@@ -38,6 +38,8 @@ pub struct IntermediateJoinNode {
     pub tee_idx: Option<isize>,
     /// A mapping from variables in the rule to the index of the corresponding element in the flattened tuples this node emits.
     pub variable_mapping: BTreeMap<String, usize>,
+    /// Tuple indices that that correspond to wildcard, unused values.
+    pub wildcard_indices: Vec<usize>,
     /// The type of the flattened tuples this node emits.
     pub tuple_type: syn::Type,
     /// The span corresponding to the original sources resulting in this node.
@@ -97,6 +99,10 @@ fn emit_join_input_pipeline(
                 panic!("Could not find key that is being joined on: {:?}", ident);
             }
         })
+        .chain(source_expanded.wildcard_indices.iter().map(|idx| {
+            let idx_ident = syn::Index::from(*idx);
+            parse_quote!(_v.#idx_ident)
+        }))
         .collect();
 
     let out_index = syn::Index::from(join_side.index());
@@ -229,6 +235,7 @@ pub fn expand_join_plan(
     match plan {
         JoinPlan::Source(target, persisted) => {
             let mut variable_mapping = BTreeMap::new();
+            let mut wildcard_indices = vec![];
             let mut row_types: Vec<syn::Type> = vec![];
 
             let local_constraints = find_relation_local_constraints(target.fields.iter());
@@ -240,6 +247,8 @@ pub fn expand_join_plan(
                     if let Entry::Vacant(e) = variable_mapping.entry(ident.name.clone()) {
                         e.insert(i);
                     }
+                } else {
+                    wildcard_indices.push(i);
                 }
             }
 
@@ -258,6 +267,7 @@ pub fn expand_join_plan(
                     persisted: *persisted,
                     tee_idx: Some(tee_index),
                     variable_mapping,
+                    wildcard_indices,
                     tuple_type: row_type,
                     span: get_span(target.span),
                 };
@@ -285,6 +295,7 @@ pub fn expand_join_plan(
                 persisted: *persisted,
                 tee_idx: None,
                 variable_mapping,
+                wildcard_indices,
                 tuple_type: row_type,
                 span: get_span(target.span),
             }
@@ -340,11 +351,11 @@ pub fn expand_join_plan(
 
             let left_type = repeat_tuple::<syn::Type, syn::Type>(
                 || parse_quote!(_),
-                left_non_joined_identifiers.len(),
+                left_non_joined_identifiers.len() + left_expanded.wildcard_indices.len(),
             );
             let right_type = repeat_tuple::<syn::Type, syn::Type>(
                 || parse_quote!(_),
-                right_non_joined_identifiers.len(),
+                right_non_joined_identifiers.len() + right_expanded.wildcard_indices.len(),
             );
 
             let join_node = syn::Ident::new(
@@ -360,6 +371,7 @@ pub fn expand_join_plan(
             // single tuple that is used by downstream joins or the final output.
             let mut flattened_tuple_elems: Vec<syn::Expr> = vec![];
             let mut flattened_mapping = BTreeMap::new();
+            let mut flattened_wildcard_indices = vec![];
 
             for (ident, idx) in &identifiers_to_join {
                 if !flattened_mapping.contains_key(*ident) {
@@ -381,6 +393,14 @@ pub fn expand_join_plan(
                         flattened_tuple_elems.push(value_expr);
                     }
                 }
+
+                for idx in 0..left_expanded.wildcard_indices.len() {
+                    let idx = syn::Index::from(left_non_joined_identifiers.len() + idx);
+                    let value_expr: syn::Expr = parse_quote!(kv.1.#idx);
+
+                    flattened_wildcard_indices.push(flattened_tuple_elems.len());
+                    flattened_tuple_elems.push(value_expr);
+                }
             } else {
                 for (ident, source_idx) in left_non_joined_identifiers
                     .keys()
@@ -401,6 +421,21 @@ pub fn expand_join_plan(
                         flattened_mapping.insert((*ident).clone(), flattened_tuple_elems.len());
                         flattened_tuple_elems.push(parse_quote!(#source_expr.#source_col_idx));
                     }
+                }
+
+                for (idx, source_idx) in (0..left_expanded.wildcard_indices.len())
+                    .map(|i| (left_non_joined_identifiers.len() + i, 0))
+                    .chain(
+                        (0..right_expanded.wildcard_indices.len())
+                            .map(|i| (right_non_joined_identifiers.len() + i, 1)),
+                    )
+                {
+                    let syn_source_index = syn::Index::from(source_idx);
+                    let idx = syn::Index::from(idx);
+                    let value_expr: syn::Expr = parse_quote!(kv.1.#syn_source_index.#idx);
+
+                    flattened_wildcard_indices.push(flattened_tuple_elems.len());
+                    flattened_tuple_elems.push(value_expr);
                 }
             }
 
@@ -438,6 +473,7 @@ pub fn expand_join_plan(
                 persisted: is_persist,
                 tee_idx: None,
                 variable_mapping: flattened_mapping,
+                wildcard_indices: flattened_wildcard_indices,
                 tuple_type: output_type,
                 span: left_expanded
                     .span
@@ -534,6 +570,7 @@ pub fn expand_join_plan(
                 persisted: inner_expanded.persisted,
                 tee_idx: None,
                 variable_mapping: inner_expanded.variable_mapping,
+                wildcard_indices: inner_expanded.wildcard_indices,
                 tuple_type: row_type,
                 span: get_span(rule_span),
             }
@@ -582,21 +619,31 @@ pub fn expand_join_plan(
 
             let mut flattened_elements: Vec<syn::Expr> = vec![];
             let mut flattened_mapping = BTreeMap::new();
+            let mut flattened_wildcard_indices = Vec::new();
+
             for (ident, source_idx) in &inner_expanded.variable_mapping {
                 let syn_source_index = syn::Index::from(*source_idx);
                 flattened_mapping.insert(ident.clone(), flattened_elements.len());
                 flattened_elements.push(parse_quote!(row.#syn_source_index.clone()));
             }
 
-            flattened_elements.push(parse_quote!(v));
+            for wildcard_idx in &inner_expanded.wildcard_indices {
+                let syn_wildcard_idx = syn::Index::from(*wildcard_idx);
+                flattened_wildcard_indices.push(flattened_elements.len());
+                flattened_elements.push(parse_quote!(row.#syn_wildcard_idx.clone()));
+            }
 
             if let IdentOrUnderscore::Ident(less_than) = less_than.deref() {
                 if less_than.name == threshold_name {
                     panic!("The threshold and less_than variables must be different")
                 }
 
-                flattened_mapping.insert(less_than.name.clone(), flattened_elements.len() - 1);
+                flattened_mapping.insert(less_than.name.clone(), flattened_elements.len());
+            } else {
+                flattened_wildcard_indices.push(flattened_elements.len());
             }
+
+            flattened_elements.push(parse_quote!(v));
 
             flat_graph_builder.add_statement(parse_quote_spanned! {get_span(rule_span)=>
                 #magic_node = #inner_name -> flat_map(|row: #row_type| (0..(row.#threshold_index)).map(move |v| (#(#flattened_elements, )*)) )
@@ -607,6 +654,7 @@ pub fn expand_join_plan(
                 persisted: inner_expanded.persisted,
                 tee_idx: None,
                 variable_mapping: flattened_mapping,
+                wildcard_indices: flattened_wildcard_indices,
                 tuple_type: repeat_tuple::<syn::Type, syn::Type>(
                     || parse_quote!(_),
                     flattened_elements.len(),

@@ -36,8 +36,8 @@ async fn main() {
         voteToReplica@addr(v) :~ clientIn(v), replicas(addr)
         allVotes(s, v) :- voteFromReplica(s, v)
         allVotes(s, v) :+ allVotes(s, v)
-        voteCounts(count(l), v) :- allVotes(l, v)
-        numReplicas(count(addr)) :- replicas(addr)
+        voteCounts(count(*), v) :- allVotes(l, v)
+        numReplicas(count(*)) :- replicas(addr)
         stdout(v) :- clientIn(v), voteCounts(n, v), numReplicas(n)
     "#
     );
