@@ -10,11 +10,6 @@ pub type JoinState<Key, V1, V2> = (
     HalfJoinStateSetUnion<Key, V2, V1>,
 );
 
-pub type JoinStateNoSetUnion<Key, V1, V2> = (
-    HalfJoinStateNoSetUnion<Key, V1, V2>,
-    HalfJoinStateNoSetUnion<Key, V2, V1>,
-);
-
 pub trait HalfJoinState<Key, ValBuild, ValProbe> {
     fn build(&mut self, k: Key, v: &ValBuild) -> bool;
     fn probe(&mut self, k: &Key, v: &ValProbe);

@@ -46,8 +46,8 @@ use syn::parse_quote;
 /// Join also accepts one type argument that controls how the join state is built up. This (currently) allows switching between a SetUnion and NonSetUnion implementation.
 /// For example:
 /// ```hydroflow,ignore
-/// join:<<HalfJoinStateSetUnion>
-/// join:<<HalfJoinStateNoSetUnion>
+/// join::<HalfJoinStateSetUnion>();
+/// join::<HalfJoinStateNoSetUnion>();
 /// ```
 ///
 /// ### Examples
