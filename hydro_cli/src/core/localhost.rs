@@ -107,27 +107,22 @@ impl LaunchedHost for LaunchedLocalhost {
             ServerStrategy::ExternalTcpPort(_) => panic!("Cannot bind to external port"),
             ServerStrategy::Demux(demux) => {
                 let mut config_map = HashMap::new();
-                for (key, bind_type) in demux {
-                    config_map.insert(*key, self.server_config(bind_type));
+                for (key, underlying) in demux {
+                    config_map.insert(*key, self.server_config(underlying));
                 }
 
                 ServerBindConfig::Demux(config_map)
             }
             ServerStrategy::Merge(merge) => {
                 let mut configs = vec![];
-                for bind_type in merge {
-                    configs.push(self.server_config(bind_type));
+                for underlying in merge {
+                    configs.push(self.server_config(underlying));
                 }
 
                 ServerBindConfig::Merge(configs)
             }
-            ServerStrategy::Mux(mux) => {
-                let mut config_map = HashMap::new();
-                for (key, bind_type) in mux {
-                    config_map.insert(*key, self.server_config(bind_type));
-                }
-
-                ServerBindConfig::Mux(config_map)
+            ServerStrategy::Tagged(underlying, id) => {
+                ServerBindConfig::Tagged(Box::new(self.server_config(underlying)), *id)
             }
             ServerStrategy::Null => ServerBindConfig::Null,
         }

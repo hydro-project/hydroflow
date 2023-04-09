@@ -26,16 +26,14 @@ async def main(args):
 
     receiver = deployment.HydroflowCrate(
         src=str(Path(__file__).parent.absolute()),
-        example="mux_stdout_receiver",
+        example="tagged_stdout_receiver",
         on=machine2
     )
 
     sender_port_1 = sender.client_port()
     sender_port_2 = sender.client_port()
-    hydro.mux({
-        0: sender_port_1,
-        1: sender_port_2
-    }).send_to(receiver.ports.echo)
+    sender_port_1.tagged(0).send_to(receiver.ports.echo.merge())
+    sender_port_2.tagged(1).send_to(receiver.ports.echo.merge())
 
     await deployment.deploy()
 
