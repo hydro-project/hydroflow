@@ -4,13 +4,13 @@ use std::collections::{hash_map::Entry, VecDeque};
 type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 
 #[derive(Debug)]
-pub struct HalfJoinStateSetUnion<Key, ValBuild, ValProbe> {
+pub struct HalfSetJoinState<Key, ValBuild, ValProbe> {
     /// Table to probe, vec val contains all matches.
     table: HashMap<Key, Vec<ValBuild>>,
     /// Not-yet emitted matches.
     current_matches: VecDeque<(Key, ValProbe, ValBuild)>,
 }
-impl<Key, ValBuild, ValProbe> Default for HalfJoinStateSetUnion<Key, ValBuild, ValProbe> {
+impl<Key, ValBuild, ValProbe> Default for HalfSetJoinState<Key, ValBuild, ValProbe> {
     fn default() -> Self {
         Self {
             table: HashMap::default(),
@@ -19,7 +19,7 @@ impl<Key, ValBuild, ValProbe> Default for HalfJoinStateSetUnion<Key, ValBuild, V
     }
 }
 impl<Key, ValBuild, ValProbe> HalfJoinState<Key, ValBuild, ValProbe>
-    for HalfJoinStateSetUnion<Key, ValBuild, ValProbe>
+    for HalfSetJoinState<Key, ValBuild, ValProbe>
 where
     Key: Clone + Eq + std::hash::Hash,
     ValBuild: Clone + Eq,

@@ -46,8 +46,8 @@ use syn::parse_quote;
 /// Join also accepts one type argument that controls how the join state is built up. This (currently) allows switching between a SetUnion and NonSetUnion implementation.
 /// For example:
 /// ```hydroflow,ignore
-/// join::<HalfJoinStateSetUnion>();
-/// join::<HalfJoinStateNoSetUnion>();
+/// join::<HalfSetJoinState>();
+/// join::<HalfMultisetJoinState>();
 /// ```
 ///
 /// ### Examples
@@ -127,7 +127,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                 .get(0)
                 .map(ToTokens::to_token_stream)
                 .unwrap_or(quote_spanned!(op_span=>
-                    #root::compiled::pull::HalfJoinStateSetUnion
+                    #root::compiled::pull::HalfSetJoinState
                 ));
 
         let persistences = match persistence_args[..] {

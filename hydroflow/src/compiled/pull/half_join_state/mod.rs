@@ -1,14 +1,11 @@
-mod no_set_union;
-mod set_union;
+mod multiset;
+mod set;
 
 // pub use half_join_state_trait::HalfJoinState;
-pub use no_set_union::HalfJoinStateNoSetUnion;
-pub use set_union::HalfJoinStateSetUnion;
+pub use multiset::HalfMultisetJoinState;
+pub use set::HalfSetJoinState;
 
-pub type JoinState<Key, V1, V2> = (
-    HalfJoinStateSetUnion<Key, V1, V2>,
-    HalfJoinStateSetUnion<Key, V2, V1>,
-);
+pub type SetJoinState<Key, V1, V2> = (HalfSetJoinState<Key, V1, V2>, HalfSetJoinState<Key, V2, V1>);
 
 pub trait HalfJoinState<Key, ValBuild, ValProbe> {
     fn build(&mut self, k: Key, v: &ValBuild) -> bool;

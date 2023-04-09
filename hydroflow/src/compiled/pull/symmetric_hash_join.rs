@@ -93,14 +93,14 @@ where
 #[cfg(test)]
 mod tests {
     use super::SymmetricHashJoin;
-    use crate::compiled::pull::JoinState;
+    use crate::compiled::pull::SetJoinState;
 
     #[test]
     fn hash_join() {
         let lhs = (0..10).map(|x| (x, format!("left {}", x)));
         let rhs = (6..15).map(|x| (x / 2, format!("right {} / 2", x)));
 
-        let mut state = JoinState::default();
+        let mut state = SetJoinState::default();
         let join = SymmetricHashJoin::new(lhs, rhs, &mut state);
 
         assert_eq!(
@@ -124,7 +124,7 @@ mod tests {
         let (lhs_tx, lhs_rx) = std::sync::mpsc::channel::<(usize, usize)>();
         let (rhs_tx, rhs_rx) = std::sync::mpsc::channel::<(usize, usize)>();
 
-        let mut state = JoinState::default();
+        let mut state = SetJoinState::default();
         let mut join = SymmetricHashJoin::new(lhs_rx.try_iter(), rhs_rx.try_iter(), &mut state);
 
         lhs_tx.send((7, 3)).unwrap();
