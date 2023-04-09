@@ -108,12 +108,6 @@ struct HydroflowSink {
     underlying: Arc<RwLock<dyn crate::core::hydroflow_crate::ports::HydroflowSink>>,
 }
 
-#[pyclass(subclass)]
-#[derive(Clone)]
-struct WrappedHydroflowSource {
-    pub underlying: Arc<RwLock<dyn HydroflowSource>>,
-}
-
 #[pyclass(name = "Deployment")]
 pub struct Deployment {
     underlying: Arc<RwLock<crate::core::Deployment>>,
@@ -432,10 +426,14 @@ impl CustomClientPort {
             .send_to(to.underlying.try_write().unwrap().deref_mut());
     }
 
-    #[getter]
-    fn __underlying_source(&self) -> WrappedHydroflowSource {
-        WrappedHydroflowSource {
-            underlying: self.underlying.clone(),
+    fn tagged(&self, tag: u32) -> TaggedSource {
+        TaggedSource {
+            underlying: Arc::new(RwLock::new(
+                crate::core::hydroflow_crate::ports::TaggedSource {
+                    source: self.underlying.clone(),
+                    tag,
+                },
+            )),
         }
     }
 
@@ -579,10 +577,14 @@ impl HydroflowCratePort {
             .send_to(to.underlying.try_write().unwrap().deref_mut());
     }
 
-    #[getter]
-    fn __underlying_source(&self) -> WrappedHydroflowSource {
-        WrappedHydroflowSource {
-            underlying: self.underlying.clone(),
+    fn tagged(&self, tag: u32) -> TaggedSource {
+        TaggedSource {
+            underlying: Arc::new(RwLock::new(
+                crate::core::hydroflow_crate::ports::TaggedSource {
+                    source: self.underlying.clone(),
+                    tag,
+                },
+            )),
         }
     }
 }
@@ -607,12 +609,12 @@ fn demux(mapping: &PyDict) -> HydroflowSink {
 
 #[pyclass(subclass)]
 #[derive(Clone)]
-struct MuxSource {
-    underlying: Arc<RwLock<crate::core::hydroflow_crate::ports::MuxSource>>,
+struct TaggedSource {
+    underlying: Arc<RwLock<crate::core::hydroflow_crate::ports::TaggedSource>>,
 }
 
 #[pymethods]
-impl MuxSource {
+impl TaggedSource {
     fn send_to(&mut self, to: &mut HydroflowSink) {
         self.underlying
             .try_write()
@@ -620,33 +622,15 @@ impl MuxSource {
             .send_to(to.underlying.try_write().unwrap().deref_mut());
     }
 
-    #[getter]
-    fn __underlying_source(&self) -> WrappedHydroflowSource {
-        WrappedHydroflowSource {
-            underlying: self.underlying.clone(),
+    fn tagged(&self, tag: u32) -> TaggedSource {
+        TaggedSource {
+            underlying: Arc::new(RwLock::new(
+                crate::core::hydroflow_crate::ports::TaggedSource {
+                    source: self.underlying.clone(),
+                    tag,
+                },
+            )),
         }
-    }
-}
-
-#[pyfunction]
-fn mux(mapping: &PyDict) -> MuxSource {
-    MuxSource {
-        underlying: Arc::new(RwLock::new(
-            crate::core::hydroflow_crate::ports::MuxSource {
-                mux: mapping
-                    .into_iter()
-                    .map(|(k, v)| {
-                        let k = k.extract::<u32>().unwrap();
-                        let v = v
-                            .getattr("__underlying_source")
-                            .unwrap()
-                            .extract::<WrappedHydroflowSource>()
-                            .unwrap();
-                        (k, v.underlying.clone())
-                    })
-                    .collect(),
-            },
-        )),
     }
 }
 
@@ -665,10 +649,14 @@ impl HydroflowNull {
             .send_to(to.underlying.try_write().unwrap().deref_mut());
     }
 
-    #[getter]
-    fn __underlying_source(&self) -> WrappedHydroflowSource {
-        WrappedHydroflowSource {
-            underlying: self.underlying.clone(),
+    fn tagged(&self, tag: u32) -> TaggedSource {
+        TaggedSource {
+            underlying: Arc::new(RwLock::new(
+                crate::core::hydroflow_crate::ports::TaggedSource {
+                    source: self.underlying.clone(),
+                    tag,
+                },
+            )),
         }
     }
 }
@@ -798,7 +786,6 @@ pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_class::<PythonStream>()?;
 
     module.add_function(wrap_pyfunction!(demux, module)?)?;
-    module.add_function(wrap_pyfunction!(mux, module)?)?;
     module.add_function(wrap_pyfunction!(null, module)?)?;
 
     module.add_wrapped(wrap_pymodule!(cli::cli))?;
