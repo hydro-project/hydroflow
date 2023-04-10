@@ -124,7 +124,7 @@ fn emit_join_input_pipeline(
     };
 
     let rhs = if anti_join && source_expanded.persisted {
-        parse_quote_spanned!(source_expanded.span=> persist() -> unique::<'tick>() -> #rhs)
+        parse_quote_spanned!(source_expanded.span=> persist() -> #rhs)
     } else {
         rhs
     };
