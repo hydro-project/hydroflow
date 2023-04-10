@@ -217,6 +217,7 @@ pub fn gen_hydroflow_graph(
             &mut tee_counter,
             &mut merge_counter,
             &mut next_join_idx,
+            &persists,
             &mut diagnostics,
             &get_span,
         );
@@ -299,6 +300,7 @@ fn generate_rule(
     tee_counter: &mut HashMap<String, Counter>,
     merge_counter: &mut HashMap<String, Counter>,
     next_join_idx: &mut Counter,
+    persists: &HashSet<String>,
     diagnostics: &mut Vec<Diagnostic>,
     get_span: &impl Fn((usize, usize)) -> Span,
 ) {
@@ -315,7 +317,7 @@ fn generate_rule(
         get_span,
     );
 
-    let after_join = apply_aggregations(rule, &out_expanded, diagnostics, get_span);
+    let after_join = apply_aggregations(rule, &out_expanded, persists.contains(&target.name), diagnostics, get_span);
 
     let my_merge_index = merge_counter
         .entry(target.name.clone())
@@ -517,6 +519,7 @@ fn gen_target_expr(
 fn apply_aggregations(
     rule: &Rule,
     out_expanded: &IntermediateJoinNode,
+    consumer_is_persist: bool,
     diagnostics: &mut Vec<Diagnostic>,
     get_span: &impl Fn((usize, usize)) -> Span,
 ) -> Pipeline {
@@ -590,7 +593,7 @@ fn apply_aggregations(
     let flattened_tuple_type = &out_expanded.tuple_type;
 
     if agg_exprs.is_empty() {
-        if out_expanded.persisted {
+        if out_expanded.persisted && !consumer_is_persist {
             parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)) -> persist())
         } else {
             parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)))
@@ -1012,14 +1015,21 @@ mod tests {
             .output result `for_each(|v| result.send(v).unwrap())`
             .output result2 `for_each(|v| result2.send(v).unwrap())`
             .output result3 `for_each(|v| result3.send(v).unwrap())`
+            .output result4 `for_each(|v| result4.send(v).unwrap())`
 
             result(a, b, c) :- ints1(a), ints2(b), ints3(c)
             result2(a) :- ints1(a), !ints2(a)
 
             intermediate(a) :- ints1(a)
             result3(a) :- intermediate(a)
+
+            .persist intermediate_persist
+            intermediate_persist(a) :- ints1(a)
+            result4(a) :- intermediate_persist(a)
             "#
         );
+
+        panic!();
     }
 
     #[test]
