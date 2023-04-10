@@ -586,7 +586,11 @@ fn apply_aggregations(
     let flattened_tuple_type = &out_expanded.tuple_type;
 
     if agg_exprs.is_empty() {
-        parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)))
+        if out_expanded.persisted {
+            parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)) -> persist())
+        } else {
+            parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)))
+        }
     } else {
         let agg_initial =
             repeat_tuple::<syn::Expr, syn::Expr>(|| parse_quote!(None), agg_exprs.len());
@@ -1003,9 +1007,13 @@ mod tests {
             
             .output result `for_each(|v| result.send(v).unwrap())`
             .output result2 `for_each(|v| result2.send(v).unwrap())`
+            .output result3 `for_each(|v| result3.send(v).unwrap())`
 
             result(a, b, c) :- ints1(a), ints2(b), ints3(c)
             result2(a) :- ints1(a), !ints2(a)
+
+            intermediate(a) :- ints1(a)
+            result3(a) :- intermediate(a)
             "#
         );
     }

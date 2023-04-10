@@ -46,10 +46,8 @@ macro_rules! clear_impl {
 clear_impl!(BTreeMap<K, V>);
 clear_impl!(BTreeSet<T>);
 clear_impl!(BinaryHeap<T>);
-clear_impl!(HashMap<K, V>);
-clear_impl!(FxHashMap<K, V>);
-clear_impl!(HashSet<T>);
-clear_impl!(FxHashSet<T>);
+clear_impl!(HashMap<K, V, S>);
+clear_impl!(HashSet<T, S>);
 clear_impl!(LinkedList<T>);
 clear_impl!(OsString);
 clear_impl!(String);

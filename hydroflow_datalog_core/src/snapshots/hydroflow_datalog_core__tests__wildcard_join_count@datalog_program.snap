@@ -59,7 +59,7 @@ fn main() {
                 ::std::cell::RefCell::new(
                     hydroflow::lang::monotonic_map::MonotonicMap::<
                         _,
-                        ::std::collections::HashSet<_>,
+                        hydroflow::rustc_hash::FxHashSet<_>,
                     >::default(),
                 ),
             );
@@ -102,7 +102,7 @@ fn main() {
                         let set = borrow
                             .try_insert_with(
                                 (context.current_tick(), context.current_stratum()),
-                                ::std::collections::HashSet::new,
+                                hydroflow::rustc_hash::FxHashSet::default,
                             );
                         if !set.contains(item) {
                             set.insert(::std::clone::Clone::clone(item));
@@ -166,7 +166,7 @@ fn main() {
                 ::std::cell::RefCell::new(
                     hydroflow::lang::monotonic_map::MonotonicMap::<
                         _,
-                        ::std::collections::HashSet<_>,
+                        hydroflow::rustc_hash::FxHashSet<_>,
                     >::default(),
                 ),
             );
@@ -209,7 +209,7 @@ fn main() {
                         let set = borrow
                             .try_insert_with(
                                 (context.current_tick(), context.current_stratum()),
-                                ::std::collections::HashSet::new,
+                                hydroflow::rustc_hash::FxHashSet::default,
                             );
                         if !set.contains(item) {
                             set.insert(::std::clone::Clone::clone(item));
@@ -259,7 +259,7 @@ fn main() {
                 ::std::cell::RefCell::new(
                     hydroflow::lang::monotonic_map::MonotonicMap::<
                         _,
-                        ::std::collections::HashSet<_>,
+                        hydroflow::rustc_hash::FxHashSet<_>,
                     >::default(),
                 ),
             );
@@ -329,7 +329,7 @@ fn main() {
                         let set = borrow
                             .try_insert_with(
                                 (context.current_tick(), context.current_stratum()),
-                                ::std::collections::HashSet::new,
+                                hydroflow::rustc_hash::FxHashSet::default,
                             );
                         if !set.contains(item) {
                             set.insert(::std::clone::Clone::clone(item));
@@ -378,7 +378,7 @@ fn main() {
                 ::std::cell::RefCell::new(
                     hydroflow::lang::monotonic_map::MonotonicMap::<
                         _,
-                        ::std::collections::HashSet<_>,
+                        hydroflow::rustc_hash::FxHashSet<_>,
                     >::default(),
                 ),
             );
@@ -458,7 +458,7 @@ fn main() {
                         let set = borrow
                             .try_insert_with(
                                 (context.current_tick(), context.current_stratum()),
-                                ::std::collections::HashSet::new,
+                                hydroflow::rustc_hash::FxHashSet::default,
                             );
                         if !set.contains(item) {
                             set.insert(::std::clone::Clone::clone(item));
