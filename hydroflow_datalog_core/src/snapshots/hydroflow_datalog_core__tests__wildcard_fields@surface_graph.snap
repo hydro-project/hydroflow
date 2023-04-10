@@ -13,8 +13,8 @@ expression: flat_graph_ref.surface_syntax_string()
 12v1 = map (| _v : (_ , _ ,) | ((_v . 1 ,) , (_v . 0 ,)));
 13v1 = map (| row : (_ , _ , _ ,) | (row . 0 ,));
 
-2v1 -> 3v1;
 7v1 -> 2v1;
+2v1 -> 3v1;
 13v1 -> 5v1;
 5v1 -> 8v1;
 9v1 -> 10v1;
