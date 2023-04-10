@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use hydroflow::compiled::pull::{JoinState, SymmetricHashJoin};
+use hydroflow::compiled::pull::{SetJoinState, SymmetricHashJoin};
 use rand::distributions::Distribution;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -13,7 +13,7 @@ fn ops(c: &mut Criterion) {
         let rhs: Vec<_> = (0..3000).map(|v| (v + 50000, ())).collect();
 
         b.iter(|| {
-            let mut state = black_box(JoinState::default());
+            let mut state = black_box(SetJoinState::default());
             let join = SymmetricHashJoin::new(
                 black_box(lhs.iter().cloned()),
                 black_box(rhs.iter().cloned()),
@@ -31,7 +31,7 @@ fn ops(c: &mut Criterion) {
         let rhs: Vec<_> = (0..3000).map(|v| (v, v + 50000)).collect();
 
         b.iter(|| {
-            let mut state = black_box(JoinState::default());
+            let mut state = black_box(SetJoinState::default());
             let join = SymmetricHashJoin::new(
                 black_box(lhs.iter().cloned()),
                 black_box(rhs.iter().cloned()),
@@ -49,7 +49,7 @@ fn ops(c: &mut Criterion) {
         let rhs: Vec<_> = (0..3000).map(|v| (v, v)).collect();
 
         b.iter(|| {
-            let mut state = black_box(JoinState::default());
+            let mut state = black_box(SetJoinState::default());
             let join = SymmetricHashJoin::new(
                 black_box(lhs.iter().cloned()),
                 black_box(rhs.iter().cloned()),
@@ -76,7 +76,7 @@ fn ops(c: &mut Criterion) {
                 .collect();
 
             b.iter(|| {
-                let mut state = black_box(JoinState::default());
+                let mut state = black_box(SetJoinState::default());
                 let join = SymmetricHashJoin::new(
                     black_box(lhs.iter().cloned()),
                     black_box(rhs.iter().cloned()),
@@ -104,7 +104,7 @@ fn ops(c: &mut Criterion) {
                 .collect();
 
             b.iter(|| {
-                let mut state = black_box(JoinState::default());
+                let mut state = black_box(SetJoinState::default());
                 let join = SymmetricHashJoin::new(
                     black_box(lhs.iter().cloned()),
                     black_box(rhs.iter().cloned()),
