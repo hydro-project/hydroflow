@@ -113,10 +113,25 @@ pub fn gen_hydroflow_graph(
 
         if !created_rules.contains(&target_ident.value) {
             created_rules.insert(target_ident.value.clone());
-            let name = syn::Ident::new(&target_ident.name, get_span(target_ident.span));
+            let insert_name = syn::Ident::new(&format!("{}_insert", target_ident.name), get_span(target_ident.span));
+            let read_name = syn::Ident::new(&target_ident.name, get_span(target_ident.span));
 
-            flat_graph_builder
-                .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #name = merge() -> unique::<'tick>() -> tee()));
+            if persists.contains(&target_ident.value.name) {
+                // read outputs the *new* values for this tick
+                flat_graph_builder
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #insert_name = merge() -> unique::<'tick>()));
+                flat_graph_builder
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #read_name = difference::<'tick, 'static>() -> tee()));
+                flat_graph_builder
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #insert_name -> [pos] #read_name));
+                flat_graph_builder
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #read_name -> next_tick() -> [neg] #read_name));
+            } else {
+                flat_graph_builder
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #insert_name = merge() -> unique::<'tick>()));
+                flat_graph_builder
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #read_name = #insert_name -> tee()));
+            }
         }
     }
 
@@ -129,7 +144,7 @@ pub fn gen_hydroflow_graph(
 
         let my_merge_index_lit =
             syn::LitInt::new(&format!("{}", my_merge_index), get_span(target.span));
-        let name = syn::Ident::new(&target.name, get_span(target.span));
+        let name = syn::Ident::new(&format!("{}_insert", target.name), get_span(target.span));
 
         let input_pipeline: Pipeline = parse_pipeline(&hf_code.code, &get_span)?;
 
@@ -151,7 +166,7 @@ pub fn gen_hydroflow_graph(
 
         let output_pipeline: Pipeline = parse_pipeline(&hf_code.code, &get_span)?;
         let output_pipeline = if persists.contains(&target.name) {
-            parse_quote_spanned! {get_span(target.span)=> persist() -> unique::<'tick>() -> #output_pipeline}
+            parse_quote_spanned! {get_span(target.span)=> persist() -> #output_pipeline}
         } else {
             output_pipeline
         };
@@ -173,7 +188,7 @@ pub fn gen_hydroflow_graph(
 
         let recv_merge_index_lit =
             syn::LitInt::new(&format!("{}", recv_merge_index), get_span(target.span));
-        let target_ident = syn::Ident::new(&target.name, get_span(target.span));
+        let target_ident = syn::Ident::new(&format!("{}_insert", target.name), get_span(target.span));
 
         let send_pipeline: Pipeline = parse_pipeline(&send_hf.code, &get_span)?;
         let recv_pipeline: Pipeline = parse_pipeline(&recv_hf.code, &get_span)?;
@@ -183,7 +198,7 @@ pub fn gen_hydroflow_graph(
         });
 
         flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
-            #recv_pipeline -> unique::<'tick>() -> [#recv_merge_index_lit] #target_ident
+            #recv_pipeline -> [#recv_merge_index_lit] #target_ident
         });
     }
 
@@ -284,7 +299,7 @@ fn generate_rule(
     get_span: &impl Fn((usize, usize)) -> Span,
 ) {
     let target = &rule.target.name;
-    let target_ident = syn::Ident::new(&target.name, get_span(target.span));
+    let target_ident = syn::Ident::new(&format!("{}_insert", target.name), get_span(target.span));
 
     let out_expanded = expand_join_plan(
         &plan,
@@ -689,7 +704,7 @@ fn apply_aggregations(
     };
 
     if out_expanded.persisted {
-        parse_quote!(persist() -> unique::<'tick>() -> #without_persist)
+        parse_quote!(persist() -> #without_persist)
     } else {
         without_persist
     }
