@@ -3,25 +3,28 @@ source: hydroflow_datalog_core/src/lib.rs
 expression: flat_graph_ref.surface_syntax_string()
 ---
 2v1 = unique :: < 'tick > ();
-5v1 = unique :: < 'tick > ();
-8v1 = unique :: < 'tick > ();
-10v1 = source_stream (ints2);
-11v1 = for_each (| v | result . send (v) . unwrap ());
-12v1 = map (| row : (_ ,) | (row . 0 ,));
-13v1 = persist ();
-14v1 = unique :: < 'tick > ();
+3v1 = difference :: < 'tick , 'static > ();
+4v1 = tee ();
+5v1 = next_tick ();
+7v1 = unique :: < 'tick > ();
+10v1 = unique :: < 'tick > ();
+12v1 = source_stream (ints2);
+13v1 = for_each (| v | result . send (v) . unwrap ());
+14v1 = map (| row : (_ ,) | (row . 0 ,));
 15v1 = map (| row : (_ ,) | (() , ((row . 0) ,)));
-16v1 = group_by :: < 'tick , () , (Option < _ > ,) > (| | (None ,) , | old : & mut (Option < _ > ,) , val : (_ ,) | { old . 0 = if let Some (prev) = old . 0 . take () { Some ({ let mut set : hydroflow :: rustc_hash :: FxHashSet :: < _ > = prev ; set . insert (val . 0) ; set }) } else { Some ({ let mut set = hydroflow :: rustc_hash :: FxHashSet :: < _ > :: default () ; set . insert (val . 0) ; set }) } ; });
+16v1 = group_by :: < 'static , () , (Option < _ > ,) > (| | (None ,) , | old : & mut (Option < _ > ,) , val : (_ ,) | { old . 0 = if let Some (prev) = old . 0 . take () { Some ({ let mut set : hydroflow :: rustc_hash :: FxHashSet :: < _ > = prev ; set . insert (val . 0) ; set }) } else { Some ({ let mut set = hydroflow :: rustc_hash :: FxHashSet :: < _ > :: default () ; set . insert (val . 0) ; set }) } ; });
 17v1 = map (| (g , a) | (a . 0 . unwrap () . len () ,));
 
-12v1 -> 2v1;
-10v1 -> 5v1;
-17v1 -> 8v1;
-8v1 -> 11v1;
-5v1 -> 12v1;
+14v1 -> 2v1;
+3v1 -> 4v1;
+2v1 -> 3v1;
+5v1 -> 3v1;
+4v1 -> 5v1;
+12v1 -> 7v1;
+17v1 -> 10v1;
+10v1 -> 13v1;
+7v1 -> 14v1;
 16v1 -> 17v1;
 15v1 -> 16v1;
-14v1 -> 15v1;
-13v1 -> 14v1;
-2v1 -> 13v1;
+4v1 -> 15v1;
 

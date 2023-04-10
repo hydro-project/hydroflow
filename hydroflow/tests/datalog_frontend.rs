@@ -1012,6 +1012,12 @@ fn test_persist_uniqueness() {
     flow.run_tick();
 
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1,)]);
+
+    ints2_send.send((2,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(2,)]);
 }
 
 #[multiplatform_test]
