@@ -459,7 +459,7 @@ pub fn expand_join_plan(
                     .add_statement(parse_quote_spanned!(get_span(rule_span)=> #join_node = anti_join() -> map(#flatten_closure)));
             } else {
                 flat_graph_builder.add_statement(
-                    parse_quote_spanned!(get_span(rule_span)=> #join_node = join::<#lt_left, #lt_right>() -> map(#flatten_closure)),
+                    parse_quote_spanned!(get_span(rule_span)=> #join_node = join::<#lt_left, #lt_right, hydroflow::compiled::pull::HalfMultisetJoinState>() -> map(#flatten_closure)),
                 );
             }
 
