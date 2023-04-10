@@ -209,6 +209,11 @@ pub mod datalog {
             #[rust_sitter::leaf(pattern = r"[0-9]+", transform = |s| s.parse().unwrap())]
             Spanned<i64>,
         ),
+        Parenthesized(
+            #[rust_sitter::leaf(text = "(")] (),
+            Box<IntExpr>,
+            #[rust_sitter::leaf(text = ")")] (),
+        ),
         #[rust_sitter::prec_left(1)]
         Add(
             Box<IntExpr>,
@@ -221,6 +226,12 @@ pub mod datalog {
             #[rust_sitter::leaf(text = "-")] (),
             Box<IntExpr>,
         ),
+        #[rust_sitter::prec_left(1)]
+        Mod(
+            Box<IntExpr>,
+            #[rust_sitter::leaf(text = "%")] (),
+            Box<IntExpr>,
+        ),
     }
 
     impl IntExpr {
@@ -228,12 +239,18 @@ pub mod datalog {
             match self {
                 IntExpr::Ident(i) => vec![i],
                 IntExpr::Integer(_) => vec![],
+                IntExpr::Parenthesized(_, e, _) => e.idents(),
                 IntExpr::Add(l, _, r) => {
                     let mut idents = l.idents();
                     idents.extend(r.idents());
                     idents
                 }
                 IntExpr::Sub(l, _, r) => {
+                    let mut idents = l.idents();
+                    idents.extend(r.idents());
+                    idents
+                }
+                IntExpr::Mod(l, _, r) => {
                     let mut idents = l.idents();
                     idents.extend(r.idents());
                     idents

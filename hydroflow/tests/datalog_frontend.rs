@@ -869,6 +869,7 @@ fn test_expr_lhs() {
         result(a + 123) :- ints(a)
         result(a + a) :- ints(a)
         result(123 - a) :- ints(a)
+        result(123 % (a + 5)) :- ints(a)
         "#
     );
 
@@ -878,7 +879,7 @@ fn test_expr_lhs() {
 
     assert_eq!(
         &*collect_ready::<Vec<_>, _>(&mut result_recv),
-        &[(123,), (124,), (2,), (122,)]
+        &[(123,), (124,), (2,), (122,), (3,)]
     );
 }
 
