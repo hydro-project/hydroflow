@@ -2,10 +2,10 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 
 use super::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, Persistence,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    WriteContextArgs, RANGE_1,
 };
 
-use quote::quote_spanned;
+use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
@@ -41,6 +41,13 @@ use syn::parse_quote;
 ///
 /// join::<'tick, 'static>();
 /// // etc.
+/// ```
+///
+/// Join also accepts one type argument that controls how the join state is built up. This (currently) allows switching between a SetUnion and NonSetUnion implementation.
+/// For example:
+/// ```hydroflow,ignore
+/// join::<HalfSetJoinState>();
+/// join::<HalfMultisetJoinState>();
 /// ```
 ///
 /// ### Examples
@@ -85,7 +92,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
     soft_range_out: RANGE_1,
     num_args: 0,
     persistence_args: &(0..=2),
-    type_args: RANGE_0,
+    type_args: &(0..=1),
     is_external_input: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
@@ -106,13 +113,23 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                        OperatorInstance {
                            generics:
                                OpInstGenerics {
-                                   persistence_args, ..
+                                   persistence_args,
+                                   type_args,
+                                   ..
                                },
                            ..
                        },
                    ..
                },
                _| {
+        let join_type =
+            type_args
+                .get(0)
+                .map(ToTokens::to_token_stream)
+                .unwrap_or(quote_spanned!(op_span=>
+                    #root::compiled::pull::HalfSetJoinState
+                ));
+
         let persistences = match persistence_args[..] {
             [] => [Persistence::Static, Persistence::Static],
             [a] => [a, a],
@@ -130,7 +147,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                         quote_spanned! {op_span=>
                             #root::lang::monotonic_map::MonotonicMap::new_init(
                                 #root::lang::clear::ClearDefault(
-                                    #root::compiled::pull::HalfJoinState::default()
+                                    #join_type::default()
                                 )
                             )
                         },
@@ -140,7 +157,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                     ),
                     Persistence::Static => (
                         quote_spanned! {op_span=>
-                            #root::compiled::pull::HalfJoinState::default()
+                            #join_type::default()
                         },
                         quote_spanned! {op_span=>
                             &mut #borrow_ident
@@ -172,8 +189,8 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                 fn check_inputs<'a, K, I1, V1, I2, V2>(
                     lhs: I1,
                     rhs: I2,
-                    lhs_state: &'a mut #root::compiled::pull::HalfJoinState<K, V1, V2>,
-                    rhs_state: &'a mut #root::compiled::pull::HalfJoinState<K, V2, V1>,
+                    lhs_state: &'a mut #join_type<K, V1, V2>,
+                    rhs_state: &'a mut #join_type<K, V2, V1>,
                 ) -> impl 'a + Iterator<Item = (K, (V1, V2))>
                 where
                     K: Eq + std::hash::Hash + Clone,
