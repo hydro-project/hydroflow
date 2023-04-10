@@ -2636,6 +2636,11 @@ join::&lt;'static, 'tick&gt;();
 join::&lt;'tick, 'static&gt;();
 // etc.
 </code></pre>
+<p>Join also accepts one type argument that controls how the join state is built up. This (currently) allows switching between a SetUnion and NonSetUnion implementation.
+For example:</p>
+<pre><code class="language-hydroflow ignore">join::&lt;HalfSetJoinState&gt;();
+join::&lt;HalfMultisetJoinState&gt;();
+</code></pre>
 <h3 id="examples"><a class="header" href="#examples">Examples</a></h3>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {

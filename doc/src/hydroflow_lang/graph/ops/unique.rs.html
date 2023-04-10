@@ -246,18 +246,18 @@
             Persistence::Tick =&gt; {
                 <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="kw">let </span>#uniquedata_ident = #hydroflow.add_state(::std::cell::RefCell::new(
-                        #root::lang::monotonic_map::MonotonicMap::&lt;<span class="kw">_</span>, ::std::collections::HashSet&lt;<span class="kw">_</span>&gt;&gt;::default(),
+                        #root::lang::monotonic_map::MonotonicMap::&lt;<span class="kw">_</span>, #root::rustc_hash::FxHashSet&lt;<span class="kw">_</span>&gt;&gt;::default(),
                     ));
                 };
                 <span class="kw">let </span>get_set = <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="kw">let </span><span class="kw-2">mut </span>borrow = #context.state_ref(#uniquedata_ident).borrow_mut();
-                    <span class="kw">let </span>set = borrow.try_insert_with((#context.current_tick(), #context.current_stratum()), ::std::collections::HashSet::new);
+                    <span class="kw">let </span>set = borrow.try_insert_with((#context.current_tick(), #context.current_stratum()), #root::rustc_hash::FxHashSet::default);
                 };
                 (write_prologue, get_set)
             }
             Persistence::Static =&gt; {
                 <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
-                    <span class="kw">let </span>#uniquedata_ident = #hydroflow.add_state(::std::cell::RefCell::new(::std::collections::HashSet::new()));
+                    <span class="kw">let </span>#uniquedata_ident = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashSet::default()));
                 };
                 <span class="kw">let </span>get_set = <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="kw">let </span><span class="kw-2">mut </span>set = #context.state_ref(#uniquedata_ident).borrow_mut();
