@@ -20,7 +20,7 @@ use pin_project::pin_project;
 
 use tokio::net::{TcpListener, TcpStream};
 use tokio::{io, task::JoinHandle};
-use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
+use tokio_util::codec::{Framed, LengthDelimitedCodec};
 
 #[cfg(unix)]
 use tokio::net::{UnixListener, UnixStream};
@@ -125,6 +125,17 @@ pub type DynStream = Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Se
 
 pub type DynSink<Input> = Pin<Box<dyn Sink<Input, Error = io::Error> + Send + Sync>>;
 
+pub trait StreamSink:
+    Stream<Item = Result<BytesMut, io::Error>> + Sink<Bytes, Error = io::Error>
+{
+}
+impl<T: Stream<Item = Result<BytesMut, io::Error>> + Sink<Bytes, Error = io::Error>> StreamSink
+    for T
+{
+}
+
+pub type DynStreamSink = Pin<Box<dyn StreamSink + Send + Sync>>;
+
 #[async_trait]
 pub trait Connected: Send {
     async fn from_defn(pipe: ServerOrBound) -> Self;
@@ -204,10 +215,10 @@ async fn accept(bound: BoundConnection) -> ConnectedBidi {
             #[cfg(unix)]
             {
                 let stream = listener.await.unwrap().unwrap();
-                let (sink, source) = unix_bytes(stream);
                 ConnectedBidi {
-                    source: Some(Box::pin(source)),
-                    sink: Some(Box::pin(sink)),
+                    stream_sink: Some(Box::pin(unix_bytes(stream))),
+                    source_only: None,
+                    sink_only: None,
                 }
             }
 
@@ -219,16 +230,16 @@ async fn accept(bound: BoundConnection) -> ConnectedBidi {
         }
         BoundConnection::TcpPort(listener, _) => {
             let stream = listener.await.unwrap().unwrap();
-            let (sink, source) = tcp_bytes(stream);
             ConnectedBidi {
-                source: Some(Box::pin(source)),
-                sink: Some(Box::pin(sink)),
+                stream_sink: Some(Box::pin(tcp_bytes(stream))),
+                source_only: None,
+                sink_only: None,
             }
         }
         BoundConnection::Merge(merge) => {
             let mut sources = vec![];
             for bound in merge {
-                sources.push(accept(bound).await.source.unwrap());
+                sources.push(accept(bound).await.into_source());
             }
 
             let merge_source: DynStream = Box::pin(MergeSource {
@@ -237,8 +248,9 @@ async fn accept(bound: BoundConnection) -> ConnectedBidi {
             });
 
             ConnectedBidi {
-                source: Some(merge_source),
-                sink: None,
+                stream_sink: None,
+                source_only: Some(merge_source),
+                sink_only: None,
             }
         }
         BoundConnection::Demux(_) => panic!("Cannot connect to a demux pipe directly"),
@@ -249,29 +261,13 @@ async fn accept(bound: BoundConnection) -> ConnectedBidi {
     }
 }
 
-fn tcp_bytes(
-    stream: TcpStream,
-) -> (
-    FramedWrite<tokio::net::tcp::OwnedWriteHalf, LengthDelimitedCodec>,
-    FramedRead<tokio::net::tcp::OwnedReadHalf, LengthDelimitedCodec>,
-) {
-    let (recv, send) = stream.into_split();
-    let send = FramedWrite::new(send, LengthDelimitedCodec::new());
-    let recv = FramedRead::new(recv, LengthDelimitedCodec::new());
-    (send, recv)
+fn tcp_bytes(stream: TcpStream) -> impl StreamSink {
+    Framed::new(stream, LengthDelimitedCodec::new())
 }
 
 #[cfg(unix)]
-fn unix_bytes(
-    stream: UnixStream,
-) -> (
-    FramedWrite<tokio::net::unix::OwnedWriteHalf, LengthDelimitedCodec>,
-    FramedRead<tokio::net::unix::OwnedReadHalf, LengthDelimitedCodec>,
-) {
-    let (recv, send) = stream.into_split();
-    let send = FramedWrite::new(send, LengthDelimitedCodec::new());
-    let recv = FramedRead::new(recv, LengthDelimitedCodec::new());
-    (send, recv)
+fn unix_bytes(stream: UnixStream) -> impl StreamSink {
+    Framed::new(stream, LengthDelimitedCodec::new())
 }
 
 struct IoErrorDrain<T> {
@@ -299,8 +295,9 @@ impl<T> Sink<T> for IoErrorDrain<T> {
 }
 
 pub struct ConnectedBidi {
-    source: Option<DynStream>,
-    sink: Option<DynSink<Bytes>>,
+    stream_sink: Option<DynStreamSink>,
+    source_only: Option<DynStream>,
+    sink_only: Option<DynSink<Bytes>>,
 }
 
 #[async_trait]
@@ -311,10 +308,10 @@ impl Connected for ConnectedBidi {
                 #[cfg(unix)]
                 {
                     let stream = UnixStream::connect(path).await.unwrap();
-                    let (sink, source) = unix_bytes(stream);
                     ConnectedBidi {
-                        source: Some(Box::pin(source)),
-                        sink: Some(Box::pin(sink)),
+                        stream_sink: Some(Box::pin(unix_bytes(stream))),
+                        source_only: None,
+                        sink_only: None,
                     }
                 }
 
@@ -326,10 +323,10 @@ impl Connected for ConnectedBidi {
             }
             ServerOrBound::Server(ServerPort::TcpPort(addr)) => {
                 let stream = TcpStream::connect(addr).await.unwrap();
-                let (sink, source) = tcp_bytes(stream);
                 ConnectedBidi {
-                    source: Some(Box::pin(source)),
-                    sink: Some(Box::pin(sink)),
+                    stream_sink: Some(Box::pin(tcp_bytes(stream))),
+                    source_only: None,
+                    sink_only: None,
                 }
             }
             ServerOrBound::Server(ServerPort::Merge(merge)) => {
@@ -346,8 +343,9 @@ impl Connected for ConnectedBidi {
                 };
 
                 ConnectedBidi {
-                    source: Some(Box::pin(merged)),
-                    sink: None,
+                    stream_sink: None,
+                    source_only: Some(Box::pin(merged)),
+                    sink_only: None,
                 }
             }
             ServerOrBound::Server(ServerPort::Demux(_)) => {
@@ -359,8 +357,9 @@ impl Connected for ConnectedBidi {
             }
 
             ServerOrBound::Server(ServerPort::Null) => ConnectedBidi {
-                source: Some(Box::pin(stream::empty())),
-                sink: Some(Box::pin(IoErrorDrain {
+                stream_sink: None,
+                source_only: Some(Box::pin(stream::empty())),
+                sink_only: Some(Box::pin(IoErrorDrain {
                     marker: PhantomData::default(),
                 })),
             },
@@ -375,7 +374,11 @@ impl ConnectedSource for ConnectedBidi {
     type Stream = DynStream;
 
     fn into_source(mut self) -> DynStream {
-        self.source.take().unwrap()
+        if let Some(s) = self.stream_sink.take() {
+            Box::pin(s)
+        } else {
+            self.source_only.take().unwrap()
+        }
     }
 }
 
@@ -384,7 +387,11 @@ impl ConnectedSink for ConnectedBidi {
     type Sink = DynSink<Bytes>;
 
     fn into_sink(mut self) -> DynSink<Self::Input> {
-        self.sink.take().unwrap()
+        if let Some(s) = self.stream_sink.take() {
+            Box::pin(s)
+        } else {
+            self.sink_only.take().unwrap()
+        }
     }
 }
 
