@@ -585,7 +585,7 @@ fn apply_aggregations(
 
     let flattened_tuple_type = &out_expanded.tuple_type;
 
-    let without_persist: Pipeline = if agg_exprs.is_empty() {
+    if agg_exprs.is_empty() {
         parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)))
     } else {
         let agg_initial =
@@ -698,15 +698,15 @@ fn apply_aggregations(
         let pre_group_by_map: syn::Expr = parse_quote!(|row: #flattened_tuple_type| ((#(#group_by_exprs, )*), (#(#agg_exprs, )*)));
         let after_group_map: syn::Expr = parse_quote!(|(g, a)| (#(#after_group_lookups, )*));
 
-        parse_quote! {
-            map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> map(#after_group_map)
+        if out_expanded.persisted {
+            parse_quote! {
+                map(#pre_group_by_map) -> group_by::<'static, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> map(#after_group_map)
+            }
+        } else {
+            parse_quote! {
+                map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> map(#after_group_map)
+            }
         }
-    };
-
-    if out_expanded.persisted {
-        parse_quote!(persist() -> #without_persist)
-    } else {
-        without_persist
     }
 }
 
