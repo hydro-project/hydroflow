@@ -97,13 +97,15 @@ async fn main() {
 .input noop `repeat_iter([(0 as u32,),])`
 
 # Debug
-.output p1aOut `for_each(|(a,pid,id,num):(u32,u32,u32,u32,)| println!("proposer {:?} sent p1a to {:?}: [{:?},{:?},{:?}]", pid, a, pid, id, num))`
-.output p1bOut `for_each(|(pid,a,log_size,id,num,max_id,max_num):(u32,u32,u32,u32,u32,u32,u32,)| println!("proposer {:?} received p1b: [{:?},{:?},{:?},{:?},{:?},{:?}]", pid, a, log_size, id, num, max_id, max_num))`
-.output p1bLogOut `for_each(|(pid,a,payload,slot,payload_id,payload_num,id,num):(u32,u32,u32,u32,u32,u32,u32,u32,)| println!("proposer {:?} received p1bLog: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]", pid, a, payload, slot, payload_id, payload_num, id, num))`
-.output p2aOut `for_each(|(a,pid,payload,slot,id,num):(u32,u32,u32,u32,u32,u32,)| println!("proposer {:?} sent p2a to {:?}: [{:?},{:?},{:?},{:?},{:?}]", pid, a, pid, payload, slot, id, num))`
-.output p2bOut `for_each(|(pid,a,payload,slot,id,num,max_id,max_num):(u32,u32,u32,u32,u32,u32,u32,u32,)| println!("proposer {:?} received p2b: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]", pid, a, payload, slot, id, num, max_id, max_num))`
-.output iAmLeaderSendOut `for_each(|(dest,pid,num):(u32,u32,u32,)| println!("proposer {:?} sent iAmLeader to {:?}: [{:?},{:?}]", pid, dest, pid, num))`
-.output iAmLeaderReceiveOut `for_each(|(my_id,pid,num):(u32,u32,u32,)| println!("proposer {:?} received iAmLeader: [{:?},{:?}]", my_id, pid, num))`
+.output p1aOut `for_each(|(a,pid,id,num):(u32,u32,u32,u32,)| println!("proposer {:?} sent p1a to acceptor {:?}: [{:?},{:?},{:?}]", pid, a, pid, id, num))`
+.output p1bOut `for_each(|(pid,p,a,log_size,id,num,max_id,max_num):(u32,u32,u32,u32,u32,u32,u32,u32,)| println!("proposer {:?} received p1b from acceptor: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]", pid, p, a, log_size, id, num, max_id, max_num))`
+.output p1bLogOut `for_each(|(pid,p,a,payload,slot,payload_id,payload_num,id,num):(u32,u32,u32,u32,u32,u32,u32,u32,u32,)| println!("proposer {:?} received p1bLog from acceptor: [{:?},{:?},{:?},{:?},{:?},{:?},{:?},{:?}]", pid, p, a, payload, slot, payload_id, payload_num, id, num))`
+.output p2aOut `for_each(|(a,pid,payload,slot,id,num):(u32,u32,u32,u32,u32,u32,)| println!("proposer {:?} sent p2a to p2aProxyLeader {:?}: [{:?},{:?},{:?},{:?},{:?}]", pid, a, pid, payload, slot, id, num))`
+.output p2bOut `for_each(|(pid,max_id,max_num,t1):(u32,u32,u32,u32,)| println!("proposer {:?} received p2b from p2bProxyLeader: [{:?},{:?},{:?}]", pid, max_id, max_num, t1))`
+.output p2bSealedOut `for_each(|(pid,max_id,max_num):(u32,u32,u32,)| println!("proposer {:?} sealed p2b: [{:?},{:?}]", pid, max_id, max_num))`
+.output inputsOut `for_each(|(pid,n,t1,prev_t):(u32,u32,u32,u32,)| println!("proposer {:?} received inputs from p2bProxyLeader: [{:?},{:?},{:?}]", pid, n, t1, prev_t))`
+.output iAmLeaderSendOut `for_each(|(dest,pid,num):(u32,u32,u32,)| println!("proposer {:?} sent iAmLeader to proposer{:?}: [{:?},{:?}]", pid, dest, pid, num))`
+.output iAmLeaderReceiveOut `for_each(|(my_id,pid,num):(u32,u32,u32,)| println!("proposer {:?} received iAmLeader from proposer: [{:?},{:?}]", my_id, pid, num))`
 # For some reason Hydroflow can't infer the type of nextSlot, so we define it manually:
 .input nextSlot `null::<(u32,)>()`
 
@@ -125,7 +127,7 @@ async fn main() {
 # p2bU: maxBallotID, maxBallotNum, t1
 .async p2bU `null::<(u32,u32,u32)>()` `source_stream(p2b_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,u32,u32)>(v.unwrap()).unwrap())`
 # inputs: n, t1, prevT
-.async inputs `null::<(u32,u32,u32)>()` `source_stream(inputs_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,u32,u32)>(v.unwrap()).unwrap())`
+.async inputsU `null::<(u32,u32,u32)>()` `source_stream(inputs_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,u32,u32)>(v.unwrap()).unwrap())`
 
 .input p1aTimeout `source_stream(p1a_timeout) -> map(|_| () )` # periodic timer to send p1a, so proposers each send at random times to avoid contention
 .input iAmLeaderResendTimeout `source_stream(i_am_leader_resend_timeout) -> map(|_| () )` # periodic timer to resend iAmLeader
@@ -154,12 +156,14 @@ ballot(zero) :- startBallot(zero)
 # Debug
 // p1aOut(a, i, i, num) :- id(i), NewBallot(num), p1aTimeout(), LeaderExpired(), acceptors(a)
 // p1aOut(a, i, i, num) :- id(i), ballot(num), !NewBallot(newNum), p1aTimeout(), LeaderExpired(), acceptors(a)
-// p1bOut(pid, a, logSize, id, num, maxID, maxNum) :- id(pid), p1bU(a, logSize, id, num, maxID, maxNum)
-// p1bLogOut(pid, a, payload, slot, payloadBallotID, payloadBallotNum, id, num) :- id(pid), p1bLogU(a, payload, slot, payloadBallotID, payloadBallotNum, id, num)
-// p2aOut(a, i, payload, slot, i, num) :- ResentLog(payload, slot), id(i), ballot(num), acceptors(a)
-p2aOut(a, i, no, slot, i, num) :- FilledHoles(no, slot), id(i), ballot(num), acceptors(a) # Weird bug where if this line is commented out, id has an error?
-// p2aOut(a, i, payload, slot, i, num) :- ChosenPayload(payload), nextSlot(slot), id(i), ballot(num), acceptors(a)
-// p2bOut(pid, a, payload, slot, id, num, maxID, maxNum) :- id(pid), p2bU(a, payload, slot, id, num, maxID, maxNum)
+// p1bOut(pid, p, a, logSize, id, num, maxID, maxNum) :- id(pid), p1bU(p, a, logSize, id, num, maxID, maxNum)
+// p1bLogOut(pid, p, a, payload, slot, payloadBallotID, payloadBallotNum, id, num) :- id(pid), p1bLogU(p, a, payload, slot, payloadBallotID, payloadBallotNum, id, num)
+// p2aOut(start+(slot%n), i, payload, slot, i, num) :- ResentLog(payload, slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
+p2aOut(start+(slot%n), i, no, slot, i, num) :- FilledHoles(no, slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start) # Weird bug where if this line is commented out, id has an error?
+// p2aOut(start+(slot%n), i, payload, slot, i, num) :- ChosenPayload(payload), nextSlot(slot), id(i), ballot(num),  numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
+// p2bOut(pid, mi, mn, t1) :- id(pid), p2bU(mi, mn, t1)
+// p2bSealedOut(pid, mi, mn) :- id(pid), p2bSealed(mi, mn)
+// inputsOut(pid, n, t1, prevT) :- id(pid), inputsU(n, t1, prevT)
 // iAmLeaderSendOut(pid, i, num) :- id(i), ballot(num), IsLeader(), proposers(pid), iAmLeaderResendTimeout(), !id(pid) 
 // iAmLeaderReceiveOut(pid, i, num) :- id(pid), iAmLeaderU(i, num)
 
@@ -243,6 +247,7 @@ nextSlot(s) :+ !ChosenPayload(payload), nextSlot(s), IsLeader()
 p2bUP(mi, mn, t1) :- p2bU(mi, mn, t1) # Accept the original input
 p2bUP(mi, mn, t1) :+ p2bUP(mi, mn, t1) # Persist
 recvSize(count(*), t1) :- p2bUP(mi, mn, t1) # Count. Since there's only 1 r, recvSize = rCount.
+inputs(n, t1, prevT) :+ inputsU(n, t1, prevT)
 inputs(n, t1, prevT) :+ inputs(n, t1, prevT) # TODO: experiment with replacing with .persist
 canSeal(t1) :- recvSize(n, t1), inputs(n, t1, prevT), sealed(prevT) # Check if all inputs of this batch have been received
 canSeal(t1) :- recvSize(n, t1), inputs(n, t1, prevT), (prevT == 0)

@@ -73,15 +73,16 @@ async def main(args):
         for i in range(0, num_p2a_proxy_leaders):
             machine = gcp_machine(deployment=deployment) if p2a_proxy_leader_gcp else localhost_machine
             p2a_proxy_leader_machines[proposer_id].append(machine)
+            p2a_proxy_leader_id = proposer_id*num_p2a_proxy_leaders + i
             
             p2a_proxy_leader = deployment.HydroflowCrate(
                 src=".",
                 example="dedalus_auto_paxos_p2a_proxy",
-                args=[json.dumps((acceptor_start_ids, num_acceptor_groups))], # acceptor_start_ids, num_acceptor_groups
+                args=[json.dumps((p2a_proxy_leader_id, acceptor_start_ids, num_acceptor_groups))], # my_id, acceptor_start_ids, num_acceptor_groups
                 on=machine
             )
             p2a_proxy_leader_programs[proposer_id].append(p2a_proxy_leader)
-            to_p2a_proxy_leader_ports[proposer_id*num_p2a_proxy_leaders + i] = p2a_proxy_leader.ports.p2a_to_proxy.merge()
+            to_p2a_proxy_leader_ports[p2a_proxy_leader_id] = p2a_proxy_leader.ports.p2a_to_proxy.merge()
 
     # set up acceptors
     acceptor_machines = []
@@ -95,9 +96,9 @@ async def main(args):
         for i in range(0, num_acceptor_groups):
             machine = gcp_machine(deployment=deployment) if acceptor_gcp else localhost_machine
             acceptor_machines[acceptor_id].append(machine)
+            partition_id = acceptor_id*num_acceptor_groups + i
             
             coordinator = acceptor_id # Each group of acceptors shares 1 coordinator
-            partition_id = acceptor_id*num_acceptor_groups + i
             acceptor = deployment.HydroflowCrate(
                 src=".",
                 example="dedalus_auto_paxos_acceptor",
@@ -118,16 +119,23 @@ async def main(args):
         p2b_proxy_leader_programs.append([])
         for i in range(0, num_p2b_proxy_leaders):
             machine = gcp_machine(deployment=deployment) if p2b_proxy_leader_gcp else localhost_machine
-            p2b_proxy_leader_machines[proposer_id].append(machine)
-            
+            p2b_proxy_leader_machines[proposer_id].append(machine) 
+            p2b_proxy_leader_id = proposer_id*num_p2b_proxy_leaders + i
+
             p2b_proxy_leader = deployment.HydroflowCrate(
                 src=".",
                 example="dedalus_auto_paxos_p2b_proxy",
-                args=[json.dumps((f, acceptor_start_ids, num_acceptor_groups, proposer_id))], # f, acceptor_start_ids, num_acceptor_groups, proposer
+                args=[json.dumps((p2b_proxy_leader_id, f, acceptor_start_ids, num_acceptor_groups, proposer_id))], # my_id, f, acceptor_start_ids, num_acceptor_groups, proposer
                 on=machine
             )
             p2b_proxy_leader_programs[proposer_id].append(p2b_proxy_leader)
-            to_p2b_proxy_leader_ports[proposer_id*num_p2b_proxy_leaders + i] = p2b_proxy_leader.ports.p2b.merge()
+            to_p2b_proxy_leader_ports[p2b_proxy_leader_id] = p2b_proxy_leader.ports.p2b.merge()
+
+    partitions_of_acceptor = []
+    for acceptor_id in range(0, 2*f+1):
+        partitions_of_acceptor.append([])
+        for i in range(0, num_acceptor_groups):
+            partitions_of_acceptor[acceptor_id].append(acceptor_id*num_acceptor_groups + i)
 
     # set up coordinators
     coordinator_machines = []
@@ -140,7 +148,7 @@ async def main(args):
         coordinator = deployment.HydroflowCrate(
             src=".",
             example="dedalus_auto_paxos_coordinator",
-            args=[json.dumps([num_acceptor_groups])], # num_acceptor_groups
+            args=[json.dumps((i, num_acceptor_groups, partitions_of_acceptor[i]))], # my_id, num_acceptor_groups, acceptors
             on=machine
         )
         coordinator_programs.append(coordinator)

@@ -32,7 +32,7 @@ async fn main() {
         .await
         .into_sink();
 
-    let (f, acceptor_start_ids, num_acceptor_groups, proposer):(u32, Vec<u32>, u32, u32) = 
+    let (my_id, f, acceptor_start_ids, num_acceptor_groups, proposer):(u32, u32, Vec<u32>, u32, u32) = 
         serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
     let periodic_source = periodic(1);
 
@@ -41,6 +41,7 @@ async fn main() {
         r#"
         ######################## relation definitions
 # EDB
+.input id `repeat_iter([(my_id,),])`
 .input quorum `repeat_iter([(f+1,),])`
 .input acceptorStartIDs `repeat_iter(acceptor_start_ids.clone()) -> map(|p| (p,))` # Assume = 0,n,2n,...,n*m, for n acceptors and m partitions
 .input numAcceptorGroups `repeat_iter([(num_acceptor_groups,),])`
@@ -48,7 +49,9 @@ async fn main() {
 .input tick `repeat_iter(vec![()]) -> map(|_| (context.current_tick() as u32,))`
 
 # Debug
-.output p2bOut `for_each(|(pid,a,payload,slot,id,num,max_id,max_num):(u32,u32,u32,u32,u32,u32,u32,u32,)| println!("acceptor {:?} sent p2b to {:?}: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]]", a, pid, a, payload, slot, id, num, max_id, max_num))`
+.output p2bOut `for_each(|(i,a,payload,slot,id,num,max_id,max_num):(u32,u32,u32,u32,u32,u32,u32,u32,)| println!("p2bProxyLeader {:?} received p2b from acceptor: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]]", i, a, payload, slot, id, num, max_id, max_num))`
+.output p2bToProposerOut `for_each(|(i,pid,max_id,max_num,t1):(u32,u32,u32,u32,u32,)| println!("p2bProxyLeader {:?} sent p2b to proposer {:?}: [{:?},{:?},{:?}]]", i, pid, max_id, max_num, t1))`
+.output p2bToProposerOut `for_each(|(i,pid,n,t1,prev_t):(u32,u32,u32,u32,u32,)| println!("p2bProxyLeader {:?} sent inputs to proposer {:?}: [{:?},{:?},{:?}]]", i, pid, n, t1, prev_t))`
 .input periodic `source_stream(periodic_source) -> map(|_| ())`
 .output throughputOut `for_each(|(id,num,):(u32,u32,)| println!("proxy leader {:?}: {:?}", id, num))`
 
@@ -67,7 +70,10 @@ p2b(a, p, s, i, n, mi, mn) :+ p2b(a, p, s, i, n, mi, mn), !commit(p2, s) # drop 
 
 # Debug
 // p2bOut(i, a, payload, slot, id, num, maxID, maxNum) :- id(i), p2bU(a, payload, slot, id, num, maxID, maxNum)
-// throughputOut(id,num) :- totalCommitted(num), periodic(), id(i)
+// p2bToProposerOut(i, pid, mi, mn, t1) :- p2bNewBallot(mi, mn), tick(t1), proposer(pid), id(i)
+// inputsOut(i, pid, n, t1, prevT) :- batchSize(n), tick(t1), batchTimes(prevT), proposer(pid), id(i)
+// inputsOut(i, pid, n, t1, 0) :- batchSize(n), tick(t1), !batchTimes(prevT), proposer(pid), id(i)
+throughputOut(i, num) :- totalCommitted(num), periodic(), id(i)
 
 
 ######################## p2bs with asymmetric decoupling
@@ -79,8 +85,8 @@ p2bUCount(count(*)) :- p2bNewBallot(mi, mn)
 batchSize(n) :- p2bUCount(n)
 batchTimes(t1) :+ batchSize(n), tick(t1) # Since there's only 1 r to be batched, (n != 0) is implied
 batchTimes(t1) :+ !batchSize(n), batchTimes(t1) # Persist if no batch
-inputs(n, t1, prevT) :- batchSize(n), tick(t1), batchTimes(prevT)
-inputs(n, t1, 0) :- batchSize(n), tick(t1), !batchTimes(prevT)
+inputs@pid(n, t1, prevT) :~ batchSize(n), tick(t1), batchTimes(prevT), proposer(pid)
+inputs@pid(n, t1, 0) :~ batchSize(n), tick(t1), !batchTimes(prevT), proposer(pid)
 ######################## end p2bs with asymmetric decoupling
 
 
