@@ -478,9 +478,20 @@ fn gen_target_expr(
 ) -> syn::Expr {
     match expr {
         TargetExpr::Expr(expr) => gen_value_expr(expr, lookup_ident, get_span),
-        TargetExpr::Aggregation(Aggregation { ident, .. }) => {
-            gen_value_expr(&IntExpr::Ident(ident.clone()), lookup_ident, get_span)
+        TargetExpr::Aggregation(Aggregation::Count(_)) => parse_quote!(()),
+        TargetExpr::Aggregation(Aggregation::CountUnique(_, _, keys, _)) => {
+            let keys = keys
+                .iter()
+                .map(|k| gen_value_expr(&IntExpr::Ident(k.clone()), lookup_ident, get_span))
+                .collect::<Vec<_>>();
+            parse_quote!((#(#keys),*))
         }
+        TargetExpr::Aggregation(
+            Aggregation::Min(_, _, a, _)
+            | Aggregation::Max(_, _, a, _)
+            | Aggregation::Sum(_, _, a, _)
+            | Aggregation::Choose(_, _, a, _),
+        ) => gen_value_expr(&IntExpr::Ident(a.clone()), lookup_ident, get_span),
     }
 }
 
@@ -546,12 +557,12 @@ fn apply_aggregations(
             get_span,
         );
 
-        match field.value {
+        match &field.value {
             TargetExpr::Expr(_) => {
                 group_by_exprs.push(expr);
             }
-            TargetExpr::Aggregation(_) => {
-                aggregations.push(field);
+            TargetExpr::Aggregation(a) => {
+                aggregations.push(a.clone());
                 agg_exprs.push(expr);
             }
         }
@@ -581,43 +592,51 @@ fn apply_aggregations(
                 let old_at_index: syn::Expr = parse_quote!(old.#idx);
                 let val_at_index: syn::Expr = parse_quote!(val.#idx);
 
-                let agg_expr: syn::Expr = match &agg.value {
-                    TargetExpr::Aggregation(Aggregation { tpe, .. }) => match tpe {
-                        AggregationType::Min(_) => {
-                            parse_quote!(std::cmp::min(prev, #val_at_index))
-                        }
-                        AggregationType::Max(_) => {
-                            parse_quote!(std::cmp::max(prev, #val_at_index))
-                        }
-                        AggregationType::Sum(_) => {
-                            parse_quote!(prev + #val_at_index)
-                        }
-                        AggregationType::Count(_) => {
-                            parse_quote!(prev + 1)
-                        }
-                        AggregationType::Choose(_) => {
-                            parse_quote!(prev) // choose = select any 1 element from the relation. By default we select the 1st.
-                        }
-                    },
-                    _ => panic!(),
+                let agg_expr: syn::Expr = match &agg {
+                    Aggregation::Min(..) => {
+                        parse_quote!(std::cmp::min(prev, #val_at_index))
+                    }
+                    Aggregation::Max(..) => {
+                        parse_quote!(std::cmp::max(prev, #val_at_index))
+                    }
+                    Aggregation::Sum(..) => {
+                        parse_quote!(prev + #val_at_index)
+                    }
+                    Aggregation::Count(..) => {
+                        parse_quote!(prev + 1)
+                    }
+                    Aggregation::CountUnique(..) => {
+                        parse_quote!({
+                            let mut set: hydroflow::rustc_hash::FxHashSet::<_> = prev;
+                            set.insert(#val_at_index);
+                            set
+                        })
+                    }
+                    Aggregation::Choose(..) => {
+                        parse_quote!(prev) // choose = select any 1 element from the relation. By default we select the 1st.
+                    }
                 };
 
-                let agg_initial: syn::Expr = match &agg.value {
-                    TargetExpr::Aggregation(Aggregation { tpe, .. }) => match tpe {
-                        AggregationType::Min(_)
-                        | AggregationType::Max(_)
-                        | AggregationType::Sum(_)
-                        | AggregationType::Choose(_) => {
-                            parse_quote!(#val_at_index)
-                        }
-                        AggregationType::Count(_) => {
-                            parse_quote!(1)
-                        }
-                    },
-                    _ => panic!(),
+                let agg_initial: syn::Expr = match &agg {
+                    Aggregation::Min(..)
+                    | Aggregation::Max(..)
+                    | Aggregation::Sum(..)
+                    | Aggregation::Choose(..) => {
+                        parse_quote!(#val_at_index)
+                    }
+                    Aggregation::Count(..) => {
+                        parse_quote!(1)
+                    }
+                    Aggregation::CountUnique(..) => {
+                        parse_quote!({
+                            let mut set = hydroflow::rustc_hash::FxHashSet::<_>::default();
+                            set.insert(#val_at_index);
+                            set
+                        })
+                    }
                 };
 
-                parse_quote_spanned! {get_span(agg.span) =>
+                parse_quote! {
                     #old_at_index = if let Some(prev) = #old_at_index.take() {
                         Some(#agg_expr)
                     } else {
@@ -645,6 +664,12 @@ fn apply_aggregations(
                     let idx = syn::Index::from(group_key_idx);
                     after_group_lookups.push(parse_quote_spanned!(get_span(field.span)=> g.#idx));
                     group_key_idx += 1;
+                }
+                TargetExpr::Aggregation(Aggregation::CountUnique(..)) => {
+                    let idx = syn::Index::from(agg_idx);
+                    after_group_lookups
+                        .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap().len()));
+                    agg_idx += 1;
                 }
                 TargetExpr::Aggregation(_) => {
                     let idx = syn::Index::from(agg_idx);
@@ -983,6 +1008,22 @@ mod tests {
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(count(a)) :- ints1(a)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_wildcard_join_count() {
+        test_snapshots!(
+            r#"
+            .input ints1 `source_stream(ints1)` 
+            .input ints2 `source_stream(ints2)`
+            
+            .output result `for_each(|v| result.send(v).unwrap())`
+            .output result2 `for_each(|v| result2.send(v).unwrap())`
+
+            result(count(*)) :- ints1(a, _), ints2(a)
+            result2(count(a)) :- ints1(a, _), ints2(a)
             "#
         );
     }
