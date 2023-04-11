@@ -21,8 +21,8 @@ expression: flat_graph_ref.surface_syntax_string()
 21v1 = group_by :: < 'tick , (_ ,) , (Option < _ > ,) > (| | (None ,) , | old : & mut (Option < _ > ,) , val : (_ ,) | { old . 0 = if let Some (prev) = old . 0 . take () { Some (prev) } else { Some (val . 0) } ; });
 22v1 = map (| (g , a) | (a . 0 . unwrap () , g . 0 ,));
 
-2v1 -> 3v1;
 10v1 -> 2v1;
+2v1 -> 3v1;
 4v1 -> 5v1;
 22v1 -> 8v1;
 5v1 -> 11v1;
