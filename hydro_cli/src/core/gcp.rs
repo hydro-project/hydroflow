@@ -47,28 +47,24 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
             ServerStrategy::ExternalTcpPort(_) => todo!(),
             ServerStrategy::Demux(demux) => {
                 let mut config_map = HashMap::new();
-                for (key, bind_type) in demux {
-                    config_map.insert(*key, LaunchedSSHHost::server_config(self, bind_type));
+                for (key, underlying) in demux {
+                    config_map.insert(*key, LaunchedSSHHost::server_config(self, underlying));
                 }
 
                 ServerBindConfig::Demux(config_map)
             }
             ServerStrategy::Merge(merge) => {
                 let mut configs = vec![];
-                for bind_type in merge {
-                    configs.push(LaunchedSSHHost::server_config(self, bind_type));
+                for underlying in merge {
+                    configs.push(LaunchedSSHHost::server_config(self, underlying));
                 }
 
                 ServerBindConfig::Merge(configs)
             }
-            ServerStrategy::Mux(mux) => {
-                let mut config_map = HashMap::new();
-                for (key, bind_type) in mux {
-                    config_map.insert(*key, LaunchedSSHHost::server_config(self, bind_type));
-                }
-
-                ServerBindConfig::Mux(config_map)
-            }
+            ServerStrategy::Tagged(underlying, id) => ServerBindConfig::Tagged(
+                Box::new(LaunchedSSHHost::server_config(self, underlying)),
+                *id,
+            ),
             ServerStrategy::Null => ServerBindConfig::Null,
         }
     }
@@ -291,10 +287,8 @@ impl Host for GCPComputeEngineHost {
                     self.request_port(bind_type);
                 }
             }
-            ServerStrategy::Mux(mux) => {
-                for bind_type in mux.values() {
-                    self.request_port(bind_type);
-                }
+            ServerStrategy::Tagged(underlying, _) => {
+                self.request_port(underlying);
             }
             ServerStrategy::Null => {}
         }

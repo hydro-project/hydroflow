@@ -20,7 +20,7 @@ use pin_project::pin_project;
 
 use tokio::net::{TcpListener, TcpStream};
 use tokio::{io, task::JoinHandle};
-use tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
+use tokio_util::codec::{Framed, LengthDelimitedCodec};
 
 #[cfg(unix)]
 use tokio::net::{UnixListener, UnixStream};
@@ -42,7 +42,7 @@ pub enum ServerBindConfig {
     ),
     Demux(HashMap<u32, ServerBindConfig>),
     Merge(Vec<ServerBindConfig>),
-    Mux(HashMap<u32, ServerBindConfig>),
+    Tagged(Box<ServerBindConfig>, u32),
     Null,
 }
 
@@ -89,12 +89,8 @@ impl ServerBindConfig {
                 }
                 BoundConnection::Merge(merge)
             }
-            ServerBindConfig::Mux(bindings) => {
-                let mut mux = HashMap::new();
-                for (key, bind) in bindings {
-                    mux.insert(key, bind.bind().await);
-                }
-                BoundConnection::Mux(mux)
+            ServerBindConfig::Tagged(underlying, id) => {
+                BoundConnection::Tagged(Box::new(underlying.bind().await), id)
             }
             ServerBindConfig::Null => BoundConnection::Null,
         }
@@ -121,13 +117,24 @@ pub enum ServerPort {
     TcpPort(SocketAddr),
     Demux(HashMap<u32, ServerPort>),
     Merge(Vec<ServerPort>),
-    Mux(HashMap<u32, ServerPort>),
+    Tagged(Box<ServerPort>, u32),
     Null,
 }
 
 pub type DynStream = Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send + Sync>>;
 
 pub type DynSink<Input> = Pin<Box<dyn Sink<Input, Error = io::Error> + Send + Sync>>;
+
+pub trait StreamSink:
+    Stream<Item = Result<BytesMut, io::Error>> + Sink<Bytes, Error = io::Error>
+{
+}
+impl<T: Stream<Item = Result<BytesMut, io::Error>> + Sink<Bytes, Error = io::Error>> StreamSink
+    for T
+{
+}
+
+pub type DynStreamSink = Pin<Box<dyn StreamSink + Send + Sync>>;
 
 #[async_trait]
 pub trait Connected: Send {
@@ -153,7 +160,7 @@ pub enum BoundConnection {
     TcpPort(JoinHandle<io::Result<TcpStream>>, SocketAddr),
     Demux(HashMap<u32, BoundConnection>),
     Merge(Vec<BoundConnection>),
-    Mux(HashMap<u32, BoundConnection>),
+    Tagged(Box<BoundConnection>, u32),
     Null,
 }
 
@@ -192,12 +199,8 @@ impl BoundConnection {
                 ServerPort::Merge(merge)
             }
 
-            BoundConnection::Mux(bindings) => {
-                let mut mux = HashMap::new();
-                for (key, bind) in bindings {
-                    mux.insert(*key, bind.sink_port());
-                }
-                ServerPort::Mux(mux)
+            BoundConnection::Tagged(underlying, id) => {
+                ServerPort::Tagged(Box::new(underlying.sink_port()), *id)
             }
 
             BoundConnection::Null => ServerPort::Null,
@@ -212,10 +215,10 @@ async fn accept(bound: BoundConnection) -> ConnectedBidi {
             #[cfg(unix)]
             {
                 let stream = listener.await.unwrap().unwrap();
-                let (sink, source) = unix_bytes(stream);
                 ConnectedBidi {
-                    source: Some(Box::pin(source)),
-                    sink: Some(Box::pin(sink)),
+                    stream_sink: Some(Box::pin(unix_bytes(stream))),
+                    source_only: None,
+                    sink_only: None,
                 }
             }
 
@@ -227,16 +230,16 @@ async fn accept(bound: BoundConnection) -> ConnectedBidi {
         }
         BoundConnection::TcpPort(listener, _) => {
             let stream = listener.await.unwrap().unwrap();
-            let (sink, source) = tcp_bytes(stream);
             ConnectedBidi {
-                source: Some(Box::pin(source)),
-                sink: Some(Box::pin(sink)),
+                stream_sink: Some(Box::pin(tcp_bytes(stream))),
+                source_only: None,
+                sink_only: None,
             }
         }
         BoundConnection::Merge(merge) => {
             let mut sources = vec![];
             for bound in merge {
-                sources.push(accept(bound).await.source.unwrap());
+                sources.push(accept(bound).await.into_source());
             }
 
             let merge_source: DynStream = Box::pin(MergeSource {
@@ -245,41 +248,26 @@ async fn accept(bound: BoundConnection) -> ConnectedBidi {
             });
 
             ConnectedBidi {
-                source: Some(merge_source),
-                sink: None,
+                stream_sink: None,
+                source_only: Some(merge_source),
+                sink_only: None,
             }
         }
         BoundConnection::Demux(_) => panic!("Cannot connect to a demux pipe directly"),
-        BoundConnection::Mux(_) => panic!("Cannot connect to a mux pipe directly"),
+        BoundConnection::Tagged(_, _) => panic!("Cannot connect to a tagged pipe directly"),
         BoundConnection::Null => {
             ConnectedBidi::from_defn(ServerOrBound::Server(ServerPort::Null)).await
         }
     }
 }
 
-fn tcp_bytes(
-    stream: TcpStream,
-) -> (
-    FramedWrite<tokio::net::tcp::OwnedWriteHalf, LengthDelimitedCodec>,
-    FramedRead<tokio::net::tcp::OwnedReadHalf, LengthDelimitedCodec>,
-) {
-    let (recv, send) = stream.into_split();
-    let send = FramedWrite::new(send, LengthDelimitedCodec::new());
-    let recv = FramedRead::new(recv, LengthDelimitedCodec::new());
-    (send, recv)
+fn tcp_bytes(stream: TcpStream) -> impl StreamSink {
+    Framed::new(stream, LengthDelimitedCodec::new())
 }
 
 #[cfg(unix)]
-fn unix_bytes(
-    stream: UnixStream,
-) -> (
-    FramedWrite<tokio::net::unix::OwnedWriteHalf, LengthDelimitedCodec>,
-    FramedRead<tokio::net::unix::OwnedReadHalf, LengthDelimitedCodec>,
-) {
-    let (recv, send) = stream.into_split();
-    let send = FramedWrite::new(send, LengthDelimitedCodec::new());
-    let recv = FramedRead::new(recv, LengthDelimitedCodec::new());
-    (send, recv)
+fn unix_bytes(stream: UnixStream) -> impl StreamSink {
+    Framed::new(stream, LengthDelimitedCodec::new())
 }
 
 struct IoErrorDrain<T> {
@@ -307,8 +295,9 @@ impl<T> Sink<T> for IoErrorDrain<T> {
 }
 
 pub struct ConnectedBidi {
-    source: Option<DynStream>,
-    sink: Option<DynSink<Bytes>>,
+    stream_sink: Option<DynStreamSink>,
+    source_only: Option<DynStream>,
+    sink_only: Option<DynSink<Bytes>>,
 }
 
 #[async_trait]
@@ -319,10 +308,10 @@ impl Connected for ConnectedBidi {
                 #[cfg(unix)]
                 {
                     let stream = UnixStream::connect(path).await.unwrap();
-                    let (sink, source) = unix_bytes(stream);
                     ConnectedBidi {
-                        source: Some(Box::pin(source)),
-                        sink: Some(Box::pin(sink)),
+                        stream_sink: Some(Box::pin(unix_bytes(stream))),
+                        source_only: None,
+                        sink_only: None,
                     }
                 }
 
@@ -334,10 +323,10 @@ impl Connected for ConnectedBidi {
             }
             ServerOrBound::Server(ServerPort::TcpPort(addr)) => {
                 let stream = TcpStream::connect(addr).await.unwrap();
-                let (sink, source) = tcp_bytes(stream);
                 ConnectedBidi {
-                    source: Some(Box::pin(source)),
-                    sink: Some(Box::pin(sink)),
+                    stream_sink: Some(Box::pin(tcp_bytes(stream))),
+                    source_only: None,
+                    sink_only: None,
                 }
             }
             ServerOrBound::Server(ServerPort::Merge(merge)) => {
@@ -354,21 +343,23 @@ impl Connected for ConnectedBidi {
                 };
 
                 ConnectedBidi {
-                    source: Some(Box::pin(merged)),
-                    sink: None,
+                    stream_sink: None,
+                    source_only: Some(Box::pin(merged)),
+                    sink_only: None,
                 }
             }
             ServerOrBound::Server(ServerPort::Demux(_)) => {
                 panic!("Cannot connect to a demux pipe directly")
             }
 
-            ServerOrBound::Server(ServerPort::Mux(_)) => {
-                panic!("Cannot connect to a mux pipe directly")
+            ServerOrBound::Server(ServerPort::Tagged(_, _)) => {
+                panic!("Cannot connect to a tagged pipe directly")
             }
 
             ServerOrBound::Server(ServerPort::Null) => ConnectedBidi {
-                source: Some(Box::pin(stream::empty())),
-                sink: Some(Box::pin(IoErrorDrain {
+                stream_sink: None,
+                source_only: Some(Box::pin(stream::empty())),
+                sink_only: Some(Box::pin(IoErrorDrain {
                     marker: PhantomData::default(),
                 })),
             },
@@ -383,7 +374,11 @@ impl ConnectedSource for ConnectedBidi {
     type Stream = DynStream;
 
     fn into_source(mut self) -> DynStream {
-        self.source.take().unwrap()
+        if let Some(s) = self.stream_sink.take() {
+            Box::pin(s)
+        } else {
+            self.source_only.take().unwrap()
+        }
     }
 }
 
@@ -392,7 +387,11 @@ impl ConnectedSink for ConnectedBidi {
     type Sink = DynSink<Bytes>;
 
     fn into_sink(mut self) -> DynSink<Self::Input> {
-        self.sink.take().unwrap()
+        if let Some(s) = self.stream_sink.take() {
+            Box::pin(s)
+        } else {
+            self.sink_only.take().unwrap()
+        }
     }
 }
 
@@ -552,14 +551,14 @@ impl<T: Unpin, S: Stream<Item = T> + Send + Sync + ?Sized> Stream for MergeSourc
     }
 }
 
-pub struct MuxSource<T: Unpin, S: Stream<Item = Result<T, io::Error>> + Send + Sync + ?Sized> {
+pub struct TaggedSource<T: Unpin, S: Stream<Item = Result<T, io::Error>> + Send + Sync + ?Sized> {
     marker: PhantomData<T>,
     id: u32,
     source: Pin<Box<S>>,
 }
 
 impl<T: Unpin, S: Stream<Item = Result<T, io::Error>> + Send + Sync + ?Sized> Stream
-    for MuxSource<T, S>
+    for TaggedSource<T, S>
 {
     type Item = Result<(u32, T), io::Error>;
 
@@ -576,10 +575,10 @@ impl<T: Unpin, S: Stream<Item = Result<T, io::Error>> + Send + Sync + ?Sized> St
 
 type MergedMux<T> = MergeSource<
     Result<(u32, <T as ConnectedSource>::Output), io::Error>,
-    MuxSource<<T as ConnectedSource>::Output, <T as ConnectedSource>::Stream>,
+    TaggedSource<<T as ConnectedSource>::Output, <T as ConnectedSource>::Stream>,
 >;
 
-pub struct ConnectedMux<T: ConnectedSource>
+pub struct ConnectedTagged<T: ConnectedSource>
 where
     <T as ConnectedSource>::Output: 'static + Sync + Unpin,
 {
@@ -587,66 +586,101 @@ where
 }
 
 #[async_trait]
-impl<T: Connected + ConnectedSource> Connected for ConnectedMux<T>
+impl<T: Connected + ConnectedSource> Connected for ConnectedTagged<T>
 where
     <T as ConnectedSource>::Output: 'static + Sync + Unpin,
 {
     async fn from_defn(pipe: ServerOrBound) -> Self {
-        match pipe {
-            ServerOrBound::Server(ServerPort::Mux(mux)) => {
-                let mut connected_mux = Vec::new();
-                for (id, pipe) in mux {
-                    connected_mux.push(Box::pin(MuxSource {
-                        marker: PhantomData::default(),
-                        id,
-                        source: Box::pin(
-                            T::from_defn(ServerOrBound::Server(pipe))
-                                .await
-                                .into_source(),
-                        ),
-                    }));
-                }
-
-                let muxer = MergeSource {
-                    marker: PhantomData::default(),
-                    sources: connected_mux,
-                };
-
-                ConnectedMux { source: muxer }
+        let sources = match pipe {
+            ServerOrBound::Server(ServerPort::Tagged(pipe, id)) => {
+                vec![(
+                    Box::pin(
+                        T::from_defn(ServerOrBound::Server(*pipe))
+                            .await
+                            .into_source(),
+                    ),
+                    id,
+                )]
             }
 
-            ServerOrBound::Bound(BoundConnection::Mux(mux)) => {
-                let mut connected_mux = Vec::new();
-                for (id, bound) in mux {
-                    connected_mux.push(Box::pin(MuxSource {
-                        marker: PhantomData::default(),
-                        id,
-                        source: Box::pin(
-                            T::from_defn(ServerOrBound::Bound(bound))
-                                .await
-                                .into_source(),
-                        ),
-                    }));
+            ServerOrBound::Server(ServerPort::Merge(m)) => {
+                let mut sources = Vec::new();
+                for port in m {
+                    if let ServerPort::Tagged(pipe, id) = port {
+                        sources.push((
+                            Box::pin(
+                                T::from_defn(ServerOrBound::Server(*pipe))
+                                    .await
+                                    .into_source(),
+                            ),
+                            id,
+                        ));
+                    } else {
+                        panic!("Merge port must be tagged");
+                    }
                 }
 
-                let muxer = MergeSource {
-                    marker: PhantomData::default(),
-                    sources: connected_mux,
-                };
-
-                ConnectedMux { source: muxer }
+                sources
             }
-            _ => panic!("Cannot connect to a non-mux pipe as a mux"),
+
+            ServerOrBound::Bound(BoundConnection::Tagged(pipe, id)) => {
+                vec![(
+                    Box::pin(
+                        T::from_defn(ServerOrBound::Bound(*pipe))
+                            .await
+                            .into_source(),
+                    ),
+                    id,
+                )]
+            }
+
+            ServerOrBound::Bound(BoundConnection::Merge(m)) => {
+                let mut sources = Vec::new();
+                for port in m {
+                    if let BoundConnection::Tagged(pipe, id) = port {
+                        sources.push((
+                            Box::pin(
+                                T::from_defn(ServerOrBound::Bound(*pipe))
+                                    .await
+                                    .into_source(),
+                            ),
+                            id,
+                        ));
+                    } else {
+                        panic!("Merge port must be tagged");
+                    }
+                }
+
+                sources
+            }
+
+            _ => panic!("Cannot connect to a non-tagged pipe as a tagged"),
+        };
+
+        let mut connected_mux = Vec::new();
+        for (pipe, id) in sources {
+            connected_mux.push(Box::pin(TaggedSource {
+                marker: PhantomData::default(),
+                id,
+                source: pipe,
+            }));
         }
+
+        let muxer = MergeSource {
+            marker: PhantomData::default(),
+            sources: connected_mux,
+        };
+
+        ConnectedTagged { source: muxer }
     }
 }
 
-impl<T: ConnectedSource> ConnectedSource for ConnectedMux<T>
+impl<T: ConnectedSource> ConnectedSource for ConnectedTagged<T>
 where
     <T as ConnectedSource>::Output: 'static + Sync + Unpin,
 {
     type Output = (u32, T::Output);
-    type Stream = MergeSource<Result<Self::Output, io::Error>, MuxSource<T::Output, T::Stream>>;
+    type Stream = MergeSource<Result<Self::Output, io::Error>, TaggedSource<T::Output, T::Stream>>;
 
     fn into_source(self) -> Self::Stream {
         self.source

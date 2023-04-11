@@ -288,7 +288,7 @@ impl Service for HydroflowCrate {
 
         let mut sink_ports = HashMap::new();
         for (port_name, outgoing) in self.port_to_server.drain() {
-            sink_ports.insert(port_name.clone(), outgoing.load_instantiated().await);
+            sink_ports.insert(port_name.clone(), outgoing.load_instantiated(&|p| p).await);
         }
 
         let formatted_defns = serde_json::to_string(&sink_ports).unwrap();

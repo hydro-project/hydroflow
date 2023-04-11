@@ -10,7 +10,7 @@ name = "empty_program"
 name = "stdout_receiver"
 
 [[example]]
-name = "mux_stdout_receiver"
+name = "tagged_stdout_receiver"
 
 [[example]]
 name = "dedalus_sender"
