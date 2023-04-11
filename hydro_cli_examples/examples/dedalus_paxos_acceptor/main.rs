@@ -96,12 +96,12 @@ async fn main() {
 ballots(id, num) :- p1a(pid, id, num)
 MaxBallotNum(max(num)) :- ballots(id, num) 
 MaxBallot(max(id), num) :- MaxBallotNum(num), ballots(id, num)
-LogSize(count(slot)) :- log(p, slot, ballotID, ballotNum)
+LogSize(count(slot)) :- p1a(_,_,_), log(p, slot, ballotID, ballotNum)
 p1b@pid(i, size, ballotID, ballotNum, maxBallotID, maxBallotNum) :~ p1a(pid, ballotID, ballotNum), id(i), LogSize(size), MaxBallot(maxBallotID, maxBallotNum)
 p1b@pid(i, 0, ballotID, ballotNum, maxBallotID, maxBallotNum) :~ p1a(pid, ballotID, ballotNum), id(i), !LogSize(size), MaxBallot(maxBallotID, maxBallotNum)
 
-LogEntryMaxBallotNum(slot, max(ballotNum)) :- log(p, slot, ballotID, ballotNum)
-LogEntryMaxBallot(slot, max(ballotID), ballotNum) :- LogEntryMaxBallotNum(slot, ballotNum), log(p, slot, ballotID, ballotNum)
+LogEntryMaxBallotNum(slot, max(ballotNum)) :- p1a(_,_,_), log(p, slot, ballotID, ballotNum)
+LogEntryMaxBallot(slot, max(ballotID), ballotNum) :- p1a(_,_,_), LogEntryMaxBallotNum(slot, ballotNum), log(p, slot, ballotID, ballotNum)
 
 # send back entire log 
 p1bLog@pid(i, payload, slot, payloadBallotID, payloadBallotNum, ballotID, ballotNum) :~ p1a(pid, ballotID, ballotNum), id(i), log(payload, slot, payloadBallotID, payloadBallotNum), LogEntryMaxBallot(slot, payloadBallotID, payloadBallotNum)

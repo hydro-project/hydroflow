@@ -91,7 +91,7 @@ async fn main() {
 .output p2bOut `for_each(|(pid,a,payload,slot,id,num,max_id,max_num):(u32,u32,u32,u32,u32,u32,u32,u32,)| println!("proposer {:?} received p2b: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]", pid, a, payload, slot, id, num, max_id, max_num))`
 .output iAmLeaderSendOut `for_each(|(dest,pid,num):(u32,u32,u32,)| println!("proposer {:?} sent iAmLeader to {:?}: [{:?},{:?}]", pid, dest, pid, num))`
 .output iAmLeaderReceiveOut `for_each(|(my_id,pid,num):(u32,u32,u32,)| println!("proposer {:?} received iAmLeader: [{:?},{:?}]", my_id, pid, num))`
-.output throughputOut `for_each(|(num,):(u32,)| println!("committed {:?} entries", num))`
+.output throughputOut `for_each(|(num,):(u32,)| println!("{:?}", num))`
 
 # IDB
 .input clientIn `repeat_iter(vec![()]) -> map(|_| (context.current_tick() as u32,))`
