@@ -40,7 +40,7 @@ async def main(args):
         proposer = deployment.HydroflowCrate(
             src=".",
             example="dedalus_paxos_proposer",
-            args=[json.dumps((i, 2*f+1, p1a_timeout, i_am_leader_resend_timeout, i_am_leader_check_timeout))], # my_id, quorum, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const 
+            args=[json.dumps((i, f, p1a_timeout, i_am_leader_resend_timeout, i_am_leader_check_timeout))], # my_id, f, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const 
             on=machine1
         )
         proposer_programs.append(proposer)

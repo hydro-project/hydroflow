@@ -34,15 +34,25 @@ async fn main() {
         .await
         .into_source();
 
-    let p2a_sink = ports
+    let p2a_port = ports
         .remove("p2a")
         .unwrap()
         .connect::<ConnectedDemux<ConnectedBidi>>()
-        .await
-        .into_sink();
+        .await;
+
+    let p2a_proxy_leaders = p2a_port.keys.clone();
+    println!("p2a_proxy_leaders: {:?}", p2a_proxy_leaders);
+    let p2a_sink = p2a_port.into_sink();
 
     let p2b_source = ports
         .remove("p2b")
+        .unwrap()
+        .connect::<ConnectedBidi>()
+        .await
+        .into_source();
+
+    let inputs_source = ports
+        .remove("inputs")
         .unwrap()
         .connect::<ConnectedBidi>()
         .await
@@ -56,7 +66,6 @@ async fn main() {
 
     let proposers = i_am_leader_port.keys.clone();
     println!("proposers: {:?}", proposers);
-
     let i_am_leader_sink = i_am_leader_port.into_sink();
 
     let i_am_leader_source = ports
@@ -66,7 +75,7 @@ async fn main() {
         .await
         .into_source();
 
-    let (my_id, f, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const):(u32, u32, u32, u32, u32) = 
+    let (my_id, f, num_acceptor_groups, num_p2a_proxy_leaders, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const):(u32, u32, u32, u32, u32, u32, u32) = 
         serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
     let p1a_timeout = periodic(p1a_timeout_const);
     let i_am_leader_resend_timeout = periodic(i_am_leader_resend_timeout_const);
@@ -78,10 +87,12 @@ async fn main() {
         ######################## relation definitions
 # EDB
 .input id `repeat_iter([(my_id,),])`
+.input numAcceptorGroups `repeat_iter([(num_acceptor_groups,),])`
 .input acceptors `repeat_iter(acceptors.clone()) -> map(|p| (p,))`
 .input proposers `repeat_iter(proposers.clone()) -> map(|p| (p,))`
+.input p2aProxyLeadersStartID `repeat_iter([(my_id * num_p2a_proxy_leaders,),])`
+.input numP2aProxyLeaders `repeat_iter([(num_p2a_proxy_leaders,),])` # ID scheme: Assuming num_p2a_proxy_leaders = n (per proposer). Proposer i has proxy leaders from i*n to (i+1)*n-1
 .input quorum `repeat_iter([(f+1,),])`
-.input fullQuorum `repeat_iter([(2*f+1,),])` 
 .input noop `repeat_iter([(0 as u32,),])`
 
 # Debug
@@ -92,7 +103,6 @@ async fn main() {
 .output p2bOut `for_each(|(pid,a,payload,slot,id,num,max_id,max_num):(u32,u32,u32,u32,u32,u32,u32,u32,)| println!("proposer {:?} received p2b: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]", pid, a, payload, slot, id, num, max_id, max_num))`
 .output iAmLeaderSendOut `for_each(|(dest,pid,num):(u32,u32,u32,)| println!("proposer {:?} sent iAmLeader to {:?}: [{:?},{:?}]", pid, dest, pid, num))`
 .output iAmLeaderReceiveOut `for_each(|(my_id,pid,num):(u32,u32,u32,)| println!("proposer {:?} received iAmLeader: [{:?},{:?}]", my_id, pid, num))`
-.output throughputOut `for_each(|(num,):(u32,)| println!("{:?}", num))`
 
 # IDB
 .input clientIn `repeat_iter(vec![()]) -> map(|_| (context.current_tick() as u32,))`
@@ -103,14 +113,16 @@ async fn main() {
 
 # p1a: proposerID, ballotID, ballotNum
 .async p1a `map(|(node_id, v):(u32,(u32,u32,u32))| (node_id, serialize_to_bytes(v))) -> dest_sink(p1a_sink)` `null::<(u32,u32,u32)>()` 
-# p1b: acceptorID, logSize, ballotID, ballotNum, maxBallotID, maxBallotNum
-.async p1bU `null::<(u32,u32,u32,u32,u32,u32,)>()` `source_stream(p1b_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,u32,u32,u32,u32,u32,)>(v.unwrap()).unwrap())`
-# p1bLog: acceptorID, payload, slot, payloadBallotID, payloadBallotNum, ballotID, ballotNum
-.async p1bLogU `null::<(u32,u32,u32,u32,u32,u32,u32,)>()` `source_stream(p1b_log_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,u32,u32,u32,u32,u32,u32,)>(v.unwrap()).unwrap())`
+# p1b: partitionID, acceptorID, logSize, ballotID, ballotNum, maxBallotID, maxBallotNum
+.async p1bU `null::<(u32,u32,u32,u32,u32,u32,u32,)>()` `source_stream(p1b_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,u32,u32,u32,u32,u32,u32,)>(v.unwrap()).unwrap())`
+# p1bLog: partitionID, acceptorID, payload, slot, payloadBallotID, payloadBallotNum, ballotID, ballotNum
+.async p1bLogU `null::<(u32,u32,u32,u32,u32,u32,u32,u32,)>()` `source_stream(p1b_log_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,u32,u32,u32,u32,u32,u32,u32,)>(v.unwrap()).unwrap())`
 # p2a: proposerID, payload, slot, ballotID, ballotNum
 .async p2a `map(|(node_id, v):(u32,(u32,u32,u32,u32,u32))| (node_id, serialize_to_bytes(v))) -> dest_sink(p2a_sink)` `null::<(u32,u32,u32,u32,u32)>()` 
-# p2b: acceptorID, payload, slot, ballotID, ballotNum, maxBallotID, maxBallotNum
-.async p2bU `null::<(u32,u32,u32,u32,u32,u32,u32)>()` `source_stream(p2b_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,u32,u32,u32,u32,u32,u32,)>(v.unwrap()).unwrap())`
+# p2bU: maxBallotID, maxBallotNum, t1
+.async p2bU `null::<(u32,u32,u32)>()` `source_stream(p2b_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,u32,u32)>(v.unwrap()).unwrap())`
+# inputs: n, t1, prevT
+.async inputs `null::<(u32,u32,u32)>()` `source_stream(inputs_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,u32,u32)>(v.unwrap()).unwrap())`
 
 .input p1aTimeout `source_stream(p1a_timeout) -> map(|_| () )` # periodic timer to send p1a, so proposers each send at random times to avoid contention
 .input iAmLeaderResendTimeout `source_stream(i_am_leader_resend_timeout) -> map(|_| () )` # periodic timer to resend iAmLeader
@@ -122,21 +134,16 @@ async fn main() {
 
 
 # inputs that are persisted must have an alias. Format: inputU = unpersisted input.
-p1b(a, l, i, n, mi, mn) :- p1bU(a, l, i, n, mi, mn)
-p1b(a, l, i, n, mi, mn) :+ p1b(a, l, i, n, mi, mn)
+p1b(p, a, l, i, n, mi, mn) :- p1bU(p, a, l, i, n, mi, mn)
+p1b(p, a, l, i, n, mi, mn) :+ p1b(p, a, l, i, n, mi, mn)
 // .persist p1b
-p1bLog(a, p, s, pi, pn, i, n) :- p1bLogU(a, p, s, pi, pn, i, n)
-p1bLog(a, p, s, pi, pn, i, n) :+ p1bLog(a, p, s, pi, pn, i, n) # drop all p1bLogs if slot s is committed
+p1bLog(p, a, payload, s, pi, pn, i, n) :- p1bLogU(p, a, payload, s, pi, pn, i, n)
+p1bLog(p, a, payload, s, pi, pn, i, n) :+ p1bLog(p, a, payload, s, pi, pn, i, n)
 // .persist p1bLog
-p2b(a, p, s, i, n, mi, mn) :- p2bU(a, p, s, i, n, mi, mn)
-p2b(a, p, s, i, n, mi, mn) :+ p2b(a, p, s, i, n, mi, mn), !allCommit(s) # drop all p2bs if slot s is committed
 receivedBallots(i, n) :+ receivedBallots(i, n)
 // .persist receivedBallots
 iAmLeader(i, n) :- iAmLeaderU(i, n)
 iAmLeader(i, n) :+ iAmLeader(i, n), !iAmLeaderCheckTimeout() # clear iAmLeader periodically (like LRU clocks)
-// payloads(p) :- clientIn(p)
-// payloads(p) :+ payloads(p), !ChosenPayload(p), !CommittedLog(p, _), !ResentLog(p, _)
-
 
 # Initialize
 ballot(zero) :- startBallot(zero)
@@ -152,14 +159,13 @@ p2aOut(a, i, no, slot, i, num) :- FilledHoles(no, slot), id(i), ballot(num), acc
 // p2bOut(pid, a, payload, slot, id, num, maxID, maxNum) :- id(pid), p2bU(a, payload, slot, id, num, maxID, maxNum)
 // iAmLeaderSendOut(pid, i, num) :- id(i), ballot(num), IsLeader(), proposers(pid), iAmLeaderResendTimeout(), !id(pid) 
 // iAmLeaderReceiveOut(pid, i, num) :- id(pid), iAmLeaderU(i, num)
-throughputOut(num) :- totalCommitted(num), p1aTimeout(), IsLeader()
 
 
 ######################## stable leader election
-RelevantP1bs(acceptorID, logSize) :- p1b(acceptorID, logSize, i, num, maxID, maxNum), id(i), ballot(num)
+RelevantP1bs(partitionID, acceptorID, logSize) :- p1b(partitionID, acceptorID, logSize, i, num, maxID, maxNum), id(i), ballot(num)
 receivedBallots(id, num) :- iAmLeader(id, num)
-receivedBallots(maxBallotID, maxBallotNum) :- p1b(acceptorID, logSize, i, num, maxBallotID, maxBallotNum)
-receivedBallots(maxBallotID, maxBallotNum) :- p2b(acceptorID, payload, slot, ballotID, ballotNum, maxBallotID, maxBallotNum)
+receivedBallots(maxBallotID, maxBallotNum) :- p1b(partitionID, acceptorID, logSize, i, num, maxBallotID, maxBallotNum)
+receivedBallots(maxBallotID, maxBallotNum) :- p2bSealed(maxBallotID, maxBallotNum)
 MaxReceivedBallotNum(max(num)) :- receivedBallots(id, num)
 MaxReceivedBallot(max(id), num) :- MaxReceivedBallotNum(num), receivedBallots(id, num)
 HasLargestBallot() :- MaxReceivedBallot(maxId, maxNum), id(i), ballot(num), (num > maxNum)
@@ -182,25 +188,26 @@ ballot(num) :+ ballot(num), !NewBallot(newNum)
 
 
 ######################## reconcile p1b log with local log
-RelevantP1bLogs(acceptorID, payload, slot, payloadBallotID, payloadBallotNum) :- p1bLog(acceptorID, payload, slot, payloadBallotID, payloadBallotNum, i, num), id(i), ballot(num)
+RelevantP1bLogs(partitionID, acceptorID, payload, slot, payloadBallotID, payloadBallotNum) :- p1bLog(partitionID, acceptorID, payload, slot, payloadBallotID, payloadBallotNum, i, num), id(i), ballot(num)
 
 # cannot send new p2as until all p1b acceptor logs are PROCESSED; otherwise might miss pre-existing entry
-P1bLogFromAcceptor(acceptorID, count(slot)) :- RelevantP1bLogs(acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
-P1bAcceptorLogReceived(acceptorID) :- P1bLogFromAcceptor(acceptorID, logSize), RelevantP1bs(acceptorID, logSize)
-P1bAcceptorLogReceived(acceptorID) :- RelevantP1bs(acceptorID, logSize), (logSize == 0)
-P1bNumAcceptorsLogReceived(count(acceptorID)) :- P1bAcceptorLogReceived(acceptorID)
+P1bLogFromAcceptor(partitionID, acceptorID, count(slot)) :- RelevantP1bLogs(partitionID, acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
+P1bAcceptorLogReceived(partitionID, acceptorID) :- P1bLogFromAcceptor(partitionID, acceptorID, logSize), RelevantP1bs(partitionID, acceptorID, logSize)
+P1bAcceptorLogReceived(partitionID, acceptorID) :- RelevantP1bs(partitionID, acceptorID, logSize), (logSize == 0)
+P1bNumAcceptorPartitionsLogReceived(count(partitionID), acceptorID) :- P1bAcceptorLogReceived(partitionID, acceptorID)
+P1bNumAcceptorsLogReceived(n) :- P1bNumAcceptorPartitionsLogReceived(n, acceptorID), numAcceptorGroups(n)
 IsLeader() :- P1bNumAcceptorsLogReceived(c), quorum(size), (c >= size), HasLargestBallot()
 
-P1bMatchingEntry(payload, slot, count(acceptorID), payloadBallotID, payloadBallotNum) :-  RelevantP1bLogs(acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
+P1bMatchingEntry(payload, slot, count(acceptorID), payloadBallotID, payloadBallotNum) :- RelevantP1bLogs(partitionID, acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
 # what was committed = store in local log. Note: Don't need to worry about overwriting; it's impossible to have f+1 matching for the same slot and another payload with a higher ballot; therefore this slot must already have the same payload (maybe with a lower ballot)
 CommittedLog(payload, slot) :- P1bMatchingEntry(payload, slot, c, payloadBallotID, payloadBallotNum), quorum(size), (c >= size)
 
 # what was not committed = find max ballot, store in local log, resend 
-P1bLargestEntryBallotNum(slot, max(payloadBallotNum)) :- RelevantP1bLogs(acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
-P1bLargestEntryBallot(slot, max(payloadBallotID), payloadBallotNum) :- P1bLargestEntryBallotNum(slot, payloadBallotNum), RelevantP1bLogs(acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
+P1bLargestEntryBallotNum(slot, max(payloadBallotNum)) :- RelevantP1bLogs(partitionID, acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
+P1bLargestEntryBallot(slot, max(payloadBallotID), payloadBallotNum) :- P1bLargestEntryBallotNum(slot, payloadBallotNum), RelevantP1bLogs(partitionID, acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
 # makes sure that p2as cannot be sent yet; otherwise resent slots might conflict. Once p2as can be sent, a new p1b log might tell us to propose a payload for the same slot we propose (in parallel) for p2a, which violates an invariant.
 ResentLog(payload, slot) :- P1bLargestEntryBallot(slot, payloadBallotID, payloadBallotNum), P1bMatchingEntry(payload, slot, c, payloadBallotID, payloadBallotNum), !CommittedLog(otherPayload, slot), IsLeader(), !nextSlot(s)
-p2a@a(i, payload, slot, i, num) :~ ResentLog(payload, slot), id(i), ballot(num), acceptors(a)
+p2a@(start+(slot%n))(i, payload, slot, i, num) :~ ResentLog(payload, slot), id(i), ballot(num), numP2aProxyLeaders(n),p2aProxyLeadersStartID(start)
 
 # hole filling: if a slot is not in ResentEntries or proposedLog but it's smaller than max, then propose noop. Provides invariant that all holes are filled (proposed) by next timestep and we can just assign slots as current slot+1
 ProposedSlots(slot) :- startSlot(slot)
@@ -209,7 +216,7 @@ ProposedSlots(slot) :- ResentLog(payload, slot)
 MaxProposedSlot(max(slot)) :- ProposedSlots(slot)
 PrevSlots(s) :- MaxProposedSlot(maxSlot), less_than(s, maxSlot)
 FilledHoles(no, s) :- noop(no), !ProposedSlots(s), PrevSlots(s), IsLeader(), !nextSlot(s2)
-p2a@a(i, no, slot, i, num) :~ FilledHoles(no, slot), id(i), ballot(num), acceptors(a)
+p2a@(start+(slot%n))(i, no, slot, i, num) :~ FilledHoles(no, slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
 
 # To assign values sequential slots after reconciling p1bs, start at max+1
 nextSlot(s+1) :+ IsLeader(), MaxProposedSlot(s), !nextSlot(s2)
@@ -220,7 +227,7 @@ nextSlot(s+1) :+ IsLeader(), MaxProposedSlot(s), !nextSlot(s2)
 ######################## send p2as 
 # assign a slot
 ChosenPayload(choose(payload)) :- clientIn(payload), nextSlot(s), IsLeader() # drop all payloads that we can't handle in this tick by not persisting clientIn
-p2a@a(i, payload, slot, i, num) :~ ChosenPayload(payload), nextSlot(slot), id(i), ballot(num), acceptors(a)
+p2a@(start+(slot%n))(i, payload, slot, i, num) :~ ChosenPayload(payload), nextSlot(slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
 # Increment the slot if a payload was chosen
 nextSlot(s+1) :+ ChosenPayload(payload), nextSlot(s)
 # Don't increment the slot if no payload was chosen, but we are still the leader
@@ -229,22 +236,19 @@ nextSlot(s) :+ !ChosenPayload(payload), nextSlot(s), IsLeader()
 
 
 
-######################## process p2bs
-CountMatchingP2bs(payload, slot, count(acceptorID), i, num) :- p2b(acceptorID, payload, slot, i, num, payloadBallotID, payloadBallotNum)
-commit(payload, slot) :- CountMatchingP2bs(payload, slot, c, i, num), quorum(size), (c >= size)
-allCommit(slot) :- CountMatchingP2bs(payload, slot, c, i, num), fullQuorum(c)
-// clientOut(payload, slot) :- commit(payload, slot)
-NumCommits(count(slot)) :- commit(payload, slot)
-
-totalCommitted(new) :+ !totalCommitted(prev), NumCommits(new)
-totalCommitted(prev) :+ totalCommitted(prev), !NumCommits(new)
-totalCommitted(prev + new) :+ totalCommitted(prev), NumCommits(new)
-######################## end process p2bs
+######################## p2bs with asymmetric decoupling
+p2bUP(mi, mn, t1) :- p2bU(mi, mn, t1) # Accept the original input
+p2bUP(mi, mn, t1) :+ p2bUP(mi, mn, t1) # Persist
+recvSize(count(*), t1) :- p2bUP(mi, mn, t1) # Count. Since there's only 1 r, recvSize = rCount.
+inputs(n, t1, prevT) :+ inputs(n, t1, prevT) # TODO: experiment with replacing with .persist
+canSeal(t1) :- recvSize(n, t1), inputs(n, t1, prevT), sealed(prevT) # Check if all inputs of this batch have been received
+canSeal(t1) :- recvSize(n, t1), inputs(n, t1, prevT), (prevT == 0)
+sealed(t1) :+ canSeal(t1)
+sealed(t1) :+ sealed(t1) # TODO: experiment with replacing with .persist
+p2bSealed(mi, mn) :- p2bUP(mi, mn, t1), canSeal(t1)
+######################## end p2bs with asymmetric decoupling
 "#
     );
-
-    // use std::fs;
-    // fs::write("mermaid.txt", df.meta_graph().unwrap().to_mermaid()).expect("Unable to write file");
 
     df.run_async().await;
 }

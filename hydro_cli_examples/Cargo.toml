@@ -43,6 +43,21 @@ name = "dedalus_paxos_acceptor"
 name = "dedalus_paxos_proposer"
 
 [[example]]
+name = "dedalus_auto_paxos_acceptor"
+
+[[example]]
+name = "dedalus_auto_paxos_proposer"
+
+[[example]]
+name = "dedalus_auto_paxos_coordinator"
+
+[[example]]
+name = "dedalus_auto_paxos_p2a_proxy"
+
+[[example]]
+name = "dedalus_auto_paxos_p2b_proxy"
+
+[[example]]
 name = "dedalus_tick"
 
 [[example]]
