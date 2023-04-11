@@ -125,7 +125,7 @@ async def main(args):
             p2b_proxy_leader = deployment.HydroflowCrate(
                 src=".",
                 example="dedalus_auto_paxos_p2b_proxy",
-                args=[json.dumps((p2b_proxy_leader_id, f, acceptor_start_ids, num_acceptor_groups, proposer_id))], # my_id, f, acceptor_start_ids, num_acceptor_groups, proposer
+                args=[json.dumps((p2b_proxy_leader_id, f, acceptor_start_ids, num_acceptor_groups, num_p2b_proxy_leaders, proposer_id))], # my_id, f, acceptor_start_ids, num_acceptor_groups, num_p2b_proxy_leaders, proposer
                 on=machine
             )
             p2b_proxy_leader_programs[proposer_id].append(p2b_proxy_leader)

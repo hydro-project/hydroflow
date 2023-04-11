@@ -108,8 +108,8 @@ async fn main() {
 
 # Debug
 // p1aOut(p, pid, id, num) :- p1aU(pid, id, num), partitionID(p)
-// p1aCommitOut(p, o, pid, id, num) :- p1aCommitU(o, pid, id, num), partitionID(p)
-// p1aSealedOut(p, o, pid, id, num) :- p1aSealed(o, pid, id, num), partitionID(p)
+p1aCommitOut(p, o, pid, id, num) :- p1aCommitU(o, pid, id, num), partitionID(p)
+p1aSealedOut(p, o, pid, id, num) :- p1aSealed(o, pid, id, num), partitionID(p)
 // p1bOut(pid, p, i, size, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p1aSealed(_, pid, ballotID, ballotNum), acceptorID(i), partitionID(p), LogSize(size), MaxBallot(maxBallotID, maxBallotNum)
 // p1bOut(pid, p, i, 0, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p1aSealed(_, pid, ballotID, ballotNum), acceptorID(i), partitionID(p), !LogSize(size), MaxBallot(maxBallotID, maxBallotNum)
 // p1bLogOut(pid, p, i, payload, slot, payloadBallotID, payloadBallotNum, ballotID, ballotNum) :- p1aSealed(_, pid, ballotID, ballotNum), acceptorID(i), partitionID(p), log(payload, slot, payloadBallotID, payloadBallotNum), LogEntryMaxBallot(slot, payloadBallotID, payloadBallotNum)
@@ -159,7 +159,7 @@ p1aCommit(o, pid, id, num) :+ p1aCommit(o, pid, id, num)
 receivedI(o) :- p1aCommit(o, pid, id, num)
 nextToProcess(o+1) :- maxProcessedI(o)
 p1aSealed(o, pid, id, num) :- nextToProcess(o), p1aCommit(o, pid, id, num)
-p1aSealed(o, pid, id, num) :- !nextToProcess(o), p1aCommit(o, pid, id, num), (o == 0)
+p1aSealed(o, pid, id, num) :- !nextToProcess(o2), p1aCommit(o, pid, id, num), (o == 0)
 processedI(o) :+ p1aSealed(o, pid, id, num)
 outstandingVote() :- p1a(pid, id, num), !p1aCommit(o, pid, id, num)
 

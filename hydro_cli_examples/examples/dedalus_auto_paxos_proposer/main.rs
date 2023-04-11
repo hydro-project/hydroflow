@@ -161,9 +161,9 @@ ballot(zero) :- startBallot(zero)
 // p2aOut(start+(slot%n), i, payload, slot, i, num) :- ResentLog(payload, slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
 p2aOut(start+(slot%n), i, no, slot, i, num) :- FilledHoles(no, slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start) # Weird bug where if this line is commented out, id has an error?
 // p2aOut(start+(slot%n), i, payload, slot, i, num) :- ChosenPayload(payload), nextSlot(slot), id(i), ballot(num),  numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
-// p2bOut(pid, mi, mn, t1) :- id(pid), p2bU(mi, mn, t1)
-// p2bSealedOut(pid, mi, mn) :- id(pid), p2bSealed(mi, mn)
-// inputsOut(pid, n, t1, prevT) :- id(pid), inputsU(n, t1, prevT)
+p2bOut(pid, mi, mn, t1) :- id(pid), p2bU(mi, mn, t1)
+p2bSealedOut(pid, mi, mn) :- id(pid), p2bSealed(mi, mn)
+inputsOut(pid, n, t1, prevT) :- id(pid), inputsU(n, t1, prevT)
 // iAmLeaderSendOut(pid, i, num) :- id(i), ballot(num), IsLeader(), proposers(pid), iAmLeaderResendTimeout(), !id(pid) 
 // iAmLeaderReceiveOut(pid, i, num) :- id(pid), iAmLeaderU(i, num)
 
@@ -249,8 +249,8 @@ p2bUP(mi, mn, t1) :+ p2bUP(mi, mn, t1) # Persist
 recvSize(count(*), t1) :- p2bUP(mi, mn, t1) # Count. Since there's only 1 r, recvSize = rCount.
 inputs(n, t1, prevT) :+ inputsU(n, t1, prevT)
 inputs(n, t1, prevT) :+ inputs(n, t1, prevT) # TODO: experiment with replacing with .persist
-canSeal(t1) :- recvSize(n, t1), inputs(n, t1, prevT), sealed(prevT) # Check if all inputs of this batch have been received
-canSeal(t1) :- recvSize(n, t1), inputs(n, t1, prevT), (prevT == 0)
+canSeal(t1) :- recvSize(n, t1), inputs(n, t1, prevT), sealed(prevT), !sealed(t1) # Check if all inputs of this batch have been received
+canSeal(t1) :- recvSize(n, t1), inputs(n, t1, prevT), !sealed(t2), (prevT == 0)
 sealed(t1) :+ canSeal(t1)
 sealed(t1) :+ sealed(t1) # TODO: experiment with replacing with .persist
 p2bSealed(mi, mn) :- p2bUP(mi, mn, t1), canSeal(t1)
