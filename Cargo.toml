@@ -30,3 +30,4 @@ opt-level = 3
 inherits = "release"
 debug = 2
 strip = "none"
+lto = "fat"
