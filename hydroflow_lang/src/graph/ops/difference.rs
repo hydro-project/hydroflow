@@ -1,4 +1,4 @@
-use crate::graph::{PortIndexValue, OperatorInstance, OpInstGenerics};
+use crate::{graph::{PortIndexValue, OperatorInstance, OpInstGenerics}, diagnostic::{Level, Diagnostic}};
 
 use super::{
     DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
@@ -61,14 +61,25 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
                        },
                    ..
                },
-               _| {
+               diagnostics| {
         let handle_ident = wc.make_ident("diffdata_handle");
 
-        let persistence = match persistence_args[..] {
+        let persistence = match &persistence_args[..] {
             [] => Persistence::Tick,
             [Persistence::Tick, Persistence::Tick] => Persistence::Tick,
             [Persistence::Tick, Persistence::Static] => Persistence::Static,
-            _ => panic!("Invalid persistence arguments for difference operator"),
+            other => {
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    &*format!(
+                        "Unexpected persistence arguments for difference, expected two arguments with the first as `'tick`, got {:?}", // or whatever
+                        other
+                    ),
+                ));
+
+                Persistence::Tick
+            },
         };
 
         let (write_prologue, write_iterator) = {

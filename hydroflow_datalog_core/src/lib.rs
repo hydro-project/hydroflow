@@ -113,7 +113,10 @@ pub fn gen_hydroflow_graph(
 
         if !created_rules.contains(&target_ident.value) {
             created_rules.insert(target_ident.value.clone());
-            let insert_name = syn::Ident::new(&format!("{}_insert", target_ident.name), get_span(target_ident.span));
+            let insert_name = syn::Ident::new(
+                &format!("{}_insert", target_ident.name),
+                get_span(target_ident.span),
+            );
             let read_name = syn::Ident::new(&target_ident.name, get_span(target_ident.span));
 
             if persists.contains(&target_ident.value.name) {
@@ -188,7 +191,8 @@ pub fn gen_hydroflow_graph(
 
         let recv_merge_index_lit =
             syn::LitInt::new(&format!("{}", recv_merge_index), get_span(target.span));
-        let target_ident = syn::Ident::new(&format!("{}_insert", target.name), get_span(target.span));
+        let target_ident =
+            syn::Ident::new(&format!("{}_insert", target.name), get_span(target.span));
 
         let send_pipeline: Pipeline = parse_pipeline(&send_hf.code, &get_span)?;
         let recv_pipeline: Pipeline = parse_pipeline(&recv_hf.code, &get_span)?;
@@ -213,6 +217,7 @@ pub fn gen_hydroflow_graph(
             &mut tee_counter,
             &mut merge_counter,
             &mut next_join_idx,
+            &persists,
             &mut diagnostics,
             &get_span,
         );
@@ -295,6 +300,7 @@ fn generate_rule(
     tee_counter: &mut HashMap<String, Counter>,
     merge_counter: &mut HashMap<String, Counter>,
     next_join_idx: &mut Counter,
+    persists: &HashSet<String>,
     diagnostics: &mut Vec<Diagnostic>,
     get_span: &impl Fn((usize, usize)) -> Span,
 ) {
@@ -311,7 +317,13 @@ fn generate_rule(
         get_span,
     );
 
-    let after_join = apply_aggregations(rule, &out_expanded, diagnostics, get_span);
+    let after_join = apply_aggregations(
+        rule,
+        &out_expanded,
+        persists.contains(&target.name),
+        diagnostics,
+        get_span,
+    );
 
     let my_merge_index = merge_counter
         .entry(target.name.clone())
@@ -478,6 +490,11 @@ pub(crate) fn gen_value_expr(
             let r = gen_value_expr(r, lookup_ident, get_span);
             parse_quote!(#l - #r)
         }
+        IntExpr::Mul(l, _, r) => {
+            let l = gen_value_expr(l, lookup_ident, get_span);
+            let r = gen_value_expr(r, lookup_ident, get_span);
+            parse_quote!(#l * #r)
+        }
         IntExpr::Mod(l, _, r) => {
             let l = gen_value_expr(l, lookup_ident, get_span);
             let r = gen_value_expr(r, lookup_ident, get_span);
@@ -513,6 +530,7 @@ fn gen_target_expr(
 fn apply_aggregations(
     rule: &Rule,
     out_expanded: &IntermediateJoinNode,
+    consumer_is_persist: bool,
     diagnostics: &mut Vec<Diagnostic>,
     get_span: &impl Fn((usize, usize)) -> Span,
 ) -> Pipeline {
@@ -586,7 +604,7 @@ fn apply_aggregations(
     let flattened_tuple_type = &out_expanded.tuple_type;
 
     if agg_exprs.is_empty() {
-        if out_expanded.persisted {
+        if out_expanded.persisted && !consumer_is_persist {
             parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)) -> persist())
         } else {
             parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)))
@@ -951,6 +969,18 @@ mod tests {
     }
 
     #[test]
+    fn test_aggregations_group_by_expr() {
+        test_snapshots!(
+            r#"
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(a % 2, sum(b)) :- ints(a, b)
+            "#
+        );
+    }
+
+    #[test]
     fn test_non_copy_but_clone() {
         test_snapshots!(
             r#"
@@ -974,6 +1004,7 @@ mod tests {
             result(a + a) :- ints(a)
             result(123 - a) :- ints(a)
             result(123 % (a + 5)) :- ints(a)
+            result(a * 5) :- ints(a)
             "#
         );
     }
@@ -1008,12 +1039,17 @@ mod tests {
             .output result `for_each(|v| result.send(v).unwrap())`
             .output result2 `for_each(|v| result2.send(v).unwrap())`
             .output result3 `for_each(|v| result3.send(v).unwrap())`
+            .output result4 `for_each(|v| result4.send(v).unwrap())`
 
             result(a, b, c) :- ints1(a), ints2(b), ints3(c)
             result2(a) :- ints1(a), !ints2(a)
 
             intermediate(a) :- ints1(a)
             result3(a) :- intermediate(a)
+
+            .persist intermediate_persist
+            intermediate_persist(a) :- ints1(a)
+            result4(a) :- intermediate_persist(a)
             "#
         );
     }

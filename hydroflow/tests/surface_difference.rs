@@ -69,7 +69,7 @@ pub fn test_diff_static() {
     neg_send.send(2).unwrap();
 
     df.run_tick();
-    
+
     assert_eq!(&[1], &*collect_ready::<Vec<_>, _>(&mut output_recv));
 
     pos_send.send(1).unwrap();
