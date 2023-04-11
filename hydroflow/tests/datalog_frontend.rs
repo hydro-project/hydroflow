@@ -942,6 +942,7 @@ fn test_persist() {
     let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64, i64, i64)>();
     let (result2, mut result2_recv) = hydroflow::util::unbounded_channel::<(i64,)>();
     let (result3, mut result3_recv) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result4, mut result4_recv) = hydroflow::util::unbounded_channel::<(i64,)>();
 
     let mut flow = datalog!(
         r#"
@@ -956,12 +957,17 @@ fn test_persist() {
         .output result `for_each(|v| result.send(v).unwrap())`
         .output result2 `for_each(|v| result2.send(v).unwrap())`
         .output result3 `for_each(|v| result3.send(v).unwrap())`
+        .output result4 `for_each(|v| result4.send(v).unwrap())`
 
         result(a, b, c) :- ints1(a), ints2(b), ints3(c)
         result2(a) :- ints1(a), !ints2(a)
 
         intermediate(a) :- ints1(a)
         result3(a) :- intermediate(a)
+
+        .persist intermediate_persist
+        intermediate_persist(a) :- ints1(a)
+        result4(a) :- intermediate_persist(a)
         "#
     );
 
@@ -974,6 +980,7 @@ fn test_persist() {
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1, 2, 5)]);
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result2_recv), &[(1,)]);
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result3_recv), &[(1,)]);
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result4_recv), &[(1,)]);
 
     ints2_send.send((1,)).unwrap();
     ints2_send.send((3,)).unwrap();
@@ -987,6 +994,7 @@ fn test_persist() {
     );
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result2_recv), &[]);
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result3_recv), &[(1,)]);
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result4_recv), &[(1,)]);
 }
 
 #[multiplatform_test]
