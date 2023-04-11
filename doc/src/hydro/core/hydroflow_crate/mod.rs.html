@@ -619,7 +619,7 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>sink_ports = HashMap::new();
         <span class="kw">for </span>(port_name, outgoing) <span class="kw">in </span><span class="self">self</span>.port_to_server.drain() {
-            sink_ports.insert(port_name.clone(), outgoing.load_instantiated().<span class="kw">await</span>);
+            sink_ports.insert(port_name.clone(), outgoing.load_instantiated(<span class="kw-2">&amp;</span>|p| p).<span class="kw">await</span>);
         }
 
         <span class="kw">let </span>formatted_defns = serde_json::to_string(<span class="kw-2">&amp;</span>sink_ports).unwrap();

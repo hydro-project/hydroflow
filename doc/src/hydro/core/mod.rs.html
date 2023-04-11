@@ -271,7 +271,7 @@
     ),
     Demux(HashMap&lt;u32, ServerStrategy&gt;),
     Merge(Vec&lt;ServerStrategy&gt;),
-    Mux(HashMap&lt;u32, ServerStrategy&gt;),
+    Tagged(Box&lt;ServerStrategy&gt;, u32),
     Null,
 }
 

@@ -264,11 +264,6 @@
 <a href="#264" id="264">264</a>
 <a href="#265" id="265">265</a>
 <a href="#266" id="266">266</a>
-<a href="#267" id="267">267</a>
-<a href="#268" id="268">268</a>
-<a href="#269" id="269">269</a>
-<a href="#270" id="270">270</a>
-<a href="#271" id="271">271</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
 
 <span class="attr">#[cfg(unix)]
@@ -378,27 +373,22 @@
             ServerStrategy::ExternalTcpPort(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot bind to external port&quot;</span>),
             ServerStrategy::Demux(demux) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>config_map = HashMap::new();
-                <span class="kw">for </span>(key, bind_type) <span class="kw">in </span>demux {
-                    config_map.insert(<span class="kw-2">*</span>key, <span class="self">self</span>.server_config(bind_type));
+                <span class="kw">for </span>(key, underlying) <span class="kw">in </span>demux {
+                    config_map.insert(<span class="kw-2">*</span>key, <span class="self">self</span>.server_config(underlying));
                 }
 
                 ServerBindConfig::Demux(config_map)
             }
             ServerStrategy::Merge(merge) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>configs = <span class="macro">vec!</span>[];
-                <span class="kw">for </span>bind_type <span class="kw">in </span>merge {
-                    configs.push(<span class="self">self</span>.server_config(bind_type));
+                <span class="kw">for </span>underlying <span class="kw">in </span>merge {
+                    configs.push(<span class="self">self</span>.server_config(underlying));
                 }
 
                 ServerBindConfig::Merge(configs)
             }
-            ServerStrategy::Mux(mux) =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>config_map = HashMap::new();
-                <span class="kw">for </span>(key, bind_type) <span class="kw">in </span>mux {
-                    config_map.insert(<span class="kw-2">*</span>key, <span class="self">self</span>.server_config(bind_type));
-                }
-
-                ServerBindConfig::Mux(config_map)
+            ServerStrategy::Tagged(underlying, id) =&gt; {
+                ServerBindConfig::Tagged(Box::new(<span class="self">self</span>.server_config(underlying)), <span class="kw-2">*</span>id)
             }
             ServerStrategy::Null =&gt; ServerBindConfig::Null,
         }

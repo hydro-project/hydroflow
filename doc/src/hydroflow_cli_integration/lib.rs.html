@@ -652,6 +652,33 @@
 <a href="#652" id="652">652</a>
 <a href="#653" id="653">653</a>
 <a href="#654" id="654">654</a>
+<a href="#655" id="655">655</a>
+<a href="#656" id="656">656</a>
+<a href="#657" id="657">657</a>
+<a href="#658" id="658">658</a>
+<a href="#659" id="659">659</a>
+<a href="#660" id="660">660</a>
+<a href="#661" id="661">661</a>
+<a href="#662" id="662">662</a>
+<a href="#663" id="663">663</a>
+<a href="#664" id="664">664</a>
+<a href="#665" id="665">665</a>
+<a href="#666" id="666">666</a>
+<a href="#667" id="667">667</a>
+<a href="#668" id="668">668</a>
+<a href="#669" id="669">669</a>
+<a href="#670" id="670">670</a>
+<a href="#671" id="671">671</a>
+<a href="#672" id="672">672</a>
+<a href="#673" id="673">673</a>
+<a href="#674" id="674">674</a>
+<a href="#675" id="675">675</a>
+<a href="#676" id="676">676</a>
+<a href="#677" id="677">677</a>
+<a href="#678" id="678">678</a>
+<a href="#679" id="679">679</a>
+<a href="#680" id="680">680</a>
+<a href="#681" id="681">681</a>
 </pre><pre class="rust"><code><span class="attr">#![feature(never_type)]
 
 </span><span class="kw">use </span>std::{
@@ -696,7 +723,7 @@
     ),
     Demux(HashMap&lt;u32, ServerBindConfig&gt;),
     Merge(Vec&lt;ServerBindConfig&gt;),
-    Mux(HashMap&lt;u32, ServerBindConfig&gt;),
+    Tagged(Box&lt;ServerBindConfig&gt;, u32),
     Null,
 }
 
@@ -743,12 +770,8 @@
                 }
                 BoundConnection::Merge(merge)
             }
-            ServerBindConfig::Mux(bindings) =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>mux = HashMap::new();
-                <span class="kw">for </span>(key, bind) <span class="kw">in </span>bindings {
-                    mux.insert(key, bind.bind().<span class="kw">await</span>);
-                }
-                BoundConnection::Mux(mux)
+            ServerBindConfig::Tagged(underlying, id) =&gt; {
+                BoundConnection::Tagged(Box::new(underlying.bind().<span class="kw">await</span>), id)
             }
             ServerBindConfig::Null =&gt; BoundConnection::Null,
         }
@@ -775,7 +798,7 @@
     TcpPort(SocketAddr),
     Demux(HashMap&lt;u32, ServerPort&gt;),
     Merge(Vec&lt;ServerPort&gt;),
-    Mux(HashMap&lt;u32, ServerPort&gt;),
+    Tagged(Box&lt;ServerPort&gt;, u32),
     Null,
 }
 
@@ -807,7 +830,7 @@
     TcpPort(JoinHandle&lt;io::Result&lt;TcpStream&gt;&gt;, SocketAddr),
     Demux(HashMap&lt;u32, BoundConnection&gt;),
     Merge(Vec&lt;BoundConnection&gt;),
-    Mux(HashMap&lt;u32, BoundConnection&gt;),
+    Tagged(Box&lt;BoundConnection&gt;, u32),
     Null,
 }
 
@@ -846,12 +869,8 @@
                 ServerPort::Merge(merge)
             }
 
-            BoundConnection::Mux(bindings) =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>mux = HashMap::new();
-                <span class="kw">for </span>(key, bind) <span class="kw">in </span>bindings {
-                    mux.insert(<span class="kw-2">*</span>key, bind.sink_port());
-                }
-                ServerPort::Mux(mux)
+            BoundConnection::Tagged(underlying, id) =&gt; {
+                ServerPort::Tagged(Box::new(underlying.sink_port()), <span class="kw-2">*</span>id)
             }
 
             BoundConnection::Null =&gt; ServerPort::Null,
@@ -904,7 +923,7 @@
             }
         }
         BoundConnection::Demux(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a demux pipe directly&quot;</span>),
-        BoundConnection::Mux(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a mux pipe directly&quot;</span>),
+        BoundConnection::Tagged(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a tagged pipe directly&quot;</span>),
         BoundConnection::Null =&gt; {
             ConnectedBidi::from_defn(ServerOrBound::Server(ServerPort::Null)).<span class="kw">await
         </span>}
@@ -1016,8 +1035,8 @@
                 <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a demux pipe directly&quot;</span>)
             }
 
-            ServerOrBound::Server(ServerPort::Mux(<span class="kw">_</span>)) =&gt; {
-                <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a mux pipe directly&quot;</span>)
+            ServerOrBound::Server(ServerPort::Tagged(<span class="kw">_</span>, <span class="kw">_</span>)) =&gt; {
+                <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a tagged pipe directly&quot;</span>)
             }
 
             ServerOrBound::Server(ServerPort::Null) =&gt; ConnectedBidi {
@@ -1206,14 +1225,14 @@
     }
 }
 
-<span class="kw">pub struct </span>MuxSource&lt;T: Unpin, S: Stream&lt;Item = <span class="prelude-ty">Result</span>&lt;T, io::Error&gt;&gt; + Send + Sync + <span class="question-mark">?</span>Sized&gt; {
+<span class="kw">pub struct </span>TaggedSource&lt;T: Unpin, S: Stream&lt;Item = <span class="prelude-ty">Result</span>&lt;T, io::Error&gt;&gt; + Send + Sync + <span class="question-mark">?</span>Sized&gt; {
     marker: PhantomData&lt;T&gt;,
     id: u32,
     source: Pin&lt;Box&lt;S&gt;&gt;,
 }
 
 <span class="kw">impl</span>&lt;T: Unpin, S: Stream&lt;Item = <span class="prelude-ty">Result</span>&lt;T, io::Error&gt;&gt; + Send + Sync + <span class="question-mark">?</span>Sized&gt; Stream
-    <span class="kw">for </span>MuxSource&lt;T, S&gt;
+    <span class="kw">for </span>TaggedSource&lt;T, S&gt;
 {
     <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;(u32, T), io::Error&gt;;
 
@@ -1230,10 +1249,10 @@
 
 <span class="kw">type </span>MergedMux&lt;T&gt; = MergeSource&lt;
     <span class="prelude-ty">Result</span>&lt;(u32, &lt;T <span class="kw">as </span>ConnectedSource&gt;::Output), io::Error&gt;,
-    MuxSource&lt;&lt;T <span class="kw">as </span>ConnectedSource&gt;::Output, &lt;T <span class="kw">as </span>ConnectedSource&gt;::Stream&gt;,
+    TaggedSource&lt;&lt;T <span class="kw">as </span>ConnectedSource&gt;::Output, &lt;T <span class="kw">as </span>ConnectedSource&gt;::Stream&gt;,
 &gt;;
 
-<span class="kw">pub struct </span>ConnectedMux&lt;T: ConnectedSource&gt;
+<span class="kw">pub struct </span>ConnectedTagged&lt;T: ConnectedSource&gt;
 <span class="kw">where
     </span>&lt;T <span class="kw">as </span>ConnectedSource&gt;::Output: <span class="lifetime">&#39;static </span>+ Sync + Unpin,
 {
@@ -1241,66 +1260,101 @@
 }
 
 <span class="attr">#[async_trait]
-</span><span class="kw">impl</span>&lt;T: Connected + ConnectedSource&gt; Connected <span class="kw">for </span>ConnectedMux&lt;T&gt;
+</span><span class="kw">impl</span>&lt;T: Connected + ConnectedSource&gt; Connected <span class="kw">for </span>ConnectedTagged&lt;T&gt;
 <span class="kw">where
     </span>&lt;T <span class="kw">as </span>ConnectedSource&gt;::Output: <span class="lifetime">&#39;static </span>+ Sync + Unpin,
 {
     <span class="kw">async fn </span>from_defn(pipe: ServerOrBound) -&gt; <span class="self">Self </span>{
-        <span class="kw">match </span>pipe {
-            ServerOrBound::Server(ServerPort::Mux(mux)) =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>connected_mux = Vec::new();
-                <span class="kw">for </span>(id, pipe) <span class="kw">in </span>mux {
-                    connected_mux.push(Box::pin(MuxSource {
-                        marker: PhantomData::default(),
-                        id,
-                        source: Box::pin(
-                            T::from_defn(ServerOrBound::Server(pipe))
-                                .<span class="kw">await
-                                </span>.into_source(),
-                        ),
-                    }));
-                }
-
-                <span class="kw">let </span>muxer = MergeSource {
-                    marker: PhantomData::default(),
-                    sources: connected_mux,
-                };
-
-                ConnectedMux { source: muxer }
+        <span class="kw">let </span>sources = <span class="kw">match </span>pipe {
+            ServerOrBound::Server(ServerPort::Tagged(pipe, id)) =&gt; {
+                <span class="macro">vec!</span>[(
+                    Box::pin(
+                        T::from_defn(ServerOrBound::Server(<span class="kw-2">*</span>pipe))
+                            .<span class="kw">await
+                            </span>.into_source(),
+                    ),
+                    id,
+                )]
             }
 
-            ServerOrBound::Bound(BoundConnection::Mux(mux)) =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>connected_mux = Vec::new();
-                <span class="kw">for </span>(id, bound) <span class="kw">in </span>mux {
-                    connected_mux.push(Box::pin(MuxSource {
-                        marker: PhantomData::default(),
-                        id,
-                        source: Box::pin(
-                            T::from_defn(ServerOrBound::Bound(bound))
-                                .<span class="kw">await
-                                </span>.into_source(),
-                        ),
-                    }));
+            ServerOrBound::Server(ServerPort::Merge(m)) =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>sources = Vec::new();
+                <span class="kw">for </span>port <span class="kw">in </span>m {
+                    <span class="kw">if let </span>ServerPort::Tagged(pipe, id) = port {
+                        sources.push((
+                            Box::pin(
+                                T::from_defn(ServerOrBound::Server(<span class="kw-2">*</span>pipe))
+                                    .<span class="kw">await
+                                    </span>.into_source(),
+                            ),
+                            id,
+                        ));
+                    } <span class="kw">else </span>{
+                        <span class="macro">panic!</span>(<span class="string">&quot;Merge port must be tagged&quot;</span>);
+                    }
                 }
 
-                <span class="kw">let </span>muxer = MergeSource {
-                    marker: PhantomData::default(),
-                    sources: connected_mux,
-                };
-
-                ConnectedMux { source: muxer }
+                sources
             }
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a non-mux pipe as a mux&quot;</span>),
+
+            ServerOrBound::Bound(BoundConnection::Tagged(pipe, id)) =&gt; {
+                <span class="macro">vec!</span>[(
+                    Box::pin(
+                        T::from_defn(ServerOrBound::Bound(<span class="kw-2">*</span>pipe))
+                            .<span class="kw">await
+                            </span>.into_source(),
+                    ),
+                    id,
+                )]
+            }
+
+            ServerOrBound::Bound(BoundConnection::Merge(m)) =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>sources = Vec::new();
+                <span class="kw">for </span>port <span class="kw">in </span>m {
+                    <span class="kw">if let </span>BoundConnection::Tagged(pipe, id) = port {
+                        sources.push((
+                            Box::pin(
+                                T::from_defn(ServerOrBound::Bound(<span class="kw-2">*</span>pipe))
+                                    .<span class="kw">await
+                                    </span>.into_source(),
+                            ),
+                            id,
+                        ));
+                    } <span class="kw">else </span>{
+                        <span class="macro">panic!</span>(<span class="string">&quot;Merge port must be tagged&quot;</span>);
+                    }
+                }
+
+                sources
+            }
+
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a non-tagged pipe as a tagged&quot;</span>),
+        };
+
+        <span class="kw">let </span><span class="kw-2">mut </span>connected_mux = Vec::new();
+        <span class="kw">for </span>(pipe, id) <span class="kw">in </span>sources {
+            connected_mux.push(Box::pin(TaggedSource {
+                marker: PhantomData::default(),
+                id,
+                source: pipe,
+            }));
         }
+
+        <span class="kw">let </span>muxer = MergeSource {
+            marker: PhantomData::default(),
+            sources: connected_mux,
+        };
+
+        ConnectedTagged { source: muxer }
     }
 }
 
-<span class="kw">impl</span>&lt;T: ConnectedSource&gt; ConnectedSource <span class="kw">for </span>ConnectedMux&lt;T&gt;
+<span class="kw">impl</span>&lt;T: ConnectedSource&gt; ConnectedSource <span class="kw">for </span>ConnectedTagged&lt;T&gt;
 <span class="kw">where
     </span>&lt;T <span class="kw">as </span>ConnectedSource&gt;::Output: <span class="lifetime">&#39;static </span>+ Sync + Unpin,
 {
     <span class="kw">type </span>Output = (u32, T::Output);
-    <span class="kw">type </span>Stream = MergeSource&lt;<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Output, io::Error&gt;, MuxSource&lt;T::Output, T::Stream&gt;&gt;;
+    <span class="kw">type </span>Stream = MergeSource&lt;<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Output, io::Error&gt;, TaggedSource&lt;T::Output, T::Stream&gt;&gt;;
 
     <span class="kw">fn </span>into_source(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Stream {
         <span class="self">self</span>.source

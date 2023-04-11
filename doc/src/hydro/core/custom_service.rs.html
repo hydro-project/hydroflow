@@ -147,6 +147,14 @@
 <a href="#147" id="147">147</a>
 <a href="#148" id="148">148</a>
 <a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{
     any::Any,
     ops::Deref,
@@ -237,7 +245,13 @@
     }
 
     <span class="kw">pub async fn </span>server_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ServerOrBound {
-        ServerOrBound::Server(<span class="self">self</span>.client_port.as_ref().unwrap().load_instantiated().<span class="kw">await</span>)
+        ServerOrBound::Server(
+            <span class="self">self</span>.client_port
+                .as_ref()
+                .unwrap()
+                .load_instantiated(<span class="kw-2">&amp;</span>|p| p)
+                .<span class="kw">await</span>,
+        )
     }
 }
 
@@ -246,18 +260,20 @@
         SourcePath::Direct(<span class="self">self</span>.on.upgrade().unwrap().try_read().unwrap().on.clone())
     }
 
-    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>HydroflowSink) {
-        <span class="kw">if let </span><span class="prelude-val">Ok</span>(instantiated) = to.instantiate(<span class="kw-2">&amp;</span>SourcePath::Direct(
-            <span class="self">self</span>.on.upgrade().unwrap().try_read().unwrap().on.clone(),
-        )) {
-            <span class="self">self</span>.record_server_config(instantiated());
-        } <span class="kw">else </span>{
-            <span class="macro">panic!</span>(<span class="string">&quot;Custom services cannot be used as the server&quot;</span>)
-        }
+    <span class="kw">fn </span>host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt; {
+        <span class="macro">panic!</span>(<span class="string">&quot;Custom services cannot be used as the server&quot;</span>)
+    }
+
+    <span class="kw">fn </span>server(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>HydroflowServer&gt; {
+        <span class="macro">panic!</span>(<span class="string">&quot;Custom services cannot be used as the server&quot;</span>)
     }
 
     <span class="kw">fn </span>record_server_config(<span class="kw-2">&amp;mut </span><span class="self">self</span>, config: ServerConfig) {
         <span class="self">self</span>.client_port = <span class="prelude-val">Some</span>(config);
+    }
+
+    <span class="kw">fn </span>record_server_strategy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _config: ServerStrategy) {
+        <span class="macro">panic!</span>(<span class="string">&quot;Custom services cannot be used as the server&quot;</span>)
     }
 }
 

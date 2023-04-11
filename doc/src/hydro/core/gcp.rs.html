@@ -582,12 +582,6 @@
 <a href="#582" id="582">582</a>
 <a href="#583" id="583">583</a>
 <a href="#584" id="584">584</a>
-<a href="#585" id="585">585</a>
-<a href="#586" id="586">586</a>
-<a href="#587" id="587">587</a>
-<a href="#588" id="588">588</a>
-<a href="#589" id="589">589</a>
-<a href="#590" id="590">590</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
@@ -637,28 +631,24 @@
             ServerStrategy::ExternalTcpPort(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(),
             ServerStrategy::Demux(demux) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>config_map = HashMap::new();
-                <span class="kw">for </span>(key, bind_type) <span class="kw">in </span>demux {
-                    config_map.insert(<span class="kw-2">*</span>key, LaunchedSSHHost::server_config(<span class="self">self</span>, bind_type));
+                <span class="kw">for </span>(key, underlying) <span class="kw">in </span>demux {
+                    config_map.insert(<span class="kw-2">*</span>key, LaunchedSSHHost::server_config(<span class="self">self</span>, underlying));
                 }
 
                 ServerBindConfig::Demux(config_map)
             }
             ServerStrategy::Merge(merge) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>configs = <span class="macro">vec!</span>[];
-                <span class="kw">for </span>bind_type <span class="kw">in </span>merge {
-                    configs.push(LaunchedSSHHost::server_config(<span class="self">self</span>, bind_type));
+                <span class="kw">for </span>underlying <span class="kw">in </span>merge {
+                    configs.push(LaunchedSSHHost::server_config(<span class="self">self</span>, underlying));
                 }
 
                 ServerBindConfig::Merge(configs)
             }
-            ServerStrategy::Mux(mux) =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>config_map = HashMap::new();
-                <span class="kw">for </span>(key, bind_type) <span class="kw">in </span>mux {
-                    config_map.insert(<span class="kw-2">*</span>key, LaunchedSSHHost::server_config(<span class="self">self</span>, bind_type));
-                }
-
-                ServerBindConfig::Mux(config_map)
-            }
+            ServerStrategy::Tagged(underlying, id) =&gt; ServerBindConfig::Tagged(
+                Box::new(LaunchedSSHHost::server_config(<span class="self">self</span>, underlying)),
+                <span class="kw-2">*</span>id,
+            ),
             ServerStrategy::Null =&gt; ServerBindConfig::Null,
         }
     }
@@ -881,10 +871,8 @@
                     <span class="self">self</span>.request_port(bind_type);
                 }
             }
-            ServerStrategy::Mux(mux) =&gt; {
-                <span class="kw">for </span>bind_type <span class="kw">in </span>mux.values() {
-                    <span class="self">self</span>.request_port(bind_type);
-                }
+            ServerStrategy::Tagged(underlying, <span class="kw">_</span>) =&gt; {
+                <span class="self">self</span>.request_port(underlying);
             }
             ServerStrategy::Null =&gt; {}
         }
