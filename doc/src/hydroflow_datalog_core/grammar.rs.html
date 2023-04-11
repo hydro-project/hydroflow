@@ -288,6 +288,17 @@
 <a href="#288" id="288">288</a>
 <a href="#289" id="289">289</a>
 <a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
 </pre><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">&quot;datalog&quot;</span>)]
 #[allow(dead_code)]
 </span><span class="kw">pub mod </span>datalog {
@@ -545,6 +556,12 @@
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;-&quot;</span>)] </span>(),
             Box&lt;IntExpr&gt;,
         ),
+        <span class="attr">#[rust_sitter::prec_left(<span class="number">2</span>)]
+        </span>Mul(
+            Box&lt;IntExpr&gt;,
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;*&quot;</span>)] </span>(),
+            Box&lt;IntExpr&gt;,
+        ),
         <span class="attr">#[rust_sitter::prec_left(<span class="number">1</span>)]
         </span>Mod(
             Box&lt;IntExpr&gt;,
@@ -565,6 +582,11 @@
                     idents
                 }
                 IntExpr::Sub(l, <span class="kw">_</span>, r) =&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>idents = l.idents();
+                    idents.extend(r.idents());
+                    idents
+                }
+                IntExpr::Mul(l, <span class="kw">_</span>, r) =&gt; {
                     <span class="kw">let </span><span class="kw-2">mut </span>idents = l.idents();
                     idents.extend(r.idents());
                     idents

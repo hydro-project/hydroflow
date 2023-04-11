@@ -1028,6 +1028,65 @@
 <a href="#1028" id="1028">1028</a>
 <a href="#1029" id="1029">1029</a>
 <a href="#1030" id="1030">1030</a>
+<a href="#1031" id="1031">1031</a>
+<a href="#1032" id="1032">1032</a>
+<a href="#1033" id="1033">1033</a>
+<a href="#1034" id="1034">1034</a>
+<a href="#1035" id="1035">1035</a>
+<a href="#1036" id="1036">1036</a>
+<a href="#1037" id="1037">1037</a>
+<a href="#1038" id="1038">1038</a>
+<a href="#1039" id="1039">1039</a>
+<a href="#1040" id="1040">1040</a>
+<a href="#1041" id="1041">1041</a>
+<a href="#1042" id="1042">1042</a>
+<a href="#1043" id="1043">1043</a>
+<a href="#1044" id="1044">1044</a>
+<a href="#1045" id="1045">1045</a>
+<a href="#1046" id="1046">1046</a>
+<a href="#1047" id="1047">1047</a>
+<a href="#1048" id="1048">1048</a>
+<a href="#1049" id="1049">1049</a>
+<a href="#1050" id="1050">1050</a>
+<a href="#1051" id="1051">1051</a>
+<a href="#1052" id="1052">1052</a>
+<a href="#1053" id="1053">1053</a>
+<a href="#1054" id="1054">1054</a>
+<a href="#1055" id="1055">1055</a>
+<a href="#1056" id="1056">1056</a>
+<a href="#1057" id="1057">1057</a>
+<a href="#1058" id="1058">1058</a>
+<a href="#1059" id="1059">1059</a>
+<a href="#1060" id="1060">1060</a>
+<a href="#1061" id="1061">1061</a>
+<a href="#1062" id="1062">1062</a>
+<a href="#1063" id="1063">1063</a>
+<a href="#1064" id="1064">1064</a>
+<a href="#1065" id="1065">1065</a>
+<a href="#1066" id="1066">1066</a>
+<a href="#1067" id="1067">1067</a>
+<a href="#1068" id="1068">1068</a>
+<a href="#1069" id="1069">1069</a>
+<a href="#1070" id="1070">1070</a>
+<a href="#1071" id="1071">1071</a>
+<a href="#1072" id="1072">1072</a>
+<a href="#1073" id="1073">1073</a>
+<a href="#1074" id="1074">1074</a>
+<a href="#1075" id="1075">1075</a>
+<a href="#1076" id="1076">1076</a>
+<a href="#1077" id="1077">1077</a>
+<a href="#1078" id="1078">1078</a>
+<a href="#1079" id="1079">1079</a>
+<a href="#1080" id="1080">1080</a>
+<a href="#1081" id="1081">1081</a>
+<a href="#1082" id="1082">1082</a>
+<a href="#1083" id="1083">1083</a>
+<a href="#1084" id="1084">1084</a>
+<a href="#1085" id="1085">1085</a>
+<a href="#1086" id="1086">1086</a>
+<a href="#1087" id="1087">1087</a>
+<a href="#1088" id="1088">1088</a>
+<a href="#1089" id="1089">1089</a>
 </pre><pre class="rust"><code><span class="kw">use </span>rust_sitter::{
     errors::{ParseError, ParseErrorReason},
     Spanned,
@@ -1143,10 +1202,28 @@
 
         <span class="kw">if </span>!created_rules.contains(<span class="kw-2">&amp;</span>target_ident.value) {
             created_rules.insert(target_ident.value.clone());
-            <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span>target_ident.name, get_span(target_ident.span));
+            <span class="kw">let </span>insert_name = syn::Ident::new(
+                <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}_insert&quot;</span>, target_ident.name),
+                get_span(target_ident.span),
+            );
+            <span class="kw">let </span>read_name = syn::Ident::new(<span class="kw-2">&amp;</span>target_ident.name, get_span(target_ident.span));
 
-            flat_graph_builder
-                .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #name = merge() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; tee()));
+            <span class="kw">if </span>persists.contains(<span class="kw-2">&amp;</span>target_ident.value.name) {
+                <span class="comment">// read outputs the *new* values for this tick
+                </span>flat_graph_builder
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #insert_name = merge() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;()));
+                flat_graph_builder
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #read_name = difference::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;static</span>&gt;() -&gt; tee()));
+                flat_graph_builder
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #insert_name -&gt; [pos] #read_name));
+                flat_graph_builder
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #read_name -&gt; next_tick() -&gt; [neg] #read_name));
+            } <span class="kw">else </span>{
+                flat_graph_builder
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #insert_name = merge() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;()));
+                flat_graph_builder
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #read_name = #insert_name -&gt; tee()));
+            }
         }
     }
 
@@ -1159,7 +1236,7 @@
 
         <span class="kw">let </span>my_merge_index_lit =
             syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_merge_index), get_span(target.span));
-        <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, get_span(target.span));
+        <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}_insert&quot;</span>, target.name), get_span(target.span));
 
         <span class="kw">let </span>input_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
 
@@ -1181,7 +1258,7 @@
 
         <span class="kw">let </span>output_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
         <span class="kw">let </span>output_pipeline = <span class="kw">if </span>persists.contains(<span class="kw-2">&amp;</span>target.name) {
-            <span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt; persist() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; #output_pipeline}
+            <span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt; persist() -&gt; #output_pipeline}
         } <span class="kw">else </span>{
             output_pipeline
         };
@@ -1203,7 +1280,8 @@
 
         <span class="kw">let </span>recv_merge_index_lit =
             syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, recv_merge_index), get_span(target.span));
-        <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, get_span(target.span));
+        <span class="kw">let </span>target_ident =
+            syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}_insert&quot;</span>, target.name), get_span(target.span));
 
         <span class="kw">let </span>send_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>send_hf.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
         <span class="kw">let </span>recv_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>recv_hf.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
@@ -1213,7 +1291,7 @@
         });
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
-            #recv_pipeline -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; [#recv_merge_index_lit] #target_ident
+            #recv_pipeline -&gt; [#recv_merge_index_lit] #target_ident
         });
     }
 
@@ -1228,6 +1306,7 @@
             <span class="kw-2">&amp;mut </span>tee_counter,
             <span class="kw-2">&amp;mut </span>merge_counter,
             <span class="kw-2">&amp;mut </span>next_join_idx,
+            <span class="kw-2">&amp;</span>persists,
             <span class="kw-2">&amp;mut </span>diagnostics,
             <span class="kw-2">&amp;</span>get_span,
         );
@@ -1310,11 +1389,12 @@
     tee_counter: <span class="kw-2">&amp;mut </span>HashMap&lt;String, Counter&gt;,
     merge_counter: <span class="kw-2">&amp;mut </span>HashMap&lt;String, Counter&gt;,
     next_join_idx: <span class="kw-2">&amp;mut </span>Counter,
+    persists: <span class="kw-2">&amp;</span>HashSet&lt;String&gt;,
     diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
     get_span: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn((usize, usize)) -&gt; Span,
 ) {
     <span class="kw">let </span>target = <span class="kw-2">&amp;</span>rule.target.name;
-    <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, get_span(target.span));
+    <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}_insert&quot;</span>, target.name), get_span(target.span));
 
     <span class="kw">let </span>out_expanded = expand_join_plan(
         <span class="kw-2">&amp;</span>plan,
@@ -1326,7 +1406,13 @@
         get_span,
     );
 
-    <span class="kw">let </span>after_join = apply_aggregations(rule, <span class="kw-2">&amp;</span>out_expanded, diagnostics, get_span);
+    <span class="kw">let </span>after_join = apply_aggregations(
+        rule,
+        <span class="kw-2">&amp;</span>out_expanded,
+        persists.contains(<span class="kw-2">&amp;</span>target.name),
+        diagnostics,
+        get_span,
+    );
 
     <span class="kw">let </span>my_merge_index = merge_counter
         .entry(target.name.clone())
@@ -1493,6 +1579,11 @@
             <span class="kw">let </span>r = gen_value_expr(r, lookup_ident, get_span);
             <span class="macro">parse_quote!</span>(#l - #r)
         }
+        IntExpr::Mul(l, <span class="kw">_</span>, r) =&gt; {
+            <span class="kw">let </span>l = gen_value_expr(l, lookup_ident, get_span);
+            <span class="kw">let </span>r = gen_value_expr(r, lookup_ident, get_span);
+            <span class="macro">parse_quote!</span>(#l * #r)
+        }
         IntExpr::Mod(l, <span class="kw">_</span>, r) =&gt; {
             <span class="kw">let </span>l = gen_value_expr(l, lookup_ident, get_span);
             <span class="kw">let </span>r = gen_value_expr(r, lookup_ident, get_span);
@@ -1528,6 +1619,7 @@
 <span class="kw">fn </span>apply_aggregations(
     rule: <span class="kw-2">&amp;</span>Rule,
     out_expanded: <span class="kw-2">&amp;</span>IntermediateJoinNode,
+    consumer_is_persist: bool,
     diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
     get_span: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn((usize, usize)) -&gt; Span,
 ) -&gt; Pipeline {
@@ -1600,8 +1692,12 @@
 
     <span class="kw">let </span>flattened_tuple_type = <span class="kw-2">&amp;</span>out_expanded.tuple_type;
 
-    <span class="kw">let </span>without_persist: Pipeline = <span class="kw">if </span>agg_exprs.is_empty() {
-        <span class="macro">parse_quote!</span>(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )<span class="kw-2">*</span>)))
+    <span class="kw">if </span>agg_exprs.is_empty() {
+        <span class="kw">if </span>out_expanded.persisted &amp;&amp; !consumer_is_persist {
+            <span class="macro">parse_quote!</span>(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )<span class="kw-2">*</span>)) -&gt; persist())
+        } <span class="kw">else </span>{
+            <span class="macro">parse_quote!</span>(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )<span class="kw-2">*</span>)))
+        }
     } <span class="kw">else </span>{
         <span class="kw">let </span>agg_initial =
             repeat_tuple::&lt;syn::Expr, syn::Expr&gt;(|| <span class="macro">parse_quote!</span>(<span class="prelude-val">None</span>), agg_exprs.len());
@@ -1713,15 +1809,15 @@
         <span class="kw">let </span>pre_group_by_map: syn::Expr = <span class="macro">parse_quote!</span>(|row: #flattened_tuple_type| ((#(#group_by_exprs, )<span class="kw-2">*</span>), (#(#agg_exprs, )<span class="kw-2">*</span>)));
         <span class="kw">let </span>after_group_map: syn::Expr = <span class="macro">parse_quote!</span>(|(g, a)| (#(#after_group_lookups, )<span class="kw-2">*</span>));
 
-        <span class="macro">parse_quote! </span>{
-            map(#pre_group_by_map) -&gt; group_by::&lt;<span class="lifetime">&#39;tick</span>, #group_by_input_type, #agg_type&gt;(|| #agg_initial, #group_by_fn) -&gt; map(#after_group_map)
+        <span class="kw">if </span>out_expanded.persisted {
+            <span class="macro">parse_quote! </span>{
+                map(#pre_group_by_map) -&gt; group_by::&lt;<span class="lifetime">&#39;static</span>, #group_by_input_type, #agg_type&gt;(|| #agg_initial, #group_by_fn) -&gt; map(#after_group_map)
+            }
+        } <span class="kw">else </span>{
+            <span class="macro">parse_quote! </span>{
+                map(#pre_group_by_map) -&gt; group_by::&lt;<span class="lifetime">&#39;tick</span>, #group_by_input_type, #agg_type&gt;(|| #agg_initial, #group_by_fn) -&gt; map(#after_group_map)
+            }
         }
-    };
-
-    <span class="kw">if </span>out_expanded.persisted {
-        <span class="macro">parse_quote!</span>(persist() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; #without_persist)
-    } <span class="kw">else </span>{
-        without_persist
     }
 }
 
@@ -1962,6 +2058,18 @@
     }
 
     <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_aggregations_group_by_expr() {
+        <span class="macro">test_snapshots!</span>(
+            <span class="string">r#&quot;
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(a % 2, sum(b)) :- ints(a, b)
+            &quot;#
+        </span>);
+    }
+
+    <span class="attr">#[test]
     </span><span class="kw">fn </span>test_non_copy_but_clone() {
         <span class="macro">test_snapshots!</span>(
             <span class="string">r#&quot;
@@ -1985,6 +2093,7 @@
             result(a + a) :- ints(a)
             result(123 - a) :- ints(a)
             result(123 % (a + 5)) :- ints(a)
+            result(a * 5) :- ints(a)
             &quot;#
         </span>);
     }
@@ -2018,9 +2127,18 @@
             
             .output result `for_each(|v| result.send(v).unwrap())`
             .output result2 `for_each(|v| result2.send(v).unwrap())`
+            .output result3 `for_each(|v| result3.send(v).unwrap())`
+            .output result4 `for_each(|v| result4.send(v).unwrap())`
 
             result(a, b, c) :- ints1(a), ints2(b), ints3(c)
             result2(a) :- ints1(a), !ints2(a)
+
+            intermediate(a) :- ints1(a)
+            result3(a) :- intermediate(a)
+
+            .persist intermediate_persist
+            intermediate_persist(a) :- ints1(a)
+            result4(a) :- intermediate_persist(a)
             &quot;#
         </span>);
     }

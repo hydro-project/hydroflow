@@ -790,7 +790,7 @@
     };
 
     <span class="kw">let </span>rhs = <span class="kw">if </span>anti_join &amp;&amp; source_expanded.persisted {
-        <span class="macro">parse_quote_spanned!</span>(source_expanded.span=&gt; persist() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; #rhs)
+        <span class="macro">parse_quote_spanned!</span>(source_expanded.span=&gt; persist() -&gt; #rhs)
     } <span class="kw">else </span>{
         rhs
     };
@@ -1125,7 +1125,7 @@
                     .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(rule_span)=&gt; #join_node = anti_join() -&gt; map(#flatten_closure)));
             } <span class="kw">else </span>{
                 flat_graph_builder.add_statement(
-                    <span class="macro">parse_quote_spanned!</span>(get_span(rule_span)=&gt; #join_node = join::&lt;#lt_left, #lt_right&gt;() -&gt; map(#flatten_closure)),
+                    <span class="macro">parse_quote_spanned!</span>(get_span(rule_span)=&gt; #join_node = join::&lt;#lt_left, #lt_right, hydroflow::compiled::pull::HalfMultisetJoinState&gt;() -&gt; map(#flatten_closure)),
                 );
             }
 
