@@ -1,8 +1,8 @@
-use crate::graph::PortIndexValue;
+use crate::{graph::{PortIndexValue, OperatorInstance, OpInstGenerics}, diagnostic::{Level, Diagnostic}};
 
 use super::{
     DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    WriteContextArgs, RANGE_0, RANGE_1, Persistence,
 };
 
 use quote::{quote_spanned, ToTokens};
@@ -28,7 +28,7 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: 0,
-    persistence_args: RANGE_0,
+    persistence_args: &(0..=2),
     type_args: RANGE_0,
     is_external_input: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { pos, neg })),
@@ -51,29 +51,73 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
                    op_span,
                    ident,
                    inputs,
+                   op_inst:
+                       OperatorInstance {
+                           generics:
+                               OpInstGenerics {
+                                   persistence_args, ..
+                               },
+                           ..
+                       },
                    ..
                },
-               _| {
+               diagnostics| {
         let handle_ident = wc.make_ident("diffdata_handle");
-        let write_prologue = quote_spanned! {op_span=>
-            let #handle_ident = #hydroflow.add_state(std::cell::RefCell::new(
-                #root::lang::monotonic_map::MonotonicMap::<_, std::collections::HashSet<_>>::default(),
-            ));
+
+        let persistence = match &persistence_args[..] {
+            [] => Persistence::Tick,
+            [Persistence::Tick, Persistence::Tick] => Persistence::Tick,
+            [Persistence::Tick, Persistence::Static] => Persistence::Static,
+            other => {
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    &*format!(
+                        "Unexpected persistence arguments for difference, expected two arguments with the first as `'tick`, got {:?}", // or whatever
+                        other
+                    ),
+                ));
+
+                Persistence::Tick
+            },
         };
-        let write_iterator = {
+
+        let (write_prologue, write_iterator) = {
             let borrow_ident = wc.make_ident("borrow");
             let negset_ident = wc.make_ident("negset");
 
             let input_neg = &inputs[0]; // N before P
             let input_pos = &inputs[1];
-            quote_spanned! {op_span=>
-                let mut #borrow_ident = #context.state_ref(#handle_ident).borrow_mut();
-                let #negset_ident = #borrow_ident
-                    .try_insert_with((#context.current_tick(), #context.current_stratum()), || {
-                        #input_neg.collect()
-                    });
+
+            let (write_prologue, get_set) = match persistence {
+                Persistence::Tick => {
+                    (quote_spanned! {op_span=>
+                        let #handle_ident = #hydroflow.add_state(std::cell::RefCell::new(
+                            #root::lang::monotonic_map::MonotonicMap::<_, #root::rustc_hash::FxHashSet<_>>::default(),
+                        ));
+                    }, quote_spanned! {op_span=>
+                        let mut #borrow_ident = #context.state_ref(#handle_ident).borrow_mut();
+                        let #negset_ident = #borrow_ident
+                            .try_insert_with((#context.current_tick(), #context.current_stratum()), || {
+                                #input_neg.collect()
+                            });
+                    })
+                }
+
+                Persistence::Static => {
+                    (quote_spanned! {op_span=>
+                        let #handle_ident = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashSet::default()));
+                    }, quote_spanned! {op_span=>
+                        let mut #negset_ident = #context.state_ref(#handle_ident).borrow_mut();
+                        #negset_ident.extend(#input_neg);
+                    })
+                }
+            };
+
+            (write_prologue, quote_spanned! {op_span=>
+                #get_set
                 let #ident = #input_pos.filter(move |x| !#negset_ident.contains(x));
-            }
+            })
         };
         Ok(OperatorWriteOutput {
             write_prologue,
