@@ -679,6 +679,13 @@
 <a href="#679" id="679">679</a>
 <a href="#680" id="680">680</a>
 <a href="#681" id="681">681</a>
+<a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a>
+<a href="#687" id="687">687</a>
+<a href="#688" id="688">688</a>
 </pre><pre class="rust"><code><span class="attr">#![feature(never_type)]
 
 </span><span class="kw">use </span>std::{
@@ -701,7 +708,7 @@
 
 <span class="kw">use </span>tokio::net::{TcpListener, TcpStream};
 <span class="kw">use </span>tokio::{io, task::JoinHandle};
-<span class="kw">use </span>tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
+<span class="kw">use </span>tokio_util::codec::{Framed, LengthDelimitedCodec};
 
 <span class="attr">#[cfg(unix)]
 </span><span class="kw">use </span>tokio::net::{UnixListener, UnixStream};
@@ -806,6 +813,17 @@
 
 <span class="kw">pub type </span>DynSink&lt;Input&gt; = Pin&lt;Box&lt;<span class="kw">dyn </span>Sink&lt;Input, Error = io::Error&gt; + Send + Sync&gt;&gt;;
 
+<span class="kw">pub trait </span>StreamSink:
+    Stream&lt;Item = <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;&gt; + Sink&lt;Bytes, Error = io::Error&gt;
+{
+}
+<span class="kw">impl</span>&lt;T: Stream&lt;Item = <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;&gt; + Sink&lt;Bytes, Error = io::Error&gt;&gt; StreamSink
+    <span class="kw">for </span>T
+{
+}
+
+<span class="kw">pub type </span>DynStreamSink = Pin&lt;Box&lt;<span class="kw">dyn </span>StreamSink + Send + Sync&gt;&gt;;
+
 <span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>Connected: Send {
     <span class="kw">async fn </span>from_defn(pipe: ServerOrBound) -&gt; <span class="self">Self</span>;
@@ -885,10 +903,10 @@
             <span class="attr">#[cfg(unix)]
             </span>{
                 <span class="kw">let </span>stream = listener.<span class="kw">await</span>.unwrap().unwrap();
-                <span class="kw">let </span>(sink, source) = unix_bytes(stream);
                 ConnectedBidi {
-                    source: <span class="prelude-val">Some</span>(Box::pin(source)),
-                    sink: <span class="prelude-val">Some</span>(Box::pin(sink)),
+                    stream_sink: <span class="prelude-val">Some</span>(Box::pin(unix_bytes(stream))),
+                    source_only: <span class="prelude-val">None</span>,
+                    sink_only: <span class="prelude-val">None</span>,
                 }
             }
 
@@ -900,16 +918,16 @@
         }
         BoundConnection::TcpPort(listener, <span class="kw">_</span>) =&gt; {
             <span class="kw">let </span>stream = listener.<span class="kw">await</span>.unwrap().unwrap();
-            <span class="kw">let </span>(sink, source) = tcp_bytes(stream);
             ConnectedBidi {
-                source: <span class="prelude-val">Some</span>(Box::pin(source)),
-                sink: <span class="prelude-val">Some</span>(Box::pin(sink)),
+                stream_sink: <span class="prelude-val">Some</span>(Box::pin(tcp_bytes(stream))),
+                source_only: <span class="prelude-val">None</span>,
+                sink_only: <span class="prelude-val">None</span>,
             }
         }
         BoundConnection::Merge(merge) =&gt; {
             <span class="kw">let </span><span class="kw-2">mut </span>sources = <span class="macro">vec!</span>[];
             <span class="kw">for </span>bound <span class="kw">in </span>merge {
-                sources.push(accept(bound).<span class="kw">await</span>.source.unwrap());
+                sources.push(accept(bound).<span class="kw">await</span>.into_source());
             }
 
             <span class="kw">let </span>merge_source: DynStream = Box::pin(MergeSource {
@@ -918,8 +936,9 @@
             });
 
             ConnectedBidi {
-                source: <span class="prelude-val">Some</span>(merge_source),
-                sink: <span class="prelude-val">None</span>,
+                stream_sink: <span class="prelude-val">None</span>,
+                source_only: <span class="prelude-val">Some</span>(merge_source),
+                sink_only: <span class="prelude-val">None</span>,
             }
         }
         BoundConnection::Demux(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a demux pipe directly&quot;</span>),
@@ -930,29 +949,13 @@
     }
 }
 
-<span class="kw">fn </span>tcp_bytes(
-    stream: TcpStream,
-) -&gt; (
-    FramedWrite&lt;tokio::net::tcp::OwnedWriteHalf, LengthDelimitedCodec&gt;,
-    FramedRead&lt;tokio::net::tcp::OwnedReadHalf, LengthDelimitedCodec&gt;,
-) {
-    <span class="kw">let </span>(recv, send) = stream.into_split();
-    <span class="kw">let </span>send = FramedWrite::new(send, LengthDelimitedCodec::new());
-    <span class="kw">let </span>recv = FramedRead::new(recv, LengthDelimitedCodec::new());
-    (send, recv)
+<span class="kw">fn </span>tcp_bytes(stream: TcpStream) -&gt; <span class="kw">impl </span>StreamSink {
+    Framed::new(stream, LengthDelimitedCodec::new())
 }
 
 <span class="attr">#[cfg(unix)]
-</span><span class="kw">fn </span>unix_bytes(
-    stream: UnixStream,
-) -&gt; (
-    FramedWrite&lt;tokio::net::unix::OwnedWriteHalf, LengthDelimitedCodec&gt;,
-    FramedRead&lt;tokio::net::unix::OwnedReadHalf, LengthDelimitedCodec&gt;,
-) {
-    <span class="kw">let </span>(recv, send) = stream.into_split();
-    <span class="kw">let </span>send = FramedWrite::new(send, LengthDelimitedCodec::new());
-    <span class="kw">let </span>recv = FramedRead::new(recv, LengthDelimitedCodec::new());
-    (send, recv)
+</span><span class="kw">fn </span>unix_bytes(stream: UnixStream) -&gt; <span class="kw">impl </span>StreamSink {
+    Framed::new(stream, LengthDelimitedCodec::new())
 }
 
 <span class="kw">struct </span>IoErrorDrain&lt;T&gt; {
@@ -980,8 +983,9 @@
 }
 
 <span class="kw">pub struct </span>ConnectedBidi {
-    source: <span class="prelude-ty">Option</span>&lt;DynStream&gt;,
-    sink: <span class="prelude-ty">Option</span>&lt;DynSink&lt;Bytes&gt;&gt;,
+    stream_sink: <span class="prelude-ty">Option</span>&lt;DynStreamSink&gt;,
+    source_only: <span class="prelude-ty">Option</span>&lt;DynStream&gt;,
+    sink_only: <span class="prelude-ty">Option</span>&lt;DynSink&lt;Bytes&gt;&gt;,
 }
 
 <span class="attr">#[async_trait]
@@ -992,10 +996,10 @@
                 <span class="attr">#[cfg(unix)]
                 </span>{
                     <span class="kw">let </span>stream = UnixStream::connect(path).<span class="kw">await</span>.unwrap();
-                    <span class="kw">let </span>(sink, source) = unix_bytes(stream);
                     ConnectedBidi {
-                        source: <span class="prelude-val">Some</span>(Box::pin(source)),
-                        sink: <span class="prelude-val">Some</span>(Box::pin(sink)),
+                        stream_sink: <span class="prelude-val">Some</span>(Box::pin(unix_bytes(stream))),
+                        source_only: <span class="prelude-val">None</span>,
+                        sink_only: <span class="prelude-val">None</span>,
                     }
                 }
 
@@ -1007,10 +1011,10 @@
             }
             ServerOrBound::Server(ServerPort::TcpPort(addr)) =&gt; {
                 <span class="kw">let </span>stream = TcpStream::connect(addr).<span class="kw">await</span>.unwrap();
-                <span class="kw">let </span>(sink, source) = tcp_bytes(stream);
                 ConnectedBidi {
-                    source: <span class="prelude-val">Some</span>(Box::pin(source)),
-                    sink: <span class="prelude-val">Some</span>(Box::pin(sink)),
+                    stream_sink: <span class="prelude-val">Some</span>(Box::pin(tcp_bytes(stream))),
+                    source_only: <span class="prelude-val">None</span>,
+                    sink_only: <span class="prelude-val">None</span>,
                 }
             }
             ServerOrBound::Server(ServerPort::Merge(merge)) =&gt; {
@@ -1027,8 +1031,9 @@
                 };
 
                 ConnectedBidi {
-                    source: <span class="prelude-val">Some</span>(Box::pin(merged)),
-                    sink: <span class="prelude-val">None</span>,
+                    stream_sink: <span class="prelude-val">None</span>,
+                    source_only: <span class="prelude-val">Some</span>(Box::pin(merged)),
+                    sink_only: <span class="prelude-val">None</span>,
                 }
             }
             ServerOrBound::Server(ServerPort::Demux(<span class="kw">_</span>)) =&gt; {
@@ -1040,8 +1045,9 @@
             }
 
             ServerOrBound::Server(ServerPort::Null) =&gt; ConnectedBidi {
-                source: <span class="prelude-val">Some</span>(Box::pin(stream::empty())),
-                sink: <span class="prelude-val">Some</span>(Box::pin(IoErrorDrain {
+                stream_sink: <span class="prelude-val">None</span>,
+                source_only: <span class="prelude-val">Some</span>(Box::pin(stream::empty())),
+                sink_only: <span class="prelude-val">Some</span>(Box::pin(IoErrorDrain {
                     marker: PhantomData::default(),
                 })),
             },
@@ -1056,7 +1062,11 @@
     <span class="kw">type </span>Stream = DynStream;
 
     <span class="kw">fn </span>into_source(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; DynStream {
-        <span class="self">self</span>.source.take().unwrap()
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(s) = <span class="self">self</span>.stream_sink.take() {
+            Box::pin(s)
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.source_only.take().unwrap()
+        }
     }
 }
 
@@ -1065,7 +1075,11 @@
     <span class="kw">type </span>Sink = DynSink&lt;Bytes&gt;;
 
     <span class="kw">fn </span>into_sink(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; DynSink&lt;<span class="self">Self</span>::Input&gt; {
-        <span class="self">self</span>.sink.take().unwrap()
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(s) = <span class="self">self</span>.stream_sink.take() {
+            Box::pin(s)
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.sink_only.take().unwrap()
+        }
     }
 }
 

@@ -259,6 +259,35 @@
 <a href="#259" id="259">259</a>
 <a href="#260" id="260">260</a>
 <a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
 </pre><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">&quot;datalog&quot;</span>)]
 #[allow(dead_code)]
 </span><span class="kw">pub mod </span>datalog {
@@ -398,28 +427,57 @@
         <span class="kw">pub fn </span>idents(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;<span class="kw-2">&amp;</span>Ident&gt; {
             <span class="kw">match </span><span class="self">self </span>{
                 TargetExpr::Expr(e) =&gt; e.idents(),
-                TargetExpr::Aggregation(a) =&gt; <span class="macro">vec!</span>[<span class="kw-2">&amp;</span>a.ident],
+                TargetExpr::Aggregation(Aggregation::Count(<span class="kw">_</span>)) =&gt; <span class="macro">vec!</span>[],
+                TargetExpr::Aggregation(Aggregation::CountUnique(<span class="kw">_</span>, <span class="kw">_</span>, idents, <span class="kw">_</span>)) =&gt; {
+                    idents.iter().map(|i| <span class="kw-2">&amp;</span>i.value).collect()
+                }
+                TargetExpr::Aggregation(
+                    Aggregation::Min(<span class="kw">_</span>, <span class="kw">_</span>, a, <span class="kw">_</span>)
+                    | Aggregation::Max(<span class="kw">_</span>, <span class="kw">_</span>, a, <span class="kw">_</span>)
+                    | Aggregation::Sum(<span class="kw">_</span>, <span class="kw">_</span>, a, <span class="kw">_</span>)
+                    | Aggregation::Choose(<span class="kw">_</span>, <span class="kw">_</span>, a, <span class="kw">_</span>),
+                ) =&gt; <span class="macro">vec!</span>[a],
             }
         }
     }
 
     <span class="attr">#[derive(Debug, Clone)]
-    </span><span class="kw">pub struct </span>Aggregation {
-        <span class="kw">pub </span>tpe: AggregationType,
-        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)]
-        </span>_lparen: (),
-        <span class="kw">pub </span>ident: Spanned&lt;Ident&gt;,
-        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)]
-        </span>_rparen: (),
-    }
-
-    <span class="attr">#[derive(Debug, Clone)]
-    </span><span class="kw">pub enum </span>AggregationType {
-        Min(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;min&quot;</span>)] </span>()),
-        Max(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;max&quot;</span>)] </span>()),
-        Sum(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;sum&quot;</span>)] </span>()),
-        Count(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;count&quot;</span>)] </span>()),
-        Choose(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;choose&quot;</span>)] </span>()),
+    </span><span class="kw">pub enum </span>Aggregation {
+        Min(
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;min&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)] </span>(),
+            Spanned&lt;Ident&gt;,
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)] </span>(),
+        ),
+        Max(
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;max&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)] </span>(),
+            Spanned&lt;Ident&gt;,
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)] </span>(),
+        ),
+        Sum(
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;sum&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)] </span>(),
+            Spanned&lt;Ident&gt;,
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)] </span>(),
+        ),
+        Count(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;count(*)&quot;</span>)] </span>()),
+        CountUnique(
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;count&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::delimited(
+                <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;,&quot;</span>)]
+                </span>()
+            )]
+            Vec&lt;Spanned&lt;Ident&gt;&gt;,
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)] </span>(),
+        ),
+        Choose(
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;choose&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)] </span>(),
+            Spanned&lt;Ident&gt;,
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)] </span>(),
+        ),
     }
 
     <span class="attr">#[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Debug)]

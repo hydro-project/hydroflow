@@ -616,6 +616,54 @@
 <a href="#616" id="616">616</a>
 <a href="#617" id="617">617</a>
 <a href="#618" id="618">618</a>
+<a href="#619" id="619">619</a>
+<a href="#620" id="620">620</a>
+<a href="#621" id="621">621</a>
+<a href="#622" id="622">622</a>
+<a href="#623" id="623">623</a>
+<a href="#624" id="624">624</a>
+<a href="#625" id="625">625</a>
+<a href="#626" id="626">626</a>
+<a href="#627" id="627">627</a>
+<a href="#628" id="628">628</a>
+<a href="#629" id="629">629</a>
+<a href="#630" id="630">630</a>
+<a href="#631" id="631">631</a>
+<a href="#632" id="632">632</a>
+<a href="#633" id="633">633</a>
+<a href="#634" id="634">634</a>
+<a href="#635" id="635">635</a>
+<a href="#636" id="636">636</a>
+<a href="#637" id="637">637</a>
+<a href="#638" id="638">638</a>
+<a href="#639" id="639">639</a>
+<a href="#640" id="640">640</a>
+<a href="#641" id="641">641</a>
+<a href="#642" id="642">642</a>
+<a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a>
+<a href="#647" id="647">647</a>
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a>
+<a href="#651" id="651">651</a>
+<a href="#652" id="652">652</a>
+<a href="#653" id="653">653</a>
+<a href="#654" id="654">654</a>
+<a href="#655" id="655">655</a>
+<a href="#656" id="656">656</a>
+<a href="#657" id="657">657</a>
+<a href="#658" id="658">658</a>
+<a href="#659" id="659">659</a>
+<a href="#660" id="660">660</a>
+<a href="#661" id="661">661</a>
+<a href="#662" id="662">662</a>
+<a href="#663" id="663">663</a>
+<a href="#664" id="664">664</a>
+<a href="#665" id="665">665</a>
+<a href="#666" id="666">666</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::collections::{btree_map::Entry, BTreeMap, HashMap};
 <span class="kw">use </span>std::ops::Deref;
 
@@ -656,6 +704,8 @@
     </span><span class="kw">pub </span>tee_idx: <span class="prelude-ty">Option</span>&lt;isize&gt;,
     <span class="doccomment">/// A mapping from variables in the rule to the index of the corresponding element in the flattened tuples this node emits.
     </span><span class="kw">pub </span>variable_mapping: BTreeMap&lt;String, usize&gt;,
+    <span class="doccomment">/// Tuple indices that that correspond to wildcard, unused values.
+    </span><span class="kw">pub </span>wildcard_indices: Vec&lt;usize&gt;,
     <span class="doccomment">/// The type of the flattened tuples this node emits.
     </span><span class="kw">pub </span>tuple_type: syn::Type,
     <span class="doccomment">/// The span corresponding to the original sources resulting in this node.
@@ -715,6 +765,10 @@
                 <span class="macro">panic!</span>(<span class="string">&quot;Could not find key that is being joined on: {:?}&quot;</span>, ident);
             }
         })
+        .chain(source_expanded.wildcard_indices.iter().map(|idx| {
+            <span class="kw">let </span>idx_ident = syn::Index::from(<span class="kw-2">*</span>idx);
+            <span class="macro">parse_quote!</span>(_v.#idx_ident)
+        }))
         .collect();
 
     <span class="kw">let </span>out_index = syn::Index::from(join_side.index());
@@ -847,6 +901,7 @@
     <span class="kw">match </span>plan {
         JoinPlan::Source(target, persisted) =&gt; {
             <span class="kw">let </span><span class="kw-2">mut </span>variable_mapping = BTreeMap::new();
+            <span class="kw">let </span><span class="kw-2">mut </span>wildcard_indices = <span class="macro">vec!</span>[];
             <span class="kw">let </span><span class="kw-2">mut </span>row_types: Vec&lt;syn::Type&gt; = <span class="macro">vec!</span>[];
 
             <span class="kw">let </span>local_constraints = find_relation_local_constraints(target.fields.iter());
@@ -858,6 +913,8 @@
                     <span class="kw">if let </span>Entry::Vacant(e) = variable_mapping.entry(ident.name.clone()) {
                         e.insert(i);
                     }
+                } <span class="kw">else </span>{
+                    wildcard_indices.push(i);
                 }
             }
 
@@ -876,6 +933,7 @@
                     persisted: <span class="kw-2">*</span>persisted,
                     tee_idx: <span class="prelude-val">Some</span>(tee_index),
                     variable_mapping,
+                    wildcard_indices,
                     tuple_type: row_type,
                     span: get_span(target.span),
                 };
@@ -903,6 +961,7 @@
                 persisted: <span class="kw-2">*</span>persisted,
                 tee_idx: <span class="prelude-val">None</span>,
                 variable_mapping,
+                wildcard_indices,
                 tuple_type: row_type,
                 span: get_span(target.span),
             }
@@ -958,11 +1017,11 @@
 
             <span class="kw">let </span>left_type = repeat_tuple::&lt;syn::Type, syn::Type&gt;(
                 || <span class="macro">parse_quote!</span>(<span class="kw">_</span>),
-                left_non_joined_identifiers.len(),
+                left_non_joined_identifiers.len() + left_expanded.wildcard_indices.len(),
             );
             <span class="kw">let </span>right_type = repeat_tuple::&lt;syn::Type, syn::Type&gt;(
                 || <span class="macro">parse_quote!</span>(<span class="kw">_</span>),
-                right_non_joined_identifiers.len(),
+                right_non_joined_identifiers.len() + right_expanded.wildcard_indices.len(),
             );
 
             <span class="kw">let </span>join_node = syn::Ident::new(
@@ -978,6 +1037,7 @@
             // single tuple that is used by downstream joins or the final output.
             </span><span class="kw">let </span><span class="kw-2">mut </span>flattened_tuple_elems: Vec&lt;syn::Expr&gt; = <span class="macro">vec!</span>[];
             <span class="kw">let </span><span class="kw-2">mut </span>flattened_mapping = BTreeMap::new();
+            <span class="kw">let </span><span class="kw-2">mut </span>flattened_wildcard_indices = <span class="macro">vec!</span>[];
 
             <span class="kw">for </span>(ident, idx) <span class="kw">in </span><span class="kw-2">&amp;</span>identifiers_to_join {
                 <span class="kw">if </span>!flattened_mapping.contains_key(<span class="kw-2">*</span>ident) {
@@ -999,6 +1059,14 @@
                         flattened_tuple_elems.push(value_expr);
                     }
                 }
+
+                <span class="kw">for </span>idx <span class="kw">in </span><span class="number">0</span>..left_expanded.wildcard_indices.len() {
+                    <span class="kw">let </span>idx = syn::Index::from(left_non_joined_identifiers.len() + idx);
+                    <span class="kw">let </span>value_expr: syn::Expr = <span class="macro">parse_quote!</span>(kv.<span class="number">1.</span>#idx);
+
+                    flattened_wildcard_indices.push(flattened_tuple_elems.len());
+                    flattened_tuple_elems.push(value_expr);
+                }
             } <span class="kw">else </span>{
                 <span class="kw">for </span>(ident, source_idx) <span class="kw">in </span>left_non_joined_identifiers
                     .keys()
@@ -1019,6 +1087,21 @@
                         flattened_mapping.insert((<span class="kw-2">*</span>ident).clone(), flattened_tuple_elems.len());
                         flattened_tuple_elems.push(<span class="macro">parse_quote!</span>(#source_expr.#source_col_idx));
                     }
+                }
+
+                <span class="kw">for </span>(idx, source_idx) <span class="kw">in </span>(<span class="number">0</span>..left_expanded.wildcard_indices.len())
+                    .map(|i| (left_non_joined_identifiers.len() + i, <span class="number">0</span>))
+                    .chain(
+                        (<span class="number">0</span>..right_expanded.wildcard_indices.len())
+                            .map(|i| (right_non_joined_identifiers.len() + i, <span class="number">1</span>)),
+                    )
+                {
+                    <span class="kw">let </span>syn_source_index = syn::Index::from(source_idx);
+                    <span class="kw">let </span>idx = syn::Index::from(idx);
+                    <span class="kw">let </span>value_expr: syn::Expr = <span class="macro">parse_quote!</span>(kv.<span class="number">1.</span>#syn_source_index.#idx);
+
+                    flattened_wildcard_indices.push(flattened_tuple_elems.len());
+                    flattened_tuple_elems.push(value_expr);
                 }
             }
 
@@ -1056,6 +1139,7 @@
                 persisted: is_persist,
                 tee_idx: <span class="prelude-val">None</span>,
                 variable_mapping: flattened_mapping,
+                wildcard_indices: flattened_wildcard_indices,
                 tuple_type: output_type,
                 span: left_expanded
                     .span
@@ -1152,6 +1236,7 @@
                 persisted: inner_expanded.persisted,
                 tee_idx: <span class="prelude-val">None</span>,
                 variable_mapping: inner_expanded.variable_mapping,
+                wildcard_indices: inner_expanded.wildcard_indices,
                 tuple_type: row_type,
                 span: get_span(rule_span),
             }
@@ -1200,21 +1285,31 @@
 
             <span class="kw">let </span><span class="kw-2">mut </span>flattened_elements: Vec&lt;syn::Expr&gt; = <span class="macro">vec!</span>[];
             <span class="kw">let </span><span class="kw-2">mut </span>flattened_mapping = BTreeMap::new();
+            <span class="kw">let </span><span class="kw-2">mut </span>flattened_wildcard_indices = Vec::new();
+
             <span class="kw">for </span>(ident, source_idx) <span class="kw">in </span><span class="kw-2">&amp;</span>inner_expanded.variable_mapping {
                 <span class="kw">let </span>syn_source_index = syn::Index::from(<span class="kw-2">*</span>source_idx);
                 flattened_mapping.insert(ident.clone(), flattened_elements.len());
                 flattened_elements.push(<span class="macro">parse_quote!</span>(row.#syn_source_index.clone()));
             }
 
-            flattened_elements.push(<span class="macro">parse_quote!</span>(v));
+            <span class="kw">for </span>wildcard_idx <span class="kw">in </span><span class="kw-2">&amp;</span>inner_expanded.wildcard_indices {
+                <span class="kw">let </span>syn_wildcard_idx = syn::Index::from(<span class="kw-2">*</span>wildcard_idx);
+                flattened_wildcard_indices.push(flattened_elements.len());
+                flattened_elements.push(<span class="macro">parse_quote!</span>(row.#syn_wildcard_idx.clone()));
+            }
 
             <span class="kw">if let </span>IdentOrUnderscore::Ident(less_than) = less_than.deref() {
                 <span class="kw">if </span>less_than.name == threshold_name {
                     <span class="macro">panic!</span>(<span class="string">&quot;The threshold and less_than variables must be different&quot;</span>)
                 }
 
-                flattened_mapping.insert(less_than.name.clone(), flattened_elements.len() - <span class="number">1</span>);
+                flattened_mapping.insert(less_than.name.clone(), flattened_elements.len());
+            } <span class="kw">else </span>{
+                flattened_wildcard_indices.push(flattened_elements.len());
             }
+
+            flattened_elements.push(<span class="macro">parse_quote!</span>(v));
 
             flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(rule_span)=&gt;
                 #magic_node = #inner_name -&gt; flat_map(|row: #row_type| (<span class="number">0</span>..(row.#threshold_index)).map(<span class="kw">move </span>|v| (#(#flattened_elements, )<span class="kw-2">*</span>)) )
@@ -1225,6 +1320,7 @@
                 persisted: inner_expanded.persisted,
                 tee_idx: <span class="prelude-val">None</span>,
                 variable_mapping: flattened_mapping,
+                wildcard_indices: flattened_wildcard_indices,
                 tuple_type: repeat_tuple::&lt;syn::Type, syn::Type&gt;(
                     || <span class="macro">parse_quote!</span>(<span class="kw">_</span>),
                     flattened_elements.len(),

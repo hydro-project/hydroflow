@@ -987,6 +987,47 @@
 <a href="#987" id="987">987</a>
 <a href="#988" id="988">988</a>
 <a href="#989" id="989">989</a>
+<a href="#990" id="990">990</a>
+<a href="#991" id="991">991</a>
+<a href="#992" id="992">992</a>
+<a href="#993" id="993">993</a>
+<a href="#994" id="994">994</a>
+<a href="#995" id="995">995</a>
+<a href="#996" id="996">996</a>
+<a href="#997" id="997">997</a>
+<a href="#998" id="998">998</a>
+<a href="#999" id="999">999</a>
+<a href="#1000" id="1000">1000</a>
+<a href="#1001" id="1001">1001</a>
+<a href="#1002" id="1002">1002</a>
+<a href="#1003" id="1003">1003</a>
+<a href="#1004" id="1004">1004</a>
+<a href="#1005" id="1005">1005</a>
+<a href="#1006" id="1006">1006</a>
+<a href="#1007" id="1007">1007</a>
+<a href="#1008" id="1008">1008</a>
+<a href="#1009" id="1009">1009</a>
+<a href="#1010" id="1010">1010</a>
+<a href="#1011" id="1011">1011</a>
+<a href="#1012" id="1012">1012</a>
+<a href="#1013" id="1013">1013</a>
+<a href="#1014" id="1014">1014</a>
+<a href="#1015" id="1015">1015</a>
+<a href="#1016" id="1016">1016</a>
+<a href="#1017" id="1017">1017</a>
+<a href="#1018" id="1018">1018</a>
+<a href="#1019" id="1019">1019</a>
+<a href="#1020" id="1020">1020</a>
+<a href="#1021" id="1021">1021</a>
+<a href="#1022" id="1022">1022</a>
+<a href="#1023" id="1023">1023</a>
+<a href="#1024" id="1024">1024</a>
+<a href="#1025" id="1025">1025</a>
+<a href="#1026" id="1026">1026</a>
+<a href="#1027" id="1027">1027</a>
+<a href="#1028" id="1028">1028</a>
+<a href="#1029" id="1029">1029</a>
+<a href="#1030" id="1030">1030</a>
 </pre><pre class="rust"><code><span class="kw">use </span>rust_sitter::{
     errors::{ParseError, ParseErrorReason},
     Spanned,
@@ -1467,9 +1508,20 @@
 ) -&gt; syn::Expr {
     <span class="kw">match </span>expr {
         TargetExpr::Expr(expr) =&gt; gen_value_expr(expr, lookup_ident, get_span),
-        TargetExpr::Aggregation(Aggregation { ident, .. }) =&gt; {
-            gen_value_expr(<span class="kw-2">&amp;</span>IntExpr::Ident(ident.clone()), lookup_ident, get_span)
+        TargetExpr::Aggregation(Aggregation::Count(<span class="kw">_</span>)) =&gt; <span class="macro">parse_quote!</span>(()),
+        TargetExpr::Aggregation(Aggregation::CountUnique(<span class="kw">_</span>, <span class="kw">_</span>, keys, <span class="kw">_</span>)) =&gt; {
+            <span class="kw">let </span>keys = keys
+                .iter()
+                .map(|k| gen_value_expr(<span class="kw-2">&amp;</span>IntExpr::Ident(k.clone()), lookup_ident, get_span))
+                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+            <span class="macro">parse_quote!</span>((#(#keys),<span class="kw-2">*</span>))
         }
+        TargetExpr::Aggregation(
+            Aggregation::Min(<span class="kw">_</span>, <span class="kw">_</span>, a, <span class="kw">_</span>)
+            | Aggregation::Max(<span class="kw">_</span>, <span class="kw">_</span>, a, <span class="kw">_</span>)
+            | Aggregation::Sum(<span class="kw">_</span>, <span class="kw">_</span>, a, <span class="kw">_</span>)
+            | Aggregation::Choose(<span class="kw">_</span>, <span class="kw">_</span>, a, <span class="kw">_</span>),
+        ) =&gt; gen_value_expr(<span class="kw-2">&amp;</span>IntExpr::Ident(a.clone()), lookup_ident, get_span),
     }
 }
 
@@ -1535,12 +1587,12 @@
             get_span,
         );
 
-        <span class="kw">match </span>field.value {
+        <span class="kw">match </span><span class="kw-2">&amp;</span>field.value {
             TargetExpr::Expr(<span class="kw">_</span>) =&gt; {
                 group_by_exprs.push(expr);
             }
-            TargetExpr::Aggregation(<span class="kw">_</span>) =&gt; {
-                aggregations.push(field);
+            TargetExpr::Aggregation(a) =&gt; {
+                aggregations.push(a.clone());
                 agg_exprs.push(expr);
             }
         }
@@ -1570,43 +1622,51 @@
                 <span class="kw">let </span>old_at_index: syn::Expr = <span class="macro">parse_quote!</span>(old.#idx);
                 <span class="kw">let </span>val_at_index: syn::Expr = <span class="macro">parse_quote!</span>(val.#idx);
 
-                <span class="kw">let </span>agg_expr: syn::Expr = <span class="kw">match </span><span class="kw-2">&amp;</span>agg.value {
-                    TargetExpr::Aggregation(Aggregation { tpe, .. }) =&gt; <span class="kw">match </span>tpe {
-                        AggregationType::Min(<span class="kw">_</span>) =&gt; {
-                            <span class="macro">parse_quote!</span>(std::cmp::min(prev, #val_at_index))
-                        }
-                        AggregationType::Max(<span class="kw">_</span>) =&gt; {
-                            <span class="macro">parse_quote!</span>(std::cmp::max(prev, #val_at_index))
-                        }
-                        AggregationType::Sum(<span class="kw">_</span>) =&gt; {
-                            <span class="macro">parse_quote!</span>(prev + #val_at_index)
-                        }
-                        AggregationType::Count(<span class="kw">_</span>) =&gt; {
-                            <span class="macro">parse_quote!</span>(prev + <span class="number">1</span>)
-                        }
-                        AggregationType::Choose(<span class="kw">_</span>) =&gt; {
-                            <span class="macro">parse_quote!</span>(prev) <span class="comment">// choose = select any 1 element from the relation. By default we select the 1st.
-                        </span>}
-                    },
-                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(),
+                <span class="kw">let </span>agg_expr: syn::Expr = <span class="kw">match </span><span class="kw-2">&amp;</span>agg {
+                    Aggregation::Min(..) =&gt; {
+                        <span class="macro">parse_quote!</span>(std::cmp::min(prev, #val_at_index))
+                    }
+                    Aggregation::Max(..) =&gt; {
+                        <span class="macro">parse_quote!</span>(std::cmp::max(prev, #val_at_index))
+                    }
+                    Aggregation::Sum(..) =&gt; {
+                        <span class="macro">parse_quote!</span>(prev + #val_at_index)
+                    }
+                    Aggregation::Count(..) =&gt; {
+                        <span class="macro">parse_quote!</span>(prev + <span class="number">1</span>)
+                    }
+                    Aggregation::CountUnique(..) =&gt; {
+                        <span class="macro">parse_quote!</span>({
+                            <span class="kw">let </span><span class="kw-2">mut </span>set: hydroflow::rustc_hash::FxHashSet::&lt;<span class="kw">_</span>&gt; = prev;
+                            set.insert(#val_at_index);
+                            set
+                        })
+                    }
+                    Aggregation::Choose(..) =&gt; {
+                        <span class="macro">parse_quote!</span>(prev) <span class="comment">// choose = select any 1 element from the relation. By default we select the 1st.
+                    </span>}
                 };
 
-                <span class="kw">let </span>agg_initial: syn::Expr = <span class="kw">match </span><span class="kw-2">&amp;</span>agg.value {
-                    TargetExpr::Aggregation(Aggregation { tpe, .. }) =&gt; <span class="kw">match </span>tpe {
-                        AggregationType::Min(<span class="kw">_</span>)
-                        | AggregationType::Max(<span class="kw">_</span>)
-                        | AggregationType::Sum(<span class="kw">_</span>)
-                        | AggregationType::Choose(<span class="kw">_</span>) =&gt; {
-                            <span class="macro">parse_quote!</span>(#val_at_index)
-                        }
-                        AggregationType::Count(<span class="kw">_</span>) =&gt; {
-                            <span class="macro">parse_quote!</span>(<span class="number">1</span>)
-                        }
-                    },
-                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(),
+                <span class="kw">let </span>agg_initial: syn::Expr = <span class="kw">match </span><span class="kw-2">&amp;</span>agg {
+                    Aggregation::Min(..)
+                    | Aggregation::Max(..)
+                    | Aggregation::Sum(..)
+                    | Aggregation::Choose(..) =&gt; {
+                        <span class="macro">parse_quote!</span>(#val_at_index)
+                    }
+                    Aggregation::Count(..) =&gt; {
+                        <span class="macro">parse_quote!</span>(<span class="number">1</span>)
+                    }
+                    Aggregation::CountUnique(..) =&gt; {
+                        <span class="macro">parse_quote!</span>({
+                            <span class="kw">let </span><span class="kw-2">mut </span>set = hydroflow::rustc_hash::FxHashSet::&lt;<span class="kw">_</span>&gt;::default();
+                            set.insert(#val_at_index);
+                            set
+                        })
+                    }
                 };
 
-                <span class="macro">parse_quote_spanned! </span>{get_span(agg.span) =&gt;
+                <span class="macro">parse_quote! </span>{
                     #old_at_index = <span class="kw">if let </span><span class="prelude-val">Some</span>(prev) = #old_at_index.take() {
                         <span class="prelude-val">Some</span>(#agg_expr)
                     } <span class="kw">else </span>{
@@ -1634,6 +1694,12 @@
                     <span class="kw">let </span>idx = syn::Index::from(group_key_idx);
                     after_group_lookups.push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; g.#idx));
                     group_key_idx += <span class="number">1</span>;
+                }
+                TargetExpr::Aggregation(Aggregation::CountUnique(..)) =&gt; {
+                    <span class="kw">let </span>idx = syn::Index::from(agg_idx);
+                    after_group_lookups
+                        .push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; a.#idx.unwrap().len()));
+                    agg_idx += <span class="number">1</span>;
                 }
                 TargetExpr::Aggregation(<span class="kw">_</span>) =&gt; {
                     <span class="kw">let </span>idx = syn::Index::from(agg_idx);
@@ -1972,6 +2038,22 @@
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(count(a)) :- ints1(a)
+            &quot;#
+        </span>);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_wildcard_join_count() {
+        <span class="macro">test_snapshots!</span>(
+            <span class="string">r#&quot;
+            .input ints1 `source_stream(ints1)` 
+            .input ints2 `source_stream(ints2)`
+            
+            .output result `for_each(|v| result.send(v).unwrap())`
+            .output result2 `for_each(|v| result2.send(v).unwrap())`
+
+            result(count(*)) :- ints1(a, _), ints2(a)
+            result2(count(a)) :- ints1(a, _), ints2(a)
             &quot;#
         </span>);
     }
