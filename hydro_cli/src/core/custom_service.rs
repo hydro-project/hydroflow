@@ -88,7 +88,13 @@ impl CustomClientPort {
     }
 
     pub async fn server_port(&self) -> ServerOrBound {
-        ServerOrBound::Server(self.client_port.as_ref().unwrap().load_instantiated().await)
+        ServerOrBound::Server(
+            self.client_port
+                .as_ref()
+                .unwrap()
+                .load_instantiated(&|p| p)
+                .await,
+        )
     }
 }
 
@@ -97,18 +103,20 @@ impl HydroflowSource for CustomClientPort {
         SourcePath::Direct(self.on.upgrade().unwrap().try_read().unwrap().on.clone())
     }
 
-    fn send_to(&mut self, to: &mut dyn HydroflowSink) {
-        if let Ok(instantiated) = to.instantiate(&SourcePath::Direct(
-            self.on.upgrade().unwrap().try_read().unwrap().on.clone(),
-        )) {
-            self.record_server_config(instantiated());
-        } else {
-            panic!("Custom services cannot be used as the server")
-        }
+    fn host(&self) -> Arc<RwLock<dyn Host>> {
+        panic!("Custom services cannot be used as the server")
+    }
+
+    fn server(&self) -> Arc<dyn HydroflowServer> {
+        panic!("Custom services cannot be used as the server")
     }
 
     fn record_server_config(&mut self, config: ServerConfig) {
         self.client_port = Some(config);
+    }
+
+    fn record_server_strategy(&mut self, _config: ServerStrategy) {
+        panic!("Custom services cannot be used as the server")
     }
 }
 
