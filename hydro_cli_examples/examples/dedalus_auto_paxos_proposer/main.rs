@@ -77,6 +77,7 @@ async fn main() {
 
     let (my_id, f, num_acceptor_groups, num_p2a_proxy_leaders, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const):(u32, u32, u32, u32, u32, u32, u32) = 
         serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
+    let p2a_proxy_leaders_start_id = my_id * num_p2a_proxy_leaders;
     let p1a_timeout = periodic(p1a_timeout_const);
     let i_am_leader_resend_timeout = periodic(i_am_leader_resend_timeout_const);
     let i_am_leader_check_timeout = periodic(i_am_leader_check_timeout_const);
@@ -90,7 +91,7 @@ async fn main() {
 .input numAcceptorGroups `repeat_iter([(num_acceptor_groups,),])`
 .input acceptors `repeat_iter(acceptors.clone()) -> map(|p| (p,))`
 .input proposers `repeat_iter(proposers.clone()) -> map(|p| (p,))`
-.input p2aProxyLeadersStartID `repeat_iter([(my_id * num_p2a_proxy_leaders,),])`
+.input p2aProxyLeadersStartID `repeat_iter([(p2a_proxy_leaders_start_id,),])`
 .input numP2aProxyLeaders `repeat_iter([(num_p2a_proxy_leaders,),])` # ID scheme: Assuming num_p2a_proxy_leaders = n (per proposer). Proposer i has proxy leaders from i*n to (i+1)*n-1
 .input quorum `repeat_iter([(f+1,),])`
 .input noop `repeat_iter([(0 as u32,),])`
@@ -103,6 +104,8 @@ async fn main() {
 .output p2bOut `for_each(|(pid,a,payload,slot,id,num,max_id,max_num):(u32,u32,u32,u32,u32,u32,u32,u32,)| println!("proposer {:?} received p2b: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]", pid, a, payload, slot, id, num, max_id, max_num))`
 .output iAmLeaderSendOut `for_each(|(dest,pid,num):(u32,u32,u32,)| println!("proposer {:?} sent iAmLeader to {:?}: [{:?},{:?}]", pid, dest, pid, num))`
 .output iAmLeaderReceiveOut `for_each(|(my_id,pid,num):(u32,u32,u32,)| println!("proposer {:?} received iAmLeader: [{:?},{:?}]", my_id, pid, num))`
+# For some reason Hydroflow can't infer the type of nextSlot, so we define it manually:
+.input nextSlot `null::<(u32,)>()`
 
 # IDB
 .input clientIn `repeat_iter(vec![()]) -> map(|_| (context.current_tick() as u32,))`
@@ -207,7 +210,7 @@ P1bLargestEntryBallotNum(slot, max(payloadBallotNum)) :- RelevantP1bLogs(partiti
 P1bLargestEntryBallot(slot, max(payloadBallotID), payloadBallotNum) :- P1bLargestEntryBallotNum(slot, payloadBallotNum), RelevantP1bLogs(partitionID, acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
 # makes sure that p2as cannot be sent yet; otherwise resent slots might conflict. Once p2as can be sent, a new p1b log might tell us to propose a payload for the same slot we propose (in parallel) for p2a, which violates an invariant.
 ResentLog(payload, slot) :- P1bLargestEntryBallot(slot, payloadBallotID, payloadBallotNum), P1bMatchingEntry(payload, slot, c, payloadBallotID, payloadBallotNum), !CommittedLog(otherPayload, slot), IsLeader(), !nextSlot(s)
-p2a@(start+(slot%n))(i, payload, slot, i, num) :~ ResentLog(payload, slot), id(i), ballot(num), numP2aProxyLeaders(n),p2aProxyLeadersStartID(start)
+p2a@(start+(slot%n))(i, payload, slot, i, num) :~ ResentLog(payload, slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
 
 # hole filling: if a slot is not in ResentEntries or proposedLog but it's smaller than max, then propose noop. Provides invariant that all holes are filled (proposed) by next timestep and we can just assign slots as current slot+1
 ProposedSlots(slot) :- startSlot(slot)

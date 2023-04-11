@@ -15,14 +15,12 @@ async fn main() {
         .await
         .into_source();
 
-    let p1b = ports
+    let p1b_sink = ports
         .remove("p1b")
         .unwrap()
         .connect::<ConnectedDemux<ConnectedBidi>>()
-        .await;
-
-    let peers = p1b.keys.clone();
-    let p1b_sink = p1b.into_sink();
+        .await
+        .into_sink();
 
     let p1b_log_sink = ports
         .remove("p1b_log")
@@ -38,19 +36,23 @@ async fn main() {
         .await
         .into_source();
 
-    let p2b_sink = ports
+    let p2b_ports = ports
         .remove("p2b")
         .unwrap()
         .connect::<ConnectedDemux<ConnectedBidi>>()
-        .await
-        .into_sink();
+        .await;
+    let p2b_proxy_leaders = p2b_ports.keys.clone();
+    println!("p2b_proxy_leaders: {:?}", p2b_proxy_leaders);
+    let p2b_sink = p2b_ports.into_sink();
 
-    let p1a_vote_sink = ports
+    let p1a_vote_ports = ports
         .remove("p1a_vote")
         .unwrap()
         .connect::<ConnectedDemux<ConnectedBidi>>()
-        .await
-        .into_sink();
+        .await;
+    let coordinators = p1a_vote_ports.keys.clone();
+    println!("coordinators: {:?}", coordinators);
+    let p1a_vote_sink = p1a_vote_ports.into_sink();
 
     let p1a_commit_source = ports
         .remove("p1a_commit")
@@ -76,6 +78,8 @@ async fn main() {
         .output p1bLogOut `for_each(|(pid,a,payload,slot,payload_id,payload_num,id,num):(u32,u32,u32,u32,u32,u32,u32,u32,)| println!("acceptor {:?} sent p1bLog to {:?}: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]", a, pid, a, payload, slot, payload_id, payload_num, id, num))`
         .output p2aOut `for_each(|(a,pid,payload,slot,id,num):(u32,u32,u32,u32,u32,u32,)| println!("acceptor {:?} received p2a: [{:?},{:?},{:?},{:?},{:?}]", a, pid, payload, slot, id, num))`
         .output p2bOut `for_each(|(pid,a,payload,slot,id,num,max_id,max_num):(u32,u32,u32,u32,u32,u32,u32,u32,)| println!("acceptor {:?} sent p2b to {:?}: [{:?},{:?},{:?},{:?},{:?},{:?},{:?}]]", a, pid, a, payload, slot, id, num, max_id, max_num))`
+        # For some reason Hydroflow can't infer the type of p2aSealed, so we define it manually:
+        .input p2aSealed `null::<(u32,u32,u32,u32,u32)>()`
         
         # p1a: proposerID, ballotID, ballotNum
         .async p1aU `null::<(u32,u32,u32,)>()` `source_stream(p1a_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,u32,u32,)>(v.unwrap()).unwrap())`
