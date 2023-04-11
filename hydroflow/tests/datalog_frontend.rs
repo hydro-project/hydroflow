@@ -985,7 +985,7 @@ fn test_persist() {
 #[multiplatform_test]
 fn test_persist_uniqueness() {
     let (ints2_send, ints2) = hydroflow::util::unbounded_channel::<(i64,)>();
-    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize,)>();
 
     let mut flow = datalog!(
         r#"
@@ -1012,4 +1012,34 @@ fn test_persist_uniqueness() {
     flow.run_tick();
 
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1,)]);
+}
+
+#[multiplatform_test]
+fn test_wildcard_join_count() {
+    let (ints1_send, ints1) = hydroflow::util::unbounded_channel::<(i64, i64)>();
+    let (ints2_send, ints2) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize,)>();
+    let (result2, mut result2_recv) = hydroflow::util::unbounded_channel::<(usize,)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints1 `source_stream(ints1)` 
+        .input ints2 `source_stream(ints2)`
+        
+        .output result `for_each(|v| result.send(v).unwrap())`
+        .output result2 `for_each(|v| result2.send(v).unwrap())`
+
+        result(count(*)) :- ints1(a, _), ints2(a)
+        result2(count(a)) :- ints1(a, _), ints2(a)
+        "#
+    );
+
+    ints1_send.send((1, 1)).unwrap();
+    ints1_send.send((1, 2)).unwrap();
+    ints2_send.send((1,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(2,)]);
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result2_recv), &[(1,)]);
 }
