@@ -490,6 +490,11 @@ pub(crate) fn gen_value_expr(
             let r = gen_value_expr(r, lookup_ident, get_span);
             parse_quote!(#l - #r)
         }
+        IntExpr::Mul(l, _, r) => {
+            let l = gen_value_expr(l, lookup_ident, get_span);
+            let r = gen_value_expr(r, lookup_ident, get_span);
+            parse_quote!(#l * #r)
+        }
         IntExpr::Mod(l, _, r) => {
             let l = gen_value_expr(l, lookup_ident, get_span);
             let r = gen_value_expr(r, lookup_ident, get_span);
@@ -964,6 +969,18 @@ mod tests {
     }
 
     #[test]
+    fn test_aggregations_group_by_expr() {
+        test_snapshots!(
+            r#"
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(a % 2, sum(b)) :- ints(a, b)
+            "#
+        );
+    }
+
+    #[test]
     fn test_non_copy_but_clone() {
         test_snapshots!(
             r#"
@@ -987,6 +1004,7 @@ mod tests {
             result(a + a) :- ints(a)
             result(123 - a) :- ints(a)
             result(123 % (a + 5)) :- ints(a)
+            result(a * 5) :- ints(a)
             "#
         );
     }

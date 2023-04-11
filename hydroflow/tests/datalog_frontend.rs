@@ -806,6 +806,31 @@ fn test_aggregations_and_comments() {
 }
 
 #[multiplatform_test]
+fn test_aggregations_group_by_expr() {
+    let (ints_send, ints) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints `source_stream(ints)`
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(a % 2, sum(b)) :- ints(a, b)
+        "#
+    );
+
+    ints_send.send((1, 1)).unwrap();
+    ints_send.send((2, 1)).unwrap();
+    ints_send.send((3, 1)).unwrap();
+
+    flow.run_tick();
+
+    let mut res = collect_ready::<Vec<_>, _>(&mut result_recv);
+    res.sort_by_key(|v| v.0);
+    assert_eq!(&res, &[(0, 1), (1, 2)]);
+}
+
+#[multiplatform_test]
 fn test_choose_strings() {
     let (strings_send, strings) = hydroflow::util::unbounded_channel::<(String,)>();
     let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(String,)>();
@@ -870,6 +895,7 @@ fn test_expr_lhs() {
         result(a + a) :- ints(a)
         result(123 - a) :- ints(a)
         result(123 % (a + 5)) :- ints(a)
+        result(a * 5) :- ints(a)
         "#
     );
 
@@ -879,7 +905,7 @@ fn test_expr_lhs() {
 
     assert_eq!(
         &*collect_ready::<Vec<_>, _>(&mut result_recv),
-        &[(123,), (124,), (2,), (122,), (3,)]
+        &[(123,), (124,), (2,), (122,), (3,), (5,)]
     );
 }
 

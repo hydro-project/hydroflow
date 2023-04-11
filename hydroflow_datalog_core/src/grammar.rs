@@ -255,6 +255,12 @@ pub mod datalog {
             #[rust_sitter::leaf(text = "-")] (),
             Box<IntExpr>,
         ),
+        #[rust_sitter::prec_left(2)]
+        Mul(
+            Box<IntExpr>,
+            #[rust_sitter::leaf(text = "*")] (),
+            Box<IntExpr>,
+        ),
         #[rust_sitter::prec_left(1)]
         Mod(
             Box<IntExpr>,
@@ -275,6 +281,11 @@ pub mod datalog {
                     idents
                 }
                 IntExpr::Sub(l, _, r) => {
+                    let mut idents = l.idents();
+                    idents.extend(r.idents());
+                    idents
+                }
+                IntExpr::Mul(l, _, r) => {
                     let mut idents = l.idents();
                     idents.extend(r.idents());
                     idents

@@ -13,6 +13,7 @@ expression: flat_graph_ref.surface_syntax_string()
 11v1 = map (| row : (_ ,) | (row . 0 . clone () + row . 0 ,));
 12v1 = map (| row : (_ ,) | (123 - row . 0 ,));
 13v1 = map (| row : (_ ,) | (123 % (row . 0 + 5) ,));
+14v1 = map (| row : (_ ,) | (row . 0 * 5 ,));
 
 7v1 -> 2v1;
 2v1 -> 3v1;
@@ -28,4 +29,6 @@ expression: flat_graph_ref.surface_syntax_string()
 3v1 -> 12v1;
 13v1 -> 4v1;
 3v1 -> 13v1;
+14v1 -> 4v1;
+3v1 -> 14v1;
 
