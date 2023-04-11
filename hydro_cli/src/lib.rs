@@ -178,6 +178,37 @@ impl Deployment {
         .into_py(py))
     }
 
+    #[allow(non_snake_case, clippy::too_many_arguments)]
+    fn ExistingGCPComputeEngineHost(
+        &self,
+        py: Python<'_>,
+        project: String,
+        name: String,
+        zone: Option<String>,
+        user: Option<String>,
+        existing_private_key_path: Option<String>,
+    ) -> PyResult<Py<pyo3::PyAny>> {
+        let arc = self.underlying.blocking_write().add_host(|id| {
+            crate::core::GCPComputeEngineHost::existing(
+                id,
+                project,
+                name,
+                zone,
+                user,
+                existing_private_key_path,
+            )
+        });
+
+        Ok(Py::new(
+            py,
+            PyClassInitializer::from(Host {
+                underlying: arc.clone(),
+            })
+            .add_subclass(GCPComputeEngineHost { underlying: arc }),
+        )?
+        .into_py(py))
+    }
+
     #[allow(non_snake_case)]
     fn CustomService(
         &self,

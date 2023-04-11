@@ -21,20 +21,26 @@ use super::{
 pub struct LaunchedComputeEngine {
     resource_result: Arc<ResourceResult>,
     user: String,
+    existing_private_key_path: Option<String>,
     pub internal_ip: String,
     pub external_ip: Option<String>,
 }
 
 impl LaunchedComputeEngine {
     pub fn ssh_key_path(&self) -> PathBuf {
-        self.resource_result
-            .terraform
-            .deployment_folder
+        self.existing_private_key_path
             .as_ref()
-            .unwrap()
-            .path()
-            .join(".ssh")
-            .join("vm_instance_ssh_key_pem")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| {
+                self.resource_result
+                    .terraform
+                    .deployment_folder
+                    .as_ref()
+                    .unwrap()
+                    .path()
+                    .join(".ssh")
+                    .join("vm_instance_ssh_key_pem")
+            })
     }
 }
 
@@ -226,14 +232,28 @@ impl GCPNetwork {
 }
 
 #[derive(Debug)]
+enum GCPComputeEngineConfig {
+    New {
+        project: String,
+        machine_type: String,
+        image: String,
+        region: String,
+        network: Arc<RwLock<GCPNetwork>>,
+        user: Option<String>,
+    },
+    Existing {
+        project: String,
+        name: String,
+        zone: Option<String>,
+        user: Option<String>,
+        existing_private_key_path: Option<String>,
+    },
+}
+
+#[derive(Debug)]
 pub struct GCPComputeEngineHost {
     pub id: usize,
-    pub project: String,
-    pub machine_type: String,
-    pub image: String,
-    pub region: String,
-    pub network: Arc<RwLock<GCPNetwork>>,
-    pub user: Option<String>,
+    config: GCPComputeEngineConfig,
     pub launched: Option<Arc<LaunchedComputeEngine>>,
     external_ports: Vec<u16>,
 }
@@ -250,14 +270,52 @@ impl GCPComputeEngineHost {
     ) -> Self {
         Self {
             id,
-            project,
-            machine_type,
-            image,
-            region,
-            network,
-            user,
+            config: GCPComputeEngineConfig::New {
+                project,
+                machine_type,
+                image,
+                region,
+                network,
+                user,
+            },
             launched: None,
             external_ports: vec![],
+        }
+    }
+
+    pub fn existing(
+        id: usize,
+        project: String,
+        name: String,
+        zone: Option<String>,
+        user: Option<String>,
+        existing_private_key_path: Option<String>,
+    ) -> Self {
+        Self {
+            id,
+            config: GCPComputeEngineConfig::Existing {
+                project,
+                name,
+                zone,
+                user,
+                existing_private_key_path,
+            },
+            launched: None,
+            external_ports: vec![],
+        }
+    }
+
+    fn project(&self) -> &String {
+        match &self.config {
+            GCPComputeEngineConfig::New { project, .. } => project,
+            GCPComputeEngineConfig::Existing { project, .. } => project,
+        }
+    }
+
+    fn user(&self) -> &Option<String> {
+        match &self.config {
+            GCPComputeEngineConfig::New { user, .. } => user,
+            GCPComputeEngineConfig::Existing { user, .. } => user,
         }
     }
 }
@@ -321,13 +379,6 @@ impl Host for GCPComputeEngineHost {
             return;
         }
 
-        self.network
-            .try_write()
-            .unwrap()
-            .collect_resources(resource_batch);
-
-        let project = self.project.as_str();
-
         // first, we import the providers we need
         resource_batch
             .terraform
@@ -365,133 +416,175 @@ impl Host for GCPComputeEngineHost {
                 },
             );
 
-        // we use a single SSH key for all VMs
-        resource_batch
-            .terraform
-            .resource
-            .entry("tls_private_key".to_string())
-            .or_default()
-            .insert(
-                "vm_instance_ssh_key".to_string(),
-                json!({
-                    "algorithm": "RSA",
-                    "rsa_bits": 4096
-                }),
-            );
-
-        resource_batch
-            .terraform
-            .resource
-            .entry("local_file".to_string())
-            .or_default()
-            .insert(
-                "vm_instance_ssh_key_pem".to_string(),
-                json!({
-                    "content": "${tls_private_key.vm_instance_ssh_key.private_key_pem}",
-                    "filename": ".ssh/vm_instance_ssh_key_pem",
-                    "file_permission": "0600"
-                }),
-            );
-
-        let vpc_path = self
-            .network
-            .try_read()
-            .unwrap()
-            .tf_path
-            .as_ref()
-            .unwrap()
-            .clone();
-
         let vm_key = format!("vm-instance-{}", self.id);
-        let vm_name = format!("hydro-vm-instance-{}", nanoid!(8, &TERRAFORM_ALPHABET));
 
-        let mut tags = vec![];
-        let mut external_interfaces = vec![];
+        let tf_path = match &self.config {
+            GCPComputeEngineConfig::Existing {
+                project,
+                name,
+                zone,
+                ..
+            } => {
+                resource_batch
+                    .terraform
+                    .data
+                    .entry("google_compute_instance".to_string())
+                    .or_default()
+                    .insert(
+                        vm_key.clone(),
+                        json!({
+                            "project": project,
+                            "name": name,
+                            "zone": zone
+                        }),
+                    );
 
-        if self.external_ports.is_empty() {
-            external_interfaces.push(json!({ "network": format!("${{{vpc_path}.self_link}}") }));
-        } else {
-            external_interfaces.push(json!({
-                "network": format!("${{{vpc_path}.self_link}}"),
-                "access_config": [
-                    {
-                        "network_tier": "STANDARD"
-                    }
-                ]
-            }));
+                format!("data.google_compute_instance.{vm_key}")
+            }
 
-            // open the external ports that were requested
-            let open_external_ports_rule = format!("{vm_name}-open-external-ports");
-            resource_batch
-                .terraform
-                .resource
-                .entry("google_compute_firewall".to_string())
-                .or_default()
-                .insert(
-                open_external_ports_rule.clone(),
-                json!({
-                    "name": open_external_ports_rule,
-                    "project": project,
-                    "network": format!("${{{vpc_path}.name}}"),
-                    "target_tags": [open_external_ports_rule],
-                    "source_ranges": ["0.0.0.0/0"],
-                    "allow": [
-                        {
-                            "protocol": "tcp",
-                            "ports": self.external_ports.iter().map(|p| p.to_string()).collect::<Vec<String>>()
-                        }
-                    ]
-                }),
-            );
+            GCPComputeEngineConfig::New {
+                project,
+                machine_type,
+                image,
+                region,
+                network,
+                user,
+            } => {
+                network
+                    .try_write()
+                    .unwrap()
+                    .collect_resources(resource_batch);
 
-            tags.push(open_external_ports_rule);
+                // we use a single SSH key for all VMs
+                resource_batch
+                    .terraform
+                    .resource
+                    .entry("tls_private_key".to_string())
+                    .or_default()
+                    .insert(
+                        "vm_instance_ssh_key".to_string(),
+                        json!({
+                            "algorithm": "RSA",
+                            "rsa_bits": 4096
+                        }),
+                    );
 
-            resource_batch.terraform.output.insert(
-                format!("{vm_key}-public-ip"),
-                TerraformOutput {
-                    value: format!("${{google_compute_instance.{vm_key}.network_interface[0].access_config[0].nat_ip}}")
-                }
-            );
-        }
+                resource_batch
+                    .terraform
+                    .resource
+                    .entry("local_file".to_string())
+                    .or_default()
+                    .insert(
+                        "vm_instance_ssh_key_pem".to_string(),
+                        json!({
+                            "content": "${tls_private_key.vm_instance_ssh_key.private_key_pem}",
+                            "filename": ".ssh/vm_instance_ssh_key_pem",
+                            "file_permission": "0600"
+                        }),
+                    );
 
-        let user = self.user.as_ref().cloned().unwrap_or("hydro".to_string());
-        resource_batch
-            .terraform
-            .resource
-            .entry("google_compute_instance".to_string())
-            .or_default()
-            .insert(
-                vm_key.clone(),
-                json!({
-                    "name": vm_name,
-                    "project": project,
-                    "machine_type": self.machine_type,
-                    "zone": self.region,
-                    "tags": tags,
-                    "metadata": {
-                        "ssh-keys": format!("{user}:${{tls_private_key.vm_instance_ssh_key.public_key_openssh}}")
-                    },
-                    "boot_disk": [
-                        {
-                            "initialize_params": [
+                let vpc_path = network
+                    .try_read()
+                    .unwrap()
+                    .tf_path
+                    .as_ref()
+                    .unwrap()
+                    .clone();
+
+                let vm_name = format!("hydro-vm-instance-{}", nanoid!(8, &TERRAFORM_ALPHABET));
+
+                let mut tags = vec![];
+                let mut external_interfaces = vec![];
+
+                if self.external_ports.is_empty() {
+                    external_interfaces
+                        .push(json!({ "network": format!("${{{vpc_path}.self_link}}") }));
+                } else {
+                    external_interfaces.push(json!({
+                        "network": format!("${{{vpc_path}.self_link}}"),
+                        "access_config": [
+                            {
+                                "network_tier": "STANDARD"
+                            }
+                        ]
+                    }));
+
+                    // open the external ports that were requested
+                    let open_external_ports_rule = format!("{vm_name}-open-external-ports");
+                    resource_batch
+                        .terraform
+                        .resource
+                        .entry("google_compute_firewall".to_string())
+                        .or_default()
+                        .insert(
+                        open_external_ports_rule.clone(),
+                        json!({
+                            "name": open_external_ports_rule,
+                            "project": project,
+                            "network": format!("${{{vpc_path}.name}}"),
+                            "target_tags": [open_external_ports_rule],
+                            "source_ranges": ["0.0.0.0/0"],
+                            "allow": [
                                 {
-                                    "image": self.image
+                                    "protocol": "tcp",
+                                    "ports": self.external_ports.iter().map(|p| p.to_string()).collect::<Vec<String>>()
                                 }
                             ]
-                        }
-                    ],
-                    "network_interface": external_interfaces
-                }),
-            );
+                        }),
+                    );
+
+                    tags.push(open_external_ports_rule);
+
+                    let user = user.as_ref().cloned().unwrap_or("hydro".to_string());
+                    resource_batch
+                        .terraform
+                        .resource
+                        .entry("google_compute_instance".to_string())
+                        .or_default()
+                        .insert(
+                            vm_key.clone(),
+                            json!({
+                                "name": vm_name,
+                                "project": project,
+                                "machine_type": machine_type,
+                                "zone": region,
+                                "tags": tags,
+                                "metadata": {
+                                    "ssh-keys": format!("{user}:${{tls_private_key.vm_instance_ssh_key.public_key_openssh}}")
+                                },
+                                "boot_disk": [
+                                    {
+                                        "initialize_params": [
+                                            {
+                                                "image": image
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "network_interface": external_interfaces
+                            }),
+                        );
+                }
+
+                format!("google_compute_instance.{vm_key}")
+            }
+        };
 
         resource_batch.terraform.output.insert(
             format!("{vm_key}-internal-ip"),
             TerraformOutput {
-                value: format!(
-                    "${{google_compute_instance.{vm_key}.network_interface[0].network_ip}}"
-                ),
+                value: format!("${{{tf_path}.network_interface[0].network_ip}}"),
             },
         );
+
+        if !self.external_ports.is_empty() {
+            resource_batch.terraform.output.insert(
+                format!("{vm_key}-public-ip"),
+                TerraformOutput {
+                    value: format!("${{{tf_path}.network_interface[0].access_config[0].nat_ip}}"),
+                },
+            );
+        }
     }
 
     fn launched(&self) -> Option<Arc<dyn LaunchedHost>> {
@@ -520,7 +613,16 @@ impl Host for GCPComputeEngineHost {
 
             self.launched = Some(Arc::new(LaunchedComputeEngine {
                 resource_result: resource_result.clone(),
-                user: self.user.as_ref().cloned().unwrap_or("hydro".to_string()),
+                user: self.user().clone().unwrap_or("hydro".to_string()),
+                existing_private_key_path: if let GCPComputeEngineConfig::Existing {
+                    existing_private_key_path,
+                    ..
+                } = &self.config
+                {
+                    existing_private_key_path.clone()
+                } else {
+                    None
+                },
                 internal_ip,
                 external_ip,
             }))
@@ -579,7 +681,7 @@ impl Host for GCPComputeEngineHost {
                 if let Some(gcp_target) =
                     target_host.as_any().downcast_ref::<GCPComputeEngineHost>()
                 {
-                    self.project == gcp_target.project
+                    self.project() == gcp_target.project()
                 } else {
                     false
                 }
