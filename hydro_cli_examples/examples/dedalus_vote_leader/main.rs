@@ -26,23 +26,32 @@ async fn main() {
         .await
         .into_source();
 
+    let flush_every_n:Vec<u32> = serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
+
     let frequency = 1;
     let start = Instant::now() + Duration::from_secs(frequency);
     let periodic_source = IntervalStream::new(interval_at(start, Duration::from_secs(frequency)));
 
     let mut df = datalog!(
         r#"
+        .input flushEveryN `repeat_iter(flush_every_n.clone()) -> map(|p| (p,))`
         .input clientIn `repeat_iter(vec![()]) -> map(|_| (context.current_tick(),))`
 .output stdout `for_each(|s:(u32,)| println!("committed: {:?}", s))`
 .input replicas `repeat_iter(peers.clone()) -> map(|p| (p,))`
 
 .input periodic `source_stream(periodic_source) -> map(|_| ())`
-.output throughputOut `for_each(|(num,):(u32,)| println!("committed {:?} entries", num))`
+.output throughputOut `for_each(|(num,):(u32,)| println!("throughput,{:?}", num))`
 
 .async voteToReplica `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(to_replica_sink)` `null::<(u32,)>()`
 .async voteFromReplica `null::<(u32,u32,)>()` `source_stream(from_replica_source) -> map(|v| deserialize_from_bytes::<(u32,u32,)>(v.unwrap()).unwrap())`
 
-voteToReplica@addr(v) :~ clientIn(v), replicas(addr)
+// voteToReplica@addr(v) :~ clientIn(v), replicas(addr)
+voteToReplicaBuffer(v) :- clientIn(v)
+voteToReplicaBufferCount(count(v)) :- voteToReplicaBuffer(v)
+voteToReplicaFull() :- voteToReplicaBufferCount(n), flushEveryN(n)
+voteToReplica@addr(v) :~ voteToReplicaBuffer(v), voteToReplicaFull(), replicas(addr)
+voteToReplicaBuffer(v) :+ voteToReplicaBuffer(v), !voteToReplicaFull()
+
 allVotes(l, v) :- voteFromReplica(l, v)
 allVotes(l, v) :+ allVotes(l, v), !committed(v)
 voteCounts(count(l), v) :- allVotes(l, v)

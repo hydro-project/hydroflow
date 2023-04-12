@@ -66,7 +66,7 @@ async fn main() {
         .await
         .into_source();
 
-    let (my_id, f, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const):(u32, u32, u32, u32, u32) = 
+    let (my_id, f, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const, flush_every_n):(u32, u32, u32, u32, u32, u32) = 
         serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
     let p1a_timeout = periodic(p1a_timeout_const);
     let i_am_leader_resend_timeout = periodic(i_am_leader_resend_timeout_const);
@@ -83,6 +83,7 @@ async fn main() {
 .input quorum `repeat_iter([(f+1,),])`
 .input fullQuorum `repeat_iter([(2*f+1,),])` 
 .input noop `repeat_iter([(0 as u32,),])`
+.input flushEveryN `repeat_iter([(flush_every_n,),])`
 
 # Debug
 .output p1aOut `for_each(|(a,pid,id,num):(u32,u32,u32,u32,)| println!("proposer {:?} sent p1a to {:?}: [{:?},{:?},{:?}]", pid, a, pid, id, num))`
@@ -233,7 +234,7 @@ ChosenPayload(choose(payload)) :- clientIn(payload), nextSlot(s), IsLeader() # d
 // p2a@a(i, payload, slot, i, num) :~ ChosenPayload(payload), nextSlot(slot), id(i), ballot(num), acceptors(a)
 p2aBuffer(a, i, payload, slot, i, num) :- ChosenPayload(payload), nextSlot(slot), id(i), ballot(num), acceptors(a)
 p2aBufferCount(a, count(slot)) :- p2aBuffer(a, i, payload, slot, i, num)
-p2aBufferFull(a) :- p2aBufferCount(a, c), (c >= 10)
+p2aBufferFull(a) :- p2aBufferCount(a, c), flushEveryN(c)
 p2a@a(i, payload, slot, i, num) :~ p2aBuffer(a, i, payload, slot, i, num), p2aBufferFull(a)
 p2aBuffer(a, i, payload, slot, i, num) :+ p2aBuffer(a, i, payload, slot, i, num), !p2aBufferFull(a)
 # Increment the slot if a payload was chosen
