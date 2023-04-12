@@ -17,7 +17,7 @@ async fn main() {
 
     let peers = to_replica_port.keys.clone();
     println!("peers: {:?}", peers);
-    let to_replica_unbatched_sink = to_replica_port.into_sink();
+    let to_replica_sink = to_replica_port.into_sink();
 
     let from_replica_source = ports
         .remove("from_replica")
@@ -27,7 +27,7 @@ async fn main() {
         .into_source();
 
     let flush_every_n: Vec<usize> = serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
-    let to_replica_sink = batched_sink(to_replica_unbatched_sink, flush_every_n[0], Duration::from_secs(10));
+    // let to_replica_sink = batched_sink(to_replica_unbatched_sink, flush_every_n[0], Duration::from_secs(10));
 
     let frequency = 1;
     let start = Instant::now() + Duration::from_secs(frequency);

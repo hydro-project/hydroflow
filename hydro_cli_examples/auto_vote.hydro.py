@@ -4,6 +4,7 @@ import matplotlib.text as text
 import numpy as np
 import json
 import sys
+from aiostream import stream
 
 def gcp_machine(deployment, gcp_vpc):
     return deployment.GCPComputeEngineHost(
@@ -101,16 +102,19 @@ async def main(args):
     print("deployed!")
 
     # create this as separate variable to indicate to Hydro that we want to capture all stdout, even after the loop
-    program_out = await collector_programs[0].stdout()
+    collector_0_out = await collector_programs[0].stdout()
+    leader_out = await leader_program.stdout()
 
     await deployment.start()
     print("started!")
 
     throughput = []
+    ticks = []
 
     plt.ion()               # interactive mode on
     fig,ax = plt.subplots()
 
+    ticks_plot = ax.plot(range(0, len(ticks)), ticks, label="ticks")[0]
     throughput_plot = ax.plot(range(0, len(throughput)), throughput, label="committed")[0]
     plt.legend()
     plt.xlabel("seconds")
@@ -118,30 +122,33 @@ async def main(args):
     fig.show()
 
     try:
-        async for log in program_out:
-            split = log.split(",")
-            if split[0] == "throughput" and split[1] == "0":
-                throughput.append(int(split[2]) * num_collectors)
-            print(log, file=sys.stderr)
-            
-            throughput_seconds = range(0, len(throughput))
-            throughput_plot.set_xdata(throughput_seconds)
-            throughput_plot.set_ydata(throughput)
+        async with stream.merge(leader_out, collector_0_out).stream() as merged:
+            async for log in merged:
+                split = log.split(",")
+                if split[0] == "throughput" and split[1] == "0":
+                    throughput.append(int(split[2]) * num_collectors)
+                if split[0] == "tick":
+                    ticks.append(int(split[1]))
+                print(log, file=sys.stderr)
+                
+                throughput_seconds = range(0, len(throughput))
+                throughput_plot.set_xdata(throughput_seconds)
+                throughput_plot.set_ydata(throughput)
 
-            # Calculate slope
-            if len(throughput_seconds) > 1:
-                throughput_z = np.polyfit(throughput_seconds, throughput, 1)
-                for x in plt.findobj(match=text.Text):
-                    try:
-                        x.remove()
-                    except NotImplementedError:
-                        pass
-                plt.text(0.7, 0.1, "throughput=%.2f/s"%throughput_z[0], fontsize = 11, transform=ax.transAxes, horizontalalignment='right', verticalalignment='bottom')
+                # Calculate slope
+                if len(throughput_seconds) > 1:
+                    throughput_z = np.polyfit(throughput_seconds, throughput, 1)
+                    for x in plt.findobj(match=text.Text):
+                        try:
+                            x.remove()
+                        except NotImplementedError:
+                            pass
+                    plt.text(0.7, 0.1, "throughput=%.2f/s"%throughput_z[0], fontsize = 11, transform=ax.transAxes, horizontalalignment='right', verticalalignment='bottom')
 
-            ax.relim()
-            ax.autoscale_view()
-            plt.draw()
-            plt.pause(0.01)
+                ax.relim()
+                ax.autoscale_view()
+                plt.draw()
+                plt.pause(0.01)
     except:
         import traceback
         traceback.print_exc(file=sys.stderr)

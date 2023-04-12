@@ -34,7 +34,7 @@ async fn main() {
         .await
         .into_source();
 
-    let p2a_unbatched_sink = ports
+    let p2a_sink = ports
         .remove("p2a")
         .unwrap()
         .connect::<ConnectedDemux<ConnectedBidi>>()
@@ -72,7 +72,7 @@ async fn main() {
     let i_am_leader_resend_timeout = periodic(i_am_leader_resend_timeout_const);
     let i_am_leader_check_timeout = periodic(i_am_leader_check_timeout_const);
 
-    let p2a_sink = batched_sink(p2a_unbatched_sink, flush_every_n, Duration::from_secs(10));
+    // let p2a_sink = batched_sink(p2a_unbatched_sink, flush_every_n, Duration::from_secs(10));
 
     
     let mut df = datalog!(
@@ -105,6 +105,7 @@ async fn main() {
 
 # IDB
 .input clientIn `repeat_iter(vec![()]) -> map(|_| (context.current_tick() as u32,))`
+// .input clientIn `repeat_iter(vec![()]) -> flat_map(|_| (0..3).map(|d| ((context.current_tick() * 3 + d) as u32,)))`
 .output clientOut `for_each(|(payload,slot):(u32,u32)| println!("committed {:?}: {:?}", slot, payload))`
 
 .input startBallot `repeat_iter([(0 as u32,),])`
@@ -163,7 +164,7 @@ p2aOut(a, i, no, slot, i, num) :- FilledHoles(no, slot), id(i), ballot(num), acc
 iAmLeaderReceiveOut(pid, i, num) :- id(pid), iAmLeaderU(i, num)
 LeaderExpiredOut(pid) :- id(pid), LeaderExpired()
 throughputOut(num) :- totalCommitted(num), p1aTimeout(), IsLeader()
-nextSlotOut(num) :- nextSlot(num), p1aTimeout(), IsLeader()
+nextSlotOut(num) :- nextSlot1(num), p1aTimeout(), IsLeader()
 acceptorThroughputOut(acceptorID, num) :- totalAcceptorSentP2bs(acceptorID, num), p1aTimeout(), IsLeader()
 
 
@@ -211,7 +212,7 @@ CommittedLog(payload, slot) :- P1bMatchingEntry(payload, slot, c, payloadBallotI
 P1bLargestEntryBallotNum(slot, max(payloadBallotNum)) :- RelevantP1bLogs(acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
 P1bLargestEntryBallot(slot, max(payloadBallotID), payloadBallotNum) :- P1bLargestEntryBallotNum(slot, payloadBallotNum), RelevantP1bLogs(acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
 # makes sure that p2as cannot be sent yet; otherwise resent slots might conflict. Once p2as can be sent, a new p1b log might tell us to propose a payload for the same slot we propose (in parallel) for p2a, which violates an invariant.
-ResentLog(payload, slot) :- P1bLargestEntryBallot(slot, payloadBallotID, payloadBallotNum), P1bMatchingEntry(payload, slot, c, payloadBallotID, payloadBallotNum), !CommittedLog(otherPayload, slot), IsLeader(), !nextSlot(s)
+ResentLog(payload, slot) :- P1bLargestEntryBallot(slot, payloadBallotID, payloadBallotNum), P1bMatchingEntry(payload, slot, c, payloadBallotID, payloadBallotNum), !CommittedLog(otherPayload, slot), IsLeader(), !nextSlot1(s)
 p2a@a(i, payload, slot, i, num) :~ ResentLog(payload, slot), id(i), ballot(num), acceptors(a)
 
 # hole filling: if a slot is not in ResentEntries or proposedLog but it's smaller than max, then propose noop. Provides invariant that all holes are filled (proposed) by next timestep and we can just assign slots as current slot+1
@@ -220,23 +221,41 @@ ProposedSlots(slot) :- CommittedLog(payload, slot)
 ProposedSlots(slot) :- ResentLog(payload, slot)
 MaxProposedSlot(max(slot)) :- ProposedSlots(slot)
 PrevSlots(s) :- MaxProposedSlot(maxSlot), less_than(s, maxSlot)
-FilledHoles(no, s) :- noop(no), !ProposedSlots(s), PrevSlots(s), IsLeader(), !nextSlot(s2)
+FilledHoles(no, s) :- noop(no), !ProposedSlots(s), PrevSlots(s), IsLeader(), !nextSlot1(s2)
 p2a@a(i, no, slot, i, num) :~ FilledHoles(no, slot), id(i), ballot(num), acceptors(a)
 
 # To assign values sequential slots after reconciling p1bs, start at max+1
-nextSlot(s+1) :+ IsLeader(), MaxProposedSlot(s), !nextSlot(s2)
+nextSlot1(s+1) :+ IsLeader(), MaxProposedSlot(s), !nextSlot1(s2)
+// nextSlot2(s+2) :+ IsLeader(), MaxProposedSlot(s), !nextSlot1(s2)
+// nextSlot3(s+3) :+ IsLeader(), MaxProposedSlot(s), !nextSlot1(s2)
 ######################## end reconcile p1b log with local log
 
 
 
 ######################## send p2as 
 # assign a slot
-ChosenPayload(choose(payload)) :- clientIn(payload), nextSlot(s), IsLeader() # drop all payloads that we can't handle in this tick by not persisting clientIn
-p2a@a(i, payload, slot, i, num) :~ ChosenPayload(payload), nextSlot(slot), id(i), ballot(num), acceptors(a)
-# Increment the slot if a payload was chosen
-nextSlot(s+1) :+ ChosenPayload(payload), nextSlot(s)
-# Don't increment the slot if no payload was chosen, but we are still the leader
-nextSlot(s) :+ !ChosenPayload(payload), nextSlot(s), IsLeader()
+ChosenPayload1(choose(payload)) :- clientIn(payload), nextSlot1(s), IsLeader() # drop all payloads that we can't handle in this tick by not persisting clientIn
+// ChosenPayload2(choose(payload)) :- clientIn(payload), !ChosenPayload1(payload), nextSlot2(s), IsLeader()
+// ChosenPayload3(choose(payload)) :- clientIn(payload), !ChosenPayload1(payload), !ChosenPayload2(payload), nextSlot3(s), IsLeader()
+p2a@a(i, payload, slot, i, num) :~ ChosenPayload1(payload), nextSlot1(slot), id(i), ballot(num), acceptors(a)
+// p2a@a(i, payload, slot, i, num) :~ ChosenPayload2(payload), nextSlot2(slot), id(i), ballot(num), acceptors(a)
+// p2a@a(i, payload, slot, i, num) :~ ChosenPayload3(payload), nextSlot3(slot), id(i), ballot(num), acceptors(a)
+// # Increment the slot if a payload was chosen
+nextSlot1(s+1) :+ ChosenPayload1(payload), nextSlot1(s)
+// nextSlot1(s+1) :+ ChosenPayload1(payload), !ChosenPayload2(p2), !ChosenPayload3(p3), nextSlot1(s)
+// nextSlot1(s+2) :+ ChosenPayload1(payload), ChosenPayload2(p2), !ChosenPayload3(p3), nextSlot1(s)
+// nextSlot1(s+3) :+ ChosenPayload1(payload), ChosenPayload2(p2), ChosenPayload3(p3), nextSlot1(s)
+// nextSlot2(s+1) :+ ChosenPayload1(payload), !ChosenPayload2(p2), !ChosenPayload3(p3), nextSlot2(s)
+// nextSlot2(s+2) :+ ChosenPayload1(payload), ChosenPayload2(p2), !ChosenPayload3(p3), nextSlot2(s)
+// nextSlot2(s+3) :+ ChosenPayload1(payload), ChosenPayload2(p2), ChosenPayload3(p3), nextSlot2(s)
+// nextSlot3(s+1) :+ ChosenPayload1(payload), !ChosenPayload2(p2), !ChosenPayload3(p3), nextSlot3(s)
+// nextSlot3(s+2) :+ ChosenPayload1(payload), ChosenPayload2(p2), !ChosenPayload3(p3), nextSlot3(s)
+// nextSlot3(s+3) :+ ChosenPayload1(payload), ChosenPayload2(p2), ChosenPayload3(p3), nextSlot3(s)
+// # Don't increment the slot if no payload was chosen, but we are still the leader
+nextSlot1(s) :+ !ChosenPayload1(payload), nextSlot1(s), IsLeader()
+// nextSlot1(s) :+ !ChosenPayload1(payload), !ChosenPayload2(p2), !ChosenPayload3(p3), nextSlot1(s), IsLeader()
+// nextSlot2(s) :+ !ChosenPayload1(payload), !ChosenPayload2(p2), !ChosenPayload3(p3), nextSlot2(s), IsLeader()
+// nextSlot3(s) :+ !ChosenPayload1(payload), !ChosenPayload2(p2), !ChosenPayload3(p3), nextSlot3(s), IsLeader()
 ######################## end send p2as 
 
 

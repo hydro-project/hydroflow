@@ -42,7 +42,7 @@ async fn main() {
 
     let p2a_proxy_leaders = p2a_port.keys.clone();
     println!("p2a_proxy_leaders: {:?}", p2a_proxy_leaders);
-    let p2a_unbatched_sink = p2a_port.into_sink();
+    let p2a_sink = p2a_port.into_sink();
 
     let p2b_source = ports
         .remove("p2b")
@@ -82,7 +82,7 @@ async fn main() {
     let i_am_leader_resend_timeout = periodic(i_am_leader_resend_timeout_const);
     let i_am_leader_check_timeout = periodic(i_am_leader_check_timeout_const);
 
-    let p2a_sink = batched_sink(p2a_unbatched_sink, flush_every_n, Duration::from_secs(10));
+    // let p2a_sink = batched_sink(p2a_unbatched_sink, flush_every_n, Duration::from_secs(10));
 
     let mut df = datalog!(
         r#"

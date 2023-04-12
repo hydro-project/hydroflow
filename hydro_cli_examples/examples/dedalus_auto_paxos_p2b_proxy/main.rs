@@ -54,7 +54,7 @@ async fn main() {
 .output p2bToProposerOut `for_each(|(i,pid,max_id,max_num,t1):(u32,u32,u32,u32,u32,)| println!("p2bProxyLeader {:?} sent p2b to proposer {:?}: [{:?},{:?},{:?}]]", i, pid, max_id, max_num, t1))`
 .output p2bToProposerOut `for_each(|(i,pid,n,t1,prev_t):(u32,u32,u32,u32,u32,)| println!("p2bProxyLeader {:?} sent inputs to proposer {:?}: [{:?},{:?},{:?}]]", i, pid, n, t1, prev_t))`
 .input periodic `source_stream(periodic_source) -> map(|_| ())`
-.output throughputOut `for_each(|(id,num,n):(u32,u32,u32)| if id == 0 {println!("{:?}", num * n);})`
+.output throughputOut `for_each(|(id,num,n):(u32,u32,u32)| println!("throughput,{:?},{:?}", id, num * n))`
 
 # p2b: acceptorID, payload, slot, ballotID, ballotNum, maxBallotID, maxBallotNum
 .async p2bU `null::<(u32,u32,u32,u32,u32,u32,u32)>()` `source_stream(p2b_source) -> map(|v: Result<BytesMut, _>| deserialize_from_bytes::<(u32,u32,u32,u32,u32,u32,u32,)>(v.unwrap()).unwrap())`
