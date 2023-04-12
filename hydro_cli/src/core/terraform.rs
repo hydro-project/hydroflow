@@ -156,7 +156,7 @@ fn filter_terraform_logs(child: &mut Child) {
                     && split.next().is_some()
                     && split.next().is_none()
                 {
-                    println!("[terraform] {}", line);
+                    eprintln!("[terraform] {}", line);
                 }
             }
         } else {
@@ -205,7 +205,7 @@ impl TerraformApply {
 }
 
 fn destroy_deployment(deployment_folder: &TempDir) {
-    println!(
+    eprintln!(
         "Destroying terraform deployment at {}",
         deployment_folder.path().display()
     );
@@ -252,7 +252,7 @@ impl Drop for TerraformApply {
 
             let mut child_write = child.write().unwrap();
             if child_write.try_wait().unwrap().is_none() {
-                println!("Waiting for Terraform apply to finish...");
+                eprintln!("Waiting for Terraform apply to finish...");
                 child_write.wait().unwrap();
             }
         }

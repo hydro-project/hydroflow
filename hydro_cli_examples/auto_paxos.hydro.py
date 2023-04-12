@@ -1,13 +1,14 @@
 import hydro
 import json
 
-def gcp_machine(deployment):
+def gcp_machine(deployment, gcp_vpc):
     return deployment.GCPComputeEngineHost(
-            project="autocompartmentalization",
-            machine_type="e2-micro",
-            image="debian-cloud/debian-11",
-            region="us-west1-a"
-        )
+        project="autocompartmentalization",
+        machine_type="e2-micro",
+        image="debian-cloud/debian-11",
+        region="us-west1-a",
+        network=gcp_vpc
+    )
 
 async def main(args):
     proposer_gcp = args[0] == "gcp"
@@ -26,6 +27,9 @@ async def main(args):
     # i_am_leader_check_timeout should >> i_am_leader_resend_timeout, so the current leader has time to send a heartbeat
     # Leader election time (out of our control) should >> p1a_timeout, so the leader doesn't spam acceptors. p1a_timeout should differ between proposers to avoid contention
 
+    gcp_vpc = hydro.GCPNetwork(
+        project="autocompartmentalization",
+    )
     deployment = hydro.Deployment()
     localhost_machine = deployment.Localhost()
 
@@ -40,7 +44,7 @@ async def main(args):
     for i in range(0, f+1):
         proposer_i_am_leader_ports[i] = {}
     for i in range(0, f+1):
-        machine = gcp_machine(deployment=deployment) if proposer_gcp else localhost_machine
+        machine = gcp_machine(deployment=deployment, gcp_vpc=gcp_vpc) if proposer_gcp else localhost_machine
         proposer_machine.append(machine)
         p1a_timeout = p1a_node_0_timeout if i == 0 else p1a_other_nodes_timeout # proposer with id 0 is much more likely to be the leader
 
@@ -71,7 +75,7 @@ async def main(args):
         p2a_proxy_leader_machines.append([])
         p2a_proxy_leader_programs.append([])
         for i in range(0, num_p2a_proxy_leaders):
-            machine = gcp_machine(deployment=deployment) if p2a_proxy_leader_gcp else localhost_machine
+            machine = gcp_machine(deployment=deployment, gcp_vpc=gcp_vpc) if p2a_proxy_leader_gcp else localhost_machine
             p2a_proxy_leader_machines[proposer_id].append(machine)
             p2a_proxy_leader_id = proposer_id*num_p2a_proxy_leaders + i
             
@@ -94,7 +98,7 @@ async def main(args):
         acceptor_machines.append([])
         acceptor_programs.append([])
         for i in range(0, num_acceptor_groups):
-            machine = gcp_machine(deployment=deployment) if acceptor_gcp else localhost_machine
+            machine = gcp_machine(deployment=deployment, gcp_vpc=gcp_vpc) if acceptor_gcp else localhost_machine
             acceptor_machines[acceptor_id].append(machine)
             partition_id = acceptor_id*num_acceptor_groups + i
             
@@ -118,7 +122,7 @@ async def main(args):
         p2b_proxy_leader_machines.append([])
         p2b_proxy_leader_programs.append([])
         for i in range(0, num_p2b_proxy_leaders):
-            machine = gcp_machine(deployment=deployment) if p2b_proxy_leader_gcp else localhost_machine
+            machine = gcp_machine(deployment=deployment, gcp_vpc=gcp_vpc) if p2b_proxy_leader_gcp else localhost_machine
             p2b_proxy_leader_machines[proposer_id].append(machine) 
             p2b_proxy_leader_id = proposer_id*num_p2b_proxy_leaders + i
 
@@ -142,7 +146,7 @@ async def main(args):
     coordinator_programs = []
     to_coordinator_p1a_ports = {}
     for i in range(0, 2*f+1):
-        machine = gcp_machine(deployment=deployment) if coordinator_gcp else localhost_machine
+        machine = gcp_machine(deployment=deployment, gcp_vpc=gcp_vpc) if coordinator_gcp else localhost_machine
         coordinator_machines.append(machine)
         
         coordinator = deployment.HydroflowCrate(

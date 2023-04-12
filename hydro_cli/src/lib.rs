@@ -51,6 +51,7 @@ import sys
 async def coroutine_to_safely_cancellable(c, cancel_token):
     while True:
         try:
+            cancel = True
             ok, cancel = await asyncio.shield(c)
         except asyncio.CancelledError:
             cancel_token.safe_cancel()

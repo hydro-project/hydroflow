@@ -93,6 +93,11 @@ async fn main() {
 .output iAmLeaderSendOut `for_each(|(dest,pid,num):(u32,u32,u32,)| println!("proposer {:?} sent iAmLeader to {:?}: [{:?},{:?}]", pid, dest, pid, num))`
 .output iAmLeaderReceiveOut `for_each(|(my_id,pid,num):(u32,u32,u32,)| println!("proposer {:?} received iAmLeader: [{:?},{:?}]", my_id, pid, num))`
 .output throughputOut `for_each(|(num,):(u32,)| println!("{:?}", num))`
+.output throughputOut `for_each(|(num,):(u32,)| eprintln!("total_throughput,{:?}", num))`
+.output nextSlotOut `for_each(|(num,):(u32,)| eprintln!("total_sent,{:?}", num))`
+.output acceptorThroughputOut `for_each(|(acceptor_id,num,):(u32,u32,)| println!("From acceptor {:?}: {:?}", acceptor_id, num))`
+.output acceptorThroughputOut `for_each(|(acceptor_id,num,):(u32,u32,)| eprintln!("throughput,{:?},{:?}", acceptor_id, num))`
+.output LeaderExpiredOut `for_each(|(pid,):(u32,)| println!("proposer {:?} leader expired", pid))`
 
 # IDB
 .input clientIn `repeat_iter(vec![()]) -> map(|_| (context.current_tick() as u32,))`
@@ -142,17 +147,20 @@ iAmLeader(i, n) :+ iAmLeader(i, n), !iAmLeaderCheckTimeout() # clear iAmLeader p
 ballot(zero) :- startBallot(zero)
 
 # Debug
-// p1aOut(a, i, i, num) :- id(i), NewBallot(num), p1aTimeout(), LeaderExpired(), acceptors(a)
-// p1aOut(a, i, i, num) :- id(i), ballot(num), !NewBallot(newNum), p1aTimeout(), LeaderExpired(), acceptors(a)
-// p1bOut(pid, a, logSize, id, num, maxID, maxNum) :- id(pid), p1bU(a, logSize, id, num, maxID, maxNum)
-// p1bLogOut(pid, a, payload, slot, payloadBallotID, payloadBallotNum, id, num) :- id(pid), p1bLogU(a, payload, slot, payloadBallotID, payloadBallotNum, id, num)
+p1aOut(a, i, i, num) :- id(i), NewBallot(num), p1aTimeout(), LeaderExpired(), acceptors(a)
+p1aOut(a, i, i, num) :- id(i), ballot(num), !NewBallot(newNum), p1aTimeout(), LeaderExpired(), acceptors(a)
+p1bOut(pid, a, logSize, id, num, maxID, maxNum) :- id(pid), p1bU(a, logSize, id, num, maxID, maxNum)
+p1bLogOut(pid, a, payload, slot, payloadBallotID, payloadBallotNum, id, num) :- id(pid), p1bLogU(a, payload, slot, payloadBallotID, payloadBallotNum, id, num)
 // p2aOut(a, i, payload, slot, i, num) :- ResentLog(payload, slot), id(i), ballot(num), acceptors(a)
 p2aOut(a, i, no, slot, i, num) :- FilledHoles(no, slot), id(i), ballot(num), acceptors(a) # Weird bug where if this line is commented out, id has an error?
 // p2aOut(a, i, payload, slot, i, num) :- ChosenPayload(payload), nextSlot(slot), id(i), ballot(num), acceptors(a)
 // p2bOut(pid, a, payload, slot, id, num, maxID, maxNum) :- id(pid), p2bU(a, payload, slot, id, num, maxID, maxNum)
 // iAmLeaderSendOut(pid, i, num) :- id(i), ballot(num), IsLeader(), proposers(pid), iAmLeaderResendTimeout(), !id(pid) 
-// iAmLeaderReceiveOut(pid, i, num) :- id(pid), iAmLeaderU(i, num)
+iAmLeaderReceiveOut(pid, i, num) :- id(pid), iAmLeaderU(i, num)
+LeaderExpiredOut(pid) :- id(pid), LeaderExpired()
 throughputOut(num) :- totalCommitted(num), p1aTimeout(), IsLeader()
+nextSlotOut(num) :- nextSlot(num), p1aTimeout(), IsLeader()
+acceptorThroughputOut(acceptorID, num) :- totalAcceptorSentP2bs(acceptorID, num), p1aTimeout(), IsLeader()
 
 
 ######################## stable leader election
@@ -239,6 +247,11 @@ NumCommits(count(slot)) :- commit(payload, slot)
 totalCommitted(new) :+ !totalCommitted(prev), NumCommits(new)
 totalCommitted(prev) :+ totalCommitted(prev), !NumCommits(new)
 totalCommitted(prev + new) :+ totalCommitted(prev), NumCommits(new)
+
+acceptorSentP2bs(acceptorID, count(slot)) :- p2bU(acceptorID, payload, slot, i, num, payloadBallotID, payloadBallotNum)
+totalAcceptorSentP2bs(acceptorID, new) :+ !totalAcceptorSentP2bs(acceptorID, prev), acceptorSentP2bs(acceptorID, new)
+totalAcceptorSentP2bs(acceptorID, prev) :+ totalAcceptorSentP2bs(acceptorID, prev), !acceptorSentP2bs(acceptorID, new)
+totalAcceptorSentP2bs(acceptorID, (prev + new)) :+ totalAcceptorSentP2bs(acceptorID, prev), acceptorSentP2bs(acceptorID, new)
 ######################## end process p2bs
 "#
     );

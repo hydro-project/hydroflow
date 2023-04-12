@@ -154,10 +154,10 @@ iAmLeader(i, n) :+ iAmLeader(i, n), !iAmLeaderCheckTimeout() # clear iAmLeader p
 ballot(zero) :- startBallot(zero)
 
 # Debug
-// p1aOut(a, i, i, num) :- id(i), NewBallot(num), p1aTimeout(), LeaderExpired(), acceptors(a)
-// p1aOut(a, i, i, num) :- id(i), ballot(num), !NewBallot(newNum), p1aTimeout(), LeaderExpired(), acceptors(a)
-// p1bOut(pid, p, a, logSize, id, num, maxID, maxNum) :- id(pid), p1bU(p, a, logSize, id, num, maxID, maxNum)
-// p1bLogOut(pid, p, a, payload, slot, payloadBallotID, payloadBallotNum, id, num) :- id(pid), p1bLogU(p, a, payload, slot, payloadBallotID, payloadBallotNum, id, num)
+p1aOut(a, i, i, num) :- id(i), NewBallot(num), p1aTimeout(), LeaderExpired(), acceptors(a)
+p1aOut(a, i, i, num) :- id(i), ballot(num), !NewBallot(newNum), p1aTimeout(), LeaderExpired(), acceptors(a)
+p1bOut(pid, p, a, logSize, id, num, maxID, maxNum) :- id(pid), p1bU(p, a, logSize, id, num, maxID, maxNum)
+p1bLogOut(pid, p, a, payload, slot, payloadBallotID, payloadBallotNum, id, num) :- id(pid), p1bLogU(p, a, payload, slot, payloadBallotID, payloadBallotNum, id, num)
 // p2aOut(start+(slot%n), i, payload, slot, i, num) :- ResentLog(payload, slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
 p2aOut(start+(slot%n), i, no, slot, i, num) :- FilledHoles(no, slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start) # Weird bug where if this line is commented out, id has an error?
 // p2aOut(start+(slot%n), i, payload, slot, i, num) :- ChosenPayload(payload), nextSlot(slot), id(i), ballot(num),  numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
@@ -202,7 +202,9 @@ P1bLogFromAcceptor(partitionID, acceptorID, count(slot)) :- RelevantP1bLogs(part
 P1bAcceptorLogReceived(partitionID, acceptorID) :- P1bLogFromAcceptor(partitionID, acceptorID, logSize), RelevantP1bs(partitionID, acceptorID, logSize)
 P1bAcceptorLogReceived(partitionID, acceptorID) :- RelevantP1bs(partitionID, acceptorID, logSize), (logSize == 0)
 P1bNumAcceptorPartitionsLogReceived(count(partitionID), acceptorID) :- P1bAcceptorLogReceived(partitionID, acceptorID)
-P1bNumAcceptorsLogReceived(n) :- P1bNumAcceptorPartitionsLogReceived(n, acceptorID), numAcceptorGroups(n)
+// .output P1bNumAcceptorPartitionsLogReceived `for_each(|(c,aid):(u32,u32)| println!("P1bNumAcceptorPartitionsLogReceived: [{:?},{:?}]", c, aid))`
+P1bNumAcceptorsLogReceived(count(acceptorID)) :- P1bNumAcceptorPartitionsLogReceived(n, acceptorID), numAcceptorGroups(n)
+// .output P1bNumAcceptorsLogReceived `for_each(|(c,):(u32,)| println!("P1bNumAcceptorsLogReceived: [{:?}]", c))`
 IsLeader() :- P1bNumAcceptorsLogReceived(c), quorum(size), (c >= size), HasLargestBallot()
 
 P1bMatchingEntry(payload, slot, count(acceptorID), payloadBallotID, payloadBallotNum) :- RelevantP1bLogs(partitionID, acceptorID, payload, slot, payloadBallotID, payloadBallotNum)

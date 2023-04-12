@@ -323,6 +323,7 @@ impl Connected for ConnectedBidi {
             }
             ServerOrBound::Server(ServerPort::TcpPort(addr)) => {
                 let stream = TcpStream::connect(addr).await.unwrap();
+                stream.set_nodelay(true).unwrap();
                 ConnectedBidi {
                     stream_sink: Some(Box::pin(tcp_bytes(stream))),
                     source_only: None,

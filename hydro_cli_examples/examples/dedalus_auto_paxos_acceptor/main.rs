@@ -107,12 +107,12 @@ async fn main() {
 
 
 # Debug
-// p1aOut(p, pid, id, num) :- p1aU(pid, id, num), partitionID(p)
+p1aOut(p, pid, id, num) :- p1aU(pid, id, num), partitionID(p)
 p1aCommitOut(p, o, pid, id, num) :- p1aCommitU(o, pid, id, num), partitionID(p)
 p1aSealedOut(p, o, pid, id, num) :- p1aSealed(o, pid, id, num), partitionID(p)
-// p1bOut(pid, p, i, size, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p1aSealed(_, pid, ballotID, ballotNum), acceptorID(i), partitionID(p), LogSize(size), MaxBallot(maxBallotID, maxBallotNum)
-// p1bOut(pid, p, i, 0, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p1aSealed(_, pid, ballotID, ballotNum), acceptorID(i), partitionID(p), !LogSize(size), MaxBallot(maxBallotID, maxBallotNum)
-// p1bLogOut(pid, p, i, payload, slot, payloadBallotID, payloadBallotNum, ballotID, ballotNum) :- p1aSealed(_, pid, ballotID, ballotNum), acceptorID(i), partitionID(p), log(payload, slot, payloadBallotID, payloadBallotNum), LogEntryMaxBallot(slot, payloadBallotID, payloadBallotNum)
+p1bOut(pid, p, i, size, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p1aSealed(_, pid, ballotID, ballotNum), acceptorID(i), partitionID(p), LogSize(size), MaxBallot(maxBallotID, maxBallotNum)
+p1bOut(pid, p, i, 0, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p1aSealed(_, pid, ballotID, ballotNum), acceptorID(i), partitionID(p), !LogSize(size), MaxBallot(maxBallotID, maxBallotNum)
+p1bLogOut(pid, p, i, payload, slot, payloadBallotID, payloadBallotNum, ballotID, ballotNum) :- p1aSealed(_, pid, ballotID, ballotNum), acceptorID(i), partitionID(p), log(payload, slot, payloadBallotID, payloadBallotNum), LogEntryMaxBallot(slot, payloadBallotID, payloadBallotNum)
 // p2aOut(p, pid, payload, slot, id, num) :- p2aU(pid, payload, slot, id, num), partitionID(p)
 // p2aSealedOut(p, pid, payload, slot, id, num) :- p2aSealed(pid, payload, slot, id, num), partitionID(p)
 // p2bOut(p, (pid*n)+(slot%n), a, payload, slot, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p2aSealed(p, pid, payload, slot, ballotID, ballotNum), acceptorID(a), MaxBallot(maxBallotID, maxBallotNum), numP2bProxyLeaders(n), partitionID(p)

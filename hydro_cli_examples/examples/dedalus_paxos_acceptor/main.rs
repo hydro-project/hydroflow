@@ -84,10 +84,10 @@ async fn main() {
 
 
 # Debug
-// p1aOut(a, pid, id, num) :- p1a(pid, id, num), id(a)
-// p1bOut(pid, i, size, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p1a(pid, ballotID, ballotNum), id(i), LogSize(size), MaxBallot(maxBallotID, maxBallotNum)
-// p1bOut(pid, i, 0, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p1a(pid, ballotID, ballotNum), id(i), !LogSize(size), MaxBallot(maxBallotID, maxBallotNum)
-// p1bLogOut(pid, i, payload, slot, payloadBallotID, payloadBallotNum, ballotID, ballotNum) :- p1a(pid, ballotID, ballotNum), id(i), log(payload, slot, payloadBallotID, payloadBallotNum), LogEntryMaxBallot(slot, payloadBallotID, payloadBallotNum)
+p1aOut(a, pid, id, num) :- p1a(pid, id, num), id(a)
+p1bOut(pid, i, size, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p1a(pid, ballotID, ballotNum), id(i), LogSize(size), MaxBallot(maxBallotID, maxBallotNum)
+p1bOut(pid, i, 0, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p1a(pid, ballotID, ballotNum), id(i), !LogSize(size), MaxBallot(maxBallotID, maxBallotNum)
+p1bLogOut(pid, i, payload, slot, payloadBallotID, payloadBallotNum, ballotID, ballotNum) :- p1a(pid, ballotID, ballotNum), id(i), log(payload, slot, payloadBallotID, payloadBallotNum), LogEntryMaxBallot(slot, payloadBallotID, payloadBallotNum)
 // p2aOut(a, pid, payload, slot, id, num) :- p2a(pid, payload, slot, id, num), id(a)
 // p2bOut(pid, i, payload, slot, ballotID, ballotNum, maxBallotID, maxBallotNum) :- p2a(pid, payload, slot, ballotID, ballotNum), id(i), MaxBallot(maxBallotID, maxBallotNum)
 
