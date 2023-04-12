@@ -256,6 +256,7 @@ declare_ops![
     reduce::REDUCE,
     repeat_fn::REPEAT_FN,
     repeat_iter::REPEAT_ITER,
+    repeat_iter_external::REPEAT_ITER_EXTERNAL,
     sort::SORT,
     sort_by::SORT_BY,
     source_file::SOURCE_FILE,
