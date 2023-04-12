@@ -634,6 +634,23 @@
 <a href="#634" id="634">634</a>
 <a href="#635" id="635">635</a>
 <a href="#636" id="636">636</a>
+<a href="#637" id="637">637</a>
+<a href="#638" id="638">638</a>
+<a href="#639" id="639">639</a>
+<a href="#640" id="640">640</a>
+<a href="#641" id="641">641</a>
+<a href="#642" id="642">642</a>
+<a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a>
+<a href="#647" id="647">647</a>
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a>
+<a href="#651" id="651">651</a>
+<a href="#652" id="652">652</a>
+<a href="#653" id="653">653</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::cell::Cell;
@@ -777,7 +794,7 @@
         work_done
     }
 
-    <span class="doccomment">/// Runs the dataflow until no more work is immediately available.
+    <span class="doccomment">/// Runs the dataflow until no more (externally-triggered) work is immediately available.
     /// Runs at least one tick of dataflow, even if no external events have been received.
     /// If the dataflow contains loops this method may run forever.
     /// Returns true if any work was done.
@@ -788,6 +805,26 @@
             work_done = <span class="bool-val">true</span>;
             <span class="comment">// Do any work.
             </span><span class="self">self</span>.run_stratum();
+        }
+        work_done
+    }
+
+    <span class="doccomment">/// Runs the dataflow until no more (externally-triggered) work is immediately available.
+    /// Runs at least one tick of dataflow, even if no external events have been received.
+    /// If the dataflow contains loops this method may run forever.
+    /// Returns true if any work was done.
+    /// Yields repeatedly to allow external events to happen.
+    </span><span class="kw">pub async fn </span>run_available_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">let </span><span class="kw-2">mut </span>work_done = <span class="bool-val">false</span>;
+        <span class="comment">// While work is immediately available.
+        </span><span class="kw">while </span><span class="self">self</span>.next_stratum(<span class="bool-val">false</span>) {
+            work_done = <span class="bool-val">true</span>;
+            <span class="comment">// Do any work.
+            </span><span class="self">self</span>.run_stratum();
+
+            <span class="comment">// Yield between each stratum to receive more events.
+            // TODO(mingwei): really only need to yield at start of ticks though.
+            </span>tokio::task::yield_now().<span class="kw">await</span>;
         }
         work_done
     }
@@ -898,10 +935,7 @@
     </span><span class="kw">pub async fn </span>run_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;!&gt; {
         <span class="kw">loop </span>{
             <span class="comment">// Run any work which is immediately available.
-            </span><span class="kw">while </span><span class="self">self</span>.run_tick() {
-                <span class="comment">// Yield between each tick to receive more events.
-                </span>tokio::task::yield_now().<span class="kw">await</span>;
-            }
+            </span><span class="self">self</span>.run_available_async().<span class="kw">await</span>;
             <span class="comment">// When no work is available yield until more events occur.
             </span><span class="self">self</span>.recv_events_async().<span class="kw">await</span>;
         }

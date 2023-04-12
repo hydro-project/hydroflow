@@ -1410,6 +1410,13 @@ on every tick (where <code>source_iter</code> only delivers on the first tick).<
 </span><span class="boring">})
 </span><span class="boring">}
 </span></code></pre></pre>
+<h2 id="repeat_iter_external"><a class="header" href="#repeat_iter_external"><code>repeat_iter_external</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
+<tr><td><span title="exactly 0">exactly 0</span></td><td><code>repeat_iter_external(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/repeat_iter_external.rs" -->
+<p>Same as <a href="#repeat_iter"><code>repeat_iter</code></a> but treats the iter as external, meaning this operator
+will trigger the start of new ticks in order to repeat, causing spinning-like behavior.</p>
 <h2 id="sort"><a class="header" href="#sort"><code>sort</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; sort() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
