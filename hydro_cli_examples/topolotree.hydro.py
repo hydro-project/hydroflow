@@ -76,13 +76,15 @@ async def main(args):
     )
 
     gcp_vpc = hydro.GCPNetwork(
-        project="autocompartmentalization",
+        # project="autocompartmentalization",
+        project="hydro-chrisdouglas",
     )
 
     def create_machine():
         if args[0] == "gcp":
             return deployment.GCPComputeEngineHost(
-                project="autocompartmentalization",
+                # project="autocompartmentalization",
+                project="hydro-chrisdouglas",
                 machine_type="e2-micro",
                 image="debian-cloud/debian-11",
                 region="us-west1-a",
@@ -119,9 +121,16 @@ async def main(args):
         return await (await port.server_port()).into_source()
     tree_query_response_channels = await tree_query_response_ports.map_async(get_query_response_channel)
 
+    async def get_stdouts(node):
+        return await node.stdout()
+    tree_stdouts = await tree.map_async(get_stdouts)
+
     def stream_printer(path, v):
         parsed = json.loads(decode(v, "utf-8"))
         return f"{path}: {parsed}"
+
+    def stdout_printer(path, v):
+        return f"{path}: {v}"
 
     print("deployed!")
 
@@ -138,6 +147,20 @@ async def main(args):
         except asyncio.CancelledError:
             pass
     print_task = asyncio.create_task(print_queries())
+
+    with_stdouts = [
+        stream.map(stdout, lambda x,path=path: stdout_printer(path, x))
+        for (stdout, path) in tree_stdouts.flatten_with_path()
+    ]
+
+    async def print_stdouts():
+        try:
+            async with stream.merge(*with_stdouts).stream() as merged:
+                async for log in merged:
+                    print(log)
+        except asyncio.CancelledError:
+            pass
+    print_task = asyncio.create_task(print_stdouts())
 
     await deployment.start()
     print("started!")
