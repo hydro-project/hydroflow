@@ -111,6 +111,7 @@ pub enum ClientStrategy<'a> {
     ),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum HostTargetType {
     Local,
     Linux,

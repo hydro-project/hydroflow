@@ -3,23 +3,18 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 use anyhow::{bail, Result};
 use async_channel::Receiver;
 use async_trait::async_trait;
-use cargo::{
-    core::{compiler::BuildConfig, resolver::CliFeatures, Workspace},
-    ops::{CompileFilter, CompileOptions, FilterRule, LibRule},
-    util::{command_prelude::CompileMode, interning::InternedString},
-    Config,
-};
 use hydroflow_cli_integration::ServerPort;
 use tokio::{sync::RwLock, task::JoinHandle};
 
 use self::ports::{HydroflowPortConfig, HydroflowSink, SourcePath};
 
 use super::{
-    Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
-    ServerStrategy, Service,
+    Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
 };
 
+mod build;
 pub mod ports;
+use build::*;
 
 pub struct HydroflowCrate {
     src: PathBuf,
@@ -153,55 +148,9 @@ impl HydroflowCrate {
         let example_cloned = self.example.clone();
         let features_cloned = self.features.clone();
         let host = self.on.clone();
+        let target_type = host.try_read().unwrap().target_type();
 
-        tokio::task::spawn_blocking(move || {
-            let config = Config::default().unwrap();
-            config.shell().set_verbosity(cargo::core::Verbosity::Normal);
-
-            let workspace = Workspace::new(&src_cloned, &config).unwrap();
-
-            let mut compile_options = CompileOptions::new(&config, CompileMode::Build).unwrap();
-            compile_options.filter = CompileFilter::Only {
-                all_targets: false,
-                lib: LibRule::Default,
-                bins: FilterRule::Just(vec![]),
-                examples: FilterRule::Just(vec![example_cloned.unwrap()]),
-                tests: FilterRule::Just(vec![]),
-                benches: FilterRule::Just(vec![]),
-            };
-
-            let target_type = host.blocking_read().target_type();
-
-            compile_options.build_config = BuildConfig::new(
-                &config,
-                None,
-                false,
-                &(match target_type {
-                    HostTargetType::Local => vec![],
-                    HostTargetType::Linux => vec!["x86_64-unknown-linux-musl".to_string()],
-                }),
-                CompileMode::Build,
-            )
-            .unwrap();
-
-            compile_options.build_config.requested_profile = InternedString::from("release");
-            compile_options.cli_features =
-                CliFeatures::from_command_line(&features_cloned.unwrap_or_default(), false, true)
-                    .unwrap();
-
-            let res = cargo::ops::compile(&workspace, &compile_options).unwrap();
-            let binaries = res
-                .binaries
-                .iter()
-                .map(|b| b.path.to_string_lossy())
-                .collect::<Vec<_>>();
-
-            if binaries.len() == 1 {
-                binaries[0].to_string().into()
-            } else {
-                panic!("expected exactly one binary, got {}", binaries.len())
-            }
-        })
+        build_crate(src_cloned, example_cloned, target_type, features_cloned)
     }
 }
 
