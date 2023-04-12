@@ -98,6 +98,8 @@ async fn main() {
 .output acceptorThroughputOut `for_each(|(acceptor_id,num,):(u32,u32,)| println!("From acceptor {:?}: {:?}", acceptor_id, num))`
 .output acceptorThroughputOut `for_each(|(acceptor_id,num,):(u32,u32,)| eprintln!("throughput,{:?},{:?}", acceptor_id, num))`
 .output LeaderExpiredOut `for_each(|(pid,):(u32,)| println!("proposer {:?} leader expired", pid))`
+# For some reason Hydroflow can't infer the type of p2aBuffer, so we define it manually:
+.input p2aBuffer `null::<(u32,u32,u32,u32,u32,u32,)>()`
 
 # IDB
 .input clientIn `repeat_iter(vec![()]) -> map(|_| (context.current_tick() as u32,))`
@@ -228,7 +230,12 @@ nextSlot(s+1) :+ IsLeader(), MaxProposedSlot(s), !nextSlot(s2)
 ######################## send p2as 
 # assign a slot
 ChosenPayload(choose(payload)) :- clientIn(payload), nextSlot(s), IsLeader() # drop all payloads that we can't handle in this tick by not persisting clientIn
-p2a@a(i, payload, slot, i, num) :~ ChosenPayload(payload), nextSlot(slot), id(i), ballot(num), acceptors(a)
+// p2a@a(i, payload, slot, i, num) :~ ChosenPayload(payload), nextSlot(slot), id(i), ballot(num), acceptors(a)
+p2aBuffer(a, i, payload, slot, i, num) :- ChosenPayload(payload), nextSlot(slot), id(i), ballot(num), acceptors(a)
+p2aBufferCount(a, count(slot)) :- p2aBuffer(a, i, payload, slot, i, num)
+p2aBufferFull(a) :- p2aBufferCount(a, c), (c >= 10)
+p2a@a(i, payload, slot, i, num) :~ p2aBuffer(a, i, payload, slot, i, num), p2aBufferFull(a)
+p2aBuffer(a, i, payload, slot, i, num) :+ p2aBuffer(a, i, payload, slot, i, num), !p2aBufferFull(a)
 # Increment the slot if a payload was chosen
 nextSlot(s+1) :+ ChosenPayload(payload), nextSlot(s)
 # Don't increment the slot if no payload was chosen, but we are still the leader
@@ -242,11 +249,12 @@ CountMatchingP2bs(payload, slot, count(acceptorID), i, num) :- p2b(acceptorID, p
 commit(payload, slot) :- CountMatchingP2bs(payload, slot, c, i, num), quorum(size), (c >= size)
 allCommit(slot) :- CountMatchingP2bs(payload, slot, c, i, num), fullQuorum(c)
 // clientOut(payload, slot) :- commit(payload, slot)
-NumCommits(count(slot)) :- commit(payload, slot)
+MaxCommits(max(slot)) :- commit(payload, slot)
 
-totalCommitted(new) :+ !totalCommitted(prev), NumCommits(new)
-totalCommitted(prev) :+ totalCommitted(prev), !NumCommits(new)
-totalCommitted(prev + new) :+ totalCommitted(prev), NumCommits(new)
+totalCommitted(new) :+ !totalCommitted(prev), MaxCommits(new)
+totalCommitted(prev) :+ totalCommitted(prev), !MaxCommits(new)
+totalCommitted(new) :+ totalCommitted(prev), MaxCommits(new), (prev < new)
+totalCommitted(prev) :+ totalCommitted(prev), MaxCommits(new), (prev >= new)
 
 acceptorSentP2bs(acceptorID, count(slot)) :- p2bU(acceptorID, payload, slot, i, num, payloadBallotID, payloadBallotNum)
 totalAcceptorSentP2bs(acceptorID, new) :+ !totalAcceptorSentP2bs(acceptorID, prev), acceptorSentP2bs(acceptorID, new)

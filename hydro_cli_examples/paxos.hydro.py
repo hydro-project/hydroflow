@@ -1,12 +1,14 @@
 import hydro
 import matplotlib.pyplot as plt
+import matplotlib.text as text
+import numpy as np
 import json
 import sys
 
 def gcp_machine(deployment, gcp_vpc):
     return deployment.GCPComputeEngineHost(
         project="autocompartmentalization",
-        machine_type="e2-micro",
+        machine_type="n2-standard-4",
         image="debian-cloud/debian-11",
         region="us-west1-a",
         network=gcp_vpc
@@ -100,16 +102,18 @@ async def main(args):
 
     # fig = plt.figure()
     # ax = fig.add_subplot(1,1,1)
-    plt.show(block=False)
+    plt.ion()               # interactive mode on
+    fig,ax = plt.subplots()
 
     acceptor_plots = []
     for i in range(0, len(per_acceptor)):
-        acceptor_plots.append(plt.plot(range(0, len(per_acceptor[i])), per_acceptor[i], label="acceptor " + str(i))[0])
-    total_throughput_plot = plt.plot(range(0, len(total_throughput)), total_throughput, label="total throughput")[0]
-    total_sent_plot = plt.plot(range(0, len(total_sent)), total_sent, label="total sent")[0]
+        acceptor_plots.append(ax.plot(range(0, len(per_acceptor[i])), per_acceptor[i], label="acceptor " + str(i))[0])
+    total_throughput_plot = ax.plot(range(0, len(total_throughput)), total_throughput, label="total throughput")[0]
+    total_sent_plot = ax.plot(range(0, len(total_sent)), total_sent, label="total sent")[0]
     plt.legend()
     plt.xlabel("index in array")
     plt.ylabel("throughput")
+    fig.show()
 
     try:
         async for log in program_out:
@@ -122,16 +126,33 @@ async def main(args):
                 total_sent.append(int(split[1]))
             print(log, file=sys.stderr)
 
+
             for i in range(0, len(per_acceptor)):
                 acceptor_plots[i].set_xdata(range(0, len(per_acceptor[i])))
                 acceptor_plots[i].set_ydata(per_acceptor[i])
             
-            total_throughput_plot.set_xdata(range(0, len(total_throughput)))
+            throughput_seconds = range(0, len(total_throughput))
+            total_throughput_plot.set_xdata(throughput_seconds)
             total_throughput_plot.set_ydata(total_throughput)
 
-            total_sent_plot.set_xdata(range(0, len(total_sent)))
+            sent_seconds = range(0, len(total_sent))
+            total_sent_plot.set_xdata(sent_seconds)
             total_sent_plot.set_ydata(total_sent)
 
+            # Calculate slope
+            if len(total_throughput) > 1:
+                throughput_z = np.polyfit(throughput_seconds, total_throughput, 1)
+                sent_z = np.polyfit(sent_seconds, total_sent, 1)
+                for x in plt.findobj(match=text.Text):
+                    try:
+                        x.remove()
+                    except NotImplementedError:
+                        pass
+                plt.text(0.7, 0.1, "throughput=%.2f/s"%throughput_z[0] + "\nwrite=%.2f/s"%sent_z[0], fontsize = 11, transform=ax.transAxes, horizontalalignment='right', verticalalignment='bottom')
+
+
+            ax.relim()
+            ax.autoscale_view()
             plt.draw()
             plt.pause(0.01)
     except:

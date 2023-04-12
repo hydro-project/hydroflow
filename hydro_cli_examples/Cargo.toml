@@ -43,6 +43,18 @@ name = "dedalus_paxos_acceptor"
 name = "dedalus_paxos_proposer"
 
 [[example]]
+name = "dedalus_auto_vote_leader"
+
+[[example]]
+name = "dedalus_auto_vote_participant"
+
+[[example]]
+name = "dedalus_auto_vote_collector"
+
+[[example]]
+name = "dedalus_auto_vote_broadcaster"
+
+[[example]]
 name = "dedalus_auto_paxos_acceptor"
 
 [[example]]
