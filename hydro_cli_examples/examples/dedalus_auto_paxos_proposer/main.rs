@@ -111,7 +111,7 @@ async fn main() {
 .input nextSlot `null::<(u32,)>()`
 
 # IDB
-.input clientIn `repeat_iter(vec![()]) -> map(|_| (context.current_tick() as u32,))`
+.input clientIn `repeat_iter_external(vec![()]) -> map(|_| (context.current_tick() as u32,))`
 .output clientOut `for_each(|(payload,slot):(u32,u32)| println!("committed {:?}: {:?}", slot, payload))`
 
 .input startBallot `repeat_iter([(0 as u32,),])`

@@ -35,7 +35,7 @@ async fn main() {
 
     let mut df = datalog!(
         r#"
-        .input clientIn `repeat_iter(vec![()]) -> map(|_| (context.current_tick(),))`
+        .input clientIn `repeat_iter_external(vec![()]) -> map(|_| (context.current_tick(),))`
 .output stdout `for_each(|s:(u32,)| println!("committed: {:?}", s))`
 .input replicas `repeat_iter(peers.clone()) -> map(|p| (p,))`
 

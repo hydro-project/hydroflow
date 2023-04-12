@@ -28,7 +28,7 @@ async fn main() {
 
     let mut df = datalog!(
         r#"
-        .input clientIn `repeat_iter(vec![()]) -> map(|_| (context.current_tick() as u32,))`
+        .input clientIn `repeat_iter_external(vec![()]) -> map(|_| (context.current_tick() as u32,))`
 .input numBroadcasterPartitions `repeat_iter([(num_broadcaster_partitions,),])`
 // .input flushEveryN `repeat_iter([(flush_every_n,),])`
 .async toBroadcaster `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(to_broadcaster_sink)` `null::<(u32,)>()`
