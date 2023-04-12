@@ -14,13 +14,6 @@ async fn main() {
         .await
         .into_source();
 
-    // let query_requests = ports
-    //     .remove("query_requests")
-    //     .unwrap()
-    //     .connect::<ConnectedBidi>()
-    //     .await
-    //     .into_source();
-
     let query_responses = ports
         .remove("query_responses")
         .unwrap()
