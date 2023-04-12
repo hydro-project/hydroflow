@@ -141,7 +141,7 @@ impl Hydroflow {
         work_done
     }
 
-    /// Runs the dataflow until no more work is immediately available.
+    /// Runs the dataflow until no more (externally-triggered) work is immediately available.
     /// Runs at least one tick of dataflow, even if no external events have been received.
     /// If the dataflow contains loops this method may run forever.
     /// Returns true if any work was done.
@@ -152,6 +152,26 @@ impl Hydroflow {
             work_done = true;
             // Do any work.
             self.run_stratum();
+        }
+        work_done
+    }
+
+    /// Runs the dataflow until no more (externally-triggered) work is immediately available.
+    /// Runs at least one tick of dataflow, even if no external events have been received.
+    /// If the dataflow contains loops this method may run forever.
+    /// Returns true if any work was done.
+    /// Yields repeatedly to allow external events to happen.
+    pub async fn run_available_async(&mut self) -> bool {
+        let mut work_done = false;
+        // While work is immediately available.
+        while self.next_stratum(false) {
+            work_done = true;
+            // Do any work.
+            self.run_stratum();
+
+            // Yield between each stratum to receive more events.
+            // TODO(mingwei): really only need to yield at start of ticks though.
+            tokio::task::yield_now().await;
         }
         work_done
     }
@@ -262,10 +282,7 @@ impl Hydroflow {
     pub async fn run_async(&mut self) -> Option<!> {
         loop {
             // Run any work which is immediately available.
-            while self.run_tick() {
-                // Yield between each tick to receive more events.
-                tokio::task::yield_now().await;
-            }
+            self.run_available_async().await;
             // When no work is available yield until more events occur.
             self.recv_events_async().await;
         }
