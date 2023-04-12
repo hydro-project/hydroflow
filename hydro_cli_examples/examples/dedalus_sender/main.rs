@@ -1,6 +1,9 @@
+use std::time::Duration;
+
 use hydroflow::{
     tokio_stream::wrappers::IntervalStream,
     util::{
+        batched_sink,
         cli::{ConnectedBidi, ConnectedDemux, ConnectedSink},
         serialize_to_bytes,
     },
@@ -18,7 +21,7 @@ async fn main() {
 
     let (peers, sender_i): (Vec<u32>, u32) =
         serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
-    let broadcast_sink = broadcast_port.into_sink();
+    let broadcast_sink = batched_sink(broadcast_port.into_sink(), 8, Duration::from_millis(1));
 
     let periodic = IntervalStream::new(tokio::time::interval(std::time::Duration::from_secs(1)));
     let to_repeat = vec![
