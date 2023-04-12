@@ -30,7 +30,7 @@ struct SafeCancelToken {
 impl SafeCancelToken {
     fn safe_cancel(&mut self) {
         if let Some(token) = self.cancel_tx.take() {
-            if let Ok(_) = token.send(()) {
+            if token.send(()).is_ok() {
                 eprintln!("Received cancellation, cleaning up...");
             }
         } else {

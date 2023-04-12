@@ -12,7 +12,7 @@ use std::{
 use bytes::{Bytes, BytesMut};
 use serde::{Deserialize, Serialize};
 
-use futures::{ready, stream, Sink, Stream};
+use futures::{ready, sink::Buffer, stream, Sink, SinkExt, Stream};
 
 use async_recursion::async_recursion;
 use async_trait::async_trait;
@@ -396,9 +396,14 @@ impl ConnectedSink for ConnectedBidi {
     }
 }
 
-pub struct ConnectedDemux<T: ConnectedSink> {
+pub type BufferedDrain<S, I> = DemuxDrain<I, Buffer<S, I>>;
+
+pub struct ConnectedDemux<T: ConnectedSink>
+where
+    <T as ConnectedSink>::Input: Sync,
+{
     pub keys: Vec<u32>,
-    sink: Option<DemuxDrain<T::Input, T::Sink>>,
+    sink: Option<BufferedDrain<T::Sink, T::Input>>,
 }
 
 #[pin_project]
@@ -461,7 +466,12 @@ where
                 for (id, pipe) in demux {
                     connected_demux.insert(
                         id,
-                        Box::pin(T::from_defn(ServerOrBound::Server(pipe)).await.into_sink()),
+                        Box::pin(
+                            T::from_defn(ServerOrBound::Server(pipe))
+                                .await
+                                .into_sink()
+                                .buffer(1024),
+                        ),
                     );
                 }
 
@@ -482,7 +492,12 @@ where
                 for (id, bound) in demux {
                     connected_demux.insert(
                         id,
-                        Box::pin(T::from_defn(ServerOrBound::Bound(bound)).await.into_sink()),
+                        Box::pin(
+                            T::from_defn(ServerOrBound::Bound(bound))
+                                .await
+                                .into_sink()
+                                .buffer(1024),
+                        ),
                     );
                 }
 
@@ -506,7 +521,7 @@ where
     <T as ConnectedSink>::Input: 'static + Sync,
 {
     type Input = (u32, T::Input);
-    type Sink = DemuxDrain<T::Input, T::Sink>;
+    type Sink = BufferedDrain<T::Sink, T::Input>;
 
     fn into_sink(mut self) -> Self::Sink {
         self.sink.take().unwrap()
