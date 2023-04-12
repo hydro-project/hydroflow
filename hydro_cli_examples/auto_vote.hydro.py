@@ -1,13 +1,18 @@
 import hydro
+import matplotlib.pyplot as plt
+import matplotlib.text as text
+import numpy as np
 import json
+import sys
 
-def gcp_machine(deployment):
+def gcp_machine(deployment, gcp_vpc):
     return deployment.GCPComputeEngineHost(
-            project="autocompartmentalization",
-            machine_type="e2-micro",
-            image="debian-cloud/debian-11",
-            region="us-west1-a"
-        )
+        project="autocompartmentalization",
+        machine_type="n2-standard-4",
+        image="debian-cloud/debian-11",
+        region="us-west1-a",
+        network=gcp_vpc
+    )
 
 async def main(args):
     leader_gcp = args[0] == "gcp"
@@ -18,15 +23,19 @@ async def main(args):
     num_collectors = int(args[5])
     num_participants = int(args[6])
     num_participant_partitions = int(args[7]) # Total number of participants = num_participants * num_participant_partitions
+    flush_every_n = int(args[7])
 
+    gcp_vpc = hydro.GCPNetwork(
+        project="autocompartmentalization",
+    )
     deployment = hydro.Deployment()
     localhost_machine = deployment.Localhost()
 
-    leader_machine = gcp_machine(deployment=deployment) if leader_gcp else localhost_machine
+    leader_machine = gcp_machine(deployment, gcp_vpc) if leader_gcp else localhost_machine
     leader_program = deployment.HydroflowCrate(
             src=".",
             example="dedalus_auto_vote_leader",
-            args=[json.dumps([num_broadcasters])],
+            args=[json.dumps((num_broadcasters, flush_every_n))],
             on=leader_machine
         )
 
@@ -38,7 +47,7 @@ async def main(args):
         participant_start_ids.append(i * num_participant_partitions)
         
     for i in range(0, num_broadcasters):
-        broadcaster_machine = gcp_machine(deployment=deployment) if broadcaster_gcp else localhost_machine
+        broadcaster_machine = gcp_machine(deployment, gcp_vpc) if broadcaster_gcp else localhost_machine
         program = deployment.HydroflowCrate(
             src=".",
             example="dedalus_auto_vote_broadcaster",
@@ -53,11 +62,11 @@ async def main(args):
     collector_programs = []
     to_collector_ports = {}
     for i in range(0, num_collectors):
-        collector_machine = gcp_machine(deployment=deployment) if collector_gcp else localhost_machine
+        collector_machine = gcp_machine(deployment, gcp_vpc) if collector_gcp else localhost_machine
         program = deployment.HydroflowCrate(
             src=".",
             example="dedalus_auto_vote_collector",
-            args=[json.dumps([num_participants])],
+            args=[json.dumps((i, num_participants))],
             on=collector_machine
         )
         collector_machines.append(collector_machine)
@@ -68,7 +77,7 @@ async def main(args):
     participant_programs = []
     to_participant_ports = {}
     for i in range(0, num_participants * num_participant_partitions):
-        participant_machine = gcp_machine(deployment=deployment) if participant_gcp else localhost_machine
+        participant_machine = gcp_machine(deployment, gcp_vpc) if participant_gcp else localhost_machine
         program = deployment.HydroflowCrate(
             src=".",
             example="dedalus_auto_vote_participant",
@@ -77,7 +86,7 @@ async def main(args):
         )
         participant_machines.append(participant_machine)
         participant_programs.append(program)
-        to_participant_ports[i] = program.ports.to_participant
+        to_participant_ports[i] = program.ports.to_participant.merge()
 
 
     leader_program.ports.to_broadcaster.send_to(hydro.demux(to_broadcaster_ports))
@@ -92,17 +101,51 @@ async def main(args):
     print("deployed!")
 
     # create this as separate variable to indicate to Hydro that we want to capture all stdout, even after the loop
-    program_out = await leader_program.stdout()
+    program_out = await collector_programs[0].stdout()
 
     await deployment.start()
     print("started!")
 
-    counter = 0
-    async for log in program_out:
-        print(log)
-        counter += 1
-        if counter == 1000:
-            break
+    throughput = []
+
+    plt.ion()               # interactive mode on
+    fig,ax = plt.subplots()
+
+    throughput_plot = ax.plot(range(0, len(throughput)), throughput, label="committed")[0]
+    plt.legend()
+    plt.xlabel("seconds")
+    plt.ylabel("throughput")
+    fig.show()
+
+    try:
+        async for log in program_out:
+            split = log.split(",")
+            if split[0] == "throughput" and split[1] == "0":
+                throughput.append(int(split[2]) * num_collectors)
+            print(log, file=sys.stderr)
+            
+            throughput_seconds = range(0, len(throughput))
+            throughput_plot.set_xdata(throughput_seconds)
+            throughput_plot.set_ydata(throughput)
+
+            # Calculate slope
+            if len(throughput_seconds) > 1:
+                throughput_z = np.polyfit(throughput_seconds, throughput, 1)
+                for x in plt.findobj(match=text.Text):
+                    try:
+                        x.remove()
+                    except NotImplementedError:
+                        pass
+                plt.text(0.7, 0.1, "throughput=%.2f/s"%throughput_z[0], fontsize = 11, transform=ax.transAxes, horizontalalignment='right', verticalalignment='bottom')
+
+            ax.relim()
+            ax.autoscale_view()
+            plt.draw()
+            plt.pause(0.01)
+    except:
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        pass
 
     print(await leader_program.exit_code())
 

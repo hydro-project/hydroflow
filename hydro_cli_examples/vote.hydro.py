@@ -68,7 +68,7 @@ async def main(args):
     plt.ion()               # interactive mode on
     fig,ax = plt.subplots()
 
-    throughput_plot = ax.plot(range(0, len(throughput)), throughput, label="total sent")[0]
+    throughput_plot = ax.plot(range(0, len(throughput)), throughput, label="committed")[0]
     plt.legend()
     plt.xlabel("seconds")
     plt.ylabel("throughput")
