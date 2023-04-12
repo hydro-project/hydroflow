@@ -1,6 +1,6 @@
 use hydroflow::util::{
     cli::{ConnectedBidi, ConnectedDemux, ConnectedSink, ConnectedSource},
-    deserialize_from_bytes, serialize_to_bytes,
+    deserialize_from_bytes, serialize_to_bytes, batched_sink,
 };
 use hydroflow::bytes::BytesMut;
 use hydroflow::tokio_stream::wrappers::IntervalStream;
@@ -34,7 +34,7 @@ async fn main() {
         .await
         .into_source();
 
-    let p2a_sink = ports
+    let p2a_unbatched_sink = ports
         .remove("p2a")
         .unwrap()
         .connect::<ConnectedDemux<ConnectedBidi>>()
@@ -66,11 +66,13 @@ async fn main() {
         .await
         .into_source();
 
-    let (my_id, f, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const, flush_every_n):(u32, u32, u32, u32, u32, u32) = 
+    let (my_id, f, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const, flush_every_n):(u32, u32, u32, u32, u32, usize) = 
         serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
     let p1a_timeout = periodic(p1a_timeout_const);
     let i_am_leader_resend_timeout = periodic(i_am_leader_resend_timeout_const);
     let i_am_leader_check_timeout = periodic(i_am_leader_check_timeout_const);
+
+    let p2a_sink = batched_sink(p2a_unbatched_sink, flush_every_n, Duration::from_secs(10));
 
     
     let mut df = datalog!(
@@ -83,7 +85,6 @@ async fn main() {
 .input quorum `repeat_iter([(f+1,),])`
 .input fullQuorum `repeat_iter([(2*f+1,),])` 
 .input noop `repeat_iter([(0 as u32,),])`
-.input flushEveryN `repeat_iter([(flush_every_n,),])`
 
 # Debug
 .output p1aOut `for_each(|(a,pid,id,num):(u32,u32,u32,u32,)| println!("proposer {:?} sent p1a to {:?}: [{:?},{:?},{:?}]", pid, a, pid, id, num))`
@@ -231,12 +232,7 @@ nextSlot(s+1) :+ IsLeader(), MaxProposedSlot(s), !nextSlot(s2)
 ######################## send p2as 
 # assign a slot
 ChosenPayload(choose(payload)) :- clientIn(payload), nextSlot(s), IsLeader() # drop all payloads that we can't handle in this tick by not persisting clientIn
-// p2a@a(i, payload, slot, i, num) :~ ChosenPayload(payload), nextSlot(slot), id(i), ballot(num), acceptors(a)
-p2aBuffer(a, i, payload, slot, i, num) :- ChosenPayload(payload), nextSlot(slot), id(i), ballot(num), acceptors(a)
-p2aBufferCount(a, count(slot)) :- p2aBuffer(a, i, payload, slot, i, num)
-p2aBufferFull(a) :- p2aBufferCount(a, c), flushEveryN(c)
-p2a@a(i, payload, slot, i, num) :~ p2aBuffer(a, i, payload, slot, i, num), p2aBufferFull(a)
-p2aBuffer(a, i, payload, slot, i, num) :+ p2aBuffer(a, i, payload, slot, i, num), !p2aBufferFull(a)
+p2a@a(i, payload, slot, i, num) :~ ChosenPayload(payload), nextSlot(slot), id(i), ballot(num), acceptors(a)
 # Increment the slot if a payload was chosen
 nextSlot(s+1) :+ ChosenPayload(payload), nextSlot(s)
 # Don't increment the slot if no payload was chosen, but we are still the leader

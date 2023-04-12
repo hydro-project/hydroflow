@@ -1,6 +1,6 @@
 use hydroflow::util::{
     cli::{ConnectedBidi, ConnectedDemux, ConnectedSink, ConnectedSource},
-    deserialize_from_bytes, serialize_to_bytes,
+    deserialize_from_bytes, serialize_to_bytes, batched_sink
 };
 use hydroflow::bytes::BytesMut;
 use hydroflow::tokio_stream::wrappers::IntervalStream;
@@ -42,7 +42,7 @@ async fn main() {
 
     let p2a_proxy_leaders = p2a_port.keys.clone();
     println!("p2a_proxy_leaders: {:?}", p2a_proxy_leaders);
-    let p2a_sink = p2a_port.into_sink();
+    let p2a_unbatched_sink = p2a_port.into_sink();
 
     let p2b_source = ports
         .remove("p2b")
@@ -75,14 +75,15 @@ async fn main() {
         .await
         .into_source();
 
-    let (my_id, f, num_acceptor_groups, num_p2a_proxy_leaders, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const):(u32, u32, u32, u32, u32, u32, u32) = 
+    let (my_id, f, num_acceptor_groups, num_p2a_proxy_leaders, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const, flush_every_n):(u32, u32, u32, u32, u32, u32, u32, usize) = 
         serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
     let p2a_proxy_leaders_start_id = my_id * num_p2a_proxy_leaders;
     let p1a_timeout = periodic(p1a_timeout_const);
     let i_am_leader_resend_timeout = periodic(i_am_leader_resend_timeout_const);
     let i_am_leader_check_timeout = periodic(i_am_leader_check_timeout_const);
 
-    
+    let p2a_sink = batched_sink(p2a_unbatched_sink, flush_every_n, Duration::from_secs(10));
+
     let mut df = datalog!(
         r#"
         ######################## relation definitions

@@ -1,6 +1,6 @@
 use hydroflow::util::{
     cli::{ConnectedBidi, ConnectedDemux, ConnectedSink, ConnectedSource},
-    deserialize_from_bytes, serialize_to_bytes,
+    deserialize_from_bytes, serialize_to_bytes, batched_sink
 };
 use hydroflow::tokio_stream::wrappers::IntervalStream;
 use hydroflow_datalog::datalog;
@@ -17,7 +17,7 @@ async fn main() {
 
     let peers = to_replica_port.keys.clone();
     println!("peers: {:?}", peers);
-    let to_replica_sink = to_replica_port.into_sink();
+    let to_replica_unbatched_sink = to_replica_port.into_sink();
 
     let from_replica_source = ports
         .remove("from_replica")
@@ -26,7 +26,8 @@ async fn main() {
         .await
         .into_source();
 
-    let flush_every_n:Vec<u32> = serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
+    let flush_every_n: Vec<usize> = serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
+    let to_replica_sink = batched_sink(to_replica_unbatched_sink, flush_every_n[0], Duration::from_secs(10));
 
     let frequency = 1;
     let start = Instant::now() + Duration::from_secs(frequency);
@@ -34,7 +35,6 @@ async fn main() {
 
     let mut df = datalog!(
         r#"
-        .input flushEveryN `repeat_iter(flush_every_n.clone()) -> map(|p| (p,))`
         .input clientIn `repeat_iter(vec![()]) -> map(|_| (context.current_tick(),))`
 .output stdout `for_each(|s:(u32,)| println!("committed: {:?}", s))`
 .input replicas `repeat_iter(peers.clone()) -> map(|p| (p,))`
@@ -45,12 +45,7 @@ async fn main() {
 .async voteToReplica `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(to_replica_sink)` `null::<(u32,)>()`
 .async voteFromReplica `null::<(u32,u32,)>()` `source_stream(from_replica_source) -> map(|v| deserialize_from_bytes::<(u32,u32,)>(v.unwrap()).unwrap())`
 
-// voteToReplica@addr(v) :~ clientIn(v), replicas(addr)
-voteToReplicaBuffer(v) :- clientIn(v)
-voteToReplicaBufferCount(count(v)) :- voteToReplicaBuffer(v)
-voteToReplicaFull() :- voteToReplicaBufferCount(n), flushEveryN(n)
-voteToReplica@addr(v) :~ voteToReplicaBuffer(v), voteToReplicaFull(), replicas(addr)
-voteToReplicaBuffer(v) :+ voteToReplicaBuffer(v), !voteToReplicaFull()
+voteToReplica@addr(v) :~ clientIn(v), replicas(addr)
 
 allVotes(l, v) :- voteFromReplica(l, v)
 allVotes(l, v) :+ allVotes(l, v), !committed(v)
