@@ -12,8 +12,8 @@ expression: flat_graph_ref.surface_syntax_string()
 13v1 = for_each (| v | result . send (v) . unwrap ());
 14v1 = map (| row : (_ ,) | (row . 0 ,));
 15v1 = map (| row : (_ ,) | (() , ((row . 0) ,)));
-16v1 = group_by :: < 'static , () , (Option < _ > ,) > (| | (None ,) , | old : & mut (Option < _ > ,) , val : (_ ,) | { old . 0 = if let Some (prev) = old . 0 . take () { Some ({ let mut set : hydroflow :: rustc_hash :: FxHashSet :: < _ > = prev ; set . insert (val . 0) ; set }) } else { Some ({ let mut set = hydroflow :: rustc_hash :: FxHashSet :: < _ > :: default () ; set . insert (val . 0) ; set }) } ; });
-17v1 = map (| (g , a) | (a . 0 . unwrap () . len () ,));
+16v1 = group_by :: < 'static , () , (Option < _ > ,) > (| | (None ,) , | old : & mut (Option < _ > ,) , val : (_ ,) | { old . 0 = if let Some (prev) = old . 0 . take () { Some ({ let prev : (hydroflow :: rustc_hash :: FxHashSet < _ > , _) = prev ; let mut set : hydroflow :: rustc_hash :: FxHashSet :: < _ > = prev . 0 ; if set . insert (val . 0) { (set , prev . 1 + 1) } else { (set , prev . 1) } }) } else { Some ({ let mut set = hydroflow :: rustc_hash :: FxHashSet :: < _ > :: default () ; set . insert (val . 0) ; (set , 1) }) } ; });
+17v1 = map (| (g , a) | (a . 0 . unwrap () . 1 ,));
 
 14v1 -> 2v1;
 3v1 -> 4v1;
