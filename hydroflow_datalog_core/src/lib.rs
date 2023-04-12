@@ -644,9 +644,13 @@ fn apply_aggregations(
                     }
                     Aggregation::CountUnique(..) => {
                         parse_quote!({
-                            let mut set: hydroflow::rustc_hash::FxHashSet::<_> = prev;
-                            set.insert(#val_at_index);
-                            set
+                            let prev: (hydroflow::rustc_hash::FxHashSet<_>, _) = prev;
+                            let mut set: hydroflow::rustc_hash::FxHashSet::<_> = prev.0;
+                            if set.insert(#val_at_index) {
+                                (set, prev.1 + 1)
+                            } else {
+                                (set, prev.1)
+                            }
                         })
                     }
                     Aggregation::Choose(..) => {
@@ -668,7 +672,7 @@ fn apply_aggregations(
                         parse_quote!({
                             let mut set = hydroflow::rustc_hash::FxHashSet::<_>::default();
                             set.insert(#val_at_index);
-                            set
+                            (set, 1)
                         })
                     }
                 };
@@ -705,7 +709,7 @@ fn apply_aggregations(
                 TargetExpr::Aggregation(Aggregation::CountUnique(..)) => {
                     let idx = syn::Index::from(agg_idx);
                     after_group_lookups
-                        .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap().len()));
+                        .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap().1));
                     agg_idx += 1;
                 }
                 TargetExpr::Aggregation(_) => {
