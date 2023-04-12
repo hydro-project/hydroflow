@@ -33,6 +33,9 @@ name = "dedalus_2pc_participant"
 [[example]]
 name = "topolotree"
 
+[[example]]
+name = "classic_crdt"
+
 [dev-dependencies]
 hydroflow = { path = "../hydroflow", features = [ "cli_integration" ] }
 hydroflow_datalog = { path = "../hydroflow_datalog" }
