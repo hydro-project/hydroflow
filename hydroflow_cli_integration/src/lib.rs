@@ -224,7 +224,7 @@ async fn accept(bound: BoundConnection) -> ConnectedBidi {
 
             #[cfg(not(unix))]
             {
-                let _ = listener;
+                std::mem::drop(listener);
                 panic!("Unix sockets are not supported on this platform")
             }
         }
