@@ -26,6 +26,7 @@ async fn main() {
         .into_source();
 
     let f1 = async {
+        #[cfg(target_os = "linux")]
         loop {
             let x = procinfo::pid::stat_self().unwrap();
 
@@ -163,7 +164,7 @@ async fn main() {
         from_local = source_stream(increment_requests) //TODO implement
             -> inspect(|_| println!("from_local_now: {:?}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)))
             -> map(|x| (x, Some(Instant::now())))
-            -> inspect(|x| println!("debug_from_local: {x:?}"))
+            // -> inspect(|x| println!("debug_from_local: {x:?}"))
             -> map(|(x, ts)| (String::from_utf8(x.unwrap().to_vec()).unwrap(), ts))
             -> map(|(x, ts)| (serde_json::from_str::<IncrementRequest>(&x).unwrap(), ts))
             -> map(|(x, ts)| ((x.tweet_id, x.likes), ts))
@@ -251,7 +252,9 @@ async fn main() {
             -> dest_sink(query_responses); //send result to output channel
     };
 
-    let f2 = df.run_async();
+    let f1_handle = tokio::spawn(f1);
 
-    futures::join!(f1, f2);
+    hydroflow::util::cli::launch_flow(df).await;
+
+    f1_handle.abort();
 }
