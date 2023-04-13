@@ -11,6 +11,7 @@ use pyo3::exceptions::PyException;
 use pyo3::types::{PyBytes, PyDict};
 use pyo3::{create_exception, prelude::*, wrap_pymodule};
 use pythonize::pythonize;
+use tokio::sync::oneshot::Sender;
 use tokio::sync::RwLock;
 
 use crate::core::hydroflow_crate::ports::HydroflowSource;
@@ -20,17 +21,69 @@ pub mod core;
 
 create_exception!(hydro_cli_core, AnyhowError, PyException);
 
+#[pyclass]
+struct SafeCancelToken {
+    cancel_tx: Option<Sender<()>>,
+}
+
+#[pymethods]
+impl SafeCancelToken {
+    fn safe_cancel(&mut self) {
+        if let Some(token) = self.cancel_tx.take() {
+            eprintln!("Received cancellation, cleaning up...");
+            token.send(()).unwrap();
+        } else {
+            eprintln!("Already received cancellation, please be patient!");
+        }
+    }
+}
+
 fn interruptible_future_to_py<F, T>(py: Python<'_>, fut: F) -> PyResult<&PyAny>
 where
     F: Future<Output = PyResult<T>> + Send + 'static,
     T: IntoPy<PyObject>,
 {
-    pyo3_asyncio::tokio::future_into_py(py, async move {
+    let module = PyModule::from_code(
+        py,
+        r#"
+import asyncio
+import sys
+async def coroutine_to_safely_cancellable(c, cancel_token):
+    while True:
+        try:
+            ok, cancel = await asyncio.shield(c)
+        except asyncio.CancelledError:
+            cancel_token.safe_cancel()
+
+        if not cancel:
+            return ok
+        else:
+            raise asyncio.CancelledError()
+"#,
+        "coro_converter",
+        "coro_converter",
+    )?;
+
+    let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::<()>();
+
+    let base_coro = pyo3_asyncio::tokio::future_into_py(py, async move {
         tokio::select! {
-            _ = tokio::signal::ctrl_c() => Err(PyErr::new::<pyo3::exceptions::PyKeyboardInterrupt, _>("received Ctrl-C")),
-            r = fut => r,
+            _ = cancel_rx => {
+                Ok((None, true))
+            },
+            r = fut => r.map(|o| (Some(o), false))
         }
-    })
+    })?;
+
+    module.call_method1(
+        "coroutine_to_safely_cancellable",
+        (
+            base_coro,
+            SafeCancelToken {
+                cancel_tx: Some(cancel_tx),
+            },
+        ),
+    )
 }
 
 #[pyclass]
@@ -71,20 +124,22 @@ impl Deployment {
 
     #[allow(non_snake_case)]
     fn Localhost(&self, py: Python<'_>) -> PyResult<Py<pyo3::PyAny>> {
+        let arc = self
+            .underlying
+            .blocking_write()
+            .add_host(crate::core::LocalhostHost::new);
+
         Ok(Py::new(
             py,
             PyClassInitializer::from(Host {
-                underlying: self
-                    .underlying
-                    .blocking_write()
-                    .add_host(|id| crate::core::LocalhostHost { id }),
+                underlying: arc.clone(),
             })
-            .add_subclass(LocalhostHost {}),
+            .add_subclass(LocalhostHost { underlying: arc }),
         )?
         .into_py(py))
     }
 
-    #[allow(non_snake_case)]
+    #[allow(non_snake_case, clippy::too_many_arguments)]
     fn GCPComputeEngineHost(
         &self,
         py: Python<'_>,
@@ -93,22 +148,26 @@ impl Deployment {
         image: String,
         region: String,
         network: GCPNetwork,
+        user: Option<String>,
     ) -> PyResult<Py<pyo3::PyAny>> {
+        let arc = self.underlying.blocking_write().add_host(|id| {
+            crate::core::GCPComputeEngineHost::new(
+                id,
+                project,
+                machine_type,
+                image,
+                region,
+                network.underlying,
+                user,
+            )
+        });
+
         Ok(Py::new(
             py,
             PyClassInitializer::from(Host {
-                underlying: self.underlying.blocking_write().add_host(|id| {
-                    crate::core::GCPComputeEngineHost::new(
-                        id,
-                        project,
-                        machine_type,
-                        image,
-                        region,
-                        network.underlying,
-                    )
-                }),
+                underlying: arc.clone(),
             })
-            .add_subclass(LocalhostHost {}),
+            .add_subclass(GCPComputeEngineHost { underlying: arc }),
         )?
         .into_py(py))
     }
@@ -210,7 +269,27 @@ pub struct Host {
 }
 
 #[pyclass(extends=Host, subclass)]
-struct LocalhostHost {}
+struct LocalhostHost {
+    underlying: Arc<RwLock<crate::core::LocalhostHost>>,
+}
+
+#[pymethods]
+impl LocalhostHost {
+    fn client_only(&self, py: Python<'_>) -> PyResult<Py<pyo3::PyAny>> {
+        let arc = Arc::new(RwLock::new(
+            self.underlying.try_read().unwrap().client_only(),
+        ));
+
+        Ok(Py::new(
+            py,
+            PyClassInitializer::from(Host {
+                underlying: arc.clone(),
+            })
+            .add_subclass(LocalhostHost { underlying: arc }),
+        )?
+        .into_py(py))
+    }
+}
 
 #[pyclass]
 #[derive(Clone)]
@@ -347,6 +426,17 @@ impl CustomClientPort {
             .send_to(to.underlying.try_write().unwrap().deref_mut());
     }
 
+    fn tagged(&self, tag: u32) -> TaggedSource {
+        TaggedSource {
+            underlying: Arc::new(RwLock::new(
+                crate::core::hydroflow_crate::ports::TaggedSource {
+                    source: self.underlying.clone(),
+                    tag,
+                },
+            )),
+        }
+    }
+
     fn server_port<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
@@ -440,11 +530,10 @@ struct HydroflowCratePorts {
 impl HydroflowCratePorts {
     fn __getattribute__(&self, name: String, py: Python<'_>) -> PyResult<Py<pyo3::PyAny>> {
         let arc = Arc::new(RwLock::new(
-            crate::core::hydroflow_crate::ports::HydroflowPortConfig {
-                service: Arc::downgrade(&self.underlying),
-                port: name,
-                merge: false,
-            },
+            self.underlying
+                .try_read()
+                .unwrap()
+                .get_port(name, &self.underlying),
         ));
 
         Ok(Py::new(
@@ -487,6 +576,17 @@ impl HydroflowCratePort {
             .unwrap()
             .send_to(to.underlying.try_write().unwrap().deref_mut());
     }
+
+    fn tagged(&self, tag: u32) -> TaggedSource {
+        TaggedSource {
+            underlying: Arc::new(RwLock::new(
+                crate::core::hydroflow_crate::ports::TaggedSource {
+                    source: self.underlying.clone(),
+                    tag,
+                },
+            )),
+        }
+    }
 }
 
 #[pyfunction]
@@ -507,6 +607,33 @@ fn demux(mapping: &PyDict) -> HydroflowSink {
     }
 }
 
+#[pyclass(subclass)]
+#[derive(Clone)]
+struct TaggedSource {
+    underlying: Arc<RwLock<crate::core::hydroflow_crate::ports::TaggedSource>>,
+}
+
+#[pymethods]
+impl TaggedSource {
+    fn send_to(&mut self, to: &mut HydroflowSink) {
+        self.underlying
+            .try_write()
+            .unwrap()
+            .send_to(to.underlying.try_write().unwrap().deref_mut());
+    }
+
+    fn tagged(&self, tag: u32) -> TaggedSource {
+        TaggedSource {
+            underlying: Arc::new(RwLock::new(
+                crate::core::hydroflow_crate::ports::TaggedSource {
+                    source: self.underlying.clone(),
+                    tag,
+                },
+            )),
+        }
+    }
+}
+
 #[pyclass(extends=HydroflowSink, subclass)]
 #[derive(Clone)]
 struct HydroflowNull {
@@ -520,6 +647,17 @@ impl HydroflowNull {
             .try_write()
             .unwrap()
             .send_to(to.underlying.try_write().unwrap().deref_mut());
+    }
+
+    fn tagged(&self, tag: u32) -> TaggedSource {
+        TaggedSource {
+            underlying: Arc::new(RwLock::new(
+                crate::core::hydroflow_crate::ports::TaggedSource {
+                    source: self.underlying.clone(),
+                    tag,
+                },
+            )),
+        }
     }
 }
 
@@ -625,11 +763,6 @@ impl PythonStream {
 
 #[pymodule]
 pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
-    ctrlc::set_handler(move || {
-        eprintln!("Received Ctrl-C, cleaning up...");
-    })
-    .unwrap();
-
     module.add("AnyhowError", py.get_type::<AnyhowError>())?;
     module.add_class::<AnyhowWrapper>()?;
 

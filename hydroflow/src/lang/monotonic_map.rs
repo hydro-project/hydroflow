@@ -8,7 +8,6 @@ use super::clear::Clear;
 pub struct MonotonicMap<K, V>
 where
     K: PartialOrd,
-    V: Clear,
 {
     key: Option<K>,
     val: V,
@@ -17,7 +16,7 @@ where
 impl<K, V> Default for MonotonicMap<K, V>
 where
     K: PartialOrd,
-    V: Clear + Default,
+    V: Default,
 {
     fn default() -> Self {
         Self {
@@ -30,7 +29,6 @@ where
 impl<K, V> MonotonicMap<K, V>
 where
     K: PartialOrd,
-    V: Clear,
 {
     /// Creates a new `MonotonicMap` initialized with the given value. The
     /// vaue will be `Clear`ed before it is accessed.
@@ -39,32 +37,40 @@ where
     }
 
     /// Inserts the value using the function if new `key` is strictly later than the current key.
-    pub fn try_insert_with(&mut self, key: K, init: impl FnOnce() -> V) -> &mut V {
-        if self
-            .key
-            .as_ref()
-            .map(|old_key| old_key < &key)
-            .unwrap_or(true)
-        {
+    pub fn get_mut_with(&mut self, key: K, init: impl FnOnce() -> V) -> &mut V {
+        if self.key.as_ref().map_or(true, |old_key| old_key < &key) {
             self.key = Some(key);
             self.val = (init)();
         }
         &mut self.val
     }
 
-    /// Returns the value for the monotonically increasing key, or `None` if
-    /// the key has already passed.
-    pub fn get_mut(&mut self, key: K) -> Option<&mut V> {
-        if self
-            .key
-            .as_ref()
-            .map(|old_key| old_key <= &key)
-            .unwrap_or(true)
-        {
+    // /// Returns the value for the monotonically increasing key, or `None` if
+    // /// the key has already passed.
+    // pub fn get_mut(&mut self, key: K) -> Option<&mut V> {
+    //     if self
+    //         .key
+    //         .as_ref()
+    //         .map_or(true, |old_key| old_key <= &key)
+    //     {
+    //         self.key = Some(key);
+    //         Some(&mut self.val)
+    //     } else {
+    //         None
+    //     }
+    // }
+}
+
+impl<K, V> MonotonicMap<K, V>
+where
+    K: PartialOrd,
+    V: Clear,
+{
+    pub fn get_mut_clear(&mut self, key: K) -> &mut V {
+        if self.key.as_ref().map_or(true, |old_key| old_key < &key) {
             self.key = Some(key);
-            Some(&mut self.val)
-        } else {
-            None
+            self.val.clear();
         }
+        &mut self.val
     }
 }

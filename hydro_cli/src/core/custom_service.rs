@@ -1,5 +1,6 @@
 use std::{
     any::Any,
+    ops::Deref,
     sync::{Arc, Weak},
 };
 
@@ -9,7 +10,9 @@ use hydroflow_cli_integration::ServerOrBound;
 use tokio::sync::RwLock;
 
 use super::{
-    hydroflow_crate::ports::{HydroflowServer, HydroflowSink, HydroflowSource, ServerConfig},
+    hydroflow_crate::ports::{
+        HydroflowServer, HydroflowSink, HydroflowSource, ServerConfig, SourcePath,
+    },
     Host, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
 };
 
@@ -85,18 +88,35 @@ impl CustomClientPort {
     }
 
     pub async fn server_port(&self) -> ServerOrBound {
-        ServerOrBound::Server(self.client_port.as_ref().unwrap().sink_port().await)
+        ServerOrBound::Server(
+            self.client_port
+                .as_ref()
+                .unwrap()
+                .load_instantiated(&|p| p)
+                .await,
+        )
     }
 }
 
 impl HydroflowSource for CustomClientPort {
-    fn send_to(&mut self, to: &mut dyn HydroflowSink) {
-        if let Ok(instantiated) = to.instantiate(&self.on.upgrade().unwrap().try_read().unwrap().on)
-        {
-            self.client_port = Some(instantiated());
-        } else {
-            panic!("Custom services cannot be used as the server")
-        }
+    fn source_path(&self) -> SourcePath {
+        SourcePath::Direct(self.on.upgrade().unwrap().try_read().unwrap().on.clone())
+    }
+
+    fn host(&self) -> Arc<RwLock<dyn Host>> {
+        panic!("Custom services cannot be used as the server")
+    }
+
+    fn server(&self) -> Arc<dyn HydroflowServer> {
+        panic!("Custom services cannot be used as the server")
+    }
+
+    fn record_server_config(&mut self, config: ServerConfig) {
+        self.client_port = Some(config);
+    }
+
+    fn record_server_strategy(&mut self, _config: ServerStrategy) {
+        panic!("Custom services cannot be used as the server")
     }
 }
 
@@ -106,39 +126,24 @@ impl HydroflowSink for CustomClientPort {
         self
     }
 
-    fn instantiate_null(&mut self) {
-        self.client_port = Some(ServerConfig::Null);
-    }
-
-    fn instantiate(
-        &self,
-        _client_host: &Arc<RwLock<dyn Host>>,
-    ) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
+    fn instantiate(&self, _client_path: &SourcePath) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
         bail!("Custom services cannot be used as the server")
     }
 
     fn instantiate_reverse(
         &self,
         server_host: &Arc<RwLock<dyn Host>>,
-        server_sink: Box<dyn HydroflowServer>,
+        server_sink: Arc<dyn HydroflowServer>,
         wrap_client_port: &dyn Fn(ServerConfig) -> ServerConfig,
     ) -> Result<Box<dyn FnOnce(&mut dyn Any) -> ServerStrategy>> {
         let client = self.on.upgrade().unwrap();
         let client_read = client.try_read().unwrap();
 
-        let client_host_id = client_read.on.try_read().unwrap().id();
-
         let server_host_clone = server_host.clone();
         let server_host = server_host_clone.try_read().unwrap();
 
-        let client_host_clone = client_read.on.clone();
-        let client_host_read = if server_host.id() == client_host_id {
-            None
-        } else {
-            client_host_clone.try_read().ok()
-        };
-
-        let (conn_type, bind_type) = server_host.strategy_as_server(client_host_read.as_deref())?;
+        let (conn_type, bind_type) =
+            server_host.strategy_as_server(client_read.on.try_read().unwrap().deref())?;
 
         let client_port = wrap_client_port(ServerConfig::from_strategy(&conn_type, server_sink));
 

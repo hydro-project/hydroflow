@@ -59,8 +59,8 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
                _| {
         let handle_ident = wc.make_ident("diffdata_handle");
         let write_prologue = quote_spanned! {op_span=>
-            let #handle_ident = #hydroflow.add_state(std::cell::RefCell::new(
-                #root::lang::monotonic_map::MonotonicMap::<_, std::collections::HashSet<_>>::default(),
+            let #handle_ident = #hydroflow.add_state(::std::cell::RefCell::new(
+                #root::lang::monotonic_map::MonotonicMap::<_, #root::rustc_hash::FxHashSet<_>>::default(),
             ));
         };
         let write_iterator = {
@@ -76,10 +76,10 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
                     fn check_inputs<'a, K, I1, V, I2>(
                         input_pos: I1,
                         input_neg: I2,
-                        borrow_state: &'a mut std::collections::HashSet<K>,
+                        borrow_state: &'a mut #root::rustc_hash::FxHashSet<K>,
                     ) -> impl 'a + Iterator<Item = (K, V)>
                     where
-                        K: Eq + std::hash::Hash + Clone,
+                        K: Eq + ::std::hash::Hash + Clone,
                         V: Eq + Clone,
                         I1: 'a + Iterator<Item = (K, V)>,
                         I2: 'a + Iterator<Item = K>,
@@ -91,10 +91,7 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
                     check_inputs(
                         #input_pos,
                         #input_neg,
-                        #borrow_ident.try_insert_with(
-                            (#context.current_tick(), #context.current_stratum()),
-                            Default::default
-                        )
+                        #borrow_ident.get_mut_clear((#context.current_tick(), #context.current_stratum()))
                     )
                 };
             }

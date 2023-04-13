@@ -21,6 +21,7 @@ pub mod datalog {
             Spanned<Ident>,
             RustSnippet,
         ),
+        Persist(#[rust_sitter::leaf(text = ".persist")] (), Spanned<Ident>),
         Async(
             #[rust_sitter::leaf(text = ".async")] (),
             Spanned<Ident>,
@@ -72,7 +73,13 @@ pub mod datalog {
             #[rust_sitter::leaf(text = "!")] Option<()>,
             Spanned<InputRelationExpr>,
         ),
-        Predicate(Spanned<PredicateExpr>),
+        Predicate(Spanned<BoolExpr>),
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum IdentOrUnderscore {
+        Ident(Spanned<Ident>),
+        Underscore(#[rust_sitter::leaf(text = "_")] Spanned<()>),
     }
 
     #[derive(Debug, Clone)]
@@ -86,7 +93,7 @@ pub mod datalog {
             #[rust_sitter::leaf(text = ",")]
             ()
         )]
-        pub fields: Vec<Spanned<Ident>>,
+        pub fields: Vec<Spanned<IdentOrUnderscore>>,
 
         #[rust_sitter::leaf(text = ")")]
         _r_paren: (),
@@ -122,7 +129,7 @@ pub mod datalog {
 
     #[derive(Debug, Clone)]
     pub enum TargetExpr {
-        Expr(ValueExpr),
+        Expr(IntExpr),
         Aggregation(Aggregation),
     }
 
@@ -130,33 +137,62 @@ pub mod datalog {
         pub fn idents(&self) -> Vec<&Ident> {
             match self {
                 TargetExpr::Expr(e) => e.idents(),
-                TargetExpr::Aggregation(a) => vec![&a.ident],
+                TargetExpr::Aggregation(Aggregation::Count(_)) => vec![],
+                TargetExpr::Aggregation(Aggregation::CountUnique(_, _, idents, _)) => {
+                    idents.iter().map(|i| &i.value).collect()
+                }
+                TargetExpr::Aggregation(
+                    Aggregation::Min(_, _, a, _)
+                    | Aggregation::Max(_, _, a, _)
+                    | Aggregation::Sum(_, _, a, _)
+                    | Aggregation::Choose(_, _, a, _),
+                ) => vec![a],
             }
         }
     }
 
     #[derive(Debug, Clone)]
-    pub struct Aggregation {
-        pub tpe: AggregationType,
-        #[rust_sitter::leaf(text = "(")]
-        _lparen: (),
-        pub ident: Spanned<Ident>,
-        #[rust_sitter::leaf(text = ")")]
-        _rparen: (),
-    }
-
-    #[derive(Debug, Clone)]
-    pub enum AggregationType {
-        Min(#[rust_sitter::leaf(text = "min")] ()),
-        Max(#[rust_sitter::leaf(text = "max")] ()),
-        Sum(#[rust_sitter::leaf(text = "sum")] ()),
-        Count(#[rust_sitter::leaf(text = "count")] ()),
-        Choose(#[rust_sitter::leaf(text = "choose")] ()),
+    pub enum Aggregation {
+        Min(
+            #[rust_sitter::leaf(text = "min")] (),
+            #[rust_sitter::leaf(text = "(")] (),
+            Spanned<Ident>,
+            #[rust_sitter::leaf(text = ")")] (),
+        ),
+        Max(
+            #[rust_sitter::leaf(text = "max")] (),
+            #[rust_sitter::leaf(text = "(")] (),
+            Spanned<Ident>,
+            #[rust_sitter::leaf(text = ")")] (),
+        ),
+        Sum(
+            #[rust_sitter::leaf(text = "sum")] (),
+            #[rust_sitter::leaf(text = "(")] (),
+            Spanned<Ident>,
+            #[rust_sitter::leaf(text = ")")] (),
+        ),
+        Count(#[rust_sitter::leaf(text = "count(*)")] ()),
+        CountUnique(
+            #[rust_sitter::leaf(text = "count")] (),
+            #[rust_sitter::leaf(text = "(")] (),
+            #[rust_sitter::delimited(
+                #[rust_sitter::leaf(text = ",")]
+                ()
+            )]
+            Vec<Spanned<Ident>>,
+            #[rust_sitter::leaf(text = ")")] (),
+        ),
+        Choose(
+            #[rust_sitter::leaf(text = "choose")] (),
+            #[rust_sitter::leaf(text = "(")] (),
+            Spanned<Ident>,
+            #[rust_sitter::leaf(text = ")")] (),
+        ),
     }
 
     #[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Debug)]
     pub struct Ident {
-        #[rust_sitter::leaf(pattern = r"[a-zA-Z_][a-zA-Z0-9_]*", transform = |s| s.to_string())]
+        #[rust_sitter::leaf(pattern = r"[a-zA-Z][a-zA-Z0-9_]*", transform = |s| s.to_string())]
         pub name: String,
     }
 
@@ -179,53 +215,82 @@ pub mod datalog {
         Gt(#[rust_sitter::leaf(text = ">")] ()),
         GtEq(#[rust_sitter::leaf(text = ">=")] ()),
         Eq(#[rust_sitter::leaf(text = "==")] ()),
+        Neq(#[rust_sitter::leaf(text = "!=")] ()),
     }
 
     #[derive(Debug, Clone)]
-    pub struct PredicateExpr {
+    pub struct BoolExpr {
         #[rust_sitter::leaf(text = "(")]
         _l_brace: (),
 
-        pub left: Spanned<Ident>,
+        pub left: Spanned<IntExpr>,
         pub op: BoolOp,
-        pub right: Spanned<Ident>,
+        pub right: Spanned<IntExpr>,
 
         #[rust_sitter::leaf(text = ")")]
         _r_brace: (),
     }
 
     #[derive(Debug, Clone)]
-    pub enum ValueExpr {
+    pub enum IntExpr {
         Ident(Spanned<Ident>),
         Integer(
             #[rust_sitter::leaf(pattern = r"[0-9]+", transform = |s| s.parse().unwrap())]
             Spanned<i64>,
         ),
+        Parenthesized(
+            #[rust_sitter::leaf(text = "(")] (),
+            Box<IntExpr>,
+            #[rust_sitter::leaf(text = ")")] (),
+        ),
         #[rust_sitter::prec_left(1)]
         Add(
-            Box<ValueExpr>,
+            Box<IntExpr>,
             #[rust_sitter::leaf(text = "+")] (),
-            Box<ValueExpr>,
+            Box<IntExpr>,
         ),
         #[rust_sitter::prec_left(1)]
         Sub(
-            Box<ValueExpr>,
+            Box<IntExpr>,
             #[rust_sitter::leaf(text = "-")] (),
-            Box<ValueExpr>,
+            Box<IntExpr>,
+        ),
+        #[rust_sitter::prec_left(2)]
+        Mul(
+            Box<IntExpr>,
+            #[rust_sitter::leaf(text = "*")] (),
+            Box<IntExpr>,
+        ),
+        #[rust_sitter::prec_left(1)]
+        Mod(
+            Box<IntExpr>,
+            #[rust_sitter::leaf(text = "%")] (),
+            Box<IntExpr>,
         ),
     }
 
-    impl ValueExpr {
+    impl IntExpr {
         pub fn idents(&self) -> Vec<&Ident> {
             match self {
-                ValueExpr::Ident(i) => vec![i],
-                ValueExpr::Integer(_) => vec![],
-                ValueExpr::Add(l, _, r) => {
+                IntExpr::Ident(i) => vec![i],
+                IntExpr::Integer(_) => vec![],
+                IntExpr::Parenthesized(_, e, _) => e.idents(),
+                IntExpr::Add(l, _, r) => {
                     let mut idents = l.idents();
                     idents.extend(r.idents());
                     idents
                 }
-                ValueExpr::Sub(l, _, r) => {
+                IntExpr::Sub(l, _, r) => {
+                    let mut idents = l.idents();
+                    idents.extend(r.idents());
+                    idents
+                }
+                IntExpr::Mul(l, _, r) => {
+                    let mut idents = l.idents();
+                    idents.extend(r.idents());
+                    idents
+                }
+                IntExpr::Mod(l, _, r) => {
                     let mut idents = l.idents();
                     idents.extend(r.idents());
                     idents

@@ -78,6 +78,7 @@ impl Drop for TerraformPool {
 #[derive(Serialize, Deserialize)]
 pub struct TerraformBatch {
     pub terraform: TerraformConfig,
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
     pub data: HashMap<String, HashMap<String, serde_json::Value>>,
     pub resource: HashMap<String, HashMap<String, serde_json::Value>>,
     pub output: HashMap<String, TerraformOutput>,
@@ -273,11 +274,12 @@ pub struct TerraformProvider {
     pub version: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TerraformOutput {
     pub value: String,
 }
 
+#[derive(Debug)]
 pub struct TerraformResult {
     pub outputs: HashMap<String, TerraformOutput>,
     /// `None` if no deployment was performed

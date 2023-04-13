@@ -50,6 +50,7 @@ impl ResourceBatch {
     }
 }
 
+#[derive(Debug)]
 pub struct ResourceResult {
     pub terraform: terraform::TerraformResult,
 }
@@ -90,6 +91,7 @@ pub enum ServerStrategy {
     ),
     Demux(HashMap<u32, ServerStrategy>),
     Merge(Vec<ServerStrategy>),
+    Tagged(Box<ServerStrategy>, u32),
     Null,
 }
 
@@ -117,7 +119,7 @@ pub enum HostTargetType {
 pub type HostStrategyGetter = Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>;
 
 #[async_trait]
-pub trait Host: Send + Sync {
+pub trait Host: Send + Sync + std::fmt::Debug {
     fn target_type(&self) -> HostTargetType;
 
     fn request_port(&mut self, bind_type: &ServerStrategy);
@@ -140,11 +142,13 @@ pub trait Host: Send + Sync {
     /// Connects to the acquired resources and prepares the host to run services.
     async fn provision(&mut self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost>;
 
+    fn launched(&self) -> Option<Arc<dyn LaunchedHost>>;
+
     /// Identifies a network type that this host can use for connections if it is the server.
     /// The host will be `None` if the connection is from the same host as the target.
     fn strategy_as_server<'a>(
         &'a self,
-        connection_from: Option<&dyn Host>,
+        connection_from: &dyn Host,
     ) -> Result<(ClientStrategy<'a>, HostStrategyGetter)>;
 
     /// Determines whether this host can connect to another host using the given strategy.

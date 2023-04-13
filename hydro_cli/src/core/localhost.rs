@@ -107,19 +107,22 @@ impl LaunchedHost for LaunchedLocalhost {
             ServerStrategy::ExternalTcpPort(_) => panic!("Cannot bind to external port"),
             ServerStrategy::Demux(demux) => {
                 let mut config_map = HashMap::new();
-                for (key, bind_type) in demux {
-                    config_map.insert(*key, self.server_config(bind_type));
+                for (key, underlying) in demux {
+                    config_map.insert(*key, self.server_config(underlying));
                 }
 
                 ServerBindConfig::Demux(config_map)
             }
             ServerStrategy::Merge(merge) => {
                 let mut configs = vec![];
-                for bind_type in merge {
-                    configs.push(self.server_config(bind_type));
+                for underlying in merge {
+                    configs.push(self.server_config(underlying));
                 }
 
                 ServerBindConfig::Merge(configs)
+            }
+            ServerStrategy::Tagged(underlying, id) => {
+                ServerBindConfig::Tagged(Box::new(self.server_config(underlying)), *id)
             }
             ServerStrategy::Null => ServerBindConfig::Null,
         }
@@ -167,6 +170,23 @@ impl LaunchedHost for LaunchedLocalhost {
 #[derive(Debug)]
 pub struct LocalhostHost {
     pub id: usize,
+    client_only: bool,
+}
+
+impl LocalhostHost {
+    pub fn new(id: usize) -> LocalhostHost {
+        LocalhostHost {
+            id,
+            client_only: false,
+        }
+    }
+
+    pub fn client_only(&self) -> LocalhostHost {
+        LocalhostHost {
+            id: self.id,
+            client_only: true,
+        }
+    }
 }
 
 #[async_trait]
@@ -191,18 +211,25 @@ impl Host for LocalhostHost {
         self
     }
 
+    fn launched(&self) -> Option<Arc<dyn LaunchedHost>> {
+        Some(Arc::new(LaunchedLocalhost {}))
+    }
+
     async fn provision(&mut self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         Arc::new(LaunchedLocalhost {})
     }
 
     fn strategy_as_server<'a>(
         &'a self,
-        connection_from: Option<&dyn Host>,
+        connection_from: &dyn Host,
     ) -> Result<(
         ClientStrategy<'a>,
         Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>,
     )> {
-        let connection_from = connection_from.unwrap_or(self);
+        if self.client_only {
+            anyhow::bail!("Localhost cannot be a server if it is client only")
+        }
+
         if connection_from.can_connect_to(ClientStrategy::UnixSocket(self.id)) {
             Ok((
                 ClientStrategy::UnixSocket(self.id),

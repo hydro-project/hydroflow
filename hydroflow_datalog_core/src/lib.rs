@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 
 use hydroflow_lang::{
     diagnostic::{Diagnostic, Level},
-    graph::{partition_graph, FlatGraphBuilder, HydroflowGraph},
+    graph::{eliminate_extra_merges_tees, partition_graph, FlatGraphBuilder, HydroflowGraph},
     parse::{IndexInt, Indexing, Pipeline, PipelineLink},
 };
 use proc_macro2::{Span, TokenStream};
@@ -69,6 +69,7 @@ pub fn gen_hydroflow_graph(
 
     let mut inputs = Vec::new();
     let mut outputs = Vec::new();
+    let mut persists = HashSet::new();
     let mut asyncs = Vec::new();
     let mut rules = Vec::new();
 
@@ -81,6 +82,9 @@ pub fn gen_hydroflow_graph(
             Declaration::Output(_, ident, hf_code) => {
                 assert!(!MAGIC_RELATIONS.contains(&ident.name.as_str()));
                 outputs.push((ident, hf_code))
+            }
+            Declaration::Persist(_, ident) => {
+                persists.insert(ident.name.clone());
             }
             Declaration::Async(_, ident, send_hf, recv_hf) => {
                 assert!(!MAGIC_RELATIONS.contains(&ident.name.as_str()));
@@ -102,15 +106,35 @@ pub fn gen_hydroflow_graph(
         let target_ident = match decl {
             Declaration::Input(_, ident, _) => ident.clone(),
             Declaration::Output(_, ident, _) => ident.clone(),
+            Declaration::Persist(_, ident) => ident.clone(),
             Declaration::Async(_, ident, _, _) => ident.clone(),
             Declaration::Rule(rule) => rule.target.name.clone(),
         };
 
         if !created_rules.contains(&target_ident.value) {
             created_rules.insert(target_ident.value.clone());
-            let name = syn::Ident::new(&target_ident.name, get_span(target_ident.span));
-            flat_graph_builder
-                .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #name = merge() -> unique::<'tick>() -> tee()));
+            let insert_name = syn::Ident::new(
+                &format!("{}_insert", target_ident.name),
+                get_span(target_ident.span),
+            );
+            let read_name = syn::Ident::new(&target_ident.name, get_span(target_ident.span));
+
+            if persists.contains(&target_ident.value.name) {
+                // read outputs the *new* values for this tick
+                flat_graph_builder
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #insert_name = merge() -> unique::<'tick>()));
+                flat_graph_builder
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #read_name = difference::<'tick, 'static>() -> tee()));
+                flat_graph_builder
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #insert_name -> [pos] #read_name));
+                flat_graph_builder
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #read_name -> next_tick() -> [neg] #read_name));
+            } else {
+                flat_graph_builder
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #insert_name = merge() -> unique::<'tick>()));
+                flat_graph_builder
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #read_name = #insert_name -> tee()));
+            }
         }
     }
 
@@ -123,7 +147,7 @@ pub fn gen_hydroflow_graph(
 
         let my_merge_index_lit =
             syn::LitInt::new(&format!("{}", my_merge_index), get_span(target.span));
-        let name = syn::Ident::new(&target.name, get_span(target.span));
+        let name = syn::Ident::new(&format!("{}_insert", target.name), get_span(target.span));
 
         let input_pipeline: Pipeline = parse_pipeline(&hf_code.code, &get_span)?;
 
@@ -144,6 +168,11 @@ pub fn gen_hydroflow_graph(
         let target_ident = syn::Ident::new(&target.name, get_span(target.span));
 
         let output_pipeline: Pipeline = parse_pipeline(&hf_code.code, &get_span)?;
+        let output_pipeline = if persists.contains(&target.name) {
+            parse_quote_spanned! {get_span(target.span)=> persist() -> #output_pipeline}
+        } else {
+            output_pipeline
+        };
 
         flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
             #target_ident [#my_tee_index_lit] -> #output_pipeline
@@ -162,7 +191,8 @@ pub fn gen_hydroflow_graph(
 
         let recv_merge_index_lit =
             syn::LitInt::new(&format!("{}", recv_merge_index), get_span(target.span));
-        let target_ident = syn::Ident::new(&target.name, get_span(target.span));
+        let target_ident =
+            syn::Ident::new(&format!("{}_insert", target.name), get_span(target.span));
 
         let send_pipeline: Pipeline = parse_pipeline(&send_hf.code, &get_span)?;
         let recv_pipeline: Pipeline = parse_pipeline(&recv_hf.code, &get_span)?;
@@ -172,19 +202,22 @@ pub fn gen_hydroflow_graph(
         });
 
         flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
-            #recv_pipeline -> unique::<'tick>() -> [#recv_merge_index_lit] #target_ident
+            #recv_pipeline -> [#recv_merge_index_lit] #target_ident
         });
     }
 
     let mut next_join_idx = 0..;
     let mut diagnostics = Vec::new();
     for rule in rules {
+        let plan = compute_join_plan(&rule.sources, &persists);
         generate_rule(
+            plan,
             rule,
             &mut flat_graph_builder,
             &mut tee_counter,
             &mut merge_counter,
             &mut next_join_idx,
+            &persists,
             &mut diagnostics,
             &get_span,
         );
@@ -193,11 +226,12 @@ pub fn gen_hydroflow_graph(
     if !diagnostics.is_empty() {
         Err(diagnostics)
     } else {
-        let (flat_graph, mut diagnostics) = flat_graph_builder.build();
+        let (mut flat_graph, mut diagnostics) = flat_graph_builder.build();
         diagnostics.retain(Diagnostic::is_error);
         if !diagnostics.is_empty() {
             Err(diagnostics)
         } else {
+            eliminate_extra_merges_tees(&mut flat_graph);
             Ok(flat_graph)
         }
     }
@@ -258,82 +292,20 @@ pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream)
     code_tokens
 }
 
+#[allow(clippy::too_many_arguments)]
 fn generate_rule(
+    plan: JoinPlan<'_>,
     rule: &Spanned<Rule>,
     flat_graph_builder: &mut FlatGraphBuilder,
     tee_counter: &mut HashMap<String, Counter>,
     merge_counter: &mut HashMap<String, Counter>,
     next_join_idx: &mut Counter,
+    persists: &HashSet<String>,
     diagnostics: &mut Vec<Diagnostic>,
     get_span: &impl Fn((usize, usize)) -> Span,
 ) {
     let target = &rule.target.name;
-    let target_ident = syn::Ident::new(&target.name, get_span(target.span));
-
-    let sources: Vec<Atom> = rule.sources.to_vec();
-
-    // TODO(shadaj): smarter plans
-    let mut plan: JoinPlan = sources
-        .iter()
-        .filter_map(|x| match x {
-            Atom::Relation(negated, e) => {
-                if negated.is_none() && !MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
-                    Some(JoinPlan::Source(e))
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        })
-        .reduce(|a, b| JoinPlan::Join(Box::new(a), Box::new(b)))
-        .unwrap();
-
-    plan = sources
-        .iter()
-        .filter_map(|x| match x {
-            Atom::Relation(negated, e) => {
-                if negated.is_some() {
-                    Some(JoinPlan::Source(e))
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        })
-        .fold(plan, |a, b| JoinPlan::AntiJoin(Box::new(a), Box::new(b)));
-
-    let predicates = sources
-        .iter()
-        .filter_map(|x| match x {
-            Atom::Predicate(e) => Some(e),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
-
-    if !predicates.is_empty() {
-        plan = JoinPlan::Predicate(predicates, Box::new(plan))
-    }
-
-    plan = sources.iter().fold(plan, |acc, atom| match atom {
-        Atom::Relation(negated, e) => {
-            if MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
-                match e.name.name.as_str() {
-                    "less_than" => {
-                        assert!(negated.is_none());
-                        JoinPlan::MagicNatLt(
-                            Box::new(acc),
-                            e.fields[0].value.clone(),
-                            e.fields[1].value.clone(),
-                        )
-                    }
-                    o => panic!("Unknown magic relation {}", o),
-                }
-            } else {
-                acc
-            }
-        }
-        _ => acc,
-    });
+    let target_ident = syn::Ident::new(&format!("{}_insert", target.name), get_span(target.span));
 
     let out_expanded = expand_join_plan(
         &plan,
@@ -341,10 +313,17 @@ fn generate_rule(
         tee_counter,
         next_join_idx,
         rule.span,
+        diagnostics,
         get_span,
     );
 
-    let after_join = apply_aggregations(rule, &out_expanded, diagnostics, get_span);
+    let after_join = apply_aggregations(
+        rule,
+        &out_expanded,
+        persists.contains(&target.name),
+        diagnostics,
+        get_span,
+    );
 
     let my_merge_index = merge_counter
         .entry(target.name.clone())
@@ -419,115 +398,139 @@ fn generate_rule(
     ));
 }
 
-fn gen_value_expr(
-    expr: &ValueExpr,
-    field_use_count: &HashMap<String, i32>,
-    field_use_cur: &mut HashMap<String, i32>,
-    out_expanded: &IntermediateJoinNode,
-    diagnostics: &mut Vec<Diagnostic>,
+fn compute_join_plan<'a>(sources: &'a [Atom], persisted_rules: &HashSet<String>) -> JoinPlan<'a> {
+    // TODO(shadaj): smarter plans
+    let mut plan: JoinPlan = sources
+        .iter()
+        .filter_map(|x| match x {
+            Atom::Relation(negated, e) => {
+                if negated.is_none() && !MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
+                    Some(JoinPlan::Source(e, persisted_rules.contains(&e.name.name)))
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
+        .reduce(|a, b| JoinPlan::Join(Box::new(a), Box::new(b)))
+        .unwrap();
+
+    plan = sources
+        .iter()
+        .filter_map(|x| match x {
+            Atom::Relation(negated, e) => {
+                if negated.is_some() {
+                    Some(JoinPlan::Source(e, persisted_rules.contains(&e.name.name)))
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
+        .fold(plan, |a, b| JoinPlan::AntiJoin(Box::new(a), Box::new(b)));
+
+    let predicates = sources
+        .iter()
+        .filter_map(|x| match x {
+            Atom::Predicate(e) => Some(e),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    if !predicates.is_empty() {
+        plan = JoinPlan::Predicate(predicates, Box::new(plan))
+    }
+
+    plan = sources.iter().fold(plan, |acc, atom| match atom {
+        Atom::Relation(negated, e) => {
+            if MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
+                match e.name.name.as_str() {
+                    "less_than" => {
+                        assert!(negated.is_none());
+                        JoinPlan::MagicNatLt(
+                            Box::new(acc),
+                            e.fields[0].value.clone(),
+                            e.fields[1].value.clone(),
+                        )
+                    }
+                    o => panic!("Unknown magic relation {}", o),
+                }
+            } else {
+                acc
+            }
+        }
+        _ => acc,
+    });
+
+    plan
+}
+
+pub(crate) fn gen_value_expr(
+    expr: &IntExpr,
+    lookup_ident: &mut impl FnMut(&Spanned<Ident>) -> syn::Expr,
     get_span: &dyn Fn((usize, usize)) -> Span,
 ) -> syn::Expr {
     match expr {
-        ValueExpr::Ident(ident) => {
-            if let Some(col) = out_expanded.variable_mapping.get(&ident.name) {
-                let cur_count = field_use_cur
-                    .entry(ident.name.clone())
-                    .and_modify(|e| *e += 1)
-                    .or_insert(1);
-
-                let source_col_idx = syn::Index::from(*col);
-                let base = parse_quote_spanned!(get_span(ident.span)=> row.#source_col_idx);
-
-                if *cur_count < field_use_count[&ident.name] && field_use_count[&ident.name] > 1 {
-                    parse_quote!(#base.clone())
-                } else {
-                    base
-                }
-            } else {
-                diagnostics.push(Diagnostic::spanned(
-                    get_span(ident.span),
-                    Level::Error,
-                    format!("Could not find column {} in RHS of rule", &ident.name),
-                ));
-                parse_quote!(())
-            }
-        }
-        ValueExpr::Integer(i) => syn::Expr::Lit(syn::ExprLit {
+        IntExpr::Ident(ident) => lookup_ident(ident),
+        IntExpr::Integer(i) => syn::Expr::Lit(syn::ExprLit {
             attrs: Vec::new(),
             lit: syn::Lit::Int(syn::LitInt::new(&i.to_string(), get_span(i.span))),
         }),
-        ValueExpr::Add(l, _, r) => {
-            let l = gen_value_expr(
-                l,
-                field_use_count,
-                field_use_cur,
-                out_expanded,
-                diagnostics,
-                get_span,
-            );
-            let r = gen_value_expr(
-                r,
-                field_use_count,
-                field_use_cur,
-                out_expanded,
-                diagnostics,
-                get_span,
-            );
+        IntExpr::Parenthesized(_, e, _) => {
+            let inner = gen_value_expr(e, lookup_ident, get_span);
+            parse_quote!((#inner))
+        }
+        IntExpr::Add(l, _, r) => {
+            let l = gen_value_expr(l, lookup_ident, get_span);
+            let r = gen_value_expr(r, lookup_ident, get_span);
             parse_quote!(#l + #r)
         }
-        ValueExpr::Sub(l, _, r) => {
-            let l = gen_value_expr(
-                l,
-                field_use_count,
-                field_use_cur,
-                out_expanded,
-                diagnostics,
-                get_span,
-            );
-            let r = gen_value_expr(
-                r,
-                field_use_count,
-                field_use_cur,
-                out_expanded,
-                diagnostics,
-                get_span,
-            );
+        IntExpr::Sub(l, _, r) => {
+            let l = gen_value_expr(l, lookup_ident, get_span);
+            let r = gen_value_expr(r, lookup_ident, get_span);
             parse_quote!(#l - #r)
+        }
+        IntExpr::Mul(l, _, r) => {
+            let l = gen_value_expr(l, lookup_ident, get_span);
+            let r = gen_value_expr(r, lookup_ident, get_span);
+            parse_quote!(#l * #r)
+        }
+        IntExpr::Mod(l, _, r) => {
+            let l = gen_value_expr(l, lookup_ident, get_span);
+            let r = gen_value_expr(r, lookup_ident, get_span);
+            parse_quote!(#l % #r)
         }
     }
 }
 
 fn gen_target_expr(
     expr: &TargetExpr,
-    field_use_count: &HashMap<String, i32>,
-    field_use_cur: &mut HashMap<String, i32>,
-    out_expanded: &IntermediateJoinNode,
-    diagnostics: &mut Vec<Diagnostic>,
+    lookup_ident: &mut impl FnMut(&Spanned<Ident>) -> syn::Expr,
     get_span: &dyn Fn((usize, usize)) -> Span,
 ) -> syn::Expr {
     match expr {
-        TargetExpr::Expr(expr) => gen_value_expr(
-            expr,
-            field_use_count,
-            field_use_cur,
-            out_expanded,
-            diagnostics,
-            get_span,
-        ),
-        TargetExpr::Aggregation(Aggregation { ident, .. }) => gen_value_expr(
-            &ValueExpr::Ident(ident.clone()),
-            field_use_count,
-            field_use_cur,
-            out_expanded,
-            diagnostics,
-            get_span,
-        ),
+        TargetExpr::Expr(expr) => gen_value_expr(expr, lookup_ident, get_span),
+        TargetExpr::Aggregation(Aggregation::Count(_)) => parse_quote!(()),
+        TargetExpr::Aggregation(Aggregation::CountUnique(_, _, keys, _)) => {
+            let keys = keys
+                .iter()
+                .map(|k| gen_value_expr(&IntExpr::Ident(k.clone()), lookup_ident, get_span))
+                .collect::<Vec<_>>();
+            parse_quote!((#(#keys),*))
+        }
+        TargetExpr::Aggregation(
+            Aggregation::Min(_, _, a, _)
+            | Aggregation::Max(_, _, a, _)
+            | Aggregation::Sum(_, _, a, _)
+            | Aggregation::Choose(_, _, a, _),
+        ) => gen_value_expr(&IntExpr::Ident(a.clone()), lookup_ident, get_span),
     }
 }
 
 fn apply_aggregations(
     rule: &Rule,
     out_expanded: &IntermediateJoinNode,
+    consumer_is_persist: bool,
     diagnostics: &mut Vec<Diagnostic>,
     get_span: &impl Fn((usize, usize)) -> Span,
 ) -> Pipeline {
@@ -559,19 +562,40 @@ fn apply_aggregations(
     {
         let expr: syn::Expr = gen_target_expr(
             field,
-            &field_use_count,
-            &mut field_use_cur,
-            out_expanded,
-            diagnostics,
+            &mut |ident| {
+                if let Some(col) = out_expanded.variable_mapping.get(&ident.name) {
+                    let cur_count = field_use_cur
+                        .entry(ident.name.clone())
+                        .and_modify(|e| *e += 1)
+                        .or_insert(1);
+
+                    let source_col_idx = syn::Index::from(*col);
+                    let base = parse_quote_spanned!(get_span(ident.span)=> row.#source_col_idx);
+
+                    if *cur_count < field_use_count[&ident.name] && field_use_count[&ident.name] > 1
+                    {
+                        parse_quote!(#base.clone())
+                    } else {
+                        base
+                    }
+                } else {
+                    diagnostics.push(Diagnostic::spanned(
+                        get_span(ident.span),
+                        Level::Error,
+                        format!("Could not find column {} in RHS of rule", &ident.name),
+                    ));
+                    parse_quote!(())
+                }
+            },
             get_span,
         );
 
-        match field.value {
+        match &field.value {
             TargetExpr::Expr(_) => {
                 group_by_exprs.push(expr);
             }
-            TargetExpr::Aggregation(_) => {
-                aggregations.push(field);
+            TargetExpr::Aggregation(a) => {
+                aggregations.push(a.clone());
                 agg_exprs.push(expr);
             }
         }
@@ -580,7 +604,11 @@ fn apply_aggregations(
     let flattened_tuple_type = &out_expanded.tuple_type;
 
     if agg_exprs.is_empty() {
-        parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)))
+        if out_expanded.persisted && !consumer_is_persist {
+            parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)) -> persist())
+        } else {
+            parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)))
+        }
     } else {
         let agg_initial =
             repeat_tuple::<syn::Expr, syn::Expr>(|| parse_quote!(None), agg_exprs.len());
@@ -601,43 +629,55 @@ fn apply_aggregations(
                 let old_at_index: syn::Expr = parse_quote!(old.#idx);
                 let val_at_index: syn::Expr = parse_quote!(val.#idx);
 
-                let agg_expr: syn::Expr = match &agg.value {
-                    TargetExpr::Aggregation(Aggregation { tpe, .. }) => match tpe {
-                        AggregationType::Min(_) => {
-                            parse_quote!(std::cmp::min(prev, #val_at_index))
-                        }
-                        AggregationType::Max(_) => {
-                            parse_quote!(std::cmp::max(prev, #val_at_index))
-                        }
-                        AggregationType::Sum(_) => {
-                            parse_quote!(prev + #val_at_index)
-                        }
-                        AggregationType::Count(_) => {
-                            parse_quote!(prev + 1)
-                        }
-                        AggregationType::Choose(_) => {
-                            parse_quote!(prev) // choose = select any 1 element from the relation. By default we select the 1st.
-                        }
-                    },
-                    _ => panic!(),
+                let agg_expr: syn::Expr = match &agg {
+                    Aggregation::Min(..) => {
+                        parse_quote!(std::cmp::min(prev, #val_at_index))
+                    }
+                    Aggregation::Max(..) => {
+                        parse_quote!(std::cmp::max(prev, #val_at_index))
+                    }
+                    Aggregation::Sum(..) => {
+                        parse_quote!(prev + #val_at_index)
+                    }
+                    Aggregation::Count(..) => {
+                        parse_quote!(prev + 1)
+                    }
+                    Aggregation::CountUnique(..) => {
+                        parse_quote!({
+                            let prev: (hydroflow::rustc_hash::FxHashSet<_>, _) = prev;
+                            let mut set: hydroflow::rustc_hash::FxHashSet::<_> = prev.0;
+                            if set.insert(#val_at_index) {
+                                (set, prev.1 + 1)
+                            } else {
+                                (set, prev.1)
+                            }
+                        })
+                    }
+                    Aggregation::Choose(..) => {
+                        parse_quote!(prev) // choose = select any 1 element from the relation. By default we select the 1st.
+                    }
                 };
 
-                let agg_initial: syn::Expr = match &agg.value {
-                    TargetExpr::Aggregation(Aggregation { tpe, .. }) => match tpe {
-                        AggregationType::Min(_)
-                        | AggregationType::Max(_)
-                        | AggregationType::Sum(_)
-                        | AggregationType::Choose(_) => {
-                            parse_quote!(#val_at_index)
-                        }
-                        AggregationType::Count(_) => {
-                            parse_quote!(1)
-                        }
-                    },
-                    _ => panic!(),
+                let agg_initial: syn::Expr = match &agg {
+                    Aggregation::Min(..)
+                    | Aggregation::Max(..)
+                    | Aggregation::Sum(..)
+                    | Aggregation::Choose(..) => {
+                        parse_quote!(#val_at_index)
+                    }
+                    Aggregation::Count(..) => {
+                        parse_quote!(1)
+                    }
+                    Aggregation::CountUnique(..) => {
+                        parse_quote!({
+                            let mut set = hydroflow::rustc_hash::FxHashSet::<_>::default();
+                            set.insert(#val_at_index);
+                            (set, 1)
+                        })
+                    }
                 };
 
-                parse_quote_spanned! {get_span(agg.span) =>
+                parse_quote! {
                     #old_at_index = if let Some(prev) = #old_at_index.take() {
                         Some(#agg_expr)
                     } else {
@@ -666,6 +706,12 @@ fn apply_aggregations(
                     after_group_lookups.push(parse_quote_spanned!(get_span(field.span)=> g.#idx));
                     group_key_idx += 1;
                 }
+                TargetExpr::Aggregation(Aggregation::CountUnique(..)) => {
+                    let idx = syn::Index::from(agg_idx);
+                    after_group_lookups
+                        .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap().1));
+                    agg_idx += 1;
+                }
                 TargetExpr::Aggregation(_) => {
                     let idx = syn::Index::from(agg_idx);
                     after_group_lookups
@@ -678,8 +724,14 @@ fn apply_aggregations(
         let pre_group_by_map: syn::Expr = parse_quote!(|row: #flattened_tuple_type| ((#(#group_by_exprs, )*), (#(#agg_exprs, )*)));
         let after_group_map: syn::Expr = parse_quote!(|(g, a)| (#(#after_group_lookups, )*));
 
-        parse_quote! {
-            map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> map(#after_group_map)
+        if out_expanded.persisted {
+            parse_quote! {
+                map(#pre_group_by_map) -> group_by::<'static, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> map(#after_group_map)
+            }
+        } else {
+            parse_quote! {
+                map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> map(#after_group_map)
+            }
         }
     }
 }
@@ -736,6 +788,18 @@ mod tests {
             .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x, y) :- input(x, y), input(y, x).
+            "#
+        );
+    }
+
+    #[test]
+    fn wildcard_fields() {
+        test_snapshots!(
+            r#"
+            .input input `source_stream(input)`
+            .output out `for_each(|v| out.send(v).unwrap())`
+
+            out(x) :- input(x, _), input(_, x).
             "#
         );
     }
@@ -909,6 +973,18 @@ mod tests {
     }
 
     #[test]
+    fn test_aggregations_group_by_expr() {
+        test_snapshots!(
+            r#"
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(a % 2, sum(b)) :- ints(a, b)
+            "#
+        );
+    }
+
+    #[test]
     fn test_non_copy_but_clone() {
         test_snapshots!(
             r#"
@@ -931,6 +1007,86 @@ mod tests {
             result(a + 123) :- ints(a)
             result(a + a) :- ints(a)
             result(123 - a) :- ints(a)
+            result(123 % (a + 5)) :- ints(a)
+            result(a * 5) :- ints(a)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_expr_predicate() {
+        test_snapshots!(
+            r#"
+            .input ints `source_stream(ints)`
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(1) :- ints(a), (a == 0)
+            result(2) :- ints(a), (a != 0)
+            result(3) :- ints(a), (a - 1 == 0)
+            result(4) :- ints(a), (a - 1 == 1 - 1)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_persist() {
+        test_snapshots!(
+            r#"
+            .input ints1 `source_stream(ints1)`
+            .persist ints1
+
+            .input ints2 `source_stream(ints2)`
+            .persist ints2
+
+            .input ints3 `source_stream(ints3)`
+            
+            .output result `for_each(|v| result.send(v).unwrap())`
+            .output result2 `for_each(|v| result2.send(v).unwrap())`
+            .output result3 `for_each(|v| result3.send(v).unwrap())`
+            .output result4 `for_each(|v| result4.send(v).unwrap())`
+
+            result(a, b, c) :- ints1(a), ints2(b), ints3(c)
+            result2(a) :- ints1(a), !ints2(a)
+
+            intermediate(a) :- ints1(a)
+            result3(a) :- intermediate(a)
+
+            .persist intermediate_persist
+            intermediate_persist(a) :- ints1(a)
+            result4(a) :- intermediate_persist(a)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_persist_uniqueness() {
+        test_snapshots!(
+            r#"
+            .persist ints1
+
+            .input ints2 `source_stream(ints2)`
+            
+            ints1(a) :- ints2(a)
+            
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(count(a)) :- ints1(a)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_wildcard_join_count() {
+        test_snapshots!(
+            r#"
+            .input ints1 `source_stream(ints1)` 
+            .input ints2 `source_stream(ints2)`
+            
+            .output result `for_each(|v| result.send(v).unwrap())`
+            .output result2 `for_each(|v| result2.send(v).unwrap())`
+
+            result(count(*)) :- ints1(a, _), ints2(a)
+            result2(count(a)) :- ints1(a, _), ints2(a)
             "#
         );
     }

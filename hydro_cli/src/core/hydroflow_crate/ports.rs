@@ -1,5 +1,5 @@
 use super::HydroflowCrate;
-use crate::core::{ClientStrategy, Host, LaunchedHost, ServerStrategy};
+use crate::core::{ClientStrategy, Host, HostStrategyGetter, LaunchedHost, ServerStrategy};
 
 use anyhow::Result;
 use async_recursion::async_recursion;
@@ -9,18 +9,43 @@ use dyn_clone::DynClone;
 use std::any::Any;
 use std::collections::HashMap;
 
+use std::ops::Deref;
 use std::sync::{Arc, Weak};
 use tokio::sync::RwLock;
 
 use hydroflow_cli_integration::ServerPort;
 
 pub trait HydroflowSource: Send + Sync {
-    fn send_to(&mut self, to: &mut dyn HydroflowSink);
+    fn source_path(&self) -> SourcePath;
+    fn record_server_config(&mut self, config: ServerConfig);
+
+    fn host(&self) -> Arc<RwLock<dyn Host>>;
+    fn server(&self) -> Arc<dyn HydroflowServer>;
+    fn record_server_strategy(&mut self, config: ServerStrategy);
+
+    fn wrap_reverse_server_config(&self, config: ServerConfig) -> ServerConfig {
+        config
+    }
+
+    fn send_to(&mut self, sink: &mut dyn HydroflowSink) {
+        let forward_res = sink.instantiate(&self.source_path());
+        if let Ok(instantiated) = forward_res {
+            self.record_server_config(instantiated());
+        } else {
+            drop(forward_res);
+            let instantiated = sink
+                .instantiate_reverse(&self.host(), self.server(), &|p| {
+                    self.wrap_reverse_server_config(p)
+                })
+                .unwrap();
+            self.record_server_strategy(instantiated(sink.as_any_mut()));
+        }
+    }
 }
 
 #[async_trait]
-pub trait HydroflowServer: DynClone + Send + Sync {
-    async fn get_port(&self) -> ServerPort;
+pub trait HydroflowServer: DynClone + Send + Sync + std::fmt::Debug {
+    fn get_port(&self) -> ServerPort;
     async fn launched_host(&self) -> Arc<dyn LaunchedHost>;
 }
 
@@ -29,31 +54,77 @@ pub type ReverseSinkInstantiator = Box<dyn FnOnce(&mut dyn Any) -> ServerStrateg
 pub trait HydroflowSink: Send + Sync {
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 
-    fn instantiate_null(&mut self);
-
     /// Instantiate the sink as the source host connecting to the sink host.
     /// Returns a thunk that can be called to perform mutations that instantiate the sink.
-    fn instantiate(
-        &self,
-        client_host: &Arc<RwLock<dyn Host>>,
-    ) -> Result<Box<dyn FnOnce() -> ServerConfig>>;
+    fn instantiate(&self, client_path: &SourcePath) -> Result<Box<dyn FnOnce() -> ServerConfig>>;
 
     /// Instantiate the sink, but as the sink host connecting to the source host.
     /// Returns a thunk that can be called to perform mutations that instantiate the sink, taking a mutable reference to this sink.
     fn instantiate_reverse(
         &self,
         server_host: &Arc<RwLock<dyn Host>>,
-        server_sink: Box<dyn HydroflowServer>,
+        server_sink: Arc<dyn HydroflowServer>,
         wrap_client_port: &dyn Fn(ServerConfig) -> ServerConfig,
     ) -> Result<ReverseSinkInstantiator>;
+}
+
+pub struct TaggedSource {
+    pub source: Arc<RwLock<dyn HydroflowSource>>,
+    pub tag: u32,
+}
+
+impl HydroflowSource for TaggedSource {
+    fn source_path(&self) -> SourcePath {
+        SourcePath::Tagged(
+            Box::new(self.source.try_read().unwrap().source_path()),
+            self.tag,
+        )
+    }
+
+    fn record_server_config(&mut self, config: ServerConfig) {
+        self.source
+            .try_write()
+            .unwrap()
+            .record_server_config(config);
+    }
+
+    fn host(&self) -> Arc<RwLock<dyn Host>> {
+        self.source.try_read().unwrap().host()
+    }
+
+    fn server(&self) -> Arc<dyn HydroflowServer> {
+        self.source.try_read().unwrap().server()
+    }
+
+    fn wrap_reverse_server_config(&self, config: ServerConfig) -> ServerConfig {
+        ServerConfig::Tagged(Box::new(config), self.tag)
+    }
+
+    fn record_server_strategy(&mut self, config: ServerStrategy) {
+        self.source
+            .try_write()
+            .unwrap()
+            .record_server_strategy(config);
+    }
 }
 
 pub struct NullSourceSink;
 
 impl HydroflowSource for NullSourceSink {
-    fn send_to(&mut self, to: &mut dyn HydroflowSink) {
-        to.instantiate_null();
+    fn source_path(&self) -> SourcePath {
+        SourcePath::Null
     }
+
+    fn host(&self) -> Arc<RwLock<dyn Host>> {
+        panic!("null source has no host")
+    }
+
+    fn server(&self) -> Arc<dyn HydroflowServer> {
+        panic!("null source has no server")
+    }
+
+    fn record_server_config(&mut self, _config: ServerConfig) {}
+    fn record_server_strategy(&mut self, _config: ServerStrategy) {}
 }
 
 impl HydroflowSink for NullSourceSink {
@@ -61,19 +132,14 @@ impl HydroflowSink for NullSourceSink {
         self
     }
 
-    fn instantiate_null(&mut self) {}
-
-    fn instantiate(
-        &self,
-        _client_host: &Arc<RwLock<dyn Host>>,
-    ) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
+    fn instantiate(&self, _client_path: &SourcePath) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
         Ok(Box::new(|| ServerConfig::Null))
     }
 
     fn instantiate_reverse(
         &self,
         _server_host: &Arc<RwLock<dyn Host>>,
-        _server_sink: Box<dyn HydroflowServer>,
+        _server_sink: Arc<dyn HydroflowServer>,
         _wrap_client_port: &dyn Fn(ServerConfig) -> ServerConfig,
     ) -> Result<ReverseSinkInstantiator> {
         Ok(Box::new(|_| ServerStrategy::Null))
@@ -89,16 +155,7 @@ impl HydroflowSink for DemuxSink {
         self
     }
 
-    fn instantiate_null(&mut self) {
-        self.demux
-            .values_mut()
-            .for_each(|sink| sink.try_write().unwrap().instantiate_null());
-    }
-
-    fn instantiate(
-        &self,
-        client_host: &Arc<RwLock<dyn Host>>,
-    ) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
+    fn instantiate(&self, client_host: &SourcePath) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
         let mut thunk_map = HashMap::new();
         for (key, target) in &self.demux {
             thunk_map.insert(*key, target.try_read().unwrap().instantiate(client_host)?);
@@ -117,7 +174,7 @@ impl HydroflowSink for DemuxSink {
     fn instantiate_reverse(
         &self,
         server_host: &Arc<RwLock<dyn Host>>,
-        server_sink: Box<dyn HydroflowServer>,
+        server_sink: Arc<dyn HydroflowServer>,
         wrap_client_port: &dyn Fn(ServerConfig) -> ServerConfig,
     ) -> Result<Box<dyn FnOnce(&mut dyn Any) -> ServerStrategy>> {
         let mut thunk_map = HashMap::new();
@@ -126,7 +183,7 @@ impl HydroflowSink for DemuxSink {
                 *key,
                 target.try_write().unwrap().instantiate_reverse(
                     server_host,
-                    dyn_clone::clone_box(&*server_sink),
+                    server_sink.clone(),
                     // the parent wrapper selects the demux port for the parent defn, so do that first
                     &|p| ServerConfig::DemuxSelect(Box::new(wrap_client_port(p)), *key),
                 )?,
@@ -157,9 +214,11 @@ impl HydroflowSink for DemuxSink {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct HydroflowPortConfig {
     pub service: Weak<RwLock<HydroflowCrate>>,
+    pub service_host: Arc<RwLock<dyn Host>>,
+    pub service_server_defns: Arc<RwLock<HashMap<String, ServerPort>>>,
     pub port: String,
     pub merge: bool,
 }
@@ -168,6 +227,8 @@ impl HydroflowPortConfig {
     pub fn merge(&self) -> Self {
         Self {
             service: self.service.clone(),
+            service_host: self.service_host.clone(),
+            service_server_defns: self.service_server_defns.clone(),
             port: self.port.clone(),
             merge: true,
         }
@@ -175,27 +236,102 @@ impl HydroflowPortConfig {
 }
 
 impl HydroflowSource for HydroflowPortConfig {
-    fn send_to(&mut self, sink: &mut dyn HydroflowSink) {
+    fn source_path(&self) -> SourcePath {
+        SourcePath::Direct(
+            self.service
+                .upgrade()
+                .unwrap()
+                .try_read()
+                .unwrap()
+                .on
+                .clone(),
+        )
+    }
+
+    fn host(&self) -> Arc<RwLock<dyn Host>> {
+        self.service_host.clone()
+    }
+
+    fn server(&self) -> Arc<dyn HydroflowServer> {
+        let from = self.service.upgrade().unwrap();
+        let from_read = from.try_read().unwrap();
+
+        Arc::new(HydroflowPortConfig {
+            service: Arc::downgrade(&from),
+            service_host: from_read.on.clone(),
+            service_server_defns: from_read.server_defns.clone(),
+            port: self.port.clone(),
+            merge: false,
+        })
+    }
+
+    fn record_server_config(&mut self, config: ServerConfig) {
         let from = self.service.upgrade().unwrap();
         let mut from_write = from.try_write().unwrap();
-        from_write
-            .add_connection(&from, self.port.clone(), sink)
-            .unwrap();
+
+        // TODO(shadaj): if already in this map, we want to broadcast
+        assert!(!from_write.port_to_server.contains_key(&self.port));
+        from_write.port_to_server.insert(self.port.clone(), config);
+    }
+
+    fn record_server_strategy(&mut self, config: ServerStrategy) {
+        let from = self.service.upgrade().unwrap();
+        let mut from_write = from.try_write().unwrap();
+
+        assert!(!from_write.port_to_bind.contains_key(&self.port));
+        from_write.port_to_bind.insert(self.port.clone(), config);
     }
 }
 
 #[async_trait]
 impl HydroflowServer for HydroflowPortConfig {
-    async fn get_port(&self) -> ServerPort {
-        let server = self.service.upgrade().unwrap();
-        let server = server.read().await;
-        server.server_defns.get(&self.port).unwrap().clone()
+    fn get_port(&self) -> ServerPort {
+        // we are in `deployment.start()`, so no one should be writing
+        let server_defns = self.service_server_defns.try_read().unwrap();
+        server_defns.get(&self.port).unwrap().clone()
     }
 
     async fn launched_host(&self) -> Arc<dyn LaunchedHost> {
-        let server = self.service.upgrade().unwrap();
-        let server_read = server.read().await;
-        server_read.launched_host.as_ref().unwrap().clone()
+        self.service_host.read().await.launched().unwrap()
+    }
+}
+
+pub enum SourcePath {
+    Null,
+    Direct(Arc<RwLock<dyn Host>>),
+    Tagged(Box<SourcePath>, u32),
+}
+
+impl SourcePath {
+    fn plan<T: HydroflowServer + Clone + 'static>(
+        &self,
+        server: &T,
+        server_host: &dyn Host,
+    ) -> Result<(HostStrategyGetter, ServerConfig)> {
+        match self {
+            SourcePath::Direct(client_host) => {
+                let client_host = client_host.try_read().unwrap();
+                let (conn_type, bind_type) = server_host.strategy_as_server(client_host.deref())?;
+                let base_config = ServerConfig::from_strategy(&conn_type, Arc::new(server.clone()));
+                Ok((bind_type, base_config))
+            }
+
+            SourcePath::Tagged(underlying, tag) => {
+                let (bind_type, base_config) = underlying.plan(server, server_host)?;
+                let tag = *tag;
+                let strategy_getter: HostStrategyGetter =
+                    Box::new(move |host| ServerStrategy::Tagged(Box::new(bind_type(host)), tag));
+                Ok((
+                    strategy_getter,
+                    ServerConfig::TaggedUnwrap(Box::new(base_config)),
+                ))
+            }
+
+            SourcePath::Null => {
+                let strategy_getter: HostStrategyGetter = Box::new(|_| ServerStrategy::Null);
+                Ok((strategy_getter, ServerConfig::Null))
+            }
+        }
     }
 }
 
@@ -204,42 +340,14 @@ impl HydroflowSink for HydroflowPortConfig {
         self
     }
 
-    fn instantiate_null(&mut self) {
-        let service = self.service.upgrade().unwrap();
-        let mut service_write = service.try_write().unwrap();
-        if self.merge {
-            service_write
-                .port_to_bind
-                .entry(self.port.clone())
-                .or_insert(ServerStrategy::Merge(vec![]));
-        } else {
-            assert!(!service_write.port_to_bind.contains_key(&self.port));
-            service_write
-                .port_to_bind
-                .insert(self.port.clone(), ServerStrategy::Null);
-        }
-    }
-
-    fn instantiate(
-        &self,
-        client_host: &Arc<RwLock<dyn Host>>,
-    ) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
+    fn instantiate(&self, client_path: &SourcePath) -> Result<Box<dyn FnOnce() -> ServerConfig>> {
         let server = self.service.upgrade().unwrap();
         let server_read = server.try_read().unwrap();
-
-        let client_host_id = client_host.try_read().unwrap().id();
 
         let server_host_clone = server_read.on.clone();
         let server_host = server_host_clone.try_read().unwrap();
 
-        let client_host_read = if server_host.id() == client_host_id {
-            None
-        } else {
-            client_host.try_read().ok()
-        };
-
-        let (conn_type, bind_type) = server_host.strategy_as_server(client_host_read.as_deref())?;
-        let base_config = ServerConfig::from_strategy(&conn_type, Box::new(self.clone()));
+        let (bind_type, base_config) = client_path.plan(self, server_host.deref())?;
 
         let server = server.clone();
         let merge = self.merge;
@@ -272,25 +380,17 @@ impl HydroflowSink for HydroflowPortConfig {
     fn instantiate_reverse(
         &self,
         server_host: &Arc<RwLock<dyn Host>>,
-        server_sink: Box<dyn HydroflowServer>,
+        server_sink: Arc<dyn HydroflowServer>,
         wrap_client_port: &dyn Fn(ServerConfig) -> ServerConfig,
     ) -> Result<Box<dyn FnOnce(&mut dyn Any) -> ServerStrategy>> {
         let client = self.service.upgrade().unwrap();
         let client_read = client.try_read().unwrap();
 
-        let client_host_id = client_read.on.try_read().unwrap().id();
-
         let server_host_clone = server_host.clone();
         let server_host = server_host_clone.try_read().unwrap();
 
-        let client_host_clone = client_read.on.clone();
-        let client_host_read = if server_host.id() == client_host_id {
-            None
-        } else {
-            client_host_clone.try_read().ok()
-        };
-
-        let (conn_type, bind_type) = server_host.strategy_as_server(client_host_read.as_deref())?;
+        let (conn_type, bind_type) =
+            server_host.strategy_as_server(client_read.on.try_read().unwrap().deref())?;
         let client_port = wrap_client_port(ServerConfig::from_strategy(&conn_type, server_sink));
 
         let client = client.clone();
@@ -323,9 +423,10 @@ impl HydroflowSink for HydroflowPortConfig {
     }
 }
 
+#[derive(Clone, Debug)]
 pub enum ServerConfig {
-    Direct(Box<dyn HydroflowServer>),
-    Forwarded(Box<dyn HydroflowServer>),
+    Direct(Arc<dyn HydroflowServer>),
+    Forwarded(Arc<dyn HydroflowServer>),
     /// A demux that will be used at runtime to listen to many connections.
     Demux(HashMap<u32, ServerConfig>),
     /// The other side of a demux, with a port to extract the appropriate connection.
@@ -334,13 +435,15 @@ pub enum ServerConfig {
     Merge(Vec<ServerConfig>),
     /// The other side of a merge, with a port to extract the appropriate connection.
     MergeSelect(Box<ServerConfig>, usize),
+    Tagged(Box<ServerConfig>, u32),
+    TaggedUnwrap(Box<ServerConfig>),
     Null,
 }
 
 impl ServerConfig {
     pub fn from_strategy(
         strategy: &ClientStrategy,
-        server: Box<dyn HydroflowServer>,
+        server: Arc<dyn HydroflowServer>,
     ) -> ServerConfig {
         match strategy {
             ClientStrategy::UnixSocket(_) | ClientStrategy::InternalTcpPort(_) => {
@@ -370,53 +473,85 @@ async fn forward_connection(conn: &ServerPort, target: &dyn LaunchedHost) -> Ser
             }
             ServerPort::Merge(forwarded_vec)
         }
+        ServerPort::Tagged(underlying, id) => {
+            ServerPort::Tagged(Box::new(forward_connection(underlying, target).await), *id)
+        }
         ServerPort::Null => ServerPort::Null,
     }
 }
 
 impl ServerConfig {
     #[async_recursion]
-    pub async fn sink_port(&self) -> ServerPort {
+    pub async fn load_instantiated(
+        &self,
+        select: &(dyn Fn(ServerPort) -> ServerPort + Send + Sync),
+    ) -> ServerPort {
         match self {
-            ServerConfig::Direct(server) => server.get_port().await,
+            ServerConfig::Direct(server) => select(server.get_port()),
 
             ServerConfig::Forwarded(server) => {
-                forward_connection(
-                    &server.get_port().await,
-                    server.launched_host().await.as_ref(),
-                )
-                .await
+                let selected = select(server.get_port());
+                forward_connection(&selected, server.launched_host().await.as_ref()).await
             }
 
             ServerConfig::Demux(demux) => {
                 let mut demux_map = HashMap::new();
                 for (key, conn) in demux {
-                    demux_map.insert(*key, conn.sink_port().await);
+                    demux_map.insert(*key, conn.load_instantiated(select).await);
                 }
                 ServerPort::Demux(demux_map)
             }
 
             ServerConfig::DemuxSelect(underlying, key) => {
-                if let ServerPort::Demux(mut mapping) = underlying.sink_port().await {
-                    mapping.remove(key).unwrap()
-                } else {
-                    panic!("Expected a demux connection definition")
-                }
+                let key = *key;
+                underlying
+                    .load_instantiated(
+                        &(move |p| {
+                            if let ServerPort::Demux(mut mapping) = p {
+                                select(mapping.remove(&key).unwrap())
+                            } else {
+                                panic!("Expected a demux connection definition")
+                            }
+                        }),
+                    )
+                    .await
             }
 
             ServerConfig::Merge(merge) => {
                 let mut merge_vec = Vec::new();
                 for conn in merge {
-                    merge_vec.push(conn.sink_port().await);
+                    merge_vec.push(conn.load_instantiated(select).await);
                 }
                 ServerPort::Merge(merge_vec)
             }
 
             ServerConfig::MergeSelect(underlying, key) => {
-                if let ServerPort::Merge(mut mapping) = underlying.sink_port().await {
-                    mapping.remove(*key)
+                dbg!(underlying);
+                let key = *key;
+                underlying
+                    .load_instantiated(
+                        &(move |p| {
+                            if let ServerPort::Merge(mut mapping) = p {
+                                select(mapping.remove(key))
+                            } else {
+                                panic!("Expected a merge connection definition")
+                            }
+                        }),
+                    )
+                    .await
+            }
+
+            ServerConfig::Tagged(underlying, id) => {
+                ServerPort::Tagged(Box::new(underlying.load_instantiated(select).await), *id)
+            }
+
+            ServerConfig::TaggedUnwrap(underlying) => {
+                let loaded = underlying.load_instantiated(select).await;
+                dbg!(&loaded);
+                if let ServerPort::Tagged(underlying, _) = loaded {
+                    *underlying
                 } else {
-                    panic!("Expected a merge connection definition")
+                    panic!("Expected a tagged connection definition")
                 }
             }
 

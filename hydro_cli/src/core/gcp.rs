@@ -17,8 +17,10 @@ use super::{
     ServerStrategy,
 };
 
+#[derive(Debug)]
 pub struct LaunchedComputeEngine {
     resource_result: Arc<ResourceResult>,
+    user: String,
     pub internal_ip: String,
     pub external_ip: Option<String>,
 }
@@ -45,26 +47,34 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
             ServerStrategy::ExternalTcpPort(_) => todo!(),
             ServerStrategy::Demux(demux) => {
                 let mut config_map = HashMap::new();
-                for (key, bind_type) in demux {
-                    config_map.insert(*key, LaunchedSSHHost::server_config(self, bind_type));
+                for (key, underlying) in demux {
+                    config_map.insert(*key, LaunchedSSHHost::server_config(self, underlying));
                 }
 
                 ServerBindConfig::Demux(config_map)
             }
             ServerStrategy::Merge(merge) => {
                 let mut configs = vec![];
-                for bind_type in merge {
-                    configs.push(LaunchedSSHHost::server_config(self, bind_type));
+                for underlying in merge {
+                    configs.push(LaunchedSSHHost::server_config(self, underlying));
                 }
 
                 ServerBindConfig::Merge(configs)
             }
+            ServerStrategy::Tagged(underlying, id) => ServerBindConfig::Tagged(
+                Box::new(LaunchedSSHHost::server_config(self, underlying)),
+                *id,
+            ),
             ServerStrategy::Null => ServerBindConfig::Null,
         }
     }
 
     fn resource_result(&self) -> &Arc<ResourceResult> {
         &self.resource_result
+    }
+
+    fn ssh_user(&self) -> &str {
+        self.user.as_str()
     }
 
     async fn open_ssh_session(&self) -> Result<AsyncSession<TcpStream>> {
@@ -88,7 +98,12 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
                 session.handshake().await?;
 
                 session
-                    .userauth_pubkey_file("hydro", None, self.ssh_key_path().as_path(), None)
+                    .userauth_pubkey_file(
+                        self.user.as_str(),
+                        None,
+                        self.ssh_key_path().as_path(),
+                        None,
+                    )
                     .await?;
 
                 Ok(session)
@@ -100,6 +115,7 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
     }
 }
 
+#[derive(Debug)]
 pub struct GCPNetwork {
     pub project: String,
     pub tf_path: Option<String>,
@@ -205,6 +221,7 @@ impl GCPNetwork {
     }
 }
 
+#[derive(Debug)]
 pub struct GCPComputeEngineHost {
     pub id: usize,
     pub project: String,
@@ -212,6 +229,7 @@ pub struct GCPComputeEngineHost {
     pub image: String,
     pub region: String,
     pub network: Arc<RwLock<GCPNetwork>>,
+    pub user: Option<String>,
     pub launched: Option<Arc<LaunchedComputeEngine>>,
     external_ports: Vec<u16>,
 }
@@ -224,6 +242,7 @@ impl GCPComputeEngineHost {
         image: String,
         region: String,
         network: Arc<RwLock<GCPNetwork>>,
+        user: Option<String>,
     ) -> Self {
         Self {
             id,
@@ -232,6 +251,7 @@ impl GCPComputeEngineHost {
             image,
             region,
             network,
+            user,
             launched: None,
             external_ports: vec![],
         }
@@ -249,11 +269,13 @@ impl Host for GCPComputeEngineHost {
             ServerStrategy::UnixSocket => {}
             ServerStrategy::InternalTcpPort => {}
             ServerStrategy::ExternalTcpPort(port) => {
-                if self.launched.is_some() {
-                    todo!("Cannot adjust firewall after host has been launched");
-                }
+                if !self.external_ports.contains(port) {
+                    if self.launched.is_some() {
+                        todo!("Cannot adjust firewall after host has been launched");
+                    }
 
-                self.external_ports.push(*port);
+                    self.external_ports.push(*port);
+                }
             }
             ServerStrategy::Demux(demux) => {
                 for bind_type in demux.values() {
@@ -264,6 +286,9 @@ impl Host for GCPComputeEngineHost {
                 for bind_type in merge {
                     self.request_port(bind_type);
                 }
+            }
+            ServerStrategy::Tagged(underlying, _) => {
+                self.request_port(underlying);
             }
             ServerStrategy::Null => {}
         }
@@ -423,6 +448,7 @@ impl Host for GCPComputeEngineHost {
             );
         }
 
+        let user = self.user.as_ref().cloned().unwrap_or("hydro".to_string());
         resource_batch
             .terraform
             .resource
@@ -437,7 +463,7 @@ impl Host for GCPComputeEngineHost {
                     "zone": self.region,
                     "tags": tags,
                     "metadata": {
-                    "ssh-keys": "hydro:${tls_private_key.vm_instance_ssh_key.public_key_openssh}"
+                        "ssh-keys": format!("{user}:${{tls_private_key.vm_instance_ssh_key.public_key_openssh}}")
                     },
                     "boot_disk": [
                         {
@@ -462,6 +488,12 @@ impl Host for GCPComputeEngineHost {
         );
     }
 
+    fn launched(&self) -> Option<Arc<dyn LaunchedHost>> {
+        self.launched
+            .as_ref()
+            .map(|a| a.clone() as Arc<dyn LaunchedHost>)
+    }
+
     async fn provision(&mut self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         if self.launched.is_none() {
             let id = self.id;
@@ -482,6 +514,7 @@ impl Host for GCPComputeEngineHost {
 
             self.launched = Some(Arc::new(LaunchedComputeEngine {
                 resource_result: resource_result.clone(),
+                user: self.user.as_ref().cloned().unwrap_or("hydro".to_string()),
                 internal_ip,
                 external_ip,
             }))
@@ -492,12 +525,11 @@ impl Host for GCPComputeEngineHost {
 
     fn strategy_as_server<'a>(
         &'a self,
-        client_host: Option<&dyn Host>,
+        client_host: &dyn Host,
     ) -> Result<(
         ClientStrategy<'a>,
         Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>,
     )> {
-        let client_host = client_host.unwrap_or(self);
         if client_host.can_connect_to(ClientStrategy::UnixSocket(self.id)) {
             Ok((
                 ClientStrategy::UnixSocket(self.id),

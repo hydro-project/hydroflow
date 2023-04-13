@@ -12,7 +12,7 @@ use cargo::{
 use hydroflow_cli_integration::ServerPort;
 use tokio::{sync::RwLock, task::JoinHandle};
 
-use self::ports::{HydroflowPortConfig, HydroflowSink};
+use self::ports::{HydroflowPortConfig, HydroflowSink, SourcePath};
 
 use super::{
     Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
@@ -40,7 +40,7 @@ pub struct HydroflowCrate {
     /// A map of port names to config for how other services can connect to this one.
     /// Only valid after `ready` has been called, only contains ports that are configured
     /// in `server_ports`.
-    server_defns: HashMap<String, ServerPort>,
+    server_defns: Arc<RwLock<HashMap<String, ServerPort>>>,
 
     launched_binary: Option<Arc<RwLock<dyn LaunchedBinary>>>,
     started: bool,
@@ -64,9 +64,23 @@ impl HydroflowCrate {
             port_to_bind: HashMap::new(),
             built_binary: None,
             launched_host: None,
-            server_defns: HashMap::new(),
+            server_defns: Arc::new(RwLock::new(HashMap::new())),
             launched_binary: None,
             started: false,
+        }
+    }
+
+    pub fn get_port(
+        &self,
+        name: String,
+        self_arc: &Arc<RwLock<HydroflowCrate>>,
+    ) -> HydroflowPortConfig {
+        HydroflowPortConfig {
+            service: Arc::downgrade(self_arc),
+            service_host: self.on.clone(),
+            service_server_defns: self.server_defns.clone(),
+            port: name,
+            merge: false,
         }
     }
 
@@ -76,7 +90,7 @@ impl HydroflowCrate {
         my_port: String,
         sink: &mut dyn HydroflowSink,
     ) -> Result<()> {
-        let forward_res = sink.instantiate(&self.on);
+        let forward_res = sink.instantiate(&SourcePath::Direct(self.on.clone()));
         if let Ok(instantiated) = forward_res {
             // TODO(shadaj): if already in this map, we want to broadcast
             assert!(!self.port_to_server.contains_key(&my_port));
@@ -86,8 +100,10 @@ impl HydroflowCrate {
             drop(forward_res);
             let instantiated = sink.instantiate_reverse(
                 &self.on,
-                Box::new(HydroflowPortConfig {
+                Arc::new(HydroflowPortConfig {
                     service: Arc::downgrade(self_arc),
+                    service_host: self.on.clone(),
+                    service_server_defns: self.server_defns.clone(),
                     port: my_port.clone(),
                     merge: false,
                 }),
@@ -254,7 +270,7 @@ impl Service for HydroflowCrate {
 
         let ready_line = stdout_receiver.recv().await.unwrap();
         if ready_line.starts_with("ready: ") {
-            self.server_defns =
+            *self.server_defns.try_write().unwrap() =
                 serde_json::from_str(ready_line.trim_start_matches("ready: ")).unwrap();
         } else {
             bail!("expected ready");
@@ -272,7 +288,7 @@ impl Service for HydroflowCrate {
 
         let mut sink_ports = HashMap::new();
         for (port_name, outgoing) in self.port_to_server.drain() {
-            sink_ports.insert(port_name.clone(), outgoing.sink_port().await);
+            sink_ports.insert(port_name.clone(), outgoing.load_instantiated(&|p| p).await);
         }
 
         let formatted_defns = serde_json::to_string(&sink_ports).unwrap();
