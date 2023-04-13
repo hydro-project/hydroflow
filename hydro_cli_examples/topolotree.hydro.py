@@ -137,13 +137,13 @@ async def main(args):
         for (response, path) in tree_query_response_channels.flatten_with_path()
     ]
 
-    # async def print_queries():
-    #     try:
-    #         async with stream.merge(*with_path_responses).stream() as merged:
-    #             async for log in merged:
-    #                 print(log)
-    #     except asyncio.CancelledError:
-    #         pass
+    async def print_queries():
+        try:
+            async with stream.merge(*with_path_responses).stream() as merged:
+                async for log in merged:
+                    print(log)
+        except asyncio.CancelledError:
+            pass
 
     with_stdouts = [
         stream.map(stdout, lambda x,path=path: (path, x))
@@ -159,7 +159,7 @@ async def main(args):
         except asyncio.CancelledError:
             pass
     
-    # print_query_task = asyncio.create_task(print_queries())
+    print_query_task = asyncio.create_task(print_queries())
     print_stdout_task = asyncio.create_task(print_stdouts())
     try:
         await deployment.start()

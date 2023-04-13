@@ -110,7 +110,7 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
                     };
                 },
                 quote_spanned! {op_span=>
-                    // #context.schedule_subgraph(#context.current_subgraph(), false);
+                    #context.schedule_subgraph(#context.current_subgraph(), false);
                 },
             ),
         };

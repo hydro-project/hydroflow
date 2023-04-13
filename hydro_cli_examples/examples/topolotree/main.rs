@@ -6,6 +6,8 @@ use hydroflow::tokio;
 use hydroflow::util::cli::{ConnectedBidi, ConnectedSink, ConnectedSource};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 use std::collections::HashMap;
+use std::hash::Hash;
+use std::hash::Hasher;
 use std::time::Duration;
 use std::time::Instant;
 
@@ -13,6 +15,26 @@ use std::time::Instant;
 struct IncrementRequest {
     tweet_id: u64,
     likes: i32,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct TimestampedValue<T> {
+    pub value: T,
+    pub timestamp: u32,
+}
+
+impl<T> PartialEq for TimestampedValue<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.timestamp == other.timestamp
+    }
+}
+
+impl<T> Eq for TimestampedValue<T> {}
+
+impl<T> Hash for TimestampedValue<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.timestamp.hash(state);
+    }
 }
 
 #[tokio::main]
@@ -29,9 +51,7 @@ async fn main() {
         #[cfg(target_os = "linux")]
         loop {
             let x = procinfo::pid::stat_self().unwrap();
-
             println!("memory: {} bytes", x.rss * 1024 * 4);
-
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
     };
@@ -93,24 +113,36 @@ async fn main() {
         .into_source();
 
     fn my_merge_function(
-        ((current_time, current_value), _): ((i32, MyType), Option<Instant>),
-        ((x, y), ts_new): ((i32, MyType), Option<Instant>),
-    ) -> ((i32, MyType), Option<Instant>) {
-        if x > current_time {
-            ((x, y), ts_new)
+        (cur, _): (TimestampedValue<MyType>, Option<Instant>),
+        (other, ts_new): (TimestampedValue<MyType>, Option<Instant>),
+    ) -> (TimestampedValue<MyType>, Option<Instant>) {
+        if other.timestamp > cur.timestamp {
+            (
+                TimestampedValue {
+                    value: other.value,
+                    timestamp: other.timestamp,
+                },
+                ts_new,
+            )
         } else {
-            ((current_time, current_value), ts_new)
+            (cur, ts_new)
         }
     }
 
     fn time_incrementer(
-        ((current_time, current_value), _ts): ((i32, MyType), Option<Instant>),
+        (cur, _ts): (TimestampedValue<MyType>, Option<Instant>),
         (new_value, ts_new): (MyType, Option<Instant>),
-    ) -> ((i32, MyType), Option<Instant>) {
-        if new_value != current_value {
-            ((current_time + 1, new_value), ts_new)
+    ) -> (TimestampedValue<MyType>, Option<Instant>) {
+        if new_value != cur.value {
+            (
+                TimestampedValue {
+                    value: new_value,
+                    timestamp: cur.timestamp + 1,
+                },
+                ts_new,
+            )
         } else {
-            ((current_time, new_value), ts_new)
+            (cur, ts_new)
         }
     }
 
@@ -133,32 +165,41 @@ async fn main() {
     type UpdateType = (u64, i32);
     type MyType = HashMap<u64, i32>;
 
-    let mut df = hydroflow_syntax! {
+    let df = hydroflow_syntax! {
         from_parent = source_stream(from_parent)
             -> inspect(|_| println!("from_parent_now: {:?}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)))
             -> map(|x| (x, Some(Instant::now())))
-            -> map(|(x, ts)| (deserialize_from_bytes::<(i32, MyType)>(x.unwrap()).unwrap(), ts))
+            -> map(|(x, ts)| (deserialize_from_bytes::<TimestampedValue<MyType>>(x.unwrap()).unwrap(), ts))
             // -> inspect(|x| println!("from_parent: {x:?}"))
-            -> fold::<'static>(((0, MyType::default()), None), my_merge_function)
-            -> map(|((_current_time, current_value), ts)| (current_value, ts))
+            -> fold::<'static>((TimestampedValue {
+                value: MyType::default(),
+                timestamp: 0,
+            }, None), my_merge_function)
+            -> map(|(cur, ts)| (cur.value, ts))
             -> tee();
 
         from_left = source_stream(from_left)
             -> inspect(|_| println!("from_left_now: {:?}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)))
             -> map(|x| (x, Some(Instant::now())))
-            -> map(|(x, ts)| (deserialize_from_bytes::<(i32, MyType)>(x.unwrap()).unwrap(), ts))
-            // -> inspect(|x| println!("from_left: {x:?}"))
-            -> fold::<'static>(((0, MyType::default()), None), my_merge_function)
-            -> map(|((_current_time, current_value), ts)| (current_value, ts))
+            -> map(|(x, ts)| (deserialize_from_bytes::<TimestampedValue<MyType>>(x.unwrap()).unwrap(), ts))
+            // -> inspect(|x| println!("froM_left: {x:?}"))
+            -> fold::<'static>((TimestampedValue {
+                value: MyType::default(),
+                timestamp: 0,
+            }, None), my_merge_function)
+            -> map(|(cur, ts)| (cur.value, ts))
             -> tee();
 
         from_right = source_stream(from_right)
             -> inspect(|_| println!("from_right_now: {:?}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)))
             -> map(|x| (x, Some(Instant::now())))
-            -> map(|(x, ts)| (deserialize_from_bytes::<(i32, MyType)>(x.unwrap()).unwrap(), ts))
+            -> map(|(x, ts)| (deserialize_from_bytes::<TimestampedValue<MyType>>(x.unwrap()).unwrap(), ts))
             // -> inspect(|x| println!("from_right: {x:?}"))
-            -> fold::<'static>(((0, MyType::default()), None), my_merge_function)
-            -> map(|((_current_time, current_value), ts)| (current_value, ts))
+            -> fold::<'static>((TimestampedValue {
+                value: MyType::default(),
+                timestamp: 0,
+            }, None), my_merge_function)
+            -> map(|(cur, ts)| (cur.value, ts))
             -> tee();
 
         from_local = source_stream(increment_requests) //TODO implement
@@ -168,11 +209,20 @@ async fn main() {
             -> map(|(x, ts)| (String::from_utf8(x.unwrap().to_vec()).unwrap(), ts))
             -> map(|(x, ts)| (serde_json::from_str::<IncrementRequest>(&x).unwrap(), ts))
             -> map(|(x, ts)| ((x.tweet_id, x.likes), ts))
-            -> fold::<'static>(((0, MyType::default()), None), |((time, value), _): ((i32, MyType), Option<Instant>), (req, ts): (UpdateType, Option<Instant>)| {
-                ((time + 1, binary_op_twitter(req, value)), ts)
+            -> fold::<'static>((TimestampedValue {
+                value: MyType::default(),
+                timestamp: 0,
+            }, None), |(prev, _): (TimestampedValue<MyType>, Option<Instant>), (req, ts): (UpdateType, Option<Instant>)| {
+                (TimestampedValue {
+                    value: binary_op_twitter(req, prev.value),
+                    timestamp: prev.timestamp + 1,
+                }, ts)
             })
-            -> fold::<'static>(((0, MyType::default()), None), my_merge_function)
-            -> map(|((_current_time, current_value), ts)| (current_value, ts))
+            -> fold::<'static>((TimestampedValue {
+                value: MyType::default(),
+                timestamp: 0,
+            }, None), my_merge_function)
+            -> map(|(cur, ts)| (cur.value, ts))
             -> tee();
 
         to_right = merge();
@@ -183,15 +233,18 @@ async fn main() {
 
         to_right
             -> fold::<'tick>((MyType::default(), None), combine_values) // This is just adding from_parent, from_left, from_local in one tick, that's what it's 'tick.
-            -> fold::<'static>(((0, MyType::default()), None), time_incrementer) // This is persisting the logical timestamp, and incrementing it, that's why it's 'static.
-            // -> unique::<'static>()
+            -> fold::<'static>((TimestampedValue {
+                value: MyType::default(),
+                timestamp: 0,
+            }, None), time_incrementer) // This is persisting the logical timestamp, and incrementing it, that's why it's 'static.
+            -> unique::<'static>()
             // -> inspect(|x| println!("to_right: {x:?}"))
             -> map(|(v, ts)| (serialize_to_bytes(v), ts))
             -> map(|(v, ts)| {
                 println!("to_right: {:?}", ts.map(|x| x.elapsed()));
                 v
             })
-            ->inspect(|x| println!("to_right bytes: {:?}", x.len())) //Measure the byte size of messages sent over the network
+            -> inspect(|x| println!("to_right bytes: {:?}", x.len())) //Measure the byte size of messages sent over the network
             -> dest_sink(to_right); //send result to output channel
 
         to_left = merge();
@@ -202,8 +255,11 @@ async fn main() {
 
         to_left
             -> fold::<'tick>((MyType::default(), None), combine_values)
-            -> fold::<'static>(((0, MyType::default()), None), time_incrementer)
-            // -> unique::<'static>()
+            -> fold::<'static>((TimestampedValue {
+                value: MyType::default(),
+                timestamp: 0,
+            }, None), time_incrementer)
+            -> unique::<'static>()
             // -> inspect(|x| println!("to_left: {x:?}"))
             -> map(|(v, ts)| (serialize_to_bytes(v), ts))
             -> map(|(v, ts)| {
@@ -221,15 +277,18 @@ async fn main() {
 
         to_parent
             -> fold::<'tick>((MyType::default(), None), combine_values)
-            -> fold::<'static>(((0, MyType::default()), None), time_incrementer)
-            // -> unique::<'static>()
+            -> fold::<'static>((TimestampedValue {
+                value: MyType::default(),
+                timestamp: 0,
+            }, None), time_incrementer)
+            -> unique::<'static>()
             // -> inspect(|x| println!("to_parent: {x:?}"))
             -> map(|(v, ts)| (serialize_to_bytes(v), ts))
             -> map(|(v, ts)| {
                 println!("to_parent: {:?}", ts.map(|x| x.elapsed()));
                 v
             })
-            ->inspect(|x| println!("to_parent bytes: {:?}", x.len())) //Measure the byte size of messages sent over the network
+            -> inspect(|x| println!("to_parent bytes: {:?}", x.len())) //Measure the byte size of messages sent over the network
             -> dest_sink(to_parent); //send result to output channel
 
         to_query = merge();
@@ -241,8 +300,11 @@ async fn main() {
 
         to_query
             -> fold::<'tick>((MyType::default(), None), combine_values)
-            -> fold::<'static>(((0, MyType::default()), None), time_incrementer)
-            // -> unique::<'static>()
+            -> fold::<'static>((TimestampedValue {
+                value: MyType::default(),
+                timestamp: 0,
+            }, None), time_incrementer)
+            -> unique::<'static>()
             // -> inspect(|x| println!("to_query: {x:?}"))
             -> map(|(v, ts)| (Bytes::from(serde_json::to_string(&v).unwrap()), ts))
             -> map(|(v, ts)| {
