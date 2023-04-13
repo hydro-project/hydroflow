@@ -280,77 +280,23 @@
 <a href="#280" id="280">280</a>
 <a href="#281" id="281">281</a>
 <a href="#282" id="282">282</a>
-<a href="#283" id="283">283</a>
-<a href="#284" id="284">284</a>
-<a href="#285" id="285">285</a>
-<a href="#286" id="286">286</a>
-<a href="#287" id="287">287</a>
-<a href="#288" id="288">288</a>
-<a href="#289" id="289">289</a>
-<a href="#290" id="290">290</a>
-<a href="#291" id="291">291</a>
-<a href="#292" id="292">292</a>
-<a href="#293" id="293">293</a>
-<a href="#294" id="294">294</a>
-<a href="#295" id="295">295</a>
-<a href="#296" id="296">296</a>
-<a href="#297" id="297">297</a>
-<a href="#298" id="298">298</a>
-<a href="#299" id="299">299</a>
-<a href="#300" id="300">300</a>
-<a href="#301" id="301">301</a>
-<a href="#302" id="302">302</a>
-<a href="#303" id="303">303</a>
-<a href="#304" id="304">304</a>
-<a href="#305" id="305">305</a>
-<a href="#306" id="306">306</a>
-<a href="#307" id="307">307</a>
-<a href="#308" id="308">308</a>
-<a href="#309" id="309">309</a>
-<a href="#310" id="310">310</a>
-<a href="#311" id="311">311</a>
-<a href="#312" id="312">312</a>
-<a href="#313" id="313">313</a>
-<a href="#314" id="314">314</a>
-<a href="#315" id="315">315</a>
-<a href="#316" id="316">316</a>
-<a href="#317" id="317">317</a>
-<a href="#318" id="318">318</a>
-<a href="#319" id="319">319</a>
-<a href="#320" id="320">320</a>
-<a href="#321" id="321">321</a>
-<a href="#322" id="322">322</a>
-<a href="#323" id="323">323</a>
-<a href="#324" id="324">324</a>
-<a href="#325" id="325">325</a>
-<a href="#326" id="326">326</a>
-<a href="#327" id="327">327</a>
-<a href="#328" id="328">328</a>
-<a href="#329" id="329">329</a>
-<a href="#330" id="330">330</a>
-<a href="#331" id="331">331</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 <span class="kw">use </span>anyhow::{bail, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>async_channel::Receiver;
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>cargo::{
-    core::{compiler::BuildConfig, resolver::CliFeatures, Workspace},
-    ops::{CompileFilter, CompileOptions, FilterRule, LibRule},
-    util::{command_prelude::CompileMode, interning::InternedString},
-    Config,
-};
 <span class="kw">use </span>hydroflow_cli_integration::ServerPort;
 <span class="kw">use </span>tokio::{sync::RwLock, task::JoinHandle};
 
 <span class="kw">use </span><span class="self">self</span>::ports::{HydroflowPortConfig, HydroflowSink, SourcePath};
 
 <span class="kw">use super</span>::{
-    Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
-    ServerStrategy, Service,
+    Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
 };
 
+<span class="kw">mod </span>build;
 <span class="kw">pub mod </span>ports;
+<span class="kw">use </span>build::<span class="kw-2">*</span>;
 
 <span class="kw">pub struct </span>HydroflowCrate {
     src: PathBuf,
@@ -484,54 +430,10 @@
         <span class="kw">let </span>example_cloned = <span class="self">self</span>.example.clone();
         <span class="kw">let </span>features_cloned = <span class="self">self</span>.features.clone();
         <span class="kw">let </span>host = <span class="self">self</span>.on.clone();
+        <span class="kw">let </span>target_type = host.try_read().unwrap().target_type();
 
         tokio::task::spawn_blocking(<span class="kw">move </span>|| {
-            <span class="kw">let </span>config = Config::default().unwrap();
-            config.shell().set_verbosity(cargo::core::Verbosity::Normal);
-
-            <span class="kw">let </span>workspace = Workspace::new(<span class="kw-2">&amp;</span>src_cloned, <span class="kw-2">&amp;</span>config).unwrap();
-
-            <span class="kw">let </span><span class="kw-2">mut </span>compile_options = CompileOptions::new(<span class="kw-2">&amp;</span>config, CompileMode::Build).unwrap();
-            compile_options.filter = CompileFilter::Only {
-                all_targets: <span class="bool-val">false</span>,
-                lib: LibRule::Default,
-                bins: FilterRule::Just(<span class="macro">vec!</span>[]),
-                examples: FilterRule::Just(<span class="macro">vec!</span>[example_cloned.unwrap()]),
-                tests: FilterRule::Just(<span class="macro">vec!</span>[]),
-                benches: FilterRule::Just(<span class="macro">vec!</span>[]),
-            };
-
-            <span class="kw">let </span>target_type = host.blocking_read().target_type();
-
-            compile_options.build_config = BuildConfig::new(
-                <span class="kw-2">&amp;</span>config,
-                <span class="prelude-val">None</span>,
-                <span class="bool-val">false</span>,
-                <span class="kw-2">&amp;</span>(<span class="kw">match </span>target_type {
-                    HostTargetType::Local =&gt; <span class="macro">vec!</span>[],
-                    HostTargetType::Linux =&gt; <span class="macro">vec!</span>[<span class="string">&quot;x86_64-unknown-linux-musl&quot;</span>.to_string()],
-                }),
-                CompileMode::Build,
-            )
-            .unwrap();
-
-            compile_options.build_config.requested_profile = InternedString::from(<span class="string">&quot;release&quot;</span>);
-            compile_options.cli_features =
-                CliFeatures::from_command_line(<span class="kw-2">&amp;</span>features_cloned.unwrap_or_default(), <span class="bool-val">false</span>, <span class="bool-val">true</span>)
-                    .unwrap();
-
-            <span class="kw">let </span>res = cargo::ops::compile(<span class="kw-2">&amp;</span>workspace, <span class="kw-2">&amp;</span>compile_options).unwrap();
-            <span class="kw">let </span>binaries = res
-                .binaries
-                .iter()
-                .map(|b| b.path.to_string_lossy())
-                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-
-            <span class="kw">if </span>binaries.len() == <span class="number">1 </span>{
-                binaries[<span class="number">0</span>].to_string().into()
-            } <span class="kw">else </span>{
-                <span class="macro">panic!</span>(<span class="string">&quot;expected exactly one binary, got {}&quot;</span>, binaries.len())
-            }
+            build_crate(src_cloned, example_cloned, target_type, features_cloned)
         })
     }
 }
