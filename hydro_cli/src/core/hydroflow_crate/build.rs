@@ -11,7 +11,6 @@ use cargo::{
     Config,
 };
 use once_cell::sync::{Lazy, OnceCell};
-use tokio::task::JoinHandle;
 
 use crate::core::HostTargetType;
 
@@ -24,62 +23,58 @@ pub fn build_crate(
     example: Option<String>,
     target_type: HostTargetType,
     features: Option<Vec<String>>,
-) -> JoinHandle<PathBuf> {
+) -> PathBuf {
     let key = (src.clone(), example.clone(), target_type, features.clone());
     let unit_of_work = {
         let mut builds = BUILDS.lock().unwrap();
         builds.entry(key).or_default().clone()
         // Release BUILDS table lock here.
     };
+    unit_of_work
+        .get_or_init(|| {
+            let config = Config::default().unwrap();
+            config.shell().set_verbosity(cargo::core::Verbosity::Normal);
 
-    tokio::task::spawn_blocking(move || {
-        unit_of_work
-            .get_or_init(|| {
-                let config = Config::default().unwrap();
-                config.shell().set_verbosity(cargo::core::Verbosity::Normal);
+            let workspace = Workspace::new(&src, &config).unwrap();
 
-                let workspace = Workspace::new(&src, &config).unwrap();
+            let mut compile_options = CompileOptions::new(&config, CompileMode::Build).unwrap();
+            compile_options.filter = CompileFilter::Only {
+                all_targets: false,
+                lib: LibRule::Default,
+                bins: FilterRule::Just(vec![]),
+                examples: FilterRule::Just(vec![example.unwrap()]),
+                tests: FilterRule::Just(vec![]),
+                benches: FilterRule::Just(vec![]),
+            };
 
-                let mut compile_options = CompileOptions::new(&config, CompileMode::Build).unwrap();
-                compile_options.filter = CompileFilter::Only {
-                    all_targets: false,
-                    lib: LibRule::Default,
-                    bins: FilterRule::Just(vec![]),
-                    examples: FilterRule::Just(vec![example.unwrap()]),
-                    tests: FilterRule::Just(vec![]),
-                    benches: FilterRule::Just(vec![]),
-                };
+            compile_options.build_config = BuildConfig::new(
+                &config,
+                None,
+                false,
+                &(match target_type {
+                    HostTargetType::Local => vec![],
+                    HostTargetType::Linux => vec!["x86_64-unknown-linux-musl".to_string()],
+                }),
+                CompileMode::Build,
+            )
+            .unwrap();
 
-                compile_options.build_config = BuildConfig::new(
-                    &config,
-                    None,
-                    false,
-                    &(match target_type {
-                        HostTargetType::Local => vec![],
-                        HostTargetType::Linux => vec!["x86_64-unknown-linux-musl".to_string()],
-                    }),
-                    CompileMode::Build,
-                )
-                .unwrap();
+            compile_options.build_config.requested_profile = InternedString::from("release");
+            compile_options.cli_features =
+                CliFeatures::from_command_line(&features.unwrap_or_default(), false, true).unwrap();
 
-                compile_options.build_config.requested_profile = InternedString::from("release");
-                compile_options.cli_features =
-                    CliFeatures::from_command_line(&features.unwrap_or_default(), false, true)
-                        .unwrap();
+            let res = cargo::ops::compile(&workspace, &compile_options).unwrap();
+            let binaries = res
+                .binaries
+                .iter()
+                .map(|b| b.path.to_string_lossy())
+                .collect::<Vec<_>>();
 
-                let res = cargo::ops::compile(&workspace, &compile_options).unwrap();
-                let binaries = res
-                    .binaries
-                    .iter()
-                    .map(|b| b.path.to_string_lossy())
-                    .collect::<Vec<_>>();
-
-                if binaries.len() == 1 {
-                    binaries[0].to_string().into()
-                } else {
-                    panic!("expected exactly one binary, got {}", binaries.len())
-                }
-            })
-            .clone()
-    })
+            if binaries.len() == 1 {
+                binaries[0].to_string().into()
+            } else {
+                panic!("expected exactly one binary, got {}", binaries.len())
+            }
+        })
+        .clone()
 }
