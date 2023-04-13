@@ -1,45 +1,38 @@
-#[cfg(not(target_family = "windows"))]
-#[path = "."]
-mod src {
-    mod buffer_pool;
-    mod protocol;
-    mod server;
-    mod util;
+mod buffer_pool;
+mod protocol;
+mod server;
+mod util;
+
+use crate::server::run_server;
+
+use clap::command;
+use clap::Parser;
+use clap::Subcommand;
+
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+use std::time::Duration;
+
+#[derive(Debug, Parser)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
 }
-#[cfg(not(target_family = "windows"))]
-use src::*;
 
-#[cfg(not(target_family = "windows"))]
+#[derive(Debug, Subcommand)]
+enum Commands {
+    #[command(arg_required_else_help = true)]
+    Bench {
+        #[clap(long)]
+        threads: usize,
+
+        #[clap(long)]
+        dist: f64,
+    },
+}
+
 fn main() {
-
-    use server::run_server;
-
-    use std::sync::atomic::AtomicUsize;
-    use std::sync::atomic::Ordering;
-    use std::sync::Arc;
-    use std::time::Duration;
-
-    use clap::command;
-    use clap::Parser;
-    use clap::Subcommand;
-
-    #[derive(Debug, Parser)]
-    struct Cli {
-        #[command(subcommand)]
-        command: Commands,
-    }
-
-    #[derive(Debug, Subcommand)]
-    enum Commands {
-        #[command(arg_required_else_help = true)]
-        Bench {
-            #[clap(long)]
-            threads: usize,
-
-            #[clap(long)]
-            dist: f64,
-        },
-    }
     let ctx = tmq::Context::new();
 
     let throughput = Arc::new(AtomicUsize::new(0));
@@ -68,9 +61,4 @@ fn main() {
     std::thread::sleep(Duration::from_millis(12000));
     let puts = throughput.load(Ordering::SeqCst) as f64 / start_time.elapsed().as_secs_f64();
     println!("{puts}");
-}
-
-#[cfg(target_family = "windows")]
-fn main() {
-    unimplemented!();
 }
