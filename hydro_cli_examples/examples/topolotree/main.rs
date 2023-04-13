@@ -47,22 +47,6 @@ async fn main() {
         .await
         .into_source();
 
-    let f1 = async {
-        #[cfg(target_os = "linux")]
-        loop {
-            let x = procinfo::pid::stat_self().unwrap();
-            println!("memory: {} bytes", x.rss * 1024 * 4);
-            tokio::time::sleep(Duration::from_secs(1)).await;
-        }
-    };
-
-    // let query_requests = ports
-    //     .remove("query_requests")
-    //     .unwrap()
-    //     .connect::<ConnectedBidi>()
-    //     .await
-    //     .into_source();
-
     let query_responses = ports
         .remove("query_responses")
         .unwrap()
@@ -111,6 +95,15 @@ async fn main() {
         .connect::<ConnectedBidi>()
         .await
         .into_source();
+
+    let f1 = async {
+        #[cfg(target_os = "linux")]
+        loop {
+            let x = procinfo::pid::stat_self().unwrap();
+            println!("memory: {} bytes", x.rss * 1024 * 4);
+            tokio::time::sleep(Duration::from_secs(1)).await;
+        }
+    };
 
     fn my_merge_function(
         (cur, _): (TimestampedValue<MyType>, Option<Instant>),
@@ -315,8 +308,6 @@ async fn main() {
     };
 
     let f1_handle = tokio::spawn(f1);
-
     hydroflow::util::cli::launch_flow(df).await;
-
     f1_handle.abort();
 }

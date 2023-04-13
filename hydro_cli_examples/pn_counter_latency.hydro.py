@@ -10,68 +10,9 @@ import pandas as pd
 import numpy as np
 import uuid
 
-
-class Tree:
-    def __init__(self, node, left, right):
-        self.node = node
-        self.left = left
-        self.right = right
-
-    def map(self, transform):
-        return Tree(
-            transform(self.node),
-            self.left.map(transform) if self.left is not None else None,
-            self.right.map(transform) if self.right is not None else None
-        )
-
-    def flatten_with_path(self, cur_path=""):
-        return [(self.node, cur_path)] + \
-            (self.left.flatten_with_path(cur_path + "L") if self.left is not None else []) + \
-            (self.right.flatten_with_path(cur_path + "R") if self.right is not None else [])
-
-    async def map_async(self, transform):
-        return Tree(
-            await transform(self.node),
-            (await self.left.map_async(transform)) if self.left is not None else None,
-            (await self.right.map_async(transform)) if self.right is not None else None
-        )
-
-def create_tree(depth, deployment, create_machine) -> Optional[Tree]:
-    if depth == 0:
-        return None
-    else:
-        self_service = deployment.HydroflowCrate(
-            src=str(Path(__file__).parent.absolute()),
-            example="topolotree",
-            on=create_machine()
-        )
-
-        left = create_tree(depth - 1, deployment, create_machine)
-        right = create_tree(depth - 1, deployment, create_machine)
-
-        if left is not None:
-            self_service.ports.to_left.send_to(left.node.ports.from_parent)
-            left.node.ports.to_parent.send_to(self_service.ports.from_left)
-        else:
-            self_service.ports.to_left.send_to(hydro.null())
-            hydro.null().send_to(self_service.ports.from_left)
-
-        if right is not None:
-            self_service.ports.to_right.send_to(right.node.ports.from_parent)
-            right.node.ports.to_parent.send_to(self_service.ports.from_right)
-        else:
-            self_service.ports.to_right.send_to(hydro.null())
-            hydro.null().send_to(self_service.ports.from_right)
-
-        return Tree(
-            self_service,
-            left,
-            right
-        )
-
 # rustup run nightly-2023-03-01-x86_64-unknown-linux-gnu hydro deploy ../hydro_cli_examples/toplotree_latency.hydro.py -- local/gcp DEPTH_OF_TREE
 async def main(args):
-    tree_depth = int(args[1])
+    num_replicas = int(args[1])
     deployment = hydro.Deployment()
 
     localhost_machine = deployment.Localhost()
@@ -92,27 +33,37 @@ async def main(args):
         else:
             return localhost_machine
 
-    tree = create_tree(tree_depth, deployment, create_machine)
-    tree.node.ports.to_parent.send_to(hydro.null())
-    hydro.null().send_to(tree.node.ports.from_parent)
+    cluster = [
+        deployment.HydroflowCrate(
+            src=str(Path(__file__).parent.absolute()),
+            example="pn_counter",
+            args=[json.dumps([i]), json.dumps([num_replicas])],
+            on=create_machine()
+        )
+        for i in range(num_replicas)
+    ]
 
-    def create_increment_port(node):
+    for i in range(num_replicas):
+        cluster[i].ports.to_peer.send_to(hydro.demux(
+            {
+                j: cluster[j].ports.from_peer.merge()
+                for j in range(num_replicas)
+                if i != j
+            }
+        ))
+
+    for node in cluster:
         hydro.null().send_to(node.ports.increment_requests.merge())
 
-    tree.map(create_increment_port)
-
-    source = tree
-    while source.left is not None:
-        source = source.left
-    dest = tree
-    while dest.right is not None:
-        dest = dest.right
+    source = cluster[0]
+    dest = cluster[-1]
 
     def send_non_dest_queries_to_null(node):
-        if node is not dest.node:
+        if node is not dest:
             node.ports.query_responses.send_to(hydro.null())
 
-    tree.map(send_non_dest_queries_to_null)
+    for node in cluster:
+        send_non_dest_queries_to_null(node)
 
     latency_machine = deployment.GCPComputeEngineHost(
         project="hydro-chrisdouglas",
@@ -127,32 +78,14 @@ async def main(args):
         on=latency_machine
     )
 
-    latency_measurer.ports.increment_start_node.send_to(source.node.ports.increment_requests.merge())
-    dest.node.ports.query_responses.send_to(latency_measurer.ports.end_node_query)
+    latency_measurer.ports.increment_start_node.send_to(source.ports.increment_requests.merge())
+    dest.ports.query_responses.send_to(latency_measurer.ports.end_node_query)
 
     await deployment.deploy()
 
-    async def get_stdouts(node):
-        return await node.stdout()
-    tree_stdouts = await tree.map_async(get_stdouts)
     print("deployed!")
 
-    with_stdouts = [
-        stream.map(stdout, lambda x,path=path: (path, x))
-        for (stdout, path) in tree_stdouts.flatten_with_path()
-    ]
-
-    async def print_stdouts():
-        try:
-            async with stream.merge(*with_stdouts).stream() as merged:
-                async for _ in merged:
-                    pass
-        except asyncio.CancelledError:
-            pass
-    
     latency_stdout = await latency_measurer.stdout()
-
-    print_stdout_task = asyncio.create_task(print_stdouts())
     try:
         await deployment.start()
         print("started!")
@@ -185,7 +118,8 @@ async def main(args):
             if iter > 10000:
                 break
 
-        await tree.map_async(lambda node: node.stop())
+        for node in cluster:
+            await node.stop()
 
         # the current timestamp
         import datetime
@@ -202,19 +136,15 @@ async def main(args):
         print("percentile 1 = ", np.percentile(latency, 1))
 
         # print the above values to a csv file
-        csv_file = open("stats_"+ args[0] + "_tree_depth_" + str(tree_depth) + "_" + experiment_id+".csv", "w")
+        csv_file = open("pn_stats_"+ args[0] + "_replica_count_" + str(num_replicas) + "_" + experiment_id+".csv", "w")
         csv_file.write("mean,std,min,max,percentile_99,percentile_75,percentile_50,percentile_25,percentile_1\n")
         csv_file.write(str(np.mean(latency)) + "," + str(np.std(latency)) + "," + str(np.min(latency)) + "," + str(np.max(latency)) + "," + str(np.percentile(latency, 99)) + "," + str(np.percentile(latency, 75)) + "," + str(np.percentile(latency, 50)) + "," + str(np.percentile(latency, 25)) + "," + str(np.percentile(latency, 1)))
         csv_file.close()
 
         df = pd.DataFrame(latency)
-        df.to_csv("latency_"+ args[0] + "_tree_depth_" + str(tree_depth) + "_" + experiment_id+".csv", index=False, header=False)
+        df.to_csv("pn_latency_"+ args[0] + "_replica_count_" + str(num_replicas) + "_" + experiment_id+".csv", index=False, header=False)
     finally:
-        print_stdout_task.cancel()
-        try:
-            await print_stdout_task
-        except:
-            pass
+        pass
 
 if __name__ == "__main__":
     import sys
