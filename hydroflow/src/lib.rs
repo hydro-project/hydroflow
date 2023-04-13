@@ -1,5 +1,6 @@
 #![feature(never_type)]
 #![feature(type_alias_impl_trait)]
+#![feature(impl_trait_in_assoc_type)]
 #![allow(type_alias_bounds)]
 #![allow(clippy::let_and_return)]
 #![allow(clippy::iter_with_drain)]
