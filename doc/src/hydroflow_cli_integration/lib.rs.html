@@ -686,6 +686,21 @@
 <a href="#686" id="686">686</a>
 <a href="#687" id="687">687</a>
 <a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a>
+<a href="#690" id="690">690</a>
+<a href="#691" id="691">691</a>
+<a href="#692" id="692">692</a>
+<a href="#693" id="693">693</a>
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
 </pre><pre class="rust"><code><span class="attr">#![feature(never_type)]
 
 </span><span class="kw">use </span>std::{
@@ -700,7 +715,7 @@
 <span class="kw">use </span>bytes::{Bytes, BytesMut};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
-<span class="kw">use </span>futures::{ready, stream, Sink, Stream};
+<span class="kw">use </span>futures::{ready, sink::Buffer, stream, Sink, SinkExt, Stream};
 
 <span class="kw">use </span>async_recursion::async_recursion;
 <span class="kw">use </span>async_trait::async_trait;
@@ -1083,9 +1098,14 @@
     }
 }
 
-<span class="kw">pub struct </span>ConnectedDemux&lt;T: ConnectedSink&gt; {
+<span class="kw">pub type </span>BufferedDrain&lt;S, I&gt; = DemuxDrain&lt;I, Buffer&lt;S, I&gt;&gt;;
+
+<span class="kw">pub struct </span>ConnectedDemux&lt;T: ConnectedSink&gt;
+<span class="kw">where
+    </span>&lt;T <span class="kw">as </span>ConnectedSink&gt;::Input: Sync,
+{
     <span class="kw">pub </span>keys: Vec&lt;u32&gt;,
-    sink: <span class="prelude-ty">Option</span>&lt;DemuxDrain&lt;T::Input, T::Sink&gt;&gt;,
+    sink: <span class="prelude-ty">Option</span>&lt;BufferedDrain&lt;T::Sink, T::Input&gt;&gt;,
 }
 
 <span class="attr">#[pin_project]
@@ -1148,7 +1168,12 @@
                 <span class="kw">for </span>(id, pipe) <span class="kw">in </span>demux {
                     connected_demux.insert(
                         id,
-                        Box::pin(T::from_defn(ServerOrBound::Server(pipe)).<span class="kw">await</span>.into_sink()),
+                        Box::pin(
+                            T::from_defn(ServerOrBound::Server(pipe))
+                                .<span class="kw">await
+                                </span>.into_sink()
+                                .buffer(<span class="number">1024</span>),
+                        ),
                     );
                 }
 
@@ -1169,7 +1194,12 @@
                 <span class="kw">for </span>(id, bound) <span class="kw">in </span>demux {
                     connected_demux.insert(
                         id,
-                        Box::pin(T::from_defn(ServerOrBound::Bound(bound)).<span class="kw">await</span>.into_sink()),
+                        Box::pin(
+                            T::from_defn(ServerOrBound::Bound(bound))
+                                .<span class="kw">await
+                                </span>.into_sink()
+                                .buffer(<span class="number">1024</span>),
+                        ),
                     );
                 }
 
@@ -1193,7 +1223,7 @@
     </span>&lt;T <span class="kw">as </span>ConnectedSink&gt;::Input: <span class="lifetime">&#39;static </span>+ Sync,
 {
     <span class="kw">type </span>Input = (u32, T::Input);
-    <span class="kw">type </span>Sink = DemuxDrain&lt;T::Input, T::Sink&gt;;
+    <span class="kw">type </span>Sink = BufferedDrain&lt;T::Sink, T::Input&gt;;
 
     <span class="kw">fn </span>into_sink(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Sink {
         <span class="self">self</span>.sink.take().unwrap()
