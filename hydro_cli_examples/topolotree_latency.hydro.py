@@ -69,27 +69,20 @@ def create_tree(depth, deployment, create_machine) -> Optional[Tree]:
             right
         )
 
-# rustup run nightly-2023-03-01-x86_64-unknown-linux-gnu hydro deploy ../hydro_cli_examples/toplotree.hydro.py -- local (or gcp)
+# rustup run nightly-2023-03-01-x86_64-unknown-linux-gnu hydro deploy ../hydro_cli_examples/toplotree_latency.hydro.py -- local/gcp DEPTH_OF_TREE
 async def main(args):
     tree_depth = int(args[1])
     deployment = hydro.Deployment()
 
     localhost_machine = deployment.Localhost()
 
-    # python_sender = deployment.CustomService(
-    #     external_ports=[],
-    #     on=localhost_machine,
-    # )
-
     gcp_vpc = hydro.GCPNetwork(
-        # project="autocompartmentalization",
         project="hydro-chrisdouglas",
     )
 
     def create_machine():
         if args[0] == "gcp":
             return deployment.GCPComputeEngineHost(
-                # project="autocompartmentalization",
                 project="hydro-chrisdouglas",
                 machine_type="e2-micro",
                 image="debian-cloud/debian-11",
@@ -122,7 +115,6 @@ async def main(args):
     tree.map(send_non_rightmost_queries_to_null)
 
     latency_machine = deployment.GCPComputeEngineHost(
-        # project="autocompartmentalization",
         project="hydro-chrisdouglas",
         machine_type="e2-micro",
         image="debian-cloud/debian-11",
@@ -140,36 +132,10 @@ async def main(args):
 
     await deployment.deploy()
 
-    # async def get_increment_channel(port):
-    #     return await (await port.server_port()).into_sink()
-    # tree_increment_channels = await tree_increment_ports.map_async(get_increment_channel)
-
-    # async def get_query_response_channel(port):
-    #     return await (await port.server_port()).into_source()
-    # tree_query_response_channels = await tree_query_response_ports.map_async(get_query_response_channel)
-
     async def get_stdouts(node):
         return await node.stdout()
     tree_stdouts = await tree.map_async(get_stdouts)
-
-    # def stream_printer(path, v):
-    #     parsed = json.loads(decode(v, "utf-8"))
-    #     return f"{path}: {parsed}"
-
     print("deployed!")
-
-    # with_path_responses = [
-    #     stream.map(response, lambda x,path=path: stream_printer(path, x))
-    #     for (response, path) in tree_query_response_channels.flatten_with_path()
-    # ]
-
-    # async def print_queries():
-    #     try:
-    #         async with stream.merge(*with_path_responses).stream() as merged:
-    #             async for log in merged:
-    #                 print(log)
-    #     except asyncio.CancelledError:
-    #         pass
 
     with_stdouts = [
         stream.map(stdout, lambda x,path=path: (path, x))
@@ -179,16 +145,13 @@ async def main(args):
     async def print_stdouts():
         try:
             async with stream.merge(*with_stdouts).stream() as merged:
-                async for path, log in merged:
-                    # if not log.startswith("to_query"):
-                    #     return f"{path}: {log}"
+                async for _ in merged:
                     pass
         except asyncio.CancelledError:
             pass
     
     latency_stdout = await latency_measurer.stdout()
 
-    # print_query_task = asyncio.create_task(print_queries())
     print_stdout_task = asyncio.create_task(print_stdouts())
     try:
         await deployment.start()
@@ -244,30 +207,10 @@ async def main(args):
         csv_file.write(str(np.mean(latency)) + "," + str(np.std(latency)) + "," + str(np.min(latency)) + "," + str(np.max(latency)) + "," + str(np.percentile(latency, 99)) + "," + str(np.percentile(latency, 75)) + "," + str(np.percentile(latency, 50)) + "," + str(np.percentile(latency, 25)) + "," + str(np.percentile(latency, 1)))
         csv_file.close()
 
-        # my_file = open("latency_"+experiment_id, ".txt", "w")
-        # print(my_file.read())
-        # my_file.close()
-
         df = pd.DataFrame(latency)
         df.to_csv("latency_"+ args[0] + "_tree_depth_" + str(tree_depth) + "_" + experiment_id+".csv", index=False, header=False)
-
-        
-        # with open(f"latency_{experiment_id}.csv", "w") as f:
-        #     f.write("mean,std,min,max,percentile_99,percentile_75,percentile_50,percentile_25,percentile_1)
-        
-
-        # for i in range(1000000):
-        #     if i % 10000 == 0:
-        #         print(f"sending increment {i}")
-        #     await tree_increment_channels.node.send(bytes("{\"tweet_id\": " + str(i) + ", \"likes\": " + str(i % 2 * 2 - 1) + "}", "utf-8"))
-        #     # print("temp")
-        #     # await tree_increment_channels.node.send(bytes(F"""{"tweet_id": 1, "likes": {i % 2}}""", "utf-8"))
-        #     #await asyncio.sleep(1)
     finally:
-        pass
-        # print_query_task.cancel()
         print_stdout_task.cancel()
-        # await print_query_task
         try:
             await print_stdout_task
         except:

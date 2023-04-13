@@ -64,7 +64,7 @@ def create_tree(depth, deployment, create_machine) -> Optional[Tree]:
             right
         )
 
-# rustup run nightly-2023-03-01-x86_64-unknown-linux-gnu hydro deploy ../hydro_cli_examples/toplotree.hydro.py -- local (or gcp)
+# rustup run nightly-2023-03-01-x86_64-unknown-linux-gnu hydro deploy ../hydro_cli_examples/toplotree.hydro.py -- local/gcp DEPTH_OF_TREE
 async def main(args):
     tree_depth = int(args[1])
     deployment = hydro.Deployment()
@@ -77,14 +77,12 @@ async def main(args):
     )
 
     gcp_vpc = hydro.GCPNetwork(
-        # project="autocompartmentalization",
         project="hydro-chrisdouglas",
     )
 
     def create_machine():
         if args[0] == "gcp":
             return deployment.GCPComputeEngineHost(
-                # project="autocompartmentalization",
                 project="hydro-chrisdouglas",
                 machine_type="e2-micro",
                 image="debian-cloud/debian-11",
@@ -171,9 +169,6 @@ async def main(args):
             if i % 10000 == 0:
                 print(f"sending increment {i}")
             await tree_increment_channels.node.send(bytes("{\"tweet_id\": " + str(i) + ", \"likes\": " + str(i % 2 * 2 - 1) + "}", "utf-8"))
-            # print("temp")
-            # await tree_increment_channels.node.send(bytes(F"""{"tweet_id": 1, "likes": {i % 2}}""", "utf-8"))
-            #await asyncio.sleep(1)
     finally:
         print_query_task.cancel()
         print_stdout_task.cancel()
