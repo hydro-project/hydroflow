@@ -1,4 +1,7 @@
-use crate::lang::lattice::{Convert, LatticeRepr, Merge};
+use crate::lang::{
+    clear::Clear,
+    lattice::{Convert, LatticeRepr, Merge},
+};
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::{
     collections::{hash_map::Entry, hash_set},
@@ -19,6 +22,13 @@ impl<Key, Lr: LatticeRepr + Merge<LrDelta>, LrDelta: LatticeRepr> Default
             table: FxHashMap::default(),
             _marker: PhantomData::default(),
         }
+    }
+}
+impl<Key, Lr: LatticeRepr + Merge<LrDelta>, LrDelta: LatticeRepr> Clear
+    for HalfJoinStateLattice<Key, Lr, LrDelta>
+{
+    fn clear(&mut self) {
+        self.table.clear()
     }
 }
 impl<Key, Lr: LatticeRepr + Merge<LrDelta> + Convert<LrDelta>, LrDelta: LatticeRepr>

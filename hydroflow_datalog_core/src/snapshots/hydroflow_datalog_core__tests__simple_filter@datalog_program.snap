@@ -72,10 +72,10 @@ fn main() {
                             .state_ref(sg_1v1_node_2v1_uniquedata)
                             .borrow_mut();
                         let set = borrow
-                            .try_insert_with(
-                                (context.current_tick(), context.current_stratum()),
-                                hydroflow::rustc_hash::FxHashSet::default,
-                            );
+                            .get_mut_clear((
+                                context.current_tick(),
+                                context.current_stratum(),
+                            ));
                         if !set.contains(item) {
                             set.insert(::std::clone::Clone::clone(item));
                             true
@@ -120,10 +120,10 @@ fn main() {
                             .state_ref(sg_1v1_node_5v1_uniquedata)
                             .borrow_mut();
                         let set = borrow
-                            .try_insert_with(
-                                (context.current_tick(), context.current_stratum()),
-                                hydroflow::rustc_hash::FxHashSet::default,
-                            );
+                            .get_mut_clear((
+                                context.current_tick(),
+                                context.current_stratum(),
+                            ));
                         if !set.contains(item) {
                             set.insert(::std::clone::Clone::clone(item));
                             true

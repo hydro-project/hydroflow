@@ -146,13 +146,11 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                     Persistence::Tick => (
                         quote_spanned! {op_span=>
                             #root::lang::monotonic_map::MonotonicMap::new_init(
-                                #root::lang::clear::ClearDefault(
-                                    #join_type::default()
-                                )
+                                #join_type::default()
                             )
                         },
                         quote_spanned! {op_span=>
-                            &mut #borrow_ident.try_insert_with(#context.current_tick(), Default::default).0
+                            &mut *#borrow_ident.get_mut_clear(#context.current_tick())
                         },
                     ),
                     Persistence::Static => (

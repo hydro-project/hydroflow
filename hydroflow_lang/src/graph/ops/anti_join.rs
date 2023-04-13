@@ -91,10 +91,7 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
                     check_inputs(
                         #input_pos,
                         #input_neg,
-                        #borrow_ident.try_insert_with(
-                            (#context.current_tick(), #context.current_stratum()),
-                            Default::default
-                        )
+                        #borrow_ident.get_mut_clear((#context.current_tick(), #context.current_stratum()))
                     )
                 };
             }

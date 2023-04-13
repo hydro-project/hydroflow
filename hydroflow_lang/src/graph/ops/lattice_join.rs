@@ -130,13 +130,11 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
                     Persistence::Tick => (
                         quote_spanned! {op_span=>
                             #root::lang::monotonic_map::MonotonicMap::new_init(
-                                #root::lang::clear::ClearDefault(
-                                    #root::compiled::pull::HalfJoinStateLattice::default()
-                                )
+                                #root::compiled::pull::HalfJoinStateLattice::default()
                             )
                         },
                         quote_spanned! {op_span=>
-                            &mut #borrow_ident.try_insert_with(#context.current_tick(), Default::default).0
+                            &mut *#borrow_ident.get_mut_clear(#context.current_tick())
                         },
                     ),
                     Persistence::Static => (
