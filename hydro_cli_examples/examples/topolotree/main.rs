@@ -8,7 +8,6 @@ use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::hash::Hasher;
-use std::time::Duration;
 use std::time::Instant;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -52,7 +51,7 @@ async fn main() {
         loop {
             let x = procinfo::pid::stat_self().unwrap();
             println!("memory: {} bytes", x.rss * 1024 * 4);
-            tokio::time::sleep(Duration::from_secs(1)).await;
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
     };
 
