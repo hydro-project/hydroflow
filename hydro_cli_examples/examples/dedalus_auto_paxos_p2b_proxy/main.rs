@@ -43,6 +43,7 @@ async fn main() {
 # EDB
 .input id `repeat_iter([(my_id,),])`
 .input quorum `repeat_iter([(f+1,),])`
+.input fullQuorum `repeat_iter([(2*f+1,),])`
 .input acceptorStartIDs `repeat_iter(acceptor_start_ids.clone()) -> map(|p| (p,))` # Assume = 0,n,2n,...,n*m, for n acceptors and m partitions
 .input numAcceptorGroups `repeat_iter([(num_acceptor_groups,),])`
 .input numP2bProxyLeaders `repeat_iter([(num_p2b_proxy_leaders,),])`
@@ -66,14 +67,14 @@ async fn main() {
 
 
 p2b(a, p, s, i, n, mi, mn) :- p2bU(a, p, s, i, n, mi, mn)
-p2b(a, p, s, i, n, mi, mn) :+ p2b(a, p, s, i, n, mi, mn), !commit(p2, s) # drop all p2bs if slot s is committed
+p2b(a, p, s, i, n, mi, mn) :+ p2b(a, p, s, i, n, mi, mn), !allCommit(s) # drop all p2bs if slot s is committed
 
 
 # Debug
 // p2bOut(i, a, payload, slot, id, num, maxID, maxNum) :- id(i), p2bU(a, payload, slot, id, num, maxID, maxNum)
-p2bToProposerOut(i, pid, mi, mn, t1) :- p2bNewBallot(mi, mn), tick(t1), proposer(pid), id(i)
-inputsOut(i, pid, n, t1, prevT) :- batchSize(n), tick(t1), batchTimes(prevT), proposer(pid), id(i)
-inputsOut(i, pid, n, t1, 0) :- batchSize(n), tick(t1), !batchTimes(prevT), proposer(pid), id(i)
+// p2bToProposerOut(i, pid, mi, mn, t1) :- p2bNewBallot(mi, mn), tick(t1), proposer(pid), id(i)
+// inputsOut(i, pid, n, t1, prevT) :- batchSize(n), tick(t1), batchTimes(prevT), proposer(pid), id(i)
+// inputsOut(i, pid, n, t1, 0) :- batchSize(n), tick(t1), !batchTimes(prevT), proposer(pid), id(i)
 throughputOut(i, num, n) :- totalCommitted(num), periodic(), id(i), numP2bProxyLeaders(n)
 
 
@@ -93,13 +94,14 @@ inputs@pid(n, t1, 0) :~ batchSize(n), tick(t1), !batchTimes(prevT), proposer(pid
 
 CountMatchingP2bs(payload, slot, count(acceptorID), i, num) :- p2b(acceptorID, payload, slot, i, num, payloadBallotID, payloadBallotNum)
 commit(payload, slot) :- CountMatchingP2bs(payload, slot, c, i, num), quorum(size), (c >= size)
+allCommit(slot) :- CountMatchingP2bs(payload, slot, c, i, num), fullQuorum(c)
 // clientOut(payload, slot) :- commit(payload, slot)
-NumCommits(count(slot)) :- commit(payload, slot)
+MaxCommits(max(slot)) :- commit(payload, slot)
 
-totalCommitted(new) :+ !totalCommitted(prev), NumCommits(new)
-totalCommitted(prev) :+ totalCommitted(prev), !NumCommits(new)
-totalCommitted(prev + new) :+ totalCommitted(prev), NumCommits(new)
-
+totalCommitted(new) :+ !totalCommitted(prev), MaxCommits(new)
+totalCommitted(prev) :+ totalCommitted(prev), !MaxCommits(new)
+totalCommitted(new) :+ totalCommitted(prev), MaxCommits(new), (prev < new)
+totalCommitted(prev) :+ totalCommitted(prev), MaxCommits(new), (prev >= new)
 "#
     );
     df.run_async().await;

@@ -100,11 +100,10 @@ async fn main() {
 .output acceptorThroughputOut `for_each(|(acceptor_id,num,):(u32,u32,)| println!("From acceptor {:?}: {:?}", acceptor_id, num))`
 .output acceptorThroughputOut `for_each(|(acceptor_id,num,):(u32,u32,)| eprintln!("throughput,{:?},{:?}", acceptor_id, num))`
 .output LeaderExpiredOut `for_each(|(pid,):(u32,)| println!("proposer {:?} leader expired", pid))`
-# For some reason Hydroflow can't infer the type of p2aBuffer, so we define it manually:
-.input p2aBuffer `null::<(u32,u32,u32,u32,u32,u32,)>()`
 
 # IDB
 .input clientIn `repeat_iter_external(vec![()]) -> map(|_| (context.current_tick() as u32,))`
+// .input clientIn2 `repeat_iter_external(vec![()]) -> map(|_| (context.current_tick() * 2 + 1 as u32,))`
 // .input clientIn `repeat_iter_external(vec![()]) -> flat_map(|_| (0..3).map(|d| ((context.current_tick() * 3 + d) as u32,)))`
 .output clientOut `for_each(|(payload,slot):(u32,u32)| println!("committed {:?}: {:?}", slot, payload))`
 
@@ -136,7 +135,7 @@ p1b(a, l, i, n, mi, mn) :- p1bU(a, l, i, n, mi, mn)
 p1b(a, l, i, n, mi, mn) :+ p1b(a, l, i, n, mi, mn)
 // .persist p1b
 p1bLog(a, p, s, pi, pn, i, n) :- p1bLogU(a, p, s, pi, pn, i, n)
-p1bLog(a, p, s, pi, pn, i, n) :+ p1bLog(a, p, s, pi, pn, i, n) # drop all p1bLogs if slot s is committed
+p1bLog(a, p, s, pi, pn, i, n) :+ p1bLog(a, p, s, pi, pn, i, n)
 // .persist p1bLog
 p2b(a, p, s, i, n, mi, mn) :- p2bU(a, p, s, i, n, mi, mn)
 p2b(a, p, s, i, n, mi, mn) :+ p2b(a, p, s, i, n, mi, mn), !allCommit(s) # drop all p2bs if slot s is committed
@@ -152,20 +151,20 @@ iAmLeader(i, n) :+ iAmLeader(i, n), !iAmLeaderCheckTimeout() # clear iAmLeader p
 ballot(zero) :- startBallot(zero)
 
 # Debug
-p1aOut(a, i, i, num) :- id(i), NewBallot(num), p1aTimeout(), LeaderExpired(), acceptors(a)
-p1aOut(a, i, i, num) :- id(i), ballot(num), !NewBallot(newNum), p1aTimeout(), LeaderExpired(), acceptors(a)
-p1bOut(pid, a, logSize, id, num, maxID, maxNum) :- id(pid), p1bU(a, logSize, id, num, maxID, maxNum)
-p1bLogOut(pid, a, payload, slot, payloadBallotID, payloadBallotNum, id, num) :- id(pid), p1bLogU(a, payload, slot, payloadBallotID, payloadBallotNum, id, num)
+// p1aOut(a, i, i, num) :- id(i), NewBallot(num), p1aTimeout(), LeaderExpired(), acceptors(a)
+// p1aOut(a, i, i, num) :- id(i), ballot(num), !NewBallot(newNum), p1aTimeout(), LeaderExpired(), acceptors(a)
+// p1bOut(pid, a, logSize, id, num, maxID, maxNum) :- id(pid), p1bU(a, logSize, id, num, maxID, maxNum)
+// p1bLogOut(pid, a, payload, slot, payloadBallotID, payloadBallotNum, id, num) :- id(pid), p1bLogU(a, payload, slot, payloadBallotID, payloadBallotNum, id, num)
 // p2aOut(a, i, payload, slot, i, num) :- ResentLog(payload, slot), id(i), ballot(num), acceptors(a)
 p2aOut(a, i, no, slot, i, num) :- FilledHoles(no, slot), id(i), ballot(num), acceptors(a) # Weird bug where if this line is commented out, id has an error?
 // p2aOut(a, i, payload, slot, i, num) :- ChosenPayload(payload), nextSlot(slot), id(i), ballot(num), acceptors(a)
 // p2bOut(pid, a, payload, slot, id, num, maxID, maxNum) :- id(pid), p2bU(a, payload, slot, id, num, maxID, maxNum)
 // iAmLeaderSendOut(pid, i, num) :- id(i), ballot(num), IsLeader(), proposers(pid), iAmLeaderResendTimeout(), !id(pid) 
-iAmLeaderReceiveOut(pid, i, num) :- id(pid), iAmLeaderU(i, num)
-LeaderExpiredOut(pid) :- id(pid), LeaderExpired()
+// iAmLeaderReceiveOut(pid, i, num) :- id(pid), iAmLeaderU(i, num)
+// LeaderExpiredOut(pid) :- id(pid), LeaderExpired()
 throughputOut(num) :- totalCommitted(num), p1aTimeout(), IsLeader()
-nextSlotOut(num) :- nextSlot(num), p1aTimeout(), IsLeader()
-acceptorThroughputOut(acceptorID, num) :- totalAcceptorSentP2bs(acceptorID, num), p1aTimeout(), IsLeader()
+// nextSlotOut(num) :- nextSlot(num), p1aTimeout(), IsLeader()
+// acceptorThroughputOut(acceptorID, num) :- totalAcceptorSentP2bs(acceptorID, num), p1aTimeout(), IsLeader()
 
 
 ######################## stable leader election
@@ -179,12 +178,12 @@ HasLargestBallot() :- MaxReceivedBallot(maxId, maxNum), id(i), ballot(num), (num
 HasLargestBallot() :- MaxReceivedBallot(maxId, maxNum), id(i), ballot(num), (num == maxNum), (i >= maxId)
 
 # send heartbeat if we're the leader.
-iAmLeaderU@pid(i, num) :~ id(i), ballot(num), IsLeader(), proposers(pid), iAmLeaderResendTimeout(), !id(pid) # don't send to self
-LeaderExpired() :- iAmLeaderCheckTimeout(), !iAmLeader(i, n), !IsLeader()
+iAmLeaderU@pid(i, num) :~ iAmLeaderResendTimeout(), id(i), ballot(num), IsLeader(), proposers(pid), !id(pid) # don't send to self
+LeaderExpired() :- iAmLeaderCheckTimeout(), !IsLeader(), !iAmLeader(i, n)
 
 # Resend p1a if we waited a random amount of time (timeout) AND leader heartbeat timed out. Send NewBallot if it was just triggered (ballot is updated in t+1), otherwise send ballot.
-p1a@a(i, i, num) :~ id(i), NewBallot(num), p1aTimeout(), LeaderExpired(), acceptors(a)
-p1a@a(i, i, num) :~ id(i), ballot(num), !NewBallot(newNum), p1aTimeout(), LeaderExpired(), acceptors(a)
+p1a@a(i, i, num) :~ p1aTimeout(), LeaderExpired(), id(i), NewBallot(num), acceptors(a)
+p1a@a(i, i, num) :~ p1aTimeout(), LeaderExpired(), id(i), ballot(num), !NewBallot(newNum), acceptors(a)
 
 # ballot = max + 1. If anothe proposer sends iAmLeader, that contains its ballot, which updates our ballot (to be even higher), so we are no longer the leader (RelevantP1bs no longer relevant)
 NewBallot(maxNum + 1) :- MaxReceivedBallot(maxId, maxNum), id(i), ballot(num), (maxNum >= num), (maxId != i)
@@ -204,7 +203,7 @@ P1bAcceptorLogReceived(acceptorID) :- RelevantP1bs(acceptorID, logSize), (logSiz
 P1bNumAcceptorsLogReceived(count(acceptorID)) :- P1bAcceptorLogReceived(acceptorID)
 IsLeader() :- P1bNumAcceptorsLogReceived(c), quorum(size), (c >= size), HasLargestBallot()
 
-P1bMatchingEntry(payload, slot, count(acceptorID), payloadBallotID, payloadBallotNum) :-  RelevantP1bLogs(acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
+P1bMatchingEntry(payload, slot, count(acceptorID), payloadBallotID, payloadBallotNum) :- RelevantP1bLogs(acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
 # what was committed = store in local log. Note: Don't need to worry about overwriting; it's impossible to have f+1 matching for the same slot and another payload with a higher ballot; therefore this slot must already have the same payload (maybe with a lower ballot)
 CommittedLog(payload, slot) :- P1bMatchingEntry(payload, slot, c, payloadBallotID, payloadBallotNum), quorum(size), (c >= size)
 
@@ -212,7 +211,7 @@ CommittedLog(payload, slot) :- P1bMatchingEntry(payload, slot, c, payloadBallotI
 P1bLargestEntryBallotNum(slot, max(payloadBallotNum)) :- RelevantP1bLogs(acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
 P1bLargestEntryBallot(slot, max(payloadBallotID), payloadBallotNum) :- P1bLargestEntryBallotNum(slot, payloadBallotNum), RelevantP1bLogs(acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
 # makes sure that p2as cannot be sent yet; otherwise resent slots might conflict. Once p2as can be sent, a new p1b log might tell us to propose a payload for the same slot we propose (in parallel) for p2a, which violates an invariant.
-ResentLog(payload, slot) :- P1bLargestEntryBallot(slot, payloadBallotID, payloadBallotNum), P1bMatchingEntry(payload, slot, c, payloadBallotID, payloadBallotNum), !CommittedLog(otherPayload, slot), IsLeader(), !nextSlot(s)
+ResentLog(payload, slot) :- !nextSlot(s), IsLeader(), P1bLargestEntryBallot(slot, payloadBallotID, payloadBallotNum), P1bMatchingEntry(payload, slot, c, payloadBallotID, payloadBallotNum), !CommittedLog(otherPayload, slot)
 p2a@a(i, payload, slot, i, num) :~ ResentLog(payload, slot), id(i), ballot(num), acceptors(a)
 
 # hole filling: if a slot is not in ResentEntries or proposedLog but it's smaller than max, then propose noop. Provides invariant that all holes are filled (proposed) by next timestep and we can just assign slots as current slot+1
@@ -221,11 +220,11 @@ ProposedSlots(slot) :- CommittedLog(payload, slot)
 ProposedSlots(slot) :- ResentLog(payload, slot)
 MaxProposedSlot(max(slot)) :- ProposedSlots(slot)
 PrevSlots(s) :- MaxProposedSlot(maxSlot), less_than(s, maxSlot)
-FilledHoles(no, s) :- noop(no), !ProposedSlots(s), PrevSlots(s), IsLeader(), !nextSlot(s2)
+FilledHoles(no, s) :- !nextSlot(s2), IsLeader(), noop(no), !ProposedSlots(s), PrevSlots(s)
 p2a@a(i, no, slot, i, num) :~ FilledHoles(no, slot), id(i), ballot(num), acceptors(a)
 
 # To assign values sequential slots after reconciling p1bs, start at max+1
-nextSlot(s+1) :+ IsLeader(), MaxProposedSlot(s), !nextSlot(s2)
+nextSlot(s+1) :+ !nextSlot(s2), IsLeader(), MaxProposedSlot(s)
 ######################## end reconcile p1b log with local log
 
 
@@ -254,10 +253,10 @@ totalCommitted(prev) :+ totalCommitted(prev), !MaxCommits(new)
 totalCommitted(new) :+ totalCommitted(prev), MaxCommits(new), (prev < new)
 totalCommitted(prev) :+ totalCommitted(prev), MaxCommits(new), (prev >= new)
 
-acceptorSentP2bs(acceptorID, count(slot)) :- p2bU(acceptorID, payload, slot, i, num, payloadBallotID, payloadBallotNum)
-totalAcceptorSentP2bs(acceptorID, new) :+ !totalAcceptorSentP2bs(acceptorID, prev), acceptorSentP2bs(acceptorID, new)
-totalAcceptorSentP2bs(acceptorID, prev) :+ totalAcceptorSentP2bs(acceptorID, prev), !acceptorSentP2bs(acceptorID, new)
-totalAcceptorSentP2bs(acceptorID, (prev + new)) :+ totalAcceptorSentP2bs(acceptorID, prev), acceptorSentP2bs(acceptorID, new)
+// acceptorSentP2bs(acceptorID, count(slot)) :- p2bU(acceptorID, payload, slot, i, num, payloadBallotID, payloadBallotNum)
+// totalAcceptorSentP2bs(acceptorID, new) :+ !totalAcceptorSentP2bs(acceptorID, prev), acceptorSentP2bs(acceptorID, new)
+// totalAcceptorSentP2bs(acceptorID, prev) :+ totalAcceptorSentP2bs(acceptorID, prev), !acceptorSentP2bs(acceptorID, new)
+// totalAcceptorSentP2bs(acceptorID, (prev + new)) :+ totalAcceptorSentP2bs(acceptorID, prev), acceptorSentP2bs(acceptorID, new)
 ######################## end process p2bs
 "#
     );

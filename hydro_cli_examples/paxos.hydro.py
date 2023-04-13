@@ -97,20 +97,20 @@ async def main(args):
     await deployment.start()
     print("started!")
 
-    per_acceptor = [[] for _ in acceptor_programs]
+    # per_acceptor = [[] for _ in acceptor_programs]
     total_throughput = []
-    total_sent = []
+    # total_sent = []
 
     # fig = plt.figure()
     # ax = fig.add_subplot(1,1,1)
     plt.ion()               # interactive mode on
     fig,ax = plt.subplots()
 
-    acceptor_plots = []
-    for i in range(0, len(per_acceptor)):
-        acceptor_plots.append(ax.plot(range(0, len(per_acceptor[i])), per_acceptor[i], label="acceptor " + str(i))[0])
+    # acceptor_plots = []
+    # for i in range(0, len(per_acceptor)):
+    #     acceptor_plots.append(ax.plot(range(0, len(per_acceptor[i])), per_acceptor[i], label="acceptor " + str(i))[0])
     total_throughput_plot = ax.plot(range(0, len(total_throughput)), total_throughput, label="total throughput")[0]
-    total_sent_plot = ax.plot(range(0, len(total_sent)), total_sent, label="total sent")[0]
+    # total_sent_plot = ax.plot(range(0, len(total_sent)), total_sent, label="total sent")[0]
     plt.legend()
     plt.xlabel("index in array")
     plt.ylabel("throughput")
@@ -119,37 +119,38 @@ async def main(args):
     try:
         async for log in program_out:
             split = log.split(",")
-            if split[0] == "throughput":
-                per_acceptor[int(split[1])].append(int(split[2]))
+            # if split[0] == "throughput":
+            #     per_acceptor[int(split[1])].append(int(split[2]))
             if split[0] == "total_throughput":
                 total_throughput.append(int(split[1]))
-            if split[0] == "total_sent":
-                total_sent.append(int(split[1]))
+            # if split[0] == "total_sent":
+            #     total_sent.append(int(split[1]))
             print(log, file=sys.stderr)
 
 
-            for i in range(0, len(per_acceptor)):
-                acceptor_plots[i].set_xdata(range(0, len(per_acceptor[i])))
-                acceptor_plots[i].set_ydata(per_acceptor[i])
+            # for i in range(0, len(per_acceptor)):
+            #     acceptor_plots[i].set_xdata(range(0, len(per_acceptor[i])))
+            #     acceptor_plots[i].set_ydata(per_acceptor[i])
             
             throughput_seconds = range(0, len(total_throughput))
             total_throughput_plot.set_xdata(throughput_seconds)
             total_throughput_plot.set_ydata(total_throughput)
 
-            sent_seconds = range(0, len(total_sent))
-            total_sent_plot.set_xdata(sent_seconds)
-            total_sent_plot.set_ydata(total_sent)
+            # sent_seconds = range(0, len(total_sent))
+            # total_sent_plot.set_xdata(sent_seconds)
+            # total_sent_plot.set_ydata(total_sent)
 
             # Calculate slope
             if len(total_throughput) > 1:
                 throughput_z = np.polyfit(throughput_seconds, total_throughput, 1)
-                sent_z = np.polyfit(sent_seconds, total_sent, 1)
+                # sent_z = np.polyfit(sent_seconds, total_sent, 1)
                 for x in plt.findobj(match=text.Text):
                     try:
                         x.remove()
                     except NotImplementedError:
                         pass
-                plt.text(0.7, 0.1, "throughput=%.2f/s"%throughput_z[0] + "\nwrite=%.2f/s"%sent_z[0], fontsize = 11, transform=ax.transAxes, horizontalalignment='right', verticalalignment='bottom')
+                # plt.text(0.7, 0.1, "throughput=%.2f/s"%throughput_z[0] + "\nwrite=%.2f/s"%sent_z[0], fontsize = 11, transform=ax.transAxes, horizontalalignment='right', verticalalignment='bottom')
+                plt.text(0.7, 0.1, "throughput=%.2f/s"%throughput_z[0], fontsize = 11, transform=ax.transAxes, horizontalalignment='right', verticalalignment='bottom')
 
 
             ax.relim()

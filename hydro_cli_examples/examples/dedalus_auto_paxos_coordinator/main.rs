@@ -46,9 +46,9 @@ async fn main() {
 
 
 # Debug
-p1aVoteOut(i, aid, pid, ballotID, ballotNum) :- p1aVoteU(aid, pid, ballotID, ballotNum), id(i)
-p1aCommitOut(i, a, o, pid, ballotID, ballotNum) :- chosenP1aVote(pid, ballotID, ballotNum), nextOrder(o), acceptorPartitions(a), id(i)
-p1aCommitOut(i, a, 0, pid, ballotID, ballotNum) :- chosenP1aVote(pid, ballotID, ballotNum), !nextOrder(o), acceptorPartitions(a), id(i)
+// p1aVoteOut(i, aid, pid, ballotID, ballotNum) :- p1aVoteU(aid, pid, ballotID, ballotNum), id(i)
+// p1aCommitOut(i, a, o, pid, ballotID, ballotNum) :- chosenP1aVote(pid, ballotID, ballotNum), nextOrder(o), acceptorPartitions(a), id(i)
+// p1aCommitOut(i, a, 0, pid, ballotID, ballotNum) :- chosenP1aVote(pid, ballotID, ballotNum), !nextOrder(o), acceptorPartitions(a), id(i)
 
 
 p1aVote(aid, pid, i, n) :- p1aVoteU(aid, pid, i, n)

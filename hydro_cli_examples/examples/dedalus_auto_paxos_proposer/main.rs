@@ -155,16 +155,16 @@ iAmLeader(i, n) :+ iAmLeader(i, n), !iAmLeaderCheckTimeout() # clear iAmLeader p
 ballot(zero) :- startBallot(zero)
 
 # Debug
-p1aOut(a, i, i, num) :- id(i), NewBallot(num), p1aTimeout(), LeaderExpired(), acceptors(a)
-p1aOut(a, i, i, num) :- id(i), ballot(num), !NewBallot(newNum), p1aTimeout(), LeaderExpired(), acceptors(a)
-p1bOut(pid, p, a, logSize, id, num, maxID, maxNum) :- id(pid), p1bU(p, a, logSize, id, num, maxID, maxNum)
-p1bLogOut(pid, p, a, payload, slot, payloadBallotID, payloadBallotNum, id, num) :- id(pid), p1bLogU(p, a, payload, slot, payloadBallotID, payloadBallotNum, id, num)
+// p1aOut(a, i, i, num) :- id(i), NewBallot(num), p1aTimeout(), LeaderExpired(), acceptors(a)
+// p1aOut(a, i, i, num) :- id(i), ballot(num), !NewBallot(newNum), p1aTimeout(), LeaderExpired(), acceptors(a)
+// p1bOut(pid, p, a, logSize, id, num, maxID, maxNum) :- id(pid), p1bU(p, a, logSize, id, num, maxID, maxNum)
+// p1bLogOut(pid, p, a, payload, slot, payloadBallotID, payloadBallotNum, id, num) :- id(pid), p1bLogU(p, a, payload, slot, payloadBallotID, payloadBallotNum, id, num)
 // p2aOut(start+(slot%n), i, payload, slot, i, num) :- ResentLog(payload, slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
 p2aOut(start+(slot%n), i, no, slot, i, num) :- FilledHoles(no, slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start) # Weird bug where if this line is commented out, id has an error?
 // p2aOut(start+(slot%n), i, payload, slot, i, num) :- ChosenPayload(payload), nextSlot(slot), id(i), ballot(num),  numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
-p2bOut(pid, mi, mn, t1) :- id(pid), p2bU(mi, mn, t1)
-p2bSealedOut(pid, mi, mn) :- id(pid), p2bSealed(mi, mn)
-inputsOut(pid, n, t1, prevT) :- id(pid), inputsU(n, t1, prevT)
+// p2bOut(pid, mi, mn, t1) :- id(pid), p2bU(mi, mn, t1)
+// p2bSealedOut(pid, mi, mn) :- id(pid), p2bSealed(mi, mn)
+// inputsOut(pid, n, t1, prevT) :- id(pid), inputsU(n, t1, prevT)
 // iAmLeaderSendOut(pid, i, num) :- id(i), ballot(num), IsLeader(), proposers(pid), iAmLeaderResendTimeout(), !id(pid) 
 // iAmLeaderReceiveOut(pid, i, num) :- id(pid), iAmLeaderU(i, num)
 
@@ -180,12 +180,12 @@ HasLargestBallot() :- MaxReceivedBallot(maxId, maxNum), id(i), ballot(num), (num
 HasLargestBallot() :- MaxReceivedBallot(maxId, maxNum), id(i), ballot(num), (num == maxNum), (i >= maxId)
 
 # send heartbeat if we're the leader.
-iAmLeaderU@pid(i, num) :~ id(i), ballot(num), IsLeader(), proposers(pid), iAmLeaderResendTimeout(), !id(pid) # don't send to self
-LeaderExpired() :- iAmLeaderCheckTimeout(), !iAmLeader(i, n), !IsLeader()
+iAmLeaderU@pid(i, num) :~ iAmLeaderResendTimeout(), id(i), ballot(num), IsLeader(), proposers(pid), !id(pid) # don't send to self
+LeaderExpired() :- iAmLeaderCheckTimeout(), !IsLeader(), !iAmLeader(i, n)
 
 # Resend p1a if we waited a random amount of time (timeout) AND leader heartbeat timed out. Send NewBallot if it was just triggered (ballot is updated in t+1), otherwise send ballot.
-p1a@a(i, i, num) :~ id(i), NewBallot(num), p1aTimeout(), LeaderExpired(), acceptors(a)
-p1a@a(i, i, num) :~ id(i), ballot(num), !NewBallot(newNum), p1aTimeout(), LeaderExpired(), acceptors(a)
+p1a@a(i, i, num) :~ p1aTimeout(), LeaderExpired(), id(i), NewBallot(num), acceptors(a)
+p1a@a(i, i, num) :~ p1aTimeout(), LeaderExpired(), id(i), ballot(num), !NewBallot(newNum), acceptors(a)
 
 # ballot = max + 1. If anothe proposer sends iAmLeader, that contains its ballot, which updates our ballot (to be even higher), so we are no longer the leader (RelevantP1bs no longer relevant)
 NewBallot(maxNum + 1) :- MaxReceivedBallot(maxId, maxNum), id(i), ballot(num), (maxNum >= num), (maxId != i)
@@ -216,7 +216,7 @@ CommittedLog(payload, slot) :- P1bMatchingEntry(payload, slot, c, payloadBallotI
 P1bLargestEntryBallotNum(slot, max(payloadBallotNum)) :- RelevantP1bLogs(partitionID, acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
 P1bLargestEntryBallot(slot, max(payloadBallotID), payloadBallotNum) :- P1bLargestEntryBallotNum(slot, payloadBallotNum), RelevantP1bLogs(partitionID, acceptorID, payload, slot, payloadBallotID, payloadBallotNum)
 # makes sure that p2as cannot be sent yet; otherwise resent slots might conflict. Once p2as can be sent, a new p1b log might tell us to propose a payload for the same slot we propose (in parallel) for p2a, which violates an invariant.
-ResentLog(payload, slot) :- P1bLargestEntryBallot(slot, payloadBallotID, payloadBallotNum), P1bMatchingEntry(payload, slot, c, payloadBallotID, payloadBallotNum), !CommittedLog(otherPayload, slot), IsLeader(), !nextSlot(s)
+ResentLog(payload, slot) :- !nextSlot(s), IsLeader(), P1bLargestEntryBallot(slot, payloadBallotID, payloadBallotNum), P1bMatchingEntry(payload, slot, c, payloadBallotID, payloadBallotNum), !CommittedLog(otherPayload, slot)
 p2a@(start+(slot%n))(i, payload, slot, i, num) :~ ResentLog(payload, slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
 
 # hole filling: if a slot is not in ResentEntries or proposedLog but it's smaller than max, then propose noop. Provides invariant that all holes are filled (proposed) by next timestep and we can just assign slots as current slot+1
@@ -225,7 +225,7 @@ ProposedSlots(slot) :- CommittedLog(payload, slot)
 ProposedSlots(slot) :- ResentLog(payload, slot)
 MaxProposedSlot(max(slot)) :- ProposedSlots(slot)
 PrevSlots(s) :- MaxProposedSlot(maxSlot), less_than(s, maxSlot)
-FilledHoles(no, s) :- noop(no), !ProposedSlots(s), PrevSlots(s), IsLeader(), !nextSlot(s2)
+FilledHoles(no, s) :- !nextSlot(s2), IsLeader(), noop(no), !ProposedSlots(s), PrevSlots(s)
 p2a@(start+(slot%n))(i, no, slot, i, num) :~ FilledHoles(no, slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
 
 # To assign values sequential slots after reconciling p1bs, start at max+1
@@ -251,11 +251,11 @@ p2bUP(mi, mn, t1) :- p2bU(mi, mn, t1) # Accept the original input
 p2bUP(mi, mn, t1) :+ p2bUP(mi, mn, t1) # Persist
 recvSize(count(*), t1) :- p2bUP(mi, mn, t1) # Count. Since there's only 1 r, recvSize = rCount.
 inputs(n, t1, prevT) :+ inputsU(n, t1, prevT)
-inputs(n, t1, prevT) :+ inputs(n, t1, prevT) # TODO: experiment with replacing with .persist
-canSeal(t1) :- recvSize(n, t1), inputs(n, t1, prevT), sealed(prevT), !sealed(t1) # Check if all inputs of this batch have been received
-canSeal(t1) :- recvSize(n, t1), inputs(n, t1, prevT), !sealed(t2), (prevT == 0)
+inputs(n, t1, prevT) :+ inputs(n, t1, prevT)
+canSeal(t1) :- recvSize(n, t1), !sealed(t1), inputs(n, t1, prevT), sealed(prevT) # Check if all inputs of this batch have been received
+canSeal(t1) :- recvSize(n, t1), !sealed(t2), inputs(n, t1, prevT), (prevT == 0)
 sealed(t1) :+ canSeal(t1)
-sealed(t1) :+ sealed(t1) # TODO: experiment with replacing with .persist
+sealed(t1) :+ sealed(t1)
 p2bSealed(mi, mn) :- p2bUP(mi, mn, t1), canSeal(t1)
 ######################## end p2bs with asymmetric decoupling
 "#
