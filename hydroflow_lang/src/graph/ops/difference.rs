@@ -98,7 +98,7 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
                     }, quote_spanned! {op_span=>
                         let mut #borrow_ident = #context.state_ref(#handle_ident).borrow_mut();
                         let #negset_ident = #borrow_ident
-                            .try_insert_with((#context.current_tick(), #context.current_stratum()), || {
+                            .get_mut_with((#context.current_tick(), #context.current_stratum()), || {
                                 #input_neg.collect()
                             });
                     })

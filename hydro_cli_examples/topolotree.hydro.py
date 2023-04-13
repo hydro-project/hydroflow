@@ -64,8 +64,9 @@ def create_tree(depth, deployment, create_machine) -> Optional[Tree]:
             right
         )
 
-# rustup run nightly-2023-03-01-x86_64-unknown-linux-gnu hydro deploy ../hydro_cli_examples/toplotree.hydro.py -- local (or gcp)
+# rustup run nightly-2023-03-01-x86_64-unknown-linux-gnu hydro deploy ../hydro_cli_examples/toplotree.hydro.py -- local/gcp DEPTH_OF_TREE
 async def main(args):
+    tree_depth = int(args[1])
     deployment = hydro.Deployment()
 
     localhost_machine = deployment.Localhost()
@@ -76,13 +77,13 @@ async def main(args):
     )
 
     gcp_vpc = hydro.GCPNetwork(
-        project="autocompartmentalization",
+        project="hydro-chrisdouglas",
     )
 
     def create_machine():
         if args[0] == "gcp":
             return deployment.GCPComputeEngineHost(
-                project="autocompartmentalization",
+                project="hydro-chrisdouglas",
                 machine_type="e2-micro",
                 image="debian-cloud/debian-11",
                 region="us-west1-a",
@@ -91,7 +92,7 @@ async def main(args):
         else:
             return localhost_machine
 
-    tree = create_tree(3, deployment, create_machine)
+    tree = create_tree(tree_depth, deployment, create_machine)
     tree.node.ports.to_parent.send_to(hydro.null())
     hydro.null().send_to(tree.node.ports.from_parent)
 
@@ -119,6 +120,10 @@ async def main(args):
         return await (await port.server_port()).into_source()
     tree_query_response_channels = await tree_query_response_ports.map_async(get_query_response_channel)
 
+    async def get_stdouts(node):
+        return await node.stdout()
+    tree_stdouts = await tree.map_async(get_stdouts)
+
     def stream_printer(path, v):
         parsed = json.loads(decode(v, "utf-8"))
         return f"{path}: {parsed}"
@@ -137,20 +142,38 @@ async def main(args):
                     print(log)
         except asyncio.CancelledError:
             pass
-    print_task = asyncio.create_task(print_queries())
 
-    await deployment.start()
-    print("started!")
+    with_stdouts = [
+        stream.map(stdout, lambda x,path=path: (path, x))
+        for (stdout, path) in tree_stdouts.flatten_with_path()
+    ]
 
-    await asyncio.sleep(1)
+    async def print_stdouts():
+        try:
+            async with stream.merge(*with_stdouts).stream() as merged:
+                async for path, log in merged:
+                    if not log.startswith("to_query"):
+                        return f"{path}: {log}"
+        except asyncio.CancelledError:
+            pass
+    
+    print_query_task = asyncio.create_task(print_queries())
+    print_stdout_task = asyncio.create_task(print_stdouts())
+    try:
+        await deployment.start()
+        print("started!")
 
-    for i in range(5):
-        print("sending increment")
-        await tree_increment_channels.node.send(bytes("1", "utf-8"))
         await asyncio.sleep(1)
 
-    print_task.cancel()
-    await print_task
+        for i in range(1000000):
+            if i % 10000 == 0:
+                print(f"sending increment {i}")
+            await tree_increment_channels.node.send(bytes("{\"tweet_id\": " + str(i) + ", \"likes\": " + str(i % 2 * 2 - 1) + "}", "utf-8"))
+    finally:
+        print_query_task.cancel()
+        print_stdout_task.cancel()
+        await print_query_task
+        await print_stdout_task
 
 if __name__ == "__main__":
     import sys

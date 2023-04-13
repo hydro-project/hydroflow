@@ -103,7 +103,7 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
                 };
                 let get_set = quote_spanned! {op_span=>
                     let mut borrow = #context.state_ref(#uniquedata_ident).borrow_mut();
-                    let set = borrow.try_insert_with((#context.current_tick(), #context.current_stratum()), #root::rustc_hash::FxHashSet::default);
+                    let set = borrow.get_mut_clear((#context.current_tick(), #context.current_stratum()));
                 };
                 (write_prologue, get_set)
             }
