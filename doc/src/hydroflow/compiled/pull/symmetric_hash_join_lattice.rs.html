@@ -226,7 +226,20 @@
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
 <a href="#228" id="228">228</a>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::lang::lattice::{Convert, LatticeRepr, Merge};
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::lang::{
+    clear::Clear,
+    lattice::{Convert, LatticeRepr, Merge},
+};
 <span class="kw">use </span>rustc_hash::{FxHashMap, FxHashSet};
 <span class="kw">use </span>std::{
     collections::{hash_map::Entry, hash_set},
@@ -247,6 +260,13 @@
             table: FxHashMap::default(),
             _marker: PhantomData::default(),
         }
+    }
+}
+<span class="kw">impl</span>&lt;Key, Lr: LatticeRepr + Merge&lt;LrDelta&gt;, LrDelta: LatticeRepr&gt; Clear
+    <span class="kw">for </span>HalfJoinStateLattice&lt;Key, Lr, LrDelta&gt;
+{
+    <span class="kw">fn </span>clear(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.table.clear()
     }
 }
 <span class="kw">impl</span>&lt;Key, Lr: LatticeRepr + Merge&lt;LrDelta&gt; + Convert&lt;LrDelta&gt;, LrDelta: LatticeRepr&gt;

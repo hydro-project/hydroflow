@@ -68,6 +68,12 @@
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
 <a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::clear::Clear;
 
 <span class="doccomment">/// A map-like interface which in reality only stores one value at a time. The keys must be
@@ -78,7 +84,6 @@
 </span><span class="kw">pub struct </span>MonotonicMap&lt;K, V&gt;
 <span class="kw">where
     </span>K: PartialOrd,
-    V: Clear,
 {
     key: <span class="prelude-ty">Option</span>&lt;K&gt;,
     val: V,
@@ -87,7 +92,7 @@
 <span class="kw">impl</span>&lt;K, V&gt; Default <span class="kw">for </span>MonotonicMap&lt;K, V&gt;
 <span class="kw">where
     </span>K: PartialOrd,
-    V: Clear + Default,
+    V: Default,
 {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
@@ -100,7 +105,6 @@
 <span class="kw">impl</span>&lt;K, V&gt; MonotonicMap&lt;K, V&gt;
 <span class="kw">where
     </span>K: PartialOrd,
-    V: Clear,
 {
     <span class="doccomment">/// Creates a new `MonotonicMap` initialized with the given value. The
     /// vaue will be `Clear`ed before it is accessed.
@@ -109,33 +113,41 @@
     }
 
     <span class="doccomment">/// Inserts the value using the function if new `key` is strictly later than the current key.
-    </span><span class="kw">pub fn </span>try_insert_with(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: K, init: <span class="kw">impl </span>FnOnce() -&gt; V) -&gt; <span class="kw-2">&amp;mut </span>V {
-        <span class="kw">if </span><span class="self">self
-            </span>.key
-            .as_ref()
-            .map(|old_key| old_key &lt; <span class="kw-2">&amp;</span>key)
-            .unwrap_or(<span class="bool-val">true</span>)
-        {
+    </span><span class="kw">pub fn </span>get_mut_with(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: K, init: <span class="kw">impl </span>FnOnce() -&gt; V) -&gt; <span class="kw-2">&amp;mut </span>V {
+        <span class="kw">if </span><span class="self">self</span>.key.as_ref().map_or(<span class="bool-val">true</span>, |old_key| old_key &lt; <span class="kw-2">&amp;</span>key) {
             <span class="self">self</span>.key = <span class="prelude-val">Some</span>(key);
             <span class="self">self</span>.val = (init)();
         }
         <span class="kw-2">&amp;mut </span><span class="self">self</span>.val
     }
 
-    <span class="doccomment">/// Returns the value for the monotonically increasing key, or `None` if
-    /// the key has already passed.
-    </span><span class="kw">pub fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: K) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>V&gt; {
-        <span class="kw">if </span><span class="self">self
-            </span>.key
-            .as_ref()
-            .map(|old_key| old_key &lt;= <span class="kw-2">&amp;</span>key)
-            .unwrap_or(<span class="bool-val">true</span>)
-        {
+    <span class="comment">// /// Returns the value for the monotonically increasing key, or `None` if
+    // /// the key has already passed.
+    // pub fn get_mut(&amp;mut self, key: K) -&gt; Option&lt;&amp;mut V&gt; {
+    //     if self
+    //         .key
+    //         .as_ref()
+    //         .map_or(true, |old_key| old_key &lt;= &amp;key)
+    //     {
+    //         self.key = Some(key);
+    //         Some(&amp;mut self.val)
+    //     } else {
+    //         None
+    //     }
+    // }
+</span>}
+
+<span class="kw">impl</span>&lt;K, V&gt; MonotonicMap&lt;K, V&gt;
+<span class="kw">where
+    </span>K: PartialOrd,
+    V: Clear,
+{
+    <span class="kw">pub fn </span>get_mut_clear(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: K) -&gt; <span class="kw-2">&amp;mut </span>V {
+        <span class="kw">if </span><span class="self">self</span>.key.as_ref().map_or(<span class="bool-val">true</span>, |old_key| old_key &lt; <span class="kw-2">&amp;</span>key) {
             <span class="self">self</span>.key = <span class="prelude-val">Some</span>(key);
-            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span><span class="self">self</span>.val)
-        } <span class="kw">else </span>{
-            <span class="prelude-val">None
-        </span>}
+            <span class="self">self</span>.val.clear();
+        }
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>.val
     }
 }
 </code></pre></div>

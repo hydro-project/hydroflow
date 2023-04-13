@@ -251,7 +251,7 @@
                 };
                 <span class="kw">let </span>get_set = <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="kw">let </span><span class="kw-2">mut </span>borrow = #context.state_ref(#uniquedata_ident).borrow_mut();
-                    <span class="kw">let </span>set = borrow.try_insert_with((#context.current_tick(), #context.current_stratum()), #root::rustc_hash::FxHashSet::default);
+                    <span class="kw">let </span>set = borrow.get_mut_clear((#context.current_tick(), #context.current_stratum()));
                 };
                 (write_prologue, get_set)
             }

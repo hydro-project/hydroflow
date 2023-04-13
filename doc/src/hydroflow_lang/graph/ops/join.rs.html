@@ -210,8 +210,6 @@
 <a href="#210" id="210">210</a>
 <a href="#211" id="211">211</a>
 <a href="#212" id="212">212</a>
-<a href="#213" id="213">213</a>
-<a href="#214" id="214">214</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
 
 <span class="kw">use super</span>::{
@@ -360,14 +358,12 @@
                     Persistence::Tick =&gt; (
                         <span class="macro">quote_spanned! </span>{op_span=&gt;
                             #root::lang::monotonic_map::MonotonicMap::new_init(
-                                #root::lang::clear::ClearDefault(
-                                    #join_type::default()
-                                )
+                                #join_type::default()
                             )
                         },
                         <span class="macro">quote_spanned! </span>{op_span=&gt;
-                            <span class="kw-2">&amp;mut </span>#borrow_ident.try_insert_with(#context.current_tick(), Default::default).<span class="number">0
-                        </span>},
+                            <span class="kw-2">&amp;mut *</span>#borrow_ident.get_mut_clear(#context.current_tick())
+                        },
                     ),
                     Persistence::Static =&gt; (
                         <span class="macro">quote_spanned! </span>{op_span=&gt;

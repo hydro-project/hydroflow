@@ -103,9 +103,6 @@
 <a href="#103" id="103">103</a>
 <a href="#104" id="104">104</a>
 <a href="#105" id="105">105</a>
-<a href="#106" id="106">106</a>
-<a href="#107" id="107">107</a>
-<a href="#108" id="108">108</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::PortIndexValue;
 
 <span class="kw">use super</span>::{FlowProperties, FlowPropertyVal};
@@ -199,10 +196,7 @@
                     check_inputs(
                         #input_pos,
                         #input_neg,
-                        #borrow_ident.try_insert_with(
-                            (#context.current_tick(), #context.current_stratum()),
-                            Default::default
-                        )
+                        #borrow_ident.get_mut_clear((#context.current_tick(), #context.current_stratum()))
                     )
                 };
             }
