@@ -1552,6 +1552,7 @@ dependencies = [
  "hydroflow_cli_integration",
  "nanoid",
  "nix",
+ "once_cell",
  "pyo3",
  "pyo3-asyncio",
  "pythonize",
