@@ -60,9 +60,7 @@ fn main() {
             .add_state(
                 std::cell::RefCell::new(
                     hydroflow::lang::monotonic_map::MonotonicMap::new_init(
-                        hydroflow::lang::clear::ClearDefault(
-                            hydroflow::compiled::pull::HalfMultisetJoinState::default(),
-                        ),
+                        hydroflow::compiled::pull::HalfMultisetJoinState::default(),
                     ),
                 ),
             );
@@ -70,9 +68,7 @@ fn main() {
             .add_state(
                 std::cell::RefCell::new(
                     hydroflow::lang::monotonic_map::MonotonicMap::new_init(
-                        hydroflow::lang::clear::ClearDefault(
-                            hydroflow::compiled::pull::HalfMultisetJoinState::default(),
-                        ),
+                        hydroflow::compiled::pull::HalfMultisetJoinState::default(),
                     ),
                 ),
             );
@@ -116,10 +112,10 @@ fn main() {
                             .state_ref(sg_1v1_node_2v1_uniquedata)
                             .borrow_mut();
                         let set = borrow
-                            .try_insert_with(
-                                (context.current_tick(), context.current_stratum()),
-                                hydroflow::rustc_hash::FxHashSet::default,
-                            );
+                            .get_mut_clear((
+                                context.current_tick(),
+                                context.current_stratum(),
+                            ));
                         if !set.contains(item) {
                             set.insert(::std::clone::Clone::clone(item));
                             true
@@ -161,10 +157,10 @@ fn main() {
                             .state_ref(sg_1v1_node_5v1_uniquedata)
                             .borrow_mut();
                         let set = borrow
-                            .try_insert_with(
-                                (context.current_tick(), context.current_stratum()),
-                                hydroflow::rustc_hash::FxHashSet::default,
-                            );
+                            .get_mut_clear((
+                                context.current_tick(),
+                                context.current_stratum(),
+                            ));
                         if !set.contains(item) {
                             set.insert(::std::clone::Clone::clone(item));
                             true
@@ -243,12 +239,10 @@ fn main() {
                     check_inputs(
                         op_15v1,
                         op_16v1,
-                        &mut sg_1v1_node_13v1_joindata_lhs_borrow
-                            .try_insert_with(context.current_tick(), Default::default)
-                            .0,
-                        &mut sg_1v1_node_13v1_joindata_rhs_borrow
-                            .try_insert_with(context.current_tick(), Default::default)
-                            .0,
+                        &mut *sg_1v1_node_13v1_joindata_lhs_borrow
+                            .get_mut_clear(context.current_tick()),
+                        &mut *sg_1v1_node_13v1_joindata_rhs_borrow
+                            .get_mut_clear(context.current_tick()),
                     )
                 };
                 let op_13v1 = {
@@ -289,10 +283,10 @@ fn main() {
                             .state_ref(sg_1v1_node_8v1_uniquedata)
                             .borrow_mut();
                         let set = borrow
-                            .try_insert_with(
-                                (context.current_tick(), context.current_stratum()),
-                                hydroflow::rustc_hash::FxHashSet::default,
-                            );
+                            .get_mut_clear((
+                                context.current_tick(),
+                                context.current_stratum(),
+                            ));
                         if !set.contains(item) {
                             set.insert(::std::clone::Clone::clone(item));
                             true

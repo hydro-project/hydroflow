@@ -1,3 +1,5 @@
+use crate::lang::clear::Clear;
+
 use super::HalfJoinState;
 use std::collections::{hash_map::Entry, VecDeque};
 
@@ -16,6 +18,12 @@ impl<Key, ValBuild, ValProbe> Default for HalfMultisetJoinState<Key, ValBuild, V
             table: HashMap::default(),
             current_matches: VecDeque::default(),
         }
+    }
+}
+impl<Key, ValBuild, ValProbe> Clear for HalfMultisetJoinState<Key, ValBuild, ValProbe> {
+    fn clear(&mut self) {
+        self.table.clear();
+        self.current_matches.clear();
     }
 }
 impl<Key, ValBuild, ValProbe> HalfJoinState<Key, ValBuild, ValProbe>
