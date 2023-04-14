@@ -44,12 +44,12 @@ See `test.hydro.py` for an example of how to use the available APIs.
 The CLI will use its own copy of `cargo` to build any Rust code. This means that the Rust toolchain used by the CLI is the one on your `$PATH`. If using `rustup` to manage toolchains, you will need to run the deployment with the appropriate toolchain activated. For example, to use the toolchain in `rust-toolchain.toml`, first run:
 ```bash
 $ rustup show active-toolchain
-# nightly-2023-03-01-aarch64-apple-darwin (environment override by RUSTUP_TOOLCHAIN)
+# nightly-2023-04-13-aarch64-apple-darwin (environment override by RUSTUP_TOOLCHAIN)
 ```
 
 Then, copying the toolchain name, run:
 ```bash
-rustup run nightly-2023-03-01-aarch64-apple-darwin hydro deploy ...
+rustup run nightly-2023-04-13-aarch64-apple-darwin hydro deploy ...
 ```
 
 ## Examples

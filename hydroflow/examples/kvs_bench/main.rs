@@ -4,14 +4,15 @@ mod server;
 mod util;
 
 use crate::server::run_server;
+
 use clap::command;
 use clap::Parser;
 use clap::Subcommand;
-use std::time::Duration;
 
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::time::Duration;
 
 #[derive(Debug, Parser)]
 struct Cli {

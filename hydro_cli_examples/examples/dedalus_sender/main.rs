@@ -30,7 +30,7 @@ async fn main() {
 
     let df = datalog!(
         r#"
-        .input repeated `repeat_iter(to_repeat.iter().cloned())`
+        .input repeated `repeat_iter_external(to_repeat.iter().cloned())`
         .input periodic `source_stream(periodic) -> map(|_| ())`
         .input peers `repeat_iter(peers.clone()) -> map(|p| (p,))`
         .async broadcast `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink_chunked(broadcast_sink, 8, Duration::from_millis(1))` `null::<(String,)>()`
