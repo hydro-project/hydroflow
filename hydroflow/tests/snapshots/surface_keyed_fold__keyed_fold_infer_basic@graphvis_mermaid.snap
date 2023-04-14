@@ -1,5 +1,5 @@
 ---
-source: hydroflow/tests/surface_group_by.rs
+source: hydroflow/tests/surface_keyed_fold.rs
 expression: df.meta_graph().unwrap().to_mermaid()
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
@@ -13,7 +13,7 @@ subgraph sg_1v1 ["sg_1v1 stratum 0"]
     1v1--->2v1
 end
 subgraph sg_2v1 ["sg_2v1 stratum 1"]
-    3v1[\"(3v1) <code>group_by::&lt;'static&gt;(|| 0, |old: &amp;mut u32, val: u32| *old += val)</code>"/]:::pullClass
+    3v1[\"(3v1) <code>keyed_fold::&lt;'static&gt;(|| 0, |old: &amp;mut u32, val: u32| *old += val)</code>"/]:::pullClass
     4v1[/"(4v1) <code>for_each(|(k, v)| println!(&quot;{}: {}&quot;, k, v))</code>"\]:::pushClass
     3v1--->4v1
 end
