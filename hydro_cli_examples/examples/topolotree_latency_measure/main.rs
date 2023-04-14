@@ -30,21 +30,23 @@ async fn main() {
         .into_source();
 
     loop {
-        let start = Instant::now();
-        start_node
-            .send(
-                serde_json::to_string(&IncrementRequest {
-                    tweet_id: 0,
-                    likes: 1,
-                })
-                .unwrap()
-                .into_bytes()
-                .into(),
-            )
-            .await
-            .unwrap();
+        for id in 0..1000000 {
+            let start = Instant::now();
+            start_node
+                .send(
+                    serde_json::to_string(&IncrementRequest {
+                        tweet_id: 0,
+                        likes: 1,
+                    })
+                    .unwrap()
+                    .into_bytes()
+                    .into(),
+                )
+                .await
+                .unwrap();
 
-        end_node.next().await;
-        println!("latency,{:?}", start.elapsed().as_micros());
+            end_node.next().await;
+            println!("latency,{:?}", start.elapsed().as_micros());
+        }
     }
 }

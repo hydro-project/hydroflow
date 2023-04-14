@@ -36,16 +36,18 @@ name = "topolotree"
 [[example]]
 name = "topolotree_latency_measure"
 
+[[example]]
+name = "pn_counter"
+
 [dev-dependencies]
 hydroflow = { path = "../hydroflow", features = [ "cli_integration" ] }
 hydroflow_datalog = { path = "../hydroflow_datalog" }
 
 tokio = { version = "1.16", features = [ "full" ] }
-serde = "1.0.159"
+serde = "1"
 serde_json = "1"
 
 futures = "0.3.28"
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 procinfo = "0.4.2"
-
