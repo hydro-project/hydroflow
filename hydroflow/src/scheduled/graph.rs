@@ -4,7 +4,6 @@ use std::cell::Cell;
 use std::collections::VecDeque;
 use std::future::Future;
 use std::marker::PhantomData;
-use std::num::NonZeroUsize;
 
 use hydroflow_lang::diagnostic::{Diagnostic, SerdeSpan};
 use hydroflow_lang::graph::HydroflowGraph;
@@ -309,48 +308,49 @@ impl Hydroflow {
 
     /// Enqueues subgraphs triggered by external events, blocking until at
     /// least one subgraph is scheduled **from an external event**.
-    pub fn recv_events(&mut self) -> Option<NonZeroUsize> {
+    pub fn recv_events(&mut self) -> Option<usize> {
         self.events_received_tick = true;
 
-        let mut events_has_external = false;
-        loop {
+        let mut count = 0;
+        let mut external = false;
+        while !external {
             let (sg_id, is_external) = self.event_queue_recv.blocking_recv()?;
-            events_has_external |= is_external;
+            external |= is_external;
             let sg_data = &self.subgraphs[sg_id.0];
             if !sg_data.is_scheduled.replace(true) {
                 self.stratum_queues[sg_data.stratum].push_back(sg_id);
-
-                // Enqueue any other immediate events.
-                let (extra_count, extra_has_external) = self.try_recv_events();
-                events_has_external |= extra_has_external;
-                if events_has_external {
-                    return Some(NonZeroUsize::new(extra_count + 1).unwrap());
-                }
+                count += 1;
             }
         }
+        debug_assert!(external);
+        // Enqueue any other immediate events.
+        let (extra_count, _extra_external) = self.try_recv_events();
+        Some(count + extra_count)
     }
 
-    /// Enqueues subgraphs triggered by external events asynchronously, waiting
-    /// until at least one subgraph is scheduled **from an external event**.
-    pub async fn recv_events_async(&mut self) -> Option<NonZeroUsize> {
+    /// Enqueues subgraphs triggered by external events asynchronously, waiting until at least one
+    /// subgraph is scheduled **from an external event**. Returns the number of subgraphs enqueued,
+    /// which may be zero if an external event scheduled an already-scheduled subgraph.
+    ///
+    /// Returns `None` if the event queue is closed, but that should not happen normally.
+    pub async fn recv_events_async(&mut self) -> Option<usize> {
         self.events_received_tick = true;
 
-        let mut events_has_external = false;
-        loop {
+        let mut count = 0;
+        let mut external = false;
+        while !external {
             let (sg_id, is_external) = self.event_queue_recv.recv().await?;
-            events_has_external |= is_external;
+            external |= is_external;
             let sg_data = &self.subgraphs[sg_id.0];
             if !sg_data.is_scheduled.replace(true) {
                 self.stratum_queues[sg_data.stratum].push_back(sg_id);
-
-                // Enqueue any other immediate events.
-                let (extra_count, extra_has_external) = self.try_recv_events();
-                events_has_external |= extra_has_external;
-                if events_has_external {
-                    return Some(NonZeroUsize::new(extra_count + 1).unwrap());
-                }
+                count += 1;
             }
         }
+        debug_assert!(external);
+        // Enqueue any other immediate events.
+        let (extra_count, _extra_external) = self.try_recv_events();
+        Some(count + extra_count)
     }
 
     pub fn add_subgraph<Name, R, W, F>(
