@@ -731,7 +731,7 @@ impl HydroflowGraph {
                                     let location = location.to_string().replace(|x: char| !x.is_alphanumeric(), "_");
 
                                     format!(
-                                        "{}__{}_{}__{}_{}",
+                                        "loc_{}_start_{}_{}_end_{}_{}",
                                         location,
                                         op_span.start().line,
                                         op_span.start().column,
@@ -739,18 +739,18 @@ impl HydroflowGraph {
                                         op_span.end().column
                                     )
                                 };
-                                let fn_ident = format_ident!("check_{}_{}_{}", ident, op_name, source_info, span = op_span);
+                                let fn_ident = format_ident!("{}__{}__{}", ident, op_name, source_info, span = op_span);
                                 let type_guard = if is_pull {
                                     quote_spanned! {op_span=>
                                         let #ident = {
                                             #[allow(non_snake_case)]
                                             #[inline(always)]
                                             pub fn #fn_ident<Item, Input: ::std::iter::Iterator<Item = Item>>(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
-                                                struct TypeGuard<Item, Input: ::std::iter::Iterator<Item = Item>> {
+                                                struct Pull<Item, Input: ::std::iter::Iterator<Item = Item>> {
                                                     inner: Input
                                                 }
 
-                                                impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator for TypeGuard<Item, Input> {
+                                                impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator for Pull<Item, Input> {
                                                     type Item = Item;
 
                                                     #[inline(always)]
@@ -764,7 +764,7 @@ impl HydroflowGraph {
                                                     }
                                                 }
 
-                                                TypeGuard {
+                                                Pull {
                                                     inner: input
                                                 }
                                             }
@@ -777,11 +777,11 @@ impl HydroflowGraph {
                                             #[allow(non_snake_case)]
                                             #[inline(always)]
                                             pub fn #fn_ident<Item, Input: #root::pusherator::Pusherator<Item = Item>>(input: Input) -> impl #root::pusherator::Pusherator<Item = Item> {
-                                                struct TypeGuard<Item, Input: #root::pusherator::Pusherator<Item = Item>> {
+                                                struct Push<Item, Input: #root::pusherator::Pusherator<Item = Item>> {
                                                     inner: Input
                                                 }
 
-                                                impl<Item, Input: #root::pusherator::Pusherator<Item = Item>> #root::pusherator::Pusherator for TypeGuard<Item, Input> {
+                                                impl<Item, Input: #root::pusherator::Pusherator<Item = Item>> #root::pusherator::Pusherator for Push<Item, Input> {
                                                     type Item = Item;
 
                                                     #[inline(always)]
@@ -790,7 +790,7 @@ impl HydroflowGraph {
                                                     }
                                                 }
 
-                                                TypeGuard {
+                                                Push {
                                                     inner: input
                                                 }
                                             }
