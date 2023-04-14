@@ -5,6 +5,7 @@ import hydro
 import json
 from pathlib import Path
 from aiostream import stream
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -71,7 +72,9 @@ def create_tree(depth, deployment, create_machine) -> Optional[Tree]:
 
 # rustup run nightly-2023-04-13-x86_64-unknown-linux-gnu hydro deploy ../hydro_cli_examples/toplotree_latency.hydro.py -- local/gcp DEPTH_OF_TREE
 async def main(args):
-    tree_depth = int(args[1])
+    is_tree = args[1] == "topolo" # or "pn"
+    tree_depth = int(args[2])
+    num_replicas = 2 ** tree_depth - 1
     deployment = hydro.Deployment()
 
     localhost_machine = deployment.Localhost()
@@ -92,27 +95,63 @@ async def main(args):
         else:
             return localhost_machine
 
-    tree = create_tree(tree_depth, deployment, create_machine)
-    tree.node.ports.to_parent.send_to(hydro.null())
-    hydro.null().send_to(tree.node.ports.from_parent)
+    all_nodes = []
+    if is_tree:
+        tree = create_tree(tree_depth, deployment, create_machine)
+        tree.node.ports.to_parent.send_to(hydro.null())
+        hydro.null().send_to(tree.node.ports.from_parent)
+        all_nodes = [tup[0] for tup in tree.flatten_with_path()]
+    else:
+        cluster = [
+            deployment.HydroflowCrate(
+                src=str(Path(__file__).parent.absolute()),
+                example="pn_counter",
+                args=[json.dumps([i]), json.dumps([num_replicas])],
+                on=create_machine()
+            )
+            for i in range(num_replicas)
+        ]
 
-    def create_increment_port(node):
+        for i in range(num_replicas):
+            cluster[i].ports.to_peer.send_to(hydro.demux(
+                {
+                    j: cluster[j].ports.from_peer.merge()
+                    for j in range(num_replicas)
+                    if i != j
+                }
+            ))
+
+        all_nodes = cluster
+
+    memory_receiver = deployment.CustomService(
+        on=localhost_machine,
+        external_ports=[]
+    )
+
+    memories = []
+    for node in all_nodes:
         hydro.null().send_to(node.ports.increment_requests.merge())
+        receiver_port = memory_receiver.client_port()
+        memories.append(receiver_port)
+        node.ports.memory_report.send_to(receiver_port)
 
-    tree.map(create_increment_port)
+    if is_tree:
+        source = tree
+        while source.left is not None:
+            source = source.left
+        source = source.node
 
-    leftmost = tree
-    while leftmost.left is not None:
-        leftmost = leftmost.left
-    rightmost = tree
-    while rightmost.right is not None:
-        rightmost = rightmost.right
-
-    def send_non_rightmost_queries_to_null(node):
-        if node is not rightmost.node:
+        dest = tree
+        while dest.right is not None:
+            dest = dest.right
+        dest = dest.node
+    else:
+        source = cluster[0]
+        dest = cluster[-1]
+        
+    for node in all_nodes:
+        if node is not dest:
             node.ports.query_responses.send_to(hydro.null())
-
-    tree.map(send_non_rightmost_queries_to_null)
 
     latency_machine = deployment.GCPComputeEngineHost(
         project="hydro-chrisdouglas",
@@ -127,94 +166,114 @@ async def main(args):
         on=latency_machine
     )
 
-    latency_measurer.ports.increment_start_node.send_to(leftmost.node.ports.increment_requests.merge())
-    rightmost.node.ports.query_responses.send_to(latency_measurer.ports.end_node_query)
+    latency_measurer.ports.increment_start_node.send_to(source.ports.increment_requests.merge())
+    dest.ports.query_responses.send_to(latency_measurer.ports.end_node_query)
 
     await deployment.deploy()
 
-    async def get_stdouts(node):
-        return await node.stdout()
-    tree_stdouts = await tree.map_async(get_stdouts)
     print("deployed!")
 
-    with_stdouts = [
-        stream.map(stdout, lambda x,path=path: (path, x))
-        for (stdout, path) in tree_stdouts.flatten_with_path()
-    ]
+    latency = []
+    memory_per_node = [[] for _ in range(num_replicas)]
+    throughput_raw = []
 
-    async def print_stdouts():
-        try:
-            async with stream.merge(*with_stdouts).stream() as merged:
-                async for _ in merged:
-                    pass
-        except asyncio.CancelledError:
-            pass
-    
+    throughput = []
+    throughput_fig,throughput_ax = plt.subplots()
+    throughput_plot = throughput_ax.plot(range(0, len(throughput)), throughput, label="throughput (ops/s)")[0]
+    plt.legend()
+    plt.xlabel("iterations")
+    plt.ylabel("throughput (ops/s)")
+
+    plt.show(block=False)
+
     latency_stdout = await latency_measurer.stdout()
 
-    print_stdout_task = asyncio.create_task(print_stdouts())
-    try:
-        await deployment.start()
-        print("started!")
+    memories_streams_with_index = [
+        stream.map(
+            await (await port.server_port()).into_source(),
+            lambda x,i=i: (i, x)
+        )
+        for i, port in enumerate(memories)
+    ]
 
-        plt.ion()               # interactive mode on
-        fig,ax = plt.subplots()
+    async def memory_plotter():
+        async with stream.merge(*memories_streams_with_index).stream() as merged:
+            async for node_idx, memory in merged:
+                memory = json.loads(decode(memory, "utf-8"))
+                memory_per_node[node_idx].append(memory)
 
-        latency = []
-        latency_plot = ax.plot(range(0, len(latency)), latency, label="latency (mus)")[0]
-        plt.legend()
-        plt.xlabel("iterations")
-        plt.ylabel("latency (mus)")
-        fig.show()
+    memory_plotter_task = asyncio.create_task(memory_plotter())
 
-        iter = 0
+    async def latency_plotter():
         async for line in latency_stdout:
-            iter += 1
-            number = int(line.split(",")[1]) # microseconds
-            latency.append(number)
+            line_split = line.split(",")
+            if line_split[0] == "throughput":
+                count = int(line_split[1])
+                period = float(line_split[2])
+                throughput_raw.append([count, period])
+                throughput.append(count / period)
 
-            if iter % 1000 == 0:
-                latency_seconds = range(0, len(latency))
-                latency_plot.set_xdata(latency_seconds)
-                latency_plot.set_ydata(latency)
+                throughput_plot.set_xdata(range(0, len(throughput)))
+                throughput_plot.set_ydata(throughput)
+                throughput_ax.relim()
+                throughput_ax.autoscale_view()
+                throughput_fig.canvas.draw()
+                throughput_fig.canvas.flush_events()
+            elif line_split[0] == "latency":
+                number = int(line_split[1]) # microseconds
+                latency.append(number)
 
-                ax.relim()
-                ax.autoscale_view()
-                plt.draw()
-                plt.pause(0.01)
-            if iter > 10000:
-                break
+    latency_plotter_task = asyncio.create_task(latency_plotter())
 
-        await tree.map_async(lambda node: node.stop())
+    await deployment.start()
+    print("started!")
 
-        # the current timestamp
-        import datetime
-        experiment_id = str(datetime.datetime.now())
+    await asyncio.sleep(10)
+    memory_plotter_task.cancel()
+    latency_plotter_task.cancel()
+    try:
+        await memory_plotter_task
+    except:
+        pass
+    try:
+        await latency_plotter_task
+    except:
+        pass
 
-        print("mean = ", np.mean(latency))
-        print("std = ", np.std(latency))
-        print("min = ", np.min(latency))
-        print("max = ", np.max(latency))
-        print("percentile 99 = ", np.percentile(latency, 99))
-        print("percentile 75 = ", np.percentile(latency, 75))
-        print("percentile 50 = ", np.percentile(latency, 50))
-        print("percentile 25 = ", np.percentile(latency, 25))
-        print("percentile 1 = ", np.percentile(latency, 1))
+    for node in all_nodes:
+        await node.stop()
 
-        # print the above values to a csv file
-        csv_file = open("stats_"+ args[0] + "_tree_depth_" + str(tree_depth) + "_" + experiment_id+".csv", "w")
-        csv_file.write("mean,std,min,max,percentile_99,percentile_75,percentile_50,percentile_25,percentile_1\n")
-        csv_file.write(str(np.mean(latency)) + "," + str(np.std(latency)) + "," + str(np.min(latency)) + "," + str(np.max(latency)) + "," + str(np.percentile(latency, 99)) + "," + str(np.percentile(latency, 75)) + "," + str(np.percentile(latency, 50)) + "," + str(np.percentile(latency, 25)) + "," + str(np.percentile(latency, 1)))
-        csv_file.close()
+    # the current timestamp
+    import datetime
+    experiment_id = str(datetime.datetime.now())
 
-        df = pd.DataFrame(latency)
-        df.to_csv("latency_"+ args[0] + "_tree_depth_" + str(tree_depth) + "_" + experiment_id+".csv", index=False, header=False)
-    finally:
-        print_stdout_task.cancel()
-        try:
-            await print_stdout_task
-        except:
-            pass
+    def summarize(v):
+        print("mean = ", np.mean(v))
+        print("std = ", np.std(v))
+        print("min = ", np.min(v))
+        print("max = ", np.max(v))
+        print("percentile 99 = ", np.percentile(v, 99))
+        print("percentile 75 = ", np.percentile(v, 75))
+        print("percentile 50 = ", np.percentile(v, 50))
+        print("percentile 25 = ", np.percentile(v, 25))
+        print("percentile 1 = ", np.percentile(v, 1))
+
+    print("latency:")
+    summarize(latency)
+
+    print("throughput:")
+    summarize(throughput)
+
+    final_memories = [
+        memory[-1]
+        for memory in memory_per_node
+    ]
+    print("final memory:")
+    summarize(final_memories)
+
+    pd.DataFrame(latency).to_csv("latency_"+ args[0] + "_tree_depth_" + str(tree_depth) + "_" + experiment_id+".csv", index=False, header=["latency"])
+    pd.DataFrame(throughput_raw).to_csv("throughput_"+ args[0] + "_tree_depth_" + str(tree_depth) + "_" + experiment_id+".csv", index=False, header=["count", "period"])
+    pd.DataFrame(final_memories).to_csv("memory_"+ args[0] + "_tree_depth_" + str(tree_depth) + "_" + experiment_id+".csv", index=False, header=["memory"])
 
 if __name__ == "__main__":
     import sys
