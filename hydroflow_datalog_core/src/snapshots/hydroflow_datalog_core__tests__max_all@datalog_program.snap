@@ -57,13 +57,30 @@ fn main() {
                     }
                 });
                 let op_7v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_7v1<Input: ::std::iter::Iterator<Item = Item>, Item>(
-                        input: Input,
-                    ) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
+                    pub fn op_7v1__source_stream__loc_unknown_start_1_0_end_1_0<
+                        Item,
+                        Input: ::std::iter::Iterator<Item = Item>,
+                    >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                        struct Pull<Item, Input: ::std::iter::Iterator<Item = Item>> {
+                            inner: Input,
+                        }
+                        impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator
+                        for Pull<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn next(&mut self) -> Option<Self::Item> {
+                                self.inner.next()
+                            }
+                            #[inline(always)]
+                            fn size_hint(&self) -> (usize, Option<usize>) {
+                                self.inner.size_hint()
+                            }
+                        }
+                        Pull { inner: input }
                     }
-                    check_op_7v1(op_7v1)
+                    op_7v1__source_stream__loc_unknown_start_1_0_end_1_0(op_7v1)
                 };
                 let op_2v1 = op_7v1
                     .filter(|item| {
@@ -83,23 +100,57 @@ fn main() {
                         }
                     });
                 let op_2v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_2v1<Input: ::std::iter::Iterator<Item = Item>, Item>(
-                        input: Input,
-                    ) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
+                    pub fn op_2v1__unique__loc_unknown_start_1_0_end_1_0<
+                        Item,
+                        Input: ::std::iter::Iterator<Item = Item>,
+                    >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                        struct Pull<Item, Input: ::std::iter::Iterator<Item = Item>> {
+                            inner: Input,
+                        }
+                        impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator
+                        for Pull<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn next(&mut self) -> Option<Self::Item> {
+                                self.inner.next()
+                            }
+                            #[inline(always)]
+                            fn size_hint(&self) -> (usize, Option<usize>) {
+                                self.inner.size_hint()
+                            }
+                        }
+                        Pull { inner: input }
                     }
-                    check_op_2v1(op_2v1)
+                    op_2v1__unique__loc_unknown_start_1_0_end_1_0(op_2v1)
                 };
                 let op_9v1 = op_2v1.map(|row: (_, _)| ((), (row.0, row.1)));
                 let op_9v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_9v1<Input: ::std::iter::Iterator<Item = Item>, Item>(
-                        input: Input,
-                    ) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
+                    pub fn op_9v1__map__loc_unknown_start_1_0_end_1_0<
+                        Item,
+                        Input: ::std::iter::Iterator<Item = Item>,
+                    >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                        struct Pull<Item, Input: ::std::iter::Iterator<Item = Item>> {
+                            inner: Input,
+                        }
+                        impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator
+                        for Pull<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn next(&mut self) -> Option<Self::Item> {
+                                self.inner.next()
+                            }
+                            #[inline(always)]
+                            fn size_hint(&self) -> (usize, Option<usize>) {
+                                self.inner.size_hint()
+                            }
+                        }
+                        Pull { inner: input }
                     }
-                    check_op_9v1(op_9v1)
+                    op_9v1__map__loc_unknown_start_1_0_end_1_0(op_9v1)
                 };
                 #[inline(always)]
                 fn check_pivot_run<
@@ -165,25 +216,57 @@ fn main() {
                         .into_iter()
                 };
                 let op_10v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_10v1<
-                        Input: ::std::iter::Iterator<Item = Item>,
+                    pub fn op_10v1__group_by__loc_unknown_start_1_0_end_1_0<
                         Item,
+                        Input: ::std::iter::Iterator<Item = Item>,
                     >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
+                        struct Pull<Item, Input: ::std::iter::Iterator<Item = Item>> {
+                            inner: Input,
+                        }
+                        impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator
+                        for Pull<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn next(&mut self) -> Option<Self::Item> {
+                                self.inner.next()
+                            }
+                            #[inline(always)]
+                            fn size_hint(&self) -> (usize, Option<usize>) {
+                                self.inner.size_hint()
+                            }
+                        }
+                        Pull { inner: input }
                     }
-                    check_op_10v1(op_10v1)
+                    op_10v1__group_by__loc_unknown_start_1_0_end_1_0(op_10v1)
                 };
                 let op_11v1 = op_10v1.map(|(g, a)| (a.0.unwrap(), a.1.unwrap()));
                 let op_11v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_11v1<
-                        Input: ::std::iter::Iterator<Item = Item>,
+                    pub fn op_11v1__map__loc_unknown_start_1_0_end_1_0<
                         Item,
+                        Input: ::std::iter::Iterator<Item = Item>,
                     >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
+                        struct Pull<Item, Input: ::std::iter::Iterator<Item = Item>> {
+                            inner: Input,
+                        }
+                        impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator
+                        for Pull<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn next(&mut self) -> Option<Self::Item> {
+                                self.inner.next()
+                            }
+                            #[inline(always)]
+                            fn size_hint(&self) -> (usize, Option<usize>) {
+                                self.inner.size_hint()
+                            }
+                        }
+                        Pull { inner: input }
                     }
-                    check_op_11v1(op_11v1)
+                    op_11v1__map__loc_unknown_start_1_0_end_1_0(op_11v1)
                 };
                 let op_5v1 = op_11v1
                     .filter(|item| {
@@ -203,28 +286,62 @@ fn main() {
                         }
                     });
                 let op_5v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_5v1<Input: ::std::iter::Iterator<Item = Item>, Item>(
-                        input: Input,
-                    ) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
+                    pub fn op_5v1__unique__loc_unknown_start_1_0_end_1_0<
+                        Item,
+                        Input: ::std::iter::Iterator<Item = Item>,
+                    >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                        struct Pull<Item, Input: ::std::iter::Iterator<Item = Item>> {
+                            inner: Input,
+                        }
+                        impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator
+                        for Pull<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn next(&mut self) -> Option<Self::Item> {
+                                self.inner.next()
+                            }
+                            #[inline(always)]
+                            fn size_hint(&self) -> (usize, Option<usize>) {
+                                self.inner.size_hint()
+                            }
+                        }
+                        Pull { inner: input }
                     }
-                    check_op_5v1(op_5v1)
+                    op_5v1__unique__loc_unknown_start_1_0_end_1_0(op_5v1)
                 };
                 let op_8v1 = hydroflow::pusherator::for_each::ForEach::new(|v| {
                     result.send(v).unwrap()
                 });
                 let op_8v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_8v1<
-                        Input: hydroflow::pusherator::Pusherator<Item = Item>,
+                    pub fn op_8v1__for_each__loc_unknown_start_1_0_end_1_0<
                         Item,
+                        Input: hydroflow::pusherator::Pusherator<Item = Item>,
                     >(
                         input: Input,
                     ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
-                        input
+                        struct Push<
+                            Item,
+                            Input: hydroflow::pusherator::Pusherator<Item = Item>,
+                        > {
+                            inner: Input,
+                        }
+                        impl<
+                            Item,
+                            Input: hydroflow::pusherator::Pusherator<Item = Item>,
+                        > hydroflow::pusherator::Pusherator for Push<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn give(&mut self, item: Self::Item) {
+                                self.inner.give(item)
+                            }
+                        }
+                        Push { inner: input }
                     }
-                    check_op_8v1(op_8v1)
+                    op_8v1__for_each__loc_unknown_start_1_0_end_1_0(op_8v1)
                 };
                 #[inline(always)]
                 fn check_pivot_run<
