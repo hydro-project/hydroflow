@@ -411,7 +411,7 @@ async fn asynctest_check_state_yielding() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn asynctest_repeat_iter() {
-    let (b_send, mut b_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let (b_send, b_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut hf = hydroflow_syntax! {
         repeat_iter(0..3)
@@ -419,8 +419,30 @@ async fn asynctest_repeat_iter() {
     };
     hf.run_available_async().await;
 
-    assert_eq!(
-        [0, 1, 2].into_iter().collect::<BTreeSet<_>>(),
-        collect_ready_async(&mut b_recv).await
-    );
+    let seen: Vec<_> = collect_ready_async(b_recv).await;
+    assert_eq!(&[0, 1, 2], &*seen);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn asynctest_event_repeat_iter() {
+    let (a_send, a_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let (b_send, b_recv) = hydroflow::util::unbounded_channel::<usize>();
+
+    let mut hf = hydroflow_syntax! {
+        repeat_iter(0..3) -> my_merge;
+        source_stream(a_recv) -> my_merge;
+        my_merge = merge() -> for_each(|x| b_send.send(x).unwrap());
+    };
+
+    tokio::task::spawn(async move {
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        a_send.send(10).unwrap();
+    });
+
+    tokio::time::timeout(Duration::from_millis(200), hf.run_async())
+        .await
+        .expect_err("Expected timeout");
+
+    let seen: Vec<_> = collect_ready_async(b_recv).await;
+    assert_eq!(&[0, 1, 2, 0, 1, 2, 10], &*seen);
 }
