@@ -5,10 +5,13 @@ use std::collections::{hash_map::Entry, VecDeque};
 
 type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 
+use smallvec::smallvec;
+use smallvec::SmallVec;
+
 #[derive(Debug)]
 pub struct HalfMultisetJoinState<Key, ValBuild, ValProbe> {
     /// Table to probe, vec val contains all matches.
-    table: HashMap<Key, Vec<ValBuild>>,
+    table: HashMap<Key, SmallVec<[ValBuild; 8]>>,
     /// Not-yet emitted matches.
     current_matches: VecDeque<(Key, ValProbe, ValBuild)>,
 }
@@ -43,7 +46,7 @@ where
                 vec.push(v.clone());
             }
             Entry::Vacant(e) => {
-                e.insert(vec![v.clone()]);
+                e.insert(smallvec![v.clone()]);
             }
         };
 
