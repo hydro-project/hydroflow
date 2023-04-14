@@ -1,3 +1,4 @@
+use futures::SinkExt;
 use hydroflow::bytes::Bytes;
 use hydroflow::hydroflow_syntax;
 use hydroflow::serde::Deserialize;
@@ -6,9 +7,10 @@ use hydroflow::tokio;
 use hydroflow::util::cli::{ConnectedBidi, ConnectedSink, ConnectedSource};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::hash::Hash;
 use std::hash::Hasher;
-use std::time::Instant;
+use std::time::Duration;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct IncrementRequest {
@@ -16,10 +18,34 @@ struct IncrementRequest {
     likes: i32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Default, Copy, Clone, Debug)]
 struct TimestampedValue<T> {
     pub value: T,
     pub timestamp: u32,
+}
+
+impl <T> TimestampedValue<T> {
+    pub fn new(v: T) -> Self {
+        TimestampedValue {
+            value: v,
+            timestamp: 0,
+        }
+    }
+
+    pub fn merge_from(&mut self, other: TimestampedValue<T>) -> bool {
+        if other.timestamp > self.timestamp {
+            self.value = other.value;
+            self.timestamp = other.timestamp;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn update(&mut self, updater: impl Fn(&T) -> T) {
+        self.value = updater(&self.value);
+        self.timestamp += 1;
+    }
 }
 
 impl<T> PartialEq for TimestampedValue<T> {
@@ -45,22 +71,6 @@ async fn main() {
         .connect::<ConnectedBidi>()
         .await
         .into_source();
-
-    let f1 = async {
-        #[cfg(target_os = "linux")]
-        loop {
-            let x = procinfo::pid::stat_self().unwrap();
-            println!("memory: {} bytes", x.rss * 1024 * 4);
-            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-        }
-    };
-
-    // let query_requests = ports
-    //     .remove("query_requests")
-    //     .unwrap()
-    //     .connect::<ConnectedBidi>()
-    //     .await
-    //     .into_source();
 
     let query_responses = ports
         .remove("query_responses")
@@ -111,211 +121,254 @@ async fn main() {
         .await
         .into_source();
 
-    fn my_merge_function(
-        (cur, _): (TimestampedValue<MyType>, Option<Instant>),
-        (other, ts_new): (TimestampedValue<MyType>, Option<Instant>),
-    ) -> (TimestampedValue<MyType>, Option<Instant>) {
-        if other.timestamp > cur.timestamp {
-            (
-                TimestampedValue {
-                    value: other.value,
-                    timestamp: other.timestamp,
-                },
-                ts_new,
-            )
-        } else {
-            (cur, ts_new)
+    let mut memory_report = ports
+        .remove("memory_report")
+        .unwrap()
+        .connect::<ConnectedBidi>()
+        .await
+        .into_sink();
+
+    let f1 = async move {
+        #[cfg(target_os = "linux")]
+        loop {
+            let x = procinfo::pid::stat_self().unwrap();
+            let bytes = x.rss * 1024 * 4;
+            memory_report
+                .send(Bytes::from(serde_json::to_string(&bytes).unwrap()))
+                .await
+                .unwrap();
+            tokio::time::sleep(Duration::from_secs(1)).await;
         }
-    }
-
-    fn time_incrementer(
-        (cur, _ts): (TimestampedValue<MyType>, Option<Instant>),
-        (new_value, ts_new): (MyType, Option<Instant>),
-    ) -> (TimestampedValue<MyType>, Option<Instant>) {
-        if new_value != cur.value {
-            (
-                TimestampedValue {
-                    value: new_value,
-                    timestamp: cur.timestamp + 1,
-                },
-                ts_new,
-            )
-        } else {
-            (cur, ts_new)
-        }
-    }
-
-    fn binary_op_twitter((key, like): (u64, i32), mut map: HashMap<u64, i32>) -> HashMap<u64, i32> {
-        *map.entry(key).or_default() += like;
-        map
-    }
-
-    fn combine_values(
-        (mut current_value, _ts): (MyType, Option<Instant>),
-        (new_value, ts_new): (MyType, Option<Instant>),
-    ) -> (MyType, Option<Instant>) {
-        for (k, v) in new_value {
-            *current_value.entry(k).or_insert(0) += v;
-        }
-
-        (current_value, ts_new)
-    }
+    };
 
     type UpdateType = (u64, i32);
-    type MyType = HashMap<u64, i32>;
 
     let df = hydroflow_syntax! {
         from_parent = source_stream(from_parent)
-            -> inspect(|_| println!("from_parent_now: {:?}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)))
-            -> map(|x| (x, Some(Instant::now())))
-            -> map(|(x, ts)| (deserialize_from_bytes::<TimestampedValue<MyType>>(x.unwrap()).unwrap(), ts))
-            // -> inspect(|x| println!("from_parent: {x:?}"))
-            -> fold::<'static>((TimestampedValue {
-                value: MyType::default(),
-                timestamp: 0,
-            }, None), my_merge_function)
-            -> map(|(cur, ts)| (cur.value, ts))
+            -> map(|x| deserialize_from_bytes::<Vec<(u64, TimestampedValue<i32>)>>(x.unwrap()).unwrap())
+            -> fold::<'static>(
+                (HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
+                |(mut prev, mut modified_tweets, prev_tick), req: Vec<(u64, TimestampedValue<i32>)>| {
+                    if prev_tick != context.current_tick() {
+                        modified_tweets.clear();
+                    }
+
+                    for (k, v) in req {
+                        let updated = if let Some(e) = prev.get_mut(&k) {
+                            e.merge_from(v)
+                        } else {
+                            prev.insert(k, v);
+                            true
+                        };
+
+                        if updated {
+                            modified_tweets.insert(k);
+                        }
+                    }
+
+                    (prev, modified_tweets, context.current_tick())
+                }
+            )
+            -> filter(|(_, _, tick)| *tick == context.current_tick())
+            -> flat_map(|(state, modified_tweets, _)| modified_tweets.iter().map(|t| (*t, *state.get(t).unwrap())).collect::<Vec<_>>())
             -> tee();
 
         from_left = source_stream(from_left)
-            -> inspect(|_| println!("from_left_now: {:?}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)))
-            -> map(|x| (x, Some(Instant::now())))
-            -> map(|(x, ts)| (deserialize_from_bytes::<TimestampedValue<MyType>>(x.unwrap()).unwrap(), ts))
-            // -> inspect(|x| println!("froM_left: {x:?}"))
-            -> fold::<'static>((TimestampedValue {
-                value: MyType::default(),
-                timestamp: 0,
-            }, None), my_merge_function)
-            -> map(|(cur, ts)| (cur.value, ts))
+            -> map(|x| deserialize_from_bytes::<Vec<(u64, TimestampedValue<i32>)>>(x.unwrap()).unwrap())
+            -> fold::<'static>(
+                (HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
+                |(mut prev, mut modified_tweets, prev_tick), req: Vec<(u64, TimestampedValue<i32>)>| {
+                    if prev_tick != context.current_tick() {
+                        modified_tweets.clear();
+                    }
+
+                    for (k, v) in req {
+                        let updated = if let Some(e) = prev.get_mut(&k) {
+                            e.merge_from(v)
+                        } else {
+                            prev.insert(k, v);
+                            true
+                        };
+
+                        if updated {
+                            modified_tweets.insert(k);
+                        }
+                    }
+
+                    (prev, modified_tweets, context.current_tick())
+                }
+            )
+            -> filter(|(_, _, tick)| *tick == context.current_tick())
+            -> flat_map(|(state, modified_tweets, _)| modified_tweets.iter().map(|t| (*t, *state.get(t).unwrap())).collect::<Vec<_>>())
             -> tee();
 
         from_right = source_stream(from_right)
-            -> inspect(|_| println!("from_right_now: {:?}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)))
-            -> map(|x| (x, Some(Instant::now())))
-            -> map(|(x, ts)| (deserialize_from_bytes::<TimestampedValue<MyType>>(x.unwrap()).unwrap(), ts))
-            // -> inspect(|x| println!("from_right: {x:?}"))
-            -> fold::<'static>((TimestampedValue {
-                value: MyType::default(),
-                timestamp: 0,
-            }, None), my_merge_function)
-            -> map(|(cur, ts)| (cur.value, ts))
+            -> map(|x| deserialize_from_bytes::<Vec<(u64, TimestampedValue<i32>)>>(x.unwrap()).unwrap())
+            -> fold::<'static>(
+                (HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
+                |(mut prev, mut modified_tweets, prev_tick), req: Vec<(u64, TimestampedValue<i32>)>| {
+                    if prev_tick != context.current_tick() {
+                        modified_tweets.clear();
+                    }
+
+                    for (k, v) in req {
+                        let updated = if let Some(e) = prev.get_mut(&k) {
+                            e.merge_from(v)
+                        } else {
+                            prev.insert(k, v);
+                            true
+                        };
+
+                        if updated {
+                            modified_tweets.insert(k);
+                        }
+                    }
+
+                    (prev, modified_tweets, context.current_tick())
+                }
+            )
+            -> filter(|(_, _, tick)| *tick == context.current_tick())
+            -> flat_map(|(state, modified_tweets, _)| modified_tweets.iter().map(|t| (*t, *state.get(t).unwrap())).collect::<Vec<_>>())
             -> tee();
 
-        from_local = source_stream(increment_requests) //TODO implement
-            -> inspect(|_| println!("from_local_now: {:?}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)))
-            -> map(|x| (x, Some(Instant::now())))
-            // -> inspect(|x| println!("debug_from_local: {x:?}"))
-            -> map(|(x, ts)| (String::from_utf8(x.unwrap().to_vec()).unwrap(), ts))
-            -> map(|(x, ts)| (serde_json::from_str::<IncrementRequest>(&x).unwrap(), ts))
-            -> map(|(x, ts)| ((x.tweet_id, x.likes), ts))
-            -> fold::<'static>((TimestampedValue {
-                value: MyType::default(),
-                timestamp: 0,
-            }, None), |(prev, _): (TimestampedValue<MyType>, Option<Instant>), (req, ts): (UpdateType, Option<Instant>)| {
-                (TimestampedValue {
-                    value: binary_op_twitter(req, prev.value),
-                    timestamp: prev.timestamp + 1,
-                }, ts)
-            })
-            -> fold::<'static>((TimestampedValue {
-                value: MyType::default(),
-                timestamp: 0,
-            }, None), my_merge_function)
-            -> map(|(cur, ts)| (cur.value, ts))
+        from_local = source_stream(increment_requests)
+            -> map(|x| deserialize_from_bytes::<IncrementRequest>(&x.unwrap()).unwrap())
+            -> map(|x| (x.tweet_id, x.likes))
+            -> fold::<'static>(
+                (HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
+                |(mut prev, mut modified_tweets, prev_tick), req: UpdateType| {
+                    if prev_tick != context.current_tick() {
+                        modified_tweets.clear();
+                    }
+
+                    prev.entry(req.0).or_default().update(|v| v + req.1);
+                    modified_tweets.insert(req.0);
+                    (prev, modified_tweets, context.current_tick())
+                }
+            )
+            -> filter(|(_, _, tick)| *tick == context.current_tick())
+            -> flat_map(|(state, modified_tweets, _)| modified_tweets.iter().map(|t| (*t, *state.get(t).unwrap())).collect::<Vec<_>>())
             -> tee();
 
         to_right = merge();
 
-        from_parent -> to_right;
-        from_left -> to_right;
-        from_local -> to_right;
+        from_parent -> map(|v| (0, v)) -> to_right;
+        from_left -> map(|v| (1, v)) -> to_right;
+        from_local -> map(|v| (2, v)) -> to_right;
 
         to_right
-            -> fold::<'tick>((MyType::default(), None), combine_values) // This is just adding from_parent, from_left, from_local in one tick, that's what it's 'tick.
-            -> fold::<'static>((TimestampedValue {
-                value: MyType::default(),
-                timestamp: 0,
-            }, None), time_incrementer) // This is persisting the logical timestamp, and incrementing it, that's why it's 'static.
-            -> unique::<'static>()
-            // -> inspect(|x| println!("to_right: {x:?}"))
-            -> map(|(v, ts)| (serialize_to_bytes(v), ts))
-            -> map(|(v, ts)| {
-                println!("to_right: {:?}", ts.map(|x| x.elapsed()));
-                v
-            })
-            -> inspect(|x| println!("to_right bytes: {:?}", x.len())) //Measure the byte size of messages sent over the network
-            -> dest_sink(to_right); //send result to output channel
+            -> fold::<'static>(
+                (vec![HashMap::<u64, TimestampedValue<i32>>::new(); 3], HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
+                |(mut each_source, mut acc_source, mut modified_tweets, prev_tick), (source_i, (key, v))| {
+                    if prev_tick != context.current_tick() {
+                        modified_tweets.clear();
+                    }
+
+                    let updated = each_source[source_i].entry(key).or_default().merge_from(v);
+
+                    if updated {
+                        acc_source.entry(key).or_default().update(|_| each_source.iter().map(|s| s.get(&key).map(|t| t.value).unwrap_or_default()).sum());
+                        modified_tweets.insert(key);
+                    }
+
+                    (each_source, acc_source, modified_tweets, context.current_tick())
+                }
+            )
+            -> filter(|(_, _, _, tick)| *tick == context.current_tick())
+            -> map(|(_, state, modified_tweets, _)| modified_tweets.iter().map(|t| (*t, *state.get(t).unwrap())).collect())
+            -> map(|v| serialize_to_bytes::<Vec<(u64, TimestampedValue<i32>)>>(v))
+            -> dest_sink(to_right);
 
         to_left = merge();
 
-        from_parent -> to_left;
-        from_right -> to_left;
-        from_local -> to_left;
+        from_parent -> map(|v| (0, v)) -> to_left;
+        from_right -> map(|v| (1, v)) -> to_left;
+        from_local -> map(|v| (2, v)) -> to_left;
 
         to_left
-            -> fold::<'tick>((MyType::default(), None), combine_values)
-            -> fold::<'static>((TimestampedValue {
-                value: MyType::default(),
-                timestamp: 0,
-            }, None), time_incrementer)
-            -> unique::<'static>()
-            // -> inspect(|x| println!("to_left: {x:?}"))
-            -> map(|(v, ts)| (serialize_to_bytes(v), ts))
-            -> map(|(v, ts)| {
-                println!("to_left: {:?}", ts.map(|x| x.elapsed()));
-                v
-            })
-            ->inspect(|x| println!("to_left bytes: {:?}", x.len())) //Measure the byte size of messages sent over the network
-            -> dest_sink(to_left); //send result to output channel
+            -> fold::<'static>(
+                (vec![HashMap::<u64, TimestampedValue<i32>>::new(); 3], HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
+                |(mut each_source, mut acc_source, mut modified_tweets, prev_tick), (source_i, (key, v))| {
+                    if prev_tick != context.current_tick() {
+                        modified_tweets.clear();
+                    }
+
+                    let updated = each_source[source_i].entry(key).or_default().merge_from(v);
+
+                    if updated {
+                        acc_source.entry(key).or_default().update(|_| each_source.iter().map(|s| s.get(&key).map(|t| t.value).unwrap_or_default()).sum());
+                        modified_tweets.insert(key);
+                    }
+
+                    (each_source, acc_source, modified_tweets, context.current_tick())
+                }
+            )
+            -> filter(|(_, _, _, tick)| *tick == context.current_tick())
+            -> map(|(_, state, modified_tweets, _)| modified_tweets.iter().map(|t| (*t, *state.get(t).unwrap())).collect())
+            -> map(|v| serialize_to_bytes::<Vec<(u64, TimestampedValue<i32>)>>(v))
+            -> dest_sink(to_left);
 
         to_parent = merge();
 
-        from_right -> to_parent;
-        from_left -> to_parent;
-        from_local -> to_parent;
+        from_right -> map(|v| (0, v)) -> to_parent;
+        from_left -> map(|v| (1, v)) -> to_parent;
+        from_local -> map(|v| (2, v)) -> to_parent;
 
         to_parent
-            -> fold::<'tick>((MyType::default(), None), combine_values)
-            -> fold::<'static>((TimestampedValue {
-                value: MyType::default(),
-                timestamp: 0,
-            }, None), time_incrementer)
-            -> unique::<'static>()
-            // -> inspect(|x| println!("to_parent: {x:?}"))
-            -> map(|(v, ts)| (serialize_to_bytes(v), ts))
-            -> map(|(v, ts)| {
-                println!("to_parent: {:?}", ts.map(|x| x.elapsed()));
-                v
-            })
-            -> inspect(|x| println!("to_parent bytes: {:?}", x.len())) //Measure the byte size of messages sent over the network
-            -> dest_sink(to_parent); //send result to output channel
+            -> fold::<'static>(
+                (vec![HashMap::<u64, TimestampedValue<i32>>::new(); 3], HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
+                |(mut each_source, mut acc_source, mut modified_tweets, prev_tick), (source_i, (key, v))| {
+                    if prev_tick != context.current_tick() {
+                        modified_tweets.clear();
+                    }
+
+                    let updated = each_source[source_i].entry(key).or_default().merge_from(v);
+
+                    if updated {
+                        acc_source.entry(key).or_default().update(|_| each_source.iter().map(|s| s.get(&key).map(|t| t.value).unwrap_or_default()).sum());
+                        modified_tweets.insert(key);
+                    }
+
+                    (each_source, acc_source, modified_tweets, context.current_tick())
+                }
+            )
+            -> filter(|(_, _, _, tick)| *tick == context.current_tick())
+            -> map(|(_, state, modified_tweets, _)| modified_tweets.iter().map(|t| (*t, *state.get(t).unwrap())).collect())
+            -> map(|v| serialize_to_bytes::<Vec<(u64, TimestampedValue<i32>)>>(v))
+            -> dest_sink(to_parent);
 
         to_query = merge();
 
-        from_parent -> to_query;
-        from_left -> to_query;
-        from_right -> to_query;
-        from_local -> to_query;
+        from_parent -> map(|v| (0, v)) -> to_query;
+        from_left -> map(|v| (1, v)) -> to_query;
+        from_right -> map(|v| (2, v)) -> to_query;
+        from_local -> map(|v| (3, v)) -> to_query;
 
         to_query
-            -> fold::<'tick>((MyType::default(), None), combine_values)
-            -> fold::<'static>((TimestampedValue {
-                value: MyType::default(),
-                timestamp: 0,
-            }, None), time_incrementer)
-            -> unique::<'static>()
-            // -> inspect(|x| println!("to_query: {x:?}"))
-            -> map(|(v, ts)| (Bytes::from(serde_json::to_string(&v).unwrap()), ts))
-            -> map(|(v, ts)| {
-                println!("to_query: {:?}", ts.map(|x| x.elapsed()));
-                v
-            })
-            -> dest_sink(query_responses); //send result to output channel
+            -> fold::<'static>(
+                (vec![HashMap::<u64, TimestampedValue<i32>>::new(); 4], HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
+                |(mut each_source, mut acc_source, mut modified_tweets, prev_tick), (source_i, (key, v))| {
+                    if prev_tick != context.current_tick() {
+                        modified_tweets.clear();
+                    }
+
+                    let updated = each_source[source_i].entry(key).or_default().merge_from(v);
+
+                    if updated {
+                        acc_source.entry(key).or_default().update(|_| each_source.iter().map(|s| s.get(&key).map(|t| t.value).unwrap_or_default()).sum());
+                        modified_tweets.insert(key);
+                    }
+
+                    (each_source, acc_source, modified_tweets, context.current_tick())
+                }
+            )
+            -> filter(|(_, _, _, tick)| *tick == context.current_tick())
+            -> flat_map(|(_, state, modified_tweets, _)| modified_tweets.iter().map(|t| (*t, state.get(t).unwrap().value)).collect::<Vec<_>>())
+            -> map(|v| serialize_to_bytes::<(u64, i32)>(v))
+            -> dest_sink(query_responses);
     };
 
     let f1_handle = tokio::spawn(f1);
-
     hydroflow::util::cli::launch_flow(df).await;
-
     f1_handle.abort();
 }
