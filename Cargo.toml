@@ -25,6 +25,7 @@ strip = true      # Strip symbols from the binary
 # doesn't make things that much smaller, `strip` is far more important for binary size. Use "3" for
 # performance.
 opt-level = 3
+lto = "fat"
 
 [profile.profile]
 inherits = "release"
