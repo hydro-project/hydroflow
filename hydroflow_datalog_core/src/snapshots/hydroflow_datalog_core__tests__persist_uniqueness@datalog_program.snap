@@ -63,14 +63,33 @@ fn main() {
                     }
                 });
                 let op_12v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_12v1<
-                        Input: ::std::iter::Iterator<Item = Item>,
+                    pub fn check_op_12v1_source_stream_unknown__1_0__1_0<
                         Item,
+                        Input: ::std::iter::Iterator<Item = Item>,
                     >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
+                        struct TypeGuard<
+                            Item,
+                            Input: ::std::iter::Iterator<Item = Item>,
+                        > {
+                            inner: Input,
+                        }
+                        impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator
+                        for TypeGuard<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn next(&mut self) -> Option<Self::Item> {
+                                self.inner.next()
+                            }
+                            #[inline(always)]
+                            fn size_hint(&self) -> (usize, Option<usize>) {
+                                self.inner.size_hint()
+                            }
+                        }
+                        TypeGuard { inner: input }
                     }
-                    check_op_12v1(op_12v1)
+                    check_op_12v1_source_stream_unknown__1_0__1_0(op_12v1)
                 };
                 #[inline(always)]
                 fn check_pivot_run<
@@ -103,13 +122,33 @@ fn main() {
                     check_input::<_, _>(hoff_8v3_recv)
                 };
                 let op_5v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_5v1<Input: ::std::iter::Iterator<Item = Item>, Item>(
-                        input: Input,
-                    ) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
+                    pub fn check_op_5v1_next_tick_unknown__1_0__1_0<
+                        Item,
+                        Input: ::std::iter::Iterator<Item = Item>,
+                    >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                        struct TypeGuard<
+                            Item,
+                            Input: ::std::iter::Iterator<Item = Item>,
+                        > {
+                            inner: Input,
+                        }
+                        impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator
+                        for TypeGuard<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn next(&mut self) -> Option<Self::Item> {
+                                self.inner.next()
+                            }
+                            #[inline(always)]
+                            fn size_hint(&self) -> (usize, Option<usize>) {
+                                self.inner.size_hint()
+                            }
+                        }
+                        TypeGuard { inner: input }
                     }
-                    check_op_5v1(op_5v1)
+                    check_op_5v1_next_tick_unknown__1_0__1_0(op_5v1)
                 };
                 #[inline(always)]
                 fn check_pivot_run<
@@ -191,25 +230,63 @@ fn main() {
                         |(k, v)| (k.clone(), v.clone()),
                     );
                 let op_16v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_16v1<
-                        Input: ::std::iter::Iterator<Item = Item>,
+                    pub fn check_op_16v1_group_by_unknown__1_0__1_0<
                         Item,
+                        Input: ::std::iter::Iterator<Item = Item>,
                     >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
+                        struct TypeGuard<
+                            Item,
+                            Input: ::std::iter::Iterator<Item = Item>,
+                        > {
+                            inner: Input,
+                        }
+                        impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator
+                        for TypeGuard<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn next(&mut self) -> Option<Self::Item> {
+                                self.inner.next()
+                            }
+                            #[inline(always)]
+                            fn size_hint(&self) -> (usize, Option<usize>) {
+                                self.inner.size_hint()
+                            }
+                        }
+                        TypeGuard { inner: input }
                     }
-                    check_op_16v1(op_16v1)
+                    check_op_16v1_group_by_unknown__1_0__1_0(op_16v1)
                 };
                 let op_17v1 = op_16v1.map(|(g, a)| (a.0.unwrap().1,));
                 let op_17v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_17v1<
-                        Input: ::std::iter::Iterator<Item = Item>,
+                    pub fn check_op_17v1_map_unknown__1_0__1_0<
                         Item,
+                        Input: ::std::iter::Iterator<Item = Item>,
                     >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
+                        struct TypeGuard<
+                            Item,
+                            Input: ::std::iter::Iterator<Item = Item>,
+                        > {
+                            inner: Input,
+                        }
+                        impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator
+                        for TypeGuard<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn next(&mut self) -> Option<Self::Item> {
+                                self.inner.next()
+                            }
+                            #[inline(always)]
+                            fn size_hint(&self) -> (usize, Option<usize>) {
+                                self.inner.size_hint()
+                            }
+                        }
+                        TypeGuard { inner: input }
                     }
-                    check_op_17v1(op_17v1)
+                    check_op_17v1_map_unknown__1_0__1_0(op_17v1)
                 };
                 let op_10v1 = op_17v1
                     .filter(|item| {
@@ -229,29 +306,65 @@ fn main() {
                         }
                     });
                 let op_10v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_10v1<
-                        Input: ::std::iter::Iterator<Item = Item>,
+                    pub fn check_op_10v1_unique_unknown__1_0__1_0<
                         Item,
+                        Input: ::std::iter::Iterator<Item = Item>,
                     >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
+                        struct TypeGuard<
+                            Item,
+                            Input: ::std::iter::Iterator<Item = Item>,
+                        > {
+                            inner: Input,
+                        }
+                        impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator
+                        for TypeGuard<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn next(&mut self) -> Option<Self::Item> {
+                                self.inner.next()
+                            }
+                            #[inline(always)]
+                            fn size_hint(&self) -> (usize, Option<usize>) {
+                                self.inner.size_hint()
+                            }
+                        }
+                        TypeGuard { inner: input }
                     }
-                    check_op_10v1(op_10v1)
+                    check_op_10v1_unique_unknown__1_0__1_0(op_10v1)
                 };
                 let op_13v1 = hydroflow::pusherator::for_each::ForEach::new(|v| {
                     result.send(v).unwrap()
                 });
                 let op_13v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_13v1<
-                        Input: hydroflow::pusherator::Pusherator<Item = Item>,
+                    pub fn check_op_13v1_for_each_unknown__1_0__1_0<
                         Item,
+                        Input: hydroflow::pusherator::Pusherator<Item = Item>,
                     >(
                         input: Input,
                     ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
-                        input
+                        struct TypeGuard<
+                            Item,
+                            Input: hydroflow::pusherator::Pusherator<Item = Item>,
+                        > {
+                            inner: Input,
+                        }
+                        impl<
+                            Item,
+                            Input: hydroflow::pusherator::Pusherator<Item = Item>,
+                        > hydroflow::pusherator::Pusherator for TypeGuard<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn give(&mut self, item: Self::Item) {
+                                self.inner.give(item)
+                            }
+                        }
+                        TypeGuard { inner: input }
                     }
-                    check_op_13v1(op_13v1)
+                    check_op_13v1_for_each_unknown__1_0__1_0(op_13v1)
                 };
                 #[inline(always)]
                 fn check_pivot_run<
@@ -325,24 +438,63 @@ fn main() {
                         }
                     });
                 let op_7v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_7v1<Input: ::std::iter::Iterator<Item = Item>, Item>(
-                        input: Input,
-                    ) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
+                    pub fn check_op_7v1_unique_unknown__1_0__1_0<
+                        Item,
+                        Input: ::std::iter::Iterator<Item = Item>,
+                    >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                        struct TypeGuard<
+                            Item,
+                            Input: ::std::iter::Iterator<Item = Item>,
+                        > {
+                            inner: Input,
+                        }
+                        impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator
+                        for TypeGuard<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn next(&mut self) -> Option<Self::Item> {
+                                self.inner.next()
+                            }
+                            #[inline(always)]
+                            fn size_hint(&self) -> (usize, Option<usize>) {
+                                self.inner.size_hint()
+                            }
+                        }
+                        TypeGuard { inner: input }
                     }
-                    check_op_7v1(op_7v1)
+                    check_op_7v1_unique_unknown__1_0__1_0(op_7v1)
                 };
                 let op_14v1 = op_7v1.map(|row: (_,)| (row.0,));
                 let op_14v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_14v1<
-                        Input: ::std::iter::Iterator<Item = Item>,
+                    pub fn check_op_14v1_map_unknown__1_0__1_0<
                         Item,
+                        Input: ::std::iter::Iterator<Item = Item>,
                     >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
+                        struct TypeGuard<
+                            Item,
+                            Input: ::std::iter::Iterator<Item = Item>,
+                        > {
+                            inner: Input,
+                        }
+                        impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator
+                        for TypeGuard<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn next(&mut self) -> Option<Self::Item> {
+                                self.inner.next()
+                            }
+                            #[inline(always)]
+                            fn size_hint(&self) -> (usize, Option<usize>) {
+                                self.inner.size_hint()
+                            }
+                        }
+                        TypeGuard { inner: input }
                     }
-                    check_op_14v1(op_14v1)
+                    check_op_14v1_map_unknown__1_0__1_0(op_14v1)
                 };
                 let op_2v1 = op_14v1
                     .filter(|item| {
@@ -362,13 +514,33 @@ fn main() {
                         }
                     });
                 let op_2v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_2v1<Input: ::std::iter::Iterator<Item = Item>, Item>(
-                        input: Input,
-                    ) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
+                    pub fn check_op_2v1_unique_unknown__1_0__1_0<
+                        Item,
+                        Input: ::std::iter::Iterator<Item = Item>,
+                    >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                        struct TypeGuard<
+                            Item,
+                            Input: ::std::iter::Iterator<Item = Item>,
+                        > {
+                            inner: Input,
+                        }
+                        impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator
+                        for TypeGuard<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn next(&mut self) -> Option<Self::Item> {
+                                self.inner.next()
+                            }
+                            #[inline(always)]
+                            fn size_hint(&self) -> (usize, Option<usize>) {
+                                self.inner.size_hint()
+                            }
+                        }
+                        TypeGuard { inner: input }
                     }
-                    check_op_2v1(op_2v1)
+                    check_op_2v1_unique_unknown__1_0__1_0(op_2v1)
                 };
                 let mut sg_3v1_node_3v1_negset = context
                     .state_ref(sg_3v1_node_3v1_diffdata_handle)
@@ -376,45 +548,99 @@ fn main() {
                 sg_3v1_node_3v1_negset.extend(hoff_11v3_recv);
                 let op_3v1 = op_2v1.filter(move |x| !sg_3v1_node_3v1_negset.contains(x));
                 let op_3v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_3v1<Input: ::std::iter::Iterator<Item = Item>, Item>(
-                        input: Input,
-                    ) -> impl ::std::iter::Iterator<Item = Item> {
-                        input
+                    pub fn check_op_3v1_difference_unknown__1_0__1_0<
+                        Item,
+                        Input: ::std::iter::Iterator<Item = Item>,
+                    >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                        struct TypeGuard<
+                            Item,
+                            Input: ::std::iter::Iterator<Item = Item>,
+                        > {
+                            inner: Input,
+                        }
+                        impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator
+                        for TypeGuard<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn next(&mut self) -> Option<Self::Item> {
+                                self.inner.next()
+                            }
+                            #[inline(always)]
+                            fn size_hint(&self) -> (usize, Option<usize>) {
+                                self.inner.size_hint()
+                            }
+                        }
+                        TypeGuard { inner: input }
                     }
-                    check_op_3v1(op_3v1)
+                    check_op_3v1_difference_unknown__1_0__1_0(op_3v1)
                 };
                 let op_15v1 = hydroflow::pusherator::map::Map::new(
                     |row: (_,)| ((), ((row.0),)),
                     hoff_9v3_send,
                 );
                 let op_15v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_15v1<
-                        Input: hydroflow::pusherator::Pusherator<Item = Item>,
+                    pub fn check_op_15v1_map_unknown__1_0__1_0<
                         Item,
+                        Input: hydroflow::pusherator::Pusherator<Item = Item>,
                     >(
                         input: Input,
                     ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
-                        input
+                        struct TypeGuard<
+                            Item,
+                            Input: hydroflow::pusherator::Pusherator<Item = Item>,
+                        > {
+                            inner: Input,
+                        }
+                        impl<
+                            Item,
+                            Input: hydroflow::pusherator::Pusherator<Item = Item>,
+                        > hydroflow::pusherator::Pusherator for TypeGuard<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn give(&mut self, item: Self::Item) {
+                                self.inner.give(item)
+                            }
+                        }
+                        TypeGuard { inner: input }
                     }
-                    check_op_15v1(op_15v1)
+                    check_op_15v1_map_unknown__1_0__1_0(op_15v1)
                 };
                 let op_4v1 = hydroflow::pusherator::tee::Tee::new(
                     op_15v1,
                     hoff_8v3_send,
                 );
                 let op_4v1 = {
+                    #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn check_op_4v1<
-                        Input: hydroflow::pusherator::Pusherator<Item = Item>,
+                    pub fn check_op_4v1_tee_unknown__1_0__1_0<
                         Item,
+                        Input: hydroflow::pusherator::Pusherator<Item = Item>,
                     >(
                         input: Input,
                     ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
-                        input
+                        struct TypeGuard<
+                            Item,
+                            Input: hydroflow::pusherator::Pusherator<Item = Item>,
+                        > {
+                            inner: Input,
+                        }
+                        impl<
+                            Item,
+                            Input: hydroflow::pusherator::Pusherator<Item = Item>,
+                        > hydroflow::pusherator::Pusherator for TypeGuard<Item, Input> {
+                            type Item = Item;
+                            #[inline(always)]
+                            fn give(&mut self, item: Self::Item) {
+                                self.inner.give(item)
+                            }
+                        }
+                        TypeGuard { inner: input }
                     }
-                    check_op_4v1(op_4v1)
+                    check_op_4v1_tee_unknown__1_0__1_0(op_4v1)
                 };
                 #[inline(always)]
                 fn check_pivot_run<
