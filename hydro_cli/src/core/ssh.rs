@@ -1,9 +1,4 @@
-use std::{
-    borrow::Cow,
-    net::SocketAddr,
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::{borrow::Cow, net::SocketAddr, path::PathBuf, sync::Arc};
 
 use anyhow::Result;
 use async_channel::{Receiver, Sender};
@@ -80,7 +75,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
 
     async fn launch_binary(
         &self,
-        binary: &Path,
+        binary: Arc<(String, Vec<u8>)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let session = self.open_ssh_session().await?;
@@ -88,21 +83,27 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         let sftp = session.sftp().await?;
 
         // we may be deploying multiple binaries, so give each a unique name
-        let unique_name = nanoid!(8);
+        let unique_name = &binary.0;
 
         let user = self.ssh_user();
         let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_name}"));
 
-        let mut created_file = sftp.create(&binary_path).await?;
-        created_file
-            .write_all(std::fs::read(binary).unwrap().as_slice())
-            .await?;
+        if sftp.stat(&binary_path).await.is_err() {
+            let random = nanoid!(8);
+            let temp_path = PathBuf::from(format!("/home/{user}/hydro-{random}"));
+            let mut created_file = sftp.create(&temp_path).await?;
+            println!("[hydro] uploading binary to /home/{user}/hydro-{random}");
+            created_file.write_all(&binary.1).await?;
+            println!("[hydro] uploaded binary to /home/{user}/hydro-{random}");
 
-        let mut orig_file_stat = sftp.stat(&binary_path).await?;
-        orig_file_stat.perm = Some(0o755); // allow the copied binary to be executed by anyone
-        created_file.setstat(orig_file_stat).await?;
-        created_file.close().await?;
-        drop(created_file);
+            let mut orig_file_stat = sftp.stat(&temp_path).await?;
+            orig_file_stat.perm = Some(0o755); // allow the copied binary to be executed by anyone
+            created_file.setstat(orig_file_stat).await?;
+            created_file.close().await?;
+            drop(created_file);
+
+            sftp.rename(&temp_path, &binary_path, None).await?;
+        }
 
         let mut channel = session.channel_session().await?;
         let binary_path_string = binary_path.to_str().unwrap();
