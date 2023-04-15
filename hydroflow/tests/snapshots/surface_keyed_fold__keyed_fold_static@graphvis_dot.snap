@@ -1,5 +1,5 @@
 ---
-source: hydroflow/tests/surface_group_by.rs
+source: hydroflow/tests/surface_keyed_fold.rs
 expression: df.meta_graph().unwrap().to_dot()
 ---
 digraph {
@@ -13,7 +13,7 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_2v1\nstratum 1"
-        n2v1 [label="(n2v1) group_by::<'tick>(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n2v1 [label="(n2v1) keyed_fold::<\l    'static,\l>(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))\l", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n3v1 [label="(n3v1) for_each(|v| result_send.send(v).unwrap())", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n2v1 -> n3v1
     }
