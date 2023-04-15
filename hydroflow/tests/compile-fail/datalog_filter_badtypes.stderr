@@ -11,5 +11,6 @@ note: an implementation of `PartialOrd<_>` might be missing for `Uncomparable`
    | ^^^^^^^^^^^^^^^^^^^ must implement `PartialOrd<_>`
 help: consider annotating `Uncomparable` with `#[derive(PartialEq, PartialOrd)]`
    |
-4  | #[derive(PartialEq, PartialOrd)]
+4  + #[derive(PartialEq, PartialOrd)]
+5  | struct Uncomparable;
    |
