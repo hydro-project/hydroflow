@@ -71,6 +71,13 @@
 <a href="#71" id="71">71</a>
 <a href="#72" id="72">72</a>
 <a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::lang::clear::Clear;
 
 <span class="kw">use </span><span class="kw">super</span>::HalfJoinState;
@@ -78,10 +85,17 @@
 
 <span class="kw">type </span>HashMap&lt;K, V&gt; = rustc_hash::FxHashMap&lt;K, V&gt;;
 
+<span class="kw">use </span>smallvec::{smallvec, SmallVec};
+
 <span class="attr">#[derive(Debug)]
 </span><span class="kw">pub struct </span>HalfSetJoinState&lt;Key, ValBuild, ValProbe&gt; {
-    <span class="doccomment">/// Table to probe, vec val contains all matches.
-    </span>table: HashMap&lt;Key, Vec&lt;ValBuild&gt;&gt;,
+    <span class="comment">// Here a smallvec with inline storage of 1 is chosen.
+    // The rationale for this decision is that, I speculate, that joins possibly have a bimodal distribution with regards to how much key contention they have.
+    // That is, I think that there are many joins that have 1 value per key on LHS/RHS, and there are also a large category of joins that have multiple values per key.
+    // For the category of joins that have multiple values per key, it&#39;s not clear why they would only have 2, 3, 4, or N specific number of values per key. So there&#39;s no good number to set the smallvec storage to.
+    // Instead we can just focus on the first group of joins that have 1 value per key and get benefit there without hurting the other group too much with excessive memory usage.
+    </span><span class="doccomment">/// Table to probe, vec val contains all matches.
+    </span>table: HashMap&lt;Key, SmallVec&lt;[ValBuild; <span class="number">1</span>]&gt;&gt;,
     <span class="doccomment">/// Not-yet emitted matches.
     </span>current_matches: VecDeque&lt;(Key, ValProbe, ValBuild)&gt;,
 }
@@ -119,7 +133,7 @@
                 }
             }
             Entry::Vacant(e) =&gt; {
-                e.insert(<span class="macro">vec!</span>[v.clone()]);
+                e.insert(<span class="macro">smallvec!</span>[v.clone()]);
                 <span class="kw">return </span><span class="bool-val">true</span>;
             }
         };
