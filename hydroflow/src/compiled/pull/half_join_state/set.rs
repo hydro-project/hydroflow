@@ -5,8 +5,7 @@ use std::collections::{hash_map::Entry, VecDeque};
 
 type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 
-use smallvec::smallvec;
-use smallvec::SmallVec;
+use smallvec::{smallvec, SmallVec};
 
 #[derive(Debug)]
 pub struct HalfSetJoinState<Key, ValBuild, ValProbe> {
