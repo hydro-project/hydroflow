@@ -29,7 +29,7 @@ pub struct HydroflowCrate {
     /// Configuration for the ports that this service will listen on a port for.
     port_to_bind: HashMap<String, ServerStrategy>,
 
-    built_binary: Option<JoinHandle<PathBuf>>,
+    built_binary: Option<JoinHandle<Arc<(String, Vec<u8>)>>>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
 
     /// A map of port names to config for how other services can connect to this one.
@@ -143,7 +143,7 @@ impl HydroflowCrate {
             .await
     }
 
-    fn build(&mut self) -> JoinHandle<PathBuf> {
+    fn build(&mut self) -> JoinHandle<Arc<(String, Vec<u8>)>> {
         let src_cloned = self.src.join("Cargo.toml").canonicalize().unwrap();
         let example_cloned = self.example.clone();
         let features_cloned = self.features.clone();
@@ -196,7 +196,13 @@ impl Service for HydroflowCrate {
 
         let binary = launched_host
             .launch_binary(
-                self.built_binary.take().unwrap().await.as_ref().unwrap(),
+                self.built_binary
+                    .take()
+                    .unwrap()
+                    .await
+                    .as_ref()
+                    .unwrap()
+                    .clone(),
                 &self.args.as_ref().cloned().unwrap_or_default(),
             )
             .await?;

@@ -10,20 +10,22 @@ use cargo::{
     util::{command_prelude::CompileMode, interning::InternedString},
     Config,
 };
+use nanoid::nanoid;
 use once_cell::sync::{Lazy, OnceCell};
 
 use crate::core::HostTargetType;
 
 type CacheKey = (PathBuf, Option<String>, HostTargetType, Option<Vec<String>>);
 
-static BUILDS: Lazy<Mutex<HashMap<CacheKey, Arc<OnceCell<PathBuf>>>>> = Lazy::new(Default::default);
+static BUILDS: Lazy<Mutex<HashMap<CacheKey, Arc<OnceCell<Arc<(String, Vec<u8>)>>>>>> =
+    Lazy::new(Default::default);
 
 pub fn build_crate(
     src: PathBuf,
     example: Option<String>,
     target_type: HostTargetType,
     features: Option<Vec<String>>,
-) -> PathBuf {
+) -> Arc<(String, Vec<u8>)> {
     let key = (src.clone(), example.clone(), target_type, features.clone());
     let unit_of_work = {
         let mut builds = BUILDS.lock().unwrap();
@@ -71,7 +73,7 @@ pub fn build_crate(
                 .collect::<Vec<_>>();
 
             if binaries.len() == 1 {
-                binaries[0].to_string().into()
+                Arc::new((nanoid!(8), std::fs::read(binaries[0].to_string()).unwrap()))
             } else {
                 panic!("expected exactly one binary, got {}", binaries.len())
             }
