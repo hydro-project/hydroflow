@@ -1,4 +1,4 @@
-use std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
+use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
 use anyhow::Result;
 use async_channel::{Receiver, Sender};
@@ -43,9 +43,10 @@ impl ResourceBatch {
         }
     }
 
-    async fn provision(self, pool: &mut ResourcePool) -> Result<ResourceResult> {
+    async fn provision(self, pool: &mut ResourcePool, last_result: Option<Arc<ResourceResult>>) -> Result<ResourceResult> {
         Ok(ResourceResult {
             terraform: self.terraform.provision(&mut pool.terraform).await?,
+            _last_result: last_result,
         })
     }
 }
@@ -53,6 +54,7 @@ impl ResourceBatch {
 #[derive(Debug)]
 pub struct ResourceResult {
     pub terraform: terraform::TerraformResult,
+    _last_result: Option<Arc<ResourceResult>>,
 }
 
 #[async_trait]
@@ -74,7 +76,7 @@ pub trait LaunchedHost: Send + Sync {
 
     async fn launch_binary(
         &self,
-        binary: &Path,
+        binary: Arc<(String, Vec<u8>)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;
 

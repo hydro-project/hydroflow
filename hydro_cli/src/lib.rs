@@ -30,10 +30,7 @@ struct SafeCancelToken {
 impl SafeCancelToken {
     fn safe_cancel(&mut self) {
         if let Some(token) = self.cancel_tx.take() {
-            eprintln!("Received cancellation, cleaning up...");
-            token.send(()).unwrap();
-        } else {
-            eprintln!("Already received cancellation, please be patient!");
+            let _ = token.send(());
         }
     }
 }
@@ -302,11 +299,10 @@ impl GCPNetwork {
     #[new]
     fn new(project: String, existing: Option<String>) -> Self {
         GCPNetwork {
-            underlying: Arc::new(RwLock::new(crate::core::gcp::GCPNetwork {
+            underlying: Arc::new(RwLock::new(crate::core::gcp::GCPNetwork::new(
                 project,
-                tf_path: None,
-                existing_vpc: existing,
-            })),
+                existing,
+            ))),
         }
     }
 }

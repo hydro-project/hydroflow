@@ -87,7 +87,7 @@ fn main() {
                 let op_7v1 = {
                     #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn op_7v1__source_stream__loc_unknown_start_1_0_end_1_0<
+                    pub fn op_7v1__source_stream__loc_unknown_start_2_25_end_2_44<
                         Item,
                         Input: ::std::iter::Iterator<Item = Item>,
                     >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
@@ -108,7 +108,7 @@ fn main() {
                         }
                         Pull { inner: input }
                     }
-                    op_7v1__source_stream__loc_unknown_start_1_0_end_1_0(op_7v1)
+                    op_7v1__source_stream__loc_unknown_start_2_25_end_2_44(op_7v1)
                 };
                 let op_2v1 = op_7v1
                     .filter(|item| {
@@ -130,7 +130,7 @@ fn main() {
                 let op_2v1 = {
                     #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn op_2v1__unique__loc_unknown_start_1_0_end_1_0<
+                    pub fn op_2v1__unique__loc_unknown_start_2_19_end_2_23<
                         Item,
                         Input: ::std::iter::Iterator<Item = Item>,
                     >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
@@ -151,7 +151,7 @@ fn main() {
                         }
                         Pull { inner: input }
                     }
-                    op_2v1__unique__loc_unknown_start_1_0_end_1_0(op_2v1)
+                    op_2v1__unique__loc_unknown_start_2_19_end_2_23(op_2v1)
                 };
                 let op_15v1 = hydroflow::pusherator::filter::Filter::new(
                     |row: &(_,)| row.0 - 1 == 1 - 1,
@@ -160,7 +160,7 @@ fn main() {
                 let op_15v1 = {
                     #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn op_15v1__filter__loc_unknown_start_1_0_end_1_0<
+                    pub fn op_15v1__filter__loc_unknown_start_8_12_end_8_50<
                         Item,
                         Input: hydroflow::pusherator::Pusherator<Item = Item>,
                     >(
@@ -184,7 +184,7 @@ fn main() {
                         }
                         Push { inner: input }
                     }
-                    op_15v1__filter__loc_unknown_start_1_0_end_1_0(op_15v1)
+                    op_15v1__filter__loc_unknown_start_8_12_end_8_50(op_15v1)
                 };
                 let op_13v1 = hydroflow::pusherator::filter::Filter::new(
                     |row: &(_,)| row.0 - 1 == 0,
@@ -193,7 +193,7 @@ fn main() {
                 let op_13v1 = {
                     #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn op_13v1__filter__loc_unknown_start_1_0_end_1_0<
+                    pub fn op_13v1__filter__loc_unknown_start_7_12_end_7_46<
                         Item,
                         Input: hydroflow::pusherator::Pusherator<Item = Item>,
                     >(
@@ -217,7 +217,7 @@ fn main() {
                         }
                         Push { inner: input }
                     }
-                    op_13v1__filter__loc_unknown_start_1_0_end_1_0(op_13v1)
+                    op_13v1__filter__loc_unknown_start_7_12_end_7_46(op_13v1)
                 };
                 let op_11v1 = hydroflow::pusherator::filter::Filter::new(
                     |row: &(_,)| row.0 != 0,
@@ -226,7 +226,7 @@ fn main() {
                 let op_11v1 = {
                     #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn op_11v1__filter__loc_unknown_start_1_0_end_1_0<
+                    pub fn op_11v1__filter__loc_unknown_start_6_12_end_6_42<
                         Item,
                         Input: hydroflow::pusherator::Pusherator<Item = Item>,
                     >(
@@ -250,7 +250,7 @@ fn main() {
                         }
                         Push { inner: input }
                     }
-                    op_11v1__filter__loc_unknown_start_1_0_end_1_0(op_11v1)
+                    op_11v1__filter__loc_unknown_start_6_12_end_6_42(op_11v1)
                 };
                 let op_9v1 = hydroflow::pusherator::filter::Filter::new(
                     |row: &(_,)| row.0 == 0,
@@ -259,7 +259,7 @@ fn main() {
                 let op_9v1 = {
                     #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn op_9v1__filter__loc_unknown_start_1_0_end_1_0<
+                    pub fn op_9v1__filter__loc_unknown_start_5_12_end_5_42<
                         Item,
                         Input: hydroflow::pusherator::Pusherator<Item = Item>,
                     >(
@@ -283,7 +283,7 @@ fn main() {
                         }
                         Push { inner: input }
                     }
-                    op_9v1__filter__loc_unknown_start_1_0_end_1_0(op_9v1)
+                    op_9v1__filter__loc_unknown_start_5_12_end_5_42(op_9v1)
                 };
                 let op_3v1 = hydroflow::pusherator::tee::Tee::new(
                     op_9v1,
@@ -295,7 +295,7 @@ fn main() {
                 let op_3v1 = {
                     #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn op_3v1__tee__loc_unknown_start_1_0_end_1_0<
+                    pub fn op_3v1__tee__loc_unknown_start_2_19_end_2_23<
                         Item,
                         Input: hydroflow::pusherator::Pusherator<Item = Item>,
                     >(
@@ -319,7 +319,7 @@ fn main() {
                         }
                         Push { inner: input }
                     }
-                    op_3v1__tee__loc_unknown_start_1_0_end_1_0(op_3v1)
+                    op_3v1__tee__loc_unknown_start_2_19_end_2_23(op_3v1)
                 };
                 #[inline(always)]
                 fn check_pivot_run<
@@ -485,7 +485,7 @@ fn main() {
                 let op_4v1 = {
                     #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn op_4v1__merge__loc_unknown_start_1_0_end_1_0<
+                    pub fn op_4v1__merge__loc_unknown_start_3_20_end_3_26<
                         Item,
                         Input: ::std::iter::Iterator<Item = Item>,
                     >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
@@ -506,7 +506,7 @@ fn main() {
                         }
                         Pull { inner: input }
                     }
-                    op_4v1__merge__loc_unknown_start_1_0_end_1_0(op_4v1)
+                    op_4v1__merge__loc_unknown_start_3_20_end_3_26(op_4v1)
                 };
                 let op_5v1 = op_4v1
                     .filter(|item| {
@@ -528,7 +528,7 @@ fn main() {
                 let op_5v1 = {
                     #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn op_5v1__unique__loc_unknown_start_1_0_end_1_0<
+                    pub fn op_5v1__unique__loc_unknown_start_3_20_end_3_26<
                         Item,
                         Input: ::std::iter::Iterator<Item = Item>,
                     >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
@@ -549,7 +549,7 @@ fn main() {
                         }
                         Pull { inner: input }
                     }
-                    op_5v1__unique__loc_unknown_start_1_0_end_1_0(op_5v1)
+                    op_5v1__unique__loc_unknown_start_3_20_end_3_26(op_5v1)
                 };
                 let op_8v1 = hydroflow::pusherator::for_each::ForEach::new(|v| {
                     result.send(v).unwrap()
@@ -557,7 +557,7 @@ fn main() {
                 let op_8v1 = {
                     #[allow(non_snake_case)]
                     #[inline(always)]
-                    pub fn op_8v1__for_each__loc_unknown_start_1_0_end_1_0<
+                    pub fn op_8v1__for_each__loc_unknown_start_3_28_end_3_65<
                         Item,
                         Input: hydroflow::pusherator::Pusherator<Item = Item>,
                     >(
@@ -581,7 +581,7 @@ fn main() {
                         }
                         Push { inner: input }
                     }
-                    op_8v1__for_each__loc_unknown_start_1_0_end_1_0(op_8v1)
+                    op_8v1__for_each__loc_unknown_start_3_28_end_3_65(op_8v1)
                 };
                 #[inline(always)]
                 fn check_pivot_run<
