@@ -6,13 +6,13 @@ use std::{
     net::SocketAddr,
     path::PathBuf,
     pin::Pin,
-    task::{Context, Poll},
+    task::{Context, Poll}, time::Duration,
 };
 
 use bytes::{Bytes, BytesMut};
 use serde::{Deserialize, Serialize};
 
-use futures::{ready, sink::Buffer, stream, Sink, SinkExt, Stream};
+use futures::{ready, sink::Buffer, stream, Sink, SinkExt, Stream, Future};
 
 use async_recursion::async_recursion;
 use async_trait::async_trait;
@@ -294,6 +294,23 @@ impl<T> Sink<T> for IoErrorDrain<T> {
     }
 }
 
+async fn async_retry<T, E, F: Future<Output = Result<T, E>>>(
+    thunk: impl Fn() -> F,
+    count: usize,
+    delay: Duration,
+) -> Result<T, E> {
+    for _ in 1..count {
+        let result = thunk().await;
+        if result.is_ok() {
+            return result;
+        } else {
+            tokio::time::sleep(delay).await;
+        }
+    }
+
+    thunk().await
+}
+
 pub struct ConnectedBidi {
     stream_sink: Option<DynStreamSink>,
     source_only: Option<DynStream>,
@@ -322,7 +339,8 @@ impl Connected for ConnectedBidi {
                 }
             }
             ServerOrBound::Server(ServerPort::TcpPort(addr)) => {
-                let stream = TcpStream::connect(addr).await.unwrap();
+                let stream = async_retry(|| TcpStream::connect(addr), 10, Duration::from_secs(1)).await.unwrap();
+                stream.set_nodelay(true).unwrap();
                 ConnectedBidi {
                     stream_sink: Some(Box::pin(tcp_bytes(stream))),
                     source_only: None,
