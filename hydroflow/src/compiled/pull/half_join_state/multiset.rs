@@ -5,10 +5,16 @@ use std::collections::{hash_map::Entry, VecDeque};
 
 type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 
+use smallvec::{smallvec, SmallVec};
 #[derive(Debug)]
 pub struct HalfMultisetJoinState<Key, ValBuild, ValProbe> {
+    // Here a smallvec with inline storage of 1 is chosen.
+    // The rationale for this decision is that, I speculate, that joins possibly have a bimodal distribution with regards to how much key contention they have.
+    // That is, I think that there are many joins that have 1 value per key on LHS/RHS, and there are also a large category of joins that have multiple values per key.
+    // For the category of joins that have multiple values per key, it's not clear why they would only have 2, 3, 4, or N specific number of values per key. So there's no good number to set the smallvec storage to.
+    // Instead we can just focus on the first group of joins that have 1 value per key and get benefit there without hurting the other group too much with excessive memory usage.
     /// Table to probe, vec val contains all matches.
-    table: HashMap<Key, Vec<ValBuild>>,
+    table: HashMap<Key, SmallVec<[ValBuild; 1]>>,
     /// Not-yet emitted matches.
     current_matches: VecDeque<(Key, ValProbe, ValBuild)>,
 }
@@ -43,7 +49,7 @@ where
                 vec.push(v.clone());
             }
             Entry::Vacant(e) => {
-                e.insert(vec![v.clone()]);
+                e.insert(smallvec![v.clone()]);
             }
         };
 
