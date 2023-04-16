@@ -44,7 +44,7 @@ pub trait HydroflowSource: Send + Sync {
 }
 
 #[async_trait]
-pub trait HydroflowServer: DynClone + Send + Sync + std::fmt::Debug {
+pub trait HydroflowServer: DynClone + Send + Sync {
     fn get_port(&self) -> ServerPort;
     async fn launched_host(&self) -> Arc<dyn LaunchedHost>;
 }
@@ -214,7 +214,7 @@ impl HydroflowSink for DemuxSink {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct HydroflowPortConfig {
     pub service: Weak<RwLock<HydroflowCrate>>,
     pub service_host: Arc<RwLock<dyn Host>>,
@@ -423,7 +423,7 @@ impl HydroflowSink for HydroflowPortConfig {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum ServerConfig {
     Direct(Arc<dyn HydroflowServer>),
     Forwarded(Arc<dyn HydroflowServer>),
@@ -526,7 +526,6 @@ impl ServerConfig {
             }
 
             ServerConfig::MergeSelect(underlying, key) => {
-                dbg!(underlying);
                 let key = *key;
                 underlying
                     .load_instantiated(

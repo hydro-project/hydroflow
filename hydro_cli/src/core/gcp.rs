@@ -7,7 +7,10 @@ use async_trait::async_trait;
 use hydroflow_cli_integration::ServerBindConfig;
 use nanoid::nanoid;
 use serde_json::json;
-use tokio::{net::TcpStream, sync::RwLock};
+use tokio::{
+    net::TcpStream,
+    sync::{Mutex, RwLock},
+};
 
 use super::{
     ssh::LaunchedSSHHost,
@@ -17,12 +20,13 @@ use super::{
     ServerStrategy,
 };
 
-#[derive(Debug)]
+// #[derive(Debug)]
 pub struct LaunchedComputeEngine {
     resource_result: Arc<ResourceResult>,
     user: String,
     pub internal_ip: String,
     pub external_ip: Option<String>,
+    ssh_session: Mutex<Option<AsyncSession<TcpStream>>>,
 }
 
 impl LaunchedComputeEngine {
@@ -78,6 +82,11 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
     }
 
     async fn open_ssh_session(&self) -> Result<AsyncSession<TcpStream>> {
+        let mut self_session = self.ssh_session.lock().await;
+        // if let Some(session) = self_session.deref() {
+        //     return Ok(session.clone());
+        // }
+
         let target_addr = SocketAddr::new(
             self.external_ip
                 .as_ref()
@@ -87,10 +96,10 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
             22,
         );
 
-        async_retry(
-            || async {
+        let res = async_retry(
+            &|| async {
                 let mut config = SessionConfiguration::new();
-                config.set_timeout(1000);
+                config.set_compress(true);
 
                 let mut session =
                     AsyncSession::<TcpStream>::connect(target_addr, Some(config)).await?;
@@ -111,23 +120,30 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
             10,
             Duration::from_secs(1),
         )
-        .await
+        .await?;
+
+        *self_session = Some(res.clone());
+        Ok(res)
     }
 }
 
 #[derive(Debug)]
 pub struct GCPNetwork {
     pub project: String,
-    pub tf_path: Option<String>,
     pub existing_vpc: Option<String>,
+    id: String,
 }
 
 impl GCPNetwork {
-    fn collect_resources(&mut self, resource_batch: &mut ResourceBatch) {
-        if self.tf_path.is_some() {
-            return;
+    pub fn new(project: String, existing_vpc: Option<String>) -> Self {
+        Self {
+            project,
+            existing_vpc,
+            id: nanoid!(8, &TERRAFORM_ALPHABET),
         }
+    }
 
+    fn collect_resources(&mut self, resource_batch: &mut ResourceBatch) -> String {
         resource_batch
             .terraform
             .terraform
@@ -140,24 +156,34 @@ impl GCPNetwork {
                 },
             );
 
-        let vpc_network = format!("hydro-vpc-network-{}", nanoid!(8, &TERRAFORM_ALPHABET));
+        let vpc_network = format!("hydro-vpc-network-{}", self.id);
 
         if let Some(existing) = self.existing_vpc.as_ref() {
-            self.tf_path = Some(format!("data.google_compute_network.{vpc_network}"));
-            resource_batch
+            if resource_batch
                 .terraform
-                .data
-                .entry("google_compute_network".to_string())
-                .or_default()
-                .insert(
-                    vpc_network,
-                    json!({
-                        "name": existing,
-                        "project": self.project,
-                    }),
-                );
+                .resource
+                .get(&"google_compute_network".to_string())
+                .unwrap_or(&HashMap::new())
+                .contains_key(existing)
+            {
+                format!("google_compute_network.{existing}")
+            } else {
+                resource_batch
+                    .terraform
+                    .data
+                    .entry("google_compute_network".to_string())
+                    .or_default()
+                    .insert(
+                        vpc_network.clone(),
+                        json!({
+                            "name": existing,
+                            "project": self.project,
+                        }),
+                    );
+
+                format!("data.google_compute_network.{vpc_network}")
+            }
         } else {
-            self.tf_path = Some(format!("google_compute_network.{vpc_network}"));
             resource_batch
                 .terraform
                 .resource
@@ -217,11 +243,14 @@ impl GCPNetwork {
                     ]
                 }),
             );
+
+            self.existing_vpc = Some(vpc_network.clone());
+
+            format!("google_compute_network.{vpc_network}")
         }
     }
 }
 
-#[derive(Debug)]
 pub struct GCPComputeEngineHost {
     pub id: usize,
     pub project: String,
@@ -315,7 +344,8 @@ impl Host for GCPComputeEngineHost {
             return;
         }
 
-        self.network
+        let vpc_path = self
+            .network
             .try_write()
             .unwrap()
             .collect_resources(resource_batch);
@@ -387,15 +417,6 @@ impl Host for GCPComputeEngineHost {
                 }),
             );
 
-        let vpc_path = self
-            .network
-            .try_read()
-            .unwrap()
-            .tf_path
-            .as_ref()
-            .unwrap()
-            .clone();
-
         let vm_key = format!("vm-instance-{}", self.id);
         let vm_name = format!("hydro-vm-instance-{}", nanoid!(8, &TERRAFORM_ALPHABET));
 
@@ -415,30 +436,32 @@ impl Host for GCPComputeEngineHost {
             }));
 
             // open the external ports that were requested
-            let open_external_ports_rule = format!("{vm_name}-open-external-ports");
-            resource_batch
-                .terraform
-                .resource
-                .entry("google_compute_firewall".to_string())
-                .or_default()
-                .insert(
-                open_external_ports_rule.clone(),
-                json!({
-                    "name": open_external_ports_rule,
-                    "project": project,
-                    "network": format!("${{{vpc_path}.name}}"),
-                    "target_tags": [open_external_ports_rule],
-                    "source_ranges": ["0.0.0.0/0"],
-                    "allow": [
-                        {
-                            "protocol": "tcp",
-                            "ports": self.external_ports.iter().map(|p| p.to_string()).collect::<Vec<String>>()
-                        }
-                    ]
-                }),
-            );
+            let my_external_tags = self.external_ports.iter().map(|port| {
+                let rule_id = nanoid!(8, &TERRAFORM_ALPHABET);
+                let firewall_rule = resource_batch
+                    .terraform
+                    .resource
+                    .entry("google_compute_firewall".to_string())
+                    .or_default()
+                    .entry(format!("open-external-port-{}", port))
+                    .or_insert(json!({
+                        "name": format!("open-external-port-{}-{}", port, rule_id),
+                        "project": project,
+                        "network": format!("${{{vpc_path}.name}}"),
+                        "target_tags": [format!("open-external-port-tag-{}-{}", port, rule_id)],
+                        "source_ranges": ["0.0.0.0/0"],
+                        "allow": [
+                            {
+                                "protocol": "tcp",
+                                "ports": vec![port.to_string()]
+                            }
+                        ]
+                    }));
 
-            tags.push(open_external_ports_rule);
+                firewall_rule["target_tags"].as_array().unwrap()[0].clone()
+            });
+
+            tags.extend(my_external_tags);
 
             resource_batch.terraform.output.insert(
                 format!("{vm_key}-public-ip"),
@@ -517,6 +540,7 @@ impl Host for GCPComputeEngineHost {
                 user: self.user.as_ref().cloned().unwrap_or("hydro".to_string()),
                 internal_ip,
                 external_ip,
+                ssh_session: Mutex::new(None),
             }))
         }
 
