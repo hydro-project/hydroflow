@@ -99,10 +99,6 @@ impl Default for TerraformBatch {
 
 impl TerraformBatch {
     pub async fn provision(self, pool: &mut TerraformPool) -> Result<TerraformResult> {
-        let dothydro_folder = std::env::current_dir().unwrap().join(".hydro");
-        std::fs::create_dir_all(&dothydro_folder).unwrap();
-        let deployment_folder = tempfile::tempdir_in(dothydro_folder).unwrap();
-
         if self.terraform.required_providers.is_empty()
             && self.resource.is_empty()
             && self.data.is_empty()
@@ -113,6 +109,10 @@ impl TerraformBatch {
                 deployment_folder: None,
             });
         }
+
+        let dothydro_folder = std::env::current_dir().unwrap().join(".hydro");
+        std::fs::create_dir_all(&dothydro_folder).unwrap();
+        let deployment_folder = tempfile::tempdir_in(dothydro_folder).unwrap();
 
         std::fs::write(
             deployment_folder.path().join("main.tf.json"),
