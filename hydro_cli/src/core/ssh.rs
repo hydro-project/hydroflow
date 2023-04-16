@@ -1,9 +1,4 @@
-use std::{
-    borrow::Cow,
-    net::SocketAddr,
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::{borrow::Cow, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::Result;
 use async_channel::{Receiver, Sender};
@@ -16,6 +11,8 @@ use tokio::{
     net::{TcpListener, TcpStream},
     sync::RwLock,
 };
+
+use crate::core::util::async_retry;
 
 use super::{
     localhost::create_broadcast, LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy,
@@ -60,7 +57,9 @@ impl LaunchedBinary for LaunchedSSHBinary {
 
     async fn wait(&mut self) -> Option<i32> {
         self.channel.wait_eof().await.unwrap();
-        self.exit_code().await
+        let ret = self.exit_code().await;
+        self.channel.wait_close().await.unwrap();
+        ret
     }
 }
 
@@ -80,31 +79,49 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
 
     async fn launch_binary(
         &self,
-        binary: &Path,
+        binary: Arc<(String, Vec<u8>)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let session = self.open_ssh_session().await?;
 
-        let sftp = session.sftp().await?;
+        let sftp = async_retry(
+            || async { Ok(session.sftp().await?) },
+            10,
+            Duration::from_secs(1),
+        )
+        .await?;
 
         // we may be deploying multiple binaries, so give each a unique name
-        let unique_name = nanoid!(8);
+        let unique_name = &binary.0;
 
         let user = self.ssh_user();
         let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_name}"));
 
-        let mut created_file = sftp.create(&binary_path).await?;
-        created_file
-            .write_all(std::fs::read(binary).unwrap().as_slice())
-            .await?;
+        if sftp.stat(&binary_path).await.is_err() {
+            let random = nanoid!(8);
+            let temp_path = PathBuf::from(format!("/home/{user}/hydro-{random}"));
+            let mut created_file = sftp.create(&temp_path).await?;
+            println!("[hydro] uploading binary to /home/{user}/hydro-{random}");
+            created_file.write_all(&binary.1).await?;
+            println!("[hydro] uploaded binary to /home/{user}/hydro-{random}");
 
-        let mut orig_file_stat = sftp.stat(&binary_path).await?;
-        orig_file_stat.perm = Some(0o755); // allow the copied binary to be executed by anyone
-        created_file.setstat(orig_file_stat).await?;
-        created_file.close().await?;
-        drop(created_file);
+            let mut orig_file_stat = sftp.stat(&temp_path).await?;
+            orig_file_stat.perm = Some(0o755); // allow the copied binary to be executed by anyone
+            created_file.setstat(orig_file_stat).await?;
+            created_file.close().await?;
+            drop(created_file);
 
-        let mut channel = session.channel_session().await?;
+            sftp.rename(&temp_path, &binary_path, None).await?;
+        }
+        drop(sftp);
+
+        println!("[hydro] launching binary /home/{user}/hydro-{unique_name}");
+        let mut channel = async_retry(
+            || async { Ok(session.channel_session().await?) },
+            10,
+            Duration::from_secs(1),
+        )
+        .await?;
         let binary_path_string = binary_path.to_str().unwrap();
         let args_string = args
             .iter()
@@ -113,6 +130,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         channel
             .exec(&format!("{binary_path_string}{args_string}"))
             .await?;
+        println!("[hydro] launched binary /home/{user}/hydro-{unique_name}");
 
         let (stdin_sender, mut stdin_receiver) = async_channel::unbounded::<String>();
         let mut stdin = channel.stream(0); // stream 0 is stdout/stdin, we use it for stdin
