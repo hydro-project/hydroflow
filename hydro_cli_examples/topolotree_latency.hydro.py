@@ -181,25 +181,31 @@ async def run_experiment(deployment, machine_pool, experiment_id, summaries_file
     ]
 
     async def memory_plotter():
-        async with stream.merge(*memories_streams_with_index).stream() as merged:
-            async for node_idx, line in merged:
-                line_split = line.split(",")
-                if line_split[0] == "memory":
-                    memory_per_node[node_idx].append(int(line_split[1]))
+        try:
+            async with stream.merge(*memories_streams_with_index).stream() as merged:
+                async for node_idx, line in merged:
+                    line_split = line.split(",")
+                    if line_split[0] == "memory":
+                        memory_per_node[node_idx].append(int(line_split[1]))
+        except asyncio.CancelledError:
+            return
 
     memory_plotter_task = asyncio.create_task(memory_plotter())
 
     async def latency_plotter():
-        async for line in latency_stdout:
-            line_split = line.split(",")
-            if line_split[0] == "throughput":
-                count = int(line_split[1])
-                period = float(line_split[2])
-                throughput_raw.append([count, period])
-                throughput.append(count / period)
-            elif line_split[0] == "latency":
-                number = int(line_split[1]) # microseconds
-                latency.append(number)
+        try:
+            async for line in latency_stdout:
+                line_split = line.split(",")
+                if line_split[0] == "throughput":
+                    count = int(line_split[1])
+                    period = float(line_split[2])
+                    throughput_raw.append([count, period])
+                    throughput.append(count / period)
+                elif line_split[0] == "latency":
+                    number = int(line_split[1]) # microseconds
+                    latency.append(number)
+        except asyncio.CancelledError:
+            return
 
     latency_plotter_task = asyncio.create_task(latency_plotter())
 
@@ -207,21 +213,15 @@ async def run_experiment(deployment, machine_pool, experiment_id, summaries_file
     print("started!")
 
     await asyncio.sleep(30)
-    
-    try:
-        memory_plotter_task.cancel()
-        await memory_plotter_task
-    except:
-        pass
-    try:
-        latency_plotter_task.cancel()
-        await latency_plotter_task
-    except:
-        pass
 
     await latency_measurer.stop()
-    for node in all_nodes:
-        await node.stop()
+    await asyncio.gather(*[node.stop() for node in all_nodes])
+
+    memory_plotter_task.cancel()
+    await memory_plotter_task
+
+    latency_plotter_task.cancel()
+    await latency_plotter_task
 
     def summarize(v, kind):
         print("mean = ", np.mean(v))

@@ -7,10 +7,7 @@ use async_trait::async_trait;
 use hydroflow_cli_integration::ServerBindConfig;
 use nanoid::nanoid;
 use serde_json::json;
-use tokio::{
-    net::TcpStream,
-    sync::{Mutex, RwLock},
-};
+use tokio::{net::TcpStream, sync::RwLock};
 
 use super::{
     ssh::LaunchedSSHHost,
@@ -26,7 +23,6 @@ pub struct LaunchedComputeEngine {
     user: String,
     pub internal_ip: String,
     pub external_ip: Option<String>,
-    ssh_session: Mutex<Option<AsyncSession<TcpStream>>>,
 }
 
 impl LaunchedComputeEngine {
@@ -82,11 +78,6 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
     }
 
     async fn open_ssh_session(&self) -> Result<AsyncSession<TcpStream>> {
-        let mut self_session = self.ssh_session.lock().await;
-        // if let Some(session) = self_session.deref() {
-        //     return Ok(session.clone());
-        // }
-
         let target_addr = SocketAddr::new(
             self.external_ip
                 .as_ref()
@@ -122,7 +113,6 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
         )
         .await?;
 
-        *self_session = Some(res.clone());
         Ok(res)
     }
 }
@@ -540,7 +530,6 @@ impl Host for GCPComputeEngineHost {
                 user: self.user.as_ref().cloned().unwrap_or("hydro".to_string()),
                 internal_ip,
                 external_ip,
-                ssh_session: Mutex::new(None),
             }))
         }
 
