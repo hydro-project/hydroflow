@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::{bail, Result};
 use async_channel::Receiver;
@@ -29,7 +29,7 @@ pub struct HydroflowCrate {
     /// Configuration for the ports that this service will listen on a port for.
     port_to_bind: HashMap<String, ServerStrategy>,
 
-    built_binary: Option<JoinHandle<PathBuf>>,
+    built_binary: Option<JoinHandle<BuildResult>>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
 
     /// A map of port names to config for how other services can connect to this one.
@@ -143,7 +143,7 @@ impl HydroflowCrate {
             .await
     }
 
-    fn build(&mut self) -> JoinHandle<PathBuf> {
+    fn build(&mut self) -> JoinHandle<Arc<(String, Vec<u8>)>> {
         let src_cloned = self.src.join("Cargo.toml").canonicalize().unwrap();
         let example_cloned = self.example.clone();
         let features_cloned = self.features.clone();
@@ -194,12 +194,17 @@ impl Service for HydroflowCrate {
 
         let launched_host = self.launched_host.as_ref().unwrap();
 
-        let binary = launched_host
-            .launch_binary(
-                self.built_binary.take().unwrap().await.as_ref().unwrap(),
-                &self.args.as_ref().cloned().unwrap_or_default(),
-            )
-            .await?;
+        let built = self
+            .built_binary
+            .take()
+            .unwrap()
+            .await
+            .as_ref()
+            .unwrap()
+            .clone();
+        let args = self.args.as_ref().cloned().unwrap_or_default();
+
+        let binary = launched_host.launch_binary(built.clone(), &args).await?;
 
         let mut bind_config = HashMap::new();
         for (port_name, bind_type) in self.port_to_bind.iter() {
@@ -219,7 +224,8 @@ impl Service for HydroflowCrate {
             .send(format!("{formatted_bind_config}\n"))
             .await?;
 
-        let ready_line = stdout_receiver.recv().await.unwrap();
+        let ready_line =
+            tokio::time::timeout(Duration::from_secs(60), stdout_receiver.recv()).await??;
         if ready_line.starts_with("ready: ") {
             *self.server_defns.try_write().unwrap() =
                 serde_json::from_str(ready_line.trim_start_matches("ready: ")).unwrap();

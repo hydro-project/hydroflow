@@ -30,11 +30,7 @@ struct SafeCancelToken {
 impl SafeCancelToken {
     fn safe_cancel(&mut self) {
         if let Some(token) = self.cancel_tx.take() {
-            if token.send(()).is_ok() {
-                eprintln!("Received cancellation, cleaning up...");
-            }
-        } else {
-            eprintln!("Already received cancellation, please be patient!");
+            let _ = token.send(());
         }
     }
 }
@@ -50,20 +46,12 @@ where
 import asyncio
 import sys
 async def coroutine_to_safely_cancellable(c, cancel_token):
-    while True:
-        try:
-            cancel = True
-            ok, cancel = await asyncio.shield(c)
-            is_done = True
-        except asyncio.CancelledError:
-            cancel_token.safe_cancel()
-            is_done = False
-
-        if is_done:
-            if not cancel:
-                return ok
-            else:
-                raise asyncio.CancelledError()
+    try:
+        return await asyncio.shield(c)
+    except asyncio.CancelledError:
+        cancel_token.safe_cancel()
+        await c
+        raise asyncio.CancelledError()
 "#,
         "coro_converter",
         "coro_converter",
@@ -73,10 +61,9 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
 
     let base_coro = pyo3_asyncio::tokio::future_into_py(py, async move {
         tokio::select! {
-            _ = cancel_rx => {
-                Ok((None, true))
-            },
-            r = fut => r.map(|o| (Some(o), false))
+            biased;
+            _ = cancel_rx => Ok(None),
+            r = fut => r.map(|o| Some(o))
         }
     })?;
 
@@ -237,7 +224,7 @@ impl Deployment {
         .into_py(py))
     }
 
-    fn deploy<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+    fn deploy<'p>(&self, py: Python<'p>) -> PyResult<&'p pyo3::PyAny> {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
             underlying.write().await.deploy().await.map_err(|e| {
@@ -255,16 +242,14 @@ impl Deployment {
             })?;
             Python::with_gil(|py| Ok(py.None()))
         })
-        .unwrap()
     }
 
-    fn start<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+    fn start<'p>(&self, py: Python<'p>) -> PyResult<&'p pyo3::PyAny> {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
             underlying.write().await.start().await;
             Ok(Python::with_gil(|py| py.None()))
         })
-        .unwrap()
     }
 }
 
@@ -307,11 +292,9 @@ impl GCPNetwork {
     #[new]
     fn new(project: String, existing: Option<String>) -> Self {
         GCPNetwork {
-            underlying: Arc::new(RwLock::new(crate::core::gcp::GCPNetwork {
-                project,
-                tf_path: None,
-                existing_vpc: existing,
-            })),
+            underlying: Arc::new(RwLock::new(crate::core::gcp::GCPNetwork::new(
+                project, existing,
+            ))),
         }
     }
 }
@@ -366,13 +349,12 @@ pub struct Service {
 
 #[pymethods]
 impl Service {
-    fn stop<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+    fn stop<'p>(&self, py: Python<'p>) -> PyResult<&'p pyo3::PyAny> {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
             underlying.write().await.stop().await.unwrap();
             Ok(Python::with_gil(|py| py.None()))
         })
-        .unwrap()
     }
 }
 
@@ -383,13 +365,12 @@ struct PyReceiver {
 
 #[pymethods]
 impl PyReceiver {
-    fn next<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+    fn next<'p>(&self, py: Python<'p>) -> PyResult<&'p pyo3::PyAny> {
         let my_receiver = self.receiver.clone();
         interruptible_future_to_py(py, async move {
             let underlying = my_receiver.recv();
             Ok(underlying.await.map(Some).unwrap_or(None))
         })
-        .unwrap()
     }
 }
 
@@ -442,7 +423,7 @@ impl CustomClientPort {
         }
     }
 
-    fn server_port<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+    fn server_port<'p>(&self, py: Python<'p>) -> PyResult<&'p pyo3::PyAny> {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
@@ -450,7 +431,6 @@ impl CustomClientPort {
                 underlying: Some(underlying.server_port().await),
             })
         })
-        .unwrap()
     }
 }
 
@@ -486,7 +466,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
 
 #[pymethods]
 impl HydroflowCrate {
-    fn stdout<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+    fn stdout<'p>(&self, py: Python<'p>) -> PyResult<&'p pyo3::PyAny> {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
@@ -494,10 +474,9 @@ impl HydroflowCrate {
                 receiver: Arc::new(underlying.stdout().await),
             })
         })
-        .unwrap()
     }
 
-    fn stderr<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+    fn stderr<'p>(&self, py: Python<'p>) -> PyResult<&'p pyo3::PyAny> {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
@@ -505,16 +484,14 @@ impl HydroflowCrate {
                 receiver: Arc::new(underlying.stderr().await),
             })
         })
-        .unwrap()
     }
 
-    fn exit_code<'p>(&self, py: Python<'p>) -> &'p pyo3::PyAny {
+    fn exit_code<'p>(&self, py: Python<'p>) -> PyResult<&'p pyo3::PyAny> {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
             Ok(underlying.exit_code().await)
         })
-        .unwrap()
     }
 
     #[getter]
@@ -698,7 +675,7 @@ impl ServerPort {
     }
 
     #[allow(clippy::wrong_self_convention)]
-    fn into_source<'p>(&mut self, py: Python<'p>) -> &'p pyo3::PyAny {
+    fn into_source<'p>(&mut self, py: Python<'p>) -> PyResult<&'p pyo3::PyAny> {
         let underlying = self.underlying.take().unwrap();
         interruptible_future_to_py(py, async move {
             convert_next_to_generator(PythonStream {
@@ -707,11 +684,10 @@ impl ServerPort {
                 )),
             })
         })
-        .unwrap()
     }
 
     #[allow(clippy::wrong_self_convention)]
-    fn into_sink<'p>(&mut self, py: Python<'p>) -> &'p pyo3::PyAny {
+    fn into_sink<'p>(&mut self, py: Python<'p>) -> PyResult<&'p pyo3::PyAny> {
         let underlying = self.underlying.take().unwrap();
         interruptible_future_to_py(py, async move {
             let connected = underlying.connect::<ConnectedBidi>().await.into_sink();
@@ -720,7 +696,6 @@ impl ServerPort {
                 underlying: Arc::new(RwLock::new(connected)),
             })
         })
-        .unwrap()
     }
 }
 
@@ -732,14 +707,13 @@ struct PythonSink {
 
 #[pymethods]
 impl PythonSink {
-    fn send<'p>(&mut self, data: Py<PyBytes>, py: Python<'p>) -> &'p PyAny {
+    fn send<'p>(&mut self, data: Py<PyBytes>, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.clone();
         let bytes = Bytes::from(data.as_bytes(py).to_vec());
         interruptible_future_to_py(py, async move {
             underlying.write().await.send(bytes).await?;
             Ok(())
         })
-        .unwrap()
     }
 }
 
@@ -751,7 +725,7 @@ struct PythonStream {
 
 #[pymethods]
 impl PythonStream {
-    fn next<'p>(&mut self, py: Python<'p>) -> &'p PyAny {
+    fn next<'p>(&mut self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
             let read_res = underlying.write().await.next().await;
@@ -762,7 +736,6 @@ impl PythonStream {
                     .into_py(py))
             })
         })
-        .unwrap()
     }
 }
 

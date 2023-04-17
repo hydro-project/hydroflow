@@ -715,25 +715,90 @@ impl HydroflowGraph {
 
                             op_prologue_code.push(write_prologue);
                             subgraph_op_iter_code.push(write_iterator);
+
                             if include_type_guards {
-                                let fn_ident = format_ident!("check_{}", ident, span = op_span);
-                                let pull_push_trait = if is_pull {
+                                let source_info = {
+                                    // TODO: This crashes when running tests from certain directories because of diagnostics flag being turned on when it should not be on.
+                                    // Not sure of the solution yet, but it is not too important because the file is usually obvious as there can only be one until module support is added.
+                                    // #[cfg(feature = "diagnostics")]
+                                    // let path = op_span.unwrap().source_file().path();
+                                    #[cfg(feature = "diagnostics")]
+                                    let location = "unknown"; // path.display();
+
+                                    #[cfg(not(feature = "diagnostics"))]
+                                    let location = "unknown";
+
+                                    let location = location.to_string().replace(|x: char| !x.is_alphanumeric(), "_");
+
+                                    format!(
+                                        "loc_{}_start_{}_{}_end_{}_{}",
+                                        location,
+                                        op_span.start().line,
+                                        op_span.start().column,
+                                        op_span.end().line,
+                                        op_span.end().column
+                                    )
+                                };
+                                let fn_ident = format_ident!("{}__{}__{}", ident, op_name, source_info, span = op_span);
+                                let type_guard = if is_pull {
                                     quote_spanned! {op_span=>
-                                        ::std::iter::Iterator<Item = Item>
+                                        let #ident = {
+                                            #[allow(non_snake_case)]
+                                            #[inline(always)]
+                                            pub fn #fn_ident<Item, Input: ::std::iter::Iterator<Item = Item>>(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                                                struct Pull<Item, Input: ::std::iter::Iterator<Item = Item>> {
+                                                    inner: Input
+                                                }
+
+                                                impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator for Pull<Item, Input> {
+                                                    type Item = Item;
+
+                                                    #[inline(always)]
+                                                    fn next(&mut self) -> Option<Self::Item> {
+                                                        self.inner.next()
+                                                    }
+
+                                                    #[inline(always)]
+                                                    fn size_hint(&self) -> (usize, Option<usize>) {
+                                                        self.inner.size_hint()
+                                                    }
+                                                }
+
+                                                Pull {
+                                                    inner: input
+                                                }
+                                            }
+                                            #fn_ident( #ident )
+                                        };
                                     }
                                 } else {
                                     quote_spanned! {op_span=>
-                                        #root::pusherator::Pusherator<Item = Item>
+                                        let #ident = {
+                                            #[allow(non_snake_case)]
+                                            #[inline(always)]
+                                            pub fn #fn_ident<Item, Input: #root::pusherator::Pusherator<Item = Item>>(input: Input) -> impl #root::pusherator::Pusherator<Item = Item> {
+                                                struct Push<Item, Input: #root::pusherator::Pusherator<Item = Item>> {
+                                                    inner: Input
+                                                }
+
+                                                impl<Item, Input: #root::pusherator::Pusherator<Item = Item>> #root::pusherator::Pusherator for Push<Item, Input> {
+                                                    type Item = Item;
+
+                                                    #[inline(always)]
+                                                    fn give(&mut self, item: Self::Item) {
+                                                        self.inner.give(item)
+                                                    }
+                                                }
+
+                                                Push {
+                                                    inner: input
+                                                }
+                                            }
+                                            #fn_ident( #ident )
+                                        };
                                     }
                                 };
-                                let iter_type_guard = quote_spanned! {op_span=>
-                                    let #ident = {
-                                        #[inline(always)]
-                                        pub fn #fn_ident<Input: #pull_push_trait, Item>(input: Input) -> impl #pull_push_trait { input }
-                                        #fn_ident( #ident )
-                                    };
-                                };
-                                subgraph_op_iter_code.push(iter_type_guard);
+                                subgraph_op_iter_code.push(type_guard);
                             }
                             subgraph_op_iter_after_code.push(write_iterator_after);
                         }

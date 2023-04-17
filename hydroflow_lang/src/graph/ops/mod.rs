@@ -246,6 +246,8 @@ declare_ops![
     initialize::INITIALIZE,
     inspect::INSPECT,
     join::JOIN,
+    keyed_fold::KEYED_FOLD,
+    keyed_reduce::KEYED_REDUCE,
     lattice_join::LATTICE_JOIN,
     lattice_merge::LATTICE_MERGE,
     map::MAP,
