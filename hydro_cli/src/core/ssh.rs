@@ -188,13 +188,19 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         let port = addr.port();
 
         tokio::spawn(async move {
+            #[allow(clippy::never_loop)]
             while let Ok((mut local_stream, _)) = local_port.accept().await {
                 let mut channel = session
                     .channel_direct_tcpip(&internal_ip, port, None)
                     .await
                     .unwrap();
                 let _ = tokio::io::copy_bidirectional(&mut local_stream, &mut channel).await;
+                break;
+                // TODO(shadaj): we should be returning an Arc so that we know
+                // if anyone wants to connect to this forwarded port
             }
+
+            println!("[hydro] closing forwarded port");
         });
 
         Ok(local_addr)
