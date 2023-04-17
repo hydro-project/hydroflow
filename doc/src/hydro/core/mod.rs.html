@@ -179,7 +179,13 @@
 <a href="#179" id="179">179</a>
 <a href="#180" id="180">180</a>
 <a href="#181" id="181">181</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_channel::{Receiver, Sender};
@@ -224,9 +230,14 @@
         }
     }
 
-    <span class="kw">async fn </span>provision(<span class="self">self</span>, pool: <span class="kw-2">&amp;mut </span>ResourcePool) -&gt; <span class="prelude-ty">Result</span>&lt;ResourceResult&gt; {
+    <span class="kw">async fn </span>provision(
+        <span class="self">self</span>,
+        pool: <span class="kw-2">&amp;mut </span>ResourcePool,
+        last_result: <span class="prelude-ty">Option</span>&lt;Arc&lt;ResourceResult&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ResourceResult&gt; {
         <span class="prelude-val">Ok</span>(ResourceResult {
             terraform: <span class="self">self</span>.terraform.provision(<span class="kw-2">&amp;mut </span>pool.terraform).<span class="kw">await</span><span class="question-mark">?</span>,
+            _last_result: last_result,
         })
     }
 }
@@ -234,6 +245,7 @@
 <span class="attr">#[derive(Debug)]
 </span><span class="kw">pub struct </span>ResourceResult {
     <span class="kw">pub </span>terraform: terraform::TerraformResult,
+    _last_result: <span class="prelude-ty">Option</span>&lt;Arc&lt;ResourceResult&gt;&gt;,
 }
 
 <span class="attr">#[async_trait]
@@ -255,7 +267,7 @@
 
     <span class="kw">async fn </span>launch_binary(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        binary: <span class="kw-2">&amp;</span>Path,
+        binary: Arc&lt;(String, Vec&lt;u8&gt;)&gt;,
         args: <span class="kw-2">&amp;</span>[String],
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt;;
 
@@ -301,7 +313,7 @@
 <span class="kw">pub type </span>HostStrategyGetter = Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any) -&gt; ServerStrategy&gt;;
 
 <span class="attr">#[async_trait]
-</span><span class="kw">pub trait </span>Host: Send + Sync + std::fmt::Debug {
+</span><span class="kw">pub trait </span>Host: Send + Sync {
     <span class="kw">fn </span>target_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HostTargetType;
 
     <span class="kw">fn </span>request_port(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>ServerStrategy);

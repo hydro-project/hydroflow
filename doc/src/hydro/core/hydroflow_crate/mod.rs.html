@@ -280,6 +280,12 @@
 <a href="#280" id="280">280</a>
 <a href="#281" id="281">281</a>
 <a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 <span class="kw">use </span>anyhow::{bail, <span class="prelude-ty">Result</span>};
@@ -311,7 +317,7 @@
     <span class="doccomment">/// Configuration for the ports that this service will listen on a port for.
     </span>port_to_bind: HashMap&lt;String, ServerStrategy&gt;,
 
-    built_binary: <span class="prelude-ty">Option</span>&lt;JoinHandle&lt;PathBuf&gt;&gt;,
+    built_binary: <span class="prelude-ty">Option</span>&lt;JoinHandle&lt;BuildResult&gt;&gt;,
     launched_host: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt;,
 
     <span class="doccomment">/// A map of port names to config for how other services can connect to this one.
@@ -425,7 +431,7 @@
             .<span class="kw">await
     </span>}
 
-    <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; JoinHandle&lt;PathBuf&gt; {
+    <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; JoinHandle&lt;Arc&lt;(String, Vec&lt;u8&gt;)&gt;&gt; {
         <span class="kw">let </span>src_cloned = <span class="self">self</span>.src.join(<span class="string">&quot;Cargo.toml&quot;</span>).canonicalize().unwrap();
         <span class="kw">let </span>example_cloned = <span class="self">self</span>.example.clone();
         <span class="kw">let </span>features_cloned = <span class="self">self</span>.features.clone();
@@ -478,7 +484,13 @@
 
         <span class="kw">let </span>binary = launched_host
             .launch_binary(
-                <span class="self">self</span>.built_binary.take().unwrap().<span class="kw">await</span>.as_ref().unwrap(),
+                <span class="self">self</span>.built_binary
+                    .take()
+                    .unwrap()
+                    .<span class="kw">await
+                    </span>.as_ref()
+                    .unwrap()
+                    .clone(),
                 <span class="kw-2">&amp;</span><span class="self">self</span>.args.as_ref().cloned().unwrap_or_default(),
             )
             .<span class="kw">await</span><span class="question-mark">?</span>;

@@ -78,6 +78,10 @@
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::HashMap,
     path::PathBuf,
@@ -90,20 +94,24 @@
     util::{command_prelude::CompileMode, interning::InternedString},
     Config,
 };
+<span class="kw">use </span>nanoid::nanoid;
 <span class="kw">use </span>once_cell::sync::{Lazy, OnceCell};
 
 <span class="kw">use </span><span class="kw">crate</span>::core::HostTargetType;
 
 <span class="kw">type </span>CacheKey = (PathBuf, <span class="prelude-ty">Option</span>&lt;String&gt;, HostTargetType, <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;);
 
-<span class="kw">static </span>BUILDS: Lazy&lt;Mutex&lt;HashMap&lt;CacheKey, Arc&lt;OnceCell&lt;PathBuf&gt;&gt;&gt;&gt;&gt; = Lazy::new(Default::default);
+<span class="kw">pub type </span>BuildResult = Arc&lt;(String, Vec&lt;u8&gt;)&gt;;
+
+<span class="kw">static </span>BUILDS: Lazy&lt;Mutex&lt;HashMap&lt;CacheKey, Arc&lt;OnceCell&lt;BuildResult&gt;&gt;&gt;&gt;&gt; =
+    Lazy::new(Default::default);
 
 <span class="kw">pub fn </span>build_crate(
     src: PathBuf,
     example: <span class="prelude-ty">Option</span>&lt;String&gt;,
     target_type: HostTargetType,
     features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
-) -&gt; PathBuf {
+) -&gt; Arc&lt;(String, Vec&lt;u8&gt;)&gt; {
     <span class="kw">let </span>key = (src.clone(), example.clone(), target_type, features.clone());
     <span class="kw">let </span>unit_of_work = {
         <span class="kw">let </span><span class="kw-2">mut </span>builds = BUILDS.lock().unwrap();
@@ -151,7 +159,7 @@
                 .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
             <span class="kw">if </span>binaries.len() == <span class="number">1 </span>{
-                binaries[<span class="number">0</span>].to_string().into()
+                Arc::new((<span class="macro">nanoid!</span>(<span class="number">8</span>), std::fs::read(binaries[<span class="number">0</span>].to_string()).unwrap()))
             } <span class="kw">else </span>{
                 <span class="macro">panic!</span>(<span class="string">&quot;expected exactly one binary, got {}&quot;</span>, binaries.len())
             }

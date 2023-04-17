@@ -399,10 +399,6 @@
 
 <span class="kw">impl </span>TerraformBatch {
     <span class="kw">pub async fn </span>provision(<span class="self">self</span>, pool: <span class="kw-2">&amp;mut </span>TerraformPool) -&gt; <span class="prelude-ty">Result</span>&lt;TerraformResult&gt; {
-        <span class="kw">let </span>dothydro_folder = std::env::current_dir().unwrap().join(<span class="string">&quot;.hydro&quot;</span>);
-        std::fs::create_dir_all(<span class="kw-2">&amp;</span>dothydro_folder).unwrap();
-        <span class="kw">let </span>deployment_folder = tempfile::tempdir_in(dothydro_folder).unwrap();
-
         <span class="kw">if </span><span class="self">self</span>.terraform.required_providers.is_empty()
             &amp;&amp; <span class="self">self</span>.resource.is_empty()
             &amp;&amp; <span class="self">self</span>.data.is_empty()
@@ -413,6 +409,10 @@
                 deployment_folder: <span class="prelude-val">None</span>,
             });
         }
+
+        <span class="kw">let </span>dothydro_folder = std::env::current_dir().unwrap().join(<span class="string">&quot;.hydro&quot;</span>);
+        std::fs::create_dir_all(<span class="kw-2">&amp;</span>dothydro_folder).unwrap();
+        <span class="kw">let </span>deployment_folder = tempfile::tempdir_in(dothydro_folder).unwrap();
 
         std::fs::write(
             deployment_folder.path().join(<span class="string">&quot;main.tf.json&quot;</span>),

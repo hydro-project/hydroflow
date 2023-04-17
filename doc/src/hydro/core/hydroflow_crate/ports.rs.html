@@ -558,7 +558,6 @@
 <a href="#558" id="558">558</a>
 <a href="#559" id="559">559</a>
 <a href="#560" id="560">560</a>
-<a href="#561" id="561">561</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::HydroflowCrate;
 <span class="kw">use </span><span class="kw">crate</span>::core::{ClientStrategy, Host, HostStrategyGetter, LaunchedHost, ServerStrategy};
 
@@ -605,7 +604,7 @@
 }
 
 <span class="attr">#[async_trait]
-</span><span class="kw">pub trait </span>HydroflowServer: DynClone + Send + Sync + std::fmt::Debug {
+</span><span class="kw">pub trait </span>HydroflowServer: DynClone + Send + Sync {
     <span class="kw">fn </span>get_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ServerPort;
     <span class="kw">async fn </span>launched_host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;;
 }
@@ -775,7 +774,7 @@
     }
 }
 
-<span class="attr">#[derive(Clone, Debug)]
+<span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>HydroflowPortConfig {
     <span class="kw">pub </span>service: Weak&lt;RwLock&lt;HydroflowCrate&gt;&gt;,
     <span class="kw">pub </span>service_host: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
@@ -984,7 +983,7 @@
     }
 }
 
-<span class="attr">#[derive(Clone, Debug)]
+<span class="attr">#[derive(Clone)]
 </span><span class="kw">pub enum </span>ServerConfig {
     Direct(Arc&lt;<span class="kw">dyn </span>HydroflowServer&gt;),
     Forwarded(Arc&lt;<span class="kw">dyn </span>HydroflowServer&gt;),
@@ -1087,7 +1086,6 @@
             }
 
             ServerConfig::MergeSelect(underlying, key) =&gt; {
-                <span class="macro">dbg!</span>(underlying);
                 <span class="kw">let </span>key = <span class="kw-2">*</span>key;
                 underlying
                     .load_instantiated(

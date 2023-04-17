@@ -158,12 +158,49 @@
 <a href="#158" id="158">158</a>
 <a href="#159" id="159">159</a>
 <a href="#160" id="160">160</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::{
-    borrow::Cow,
-    net::SocketAddr,
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::{borrow::Cow, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_channel::{Receiver, Sender};
@@ -177,12 +214,15 @@
     sync::RwLock,
 };
 
+<span class="kw">use </span><span class="kw">crate</span>::core::util::async_retry;
+
 <span class="kw">use super</span>::{
     localhost::create_broadcast, LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy,
 };
 
 <span class="kw">struct </span>LaunchedSSHBinary {
     _resource_result: Arc&lt;ResourceResult&gt;,
+    session: <span class="prelude-ty">Option</span>&lt;AsyncSession&lt;TcpStream&gt;&gt;,
     channel: AsyncChannel&lt;TcpStream&gt;,
     stdin_sender: Sender&lt;String&gt;,
     stdout_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
@@ -220,8 +260,26 @@
 
     <span class="kw">async fn </span>wait(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
         <span class="self">self</span>.channel.wait_eof().<span class="kw">await</span>.unwrap();
-        <span class="self">self</span>.exit_code().<span class="kw">await
-    </span>}
+        <span class="kw">let </span>ret = <span class="self">self</span>.exit_code().<span class="kw">await</span>;
+        <span class="self">self</span>.channel.wait_close().<span class="kw">await</span>.unwrap();
+        ret
+    }
+}
+
+<span class="kw">impl </span>Drop <span class="kw">for </span>LaunchedSSHBinary {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">let </span>session = <span class="self">self</span>.session.take().unwrap();
+        std::thread::scope(|s| {
+            s.spawn(|| {
+                <span class="kw">let </span>runtime = tokio::runtime::Builder::new_multi_thread().build().unwrap();
+                runtime
+                    .block_on(session.disconnect(<span class="prelude-val">None</span>, <span class="string">&quot;&quot;</span>, <span class="prelude-val">None</span>))
+                    .unwrap();
+            })
+            .join()
+            .unwrap();
+        });
+    }
 }
 
 <span class="attr">#[async_trait]
@@ -240,31 +298,55 @@
 
     <span class="kw">async fn </span>launch_binary(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        binary: <span class="kw-2">&amp;</span>Path,
+        binary: Arc&lt;(String, Vec&lt;u8&gt;)&gt;,
         args: <span class="kw-2">&amp;</span>[String],
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt; {
         <span class="kw">let </span>session = <span class="self">self</span>.open_ssh_session().<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let </span>sftp = session.sftp().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>sftp = async_retry(
+            <span class="kw-2">&amp;</span>|| <span class="kw">async </span>{ <span class="prelude-val">Ok</span>(session.sftp().<span class="kw">await</span><span class="question-mark">?</span>) },
+            <span class="number">10</span>,
+            Duration::from_secs(<span class="number">1</span>),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// we may be deploying multiple binaries, so give each a unique name
-        </span><span class="kw">let </span>unique_name = <span class="macro">nanoid!</span>(<span class="number">8</span>);
+        </span><span class="kw">let </span>unique_name = <span class="kw-2">&amp;</span>binary.<span class="number">0</span>;
 
         <span class="kw">let </span>user = <span class="self">self</span>.ssh_user();
         <span class="kw">let </span>binary_path = PathBuf::from(<span class="macro">format!</span>(<span class="string">&quot;/home/{user}/hydro-{unique_name}&quot;</span>));
 
-        <span class="kw">let </span><span class="kw-2">mut </span>created_file = sftp.create(<span class="kw-2">&amp;</span>binary_path).<span class="kw">await</span><span class="question-mark">?</span>;
-        created_file
-            .write_all(std::fs::read(binary).unwrap().as_slice())
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">if </span>sftp.stat(<span class="kw-2">&amp;</span>binary_path).<span class="kw">await</span>.is_err() {
+            <span class="kw">let </span>random = <span class="macro">nanoid!</span>(<span class="number">8</span>);
+            <span class="kw">let </span>temp_path = PathBuf::from(<span class="macro">format!</span>(<span class="string">&quot;/home/{user}/hydro-{random}&quot;</span>));
+            <span class="kw">let </span><span class="kw-2">mut </span>created_file = sftp.create(<span class="kw-2">&amp;</span>temp_path).<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="macro">println!</span>(<span class="string">&quot;[hydro] uploading binary to /home/{user}/hydro-{random}&quot;</span>);
+            created_file.write_all(<span class="kw-2">&amp;</span>binary.<span class="number">1</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>orig_file_stat = sftp.stat(<span class="kw-2">&amp;</span>binary_path).<span class="kw">await</span><span class="question-mark">?</span>;
-        orig_file_stat.perm = <span class="prelude-val">Some</span>(<span class="number">0o755</span>); <span class="comment">// allow the copied binary to be executed by anyone
-        </span>created_file.setstat(orig_file_stat).<span class="kw">await</span><span class="question-mark">?</span>;
-        created_file.close().<span class="kw">await</span><span class="question-mark">?</span>;
-        drop(created_file);
+            <span class="kw">let </span><span class="kw-2">mut </span>orig_file_stat = sftp.stat(<span class="kw-2">&amp;</span>temp_path).<span class="kw">await</span><span class="question-mark">?</span>;
+            orig_file_stat.perm = <span class="prelude-val">Some</span>(<span class="number">0o755</span>); <span class="comment">// allow the copied binary to be executed by anyone
+            </span>created_file.setstat(orig_file_stat).<span class="kw">await</span><span class="question-mark">?</span>;
+            created_file.close().<span class="kw">await</span><span class="question-mark">?</span>;
+            drop(created_file);
+            <span class="macro">println!</span>(<span class="string">&quot;[hydro] uploaded binary to /home/{user}/hydro-{random}&quot;</span>);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>channel = session.channel_session().<span class="kw">await</span><span class="question-mark">?</span>;
+            sftp.rename(<span class="kw-2">&amp;</span>temp_path, <span class="kw-2">&amp;</span>binary_path, <span class="prelude-val">None</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="macro">println!</span>(<span class="string">&quot;[hydro] moved binary to /home/{user}/hydro-{unique_name}&quot;</span>);
+        }
+        drop(sftp);
+
+        <span class="macro">println!</span>(<span class="string">&quot;[hydro] launching binary /home/{user}/hydro-{unique_name}&quot;</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>channel = async_retry(
+            <span class="kw-2">&amp;</span>|| <span class="kw">async </span>{
+                <span class="prelude-val">Ok</span>(
+                    tokio::time::timeout(Duration::from_secs(<span class="number">60</span>), session.channel_session())
+                        .<span class="kw">await</span><span class="question-mark">??</span>,
+                )
+            },
+            <span class="number">10</span>,
+            Duration::from_secs(<span class="number">1</span>),
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>binary_path_string = binary_path.to_str().unwrap();
         <span class="kw">let </span>args_string = args
             .iter()
@@ -273,6 +355,7 @@
         channel
             .exec(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{binary_path_string}{args_string}&quot;</span>))
             .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="macro">println!</span>(<span class="string">&quot;[hydro] launched binary /home/{user}/hydro-{unique_name}&quot;</span>);
 
         <span class="kw">let </span>(stdin_sender, <span class="kw-2">mut </span>stdin_receiver) = async_channel::unbounded::&lt;String&gt;();
         <span class="kw">let </span><span class="kw-2">mut </span>stdin = channel.stream(<span class="number">0</span>); <span class="comment">// stream 0 is stdout/stdin, we use it for stdin
@@ -289,6 +372,7 @@
 
         <span class="prelude-val">Ok</span>(Arc::new(RwLock::new(LaunchedSSHBinary {
             _resource_result: <span class="self">self</span>.resource_result().clone(),
+            session: <span class="prelude-val">Some</span>(session),
             channel,
             stdin_sender,
             stdout_receivers,

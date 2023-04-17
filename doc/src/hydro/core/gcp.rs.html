@@ -582,6 +582,30 @@
 <a href="#582" id="582">582</a>
 <a href="#583" id="583">583</a>
 <a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+<a href="#590" id="590">590</a>
+<a href="#591" id="591">591</a>
+<a href="#592" id="592">592</a>
+<a href="#593" id="593">593</a>
+<a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+<a href="#599" id="599">599</a>
+<a href="#600" id="600">600</a>
+<a href="#601" id="601">601</a>
+<a href="#602" id="602">602</a>
+<a href="#603" id="603">603</a>
+<a href="#604" id="604">604</a>
+<a href="#605" id="605">605</a>
+<a href="#606" id="606">606</a>
+<a href="#607" id="607">607</a>
+<a href="#608" id="608">608</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
@@ -591,7 +615,10 @@
 <span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
 <span class="kw">use </span>nanoid::nanoid;
 <span class="kw">use </span>serde_json::json;
-<span class="kw">use </span>tokio::{net::TcpStream, sync::RwLock};
+<span class="kw">use </span>tokio::{
+    net::TcpStream,
+    sync::{Mutex, RwLock},
+};
 
 <span class="kw">use super</span>::{
     ssh::LaunchedSSHHost,
@@ -601,12 +628,13 @@
     ServerStrategy,
 };
 
-<span class="attr">#[derive(Debug)]
+<span class="comment">// #[derive(Debug)]
 </span><span class="kw">pub struct </span>LaunchedComputeEngine {
     resource_result: Arc&lt;ResourceResult&gt;,
     user: String,
     <span class="kw">pub </span>internal_ip: String,
     <span class="kw">pub </span>external_ip: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    ssh_session: Mutex&lt;<span class="prelude-ty">Option</span>&lt;AsyncSession&lt;TcpStream&gt;&gt;&gt;,
 }
 
 <span class="kw">impl </span>LaunchedComputeEngine {
@@ -662,7 +690,12 @@
     }
 
     <span class="kw">async fn </span>open_ssh_session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;AsyncSession&lt;TcpStream&gt;&gt; {
-        <span class="kw">let </span>target_addr = SocketAddr::new(
+        <span class="kw">let </span><span class="kw-2">mut </span>self_session = <span class="self">self</span>.ssh_session.lock().<span class="kw">await</span>;
+        <span class="comment">// if let Some(session) = self_session.deref() {
+        //     return Ok(session.clone());
+        // }
+
+        </span><span class="kw">let </span>target_addr = SocketAddr::new(
             <span class="self">self</span>.external_ip
                 .as_ref()
                 .context(<span class="string">&quot;GCP host must be configured with an external IP to launch binaries&quot;</span>)<span class="question-mark">?
@@ -671,10 +704,10 @@
             <span class="number">22</span>,
         );
 
-        async_retry(
-            || <span class="kw">async </span>{
+        <span class="kw">let </span>res = async_retry(
+            <span class="kw-2">&amp;</span>|| <span class="kw">async </span>{
                 <span class="kw">let </span><span class="kw-2">mut </span>config = SessionConfiguration::new();
-                config.set_timeout(<span class="number">1000</span>);
+                config.set_compress(<span class="bool-val">true</span>);
 
                 <span class="kw">let </span><span class="kw-2">mut </span>session =
                     AsyncSession::&lt;TcpStream&gt;::connect(target_addr, <span class="prelude-val">Some</span>(config)).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -695,23 +728,30 @@
             <span class="number">10</span>,
             Duration::from_secs(<span class="number">1</span>),
         )
-        .<span class="kw">await
-    </span>}
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="kw-2">*</span>self_session = <span class="prelude-val">Some</span>(res.clone());
+        <span class="prelude-val">Ok</span>(res)
+    }
 }
 
 <span class="attr">#[derive(Debug)]
 </span><span class="kw">pub struct </span>GCPNetwork {
     <span class="kw">pub </span>project: String,
-    <span class="kw">pub </span>tf_path: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="kw">pub </span>existing_vpc: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    id: String,
 }
 
 <span class="kw">impl </span>GCPNetwork {
-    <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {
-        <span class="kw">if </span><span class="self">self</span>.tf_path.is_some() {
-            <span class="kw">return</span>;
+    <span class="kw">pub fn </span>new(project: String, existing_vpc: <span class="prelude-ty">Option</span>&lt;String&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            project,
+            existing_vpc,
+            id: <span class="macro">nanoid!</span>(<span class="number">8</span>, <span class="kw-2">&amp;</span>TERRAFORM_ALPHABET),
         }
+    }
 
+    <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) -&gt; String {
         resource_batch
             .terraform
             .terraform
@@ -724,24 +764,34 @@
                 },
             );
 
-        <span class="kw">let </span>vpc_network = <span class="macro">format!</span>(<span class="string">&quot;hydro-vpc-network-{}&quot;</span>, <span class="macro">nanoid!</span>(<span class="number">8</span>, <span class="kw-2">&amp;</span>TERRAFORM_ALPHABET));
+        <span class="kw">let </span>vpc_network = <span class="macro">format!</span>(<span class="string">&quot;hydro-vpc-network-{}&quot;</span>, <span class="self">self</span>.id);
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(existing) = <span class="self">self</span>.existing_vpc.as_ref() {
-            <span class="self">self</span>.tf_path = <span class="prelude-val">Some</span>(<span class="macro">format!</span>(<span class="string">&quot;data.google_compute_network.{vpc_network}&quot;</span>));
-            resource_batch
+            <span class="kw">if </span>resource_batch
                 .terraform
-                .data
-                .entry(<span class="string">&quot;google_compute_network&quot;</span>.to_string())
-                .or_default()
-                .insert(
-                    vpc_network,
-                    <span class="macro">json!</span>({
-                        <span class="string">&quot;name&quot;</span>: existing,
-                        <span class="string">&quot;project&quot;</span>: <span class="self">self</span>.project,
-                    }),
-                );
+                .resource
+                .get(<span class="kw-2">&amp;</span><span class="string">&quot;google_compute_network&quot;</span>.to_string())
+                .unwrap_or(<span class="kw-2">&amp;</span>HashMap::new())
+                .contains_key(existing)
+            {
+                <span class="macro">format!</span>(<span class="string">&quot;google_compute_network.{existing}&quot;</span>)
+            } <span class="kw">else </span>{
+                resource_batch
+                    .terraform
+                    .data
+                    .entry(<span class="string">&quot;google_compute_network&quot;</span>.to_string())
+                    .or_default()
+                    .insert(
+                        vpc_network.clone(),
+                        <span class="macro">json!</span>({
+                            <span class="string">&quot;name&quot;</span>: existing,
+                            <span class="string">&quot;project&quot;</span>: <span class="self">self</span>.project,
+                        }),
+                    );
+
+                <span class="macro">format!</span>(<span class="string">&quot;data.google_compute_network.{vpc_network}&quot;</span>)
+            }
         } <span class="kw">else </span>{
-            <span class="self">self</span>.tf_path = <span class="prelude-val">Some</span>(<span class="macro">format!</span>(<span class="string">&quot;google_compute_network.{vpc_network}&quot;</span>));
             resource_batch
                 .terraform
                 .resource
@@ -801,12 +851,15 @@
                     ]
                 }),
             );
+
+            <span class="self">self</span>.existing_vpc = <span class="prelude-val">Some</span>(vpc_network.clone());
+
+            <span class="macro">format!</span>(<span class="string">&quot;google_compute_network.{vpc_network}&quot;</span>)
         }
     }
 }
 
-<span class="attr">#[derive(Debug)]
-</span><span class="kw">pub struct </span>GCPComputeEngineHost {
+<span class="kw">pub struct </span>GCPComputeEngineHost {
     <span class="kw">pub </span>id: usize,
     <span class="kw">pub </span>project: String,
     <span class="kw">pub </span>machine_type: String,
@@ -899,7 +952,8 @@
             <span class="kw">return</span>;
         }
 
-        <span class="self">self</span>.network
+        <span class="kw">let </span>vpc_path = <span class="self">self
+            </span>.network
             .try_write()
             .unwrap()
             .collect_resources(resource_batch);
@@ -971,15 +1025,6 @@
                 </span>}),
             );
 
-        <span class="kw">let </span>vpc_path = <span class="self">self
-            </span>.network
-            .try_read()
-            .unwrap()
-            .tf_path
-            .as_ref()
-            .unwrap()
-            .clone();
-
         <span class="kw">let </span>vm_key = <span class="macro">format!</span>(<span class="string">&quot;vm-instance-{}&quot;</span>, <span class="self">self</span>.id);
         <span class="kw">let </span>vm_name = <span class="macro">format!</span>(<span class="string">&quot;hydro-vm-instance-{}&quot;</span>, <span class="macro">nanoid!</span>(<span class="number">8</span>, <span class="kw-2">&amp;</span>TERRAFORM_ALPHABET));
 
@@ -999,30 +1044,32 @@
             }));
 
             <span class="comment">// open the external ports that were requested
-            </span><span class="kw">let </span>open_external_ports_rule = <span class="macro">format!</span>(<span class="string">&quot;{vm_name}-open-external-ports&quot;</span>);
-            resource_batch
-                .terraform
-                .resource
-                .entry(<span class="string">&quot;google_compute_firewall&quot;</span>.to_string())
-                .or_default()
-                .insert(
-                open_external_ports_rule.clone(),
-                <span class="macro">json!</span>({
-                    <span class="string">&quot;name&quot;</span>: open_external_ports_rule,
-                    <span class="string">&quot;project&quot;</span>: project,
-                    <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{{vpc_path}.name}}&quot;</span>),
-                    <span class="string">&quot;target_tags&quot;</span>: [open_external_ports_rule],
-                    <span class="string">&quot;source_ranges&quot;</span>: [<span class="string">&quot;0.0.0.0/0&quot;</span>],
-                    <span class="string">&quot;allow&quot;</span>: [
-                        {
-                            <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;tcp&quot;</span>,
-                            <span class="string">&quot;ports&quot;</span>: <span class="self">self</span>.external_ports.iter().map(|p| p.to_string()).collect::&lt;Vec&lt;String&gt;&gt;()
-                        }
-                    ]
-                }),
-            );
+            </span><span class="kw">let </span>my_external_tags = <span class="self">self</span>.external_ports.iter().map(|port| {
+                <span class="kw">let </span>rule_id = <span class="macro">nanoid!</span>(<span class="number">8</span>, <span class="kw-2">&amp;</span>TERRAFORM_ALPHABET);
+                <span class="kw">let </span>firewall_rule = resource_batch
+                    .terraform
+                    .resource
+                    .entry(<span class="string">&quot;google_compute_firewall&quot;</span>.to_string())
+                    .or_default()
+                    .entry(<span class="macro">format!</span>(<span class="string">&quot;open-external-port-{}&quot;</span>, port))
+                    .or_insert(<span class="macro">json!</span>({
+                        <span class="string">&quot;name&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;open-external-port-{}-{}&quot;</span>, port, rule_id),
+                        <span class="string">&quot;project&quot;</span>: project,
+                        <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{{vpc_path}.name}}&quot;</span>),
+                        <span class="string">&quot;target_tags&quot;</span>: [<span class="macro">format!</span>(<span class="string">&quot;open-external-port-tag-{}-{}&quot;</span>, port, rule_id)],
+                        <span class="string">&quot;source_ranges&quot;</span>: [<span class="string">&quot;0.0.0.0/0&quot;</span>],
+                        <span class="string">&quot;allow&quot;</span>: [
+                            {
+                                <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;tcp&quot;</span>,
+                                <span class="string">&quot;ports&quot;</span>: <span class="macro">vec!</span>[port.to_string()]
+                            }
+                        ]
+                    }));
 
-            tags.push(open_external_ports_rule);
+                firewall_rule[<span class="string">&quot;target_tags&quot;</span>].as_array().unwrap()[<span class="number">0</span>].clone()
+            });
+
+            tags.extend(my_external_tags);
 
             resource_batch.terraform.output.insert(
                 <span class="macro">format!</span>(<span class="string">&quot;{vm_key}-public-ip&quot;</span>),
@@ -1101,6 +1148,7 @@
                 user: <span class="self">self</span>.user.as_ref().cloned().unwrap_or(<span class="string">&quot;hydro&quot;</span>.to_string()),
                 internal_ip,
                 external_ip,
+                ssh_session: Mutex::new(<span class="prelude-val">None</span>),
             }))
         }
 

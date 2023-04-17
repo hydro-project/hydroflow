@@ -264,10 +264,30 @@
 <a href="#264" id="264">264</a>
 <a href="#265" id="265">265</a>
 <a href="#266" id="266">266</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, fs::File, io::Write, net::SocketAddr, sync::Arc};
 
 <span class="attr">#[cfg(unix)]
 </span><span class="kw">use </span>std::os::unix::process::ExitStatusExt;
+
+<span class="attr">#[cfg(unix)]
+</span><span class="kw">use </span>std::os::unix::prelude::PermissionsExt;
 
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_channel::{Receiver, Sender};
@@ -275,6 +295,7 @@
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::{io::BufReader, AsyncBufReadExt, AsyncRead, AsyncWriteExt, StreamExt};
 <span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
+<span class="kw">use </span>tempfile::{NamedTempFile, TempPath};
 <span class="kw">use </span>tokio::sync::RwLock;
 
 <span class="kw">use super</span>::{
@@ -284,6 +305,7 @@
 
 <span class="kw">struct </span>LaunchedLocalhostBinary {
     child: RwLock&lt;async_process::Child&gt;,
+    _temp_path: TempPath,
     stdin_sender: Sender&lt;String&gt;,
     stdout_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
     stderr_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
@@ -396,10 +418,21 @@
 
     <span class="kw">async fn </span>launch_binary(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        binary: <span class="kw-2">&amp;</span>Path,
+        binary: Arc&lt;(String, Vec&lt;u8&gt;)&gt;,
         args: <span class="kw-2">&amp;</span>[String],
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>child = Command::new(binary)
+        <span class="kw">let </span>temp_path = NamedTempFile::new()<span class="question-mark">?</span>.into_temp_path();
+
+        <span class="kw">let </span><span class="kw-2">mut </span>file = File::create(<span class="kw-2">&amp;</span>temp_path)<span class="question-mark">?</span>;
+        file.write_all(binary.<span class="number">1</span>.as_slice())<span class="question-mark">?</span>;
+        drop(file);
+
+        <span class="kw">let </span><span class="kw-2">mut </span>orig_perms = std::fs::metadata(<span class="kw-2">&amp;</span>temp_path)<span class="question-mark">?</span>.permissions();
+        <span class="attr">#[cfg(unix)]
+        </span>orig_perms.set_mode(<span class="number">0o755</span>);
+        std::fs::set_permissions(<span class="kw-2">&amp;</span>temp_path, orig_perms)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span><span class="kw-2">mut </span>child = Command::new(<span class="kw-2">&amp;</span>temp_path)
             .args(args)
             .kill_on_drop(<span class="bool-val">true</span>)
             .stdin(Stdio::piped())
@@ -422,6 +455,7 @@
 
         <span class="prelude-val">Ok</span>(Arc::new(RwLock::new(LaunchedLocalhostBinary {
             child: RwLock::new(child),
+            _temp_path: temp_path,
             stdin_sender,
             stdout_receivers,
             stderr_receivers,
