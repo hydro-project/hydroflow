@@ -194,7 +194,12 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
                     .await
                     .unwrap();
                 let _ = tokio::io::copy_bidirectional(&mut local_stream, &mut channel).await;
+                break;
+                // TODO(shadaj): we should be returning an Arc so that we know
+                // if anyone wants to connect to this forwarded port
             }
+
+            println!("[hydro] closing forwarded port");
         });
 
         Ok(local_addr)

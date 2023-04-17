@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::{bail, Result};
 use async_channel::Receiver;
@@ -194,18 +194,19 @@ impl Service for HydroflowCrate {
 
         let launched_host = self.launched_host.as_ref().unwrap();
 
-        let binary = launched_host
-            .launch_binary(
-                self.built_binary
-                    .take()
-                    .unwrap()
-                    .await
-                    .as_ref()
-                    .unwrap()
-                    .clone(),
-                &self.args.as_ref().cloned().unwrap_or_default(),
-            )
-            .await?;
+        let built = self.built_binary
+            .take()
+            .unwrap()
+            .await
+            .as_ref()
+            .unwrap()
+            .clone();
+        let args = self.args.as_ref().cloned().unwrap_or_default();
+
+        let binary = launched_host.launch_binary(
+            built.clone(),
+            &args,
+        ).await?;
 
         let mut bind_config = HashMap::new();
         for (port_name, bind_type) in self.port_to_bind.iter() {
@@ -225,7 +226,9 @@ impl Service for HydroflowCrate {
             .send(format!("{formatted_bind_config}\n"))
             .await?;
 
-        let ready_line = stdout_receiver.recv().await.unwrap();
+        let ready_line = tokio::time::timeout(Duration::from_secs(60),
+            stdout_receiver.recv()
+        ).await??;
         if ready_line.starts_with("ready: ") {
             *self.server_defns.try_write().unwrap() =
                 serde_json::from_str(ready_line.trim_start_matches("ready: ")).unwrap();

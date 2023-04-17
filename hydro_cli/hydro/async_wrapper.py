@@ -21,7 +21,7 @@ def run(inner, args):
     except KeyboardInterrupt:
         should_cancel = True
         # don't re-raise the exception, to give Rust a chance to gracefully shut down
-        res = (None, [Exception, Exception("Received keyboard interrupt"), None])
+        res = (None, [KeyboardInterrupt, KeyboardInterrupt("Received keyboard interrupt"), None])
     except:
         should_cancel = True
         cancel_reason = sys.exc_info()
@@ -33,11 +33,17 @@ def run(inner, args):
 
     if should_cancel:
         task.cancel()
-        event_loop.run_until_complete(task)
+        try:
+            event_loop.run_until_complete(task)
+        except asyncio.CancelledError:
+            pass
 
-    event_loop.run_until_complete(
-        asyncio.gather(*asyncio.all_tasks(loop=event_loop))
-    )
+    for task in asyncio.all_tasks(loop=event_loop):
+        task.cancel()
+        try:
+            event_loop.run_until_complete(task)
+        except asyncio.CancelledError:
+            pass
 
     event_loop.close()
 
