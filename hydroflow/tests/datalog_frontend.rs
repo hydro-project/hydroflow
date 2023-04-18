@@ -1090,3 +1090,89 @@ fn test_wildcard_join_count() {
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(2,)]);
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result2_recv), &[(1,)]);
 }
+
+#[multiplatform_test]
+fn test_index() {
+    let (ints_send, ints) = hydroflow::util::unbounded_channel::<(i64, i64)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64, i64, usize)>();
+    let (result2, mut result2_recv) = hydroflow::util::unbounded_channel::<(i64, usize, usize)>();
+
+    let (result3, mut result3_recv) = hydroflow::util::unbounded_channel::<(i64, i64, usize)>();
+    let (result4, mut result4_recv) = hydroflow::util::unbounded_channel::<(i64, usize, usize)>();
+    let (result5, mut result5_recv) = hydroflow::util::unbounded_channel::<(i64, i64, usize)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints `source_stream(ints)` 
+        
+        .output result `for_each(|v| result.send(v).unwrap())`
+        .output result2 `for_each(|v| result2.send(v).unwrap())`
+        .output result3 `for_each(|v| result3.send(v).unwrap())`
+        .output result4 `for_each(|v| result4.send(v).unwrap())`
+
+        .persist result5
+        .output result5 `for_each(|v| result5.send(v).unwrap())`
+
+        result(a, b, index()) :- ints(a, b)
+        result2(a, count(b), index()) :- ints(a, b)
+
+        .persist ints_persisted
+        ints_persisted(a, b) :- ints(a, b)
+
+        result3(a, b, index()) :- ints_persisted(a, b)
+        result4(a, count(b), index()) :- ints_persisted(a, b)
+        result5(a, b, index()) :- ints_persisted(a, b)
+        "#
+    );
+
+    ints_send.send((1, 1)).unwrap();
+    ints_send.send((1, 2)).unwrap();
+    ints_send.send((2, 1)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(1, 1, 0), (1, 2, 1), (2, 1, 2)]
+    );
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result2_recv),
+        &[(1, 2, 0), (2, 1, 1)]
+    );
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result3_recv),
+        &[(1, 1, 0), (1, 2, 1), (2, 1, 2)]
+    );
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result4_recv),
+        &[(1, 2, 0), (2, 1, 1)]
+    );
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result5_recv),
+        &[(1, 1, 0), (1, 2, 1), (2, 1, 2)]
+    );
+
+    ints_send.send((3, 1)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(3, 1, 0)]);
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result2_recv),
+        &[(3, 1, 0)]
+    );
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result3_recv),
+        &[(1, 1, 0), (1, 2, 1), (2, 1, 2), (3, 1, 3)]
+    );
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result4_recv),
+        &[(1, 2, 0), (2, 1, 1), (3, 1, 2)]
+    );
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result5_recv),
+        &[(1, 1, 0), (1, 2, 1), (2, 1, 2), (3, 1, 3)]
+    );
+}
