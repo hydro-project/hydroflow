@@ -1696,6 +1696,7 @@ dependencies = [
  "crdts",
  "criterion",
  "futures",
+ "futures-batch",
  "getrandom 0.2.9",
  "hdrhistogram",
  "hydroflow_cli_integration",

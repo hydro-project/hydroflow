@@ -29,7 +29,7 @@ async def main(args):
     num_p2a_proxy_leaders = int(args[10])
     num_p2b_proxy_leaders = int(args[11])
     num_acceptor_groups = int(args[12])
-    flush_every_n = int(args[13])
+    inputs_per_tick = int(args[13])
     # i_am_leader_check_timeout should >> i_am_leader_resend_timeout, so the current leader has time to send a heartbeat
     # Leader election time (out of our control) should >> p1a_timeout, so the leader doesn't spam acceptors. p1a_timeout should differ between proposers to avoid contention
 
@@ -57,7 +57,7 @@ async def main(args):
         proposer = deployment.HydroflowCrate(
             src=".",
             example="dedalus_auto_paxos_proposer",
-            args=[json.dumps((i, f, num_acceptor_groups, num_p2a_proxy_leaders, p1a_timeout, i_am_leader_resend_timeout, i_am_leader_check_timeout, flush_every_n))], # my_id, f, num_acceptor_groups, num_p2a_proxy_leaders, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const
+            args=[json.dumps((i, f, num_acceptor_groups, num_p2a_proxy_leaders, p1a_timeout, i_am_leader_resend_timeout, i_am_leader_check_timeout, inputs_per_tick))], # my_id, f, num_acceptor_groups, num_p2a_proxy_leaders, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const, inputs_per_tick
             on=machine
         )
         proposer_programs.append(proposer)

@@ -66,7 +66,7 @@ async fn main() {
         .await
         .into_source();
 
-    let (my_id, f, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const, flush_every_n):(u32, u32, u32, u32, u32, usize) = 
+    let (my_id, f, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const, inputs_per_tick):(u32, u32, u32, u32, u32, usize) = 
         serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
     let p1a_timeout = periodic(p1a_timeout_const);
     let i_am_leader_resend_timeout = periodic(i_am_leader_resend_timeout_const);
@@ -102,9 +102,8 @@ async fn main() {
 .output LeaderExpiredOut `for_each(|(pid,):(u32,)| println!("proposer {:?} leader expired", pid))`
 
 # IDB
-.input clientIn `repeat_iter_external(vec![()]) -> map(|_| (context.current_tick() as u32,))`
-// .input clientIn2 `repeat_iter_external(vec![()]) -> map(|_| (context.current_tick() * 2 + 1 as u32,))`
-// .input clientIn `repeat_iter_external(vec![()]) -> flat_map(|_| (0..3).map(|d| ((context.current_tick() * 3 + d) as u32,)))`
+// .input clientIn `repeat_iter_external(vec![()]) -> map(|_| (context.current_tick() as u32,))`
+.input clientIn `repeat_iter_external(vec![()]) -> flat_map(|_| (0..inputs_per_tick).map(|d| ((context.current_tick() * inputs_per_tick + d) as u32,)))`
 .output clientOut `for_each(|(payload,slot):(u32,u32)| println!("committed {:?}: {:?}", slot, payload))`
 
 .input startBallot `repeat_iter([(0 as u32,),])`
@@ -143,8 +142,6 @@ receivedBallots(i, n) :+ receivedBallots(i, n)
 // .persist receivedBallots
 iAmLeader(i, n) :- iAmLeaderU(i, n)
 iAmLeader(i, n) :+ iAmLeader(i, n), !iAmLeaderCheckTimeout() # clear iAmLeader periodically (like LRU clocks)
-// payloads(p) :- clientIn(p)
-// payloads(p) :+ payloads(p), !ChosenPayload(p), !CommittedLog(p, _), !ResentLog(p, _)
 
 
 # Initialize
@@ -231,12 +228,13 @@ nextSlot(s+1) :+ !nextSlot(s2), IsLeader(), MaxProposedSlot(s)
 
 ######################## send p2as 
 # assign a slot
-ChosenPayload(choose(payload)) :- clientIn(payload), nextSlot(s), IsLeader() # drop all payloads that we can't handle in this tick by not persisting clientIn
-p2a@a(i, payload, slot, i, num) :~ ChosenPayload(payload), nextSlot(slot), id(i), ballot(num), acceptors(a)
+IndexedPayloads(payload, index()) :- clientIn(payload), nextSlot(s), IsLeader()
+p2a@a(i, payload, (slot + offset), i, num) :~ IndexedPayloads(payload, offset), nextSlot(slot), id(i), ballot(num), acceptors(a)
 # Increment the slot if a payload was chosen
-nextSlot(s+1) :+ ChosenPayload(payload), nextSlot(s)
+NumPayloads(count(payload)) :- clientIn(payload)
+nextSlot(s+num) :+ NumPayloads(num), nextSlot(s)
 # Don't increment the slot if no payload was chosen, but we are still the leader
-nextSlot(s) :+ !ChosenPayload(payload), nextSlot(s), IsLeader()
+nextSlot(s) :+ !NumPayloads(num), nextSlot(s), IsLeader()
 ######################## end send p2as 
 
 

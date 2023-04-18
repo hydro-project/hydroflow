@@ -75,7 +75,7 @@ async fn main() {
         .await
         .into_source();
 
-    let (my_id, f, num_acceptor_groups, num_p2a_proxy_leaders, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const, flush_every_n):(u32, u32, u32, u32, u32, u32, u32, usize) = 
+    let (my_id, f, num_acceptor_groups, num_p2a_proxy_leaders, p1a_timeout_const, i_am_leader_resend_timeout_const, i_am_leader_check_timeout_const, inputs_per_tick):(u32, u32, u32, u32, u32, u32, u32, usize) = 
         serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
     let p2a_proxy_leaders_start_id = my_id * num_p2a_proxy_leaders;
     let p1a_timeout = periodic(p1a_timeout_const);
@@ -111,7 +111,8 @@ async fn main() {
 .input nextSlot `null::<(u32,)>()`
 
 # IDB
-.input clientIn `repeat_iter_external(vec![()]) -> map(|_| (context.current_tick() as u32,))`
+// .input clientIn `repeat_iter_external(vec![()]) -> map(|_| (context.current_tick() as u32,))`
+.input clientIn `repeat_iter_external(vec![()]) -> flat_map(|_| (0..inputs_per_tick).map(|d| ((context.current_tick() * inputs_per_tick + d) as u32,)))`
 .output clientOut `for_each(|(payload,slot):(u32,u32)| println!("committed {:?}: {:?}", slot, payload))`
 
 .input startBallot `repeat_iter([(0 as u32,),])`
@@ -161,7 +162,7 @@ ballot(zero) :- startBallot(zero)
 // p1bLogOut(pid, p, a, payload, slot, payloadBallotID, payloadBallotNum, id, num) :- id(pid), p1bLogU(p, a, payload, slot, payloadBallotID, payloadBallotNum, id, num)
 // p2aOut(start+(slot%n), i, payload, slot, i, num) :- ResentLog(payload, slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
 p2aOut(start+(slot%n), i, no, slot, i, num) :- FilledHoles(no, slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start) # Weird bug where if this line is commented out, id has an error?
-// p2aOut(start+(slot%n), i, payload, slot, i, num) :- ChosenPayload(payload), nextSlot(slot), id(i), ballot(num),  numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
+// p2aOut(start+(slot%n), i, payload, (slot + offset), i, num) :- IndexedPayloads(payload, offset), nextSlot(slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
 // p2bOut(pid, mi, mn, t1) :- id(pid), p2bU(mi, mn, t1)
 // p2bSealedOut(pid, mi, mn) :- id(pid), p2bSealed(mi, mn)
 // inputsOut(pid, n, t1, prevT) :- id(pid), inputsU(n, t1, prevT)
@@ -235,13 +236,13 @@ nextSlot(s+1) :+ IsLeader(), MaxProposedSlot(s), !nextSlot(s2)
 
 
 ######################## send p2as 
-# assign a slot
-ChosenPayload(choose(payload)) :- clientIn(payload), nextSlot(s), IsLeader() # drop all payloads that we can't handle in this tick by not persisting clientIn
-p2a@(start+(slot%n))(i, payload, slot, i, num) :~ ChosenPayload(payload), nextSlot(slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
+IndexedPayloads(payload, index()) :- clientIn(payload), nextSlot(s), IsLeader()
+p2a@(start+(slot%n))(i, payload, (slot + offset), i, num) :~ IndexedPayloads(payload, offset), nextSlot(slot), id(i), ballot(num), numP2aProxyLeaders(n), p2aProxyLeadersStartID(start)
 # Increment the slot if a payload was chosen
-nextSlot(s+1) :+ ChosenPayload(payload), nextSlot(s)
+NumPayloads(count(payload)) :- clientIn(payload)
+nextSlot(s+num) :+ NumPayloads(num), nextSlot(s)
 # Don't increment the slot if no payload was chosen, but we are still the leader
-nextSlot(s) :+ !ChosenPayload(payload), nextSlot(s), IsLeader()
+nextSlot(s) :+ !NumPayloads(num), nextSlot(s), IsLeader()
 ######################## end send p2as 
 
 
