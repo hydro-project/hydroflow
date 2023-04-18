@@ -1091,11 +1091,65 @@
 <a href="#1091" id="1091">1091</a>
 <a href="#1092" id="1092">1092</a>
 <a href="#1093" id="1093">1093</a>
+<a href="#1094" id="1094">1094</a>
+<a href="#1095" id="1095">1095</a>
+<a href="#1096" id="1096">1096</a>
+<a href="#1097" id="1097">1097</a>
+<a href="#1098" id="1098">1098</a>
+<a href="#1099" id="1099">1099</a>
+<a href="#1100" id="1100">1100</a>
+<a href="#1101" id="1101">1101</a>
+<a href="#1102" id="1102">1102</a>
+<a href="#1103" id="1103">1103</a>
+<a href="#1104" id="1104">1104</a>
+<a href="#1105" id="1105">1105</a>
+<a href="#1106" id="1106">1106</a>
+<a href="#1107" id="1107">1107</a>
+<a href="#1108" id="1108">1108</a>
+<a href="#1109" id="1109">1109</a>
+<a href="#1110" id="1110">1110</a>
+<a href="#1111" id="1111">1111</a>
+<a href="#1112" id="1112">1112</a>
+<a href="#1113" id="1113">1113</a>
+<a href="#1114" id="1114">1114</a>
+<a href="#1115" id="1115">1115</a>
+<a href="#1116" id="1116">1116</a>
+<a href="#1117" id="1117">1117</a>
+<a href="#1118" id="1118">1118</a>
+<a href="#1119" id="1119">1119</a>
+<a href="#1120" id="1120">1120</a>
+<a href="#1121" id="1121">1121</a>
+<a href="#1122" id="1122">1122</a>
+<a href="#1123" id="1123">1123</a>
+<a href="#1124" id="1124">1124</a>
+<a href="#1125" id="1125">1125</a>
+<a href="#1126" id="1126">1126</a>
+<a href="#1127" id="1127">1127</a>
+<a href="#1128" id="1128">1128</a>
+<a href="#1129" id="1129">1129</a>
+<a href="#1130" id="1130">1130</a>
+<a href="#1131" id="1131">1131</a>
+<a href="#1132" id="1132">1132</a>
+<a href="#1133" id="1133">1133</a>
+<a href="#1134" id="1134">1134</a>
+<a href="#1135" id="1135">1135</a>
+<a href="#1136" id="1136">1136</a>
+<a href="#1137" id="1137">1137</a>
+<a href="#1138" id="1138">1138</a>
+<a href="#1139" id="1139">1139</a>
+<a href="#1140" id="1140">1140</a>
+<a href="#1141" id="1141">1141</a>
+<a href="#1142" id="1142">1142</a>
+<a href="#1143" id="1143">1143</a>
+<a href="#1144" id="1144">1144</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>rust_sitter::{
     errors::{ParseError, ParseErrorReason},
     Spanned,
 };
-<span class="kw">use </span>std::collections::{HashMap, HashSet};
+<span class="kw">use </span>std::{
+    collections::{HashMap, HashSet},
+    ops::Deref,
+};
 
 <span class="kw">use </span>hydroflow_lang::{
     diagnostic::{Diagnostic, Level},
@@ -1617,6 +1671,7 @@
             | Aggregation::Sum(<span class="kw">_</span>, <span class="kw">_</span>, a, <span class="kw">_</span>)
             | Aggregation::Choose(<span class="kw">_</span>, <span class="kw">_</span>, a, <span class="kw">_</span>),
         ) =&gt; gen_value_expr(<span class="kw-2">&amp;</span>IntExpr::Ident(a.clone()), lookup_ident, get_span),
+        TargetExpr::Index(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
     }
 }
 
@@ -1647,67 +1702,118 @@
     }
 
     <span class="kw">let </span><span class="kw-2">mut </span>field_use_cur = HashMap::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>has_index = <span class="bool-val">false</span>;
     <span class="kw">for </span>field <span class="kw">in </span>rule
         .target
         .fields
         .iter()
         .chain(rule.target.at_node.iter().map(|n| <span class="kw-2">&amp;</span>n.node))
     {
-        <span class="kw">let </span>expr: syn::Expr = gen_target_expr(
-            field,
-            <span class="kw-2">&amp;mut </span>|ident| {
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(col) = out_expanded.variable_mapping.get(<span class="kw-2">&amp;</span>ident.name) {
-                    <span class="kw">let </span>cur_count = field_use_cur
-                        .entry(ident.name.clone())
-                        .and_modify(|e| <span class="kw-2">*</span>e += <span class="number">1</span>)
-                        .or_insert(<span class="number">1</span>);
+        <span class="kw">if </span><span class="macro">matches!</span>(field.deref(), TargetExpr::Index(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>)) {
+            has_index = <span class="bool-val">true</span>;
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>expr: syn::Expr = gen_target_expr(
+                field,
+                <span class="kw-2">&amp;mut </span>|ident| {
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(col) = out_expanded.variable_mapping.get(<span class="kw-2">&amp;</span>ident.name) {
+                        <span class="kw">let </span>cur_count = field_use_cur
+                            .entry(ident.name.clone())
+                            .and_modify(|e| <span class="kw-2">*</span>e += <span class="number">1</span>)
+                            .or_insert(<span class="number">1</span>);
 
-                    <span class="kw">let </span>source_col_idx = syn::Index::from(<span class="kw-2">*</span>col);
-                    <span class="kw">let </span>base = <span class="macro">parse_quote_spanned!</span>(get_span(ident.span)=&gt; row.#source_col_idx);
+                        <span class="kw">let </span>source_col_idx = syn::Index::from(<span class="kw-2">*</span>col);
+                        <span class="kw">let </span>base = <span class="macro">parse_quote_spanned!</span>(get_span(ident.span)=&gt; row.#source_col_idx);
 
-                    <span class="kw">if </span><span class="kw-2">*</span>cur_count &lt; field_use_count[<span class="kw-2">&amp;</span>ident.name] &amp;&amp; field_use_count[<span class="kw-2">&amp;</span>ident.name] &gt; <span class="number">1
-                    </span>{
-                        <span class="macro">parse_quote!</span>(#base.clone())
+                        <span class="kw">if </span><span class="kw-2">*</span>cur_count &lt; field_use_count[<span class="kw-2">&amp;</span>ident.name]
+                            &amp;&amp; field_use_count[<span class="kw-2">&amp;</span>ident.name] &gt; <span class="number">1
+                        </span>{
+                            <span class="macro">parse_quote!</span>(#base.clone())
+                        } <span class="kw">else </span>{
+                            base
+                        }
                     } <span class="kw">else </span>{
-                        base
+                        diagnostics.push(Diagnostic::spanned(
+                            get_span(ident.span),
+                            Level::Error,
+                            <span class="macro">format!</span>(<span class="string">&quot;Could not find column {} in RHS of rule&quot;</span>, <span class="kw-2">&amp;</span>ident.name),
+                        ));
+                        <span class="macro">parse_quote!</span>(())
                     }
-                } <span class="kw">else </span>{
-                    diagnostics.push(Diagnostic::spanned(
-                        get_span(ident.span),
-                        Level::Error,
-                        <span class="macro">format!</span>(<span class="string">&quot;Could not find column {} in RHS of rule&quot;</span>, <span class="kw-2">&amp;</span>ident.name),
-                    ));
-                    <span class="macro">parse_quote!</span>(())
-                }
-            },
-            get_span,
-        );
+                },
+                get_span,
+            );
 
-        <span class="kw">match </span><span class="kw-2">&amp;</span>field.value {
-            TargetExpr::Expr(<span class="kw">_</span>) =&gt; {
-                group_by_exprs.push(expr);
-            }
-            TargetExpr::Aggregation(a) =&gt; {
-                aggregations.push(a.clone());
-                agg_exprs.push(expr);
+            <span class="kw">match </span><span class="kw-2">&amp;</span>field.value {
+                TargetExpr::Expr(<span class="kw">_</span>) =&gt; {
+                    group_by_exprs.push(expr);
+                }
+                TargetExpr::Aggregation(a) =&gt; {
+                    aggregations.push(a.clone());
+                    agg_exprs.push(expr);
+                }
+                TargetExpr::Index(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
             }
         }
     }
 
     <span class="kw">let </span>flattened_tuple_type = <span class="kw-2">&amp;</span>out_expanded.tuple_type;
 
+    <span class="kw">let </span><span class="kw-2">mut </span>after_group_lookups: Vec&lt;syn::Expr&gt; = <span class="macro">vec!</span>[];
+    <span class="kw">let </span><span class="kw-2">mut </span>group_key_idx = <span class="number">0</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>agg_idx = <span class="number">0</span>;
+    <span class="kw">for </span>field <span class="kw">in </span>rule
+        .target
+        .fields
+        .iter()
+        .chain(rule.target.at_node.iter().map(|n| <span class="kw-2">&amp;</span>n.node))
+    {
+        <span class="kw">match </span>field.value {
+            TargetExpr::Expr(<span class="kw">_</span>) =&gt; {
+                <span class="kw">let </span>idx = syn::Index::from(group_key_idx);
+                after_group_lookups.push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; g.#idx));
+                group_key_idx += <span class="number">1</span>;
+            }
+            TargetExpr::Aggregation(Aggregation::CountUnique(..)) =&gt; {
+                <span class="kw">let </span>idx = syn::Index::from(agg_idx);
+                after_group_lookups
+                    .push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; a.#idx.unwrap().<span class="number">1</span>));
+                agg_idx += <span class="number">1</span>;
+            }
+            TargetExpr::Aggregation(<span class="kw">_</span>) =&gt; {
+                <span class="kw">let </span>idx = syn::Index::from(agg_idx);
+                after_group_lookups
+                    .push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; a.#idx.unwrap()));
+                agg_idx += <span class="number">1</span>;
+            }
+            TargetExpr::Index(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
+                after_group_lookups.push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; i));
+            }
+        }
+    }
+
+    <span class="kw">let </span>group_by_input_type =
+        repeat_tuple::&lt;syn::Type, syn::Type&gt;(|| <span class="macro">parse_quote!</span>(<span class="kw">_</span>), group_by_exprs.len());
+
+    <span class="kw">let </span>after_group_pipeline: Pipeline = <span class="kw">if </span>has_index {
+        <span class="kw">if </span>out_expanded.persisted &amp;&amp; agg_exprs.is_empty() {
+            <span class="comment">// if there is an aggregation, we will use a group which replays so we should use `&#39;tick` instead
+            </span><span class="macro">parse_quote!</span>(enumerate::&lt;<span class="lifetime">&#39;static</span>&gt;() -&gt; map(|(i, (g, a)): (<span class="kw">_</span>, (#group_by_input_type, <span class="kw">_</span>))| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
+        } <span class="kw">else </span>{
+            <span class="macro">parse_quote!</span>(enumerate::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; map(|(i, (g, a)): (<span class="kw">_</span>, (#group_by_input_type, <span class="kw">_</span>))| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
+        }
+    } <span class="kw">else </span>{
+        <span class="macro">parse_quote!</span>(map(|(g, a): (#group_by_input_type, <span class="kw">_</span>)| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
+    };
+
     <span class="kw">if </span>agg_exprs.is_empty() {
         <span class="kw">if </span>out_expanded.persisted &amp;&amp; !consumer_is_persist {
-            <span class="macro">parse_quote!</span>(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )<span class="kw-2">*</span>)) -&gt; persist())
+            <span class="macro">parse_quote!</span>(map(|row: #flattened_tuple_type| ((#(#group_by_exprs, )<span class="kw-2">*</span>), ())) -&gt; #after_group_pipeline -&gt; persist())
         } <span class="kw">else </span>{
-            <span class="macro">parse_quote!</span>(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )<span class="kw-2">*</span>)))
+            <span class="macro">parse_quote!</span>(map(|row: #flattened_tuple_type| ((#(#group_by_exprs, )<span class="kw-2">*</span>), ())) -&gt; #after_group_pipeline)
         }
     } <span class="kw">else </span>{
         <span class="kw">let </span>agg_initial =
             repeat_tuple::&lt;syn::Expr, syn::Expr&gt;(|| <span class="macro">parse_quote!</span>(<span class="prelude-val">None</span>), agg_exprs.len());
-
-        <span class="kw">let </span>group_by_input_type =
-            repeat_tuple::&lt;syn::Type, syn::Type&gt;(|| <span class="macro">parse_quote!</span>(<span class="kw">_</span>), group_by_exprs.len());
 
         <span class="kw">let </span>agg_input_type =
             repeat_tuple::&lt;syn::Type, syn::Type&gt;(|| <span class="macro">parse_quote!</span>(<span class="kw">_</span>), agg_exprs.len());
@@ -1780,50 +1886,19 @@
             })
             .collect();
 
+        <span class="kw">let </span>pre_group_by_map: syn::Expr = <span class="macro">parse_quote!</span>(|row: #flattened_tuple_type| ((#(#group_by_exprs, )<span class="kw-2">*</span>), (#(#agg_exprs, )<span class="kw-2">*</span>)));
+
         <span class="kw">let </span>group_by_fn: syn::Expr = <span class="macro">parse_quote!</span>(|old: <span class="kw-2">&amp;mut </span>#agg_type, val: #agg_input_type| {
             #(#group_by_stmts)*
         });
 
-        <span class="kw">let </span><span class="kw-2">mut </span>after_group_lookups: Vec&lt;syn::Expr&gt; = <span class="macro">vec!</span>[];
-        <span class="kw">let </span><span class="kw-2">mut </span>group_key_idx = <span class="number">0</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>agg_idx = <span class="number">0</span>;
-        <span class="kw">for </span>field <span class="kw">in </span>rule
-            .target
-            .fields
-            .iter()
-            .chain(rule.target.at_node.iter().map(|n| <span class="kw-2">&amp;</span>n.node))
-        {
-            <span class="kw">match </span>field.value {
-                TargetExpr::Expr(<span class="kw">_</span>) =&gt; {
-                    <span class="kw">let </span>idx = syn::Index::from(group_key_idx);
-                    after_group_lookups.push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; g.#idx));
-                    group_key_idx += <span class="number">1</span>;
-                }
-                TargetExpr::Aggregation(Aggregation::CountUnique(..)) =&gt; {
-                    <span class="kw">let </span>idx = syn::Index::from(agg_idx);
-                    after_group_lookups
-                        .push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; a.#idx.unwrap().<span class="number">1</span>));
-                    agg_idx += <span class="number">1</span>;
-                }
-                TargetExpr::Aggregation(<span class="kw">_</span>) =&gt; {
-                    <span class="kw">let </span>idx = syn::Index::from(agg_idx);
-                    after_group_lookups
-                        .push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; a.#idx.unwrap()));
-                    agg_idx += <span class="number">1</span>;
-                }
-            }
-        }
-
-        <span class="kw">let </span>pre_group_by_map: syn::Expr = <span class="macro">parse_quote!</span>(|row: #flattened_tuple_type| ((#(#group_by_exprs, )<span class="kw-2">*</span>), (#(#agg_exprs, )<span class="kw-2">*</span>)));
-        <span class="kw">let </span>after_group_map: syn::Expr = <span class="macro">parse_quote!</span>(|(g, a)| (#(#after_group_lookups, )<span class="kw-2">*</span>));
-
         <span class="kw">if </span>out_expanded.persisted {
             <span class="macro">parse_quote! </span>{
-                map(#pre_group_by_map) -&gt; group_by::&lt;<span class="lifetime">&#39;static</span>, #group_by_input_type, #agg_type&gt;(|| #agg_initial, #group_by_fn) -&gt; map(#after_group_map)
+                map(#pre_group_by_map) -&gt; group_by::&lt;<span class="lifetime">&#39;static</span>, #group_by_input_type, #agg_type&gt;(|| #agg_initial, #group_by_fn) -&gt; #after_group_pipeline
             }
         } <span class="kw">else </span>{
             <span class="macro">parse_quote! </span>{
-                map(#pre_group_by_map) -&gt; group_by::&lt;<span class="lifetime">&#39;tick</span>, #group_by_input_type, #agg_type&gt;(|| #agg_initial, #group_by_fn) -&gt; map(#after_group_map)
+                map(#pre_group_by_map) -&gt; group_by::&lt;<span class="lifetime">&#39;tick</span>, #group_by_input_type, #agg_type&gt;(|| #agg_initial, #group_by_fn) -&gt; #after_group_pipeline
             }
         }
     }
@@ -2180,6 +2255,33 @@
 
             result(count(*)) :- ints1(a, _), ints2(a)
             result2(count(a)) :- ints1(a, _), ints2(a)
+            &quot;#
+        </span>);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_index() {
+        <span class="macro">test_snapshots!</span>(
+            <span class="string">r#&quot;
+            .input ints `source_stream(ints)` 
+            
+            .output result `for_each(|v| result.send(v).unwrap())`
+            .output result2 `for_each(|v| result2.send(v).unwrap())`
+            .output result3 `for_each(|v| result3.send(v).unwrap())`
+            .output result4 `for_each(|v| result4.send(v).unwrap())`
+
+            .persist result5
+            .output result5 `for_each(|v| result5.send(v).unwrap())`
+
+            result(a, b, index()) :- ints(a, b)
+            result2(a, count(b), index()) :- ints(a, b)
+
+            .persist ints_persisted
+            ints_persisted(a, b) :- ints(a, b)
+
+            result3(a, b, index()) :- ints_persisted(a, b)
+            result4(a, count(b), index()) :- ints_persisted(a, b)
+            result5(a, b, index()) :- ints_persisted(a, b)
             &quot;#
         </span>);
     }

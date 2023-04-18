@@ -299,6 +299,12 @@
 <a href="#299" id="299">299</a>
 <a href="#300" id="300">300</a>
 <a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
 </pre></div><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">&quot;datalog&quot;</span>)]
 #[allow(dead_code)]
 </span><span class="kw">pub mod </span>datalog {
@@ -432,6 +438,11 @@
     </span><span class="kw">pub enum </span>TargetExpr {
         Expr(IntExpr),
         Aggregation(Aggregation),
+        Index(
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;index&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)] </span>(),
+        ),
     }
 
     <span class="kw">impl </span>TargetExpr {
@@ -448,6 +459,7 @@
                     | Aggregation::Sum(<span class="kw">_</span>, <span class="kw">_</span>, a, <span class="kw">_</span>)
                     | Aggregation::Choose(<span class="kw">_</span>, <span class="kw">_</span>, a, <span class="kw">_</span>),
                 ) =&gt; <span class="macro">vec!</span>[a],
+                TargetExpr::Index(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">vec!</span>[],
             }
         }
     }

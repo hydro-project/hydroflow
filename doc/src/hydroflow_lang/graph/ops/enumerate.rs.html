@@ -193,17 +193,17 @@
             Persistence::Tick =&gt; (
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="kw">let </span>#counter_ident = #hydroflow.add_state(::std::cell::RefCell::new(
-                        #root::lang::monotonic_map::MonotonicMap::new_init((<span class="number">0_usize</span>..)),
+                        #root::lang::monotonic_map::MonotonicMap::new_init((<span class="number">0</span>..)),
                     ));
                 },
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="kw">let </span><span class="kw-2">mut </span>borrow = #context.state_ref(#counter_ident).borrow_mut();
-                    <span class="kw">let </span>counter = borrow.get_mut_with((#context.current_tick(), #context.current_stratum()), || (<span class="number">0_usize</span>..));
+                    <span class="kw">let </span>counter = borrow.get_mut_with((#context.current_tick(), #context.current_stratum()), || (<span class="number">0</span>..));
                 },
             ),
             Persistence::Static =&gt; (
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
-                    <span class="kw">let </span>#counter_ident = #hydroflow.add_state(::std::cell::RefCell::new((<span class="number">0_usize</span>..)));
+                    <span class="kw">let </span>#counter_ident = #hydroflow.add_state(::std::cell::RefCell::new((<span class="number">0</span>..)));
                 },
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="kw">let </span><span class="kw-2">mut </span>counter = #context.state_ref(#counter_ident).borrow_mut();
