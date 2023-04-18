@@ -770,23 +770,6 @@
 <a href="#770" id="770">770</a>
 <a href="#771" id="771">771</a>
 <a href="#772" id="772">772</a>
-<a href="#773" id="773">773</a>
-<a href="#774" id="774">774</a>
-<a href="#775" id="775">775</a>
-<a href="#776" id="776">776</a>
-<a href="#777" id="777">777</a>
-<a href="#778" id="778">778</a>
-<a href="#779" id="779">779</a>
-<a href="#780" id="780">780</a>
-<a href="#781" id="781">781</a>
-<a href="#782" id="782">782</a>
-<a href="#783" id="783">783</a>
-<a href="#784" id="784">784</a>
-<a href="#785" id="785">785</a>
-<a href="#786" id="786">786</a>
-<a href="#787" id="787">787</a>
-<a href="#788" id="788">788</a>
-<a href="#789" id="789">789</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::sync::Arc;
 
@@ -835,16 +818,12 @@
 import asyncio
 import sys
 async def coroutine_to_safely_cancellable(c, cancel_token):
-    while True:
-        try:
-            ok, cancel = await asyncio.shield(c)
-        except asyncio.CancelledError:
-            cancel_token.safe_cancel()
-
-        if not cancel:
-            return ok
-        else:
-            raise asyncio.CancelledError()
+    try:
+        return await asyncio.shield(c)
+    except asyncio.CancelledError:
+        cancel_token.safe_cancel()
+        await c
+        raise asyncio.CancelledError()
 &quot;#</span>,
         <span class="string">&quot;coro_converter&quot;</span>,
         <span class="string">&quot;coro_converter&quot;</span>,
@@ -854,10 +833,9 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
 
     <span class="kw">let </span>base_coro = pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
         <span class="macro">tokio::select! </span>{
-            <span class="kw">_ </span>= cancel_rx =&gt; {
-                <span class="prelude-val">Ok</span>((<span class="prelude-val">None</span>, <span class="bool-val">true</span>))
-            },
-            r = fut =&gt; r.map(|o| (<span class="prelude-val">Some</span>(o), <span class="bool-val">false</span>))
+            biased;
+            <span class="kw">_ </span>= cancel_rx =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+            r = fut =&gt; r.map(|o| <span class="prelude-val">Some</span>(o))
         }
     })<span class="question-mark">?</span>;
 
@@ -1018,7 +996,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         </span>.into_py(py))
     }
 
-    <span class="kw">fn </span>deploy&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
+    <span class="kw">fn </span>deploy&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             underlying.write().<span class="kw">await</span>.deploy().<span class="kw">await</span>.map_err(|e| {
@@ -1036,16 +1014,14 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
             })<span class="question-mark">?</span>;
             Python::with_gil(|py| <span class="prelude-val">Ok</span>(py.<span class="prelude-val">None</span>()))
         })
-        .unwrap()
     }
 
-    <span class="kw">fn </span>start&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
+    <span class="kw">fn </span>start&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             underlying.write().<span class="kw">await</span>.start().<span class="kw">await</span>;
             <span class="prelude-val">Ok</span>(Python::with_gil(|py| py.<span class="prelude-val">None</span>()))
         })
-        .unwrap()
     }
 }
 
@@ -1145,13 +1121,12 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>Service {
-    <span class="kw">fn </span>stop&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
+    <span class="kw">fn </span>stop&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             underlying.write().<span class="kw">await</span>.stop().<span class="kw">await</span>.unwrap();
             <span class="prelude-val">Ok</span>(Python::with_gil(|py| py.<span class="prelude-val">None</span>()))
         })
-        .unwrap()
     }
 }
 
@@ -1162,13 +1137,12 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>PyReceiver {
-    <span class="kw">fn </span>next&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
+    <span class="kw">fn </span>next&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
         <span class="kw">let </span>my_receiver = <span class="self">self</span>.receiver.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = my_receiver.recv();
             <span class="prelude-val">Ok</span>(underlying.<span class="kw">await</span>.map(<span class="prelude-val">Some</span>).unwrap_or(<span class="prelude-val">None</span>))
         })
-        .unwrap()
     }
 }
 
@@ -1221,7 +1195,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         }
     }
 
-    <span class="kw">fn </span>server_port&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
+    <span class="kw">fn </span>server_port&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
@@ -1229,7 +1203,6 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
                 underlying: <span class="prelude-val">Some</span>(underlying.server_port().<span class="kw">await</span>),
             })
         })
-        .unwrap()
     }
 }
 
@@ -1265,7 +1238,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>HydroflowCrate {
-    <span class="kw">fn </span>stdout&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
+    <span class="kw">fn </span>stdout&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
@@ -1273,10 +1246,9 @@ async def pyreceiver_to_async_generator(pyreceiver):
                 receiver: Arc::new(underlying.stdout().<span class="kw">await</span>),
             })
         })
-        .unwrap()
     }
 
-    <span class="kw">fn </span>stderr&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
+    <span class="kw">fn </span>stderr&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
@@ -1284,16 +1256,14 @@ async def pyreceiver_to_async_generator(pyreceiver):
                 receiver: Arc::new(underlying.stderr().<span class="kw">await</span>),
             })
         })
-        .unwrap()
     }
 
-    <span class="kw">fn </span>exit_code&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
+    <span class="kw">fn </span>exit_code&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
             <span class="prelude-val">Ok</span>(underlying.exit_code().<span class="kw">await</span>)
         })
-        .unwrap()
     }
 
     <span class="attr">#[getter]
@@ -1477,7 +1447,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
     }
 
     <span class="attr">#[allow(clippy::wrong_self_convention)]
-    </span><span class="kw">fn </span>into_source&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
+    </span><span class="kw">fn </span>into_source&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.take().unwrap();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             convert_next_to_generator(PythonStream {
@@ -1486,11 +1456,10 @@ async def pyreceiver_to_async_generator(pyreceiver):
                 )),
             })
         })
-        .unwrap()
     }
 
     <span class="attr">#[allow(clippy::wrong_self_convention)]
-    </span><span class="kw">fn </span>into_sink&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny {
+    </span><span class="kw">fn </span>into_sink&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.take().unwrap();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>connected = underlying.connect::&lt;ConnectedBidi&gt;().<span class="kw">await</span>.into_sink();
@@ -1499,7 +1468,6 @@ async def pyreceiver_to_async_generator(pyreceiver):
                 underlying: Arc::new(RwLock::new(connected)),
             })
         })
-        .unwrap()
     }
 }
 
@@ -1511,14 +1479,13 @@ async def pyreceiver_to_async_generator(pyreceiver):
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>PythonSink {
-    <span class="kw">fn </span>send&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, data: Py&lt;PyBytes&gt;, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny {
+    <span class="kw">fn </span>send&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, data: Py&lt;PyBytes&gt;, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         <span class="kw">let </span>bytes = Bytes::from(data.as_bytes(py).to_vec());
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             underlying.write().<span class="kw">await</span>.send(bytes).<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(())
         })
-        .unwrap()
     }
 }
 
@@ -1530,7 +1497,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>PythonStream {
-    <span class="kw">fn </span>next&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny {
+    <span class="kw">fn </span>next&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>read_res = underlying.write().<span class="kw">await</span>.next().<span class="kw">await</span>;
@@ -1541,7 +1508,6 @@ async def pyreceiver_to_async_generator(pyreceiver):
                     .into_py(py))
             })
         })
-        .unwrap()
     }
 }
 

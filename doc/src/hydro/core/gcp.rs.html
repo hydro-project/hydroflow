@@ -595,17 +595,6 @@
 <a href="#595" id="595">595</a>
 <a href="#596" id="596">596</a>
 <a href="#597" id="597">597</a>
-<a href="#598" id="598">598</a>
-<a href="#599" id="599">599</a>
-<a href="#600" id="600">600</a>
-<a href="#601" id="601">601</a>
-<a href="#602" id="602">602</a>
-<a href="#603" id="603">603</a>
-<a href="#604" id="604">604</a>
-<a href="#605" id="605">605</a>
-<a href="#606" id="606">606</a>
-<a href="#607" id="607">607</a>
-<a href="#608" id="608">608</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
@@ -615,10 +604,7 @@
 <span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
 <span class="kw">use </span>nanoid::nanoid;
 <span class="kw">use </span>serde_json::json;
-<span class="kw">use </span>tokio::{
-    net::TcpStream,
-    sync::{Mutex, RwLock},
-};
+<span class="kw">use </span>tokio::{net::TcpStream, sync::RwLock};
 
 <span class="kw">use super</span>::{
     ssh::LaunchedSSHHost,
@@ -634,7 +620,6 @@
     user: String,
     <span class="kw">pub </span>internal_ip: String,
     <span class="kw">pub </span>external_ip: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    ssh_session: Mutex&lt;<span class="prelude-ty">Option</span>&lt;AsyncSession&lt;TcpStream&gt;&gt;&gt;,
 }
 
 <span class="kw">impl </span>LaunchedComputeEngine {
@@ -690,12 +675,7 @@
     }
 
     <span class="kw">async fn </span>open_ssh_session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;AsyncSession&lt;TcpStream&gt;&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>self_session = <span class="self">self</span>.ssh_session.lock().<span class="kw">await</span>;
-        <span class="comment">// if let Some(session) = self_session.deref() {
-        //     return Ok(session.clone());
-        // }
-
-        </span><span class="kw">let </span>target_addr = SocketAddr::new(
+        <span class="kw">let </span>target_addr = SocketAddr::new(
             <span class="self">self</span>.external_ip
                 .as_ref()
                 .context(<span class="string">&quot;GCP host must be configured with an external IP to launch binaries&quot;</span>)<span class="question-mark">?
@@ -730,7 +710,6 @@
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw-2">*</span>self_session = <span class="prelude-val">Some</span>(res.clone());
         <span class="prelude-val">Ok</span>(res)
     }
 }
@@ -1148,7 +1127,6 @@
                 user: <span class="self">self</span>.user.as_ref().cloned().unwrap_or(<span class="string">&quot;hydro&quot;</span>.to_string()),
                 internal_ip,
                 external_ip,
-                ssh_session: Mutex::new(<span class="prelude-val">None</span>),
             }))
         }
 

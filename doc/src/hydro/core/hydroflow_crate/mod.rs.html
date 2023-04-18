@@ -286,7 +286,7 @@
 <a href="#286" id="286">286</a>
 <a href="#287" id="287">287</a>
 <a href="#288" id="288">288</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, path::PathBuf, sync::Arc};
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{bail, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>async_channel::Receiver;
@@ -482,18 +482,17 @@
 
         <span class="kw">let </span>launched_host = <span class="self">self</span>.launched_host.as_ref().unwrap();
 
-        <span class="kw">let </span>binary = launched_host
-            .launch_binary(
-                <span class="self">self</span>.built_binary
-                    .take()
-                    .unwrap()
-                    .<span class="kw">await
-                    </span>.as_ref()
-                    .unwrap()
-                    .clone(),
-                <span class="kw-2">&amp;</span><span class="self">self</span>.args.as_ref().cloned().unwrap_or_default(),
-            )
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>built = <span class="self">self
+            </span>.built_binary
+            .take()
+            .unwrap()
+            .<span class="kw">await
+            </span>.as_ref()
+            .unwrap()
+            .clone();
+        <span class="kw">let </span>args = <span class="self">self</span>.args.as_ref().cloned().unwrap_or_default();
+
+        <span class="kw">let </span>binary = launched_host.launch_binary(built.clone(), <span class="kw-2">&amp;</span>args).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>bind_config = HashMap::new();
         <span class="kw">for </span>(port_name, bind_type) <span class="kw">in </span><span class="self">self</span>.port_to_bind.iter() {
@@ -513,7 +512,8 @@
             </span>.send(<span class="macro">format!</span>(<span class="string">&quot;{formatted_bind_config}\n&quot;</span>))
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let </span>ready_line = stdout_receiver.recv().<span class="kw">await</span>.unwrap();
+        <span class="kw">let </span>ready_line =
+            tokio::time::timeout(Duration::from_secs(<span class="number">60</span>), stdout_receiver.recv()).<span class="kw">await</span><span class="question-mark">??</span>;
         <span class="kw">if </span>ready_line.starts_with(<span class="string">&quot;ready: &quot;</span>) {
             <span class="kw-2">*</span><span class="self">self</span>.server_defns.try_write().unwrap() =
                 serde_json::from_str(ready_line.trim_start_matches(<span class="string">&quot;ready: &quot;</span>)).unwrap();

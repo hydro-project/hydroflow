@@ -200,6 +200,12 @@
 <a href="#200" id="200">200</a>
 <a href="#201" id="201">201</a>
 <a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{borrow::Cow, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::Result;
@@ -390,13 +396,19 @@
         <span class="kw">let </span>port = addr.port();
 
         tokio::spawn(<span class="kw">async move </span>{
-            <span class="kw">while let </span><span class="prelude-val">Ok</span>((<span class="kw-2">mut </span>local_stream, <span class="kw">_</span>)) = local_port.accept().<span class="kw">await </span>{
+            <span class="attr">#[allow(clippy::never_loop)]
+            </span><span class="kw">while let </span><span class="prelude-val">Ok</span>((<span class="kw-2">mut </span>local_stream, <span class="kw">_</span>)) = local_port.accept().<span class="kw">await </span>{
                 <span class="kw">let </span><span class="kw-2">mut </span>channel = session
                     .channel_direct_tcpip(<span class="kw-2">&amp;</span>internal_ip, port, <span class="prelude-val">None</span>)
                     .<span class="kw">await
                     </span>.unwrap();
                 <span class="kw">let _ </span>= tokio::io::copy_bidirectional(<span class="kw-2">&amp;mut </span>local_stream, <span class="kw-2">&amp;mut </span>channel).<span class="kw">await</span>;
-            }
+                <span class="kw">break</span>;
+                <span class="comment">// TODO(shadaj): we should be returning an Arc so that we know
+                // if anyone wants to connect to this forwarded port
+            </span>}
+
+            <span class="macro">println!</span>(<span class="string">&quot;[hydro] closing forwarded port&quot;</span>);
         });
 
         <span class="prelude-val">Ok</span>(local_addr)
