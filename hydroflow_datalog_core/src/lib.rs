@@ -2,7 +2,10 @@ use rust_sitter::{
     errors::{ParseError, ParseErrorReason},
     Spanned,
 };
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    ops::Deref,
+};
 
 use hydroflow_lang::{
     diagnostic::{Diagnostic, Level},
@@ -524,6 +527,7 @@ fn gen_target_expr(
             | Aggregation::Sum(_, _, a, _)
             | Aggregation::Choose(_, _, a, _),
         ) => gen_value_expr(&IntExpr::Ident(a.clone()), lookup_ident, get_span),
+        TargetExpr::Index(_, _, _) => unreachable!(),
     }
 }
 
@@ -554,67 +558,117 @@ fn apply_aggregations(
     }
 
     let mut field_use_cur = HashMap::new();
+    let mut has_index = false;
     for field in rule
         .target
         .fields
         .iter()
         .chain(rule.target.at_node.iter().map(|n| &n.node))
     {
-        let expr: syn::Expr = gen_target_expr(
-            field,
-            &mut |ident| {
-                if let Some(col) = out_expanded.variable_mapping.get(&ident.name) {
-                    let cur_count = field_use_cur
-                        .entry(ident.name.clone())
-                        .and_modify(|e| *e += 1)
-                        .or_insert(1);
+        if matches!(field.deref(), TargetExpr::Index(_, _, _)) {
+            has_index = true;
+        } else {
+            let expr: syn::Expr = gen_target_expr(
+                field,
+                &mut |ident| {
+                    if let Some(col) = out_expanded.variable_mapping.get(&ident.name) {
+                        let cur_count = field_use_cur
+                            .entry(ident.name.clone())
+                            .and_modify(|e| *e += 1)
+                            .or_insert(1);
 
-                    let source_col_idx = syn::Index::from(*col);
-                    let base = parse_quote_spanned!(get_span(ident.span)=> row.#source_col_idx);
+                        let source_col_idx = syn::Index::from(*col);
+                        let base = parse_quote_spanned!(get_span(ident.span)=> row.#source_col_idx);
 
-                    if *cur_count < field_use_count[&ident.name] && field_use_count[&ident.name] > 1
-                    {
-                        parse_quote!(#base.clone())
+                        if *cur_count < field_use_count[&ident.name]
+                            && field_use_count[&ident.name] > 1
+                        {
+                            parse_quote!(#base.clone())
+                        } else {
+                            base
+                        }
                     } else {
-                        base
+                        diagnostics.push(Diagnostic::spanned(
+                            get_span(ident.span),
+                            Level::Error,
+                            format!("Could not find column {} in RHS of rule", &ident.name),
+                        ));
+                        parse_quote!(())
                     }
-                } else {
-                    diagnostics.push(Diagnostic::spanned(
-                        get_span(ident.span),
-                        Level::Error,
-                        format!("Could not find column {} in RHS of rule", &ident.name),
-                    ));
-                    parse_quote!(())
-                }
-            },
-            get_span,
-        );
+                },
+                get_span,
+            );
 
-        match &field.value {
-            TargetExpr::Expr(_) => {
-                group_by_exprs.push(expr);
-            }
-            TargetExpr::Aggregation(a) => {
-                aggregations.push(a.clone());
-                agg_exprs.push(expr);
+            match &field.value {
+                TargetExpr::Expr(_) => {
+                    group_by_exprs.push(expr);
+                }
+                TargetExpr::Aggregation(a) => {
+                    aggregations.push(a.clone());
+                    agg_exprs.push(expr);
+                }
+                TargetExpr::Index(_, _, _) => unreachable!(),
             }
         }
     }
 
     let flattened_tuple_type = &out_expanded.tuple_type;
 
+    let mut after_group_lookups: Vec<syn::Expr> = vec![];
+    let mut group_key_idx = 0;
+    let mut agg_idx = 0;
+    for field in rule
+        .target
+        .fields
+        .iter()
+        .chain(rule.target.at_node.iter().map(|n| &n.node))
+    {
+        match field.value {
+            TargetExpr::Expr(_) => {
+                let idx = syn::Index::from(group_key_idx);
+                after_group_lookups.push(parse_quote_spanned!(get_span(field.span)=> g.#idx));
+                group_key_idx += 1;
+            }
+            TargetExpr::Aggregation(Aggregation::CountUnique(..)) => {
+                let idx = syn::Index::from(agg_idx);
+                after_group_lookups
+                    .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap().1));
+                agg_idx += 1;
+            }
+            TargetExpr::Aggregation(_) => {
+                let idx = syn::Index::from(agg_idx);
+                after_group_lookups
+                    .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap()));
+                agg_idx += 1;
+            }
+            TargetExpr::Index(_, _, _) => {
+                after_group_lookups.push(parse_quote_spanned!(get_span(field.span)=> i));
+            }
+        }
+    }
+
+    let group_by_input_type =
+        repeat_tuple::<syn::Type, syn::Type>(|| parse_quote!(_), group_by_exprs.len());
+
+    let after_group_pipeline: Pipeline = if has_index {
+        if out_expanded.persisted {
+            parse_quote!(enumerate::<'static>() -> map(|(i, (g, a))| (#(#after_group_lookups, )*)))
+        } else {
+            parse_quote!(enumerate::<'tick>() -> map(|(i, (g, a))| (#(#after_group_lookups, )*)))
+        }
+    } else {
+        parse_quote!(map(|(g, a): (#group_by_input_type, _)| (#(#after_group_lookups, )*)))
+    };
+
     if agg_exprs.is_empty() {
         if out_expanded.persisted && !consumer_is_persist {
-            parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)) -> persist())
+            parse_quote!(map(|row: #flattened_tuple_type| ((#(#group_by_exprs, )*), ())) -> #after_group_pipeline -> persist())
         } else {
-            parse_quote!(map(|row: #flattened_tuple_type| (#(#group_by_exprs, )*)))
+            parse_quote!(map(|row: #flattened_tuple_type| ((#(#group_by_exprs, )*), ())) -> #after_group_pipeline)
         }
     } else {
         let agg_initial =
             repeat_tuple::<syn::Expr, syn::Expr>(|| parse_quote!(None), agg_exprs.len());
-
-        let group_by_input_type =
-            repeat_tuple::<syn::Type, syn::Type>(|| parse_quote!(_), group_by_exprs.len());
 
         let agg_input_type =
             repeat_tuple::<syn::Type, syn::Type>(|| parse_quote!(_), agg_exprs.len());
@@ -687,50 +741,19 @@ fn apply_aggregations(
             })
             .collect();
 
+        let pre_group_by_map: syn::Expr = parse_quote!(|row: #flattened_tuple_type| ((#(#group_by_exprs, )*), (#(#agg_exprs, )*)));
+
         let group_by_fn: syn::Expr = parse_quote!(|old: &mut #agg_type, val: #agg_input_type| {
             #(#group_by_stmts)*
         });
 
-        let mut after_group_lookups: Vec<syn::Expr> = vec![];
-        let mut group_key_idx = 0;
-        let mut agg_idx = 0;
-        for field in rule
-            .target
-            .fields
-            .iter()
-            .chain(rule.target.at_node.iter().map(|n| &n.node))
-        {
-            match field.value {
-                TargetExpr::Expr(_) => {
-                    let idx = syn::Index::from(group_key_idx);
-                    after_group_lookups.push(parse_quote_spanned!(get_span(field.span)=> g.#idx));
-                    group_key_idx += 1;
-                }
-                TargetExpr::Aggregation(Aggregation::CountUnique(..)) => {
-                    let idx = syn::Index::from(agg_idx);
-                    after_group_lookups
-                        .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap().1));
-                    agg_idx += 1;
-                }
-                TargetExpr::Aggregation(_) => {
-                    let idx = syn::Index::from(agg_idx);
-                    after_group_lookups
-                        .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap()));
-                    agg_idx += 1;
-                }
-            }
-        }
-
-        let pre_group_by_map: syn::Expr = parse_quote!(|row: #flattened_tuple_type| ((#(#group_by_exprs, )*), (#(#agg_exprs, )*)));
-        let after_group_map: syn::Expr = parse_quote!(|(g, a)| (#(#after_group_lookups, )*));
-
         if out_expanded.persisted {
             parse_quote! {
-                map(#pre_group_by_map) -> group_by::<'static, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> map(#after_group_map)
+                map(#pre_group_by_map) -> group_by::<'static, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> #after_group_pipeline
             }
         } else {
             parse_quote! {
-                map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> map(#after_group_map)
+                map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> #after_group_pipeline
             }
         }
     }
