@@ -487,6 +487,39 @@ diff = difference() -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 </span><span class="boring">})
 </span><span class="boring">}
 </span></code></pre></pre>
+<h2 id="enumerate"><a class="header" href="#enumerate"><code>enumerate</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; enumerate() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/enumerate.rs" -->
+<blockquote>
+<p>1 input stream of type <code>T</code>, 1 output stream of type <code>(usize, T)</code></p>
+</blockquote>
+<p>For each item passed in, enumerate it with its index: <code>(0, x_0)</code>, <code>(1, x_1)</code>, etc.</p>
+<p><code>enumerate</code> can also be provided with one generic lifetime persistence argument, either
+<code>'tick</code> or <code>'static</code>, to specify if indexing resets. If <code>'tick</code> is specified, indexing will
+restart at zero at the start of each tick. Otherwise <code>'static</code> (the default) will never reset
+and count monotonically upwards.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::{var_args, var_expr};
+</span><span class="boring">#[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+</span><span class="boring">let __rt = hydroflow::tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+</span><span class="boring">__rt.block_on(async {
+</span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
+</span>source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; enumerate()
+    -&gt; for_each(|(i, x)| println!(&quot;{}: {}&quot;, i, x));
+<span class="boring">};
+</span><span class="boring">for _ in 0..100 {
+</span><span class="boring">    hydroflow::tokio::task::yield_now().await;
+</span><span class="boring">    if !__hf.run_tick() {
+</span><span class="boring">        // No work done.
+</span><span class="boring">        break;
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">})
+</span><span class="boring">}
+</span></code></pre></pre>
 <h2 id="filter"><a class="header" href="#filter"><code>filter</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; filter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
