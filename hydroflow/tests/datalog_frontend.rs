@@ -1094,7 +1094,7 @@ fn test_wildcard_join_count() {
 #[multiplatform_test]
 fn test_index() {
     let (ints_send, ints) = hydroflow::util::unbounded_channel::<(i64, i64)>();
-    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64, i64, usize)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64, i64, i32)>();
     let (result2, mut result2_recv) = hydroflow::util::unbounded_channel::<(i64, usize, usize)>();
 
     let (result3, mut result3_recv) = hydroflow::util::unbounded_channel::<(i64, i64, usize)>();
@@ -1136,18 +1136,35 @@ fn test_index() {
         &[(1, 1, 0), (1, 2, 1), (2, 1, 2)]
     );
 
-    let mut result_2_res = collect_ready::<Vec<_>, _>(&mut result2_recv);
-    result_2_res.sort();
-    assert_eq!(&result_2_res, &[(1, 2, 0), (2, 1, 1)]);
+    // hashing / ordering differences?
+    #[cfg(not(target_arch = "wasm32"))]
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result2_recv),
+        &[(1, 2, 0), (2, 1, 1)]
+    );
+
+    #[cfg(target_arch = "wasm32")]
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result2_recv),
+        &[(2, 1, 0), (1, 2, 1)]
+    );
 
     assert_eq!(
         &*collect_ready::<Vec<_>, _>(&mut result3_recv),
         &[(1, 1, 0), (1, 2, 1), (2, 1, 2)]
     );
+
+    #[cfg(not(target_arch = "wasm32"))]
     assert_eq!(
         &*collect_ready::<Vec<_>, _>(&mut result4_recv),
         &[(1, 2, 0), (2, 1, 1)]
     );
+    #[cfg(target_arch = "wasm32")]
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result4_recv),
+        &[(2, 1, 0), (1, 2, 1)]
+    );
+
     assert_eq!(
         &*collect_ready::<Vec<_>, _>(&mut result5_recv),
         &[(1, 1, 0), (1, 2, 1), (2, 1, 2)]
@@ -1167,9 +1184,18 @@ fn test_index() {
         &*collect_ready::<Vec<_>, _>(&mut result3_recv),
         &[(1, 1, 0), (1, 2, 1), (2, 1, 2), (3, 1, 3)]
     );
-    let mut result_4_res = collect_ready::<Vec<_>, _>(&mut result4_recv);
-    result_4_res.sort();
-    assert_eq!(&result_4_res, &[(1, 2, 0), (2, 1, 1), (3, 1, 2)]);
+
+    #[cfg(not(target_arch = "wasm32"))]
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result4_recv),
+        &[(1, 2, 0), (2, 1, 1), (3, 1, 2)]
+    );
+    #[cfg(target_arch = "wasm32")]
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result4_recv),
+        &[(2, 1, 0), (3, 1, 1), (1, 2, 2)]
+    );
+
     assert_eq!(
         &*collect_ready::<Vec<_>, _>(&mut result5_recv),
         &[(1, 1, 0), (1, 2, 1), (2, 1, 2), (3, 1, 3)]
