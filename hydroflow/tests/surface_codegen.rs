@@ -163,6 +163,61 @@ pub fn test_join_order() {
 }
 
 #[multiplatform_test]
+pub fn test_multiset_join() {
+    // HalfJoinStateSetUnion
+    {
+        use hydroflow::compiled::pull::HalfSetJoinState;
+
+        let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (usize, usize))>();
+
+        let mut df = hydroflow_syntax! {
+            my_join = join::<HalfSetJoinState>() -> for_each(|m| out_tx.send(m).unwrap());
+            source_iter([(0, 1), (0, 1)]) -> [0]my_join;
+            source_iter([(0, 2)]) -> [1]my_join;
+        };
+
+        df.run_available();
+
+        let out: Vec<_> = collect_ready(&mut out_rx);
+        assert_eq!(out, vec![(0, (1, 2))]);
+    }
+
+    // HalfMultisetJoinState lhs biased
+    {
+        use hydroflow::compiled::pull::HalfMultisetJoinState;
+        let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (usize, usize))>();
+
+        let mut df = hydroflow_syntax! {
+            my_join = join::<HalfMultisetJoinState>() -> for_each(|m| out_tx.send(m).unwrap());
+            source_iter([(1, 1), (1, 1), (1, 1)]) -> [0]my_join;
+            source_iter([(1, 2), (1, 2), (1, 2), (1, 2)]) -> [1]my_join;
+        };
+
+        df.run_available();
+
+        let out: Vec<_> = collect_ready(&mut out_rx);
+        assert_eq!(out, [(1, (1, 2)); 12].to_vec());
+    }
+
+    // HalfMultisetJoinState rhs biased
+    {
+        use hydroflow::compiled::pull::HalfMultisetJoinState;
+        let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (usize, usize))>();
+
+        let mut df = hydroflow_syntax! {
+            my_join = join::<HalfMultisetJoinState>() -> for_each(|m| out_tx.send(m).unwrap());
+            source_iter([(1, 1), (1, 1), (1, 1), (1, 1)]) -> [0]my_join;
+            source_iter([(1, 2), (1, 2), (1, 2)]) -> [1]my_join;
+        };
+
+        df.run_available();
+
+        let out: Vec<_> = collect_ready(&mut out_rx);
+        assert_eq!(out, [(1, (1, 2)); 12].to_vec());
+    }
+}
+
+#[multiplatform_test]
 pub fn test_cross_join() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, &str)>();
 
@@ -179,6 +234,80 @@ pub fn test_cross_join() {
         for c in ["a", "b", "c"] {
             assert!(out.contains(&(n, c)));
         }
+    }
+}
+
+#[multiplatform_test]
+pub fn test_lattice_join() {
+    use hydroflow::lang::lattice::ord::MaxRepr;
+
+    // 'static, 'tick.
+    {
+        let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (usize, usize))>();
+        let (lhs_tx, lhs_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+        let (rhs_tx, rhs_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+        let mut df = hydroflow_syntax! {
+            my_join = lattice_join::<'static, 'tick, MaxRepr<usize>, MaxRepr<usize>>();
+
+            source_stream(lhs_rx) -> [0]my_join;
+            source_stream(rhs_rx) -> [1]my_join;
+
+            my_join -> for_each(|v| out_tx.send(v).unwrap());
+        };
+
+        // Merges forward correctly, without going backward
+        lhs_tx.send((7, 3)).unwrap();
+        lhs_tx.send((7, 4)).unwrap();
+        rhs_tx.send((7, 6)).unwrap();
+        rhs_tx.send((7, 5)).unwrap();
+
+        df.run_tick();
+
+        let out: Vec<_> = collect_ready(&mut out_rx);
+        assert_eq!(out, vec![(7, (4, 6))]);
+
+        // Forgets rhs state
+        rhs_tx.send((7, 6)).unwrap();
+        rhs_tx.send((7, 5)).unwrap();
+
+        df.run_tick();
+
+        let out: Vec<_> = collect_ready(&mut out_rx);
+        assert_eq!(out, vec![(7, (4, 6))]);
+    }
+
+    // 'static, 'static.
+    {
+        let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (usize, usize))>();
+        let (lhs_tx, lhs_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+        let (rhs_tx, rhs_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+        let mut df = hydroflow_syntax! {
+            my_join = lattice_join::<'static, 'static, MaxRepr<usize>, MaxRepr<usize>>();
+
+            source_stream(lhs_rx) -> [0]my_join;
+            source_stream(rhs_rx) -> [1]my_join;
+
+            my_join -> for_each(|v| out_tx.send(v).unwrap());
+        };
+
+        lhs_tx.send((7, 3)).unwrap();
+        lhs_tx.send((7, 4)).unwrap();
+        rhs_tx.send((7, 6)).unwrap();
+        rhs_tx.send((7, 5)).unwrap();
+
+        df.run_tick();
+        let out: Vec<_> = collect_ready(&mut out_rx);
+        assert_eq!(out, vec![(7, (4, 6))]);
+
+        // Doesn't produce unless a lattice has changed.
+        lhs_tx.send((7, 4)).unwrap();
+        rhs_tx.send((7, 5)).unwrap();
+
+        df.run_tick();
+        let out: Vec<_> = collect_ready(&mut out_rx);
+        assert_eq!(out, vec![]);
     }
 }
 
@@ -232,6 +361,84 @@ pub fn test_anti_join() {
     flow.run_available();
     let out: Vec<_> = collect_ready(&mut out_recv);
     assert_eq!(&[(1, 2), (2, 3), (3, 4), (4, 5), (5, 4), (6, 5)], &*out);
+}
+
+#[multiplatform_test]
+pub fn test_repeat_fn() {
+    // regular Fn closure
+    {
+        let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
+        let mut df = hydroflow::hydroflow_syntax! {
+            repeat_fn(3, || 1) -> for_each(|x| out_send.send(x).unwrap());
+        };
+
+        df.run_tick();
+        let out: Vec<_> = collect_ready(&mut out_recv);
+        assert_eq!(vec![1, 1, 1], out);
+
+        df.run_tick();
+        let out: Vec<_> = collect_ready(&mut out_recv);
+        assert_eq!(vec![1, 1, 1], out);
+
+        df.run_tick();
+        let out: Vec<_> = collect_ready(&mut out_recv);
+        assert_eq!(vec![1, 1, 1], out);
+    }
+
+    // FnMut closure
+    {
+        let mut x = 0;
+
+        let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
+        let mut df = hydroflow::hydroflow_syntax! {
+            repeat_fn(3, move || { x += 1; x }) -> for_each(|x| out_send.send(x).unwrap());
+        };
+
+        df.run_tick();
+        let out: Vec<_> = collect_ready(&mut out_recv);
+        assert_eq!(vec![1, 2, 3], out);
+
+        df.run_tick();
+        let out: Vec<_> = collect_ready(&mut out_recv);
+        assert_eq!(vec![4, 5, 6], out);
+
+        df.run_tick();
+        let out: Vec<_> = collect_ready(&mut out_recv);
+        assert_eq!(vec![7, 8, 9], out);
+    }
+}
+
+#[multiplatform_test]
+pub fn test_batch() {
+    let (batch1_tx, batch1_rx) = hydroflow::util::unbounded_channel::<()>();
+    let (batch2_tx, batch2_rx) = hydroflow::util::unbounded_channel::<()>();
+    let (tx, mut rx) = hydroflow::util::unbounded_channel::<()>();
+    let mut df = hydroflow_syntax! {
+        my_tee = tee();
+
+        source_iter([()])
+            -> batch(batch1_rx) // pull
+            -> my_tee;
+
+        my_tee -> for_each(|x| tx.send(x).unwrap());
+        my_tee
+            -> batch(batch2_rx) // push
+            -> for_each(|x| tx.send(x).unwrap());
+    };
+
+    df.run_available();
+    let out: Vec<_> = collect_ready(&mut rx);
+    assert_eq!(out, Vec::<()>::new());
+
+    batch1_tx.send(()).unwrap();
+    df.run_available();
+    let out: Vec<_> = collect_ready(&mut rx);
+    assert_eq!(out, vec![()]);
+
+    batch2_tx.send(()).unwrap();
+    df.run_available();
+    let out: Vec<_> = collect_ready(&mut rx);
+    assert_eq!(out, vec![()]);
 }
 
 #[multiplatform_test]

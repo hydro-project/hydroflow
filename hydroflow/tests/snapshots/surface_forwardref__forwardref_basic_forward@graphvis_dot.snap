@@ -1,15 +1,19 @@
 ---
 source: hydroflow/tests/surface_forwardref.rs
-expression: df.serde_graph().unwrap().to_dot()
+expression: df.meta_graph().unwrap().to_dot()
 ---
 digraph {
     subgraph "cluster n1v1" {
         fillcolor="#dddddd"
         style=filled
         label = "sg_1v1\nstratum 0"
-        n1v1 [label="(n1v1) source_iter(0 .. 10)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n2v1 [label="(n2v1) for_each(| v | out_send.send(v).unwrap())", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n1v1 [label="(n1v1) source_iter(0..10)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n2v1 [label="(n2v1) for_each(|v| out_send.send(v).unwrap())", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n1v1 -> n2v1
+        subgraph "cluster sg_1v1_var_forward_ref" {
+            label="var forward_ref"
+            n2v1
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 ---
 source: hydroflow/tests/surface_fold.rs
-expression: df.serde_graph().unwrap().to_dot()
+expression: df.meta_graph().unwrap().to_dot()
 ---
 digraph {
     subgraph "cluster n1v1" {
@@ -13,9 +13,9 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_2v1\nstratum 1"
-        n2v1 [label="(n2v1) fold :: < 'tick > (Vec :: new(), | mut v, x | { v.push(x) ; v })", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n3v1 [label="(n3v1) flat_map(| mut vec | { vec.sort() ; vec })", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n4v1 [label="(n4v1) for_each(| v | print! (\"{:?}, \", v))", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n2v1 [label="(n2v1) fold::<\l    'tick,\l>(\l    Vec::new(),\l    |mut v, x| {\l        v.push(x);\l        v\l    },\l)\l", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n3v1 [label="(n3v1) flat_map(|mut vec| {\l    vec.sort();\l    vec\l})\l", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n4v1 [label="(n4v1) for_each(|v| print!(\"{:?}, \", v))", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n2v1 -> n3v1
         n3v1 -> n4v1
     }

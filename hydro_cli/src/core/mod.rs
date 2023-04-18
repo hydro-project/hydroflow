@@ -1,9 +1,9 @@
-use std::{path::Path, sync::Arc};
+use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
 use anyhow::Result;
 use async_channel::{Receiver, Sender};
 use async_trait::async_trait;
-use hydroflow_cli_integration::BindConfig;
+use hydroflow_cli_integration::ServerBindConfig;
 use tokio::sync::RwLock;
 
 pub mod deployment;
@@ -11,6 +11,8 @@ pub use deployment::Deployment;
 
 pub mod localhost;
 pub use localhost::LocalhostHost;
+
+pub mod ssh;
 
 pub mod gcp;
 pub use gcp::GCPComputeEngineHost;
@@ -25,6 +27,11 @@ pub mod terraform;
 
 pub mod util;
 
+#[derive(Default)]
+pub struct ResourcePool {
+    pub terraform: terraform::TerraformPool,
+}
+
 pub struct ResourceBatch {
     pub terraform: terraform::TerraformBatch,
 }
@@ -36,15 +43,22 @@ impl ResourceBatch {
         }
     }
 
-    async fn provision(self) -> Result<ResourceResult> {
+    async fn provision(
+        self,
+        pool: &mut ResourcePool,
+        last_result: Option<Arc<ResourceResult>>,
+    ) -> Result<ResourceResult> {
         Ok(ResourceResult {
-            terraform: self.terraform.provision().await?,
+            terraform: self.terraform.provision(&mut pool.terraform).await?,
+            _last_result: last_result,
         })
     }
 }
 
+#[derive(Debug)]
 pub struct ResourceResult {
     pub terraform: terraform::TerraformResult,
+    _last_result: Option<Arc<ResourceResult>>,
 }
 
 #[async_trait]
@@ -54,53 +68,77 @@ pub trait LaunchedBinary: Send + Sync {
     async fn stderr(&self) -> Receiver<String>;
 
     async fn exit_code(&self) -> Option<i32>;
+
+    async fn wait(&mut self) -> Option<i32>;
 }
 
 #[async_trait]
 pub trait LaunchedHost: Send + Sync {
     /// Given a pre-selected network type, computes concrete information needed for a service
     /// to listen to network connections (such as the IP address to bind to).
-    fn get_bind_config(&self, bind_type: &BindType) -> BindConfig;
+    fn server_config(&self, strategy: &ServerStrategy) -> ServerBindConfig;
 
     async fn launch_binary(
         &self,
-        binary: &Path,
+        binary: Arc<(String, Vec<u8>)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;
+
+    async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr>;
 }
 
 /// Types of connections that a host can make to another host.
-pub enum BindType {
+pub enum ServerStrategy {
     UnixSocket,
     InternalTcpPort,
     ExternalTcpPort(
         /// The port number to bind to, which must be explicit to open the firewall.
         u16,
     ),
+    Demux(HashMap<u32, ServerStrategy>),
+    Merge(Vec<ServerStrategy>),
+    Tagged(Box<ServerStrategy>, u32),
+    Null,
 }
 
 /// Like BindType, but includes metadata for determining whether a connection is possible.
-pub enum ConnectionType {
+pub enum ClientStrategy<'a> {
     UnixSocket(
         /// Unique identifier for the host this socket will be on.
         usize,
     ),
     InternalTcpPort(
-        /// Unique identifier for the VPC this port will be on.
-        String,
+        /// The host that this port is available on.
+        &'a dyn Host,
+    ),
+    ForwardedTcpPort(
+        /// The host that this port is available on.
+        &'a dyn Host,
     ),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum HostTargetType {
     Local,
     Linux,
 }
 
+pub type HostStrategyGetter = Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>;
+
 #[async_trait]
 pub trait Host: Send + Sync {
     fn target_type(&self) -> HostTargetType;
 
-    fn request_port(&mut self, bind_type: &BindType);
+    fn request_port(&mut self, bind_type: &ServerStrategy);
+
+    /// An identifier for this host, which is unique within a deployment.
+    fn id(&self) -> usize;
+
+    /// Returns a reference to the host as a trait object.
+    fn as_any(&self) -> &dyn std::any::Any;
+
+    /// Returns a reference to the host as a trait object.
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 
     /// Configures the host to support copying and running a custom binary.
     fn request_custom_binary(&mut self);
@@ -111,11 +149,17 @@ pub trait Host: Send + Sync {
     /// Connects to the acquired resources and prepares the host to run services.
     async fn provision(&mut self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost>;
 
-    /// Identifies a network type that this host can use for connections from the given host.
-    fn get_bind_type(&self, connection_from: &dyn Host) -> BindType;
+    fn launched(&self) -> Option<Arc<dyn LaunchedHost>>;
 
-    /// Determins whether this host can connect to another host using the given connection type.
-    fn can_connect_to(&self, typ: ConnectionType) -> bool;
+    /// Identifies a network type that this host can use for connections if it is the server.
+    /// The host will be `None` if the connection is from the same host as the target.
+    fn strategy_as_server<'a>(
+        &'a self,
+        connection_from: &dyn Host,
+    ) -> Result<(ClientStrategy<'a>, HostStrategyGetter)>;
+
+    /// Determines whether this host can connect to another host using the given strategy.
+    fn can_connect_to(&self, typ: ClientStrategy) -> bool;
 }
 
 #[async_trait]
@@ -137,4 +181,7 @@ pub trait Service: Send + Sync {
 
     /// Starts the service by having it connect to other services and start computations.
     async fn start(&mut self);
+
+    /// Stops the service by having it disconnect from other services and stop computations.
+    async fn stop(&mut self) -> Result<()>;
 }

@@ -9,6 +9,7 @@ members = [
     "hydroflow_datalog_core",
     "hydroflow_datalog",
     "hydro_cli",
+    "hydro_cli_examples",
     "hydroflow_cli_integration",
     "benches",
     "relalg",
@@ -24,8 +25,10 @@ strip = true      # Strip symbols from the binary
 # doesn't make things that much smaller, `strip` is far more important for binary size. Use "3" for
 # performance.
 opt-level = 3
+lto = "fat"
 
 [profile.profile]
 inherits = "release"
 debug = 2
 strip = "none"
+lto = "fat"

@@ -1,5 +1,5 @@
 //! Organizational module for Hydroflow Send/RecvCtx structs and Input/OutputPort structs.
-use std::marker::PhantomData;
+use std::{cell::RefMut, marker::PhantomData};
 
 use ref_cast::RefCast;
 use sealed::sealed;
@@ -73,5 +73,9 @@ impl<H: Handoff> SendCtx<H> {
 impl<H: Handoff> RecvCtx<H> {
     pub fn take_inner(&self) -> H::Inner {
         self.handoff.take_inner()
+    }
+
+    pub fn borrow_mut_swap(&self) -> RefMut<H::Inner> {
+        self.handoff.borrow_mut_swap()
     }
 }

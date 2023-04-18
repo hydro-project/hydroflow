@@ -1,23 +1,23 @@
 ---
 source: hydroflow/tests/surface_fold.rs
-expression: df.serde_graph().unwrap().to_mermaid()
+expression: df.meta_graph().unwrap().to_mermaid()
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD
-classDef pullClass fill:#02f,color:#fff,stroke:#000
-classDef pushClass fill:#ff0,stroke:#000
+classDef pullClass fill:#02f,color:#fff,stroke:#000,text-align:left,white-space:pre
+classDef pushClass fill:#ff0,stroke:#000,text-align:left,white-space:pre
 linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
-    1v1[\"(1v1) <tt>source_stream(items_recv)</tt>"/]:::pullClass
+    1v1[\"(1v1) <code>source_stream(items_recv)</code>"/]:::pullClass
 end
 subgraph sg_2v1 ["sg_2v1 stratum 1"]
-    2v1[\"(2v1) <tt>fold :: &lt; 'tick &gt; (Vec :: new(), | mut v, x | { v.push(x) ; v })</tt>"/]:::pullClass
-    3v1[\"(3v1) <tt>flat_map(| mut vec | { vec.sort() ; vec })</tt>"/]:::pullClass
-    4v1[/"(4v1) <tt>for_each(| v | print! (&quot;{:?}, &quot;, v))</tt>"\]:::pushClass
+    2v1[\"<div style=text-align:center>(2v1)</div> <code>fold::&lt;<br>    'tick,<br>&gt;(<br>    Vec::new(),<br>    |mut v, x| {<br>        v.push(x);<br>        v<br>    },<br>)</code>"/]:::pullClass
+    3v1[\"<div style=text-align:center>(3v1)</div> <code>flat_map(|mut vec| {<br>    vec.sort();<br>    vec<br>})</code>"/]:::pullClass
+    4v1[/"(4v1) <code>for_each(|v| print!(&quot;{:?}, &quot;, v))</code>"\]:::pushClass
     2v1--->3v1
     3v1--->4v1
 end
 1v1--->5v1
-5v1["(5v1) <tt>handoff</tt>"]:::otherClass
+5v1["(5v1) <code>handoff</code>"]:::otherClass
 5v1===o2v1
 

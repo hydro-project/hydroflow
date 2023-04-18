@@ -1,5 +1,6 @@
 #![feature(never_type)]
 #![feature(type_alias_impl_trait)]
+#![feature(impl_trait_in_assoc_type)]
 #![allow(type_alias_bounds)]
 #![allow(clippy::let_and_return)]
 #![allow(clippy::iter_with_drain)]
@@ -11,9 +12,11 @@ pub mod props;
 pub mod scheduled;
 pub mod util;
 
+pub use bincode;
 pub use bytes;
 pub use futures;
 pub use pusherator;
+pub use rustc_hash;
 pub use serde;
 pub use serde_json;
 pub use static_assertions;
@@ -24,6 +27,9 @@ pub use variadics::{self, var_args, var_expr, var_type};
 
 mod declarative_macro;
 pub use declarative_macro::*;
+#[cfg(feature = "hydroflow_datalog")]
+pub use hydroflow_datalog::*;
+#[cfg(feature = "hydroflow_macro")]
 pub use hydroflow_macro::*;
 
 #[cfg(doctest)]

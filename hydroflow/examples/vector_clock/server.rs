@@ -13,7 +13,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: crat
 
     let mut flow: Hydroflow = hydroflow_syntax! {
         // Define a shared inbound channel
-        inbound_chan = source_stream_serde(inbound) -> tee();
+        inbound_chan = source_stream_serde(inbound) -> map(Result::unwrap) -> tee();
 
         // Print all messages for debugging purposes
         inbound_chan[print]
@@ -36,7 +36,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: crat
         inbound_chan[1] -> map(|(EchoMsg {payload, ..}, addr)| (payload, addr) )
             -> [0]stamped_output;
         mergevc -> [1]stamped_output;
-        stamped_output = cross_join<'tick, 'tick>() -> map(|((payload, addr), vc): ((String, SocketAddr), <VecClock as LatticeRepr>::Repr)| (EchoMsg { payload, vc }, addr))
+        stamped_output = cross_join::<'tick, 'tick>() -> map(|((payload, addr), vc): ((String, SocketAddr), <VecClock as LatticeRepr>::Repr)| (EchoMsg { payload, vc }, addr))
             -> dest_sink_serde(outbound);
     };
 

@@ -3,50 +3,17 @@ use std::fmt::{Debug, Display};
 use std::ops::{Bound, RangeBounds};
 
 use once_cell::sync::OnceCell;
-use proc_macro2::{Ident, Span, TokenStream};
+use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::quote_spanned;
 use slotmap::Key;
 use syn::punctuated::Punctuated;
-use syn::Token;
+use syn::{parse_quote_spanned, Token};
 
 use crate::diagnostic::Diagnostic;
 use crate::parse::{Operator, PortIndex};
 
 use super::{GraphNodeId, GraphSubgraphId, Node, OpInstGenerics, OperatorInstance, PortIndexValue};
 use serde::{Deserialize, Serialize};
-
-mod anti_join;
-mod cross_join;
-mod demux;
-mod dest_sink;
-mod dest_sink_serde;
-mod difference;
-mod filter;
-mod filter_map;
-mod flat_map;
-mod flatten;
-mod fold;
-mod for_each;
-mod group_by;
-mod identity;
-mod inspect;
-mod join;
-mod map;
-mod merge;
-mod next_stratum;
-mod next_tick;
-mod null;
-mod reduce;
-mod repeat_iter;
-mod sort;
-mod sort_by;
-mod source_iter;
-mod source_stdin;
-mod source_stream;
-mod source_stream_serde;
-mod tee;
-mod unique;
-mod unzip;
 
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
 pub enum DelayType {
@@ -94,7 +61,7 @@ pub struct OperatorConstraints {
     pub num_args: usize,
     /// How many persistence lifetime arguments can be provided.
     pub persistence_args: &'static dyn RangeTrait<usize>,
-    // /// How many (non-persistence) lifetime arguemtns can be provided.
+    // /// How many (non-persistence) lifetime arguments can be provided.
     // pub lifetime_args: &'static dyn RangeTrait<usize>,
     /// How many generic type arguments can be provided.
     pub type_args: &'static dyn RangeTrait<usize>,
@@ -208,40 +175,105 @@ pub const IDENTITY_WRITE_FN: WriteFn = |write_context_args, _| {
     })
 };
 
-pub const OPERATORS: &[OperatorConstraints] = &[
-    null::NULL,
-    merge::MERGE,
-    join::JOIN,
+pub fn null_write_iterator_fn(
+    &WriteContextArgs {
+        root,
+        op_span,
+        ident,
+        inputs,
+        outputs,
+        is_pull,
+        op_inst:
+            OperatorInstance {
+                generics: OpInstGenerics { type_args, .. },
+                ..
+            },
+        ..
+    }: &WriteContextArgs,
+) -> TokenStream {
+    let default_type = parse_quote_spanned! {op_span=> _};
+    let iter_type = type_args.get(0).unwrap_or(&default_type);
+    if is_pull {
+        quote_spanned! {op_span=>
+            #(
+                #inputs.for_each(std::mem::drop);
+            )*
+            let #ident = std::iter::empty::<#iter_type>();
+        }
+    } else {
+        quote_spanned! {op_span=>
+            #[allow(clippy::let_unit_value)]
+            let _ = (#(#outputs),*);
+            let #ident = #root::pusherator::for_each::ForEach::<_, #iter_type>::new(std::mem::drop);
+        }
+    }
+}
+
+pub const NULL_WRITE_FN: WriteFn = |write_context_args, _| {
+    let write_iterator = null_write_iterator_fn(write_context_args);
+    Ok(OperatorWriteOutput {
+        write_iterator,
+        ..Default::default()
+    })
+};
+
+macro_rules! declare_ops {
+    ( $( $mod:ident :: $op:ident, )* ) => {
+        $( mod $mod; )*
+        pub const OPERATORS: &[OperatorConstraints] = &[
+            $( $mod :: $op, )*
+        ];
+    };
+}
+declare_ops![
+    anti_join::ANTI_JOIN,
+    batch::BATCH,
     cross_join::CROSS_JOIN,
-    tee::TEE,
-    unzip::UNZIP,
-    identity::IDENTITY,
-    map::MAP,
-    inspect::INSPECT,
+    demux::DEMUX,
+    dest_file::DEST_FILE,
+    dest_sink::DEST_SINK,
+    dest_sink_serde::DEST_SINK_SERDE,
+    difference::DIFFERENCE,
+    enumerate::ENUMERATE,
+    filter::FILTER,
+    filter_map::FILTER_MAP,
     flat_map::FLAT_MAP,
     flatten::FLATTEN,
-    filter_map::FILTER_MAP,
-    filter::FILTER,
     fold::FOLD,
-    reduce::REDUCE,
+    for_each::FOR_EACH,
     group_by::GROUP_BY,
-    unique::UNIQUE,
+    identity::IDENTITY,
+    initialize::INITIALIZE,
+    inspect::INSPECT,
+    join::JOIN,
+    keyed_fold::KEYED_FOLD,
+    keyed_reduce::KEYED_REDUCE,
+    lattice_join::LATTICE_JOIN,
+    lattice_merge::LATTICE_MERGE,
+    map::MAP,
+    merge::MERGE,
+    next_stratum::NEXT_STRATUM,
+    next_tick::NEXT_TICK,
+    null::NULL,
+    persist::PERSIST,
+    reduce::REDUCE,
+    repeat_fn::REPEAT_FN,
+    repeat_iter::REPEAT_ITER,
+    repeat_iter_external::REPEAT_ITER_EXTERNAL,
     sort::SORT,
     sort_by::SORT_BY,
+    source_file::SOURCE_FILE,
+    source_interval::SOURCE_INTERVAL,
     source_iter::SOURCE_ITER,
+    source_json::SOURCE_JSON,
     source_stdin::SOURCE_STDIN,
     source_stream::SOURCE_STREAM,
     source_stream_serde::SOURCE_STREAM_SERDE,
-    repeat_iter::REPEAT_ITER,
-    difference::DIFFERENCE,
-    anti_join::ANTI_JOIN,
-    next_stratum::NEXT_STRATUM,
-    next_tick::NEXT_TICK,
-    for_each::FOR_EACH,
-    demux::DEMUX,
-    dest_sink::DEST_SINK,
-    dest_sink_serde::DEST_SINK_SERDE,
+    tee::TEE,
+    unique::UNIQUE,
+    unzip::UNZIP,
 ];
+
 pub fn operator_lookup() -> &'static HashMap<&'static str, &'static OperatorConstraints> {
     pub static OPERATOR_LOOKUP: OnceCell<HashMap<&'static str, &'static OperatorConstraints>> =
         OnceCell::new();
@@ -259,6 +291,7 @@ pub fn find_op_op_constraints(operator: &Operator) -> Option<&'static OperatorCo
     operator_lookup().get(name).copied()
 }
 
+#[derive(Clone)]
 pub struct WriteContextArgs<'a> {
     /// `hydroflow` crate name for `use #root::something`.
     pub root: &'a TokenStream,
@@ -368,4 +401,8 @@ where
 pub enum Persistence {
     Tick,
     Static,
+}
+
+fn make_missing_runtime_msg(op_name: &str) -> Literal {
+    Literal::string(&*format!("`{}()` must be used within a Tokio runtime. For example, use `#[tokio::main]` on your main method.", op_name))
 }

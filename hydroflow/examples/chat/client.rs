@@ -34,7 +34,7 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
     let mut hf = hydroflow_syntax! {
         // set up channels
         outbound_chan = merge() -> dest_sink_serde(outbound);
-        inbound_chan = source_stream_serde(inbound) -> map(|(m, _)| m)
+        inbound_chan = source_stream_serde(inbound) -> map(Result::unwrap) -> map(|(m, _)| m)
             ->  demux(|m, var_args!(acks, msgs, errs)|
                     match m {
                         Message::ConnectResponse => acks.give(m),
@@ -65,7 +65,7 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
     // optionally print the dataflow graph
     if let Some(graph) = opts.graph {
         let serde_graph = hf
-            .serde_graph()
+            .meta_graph()
             .expect("No graph found, maybe failed to parse.");
         match graph {
             GraphType::Mermaid => {

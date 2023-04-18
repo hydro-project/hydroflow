@@ -1,27 +1,29 @@
 use crate::helpers::parse_out;
 use crate::protocol::{CoordMsg, MsgType, SubordResponse};
-use crate::GraphType;
+use crate::{Addresses, GraphType};
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
 use std::net::SocketAddr;
+use std::path::Path;
 
 pub(crate) async fn run_coordinator(
     outbound: UdpSink,
     inbound: UdpStream,
-    subordinates: Vec<String>,
+    path: impl AsRef<Path>,
     graph: Option<GraphType>,
 ) {
     let mut df: Hydroflow = hydroflow_syntax! {
         // fetch subordinates from file, convert ip:port to a SocketAddr, and tee
-        subords = source_iter(subordinates)
+        subords = source_json(path)
+            -> flat_map(|json: Addresses| json.subordinates)
             -> map(|s| s.parse::<SocketAddr>().unwrap())
             -> tee();
 
         // set up channels
         outbound_chan = tee();
         outbound_chan[0] -> dest_sink_serde(outbound);
-        inbound_chan = source_stream_serde(inbound) -> map(|(m, _a)| m) -> tee();
+        inbound_chan = source_stream_serde(inbound) -> map(Result::unwrap) -> map(|(m, _a)| m) -> tee();
         msgs = inbound_chan[0] ->  demux(|m:SubordResponse, var_args!(commits, aborts, acks, endeds, errs)| match m.mtype {
                     MsgType::Commit => commits.give(m),
                     MsgType::Abort => aborts.give(m),
@@ -79,7 +81,7 @@ pub(crate) async fn run_coordinator(
 
     if let Some(graph) = graph {
         let serde_graph = df
-            .serde_graph()
+            .meta_graph()
             .expect("No graph found, maybe failed to parse.");
         match graph {
             GraphType::Mermaid => {

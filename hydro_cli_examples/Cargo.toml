@@ -1,0 +1,58 @@
+[package]
+name = "hydro_cli_examples"
+version = "0.1.0"
+edition = "2021"
+
+[[example]]
+name = "empty_program"
+
+[[example]]
+name = "stdout_receiver"
+
+[[example]]
+name = "tagged_stdout_receiver"
+
+[[example]]
+name = "dedalus_sender"
+
+[[example]]
+name = "dedalus_receiver"
+
+[[example]]
+name = "dedalus_vote_leader"
+
+[[example]]
+name = "dedalus_vote_participant"
+
+[[example]]
+name = "dedalus_2pc_coordinator"
+
+[[example]]
+name = "dedalus_2pc_participant"
+
+[[example]]
+name = "topolotree"
+
+[[example]]
+name = "topolotree_latency_measure"
+
+[[example]]
+name = "pn_counter"
+
+[[example]]
+name = "pn_counter_delta"
+
+[dev-dependencies]
+hydroflow = { path = "../hydroflow", features = [ "cli_integration" ] }
+hydroflow_datalog = { path = "../hydroflow_datalog" }
+
+tokio = { version = "1.16", features = [ "full" ] }
+serde = { version = "1", features = ["rc"] }
+serde_json = "1"
+rand = "0.8.5"
+dashmap = "5.4.0"
+
+futures = "0.3.28"
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+procinfo = "0.4.2"

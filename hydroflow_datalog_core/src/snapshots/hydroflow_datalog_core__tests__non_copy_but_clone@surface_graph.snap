@@ -1,0 +1,15 @@
+---
+source: hydroflow_datalog_core/src/lib.rs
+expression: flat_graph_ref.surface_syntax_string()
+---
+2v1 = unique :: < 'tick > ();
+5v1 = unique :: < 'tick > ();
+7v1 = source_stream (strings);
+8v1 = for_each (| v | result . send (v) . unwrap ());
+9v1 = map (| row : (_ ,) | (row . 0 . clone () , row . 0 ,));
+
+7v1 -> 2v1;
+9v1 -> 5v1;
+5v1 -> 8v1;
+2v1 -> 9v1;
+

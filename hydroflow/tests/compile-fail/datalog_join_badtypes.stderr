@@ -1,0 +1,16 @@
+error[E0271]: expected `impl Iterator<Item = ((&str,), ())>` to be an iterator that yields `(({integer},), _)`, but it yields `((&str,), ())`
+ --> tests/compile-fail/datalog_join_badtypes.rs:8:30
+  |
+8 |         out(a) :- in1(a, b), in2(b)
+  |         ---------------------^^^^^^
+  |         |                    |
+  |         |                    expected `(({integer},), _)`, found `((&str,), ())`
+  |         required by a bound introduced by this call
+  |
+  = note: expected tuple `(({integer},), _)`
+             found tuple `((&str,), ())`
+note: required by a bound in `check_inputs`
+ --> tests/compile-fail/datalog_join_badtypes.rs:8:9
+  |
+8 |         out(a) :- in1(a, b), in2(b)
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `check_inputs`

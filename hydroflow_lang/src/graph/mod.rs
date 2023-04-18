@@ -1,8 +1,9 @@
 //! Graph representation stages for Hydroflow graphs.
 
+use std::borrow::Cow;
 use std::hash::Hash;
 
-use proc_macro2::Span;
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::ToTokens;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -11,24 +12,26 @@ use syn::spanned::Spanned;
 use syn::{Expr, ExprPath, GenericArgument, Token, Type};
 
 use crate::diagnostic::{Diagnostic, Level};
-use crate::parse::{IndexInt, Operator, PortIndex, Ported};
+use crate::parse::{HfCode, IndexInt, Operator, PortIndex, Ported};
 use crate::pretty_span::PrettySpan;
 
 use self::ops::{OperatorConstraints, Persistence};
 
 mod di_mul_graph;
+mod eliminate_extra_merges_tees;
 mod flat_graph_builder;
 mod flat_to_partitioned;
+mod graph_write;
 mod hydroflow_graph;
 
 pub use di_mul_graph::DiMulGraph;
+pub use eliminate_extra_merges_tees::eliminate_extra_merges_tees;
 pub use flat_graph_builder::FlatGraphBuilder;
 pub use flat_to_partitioned::partition_graph;
 pub use hydroflow_graph::HydroflowGraph;
 
 pub mod graph_algorithms;
 pub mod ops;
-pub mod serde_graph;
 
 new_key_type! {
     /// ID to identify a node (operator or handoff) in [`HydroflowGraph`].
@@ -48,9 +51,47 @@ const HYDROFLOW: &str = "df";
 
 const HANDOFF_NODE_STR: &str = "handoff";
 
+mod serde_syn {
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: quote::ToTokens,
+    {
+        serializer.serialize_str(&*value.to_token_stream().to_string())
+    }
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: syn::parse::Parse,
+    {
+        let s = String::deserialize(deserializer)?;
+        syn::parse_str(&*s).map_err(<D::Error as serde::de::Error>::custom)
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
+struct Varname(#[serde(with = "serde_syn")] pub Ident);
+
+#[derive(Clone, Serialize, Deserialize)]
 pub enum Node {
-    Operator(Operator),
-    Handoff { src_span: Span, dst_span: Span },
+    Operator(#[serde(with = "serde_syn")] Operator),
+    Handoff {
+        #[serde(skip, default = "Span::call_site")]
+        src_span: Span,
+        #[serde(skip, default = "Span::call_site")]
+        dst_span: Span,
+    },
+}
+impl Node {
+    pub fn to_pretty_string(&self) -> Cow<'static, str> {
+        match self {
+            Node::Operator(op) => op.to_pretty_string().into(),
+            Node::Handoff { .. } => HANDOFF_NODE_STR.into(),
+        }
+    }
 }
 impl Spanned for Node {
     fn span(&self) -> Span {
@@ -175,11 +216,11 @@ pub fn node_color(is_handoff: bool, inn_degree: usize, out_degree: usize) -> Opt
 }
 
 /// Helper struct for [`PortIndex`] which keeps span information for elided ports.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum PortIndexValue {
-    Int(IndexInt),
-    Path(ExprPath),
-    Elided(Option<Span>),
+    Int(#[serde(with = "serde_syn")] IndexInt),
+    Path(#[serde(with = "serde_syn")] ExprPath),
+    Elided(#[serde(skip)] Option<Span>),
 }
 impl PortIndexValue {
     pub fn from_ported<Inner>(ported: Ported<Inner>) -> (Self, Inner, Self)
@@ -283,4 +324,26 @@ impl Ord for PortIndexValue {
             (Self::Elided(_), _) => std::cmp::Ordering::Greater,
         }
     }
+}
+
+pub fn build_hfcode(
+    hf_code: HfCode,
+    root: &TokenStream,
+) -> (Option<(HydroflowGraph, TokenStream)>, Vec<Diagnostic>) {
+    let flat_graph_builder = FlatGraphBuilder::from_hfcode(hf_code);
+    let (mut flat_graph, mut diagnostics) = flat_graph_builder.build();
+    eliminate_extra_merges_tees(&mut flat_graph);
+    if !diagnostics.iter().any(Diagnostic::is_error) {
+        match partition_graph(flat_graph) {
+            Ok(part_graph) => {
+                let code = part_graph.as_code(root, true, &mut diagnostics);
+                if !diagnostics.iter().any(Diagnostic::is_error) {
+                    // Success.
+                    return (Some((part_graph, code)), diagnostics);
+                }
+            }
+            Err(diagnostic) => diagnostics.push(diagnostic),
+        }
+    }
+    (None, diagnostics)
 }

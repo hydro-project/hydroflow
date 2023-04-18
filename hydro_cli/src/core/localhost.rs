@@ -1,20 +1,28 @@
-use std::{path::Path, sync::Arc};
+use std::{collections::HashMap, fs::File, io::Write, net::SocketAddr, sync::Arc};
+
+#[cfg(unix)]
+use std::os::unix::process::ExitStatusExt;
+
+#[cfg(unix)]
+use std::os::unix::prelude::PermissionsExt;
 
 use anyhow::Result;
 use async_channel::{Receiver, Sender};
 use async_process::{Command, Stdio};
 use async_trait::async_trait;
 use futures::{io::BufReader, AsyncBufReadExt, AsyncRead, AsyncWriteExt, StreamExt};
-use hydroflow_cli_integration::BindConfig;
+use hydroflow_cli_integration::ServerBindConfig;
+use tempfile::{NamedTempFile, TempPath};
 use tokio::sync::RwLock;
 
 use super::{
-    BindType, ConnectionType, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
-    ResourceResult,
+    ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
+    ResourceResult, ServerStrategy,
 };
 
 struct LaunchedLocalhostBinary {
     child: RwLock<async_process::Child>,
+    _temp_path: TempPath,
     stdin_sender: Sender<String>,
     stdout_receivers: Arc<RwLock<Vec<Sender<String>>>>,
     stderr_receivers: Arc<RwLock<Vec<Sender<String>>>>,
@@ -45,8 +53,19 @@ impl LaunchedBinary for LaunchedLocalhostBinary {
             .write()
             .await
             .try_status()
-            .map(|s| s.and_then(|c| c.code()))
-            .unwrap_or(None)
+            .ok()
+            .flatten()
+            .and_then(|c| {
+                #[cfg(unix)]
+                return c.code().or(c.signal());
+                #[cfg(not(unix))]
+                return c.code();
+            })
+    }
+
+    async fn wait(&mut self) -> Option<i32> {
+        let _ = self.child.get_mut().status().await;
+        self.exit_code().await
     }
 }
 
@@ -86,20 +105,51 @@ pub fn create_broadcast<T: AsyncRead + Send + Unpin + 'static>(
 
 #[async_trait]
 impl LaunchedHost for LaunchedLocalhost {
-    fn get_bind_config(&self, bind_type: &BindType) -> BindConfig {
+    fn server_config(&self, bind_type: &ServerStrategy) -> ServerBindConfig {
         match bind_type {
-            BindType::UnixSocket => BindConfig::UnixSocket,
-            BindType::InternalTcpPort => BindConfig::TcpPort("127.0.0.1".to_string()),
-            BindType::ExternalTcpPort(_) => panic!("Cannot bind to external port"),
+            ServerStrategy::UnixSocket => ServerBindConfig::UnixSocket,
+            ServerStrategy::InternalTcpPort => ServerBindConfig::TcpPort("127.0.0.1".to_string()),
+            ServerStrategy::ExternalTcpPort(_) => panic!("Cannot bind to external port"),
+            ServerStrategy::Demux(demux) => {
+                let mut config_map = HashMap::new();
+                for (key, underlying) in demux {
+                    config_map.insert(*key, self.server_config(underlying));
+                }
+
+                ServerBindConfig::Demux(config_map)
+            }
+            ServerStrategy::Merge(merge) => {
+                let mut configs = vec![];
+                for underlying in merge {
+                    configs.push(self.server_config(underlying));
+                }
+
+                ServerBindConfig::Merge(configs)
+            }
+            ServerStrategy::Tagged(underlying, id) => {
+                ServerBindConfig::Tagged(Box::new(self.server_config(underlying)), *id)
+            }
+            ServerStrategy::Null => ServerBindConfig::Null,
         }
     }
 
     async fn launch_binary(
         &self,
-        binary: &Path,
+        binary: Arc<(String, Vec<u8>)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
-        let mut child = Command::new(binary)
+        let temp_path = NamedTempFile::new()?.into_temp_path();
+
+        let mut file = File::create(&temp_path)?;
+        file.write_all(binary.1.as_slice())?;
+        drop(file);
+
+        let mut orig_perms = std::fs::metadata(&temp_path)?.permissions();
+        #[cfg(unix)]
+        orig_perms.set_mode(0o755);
+        std::fs::set_permissions(&temp_path, orig_perms)?;
+
+        let mut child = Command::new(&temp_path)
             .args(args)
             .kill_on_drop(true)
             .stdin(Stdio::piped())
@@ -122,16 +172,38 @@ impl LaunchedHost for LaunchedLocalhost {
 
         Ok(Arc::new(RwLock::new(LaunchedLocalhostBinary {
             child: RwLock::new(child),
+            _temp_path: temp_path,
             stdin_sender,
             stdout_receivers,
             stderr_receivers,
         })))
+    }
+
+    async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr> {
+        Ok(*addr)
     }
 }
 
 #[derive(Debug)]
 pub struct LocalhostHost {
     pub id: usize,
+    client_only: bool,
+}
+
+impl LocalhostHost {
+    pub fn new(id: usize) -> LocalhostHost {
+        LocalhostHost {
+            id,
+            client_only: false,
+        }
+    }
+
+    pub fn client_only(&self) -> LocalhostHost {
+        LocalhostHost {
+            id: self.id,
+            client_only: true,
+        }
+    }
 }
 
 #[async_trait]
@@ -140,29 +212,59 @@ impl Host for LocalhostHost {
         HostTargetType::Local
     }
 
-    fn request_port(&mut self, _bind_type: &BindType) {}
+    fn request_port(&mut self, _bind_type: &ServerStrategy) {}
     fn collect_resources(&self, _resource_batch: &mut ResourceBatch) {}
     fn request_custom_binary(&mut self) {}
+
+    fn id(&self) -> usize {
+        self.id
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+
+    fn launched(&self) -> Option<Arc<dyn LaunchedHost>> {
+        Some(Arc::new(LaunchedLocalhost {}))
+    }
 
     async fn provision(&mut self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         Arc::new(LaunchedLocalhost {})
     }
 
-    fn get_bind_type(&self, connection_from: &dyn Host) -> BindType {
-        if connection_from.can_connect_to(ConnectionType::UnixSocket(self.id)) {
-            BindType::UnixSocket
-        } else if connection_from
-            .can_connect_to(ConnectionType::InternalTcpPort(format!("{}", self.id)))
-        {
-            BindType::InternalTcpPort
+    fn strategy_as_server<'a>(
+        &'a self,
+        connection_from: &dyn Host,
+    ) -> Result<(
+        ClientStrategy<'a>,
+        Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>,
+    )> {
+        if self.client_only {
+            anyhow::bail!("Localhost cannot be a server if it is client only")
+        }
+
+        if connection_from.can_connect_to(ClientStrategy::UnixSocket(self.id)) {
+            Ok((
+                ClientStrategy::UnixSocket(self.id),
+                Box::new(|_| ServerStrategy::UnixSocket),
+            ))
+        } else if connection_from.can_connect_to(ClientStrategy::InternalTcpPort(self)) {
+            Ok((
+                ClientStrategy::InternalTcpPort(self),
+                Box::new(|_| ServerStrategy::InternalTcpPort),
+            ))
         } else {
-            todo!()
+            anyhow::bail!("Could not find a strategy to connect to localhost")
         }
     }
 
-    fn can_connect_to(&self, typ: ConnectionType) -> bool {
+    fn can_connect_to(&self, typ: ClientStrategy) -> bool {
         match typ {
-            ConnectionType::UnixSocket(id) => {
+            ClientStrategy::UnixSocket(id) => {
                 #[cfg(unix)]
                 {
                     self.id == id
@@ -174,7 +276,8 @@ impl Host for LocalhostHost {
                     false
                 }
             }
-            ConnectionType::InternalTcpPort(id) => format!("{}", self.id) == id,
+            ClientStrategy::InternalTcpPort(target_host) => self.id == target_host.id(),
+            ClientStrategy::ForwardedTcpPort(_) => true,
         }
     }
 }

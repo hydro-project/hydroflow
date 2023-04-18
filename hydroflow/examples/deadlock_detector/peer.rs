@@ -92,7 +92,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
             GraphType::Mermaid => {
                 println!(
                     "{}",
-                    df.serde_graph()
+                    df.meta_graph()
                         .expect("No graph found, maybe failed to parse.")
                         .to_mermaid()
                 )
@@ -100,7 +100,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
             GraphType::Dot => {
                 println!(
                     "{}",
-                    df.serde_graph()
+                    df.meta_graph()
                         .expect("No graph found, maybe failed to parse.")
                         .to_dot()
                 )

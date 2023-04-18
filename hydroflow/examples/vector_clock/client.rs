@@ -22,7 +22,7 @@ pub(crate) async fn run_client(
 
     let mut flow = hydroflow_syntax! {
         // Define shared inbound and outbound channels
-        inbound_chan = source_stream_serde(inbound) -> tee();
+        inbound_chan = source_stream_serde(inbound) -> map(Result::unwrap) -> tee();
         outbound_chan = // merge() ->  // commented out since we only use this once in the client template
             dest_sink_serde(outbound);
 
@@ -49,7 +49,7 @@ pub(crate) async fn run_client(
         // stamp each input with the latest local vc (as of this tick!)
         input[send] -> [0]stamped_output;
         mergevc[useful] -> [1]stamped_output;
-        stamped_output = cross_join<'tick, 'tick>() -> map(|(l, the_vc): (String, <VecClock as LatticeRepr>::Repr)| (EchoMsg { payload: l, vc: the_vc }, server_addr));
+        stamped_output = cross_join::<'tick, 'tick>() -> map(|(l, the_vc): (String, <VecClock as LatticeRepr>::Repr)| (EchoMsg { payload: l, vc: the_vc }, server_addr));
 
         // and send to server
         stamped_output[send] -> outbound_chan;
@@ -57,7 +57,7 @@ pub(crate) async fn run_client(
 
     if let Some(graph) = opts.graph {
         let serde_graph = flow
-            .serde_graph()
+            .meta_graph()
             .expect("No graph found, maybe failed to parse.");
         match graph {
             GraphType::Mermaid => {

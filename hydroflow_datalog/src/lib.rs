@@ -23,13 +23,13 @@ pub fn datalog(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
     match gen_hydroflow_graph(literal) {
         Ok(graph) => {
             let program = hydroflow_graph_to_program(graph, root);
-            proc_macro::TokenStream::from(program.to_token_stream())
+            program.to_token_stream().into()
         }
         Err(diagnostics) => {
             for diagnostic in diagnostics {
                 diagnostic.emit();
             }
-            proc_macro::TokenStream::from(quote!(()))
+            proc_macro::TokenStream::from(quote!(hydroflow::scheduled::graph::Hydroflow::new()))
         }
     }
 }

@@ -1,6 +1,6 @@
 ---
 source: hydroflow/tests/surface_stratum.rs
-expression: df.serde_graph().unwrap().to_dot()
+expression: df.meta_graph().unwrap().to_dot()
 ---
 digraph {
     subgraph "cluster n1v1" {
@@ -10,18 +10,23 @@ digraph {
         n4v1 [label="(n4v1) source_stream(pairs_recv)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n5v1 [label="(n5v1) tee()", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n4v1 -> n5v1
+        subgraph "cluster sg_1v1_var_edges" {
+            label="var edges"
+            n4v1
+            n5v1
+        }
     }
     subgraph "cluster n2v1" {
         fillcolor="#dddddd"
         style=filled
         label = "sg_2v1\nstratum 0"
-        n3v1 [label="(n3v1) source_iter(vec! [0])", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n3v1 [label="(n3v1) source_iter(vec![0])", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n1v1 [label="(n1v1) merge()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n2v1 [label="(n2v1) map(| v | (v, ()))", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n2v1 [label="(n2v1) map(|v| (v, ()))", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n6v1 [label="(n6v1) join()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n7v1 [label="(n7v1) map(| (_src, ((), dst)) | dst)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n8v1 [label="(n8v1) map(| x | x)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n9v1 [label="(n9v1) map(| x | x)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n7v1 [label="(n7v1) map(|(_src, ((), dst))| dst)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n8v1 [label="(n8v1) map(|x| x)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n9v1 [label="(n9v1) map(|x| x)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n10v1 [label="(n10v1) tee()", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n15v1 [label="(n15v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
         n15v1 -> n1v1 [label="1"]
@@ -33,16 +38,34 @@ digraph {
         n8v1 -> n9v1
         n9v1 -> n10v1
         n10v1 -> n15v1 [label="0"]
+        subgraph "cluster sg_2v1_var_my_join_tee" {
+            label="var my_join_tee"
+            n6v1
+            n7v1
+            n8v1
+            n9v1
+            n10v1
+        }
+        subgraph "cluster sg_2v1_var_reached_vertices" {
+            label="var reached_vertices"
+            n1v1
+            n2v1
+        }
     }
     subgraph "cluster n3v1" {
         fillcolor="#dddddd"
         style=filled
         label = "sg_3v1\nstratum 1"
-        n13v1 [label="(n13v1) flat_map(| (a, b) | [a, b])", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n13v1 [label="(n13v1) flat_map(|(a, b)| [a, b])", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n11v1 [label="(n11v1) difference()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n12v1 [label="(n12v1) for_each(| x | println! (\"Not reached: {}\", x))", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n12v1 [label="(n12v1) for_each(|x| println!(\"Not reached: {}\", x))", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n13v1 -> n11v1 [label="pos"]
         n11v1 -> n12v1
+        subgraph "cluster sg_3v1_var_diff" {
+            label="var diff"
+            n11v1
+            n12v1
+        }
     }
     n5v1 -> n14v1 [label="1"]
     n5v1 -> n16v1 [label="0"]

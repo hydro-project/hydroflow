@@ -89,11 +89,11 @@ where
     bytes::Bytes::from(bincode::serialize(&msg).unwrap())
 }
 
-pub fn deserialize_from_bytes<T>(msg: bytes::BytesMut) -> T
+pub fn deserialize_from_bytes<T>(msg: impl AsRef<[u8]>) -> bincode::Result<T>
 where
     T: Serialize + for<'a> Deserialize<'a> + Clone,
 {
-    bincode::deserialize(&msg).unwrap()
+    bincode::deserialize(msg.as_ref())
 }
 
 pub fn ipv4_resolve(addr: &str) -> Result<SocketAddr, std::io::Error> {

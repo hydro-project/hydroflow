@@ -1,7 +1,7 @@
 use multiplatform_test::multiplatform_test;
 
+use hydroflow::datalog;
 use hydroflow::util::collect_ready;
-use hydroflow_datalog::datalog;
 
 #[multiplatform_test]
 pub fn test_minimal() {
@@ -70,6 +70,28 @@ pub fn test_join_with_self() {
         &*collect_ready::<Vec<_>, _>(&mut out_recv),
         &[(2, 1), (1, 2)]
     );
+}
+
+#[multiplatform_test]
+pub fn test_wildcard_fields() {
+    let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize,)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input input `source_stream(input)`
+        .output out `for_each(|v| out.send(v).unwrap())`
+
+        out(x) :- input(x, _), input(_, x).
+        "#
+    );
+
+    in_send.send((1, 2)).unwrap();
+    in_send.send((3, 1)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut out_recv), &[(1,)]);
 }
 
 #[multiplatform_test]
@@ -739,4 +761,332 @@ fn test_send_to_node() {
 
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv_1), &[]);
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv_2), &[(5,)]);
+}
+
+#[multiplatform_test]
+fn test_aggregations_and_comments() {
+    let (ints_send, ints) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (result2, mut result_recv2) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    let mut flow = datalog!(
+        r#"
+        # david doesn't think this line of code will execute
+        .input ints `source_stream(ints)`
+        .output result `for_each(|v| result.send(v).unwrap())`
+        .output result2 `for_each(|v| result2.send(v).unwrap())`
+
+        result(count(a), b) :- ints(a, b)
+        result(sum(a), b) :+ ints(a, b)
+        result2(choose(a), b) :- ints(a, b)
+        "#
+    );
+
+    ints_send.send((1, 3)).unwrap();
+    ints_send.send((2, 3)).unwrap();
+    ints_send.send((3, 3)).unwrap();
+    ints_send.send((4, 3)).unwrap();
+    ints_send.send((3, 1)).unwrap();
+
+    flow.run_tick();
+
+    let mut res = collect_ready::<Vec<_>, _>(&mut result_recv);
+    res.sort_by_key(|v| v.0);
+    assert_eq!(&res, &[(1, 1), (4, 3)]);
+
+    let mut res2 = collect_ready::<Vec<_>, _>(&mut result_recv2); // Assumes deterministic choose
+    res2.sort_by_key(|v| v.0);
+    assert_eq!(&res2, &[(1, 3), (3, 1)]);
+
+    flow.run_tick();
+
+    let mut res = collect_ready::<Vec<_>, _>(&mut result_recv);
+    res.sort_by_key(|v| v.0);
+    assert_eq!(&res, &[(3, 1), (10, 3)]);
+}
+
+#[multiplatform_test]
+fn test_aggregations_group_by_expr() {
+    let (ints_send, ints) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints `source_stream(ints)`
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(a % 2, sum(b)) :- ints(a, b)
+        "#
+    );
+
+    ints_send.send((1, 1)).unwrap();
+    ints_send.send((2, 1)).unwrap();
+    ints_send.send((3, 1)).unwrap();
+
+    flow.run_tick();
+
+    let mut res = collect_ready::<Vec<_>, _>(&mut result_recv);
+    res.sort_by_key(|v| v.0);
+    assert_eq!(&res, &[(0, 1), (1, 2)]);
+}
+
+#[multiplatform_test]
+fn test_choose_strings() {
+    let (strings_send, strings) = hydroflow::util::unbounded_channel::<(String,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(String,)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input strings `source_stream(strings)`
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(choose(a)) :- strings(a)
+        "#
+    );
+
+    strings_send.send(("hello".to_string(),)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[("hello".to_string(),)]
+    );
+}
+
+#[multiplatform_test]
+fn test_non_copy_but_clone() {
+    let (strings_send, strings) = hydroflow::util::unbounded_channel::<(String, String)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(String, String)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input strings `source_stream(strings)`
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(a, a) :- strings(a, a), strings(a, a), (a == a)
+        "#
+    );
+
+    strings_send
+        .send(("Hello".to_string(), "Hello".to_string()))
+        .unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[("Hello".to_string(), "Hello".to_string())]
+    );
+}
+
+#[multiplatform_test]
+fn test_expr_lhs() {
+    let (ints_send, ints) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64,)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints `source_stream(ints)`
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(123) :- ints(a)
+        result(a + 123) :- ints(a)
+        result(a + a) :- ints(a)
+        result(123 - a) :- ints(a)
+        result(123 % (a + 5)) :- ints(a)
+        result(a * 5) :- ints(a)
+        "#
+    );
+
+    ints_send.send((1,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(123,), (124,), (2,), (122,), (3,), (5,)]
+    );
+}
+
+#[multiplatform_test]
+fn test_less_than_relation() {
+    let (ints_send, ints) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64,)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints `source_stream(ints)`
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(b) :- ints(a), less_than(b, a)
+        "#
+    );
+
+    ints_send.send((5,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(0,), (1,), (2,), (3,), (4,)]
+    );
+}
+
+#[multiplatform_test]
+fn test_expr_predicate() {
+    let (ints_send, ints) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64,)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints `source_stream(ints)`
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(1) :- ints(a), (a == 0)
+        result(2) :- ints(a), (a != 0)
+        result(3) :- ints(a), (a - 1 == 0)
+        result(4) :- ints(a), (a - 1 == 1 - 1)
+        "#
+    );
+
+    ints_send.send((1,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(2,), (3,), (4,)]
+    );
+}
+
+#[multiplatform_test]
+fn test_persist() {
+    let (ints1_send, ints1) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (ints2_send, ints2) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (ints3_send, ints3) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64, i64, i64)>();
+    let (result2, mut result2_recv) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result3, mut result3_recv) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result4, mut result4_recv) = hydroflow::util::unbounded_channel::<(i64,)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints1 `source_stream(ints1)`
+        .persist ints1
+
+        .input ints2 `source_stream(ints2)`
+        .persist ints2
+
+        .input ints3 `source_stream(ints3)`
+        
+        .output result `for_each(|v| result.send(v).unwrap())`
+        .output result2 `for_each(|v| result2.send(v).unwrap())`
+        .output result3 `for_each(|v| result3.send(v).unwrap())`
+        .output result4 `for_each(|v| result4.send(v).unwrap())`
+
+        result(a, b, c) :- ints1(a), ints2(b), ints3(c)
+        result2(a) :- ints1(a), !ints2(a)
+
+        intermediate(a) :- ints1(a)
+        result3(a) :- intermediate(a)
+
+        .persist intermediate_persist
+        intermediate_persist(a) :- ints1(a)
+        result4(a) :- intermediate_persist(a)
+        "#
+    );
+
+    ints1_send.send((1,)).unwrap();
+    ints2_send.send((2,)).unwrap();
+    ints3_send.send((5,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1, 2, 5)]);
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result2_recv), &[(1,)]);
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result3_recv), &[(1,)]);
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result4_recv), &[(1,)]);
+
+    ints2_send.send((1,)).unwrap();
+    ints2_send.send((3,)).unwrap();
+    ints3_send.send((6,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(1, 2, 6), (1, 1, 6), (1, 3, 6)]
+    );
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result2_recv), &[]);
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result3_recv), &[(1,)]);
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result4_recv), &[(1,)]);
+}
+
+#[multiplatform_test]
+fn test_persist_uniqueness() {
+    let (ints2_send, ints2) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize,)>();
+
+    let mut flow = datalog!(
+        r#"
+        .persist ints1
+
+        .input ints2 `source_stream(ints2)`
+        
+        ints1(a) :- ints2(a)
+        
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(count(a)) :- ints1(a)
+        "#
+    );
+
+    ints2_send.send((1,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1,)]);
+
+    ints2_send.send((1,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(1,)]);
+
+    ints2_send.send((2,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(2,)]);
+}
+
+#[multiplatform_test]
+fn test_wildcard_join_count() {
+    let (ints1_send, ints1) = hydroflow::util::unbounded_channel::<(i64, i64)>();
+    let (ints2_send, ints2) = hydroflow::util::unbounded_channel::<(i64,)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize,)>();
+    let (result2, mut result2_recv) = hydroflow::util::unbounded_channel::<(usize,)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints1 `source_stream(ints1)` 
+        .input ints2 `source_stream(ints2)`
+        
+        .output result `for_each(|v| result.send(v).unwrap())`
+        .output result2 `for_each(|v| result2.send(v).unwrap())`
+
+        result(count(*)) :- ints1(a, _), ints2(a)
+        result2(count(a)) :- ints1(a, _), ints2(a)
+        "#
+    );
+
+    ints1_send.send((1, 1)).unwrap();
+    ints1_send.send((1, 2)).unwrap();
+    ints2_send.send((1,)).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(2,)]);
+    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result2_recv), &[(1,)]);
 }
