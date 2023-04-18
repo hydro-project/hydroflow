@@ -85,7 +85,7 @@ fn main() {
         let sg_3v1_node_34v1_counterdata = df
             .add_state(
                 ::std::cell::RefCell::new(
-                    hydroflow::lang::monotonic_map::MonotonicMap::new_init((0_usize..)),
+                    hydroflow::lang::monotonic_map::MonotonicMap::new_init((0..)),
                 ),
             );
         df.add_subgraph_stratified(
@@ -365,7 +365,7 @@ fn main() {
                         let counter = borrow
                             .get_mut_with(
                                 (context.current_tick(), context.current_stratum()),
-                                || (0_usize..),
+                                || (0..),
                             );
                         (counter.next().unwrap(), item)
                     },
@@ -592,7 +592,7 @@ fn main() {
         let sg_4v1_node_38v1_counterdata = df
             .add_state(
                 ::std::cell::RefCell::new(
-                    hydroflow::lang::monotonic_map::MonotonicMap::new_init((0_usize..)),
+                    hydroflow::lang::monotonic_map::MonotonicMap::new_init((0..)),
                 ),
             );
         let sg_4v1_node_8v1_uniquedata = df
@@ -690,7 +690,7 @@ fn main() {
                         let counter = borrow
                             .get_mut_with(
                                 (context.current_tick(), context.current_stratum()),
-                                || (0_usize..),
+                                || (0..),
                             );
                         (counter.next().unwrap(), item)
                     },
@@ -860,7 +860,7 @@ fn main() {
         let sg_5v1_node_45v1_persistdata = df
             .add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
         let sg_5v1_node_43v1_counterdata = df
-            .add_state(::std::cell::RefCell::new((0_usize..)));
+            .add_state(::std::cell::RefCell::new((0..)));
         df.add_subgraph_stratified(
             "Subgraph GraphSubgraphId(5v1)",
             1,
@@ -1349,7 +1349,7 @@ fn main() {
         let sg_6v1_node_48v1_counterdata = df
             .add_state(
                 ::std::cell::RefCell::new(
-                    hydroflow::lang::monotonic_map::MonotonicMap::new_init((0_usize..)),
+                    hydroflow::lang::monotonic_map::MonotonicMap::new_init((0..)),
                 ),
             );
         let sg_6v1_node_14v1_uniquedata = df
@@ -1449,7 +1449,7 @@ fn main() {
                         let counter = borrow
                             .get_mut_with(
                                 (context.current_tick(), context.current_stratum()),
-                                || (0_usize..),
+                                || (0..),
                             );
                         (counter.next().unwrap(), item)
                     },
@@ -1596,7 +1596,7 @@ fn main() {
             },
         );
         let sg_7v1_node_51v1_counterdata = df
-            .add_state(::std::cell::RefCell::new((0_usize..)));
+            .add_state(::std::cell::RefCell::new((0..)));
         let sg_7v1_node_17v1_uniquedata = df
             .add_state(
                 ::std::cell::RefCell::new(

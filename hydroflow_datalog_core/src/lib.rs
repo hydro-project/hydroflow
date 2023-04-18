@@ -642,7 +642,7 @@ fn apply_aggregations(
                 agg_idx += 1;
             }
             TargetExpr::Index(_, _, _) => {
-                after_group_lookups.push(parse_quote_spanned!(get_span(field.span)=> i as _));
+                after_group_lookups.push(parse_quote_spanned!(get_span(field.span)=> i));
             }
         }
     }
