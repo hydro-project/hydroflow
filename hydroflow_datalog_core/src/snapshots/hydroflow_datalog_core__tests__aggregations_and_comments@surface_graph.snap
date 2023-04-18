@@ -12,14 +12,14 @@ expression: flat_graph_ref.surface_syntax_string()
 12v1 = for_each (| v | result2 . send (v) . unwrap ());
 13v1 = map (| row : (_ , _ ,) | ((row . 1 ,) , ((row . 0) ,)));
 14v1 = group_by :: < 'tick , (_ ,) , (Option < _ > ,) > (| | (None ,) , | old : & mut (Option < _ > ,) , val : (_ ,) | { old . 0 = if let Some (prev) = old . 0 . take () { Some ({ let prev : (hydroflow :: rustc_hash :: FxHashSet < _ > , _) = prev ; let mut set : hydroflow :: rustc_hash :: FxHashSet :: < _ > = prev . 0 ; if set . insert (val . 0) { (set , prev . 1 + 1) } else { (set , prev . 1) } }) } else { Some ({ let mut set = hydroflow :: rustc_hash :: FxHashSet :: < _ > :: default () ; set . insert (val . 0) ; (set , 1) }) } ; });
-15v1 = map (| (g , a) | (a . 0 . unwrap () . 1 , g . 0 ,));
+15v1 = map (| (g , a) : ((_ ,) , _) | (a . 0 . unwrap () . 1 , g . 0 ,));
 16v1 = map (| row : (_ , _ ,) | ((row . 1 ,) , (row . 0 ,)));
 17v1 = group_by :: < 'tick , (_ ,) , (Option < _ > ,) > (| | (None ,) , | old : & mut (Option < _ > ,) , val : (_ ,) | { old . 0 = if let Some (prev) = old . 0 . take () { Some (prev + val . 0) } else { Some (val . 0) } ; });
-18v1 = map (| (g , a) | (a . 0 . unwrap () , g . 0 ,));
+18v1 = map (| (g , a) : ((_ ,) , _) | (a . 0 . unwrap () , g . 0 ,));
 19v1 = next_tick ();
 20v1 = map (| row : (_ , _ ,) | ((row . 1 ,) , (row . 0 ,)));
 21v1 = group_by :: < 'tick , (_ ,) , (Option < _ > ,) > (| | (None ,) , | old : & mut (Option < _ > ,) , val : (_ ,) | { old . 0 = if let Some (prev) = old . 0 . take () { Some (prev) } else { Some (val . 0) } ; });
-22v1 = map (| (g , a) | (a . 0 . unwrap () , g . 0 ,));
+22v1 = map (| (g , a) : ((_ ,) , _) | (a . 0 . unwrap () , g . 0 ,));
 
 10v1 -> 2v1;
 2v1 -> 3v1;
