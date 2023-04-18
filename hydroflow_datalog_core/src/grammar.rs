@@ -131,6 +131,11 @@ pub mod datalog {
     pub enum TargetExpr {
         Expr(IntExpr),
         Aggregation(Aggregation),
+        Index(
+            #[rust_sitter::leaf(text = "index")] (),
+            #[rust_sitter::leaf(text = "(")] (),
+            #[rust_sitter::leaf(text = ")")] (),
+        ),
     }
 
     impl TargetExpr {
@@ -147,6 +152,7 @@ pub mod datalog {
                     | Aggregation::Sum(_, _, a, _)
                     | Aggregation::Choose(_, _, a, _),
                 ) => vec![a],
+                TargetExpr::Index(_, _, _) => vec![],
             }
         }
     }
