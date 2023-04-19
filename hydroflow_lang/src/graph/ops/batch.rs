@@ -8,7 +8,8 @@ use quote::quote_spanned;
 
 /// > 1 input stream, 1 output stream
 ///
-/// > Arguments: The receive end of a tokio channel that signals when to release the batch downstream.
+/// > Arguments: First argument is the maximum batch size that batch() will buffer up before releasing the excess.
+///  The second argument is the receive end of a tokio channel that signals when to release the batch downstream.
 ///
 /// Given a [`Stream`](https://docs.rs/futures/latest/futures/stream/trait.Stream.html)
 /// created in Rust code, `batch`
@@ -20,7 +21,7 @@ use quote::quote_spanned;
 ///
 ///     // Will print 0, 1, 2, 3, 4 each on a new line just once.
 ///     let mut df = hydroflow::hydroflow_syntax! {
-///         repeat_iter(0..5) -> batch(rx) -> for_each(|x| { println!("{x}"); });
+///         repeat_iter(0..5) -> batch(10, rx) -> for_each(|x| { println!("{x}"); });
 ///     };
 ///
 ///     tx.send(()).unwrap();
@@ -36,7 +37,7 @@ pub const BATCH: OperatorConstraints = OperatorConstraints {
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
-    num_args: 1,
+    num_args: 2,
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
@@ -61,7 +62,8 @@ pub const BATCH: OperatorConstraints = OperatorConstraints {
                _| {
         let internal_buffer = wc.make_ident("internal_buffer");
 
-        let receiver = &arguments[0];
+        let max_queue_len = &arguments[0];
+        let receiver = &arguments[1];
         let stream_ident = wc.make_ident("stream");
 
         let write_prologue = quote_spanned! {op_span=>
@@ -69,56 +71,79 @@ pub const BATCH: OperatorConstraints = OperatorConstraints {
             let #internal_buffer = #hydroflow.add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
         };
 
-        let write_iterator = if is_pull {
+        let (write_iterator, write_iterator_after) = if is_pull {
             let input = &inputs[0];
 
-            quote_spanned! {op_span=>
+            (
+                quote_spanned! {op_span=>
 
-                {
-                    let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
-                    vec.extend(#input);
-                }
-
-                let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
-                let mut dummy = Vec::new();
-                let #ident = match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
-                    ::std::task::Poll::Ready(_) => {
-                        vec.drain(..)
-                    },
-                    ::std::task::Poll::Pending => {
-                        dummy.drain(..)
+                    {
+                        let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
+                        vec.extend(#input);
                     }
-                };
-            }
+
+                    let max_queue_len: usize = #max_queue_len;
+
+                    let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
+                    let mut dummy = Vec::new();
+                    let #ident = match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
+                        ::std::task::Poll::Ready(_) => {
+                            vec.drain(..)
+                        },
+                        ::std::task::Poll::Pending => {
+                            if vec.len() > max_queue_len {
+                                vec.drain(max_queue_len..)
+                            } else {
+                                dummy.drain(..)
+                            }
+                        }
+                    };
+                },
+                quote_spanned! {op_span=>},
+            )
         } else {
             let output = &outputs[0];
 
-            quote_spanned! {op_span=>
+            (
+                quote_spanned! {op_span=>
 
-                let #ident = #root::pusherator::for_each::ForEach::new(|x| {
-                    let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
-
-                    vec.push(x);
-                });
-
-                {
                     let mut out = #output;
-                    match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
-                        ::std::task::Poll::Ready(_) => {
-                            let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
-                            for x in vec.drain(..) {
-                                #root::pusherator::Pusherator::give(&mut out, x);
-                            }
-                        },
-                        ::std::task::Poll::Pending => {},
+
+                    let max_queue_len: usize = #max_queue_len;
+
+                    let #ident = #root::pusherator::for_each::ForEach::new(|x| {
+                        let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
+
+                        vec.push(x);
+                    });
+                },
+                quote_spanned! {op_span=>
+                    {
+                        let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
+
+                        match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
+                            ::std::task::Poll::Ready(_) => {
+                                for x in vec.drain(..) {
+                                    #root::pusherator::Pusherator::give(&mut out, x);
+                                }
+                            },
+                            ::std::task::Poll::Pending => {
+                                if vec.len() > max_queue_len {
+                                    for x in vec.drain(max_queue_len..) {
+                                        #root::pusherator::Pusherator::give(&mut out, x);
+                                    }
+                                }
+                            },
+                        }
                     }
-                }
-            }
+                },
+            )
         };
 
         Ok(OperatorWriteOutput {
             write_prologue,
             write_iterator,
+            write_iterator_after,
             ..Default::default()
         })
     },

@@ -156,7 +156,7 @@ pub fn run_server(
 
             let mut df = hydroflow_syntax! {
 
-                simulated_put_requests = repeat_fn(std::cmp::max(2000 - gossip_queue_ref.load(Ordering::SeqCst), 0), move || {
+                simulated_put_requests = repeat_fn(std::cmp::max(if gossip_queue_ref.load(Ordering::SeqCst) > 100 { 0 } else { 100 }, 0), move || {
                     let buff = BufferPool::get_from_buffer_pool(&buffer_pool);
 
                     // Did the original C++ benchmark do anything with the data..?
@@ -214,7 +214,7 @@ pub fn run_server(
 
                 // broadcast out locally generated changes to other nodes.
                 client_input[broadcast]
-                    -> batch(batch_interval_ticker)
+                    -> batch(100, batch_interval_ticker)
                     -> map(|(key, reg)| (key, Some(reg)))
                     -> group_by::<'tick>(<BottomRepr<MyLastWriteWins> as LatticeRepr>::Repr::default, <BottomRepr<MyLastWriteWins> as Merge<BottomRepr<MyLastWriteWins>>>::merge)
                     -> filter_map(|(key, opt_reg)| opt_reg.map(|reg| (key, reg))) // to filter out bottom types since they carry no useful info.

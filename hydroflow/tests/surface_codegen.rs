@@ -417,12 +417,12 @@ pub fn test_batch() {
         my_tee = tee();
 
         source_iter([()])
-            -> batch(batch1_rx) // pull
+            -> batch(1, batch1_rx) // pull
             -> my_tee;
 
         my_tee -> for_each(|x| tx.send(x).unwrap());
         my_tee
-            -> batch(batch2_rx) // push
+            -> batch(1, batch2_rx) // push
             -> for_each(|x| tx.send(x).unwrap());
     };
 
@@ -439,6 +439,56 @@ pub fn test_batch() {
     df.run_available();
     let out: Vec<_> = collect_ready(&mut rx);
     assert_eq!(out, vec![()]);
+}
+
+#[multiplatform_test]
+pub fn test_batch_exceed_limit() {
+    let (batch1_tx, batch1_rx) = hydroflow::util::unbounded_channel::<()>();
+    let (batch2_tx, batch2_rx) = hydroflow::util::unbounded_channel::<()>();
+    let (tx_in, rx_in) = hydroflow::util::unbounded_channel::<usize>();
+    let (tx_out, mut rx_out) = hydroflow::util::unbounded_channel::<usize>();
+    let mut df = hydroflow_syntax! {
+        my_tee = tee();
+
+        source_stream(rx_in)
+            -> batch(1, batch1_rx) // pull
+            -> my_tee;
+
+        my_tee -> for_each(|x| tx_out.send(x).unwrap());
+        my_tee
+            -> batch(1, batch2_rx) // push
+            -> for_each(|x| tx_out.send(x).unwrap());
+    };
+
+    tx_in.send(0).unwrap();
+    df.run_available();
+    let out: Vec<_> = collect_ready(&mut rx_out);
+    assert_eq!(out, Vec::<usize>::new());
+
+    tx_in.send(1).unwrap();
+    df.run_available();
+    let out: Vec<_> = collect_ready(&mut rx_out);
+    assert_eq!(out, vec![1]);
+
+    tx_in.send(2).unwrap();
+    df.run_available();
+    let out: Vec<_> = collect_ready(&mut rx_out);
+    assert_eq!(out, vec![2, 2]);
+
+    tx_in.send(3).unwrap();
+    df.run_available();
+    let out: Vec<_> = collect_ready(&mut rx_out);
+    assert_eq!(out, vec![3, 3]);
+
+    batch1_tx.send(()).unwrap();
+    df.run_available();
+    let out: Vec<_> = collect_ready(&mut rx_out);
+    assert_eq!(out, vec![0, 0]);
+
+    batch2_tx.send(()).unwrap();
+    df.run_available();
+    let out: Vec<_> = collect_ready(&mut rx_out);
+    assert_eq!(out, vec![1]);
 }
 
 #[multiplatform_test]
