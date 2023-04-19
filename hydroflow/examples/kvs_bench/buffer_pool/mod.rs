@@ -7,7 +7,7 @@ use std::{
     rc::{Rc, Weak},
 };
 
-pub type BufferType = [u8; 1024];
+pub type BufferType = [u8; 1 * 1024];
 
 /// It is slow to allocate and, in particular, free blocks of memory.
 /// If we know ahead of time what size buffers we will need then we can pre-allocate a bunch of them and
@@ -57,7 +57,7 @@ impl BufferPool {
             AutoReturnBuffer {
                 inner: Some(AutoReturnBufferInner {
                     collector: Rc::downgrade(pool),
-                    inner: Rc::new(RefCell::new([0; 1024])),
+                    inner: Rc::new(RefCell::new([0; 1 * 1024])),
                 }),
             }
         }

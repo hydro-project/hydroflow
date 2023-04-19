@@ -44,10 +44,13 @@ pub fn run_server(
 
         rt.block_on(async {
 
+            let gossip_increment_per_send = (topology.len() - 1) as i64;
+            let gossip_queue_ref = &*Box::leak(Box::new(std::sync::atomic::AtomicI64::new(0))); // Doesn't need to be atomic just something with interior mutability.
+
             let buffer_pool = BufferPool::create_buffer_pool();
 
             let (transducer_to_peers_tx, _) =
-                bounded_broadcast_channel::<(u64, MyLastWriteWinsRepr)>(500000);
+                bounded_broadcast_channel::<(u64, MyLastWriteWinsRepr)>(20000);
 
             let (client_to_transducer_tx, client_to_transducer_rx) =
                 hydroflow::util::unbounded_channel::<(KvsRequest, Vec<u8>)>();
@@ -116,6 +119,8 @@ pub fn run_server(
                                                 .send(vec![serialized])
                                                 .await
                                                 .unwrap();
+
+                                            gossip_queue_ref.fetch_sub(1, Ordering::SeqCst);
                                         }
                                     }
                                 });
@@ -151,19 +156,23 @@ pub fn run_server(
 
             let mut df = hydroflow_syntax! {
 
-                simulated_put_requests = repeat_fn(2000, move || {
+                simulated_put_requests = repeat_fn(std::cmp::max(2000 - gossip_queue_ref.load(Ordering::SeqCst), 0), move || {
                     let buff = BufferPool::get_from_buffer_pool(&buffer_pool);
 
                     // Did the original C++ benchmark do anything with the data..?
                     // Can uncomment this to modify the buffers then.
                     //
-                    // let mut borrow = buff.borrow_mut().unwrap();
+                    {
+                        let mut borrow = buff._borrow_mut().unwrap();
 
-                    // let mut r = rng.sample(dist_uniform) as u64;
-                    // for i in 0..8 {
-                    //     borrow[i] = (r % 256) as u8;
-                    //     r /= 256;
-                    // }
+                        let mut r = pre_gen_random_numbers[pre_gen_index % pre_gen_random_numbers.len()];
+                        pre_gen_index += 1;
+
+                        for i in 0..8 {
+                            borrow[i] = (r % 256) as u8;
+                            r /= 256;
+                        }
+                    }
 
                     let key = pre_gen_random_numbers[pre_gen_index % pre_gen_random_numbers.len()];
                     pre_gen_index += 1;
@@ -197,7 +206,6 @@ pub fn run_server(
                                 )));
                             },
                             KvsRequest::Gossip {key, reg} => {
-                                broadcast.give((key, reg.clone()));
                                 store.give((key, reg));
                             },
                             KvsRequest::_Get {key} => gets.give((key, addr)),
@@ -211,7 +219,10 @@ pub fn run_server(
                     -> group_by::<'tick>(<BottomRepr<MyLastWriteWins> as LatticeRepr>::Repr::default, <BottomRepr<MyLastWriteWins> as Merge<BottomRepr<MyLastWriteWins>>>::merge)
                     -> filter_map(|(key, opt_reg)| opt_reg.map(|reg| (key, reg))) // to filter out bottom types since they carry no useful info.
                     // -> inspect(|x| println!("{gossip_addr}:{:5}: sending to peers: {x:?}", context.current_tick()))
-                    -> for_each(|x| { transducer_to_peers_tx.send(x).unwrap(); });
+                    -> for_each(|x| {
+                        gossip_queue_ref.fetch_add(gossip_increment_per_send, Ordering::SeqCst);
+                        transducer_to_peers_tx.send(x).unwrap();
+                    });
 
                 // join for lookups
                 lookup = lattice_join::<'static, 'tick, MyLastWriteWins, SetUnion>();

@@ -79,15 +79,16 @@ pub const BATCH: OperatorConstraints = OperatorConstraints {
                     vec.extend(#input);
                 }
 
+                let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
+                let mut dummy = Vec::new();
                 let #ident = match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
                     ::std::task::Poll::Ready(_) => {
-                        let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
-                        ::std::mem::take(&mut *vec)
+                        vec.drain(..)
                     },
                     ::std::task::Poll::Pending => {
-                        ::std::vec::Vec::new()
-                    },
-                }.into_iter();
+                        dummy.drain(..)
+                    }
+                };
             }
         } else {
             let output = &outputs[0];
@@ -102,16 +103,14 @@ pub const BATCH: OperatorConstraints = OperatorConstraints {
 
                 {
                     let mut out = #output;
-                    for x in match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
+                    match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
                         ::std::task::Poll::Ready(_) => {
                             let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
-                            ::std::mem::take(&mut *vec)
+                            for x in vec.drain(..) {
+                                #root::pusherator::Pusherator::give(&mut out, x);
+                            }
                         },
-                        ::std::task::Poll::Pending => {
-                            ::std::vec::Vec::new()
-                        },
-                    }.into_iter() {
-                        #root::pusherator::Pusherator::give(&mut out, x);
+                        ::std::task::Poll::Pending => {},
                     }
                 }
             }

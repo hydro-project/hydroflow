@@ -75,7 +75,7 @@ pub const REPEAT_FN: OperatorConstraints = OperatorConstraints {
 
         let write_iterator = quote_spanned! {op_span=>
             let #ident = {
-                (0..#batch_size).map(|_| #gen_ident())
+                (0..(#batch_size)).map(|_| #gen_ident())
             };
         };
 
