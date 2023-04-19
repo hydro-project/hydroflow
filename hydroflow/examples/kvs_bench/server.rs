@@ -168,7 +168,7 @@ pub fn run_server(
 
             let mut df = hydroflow_syntax! {
 
-                simulated_put_requests = repeat_fn(if gossip_queue_ref.load(Ordering::SeqCst) > 200 { 0 } else { 10 }, move || {
+                simulated_put_requests = repeat_fn(if gossip_queue_ref.load(Ordering::SeqCst) > 200 { 0 } else { 1000 }, move || {
                     let buff = BufferPool::get_from_buffer_pool(&buffer_pool);
 
                     // Did the original C++ benchmark do anything with the data..?
