@@ -10,6 +10,7 @@ use serde_json::json;
 use tokio::{net::TcpStream, sync::RwLock};
 
 use super::{
+    deployment::ProgressTracker,
     ssh::LaunchedSSHHost,
     terraform::{TerraformOutput, TerraformProvider, TERRAFORM_ALPHABET},
     util::async_retry,
@@ -87,29 +88,35 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
             22,
         );
 
-        let res = async_retry(
-            &|| async {
-                let mut config = SessionConfiguration::new();
-                config.set_compress(true);
+        let res = ProgressTracker::leaf(
+            format!(
+                "connecting to host @ {}",
+                self.external_ip.as_ref().unwrap()
+            ),
+            async_retry(
+                &|| async {
+                    let mut config = SessionConfiguration::new();
+                    config.set_compress(true);
 
-                let mut session =
-                    AsyncSession::<TcpStream>::connect(target_addr, Some(config)).await?;
+                    let mut session =
+                        AsyncSession::<TcpStream>::connect(target_addr, Some(config)).await?;
 
-                session.handshake().await?;
+                    session.handshake().await?;
 
-                session
-                    .userauth_pubkey_file(
-                        self.user.as_str(),
-                        None,
-                        self.ssh_key_path().as_path(),
-                        None,
-                    )
-                    .await?;
+                    session
+                        .userauth_pubkey_file(
+                            self.user.as_str(),
+                            None,
+                            self.ssh_key_path().as_path(),
+                            None,
+                        )
+                        .await?;
 
-                Ok(session)
-            },
-            10,
-            Duration::from_secs(1),
+                    Ok(session)
+                },
+                10,
+                Duration::from_secs(1),
+            ),
         )
         .await?;
 

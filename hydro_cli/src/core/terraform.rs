@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     io::{BufRead, BufReader},
-    process::{Child, Command},
+    process::{Child, ChildStdout, Command},
     sync::{Arc, RwLock},
 };
 
@@ -12,6 +12,8 @@ use anyhow::{bail, Context, Result};
 use async_process::Stdio;
 use serde::{Deserialize, Serialize};
 use tempfile::TempDir;
+
+use super::deployment::ProgressTracker;
 
 pub static TERRAFORM_ALPHABET: [char; 16] = [
     '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd', 'e', 'f',
@@ -110,40 +112,89 @@ impl TerraformBatch {
             });
         }
 
-        let dothydro_folder = std::env::current_dir().unwrap().join(".hydro");
-        std::fs::create_dir_all(&dothydro_folder).unwrap();
-        let deployment_folder = tempfile::tempdir_in(dothydro_folder).unwrap();
+        ProgressTracker::with_group("terraform", async {
+            let dothydro_folder = std::env::current_dir().unwrap().join(".hydro");
+            std::fs::create_dir_all(&dothydro_folder).unwrap();
+            let deployment_folder = tempfile::tempdir_in(dothydro_folder).unwrap();
 
-        std::fs::write(
-            deployment_folder.path().join("main.tf.json"),
-            serde_json::to_string(&self).unwrap(),
-        )
-        .unwrap();
+            std::fs::write(
+                deployment_folder.path().join("main.tf.json"),
+                serde_json::to_string(&self).unwrap(),
+            )
+            .unwrap();
 
-        if !Command::new("terraform")
-            .current_dir(deployment_folder.path())
-            .arg("init")
-            .stdout(Stdio::null())
-            .spawn()
-            .context("Failed to spawn `terraform`. Is it installed?")?
-            .wait()
-            .context("Failed to launch terraform init command")?
-            .success()
-        {
-            bail!("Failed to initialize terraform");
-        }
+            if !Command::new("terraform")
+                .current_dir(deployment_folder.path())
+                .arg("init")
+                .stdout(Stdio::null())
+                .spawn()
+                .context("Failed to spawn `terraform`. Is it installed?")?
+                .wait()
+                .context("Failed to launch terraform init command")?
+                .success()
+            {
+                bail!("Failed to initialize terraform");
+            }
 
-        let (apply_id, apply) = pool.create_apply(deployment_folder)?;
+            let (apply_id, apply) = pool.create_apply(deployment_folder)?;
 
-        let output = apply.write().await.output().await;
-        pool.drop_apply(apply_id);
-        output
+            let output =
+                ProgressTracker::with_group("apply", async { apply.write().await.output().await })
+                    .await;
+            pool.drop_apply(apply_id);
+            output
+        })
+        .await
     }
 }
 
 struct TerraformApply {
     child: Option<(u32, Arc<RwLock<Child>>)>,
     deployment_folder: Option<tempfile::TempDir>,
+}
+
+async fn display_apply_outputs(stdout: &mut ChildStdout) {
+    let lines = BufReader::new(stdout).lines();
+    let mut waiting_for_result = HashMap::new();
+
+    for line in lines {
+        if let Ok(line) = line {
+            let mut split = line.split(':');
+            if let Some(first) = split.next() {
+                if first.chars().all(|c| c != ' ')
+                    && split.next().is_some()
+                    && split.next().is_none()
+                {
+                    if line.starts_with("Plan:")
+                        || line.starts_with("Outputs:")
+                        || line.contains(": Still creating...")
+                    {
+                    } else if line.ends_with(": Creating...") {
+                        let id = line.split(':').next().unwrap().trim().to_string();
+                        let (channel_send, channel_recv) = tokio::sync::oneshot::channel();
+                        waiting_for_result.insert(
+                            id.to_string(),
+                            (
+                                channel_send,
+                                tokio::task::spawn(ProgressTracker::leaf(id, async move {
+                                    channel_recv.await.unwrap();
+                                })),
+                            ),
+                        );
+                    } else if line.contains(": Creation complete after") {
+                        let id = line.split(':').next().unwrap().trim();
+                        let (sender, to_await) = waiting_for_result.remove(id).unwrap();
+                        let _ = sender.send(());
+                        to_await.await.unwrap();
+                    } else {
+                        panic!("Unexpected from Terraform: {}", line);
+                    }
+                }
+            }
+        } else {
+            break;
+        }
+    }
 }
 
 fn filter_terraform_logs(child: &mut Child) {
@@ -168,14 +219,17 @@ fn filter_terraform_logs(child: &mut Child) {
 impl TerraformApply {
     async fn output(&mut self) -> Result<TerraformResult> {
         let (_, child) = self.child.as_ref().unwrap().clone();
+        let mut stdout = child.write().unwrap().stdout.take().unwrap();
 
         let status = tokio::task::spawn_blocking(move || {
-            filter_terraform_logs(&mut child.write().unwrap());
-
             // it is okay for this thread to keep running even if the future is cancelled
             child.write().unwrap().wait().unwrap()
-        })
-        .await;
+        });
+
+        display_apply_outputs(&mut stdout).await;
+
+        let status = status.await;
+
         self.child = None;
 
         if !status.unwrap().success() {
