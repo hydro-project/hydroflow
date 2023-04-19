@@ -68,9 +68,12 @@ pub fn run_server(
 
                         async move {
                             let mut router_socket = tmq::router(&ctx).bind(&format!("inproc://S{gossip_addr}")).unwrap();
+                            let recvs = &mut 0;
 
                             loop {
                                 if let Some(x) = router_socket.next().await {
+                                    *recvs += 1;
+
                                     let multipart_buffer = x.unwrap();
                                     assert_eq!(multipart_buffer.0.len(), 2);
 
@@ -79,8 +82,12 @@ pub fn run_server(
                                     let reader = std::io::Cursor::new(&multipart_buffer.0[1][..]);
                                     let mut deserializer = bincode::Deserializer::with_reader(reader, options());
                                     let req = KvsRequestDeserializer {
-                                        collector: Rc::downgrade(&buffer_pool),
+                                        collector: Rc::clone(&buffer_pool),
                                     }.deserialize(&mut deserializer).unwrap();
+
+                                    // if std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() % 10000 == 0 {
+                                    //     println!("recvs: {recvs}");
+                                    // }
 
                                     client_to_transducer_tx.send((req, routing_id)).unwrap();
                                 }
@@ -101,12 +108,13 @@ pub fn run_server(
                     if topology.len() > 1 {
                         for addr in &topology {
                             if *addr != gossip_addr {
-                                let mut socket = tmq::dealer(&ctx).connect(&format!("inproc://S{addr}")).unwrap();
+                                let mut socket = tmq::dealer(&ctx).set_sndhwm(1).connect(&format!("inproc://S{addr}")).unwrap();
 
                                 task::spawn_local({
                                     let mut transducer_to_peers_rx = transducer_to_peers_tx.subscribe();
 
                                     async move {
+                                        let sends = &mut 0;
                                         while let Ok((key, reg)) = transducer_to_peers_rx.recv().await {
 
                                             let req = KvsRequest::Gossip { key, reg };
@@ -119,6 +127,10 @@ pub fn run_server(
                                                 .send(vec![serialized])
                                                 .await
                                                 .unwrap();
+                                            *sends += 1;
+                                            // if std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() % 10000 == 0 {
+                                            //     println!("sends: {sends}");
+                                            // }
 
                                             gossip_queue_ref.fetch_sub(1, Ordering::SeqCst);
                                         }
@@ -156,14 +168,14 @@ pub fn run_server(
 
             let mut df = hydroflow_syntax! {
 
-                simulated_put_requests = repeat_fn(std::cmp::max(if gossip_queue_ref.load(Ordering::SeqCst) > 100 { 0 } else { 100 }, 0), move || {
+                simulated_put_requests = repeat_fn(if gossip_queue_ref.load(Ordering::SeqCst) > 200 { 0 } else { 10 }, move || {
                     let buff = BufferPool::get_from_buffer_pool(&buffer_pool);
 
                     // Did the original C++ benchmark do anything with the data..?
                     // Can uncomment this to modify the buffers then.
                     //
                     {
-                        let mut borrow = buff._borrow_mut().unwrap();
+                        let mut borrow = buff.borrow_mut().unwrap();
 
                         let mut r = pre_gen_random_numbers[pre_gen_index % pre_gen_random_numbers.len()];
                         pre_gen_index += 1;
@@ -185,8 +197,10 @@ pub fn run_server(
 
                 merge_puts_and_gossip_requests = merge();
 
+                source_stream(client_to_transducer_rx)
+                    // -> inspect(|_| println!("recv_in_df"))
+                    -> merge_puts_and_gossip_requests;
                 simulated_put_requests -> merge_puts_and_gossip_requests;
-                source_stream(client_to_transducer_rx) -> merge_puts_and_gossip_requests;
 
                 client_input = merge_puts_and_gossip_requests
                     -> demux(|(req, addr): (KvsRequest, Vec<u8>), var_args!(gets, store, broadcast)| {
@@ -237,7 +251,7 @@ pub fn run_server(
                         let mut gset = HashSet::new();
 
                         let seq_num = {
-                            let mut seq_borrow = get_seq_num.borrow_mut();
+                            let mut seq_borrow = get_seq_num.borrow_mut(); // TODO: replace with enumerate() op
                             *seq_borrow += 1;
                             *seq_borrow
                         };
@@ -261,11 +275,11 @@ pub fn run_server(
 
             };
 
-            let serde_graph = df
-                .meta_graph()
-                .expect("No graph found, maybe failed to parse.");
+            // let serde_graph = df
+            //     .meta_graph()
+            //     .expect("No graph found, maybe failed to parse.");
 
-            println!("{}", serde_graph.to_mermaid());
+            // println!("{}", serde_graph.to_mermaid());
 
             let hydroflow_task = df.run_async();
 

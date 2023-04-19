@@ -8,7 +8,7 @@ use quote::quote_spanned;
 
 /// > 1 input stream, 1 output stream
 ///
-/// > Arguments: First argument is the maximum batch size that batch() will buffer up before releasing the excess.
+/// > Arguments: First argument is the maximum batch size that batch() will buffer up before completely releasing the batch.
 ///  The second argument is the receive end of a tokio channel that signals when to release the batch downstream.
 ///
 /// Given a [`Stream`](https://docs.rs/futures/latest/futures/stream/trait.Stream.html)
@@ -87,12 +87,12 @@ pub const BATCH: OperatorConstraints = OperatorConstraints {
                     let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
                     let mut dummy = Vec::new();
                     let #ident = match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
-                        ::std::task::Poll::Ready(_) => {
+                        ::std::task::Poll::Ready(Some(_)) => {
                             vec.drain(..)
-                        },
-                        ::std::task::Poll::Pending => {
+                        }
+                        ::std::task::Poll::Ready(None) | ::std::task::Poll::Pending => {
                             if vec.len() > max_queue_len {
-                                vec.drain(max_queue_len..)
+                                vec.drain(..)
                             } else {
                                 dummy.drain(..)
                             }
@@ -122,14 +122,14 @@ pub const BATCH: OperatorConstraints = OperatorConstraints {
                         let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
 
                         match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
-                            ::std::task::Poll::Ready(_) => {
+                            ::std::task::Poll::Ready(Some(_)) => {
                                 for x in vec.drain(..) {
                                     #root::pusherator::Pusherator::give(&mut out, x);
                                 }
                             },
-                            ::std::task::Poll::Pending => {
+                            ::std::task::Poll::Ready(None) | ::std::task::Poll::Pending => {
                                 if vec.len() > max_queue_len {
-                                    for x in vec.drain(max_queue_len..) {
+                                    for x in vec.drain(..) {
                                         #root::pusherator::Pusherator::give(&mut out, x);
                                     }
                                 }
