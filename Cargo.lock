@@ -1774,7 +1774,6 @@ version = "0.1.0"
 dependencies = [
  "auto_impl",
  "hydroflow_internalmacro",
- "once_cell",
  "prettyplease",
  "proc-macro2",
  "quote",
