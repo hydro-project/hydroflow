@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::ops::{Bound, RangeBounds};
+use std::sync::OnceLock;
 
-use once_cell::sync::OnceCell;
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::quote_spanned;
 use slotmap::Key;
@@ -275,8 +275,8 @@ declare_ops![
 ];
 
 pub fn operator_lookup() -> &'static HashMap<&'static str, &'static OperatorConstraints> {
-    pub static OPERATOR_LOOKUP: OnceCell<HashMap<&'static str, &'static OperatorConstraints>> =
-        OnceCell::new();
+    pub static OPERATOR_LOOKUP: OnceLock<HashMap<&'static str, &'static OperatorConstraints>> =
+        OnceLock::new();
     OPERATOR_LOOKUP.get_or_init(|| OPERATORS.iter().map(|op| (op.name, op)).collect())
 }
 pub fn find_node_op_constraints(node: &Node) -> Option<&'static OperatorConstraints> {
