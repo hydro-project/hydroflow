@@ -17,7 +17,7 @@ pub struct HfCode {
 }
 impl Parse for HfCode {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let statements = input.parse_terminated(HfStatement::parse)?;
+        let statements = Punctuated::parse_terminated(input)?;
         if !statements.empty_or_trailing() {
             return Err(input.parse::<Token![;]>().unwrap_err());
         }
