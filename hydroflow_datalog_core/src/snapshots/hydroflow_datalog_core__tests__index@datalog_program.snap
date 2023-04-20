@@ -589,6 +589,12 @@ fn main() {
                 check_pivot_run(op_25v1, hoff_9v3_send);
             },
         );
+        let sg_4v1_node_37v1_groupbydata = df
+            .add_state(
+                ::std::cell::RefCell::new(
+                    hydroflow::rustc_hash::FxHashMap::<(_,), (Option<_>,)>::default(),
+                ),
+            );
         let sg_4v1_node_38v1_counterdata = df
             .add_state(
                 ::std::cell::RefCell::new(
@@ -612,49 +618,48 @@ fn main() {
             move |context, var_args!(hoff_21v3_recv), var_args!()| {
                 let mut hoff_21v3_recv = hoff_21v3_recv.borrow_mut_swap();
                 let hoff_21v3_recv = hoff_21v3_recv.drain(..);
-                let op_37v1 = {
+                let mut sg_4v1_node_37v1_hashtable = context
+                    .state_ref(sg_4v1_node_37v1_groupbydata)
+                    .borrow_mut();
+                {
                     #[inline(always)]
-                    fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A, B>(
-                        iter: Iter,
-                    ) -> impl ::std::iter::Iterator<Item = (A, B)> {
+                    fn check_input<
+                        Iter: ::std::iter::Iterator<Item = (A, B)>,
+                        A: ::std::clone::Clone,
+                        B: ::std::clone::Clone,
+                    >(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> {
                         iter
                     }
-                    check_input(hoff_21v3_recv)
-                        .fold(
-                            hydroflow::rustc_hash::FxHashMap::<
-                                (_,),
-                                (Option<_>,),
-                            >::default(),
-                            |mut ht, kv| {
-                                let entry = ht.entry(kv.0).or_insert_with(|| (None,));
-                                #[allow(clippy::redundant_closure_call)]
-                                (|old: &mut (Option<_>,), val: (_,)| {
-                                    old
-                                        .0 = if let Some(prev) = old.0.take() {
-                                        Some({
-                                            let prev: (hydroflow::rustc_hash::FxHashSet<_>, _) = prev;
-                                            let mut set: hydroflow::rustc_hash::FxHashSet::<_> = prev.0;
-                                            if set.insert(val.0) {
-                                                (set, prev.1 + 1)
-                                            } else {
-                                                (set, prev.1)
-                                            }
-                                        })
+                    for kv in check_input(hoff_21v3_recv) {
+                        let entry = sg_4v1_node_37v1_hashtable
+                            .entry(kv.0)
+                            .or_insert_with(|| (None,));
+                        #[allow(clippy::redundant_closure_call)]
+                        (|old: &mut (Option<_>,), val: (_,)| {
+                            old
+                                .0 = if let Some(prev) = old.0.take() {
+                                Some({
+                                    let prev: (hydroflow::rustc_hash::FxHashSet<_>, _) = prev;
+                                    let mut set: hydroflow::rustc_hash::FxHashSet::<_> = prev.0;
+                                    if set.insert(val.0) {
+                                        (set, prev.1 + 1)
                                     } else {
-                                        Some({
-                                            let mut set = hydroflow::rustc_hash::FxHashSet::<
-                                                _,
-                                            >::default();
-                                            set.insert(val.0);
-                                            (set, 1)
-                                        })
-                                    };
-                                })(entry, kv.1);
-                                ht
-                            },
-                        )
-                        .into_iter()
-                };
+                                        (set, prev.1)
+                                    }
+                                })
+                            } else {
+                                Some({
+                                    let mut set = hydroflow::rustc_hash::FxHashSet::<
+                                        _,
+                                    >::default();
+                                    set.insert(val.0);
+                                    (set, 1)
+                                })
+                            };
+                        })(entry, kv.1);
+                    }
+                }
+                let op_37v1 = sg_4v1_node_37v1_hashtable.drain();
                 let op_37v1 = {
                     #[allow(non_snake_case)]
                     #[inline(always)]
@@ -1372,41 +1377,43 @@ fn main() {
                 let mut sg_6v1_node_47v1_hashtable = context
                     .state_ref(sg_6v1_node_47v1_groupbydata)
                     .borrow_mut();
-                #[inline(always)]
-                fn check_input<
-                    Iter: ::std::iter::Iterator<Item = (A, B)>,
-                    A: ::std::clone::Clone,
-                    B: ::std::clone::Clone,
-                >(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> {
-                    iter
-                }
-                for kv in check_input(hoff_13v3_recv) {
-                    let entry = sg_6v1_node_47v1_hashtable
-                        .entry(kv.0)
-                        .or_insert_with(|| (None,));
-                    #[allow(clippy::redundant_closure_call)]
-                    (|old: &mut (Option<_>,), val: (_,)| {
-                        old
-                            .0 = if let Some(prev) = old.0.take() {
-                            Some({
-                                let prev: (hydroflow::rustc_hash::FxHashSet<_>, _) = prev;
-                                let mut set: hydroflow::rustc_hash::FxHashSet::<_> = prev.0;
-                                if set.insert(val.0) {
-                                    (set, prev.1 + 1)
-                                } else {
-                                    (set, prev.1)
-                                }
-                            })
-                        } else {
-                            Some({
-                                let mut set = hydroflow::rustc_hash::FxHashSet::<
-                                    _,
-                                >::default();
-                                set.insert(val.0);
-                                (set, 1)
-                            })
-                        };
-                    })(entry, kv.1);
+                {
+                    #[inline(always)]
+                    fn check_input<
+                        Iter: ::std::iter::Iterator<Item = (A, B)>,
+                        A: ::std::clone::Clone,
+                        B: ::std::clone::Clone,
+                    >(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> {
+                        iter
+                    }
+                    for kv in check_input(hoff_13v3_recv) {
+                        let entry = sg_6v1_node_47v1_hashtable
+                            .entry(kv.0)
+                            .or_insert_with(|| (None,));
+                        #[allow(clippy::redundant_closure_call)]
+                        (|old: &mut (Option<_>,), val: (_,)| {
+                            old
+                                .0 = if let Some(prev) = old.0.take() {
+                                Some({
+                                    let prev: (hydroflow::rustc_hash::FxHashSet<_>, _) = prev;
+                                    let mut set: hydroflow::rustc_hash::FxHashSet::<_> = prev.0;
+                                    if set.insert(val.0) {
+                                        (set, prev.1 + 1)
+                                    } else {
+                                        (set, prev.1)
+                                    }
+                                })
+                            } else {
+                                Some({
+                                    let mut set = hydroflow::rustc_hash::FxHashSet::<
+                                        _,
+                                    >::default();
+                                    set.insert(val.0);
+                                    (set, 1)
+                                })
+                            };
+                        })(entry, kv.1);
+                    }
                 }
                 let op_47v1 = sg_6v1_node_47v1_hashtable
                     .iter()
