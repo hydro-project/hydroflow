@@ -70,7 +70,7 @@ where
     RhsDelta::Repr: Eq + Clone,
 {
     state: JoinStateLatticeMut<'a, Key, Lhs, LhsDelta, Rhs, RhsDelta>,
-    updated_keys: hash_set::IntoIter<Key>,
+    updated_keys: hash_set::Drain<'a, Key>,
 }
 
 impl<'a, Key, Lhs, LhsDelta, Rhs, RhsDelta> Iterator
@@ -114,8 +114,9 @@ where
     RhsDelta::Repr: Eq + Clone,
 {
     pub fn new_from_mut<I1, I2>(
-        mut lhs: I1,
-        mut rhs: I2,
+        lhs: I1,
+        rhs: I2,
+        updated_keys: &'a mut FxHashSet<Key>,
         state_lhs: &'a mut HalfJoinStateLattice<Key, Lhs, LhsDelta>,
         state_rhs: &'a mut HalfJoinStateLattice<Key, Rhs, RhsDelta>,
     ) -> Self
@@ -123,29 +124,21 @@ where
         I1: Iterator<Item = (Key, Lhs::Repr)>,
         I2: Iterator<Item = (Key, Rhs::Repr)>,
     {
-        let mut keys = FxHashSet::default();
-
-        loop {
-            if let Some((k, v1)) = lhs.next() {
-                if state_lhs.build(k.clone(), v1) {
-                    keys.insert(k);
-                }
-                continue;
+        for (k, v1) in lhs {
+            if state_lhs.build(k.clone(), v1) {
+                updated_keys.insert(k);
             }
+        }
 
-            if let Some((k, v2)) = rhs.next() {
-                if state_rhs.build(k.clone(), v2) {
-                    keys.insert(k);
-                }
-                continue;
+        for (k, v2) in rhs {
+            if state_rhs.build(k.clone(), v2) {
+                updated_keys.insert(k);
             }
-
-            break;
         }
 
         Self {
             state: (state_lhs, state_rhs),
-            updated_keys: keys.into_iter(),
+            updated_keys: updated_keys.drain(),
         }
     }
 }
@@ -159,6 +152,7 @@ mod tests {
 
     use super::{HalfJoinStateLattice, SymmetricHashJoinLattice};
     use crate::lang::lattice::{ord::MaxRepr, LatticeRepr};
+    use rustc_hash::FxHashSet;
 
     type JoinStateMaxLattice =
         JoinStateLattice<usize, MaxRepr<usize>, MaxRepr<usize>, MaxRepr<usize>, MaxRepr<usize>>;
@@ -168,9 +162,11 @@ mod tests {
         lhs: Lhs,
         rhs: Rhs,
     ) -> Vec<(usize, (usize, usize))> {
+        let mut updated_keys = FxHashSet::default();
         SymmetricHashJoinLattice::new_from_mut(
             lhs.into_iter(),
             rhs.into_iter(),
+            &mut updated_keys,
             &mut state.0,
             &mut state.1,
         )
