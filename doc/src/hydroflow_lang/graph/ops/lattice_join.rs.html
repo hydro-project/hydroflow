@@ -200,6 +200,13 @@
 <a href="#200" id="200">200</a>
 <a href="#201" id="201">201</a>
 <a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
 </pre></div><pre class="rust"><code><span class="kw">use super</span>::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, Persistence,
     WriteContextArgs, RANGE_1,
@@ -323,42 +330,46 @@
             .unwrap_or(<span class="macro">quote_spanned!</span>(op_span=&gt; <span class="kw">_</span>));
 
         <span class="comment">// TODO(mingwei): This is messy
-        </span><span class="kw">let </span>items = persistences
-            .zip([<span class="string">&quot;lhs&quot;</span>, <span class="string">&quot;rhs&quot;</span>])
-            .map(|(persistence, side)| {
-                <span class="kw">let </span>joindata_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">&quot;joindata_{}&quot;</span>, side));
-                <span class="kw">let </span>borrow_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">&quot;joindata_{}_borrow&quot;</span>, side));
-                <span class="kw">let </span>(init, borrow) = <span class="kw">match </span>persistence {
-                    Persistence::Tick =&gt; (
-                        <span class="macro">quote_spanned! </span>{op_span=&gt;
-                            #root::lang::monotonic_map::MonotonicMap::new_init(
-                                #root::compiled::pull::HalfJoinStateLattice::default()
-                            )
-                        },
-                        <span class="macro">quote_spanned! </span>{op_span=&gt;
-                            <span class="kw-2">&amp;mut *</span>#borrow_ident.get_mut_clear(#context.current_tick())
-                        },
-                    ),
-                    Persistence::Static =&gt; (
-                        <span class="macro">quote_spanned! </span>{op_span=&gt;
+        </span><span class="kw">let </span>items = persistences.zip([<span class="string">&quot;lhs&quot;</span>, <span class="string">&quot;rhs&quot;</span>]).map(|(persistence, side)| {
+            <span class="kw">let </span>joindata_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">&quot;joindata_{}&quot;</span>, side));
+            <span class="kw">let </span>borrow_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">&quot;joindata_{}_borrow&quot;</span>, side));
+            <span class="kw">let </span>(init, borrow) = <span class="kw">match </span>persistence {
+                Persistence::Tick =&gt; (
+                    <span class="macro">quote_spanned! </span>{op_span=&gt;
+                        #root::lang::monotonic_map::MonotonicMap::new_init(
                             #root::compiled::pull::HalfJoinStateLattice::default()
-                        },
-                        <span class="macro">quote_spanned! </span>{op_span=&gt;
-                            <span class="kw-2">&amp;mut </span>#borrow_ident
-                        },
-                    ),
-                };
-                (joindata_ident, borrow_ident, init, borrow)
-            });
+                        )
+                    },
+                    <span class="macro">quote_spanned! </span>{op_span=&gt;
+                        <span class="kw-2">&amp;mut *</span>#borrow_ident.get_mut_clear(#context.current_tick())
+                    },
+                ),
+                Persistence::Static =&gt; (
+                    <span class="macro">quote_spanned! </span>{op_span=&gt;
+                        #root::compiled::pull::HalfJoinStateLattice::default()
+                    },
+                    <span class="macro">quote_spanned! </span>{op_span=&gt;
+                        <span class="kw-2">&amp;mut </span>#borrow_ident
+                    },
+                ),
+            };
+            (joindata_ident, borrow_ident, init, borrow)
+        });
         <span class="kw">let </span>[(lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow), (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow)] =
             items;
 
+        <span class="kw">let </span>join_keys_ident = wc.make_ident(<span class="string">&quot;joinkeys&quot;</span>);
+        <span class="kw">let </span>join_keys_borrow_ident = wc.make_ident(<span class="string">&quot;joinkeys_borrow&quot;</span>);
+
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
-            <span class="kw">let </span>#lhs_joindata_ident = df.add_state(std::cell::RefCell::new(
+            <span class="kw">let </span>#lhs_joindata_ident = df.add_state(::std::cell::RefCell::new(
                 #lhs_init
             ));
-            <span class="kw">let </span>#rhs_joindata_ident = df.add_state(std::cell::RefCell::new(
+            <span class="kw">let </span>#rhs_joindata_ident = df.add_state(::std::cell::RefCell::new(
                 #rhs_init
+            ));
+            <span class="kw">let </span>#join_keys_ident = df.add_state(::std::cell::RefCell::new(
+                #root::rustc_hash::FxHashSet::default()
             ));
         };
 
@@ -367,12 +378,15 @@
         <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span><span class="kw-2">mut </span>#lhs_borrow_ident = #context.state_ref(#lhs_joindata_ident).borrow_mut();
             <span class="kw">let </span><span class="kw-2">mut </span>#rhs_borrow_ident = #context.state_ref(#rhs_joindata_ident).borrow_mut();
+            <span class="kw">let </span><span class="kw-2">mut </span>#join_keys_borrow_ident = #context.state_ref(#join_keys_ident).borrow_mut();
+
             <span class="kw">let </span>#ident = {
                 <span class="doccomment">/// Limit error propagation by bounding locally, erasing output iterator type.
                 </span><span class="attr">#[inline(always)]
                 </span><span class="kw">fn </span>check_inputs&lt;<span class="lifetime">&#39;a</span>, Key, I1, Lhs, LhsDelta, I2, Rhs, RhsDelta&gt;(
                     lhs: I1,
                     rhs: I2,
+                    updated_keys: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>#root::rustc_hash::FxHashSet&lt;Key&gt;,
                     lhs_state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>#root::compiled::pull::HalfJoinStateLattice&lt;Key, Lhs, LhsDelta&gt;,
                     rhs_state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>#root::compiled::pull::HalfJoinStateLattice&lt;Key, Rhs, RhsDelta&gt;,
                 ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (Key, (Lhs::Repr, Rhs::Repr))&gt;
@@ -389,9 +403,9 @@
                     I1: Iterator&lt;Item = (Key, Lhs::Repr)&gt;,
                     I2: Iterator&lt;Item = (Key, Rhs::Repr)&gt;,
                 {
-                    #root::compiled::pull::SymmetricHashJoinLattice::new_from_mut(lhs, rhs, lhs_state, rhs_state)
+                    #root::compiled::pull::SymmetricHashJoinLattice::new_from_mut(lhs, rhs, updated_keys, lhs_state, rhs_state)
                 }
-                check_inputs::&lt;<span class="kw">_</span>, <span class="kw">_</span>, #lhs_type, #lhs_type, <span class="kw">_</span>, #rhs_type, #rhs_type&gt;(#lhs, #rhs, #lhs_borrow, #rhs_borrow)
+                check_inputs::&lt;<span class="kw">_</span>, <span class="kw">_</span>, #lhs_type, #lhs_type, <span class="kw">_</span>, #rhs_type, #rhs_type&gt;(#lhs, #rhs, <span class="kw-2">&amp;mut *</span>#join_keys_borrow_ident, #lhs_borrow, #rhs_borrow)
             };
         };
 

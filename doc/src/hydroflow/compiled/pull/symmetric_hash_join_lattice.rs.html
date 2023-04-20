@@ -232,10 +232,6 @@
 <a href="#232" id="232">232</a>
 <a href="#233" id="233">233</a>
 <a href="#234" id="234">234</a>
-<a href="#235" id="235">235</a>
-<a href="#236" id="236">236</a>
-<a href="#237" id="237">237</a>
-<a href="#238" id="238">238</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::lang::{
     clear::Clear,
     lattice::{Convert, LatticeRepr, Merge},
@@ -308,7 +304,7 @@
     RhsDelta::Repr: Eq + Clone,
 {
     state: JoinStateLatticeMut&lt;<span class="lifetime">&#39;a</span>, Key, Lhs, LhsDelta, Rhs, RhsDelta&gt;,
-    updated_keys: hash_set::IntoIter&lt;Key&gt;,
+    updated_keys: hash_set::Drain&lt;<span class="lifetime">&#39;a</span>, Key&gt;,
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, Key, Lhs, LhsDelta, Rhs, RhsDelta&gt; Iterator
@@ -352,8 +348,9 @@
     RhsDelta::Repr: Eq + Clone,
 {
     <span class="kw">pub fn </span>new_from_mut&lt;I1, I2&gt;(
-        <span class="kw-2">mut </span>lhs: I1,
-        <span class="kw-2">mut </span>rhs: I2,
+        lhs: I1,
+        rhs: I2,
+        updated_keys: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>FxHashSet&lt;Key&gt;,
         state_lhs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;Key, Lhs, LhsDelta&gt;,
         state_rhs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;Key, Rhs, RhsDelta&gt;,
     ) -&gt; <span class="self">Self
@@ -361,29 +358,21 @@
         </span>I1: Iterator&lt;Item = (Key, Lhs::Repr)&gt;,
         I2: Iterator&lt;Item = (Key, Rhs::Repr)&gt;,
     {
-        <span class="kw">let </span><span class="kw-2">mut </span>keys = FxHashSet::default();
-
-        <span class="kw">loop </span>{
-            <span class="kw">if let </span><span class="prelude-val">Some</span>((k, v1)) = lhs.next() {
-                <span class="kw">if </span>state_lhs.build(k.clone(), v1) {
-                    keys.insert(k);
-                }
-                <span class="kw">continue</span>;
+        <span class="kw">for </span>(k, v1) <span class="kw">in </span>lhs {
+            <span class="kw">if </span>state_lhs.build(k.clone(), v1) {
+                updated_keys.insert(k);
             }
+        }
 
-            <span class="kw">if let </span><span class="prelude-val">Some</span>((k, v2)) = rhs.next() {
-                <span class="kw">if </span>state_rhs.build(k.clone(), v2) {
-                    keys.insert(k);
-                }
-                <span class="kw">continue</span>;
+        <span class="kw">for </span>(k, v2) <span class="kw">in </span>rhs {
+            <span class="kw">if </span>state_rhs.build(k.clone(), v2) {
+                updated_keys.insert(k);
             }
-
-            <span class="kw">break</span>;
         }
 
         <span class="self">Self </span>{
             state: (state_lhs, state_rhs),
-            updated_keys: keys.into_iter(),
+            updated_keys: updated_keys.drain(),
         }
     }
 }
@@ -397,6 +386,7 @@
 
     <span class="kw">use super</span>::{HalfJoinStateLattice, SymmetricHashJoinLattice};
     <span class="kw">use </span><span class="kw">crate</span>::lang::lattice::{ord::MaxRepr, LatticeRepr};
+    <span class="kw">use </span>rustc_hash::FxHashSet;
 
     <span class="kw">type </span>JoinStateMaxLattice =
         JoinStateLattice&lt;usize, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;&gt;;
@@ -406,9 +396,11 @@
         lhs: Lhs,
         rhs: Rhs,
     ) -&gt; Vec&lt;(usize, (usize, usize))&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>updated_keys = FxHashSet::default();
         SymmetricHashJoinLattice::new_from_mut(
             lhs.into_iter(),
             rhs.into_iter(),
+            <span class="kw-2">&amp;mut </span>updated_keys,
             <span class="kw-2">&amp;mut </span>state.<span class="number">0</span>,
             <span class="kw-2">&amp;mut </span>state.<span class="number">1</span>,
         )
