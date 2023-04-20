@@ -81,7 +81,7 @@ impl Drop for AutoReturnBuffer {
 }
 
 impl AutoReturnBuffer {
-    pub fn _borrow_mut(&self) -> Option<RefMut<BufferType>> {
+    pub fn borrow_mut(&self) -> Option<RefMut<BufferType>> {
         self.inner.as_ref().map(|x| x.inner.borrow_mut())
     }
 

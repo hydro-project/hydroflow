@@ -1,13 +1,10 @@
 use super::{AutoReturnBuffer, BufferPool};
-use crate::buffer_pool::{AutoReturnBufferInner, BufferType};
+use crate::buffer_pool::BufferType;
 use serde::{
     de::{DeserializeSeed, Visitor},
     Serialize, Serializer,
 };
-use std::{
-    cell::RefCell,
-    rc::{Rc, Weak},
-};
+use std::{cell::RefCell, rc::Rc};
 
 impl Serialize for AutoReturnBuffer {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -19,7 +16,7 @@ impl Serialize for AutoReturnBuffer {
 }
 
 pub struct AutoReturnBufferDeserializer {
-    pub collector: Weak<RefCell<BufferPool>>,
+    pub collector: Rc<RefCell<BufferPool>>,
 }
 
 impl<'de> DeserializeSeed<'de> for AutoReturnBufferDeserializer {
@@ -58,11 +55,13 @@ impl<'de> DeserializeSeed<'de> for AutoReturnBufferDeserializer {
             }
         }
 
-        Ok(AutoReturnBuffer {
-            inner: Some(AutoReturnBufferInner {
-                collector: self.collector,
-                inner: Rc::new(RefCell::new(deserializer.deserialize_bytes(BytesVisitor)?)),
-            }),
-        })
+        let buff = BufferPool::get_from_buffer_pool(&self.collector);
+
+        {
+            let mut borrow = buff.borrow_mut().unwrap();
+            *borrow = deserializer.deserialize_bytes(BytesVisitor)?;
+        }
+
+        Ok(buff)
     }
 }
