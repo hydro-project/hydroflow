@@ -303,6 +303,12 @@ fn main() {
                 check_pivot_run(op_2v1, op_3v1);
             },
         );
+        let sg_1v1_node_14v1_groupbydata = df
+            .add_state(
+                ::std::cell::RefCell::new(
+                    hydroflow::rustc_hash::FxHashMap::<(_,), (Option<_>,)>::default(),
+                ),
+            );
         let sg_1v1_node_5v1_uniquedata = df
             .add_state(
                 ::std::cell::RefCell::new(
@@ -322,49 +328,48 @@ fn main() {
                 let hoff_9v3_recv = hoff_9v3_recv.drain(..);
                 let mut hoff_25v1_recv = hoff_25v1_recv.borrow_mut_swap();
                 let hoff_25v1_recv = hoff_25v1_recv.drain(..);
-                let op_14v1 = {
+                let mut sg_1v1_node_14v1_hashtable = context
+                    .state_ref(sg_1v1_node_14v1_groupbydata)
+                    .borrow_mut();
+                {
                     #[inline(always)]
-                    fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A, B>(
-                        iter: Iter,
-                    ) -> impl ::std::iter::Iterator<Item = (A, B)> {
+                    fn check_input<
+                        Iter: ::std::iter::Iterator<Item = (A, B)>,
+                        A: ::std::clone::Clone,
+                        B: ::std::clone::Clone,
+                    >(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> {
                         iter
                     }
-                    check_input(hoff_9v3_recv)
-                        .fold(
-                            hydroflow::rustc_hash::FxHashMap::<
-                                (_,),
-                                (Option<_>,),
-                            >::default(),
-                            |mut ht, kv| {
-                                let entry = ht.entry(kv.0).or_insert_with(|| (None,));
-                                #[allow(clippy::redundant_closure_call)]
-                                (|old: &mut (Option<_>,), val: (_,)| {
-                                    old
-                                        .0 = if let Some(prev) = old.0.take() {
-                                        Some({
-                                            let prev: (hydroflow::rustc_hash::FxHashSet<_>, _) = prev;
-                                            let mut set: hydroflow::rustc_hash::FxHashSet::<_> = prev.0;
-                                            if set.insert(val.0) {
-                                                (set, prev.1 + 1)
-                                            } else {
-                                                (set, prev.1)
-                                            }
-                                        })
+                    for kv in check_input(hoff_9v3_recv) {
+                        let entry = sg_1v1_node_14v1_hashtable
+                            .entry(kv.0)
+                            .or_insert_with(|| (None,));
+                        #[allow(clippy::redundant_closure_call)]
+                        (|old: &mut (Option<_>,), val: (_,)| {
+                            old
+                                .0 = if let Some(prev) = old.0.take() {
+                                Some({
+                                    let prev: (hydroflow::rustc_hash::FxHashSet<_>, _) = prev;
+                                    let mut set: hydroflow::rustc_hash::FxHashSet::<_> = prev.0;
+                                    if set.insert(val.0) {
+                                        (set, prev.1 + 1)
                                     } else {
-                                        Some({
-                                            let mut set = hydroflow::rustc_hash::FxHashSet::<
-                                                _,
-                                            >::default();
-                                            set.insert(val.0);
-                                            (set, 1)
-                                        })
-                                    };
-                                })(entry, kv.1);
-                                ht
-                            },
-                        )
-                        .into_iter()
-                };
+                                        (set, prev.1)
+                                    }
+                                })
+                            } else {
+                                Some({
+                                    let mut set = hydroflow::rustc_hash::FxHashSet::<
+                                        _,
+                                    >::default();
+                                    set.insert(val.0);
+                                    (set, 1)
+                                })
+                            };
+                        })(entry, kv.1);
+                    }
+                }
+                let op_14v1 = sg_1v1_node_14v1_hashtable.drain();
                 let op_14v1 = {
                     #[allow(non_snake_case)]
                     #[inline(always)]
@@ -576,6 +581,12 @@ fn main() {
                 check_pivot_run(op_5v1, op_11v1);
             },
         );
+        let sg_2v1_node_21v1_groupbydata = df
+            .add_state(
+                ::std::cell::RefCell::new(
+                    hydroflow::rustc_hash::FxHashMap::<(_,), (Option<_>,)>::default(),
+                ),
+            );
         let sg_2v1_node_8v1_uniquedata = df
             .add_state(
                 ::std::cell::RefCell::new(
@@ -593,35 +604,34 @@ fn main() {
             move |context, var_args!(hoff_23v1_recv), var_args!()| {
                 let mut hoff_23v1_recv = hoff_23v1_recv.borrow_mut_swap();
                 let hoff_23v1_recv = hoff_23v1_recv.drain(..);
-                let op_21v1 = {
+                let mut sg_2v1_node_21v1_hashtable = context
+                    .state_ref(sg_2v1_node_21v1_groupbydata)
+                    .borrow_mut();
+                {
                     #[inline(always)]
-                    fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A, B>(
-                        iter: Iter,
-                    ) -> impl ::std::iter::Iterator<Item = (A, B)> {
+                    fn check_input<
+                        Iter: ::std::iter::Iterator<Item = (A, B)>,
+                        A: ::std::clone::Clone,
+                        B: ::std::clone::Clone,
+                    >(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> {
                         iter
                     }
-                    check_input(hoff_23v1_recv)
-                        .fold(
-                            hydroflow::rustc_hash::FxHashMap::<
-                                (_,),
-                                (Option<_>,),
-                            >::default(),
-                            |mut ht, kv| {
-                                let entry = ht.entry(kv.0).or_insert_with(|| (None,));
-                                #[allow(clippy::redundant_closure_call)]
-                                (|old: &mut (Option<_>,), val: (_,)| {
-                                    old
-                                        .0 = if let Some(prev) = old.0.take() {
-                                        Some(prev)
-                                    } else {
-                                        Some(val.0)
-                                    };
-                                })(entry, kv.1);
-                                ht
-                            },
-                        )
-                        .into_iter()
-                };
+                    for kv in check_input(hoff_23v1_recv) {
+                        let entry = sg_2v1_node_21v1_hashtable
+                            .entry(kv.0)
+                            .or_insert_with(|| (None,));
+                        #[allow(clippy::redundant_closure_call)]
+                        (|old: &mut (Option<_>,), val: (_,)| {
+                            old
+                                .0 = if let Some(prev) = old.0.take() {
+                                Some(prev)
+                            } else {
+                                Some(val.0)
+                            };
+                        })(entry, kv.1);
+                    }
+                }
+                let op_21v1 = sg_2v1_node_21v1_hashtable.drain();
                 let op_21v1 = {
                     #[allow(non_snake_case)]
                     #[inline(always)]
@@ -761,6 +771,12 @@ fn main() {
                 check_pivot_run(op_8v1, op_12v1);
             },
         );
+        let sg_3v1_node_17v1_groupbydata = df
+            .add_state(
+                ::std::cell::RefCell::new(
+                    hydroflow::rustc_hash::FxHashMap::<(_,), (Option<_>,)>::default(),
+                ),
+            );
         df.add_subgraph_stratified(
             "Subgraph GraphSubgraphId(3v1)",
             1,
@@ -772,35 +788,34 @@ fn main() {
                 let hoff_7v3_send = hydroflow::pusherator::for_each::ForEach::new(|v| {
                     hoff_7v3_send.give(Some(v));
                 });
-                let op_17v1 = {
+                let mut sg_3v1_node_17v1_hashtable = context
+                    .state_ref(sg_3v1_node_17v1_groupbydata)
+                    .borrow_mut();
+                {
                     #[inline(always)]
-                    fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A, B>(
-                        iter: Iter,
-                    ) -> impl ::std::iter::Iterator<Item = (A, B)> {
+                    fn check_input<
+                        Iter: ::std::iter::Iterator<Item = (A, B)>,
+                        A: ::std::clone::Clone,
+                        B: ::std::clone::Clone,
+                    >(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> {
                         iter
                     }
-                    check_input(hoff_1v3_recv)
-                        .fold(
-                            hydroflow::rustc_hash::FxHashMap::<
-                                (_,),
-                                (Option<_>,),
-                            >::default(),
-                            |mut ht, kv| {
-                                let entry = ht.entry(kv.0).or_insert_with(|| (None,));
-                                #[allow(clippy::redundant_closure_call)]
-                                (|old: &mut (Option<_>,), val: (_,)| {
-                                    old
-                                        .0 = if let Some(prev) = old.0.take() {
-                                        Some(prev + val.0)
-                                    } else {
-                                        Some(val.0)
-                                    };
-                                })(entry, kv.1);
-                                ht
-                            },
-                        )
-                        .into_iter()
-                };
+                    for kv in check_input(hoff_1v3_recv) {
+                        let entry = sg_3v1_node_17v1_hashtable
+                            .entry(kv.0)
+                            .or_insert_with(|| (None,));
+                        #[allow(clippy::redundant_closure_call)]
+                        (|old: &mut (Option<_>,), val: (_,)| {
+                            old
+                                .0 = if let Some(prev) = old.0.take() {
+                                Some(prev + val.0)
+                            } else {
+                                Some(val.0)
+                            };
+                        })(entry, kv.1);
+                    }
+                }
+                let op_17v1 = sg_3v1_node_17v1_hashtable.drain();
                 let op_17v1 = {
                     #[allow(non_snake_case)]
                     #[inline(always)]
