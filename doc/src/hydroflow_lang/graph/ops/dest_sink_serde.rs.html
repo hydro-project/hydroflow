@@ -94,6 +94,8 @@
 <a href="#94" id="94">94</a>
 <a href="#95" id="95">95</a>
 <a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
 </pre></div><pre class="rust"><code><span class="kw">use super</span>::{make_missing_runtime_msg, FlowProperties, FlowPropertyVal};
 
 <span class="kw">use super</span>::{
@@ -179,7 +181,9 @@
 
         <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::new(|item| {
-                #send_ident.send(item).expect(<span class="string">&quot;Failed to send async write item for processing.&quot;</span>);
+                <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = #send_ident.send(item) {
+                    <span class="macro">panic!</span>(<span class="string">&quot;Failed to send async write item for processing.: {}&quot;</span>, err);
+                }
             });
         };
 

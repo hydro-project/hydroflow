@@ -472,7 +472,7 @@
 }
 <span class="kw">impl </span>Parse <span class="kw">for </span>HfCode {
     <span class="kw">fn </span>parse(input: ParseStream) -&gt; syn::Result&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let </span>statements = input.parse_terminated(HfStatement::parse)<span class="question-mark">?</span>;
+        <span class="kw">let </span>statements = Punctuated::parse_terminated(input)<span class="question-mark">?</span>;
         <span class="kw">if </span>!statements.empty_or_trailing() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(input.parse::&lt;<span class="macro">Token!</span>[;]&gt;().unwrap_err());
         }

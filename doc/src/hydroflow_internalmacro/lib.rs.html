@@ -122,20 +122,6 @@
 <a href="#122" id="122">122</a>
 <a href="#123" id="123">123</a>
 <a href="#124" id="124">124</a>
-<a href="#125" id="125">125</a>
-<a href="#126" id="126">126</a>
-<a href="#127" id="127">127</a>
-<a href="#128" id="128">128</a>
-<a href="#129" id="129">129</a>
-<a href="#130" id="130">130</a>
-<a href="#131" id="131">131</a>
-<a href="#132" id="132">132</a>
-<a href="#133" id="133">133</a>
-<a href="#134" id="134">134</a>
-<a href="#135" id="135">135</a>
-<a href="#136" id="136">136</a>
-<a href="#137" id="137">137</a>
-<a href="#138" id="138">138</a>
 </pre></div><pre class="rust"><code><span class="attr">#![feature(proc_macro_diagnostic, proc_macro_span)]
 #![allow(clippy::explicit_auto_deref)]
 
@@ -145,10 +131,11 @@
 <span class="kw">use </span>std::io::{BufWriter, Write};
 <span class="kw">use </span>std::path::PathBuf;
 
-<span class="kw">use </span>proc_macro2::{Span, TokenTree};
+<span class="kw">use </span>proc_macro2::Span;
 <span class="kw">use </span>quote::ToTokens;
 <span class="kw">use </span>syn::{
-    parse_macro_input, parse_quote, AttrStyle, Expr, ExprLit, ItemConst, Lit, Member, Path, Type,
+    parse_macro_input, parse_quote, AttrStyle, Expr, ExprLit, Ident, ItemConst, Lit, Member, Meta,
+    MetaNameValue, Path, Type,
 };
 
 <span class="attr">#[proc_macro]
@@ -214,26 +201,11 @@
 
     <span class="kw">let </span><span class="kw-2">mut </span>in_hf_doctest = <span class="bool-val">false</span>;
     <span class="kw">for </span>attr <span class="kw">in </span>item.attrs.iter() {
-        <span class="kw">if </span>AttrStyle::Outer != attr.style || identity::&lt;Path&gt;(<span class="macro">parse_quote!</span>(doc)) != attr.path {
-            <span class="kw">continue</span>;
-        }
-        <span class="kw">let </span>tokens: Vec&lt;<span class="kw">_</span>&gt; = attr.tokens.clone().into_iter().collect();
-        <span class="kw">if </span><span class="number">2 </span>!= tokens.len() {
-            <span class="kw">continue</span>;
-        }
-        <span class="kw">let </span>TokenTree::Punct(punct) = <span class="kw-2">&amp;</span>tokens[<span class="number">0</span>] <span class="kw">else </span>{
-            <span class="kw">continue</span>;
-        };
-        <span class="kw">if </span><span class="string">&#39;=&#39; </span>!= punct.as_char() {
-            <span class="kw">continue</span>;
-        }
-        <span class="kw">let </span>TokenTree::Literal(doc_lit_token) = <span class="kw-2">&amp;</span>tokens[<span class="number">1</span>] <span class="kw">else </span>{
-            <span class="kw">continue</span>;
-        };
-        <span class="kw">let </span>doc_lit = Lit::new(doc_lit_token.clone());
-        <span class="kw">let </span>Lit::Str(doc_lit_str) = doc_lit <span class="kw">else </span>{
-            <span class="kw">continue</span>;
-        };
+        <span class="kw">let </span>AttrStyle::Outer = attr.style <span class="kw">else </span>{ <span class="kw">continue</span>; };
+        <span class="kw">let </span>Meta::NameValue(MetaNameValue { path, eq_token: <span class="kw">_</span>, value }) = <span class="kw-2">&amp;</span>attr.meta <span class="kw">else </span>{ <span class="kw">continue</span>; };
+        <span class="kw">let </span><span class="prelude-val">Some</span>(<span class="string">&quot;doc&quot;</span>) = path.get_ident().map(Ident::to_string).as_deref() <span class="kw">else </span>{ <span class="kw">continue</span>; };
+        <span class="kw">let </span>Expr::Lit(ExprLit { attrs: <span class="kw">_</span>, lit }) = value <span class="kw">else </span>{ <span class="kw">continue</span>; };
+        <span class="kw">let </span>Lit::Str(doc_lit_str) = lit <span class="kw">else </span>{ <span class="kw">continue</span>; };
         <span class="comment">// At this point we know we have a `#[doc = &quot;...&quot;]`.
         </span><span class="kw">let </span>doc_str = doc_lit_str.value();
         <span class="kw">let </span>doc_str = doc_str.strip_prefix(<span class="string">&#39; &#39;</span>).unwrap_or(<span class="kw-2">&amp;*</span>doc_str);

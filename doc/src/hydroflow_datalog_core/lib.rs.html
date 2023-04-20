@@ -1844,7 +1844,7 @@
                     Aggregation::CountUnique(..) =&gt; {
                         <span class="macro">parse_quote!</span>({
                             <span class="kw">let </span>prev: (hydroflow::rustc_hash::FxHashSet&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>) = prev;
-                            <span class="kw">let </span><span class="kw-2">mut </span>set: hydroflow::rustc_hash::FxHashSet::&lt;<span class="kw">_</span>&gt; = prev.<span class="number">0</span>;
+                            <span class="kw">let </span><span class="kw-2">mut </span>set: hydroflow::rustc_hash::FxHashSet&lt;<span class="kw">_</span>&gt; = prev.<span class="number">0</span>;
                             <span class="kw">if </span>set.insert(#val_at_index) {
                                 (set, prev.<span class="number">1 </span>+ <span class="number">1</span>)
                             } <span class="kw">else </span>{
