@@ -206,7 +206,7 @@ pub fn run_server(
 
                 // broadcast out locally generated changes to other nodes.
                 client_input[broadcast]
-                    -> batch(batch_interval_ticker)
+                    -> batch(1000, batch_interval_ticker)
                     -> map(|(key, reg)| (key, Some(reg)))
                     -> group_by::<'tick>(<BottomRepr<MyLastWriteWins> as LatticeRepr>::Repr::default, <BottomRepr<MyLastWriteWins> as Merge<BottomRepr<MyLastWriteWins>>>::merge)
                     -> filter_map(|(key, opt_reg)| opt_reg.map(|reg| (key, reg))) // to filter out bottom types since they carry no useful info.
