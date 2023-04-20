@@ -120,27 +120,39 @@ pub const KEYED_REDUCE: OperatorConstraints = OperatorConstraints {
         let aggfn = &arguments[0];
 
         let (write_prologue, write_iterator, write_iterator_after) = match persistence {
-            Persistence::Tick => (
-                Default::default(),
-                quote_spanned! {op_span=>
-                    let #ident = {
-                        #[inline(always)]
-                        fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A, B>(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
-                        check_input(#input).fold(#root::rustc_hash::FxHashMap::<#( #generic_type_args ),*>::default(), |mut ht, kv| {
-                            match ht.entry(kv.0) {
-                                ::std::collections::hash_map::Entry::Vacant(vacant) => {
-                                    vacant.insert(kv.1);
-                                }
-                                ::std::collections::hash_map::Entry::Occupied(mut occupied) => {
-                                    #[allow(clippy::redundant_closure_call)] (#aggfn)(occupied.get_mut(), kv.1);
+            Persistence::Tick => {
+                let groupbydata_ident = wc.make_ident("groupbydata");
+                let hashtable_ident = wc.make_ident("hashtable");
+
+                (
+                    quote_spanned! {op_span=>
+                        let #groupbydata_ident = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashMap::<#( #generic_type_args ),*>::default()));
+                    },
+                    quote_spanned! {op_span=>
+                        let mut #hashtable_ident = #context.state_ref(#groupbydata_ident).borrow_mut();
+
+                        {
+                            #[inline(always)]
+                            fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A: ::std::clone::Clone, B: ::std::clone::Clone>(iter: Iter)
+                                -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
+
+                            for kv in check_input(#input) {
+                                match #hashtable_ident.entry(kv.0) {
+                                    ::std::collections::hash_map::Entry::Vacant(vacant) => {
+                                        vacant.insert(kv.1);
+                                    }
+                                    ::std::collections::hash_map::Entry::Occupied(mut occupied) => {
+                                        #[allow(clippy::redundant_closure_call)] (#aggfn)(occupied.get_mut(), kv.1);
+                                    }
                                 }
                             }
-                            ht
-                        }).into_iter()
-                    };
-                },
-                Default::default(),
-            ),
+                        }
+
+                        let #ident = #hashtable_ident.drain();
+                    },
+                    Default::default(),
+                )
+            }
             Persistence::Static => {
                 let groupbydata_ident = wc.make_ident("groupbydata");
                 let hashtable_ident = wc.make_ident("hashtable");
@@ -150,19 +162,21 @@ pub const KEYED_REDUCE: OperatorConstraints = OperatorConstraints {
                         let #groupbydata_ident = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashMap::<#( #generic_type_args ),*>::default()));
                     },
                     quote_spanned! {op_span=>
-                    let mut #hashtable_ident = #context.state_ref(#groupbydata_ident).borrow_mut();
+                        let mut #hashtable_ident = #context.state_ref(#groupbydata_ident).borrow_mut();
 
-                    #[inline(always)]
-                    fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A: ::std::clone::Clone, B: ::std::clone::Clone>(iter: Iter)
-                        -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
+                        {
+                            #[inline(always)]
+                            fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A: ::std::clone::Clone, B: ::std::clone::Clone>(iter: Iter)
+                                -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
 
-                        for kv in check_input(#input) {
-                            match #hashtable_ident.entry(kv.0) {
-                                ::std::collections::hash_map::Entry::Vacant(vacant) => {
-                                    vacant.insert(kv.1);
-                                }
-                                ::std::collections::hash_map::Entry::Occupied(mut occupied) => {
-                                    #[allow(clippy::redundant_closure_call)] (#aggfn)(occupied.get_mut(), kv.1);
+                            for kv in check_input(#input) {
+                                match #hashtable_ident.entry(kv.0) {
+                                    ::std::collections::hash_map::Entry::Vacant(vacant) => {
+                                        vacant.insert(kv.1);
+                                    }
+                                    ::std::collections::hash_map::Entry::Occupied(mut occupied) => {
+                                        #[allow(clippy::redundant_closure_call)] (#aggfn)(occupied.get_mut(), kv.1);
+                                    }
                                 }
                             }
                         }
