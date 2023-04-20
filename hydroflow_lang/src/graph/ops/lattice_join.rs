@@ -121,42 +121,46 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
             .unwrap_or(quote_spanned!(op_span=> _));
 
         // TODO(mingwei): This is messy
-        let items = persistences
-            .zip(["lhs", "rhs"])
-            .map(|(persistence, side)| {
-                let joindata_ident = wc.make_ident(format!("joindata_{}", side));
-                let borrow_ident = wc.make_ident(format!("joindata_{}_borrow", side));
-                let (init, borrow) = match persistence {
-                    Persistence::Tick => (
-                        quote_spanned! {op_span=>
-                            #root::lang::monotonic_map::MonotonicMap::new_init(
-                                #root::compiled::pull::HalfJoinStateLattice::default()
-                            )
-                        },
-                        quote_spanned! {op_span=>
-                            &mut *#borrow_ident.get_mut_clear(#context.current_tick())
-                        },
-                    ),
-                    Persistence::Static => (
-                        quote_spanned! {op_span=>
+        let items = persistences.zip(["lhs", "rhs"]).map(|(persistence, side)| {
+            let joindata_ident = wc.make_ident(format!("joindata_{}", side));
+            let borrow_ident = wc.make_ident(format!("joindata_{}_borrow", side));
+            let (init, borrow) = match persistence {
+                Persistence::Tick => (
+                    quote_spanned! {op_span=>
+                        #root::lang::monotonic_map::MonotonicMap::new_init(
                             #root::compiled::pull::HalfJoinStateLattice::default()
-                        },
-                        quote_spanned! {op_span=>
-                            &mut #borrow_ident
-                        },
-                    ),
-                };
-                (joindata_ident, borrow_ident, init, borrow)
-            });
+                        )
+                    },
+                    quote_spanned! {op_span=>
+                        &mut *#borrow_ident.get_mut_clear(#context.current_tick())
+                    },
+                ),
+                Persistence::Static => (
+                    quote_spanned! {op_span=>
+                        #root::compiled::pull::HalfJoinStateLattice::default()
+                    },
+                    quote_spanned! {op_span=>
+                        &mut #borrow_ident
+                    },
+                ),
+            };
+            (joindata_ident, borrow_ident, init, borrow)
+        });
         let [(lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow), (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow)] =
             items;
 
+        let join_keys_ident = wc.make_ident("joinkeys");
+        let join_keys_borrow_ident = wc.make_ident("joinkeys_borrow");
+
         let write_prologue = quote_spanned! {op_span=>
-            let #lhs_joindata_ident = df.add_state(std::cell::RefCell::new(
+            let #lhs_joindata_ident = df.add_state(::std::cell::RefCell::new(
                 #lhs_init
             ));
-            let #rhs_joindata_ident = df.add_state(std::cell::RefCell::new(
+            let #rhs_joindata_ident = df.add_state(::std::cell::RefCell::new(
                 #rhs_init
+            ));
+            let #join_keys_ident = df.add_state(::std::cell::RefCell::new(
+                #root::rustc_hash::FxHashSet::default()
             ));
         };
 
@@ -165,12 +169,15 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
         let write_iterator = quote_spanned! {op_span=>
             let mut #lhs_borrow_ident = #context.state_ref(#lhs_joindata_ident).borrow_mut();
             let mut #rhs_borrow_ident = #context.state_ref(#rhs_joindata_ident).borrow_mut();
+            let mut #join_keys_borrow_ident = #context.state_ref(#join_keys_ident).borrow_mut();
+
             let #ident = {
                 /// Limit error propagation by bounding locally, erasing output iterator type.
                 #[inline(always)]
                 fn check_inputs<'a, Key, I1, Lhs, LhsDelta, I2, Rhs, RhsDelta>(
                     lhs: I1,
                     rhs: I2,
+                    updated_keys: &'a mut #root::rustc_hash::FxHashSet<Key>,
                     lhs_state: &'a mut #root::compiled::pull::HalfJoinStateLattice<Key, Lhs, LhsDelta>,
                     rhs_state: &'a mut #root::compiled::pull::HalfJoinStateLattice<Key, Rhs, RhsDelta>,
                 ) -> impl 'a + Iterator<Item = (Key, (Lhs::Repr, Rhs::Repr))>
@@ -187,9 +194,9 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
                     I1: Iterator<Item = (Key, Lhs::Repr)>,
                     I2: Iterator<Item = (Key, Rhs::Repr)>,
                 {
-                    #root::compiled::pull::SymmetricHashJoinLattice::new_from_mut(lhs, rhs, lhs_state, rhs_state)
+                    #root::compiled::pull::SymmetricHashJoinLattice::new_from_mut(lhs, rhs, updated_keys, lhs_state, rhs_state)
                 }
-                check_inputs::<_, _, #lhs_type, #lhs_type, _, #rhs_type, #rhs_type>(#lhs, #rhs, #lhs_borrow, #rhs_borrow)
+                check_inputs::<_, _, #lhs_type, #lhs_type, _, #rhs_type, #rhs_type>(#lhs, #rhs, &mut *#join_keys_borrow_ident, #lhs_borrow, #rhs_borrow)
             };
         };
 
