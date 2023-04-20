@@ -10,13 +10,13 @@ diagnostics = []
 [dependencies]
 auto_impl = "1.0.1"
 hydroflow_internalmacro = { path = "../hydroflow_internalmacro" }
-prettyplease = { version = "0.1.22", features = [ "verbatim" ] }
+prettyplease = { version = "0.2.0", features = [ "verbatim" ] }
 proc-macro2 = { version = "1.0.0", features = ["span-locations"] }
 quote = "1.0.0"
 regex = "1.7.0"
 serde = "1.0.1"
 serde_json = "1.0.8"
 slotmap = { version = "1.0.6", features = ["serde"] }
-syn = { version = "1.0.0", features = [ "extra-traits", "full", "parsing" ] }
+syn = { version = "2.0.0", features = [ "extra-traits", "full", "parsing" ] }
 
 [dev-dependencies]

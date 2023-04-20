@@ -3,7 +3,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use proc_macro2::Span;
 use slotmap::{SecondaryMap, SparseSecondaryMap};
 use syn::parse_quote;
-use syn::spanned::Spanned;
 
 use crate::diagnostic::{Diagnostic, Level};
 use crate::union_find::UnionFind;

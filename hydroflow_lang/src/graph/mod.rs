@@ -92,9 +92,8 @@ impl Node {
             Node::Handoff { .. } => HANDOFF_NODE_STR.into(),
         }
     }
-}
-impl Spanned for Node {
-    fn span(&self) -> Span {
+
+    pub fn span(&self) -> Span {
         match self {
             Self::Operator(op) => op.span(),
             &Self::Handoff { src_span, dst_span } => src_span.join(dst_span).unwrap_or(src_span),
@@ -264,21 +263,20 @@ impl PortIndexValue {
             PortIndexValue::Elided(_) => "<elided>".to_owned(),
         }
     }
+
+    pub fn span(&self) -> Span {
+        match self {
+            PortIndexValue::Int(x) => x.span(),
+            PortIndexValue::Path(x) => x.span(),
+            PortIndexValue::Elided(span) => span.unwrap_or_else(Span::call_site),
+        }
+    }
 }
 impl From<PortIndex> for PortIndexValue {
     fn from(value: PortIndex) -> Self {
         match value {
             PortIndex::Int(x) => Self::Int(x),
             PortIndex::Path(x) => Self::Path(x),
-        }
-    }
-}
-impl Spanned for PortIndexValue {
-    fn span(&self) -> Span {
-        match self {
-            PortIndexValue::Int(x) => x.span(),
-            PortIndexValue::Path(x) => x.span(),
-            PortIndexValue::Elided(span) => span.unwrap_or_else(Span::call_site),
         }
     }
 }

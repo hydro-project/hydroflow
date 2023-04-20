@@ -9,7 +9,7 @@ path = "src/lib.rs"
 
 [dependencies]
 quote = "1.0.0"
-syn = { version = "1.0.0", features = [ "parsing", "extra-traits" ] }
+syn = { version = "2.0.0", features = [ "parsing", "extra-traits" ] }
 proc-macro2 = "1.0.27"
 proc-macro-crate = "1.1.0"
 # Note: If we ever compile this proc macro crate to WASM (e.g., if we are
