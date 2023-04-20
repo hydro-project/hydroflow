@@ -1884,14 +1884,15 @@ diff = anti_join() -&gt; for_each(|v: (_, _)| println!(&quot;{}, {}&quot;, v.0, 
 </span></code></pre></pre>
 <h2 id="batch"><a class="header" href="#batch"><code>batch</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
-<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; batch(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; batch(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
 </tbody></table>
 </div><!-- GENERATED "hydroflow_lang/src/graph/ops/batch.rs" -->
 <blockquote>
 <p>1 input stream, 1 output stream</p>
 </blockquote>
 <blockquote>
-<p>Arguments: The receive end of a tokio channel that signals when to release the batch downstream.</p>
+<p>Arguments: First argument is the maximum batch size that batch() will buffer up before completely releasing the batch.
+The second argument is the receive end of a tokio channel that signals when to release the batch downstream.</p>
 </blockquote>
 <p>Given a <a href="https://docs.rs/futures/latest/futures/stream/trait.Stream.html"><code>Stream</code></a>
 created in Rust code, <code>batch</code>
@@ -1903,7 +1904,7 @@ will pass through all received inputs to the output unchanged.</p>
 
     // Will print 0, 1, 2, 3, 4 each on a new line just once.
     let mut df = hydroflow::hydroflow_syntax! {
-        repeat_iter(0..5) -&gt; batch(rx) -&gt; for_each(|x| { println!(&quot;{x}&quot;); });
+        repeat_iter(0..5) -&gt; batch(10, rx) -&gt; for_each(|x| { println!(&quot;{x}&quot;); });
     };
 
     tx.send(()).unwrap();

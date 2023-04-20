@@ -124,6 +124,30 @@
 <a href="#124" id="124">124</a>
 <a href="#125" id="125">125</a>
 <a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
 </pre></div><pre class="rust"><code><span class="kw">use super</span>::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
@@ -134,7 +158,8 @@
 
 <span class="doccomment">/// &gt; 1 input stream, 1 output stream
 ///
-/// &gt; Arguments: The receive end of a tokio channel that signals when to release the batch downstream.
+/// &gt; Arguments: First argument is the maximum batch size that batch() will buffer up before completely releasing the batch.
+///  The second argument is the receive end of a tokio channel that signals when to release the batch downstream.
 ///
 /// Given a [`Stream`](https://docs.rs/futures/latest/futures/stream/trait.Stream.html)
 /// created in Rust code, `batch`
@@ -146,7 +171,7 @@
 ///
 ///     // Will print 0, 1, 2, 3, 4 each on a new line just once.
 ///     let mut df = hydroflow::hydroflow_syntax! {
-///         repeat_iter(0..5) -&gt; batch(rx) -&gt; for_each(|x| { println!(&quot;{x}&quot;); });
+///         repeat_iter(0..5) -&gt; batch(10, rx) -&gt; for_each(|x| { println!(&quot;{x}&quot;); });
 ///     };
 ///
 ///     tx.send(()).unwrap();
@@ -162,7 +187,7 @@
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
-    num_args: <span class="number">1</span>,
+    num_args: <span class="number">2</span>,
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
@@ -187,7 +212,8 @@
                <span class="kw">_</span>| {
         <span class="kw">let </span>internal_buffer = wc.make_ident(<span class="string">&quot;internal_buffer&quot;</span>);
 
-        <span class="kw">let </span>receiver = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
+        <span class="kw">let </span>max_queue_len = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
+        <span class="kw">let </span>receiver = <span class="kw-2">&amp;</span>arguments[<span class="number">1</span>];
         <span class="kw">let </span>stream_ident = wc.make_ident(<span class="string">&quot;stream&quot;</span>);
 
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
@@ -195,57 +221,79 @@
             <span class="kw">let </span>#internal_buffer = #hydroflow.add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
         };
 
-        <span class="kw">let </span>write_iterator = <span class="kw">if </span>is_pull {
+        <span class="kw">let </span>(write_iterator, write_iterator_after) = <span class="kw">if </span>is_pull {
             <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
 
-            <span class="macro">quote_spanned! </span>{op_span=&gt;
+            (
+                <span class="macro">quote_spanned! </span>{op_span=&gt;
 
-                {
-                    <span class="kw">let </span><span class="kw-2">mut </span>vec = #context.state_ref(#internal_buffer).borrow_mut();
-                    vec.extend(#input);
-                }
-
-                <span class="kw">let </span>#ident = <span class="kw">match </span>#root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), <span class="kw-2">&amp;mut </span>::std::task::Context::from_waker(<span class="kw-2">&amp;</span>context.waker())) {
-                    ::std::task::Poll::Ready(<span class="kw">_</span>) =&gt; {
+                    {
                         <span class="kw">let </span><span class="kw-2">mut </span>vec = #context.state_ref(#internal_buffer).borrow_mut();
-                        ::std::mem::take(<span class="kw-2">&amp;mut *</span>vec)
-                    },
-                    ::std::task::Poll::Pending =&gt; {
-                        ::std::vec::Vec::new()
-                    },
-                }.into_iter();
-            }
+                        vec.extend(#input);
+                    }
+
+                    <span class="kw">let </span>max_queue_len: usize = #max_queue_len;
+
+                    <span class="kw">let </span><span class="kw-2">mut </span>vec = #context.state_ref(#internal_buffer).borrow_mut();
+                    <span class="kw">let </span><span class="kw-2">mut </span>dummy = Vec::new();
+                    <span class="kw">let </span>#ident = <span class="kw">match </span>#root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), <span class="kw-2">&amp;mut </span>::std::task::Context::from_waker(<span class="kw-2">&amp;</span>context.waker())) {
+                        ::std::task::Poll::Ready(<span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; {
+                            vec.drain(..)
+                        }
+                        ::std::task::Poll::Ready(<span class="prelude-val">None</span>) | ::std::task::Poll::Pending =&gt; {
+                            <span class="kw">if </span>vec.len() &gt; max_queue_len {
+                                vec.drain(..)
+                            } <span class="kw">else </span>{
+                                dummy.drain(..)
+                            }
+                        }
+                    };
+                },
+                <span class="macro">quote_spanned! </span>{op_span=&gt;},
+            )
         } <span class="kw">else </span>{
             <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
 
-            <span class="macro">quote_spanned! </span>{op_span=&gt;
+            (
+                <span class="macro">quote_spanned! </span>{op_span=&gt;
 
-                <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::new(|x| {
-                    <span class="kw">let </span><span class="kw-2">mut </span>vec = #context.state_ref(#internal_buffer).borrow_mut();
-
-                    vec.push(x);
-                });
-
-                {
                     <span class="kw">let </span><span class="kw-2">mut </span>out = #output;
-                    <span class="kw">for </span>x <span class="kw">in match </span>#root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), <span class="kw-2">&amp;mut </span>::std::task::Context::from_waker(<span class="kw-2">&amp;</span>context.waker())) {
-                        ::std::task::Poll::Ready(<span class="kw">_</span>) =&gt; {
-                            <span class="kw">let </span><span class="kw-2">mut </span>vec = #context.state_ref(#internal_buffer).borrow_mut();
-                            ::std::mem::take(<span class="kw-2">&amp;mut *</span>vec)
-                        },
-                        ::std::task::Poll::Pending =&gt; {
-                            ::std::vec::Vec::new()
-                        },
-                    }.into_iter() {
-                        #root::pusherator::Pusherator::give(<span class="kw-2">&amp;mut </span>out, x);
+
+                    <span class="kw">let </span>max_queue_len: usize = #max_queue_len;
+
+                    <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::new(|x| {
+                        <span class="kw">let </span><span class="kw-2">mut </span>vec = #context.state_ref(#internal_buffer).borrow_mut();
+
+                        vec.push(x);
+                    });
+                },
+                <span class="macro">quote_spanned! </span>{op_span=&gt;
+                    {
+                        <span class="kw">let </span><span class="kw-2">mut </span>vec = #context.state_ref(#internal_buffer).borrow_mut();
+
+                        <span class="kw">match </span>#root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), <span class="kw-2">&amp;mut </span>::std::task::Context::from_waker(<span class="kw-2">&amp;</span>context.waker())) {
+                            ::std::task::Poll::Ready(<span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; {
+                                <span class="kw">for </span>x <span class="kw">in </span>vec.drain(..) {
+                                    #root::pusherator::Pusherator::give(<span class="kw-2">&amp;mut </span>out, x);
+                                }
+                            },
+                            ::std::task::Poll::Ready(<span class="prelude-val">None</span>) | ::std::task::Poll::Pending =&gt; {
+                                <span class="kw">if </span>vec.len() &gt; max_queue_len {
+                                    <span class="kw">for </span>x <span class="kw">in </span>vec.drain(..) {
+                                        #root::pusherator::Pusherator::give(<span class="kw-2">&amp;mut </span>out, x);
+                                    }
+                                }
+                            },
+                        }
                     }
-                }
-            }
+                },
+            )
         };
 
         <span class="prelude-val">Ok</span>(OperatorWriteOutput {
             write_prologue,
             write_iterator,
+            write_iterator_after,
             ..Default::default()
         })
     },
