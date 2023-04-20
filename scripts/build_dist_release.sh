@@ -52,4 +52,4 @@ fi
 # The CARGO_NET_GIT_FETCH_WITH_CLI="true" environment variable is a Workaround to an issue similar
 # to the one encountered by pytorch in https://github.com/pytorch/pytorch/issues/82174
 
-CARGO_NET_GIT_FETCH_WITH_CLI="true" cargo build --release --all-targets --workspace --exclude hydro_cli --target ${RUST_TARGET}
+CARGO_NET_GIT_FETCH_WITH_CLI="true" cargo build --release --all-targets --workspace --exclude hydro_cli --features kvs_bench --target ${RUST_TARGET}
