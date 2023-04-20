@@ -76,7 +76,7 @@ pub fn run_server(
                                     let reader = std::io::Cursor::new(&multipart_buffer.0[1][..]);
                                     let mut deserializer = bincode::Deserializer::with_reader(reader, options());
                                     let req = KvsRequestDeserializer {
-                                        collector: Rc::downgrade(&buffer_pool),
+                                        collector: Rc::clone(&buffer_pool),
                                     }.deserialize(&mut deserializer).unwrap();
 
                                     client_to_transducer_tx.send((req, routing_id)).unwrap();
