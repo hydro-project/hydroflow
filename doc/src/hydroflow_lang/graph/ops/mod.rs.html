@@ -409,8 +409,8 @@
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::{Debug, Display};
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
+<span class="kw">use </span>std::sync::OnceLock;
 
-<span class="kw">use </span>once_cell::sync::OnceCell;
 <span class="kw">use </span>proc_macro2::{Ident, Literal, Span, TokenStream};
 <span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>slotmap::Key;
@@ -683,8 +683,8 @@
 ];
 
 <span class="kw">pub fn </span>operator_lookup() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>OperatorConstraints&gt; {
-    <span class="kw">pub static </span>OPERATOR_LOOKUP: OnceCell&lt;HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>OperatorConstraints&gt;&gt; =
-        OnceCell::new();
+    <span class="kw">pub static </span>OPERATOR_LOOKUP: OnceLock&lt;HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>OperatorConstraints&gt;&gt; =
+        OnceLock::new();
     OPERATOR_LOOKUP.get_or_init(|| OPERATORS.iter().map(|op| (op.name, op)).collect())
 }
 <span class="kw">pub fn </span>find_node_op_constraints(node: <span class="kw-2">&amp;</span>Node) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>OperatorConstraints&gt; {
