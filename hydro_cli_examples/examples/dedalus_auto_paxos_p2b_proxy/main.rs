@@ -44,7 +44,7 @@ async fn main() {
 .input id `repeat_iter([(my_id,),])`
 .input quorum `repeat_iter([(f+1,),])`
 .input fullQuorum `repeat_iter([(2*f+1,),])`
-.input acceptorStartIDs `repeat_iter(acceptor_start_ids.clone()) -> map(|p| (p,))` # Assume = 0,n,2n,...,n*m, for n acceptors and m partitions
+.input acceptorStartIDs `repeat_iter(acceptor_start_ids.clone()) -> map(|p| (p,))` # Assume = 0,m,2m,...,(n-1)*m, for n acceptors and m partitions
 .input numAcceptorGroups `repeat_iter([(num_acceptor_groups,),])`
 .input numP2bProxyLeaders `repeat_iter([(num_p2b_proxy_leaders,),])`
 .input proposer `repeat_iter([(proposer,),])` # The proposer this proxy leader was decoupled from

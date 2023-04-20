@@ -31,7 +31,7 @@ async fn main() {
         ######################## relation definitions
 # EDB
 .input id `repeat_iter([(my_id,),])`
-.input acceptorStartIDs `repeat_iter(acceptor_start_ids.clone()) -> map(|p| (p,))` # Assume = 0,n,2n,...,n*m, for n acceptors and m partitions
+.input acceptorStartIDs `repeat_iter(acceptor_start_ids.clone()) -> map(|p| (p,))` # Assume = 0,m,2m,...,(n-1)*m, for n acceptors and m partitions
 .input numAcceptorGroups `repeat_iter([(num_acceptor_groups,),])` 
 
 # Debug

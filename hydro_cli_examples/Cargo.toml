@@ -31,6 +31,24 @@ name = "dedalus_echo_leader"
 name = "dedalus_echo_participant"
 
 [[example]]
+name = "dedalus_auto_2pc_coordinator"
+
+[[example]]
+name = "dedalus_auto_2pc_vote_requester"
+
+[[example]]
+name = "dedalus_auto_2pc_participant_voter"
+
+[[example]]
+name = "dedalus_auto_2pc_committer"
+
+[[example]]
+name = "dedalus_auto_2pc_participant_acker"
+
+[[example]]
+name = "dedalus_auto_2pc_ender"
+
+[[example]]
 name = "dedalus_2pc_coordinator"
 
 [[example]]

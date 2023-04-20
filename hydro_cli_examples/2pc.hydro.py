@@ -15,10 +15,11 @@ def gcp_machine(deployment, gcp_vpc):
     )
 
 async def main(args):
-    log_directory = "2pc_out"
     coordinator_gcp = args[0] == "gcp"
     participants_gcp = args[1] == "gcp"
     num_participants = int(args[2])
+    
+    log_directory = "2pc_out"
     coordinator_log = "coordinator.txt"
     participant_log = "participant.txt"
 
