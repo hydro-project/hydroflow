@@ -631,8 +631,7 @@ fn apply_aggregations(
             }
             TargetExpr::Aggregation(Aggregation::CountUnique(..)) => {
                 let idx = syn::Index::from(agg_idx);
-                after_group_lookups
-                    .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.1));
+                after_group_lookups.push(parse_quote_spanned!(get_span(field.span)=> a.#idx.1));
                 agg_idx += 1;
             }
             TargetExpr::Aggregation(
@@ -676,7 +675,9 @@ fn apply_aggregations(
         }
     } else {
         let agg_inits = aggregations.iter().map::<syn::Expr, _>(|agg| match agg {
-            Aggregation::CountUnique(..) => parse_quote!((hydroflow::rustc_hash::FxHashSet::default(), 0)),
+            Aggregation::CountUnique(..) => {
+                parse_quote!((hydroflow::rustc_hash::FxHashSet::default(), 0))
+            }
             Aggregation::Min(..) | Aggregation::Max(..) => parse_quote!(None),
             Aggregation::Sum(..) | Aggregation::Count(..) => parse_quote!(0),
             Aggregation::Choose(..) => parse_quote!(None),
