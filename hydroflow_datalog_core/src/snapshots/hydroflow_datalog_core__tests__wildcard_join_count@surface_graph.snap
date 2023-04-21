@@ -17,15 +17,15 @@ expression: flat_graph_ref.surface_syntax_string()
 19v1 = map (| _v : (_ , _ ,) | ((_v . 0 ,) , (_v . 1 ,)));
 20v1 = map (| _v : (_ ,) | ((_v . 0 ,) , ()));
 21v1 = map (| row : (_ , _ ,) | (() , (() ,)));
-22v1 = group_by :: < 'tick , () , (Option < _ > ,) > (| | (None ,) , | old : & mut (Option < _ > ,) , val : (_ ,) | { old . 0 = if let Some (prev) = old . 0 . take () { Some (prev + 1) } else { Some (1) } ; });
-23v1 = map (| (g , a) : (() , _) | (a . 0 . unwrap () ,));
+22v1 = group_by :: < 'tick , () , (_ ,) > (| | (0 ,) , | old : & mut (_ ,) , val : (_ ,) | { old . 0 += 1 ; });
+23v1 = map (| (g , a) : (() , _) | (a . 0 ,));
 24v1 = join :: < 'tick , 'tick , hydroflow :: compiled :: pull :: HalfMultisetJoinState > ();
 25v1 = map (| kv : ((_ ,) , ((_ ,) , ())) | (kv . 0 . 0 , kv . 1 . 0 . 0 ,));
 26v1 = map (| _v : (_ , _ ,) | ((_v . 0 ,) , (_v . 1 ,)));
 27v1 = map (| _v : (_ ,) | ((_v . 0 ,) , ()));
 28v1 = map (| row : (_ , _ ,) | (() , ((row . 0) ,)));
-29v1 = group_by :: < 'tick , () , (Option < _ > ,) > (| | (None ,) , | old : & mut (Option < _ > ,) , val : (_ ,) | { old . 0 = if let Some (prev) = old . 0 . take () { Some ({ let prev : (hydroflow :: rustc_hash :: FxHashSet < _ > , _) = prev ; let mut set : hydroflow :: rustc_hash :: FxHashSet < _ > = prev . 0 ; if set . insert (val . 0) { (set , prev . 1 + 1) } else { (set , prev . 1) } }) } else { Some ({ let mut set = hydroflow :: rustc_hash :: FxHashSet :: < _ > :: default () ; set . insert (val . 0) ; (set , 1) }) } ; });
-30v1 = map (| (g , a) : (() , _) | (a . 0 . unwrap () . 1 ,));
+29v1 = group_by :: < 'tick , () , (_ ,) > (| | ((hydroflow :: rustc_hash :: FxHashSet :: default () , 0) ,) , | old : & mut (_ ,) , val : (_ ,) | { let (set , count) : & mut (hydroflow :: rustc_hash :: FxHashSet < _ > , _) = & mut old . 0 ; if set . insert (val . 0) { * count += 1 } });
+30v1 = map (| (g , a) : (() , _) | (a . 0 . 1 ,));
 
 13v1 -> 2v1;
 2v1 -> 3v1;
