@@ -645,7 +645,7 @@ checksum = "c4a1e36c821dbe04574f602848a19f742f4fb3c98d40449f11bcad18d6b17421"
 [[package]]
 name = "hydroflow"
 version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow?rev=1756f1a200ee84786794ef9b93f33478459cda73#1756f1a200ee84786794ef9b93f33478459cda73"
+source = "git+https://github.com/hydro-project/hydroflow#1756f1a200ee84786794ef9b93f33478459cda73"
 dependencies = [
  "bincode",
  "byteorder",
@@ -687,7 +687,7 @@ dependencies = [
 [[package]]
 name = "hydroflow_datalog"
 version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow?rev=1756f1a200ee84786794ef9b93f33478459cda73#1756f1a200ee84786794ef9b93f33478459cda73"
+source = "git+https://github.com/hydro-project/hydroflow#1756f1a200ee84786794ef9b93f33478459cda73"
 dependencies = [
  "hydroflow_datalog_core",
  "proc-macro-crate",
@@ -699,7 +699,7 @@ dependencies = [
 [[package]]
 name = "hydroflow_datalog_core"
 version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow?rev=1756f1a200ee84786794ef9b93f33478459cda73#1756f1a200ee84786794ef9b93f33478459cda73"
+source = "git+https://github.com/hydro-project/hydroflow#1756f1a200ee84786794ef9b93f33478459cda73"
 dependencies = [
  "hydroflow_lang",
  "proc-macro-crate",
@@ -714,7 +714,7 @@ dependencies = [
 [[package]]
 name = "hydroflow_internalmacro"
 version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow?rev=1756f1a200ee84786794ef9b93f33478459cda73#1756f1a200ee84786794ef9b93f33478459cda73"
+source = "git+https://github.com/hydro-project/hydroflow#1756f1a200ee84786794ef9b93f33478459cda73"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -725,7 +725,7 @@ dependencies = [
 [[package]]
 name = "hydroflow_lang"
 version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow?rev=1756f1a200ee84786794ef9b93f33478459cda73#1756f1a200ee84786794ef9b93f33478459cda73"
+source = "git+https://github.com/hydro-project/hydroflow#1756f1a200ee84786794ef9b93f33478459cda73"
 dependencies = [
  "auto_impl",
  "hydroflow_internalmacro",
@@ -742,7 +742,7 @@ dependencies = [
 [[package]]
 name = "hydroflow_macro"
 version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow?rev=1756f1a200ee84786794ef9b93f33478459cda73#1756f1a200ee84786794ef9b93f33478459cda73"
+source = "git+https://github.com/hydro-project/hydroflow#1756f1a200ee84786794ef9b93f33478459cda73"
 dependencies = [
  "hydroflow_lang",
  "proc-macro-crate",
@@ -1167,7 +1167,7 @@ dependencies = [
 [[package]]
 name = "pusherator"
 version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow?rev=1756f1a200ee84786794ef9b93f33478459cda73#1756f1a200ee84786794ef9b93f33478459cda73"
+source = "git+https://github.com/hydro-project/hydroflow#1756f1a200ee84786794ef9b93f33478459cda73"
 dependencies = [
  "either",
  "variadics",
@@ -1978,7 +1978,7 @@ checksum = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a"
 [[package]]
 name = "variadics"
 version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow?rev=1756f1a200ee84786794ef9b93f33478459cda73#1756f1a200ee84786794ef9b93f33478459cda73"
+source = "git+https://github.com/hydro-project/hydroflow#1756f1a200ee84786794ef9b93f33478459cda73"
 
 [[package]]
 name = "vec_map"
