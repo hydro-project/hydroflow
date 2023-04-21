@@ -2,7 +2,6 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::rc::Rc;
-use std::time::Duration;
 
 use hydroflow::hydroflow_syntax;
 use hydroflow::serde::{Deserialize, Serialize};
@@ -68,7 +67,7 @@ async fn main() {
             let x = procinfo::pid::stat_self().unwrap();
             let bytes = x.rss * 1024 * 4;
             println!("memory,{}", bytes);
-            tokio::time::sleep(Duration::from_secs(1)).await;
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
     };
 
