@@ -632,13 +632,20 @@ fn apply_aggregations(
             TargetExpr::Aggregation(Aggregation::CountUnique(..)) => {
                 let idx = syn::Index::from(agg_idx);
                 after_group_lookups
-                    .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap().1));
+                    .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.1));
+                agg_idx += 1;
+            }
+            TargetExpr::Aggregation(
+                Aggregation::Max(..) | Aggregation::Min(..) | Aggregation::Choose(..),
+            ) => {
+                let idx = syn::Index::from(agg_idx);
+                after_group_lookups
+                    .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap()));
                 agg_idx += 1;
             }
             TargetExpr::Aggregation(_) => {
                 let idx = syn::Index::from(agg_idx);
-                after_group_lookups
-                    .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap()));
+                after_group_lookups.push(parse_quote_spanned!(get_span(field.span)=> a.#idx));
                 agg_idx += 1;
             }
             TargetExpr::Index(_, _, _) => {
@@ -668,77 +675,65 @@ fn apply_aggregations(
             parse_quote!(map(|row: #flattened_tuple_type| ((#(#group_by_exprs, )*), ())) -> #after_group_pipeline)
         }
     } else {
-        let agg_initial =
-            repeat_tuple::<syn::Expr, syn::Expr>(|| parse_quote!(None), agg_exprs.len());
+        let agg_inits = aggregations.iter().map::<syn::Expr, _>(|agg| match agg {
+            Aggregation::CountUnique(..) => parse_quote!((hydroflow::rustc_hash::FxHashSet::default(), 0)),
+            Aggregation::Min(..) | Aggregation::Max(..) => parse_quote!(None),
+            Aggregation::Sum(..) | Aggregation::Count(..) => parse_quote!(0),
+            Aggregation::Choose(..) => parse_quote!(None),
+        });
 
         let agg_input_type =
             repeat_tuple::<syn::Type, syn::Type>(|| parse_quote!(_), agg_exprs.len());
         let agg_type: syn::Type =
-            repeat_tuple::<syn::Type, syn::Type>(|| parse_quote!(Option<_>), agg_exprs.len());
+            repeat_tuple::<syn::Type, syn::Type>(|| parse_quote!(_), agg_exprs.len());
 
         let group_by_stmts: Vec<syn::Stmt> = aggregations
             .iter()
             .enumerate()
-            .map(|(i, agg)| {
+            .flat_map(|(i, agg)| {
                 let idx = syn::Index::from(i);
                 let old_at_index: syn::Expr = parse_quote!(old.#idx);
                 let val_at_index: syn::Expr = parse_quote!(val.#idx);
 
-                let agg_expr: syn::Expr = match &agg {
-                    Aggregation::Min(..) => {
-                        parse_quote!(std::cmp::min(prev, #val_at_index))
-                    }
-                    Aggregation::Max(..) => {
-                        parse_quote!(std::cmp::max(prev, #val_at_index))
-                    }
-                    Aggregation::Sum(..) => {
-                        parse_quote!(prev + #val_at_index)
-                    }
-                    Aggregation::Count(..) => {
-                        parse_quote!(prev + 1)
-                    }
-                    Aggregation::CountUnique(..) => {
-                        parse_quote!({
-                            let prev: (hydroflow::rustc_hash::FxHashSet<_>, _) = prev;
-                            let mut set: hydroflow::rustc_hash::FxHashSet<_> = prev.0;
-                            if set.insert(#val_at_index) {
-                                (set, prev.1 + 1)
-                            } else {
-                                (set, prev.1)
-                            }
-                        })
-                    }
-                    Aggregation::Choose(..) => {
-                        parse_quote!(prev) // choose = select any 1 element from the relation. By default we select the 1st.
-                    }
+                // Statement to modify `prev: &mut _`
+                let agg_stmts: Vec<syn::Stmt> = match agg {
+                    Aggregation::Min(..) => parse_quote! {
+                        let prev: &mut Option<_> = &mut #old_at_index;
+                        if let Some(min) = prev.as_mut() {
+                            *min = ::std::cmp::min(*min, #val_at_index);
+                        } else {
+                            *prev = Some(#val_at_index);
+                        }
+                    },
+                    Aggregation::Max(..) => parse_quote! {
+                        let prev: &mut Option<_> = &mut #old_at_index;
+                        if let Some(max) = prev.as_mut() {
+                            *max = ::std::cmp::max(*max, #val_at_index);
+                        } else {
+                            *prev = Some(#val_at_index);
+                        }
+                    },
+                    Aggregation::Sum(..) => parse_quote! {
+                        #old_at_index += #val_at_index;
+                    },
+                    Aggregation::Count(..) => parse_quote! {
+                        #old_at_index += 1;
+                    },
+                    Aggregation::CountUnique(..) => parse_quote! {
+                        let (set, count): &mut (hydroflow::rustc_hash::FxHashSet<_>, _) = &mut #old_at_index;
+                        if set.insert(#val_at_index) {
+                            *count += 1
+                        }
+                    },
+                    Aggregation::Choose(..) => parse_quote! {
+                        // choose = select any 1 element from the relation. By default we select the 1st.
+                        let prev: &mut Option<_> =  &mut #old_at_index;
+                        if prev.is_none() {
+                            *prev = Some(#val_at_index)
+                        }
+                    },
                 };
-
-                let agg_initial: syn::Expr = match &agg {
-                    Aggregation::Min(..)
-                    | Aggregation::Max(..)
-                    | Aggregation::Sum(..)
-                    | Aggregation::Choose(..) => {
-                        parse_quote!(#val_at_index)
-                    }
-                    Aggregation::Count(..) => {
-                        parse_quote!(1)
-                    }
-                    Aggregation::CountUnique(..) => {
-                        parse_quote!({
-                            let mut set = hydroflow::rustc_hash::FxHashSet::<_>::default();
-                            set.insert(#val_at_index);
-                            (set, 1)
-                        })
-                    }
-                };
-
-                parse_quote! {
-                    #old_at_index = if let Some(prev) = #old_at_index.take() {
-                        Some(#agg_expr)
-                    } else {
-                        Some(#agg_initial)
-                    };
-                }
+                agg_stmts
             })
             .collect();
 
@@ -750,11 +745,11 @@ fn apply_aggregations(
 
         if out_expanded.persisted {
             parse_quote! {
-                map(#pre_group_by_map) -> group_by::<'static, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> #after_group_pipeline
+                map(#pre_group_by_map) -> group_by::<'static, #group_by_input_type, #agg_type>(|| (#( #agg_inits, )*), #group_by_fn) -> #after_group_pipeline
             }
         } else {
             parse_quote! {
-                map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> #after_group_pipeline
+                map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #agg_type>(|| (#( #agg_inits, )*), #group_by_fn) -> #after_group_pipeline
             }
         }
     }
