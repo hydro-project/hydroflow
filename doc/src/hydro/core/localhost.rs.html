@@ -281,6 +281,7 @@
 <a href="#281" id="281">281</a>
 <a href="#282" id="282">282</a>
 <a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, fs::File, io::Write, net::SocketAddr, sync::Arc};
 
 <span class="attr">#[cfg(unix)]
@@ -427,7 +428,8 @@
         file.write_all(binary.<span class="number">1</span>.as_slice())<span class="question-mark">?</span>;
         drop(file);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>orig_perms = std::fs::metadata(<span class="kw-2">&amp;</span>temp_path)<span class="question-mark">?</span>.permissions();
+        <span class="attr">#[allow(unused_mut)]
+        </span><span class="kw">let </span><span class="kw-2">mut </span>orig_perms = std::fs::metadata(<span class="kw-2">&amp;</span>temp_path)<span class="question-mark">?</span>.permissions();
         <span class="attr">#[cfg(unix)]
         </span>orig_perms.set_mode(<span class="number">0o755</span>);
         std::fs::set_permissions(<span class="kw-2">&amp;</span>temp_path, orig_perms)<span class="question-mark">?</span>;
