@@ -700,7 +700,7 @@ fn apply_aggregations(
                     Aggregation::CountUnique(..) => {
                         parse_quote!({
                             let prev: (hydroflow::rustc_hash::FxHashSet<_>, _) = prev;
-                            let mut set: hydroflow::rustc_hash::FxHashSet::<_> = prev.0;
+                            let mut set: hydroflow::rustc_hash::FxHashSet<_> = prev.0;
                             if set.insert(#val_at_index) {
                                 (set, prev.1 + 1)
                             } else {

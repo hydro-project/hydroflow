@@ -1740,7 +1740,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.14",
 ]
 
 [[package]]
@@ -1756,7 +1756,7 @@ dependencies = [
  "rust-sitter",
  "rust-sitter-tool",
  "slotmap",
- "syn 1.0.109",
+ "syn 2.0.14",
  "tempfile",
 ]
 
@@ -1767,7 +1767,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.14",
 ]
 
 [[package]]
@@ -1776,7 +1776,6 @@ version = "0.1.0"
 dependencies = [
  "auto_impl",
  "hydroflow_internalmacro",
- "once_cell",
  "prettyplease",
  "proc-macro2",
  "quote",
@@ -1784,7 +1783,7 @@ dependencies = [
  "serde",
  "serde_json",
  "slotmap",
- "syn 1.0.109",
+ "syn 2.0.14",
 ]
 
 [[package]]
@@ -1795,7 +1794,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.14",
 ]
 
 [[package]]
@@ -2219,7 +2218,6 @@ version = "0.1.0"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -2645,12 +2643,12 @@ checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 
 [[package]]
 name = "prettyplease"
-version = "0.1.25"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c8646e95016a7a6c4adea95bafa8a16baab64b583356217f2c85db4a39d9a86"
+checksum = "1ceca8aaf45b5c46ec7ed39fff75f57290368c1846d33d24a122ca81416ab058"
 dependencies = [
  "proc-macro2",
- "syn 1.0.109",
+ "syn 2.0.14",
 ]
 
 [[package]]
@@ -3033,7 +3031,7 @@ dependencies = [
  "prettyplease",
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.14",
 ]
 
 [[package]]
