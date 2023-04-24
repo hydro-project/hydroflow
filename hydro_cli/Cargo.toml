@@ -1,7 +1,9 @@
 [package]
 name = "hydro_cli"
-version = "0.1.0"
+publish = false # TODO(mingwei)
+version = "0.0.0"
 edition = "2021"
+license = "Apache-2.0"
 
 [lib]
 name = "hydro"

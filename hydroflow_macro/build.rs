@@ -37,7 +37,7 @@ fn write_operator_docgen(op_name: &str, mut write: &mut impl Write) -> std::io::
     Ok(())
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn update_book() -> Result<(), Box<dyn Error>> {
     let mut ops: Vec<_> = OPERATORS.iter().collect();
     ops.sort_by_key(|op| op.name);
 
@@ -157,6 +157,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         writeln!(write)?;
     }
 
+    Ok(())
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    if book_file(FILENAME)?.is_file() {
+        update_book()?;
+    }
     Ok(())
 }
 
