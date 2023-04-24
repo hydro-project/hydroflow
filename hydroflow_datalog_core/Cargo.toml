@@ -1,7 +1,11 @@
 [package]
 name = "hydroflow_datalog_core"
-version = "0.1.0"
+publish = true
+version = "0.0.0"
 edition = "2021"
+license = "Apache-2.0"
+documentation = "https://docs.rs/hydroflow_datalog_core/"
+description = "Datalog implementation for Hydroflow"
 
 [lib]
 path = "src/lib.rs"
@@ -17,7 +21,7 @@ syn = { version = "2.0.0", features = [ "parsing", "extra-traits" ] }
 proc-macro2 = "1.0.27"
 proc-macro-crate = "1.1.0"
 rust-sitter = "0.3.2"
-hydroflow_lang = { path = "../hydroflow_lang" }
+hydroflow_lang = { path = "../hydroflow_lang", version = "0.0.0" }
 
 [build-dependencies]
 rust-sitter-tool = "0.3.2"

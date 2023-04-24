@@ -1,8 +1,16 @@
 [package]
 name = "pusherator"
-version = "0.1.0"
+publish = true
+version = "0.0.0"
 edition = "2021"
+license = "Apache-2.0"
+documentation = "https://docs.rs/pusherator/"
+description = "Push-based version of Rust iterators"
+
+[features]
+default = [ "demux" ]
+demux = [ "dep:variadics" ]
 
 [dependencies]
 either = "1.8.0"
-variadics = { path = "../variadics" }
+variadics = { optional = true, path = "../variadics", version = "0.0.1" }

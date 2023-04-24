@@ -300,7 +300,7 @@ dependencies = [
 
 [[package]]
 name = "benches"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "criterion",
  "differential-dataflow",
@@ -653,7 +653,7 @@ version = "4.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9644cd56d6b87dbe899ef8b053e331c0637664e9e21a33dfcdc36093f5c5c4"
 dependencies = [
- "heck 0.4.1",
+ "heck",
  "proc-macro2",
  "quote",
  "syn 2.0.14",
@@ -1520,15 +1520,6 @@ dependencies = [
 
 [[package]]
 name = "heck"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d621efb26863f0e9924c6ac577e8275e5e6b77455db64ffa6c65c904e9e132c"
-dependencies = [
- "unicode-segmentation",
-]
-
-[[package]]
-name = "heck"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
@@ -1619,7 +1610,7 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hydro_cli"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1651,7 +1642,7 @@ dependencies = [
 
 [[package]]
 name = "hydro_cli_examples"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "dashmap",
  "futures",
@@ -1666,7 +1657,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "async-trait",
  "bincode",
@@ -1716,7 +1707,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_cli_integration"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "async-recursion",
  "async-trait",
@@ -1732,7 +1723,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "hydroflow_datalog_core",
  "proc-macro-crate",
@@ -1743,7 +1734,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog_core"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "hydroflow_lang",
  "insta",
@@ -1760,7 +1751,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_internalmacro"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -1770,7 +1761,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_lang"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "auto_impl",
  "hydroflow_internalmacro",
@@ -1786,7 +1777,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_macro"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "hydroflow_lang",
  "proc-macro-crate",
@@ -2200,7 +2191,7 @@ dependencies = [
 
 [[package]]
 name = "multiplatform_test"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2682,7 +2673,7 @@ dependencies = [
 
 [[package]]
 name = "pusherator"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "either",
  "variadics",
@@ -2997,7 +2988,7 @@ checksum = "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
 
 [[package]]
 name = "relalg"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "anyhow",
  "datadriven",
@@ -3154,14 +3145,14 @@ checksum = "1792db035ce95be60c3f8853017b3999209281c24e2ba5bc8e59bf97a0c590c1"
 
 [[package]]
 name = "sealed"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b5e421024b5e5edfbaa8e60ecf90bda9dbffc602dbb230e6028763f85f0c68c"
+checksum = "f4a8caec23b7800fb97971a1c6ae365b6239aaeddfb934d6265f8505e795699d"
 dependencies = [
- "heck 0.3.3",
+ "heck",
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.14",
 ]
 
 [[package]]
@@ -3452,7 +3443,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "555fc8147af6256f3931a36bb83ad0023240ce9cf2b319dec8236fd1f220b05f"
 dependencies = [
  "cfg-expr",
- "heck 0.4.1",
+ "heck",
  "pkg-config",
  "toml 0.7.3",
  "version-compare",
@@ -3969,12 +3960,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "unicode-segmentation"
-version = "1.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dd624098567895118886609431a7c3b8f516e41d30e0643f03d94592a147e36"
-
-[[package]]
 name = "unicode-width"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4017,7 +4002,7 @@ checksum = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a"
 
 [[package]]
 name = "variadics"
-version = "0.1.0"
+version = "0.0.1"
 
 [[package]]
 name = "vcpkg"

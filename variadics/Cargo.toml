@@ -1,4 +1,8 @@
 [package]
 name = "variadics"
-version = "0.1.0"
+publish = true
+version = "0.0.1"
 edition = "2021"
+license = "Apache-2.0"
+documentation = "https://docs.rs/variadics/"
+description = "Variadic generics on stable Rust using tuple lists"

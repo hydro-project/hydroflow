@@ -1,7 +1,11 @@
 [package]
 name = "hydroflow_lang"
-version = "0.1.0"
+publish = true
+version = "0.0.0"
 edition = "2021"
+license = "Apache-2.0"
+documentation = "https://docs.rs/hydroflow_lang/"
+description = "Hydroflow's Surface Syntax implementation"
 
 [features]
 default = []
@@ -9,7 +13,7 @@ diagnostics = []
 
 [dependencies]
 auto_impl = "1.0.1"
-hydroflow_internalmacro = { path = "../hydroflow_internalmacro" }
+hydroflow_internalmacro = { path = "../hydroflow_internalmacro", version = "0.0.0" }
 prettyplease = { version = "0.2.0", features = [ "verbatim" ] }
 proc-macro2 = { version = "1.0.0", features = ["span-locations"] }
 quote = "1.0.0"

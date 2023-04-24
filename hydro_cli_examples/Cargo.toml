@@ -1,6 +1,7 @@
 [package]
 name = "hydro_cli_examples"
-version = "0.1.0"
+publish = false
+version = "0.0.0"
 edition = "2021"
 
 [[example]]
