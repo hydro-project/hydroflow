@@ -1,7 +1,11 @@
 [package]
 name = "hydroflow_internalmacro"
-version = "0.1.0"
+publish = true
+version = "0.0.0"
 edition = "2021"
+license = "Apache-2.0"
+documentation = "https://docs.rs/hydroflow_internalmacro/"
+description = "Internal macros used in Hydroflow's codebase"
 
 [lib]
 proc-macro = true

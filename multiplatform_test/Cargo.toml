@@ -1,7 +1,11 @@
 [package]
 name = "multiplatform_test"
-version = "0.1.0"
+publish = true
+version = "0.0.0"
 edition = "2021"
+license = "Apache-2.0"
+documentation = "https://docs.rs/multiplatform_test/"
+description = "A simple attribute macro to combine `#[test]` and `#[wasm_bindgen_test]`"
 
 [lib]
 proc-macro = true
