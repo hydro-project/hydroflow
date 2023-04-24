@@ -1174,7 +1174,7 @@
                 .sinks
                 .get_mut()
                 .get_mut(<span class="kw-2">&amp;</span>item.<span class="number">0</span>)
-                .unwrap()
+                .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">&quot;No sink in this demux for key {}&quot;</span>, item.<span class="number">0</span>))
                 .as_mut(),
             item.<span class="number">1</span>,
         )

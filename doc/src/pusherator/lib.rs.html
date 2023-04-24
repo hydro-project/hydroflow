@@ -331,6 +331,8 @@
 <a href="#331" id="331">331</a>
 <a href="#332" id="332">332</a>
 <a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Pusherator generics and argument order conventions:
 //! - `Next` (being the next owned pusherator) should come first in generic
 //!   arguments.
@@ -342,6 +344,7 @@
 </span><span class="attr">#![feature(never_type)]
 #![feature(type_alias_impl_trait)]
 
+#[cfg(feature = <span class="string">&quot;demux&quot;</span>)]
 </span><span class="kw">pub mod </span>demux;
 <span class="kw">pub mod </span>filter;
 <span class="kw">pub mod </span>filter_map;
@@ -441,7 +444,8 @@
         <span class="self">self</span>.push_to(for_each::ForEach::new(func))
     }
 
-    <span class="kw">fn </span>demux&lt;Func, Nexts&gt;(
+    <span class="attr">#[cfg(feature = <span class="string">&quot;demux&quot;</span>)]
+    </span><span class="kw">fn </span>demux&lt;Func, Nexts&gt;(
         <span class="self">self</span>,
         func: Func,
         nexts: Nexts,
