@@ -277,7 +277,7 @@ async def run_experiment(deployment, machine_pool, experiment_id, summaries_file
     for machine in currently_deployed:
         machine_pool.append(machine)
 
-# rustup run nightly-2023-04-18-x86_64-unknown-linux-gnu hydro deploy ../hydro_cli_examples/toplotree_latency.hydro.py -- local/gcp DEPTH_OF_TREE
+# hydro deploy ../hydro_cli_examples/toplotree_latency.hydro.py -- local/gcp DEPTH_OF_TREE
 async def main(args):
     # the current timestamp
     import datetime
