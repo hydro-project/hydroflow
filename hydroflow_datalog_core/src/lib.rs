@@ -129,7 +129,7 @@ pub fn gen_hydroflow_graph(
             Declaration::Persist(_, ident) => ident.clone(),
             Declaration::Async(_, ident, _, _) => ident.clone(),
             Declaration::Rule(rule) => rule.target.name.clone(),
-            Declaration::Static(_, ident, _) => ident.clone()
+            Declaration::Static(_, ident, _) => ident.clone(),
         };
 
         if !created_rules.contains(&target_ident.value) {
