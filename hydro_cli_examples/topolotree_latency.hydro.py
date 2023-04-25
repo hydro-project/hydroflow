@@ -7,7 +7,6 @@ import json
 from pathlib import Path
 from aiostream import stream
 
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import uuid

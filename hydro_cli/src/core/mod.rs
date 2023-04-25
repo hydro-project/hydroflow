@@ -9,6 +9,8 @@ use tokio::sync::RwLock;
 pub mod deployment;
 pub use deployment::Deployment;
 
+pub mod progress;
+
 pub mod localhost;
 pub use localhost::LocalhostHost;
 
