@@ -282,6 +282,8 @@
 <a href="#282" id="282">282</a>
 <a href="#283" id="283">283</a>
 <a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, fs::File, io::Write, net::SocketAddr, sync::Arc};
 
 <span class="attr">#[cfg(unix)]
@@ -449,6 +451,8 @@
                 <span class="kw">if </span>stdin.write_all(line.as_bytes()).<span class="kw">await</span>.is_err() {
                     <span class="kw">break</span>;
                 }
+
+                stdin.flush().<span class="kw">await</span>.ok();
             }
         });
 
