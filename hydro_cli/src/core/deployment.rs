@@ -2,6 +2,7 @@ use super::ResourcePool;
 use super::ResourceResult;
 use super::Service;
 
+use super::progress;
 use super::Host;
 
 use anyhow::Result;
@@ -20,72 +21,84 @@ pub struct Deployment {
 
 impl Deployment {
     pub async fn deploy(&mut self) -> Result<()> {
-        let mut resource_batch = super::ResourceBatch::new();
-        let active_services = self
-            .services
-            .iter()
-            .filter(|service| service.upgrade().is_some())
-            .cloned()
-            .collect::<Vec<_>>();
-        self.services = active_services;
-
-        for service in self.services.iter_mut() {
-            service
-                .upgrade()
-                .unwrap()
-                .write()
-                .await
-                .collect_resources(&mut resource_batch);
-        }
-
-        for host in self.hosts.iter_mut() {
-            host.write().await.collect_resources(&mut resource_batch);
-        }
-
-        let result = Arc::new(
-            resource_batch
-                .provision(&mut self.resource_pool, self.last_resource_result.clone())
-                .await?,
-        );
-        self.last_resource_result = Some(result.clone());
-
-        let hosts_provisioned =
-            self.hosts
-                .iter_mut()
-                .map(|host: &mut Arc<RwLock<dyn Host>>| async {
-                    host.write().await.provision(&result).await;
-                });
-        futures::future::join_all(hosts_provisioned).await;
-        println!("[hydro] provisioned resources");
-
-        let services_future =
-            self.services
-                .iter_mut()
-                .map(|service: &mut Weak<RwLock<dyn Service>>| async {
-                    service
-                        .upgrade()
-                        .unwrap()
-                        .write()
-                        .await
-                        .deploy(&result)
-                        .await;
-                });
-
-        futures::future::join_all(services_future).await;
-        println!("[hydro] deployed services");
-
-        let all_services_ready =
-            self.services
+        progress::ProgressTracker::with_group("deploy", || async {
+            let mut resource_batch = super::ResourceBatch::new();
+            let active_services = self
+                .services
                 .iter()
-                .map(|service: &Weak<RwLock<dyn Service>>| async {
-                    service.upgrade().unwrap().write().await.ready().await?;
-                    Ok(()) as Result<()>
-                });
+                .filter(|service| service.upgrade().is_some())
+                .cloned()
+                .collect::<Vec<_>>();
+            self.services = active_services;
 
-        futures::future::try_join_all(all_services_ready).await?;
-        println!("[hydro] services ready");
+            for service in self.services.iter_mut() {
+                service
+                    .upgrade()
+                    .unwrap()
+                    .write()
+                    .await
+                    .collect_resources(&mut resource_batch);
+            }
 
-        Ok(())
+            for host in self.hosts.iter_mut() {
+                host.write().await.collect_resources(&mut resource_batch);
+            }
+
+            let result = Arc::new(
+                progress::ProgressTracker::with_group("provision", || async {
+                    resource_batch
+                        .provision(&mut self.resource_pool, self.last_resource_result.clone())
+                        .await
+                })
+                .await?,
+            );
+            self.last_resource_result = Some(result.clone());
+
+            progress::ProgressTracker::with_group("provision", || {
+                let hosts_provisioned =
+                    self.hosts
+                        .iter_mut()
+                        .map(|host: &mut Arc<RwLock<dyn Host>>| async {
+                            host.write().await.provision(&result).await;
+                        });
+                futures::future::join_all(hosts_provisioned)
+            })
+            .await;
+
+            progress::ProgressTracker::with_group("deploy", || {
+                let services_future =
+                    self.services
+                        .iter_mut()
+                        .map(|service: &mut Weak<RwLock<dyn Service>>| async {
+                            service
+                                .upgrade()
+                                .unwrap()
+                                .write()
+                                .await
+                                .deploy(&result)
+                                .await;
+                        });
+
+                futures::future::join_all(services_future)
+            })
+            .await;
+
+            progress::ProgressTracker::with_group("ready", || {
+                let all_services_ready =
+                    self.services
+                        .iter()
+                        .map(|service: &Weak<RwLock<dyn Service>>| async {
+                            service.upgrade().unwrap().write().await.ready().await?;
+                            Ok(()) as Result<()>
+                        });
+
+                futures::future::try_join_all(all_services_ready)
+            })
+            .await?;
+
+            Ok(())
+        })
+        .await
     }
 
     pub async fn start(&mut self) {
