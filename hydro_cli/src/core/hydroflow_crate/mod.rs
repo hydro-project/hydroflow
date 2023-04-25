@@ -9,7 +9,8 @@ use tokio::{sync::RwLock, task::JoinHandle};
 use self::ports::{HydroflowPortConfig, HydroflowSink, SourcePath};
 
 use super::{
-    Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
+    progress::ProgressTracker, Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
+    ServerStrategy, Service,
 };
 
 mod build;
@@ -182,9 +183,19 @@ impl Service for HydroflowCrate {
             return;
         }
 
-        let mut host_write = self.on.write().await;
-        let launched = host_write.provision(resource_result);
-        self.launched_host = Some(launched.await);
+        ProgressTracker::with_group(
+            &self
+                .src
+                .file_name()
+                .map(|v| v.to_string_lossy().to_string())
+                .unwrap_or("".to_string()),
+            || async {
+                let mut host_write = self.on.write().await;
+                let launched = host_write.provision(resource_result);
+                self.launched_host = Some(launched.await);
+            },
+        )
+        .await;
     }
 
     async fn ready(&mut self) -> Result<()> {
@@ -192,50 +203,63 @@ impl Service for HydroflowCrate {
             return Ok(());
         }
 
-        let launched_host = self.launched_host.as_ref().unwrap();
+        ProgressTracker::with_group(
+            &self
+                .src
+                .file_name()
+                .map(|v| v.to_string_lossy().to_string())
+                .unwrap_or("".to_string()),
+            || async {
+                let launched_host = self.launched_host.as_ref().unwrap();
 
-        let built = self
-            .built_binary
-            .take()
-            .unwrap()
-            .await
-            .as_ref()
-            .unwrap()
-            .clone();
-        let args = self.args.as_ref().cloned().unwrap_or_default();
+                let built = self
+                    .built_binary
+                    .take()
+                    .unwrap()
+                    .await
+                    .as_ref()
+                    .unwrap()
+                    .clone();
+                let args = self.args.as_ref().cloned().unwrap_or_default();
 
-        let binary = launched_host.launch_binary(built.clone(), &args).await?;
+                let binary = launched_host.launch_binary(built.clone(), &args).await?;
 
-        let mut bind_config = HashMap::new();
-        for (port_name, bind_type) in self.port_to_bind.iter() {
-            bind_config.insert(port_name.clone(), launched_host.server_config(bind_type));
-        }
+                let mut bind_config = HashMap::new();
+                for (port_name, bind_type) in self.port_to_bind.iter() {
+                    bind_config.insert(port_name.clone(), launched_host.server_config(bind_type));
+                }
 
-        let formatted_bind_config = serde_json::to_string(&bind_config).unwrap();
+                let formatted_bind_config = serde_json::to_string(&bind_config).unwrap();
 
-        // request stdout before sending config so we don't miss the "ready" response
-        let stdout_receiver = binary.write().await.stdout().await;
+                // request stdout before sending config so we don't miss the "ready" response
+                let stdout_receiver = binary.write().await.stdout().await;
 
-        binary
-            .write()
-            .await
-            .stdin()
-            .await
-            .send(format!("{formatted_bind_config}\n"))
-            .await?;
+                binary
+                    .write()
+                    .await
+                    .stdin()
+                    .await
+                    .send(format!("{formatted_bind_config}\n"))
+                    .await?;
 
-        let ready_line =
-            tokio::time::timeout(Duration::from_secs(60), stdout_receiver.recv()).await??;
-        if ready_line.starts_with("ready: ") {
-            *self.server_defns.try_write().unwrap() =
-                serde_json::from_str(ready_line.trim_start_matches("ready: ")).unwrap();
-        } else {
-            bail!("expected ready");
-        }
+                let ready_line = ProgressTracker::leaf(
+                    "waiting for ready".to_string(),
+                    tokio::time::timeout(Duration::from_secs(60), stdout_receiver.recv()),
+                )
+                .await??;
+                if ready_line.starts_with("ready: ") {
+                    *self.server_defns.try_write().unwrap() =
+                        serde_json::from_str(ready_line.trim_start_matches("ready: ")).unwrap();
+                } else {
+                    bail!("expected ready");
+                }
 
-        self.launched_binary = Some(binary);
+                self.launched_binary = Some(binary);
 
-        Ok(())
+                Ok(())
+            },
+        )
+        .await
     }
 
     async fn start(&mut self) {

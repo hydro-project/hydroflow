@@ -164,6 +164,8 @@ impl LaunchedHost for LaunchedLocalhost {
                 if stdin.write_all(line.as_bytes()).await.is_err() {
                     break;
                 }
+
+                stdin.flush().await.ok();
             }
         });
 
