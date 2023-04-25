@@ -2,7 +2,7 @@ use std::{borrow::Cow, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration
 
 use anyhow::Result;
 use async_channel::{Receiver, Sender};
-use async_ssh2_lite::{AsyncChannel, AsyncSession};
+use async_ssh2_lite::{ssh2::ErrorCode, AsyncChannel, AsyncSession, Error};
 use async_trait::async_trait;
 use futures::{AsyncWriteExt, StreamExt};
 use hydroflow_cli_integration::ServerBindConfig;
@@ -15,7 +15,8 @@ use tokio::{
 use crate::core::util::async_retry;
 
 use super::{
-    localhost::create_broadcast, LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy,
+    localhost::create_broadcast, progress::ProgressTracker, LaunchedBinary, LaunchedHost,
+    ResourceResult, ServerStrategy,
 };
 
 struct LaunchedSSHBinary {
@@ -117,43 +118,79 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         if sftp.stat(&binary_path).await.is_err() {
             let random = nanoid!(8);
             let temp_path = PathBuf::from(format!("/home/{user}/hydro-{random}"));
-            let mut created_file = sftp.create(&temp_path).await?;
-            println!("[hydro] uploading binary to /home/{user}/hydro-{random}");
-            created_file.write_all(&binary.1).await?;
+            let sftp = &sftp;
 
-            let mut orig_file_stat = sftp.stat(&temp_path).await?;
-            orig_file_stat.perm = Some(0o755); // allow the copied binary to be executed by anyone
-            created_file.setstat(orig_file_stat).await?;
-            created_file.close().await?;
-            drop(created_file);
-            println!("[hydro] uploaded binary to /home/{user}/hydro-{random}");
+            ProgressTracker::leaf_with_progress(
+                format!("uploading binary to /home/{user}/hydro-{unique_name}"),
+                |set_progress| {
+                    let binary = &binary;
+                    let binary_path = &binary_path;
+                    async move {
+                        let mut created_file = sftp.create(&temp_path).await?;
 
-            sftp.rename(&temp_path, &binary_path, None).await?;
-            println!("[hydro] moved binary to /home/{user}/hydro-{unique_name}");
+                        let mut index = 0;
+                        while index < binary.1.len() {
+                            let written = created_file
+                                .write(
+                                    &binary.1
+                                        [index..std::cmp::min(index + 128 * 1024, binary.1.len())],
+                                )
+                                .await?;
+                            index += written;
+                            set_progress(((index as f64 / binary.1.len() as f64) * 100.0) as u64);
+                        }
+                        let mut orig_file_stat = sftp.stat(&temp_path).await?;
+                        orig_file_stat.perm = Some(0o755); // allow the copied binary to be executed by anyone
+                        created_file.setstat(orig_file_stat).await?;
+                        created_file.close().await?;
+                        drop(created_file);
+
+                        match sftp.rename(&temp_path, binary_path, None).await {
+                            Ok(_) => {}
+                            Err(Error::Ssh2(e)) if e.code() == ErrorCode::SFTP(4) => {
+                                // file already exists
+                                sftp.unlink(&temp_path).await?;
+                            }
+                            Err(e) => return Err(e.into()),
+                        }
+
+                        anyhow::Ok(())
+                    }
+                },
+            )
+            .await?;
         }
         drop(sftp);
 
-        println!("[hydro] launching binary /home/{user}/hydro-{unique_name}");
-        let mut channel = async_retry(
-            &|| async {
-                Ok(
-                    tokio::time::timeout(Duration::from_secs(60), session.channel_session())
-                        .await??,
-                )
+        let channel = ProgressTracker::leaf(
+            format!("launching binary /home/{user}/hydro-{unique_name}"),
+            async {
+                let mut channel =
+                    async_retry(
+                        &|| async {
+                            Ok(tokio::time::timeout(
+                                Duration::from_secs(60),
+                                session.channel_session(),
+                            )
+                            .await??)
+                        },
+                        10,
+                        Duration::from_secs(1),
+                    )
+                    .await?;
+                let binary_path_string = binary_path.to_str().unwrap();
+                let args_string = args
+                    .iter()
+                    .map(|s| shell_escape::unix::escape(Cow::from(s)))
+                    .fold("".to_string(), |acc, v| format!("{acc} {v}"));
+                channel
+                    .exec(&format!("{binary_path_string}{args_string}"))
+                    .await?;
+
+                anyhow::Ok(channel)
             },
-            10,
-            Duration::from_secs(1),
         )
         .await?;
-        let binary_path_string = binary_path.to_str().unwrap();
-        let args_string = args
-            .iter()
-            .map(|s| shell_escape::unix::escape(Cow::from(s)))
-            .fold("".to_string(), |acc, v| format!("{acc} {v}"));
-        channel
-            .exec(&format!("{binary_path_string}{args_string}"))
-            .await?;
-        println!("[hydro] launched binary /home/{user}/hydro-{unique_name}");
 
         let (stdin_sender, mut stdin_receiver) = async_channel::unbounded::<String>();
         let mut stdin = channel.stream(0); // stream 0 is stdout/stdin, we use it for stdin
@@ -162,6 +199,8 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
                 if stdin.write_all(line.as_bytes()).await.is_err() {
                     break;
                 }
+
+                stdin.flush().await.unwrap();
             }
         });
 
