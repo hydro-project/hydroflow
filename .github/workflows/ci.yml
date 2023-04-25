@@ -201,7 +201,7 @@ jobs:
           source .venv/bin/activate
           cd python_tests
           pip install -r requirements.txt
-          rustup run "$(grep -oP '(?<=channel = ")\S+(?=")' ../../rust-toolchain.toml)-x86_64-unknown-linux-gnu" pytest *.py
+          pytest *.py
 
   lints:
     name: Lints
