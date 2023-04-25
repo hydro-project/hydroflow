@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from aiostream import stream
 
-# rustup run nightly-2023-03-01-x86_64-unknown-linux-gnu hydro deploy ../hydro_cli_examples/toplotree.hydro.py -- local/gcp DEPTH_OF_TREE
+# hydro deploy ../hydro_cli_examples/toplotree.hydro.py -- local/gcp DEPTH_OF_TREE
 async def main(args):
     num_replicas = int(args[1])
     deployment = hydro.Deployment()
