@@ -145,7 +145,7 @@ impl HydroflowCrate {
     }
 
     fn build(&mut self) -> JoinHandle<Arc<(String, Vec<u8>)>> {
-        let src_cloned = self.src.join("Cargo.toml").canonicalize().unwrap();
+        let src_cloned = self.src.canonicalize().unwrap();
         let example_cloned = self.example.clone();
         let features_cloned = self.features.clone();
         let host = self.on.clone();
