@@ -1,15 +1,11 @@
 use std::{
     collections::HashMap,
     path::PathBuf,
+    process::Command,
+    process::Stdio,
     sync::{Arc, Mutex},
 };
 
-use cargo::{
-    core::{compiler::BuildConfig, resolver::CliFeatures, Workspace},
-    ops::{CompileFilter, CompileOptions, FilterRule, LibRule},
-    util::{command_prelude::CompileMode, interning::InternedString},
-    Config,
-};
 use nanoid::nanoid;
 use once_cell::sync::{Lazy, OnceCell};
 
@@ -36,48 +32,63 @@ pub fn build_crate(
     };
     unit_of_work
         .get_or_init(|| {
-            let config = Config::default().unwrap();
-            config.shell().set_verbosity(cargo::core::Verbosity::Normal);
+            let mut build_args = vec!["build".to_string(), "--release".to_string()];
 
-            let workspace = Workspace::new(&src, &config).unwrap();
+            if let Some(example) = example.as_ref() {
+                build_args.push("--example".to_string());
+                build_args.push(example.clone());
+            }
 
-            let mut compile_options = CompileOptions::new(&config, CompileMode::Build).unwrap();
-            compile_options.filter = CompileFilter::Only {
-                all_targets: false,
-                lib: LibRule::Default,
-                bins: FilterRule::Just(vec![]),
-                examples: FilterRule::Just(vec![example.unwrap()]),
-                tests: FilterRule::Just(vec![]),
-                benches: FilterRule::Just(vec![]),
-            };
+            match target_type {
+                HostTargetType::Local => {}
+                HostTargetType::Linux => {
+                    build_args.push("--target".to_string());
+                    build_args.push("x86_64-unknown-linux-musl".to_string());
+                }
+            }
 
-            compile_options.build_config = BuildConfig::new(
-                &config,
-                None,
-                false,
-                &(match target_type {
-                    HostTargetType::Local => vec![],
-                    HostTargetType::Linux => vec!["x86_64-unknown-linux-musl".to_string()],
-                }),
-                CompileMode::Build,
-            )
-            .unwrap();
+            if let Some(features) = features {
+                build_args.push("--features".to_string());
+                build_args.push(features.join(","));
+            }
 
-            compile_options.build_config.requested_profile = InternedString::from("release");
-            compile_options.cli_features =
-                CliFeatures::from_command_line(&features.unwrap_or_default(), false, true).unwrap();
+            build_args.push("--message-format=json-render-diagnostics".to_string());
 
-            let res = cargo::ops::compile(&workspace, &compile_options).unwrap();
-            let binaries = res
-                .binaries
-                .iter()
-                .map(|b| b.path.to_string_lossy())
-                .collect::<Vec<_>>();
+            let mut command = Command::new("cargo")
+                .args(&build_args)
+                .current_dir(&src)
+                .stdout(Stdio::piped())
+                .spawn()
+                .unwrap();
 
-            if binaries.len() == 1 {
-                Arc::new((nanoid!(8), std::fs::read(binaries[0].to_string()).unwrap()))
+            let reader = std::io::BufReader::new(command.stdout.take().unwrap());
+            for message in cargo_metadata::Message::parse_stream(reader) {
+                match message.unwrap() {
+                    cargo_metadata::Message::CompilerArtifact(artifact) => {
+                        let is_output = if example.is_some() {
+                            artifact.target.kind.contains(&"example".to_string())
+                        } else {
+                            artifact.target.kind.contains(&"bin".to_string())
+                        };
+
+                        if is_output {
+                            let path = artifact.executable.unwrap();
+                            let path = path.into_string();
+                            let data = std::fs::read(path).unwrap();
+                            return Arc::new((nanoid!(8), data));
+                        }
+                    }
+                    cargo_metadata::Message::CompilerMessage(msg) => {
+                        eprintln!("{}", msg.message.rendered.unwrap())
+                    }
+                    _ => {}
+                }
+            }
+
+            if command.wait().unwrap().success() {
+                panic!("cargo build succeeded but no binary was emitted")
             } else {
-                panic!("expected exactly one binary, got {}", binaries.len())
+                panic!("failed to build crate")
             }
         })
         .clone()
