@@ -40,6 +40,21 @@ pub fn parse_pipeline(
         })
 }
 
+pub fn parse_static(
+    code_str: &rust_sitter::Spanned<String>,
+    get_span: &impl Fn((usize, usize)) -> Span,
+) -> Result<syn::Expr, Vec<Diagnostic>> {
+    syn::LitStr::new(&code_str.value, get_span(code_str.span))
+        .parse()
+        .map_err(|err| {
+            vec![Diagnostic {
+                span: err.span(),
+                level: Level::Error,
+                message: format!("Failed to parse static expression: {}", err),
+            }]
+        })
+}
+
 pub fn gen_hydroflow_graph(
     literal: proc_macro2::Literal,
 ) -> Result<HydroflowGraph, Vec<Diagnostic>> {
@@ -75,6 +90,7 @@ pub fn gen_hydroflow_graph(
     let mut persists = HashSet::new();
     let mut asyncs = Vec::new();
     let mut rules = Vec::new();
+    let mut statics = Vec::new();
 
     for stmt in &program.rules {
         match stmt {
@@ -97,6 +113,10 @@ pub fn gen_hydroflow_graph(
                 assert!(!MAGIC_RELATIONS.contains(&rule.target.name.name.as_str()));
                 rules.push(rule)
             }
+            Declaration::Static(_, ident, hf_code) => {
+                assert!(!MAGIC_RELATIONS.contains(&ident.name.as_str()));
+                statics.push((ident, hf_code));
+            }
         }
     }
 
@@ -112,6 +132,7 @@ pub fn gen_hydroflow_graph(
             Declaration::Persist(_, ident) => ident.clone(),
             Declaration::Async(_, ident, _, _) => ident.clone(),
             Declaration::Rule(rule) => rule.target.name.clone(),
+            Declaration::Static(_, ident, _) => ident.clone(),
         };
 
         if !created_rules.contains(&target_ident.value) {
@@ -206,6 +227,24 @@ pub fn gen_hydroflow_graph(
 
         flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
             #recv_pipeline -> [#recv_merge_index_lit] #target_ident
+        });
+    }
+
+    for (target, hf_code) in statics {
+        let my_merge_index = merge_counter
+            .entry(target.name.clone())
+            .or_insert_with(|| 0..)
+            .next()
+            .expect("Out of merge indices");
+
+        let my_merge_index_lit =
+            syn::LitInt::new(&format!("{}", my_merge_index), get_span(target.span));
+        let name = syn::Ident::new(&format!("{}_insert", target.name), get_span(target.span));
+
+        let static_expression: syn::Expr = parse_static(&hf_code.code, &get_span)?;
+
+        flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
+            repeat_iter(#static_expression) -> [#my_merge_index_lit] #name
         });
     }
 
