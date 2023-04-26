@@ -305,6 +305,11 @@
 <a href="#305" id="305">305</a>
 <a href="#306" id="306">306</a>
 <a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
 </pre></div><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">&quot;datalog&quot;</span>)]
 #[allow(dead_code)]
 </span><span class="kw">pub mod </span>datalog {
@@ -338,6 +343,11 @@
             </span>RustSnippet,
         ),
         Rule(Spanned&lt;Rule&gt;),
+        Static(
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.static&quot;</span>)] </span>(),
+            Spanned&lt;Ident&gt;,
+            RustSnippet,
+        ),
     }
 
     <span class="attr">#[derive(Debug, Clone)]

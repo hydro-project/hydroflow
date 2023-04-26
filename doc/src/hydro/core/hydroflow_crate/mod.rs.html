@@ -457,7 +457,7 @@
     </span>}
 
     <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; JoinHandle&lt;Arc&lt;(String, Vec&lt;u8&gt;)&gt;&gt; {
-        <span class="kw">let </span>src_cloned = <span class="self">self</span>.src.join(<span class="string">&quot;Cargo.toml&quot;</span>).canonicalize().unwrap();
+        <span class="kw">let </span>src_cloned = <span class="self">self</span>.src.canonicalize().unwrap();
         <span class="kw">let </span>example_cloned = <span class="self">self</span>.example.clone();
         <span class="kw">let </span>features_cloned = <span class="self">self</span>.features.clone();
         <span class="kw">let </span>host = <span class="self">self</span>.on.clone();

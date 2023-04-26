@@ -82,18 +82,22 @@
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
 <a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::HashMap,
     path::PathBuf,
+    process::Command,
+    process::Stdio,
     sync::{Arc, Mutex},
 };
 
-<span class="kw">use </span>cargo::{
-    core::{compiler::BuildConfig, resolver::CliFeatures, Workspace},
-    ops::{CompileFilter, CompileOptions, FilterRule, LibRule},
-    util::{command_prelude::CompileMode, interning::InternedString},
-    Config,
-};
 <span class="kw">use </span>nanoid::nanoid;
 <span class="kw">use </span>once_cell::sync::{Lazy, OnceCell};
 
@@ -120,48 +124,60 @@
     </span>};
     unit_of_work
         .get_or_init(|| {
-            <span class="kw">let </span>config = Config::default().unwrap();
-            config.shell().set_verbosity(cargo::core::Verbosity::Normal);
+            <span class="kw">let </span><span class="kw-2">mut </span>command = Command::new(<span class="string">&quot;cargo&quot;</span>);
+            command.args([<span class="string">&quot;build&quot;</span>.to_string(), <span class="string">&quot;--release&quot;</span>.to_string()]);
 
-            <span class="kw">let </span>workspace = Workspace::new(<span class="kw-2">&amp;</span>src, <span class="kw-2">&amp;</span>config).unwrap();
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(example) = example.as_ref() {
+                command.args([<span class="string">&quot;--example&quot;</span>, example]);
+            }
 
-            <span class="kw">let </span><span class="kw-2">mut </span>compile_options = CompileOptions::new(<span class="kw-2">&amp;</span>config, CompileMode::Build).unwrap();
-            compile_options.filter = CompileFilter::Only {
-                all_targets: <span class="bool-val">false</span>,
-                lib: LibRule::Default,
-                bins: FilterRule::Just(<span class="macro">vec!</span>[]),
-                examples: FilterRule::Just(<span class="macro">vec!</span>[example.unwrap()]),
-                tests: FilterRule::Just(<span class="macro">vec!</span>[]),
-                benches: FilterRule::Just(<span class="macro">vec!</span>[]),
-            };
+            <span class="kw">match </span>target_type {
+                HostTargetType::Local =&gt; {}
+                HostTargetType::Linux =&gt; {
+                    command.args([<span class="string">&quot;--target&quot;</span>, <span class="string">&quot;x86_64-unknown-linux-musl&quot;</span>]);
+                }
+            }
 
-            compile_options.build_config = BuildConfig::new(
-                <span class="kw-2">&amp;</span>config,
-                <span class="prelude-val">None</span>,
-                <span class="bool-val">false</span>,
-                <span class="kw-2">&amp;</span>(<span class="kw">match </span>target_type {
-                    HostTargetType::Local =&gt; <span class="macro">vec!</span>[],
-                    HostTargetType::Linux =&gt; <span class="macro">vec!</span>[<span class="string">&quot;x86_64-unknown-linux-musl&quot;</span>.to_string()],
-                }),
-                CompileMode::Build,
-            )
-            .unwrap();
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(features) = features {
+                command.args([<span class="string">&quot;--features&quot;</span>, <span class="kw-2">&amp;</span>features.join(<span class="string">&quot;,&quot;</span>)]);
+            }
 
-            compile_options.build_config.requested_profile = InternedString::from(<span class="string">&quot;release&quot;</span>);
-            compile_options.cli_features =
-                CliFeatures::from_command_line(<span class="kw-2">&amp;</span>features.unwrap_or_default(), <span class="bool-val">false</span>, <span class="bool-val">true</span>).unwrap();
+            command.arg(<span class="string">&quot;--message-format=json-render-diagnostics&quot;</span>);
 
-            <span class="kw">let </span>res = cargo::ops::compile(<span class="kw-2">&amp;</span>workspace, <span class="kw-2">&amp;</span>compile_options).unwrap();
-            <span class="kw">let </span>binaries = res
-                .binaries
-                .iter()
-                .map(|b| b.path.to_string_lossy())
-                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+            <span class="kw">let </span><span class="kw-2">mut </span>spawned = command
+                .current_dir(<span class="kw-2">&amp;</span>src)
+                .stdout(Stdio::piped())
+                .spawn()
+                .unwrap();
 
-            <span class="kw">if </span>binaries.len() == <span class="number">1 </span>{
-                Arc::new((<span class="macro">nanoid!</span>(<span class="number">8</span>), std::fs::read(binaries[<span class="number">0</span>].to_string()).unwrap()))
+            <span class="kw">let </span>reader = std::io::BufReader::new(spawned.stdout.take().unwrap());
+            <span class="kw">for </span>message <span class="kw">in </span>cargo_metadata::Message::parse_stream(reader) {
+                <span class="kw">match </span>message.unwrap() {
+                    cargo_metadata::Message::CompilerArtifact(artifact) =&gt; {
+                        <span class="kw">let </span>is_output = <span class="kw">if </span>example.is_some() {
+                            artifact.target.kind.contains(<span class="kw-2">&amp;</span><span class="string">&quot;example&quot;</span>.to_string())
+                        } <span class="kw">else </span>{
+                            artifact.target.kind.contains(<span class="kw-2">&amp;</span><span class="string">&quot;bin&quot;</span>.to_string())
+                        };
+
+                        <span class="kw">if </span>is_output {
+                            <span class="kw">let </span>path = artifact.executable.unwrap();
+                            <span class="kw">let </span>path = path.into_string();
+                            <span class="kw">let </span>data = std::fs::read(path).unwrap();
+                            <span class="kw">return </span>Arc::new((<span class="macro">nanoid!</span>(<span class="number">8</span>), data));
+                        }
+                    }
+                    cargo_metadata::Message::CompilerMessage(msg) =&gt; {
+                        <span class="macro">eprintln!</span>(<span class="string">&quot;{}&quot;</span>, msg.message.rendered.unwrap())
+                    }
+                    <span class="kw">_ </span>=&gt; {}
+                }
+            }
+
+            <span class="kw">if </span>spawned.wait().unwrap().success() {
+                <span class="macro">panic!</span>(<span class="string">&quot;cargo build succeeded but no binary was emitted&quot;</span>)
             } <span class="kw">else </span>{
-                <span class="macro">panic!</span>(<span class="string">&quot;expected exactly one binary, got {}&quot;</span>, binaries.len())
+                <span class="macro">panic!</span>(<span class="string">&quot;failed to build crate&quot;</span>)
             }
         })
         .clone()

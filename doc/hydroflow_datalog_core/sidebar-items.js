@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["gen_hydroflow_graph","hydroflow_graph_to_program","parse_pipeline"]};
+window.SIDEBAR_ITEMS = {"fn":["gen_hydroflow_graph","hydroflow_graph_to_program","parse_pipeline","parse_static"]};
