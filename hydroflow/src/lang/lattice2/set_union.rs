@@ -10,7 +10,8 @@ use super::{Compare, ConvertFrom, Merge};
 
 /// A set-union lattice.
 ///
-/// `Tag` specifies what datastructure to use, allowing us to deal with different datastructures generically.
+/// `Tag` specifies what datastructure to use, allowing us to deal with different datastructures
+/// generically.
 #[repr(transparent)]
 pub struct SetUnion<Tag, T>(Tag::Bind)
 where

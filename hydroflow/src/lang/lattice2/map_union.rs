@@ -11,7 +11,8 @@ use super::{Compare, ConvertFrom, Merge};
 
 /// A map-union lattice.
 ///
-/// `Tag` specifies what datastructure to use, allowing us to deal with different datastructures generically.
+/// `Tag` specifies what datastructure to use, allowing us to deal with different datastructures
+/// generically.
 #[repr(transparent)]
 pub struct MapUnion<Tag, K, Val>(pub Tag::Bind)
 where
@@ -37,12 +38,16 @@ where
 {
     fn merge(&mut self, other: MapUnion<TagOther, K, ValOther>) -> bool {
         let mut changed = false;
+        // This vec collect is needed to prevent simultaneous mut references `self.0.extend` and
+        // `self.0.get_mut`.
+        // TODO(mingwei): This could be fixed with a different structure, maybe some sort of
+        // `Collection` entry API.
         let iter: Vec<_> = other
             .0
             .into_iter()
             .filter_map(|(k_other, val_other)| {
                 match self.0.get_mut(&k_other) {
-                    // Key collision, merge into THIS.
+                    // Key collision, merge into `self`.
                     Some(val_self) => {
                         changed |= val_self.merge(val_other);
                         None

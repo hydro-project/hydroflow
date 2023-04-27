@@ -7,6 +7,7 @@
 //! non-`Lattice` types.
 use std::cmp::Ordering;
 
+pub mod pair;
 pub mod dom_pair;
 pub mod map_union;
 pub mod ord;

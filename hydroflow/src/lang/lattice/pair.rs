@@ -35,8 +35,8 @@ where
         this: &mut <PairRepr<SelfRA, SelfRB> as LatticeRepr>::Repr,
         delta: <PairRepr<DeltaRA, DeltaRB> as LatticeRepr>::Repr,
     ) -> bool {
-        // Do NOT use short-circuiting `&&`.
-        SelfRA::merge(&mut this.0, delta.0) & SelfRB::merge(&mut this.1, delta.1)
+        // Do NOT use short-circuiting `||`.
+        SelfRA::merge(&mut this.0, delta.0) | SelfRB::merge(&mut this.1, delta.1)
     }
 }
 
