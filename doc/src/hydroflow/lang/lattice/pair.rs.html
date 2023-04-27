@@ -169,8 +169,8 @@
         this: <span class="kw-2">&amp;mut </span>&lt;PairRepr&lt;SelfRA, SelfRB&gt; <span class="kw">as </span>LatticeRepr&gt;::Repr,
         delta: &lt;PairRepr&lt;DeltaRA, DeltaRB&gt; <span class="kw">as </span>LatticeRepr&gt;::Repr,
     ) -&gt; bool {
-        <span class="comment">// Do NOT use short-circuiting `&amp;&amp;`.
-        </span>SelfRA::merge(<span class="kw-2">&amp;mut </span>this.<span class="number">0</span>, delta.<span class="number">0</span>) &amp; SelfRB::merge(<span class="kw-2">&amp;mut </span>this.<span class="number">1</span>, delta.<span class="number">1</span>)
+        <span class="comment">// Do NOT use short-circuiting `||`.
+        </span>SelfRA::merge(<span class="kw-2">&amp;mut </span>this.<span class="number">0</span>, delta.<span class="number">0</span>) | SelfRB::merge(<span class="kw-2">&amp;mut </span>this.<span class="number">1</span>, delta.<span class="number">1</span>)
     }
 }
 
