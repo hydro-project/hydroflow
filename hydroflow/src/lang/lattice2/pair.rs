@@ -14,6 +14,16 @@ pub struct Pair<LatA, LatB> {
     b: LatB,
 }
 
+impl<LatA, LatB> Pair<LatA, LatB> {
+    /// Create a `Pair` from the given lattice values.
+    pub fn new(a: impl Into<LatA>, b: impl Into<LatB>) -> Self {
+        Self {
+            a: a.into(),
+            b: b.into(),
+        }
+    }
+}
+
 impl<LatASelf, LatAOther, LatBSelf, LatBOther> Merge<Pair<LatAOther, LatBOther>>
     for Pair<LatASelf, LatBSelf>
 where

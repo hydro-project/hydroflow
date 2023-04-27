@@ -16,6 +16,16 @@ pub struct DomPair<Key, Val> {
     val: Val,
 }
 
+impl<Key, Val> DomPair<Key, Val> {
+    /// Create a `DomPair` from the given `key` and `val`.
+    pub fn new(key: impl Into<Key>, val: impl Into<Val>) -> Self {
+        Self {
+            key: key.into(),
+            val: val.into(),
+        }
+    }
+}
+
 impl<KeySelf, KeyOther, ValSelf, ValOther> Merge<DomPair<KeyOther, ValOther>>
     for DomPair<KeySelf, ValSelf>
 where

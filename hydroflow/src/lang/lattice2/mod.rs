@@ -7,10 +7,10 @@
 //! non-`Lattice` types.
 use std::cmp::Ordering;
 
-pub mod pair;
 pub mod dom_pair;
 pub mod map_union;
 pub mod ord;
+pub mod pair;
 pub mod set_union;
 
 /// Trait for lattice merge (least upper bound).
