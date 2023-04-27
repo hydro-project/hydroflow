@@ -1,7 +1,7 @@
 //! Dominating pair compound lattice.
 //!
 //! When merging if one `Key` (usually a timestamp) fully dominates (is greater than) the other,
-//! than both that `Key` and corresponding `Val` are selected. If the `Key`s are equal or
+//! then both that `Key` and corresponding `Val` are selected. If the `Key`s are equal or
 //! incomparable, then both the `Key`s and `Val`s are merged.
 
 use std::cmp::Ordering;
