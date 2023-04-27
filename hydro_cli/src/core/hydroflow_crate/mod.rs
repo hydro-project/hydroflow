@@ -191,10 +191,9 @@ impl Service for HydroflowCrate {
 
         ProgressTracker::with_group(
             &self
-                .src
-                .file_name()
-                .map(|v| v.to_string_lossy().to_string())
-                .unwrap_or("".to_string()),
+                .display_id
+                .clone()
+                .unwrap_or_else(|| format!("service/{}", self.id)),
             || async {
                 let mut host_write = self.on.write().await;
                 let launched = host_write.provision(resource_result);
@@ -211,10 +210,9 @@ impl Service for HydroflowCrate {
 
         ProgressTracker::with_group(
             &self
-                .src
-                .file_name()
-                .map(|v| v.to_string_lossy().to_string())
-                .unwrap_or("".to_string()),
+                .display_id
+                .clone()
+                .unwrap_or_else(|| format!("service/{}", self.id)),
             || async {
                 let launched_host = self.launched_host.as_ref().unwrap();
 
