@@ -27,7 +27,8 @@ async def main(args):
     receiver = deployment.HydroflowCrate(
         src=str(Path(__file__).parent.absolute()),
         example="stdout_receiver",
-        on=machine2
+        on=machine2,
+        display_id="receiver"
     )
 
     sender_port_1 = sender.client_port()
@@ -40,30 +41,17 @@ async def main(args):
 
     print("deployed!")
 
-    # create this as separate variable to indicate to Hydro that we want to capture all stdout, even after the loop
-    receiver_out = await receiver.stdout()
-
     await deployment.start()
     print("started!")
 
     sender_1_connection = await (await sender_port_1.server_port()).into_sink()
     sender_2_connection = await (await sender_port_2.server_port()).into_sink()
     
-    print("got sink!")
-
     await sender_1_connection.send(bytes("hi 1!", "utf-8"))
-    print("sent data!")
-
-    async for log in receiver_out:
-        print(log)
-        assert log == "echo \"hi 1!\""
-        break
-
     await sender_2_connection.send(bytes("hi 2!", "utf-8"))
-    async for log in receiver_out:
-        print(log)
-        assert log == "echo \"hi 2!\""
-        break
+
+    while True:
+        pass
 
 if __name__ == "__main__":
     import sys
