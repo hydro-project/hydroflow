@@ -7,10 +7,11 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
-use proc_macro2::{Span, TokenTree};
+use proc_macro2::Span;
 use quote::ToTokens;
 use syn::{
-    parse_macro_input, parse_quote, AttrStyle, Expr, ExprLit, ItemConst, Lit, Member, Path, Type,
+    parse_macro_input, parse_quote, AttrStyle, Expr, ExprLit, Ident, ItemConst, Lit, Member, Meta,
+    MetaNameValue, Path, Type,
 };
 
 #[proc_macro]
@@ -76,26 +77,11 @@ fn operator_docgen_internal(item: &ItemConst) -> Result<(), Box<dyn Error>> {
 
     let mut in_hf_doctest = false;
     for attr in item.attrs.iter() {
-        if AttrStyle::Outer != attr.style || identity::<Path>(parse_quote!(doc)) != attr.path {
-            continue;
-        }
-        let tokens: Vec<_> = attr.tokens.clone().into_iter().collect();
-        if 2 != tokens.len() {
-            continue;
-        }
-        let TokenTree::Punct(punct) = &tokens[0] else {
-            continue;
-        };
-        if '=' != punct.as_char() {
-            continue;
-        }
-        let TokenTree::Literal(doc_lit_token) = &tokens[1] else {
-            continue;
-        };
-        let doc_lit = Lit::new(doc_lit_token.clone());
-        let Lit::Str(doc_lit_str) = doc_lit else {
-            continue;
-        };
+        let AttrStyle::Outer = attr.style else { continue; };
+        let Meta::NameValue(MetaNameValue { path, eq_token: _, value }) = &attr.meta else { continue; };
+        let Some("doc") = path.get_ident().map(Ident::to_string).as_deref() else { continue; };
+        let Expr::Lit(ExprLit { attrs: _, lit }) = value else { continue; };
+        let Lit::Str(doc_lit_str) = lit else { continue; };
         // At this point we know we have a `#[doc = "..."]`.
         let doc_str = doc_lit_str.value();
         let doc_str = doc_str.strip_prefix(' ').unwrap_or(&*doc_str);

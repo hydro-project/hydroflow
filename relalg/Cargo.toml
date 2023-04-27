@@ -1,7 +1,9 @@
 [package]
 name = "relalg"
-version = "0.1.0"
+publish = false
+version = "0.0.0"
 edition = "2021"
+license = "Apache-2.0"
 
 [dependencies]
 anyhow = "1.0"
@@ -9,5 +11,5 @@ datadriven = "0.6.0"
 hydroflow = { path = "../hydroflow" }
 proc-macro2 = "1.0"
 quote = "1.0"
-syn = { version = "1.0.0", features = [ "parsing", "extra-traits" ] }
-prettyplease = "0.1.21"
+syn = { version = "2.0.0", features = [ "parsing", "extra-traits" ] }
+prettyplease = "0.2.0"

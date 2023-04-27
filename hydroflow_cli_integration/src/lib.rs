@@ -450,7 +450,7 @@ impl<T, S: Sink<T, Error = io::Error> + Send + Sync> Sink<(u32, T)> for DemuxDra
                 .sinks
                 .get_mut()
                 .get_mut(&item.0)
-                .unwrap()
+                .unwrap_or_else(|| panic!("No sink in this demux for key {}", item.0))
                 .as_mut(),
             item.1,
         )

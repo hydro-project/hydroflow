@@ -5,7 +5,7 @@ use serde::{
     ser::SerializeStructVariant,
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use std::{cell::RefCell, rc::Weak};
+use std::{cell::RefCell, rc::Rc};
 
 impl Serialize for KvsRequest {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -36,7 +36,7 @@ impl Serialize for KvsRequest {
 }
 
 pub struct KvsRequestDeserializer {
-    pub collector: Weak<RefCell<BufferPool>>,
+    pub collector: Rc<RefCell<BufferPool>>,
 }
 
 impl<'de> DeserializeSeed<'de> for KvsRequestDeserializer {
@@ -47,7 +47,7 @@ impl<'de> DeserializeSeed<'de> for KvsRequestDeserializer {
         D: serde::Deserializer<'de>,
     {
         struct KvsRequestVisitor {
-            collector: Weak<RefCell<BufferPool>>,
+            collector: Rc<RefCell<BufferPool>>,
         }
         impl<'de> Visitor<'de> for KvsRequestVisitor {
             type Value = KvsRequest;
@@ -135,7 +135,7 @@ impl<'de> DeserializeSeed<'de> for KvsRequestDeserializer {
 }
 
 struct KvsRequestGossipVisitor {
-    collector: Weak<RefCell<BufferPool>>,
+    collector: Rc<RefCell<BufferPool>>,
 }
 impl<'de> Visitor<'de> for KvsRequestGossipVisitor {
     type Value = KvsRequest;

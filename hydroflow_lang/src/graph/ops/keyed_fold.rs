@@ -126,21 +126,33 @@ pub const KEYED_FOLD: OperatorConstraints = OperatorConstraints {
         let aggfn = &arguments[1];
 
         let (write_prologue, write_iterator, write_iterator_after) = match persistence {
-            Persistence::Tick => (
-                Default::default(),
-                quote_spanned! {op_span=>
-                    let #ident = {
-                        #[inline(always)]
-                        fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A, B>(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
-                        check_input(#input).fold(#root::rustc_hash::FxHashMap::<#( #generic_type_args ),*>::default(), |mut ht, kv| {
-                            let entry = ht.entry(kv.0).or_insert_with(#initfn);
-                            #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
-                            ht
-                        }).into_iter()
-                    };
-                },
-                Default::default(),
-            ),
+            Persistence::Tick => {
+                let groupbydata_ident = wc.make_ident("groupbydata");
+                let hashtable_ident = wc.make_ident("hashtable");
+
+                (
+                    quote_spanned! {op_span=>
+                        let #groupbydata_ident = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashMap::<#( #generic_type_args ),*>::default()));
+                    },
+                    quote_spanned! {op_span=>
+                        let mut #hashtable_ident = #context.state_ref(#groupbydata_ident).borrow_mut();
+
+                        {
+                            #[inline(always)]
+                            fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A: ::std::clone::Clone, B: ::std::clone::Clone>(iter: Iter)
+                                -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
+
+                            for kv in check_input(#input) {
+                                let entry = #hashtable_ident.entry(kv.0).or_insert_with(#initfn);
+                                #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
+                            }
+                        }
+
+                        let #ident = #hashtable_ident.drain();
+                    },
+                    Default::default(),
+                )
+            }
             Persistence::Static => {
                 let groupbydata_ident = wc.make_ident("groupbydata");
                 let hashtable_ident = wc.make_ident("hashtable");
@@ -150,15 +162,17 @@ pub const KEYED_FOLD: OperatorConstraints = OperatorConstraints {
                         let #groupbydata_ident = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashMap::<#( #generic_type_args ),*>::default()));
                     },
                     quote_spanned! {op_span=>
-                    let mut #hashtable_ident = #context.state_ref(#groupbydata_ident).borrow_mut();
+                        let mut #hashtable_ident = #context.state_ref(#groupbydata_ident).borrow_mut();
 
-                    #[inline(always)]
-                    fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A: ::std::clone::Clone, B: ::std::clone::Clone>(iter: Iter)
-                        -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
+                        {
+                            #[inline(always)]
+                            fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A: ::std::clone::Clone, B: ::std::clone::Clone>(iter: Iter)
+                                -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
 
-                        for kv in check_input(#input) {
-                            let entry = #hashtable_ident.entry(kv.0).or_insert_with(#initfn);
-                            #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
+                            for kv in check_input(#input) {
+                                let entry = #hashtable_ident.entry(kv.0).or_insert_with(#initfn);
+                                #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
+                            }
                         }
 
                         let #ident = #hashtable_ident

@@ -8,7 +8,6 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::hash::Hasher;
-use std::time::Duration;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct IncrementRequest {
@@ -118,7 +117,7 @@ async fn main() {
             let x = procinfo::pid::stat_self().unwrap();
             let bytes = x.rss * 1024 * 4;
             println!("memory,{}", bytes);
-            tokio::time::sleep(Duration::from_secs(1)).await;
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
     };
 

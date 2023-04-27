@@ -9,6 +9,7 @@
 #![feature(never_type)]
 #![feature(type_alias_impl_trait)]
 
+#[cfg(feature = "demux")]
 pub mod demux;
 pub mod filter;
 pub mod filter_map;
@@ -108,6 +109,7 @@ pub trait PusheratorBuild {
         self.push_to(for_each::ForEach::new(func))
     }
 
+    #[cfg(feature = "demux")]
     fn demux<Func, Nexts>(
         self,
         func: Func,

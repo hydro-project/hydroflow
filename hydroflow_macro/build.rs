@@ -37,7 +37,10 @@ fn write_operator_docgen(op_name: &str, mut write: &mut impl Write) -> std::io::
     Ok(())
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn update_book() -> Result<(), Box<dyn Error>> {
+    let mut ops: Vec<_> = OPERATORS.iter().collect();
+    ops.sort_by_key(|op| op.name);
+
     let mut write = book_file_writer(FILENAME)?;
     writeln!(
         write,
@@ -45,9 +48,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         file!().replace(std::path::MAIN_SEPARATOR, "/")
     )?;
     writeln!(write, "{}", PREFIX)?;
-    let mut ops: Vec<_> = OPERATORS.iter().collect();
-    ops.sort_by_key(|op| op.name);
-    for op in ops {
+    writeln!(write)?;
+    writeln!(write, "| All Operators | | | |")?;
+    writeln!(write, "| --- | --- | --- | --- |")?;
+    for op_chunk in ops.chunks(4) {
+        write!(write, "|")?;
+        for op in op_chunk {
+            write!(write, " [`{0}`](#{0}) |", op.name)?;
+        }
+        writeln!(write)?;
+    }
+    writeln!(write)?;
+    for &op in ops.iter() {
         writeln!(write, "## `{}`", op.name)?;
 
         writeln!(write, "| Inputs | Syntax | Outputs | Flow |")?;
@@ -148,9 +160,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-const PREFIX: &str = "\
-# Hydroflow's Built-in Operators
+fn main() -> Result<(), Box<dyn Error>> {
+    if book_file(FILENAME)?.is_file() {
+        update_book()?;
+    }
+    Ok(())
+}
 
-In our previous examples we made use of some of Hydroflow's built-in operators.
-Here we document each operators in more detail. Most of these operators
+const PREFIX: &str = "\
+# Hydroflow's Operators
+
+In our previous examples we made use of some of Hydroflow's operators.
+Here we document each operator in more detail. Most of these operators
 are based on the Rust equivalents for iterators; see the [Rust documentation](https://doc.rust-lang.org/std/iter/trait.Iterator.html).";

@@ -76,7 +76,7 @@ pub fn run_server(
                                     let reader = std::io::Cursor::new(&multipart_buffer.0[1][..]);
                                     let mut deserializer = bincode::Deserializer::with_reader(reader, options());
                                     let req = KvsRequestDeserializer {
-                                        collector: Rc::downgrade(&buffer_pool),
+                                        collector: Rc::clone(&buffer_pool),
                                     }.deserialize(&mut deserializer).unwrap();
 
                                     client_to_transducer_tx.send((req, routing_id)).unwrap();
@@ -206,7 +206,7 @@ pub fn run_server(
 
                 // broadcast out locally generated changes to other nodes.
                 client_input[broadcast]
-                    -> batch(batch_interval_ticker)
+                    -> batch(1000, batch_interval_ticker)
                     -> map(|(key, reg)| (key, Some(reg)))
                     -> group_by::<'tick>(<BottomRepr<MyLastWriteWins> as LatticeRepr>::Repr::default, <BottomRepr<MyLastWriteWins> as Merge<BottomRepr<MyLastWriteWins>>>::merge)
                     -> filter_map(|(key, opt_reg)| opt_reg.map(|reg| (key, reg))) // to filter out bottom types since they carry no useful info.

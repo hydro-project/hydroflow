@@ -83,7 +83,9 @@ pub const DEST_SINK_SERDE: OperatorConstraints = OperatorConstraints {
 
         let write_iterator = quote_spanned! {op_span=>
             let #ident = #root::pusherator::for_each::ForEach::new(|item| {
-                #send_ident.send(item).expect("Failed to send async write item for processing.");
+                if let Err(err) = #send_ident.send(item) {
+                    panic!("Failed to send async write item for processing.: {}", err);
+                }
             });
         };
 

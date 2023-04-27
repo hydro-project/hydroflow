@@ -37,6 +37,9 @@ pub trait Collection<K, V> {
         V: 's,
         Self: 's;
     fn entries(&self) -> Self::Entries<'_>;
+
+    type IntoEntries: Iterator<Item = (K, V)>;
+    fn into_entries(self) -> Self::IntoEntries;
 }
 
 impl<K: 'static + Eq + Hash> Collection<K, ()> for HashSet<K> {
@@ -58,6 +61,11 @@ impl<K: 'static + Eq + Hash> Collection<K, ()> for HashSet<K> {
     type Entries<'s> = impl Iterator<Item = (&'s K, &'s ())>;
     fn entries(&self) -> Self::Entries<'_> {
         self.keys().map(|k| (k, &()))
+    }
+
+    type IntoEntries = impl Iterator<Item = (K, ())>;
+    fn into_entries(self) -> Self::IntoEntries {
+        self.into_iter().map(|k| (k, ()))
     }
 }
 
@@ -81,6 +89,11 @@ impl<K: 'static + Eq + Ord> Collection<K, ()> for BTreeSet<K> {
     fn entries(&self) -> Self::Entries<'_> {
         self.keys().map(|k| (k, &()))
     }
+
+    type IntoEntries = impl Iterator<Item = (K, ())>;
+    fn into_entries(self) -> Self::IntoEntries {
+        self.into_iter().map(|k| (k, ()))
+    }
 }
 
 impl<K: 'static + Eq> Collection<K, ()> for Vec<K> {
@@ -102,6 +115,11 @@ impl<K: 'static + Eq> Collection<K, ()> for Vec<K> {
     type Entries<'s> = impl Iterator<Item = (&'s K, &'s ())>;
     fn entries(&self) -> Self::Entries<'_> {
         self.keys().map(|k| (k, &()))
+    }
+
+    type IntoEntries = impl Iterator<Item = (K, ())>;
+    fn into_entries(self) -> Self::IntoEntries {
+        self.into_iter().map(|k| (k, ()))
     }
 }
 
@@ -125,6 +143,11 @@ impl<K: 'static + Eq> Collection<K, ()> for Option<K> {
     fn entries(&self) -> Self::Entries<'_> {
         self.keys().map(|k| (k, &()))
     }
+
+    type IntoEntries = impl Iterator<Item = (K, ())>;
+    fn into_entries(self) -> Self::IntoEntries {
+        self.into_iter().map(|k| (k, ()))
+    }
 }
 
 impl<K: 'static + Eq> Collection<K, ()> for Single<K> {
@@ -147,6 +170,11 @@ impl<K: 'static + Eq> Collection<K, ()> for Single<K> {
     fn entries(&self) -> Self::Entries<'_> {
         self.keys().map(|k| (k, &()))
     }
+
+    type IntoEntries = impl Iterator<Item = (K, ())>;
+    fn into_entries(self) -> Self::IntoEntries {
+        self.into_iter().map(|k| (k, ()))
+    }
 }
 
 impl<K: 'static + Eq, const N: usize> Collection<K, ()> for Array<K, N> {
@@ -168,6 +196,11 @@ impl<K: 'static + Eq, const N: usize> Collection<K, ()> for Array<K, N> {
     type Entries<'s> = impl Iterator<Item = (&'s K, &'s ())>;
     fn entries(&self) -> Self::Entries<'_> {
         self.keys().map(|k| (k, &()))
+    }
+
+    type IntoEntries = impl Iterator<Item = (K, ())>;
+    fn into_entries(self) -> Self::IntoEntries {
+        self.into_iter().map(|k| (k, ()))
     }
 }
 
@@ -205,6 +238,11 @@ impl<K: 'static + Eq, const N: usize> Collection<K, ()> for MaskedArray<K, N> {
     fn entries(&self) -> Self::Entries<'_> {
         self.keys().map(|k| (k, &()))
     }
+
+    type IntoEntries = impl Iterator<Item = (K, ())>;
+    fn into_entries(self) -> Self::IntoEntries {
+        self.into_iter().map(|k| (k, ()))
+    }
 }
 
 impl<K: 'static + Eq + Hash, V: 'static> Collection<K, V> for HashMap<K, V> {
@@ -226,6 +264,11 @@ impl<K: 'static + Eq + Hash, V: 'static> Collection<K, V> for HashMap<K, V> {
     type Entries<'s> = impl Iterator<Item = (&'s K, &'s V)>;
     fn entries(&self) -> Self::Entries<'_> {
         self.iter()
+    }
+
+    type IntoEntries = std::collections::hash_map::IntoIter<K, V>;
+    fn into_entries(self) -> Self::IntoEntries {
+        self.into_iter()
     }
 }
 
@@ -249,6 +292,11 @@ impl<K: 'static + Eq + Ord, V: 'static> Collection<K, V> for BTreeMap<K, V> {
     fn entries(&self) -> Self::Entries<'_> {
         self.iter()
     }
+
+    type IntoEntries = std::collections::btree_map::IntoIter<K, V>;
+    fn into_entries(self) -> Self::IntoEntries {
+        self.into_iter()
+    }
 }
 
 impl<K: 'static + Eq, V: 'static> Collection<K, V> for Vec<(K, V)> {
@@ -270,6 +318,11 @@ impl<K: 'static + Eq, V: 'static> Collection<K, V> for Vec<(K, V)> {
     type Entries<'s> = impl Iterator<Item = (&'s K, &'s V)>;
     fn entries(&self) -> Self::Entries<'_> {
         self.iter().map(|(k, v)| (k, v))
+    }
+
+    type IntoEntries = std::vec::IntoIter<(K, V)>;
+    fn into_entries(self) -> Self::IntoEntries {
+        self.into_iter()
     }
 }
 
@@ -295,6 +348,11 @@ impl<K: 'static + Eq, V: 'static, const N: usize> Collection<K, V> for Array<(K,
     type Entries<'s> = impl Iterator<Item = (&'s K, &'s V)>;
     fn entries(&self) -> Self::Entries<'_> {
         self.0.iter().map(|(k, v)| (k, v))
+    }
+
+    type IntoEntries = std::array::IntoIter<(K, V), N>;
+    fn into_entries(self) -> Self::IntoEntries {
+        self.0.into_iter()
     }
 }
 
@@ -334,6 +392,15 @@ impl<K: 'static + Eq, V: 'static, const N: usize> Collection<K, V> for MaskedArr
             .filter(|(mask, _)| **mask)
             .map(|(_, (k, v))| (k, v))
     }
+
+    type IntoEntries = impl Iterator<Item = (K, V)>;
+    fn into_entries(self) -> Self::IntoEntries {
+        self.mask
+            .into_iter()
+            .zip(self.vals.into_iter())
+            .filter(|(mask, _)| *mask)
+            .map(|(_, kv)| kv)
+    }
 }
 
 impl<K: 'static + Eq, V: 'static> Collection<K, V> for Single<(K, V)> {
@@ -364,6 +431,11 @@ impl<K: 'static + Eq, V: 'static> Collection<K, V> for Single<(K, V)> {
     fn entries(&self) -> Self::Entries<'_> {
         std::iter::once((&self.0 .0, &self.0 .1))
     }
+
+    type IntoEntries = std::iter::Once<(K, V)>;
+    fn into_entries(self) -> Self::IntoEntries {
+        std::iter::once((self.0 .0, self.0 .1))
+    }
 }
 
 #[repr(transparent)]
@@ -375,6 +447,11 @@ impl<T> IntoIterator for Single<T> {
 
     fn into_iter(self) -> Self::IntoIter {
         std::iter::once(self.0)
+    }
+}
+impl<T> From<T> for Single<T> {
+    fn from(value: T) -> Self {
+        Self(value)
     }
 }
 

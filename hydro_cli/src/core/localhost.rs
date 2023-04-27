@@ -144,6 +144,7 @@ impl LaunchedHost for LaunchedLocalhost {
         file.write_all(binary.1.as_slice())?;
         drop(file);
 
+        #[allow(unused_mut)]
         let mut orig_perms = std::fs::metadata(&temp_path)?.permissions();
         #[cfg(unix)]
         orig_perms.set_mode(0o755);
@@ -164,6 +165,8 @@ impl LaunchedHost for LaunchedLocalhost {
                 if stdin.write_all(line.as_bytes()).await.is_err() {
                     break;
                 }
+
+                stdin.flush().await.ok();
             }
         });
 

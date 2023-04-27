@@ -25,6 +25,31 @@ pub fn test_minimal() {
 }
 
 #[multiplatform_test]
+pub fn test_minimal_static() {
+    let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    let mut flow = datalog!(
+        r#"
+        .static input `vec![(1, 2), (3, 4)]`
+        .output out `for_each(|v| out.send(v).unwrap())`
+
+        out(y, x) :- input(x, y).
+        "#
+    );
+
+    flow.run_tick();
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut out_recv),
+        &[(2, 1), (4, 3)]
+    );
+    flow.run_tick();
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut out_recv),
+        &[(2, 1), (4, 3)]
+    );
+}
+
+#[multiplatform_test]
 pub fn test_duplicated_facts() {
     let (in_send, input) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (out, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();

@@ -31,6 +31,11 @@ pub mod datalog {
             RustSnippet,
         ),
         Rule(Spanned<Rule>),
+        Static(
+            #[rust_sitter::leaf(text = ".static")] (),
+            Spanned<Ident>,
+            RustSnippet,
+        ),
     }
 
     #[derive(Debug, Clone)]

@@ -1,15 +1,19 @@
 [package]
 name = "hydroflow"
-version = "0.1.0"
+publish = true
+version = "0.0.0"
 edition = "2021"
+license = "Apache-2.0"
+documentation = "https://docs.rs/hydroflow/"
+description = "Hydro's low-level dataflow runtime and IR"
 
 [features]
 default = [ "async", "macros" ]
-async = [ "futures", "futures-batch" ]
+async = [ "dep:futures" ]
 macros = [ "hydroflow_macro", "hydroflow_datalog" ]
 hydroflow_macro = [ "dep:hydroflow_macro" ]
 hydroflow_datalog = [ "dep:hydroflow_datalog" ]
-cli_integration = [ "hydroflow_cli_integration", "async-trait" ]
+cli_integration = [ "dep:hydroflow_cli_integration", "dep:async-trait" ]
 kvs_bench = []
 
 [dependencies]
@@ -17,22 +21,21 @@ bincode = "1.3"
 byteorder = "1.4.3"
 bytes = "1.1.0"
 futures = { version = "0.3", optional = true }
-futures-batch = { version = "0.6.1", optional = true }
-hydroflow_datalog = { optional = true, path = "../hydroflow_datalog" }
-hydroflow_lang = { path = "../hydroflow_lang" }
-hydroflow_macro = { optional = true, path = "../hydroflow_macro" }
-pusherator = { path = "../pusherator" }
+hydroflow_datalog = { optional = true, path = "../hydroflow_datalog", version = "0.0.0" }
+hydroflow_lang = { path = "../hydroflow_lang", version = "0.0.0" }
+hydroflow_macro = { optional = true, path = "../hydroflow_macro", version = "0.0.0" }
+pusherator = { path = "../pusherator", version = "0.0.0" }
 ref-cast = "1.0"
 regex = "1"
-sealed = "0.4"
+sealed = "0.5"
 serde = { version = "1", features = [ "derive" ] }
 serde_json = "1"
 slotmap = "1.0"
 static_assertions = "1.1.0"
 tokio-stream = { version = "0.1.10", features = [ "io-util", "sync" ] }
-variadics = { path = "../variadics" }
+variadics = { path = "../variadics", version = "0.0.1" }
 rustc-hash = "1.1.0"
-hydroflow_cli_integration = { optional = true, path = "../hydroflow_cli_integration" }
+hydroflow_cli_integration = { optional = true, path = "../hydroflow_cli_integration", version = "0.0.0" }
 async-trait = { version = "0.1", optional = true }
 crdts = "7.2.0"
 rand_distr = "0.4.3"
@@ -61,7 +64,7 @@ core_affinity = "0.5.10"
 futures = { version = "0.3" }
 insta = "1.7.1"
 itertools = "0.10.3"
-multiplatform_test = { path = "../multiplatform_test" }
+multiplatform_test = { path = "../multiplatform_test", version = "0.0.0" }
 wasm-bindgen-test-macro = "0.3.34"
 wasm-bindgen-test = "0.3.34"
 rand = {version = "0.8.4", features = ["small_rng"]}
