@@ -4,10 +4,12 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use crate::lang::collections::{Array, MaskedArray, Single};
 
+/// A trait (supposedly) for any type which has one type parameter.
 pub trait Tag1<T> {
     type Bind;
 }
 
+/// A trait (supposedly) for any type which has two type parameters.
 pub trait Tag2<T, U> {
     type Bind;
 }
