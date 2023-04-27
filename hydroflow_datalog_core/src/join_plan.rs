@@ -132,19 +132,10 @@ fn emit_join_input_pipeline(
     let statement = match source_expanded.tee_idx {
         Some(i) => {
             let in_index = syn::LitInt::new(&format!("{}", i), Span::call_site());
-
-            if anti_join && source_expanded.persisted {
-                parse_quote_spanned!(source_expanded.span=> #source_name [#in_index] -> persist() -> #rhs)
-            } else {
-                parse_quote_spanned!(source_expanded.span=> #source_name [#in_index] -> #rhs)
-            }
+            parse_quote_spanned!(source_expanded.span=> #source_name [#in_index] -> #rhs)
         }
         None => {
-            if anti_join && source_expanded.persisted {
-                parse_quote_spanned!(source_expanded.span=> #source_name -> persist() -> #rhs)
-            } else {
-                parse_quote_spanned!(source_expanded.span=> #source_name -> #rhs)
-            }
+            parse_quote_spanned!(source_expanded.span=> #source_name -> #rhs)
         }
     };
 

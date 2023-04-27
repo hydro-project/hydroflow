@@ -232,7 +232,6 @@ declare_ops![
     demux::DEMUX,
     dest_file::DEST_FILE,
     dest_sink::DEST_SINK,
-    dest_sink_chunked::DEST_SINK_CHUNKED,
     dest_sink_serde::DEST_SINK_SERDE,
     difference::DIFFERENCE,
     enumerate::ENUMERATE,
