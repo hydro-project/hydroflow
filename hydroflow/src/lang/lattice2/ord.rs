@@ -2,7 +2,7 @@
 //!
 //! Uses [std::cmp::Ord`].
 
-use super::{ConvertFrom, Merge};
+use super::{Compare, ConvertFrom, Merge};
 
 #[repr(transparent)]
 #[derive(Default, PartialEq, PartialOrd, Eq, Ord)]
@@ -14,6 +14,7 @@ impl<T> Max<T> {
         Self(val.into())
     }
 }
+
 impl<T> Merge<Max<T>> for Max<T>
 where
     T: Ord,
@@ -27,6 +28,7 @@ where
         }
     }
 }
+
 impl<T> ConvertFrom<Max<T>> for Max<T> {
     fn from(other: Max<T>) -> Self {
         other
@@ -43,6 +45,7 @@ impl<T> Min<T> {
         Self(val.into())
     }
 }
+
 impl<T> Merge<Min<T>> for Min<T>
 where
     T: Ord,
@@ -56,8 +59,18 @@ where
         }
     }
 }
+
 impl<T> ConvertFrom<Min<T>> for Min<T> {
     fn from(other: Min<T>) -> Self {
         other
+    }
+}
+
+impl<T> Compare<Min<T>> for Min<T>
+where
+    T: Ord,
+{
+    fn compare(&self, other: &Min<T>) -> Option<std::cmp::Ordering> {
+        Some(Ord::cmp(&self.0, &other.0))
     }
 }

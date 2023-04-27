@@ -1,8 +1,10 @@
 #![deny(missing_docs)]
 //! Module containing lattice traits and implementations.
 //!
-//! Convention: Generic parameters that are full words (e.g. `Other`, `Val`) are [`Lattice`] types.
-//! Conversely, Generic parameters that are single letters or acronyms (e.g. `K`) are scalar non-`Lattice` types.
+//! Convention: Generic parameters that are full words (e.g. `Other`, `Key`, `Val`) are lattice
+//! types.
+//! Conversely, Generic parameters that are single letters or acronyms (e.g. `K`, `T`) are scalar
+//! non-`Lattice` types.
 use std::cmp::Ordering;
 
 pub mod dom_pair;

@@ -3,9 +3,11 @@
 //! Each key corresponds to a lattice value instance. Merging map-union lattices is done by
 //! unioning the keys and merging the values of intersecting keys.
 
+use std::cmp::Ordering;
+
 use crate::lang::{collections::Collection, tag};
 
-use super::{ConvertFrom, Merge};
+use super::{Compare, ConvertFrom, Merge};
 
 /// A map-union lattice.
 ///
@@ -72,6 +74,54 @@ where
                 .map(|(k_other, val_other)| (k_other, ConvertFrom::from(val_other)))
                 .collect(),
         )
+    }
+}
+
+impl<TagSelf, TagOther, K, ValSelf, ValOther> Compare<MapUnion<TagOther, K, ValOther>>
+    for MapUnion<TagSelf, K, ValSelf>
+where
+    TagSelf: tag::Tag2<K, ValSelf>,
+    TagOther: tag::Tag2<K, ValOther>,
+    TagSelf::Bind: Collection<K, ValSelf>,
+    TagOther::Bind: Collection<K, ValOther>,
+    ValSelf: Compare<ValOther>,
+{
+    fn compare(&self, other: &MapUnion<TagOther, K, ValOther>) -> Option<std::cmp::Ordering> {
+        let mut self_any_greater = false;
+        let mut other_any_greater = false;
+        for k in self.0.keys().chain(other.0.keys()) {
+            match (self.0.get(k), other.0.get(k)) {
+                (Some(self_value), Some(other_value)) => match self_value.compare(other_value) {
+                    None => {
+                        return None;
+                    }
+                    Some(Ordering::Less) => {
+                        other_any_greater = true;
+                    }
+                    Some(Ordering::Greater) => {
+                        self_any_greater = true;
+                    }
+                    Some(Ordering::Equal) => {}
+                },
+                (Some(_), None) => {
+                    self_any_greater = true;
+                }
+                (None, Some(_)) => {
+                    other_any_greater = true;
+                }
+                (None, None) => unreachable!(),
+            }
+            if self_any_greater && other_any_greater {
+                return None;
+            }
+        }
+        match (self_any_greater, other_any_greater) {
+            (true, false) => Some(Ordering::Greater),
+            (false, true) => Some(Ordering::Less),
+            (false, false) => Some(Ordering::Equal),
+            // We check this one after each loop iteration.
+            (true, true) => unreachable!(),
+        }
     }
 }
 

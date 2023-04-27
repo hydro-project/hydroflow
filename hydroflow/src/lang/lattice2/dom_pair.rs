@@ -25,19 +25,55 @@ where
     fn merge(&mut self, other: DomPair<KeyOther, ValOther>) -> bool {
         match self.key.compare(&other.key) {
             None => {
-                self.key.merge(other.key);
+                assert!(self.key.merge(other.key));
                 self.val.merge(other.val);
                 true
             }
             Some(Ordering::Equal) => self.val.merge(other.val),
             Some(Ordering::Less) => {
-                *self = DomPair {
-                    key: ConvertFrom::from(other.key),
-                    val: ConvertFrom::from(other.val),
-                };
+                *self = ConvertFrom::from(other);
                 true
             }
             Some(Ordering::Greater) => false,
         }
+    }
+}
+
+impl<KeySelf, KeyOther, ValSelf, ValOther> ConvertFrom<DomPair<KeyOther, ValOther>>
+    for DomPair<KeySelf, ValSelf>
+where
+    KeySelf: ConvertFrom<KeyOther>,
+    ValSelf: ConvertFrom<ValOther>,
+{
+    fn from(other: DomPair<KeyOther, ValOther>) -> Self {
+        Self {
+            key: ConvertFrom::from(other.key),
+            val: ConvertFrom::from(other.val),
+        }
+    }
+}
+
+impl<KeySelf, KeyOther, ValSelf, ValOther> Compare<DomPair<KeyOther, ValOther>>
+    for DomPair<KeySelf, ValSelf>
+where
+    KeySelf: Compare<KeyOther>,
+    ValSelf: Compare<ValOther>,
+{
+    fn compare(&self, other: &DomPair<KeyOther, ValOther>) -> Option<Ordering> {
+        match self.key.compare(&other.key) {
+            Some(Ordering::Equal) => self.val.compare(&other.val),
+            otherwise => otherwise,
+        }
+    }
+}
+
+impl<Key, Val> Default for DomPair<Key, Val>
+where
+    Key: Default,
+    Val: Default,
+{
+    fn default() -> Self {
+        let (key, val) = Default::default();
+        Self { key, val }
     }
 }
