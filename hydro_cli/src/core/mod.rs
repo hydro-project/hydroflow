@@ -82,6 +82,7 @@ pub trait LaunchedHost: Send + Sync {
 
     async fn launch_binary(
         &self,
+        id: String,
         binary: Arc<(String, Vec<u8>)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;

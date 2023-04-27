@@ -97,6 +97,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
 
     async fn launch_binary(
         &self,
+        id: String,
         binary: Arc<(String, Vec<u8>)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
@@ -204,8 +205,10 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
             }
         });
 
-        let stdout_receivers = create_broadcast(channel.stream(0), |s| println!("{s}"));
-        let stderr_receivers = create_broadcast(channel.stderr(), |s| eprintln!("{s}"));
+        let id_clone = id.clone();
+        let stdout_receivers =
+            create_broadcast(channel.stream(0), move |s| println!("[{id_clone}] {s}"));
+        let stderr_receivers = create_broadcast(channel.stderr(), move |s| eprintln!("[{id}] {s}"));
 
         Ok(Arc::new(RwLock::new(LaunchedSSHBinary {
             _resource_result: self.resource_result().clone(),
