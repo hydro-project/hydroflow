@@ -18,6 +18,7 @@ use super::{
 
 /// Represents an unknown, third-party service that is not part of the Hydroflow ecosystem.
 pub struct CustomService {
+    _id: usize,
     on: Arc<RwLock<dyn Host>>,
 
     /// The ports that the service wishes to expose to the public internet.
@@ -27,8 +28,9 @@ pub struct CustomService {
 }
 
 impl CustomService {
-    pub fn new(on: Arc<RwLock<dyn Host>>, external_ports: Vec<u16>) -> Self {
+    pub fn new(id: usize, on: Arc<RwLock<dyn Host>>, external_ports: Vec<u16>) -> Self {
         Self {
+            _id: id,
             on,
             external_ports,
             launched_host: None,

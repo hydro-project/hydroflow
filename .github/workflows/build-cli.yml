@@ -16,7 +16,7 @@ jobs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
       - id: skip_check
-        uses: fkirc/skip-duplicate-actions@v3.4.0
+        uses: fkirc/skip-duplicate-actions@v5.3.0
         with:
           cancel_others: "true"
 
@@ -42,7 +42,7 @@ jobs:
         with:
           name: wheels
           path: hydro_cli/dist
-  
+
   linux:
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
@@ -73,7 +73,7 @@ jobs:
         with:
           name: wheels
           path: hydro_cli/dist
-  
+
   musllinux-cross:
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
@@ -110,7 +110,7 @@ jobs:
         with:
           name: wheels
           path: hydro_cli/dist
-  
+
   windows:
     runs-on: windows-latest
     strategy:

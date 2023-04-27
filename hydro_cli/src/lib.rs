@@ -171,13 +171,9 @@ impl Deployment {
         on: &Host,
         external_ports: Vec<u16>,
     ) -> PyResult<Py<pyo3::PyAny>> {
-        let service =
-            self.underlying
-                .blocking_write()
-                .add_service(crate::core::CustomService::new(
-                    on.underlying.clone(),
-                    external_ports,
-                ));
+        let service = self.underlying.blocking_write().add_service(|id| {
+            crate::core::CustomService::new(id, on.underlying.clone(), external_ports)
+        });
 
         Ok(Py::new(
             py,
@@ -191,7 +187,7 @@ impl Deployment {
         .into_py(py))
     }
 
-    #[allow(non_snake_case)]
+    #[allow(non_snake_case, clippy::too_many_arguments)]
     fn HydroflowCrate(
         &self,
         py: Python<'_>,
@@ -200,17 +196,19 @@ impl Deployment {
         example: Option<String>,
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
+        display_id: Option<String>,
     ) -> PyResult<Py<pyo3::PyAny>> {
-        let service =
-            self.underlying
-                .blocking_write()
-                .add_service(crate::core::HydroflowCrate::new(
-                    src.into(),
-                    on.underlying.clone(),
-                    example,
-                    features,
-                    args,
-                ));
+        let service = self.underlying.blocking_write().add_service(|id| {
+            crate::core::HydroflowCrate::new(
+                id,
+                src.into(),
+                on.underlying.clone(),
+                example,
+                features,
+                args,
+                display_id,
+            )
+        });
 
         Ok(Py::new(
             py,

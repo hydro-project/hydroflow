@@ -18,11 +18,13 @@ pub mod ports;
 use build::*;
 
 pub struct HydroflowCrate {
+    id: usize,
     src: PathBuf,
     on: Arc<RwLock<dyn Host>>,
     example: Option<String>,
     features: Option<Vec<String>>,
     args: Option<Vec<String>>,
+    display_id: Option<String>,
 
     /// Configuration for the ports this service will connect to as a client.
     port_to_server: HashMap<String, ports::ServerConfig>,
@@ -44,18 +46,22 @@ pub struct HydroflowCrate {
 
 impl HydroflowCrate {
     pub fn new(
+        id: usize,
         src: PathBuf,
         on: Arc<RwLock<dyn Host>>,
         example: Option<String>,
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
+        display_id: Option<String>,
     ) -> Self {
         Self {
+            id,
             src,
             on,
             example,
             features,
             args,
+            display_id,
             port_to_server: HashMap::new(),
             port_to_bind: HashMap::new(),
             built_binary: None,
@@ -222,7 +228,15 @@ impl Service for HydroflowCrate {
                     .clone();
                 let args = self.args.as_ref().cloned().unwrap_or_default();
 
-                let binary = launched_host.launch_binary(built.clone(), &args).await?;
+                let binary = launched_host
+                    .launch_binary(
+                        self.display_id
+                            .clone()
+                            .unwrap_or_else(|| format!("service/{}", self.id)),
+                        built.clone(),
+                        &args,
+                    )
+                    .await?;
 
                 let mut bind_config = HashMap::new();
                 for (port_name, bind_type) in self.port_to_bind.iter() {
