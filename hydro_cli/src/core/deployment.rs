@@ -17,6 +17,8 @@ pub struct Deployment {
     pub services: Vec<Weak<RwLock<dyn Service>>>,
     pub resource_pool: ResourcePool,
     last_resource_result: Option<Arc<ResourceResult>>,
+    next_host_id: usize,
+    next_service_id: usize,
 }
 
 impl Deployment {
@@ -124,13 +126,20 @@ impl Deployment {
         &mut self,
         host: F,
     ) -> Arc<RwLock<T>> {
-        let arc = Arc::new(RwLock::new(host(self.hosts.len())));
+        let arc = Arc::new(RwLock::new(host(self.next_host_id)));
+        self.next_host_id += 1;
+
         self.hosts.push(arc.clone());
         arc
     }
 
-    pub fn add_service<T: Service + 'static>(&mut self, service: T) -> Arc<RwLock<T>> {
-        let arc = Arc::new(RwLock::new(service));
+    pub fn add_service<T: Service + 'static>(
+        &mut self,
+        service: impl FnOnce(usize) -> T,
+    ) -> Arc<RwLock<T>> {
+        let arc = Arc::new(RwLock::new(service(self.next_service_id)));
+        self.next_service_id += 1;
+
         let dyn_arc: Arc<RwLock<dyn Service>> = arc.clone();
         self.services.push(Arc::downgrade(&dyn_arc));
         arc
