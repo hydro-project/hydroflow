@@ -155,6 +155,8 @@
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
 <a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     any::Any,
     ops::Deref,
@@ -175,6 +177,7 @@
 
 <span class="doccomment">/// Represents an unknown, third-party service that is not part of the Hydroflow ecosystem.
 </span><span class="kw">pub struct </span>CustomService {
+    _id: usize,
     on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
 
     <span class="doccomment">/// The ports that the service wishes to expose to the public internet.
@@ -184,8 +187,9 @@
 }
 
 <span class="kw">impl </span>CustomService {
-    <span class="kw">pub fn </span>new(on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;, external_ports: Vec&lt;u16&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new(id: usize, on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;, external_ports: Vec&lt;u16&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
+            _id: id,
             on,
             external_ports,
             launched_host: <span class="prelude-val">None</span>,

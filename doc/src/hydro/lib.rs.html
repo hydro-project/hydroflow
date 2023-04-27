@@ -768,8 +768,6 @@
 <a href="#768" id="768">768</a>
 <a href="#769" id="769">769</a>
 <a href="#770" id="770">770</a>
-<a href="#771" id="771">771</a>
-<a href="#772" id="772">772</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::sync::Arc;
 
@@ -943,13 +941,9 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         on: <span class="kw-2">&amp;</span>Host,
         external_ports: Vec&lt;u16&gt;,
     ) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
-        <span class="kw">let </span>service =
-            <span class="self">self</span>.underlying
-                .blocking_write()
-                .add_service(<span class="kw">crate</span>::core::CustomService::new(
-                    on.underlying.clone(),
-                    external_ports,
-                ));
+        <span class="kw">let </span>service = <span class="self">self</span>.underlying.blocking_write().add_service(|id| {
+            <span class="kw">crate</span>::core::CustomService::new(id, on.underlying.clone(), external_ports)
+        });
 
         <span class="prelude-val">Ok</span>(Py::new(
             py,
@@ -963,7 +957,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         </span>.into_py(py))
     }
 
-    <span class="attr">#[allow(non_snake_case)]
+    <span class="attr">#[allow(non_snake_case, clippy::too_many_arguments)]
     </span><span class="kw">fn </span>HydroflowCrate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         py: Python&lt;<span class="lifetime">&#39;_</span>&gt;,
@@ -972,17 +966,19 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         example: <span class="prelude-ty">Option</span>&lt;String&gt;,
         features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
+        display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
     ) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
-        <span class="kw">let </span>service =
-            <span class="self">self</span>.underlying
-                .blocking_write()
-                .add_service(<span class="kw">crate</span>::core::HydroflowCrate::new(
-                    src.into(),
-                    on.underlying.clone(),
-                    example,
-                    features,
-                    args,
-                ));
+        <span class="kw">let </span>service = <span class="self">self</span>.underlying.blocking_write().add_service(|id| {
+            <span class="kw">crate</span>::core::HydroflowCrate::new(
+                id,
+                src.into(),
+                on.underlying.clone(),
+                example,
+                features,
+                args,
+                display_id,
+            )
+        });
 
         <span class="prelude-val">Ok</span>(Py::new(
             py,

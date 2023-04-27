@@ -187,6 +187,7 @@
 <a href="#187" id="187">187</a>
 <a href="#188" id="188">188</a>
 <a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
 <span class="kw">use </span>anyhow::Result;
@@ -271,6 +272,7 @@
 
     <span class="kw">async fn </span>launch_binary(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
+        id: String,
         binary: Arc&lt;(String, Vec&lt;u8&gt;)&gt;,
         args: <span class="kw-2">&amp;</span>[String],
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt;;

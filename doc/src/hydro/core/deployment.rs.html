@@ -136,6 +136,15 @@
 <a href="#136" id="136">136</a>
 <a href="#137" id="137">137</a>
 <a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::ResourcePool;
 <span class="kw">use </span><span class="kw">super</span>::ResourceResult;
 <span class="kw">use </span><span class="kw">super</span>::Service;
@@ -155,6 +164,8 @@
     <span class="kw">pub </span>services: Vec&lt;Weak&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;&gt;,
     <span class="kw">pub </span>resource_pool: ResourcePool,
     last_resource_result: <span class="prelude-ty">Option</span>&lt;Arc&lt;ResourceResult&gt;&gt;,
+    next_host_id: usize,
+    next_service_id: usize,
 }
 
 <span class="kw">impl </span>Deployment {
@@ -262,13 +273,20 @@
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         host: F,
     ) -&gt; Arc&lt;RwLock&lt;T&gt;&gt; {
-        <span class="kw">let </span>arc = Arc::new(RwLock::new(host(<span class="self">self</span>.hosts.len())));
+        <span class="kw">let </span>arc = Arc::new(RwLock::new(host(<span class="self">self</span>.next_host_id)));
+        <span class="self">self</span>.next_host_id += <span class="number">1</span>;
+
         <span class="self">self</span>.hosts.push(arc.clone());
         arc
     }
 
-    <span class="kw">pub fn </span>add_service&lt;T: Service + <span class="lifetime">&#39;static</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, service: T) -&gt; Arc&lt;RwLock&lt;T&gt;&gt; {
-        <span class="kw">let </span>arc = Arc::new(RwLock::new(service));
+    <span class="kw">pub fn </span>add_service&lt;T: Service + <span class="lifetime">&#39;static</span>&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        service: <span class="kw">impl </span>FnOnce(usize) -&gt; T,
+    ) -&gt; Arc&lt;RwLock&lt;T&gt;&gt; {
+        <span class="kw">let </span>arc = Arc::new(RwLock::new(service(<span class="self">self</span>.next_service_id)));
+        <span class="self">self</span>.next_service_id += <span class="number">1</span>;
+
         <span class="kw">let </span>dyn_arc: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt; = arc.clone();
         <span class="self">self</span>.services.push(Arc::downgrade(<span class="kw-2">&amp;</span>dyn_arc));
         arc
