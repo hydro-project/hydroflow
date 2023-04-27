@@ -135,6 +135,7 @@ impl LaunchedHost for LaunchedLocalhost {
 
     async fn launch_binary(
         &self,
+        id: String,
         binary: Arc<(String, Vec<u8>)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
@@ -170,8 +171,13 @@ impl LaunchedHost for LaunchedLocalhost {
             }
         });
 
-        let stdout_receivers = create_broadcast(child.stdout.take().unwrap(), |s| println!("{s}"));
-        let stderr_receivers = create_broadcast(child.stderr.take().unwrap(), |s| eprintln!("{s}"));
+        let id_clone = id.clone();
+        let stdout_receivers = create_broadcast(child.stdout.take().unwrap(), move |s| {
+            println!("[{id_clone}] {s}")
+        });
+        let stderr_receivers = create_broadcast(child.stderr.take().unwrap(), move |s| {
+            eprintln!("[{id}] {s}")
+        });
 
         Ok(Arc::new(RwLock::new(LaunchedLocalhostBinary {
             child: RwLock::new(child),
