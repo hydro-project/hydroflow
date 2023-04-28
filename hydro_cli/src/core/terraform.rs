@@ -169,6 +169,9 @@ async fn display_apply_outputs(stdout: &mut ChildStdout) {
                     if line.starts_with("Plan:")
                         || line.starts_with("Outputs:")
                         || line.contains(": Still creating...")
+                        || line.contains(": Reading...")
+                        || line.contains(": Still reading...")
+                        || line.contains(": Read complete...")
                     {
                     } else if line.ends_with(": Creating...") {
                         let id = line.split(':').next().unwrap().trim().to_string();
