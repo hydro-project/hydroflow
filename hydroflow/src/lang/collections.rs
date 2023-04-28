@@ -494,6 +494,11 @@ impl<T, const N: usize> IntoIterator for Array<T, N> {
         IntoIterator::into_iter(self.0)
     }
 }
+impl<T, const N: usize> From<[T; N]> for Array<T, N> {
+    fn from(value: [T; N]) -> Self {
+        Self(value)
+    }
+}
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct MaskedArray<T, const N: usize> {
