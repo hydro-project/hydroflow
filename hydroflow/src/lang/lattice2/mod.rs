@@ -7,6 +7,8 @@
 //! non-`Lattice` types.
 use std::cmp::Ordering;
 
+use sealed::sealed;
+
 pub mod dom_pair;
 pub mod map_union;
 pub mod ord;
@@ -16,15 +18,41 @@ pub mod set_union;
 /// Trait for lattice merge (least upper bound).
 pub trait Merge<Other> {
     /// Merge `other` into the `self` lattice.
+    ///
+    /// Returns whether `self` changed at all.
     fn merge(&mut self, other: Other) -> bool;
 }
 
-/// Same as `From` but for lattices.
-///
-/// Do not convert non-lattice (AKA scalar) types if you implement this trait.
-pub trait ConvertFrom<Other> {
-    /// Convert from the `Other` lattice into `Self`.
-    fn from(other: Other) -> Self;
+/// Naive lattice compare, based on the [`Merge::merge`] function.
+#[sealed]
+pub trait NaiveCompare<Other>
+where
+    Self: Clone + Merge<Other> + Sized,
+    Other: Clone + Merge<Self>,
+{
+    /// Naive compare based on the [`Merge::merge`] method. This method can be very inefficient;
+    /// use [`Compare::compare`] instead.
+    ///
+    /// This method should not be overridden.
+    fn naive_compare(&self, other: &Other) -> Option<Ordering> {
+        let mut self_a = self.clone();
+        let other_a = other.clone();
+        let self_b = self.clone();
+        let mut other_b = other.clone();
+        match (self_a.merge(other_a), other_b.merge(self_b)) {
+            (true, true) => None,
+            (true, false) => Some(Ordering::Less),
+            (false, true) => Some(Ordering::Greater),
+            (false, false) => Some(Ordering::Equal),
+        }
+    }
+}
+#[sealed]
+impl<This, Other> NaiveCompare<Other> for This
+where
+    Self: Clone + Merge<Other>,
+    Other: Clone + Merge<Self>,
+{
 }
 
 /// Compare the partial order of two lattices.
@@ -36,4 +64,12 @@ pub trait Compare<Other> {
     ///
     /// `Some(Ordering::Less)` means `self` is less than `other`.
     fn compare(&self, other: &Other) -> Option<Ordering>;
+}
+
+/// Same as `From` but for lattices.
+///
+/// Do not convert non-lattice (AKA scalar) types if you implement this trait.
+pub trait ConvertFrom<Other> {
+    /// Convert from the `Other` lattice into `Self`.
+    fn from(other: Other) -> Self;
 }

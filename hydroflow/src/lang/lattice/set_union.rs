@@ -79,7 +79,7 @@ where
     ) -> Option<Ordering> {
         match this.len().cmp(&other.len()) {
             Ordering::Greater => {
-                if this.keys().all(|key| other.get(key).is_some()) {
+                if other.keys().all(|key| this.get(key).is_some()) {
                     Some(Ordering::Greater)
                 } else {
                     None
@@ -93,7 +93,7 @@ where
                 }
             }
             Ordering::Less => {
-                if other.keys().all(|key| this.get(key).is_some()) {
+                if this.keys().all(|key| other.get(key).is_some()) {
                     Some(Ordering::Less)
                 } else {
                     None
