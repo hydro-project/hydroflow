@@ -511,6 +511,11 @@
 <a href="#511" id="511">511</a>
 <a href="#512" id="512">512</a>
 <a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::array::IntoIter;
 <span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 <span class="kw">use </span>std::hash::Hash;
@@ -1005,6 +1010,11 @@
 
     <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoIter {
         IntoIterator::into_iter(<span class="self">self</span>.<span class="number">0</span>)
+    }
+}
+<span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; From&lt;[T; N]&gt; <span class="kw">for </span>Array&lt;T, N&gt; {
+    <span class="kw">fn </span>from(value: [T; N]) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>(value)
     }
 }
 

@@ -371,9 +371,9 @@
             <span class="kw">let </span>temp_path = PathBuf::from(<span class="macro">format!</span>(<span class="string">&quot;/home/{user}/hydro-{random}&quot;</span>));
             <span class="kw">let </span>sftp = <span class="kw-2">&amp;</span>sftp;
 
-            ProgressTracker::leaf_with_progress(
+            ProgressTracker::rich_leaf(
                 <span class="macro">format!</span>(<span class="string">&quot;uploading binary to /home/{user}/hydro-{unique_name}&quot;</span>),
-                |set_progress| {
+                |set_progress, <span class="kw">_</span>| {
                     <span class="kw">let </span>binary = <span class="kw-2">&amp;</span>binary;
                     <span class="kw">let </span>binary_path = <span class="kw-2">&amp;</span>binary_path;
                     <span class="kw">async move </span>{

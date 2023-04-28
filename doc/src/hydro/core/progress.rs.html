@@ -297,6 +297,12 @@
 <a href="#297" id="297">297</a>
 <a href="#298" id="298">298</a>
 <a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::{Arc, Mutex, OnceLock};
 <span class="kw">use </span>std::time::Duration;
 
@@ -356,11 +362,11 @@
         }
     }
 
-    <span class="kw">fn </span>refresh_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cur_path: <span class="kw-2">&amp;</span>[String]) {
+    <span class="kw">fn </span>refresh_prefix(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cur_path: <span class="kw-2">&amp;</span>[String]) {
         <span class="kw">match </span><span class="self">self </span>{
             BarTree::Root(children) =&gt; {
                 <span class="kw">for </span>child <span class="kw">in </span>children {
-                    child.refresh_message(cur_path);
+                    child.refresh_prefix(cur_path);
                 }
             }
             BarTree::Group(name, pb, children) =&gt; {
@@ -380,7 +386,7 @@
                     .filter(|child| child.status() == LeafStatus::Queued)
                     .count();
 
-                pb.set_message(<span class="macro">format!</span>(
+                pb.set_prefix(<span class="macro">format!</span>(
                     <span class="string">&quot;{} ({}/{}/{})&quot;</span>,
                     path_with_group.join(<span class="string">&quot; / &quot;</span>),
                     finished_count,
@@ -388,13 +394,13 @@
                     queued_count
                 ));
                 <span class="kw">for </span>child <span class="kw">in </span>children {
-                    child.refresh_message(<span class="kw-2">&amp;</span>path_with_group);
+                    child.refresh_prefix(<span class="kw-2">&amp;</span>path_with_group);
                 }
             }
             BarTree::Leaf(name, pb, <span class="kw">_</span>) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>path_with_group = cur_path.to_vec();
                 path_with_group.push(name.clone());
-                pb.set_message(path_with_group.join(<span class="string">&quot; / &quot;</span>));
+                pb.set_prefix(path_with_group.join(<span class="string">&quot; / &quot;</span>));
             }
             BarTree::Finished =&gt; {}
         }
@@ -471,19 +477,19 @@
         <span class="kw">if </span>progress {
             pb.set_style(
                 indicatif::ProgressStyle::default_bar()
-                    .template(<span class="string">&quot;{spinner:.green} {wide_msg} {bar} ({elapsed} elapsed)&quot;</span>)
+                    .template(<span class="string">&quot;{spinner:.green} {prefix} {wide_msg} {bar} ({elapsed} elapsed)&quot;</span>)
                     .unwrap(),
             );
         } <span class="kw">else </span>{
             pb.set_style(
                 indicatif::ProgressStyle::default_bar()
-                    .template(<span class="string">&quot;{spinner:.green} {wide_msg} ({elapsed} elapsed)&quot;</span>)
+                    .template(<span class="string">&quot;{spinner:.green} {prefix} {wide_msg} ({elapsed} elapsed)&quot;</span>)
                     .unwrap(),
             );
         }
         pb.enable_steady_tick(Duration::from_millis(<span class="number">100</span>));
 
-        <span class="self">self</span>.tree.refresh_message(<span class="kw-2">&amp;</span>[]);
+        <span class="self">self</span>.tree.refresh_prefix(<span class="kw-2">&amp;</span>[]);
         (inserted_index, pb)
     }
 
@@ -498,7 +504,7 @@
             <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(),
         };
 
-        <span class="self">self</span>.tree.refresh_message(<span class="kw-2">&amp;</span>[]);
+        <span class="self">self</span>.tree.refresh_prefix(<span class="kw-2">&amp;</span>[]);
 
         <span class="self">self</span>.current_count -= <span class="number">1</span>;
         <span class="kw">if </span><span class="self">self</span>.current_count == <span class="number">0 </span>{
@@ -563,9 +569,9 @@
         }
     }
 
-    <span class="kw">pub fn </span>leaf_with_progress&lt;<span class="lifetime">&#39;a</span>, T, F: Future&lt;Output = T&gt;&gt;(
+    <span class="kw">pub fn </span>rich_leaf&lt;<span class="lifetime">&#39;a</span>, T, F: Future&lt;Output = T&gt;&gt;(
         name: String,
-        f: <span class="kw">impl </span>FnOnce(Arc&lt;<span class="kw">dyn </span>Fn(u64) + Send + Sync&gt;) -&gt; F + <span class="lifetime">&#39;a</span>,
+        f: <span class="kw">impl </span>FnOnce(Box&lt;<span class="kw">dyn </span>Fn(u64) + Send + Sync&gt;, Box&lt;<span class="kw">dyn </span>Fn(String) + Send + Sync&gt;) -&gt; F + <span class="lifetime">&#39;a</span>,
     ) -&gt; <span class="kw">impl </span>Future&lt;Output = T&gt; + <span class="lifetime">&#39;a </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>group = CURRENT_GROUP
             .try_with(|cur| cur.clone())
@@ -583,9 +589,15 @@
 
         <span class="kw">async move </span>{
             <span class="kw">let </span>my_bar = bar.clone();
-            <span class="kw">let </span>out = f(Arc::new(<span class="kw">move </span>|progress| {
-                my_bar.set_position(progress);
-            }))
+            <span class="kw">let </span>my_bar_2 = bar.clone();
+            <span class="kw">let </span>out = f(
+                Box::new(<span class="kw">move </span>|progress| {
+                    my_bar.set_position(progress);
+                }),
+                Box::new(<span class="kw">move </span>|msg| {
+                    my_bar_2.set_message(msg);
+                }),
+            )
             .<span class="kw">await</span>;
             <span class="kw">let </span><span class="kw-2">mut </span>progress_bar = PROGRESS_TRACKER
                 .get_or_init(|| Mutex::new(ProgressTracker::new()))

@@ -138,6 +138,34 @@
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Set-union compound lattice.
 //!
 //! Merging set-union lattices is done by unioning the keys.
@@ -218,7 +246,7 @@
     <span class="kw">fn </span>compare(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>SetUnion&lt;TagOther, T&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Ordering&gt; {
         <span class="kw">match </span><span class="self">self</span>.<span class="number">0</span>.len().cmp(<span class="kw-2">&amp;</span>other.<span class="number">0</span>.len()) {
             Ordering::Greater =&gt; {
-                <span class="kw">if </span><span class="self">self</span>.<span class="number">0</span>.keys().all(|key| other.<span class="number">0</span>.get(key).is_some()) {
+                <span class="kw">if </span>other.<span class="number">0</span>.keys().all(|key| <span class="self">self</span>.<span class="number">0</span>.get(key).is_some()) {
                     <span class="prelude-val">Some</span>(Ordering::Greater)
                 } <span class="kw">else </span>{
                     <span class="prelude-val">None
@@ -232,7 +260,7 @@
                 </span>}
             }
             Ordering::Less =&gt; {
-                <span class="kw">if </span>other.<span class="number">0</span>.keys().all(|key| <span class="self">self</span>.<span class="number">0</span>.get(key).is_some()) {
+                <span class="kw">if </span><span class="self">self</span>.<span class="number">0</span>.keys().all(|key| other.<span class="number">0</span>.get(key).is_some()) {
                     <span class="prelude-val">Some</span>(Ordering::Less)
                 } <span class="kw">else </span>{
                     <span class="prelude-val">None
@@ -274,8 +302,36 @@
         <span class="kw">let </span><span class="kw-2">mut </span>my_set_a = SetUnion::&lt;tag::HASH_SET, <span class="kw-2">&amp;</span>str&gt;(Default::default());
         <span class="kw">let </span>my_set_b = SetUnion::&lt;tag::BTREE_SET, <span class="kw-2">&amp;</span>str&gt;(Default::default());
         <span class="kw">let </span>my_set_c = SetUnion::&lt;tag::SINGLE, <span class="kw">_</span>&gt;(Single(<span class="string">&quot;hello world&quot;</span>));
+
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Equal), my_set_a.compare(<span class="kw-2">&amp;</span>my_set_a));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Equal), my_set_a.compare(<span class="kw-2">&amp;</span>my_set_b));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Less), my_set_a.compare(<span class="kw-2">&amp;</span>my_set_c));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Equal), my_set_b.compare(<span class="kw-2">&amp;</span>my_set_a));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Equal), my_set_b.compare(<span class="kw-2">&amp;</span>my_set_b));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Less), my_set_b.compare(<span class="kw-2">&amp;</span>my_set_c));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Greater), my_set_c.compare(<span class="kw-2">&amp;</span>my_set_a));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Greater), my_set_c.compare(<span class="kw-2">&amp;</span>my_set_b));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Equal), my_set_c.compare(<span class="kw-2">&amp;</span>my_set_c));
+
         my_set_a.merge(my_set_b);
         my_set_a.merge(my_set_c);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_singleton_example() {
+        <span class="kw">let </span><span class="kw-2">mut </span>my_hash_set = SetUnionHashSet::&lt;<span class="kw-2">&amp;</span>str&gt;::default();
+        <span class="kw">let </span>my_delta_set = SetUnionSingle::new(<span class="string">&quot;hello world&quot;</span>);
+        <span class="kw">let </span>my_array_set = SetUnionArray::new([<span class="string">&quot;hello world&quot;</span>, <span class="string">&quot;b&quot;</span>, <span class="string">&quot;c&quot;</span>, <span class="string">&quot;d&quot;</span>]);
+
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Equal), my_delta_set.compare(<span class="kw-2">&amp;</span>my_delta_set));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Less), my_delta_set.compare(<span class="kw-2">&amp;</span>my_array_set));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Greater), my_array_set.compare(<span class="kw-2">&amp;</span>my_delta_set));
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Equal), my_array_set.compare(<span class="kw-2">&amp;</span>my_array_set));
+
+        <span class="macro">assert!</span>(my_hash_set.merge(my_array_set)); <span class="comment">// Changes
+        </span><span class="macro">assert!</span>(!my_hash_set.merge(my_delta_set)); <span class="comment">// No changes
+
+        </span><span class="macro">println!</span>(<span class="string">&quot;{:?}&quot;</span>, my_hash_set.<span class="number">0</span>);
     }
 }
 </code></pre></div></section></main></body></html>

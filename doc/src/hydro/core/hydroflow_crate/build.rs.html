@@ -90,8 +90,34 @@
 <a href="#90" id="90">90</a>
 <a href="#91" id="91">91</a>
 <a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::HashMap,
+    io::BufRead,
     path::PathBuf,
     process::Command,
     process::Stdio,
@@ -99,9 +125,10 @@
 };
 
 <span class="kw">use </span>nanoid::nanoid;
-<span class="kw">use </span>once_cell::sync::{Lazy, OnceCell};
+<span class="kw">use </span>once_cell::sync::Lazy;
+<span class="kw">use </span>tokio::sync::OnceCell;
 
-<span class="kw">use </span><span class="kw">crate</span>::core::HostTargetType;
+<span class="kw">use </span><span class="kw">crate</span>::core::{progress::ProgressTracker, HostTargetType};
 
 <span class="kw">type </span>CacheKey = (PathBuf, <span class="prelude-ty">Option</span>&lt;String&gt;, HostTargetType, <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;);
 
@@ -110,7 +137,7 @@
 <span class="kw">static </span>BUILDS: Lazy&lt;Mutex&lt;HashMap&lt;CacheKey, Arc&lt;OnceCell&lt;BuildResult&gt;&gt;&gt;&gt;&gt; =
     Lazy::new(Default::default);
 
-<span class="kw">pub fn </span>build_crate(
+<span class="kw">pub async fn </span>build_crate(
     src: PathBuf,
     example: <span class="prelude-ty">Option</span>&lt;String&gt;,
     target_type: HostTargetType,
@@ -123,63 +150,86 @@
         <span class="comment">// Release BUILDS table lock here.
     </span>};
     unit_of_work
-        .get_or_init(|| {
-            <span class="kw">let </span><span class="kw-2">mut </span>command = Command::new(<span class="string">&quot;cargo&quot;</span>);
-            command.args([<span class="string">&quot;build&quot;</span>.to_string(), <span class="string">&quot;--release&quot;</span>.to_string()]);
+        .get_or_init(<span class="kw">move </span>|| {
+            ProgressTracker::rich_leaf(<span class="string">&quot;build&quot;</span>.to_string(), <span class="kw">move </span>|<span class="kw">_</span>, set_msg| <span class="kw">async move </span>{
+                tokio::task::spawn_blocking(<span class="kw">move </span>|| {
+                    <span class="kw">let </span><span class="kw-2">mut </span>command = Command::new(<span class="string">&quot;cargo&quot;</span>);
+                    command.args([<span class="string">&quot;build&quot;</span>.to_string(), <span class="string">&quot;--release&quot;</span>.to_string()]);
 
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(example) = example.as_ref() {
-                command.args([<span class="string">&quot;--example&quot;</span>, example]);
-            }
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(example) = example.as_ref() {
+                        command.args([<span class="string">&quot;--example&quot;</span>, example]);
+                    }
 
-            <span class="kw">match </span>target_type {
-                HostTargetType::Local =&gt; {}
-                HostTargetType::Linux =&gt; {
-                    command.args([<span class="string">&quot;--target&quot;</span>, <span class="string">&quot;x86_64-unknown-linux-musl&quot;</span>]);
-                }
-            }
-
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(features) = features {
-                command.args([<span class="string">&quot;--features&quot;</span>, <span class="kw-2">&amp;</span>features.join(<span class="string">&quot;,&quot;</span>)]);
-            }
-
-            command.arg(<span class="string">&quot;--message-format=json-render-diagnostics&quot;</span>);
-
-            <span class="kw">let </span><span class="kw-2">mut </span>spawned = command
-                .current_dir(<span class="kw-2">&amp;</span>src)
-                .stdout(Stdio::piped())
-                .spawn()
-                .unwrap();
-
-            <span class="kw">let </span>reader = std::io::BufReader::new(spawned.stdout.take().unwrap());
-            <span class="kw">for </span>message <span class="kw">in </span>cargo_metadata::Message::parse_stream(reader) {
-                <span class="kw">match </span>message.unwrap() {
-                    cargo_metadata::Message::CompilerArtifact(artifact) =&gt; {
-                        <span class="kw">let </span>is_output = <span class="kw">if </span>example.is_some() {
-                            artifact.target.kind.contains(<span class="kw-2">&amp;</span><span class="string">&quot;example&quot;</span>.to_string())
-                        } <span class="kw">else </span>{
-                            artifact.target.kind.contains(<span class="kw-2">&amp;</span><span class="string">&quot;bin&quot;</span>.to_string())
-                        };
-
-                        <span class="kw">if </span>is_output {
-                            <span class="kw">let </span>path = artifact.executable.unwrap();
-                            <span class="kw">let </span>path = path.into_string();
-                            <span class="kw">let </span>data = std::fs::read(path).unwrap();
-                            <span class="kw">return </span>Arc::new((<span class="macro">nanoid!</span>(<span class="number">8</span>), data));
+                    <span class="kw">match </span>target_type {
+                        HostTargetType::Local =&gt; {}
+                        HostTargetType::Linux =&gt; {
+                            command.args([<span class="string">&quot;--target&quot;</span>, <span class="string">&quot;x86_64-unknown-linux-musl&quot;</span>]);
                         }
                     }
-                    cargo_metadata::Message::CompilerMessage(msg) =&gt; {
-                        <span class="macro">eprintln!</span>(<span class="string">&quot;{}&quot;</span>, msg.message.rendered.unwrap())
-                    }
-                    <span class="kw">_ </span>=&gt; {}
-                }
-            }
 
-            <span class="kw">if </span>spawned.wait().unwrap().success() {
-                <span class="macro">panic!</span>(<span class="string">&quot;cargo build succeeded but no binary was emitted&quot;</span>)
-            } <span class="kw">else </span>{
-                <span class="macro">panic!</span>(<span class="string">&quot;failed to build crate&quot;</span>)
-            }
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(features) = features {
+                        command.args([<span class="string">&quot;--features&quot;</span>, <span class="kw-2">&amp;</span>features.join(<span class="string">&quot;,&quot;</span>)]);
+                    }
+
+                    command.arg(<span class="string">&quot;--message-format=json-diagnostic-rendered-ansi&quot;</span>);
+
+                    <span class="kw">let </span><span class="kw-2">mut </span>spawned = command
+                        .current_dir(<span class="kw-2">&amp;</span>src)
+                        .stdout(Stdio::piped())
+                        .stderr(Stdio::piped())
+                        .stdin(Stdio::null())
+                        .spawn()
+                        .unwrap();
+
+                    <span class="kw">let </span>reader = std::io::BufReader::new(spawned.stdout.take().unwrap());
+                    <span class="kw">let </span><span class="kw-2">mut </span>stderr_reader = std::io::BufReader::new(spawned.stderr.take().unwrap());
+                    std::thread::spawn(<span class="kw">move </span>|| <span class="kw">loop </span>{
+                        <span class="kw">let </span><span class="kw-2">mut </span>buf = String::new();
+                        <span class="kw">if let </span><span class="prelude-val">Ok</span>(size) = stderr_reader.read_line(<span class="kw-2">&amp;mut </span>buf) {
+                            <span class="kw">if </span>size == <span class="number">0 </span>{
+                                <span class="kw">break</span>;
+                            } <span class="kw">else </span>{
+                                set_msg(buf.trim().to_string());
+                            }
+                        } <span class="kw">else </span>{
+                            <span class="kw">break</span>;
+                        }
+                    });
+
+                    <span class="kw">for </span>message <span class="kw">in </span>cargo_metadata::Message::parse_stream(reader) {
+                        <span class="kw">match </span>message.unwrap() {
+                            cargo_metadata::Message::CompilerArtifact(artifact) =&gt; {
+                                <span class="kw">let </span>is_output = <span class="kw">if </span>example.is_some() {
+                                    artifact.target.kind.contains(<span class="kw-2">&amp;</span><span class="string">&quot;example&quot;</span>.to_string())
+                                } <span class="kw">else </span>{
+                                    artifact.target.kind.contains(<span class="kw-2">&amp;</span><span class="string">&quot;bin&quot;</span>.to_string())
+                                };
+
+                                <span class="kw">if </span>is_output {
+                                    <span class="kw">let </span>path = artifact.executable.unwrap();
+                                    <span class="kw">let </span>path = path.into_string();
+                                    <span class="kw">let </span>data = std::fs::read(path).unwrap();
+                                    <span class="kw">return </span>Arc::new((<span class="macro">nanoid!</span>(<span class="number">8</span>), data));
+                                }
+                            }
+                            cargo_metadata::Message::CompilerMessage(msg) =&gt; {
+                                <span class="macro">eprintln!</span>(<span class="string">&quot;{}&quot;</span>, msg.message.rendered.unwrap())
+                            }
+                            <span class="kw">_ </span>=&gt; {}
+                        }
+                    }
+
+                    <span class="kw">if </span>spawned.wait().unwrap().success() {
+                        <span class="macro">panic!</span>(<span class="string">&quot;cargo build succeeded but no binary was emitted&quot;</span>)
+                    } <span class="kw">else </span>{
+                        <span class="macro">panic!</span>(<span class="string">&quot;failed to build crate&quot;</span>)
+                    }
+                })
+                .<span class="kw">await
+                </span>.unwrap()
+            })
         })
-        .clone()
+        .<span class="kw">await
+        </span>.clone()
 }
 </code></pre></div></section></main></body></html>
