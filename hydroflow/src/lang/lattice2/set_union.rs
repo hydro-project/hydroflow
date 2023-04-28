@@ -78,7 +78,7 @@ where
     fn compare(&self, other: &SetUnion<TagOther, T>) -> Option<Ordering> {
         match self.0.len().cmp(&other.0.len()) {
             Ordering::Greater => {
-                if self.0.keys().all(|key| other.0.get(key).is_some()) {
+                if other.0.keys().all(|key| self.0.get(key).is_some()) {
                     Some(Ordering::Greater)
                 } else {
                     None
@@ -92,7 +92,7 @@ where
                 }
             }
             Ordering::Less => {
-                if other.0.keys().all(|key| self.0.get(key).is_some()) {
+                if self.0.keys().all(|key| other.0.get(key).is_some()) {
                     Some(Ordering::Less)
                 } else {
                     None
@@ -134,7 +134,35 @@ mod test {
         let mut my_set_a = SetUnion::<tag::HASH_SET, &str>(Default::default());
         let my_set_b = SetUnion::<tag::BTREE_SET, &str>(Default::default());
         let my_set_c = SetUnion::<tag::SINGLE, _>(Single("hello world"));
+
+        assert_eq!(Some(Ordering::Equal), my_set_a.compare(&my_set_a));
+        assert_eq!(Some(Ordering::Equal), my_set_a.compare(&my_set_b));
+        assert_eq!(Some(Ordering::Less), my_set_a.compare(&my_set_c));
+        assert_eq!(Some(Ordering::Equal), my_set_b.compare(&my_set_a));
+        assert_eq!(Some(Ordering::Equal), my_set_b.compare(&my_set_b));
+        assert_eq!(Some(Ordering::Less), my_set_b.compare(&my_set_c));
+        assert_eq!(Some(Ordering::Greater), my_set_c.compare(&my_set_a));
+        assert_eq!(Some(Ordering::Greater), my_set_c.compare(&my_set_b));
+        assert_eq!(Some(Ordering::Equal), my_set_c.compare(&my_set_c));
+
         my_set_a.merge(my_set_b);
         my_set_a.merge(my_set_c);
+    }
+
+    #[test]
+    fn test_singleton_example() {
+        let mut my_hash_set = SetUnionHashSet::<&str>::default();
+        let my_delta_set = SetUnionSingle::new("hello world");
+        let my_array_set = SetUnionArray::new(["hello world", "b", "c", "d"]);
+
+        assert_eq!(Some(Ordering::Equal), my_delta_set.compare(&my_delta_set));
+        assert_eq!(Some(Ordering::Less), my_delta_set.compare(&my_array_set));
+        assert_eq!(Some(Ordering::Greater), my_array_set.compare(&my_delta_set));
+        assert_eq!(Some(Ordering::Equal), my_array_set.compare(&my_array_set));
+
+        assert!(my_hash_set.merge(my_array_set)); // Changes
+        assert!(!my_hash_set.merge(my_delta_set)); // No changes
+
+        println!("{:?}", my_hash_set.0);
     }
 }
