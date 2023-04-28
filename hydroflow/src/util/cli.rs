@@ -1,3 +1,5 @@
+#![allow(missing_docs)] // TODO(mingwei)
+
 use std::collections::HashMap;
 
 use hydroflow_cli_integration::{ServerBindConfig, ServerPort};
