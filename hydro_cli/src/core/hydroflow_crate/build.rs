@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    io::BufRead,
     path::PathBuf,
     process::Command,
     process::Stdio,
@@ -7,9 +8,10 @@ use std::{
 };
 
 use nanoid::nanoid;
-use once_cell::sync::{Lazy, OnceCell};
+use once_cell::sync::Lazy;
+use tokio::sync::OnceCell;
 
-use crate::core::HostTargetType;
+use crate::core::{progress::ProgressTracker, HostTargetType};
 
 type CacheKey = (PathBuf, Option<String>, HostTargetType, Option<Vec<String>>);
 
@@ -18,7 +20,7 @@ pub type BuildResult = Arc<(String, Vec<u8>)>;
 static BUILDS: Lazy<Mutex<HashMap<CacheKey, Arc<OnceCell<BuildResult>>>>> =
     Lazy::new(Default::default);
 
-pub fn build_crate(
+pub async fn build_crate(
     src: PathBuf,
     example: Option<String>,
     target_type: HostTargetType,
@@ -31,62 +33,85 @@ pub fn build_crate(
         // Release BUILDS table lock here.
     };
     unit_of_work
-        .get_or_init(|| {
-            let mut command = Command::new("cargo");
-            command.args(["build".to_string(), "--release".to_string()]);
+        .get_or_init(move || {
+            ProgressTracker::rich_leaf("build".to_string(), move |_, set_msg| async move {
+                tokio::task::spawn_blocking(move || {
+                    let mut command = Command::new("cargo");
+                    command.args(["build".to_string(), "--release".to_string()]);
 
-            if let Some(example) = example.as_ref() {
-                command.args(["--example", example]);
-            }
+                    if let Some(example) = example.as_ref() {
+                        command.args(["--example", example]);
+                    }
 
-            match target_type {
-                HostTargetType::Local => {}
-                HostTargetType::Linux => {
-                    command.args(["--target", "x86_64-unknown-linux-musl"]);
-                }
-            }
-
-            if let Some(features) = features {
-                command.args(["--features", &features.join(",")]);
-            }
-
-            command.arg("--message-format=json-render-diagnostics");
-
-            let mut spawned = command
-                .current_dir(&src)
-                .stdout(Stdio::piped())
-                .spawn()
-                .unwrap();
-
-            let reader = std::io::BufReader::new(spawned.stdout.take().unwrap());
-            for message in cargo_metadata::Message::parse_stream(reader) {
-                match message.unwrap() {
-                    cargo_metadata::Message::CompilerArtifact(artifact) => {
-                        let is_output = if example.is_some() {
-                            artifact.target.kind.contains(&"example".to_string())
-                        } else {
-                            artifact.target.kind.contains(&"bin".to_string())
-                        };
-
-                        if is_output {
-                            let path = artifact.executable.unwrap();
-                            let path = path.into_string();
-                            let data = std::fs::read(path).unwrap();
-                            return Arc::new((nanoid!(8), data));
+                    match target_type {
+                        HostTargetType::Local => {}
+                        HostTargetType::Linux => {
+                            command.args(["--target", "x86_64-unknown-linux-musl"]);
                         }
                     }
-                    cargo_metadata::Message::CompilerMessage(msg) => {
-                        eprintln!("{}", msg.message.rendered.unwrap())
-                    }
-                    _ => {}
-                }
-            }
 
-            if spawned.wait().unwrap().success() {
-                panic!("cargo build succeeded but no binary was emitted")
-            } else {
-                panic!("failed to build crate")
-            }
+                    if let Some(features) = features {
+                        command.args(["--features", &features.join(",")]);
+                    }
+
+                    command.arg("--message-format=json-diagnostic-rendered-ansi");
+
+                    let mut spawned = command
+                        .current_dir(&src)
+                        .stdout(Stdio::piped())
+                        .stderr(Stdio::piped())
+                        .stdin(Stdio::null())
+                        .spawn()
+                        .unwrap();
+
+                    let reader = std::io::BufReader::new(spawned.stdout.take().unwrap());
+                    let mut stderr_reader = std::io::BufReader::new(spawned.stderr.take().unwrap());
+                    std::thread::spawn(move || loop {
+                        let mut buf = String::new();
+                        if let Ok(size) = stderr_reader.read_line(&mut buf) {
+                            if size == 0 {
+                                break;
+                            } else {
+                                set_msg(buf.trim().to_string());
+                            }
+                        } else {
+                            break;
+                        }
+                    });
+
+                    for message in cargo_metadata::Message::parse_stream(reader) {
+                        match message.unwrap() {
+                            cargo_metadata::Message::CompilerArtifact(artifact) => {
+                                let is_output = if example.is_some() {
+                                    artifact.target.kind.contains(&"example".to_string())
+                                } else {
+                                    artifact.target.kind.contains(&"bin".to_string())
+                                };
+
+                                if is_output {
+                                    let path = artifact.executable.unwrap();
+                                    let path = path.into_string();
+                                    let data = std::fs::read(path).unwrap();
+                                    return Arc::new((nanoid!(8), data));
+                                }
+                            }
+                            cargo_metadata::Message::CompilerMessage(msg) => {
+                                eprintln!("{}", msg.message.rendered.unwrap())
+                            }
+                            _ => {}
+                        }
+                    }
+
+                    if spawned.wait().unwrap().success() {
+                        panic!("cargo build succeeded but no binary was emitted")
+                    } else {
+                        panic!("failed to build crate")
+                    }
+                })
+                .await
+                .unwrap()
+            })
         })
+        .await
         .clone()
 }
