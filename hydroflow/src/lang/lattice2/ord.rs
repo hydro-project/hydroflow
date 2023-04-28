@@ -35,6 +35,15 @@ impl<T> ConvertFrom<Max<T>> for Max<T> {
     }
 }
 
+impl<T> Compare<Max<T>> for Max<T>
+where
+    T: Ord,
+{
+    fn compare(&self, other: &Max<T>) -> Option<std::cmp::Ordering> {
+        Some(Ord::cmp(&self.0, &other.0))
+    }
+}
+
 #[repr(transparent)]
 #[derive(Default, PartialEq, PartialOrd, Eq, Ord)]
 /// A totally ordered min lattice. Merging takes the smaller value.
@@ -71,6 +80,6 @@ where
     T: Ord,
 {
     fn compare(&self, other: &Min<T>) -> Option<std::cmp::Ordering> {
-        Some(Ord::cmp(&self.0, &other.0))
+        Some(Ord::cmp(&self.0, &other.0).reverse())
     }
 }
