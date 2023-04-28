@@ -57,11 +57,11 @@ impl BarTree {
         }
     }
 
-    fn refresh_message(&mut self, cur_path: &[String]) {
+    fn refresh_prefix(&mut self, cur_path: &[String]) {
         match self {
             BarTree::Root(children) => {
                 for child in children {
-                    child.refresh_message(cur_path);
+                    child.refresh_prefix(cur_path);
                 }
             }
             BarTree::Group(name, pb, children) => {
@@ -81,7 +81,7 @@ impl BarTree {
                     .filter(|child| child.status() == LeafStatus::Queued)
                     .count();
 
-                pb.set_message(format!(
+                pb.set_prefix(format!(
                     "{} ({}/{}/{})",
                     path_with_group.join(" / "),
                     finished_count,
@@ -89,13 +89,13 @@ impl BarTree {
                     queued_count
                 ));
                 for child in children {
-                    child.refresh_message(&path_with_group);
+                    child.refresh_prefix(&path_with_group);
                 }
             }
             BarTree::Leaf(name, pb, _) => {
                 let mut path_with_group = cur_path.to_vec();
                 path_with_group.push(name.clone());
-                pb.set_message(path_with_group.join(" / "));
+                pb.set_prefix(path_with_group.join(" / "));
             }
             BarTree::Finished => {}
         }
@@ -172,19 +172,19 @@ impl ProgressTracker {
         if progress {
             pb.set_style(
                 indicatif::ProgressStyle::default_bar()
-                    .template("{spinner:.green} {wide_msg} {bar} ({elapsed} elapsed)")
+                    .template("{spinner:.green} {prefix} {wide_msg} {bar} ({elapsed} elapsed)")
                     .unwrap(),
             );
         } else {
             pb.set_style(
                 indicatif::ProgressStyle::default_bar()
-                    .template("{spinner:.green} {wide_msg} ({elapsed} elapsed)")
+                    .template("{spinner:.green} {prefix} {wide_msg} ({elapsed} elapsed)")
                     .unwrap(),
             );
         }
         pb.enable_steady_tick(Duration::from_millis(100));
 
-        self.tree.refresh_message(&[]);
+        self.tree.refresh_prefix(&[]);
         (inserted_index, pb)
     }
 
@@ -199,7 +199,7 @@ impl ProgressTracker {
             _ => panic!(),
         };
 
-        self.tree.refresh_message(&[]);
+        self.tree.refresh_prefix(&[]);
 
         self.current_count -= 1;
         if self.current_count == 0 {
@@ -264,9 +264,9 @@ impl ProgressTracker {
         }
     }
 
-    pub fn leaf_with_progress<'a, T, F: Future<Output = T>>(
+    pub fn rich_leaf<'a, T, F: Future<Output = T>>(
         name: String,
-        f: impl FnOnce(Arc<dyn Fn(u64) + Send + Sync>) -> F + 'a,
+        f: impl FnOnce(Arc<dyn Fn(u64) + Send + Sync>, Arc<dyn Fn(String) + Send + Sync>) -> F + 'a,
     ) -> impl Future<Output = T> + 'a {
         let mut group = CURRENT_GROUP
             .try_with(|cur| cur.clone())
@@ -284,9 +284,15 @@ impl ProgressTracker {
 
         async move {
             let my_bar = bar.clone();
-            let out = f(Arc::new(move |progress| {
-                my_bar.set_position(progress);
-            }))
+            let my_bar_2 = bar.clone();
+            let out = f(
+                Arc::new(move |progress| {
+                    my_bar.set_position(progress);
+                }),
+                Arc::new(move |msg| {
+                    my_bar_2.set_message(msg);
+                }),
+            )
             .await;
             let mut progress_bar = PROGRESS_TRACKER
                 .get_or_init(|| Mutex::new(ProgressTracker::new()))
