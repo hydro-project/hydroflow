@@ -121,9 +121,9 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
             let temp_path = PathBuf::from(format!("/home/{user}/hydro-{random}"));
             let sftp = &sftp;
 
-            ProgressTracker::leaf_with_progress(
+            ProgressTracker::rich_leaf(
                 format!("uploading binary to /home/{user}/hydro-{unique_name}"),
-                |set_progress| {
+                |set_progress, _| {
                     let binary = &binary;
                     let binary_path = &binary_path;
                     async move {

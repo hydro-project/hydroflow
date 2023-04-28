@@ -157,9 +157,12 @@ impl HydroflowCrate {
         let host = self.on.clone();
         let target_type = host.try_read().unwrap().target_type();
 
-        tokio::task::spawn_blocking(move || {
-            build_crate(src_cloned, example_cloned, target_type, features_cloned)
-        })
+        tokio::task::spawn(build_crate(
+            src_cloned,
+            example_cloned,
+            target_type,
+            features_cloned,
+        ))
     }
 }
 
