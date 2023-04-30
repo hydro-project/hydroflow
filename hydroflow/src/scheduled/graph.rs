@@ -19,6 +19,7 @@ use super::reactor::Reactor;
 use super::state::StateHandle;
 use super::subgraph::Subgraph;
 use super::{HandoffId, SubgraphId};
+use crate::util::{Counters, STRATUM_NUM_MAP};
 
 /// A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
 pub struct Hydroflow {
@@ -38,6 +39,9 @@ pub struct Hydroflow {
     meta_graph: Option<HydroflowGraph>,
     /// See [`Self::diagnostics()`].
     diagnostics: Option<Vec<Diagnostic<SerdeSpan>>>,
+
+    /// prometheus performance counters
+    counters: Counters,
 }
 impl Default for Hydroflow {
     fn default() -> Self {
@@ -55,6 +59,7 @@ impl Default for Hydroflow {
 
             task_join_handles: Vec::new(),
         };
+
         Self {
             subgraphs: Vec::new(),
             context,
@@ -66,6 +71,8 @@ impl Default for Hydroflow {
 
             meta_graph: None,
             diagnostics: None,
+
+            counters: Counters::new(),
         }
     }
 }
@@ -161,6 +168,8 @@ impl Hydroflow {
     /// Returns true if any work was done.
     /// Yields repeatedly to allow external events to happen.
     pub async fn run_available_async(&mut self) -> bool {
+        let _ = self.counters.run_available_async_latency.start_timer();
+
         let mut work_done = false;
         // While work is immediately available.
         while self.next_stratum(false) {
@@ -170,7 +179,14 @@ impl Hydroflow {
 
             // Yield between each stratum to receive more events.
             // TODO(mingwei): really only need to yield at start of ticks though.
-            tokio::task::yield_now().await;
+
+            {
+                let _ = self
+                    .counters
+                    .run_available_async_yield_latency
+                    .start_timer();
+                tokio::task::yield_now().await;
+            }
         }
         work_done
     }
@@ -178,6 +194,13 @@ impl Hydroflow {
     /// Runs the current stratum of the dataflow until no more local work is available (does not receive events).
     /// Returns true if any work was done.
     pub fn run_stratum(&mut self) -> bool {
+        let _ = self
+            .counters
+            .run_stratum_latency
+            .get_metric_with_label_values(&[STRATUM_NUM_MAP[self.context.current_stratum]])
+            .unwrap()
+            .start_timer();
+
         let mut work_done = false;
 
         while let Some(sg_id) = self.stratum_queues[self.context.current_stratum].pop_front() {
@@ -221,6 +244,8 @@ impl Hydroflow {
     /// If this returns false then the graph will be at the start of a tick (at stratum 0, can
     /// receive more external events).
     pub fn next_stratum(&mut self, current_tick_only: bool) -> bool {
+        let _ = self.counters.next_stratum_latency.start_timer();
+
         if 0 == self.context.current_stratum && !self.events_received_tick {
             // Add any external jobs to ready queue.
             self.try_recv_events();
@@ -240,6 +265,7 @@ impl Hydroflow {
             if self.context.current_stratum >= self.stratum_queues.len() {
                 self.context.current_stratum = 0;
                 self.context.current_tick += 1;
+                self.counters.ticks.inc();
                 if current_tick_only {
                     self.events_received_tick = false;
                     return false;
@@ -282,6 +308,7 @@ impl Hydroflow {
         loop {
             // Run any work which is immediately available.
             self.run_available_async().await;
+
             // When no work is available yield until more events occur.
             self.recv_events_async().await;
         }
@@ -334,6 +361,8 @@ impl Hydroflow {
     ///
     /// Returns `None` if the event queue is closed, but that should not happen normally.
     pub async fn recv_events_async(&mut self) -> Option<usize> {
+        let _ = self.counters.recv_events_async.start_timer();
+
         self.events_received_tick = true;
 
         let mut count = 0;

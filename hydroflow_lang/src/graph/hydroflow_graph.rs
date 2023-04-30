@@ -713,41 +713,52 @@ impl HydroflowGraph {
                                 write_iterator_after,
                             } = write_result.unwrap_or_else(|()| OperatorWriteOutput { write_iterator: null_write_iterator_fn(&context_args), ..Default::default() });
 
+                            let source_info = {
+                                // TODO: This crashes when running tests from certain directories because of diagnostics flag being turned on when it should not be on.
+                                // Not sure of the solution yet, but it is not too important because the file is usually obvious as there can only be one until module support is added.
+                                #[cfg(feature = "diagnostics")]
+                                let location = op_span.unwrap().source_file().path();
+
+                                #[cfg(not(feature = "diagnostics"))]
+                                let location = PathBuf::new("unknown");
+
+                                let location = location.display().to_string().replace(|x: char| !x.is_alphanumeric(), "_");
+
+                                format!(
+                                    "loc_{}_start_{}_{}_end_{}_{}_{}",
+                                    location,
+                                    op_span.start().line,
+                                    op_span.start().column,
+                                    op_span.end().line,
+                                    op_span.end().column,
+                                    if is_pull { "pull" } else { "push" },
+                                )
+                            };
+
+                            let counter_ident = format_ident!("graph_op_tuples_processed__{}__{}__{}", ident, op_name, source_info, span = op_span);
+                            let counter_ident_string = counter_ident.to_string();
+                            let write_prologue = quote_spanned! {op_span=>
+
+                                #[allow(non_snake_case)]
+                                let #counter_ident = prometheus::register_counter!(#counter_ident_string, "help").unwrap();
+
+                                #write_prologue
+                            };
+
                             op_prologue_code.push(write_prologue);
                             subgraph_op_iter_code.push(write_iterator);
 
                             if include_type_guards {
-                                let source_info = {
-                                    // TODO: This crashes when running tests from certain directories because of diagnostics flag being turned on when it should not be on.
-                                    // Not sure of the solution yet, but it is not too important because the file is usually obvious as there can only be one until module support is added.
-                                    // #[cfg(feature = "diagnostics")]
-                                    // let path = op_span.unwrap().source_file().path();
-                                    #[cfg(feature = "diagnostics")]
-                                    let location = "unknown"; // path.display();
-
-                                    #[cfg(not(feature = "diagnostics"))]
-                                    let location = "unknown";
-
-                                    let location = location.to_string().replace(|x: char| !x.is_alphanumeric(), "_");
-
-                                    format!(
-                                        "loc_{}_start_{}_{}_end_{}_{}",
-                                        location,
-                                        op_span.start().line,
-                                        op_span.start().column,
-                                        op_span.end().line,
-                                        op_span.end().column
-                                    )
-                                };
                                 let fn_ident = format_ident!("{}__{}__{}", ident, op_name, source_info, span = op_span);
                                 let type_guard = if is_pull {
                                     quote_spanned! {op_span=>
                                         let #ident = {
                                             #[allow(non_snake_case)]
                                             #[inline(always)]
-                                            pub fn #fn_ident<Item, Input: ::std::iter::Iterator<Item = Item>>(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                                            pub fn #fn_ident<Item, Input: ::std::iter::Iterator<Item = Item>>(input: Input, counter: prometheus::Counter) -> impl ::std::iter::Iterator<Item = Item> {
                                                 struct Pull<Item, Input: ::std::iter::Iterator<Item = Item>> {
-                                                    inner: Input
+                                                    input: Input,
+                                                    counter: prometheus::Counter,
                                                 }
 
                                                 impl<Item, Input: ::std::iter::Iterator<Item = Item>> Iterator for Pull<Item, Input> {
@@ -755,20 +766,22 @@ impl HydroflowGraph {
 
                                                     #[inline(always)]
                                                     fn next(&mut self) -> Option<Self::Item> {
-                                                        self.inner.next()
+                                                        self.counter.inc();
+                                                        self.input.next()
                                                     }
 
                                                     #[inline(always)]
                                                     fn size_hint(&self) -> (usize, Option<usize>) {
-                                                        self.inner.size_hint()
+                                                        self.input.size_hint()
                                                     }
                                                 }
 
                                                 Pull {
-                                                    inner: input
+                                                    input,
+                                                    counter,
                                                 }
                                             }
-                                            #fn_ident( #ident )
+                                            #fn_ident( #ident, #counter_ident.clone() )
                                         };
                                     }
                                 } else {
@@ -776,9 +789,10 @@ impl HydroflowGraph {
                                         let #ident = {
                                             #[allow(non_snake_case)]
                                             #[inline(always)]
-                                            pub fn #fn_ident<Item, Input: #root::pusherator::Pusherator<Item = Item>>(input: Input) -> impl #root::pusherator::Pusherator<Item = Item> {
+                                            pub fn #fn_ident<Item, Input: #root::pusherator::Pusherator<Item = Item>>(input: Input, counter: prometheus::Counter) -> impl #root::pusherator::Pusherator<Item = Item> {
                                                 struct Push<Item, Input: #root::pusherator::Pusherator<Item = Item>> {
-                                                    inner: Input
+                                                    input: Input,
+                                                    counter: prometheus::Counter,
                                                 }
 
                                                 impl<Item, Input: #root::pusherator::Pusherator<Item = Item>> #root::pusherator::Pusherator for Push<Item, Input> {
@@ -786,15 +800,17 @@ impl HydroflowGraph {
 
                                                     #[inline(always)]
                                                     fn give(&mut self, item: Self::Item) {
-                                                        self.inner.give(item)
+                                                        self.counter.inc();
+                                                        self.input.give(item)
                                                     }
                                                 }
 
                                                 Push {
-                                                    inner: input
+                                                    input,
+                                                    counter,
                                                 }
                                             }
-                                            #fn_ident( #ident )
+                                            #fn_ident( #ident, #counter_ident.clone() )
                                         };
                                     }
                                 };
@@ -825,17 +841,71 @@ impl HydroflowGraph {
                             send_ports[0].clone()
                         };
 
+                        // let counter_ident = format_ident!("graph_op_tuples_processed__{}__{}__{}", ident, op_name, source_info, span = op_span);
+                        // let counter_ident_string = counter_ident.to_string();
+                        // let write_prologue = quote_spanned! {op_span=>
+
+                        //     #[allow(non_snake_case)]
+                        //     let #counter_ident = prometheus::register_counter!(#counter_ident_string, "help").unwrap();
+
+                        //     #write_prologue
+                        // };
+
+
+
+
                         // Pivot span is combination of pull and push spans (or if not possible, just take the push).
                         let pivot_span = pull_ident
                             .span()
                             .join(push_ident.span())
                             .unwrap_or_else(|| push_ident.span());
+
+                        let pivot_counter_tuples_ident = format_ident!("graph_pivot_tuples__{}__{}", pull_ident, push_ident, span = pivot_span);
+                        let pivot_counter_tuples_string = pivot_counter_tuples_ident.to_string();
+                        let pivot_counter_latency_ident = format_ident!("graph_pivot_latency__{}__{}", pull_ident, push_ident, span = pivot_span);
+                        let pivot_counter_latency_string = pivot_counter_latency_ident.to_string();
+                        op_prologue_code.push(quote_spanned!{pivot_span=>
+                            #[allow(non_snake_case)]
+                            let #pivot_counter_tuples_ident = prometheus::register_counter!(#pivot_counter_tuples_string, "help").unwrap();
+
+                            #[allow(non_snake_case)]
+                            let #pivot_counter_latency_ident = {
+                                fn gen_buckets() -> Vec<f64> {
+                                    let nano_buckets = (0..10).map(|x| f64::powf(2.0, x as f64) * 0.000000001);
+                                    let micro_buckets = (0..10).map(|x| f64::powf(2.0, x as f64) * 0.000001);
+                                    let milli_buckets = (0..10).map(|x| f64::powf(2.0, x as f64) * 0.001);
+                                    let buckets = (0..10).map(|x| f64::powf(2.0, x as f64) * 1.0);
+                                
+                                    let mut ret = Vec::new();
+                                    ret.extend(nano_buckets);
+                                    ret.extend(micro_buckets);
+                                    ret.extend(milli_buckets);
+                                    ret.extend(buckets);
+                                
+                                    ret
+                                }
+
+                                prometheus::register_histogram!(#pivot_counter_latency_string, "help", gen_buckets()).unwrap()
+                            };
+                        });
+
                         subgraph_op_iter_code.push(quote_spanned! {pivot_span=>
                             #[inline(always)]
-                            fn check_pivot_run<Pull: ::std::iter::Iterator<Item = Item>, Push: #root::pusherator::Pusherator<Item = Item>, Item>(pull: Pull, push: Push) {
-                                #root::pusherator::pivot::Pivot::new(pull, push).run();
+                            fn check_pivot_run<Pull: ::std::iter::Iterator<Item = Item>, Push: #root::pusherator::Pusherator<Item = Item>, Item>(
+                                mut pull: Pull,
+                                mut push: Push,
+                                tuples: &prometheus::Counter,
+                                latency: &prometheus::Histogram) {
+
+                                let _ = latency.start_timer();
+                                for v in pull.by_ref() {
+                                    tuples.inc();
+                                    push.give(v);
+                                }
+
+                                // #root::pusherator::pivot::Pivot::new(pull, push).run();
                             }
-                            check_pivot_run(#pull_ident, #push_ident);
+                            check_pivot_run(#pull_ident, #push_ident, &#pivot_counter_tuples_ident, &#pivot_counter_latency_ident);
                         });
                     }
                 };

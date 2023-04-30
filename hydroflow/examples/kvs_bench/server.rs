@@ -36,6 +36,8 @@ pub fn run_server(
     ctx: Context,
     throughput: Arc<AtomicUsize>,
 ) {
+    prometheus_exporter::start(format!("{}:{}", "0.0.0.0", 9091).parse().unwrap()).unwrap();
+
     std::thread::spawn(move || {
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()

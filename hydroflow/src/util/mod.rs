@@ -12,9 +12,11 @@ pub use tcp::*;
 mod socket;
 #[cfg(unix)]
 pub use socket::*;
-
 #[cfg(feature = "cli_integration")]
 pub mod cli;
+
+mod metrics;
+pub use metrics::*;
 
 use std::net::SocketAddr;
 use std::task::{Context, Poll};
