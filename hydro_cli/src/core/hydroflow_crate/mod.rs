@@ -150,7 +150,7 @@ impl HydroflowCrate {
             .await
     }
 
-    fn build(&mut self) -> JoinHandle<Arc<(String, Vec<u8>)>> {
+    fn build(&mut self) -> JoinHandle<BuildResult> {
         let src_cloned = self.src.canonicalize().unwrap();
         let example_cloned = self.example.clone();
         let features_cloned = self.features.clone();
@@ -219,14 +219,7 @@ impl Service for HydroflowCrate {
             || async {
                 let launched_host = self.launched_host.as_ref().unwrap();
 
-                let built = self
-                    .built_binary
-                    .take()
-                    .unwrap()
-                    .await
-                    .as_ref()
-                    .unwrap()
-                    .clone();
+                let built = self.built_binary.take().unwrap().await??.clone();
                 let args = self.args.as_ref().cloned().unwrap_or_default();
 
                 let binary = launched_host
