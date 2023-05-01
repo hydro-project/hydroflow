@@ -209,6 +209,14 @@ impl ProgressTracker {
 }
 
 impl ProgressTracker {
+    pub fn println(msg: &str) {
+        let progress_bar = PROGRESS_TRACKER
+            .get_or_init(|| Mutex::new(ProgressTracker::new()))
+            .lock()
+            .unwrap();
+        progress_bar.multi_progress.println(msg).unwrap();
+    }
+
     pub fn with_group<'a, T, F: Future<Output = T>>(
         name: &str,
         f: impl FnOnce() -> F + 'a,
