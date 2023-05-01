@@ -54,12 +54,16 @@ pub const DEST_SINK_SERDE: OperatorConstraints = OperatorConstraints {
                _| {
         let sink_arg = &arguments[0];
 
-        let send_ident = wc.make_ident("item_send");
+        let send_ident: proc_macro2::Ident = wc.make_ident("item_send");
         let recv_ident = wc.make_ident("item_recv");
+        let count_ident_send = wc.make_ident("count_send");
+        let count_ident_recv = wc.make_ident("count_recv");
 
         let missing_runtime_msg = make_missing_runtime_msg(op_name);
 
         let write_prologue = quote_spanned! {op_span=>
+            let #count_ident_send = ::std::sync::Arc::new(::std::sync::atomic::AtomicUsize::new(0));
+            let #count_ident_recv = ::std::sync::Arc::clone(&#count_ident_send);
             let (#send_ident, #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel();
             #hydroflow
                 .spawn_task(async move {
@@ -68,14 +72,20 @@ pub const DEST_SINK_SERDE: OperatorConstraints = OperatorConstraints {
                     let mut recv = #recv_ident;
                     let mut sink = #sink_arg;
                     while let Some((payload, addr)) = recv.recv().await {
+                        #count_ident_recv.fetch_sub(1, ::std::sync::atomic::Ordering::Relaxed);
                         let item = (#root::util::serialize_to_bytes(payload), addr);
                         sink.feed(item).await.expect("Error processing async sink item.");
                         // Receive as many items synchronously as possible before flushing.
                         while let Ok((payload, addr)) = recv.try_recv() {
+                            #count_ident_recv.fetch_sub(1, ::std::sync::atomic::Ordering::Relaxed);
+
                             let item = (#root::util::serialize_to_bytes(payload), addr);
                             sink.feed(item).await.expect("Error processing async sink item.");
                         }
                         sink.flush().await.expect("Failed to flush async sink.");
+
+                        let count = #count_ident_recv.load(::std::sync::atomic::Ordering::Relaxed);
+                        println!("COUNT: {}", count);
                     }
                 })
                 .expect(#missing_runtime_msg);
@@ -86,6 +96,7 @@ pub const DEST_SINK_SERDE: OperatorConstraints = OperatorConstraints {
                 if let Err(err) = #send_ident.send(item) {
                     panic!("Failed to send async write item for processing.: {}", err);
                 }
+                #count_ident_send.fetch_add(1, ::std::sync::atomic::Ordering::Relaxed);
             });
         };
 
