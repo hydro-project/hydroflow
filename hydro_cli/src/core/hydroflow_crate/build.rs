@@ -7,6 +7,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use anyhow::{bail, Result};
 use nanoid::nanoid;
 use once_cell::sync::Lazy;
 use tokio::sync::OnceCell;
@@ -15,7 +16,7 @@ use crate::core::{progress::ProgressTracker, HostTargetType};
 
 type CacheKey = (PathBuf, Option<String>, HostTargetType, Option<Vec<String>>);
 
-pub type BuildResult = Arc<(String, Vec<u8>)>;
+pub type BuildResult = Result<Arc<(String, Vec<u8>)>>;
 
 static BUILDS: Lazy<Mutex<HashMap<CacheKey, Arc<OnceCell<BuildResult>>>>> =
     Lazy::new(Default::default);
@@ -25,7 +26,7 @@ pub async fn build_crate(
     example: Option<String>,
     target_type: HostTargetType,
     features: Option<Vec<String>>,
-) -> Arc<(String, Vec<u8>)> {
+) -> BuildResult {
     let key = (src.clone(), example.clone(), target_type, features.clone());
     let unit_of_work = {
         let mut builds = BUILDS.lock().unwrap();
@@ -92,20 +93,20 @@ pub async fn build_crate(
                                     let path = artifact.executable.unwrap();
                                     let path = path.into_string();
                                     let data = std::fs::read(path).unwrap();
-                                    return Arc::new((nanoid!(8), data));
+                                    return Ok(Arc::new((nanoid!(8), data)));
                                 }
                             }
                             cargo_metadata::Message::CompilerMessage(msg) => {
-                                eprintln!("{}", msg.message.rendered.unwrap())
+                                ProgressTracker::println(&msg.message.rendered.unwrap())
                             }
                             _ => {}
                         }
                     }
 
                     if spawned.wait().unwrap().success() {
-                        panic!("cargo build succeeded but no binary was emitted")
+                        bail!("cargo build succeeded but no binary was emitted")
                     } else {
-                        panic!("failed to build crate")
+                        bail!("failed to build crate")
                     }
                 })
                 .await
@@ -113,5 +114,7 @@ pub async fn build_crate(
             })
         })
         .await
-        .clone()
+        .as_ref()
+        .map(|x| x.clone())
+        .map_err(|e| anyhow::anyhow!(e.to_string()))
 }
