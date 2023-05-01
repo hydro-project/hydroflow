@@ -72,7 +72,11 @@ impl ServerBindConfig {
                 let listener = TcpListener::bind((host, 0)).await.unwrap();
                 let addr = listener.local_addr().unwrap();
                 BoundConnection::TcpPort(
-                    tokio::spawn(async move { Ok(listener.accept().await?.0) }),
+                    tokio::spawn(async move {
+                        let stream = listener.accept().await?.0;
+                        stream.set_nodelay(true).unwrap();
+                        Ok(stream)
+                    }),
                     addr,
                 )
             }
@@ -231,6 +235,7 @@ async fn accept(bound: BoundConnection) -> ConnectedBidi {
         }
         BoundConnection::TcpPort(listener, _) => {
             let stream = listener.await.unwrap().unwrap();
+            stream.set_nodelay(true).unwrap();
             ConnectedBidi {
                 stream_sink: Some(Box::pin(tcp_bytes(stream))),
                 source_only: None,

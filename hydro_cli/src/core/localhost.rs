@@ -274,16 +274,17 @@ impl Host for LocalhostHost {
     fn can_connect_to(&self, typ: ClientStrategy) -> bool {
         match typ {
             ClientStrategy::UnixSocket(id) => {
-                #[cfg(unix)]
-                {
-                    self.id == id
-                }
+                false
+                //#[cfg(unix)]
+                //{
+                //    self.id == id
+                //}
 
-                #[cfg(not(unix))]
-                {
-                    let _ = id;
-                    false
-                }
+                //#[cfg(not(unix))]
+                //{
+                //    let _ = id;
+                //    false
+                //}
             }
             ClientStrategy::InternalTcpPort(target_host) => self.id == target_host.id(),
             ClientStrategy::ForwardedTcpPort(_) => true,
