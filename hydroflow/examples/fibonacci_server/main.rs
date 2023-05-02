@@ -25,7 +25,7 @@ struct Opts {
     server_addr: Option<SocketAddr>,
 }
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread")]
 async fn main() {
     // parse command line arguments
     let opts = Opts::parse();
@@ -38,12 +38,7 @@ async fn main() {
     let (outbound, inbound, addr) = bind_udp_bytes(addr).await;
     println!("Listening on {:?}", addr);
 
-    match opts.role {
-        Role::Server => {
-            run_server(outbound, inbound, opts).await;
-        }
-        Role::Client => {
-            run_client(outbound, inbound, opts).await;
-        }
-    }
+    let server = tokio::spawn(async { run_server(outbound, inbound, opts) });
+    let client_a = tokio::spawn(run_client(outbound, inbound, opts));
+    let client_b = tokio::spawn(run_client(outbound, inbound, opts));
 }
