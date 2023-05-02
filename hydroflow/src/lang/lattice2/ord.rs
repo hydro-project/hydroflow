@@ -9,9 +9,14 @@ use super::{Compare, ConvertFrom, Merge};
 /// A totally ordered max lattice. Merging takes the larger value.
 pub struct Max<T>(T);
 impl<T> Max<T> {
-    /// Create a new `Max` lattice instance from a value.
-    pub fn new(val: impl Into<T>) -> Self {
-        Self(val.into())
+    /// Create a new `Max` lattice instance from a `T`.
+    pub fn new(val: T) -> Self {
+        Self(val)
+    }
+
+    /// Create a new `Max` lattice instance from an `Into<T>` value.
+    pub fn from(val: impl Into<T>) -> Self {
+        Self::new(val.into())
     }
 }
 
@@ -49,9 +54,14 @@ where
 /// A totally ordered min lattice. Merging takes the smaller value.
 pub struct Min<T>(pub T);
 impl<T> Min<T> {
-    /// Create a new `Min` lattice instance from a value.
-    pub fn new(val: impl Into<T>) -> Self {
-        Self(val.into())
+    /// Create a new `Min` lattice instance from a `T`.
+    pub fn new(val: T) -> Self {
+        Self(val)
+    }
+
+    /// Create a new `Min` lattice instance from an `Into<T>` value.
+    pub fn new_from(val: impl Into<T>) -> Self {
+        Self::new(val.into())
     }
 }
 
