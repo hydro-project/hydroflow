@@ -303,6 +303,14 @@
 <a href="#303" id="303">303</a>
 <a href="#304" id="304">304</a>
 <a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::{Arc, Mutex, OnceLock};
 <span class="kw">use </span>std::time::Duration;
 
@@ -514,6 +522,14 @@
 }
 
 <span class="kw">impl </span>ProgressTracker {
+    <span class="kw">pub fn </span>println(msg: <span class="kw-2">&amp;</span>str) {
+        <span class="kw">let </span>progress_bar = PROGRESS_TRACKER
+            .get_or_init(|| Mutex::new(ProgressTracker::new()))
+            .lock()
+            .unwrap();
+        progress_bar.multi_progress.println(msg).unwrap();
+    }
+
     <span class="kw">pub fn </span>with_group&lt;<span class="lifetime">&#39;a</span>, T, F: Future&lt;Output = T&gt;&gt;(
         name: <span class="kw-2">&amp;</span>str,
         f: <span class="kw">impl </span>FnOnce() -&gt; F + <span class="lifetime">&#39;a</span>,

@@ -353,6 +353,9 @@
 <a href="#353" id="353">353</a>
 <a href="#354" id="354">354</a>
 <a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::HashMap,
     io::{BufRead, BufReader},
@@ -524,6 +527,9 @@
                     <span class="kw">if </span>line.starts_with(<span class="string">&quot;Plan:&quot;</span>)
                         || line.starts_with(<span class="string">&quot;Outputs:&quot;</span>)
                         || line.contains(<span class="string">&quot;: Still creating...&quot;</span>)
+                        || line.contains(<span class="string">&quot;: Reading...&quot;</span>)
+                        || line.contains(<span class="string">&quot;: Still reading...&quot;</span>)
+                        || line.contains(<span class="string">&quot;: Read complete after&quot;</span>)
                     {
                     } <span class="kw">else if </span>line.ends_with(<span class="string">&quot;: Creating...&quot;</span>) {
                         <span class="kw">let </span>id = line.split(<span class="string">&#39;:&#39;</span>).next().unwrap().trim().to_string();
