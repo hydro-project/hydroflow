@@ -17,12 +17,14 @@ pub struct DomPair<Key, Val> {
 }
 
 impl<Key, Val> DomPair<Key, Val> {
-    /// Create a `DomPair` from the given `key` and `val`.
-    pub fn new(key: impl Into<Key>, val: impl Into<Val>) -> Self {
-        Self {
-            key: key.into(),
-            val: val.into(),
-        }
+    /// Create a `DomPair` from the given `Key` and `Val`.
+    pub fn new(key: Key, val: Val) -> Self {
+        Self { key, val }
+    }
+
+    /// Create a `DomPair` from the given `Into<Key>` and `Into<Val>`.
+    pub fn new_from(key: impl Into<Key>, val: impl Into<Val>) -> Self {
+        Self::new(key.into(), val.into())
     }
 }
 

@@ -15,12 +15,14 @@ pub struct Pair<LatA, LatB> {
 }
 
 impl<LatA, LatB> Pair<LatA, LatB> {
-    /// Create a `Pair` from the given lattice values.
-    pub fn new(a: impl Into<LatA>, b: impl Into<LatB>) -> Self {
-        Self {
-            a: a.into(),
-            b: b.into(),
-        }
+    /// Create a `Pair` from the given values.
+    pub fn new(a: LatA, b: LatB) -> Self {
+        Self { a, b }
+    }
+
+    /// Create a `Pair` from the given values, using `Into`.
+    pub fn new_from(a: impl Into<LatA>, b: impl Into<LatB>) -> Self {
+        Self::new(a.into(), b.into())
     }
 }
 
