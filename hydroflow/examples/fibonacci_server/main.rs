@@ -1,44 +1,28 @@
-use clap::{Parser, ValueEnum};
 use client::run_client;
-use hydroflow::tokio;
-use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use server::run_server;
-use std::net::SocketAddr;
 
 mod client;
 mod protocol;
 mod server;
 
-#[derive(Clone, ValueEnum, Debug)]
-enum Role {
-    Client,
-    Server,
-}
+fn main() {
+    // // parse command line arguments
+    // let opts = Opts::parse();
+    // // if no addr was provided, we ask the OS to assign a local port by passing in "localhost:0"
+    // let addr = opts
+    //     .addr
+    //     .unwrap_or_else(|| ipv4_resolve("localhost:0").unwrap());
 
-#[derive(Parser, Debug)]
-struct Opts {
-    #[clap(value_enum, long)]
-    role: Role,
-    #[clap(long, value_parser = ipv4_resolve)]
-    addr: Option<SocketAddr>,
-    #[clap(long, value_parser = ipv4_resolve)]
-    server_addr: Option<SocketAddr>,
-}
+    // // allocate `outbound` sink and `inbound` stream
+    // let (outbound, inbound, addr) = bind_udp_bytes(addr).await;
+    // println!("Listening on {:?}", addr);
 
-#[tokio::main(flavor = "multi_thread")]
-async fn main() {
-    // parse command line arguments
-    let opts = Opts::parse();
-    // if no addr was provided, we ask the OS to assign a local port by passing in "localhost:0"
-    let addr = opts
-        .addr
-        .unwrap_or_else(|| ipv4_resolve("localhost:0").unwrap());
+    let (req_send, req_recv) = hydroflow::util::unbounded_channel();
+    let (resp_send, resp_recv) = hydroflow::util::unbounded_channel();
 
-    // allocate `outbound` sink and `inbound` stream
-    let (outbound, inbound, addr) = bind_udp_bytes(addr).await;
-    println!("Listening on {:?}", addr);
+    let server = std::thread::spawn(|| run_server(req_recv, resp_send));
+    let client_a_handle = std::thread::spawn(|| run_client(resp_recv, req_send));
 
-    let server = tokio::spawn(async { run_server(outbound, inbound, opts) });
-    let client_a = tokio::spawn(run_client(outbound, inbound, opts));
-    let client_b = tokio::spawn(run_client(outbound, inbound, opts));
+    server.join().unwrap();
+    client_a_handle.join().unwrap();
 }

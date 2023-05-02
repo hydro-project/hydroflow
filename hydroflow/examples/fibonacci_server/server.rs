@@ -1,8 +1,8 @@
 use chrono::prelude::*;
+use hydroflow::futures::Stream;
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow::util::{UdpSink, UdpStream};
-use std::net::SocketAddr;
+use hydroflow::tokio::sync::mpsc::UnboundedSender;
 
 use crate::protocol::Msg;
 
@@ -14,18 +14,22 @@ fn fibonacci(n: u64) -> u64 {
     }
 }
 
-pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, _opts: crate::Opts) {
+#[tokio::main]
+pub(crate) async fn run_server(
+    inbound: impl 'static + Stream<Item = Msg>,
+    outbound: UnboundedSender<Msg>,
+) {
     println!("Server live!");
 
     let mut flow: Hydroflow = hydroflow_syntax! {
         // Define a shared inbound channel
-        inbound_chan = source_stream_serde(inbound) -> map(Result::unwrap);
+        inbound_chan = source_stream(inbound);
 
         // Echo back the Echo messages with updated timestamp
         inbound_chan
             // Print all messages for debugging purposes
-            -> inspect(|(msg, addr): &(Msg, SocketAddr)| println!("{}: Got {}=>{} from {:?}", Utc::now(), msg.idx, msg.val, addr))
-            -> map(|(msg, addr): (Msg, SocketAddr)| (Msg { val: fibonacci(msg.val), ..msg }, addr) ) -> dest_sink_serde(outbound);
+            -> inspect(|msg| println!("Server {}: Got {}=>{}", Utc::now(), msg.idx, msg.val))
+            -> map(|msg| Msg { val: fibonacci(msg.val), ..msg }) -> for_each(|msg| outbound.send(msg).unwrap());
     };
 
     // run the server

@@ -1,17 +1,21 @@
 use crate::protocol::Msg;
-use crate::Opts;
-use chrono::prelude::*;
-use hydroflow::futures::StreamExt;
-use hydroflow::hydroflow_syntax;
-use hydroflow::util::{UdpSink, UdpStream};
-use rand::Rng;
-use std::net::SocketAddr;
-use std::time::Duration;
-use tokio_stream::wrappers::IntervalStream;
 
-pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts) {
-    // server_addr is required for client
-    let server_addr = opts.server_addr.expect("Client requires a server address");
+use std::time::Duration;
+
+use chrono::prelude::*;
+use hydroflow::futures::{Stream, StreamExt};
+use hydroflow::hydroflow_syntax;
+use hydroflow::tokio::sync::mpsc::UnboundedSender;
+use hydroflow::tokio_stream::wrappers::IntervalStream;
+use rand::Rng;
+
+#[tokio::main]
+pub(crate) async fn run_client(
+    inbound: impl 'static + Stream<Item = Msg>,
+    outbound: UnboundedSender<Msg>,
+) {
+    // // server_addr is required for client
+    // let server_addr = opts.server_addr.expect("Client requires a server address");
     println!("Client live!");
 
     let input = IntervalStream::new(tokio::time::interval(Duration::from_millis(10)))
@@ -26,18 +30,17 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
 
     let mut flow = hydroflow_syntax! {
         // Define shared inbound and outbound channels
-        inbound_chan = source_stream_serde(inbound);
-        outbound_chan = dest_sink_serde(outbound);
+        inbound_chan = source_stream(inbound);
+        outbound_chan = for_each(|msg| outbound.send(msg).unwrap());
 
         // Print all messages for debugging purposes
         inbound_chan
-            -> map(Result::unwrap)
-            -> for_each(|(msg, addr): (Msg, SocketAddr)| println!("{}: Got {}=>{} from {:?}", Utc::now(), msg.idx, msg.val, addr));
+            -> for_each(|msg: Msg| println!("Client {}: Got {}=>{}", Utc::now(), msg.idx, msg.val));
 
         // // take stdin and send to server as an Message::Echo
         // source_stdin() -> map(|l| (l.unwrap().parse::<u64>().unwrap(), server_addr) )
-        source_stream(input) -> map(|n| (n, server_addr))
-            -> inspect(|(msg, addr)| println!("{}: Send {}=>{} from {:?}", Utc::now(), msg.idx, msg.val, addr))
+        source_stream(input) // -> map(|n| (n, server_addr))
+            -> inspect(|msg| println!("Client {}: Send {}=>{}", Utc::now(), msg.idx, msg.val))
             -> outbound_chan;
     };
 
