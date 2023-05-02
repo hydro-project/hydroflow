@@ -21,9 +21,14 @@ impl<Tag, K, Val> MapUnion<Tag, K, Val>
 where
     Tag: tag::Tag2<K, Val>,
 {
-    /// Create a new `MapUnion` from a map.
-    pub fn new(val: impl Into<Tag::Bind>) -> Self {
-        Self(val.into())
+    /// Create a new `MapUnion` from a `Map`.
+    pub fn new(val: Tag::Bind) -> Self {
+        Self(val)
+    }
+
+    /// Create a new `MapUnion` from an `Into<Map>`.
+    pub fn new_from(val: impl Into<Tag::Bind>) -> Self {
+        Self::new(val.into())
     }
 }
 
@@ -175,7 +180,7 @@ mod test {
             "hello",
             SetUnionSingle::new(Single(100)),
         )));
-        let my_map_c = MapUnionSingle::new(("hello", SetUnionHashSet::new([100, 200])));
+        let my_map_c = MapUnionSingle::new_from(("hello", SetUnionHashSet::new_from([100, 200])));
         my_map_a.merge(my_map_b);
         my_map_a.merge(my_map_c);
     }

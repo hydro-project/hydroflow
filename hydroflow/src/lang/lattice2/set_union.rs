@@ -20,9 +20,14 @@ impl<Tag, T> SetUnion<Tag, T>
 where
     Tag: tag::Tag1<T>,
 {
-    /// Create a new `SetUnion` from a set.
-    pub fn new(val: impl Into<Tag::Bind>) -> Self {
-        Self(val.into())
+    /// Create a new `SetUnion` from a `Set`.
+    pub fn new(val: Tag::Bind) -> Self {
+        Self(val)
+    }
+
+    /// Create a new `SetUnion` from an `Into<Set>`.
+    pub fn new_from(val: impl Into<Tag::Bind>) -> Self {
+        Self::new(val.into())
     }
 }
 
@@ -152,8 +157,8 @@ mod test {
     #[test]
     fn test_singleton_example() {
         let mut my_hash_set = SetUnionHashSet::<&str>::default();
-        let my_delta_set = SetUnionSingle::new("hello world");
-        let my_array_set = SetUnionArray::new(["hello world", "b", "c", "d"]);
+        let my_delta_set = SetUnionSingle::new_from("hello world");
+        let my_array_set = SetUnionArray::new_from(["hello world", "b", "c", "d"]);
 
         assert_eq!(Some(Ordering::Equal), my_delta_set.compare(&my_delta_set));
         assert_eq!(Some(Ordering::Less), my_delta_set.compare(&my_array_set));
