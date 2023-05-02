@@ -166,6 +166,11 @@
 <a href="#166" id="166">166</a>
 <a href="#167" id="167">167</a>
 <a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Set-union compound lattice.
 //!
 //! Merging set-union lattices is done by unioning the keys.
@@ -188,9 +193,14 @@
 <span class="kw">where
     </span>Tag: tag::Tag1&lt;T&gt;,
 {
-    <span class="doccomment">/// Create a new `SetUnion` from a set.
-    </span><span class="kw">pub fn </span>new(val: <span class="kw">impl </span>Into&lt;Tag::Bind&gt;) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>(val.into())
+    <span class="doccomment">/// Create a new `SetUnion` from a `Set`.
+    </span><span class="kw">pub fn </span>new(val: Tag::Bind) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>(val)
+    }
+
+    <span class="doccomment">/// Create a new `SetUnion` from an `Into&lt;Set&gt;`.
+    </span><span class="kw">pub fn </span>new_from(val: <span class="kw">impl </span>Into&lt;Tag::Bind&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::new(val.into())
     }
 }
 
@@ -320,8 +330,8 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_singleton_example() {
         <span class="kw">let </span><span class="kw-2">mut </span>my_hash_set = SetUnionHashSet::&lt;<span class="kw-2">&amp;</span>str&gt;::default();
-        <span class="kw">let </span>my_delta_set = SetUnionSingle::new(<span class="string">&quot;hello world&quot;</span>);
-        <span class="kw">let </span>my_array_set = SetUnionArray::new([<span class="string">&quot;hello world&quot;</span>, <span class="string">&quot;b&quot;</span>, <span class="string">&quot;c&quot;</span>, <span class="string">&quot;d&quot;</span>]);
+        <span class="kw">let </span>my_delta_set = SetUnionSingle::new_from(<span class="string">&quot;hello world&quot;</span>);
+        <span class="kw">let </span>my_array_set = SetUnionArray::new_from([<span class="string">&quot;hello world&quot;</span>, <span class="string">&quot;b&quot;</span>, <span class="string">&quot;c&quot;</span>, <span class="string">&quot;d&quot;</span>]);
 
         <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Equal), my_delta_set.compare(<span class="kw-2">&amp;</span>my_delta_set));
         <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Less), my_delta_set.compare(<span class="kw-2">&amp;</span>my_array_set));

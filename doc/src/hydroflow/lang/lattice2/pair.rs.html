@@ -77,6 +77,8 @@
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Pair compound lattice.
 //!
 //! Merge both nested lattices.
@@ -94,12 +96,14 @@
 }
 
 <span class="kw">impl</span>&lt;LatA, LatB&gt; Pair&lt;LatA, LatB&gt; {
-    <span class="doccomment">/// Create a `Pair` from the given lattice values.
-    </span><span class="kw">pub fn </span>new(a: <span class="kw">impl </span>Into&lt;LatA&gt;, b: <span class="kw">impl </span>Into&lt;LatB&gt;) -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{
-            a: a.into(),
-            b: b.into(),
-        }
+    <span class="doccomment">/// Create a `Pair` from the given values.
+    </span><span class="kw">pub fn </span>new(a: LatA, b: LatB) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ a, b }
+    }
+
+    <span class="doccomment">/// Create a `Pair` from the given values, using `Into`.
+    </span><span class="kw">pub fn </span>new_from(a: <span class="kw">impl </span>Into&lt;LatA&gt;, b: <span class="kw">impl </span>Into&lt;LatB&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::new(a.into(), b.into())
     }
 }
 
