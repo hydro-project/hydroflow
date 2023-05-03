@@ -5,7 +5,7 @@
 
 use std::cmp::Ordering;
 
-use crate::lang::{collections::Collection, tag};
+use crate::{collections::Collection, tag};
 
 use super::{Compare, ConvertFrom, Merge};
 
@@ -157,10 +157,10 @@ pub type MapUnionVec<K, Val> = MapUnion<tag::VEC, K, Val>;
 /// Array-backed [`MapUnion`] lattice.
 pub type MapUnionArray<K, Val, const N: usize> = MapUnion<tag::ARRAY<N>, K, Val>;
 
-/// [`crate::lang::collections::MaskedArray`]-backed [`MapUnion`] lattice.
+/// [`crate::collections::MaskedArray`]-backed [`MapUnion`] lattice.
 pub type MapUnionMaskedArray<K, Val, const N: usize> = MapUnion<tag::MASKED_ARRAY<N>, K, Val>;
 
-/// [`crate::lang::collections::Single`]-backed [`MapUnion`] lattice.
+/// [`crate::collections::Single`]-backed [`MapUnion`] lattice.
 pub type MapUnionSingle<K, Val> = MapUnion<tag::SINGLE, K, Val>;
 
 /// [`Option`]-backed [`MapUnion`] lattice.
@@ -170,8 +170,8 @@ pub type MapUnionOption<K, Val> = MapUnion<tag::OPTION, K, Val>;
 mod test {
     use super::*;
 
-    use crate::lang::collections::Single;
-    use crate::lang::lattice2::set_union::{SetUnionHashSet, SetUnionSingle};
+    use crate::collections::Single;
+    use crate::set_union::{SetUnionHashSet, SetUnionSingle};
 
     #[test]
     fn test_map_union() {

@@ -148,9 +148,8 @@ fn benchmark_hydroflow_compiled(c: &mut Criterion) {
 }
 
 fn benchmark_hydroflow(c: &mut Criterion) {
-    use hydroflow::lang::collections::Iter;
     use hydroflow::scheduled::graph::Hydroflow;
-    use hydroflow::scheduled::handoff::VecHandoff;
+    use hydroflow::scheduled::handoff::{Iter, VecHandoff};
 
     c.bench_function("identity/hydroflow", |b| {
         b.iter(|| {

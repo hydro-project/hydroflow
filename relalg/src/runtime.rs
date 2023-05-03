@@ -2,10 +2,9 @@
 
 use std::{cell::RefCell, rc::Rc};
 
-use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::scheduled::graph_ext::GraphExt;
-use hydroflow::scheduled::handoff::VecHandoff;
+use hydroflow::scheduled::handoff::{Iter, VecHandoff};
 use hydroflow::scheduled::port::RecvPort;
 
 use crate::{Datum, RelExpr};

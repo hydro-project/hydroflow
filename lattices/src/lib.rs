@@ -1,19 +1,23 @@
 #![deny(missing_docs)]
+#![feature(impl_trait_in_assoc_type)]
 //! Module containing lattice traits and implementations.
 //!
 //! Convention: Generic parameters that are full words (e.g. `Other`, `Key`, `Val`) are lattice
 //! types.
 //! Conversely, Generic parameters that are single letters or acronyms (e.g. `K`, `T`) are scalar
 //! non-`Lattice` types.
+
 use std::cmp::Ordering;
 
 use sealed::sealed;
 
+pub mod collections;
 pub mod dom_pair;
 pub mod map_union;
 pub mod ord;
 pub mod pair;
 pub mod set_union;
+pub mod tag;
 
 /// Trait for lattice merge (least upper bound).
 pub trait Merge<Other> {

@@ -1,12 +1,12 @@
 use std::borrow::Cow;
 use std::{cell::RefCell, rc::Rc};
 
-use crate::lang::collections::Iter;
 use crate::scheduled::graph::Hydroflow;
 use crate::scheduled::handoff::VecHandoff;
 
 use super::context::Context;
 use super::graph_ext::GraphExt;
+use super::handoff::Iter;
 use super::port::{RecvPort, SendCtx};
 
 const QUERY_EDGE_NAME: Cow<'static, str> = Cow::Borrowed("query handoff");
@@ -50,7 +50,7 @@ impl Query {
             vec![send_port],
             |_ctx, ins, out| {
                 for &input in ins {
-                    out[0].give(Iter(input.take_inner().into_iter()));
+                    out[0].give(input.take_inner());
                 }
             },
         );
@@ -134,8 +134,8 @@ where
             other.recv_port,
             send_port,
             |_ctx, recv1, recv2, send| {
-                send.give(Iter(recv1.take_inner().into_iter()));
-                send.give(Iter(recv2.take_inner().into_iter()));
+                send.give(recv1.take_inner());
+                send.give(recv2.take_inner());
             },
         );
 
@@ -190,7 +190,7 @@ impl<T: Clone> Operator<T> {
                     for output in outputs {
                         output.give(Iter(input.iter().cloned()));
                     }
-                    last_output.give(Iter(input.into_iter()));
+                    last_output.give(input);
                 }
             },
         );
