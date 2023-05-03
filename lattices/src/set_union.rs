@@ -13,7 +13,8 @@ use super::{Compare, ConvertFrom, Merge};
 /// `Tag` specifies what datastructure to use, allowing us to deal with different datastructures
 /// generically.
 #[repr(transparent)]
-pub struct SetUnion<Tag, T>(Tag::Bind)
+#[derive(Debug)]
+pub struct SetUnion<Tag, T>(pub Tag::Bind)
 where
     Tag: tag::Tag1<T>;
 impl<Tag, T> SetUnion<Tag, T>
@@ -28,6 +29,16 @@ where
     /// Create a new `SetUnion` from an `Into<Set>`.
     pub fn new_from(val: impl Into<Tag::Bind>) -> Self {
         Self::new(val.into())
+    }
+}
+
+impl<Tag, T> Clone for SetUnion<Tag, T>
+where
+    Tag: tag::Tag1<T>,
+    Tag::Bind: Clone,
+{
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
     }
 }
 

@@ -9,25 +9,26 @@ use crate::buffer_pool::BufferPool;
 use crate::protocol::KvsRequest;
 use crate::protocol::KvsRequestDeserializer;
 use crate::protocol::KvsResponse;
-use crate::protocol::MyLastWriteWins;
 use crate::protocol::MyLastWriteWinsRepr;
-use crate::protocol::SetUnion;
+use crate::protocol::MySetUnion;
 use bincode::options;
-use hydroflow::lang::lattice::bottom::BottomRepr;
-use hydroflow::lang::lattice::LatticeRepr;
-use hydroflow::lang::lattice::Merge;
+use hydroflow::lang::lattice2::bottom::Bottom;
 use rand::Rng;
 use rand::SeedableRng;
 use serde::de::DeserializeSeed;
 use serde::Serialize;
 use std::cell::RefCell;
-use std::collections::HashSet;
 use std::io::Cursor;
 use std::rc::Rc;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use tmq::Context;
+
+use hydroflow::lang::lattice2::fake::Fake;
+use hydroflow::lang::lattice2::ord::Max;
+use hydroflow::lang::lattice2::set_union::SetUnionSingle;
+use hydroflow::lang::lattice2::Merge;
 
 pub fn run_server(
     gossip_addr: usize,
@@ -186,18 +187,17 @@ pub fn run_server(
                                 throughput.fetch_add(1, Ordering::SeqCst);
                                 let marker = (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() << 5) + (gossip_addr as u128);
 
-                                broadcast.give((key, (
-                                    marker,
-                                    value.clone(),
+                                broadcast.give((key, MyLastWriteWinsRepr::new(
+                                    Max::new(marker),
+                                    Fake::new(value.clone()),
                                 )));
 
-                                store.give((key, (
-                                    marker,
-                                    value,
+                                store.give((key, MyLastWriteWinsRepr::new(
+                                    Max::new(marker),
+                                    Fake::new(value),
                                 )));
                             },
                             KvsRequest::Gossip {key, reg} => {
-                                broadcast.give((key, reg.clone()));
                                 store.give((key, reg));
                             },
                             KvsRequest::_Get {key} => gets.give((key, addr)),
@@ -207,14 +207,14 @@ pub fn run_server(
                 // broadcast out locally generated changes to other nodes.
                 client_input[broadcast]
                     -> batch(1000, batch_interval_ticker)
-                    -> map(|(key, reg)| (key, Some(reg)))
-                    -> group_by::<'tick>(<BottomRepr<MyLastWriteWins> as LatticeRepr>::Repr::default, <BottomRepr<MyLastWriteWins> as Merge<BottomRepr<MyLastWriteWins>>>::merge)
-                    -> filter_map(|(key, opt_reg)| opt_reg.map(|reg| (key, reg))) // to filter out bottom types since they carry no useful info.
+                    -> map(|(key, reg)| (key, Bottom::new(reg)))
+                    -> group_by::<'tick>(Bottom::default, Merge::merge) // TODO: Change to reduce syntax.
+                    -> filter_map(|(key, opt_reg)| opt_reg.0.map(|reg| (key, reg))) // to filter out bottom types since they carry no useful info.
                     // -> inspect(|x| println!("{gossip_addr}:{:5}: sending to peers: {x:?}", context.current_tick()))
                     -> for_each(|x| { transducer_to_peers_tx.send(x).unwrap(); });
 
                 // join for lookups
-                lookup = lattice_join::<'static, 'tick, MyLastWriteWins, SetUnion>();
+                lookup = lattice_join::<'static, 'tick, MyLastWriteWinsRepr, MySetUnion>();
 
                 client_input[store]
                     // -> inspect(|x| println!("{gossip_addr}:{:5}: stores-into-lookup: {x:?}", context.current_tick()))
@@ -223,7 +223,7 @@ pub fn run_server(
                 // Feed gets into the join to make them do the actual matching.
                 client_input[gets]
                     -> map(|(key, addr)| {
-                        let mut gset = HashSet::new();
+                        // let mut gset = MySetUnion::default(); // TODO: use SetUnionSingle
 
                         let seq_num = {
                             let mut seq_borrow = get_seq_num.borrow_mut();
@@ -231,8 +231,9 @@ pub fn run_server(
                             *seq_borrow
                         };
 
-                        gset.insert((addr, seq_num));
-                        (key, gset)
+                        // gset.merge(SetUnionSingle::new_from((addr, seq_num)));
+
+                        (key, SetUnionSingle::new_from((addr, seq_num)))
                     })
                     // -> inspect(|x| println!("{gossip_addr}:{:5}: gets-into-lookup: {x:?}", context.current_tick()))
                     -> [1]lookup;
@@ -240,7 +241,7 @@ pub fn run_server(
                 // Send get results back to user
                 lookup
                     -> map(|(key, (reg, gets))| {
-                        gets.into_iter().map(move |(dest, _seq_num)| {
+                        gets.0.into_iter().map(move |(dest, _seq_num)| {
                             (KvsResponse::GetResponse { key, reg: reg.clone() }, dest)
                         })
                     })

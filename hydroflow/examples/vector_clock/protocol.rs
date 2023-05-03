@@ -1,13 +1,10 @@
-use hydroflow::lang::lattice::ord::MaxRepr;
-use hydroflow::lang::lattice::LatticeRepr;
-use hydroflow::lang::{lattice::map_union::MapUnionRepr, tag};
-
+use lattices::{map_union::MapUnionHashMap, ord::Max};
 use serde::{Deserialize, Serialize};
 
-pub type VecClock = MapUnionRepr<tag::HASH_MAP, String, MaxRepr<usize>>;
+pub type VecClock = MapUnionHashMap<String, Max<usize>>;
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
 pub struct EchoMsg {
     pub payload: String,
-    pub vc: <VecClock as LatticeRepr>::Repr,
+    pub vc: VecClock,
 }

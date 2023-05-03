@@ -3,11 +3,12 @@
 //! Uses [std::cmp::Ord`].
 
 use super::{Compare, ConvertFrom, Merge};
+use serde::{Deserialize, Serialize};
 
 #[repr(transparent)]
-#[derive(Default, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Default, PartialEq, PartialOrd, Eq, Ord, Debug, Clone, Serialize, Deserialize)]
 /// A totally ordered max lattice. Merging takes the larger value.
-pub struct Max<T>(T);
+pub struct Max<T>(pub T);
 impl<T> Max<T> {
     /// Create a new `Max` lattice instance from a `T`.
     pub fn new(val: T) -> Self {
@@ -50,7 +51,7 @@ where
 }
 
 #[repr(transparent)]
-#[derive(Default, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Default, PartialEq, PartialOrd, Eq, Ord, Debug, Clone, Serialize, Deserialize)]
 /// A totally ordered min lattice. Merging takes the smaller value.
 pub struct Min<T>(pub T);
 impl<T> Min<T> {

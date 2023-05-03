@@ -11,9 +11,12 @@ use super::{Compare, ConvertFrom, Merge};
 /// Dominating pair lattice.
 ///
 /// `Key` specifies the key lattice (usually a timestamp), and `Val` specifies the value lattice.
+#[derive(Clone, Debug)]
 pub struct DomPair<Key, Val> {
-    key: Key,
-    val: Val,
+    /// The `Key` of the  dominating pair lattice, usually a timestamp
+    pub key: Key,
+    /// The `Val` of the dominating pair lattice.
+    pub val: Val,
 }
 
 impl<Key, Val> DomPair<Key, Val> {
