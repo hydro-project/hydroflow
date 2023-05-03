@@ -174,6 +174,7 @@ where
 //     }
 // }
 
+#[cfg(test)]
 fn __assert_merges() {
     use static_assertions::{assert_impl_all, assert_not_impl_any};
 
