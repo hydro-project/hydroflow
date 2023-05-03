@@ -64,7 +64,8 @@ jobs:
 
       - name: Run cargo smart-release
         run: >-
-          cargo smart-release --update-crates-index --no-changelog-preview
+          cargo smart-release --update-crates-index
+          --no-changelog-preview --allow-fully-generated-changelogs
           --no-bump-on-demand --bump ${{ inputs.bump }} --bump-dependencies auto
           ${{ inputs.execute && '--execute' || '--dry-run-cargo-publish' }}
           hydroflow hydroflow_*
