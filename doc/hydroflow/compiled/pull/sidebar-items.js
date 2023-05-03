@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["BatchJoin","BatchJoinState","CrossJoin","CrossJoinState","HalfJoinStateLattice","HalfMultisetJoinState","HalfSetJoinState","SymmetricHashJoin","SymmetricHashJoinLattice"],"trait":["HalfJoinState"],"type":["JoinStateLatticeMut","SetJoinState"]};
+window.SIDEBAR_ITEMS = {"struct":["CrossJoin","CrossJoinState","HalfJoinStateLattice","HalfMultisetJoinState","HalfSetJoinState","SymmetricHashJoin","SymmetricHashJoinLattice"],"trait":["HalfJoinState"],"type":["JoinStateLatticeMut","SetJoinState"]};

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow/src/compiled/pull/symmetric_hash_join_lattice.rs`."><title>symmetric_hash_join_lattice.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hydroflow" data-themes="" data-resource-suffix="" data-rustdoc-version="1.71.0-nightly (9ecda8de8 2023-04-30)" data-search-js="search-618e954b235f6acc.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-6f6ffb5395b17c6e.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../../static.files/source-script-11255107d0a65077.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-f0540c1d82cde29b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../hydroflow/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow/src/compiled/pull/symmetric_hash_join_lattice.rs`."><title>symmetric_hash_join_lattice.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-ba5701c5741a7b69.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hydroflow" data-themes="" data-resource-suffix="" data-rustdoc-version="1.71.0-nightly (a368898de 2023-05-02)" data-search-js="search-618e954b235f6acc.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-6f6ffb5395b17c6e.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../../../../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../../../../static.files/source-script-11255107d0a65077.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-f0540c1d82cde29b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../hydroflow/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -227,105 +227,78 @@
 <a href="#227" id="227">227</a>
 <a href="#228" id="228">228</a>
 <a href="#229" id="229">229</a>
-<a href="#230" id="230">230</a>
-<a href="#231" id="231">231</a>
-<a href="#232" id="232">232</a>
-<a href="#233" id="233">233</a>
-<a href="#234" id="234">234</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::lang::{
     clear::Clear,
-    lattice::{Convert, LatticeRepr, Merge},
+    lattice2::{map_union::MapUnionHashMap, Merge},
 };
-<span class="kw">use </span>rustc_hash::{FxHashMap, FxHashSet};
-<span class="kw">use </span>std::{
-    collections::{hash_map::Entry, hash_set},
-    marker::PhantomData,
-};
+<span class="kw">use </span>lattices::ConvertFrom;
+<span class="kw">use </span>rustc_hash::FxHashSet;
+<span class="kw">use </span>std::collections::{hash_map::Entry, hash_set};
 
-<span class="attr">#[derive(Debug)]
-</span><span class="kw">pub struct </span>HalfJoinStateLattice&lt;Key, Lr: LatticeRepr + Merge&lt;LrDelta&gt;, LrDelta: LatticeRepr&gt; {
-    table: FxHashMap&lt;Key, Lr::Repr&gt;,
-    _marker: PhantomData&lt;<span class="kw-2">*const </span>LrDelta&gt;,
+<span class="kw">pub struct </span>HalfJoinStateLattice&lt;K, Lattice&gt; {
+    table: MapUnionHashMap&lt;K, Lattice&gt;,
 }
 
-<span class="kw">impl</span>&lt;Key, Lr: LatticeRepr + Merge&lt;LrDelta&gt;, LrDelta: LatticeRepr&gt; Default
-    <span class="kw">for </span>HalfJoinStateLattice&lt;Key, Lr, LrDelta&gt;
-{
+<span class="kw">impl</span>&lt;K, Lattice&gt; Default <span class="kw">for </span>HalfJoinStateLattice&lt;K, Lattice&gt; {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            table: FxHashMap::default(),
-            _marker: PhantomData::default(),
+            table: Default::default(),
         }
     }
 }
-<span class="kw">impl</span>&lt;Key, Lr: LatticeRepr + Merge&lt;LrDelta&gt;, LrDelta: LatticeRepr&gt; Clear
-    <span class="kw">for </span>HalfJoinStateLattice&lt;Key, Lr, LrDelta&gt;
-{
+
+<span class="kw">impl</span>&lt;K, Lattice&gt; Clear <span class="kw">for </span>HalfJoinStateLattice&lt;K, Lattice&gt; {
     <span class="kw">fn </span>clear(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="self">self</span>.table.clear()
+        <span class="self">self</span>.table.<span class="number">0</span>.clear()
     }
 }
-<span class="kw">impl</span>&lt;Key, Lr: LatticeRepr + Merge&lt;LrDelta&gt; + Convert&lt;LrDelta&gt;, LrDelta: LatticeRepr&gt;
-    HalfJoinStateLattice&lt;Key, Lr, LrDelta&gt;
+
+<span class="kw">impl</span>&lt;K, Lattice&gt; HalfJoinStateLattice&lt;K, Lattice&gt;
 <span class="kw">where
-    </span>Key: Clone + Eq + std::hash::Hash,
-    Lr::Repr: Clone + Eq,
+    </span>K: Clone + Eq + std::hash::Hash,
 {
-    <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>, k: Key, v: Lr::Repr) -&gt; bool {
-        <span class="kw">let </span>entry = <span class="self">self</span>.table.entry(k);
+    <span class="kw">fn </span>build&lt;LatticeDelta&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, k: K, v: LatticeDelta) -&gt; bool
+    <span class="kw">where
+        </span>Lattice: Merge&lt;LatticeDelta&gt; + ConvertFrom&lt;LatticeDelta&gt;,
+    {
+        <span class="kw">let </span>entry = <span class="self">self</span>.table.<span class="number">0</span>.entry(k);
 
         <span class="kw">match </span>entry {
-            Entry::Occupied(<span class="kw-2">mut </span>e) =&gt; {
-                &lt;Lr <span class="kw">as </span>Merge&lt;LrDelta&gt;&gt;::merge(e.get_mut(), &lt;Lr <span class="kw">as </span>Convert&lt;LrDelta&gt;&gt;::convert(v))
-            }
+            Entry::Occupied(<span class="kw-2">mut </span>e) =&gt; e.get_mut().merge(v),
             Entry::Vacant(e) =&gt; {
-                e.insert(v);
+                e.insert(ConvertFrom::from(v));
                 <span class="bool-val">true
             </span>}
         }
     }
 }
 
-<span class="kw">pub type </span>JoinStateLatticeMut&lt;<span class="lifetime">&#39;a</span>, Key, Lhs: LatticeRepr, LhsDelta, Rhs: LatticeRepr, RhsDelta&gt; = (
-    <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;Key, Lhs, LhsDelta&gt;,
-    <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;Key, Rhs, RhsDelta&gt;,
+<span class="kw">pub type </span>JoinStateLatticeMut&lt;<span class="lifetime">&#39;a</span>, K, LhsLattice, RhsLattice&gt; = (
+    <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;K, LhsLattice&gt;,
+    <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;K, RhsLattice&gt;,
 );
 
-<span class="kw">pub struct </span>SymmetricHashJoinLattice&lt;<span class="lifetime">&#39;a</span>, Key, Lhs, LhsDelta, Rhs, RhsDelta&gt;
+<span class="kw">pub struct </span>SymmetricHashJoinLattice&lt;<span class="lifetime">&#39;a</span>, K, LhsLattice, RhsLattice&gt;
 <span class="kw">where
-    </span>Key: Eq + std::hash::Hash + Clone,
-    Lhs: Merge&lt;LhsDelta&gt;,
-    Lhs::Repr: Eq + Clone,
-    LhsDelta: LatticeRepr,
-    LhsDelta::Repr: Eq + Clone,
-    Rhs: Merge&lt;RhsDelta&gt;,
-    Rhs::Repr: Eq + Clone,
-    RhsDelta: LatticeRepr,
-    RhsDelta::Repr: Eq + Clone,
+    </span>K: Eq + std::hash::Hash + Clone,
 {
-    state: JoinStateLatticeMut&lt;<span class="lifetime">&#39;a</span>, Key, Lhs, LhsDelta, Rhs, RhsDelta&gt;,
-    updated_keys: hash_set::Drain&lt;<span class="lifetime">&#39;a</span>, Key&gt;,
+    state: JoinStateLatticeMut&lt;<span class="lifetime">&#39;a</span>, K, LhsLattice, RhsLattice&gt;,
+    updated_keys: hash_set::Drain&lt;<span class="lifetime">&#39;a</span>, K&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, Key, Lhs, LhsDelta, Rhs, RhsDelta&gt; Iterator
-    <span class="kw">for </span>SymmetricHashJoinLattice&lt;<span class="lifetime">&#39;a</span>, Key, Lhs, LhsDelta, Rhs, RhsDelta&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, K, LhsLattice, RhsLattice&gt; Iterator
+    <span class="kw">for </span>SymmetricHashJoinLattice&lt;<span class="lifetime">&#39;a</span>, K, LhsLattice, RhsLattice&gt;
 <span class="kw">where
-    </span>Key: Eq + std::hash::Hash + Clone,
-    Lhs: Merge&lt;LhsDelta&gt; + Convert&lt;LhsDelta&gt;,
-    Lhs::Repr: Eq + Clone,
-    LhsDelta: LatticeRepr,
-    LhsDelta::Repr: Eq + Clone,
-    Rhs: Merge&lt;RhsDelta&gt; + Convert&lt;RhsDelta&gt;,
-    Rhs::Repr: Eq + Clone,
-    RhsDelta: LatticeRepr,
-    RhsDelta::Repr: Eq + Clone,
+    </span>K: Eq + std::hash::Hash + Clone,
+    LhsLattice: Clone,
+    RhsLattice: Clone,
 {
-    <span class="kw">type </span>Item = (Key, (Lhs::Repr, Rhs::Repr));
+    <span class="kw">type </span>Item = (K, (LhsLattice, RhsLattice));
 
     <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(key) = <span class="self">self</span>.updated_keys.next() {
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(lhs) = <span class="self">self</span>.state.<span class="number">0</span>.table.get(<span class="kw-2">&amp;</span>key) {
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(rhs) = <span class="self">self</span>.state.<span class="number">1</span>.table.get(<span class="kw-2">&amp;</span>key) {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(lhs) = <span class="self">self</span>.state.<span class="number">0</span>.table.<span class="number">0</span>.get(<span class="kw-2">&amp;</span>key) {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(rhs) = <span class="self">self</span>.state.<span class="number">1</span>.table.<span class="number">0</span>.get(<span class="kw-2">&amp;</span>key) {
                     <span class="kw">return </span><span class="prelude-val">Some</span>((key, (lhs.clone(), rhs.clone())));
                 }
             }
@@ -334,29 +307,22 @@
         <span class="prelude-val">None
     </span>}
 }
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, Key, Lhs, LhsDelta, Rhs, RhsDelta&gt;
-    SymmetricHashJoinLattice&lt;<span class="lifetime">&#39;a</span>, Key, Lhs, LhsDelta, Rhs, RhsDelta&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, K, LhsLattice, RhsLattice&gt; SymmetricHashJoinLattice&lt;<span class="lifetime">&#39;a</span>, K, LhsLattice, RhsLattice&gt;
 <span class="kw">where
-    </span>Key: Eq + std::hash::Hash + Clone,
-    Lhs: Merge&lt;LhsDelta&gt; + Convert&lt;LhsDelta&gt;,
-    Lhs::Repr: Eq + Clone,
-    LhsDelta: LatticeRepr,
-    LhsDelta::Repr: Eq + Clone,
-    Rhs: Merge&lt;RhsDelta&gt; + Convert&lt;RhsDelta&gt;,
-    Rhs::Repr: Eq + Clone,
-    RhsDelta: LatticeRepr,
-    RhsDelta::Repr: Eq + Clone,
+    </span>K: Eq + std::hash::Hash + Clone,
 {
-    <span class="kw">pub fn </span>new_from_mut&lt;I1, I2&gt;(
+    <span class="kw">pub fn </span>new_from_mut&lt;I1, I2, LhsDelta, RhsDelta&gt;(
         lhs: I1,
         rhs: I2,
-        updated_keys: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>FxHashSet&lt;Key&gt;,
-        state_lhs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;Key, Lhs, LhsDelta&gt;,
-        state_rhs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;Key, Rhs, RhsDelta&gt;,
+        updated_keys: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>FxHashSet&lt;K&gt;,
+        state_lhs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;K, LhsLattice&gt;,
+        state_rhs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>HalfJoinStateLattice&lt;K, RhsLattice&gt;,
     ) -&gt; <span class="self">Self
     </span><span class="kw">where
-        </span>I1: Iterator&lt;Item = (Key, Lhs::Repr)&gt;,
-        I2: Iterator&lt;Item = (Key, Rhs::Repr)&gt;,
+        </span>I1: Iterator&lt;Item = (K, LhsDelta)&gt;,
+        I2: Iterator&lt;Item = (K, RhsDelta)&gt;,
+        LhsLattice: Merge&lt;LhsDelta&gt; + ConvertFrom&lt;LhsDelta&gt;,
+        RhsLattice: Merge&lt;RhsDelta&gt; + ConvertFrom&lt;RhsDelta&gt;,
     {
         <span class="kw">for </span>(k, v1) <span class="kw">in </span>lhs {
             <span class="kw">if </span>state_lhs.build(k.clone(), v1) {
@@ -379,23 +345,26 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">pub type </span>JoinStateLattice&lt;Key, Lhs: LatticeRepr, LhsDelta, Rhs: LatticeRepr, RhsDelta&gt; = (
-        HalfJoinStateLattice&lt;Key, Lhs, LhsDelta&gt;,
-        HalfJoinStateLattice&lt;Key, Rhs, RhsDelta&gt;,
+    <span class="kw">pub type </span>JoinStateLattice&lt;K, LhsLattice, RhsLattice&gt; = (
+        HalfJoinStateLattice&lt;K, LhsLattice&gt;,
+        HalfJoinStateLattice&lt;K, RhsLattice&gt;,
     );
 
     <span class="kw">use super</span>::{HalfJoinStateLattice, SymmetricHashJoinLattice};
-    <span class="kw">use </span><span class="kw">crate</span>::lang::lattice::{ord::MaxRepr, LatticeRepr};
+    <span class="kw">use </span><span class="kw">crate</span>::lang::lattice2::ord::Max;
     <span class="kw">use </span>rustc_hash::FxHashSet;
 
-    <span class="kw">type </span>JoinStateMaxLattice =
-        JoinStateLattice&lt;usize, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;&gt;;
+    <span class="kw">type </span>MyLattice = Max&lt;usize&gt;;
+    <span class="kw">type </span>JoinState = JoinStateLattice&lt;usize, MyLattice, MyLattice&gt;;
 
-    <span class="kw">fn </span>join&lt;Lhs: IntoIterator&lt;Item = (usize, usize)&gt;, Rhs: IntoIterator&lt;Item = (usize, usize)&gt;&gt;(
-        state: <span class="kw-2">&amp;mut </span>JoinStateMaxLattice,
+    <span class="kw">fn </span>join&lt;
+        Lhs: IntoIterator&lt;Item = (usize, MyLattice)&gt;,
+        Rhs: IntoIterator&lt;Item = (usize, MyLattice)&gt;,
+    &gt;(
+        state: <span class="kw-2">&amp;mut </span>JoinState,
         lhs: Lhs,
         rhs: Rhs,
-    ) -&gt; Vec&lt;(usize, (usize, usize))&gt; {
+    ) -&gt; Vec&lt;(usize, (MyLattice, MyLattice))&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>updated_keys = FxHashSet::default();
         SymmetricHashJoinLattice::new_from_mut(
             lhs.into_iter(),
@@ -409,61 +378,82 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>produces_fully_merged_output() {
-        <span class="kw">let </span><span class="kw-2">mut </span>state = JoinStateMaxLattice::default();
+        <span class="kw">let </span><span class="kw-2">mut </span>state = JoinState::default();
 
-        <span class="kw">let </span>lhs = [(<span class="number">7</span>, <span class="number">3</span>), (<span class="number">7</span>, <span class="number">4</span>)];
-        <span class="kw">let </span>rhs = [(<span class="number">7</span>, <span class="number">5</span>), (<span class="number">7</span>, <span class="number">6</span>)];
-        <span class="macro">assert_eq!</span>(join(<span class="kw-2">&amp;mut </span>state, lhs, rhs), <span class="macro">vec!</span>[(<span class="number">7</span>, (<span class="number">4</span>, <span class="number">6</span>))]);
+        <span class="kw">let </span>lhs = [(<span class="number">7</span>, MyLattice::new(<span class="number">3</span>)), (<span class="number">7</span>, MyLattice::new(<span class="number">4</span>))];
+        <span class="kw">let </span>rhs = [(<span class="number">7</span>, MyLattice::new(<span class="number">5</span>)), (<span class="number">7</span>, MyLattice::new(<span class="number">6</span>))];
+        <span class="macro">assert_eq!</span>(
+            join(<span class="kw-2">&amp;mut </span>state, lhs, rhs),
+            <span class="macro">vec!</span>[(<span class="number">7</span>, (MyLattice::new(<span class="number">4</span>), MyLattice::new(<span class="number">6</span>)))]
+        );
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>lattice_only_moves_forward() {
-        <span class="kw">let </span><span class="kw-2">mut </span>state = JoinStateMaxLattice::default();
+        <span class="kw">let </span><span class="kw-2">mut </span>state = JoinState::default();
 
-        <span class="kw">let </span>lhs = [(<span class="number">7</span>, <span class="number">4</span>), (<span class="number">7</span>, <span class="number">3</span>)];
-        <span class="kw">let </span>rhs = [(<span class="number">7</span>, <span class="number">6</span>), (<span class="number">7</span>, <span class="number">5</span>)];
-        <span class="macro">assert_eq!</span>(join(<span class="kw-2">&amp;mut </span>state, lhs, rhs), <span class="macro">vec!</span>[(<span class="number">7</span>, (<span class="number">4</span>, <span class="number">6</span>))]);
+        <span class="kw">let </span>lhs = [(<span class="number">7</span>, MyLattice::new(<span class="number">4</span>)), (<span class="number">7</span>, MyLattice::new(<span class="number">3</span>))];
+        <span class="kw">let </span>rhs = [(<span class="number">7</span>, MyLattice::new(<span class="number">6</span>)), (<span class="number">7</span>, MyLattice::new(<span class="number">5</span>))];
+        <span class="macro">assert_eq!</span>(
+            join(<span class="kw-2">&amp;mut </span>state, lhs, rhs),
+            <span class="macro">vec!</span>[(<span class="number">7</span>, (MyLattice::new(<span class="number">4</span>), MyLattice::new(<span class="number">6</span>)))]
+        );
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>subsequent_ticks_dont_produce_if_nothing_has_changed() {
-        <span class="kw">let </span><span class="kw-2">mut </span>state = JoinStateMaxLattice::default();
+        <span class="kw">let </span><span class="kw-2">mut </span>state = JoinState::default();
 
-        <span class="kw">let </span>lhs = [(<span class="number">7</span>, <span class="number">3</span>)];
-        <span class="kw">let </span>rhs = [(<span class="number">7</span>, <span class="number">3</span>)];
-        <span class="macro">assert_eq!</span>(join(<span class="kw-2">&amp;mut </span>state, lhs, rhs), <span class="macro">vec!</span>[(<span class="number">7</span>, (<span class="number">3</span>, <span class="number">3</span>))]);
+        <span class="kw">let </span>lhs = [(<span class="number">7</span>, MyLattice::new(<span class="number">3</span>))];
+        <span class="kw">let </span>rhs = [(<span class="number">7</span>, MyLattice::new(<span class="number">3</span>))];
+        <span class="macro">assert_eq!</span>(
+            join(<span class="kw-2">&amp;mut </span>state, lhs, rhs),
+            <span class="macro">vec!</span>[(<span class="number">7</span>, (Max::new(<span class="number">3</span>), Max::new(<span class="number">3</span>)))]
+        );
 
-        <span class="kw">let </span>lhs = [(<span class="number">7</span>, <span class="number">3</span>)];
-        <span class="kw">let </span>rhs = [(<span class="number">7</span>, <span class="number">3</span>)];
+        <span class="kw">let </span>lhs = [(<span class="number">7</span>, Max::new(<span class="number">3</span>))];
+        <span class="kw">let </span>rhs = [(<span class="number">7</span>, Max::new(<span class="number">3</span>))];
         <span class="macro">assert_eq!</span>(join(<span class="kw-2">&amp;mut </span>state, lhs, rhs), <span class="macro">vec!</span>[]);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>subsequent_ticks_do_produce_if_something_has_changed() {
-        <span class="kw">let </span><span class="kw-2">mut </span>state = JoinStateMaxLattice::default();
+        <span class="kw">let </span><span class="kw-2">mut </span>state = JoinState::default();
 
-        <span class="kw">let </span>lhs = [(<span class="number">7</span>, <span class="number">3</span>)];
-        <span class="kw">let </span>rhs = [(<span class="number">7</span>, <span class="number">3</span>)];
-        <span class="macro">assert_eq!</span>(join(<span class="kw-2">&amp;mut </span>state, lhs, rhs), <span class="macro">vec!</span>[(<span class="number">7</span>, (<span class="number">3</span>, <span class="number">3</span>))]);
+        <span class="kw">let </span>lhs = [(<span class="number">7</span>, MyLattice::new(<span class="number">3</span>))];
+        <span class="kw">let </span>rhs = [(<span class="number">7</span>, MyLattice::new(<span class="number">3</span>))];
+        <span class="macro">assert_eq!</span>(
+            join(<span class="kw-2">&amp;mut </span>state, lhs, rhs),
+            <span class="macro">vec!</span>[(<span class="number">7</span>, (MyLattice::new(<span class="number">3</span>), MyLattice::new(<span class="number">3</span>)))]
+        );
 
-        <span class="kw">let </span>lhs = [(<span class="number">7</span>, <span class="number">3</span>)];
-        <span class="kw">let </span>rhs = [(<span class="number">7</span>, <span class="number">4</span>)];
-        <span class="macro">assert_eq!</span>(join(<span class="kw-2">&amp;mut </span>state, lhs, rhs), <span class="macro">vec!</span>[(<span class="number">7</span>, (<span class="number">3</span>, <span class="number">4</span>))]);
+        <span class="kw">let </span>lhs = [(<span class="number">7</span>, MyLattice::new(<span class="number">3</span>))];
+        <span class="kw">let </span>rhs = [(<span class="number">7</span>, MyLattice::new(<span class="number">4</span>))];
+        <span class="macro">assert_eq!</span>(
+            join(<span class="kw-2">&amp;mut </span>state, lhs, rhs),
+            <span class="macro">vec!</span>[(<span class="number">7</span>, (MyLattice::new(<span class="number">3</span>), MyLattice::new(<span class="number">4</span>)))]
+        );
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>resetting_one_side_works() {
-        <span class="kw">let </span><span class="kw-2">mut </span>state = JoinStateMaxLattice::default();
+        <span class="kw">let </span><span class="kw-2">mut </span>state = JoinState::default();
 
-        <span class="kw">let </span>lhs = [(<span class="number">7</span>, <span class="number">3</span>)];
-        <span class="kw">let </span>rhs = [(<span class="number">7</span>, <span class="number">3</span>)];
-        <span class="macro">assert_eq!</span>(join(<span class="kw-2">&amp;mut </span>state, lhs, rhs), <span class="macro">vec!</span>[(<span class="number">7</span>, (<span class="number">3</span>, <span class="number">3</span>))]);
+        <span class="kw">let </span>lhs = [(<span class="number">7</span>, MyLattice::new(<span class="number">3</span>))];
+        <span class="kw">let </span>rhs = [(<span class="number">7</span>, MyLattice::new(<span class="number">3</span>))];
+        <span class="macro">assert_eq!</span>(
+            join(<span class="kw-2">&amp;mut </span>state, lhs, rhs),
+            <span class="macro">vec!</span>[(<span class="number">7</span>, (MyLattice::new(<span class="number">3</span>), MyLattice::new(<span class="number">3</span>)))]
+        );
 
         std::mem::take(<span class="kw-2">&amp;mut </span>state.<span class="number">1</span>);
 
-        <span class="kw">let </span>lhs = [(<span class="number">7</span>, <span class="number">3</span>)];
-        <span class="kw">let </span>rhs = [(<span class="number">7</span>, <span class="number">3</span>)];
-        <span class="macro">assert_eq!</span>(join(<span class="kw-2">&amp;mut </span>state, lhs, rhs), <span class="macro">vec!</span>[(<span class="number">7</span>, (<span class="number">3</span>, <span class="number">3</span>))]);
+        <span class="kw">let </span>lhs = [(<span class="number">7</span>, Max::new(<span class="number">3</span>))];
+        <span class="kw">let </span>rhs = [(<span class="number">7</span>, Max::new(<span class="number">3</span>))];
+        <span class="macro">assert_eq!</span>(
+            join(<span class="kw-2">&amp;mut </span>state, lhs, rhs),
+            <span class="macro">vec!</span>[(<span class="number">7</span>, (MyLattice::new(<span class="number">3</span>), MyLattice::new(<span class="number">3</span>)))]
+        );
     }
 }
 </code></pre></div></section></main></body></html>

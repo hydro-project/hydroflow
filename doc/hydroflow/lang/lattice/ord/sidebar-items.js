@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["Max","MaxRepr","Min","MinRepr"]};
