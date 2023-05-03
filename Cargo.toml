@@ -1,12 +1,12 @@
 [workspace]
 
 members = [
-    # When adding a new crate which is published, you will need to:
+    # When adding a new crate which is published, you might need to:
     # 1. run `cargo changelog --write my_crate`
     # 2. Edit `my_crate/CHANGELOG.md` and change `## Unreleased` to `## 0.0.0 (2023-05-02)` (use
     # current date).
-    # 3. Tag the commit with `my_crate-v0.0.0` and push the tag.
-    # 4. Publish `my_crate` locally using `cargo publish -p my_crate`.
+    # 3. Publish `my_crate` locally using `cargo publish -p my_crate`.
+    # 4. Tag the commit with `my_crate-v0.0.0` and push the tag.
     # Then in the future you can just run the release workflow normally.
     "benches",
     "hydro_cli",
