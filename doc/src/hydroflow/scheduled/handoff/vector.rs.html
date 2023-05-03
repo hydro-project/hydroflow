@@ -88,15 +88,11 @@
 <a href="#88" id="88">88</a>
 <a href="#89" id="89">89</a>
 <a href="#90" id="90">90</a>
-<a href="#91" id="91">91</a>
-<a href="#92" id="92">92</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::cell::{RefCell, RefMut};
 <span class="kw">use </span>std::rc::Rc;
 
-<span class="kw">use </span><span class="kw">crate</span>::lang::collections::Iter;
-
-<span class="kw">use super</span>::{CanReceive, Handoff, HandoffMeta};
+<span class="kw">use super</span>::{CanReceive, Handoff, HandoffMeta, Iter};
 
 <span class="doccomment">/**
  * A [Vec]-based FIFO handoff.
@@ -153,14 +149,14 @@
         iter
     }
 }
-<span class="comment">// impl&lt;T&gt; CanReceive&lt;Vec&lt;T&gt;&gt; for VecHandoff&lt;T&gt; {
-//     fn give(&amp;self, mut vec: Vec&lt;T&gt;) -&gt; Vec&lt;T&gt; {
-//         (*self.input).borrow_mut().extend(vec.drain(..));
-//         vec
-//     }
-// }
+<span class="kw">impl</span>&lt;T&gt; CanReceive&lt;Vec&lt;T&gt;&gt; <span class="kw">for </span>VecHandoff&lt;T&gt; {
+    <span class="kw">fn </span>give(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut </span>vec: Vec&lt;T&gt;) -&gt; Vec&lt;T&gt; {
+        (<span class="kw-2">*</span><span class="self">self</span>.input).borrow_mut().extend(vec.drain(..));
+        vec
+    }
+}
 
-</span><span class="kw">impl</span>&lt;T&gt; HandoffMeta <span class="kw">for </span>VecHandoff&lt;T&gt; {
+<span class="kw">impl</span>&lt;T&gt; HandoffMeta <span class="kw">for </span>VecHandoff&lt;T&gt; {
     <span class="kw">fn </span>any_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>Any {
         <span class="self">self
     </span>}

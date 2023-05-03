@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["dom_pair","map_union","ord","pair","set_union"],"trait":["Compare","ConvertFrom","Merge","NaiveCompare"]};

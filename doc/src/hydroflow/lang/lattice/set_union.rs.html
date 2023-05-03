@@ -166,6 +166,7 @@
 <a href="#166" id="166">166</a>
 <a href="#167" id="167">167</a>
 <a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering;
 <span class="kw">use </span>std::iter::FromIterator;
 
@@ -291,7 +292,8 @@
     }
 }
 
-<span class="kw">fn </span>__assert_merges() {
+<span class="attr">#[cfg(test)]
+</span><span class="kw">fn </span>__assert_merges() {
     <span class="kw">use </span>static_assertions::{assert_impl_all, assert_not_impl_any};
 
     <span class="macro">assert_impl_all!</span>(SetUnionRepr&lt;tag::HASH_SET, u32&gt;:

@@ -132,11 +132,12 @@
 <a href="#132" id="132">132</a>
 <a href="#133" id="133">133</a>
 <a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering;
 
 <span class="kw">use </span><span class="kw">crate</span>::lang::lattice::bottom::BottomRepr;
 <span class="kw">use </span><span class="kw">crate</span>::lang::lattice::{Compare, Convert, Debottom, Lattice, LatticeRepr, Merge, Top};
-<span class="kw">use </span><span class="kw">crate</span>::lang::tag;
 
 <span class="kw">pub struct </span>Pair&lt;La: Lattice, Lb: Lattice&gt; {
     _phantom: std::marker::PhantomData&lt;(La, Lb)&gt;,
@@ -224,7 +225,10 @@
     }
 }
 
-<span class="kw">fn </span>__assert_merges() {
+<span class="attr">#[cfg(test)]
+</span><span class="kw">fn </span>__assert_merges() {
+    <span class="kw">use </span><span class="kw">crate</span>::lang::tag;
+
     <span class="kw">use </span>static_assertions::{assert_impl_all, assert_not_impl_any};
 
     <span class="kw">use </span><span class="kw">super</span>::set_union::SetUnionRepr;

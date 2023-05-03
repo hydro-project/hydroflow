@@ -201,12 +201,12 @@
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::{cell::RefCell, rc::Rc};
 
-<span class="kw">use </span><span class="kw">crate</span>::lang::collections::Iter;
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::graph::Hydroflow;
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::VecHandoff;
 
 <span class="kw">use </span><span class="kw">super</span>::context::Context;
 <span class="kw">use </span><span class="kw">super</span>::graph_ext::GraphExt;
+<span class="kw">use </span><span class="kw">super</span>::handoff::Iter;
 <span class="kw">use </span><span class="kw">super</span>::port::{RecvPort, SendCtx};
 
 <span class="kw">const </span>QUERY_EDGE_NAME: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt; = Cow::Borrowed(<span class="string">&quot;query handoff&quot;</span>);
@@ -250,7 +250,7 @@
             <span class="macro">vec!</span>[send_port],
             |_ctx, ins, out| {
                 <span class="kw">for </span><span class="kw-2">&amp;</span>input <span class="kw">in </span>ins {
-                    out[<span class="number">0</span>].give(Iter(input.take_inner().into_iter()));
+                    out[<span class="number">0</span>].give(input.take_inner());
                 }
             },
         );
@@ -334,8 +334,8 @@
             other.recv_port,
             send_port,
             |_ctx, recv1, recv2, send| {
-                send.give(Iter(recv1.take_inner().into_iter()));
-                send.give(Iter(recv2.take_inner().into_iter()));
+                send.give(recv1.take_inner());
+                send.give(recv2.take_inner());
             },
         );
 
@@ -390,7 +390,7 @@
                     <span class="kw">for </span>output <span class="kw">in </span>outputs {
                         output.give(Iter(input.iter().cloned()));
                     }
-                    last_output.give(Iter(input.into_iter()));
+                    last_output.give(input);
                 }
             },
         );
