@@ -2,9 +2,6 @@ use std::cmp::Ordering;
 
 use super::bottom::BottomRepr;
 use super::{Compare, Convert, Debottom, Lattice, LatticeRepr, Merge, Top};
-
-use crate::lang::tag;
-
 pub struct DomPair<La: Lattice, Lb: Lattice> {
     _phantom: std::marker::PhantomData<(La, Lb)>,
 }
@@ -115,7 +112,10 @@ impl<Ra: Top, Rb: Top> Top for DomPairRepr<Ra, Rb> {
     }
 }
 
+#[cfg(test)]
 fn __assert_merges() {
+    use crate::lang::tag;
+
     use static_assertions::{assert_impl_all, assert_not_impl_any};
 
     use super::set_union::SetUnionRepr;
