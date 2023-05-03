@@ -1,19 +1,20 @@
 [workspace]
 
 members = [
-    "multiplatform_test",
+    "benches",
+    "hydro_cli",
+    "hydro_cli_examples",
+    "hydroflow",
+    "hydroflow_cli_integration",
+    "hydroflow_datalog",
+    "hydroflow_datalog_core",
     "hydroflow_internalmacro",
     "hydroflow_lang",
     "hydroflow_macro",
-    "hydroflow",
-    "hydroflow_datalog_core",
-    "hydroflow_datalog",
-    "hydro_cli",
-    "hydro_cli_examples",
-    "hydroflow_cli_integration",
-    "benches",
-    "relalg",
+    "lattices",
+    "multiplatform_test",
     "pusherator",
+    "relalg",
     "variadics",
 ]
 

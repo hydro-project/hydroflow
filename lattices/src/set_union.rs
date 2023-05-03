@@ -4,7 +4,7 @@
 
 use std::cmp::Ordering;
 
-use crate::lang::{collections::Collection, tag};
+use crate::{collections::Collection, tag};
 
 use super::{Compare, ConvertFrom, Merge};
 
@@ -119,10 +119,10 @@ pub type SetUnionVec<T> = SetUnion<tag::VEC, T>;
 /// Array-backed [`SetUnion`] lattice.
 pub type SetUnionArray<T, const N: usize> = SetUnion<tag::ARRAY<N>, T>;
 
-/// [`crate::lang::collections::MaskedArray`]-backed [`SetUnion`] lattice.
+/// [`crate::collections::MaskedArray`]-backed [`SetUnion`] lattice.
 pub type SetUnionMaskedArray<T, const N: usize> = SetUnion<tag::MASKED_ARRAY<N>, T>;
 
-/// [`crate::lang::collections::Single`]-backed [`SetUnion`] lattice.
+/// [`crate::collections::Single`]-backed [`SetUnion`] lattice.
 pub type SetUnionSingle<T> = SetUnion<tag::SINGLE, T>;
 
 /// [`Option`]-backed [`SetUnion`] lattice.
@@ -132,7 +132,7 @@ pub type SetUnionOption<T> = SetUnion<tag::OPTION, T>;
 mod test {
     use super::*;
 
-    use crate::lang::collections::Single;
+    use crate::collections::Single;
 
     #[test]
     fn test_set_union() {

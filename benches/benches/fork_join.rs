@@ -1,8 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::scheduled::graph_ext::GraphExt;
-use hydroflow::scheduled::handoff::VecHandoff;
+use hydroflow::scheduled::handoff::{Iter, VecHandoff};
 use hydroflow::scheduled::query::Query as Q;
 use timely::dataflow::operators::{Concatenate, Filter, Inspect, ToStream};
 

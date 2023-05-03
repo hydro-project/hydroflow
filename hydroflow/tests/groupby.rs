@@ -4,10 +4,9 @@ use std::rc::Rc;
 
 use multiplatform_test::multiplatform_test;
 
-use hydroflow::lang::collections::Iter;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::scheduled::graph_ext::GraphExt;
-use hydroflow::scheduled::handoff::VecHandoff;
+use hydroflow::scheduled::handoff::{Iter, VecHandoff};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Employee {

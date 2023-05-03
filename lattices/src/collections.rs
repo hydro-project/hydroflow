@@ -1,3 +1,5 @@
+//! The `Collection` trait and simple singleton or array collection implementations.
+
 use std::array::IntoIter;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::hash::Hash;
@@ -17,28 +19,40 @@ fn bool_to_option_mut<'a>(value: bool) -> Option<&'a mut ()> {
     }
 }
 
+/// An abstract collection, analagous to `Map<K, V>` or `Set<K, ()>`.
 pub trait Collection<K, V> {
+    /// Get a reference to the value corresponding to the key.
     fn get(&self, key: &K) -> Option<&V>;
+    /// Gets a mutable reference to the value corresponding to the key.
     fn get_mut(&mut self, key: &K) -> Option<&mut V>;
+    /// Length of the collection.
     fn len(&self) -> usize;
+    /// If the collection is empty.
     fn is_empty(&self) -> bool {
         0 == self.len()
     }
 
+    /// Iterator type returned by [`Self::keys`].
     type Keys<'s>: Iterator<Item = &'s K>
     where
         K: 's,
         Self: 's;
+    /// Returns an iterator over the keys in this collection.
     fn keys(&self) -> Self::Keys<'_>;
 
+    /// Iterator type returned by [`Self::entries`].
     type Entries<'s>: Iterator<Item = (&'s K, &'s V)>
     where
         K: 's,
         V: 's,
         Self: 's;
+    /// Returns an iterator over the key-value pairs in this collection.
     fn entries(&self) -> Self::Entries<'_>;
 
+    /// Iterator type returned by [`Self::into_entries`].
     type IntoEntries: Iterator<Item = (K, V)>;
+    /// Turns this collection into an iterator over its key-value pairs. Similar to
+    /// [`std::iter::IntoIterator`] but also works with sets for `(K, ())` pairs.
     fn into_entries(self) -> Self::IntoEntries;
 }
 
@@ -438,6 +452,7 @@ impl<K: 'static + Eq, V: 'static> Collection<K, V> for Single<(K, V)> {
     }
 }
 
+/// A singleton wrapper which implements `Collection`.
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Single<T>(pub T);
@@ -466,23 +481,7 @@ impl<T> From<T> for Single<T> {
 //     }
 // }
 
-#[repr(transparent)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Iter<I>(pub I)
-where
-    I: IntoIterator;
-impl<I> IntoIterator for Iter<I>
-where
-    I: IntoIterator,
-{
-    type Item = I::Item;
-    type IntoIter = I::IntoIter;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
+/// A fixed-sized array wrapper which implements `Collection`.
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Array<T, const N: usize>(pub [T; N]);
@@ -500,9 +499,12 @@ impl<T, const N: usize> From<[T; N]> for Array<T, N> {
     }
 }
 
+/// A boolean-masked fixed-size array wrapper which implements `Collection`.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct MaskedArray<T, const N: usize> {
+    /// The boolean mask.
     pub mask: [bool; N],
+    /// The collection items.
     pub vals: [T; N],
 }
 impl<T, const N: usize> IntoIterator for MaskedArray<T, N> {

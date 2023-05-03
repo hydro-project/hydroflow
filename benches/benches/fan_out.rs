@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use hydroflow::lang::collections::Iter;
+use hydroflow::scheduled::handoff::Iter;
 // use hydroflow::scheduled::ctx::SendCtx;
 // use hydroflow::scheduled::handoff::TeeingHandoff;
 use hydroflow::scheduled::query::Query as Q;

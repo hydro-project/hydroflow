@@ -117,9 +117,8 @@ fn benchmark_differential(c: &mut Criterion) {
 }
 
 fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
-    use hydroflow::lang::collections::Iter;
     use hydroflow::scheduled::graph::Hydroflow;
-    use hydroflow::scheduled::handoff::VecHandoff;
+    use hydroflow::scheduled::handoff::{Iter, VecHandoff};
     use hydroflow::{var_args, var_expr};
 
     let edges = &*EDGES;
