@@ -11,8 +11,10 @@ use std::cmp::Ordering;
 
 use sealed::sealed;
 
+pub mod bottom;
 pub mod collections;
 pub mod dom_pair;
+pub mod fake;
 pub mod map_union;
 pub mod ord;
 pub mod pair;
