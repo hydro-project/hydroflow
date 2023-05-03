@@ -9,3 +9,4 @@ description = "Lattice data types for simplifying distributed state by providing
 
 [dependencies]
 sealed = "0.5"
+serde = "1.0.160"

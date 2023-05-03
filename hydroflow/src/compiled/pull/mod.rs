@@ -1,6 +1,3 @@
-mod batch_join;
-pub use batch_join::*;
-
 mod cross_join;
 pub use cross_join::*;
 

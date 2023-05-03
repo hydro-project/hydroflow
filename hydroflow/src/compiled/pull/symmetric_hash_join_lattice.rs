@@ -1,97 +1,75 @@
 use crate::lang::{
     clear::Clear,
-    lattice::{Convert, LatticeRepr, Merge},
+    lattice2::{map_union::MapUnionHashMap, Merge},
 };
-use rustc_hash::{FxHashMap, FxHashSet};
-use std::{
-    collections::{hash_map::Entry, hash_set},
-    marker::PhantomData,
-};
+use lattices::ConvertFrom;
+use rustc_hash::FxHashSet;
+use std::collections::{hash_map::Entry, hash_set};
 
-#[derive(Debug)]
-pub struct HalfJoinStateLattice<Key, Lr: LatticeRepr + Merge<LrDelta>, LrDelta: LatticeRepr> {
-    table: FxHashMap<Key, Lr::Repr>,
-    _marker: PhantomData<*const LrDelta>,
+pub struct HalfJoinStateLattice<K, Lattice> {
+    table: MapUnionHashMap<K, Lattice>,
 }
 
-impl<Key, Lr: LatticeRepr + Merge<LrDelta>, LrDelta: LatticeRepr> Default
-    for HalfJoinStateLattice<Key, Lr, LrDelta>
-{
+impl<K, Lattice> Default for HalfJoinStateLattice<K, Lattice> {
     fn default() -> Self {
         Self {
-            table: FxHashMap::default(),
-            _marker: PhantomData::default(),
+            table: Default::default(),
         }
     }
 }
-impl<Key, Lr: LatticeRepr + Merge<LrDelta>, LrDelta: LatticeRepr> Clear
-    for HalfJoinStateLattice<Key, Lr, LrDelta>
-{
+
+impl<K, Lattice> Clear for HalfJoinStateLattice<K, Lattice> {
     fn clear(&mut self) {
-        self.table.clear()
+        self.table.0.clear()
     }
 }
-impl<Key, Lr: LatticeRepr + Merge<LrDelta> + Convert<LrDelta>, LrDelta: LatticeRepr>
-    HalfJoinStateLattice<Key, Lr, LrDelta>
+
+impl<K, Lattice> HalfJoinStateLattice<K, Lattice>
 where
-    Key: Clone + Eq + std::hash::Hash,
-    Lr::Repr: Clone + Eq,
+    K: Clone + Eq + std::hash::Hash,
 {
-    fn build(&mut self, k: Key, v: Lr::Repr) -> bool {
-        let entry = self.table.entry(k);
+    fn build<LatticeDelta>(&mut self, k: K, v: LatticeDelta) -> bool
+    where
+        Lattice: Merge<LatticeDelta> + ConvertFrom<LatticeDelta>,
+    {
+        let entry = self.table.0.entry(k);
 
         match entry {
-            Entry::Occupied(mut e) => {
-                <Lr as Merge<LrDelta>>::merge(e.get_mut(), <Lr as Convert<LrDelta>>::convert(v))
-            }
+            Entry::Occupied(mut e) => e.get_mut().merge(v),
             Entry::Vacant(e) => {
-                e.insert(v);
+                e.insert(ConvertFrom::from(v));
                 true
             }
         }
     }
 }
 
-pub type JoinStateLatticeMut<'a, Key, Lhs: LatticeRepr, LhsDelta, Rhs: LatticeRepr, RhsDelta> = (
-    &'a mut HalfJoinStateLattice<Key, Lhs, LhsDelta>,
-    &'a mut HalfJoinStateLattice<Key, Rhs, RhsDelta>,
+pub type JoinStateLatticeMut<'a, K, LhsLattice, RhsLattice> = (
+    &'a mut HalfJoinStateLattice<K, LhsLattice>,
+    &'a mut HalfJoinStateLattice<K, RhsLattice>,
 );
 
-pub struct SymmetricHashJoinLattice<'a, Key, Lhs, LhsDelta, Rhs, RhsDelta>
+pub struct SymmetricHashJoinLattice<'a, K, LhsLattice, RhsLattice>
 where
-    Key: Eq + std::hash::Hash + Clone,
-    Lhs: Merge<LhsDelta>,
-    Lhs::Repr: Eq + Clone,
-    LhsDelta: LatticeRepr,
-    LhsDelta::Repr: Eq + Clone,
-    Rhs: Merge<RhsDelta>,
-    Rhs::Repr: Eq + Clone,
-    RhsDelta: LatticeRepr,
-    RhsDelta::Repr: Eq + Clone,
+    K: Eq + std::hash::Hash + Clone,
 {
-    state: JoinStateLatticeMut<'a, Key, Lhs, LhsDelta, Rhs, RhsDelta>,
-    updated_keys: hash_set::Drain<'a, Key>,
+    state: JoinStateLatticeMut<'a, K, LhsLattice, RhsLattice>,
+    updated_keys: hash_set::Drain<'a, K>,
 }
 
-impl<'a, Key, Lhs, LhsDelta, Rhs, RhsDelta> Iterator
-    for SymmetricHashJoinLattice<'a, Key, Lhs, LhsDelta, Rhs, RhsDelta>
+impl<'a, K, LhsLattice, RhsLattice> Iterator
+    for SymmetricHashJoinLattice<'a, K, LhsLattice, RhsLattice>
 where
-    Key: Eq + std::hash::Hash + Clone,
-    Lhs: Merge<LhsDelta> + Convert<LhsDelta>,
-    Lhs::Repr: Eq + Clone,
-    LhsDelta: LatticeRepr,
-    LhsDelta::Repr: Eq + Clone,
-    Rhs: Merge<RhsDelta> + Convert<RhsDelta>,
-    Rhs::Repr: Eq + Clone,
-    RhsDelta: LatticeRepr,
-    RhsDelta::Repr: Eq + Clone,
+    K: Eq + std::hash::Hash + Clone,
+    LhsLattice: Clone,
+    RhsLattice: Clone,
 {
-    type Item = (Key, (Lhs::Repr, Rhs::Repr));
+    type Item = (K, (LhsLattice, RhsLattice));
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(key) = self.updated_keys.next() {
-            if let Some(lhs) = self.state.0.table.get(&key) {
-                if let Some(rhs) = self.state.1.table.get(&key) {
+            if let Some(lhs) = self.state.0.table.0.get(&key) {
+                if let Some(rhs) = self.state.1.table.0.get(&key) {
                     return Some((key, (lhs.clone(), rhs.clone())));
                 }
             }
@@ -100,29 +78,22 @@ where
         None
     }
 }
-impl<'a, Key, Lhs, LhsDelta, Rhs, RhsDelta>
-    SymmetricHashJoinLattice<'a, Key, Lhs, LhsDelta, Rhs, RhsDelta>
+impl<'a, K, LhsLattice, RhsLattice> SymmetricHashJoinLattice<'a, K, LhsLattice, RhsLattice>
 where
-    Key: Eq + std::hash::Hash + Clone,
-    Lhs: Merge<LhsDelta> + Convert<LhsDelta>,
-    Lhs::Repr: Eq + Clone,
-    LhsDelta: LatticeRepr,
-    LhsDelta::Repr: Eq + Clone,
-    Rhs: Merge<RhsDelta> + Convert<RhsDelta>,
-    Rhs::Repr: Eq + Clone,
-    RhsDelta: LatticeRepr,
-    RhsDelta::Repr: Eq + Clone,
+    K: Eq + std::hash::Hash + Clone,
 {
-    pub fn new_from_mut<I1, I2>(
+    pub fn new_from_mut<I1, I2, LhsDelta, RhsDelta>(
         lhs: I1,
         rhs: I2,
-        updated_keys: &'a mut FxHashSet<Key>,
-        state_lhs: &'a mut HalfJoinStateLattice<Key, Lhs, LhsDelta>,
-        state_rhs: &'a mut HalfJoinStateLattice<Key, Rhs, RhsDelta>,
+        updated_keys: &'a mut FxHashSet<K>,
+        state_lhs: &'a mut HalfJoinStateLattice<K, LhsLattice>,
+        state_rhs: &'a mut HalfJoinStateLattice<K, RhsLattice>,
     ) -> Self
     where
-        I1: Iterator<Item = (Key, Lhs::Repr)>,
-        I2: Iterator<Item = (Key, Rhs::Repr)>,
+        I1: Iterator<Item = (K, LhsDelta)>,
+        I2: Iterator<Item = (K, RhsDelta)>,
+        LhsLattice: Merge<LhsDelta> + ConvertFrom<LhsDelta>,
+        RhsLattice: Merge<RhsDelta> + ConvertFrom<RhsDelta>,
     {
         for (k, v1) in lhs {
             if state_lhs.build(k.clone(), v1) {
@@ -145,23 +116,26 @@ where
 
 #[cfg(test)]
 mod tests {
-    pub type JoinStateLattice<Key, Lhs: LatticeRepr, LhsDelta, Rhs: LatticeRepr, RhsDelta> = (
-        HalfJoinStateLattice<Key, Lhs, LhsDelta>,
-        HalfJoinStateLattice<Key, Rhs, RhsDelta>,
+    pub type JoinStateLattice<K, LhsLattice, RhsLattice> = (
+        HalfJoinStateLattice<K, LhsLattice>,
+        HalfJoinStateLattice<K, RhsLattice>,
     );
 
     use super::{HalfJoinStateLattice, SymmetricHashJoinLattice};
-    use crate::lang::lattice::{ord::MaxRepr, LatticeRepr};
+    use crate::lang::lattice2::ord::Max;
     use rustc_hash::FxHashSet;
 
-    type JoinStateMaxLattice =
-        JoinStateLattice<usize, MaxRepr<usize>, MaxRepr<usize>, MaxRepr<usize>, MaxRepr<usize>>;
+    type MyLattice = Max<usize>;
+    type JoinState = JoinStateLattice<usize, MyLattice, MyLattice>;
 
-    fn join<Lhs: IntoIterator<Item = (usize, usize)>, Rhs: IntoIterator<Item = (usize, usize)>>(
-        state: &mut JoinStateMaxLattice,
+    fn join<
+        Lhs: IntoIterator<Item = (usize, MyLattice)>,
+        Rhs: IntoIterator<Item = (usize, MyLattice)>,
+    >(
+        state: &mut JoinState,
         lhs: Lhs,
         rhs: Rhs,
-    ) -> Vec<(usize, (usize, usize))> {
+    ) -> Vec<(usize, (MyLattice, MyLattice))> {
         let mut updated_keys = FxHashSet::default();
         SymmetricHashJoinLattice::new_from_mut(
             lhs.into_iter(),
@@ -175,60 +149,81 @@ mod tests {
 
     #[test]
     fn produces_fully_merged_output() {
-        let mut state = JoinStateMaxLattice::default();
+        let mut state = JoinState::default();
 
-        let lhs = [(7, 3), (7, 4)];
-        let rhs = [(7, 5), (7, 6)];
-        assert_eq!(join(&mut state, lhs, rhs), vec![(7, (4, 6))]);
+        let lhs = [(7, MyLattice::new(3)), (7, MyLattice::new(4))];
+        let rhs = [(7, MyLattice::new(5)), (7, MyLattice::new(6))];
+        assert_eq!(
+            join(&mut state, lhs, rhs),
+            vec![(7, (MyLattice::new(4), MyLattice::new(6)))]
+        );
     }
 
     #[test]
     fn lattice_only_moves_forward() {
-        let mut state = JoinStateMaxLattice::default();
+        let mut state = JoinState::default();
 
-        let lhs = [(7, 4), (7, 3)];
-        let rhs = [(7, 6), (7, 5)];
-        assert_eq!(join(&mut state, lhs, rhs), vec![(7, (4, 6))]);
+        let lhs = [(7, MyLattice::new(4)), (7, MyLattice::new(3))];
+        let rhs = [(7, MyLattice::new(6)), (7, MyLattice::new(5))];
+        assert_eq!(
+            join(&mut state, lhs, rhs),
+            vec![(7, (MyLattice::new(4), MyLattice::new(6)))]
+        );
     }
 
     #[test]
     fn subsequent_ticks_dont_produce_if_nothing_has_changed() {
-        let mut state = JoinStateMaxLattice::default();
+        let mut state = JoinState::default();
 
-        let lhs = [(7, 3)];
-        let rhs = [(7, 3)];
-        assert_eq!(join(&mut state, lhs, rhs), vec![(7, (3, 3))]);
+        let lhs = [(7, MyLattice::new(3))];
+        let rhs = [(7, MyLattice::new(3))];
+        assert_eq!(
+            join(&mut state, lhs, rhs),
+            vec![(7, (Max::new(3), Max::new(3)))]
+        );
 
-        let lhs = [(7, 3)];
-        let rhs = [(7, 3)];
+        let lhs = [(7, Max::new(3))];
+        let rhs = [(7, Max::new(3))];
         assert_eq!(join(&mut state, lhs, rhs), vec![]);
     }
 
     #[test]
     fn subsequent_ticks_do_produce_if_something_has_changed() {
-        let mut state = JoinStateMaxLattice::default();
+        let mut state = JoinState::default();
 
-        let lhs = [(7, 3)];
-        let rhs = [(7, 3)];
-        assert_eq!(join(&mut state, lhs, rhs), vec![(7, (3, 3))]);
+        let lhs = [(7, MyLattice::new(3))];
+        let rhs = [(7, MyLattice::new(3))];
+        assert_eq!(
+            join(&mut state, lhs, rhs),
+            vec![(7, (MyLattice::new(3), MyLattice::new(3)))]
+        );
 
-        let lhs = [(7, 3)];
-        let rhs = [(7, 4)];
-        assert_eq!(join(&mut state, lhs, rhs), vec![(7, (3, 4))]);
+        let lhs = [(7, MyLattice::new(3))];
+        let rhs = [(7, MyLattice::new(4))];
+        assert_eq!(
+            join(&mut state, lhs, rhs),
+            vec![(7, (MyLattice::new(3), MyLattice::new(4)))]
+        );
     }
 
     #[test]
     fn resetting_one_side_works() {
-        let mut state = JoinStateMaxLattice::default();
+        let mut state = JoinState::default();
 
-        let lhs = [(7, 3)];
-        let rhs = [(7, 3)];
-        assert_eq!(join(&mut state, lhs, rhs), vec![(7, (3, 3))]);
+        let lhs = [(7, MyLattice::new(3))];
+        let rhs = [(7, MyLattice::new(3))];
+        assert_eq!(
+            join(&mut state, lhs, rhs),
+            vec![(7, (MyLattice::new(3), MyLattice::new(3)))]
+        );
 
         std::mem::take(&mut state.1);
 
-        let lhs = [(7, 3)];
-        let rhs = [(7, 3)];
-        assert_eq!(join(&mut state, lhs, rhs), vec![(7, (3, 3))]);
+        let lhs = [(7, Max::new(3))];
+        let rhs = [(7, Max::new(3))];
+        assert_eq!(
+            join(&mut state, lhs, rhs),
+            vec![(7, (MyLattice::new(3), MyLattice::new(3)))]
+        );
     }
 }

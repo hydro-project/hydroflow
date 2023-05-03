@@ -4,7 +4,7 @@
 
 use super::{Compare, ConvertFrom, Merge, Ordering};
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 #[repr(transparent)]
 /// Bottom wrapper.
 pub struct Bottom<Inner>(pub Option<Inner>);
@@ -17,6 +17,12 @@ impl<Inner> Bottom<Inner> {
     /// Create a new `Bottom` lattice instance from a value using `Into`.
     pub fn new_from(val: impl Into<Inner>) -> Self {
         Self::new(val.into())
+    }
+}
+
+impl<Inner> Default for Bottom<Inner> {
+    fn default() -> Self {
+        Self(Default::default())
     }
 }
 

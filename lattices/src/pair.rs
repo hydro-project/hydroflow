@@ -6,7 +6,7 @@ use std::cmp::Ordering;
 
 use super::{Compare, ConvertFrom, Merge};
 
-/// Dominating pair lattice.
+/// Pair lattice.
 ///
 /// `LatA` and `LatB` specify the nested lattice types.
 pub struct Pair<LatA, LatB> {

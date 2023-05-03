@@ -8,12 +8,16 @@ use std::cmp::Ordering;
 use crate::{collections::Collection, tag};
 
 use super::{Compare, ConvertFrom, Merge};
+use serde::{Deserialize, Serialize};
+
+use std::fmt::Debug;
 
 /// A map-union lattice.
 ///
 /// `Tag` specifies what datastructure to use, allowing us to deal with different datastructures
 /// generically.
 #[repr(transparent)]
+#[derive(Serialize, Deserialize)]
 pub struct MapUnion<Tag, K, Val>(pub Tag::Bind)
 where
     Tag: tag::Tag2<K, Val>;
@@ -142,6 +146,43 @@ where
 {
     fn default() -> Self {
         Self(Default::default())
+    }
+}
+
+impl<Tag, K, Val> Clone for MapUnion<Tag, K, Val>
+where
+    Tag: tag::Tag2<K, Val>,
+    Tag::Bind: Clone,
+{
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+impl<Tag, K, Val> PartialEq for MapUnion<Tag, K, Val>
+where
+    Tag: tag::Tag2<K, Val>,
+    Tag::Bind: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<Tag, K, Val> Eq for MapUnion<Tag, K, Val>
+where
+    Tag: tag::Tag2<K, Val>,
+    Tag::Bind: Eq,
+{
+}
+
+impl<Tag, K, Val> Debug for MapUnion<Tag, K, Val>
+where
+    Tag: tag::Tag2<K, Val>,
+    Tag::Bind: Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("MapUnion").field(&self.0).finish()
     }
 }
 
