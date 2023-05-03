@@ -239,7 +239,7 @@ pub fn test_cross_join() {
 
 #[multiplatform_test]
 pub fn test_lattice_join() {
-    use hydroflow::lang::lattice2::ord::Max;
+    use hydroflow::lattices::ord::Max;
 
     // 'static, 'tick.
     {
