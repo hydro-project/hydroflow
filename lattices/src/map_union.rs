@@ -152,7 +152,7 @@ pub type MapUnionVec<K, Val> = MapUnion<VecMap<K, Val>>;
 /// Array-backed [`MapUnion`] lattice.
 pub type MapUnionArrayMap<K, Val, const N: usize> = MapUnion<ArrayMap<K, Val, N>>;
 
-/// [`crate::collections::Single`]-backed [`MapUnion`] lattice.
+/// [`crate::collections::SingletonMap`]-backed [`MapUnion`] lattice.
 pub type MapUnionSingletonMap<K, Val> = MapUnion<SingletonMap<K, Val>>;
 
 /// [`Option`]-backed [`MapUnion`] lattice.
