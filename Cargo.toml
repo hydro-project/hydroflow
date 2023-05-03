@@ -1,6 +1,10 @@
 [workspace]
 
 members = [
+    # When adding a new crate which is published, you will need to run
+    # `cargo changelog --write my_crate` and edit `my_crate/CHANGELOG.md` and change
+    # `## Unreleased` to `## 0.0.0 (2023-05-02)` (use current date) before running the release
+    # workflow.
     "benches",
     "hydro_cli",
     "hydro_cli_examples",
