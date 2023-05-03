@@ -1,14 +1,14 @@
 use crate::protocol::{EchoMsg, VecClock};
 use chrono::prelude::*;
 use hydroflow::hydroflow_syntax;
-use hydroflow::lang::lattice::{LatticeRepr, Merge};
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
-use std::collections::HashMap;
+use lattices::map_union::MapUnionSingle;
+use lattices::ord::Max;
+use lattices::Merge;
 use std::net::SocketAddr;
 
 pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: crate::Opts) {
-    let bot_vc: <VecClock as LatticeRepr>::Repr = HashMap::new();
     println!("Server live!");
 
     let mut flow: Hydroflow = hydroflow_syntax! {
@@ -21,22 +21,21 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: crat
 
         // merge in the msg vc to the local vc
         inbound_chan[merge] -> map(|(msg, _addr): (EchoMsg, SocketAddr)| msg.vc) -> mergevc;
-        mergevc = fold::<'static> (bot_vc,
-                    |mut old: <VecClock as LatticeRepr>::Repr, vc: <VecClock as LatticeRepr>::Repr| {
-                            let my_addr = format!("{:?}", opts.addr.unwrap());
-                            let bump = HashMap::from([(my_addr.clone(), old[&my_addr] + 1)]);
-                            <VecClock as Merge<VecClock>>::merge(&mut old, bump);
-                            <VecClock as Merge<VecClock>>::merge(&mut old, vc);
-                            old.clone()
-                    }
-                );
+        mergevc = fold::<'static> (VecClock::default(), |mut old, vc| {
+                let my_addr = format!("{:?}", opts.addr.unwrap());
+                let bump = MapUnionSingle::new_from((my_addr.clone(), Max::new(old.0[&my_addr].0 + 1)));
+                old.merge(bump);
+                old.merge(vc);
+                old
+            }
+        );
 
 
         // Echo back the Echo messages, stamped with updated vc timestamp
         inbound_chan[1] -> map(|(EchoMsg {payload, ..}, addr)| (payload, addr) )
             -> [0]stamped_output;
         mergevc -> [1]stamped_output;
-        stamped_output = cross_join::<'tick, 'tick>() -> map(|((payload, addr), vc): ((String, SocketAddr), <VecClock as LatticeRepr>::Repr)| (EchoMsg { payload, vc }, addr))
+        stamped_output = cross_join::<'tick, 'tick>() -> map(|((payload, addr), vc)| (EchoMsg { payload, vc }, addr))
             -> dest_sink_serde(outbound);
     };
 

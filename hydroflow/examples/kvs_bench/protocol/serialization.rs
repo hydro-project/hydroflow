@@ -1,5 +1,6 @@
 use super::KvsRequest;
 use crate::buffer_pool::{AutoReturnBuffer, AutoReturnBufferDeserializer, BufferPool};
+use hydroflow::lang::lattice2::{dom_pair::DomPair, fake::Fake, ord::Max};
 use serde::{
     de::{DeserializeSeed, SeqAccess, VariantAccess, Visitor},
     ser::SerializeStructVariant,
@@ -27,8 +28,8 @@ impl Serialize for KvsRequest {
             KvsRequest::Gossip { key, reg } => {
                 let mut s = serializer.serialize_struct_variant("KvsRequest", 2, "Gossip", 3)?;
                 s.serialize_field("key", key)?;
-                s.serialize_field("marker", &reg.0)?;
-                s.serialize_field("buffer", &reg.1)?;
+                s.serialize_field("marker", &reg.key.0)?;
+                s.serialize_field("buffer", &reg.val.0)?;
                 s.end()
             }
         }
@@ -158,7 +159,7 @@ impl<'de> Visitor<'de> for KvsRequestGossipVisitor {
 
         Ok(KvsRequest::Gossip {
             key,
-            reg: (marker, buffer),
+            reg: DomPair::new_from(Max::new(marker), Fake::new(buffer)),
         })
     }
 
@@ -191,7 +192,7 @@ impl<'de> Visitor<'de> for KvsRequestGossipVisitor {
 
         Ok(KvsRequest::Gossip {
             key: key.unwrap(),
-            reg: (marker.unwrap(), buffer.unwrap()),
+            reg: DomPair::new(Max::new(marker.unwrap()), Fake::new(buffer.unwrap())),
         })
     }
 }

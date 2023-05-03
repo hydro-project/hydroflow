@@ -27,6 +27,15 @@ pub trait Merge<Other> {
     ///
     /// Returns whether `self` changed at all.
     fn merge(&mut self, other: Other) -> bool;
+
+    /// Merge `this` and `delta` together, returning the new value.
+    fn merge_owned(mut this: Self, delta: Other) -> Self
+    where
+        Self: Sized,
+    {
+        Self::merge(&mut this, delta);
+        this
+    }
 }
 
 /// Naive lattice compare, based on the [`Merge::merge`] function.

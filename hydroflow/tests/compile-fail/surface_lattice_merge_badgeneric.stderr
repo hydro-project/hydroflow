@@ -1,66 +1,26 @@
-error[E0277]: the trait bound `usize: LatticeRepr` is not satisfied
+error[E0277]: the trait bound `usize: hydroflow::lattices::Merge<usize>` is not satisfied
  --> tests/compile-fail/surface_lattice_merge_badgeneric.rs:6:41
   |
 6 |             -> lattice_merge::<'static, usize>()
-  |                                         ^^^^^ the trait `LatticeRepr` is not implemented for `usize`
+  |                                         ^^^^^ the trait `hydroflow::lattices::Merge<usize>` is not implemented for `usize`
   |
-  = help: the following other types implement trait `LatticeRepr`:
-            BottomRepr<Lr>
-            DomPairRepr<Ra, Rb>
-            LastWriteWinsRepr<M, T>
-            MapUnionRepr<Tag, K, B>
-            MaxRepr<T>
-            MinRepr<T>
-            PairRepr<Ra, Rb>
-            SetUnionRepr<Tag, T>
-            TopRepr<Lr>
-
-error[E0277]: the trait bound `usize: LatticeRepr` is not satisfied
- --> tests/compile-fail/surface_lattice_merge_badgeneric.rs:6:16
+  = help: the following other types implement trait `hydroflow::lattices::Merge<Other>`:
+            <Bottom<Inner> as hydroflow::lattices::Merge<Bottom<Other>>>
+            <DomPair<KeySelf, ValSelf> as hydroflow::lattices::Merge<DomPair<KeyOther, ValOther>>>
+            <Fake<T> as hydroflow::lattices::Merge<Fake<T>>>
+            <MapUnion<TagSelf, K, ValSelf> as hydroflow::lattices::Merge<MapUnion<TagOther, K, ValOther>>>
+            <Max<T> as hydroflow::lattices::Merge<Max<T>>>
+            <Min<T> as hydroflow::lattices::Merge<Min<T>>>
+            <Pair<LatASelf, LatBSelf> as hydroflow::lattices::Merge<Pair<LatAOther, LatBOther>>>
+            <SetUnion<TagSelf, T> as hydroflow::lattices::Merge<SetUnion<TagOther, T>>>
+note: required by a bound in `check_inputs`
+ --> tests/compile-fail/surface_lattice_merge_badgeneric.rs:4:18
   |
-6 |             -> lattice_merge::<'static, usize>()
-  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `LatticeRepr` is not implemented for `usize`
-  |
-  = help: the following other types implement trait `LatticeRepr`:
-            BottomRepr<Lr>
-            DomPairRepr<Ra, Rb>
-            LastWriteWinsRepr<M, T>
-            MapUnionRepr<Tag, K, B>
-            MaxRepr<T>
-            MinRepr<T>
-            PairRepr<Ra, Rb>
-            SetUnionRepr<Tag, T>
-            TopRepr<Lr>
-
-error[E0277]: the trait bound `usize: hydroflow::lang::lattice::Merge<usize>` is not satisfied
- --> tests/compile-fail/surface_lattice_merge_badgeneric.rs:6:41
-  |
-6 |             -> lattice_merge::<'static, usize>()
-  |                                         ^^^^^ the trait `hydroflow::lang::lattice::Merge<usize>` is not implemented for `usize`
-  |
-  = help: the following other types implement trait `hydroflow::lang::lattice::Merge<Delta>`:
-            <BottomRepr<SelfLr> as hydroflow::lang::lattice::Merge<BottomRepr<DeltaLr>>>
-            <DomPairRepr<SelfRA, SelfRB> as hydroflow::lang::lattice::Merge<DomPairRepr<DeltaRA, DeltaRB>>>
-            <LastWriteWinsRepr<M, T> as hydroflow::lang::lattice::Merge<LastWriteWinsRepr<M, T>>>
-            <MapUnionRepr<SelfTag, K, SelfLr> as hydroflow::lang::lattice::Merge<MapUnionRepr<DeltaTag, K, DeltaLr>>>
-            <MaxRepr<T> as hydroflow::lang::lattice::Merge<MaxRepr<T>>>
-            <MinRepr<T> as hydroflow::lang::lattice::Merge<MinRepr<T>>>
-            <PairRepr<SelfRA, SelfRB> as hydroflow::lang::lattice::Merge<PairRepr<DeltaRA, DeltaRB>>>
-            <SetUnionRepr<SelfTag, T> as hydroflow::lang::lattice::Merge<SetUnionRepr<DeltaTag, T>>>
-
-error[E0277]: the trait bound `usize: hydroflow::lang::lattice::Merge<usize>` is not satisfied
- --> tests/compile-fail/surface_lattice_merge_badgeneric.rs:5:9
-  |
-5 | /         source_iter([1,2,3,4,5])
+4 |       let mut df = hydroflow_syntax! {
+  |  __________________^
+5 | |         source_iter([1,2,3,4,5])
 6 | |             -> lattice_merge::<'static, usize>()
-  | |________________________________________________^ the trait `hydroflow::lang::lattice::Merge<usize>` is not implemented for `usize`
-  |
-  = help: the following other types implement trait `hydroflow::lang::lattice::Merge<Delta>`:
-            <BottomRepr<SelfLr> as hydroflow::lang::lattice::Merge<BottomRepr<DeltaLr>>>
-            <DomPairRepr<SelfRA, SelfRB> as hydroflow::lang::lattice::Merge<DomPairRepr<DeltaRA, DeltaRB>>>
-            <LastWriteWinsRepr<M, T> as hydroflow::lang::lattice::Merge<LastWriteWinsRepr<M, T>>>
-            <MapUnionRepr<SelfTag, K, SelfLr> as hydroflow::lang::lattice::Merge<MapUnionRepr<DeltaTag, K, DeltaLr>>>
-            <MaxRepr<T> as hydroflow::lang::lattice::Merge<MaxRepr<T>>>
-            <MinRepr<T> as hydroflow::lang::lattice::Merge<MinRepr<T>>>
-            <PairRepr<SelfRA, SelfRB> as hydroflow::lang::lattice::Merge<PairRepr<DeltaRA, DeltaRB>>>
-            <SetUnionRepr<SelfTag, T> as hydroflow::lang::lattice::Merge<SetUnionRepr<DeltaTag, T>>>
+7 | |             -> for_each(|x| println!("Least upper bound: {:?}", x));
+8 | |     };
+  | |_____^ required by this bound in `check_inputs`
+  = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
