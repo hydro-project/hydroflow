@@ -8,11 +8,11 @@ error[E0277]: the trait bound `usize: hydroflow::lattices::Merge<usize>` is not 
             <Bottom<Inner> as hydroflow::lattices::Merge<Bottom<Other>>>
             <DomPair<KeySelf, ValSelf> as hydroflow::lattices::Merge<DomPair<KeyOther, ValOther>>>
             <Fake<T> as hydroflow::lattices::Merge<Fake<T>>>
-            <MapUnion<TagSelf, K, ValSelf> as hydroflow::lattices::Merge<MapUnion<TagOther, K, ValOther>>>
+            <MapUnion<MapSelf> as hydroflow::lattices::Merge<MapUnion<MapOther>>>
             <Max<T> as hydroflow::lattices::Merge<Max<T>>>
             <Min<T> as hydroflow::lattices::Merge<Min<T>>>
             <Pair<LatASelf, LatBSelf> as hydroflow::lattices::Merge<Pair<LatAOther, LatBOther>>>
-            <SetUnion<TagSelf, T> as hydroflow::lattices::Merge<SetUnion<TagOther, T>>>
+            <SetUnion<SetSelf> as hydroflow::lattices::Merge<SetUnion<SetOther>>>
 note: required by a bound in `check_inputs`
  --> tests/compile-fail/surface_lattice_merge_badgeneric.rs:4:18
   |

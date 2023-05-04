@@ -1,8 +1,6 @@
-use crate::lang::{
-    clear::Clear,
-    lattice2::{map_union::MapUnionHashMap, Merge},
-};
-use lattices::ConvertFrom;
+use crate::lang::clear::Clear;
+use lattices::map_union::MapUnionHashMap;
+use lattices::{ConvertFrom, Merge};
 use rustc_hash::FxHashSet;
 use std::collections::{hash_map::Entry, hash_set};
 
@@ -122,7 +120,7 @@ mod tests {
     );
 
     use super::{HalfJoinStateLattice, SymmetricHashJoinLattice};
-    use crate::lang::lattice2::ord::Max;
+    use lattices::ord::Max;
     use rustc_hash::FxHashSet;
 
     type MyLattice = Max<usize>;

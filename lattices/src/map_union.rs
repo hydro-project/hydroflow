@@ -4,48 +4,42 @@
 //! unioning the keys and merging the values of intersecting keys.
 
 use std::cmp::Ordering;
-
-use crate::{collections::Collection, tag};
-
-use super::{Compare, ConvertFrom, Merge};
-use serde::{Deserialize, Serialize};
-
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
+
+use crate::cc_traits::{GetMut, Keyed, Map, MapIter, SimpleKeyedRef};
+use crate::collections::{ArrayMap, SingletonMap, VecMap};
+use crate::{Compare, ConvertFrom, Merge};
 
 /// A map-union lattice.
 ///
 /// `Tag` specifies what datastructure to use, allowing us to deal with different datastructures
 /// generically.
 #[repr(transparent)]
-#[derive(Serialize, Deserialize)]
-pub struct MapUnion<Tag, K, Val>(pub Tag::Bind)
-where
-    Tag: tag::Tag2<K, Val>;
-impl<Tag, K, Val> MapUnion<Tag, K, Val>
-where
-    Tag: tag::Tag2<K, Val>,
-{
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct MapUnion<Map>(pub Map);
+impl<Map> MapUnion<Map> {
     /// Create a new `MapUnion` from a `Map`.
-    pub fn new(val: Tag::Bind) -> Self {
+    pub fn new(val: Map) -> Self {
         Self(val)
     }
 
     /// Create a new `MapUnion` from an `Into<Map>`.
-    pub fn new_from(val: impl Into<Tag::Bind>) -> Self {
+    pub fn new_from(val: impl Into<Map>) -> Self {
         Self::new(val.into())
     }
 }
 
-impl<TagSelf, TagOther, K, ValSelf, ValOther> Merge<MapUnion<TagOther, K, ValOther>>
-    for MapUnion<TagSelf, K, ValSelf>
+impl<MapSelf, MapOther, K, ValSelf, ValOther> Merge<MapUnion<MapOther>> for MapUnion<MapSelf>
 where
-    TagSelf: tag::Tag2<K, ValSelf>,
-    TagOther: tag::Tag2<K, ValOther>,
-    TagSelf::Bind: Collection<K, ValSelf> + Extend<(K, ValSelf)>,
-    TagOther::Bind: IntoIterator<Item = (K, ValOther)>,
+    MapSelf: Keyed<Key = K, Item = ValSelf>
+        + Extend<(K, ValSelf)>
+        + for<'a> GetMut<&'a K, Item = ValSelf>,
+    MapOther: IntoIterator<Item = (K, ValOther)>,
     ValSelf: Merge<ValOther> + ConvertFrom<ValOther>,
 {
-    fn merge(&mut self, other: MapUnion<TagOther, K, ValOther>) -> bool {
+    fn merge(&mut self, other: MapUnion<MapOther>) -> bool {
         let mut changed = false;
         // This vec collect is needed to prevent simultaneous mut references `self.0.extend` and
         // `self.0.get_mut`.
@@ -57,12 +51,15 @@ where
             .filter_map(|(k_other, val_other)| {
                 match self.0.get_mut(&k_other) {
                     // Key collision, merge into `self`.
-                    Some(val_self) => {
+                    Some(mut val_self) => {
                         changed |= val_self.merge(val_other);
                         None
                     }
                     // New value, convert for extending.
-                    None => Some((k_other, ValSelf::from(val_other))),
+                    None => {
+                        changed = true;
+                        Some((k_other, ValSelf::from(val_other)))
+                    }
                 }
             })
             .collect();
@@ -71,41 +68,45 @@ where
     }
 }
 
-impl<TagSelf, TagOther, K, ValSelf, ValOther> ConvertFrom<MapUnion<TagOther, K, ValOther>>
-    for MapUnion<TagSelf, K, ValSelf>
+impl<MapSelf, MapOther, K, ValSelf, ValOther> ConvertFrom<MapUnion<MapOther>> for MapUnion<MapSelf>
 where
-    TagSelf: tag::Tag2<K, ValSelf>,
-    TagOther: tag::Tag2<K, ValOther>,
-    TagSelf::Bind: FromIterator<(K, ValSelf)>,
-    TagOther::Bind: Collection<K, ValOther>,
+    MapSelf: Keyed<Key = K, Item = ValSelf> + FromIterator<(K, ValSelf)>,
+    MapOther: IntoIterator<Item = (K, ValOther)>,
     ValSelf: ConvertFrom<ValOther>,
 {
-    fn from(other: MapUnion<TagOther, K, ValOther>) -> Self {
+    fn from(other: MapUnion<MapOther>) -> Self {
         Self(
             other
                 .0
-                .into_entries()
+                .into_iter()
                 .map(|(k_other, val_other)| (k_other, ConvertFrom::from(val_other)))
                 .collect(),
         )
     }
 }
 
-impl<TagSelf, TagOther, K, ValSelf, ValOther> Compare<MapUnion<TagOther, K, ValOther>>
-    for MapUnion<TagSelf, K, ValSelf>
+impl<MapSelf, MapOther, K, ValSelf, ValOther> Compare<MapUnion<MapOther>> for MapUnion<MapSelf>
 where
-    TagSelf: tag::Tag2<K, ValSelf>,
-    TagOther: tag::Tag2<K, ValOther>,
-    TagSelf::Bind: Collection<K, ValSelf>,
-    TagOther::Bind: Collection<K, ValOther>,
+    MapSelf: Map<K, ValSelf, Key = K, Item = ValSelf> + MapIter + SimpleKeyedRef,
+    MapOther: Map<K, ValOther, Key = K, Item = ValOther> + MapIter + SimpleKeyedRef,
     ValSelf: Compare<ValOther>,
 {
-    fn compare(&self, other: &MapUnion<TagOther, K, ValOther>) -> Option<std::cmp::Ordering> {
+    fn compare(&self, other: &MapUnion<MapOther>) -> Option<std::cmp::Ordering> {
         let mut self_any_greater = false;
         let mut other_any_greater = false;
-        for k in self.0.keys().chain(other.0.keys()) {
+        for k in self
+            .0
+            .iter()
+            .map(|(k, _v)| <MapSelf as SimpleKeyedRef>::into_ref(k))
+            .chain(
+                other
+                    .0
+                    .iter()
+                    .map(|(k, _v)| <MapOther as SimpleKeyedRef>::into_ref(k)),
+            )
+        {
             match (self.0.get(k), other.0.get(k)) {
-                (Some(self_value), Some(other_value)) => match self_value.compare(other_value) {
+                (Some(self_value), Some(other_value)) => match self_value.compare(&*other_value) {
                     None => {
                         return None;
                     }
@@ -139,89 +140,40 @@ where
     }
 }
 
-impl<Tag, K, Val> Default for MapUnion<Tag, K, Val>
-where
-    Tag: tag::Tag2<K, Val>,
-    Tag::Bind: Default,
-{
-    fn default() -> Self {
-        Self(Default::default())
-    }
-}
-
-impl<Tag, K, Val> Clone for MapUnion<Tag, K, Val>
-where
-    Tag: tag::Tag2<K, Val>,
-    Tag::Bind: Clone,
-{
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
-    }
-}
-
-impl<Tag, K, Val> PartialEq for MapUnion<Tag, K, Val>
-where
-    Tag: tag::Tag2<K, Val>,
-    Tag::Bind: PartialEq,
-{
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl<Tag, K, Val> Eq for MapUnion<Tag, K, Val>
-where
-    Tag: tag::Tag2<K, Val>,
-    Tag::Bind: Eq,
-{
-}
-
-impl<Tag, K, Val> Debug for MapUnion<Tag, K, Val>
-where
-    Tag: tag::Tag2<K, Val>,
-    Tag::Bind: Debug,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("MapUnion").field(&self.0).finish()
-    }
-}
-
 /// [`std::collections::HashMap`]-backed [`MapUnion`] lattice.
-pub type MapUnionHashMap<K, Val> = MapUnion<tag::HASH_MAP, K, Val>;
+pub type MapUnionHashMap<K, Val> = MapUnion<HashMap<K, Val>>;
 
 /// [`std::collections::BTreeMap`]-backed [`MapUnion`] lattice.
-pub type MapUnionBTreeMap<K, Val> = MapUnion<tag::BTREE_MAP, K, Val>;
+pub type MapUnionBTreeMap<K, Val> = MapUnion<BTreeMap<K, Val>>;
 
 /// [`Vec`]-backed [`MapUnion`] lattice.
-pub type MapUnionVec<K, Val> = MapUnion<tag::VEC, K, Val>;
+pub type MapUnionVec<K, Val> = MapUnion<VecMap<K, Val>>;
 
 /// Array-backed [`MapUnion`] lattice.
-pub type MapUnionArray<K, Val, const N: usize> = MapUnion<tag::ARRAY<N>, K, Val>;
+pub type MapUnionArrayMap<K, Val, const N: usize> = MapUnion<ArrayMap<K, Val, N>>;
 
-/// [`crate::collections::MaskedArray`]-backed [`MapUnion`] lattice.
-pub type MapUnionMaskedArray<K, Val, const N: usize> = MapUnion<tag::MASKED_ARRAY<N>, K, Val>;
-
-/// [`crate::collections::Single`]-backed [`MapUnion`] lattice.
-pub type MapUnionSingle<K, Val> = MapUnion<tag::SINGLE, K, Val>;
+/// [`crate::collections::SingletonMap`]-backed [`MapUnion`] lattice.
+pub type MapUnionSingletonMap<K, Val> = MapUnion<SingletonMap<K, Val>>;
 
 /// [`Option`]-backed [`MapUnion`] lattice.
-pub type MapUnionOption<K, Val> = MapUnion<tag::OPTION, K, Val>;
+pub type MapUnionOption<K, Val> = MapUnion<Option<(K, Val)>>;
 
 #[cfg(test)]
 mod test {
     use super::*;
 
-    use crate::collections::Single;
-    use crate::set_union::{SetUnionHashSet, SetUnionSingle};
+    use crate::collections::{SingletonMap, SingletonSet};
+    use crate::set_union::{SetUnionHashSet, SetUnionSingletonSet};
 
     #[test]
     fn test_map_union() {
         let mut my_map_a = <MapUnionHashMap<&str, SetUnionHashSet<u64>>>::default();
-        let my_map_b = <MapUnionSingle<&str, SetUnionSingle<u64>>>::new(Single((
+        let my_map_b = <MapUnionSingletonMap<&str, SetUnionSingletonSet<u64>>>::new(SingletonMap(
             "hello",
-            SetUnionSingle::new(Single(100)),
-        )));
-        let my_map_c = MapUnionSingle::new_from(("hello", SetUnionHashSet::new_from([100, 200])));
+            SetUnionSingletonSet::new(SingletonSet(100)),
+        ));
+        let my_map_c =
+            MapUnionSingletonMap::new_from(("hello", SetUnionHashSet::new_from([100, 200])));
         my_map_a.merge(my_map_b);
         my_map_a.merge(my_map_c);
     }

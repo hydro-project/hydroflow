@@ -3,7 +3,7 @@ use chrono::prelude::*;
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
-use lattices::map_union::MapUnionSingle;
+use lattices::map_union::MapUnionSingletonMap;
 use lattices::ord::Max;
 use lattices::Merge;
 use std::net::SocketAddr;
@@ -23,7 +23,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: crat
         inbound_chan[merge] -> map(|(msg, _addr): (EchoMsg, SocketAddr)| msg.vc) -> mergevc;
         mergevc = fold::<'static> (VecClock::default(), |mut old, vc| {
                 let my_addr = format!("{:?}", opts.addr.unwrap());
-                let bump = MapUnionSingle::new_from((my_addr.clone(), Max::new(old.0[&my_addr].0 + 1)));
+                let bump = MapUnionSingletonMap::new_from((my_addr.clone(), Max::new(old.0[&my_addr].0 + 1)));
                 old.merge(bump);
                 old.merge(vc);
                 old

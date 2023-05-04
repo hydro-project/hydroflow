@@ -424,6 +424,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "cc-traits"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "becb23f44ae9dd141d637d520b908c291bf4c5eed016ca368daa1430d54ebf4c"
+
+[[package]]
 name = "cesu8"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1587,7 +1593,9 @@ dependencies = [
 name = "lattices"
 version = "0.0.0"
 dependencies = [
+ "cc-traits",
  "sealed",
+ "serde",
 ]
 
 [[package]]
