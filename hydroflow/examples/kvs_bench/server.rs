@@ -24,9 +24,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use tmq::Context;
 
-use crate::buffer_pool::AutoReturnBuffer;
 use lattices::bottom::Bottom;
-use lattices::dom_pair::DomPair;
 use lattices::fake::Fake;
 use lattices::ord::Max;
 use lattices::set_union::SetUnionSingletonSet;
