@@ -161,7 +161,11 @@ fn update_book() -> Result<(), Box<dyn Error>> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    if book_file(FILENAME)?.is_file() {
+    // Only try to update the book if the output directory exists.
+    if book_file(FILENAME)?
+        .parent()
+        .map_or(false, |dir| dir.is_dir())
+    {
         update_book()?;
     }
     Ok(())
