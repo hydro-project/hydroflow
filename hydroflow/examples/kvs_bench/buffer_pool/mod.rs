@@ -1,13 +1,15 @@
 mod serialization;
 
 pub use serialization::AutoReturnBufferDeserializer;
+pub use serialization::OptionalAutoReturnBufferDeserializer;
 
 use std::{
     cell::{Ref, RefCell, RefMut},
     rc::{Rc, Weak},
 };
 
-pub type BufferType = [u8; 1024];
+pub const BUFFER_SIZE: usize = 1024;
+pub type BufferType = [u8; BUFFER_SIZE];
 
 /// It is slow to allocate and, in particular, free blocks of memory.
 /// If we know ahead of time what size buffers we will need then we can pre-allocate a bunch of them and
@@ -25,15 +27,9 @@ pub struct BufferPool {
 /// The collector pointer is weak because otherwise there would be a cycle between BufferPool and AutoReturnBufferInner
 /// and an AutoReturnBufferInner does not logically have any kind of ownership over the BufferPool shared pool.
 #[derive(Clone, Debug)]
-pub struct AutoReturnBufferInner {
+pub struct AutoReturnBuffer {
     pub collector: Weak<RefCell<BufferPool>>,
     pub inner: Rc<RefCell<BufferType>>,
-}
-
-/// This extra layer of wrapping is necessary so that AutoReturnBuffer can have a reasonable default value.
-#[derive(Clone, Debug, Default)]
-pub struct AutoReturnBuffer {
-    pub inner: Option<AutoReturnBufferInner>,
 }
 
 impl BufferPool {
@@ -48,17 +44,13 @@ impl BufferPool {
 
         if let Some(buffer) = buffer {
             AutoReturnBuffer {
-                inner: Some(AutoReturnBufferInner {
-                    collector: Rc::downgrade(pool),
-                    inner: buffer,
-                }),
+                collector: Rc::downgrade(pool),
+                inner: buffer,
             }
         } else {
             AutoReturnBuffer {
-                inner: Some(AutoReturnBufferInner {
-                    collector: Rc::downgrade(pool),
-                    inner: Rc::new(RefCell::new([0; 1024])),
-                }),
+                collector: Rc::downgrade(pool),
+                inner: Rc::new(RefCell::new([0; BUFFER_SIZE])),
             }
         }
     }
@@ -66,27 +58,25 @@ impl BufferPool {
 
 impl Drop for AutoReturnBuffer {
     fn drop(&mut self) {
-        if let Some(inner) = &self.inner {
-            if Rc::strong_count(&self.inner.as_ref().unwrap().inner) == 1 {
-                // This is the last one, give the buffer back to the collection.
-                if let Some(pool) = inner.collector.upgrade() {
-                    pool.borrow_mut().buffers.push(inner.inner.clone());
-                }
-
-                // If the upgrade fails then the buffer pool has been freed and so there
-                // is nothing to return this buffer to, just drop it instead.
+        if Rc::strong_count(&self.inner) == 1 {
+            // This is the last one, give the buffer back to the collection.
+            if let Some(pool) = self.collector.upgrade() {
+                pool.borrow_mut().buffers.push(self.inner.clone());
             }
+
+            // If the upgrade fails then the buffer pool has been freed and so there
+            // is nothing to return this buffer to, just drop it instead.
         }
     }
 }
 
 impl AutoReturnBuffer {
-    pub fn borrow_mut(&self) -> Option<RefMut<BufferType>> {
-        self.inner.as_ref().map(|x| x.inner.borrow_mut())
+    pub fn borrow_mut(&self) -> RefMut<BufferType> {
+        self.inner.borrow_mut()
     }
 
-    pub fn borrow(&self) -> Option<Ref<BufferType>> {
-        self.inner.as_ref().map(|x| x.inner.borrow())
+    pub fn borrow(&self) -> Ref<BufferType> {
+        self.inner.borrow()
     }
 }
 
@@ -95,15 +85,3 @@ impl AutoReturnBuffer {
 // Otherwise we would need to make our own channel type.
 unsafe impl Send for AutoReturnBuffer {}
 unsafe impl Sync for AutoReturnBuffer {}
-
-impl PartialEq for AutoReturnBuffer {
-    fn eq(&self, other: &AutoReturnBuffer) -> bool {
-        match (&self.inner, &other.inner) {
-            (Some(x), Some(y)) => x.inner == y.inner,
-            (Some(_), None) => false,
-            (None, Some(_)) => false,
-            (None, None) => true,
-        }
-    }
-}
-impl Eq for AutoReturnBuffer {}
