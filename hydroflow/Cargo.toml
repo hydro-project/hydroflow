@@ -8,7 +8,7 @@ documentation = "https://docs.rs/hydroflow/"
 description = "Hydro's low-level dataflow runtime and IR"
 
 [features]
-default = [ "async", "macros", "kvs_bench" ]
+default = [ "async", "macros" ]
 async = [ "dep:futures" ]
 macros = [ "hydroflow_macro", "hydroflow_datalog" ]
 hydroflow_macro = [ "dep:hydroflow_macro" ]
