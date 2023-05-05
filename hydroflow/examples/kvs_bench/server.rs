@@ -230,7 +230,7 @@ pub fn run_server(
                     -> for_each(|x| { transducer_to_peers_tx.send(x).unwrap(); });
 
                 // join for lookups
-                lookup = lattice_join::<'static, 'tick, DomPair<Max<u128>, Bottom<Fake<AutoReturnBuffer>>>, MySetUnion>();
+                lookup = lattice_join::<'static, 'tick, MyLastWriteWins, MySetUnion>();
 
                 client_input[store]
                     // -> inspect(|x| println!("{gossip_addr}:{:5}: stores-into-lookup: {x:?}", context.current_tick()))
