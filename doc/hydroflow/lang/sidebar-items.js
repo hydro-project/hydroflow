@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["clear","collections","monotonic_map","tag"]};
+window.SIDEBAR_ITEMS = {"mod":["clear","monotonic_map"]};

@@ -94,16 +94,17 @@
 <a href="#94" id="94">94</a>
 <a href="#95" id="95">95</a>
 <a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Totally-ordered lattices, [`Max`] and [`Min`].
 //!
 //! Uses [std::cmp::Ord`].
 
 </span><span class="kw">use super</span>::{Compare, ConvertFrom, Merge};
-<span class="kw">use </span>serde::{Deserialize, Serialize};
 
-<span class="attr">#[repr(transparent)]
-#[derive(Default, PartialEq, PartialOrd, Eq, Ord, Debug, Clone, Serialize, Deserialize)]
-</span><span class="doccomment">/// A totally ordered max lattice. Merging takes the larger value.
+<span class="doccomment">/// A totally ordered max lattice. Merging takes the larger value.
+</span><span class="attr">#[repr(transparent)]
+#[derive(Default, PartialEq, PartialOrd, Eq, Ord, Debug, Clone)]
+#[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>Max&lt;T&gt;(<span class="kw">pub </span>T);
 <span class="kw">impl</span>&lt;T&gt; Max&lt;T&gt; {
     <span class="doccomment">/// Create a new `Max` lattice instance from a `T`.
@@ -146,9 +147,10 @@
     }
 }
 
-<span class="attr">#[repr(transparent)]
-#[derive(Default, PartialEq, PartialOrd, Eq, Ord, Debug, Clone, Serialize, Deserialize)]
-</span><span class="doccomment">/// A totally ordered min lattice. Merging takes the smaller value.
+<span class="doccomment">/// A totally ordered min lattice. Merging takes the smaller value.
+</span><span class="attr">#[repr(transparent)]
+#[derive(Default, PartialEq, PartialOrd, Eq, Ord, Debug, Clone)]
+#[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>Min&lt;T&gt;(<span class="kw">pub </span>T);
 <span class="kw">impl</span>&lt;T&gt; Min&lt;T&gt; {
     <span class="doccomment">/// Create a new `Min` lattice instance from a `T`.

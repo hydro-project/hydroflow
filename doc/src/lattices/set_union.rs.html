@@ -147,152 +147,81 @@
 <a href="#147" id="147">147</a>
 <a href="#148" id="148">148</a>
 <a href="#149" id="149">149</a>
-<a href="#150" id="150">150</a>
-<a href="#151" id="151">151</a>
-<a href="#152" id="152">152</a>
-<a href="#153" id="153">153</a>
-<a href="#154" id="154">154</a>
-<a href="#155" id="155">155</a>
-<a href="#156" id="156">156</a>
-<a href="#157" id="157">157</a>
-<a href="#158" id="158">158</a>
-<a href="#159" id="159">159</a>
-<a href="#160" id="160">160</a>
-<a href="#161" id="161">161</a>
-<a href="#162" id="162">162</a>
-<a href="#163" id="163">163</a>
-<a href="#164" id="164">164</a>
-<a href="#165" id="165">165</a>
-<a href="#166" id="166">166</a>
-<a href="#167" id="167">167</a>
-<a href="#168" id="168">168</a>
-<a href="#169" id="169">169</a>
-<a href="#170" id="170">170</a>
-<a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a>
-<a href="#173" id="173">173</a>
-<a href="#174" id="174">174</a>
-<a href="#175" id="175">175</a>
-<a href="#176" id="176">176</a>
-<a href="#177" id="177">177</a>
-<a href="#178" id="178">178</a>
-<a href="#179" id="179">179</a>
-<a href="#180" id="180">180</a>
-<a href="#181" id="181">181</a>
-<a href="#182" id="182">182</a>
-<a href="#183" id="183">183</a>
-<a href="#184" id="184">184</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Set-union compound lattice.
 //!
 //! Merging set-union lattices is done by unioning the keys.
 
 </span><span class="kw">use </span>std::cmp::Ordering;
+<span class="kw">use </span>std::collections::{BTreeSet, HashSet};
 
-<span class="kw">use crate</span>::{collections::Collection, tag};
-
-<span class="kw">use super</span>::{Compare, ConvertFrom, Merge};
+<span class="kw">use </span><span class="kw">crate</span>::cc_traits::{Iter, Len, Set};
+<span class="kw">use </span><span class="kw">crate</span>::collections::{ArraySet, SingletonSet};
+<span class="kw">use crate</span>::{Compare, ConvertFrom, Merge};
 
 <span class="doccomment">/// A set-union lattice.
 ///
 /// `Tag` specifies what datastructure to use, allowing us to deal with different datastructures
 /// generically.
-</span><span class="attr">#[repr(transparent)]
-#[derive(Debug)]
-</span><span class="kw">pub struct </span>SetUnion&lt;Tag, T&gt;(<span class="kw">pub </span>Tag::Bind)
-<span class="kw">where
-    </span>Tag: tag::Tag1&lt;T&gt;;
-<span class="kw">impl</span>&lt;Tag, T&gt; SetUnion&lt;Tag, T&gt;
-<span class="kw">where
-    </span>Tag: tag::Tag1&lt;T&gt;,
-{
+</span><span class="attr">#[derive(Clone, Debug, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
+</span><span class="kw">pub struct </span>SetUnion&lt;Set&gt;(<span class="kw">pub </span>Set);
+<span class="kw">impl</span>&lt;Set&gt; SetUnion&lt;Set&gt; {
     <span class="doccomment">/// Create a new `SetUnion` from a `Set`.
-    </span><span class="kw">pub fn </span>new(val: Tag::Bind) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>new(val: Set) -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>(val)
     }
 
     <span class="doccomment">/// Create a new `SetUnion` from an `Into&lt;Set&gt;`.
-    </span><span class="kw">pub fn </span>new_from(val: <span class="kw">impl </span>Into&lt;Tag::Bind&gt;) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>new_from(val: <span class="kw">impl </span>Into&lt;Set&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>::new(val.into())
     }
 }
 
-<span class="kw">impl</span>&lt;Tag, T&gt; Clone <span class="kw">for </span>SetUnion&lt;Tag, T&gt;
+<span class="kw">impl</span>&lt;SetSelf, SetOther, Item&gt; Merge&lt;SetUnion&lt;SetOther&gt;&gt; <span class="kw">for </span>SetUnion&lt;SetSelf&gt;
 <span class="kw">where
-    </span>Tag: tag::Tag1&lt;T&gt;,
-    Tag::Bind: Clone,
+    </span>SetSelf: Extend&lt;Item&gt; + Len,
+    SetOther: IntoIterator&lt;Item = Item&gt;,
 {
-    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>(<span class="self">self</span>.<span class="number">0</span>.clone())
-    }
-}
-
-<span class="kw">impl</span>&lt;TagSelf, TagOther, T&gt; Merge&lt;SetUnion&lt;TagOther, T&gt;&gt; <span class="kw">for </span>SetUnion&lt;TagSelf, T&gt;
-<span class="kw">where
-    </span>TagSelf: tag::Tag1&lt;T&gt;,
-    TagOther: tag::Tag1&lt;T&gt;,
-    TagSelf::Bind: Collection&lt;T, ()&gt; + Extend&lt;T&gt;,
-    TagOther::Bind: IntoIterator&lt;Item = T&gt;,
-{
-    <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: SetUnion&lt;TagOther, T&gt;) -&gt; bool {
+    <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: SetUnion&lt;SetOther&gt;) -&gt; bool {
         <span class="kw">let </span>old_len = <span class="self">self</span>.<span class="number">0</span>.len();
         <span class="self">self</span>.<span class="number">0</span>.extend(other.<span class="number">0</span>);
         <span class="self">self</span>.<span class="number">0</span>.len() &gt; old_len
     }
 }
 
-<span class="kw">impl</span>&lt;TagSelf, TagOther, T&gt; ConvertFrom&lt;SetUnion&lt;TagOther, T&gt;&gt; <span class="kw">for </span>SetUnion&lt;TagSelf, T&gt;
+<span class="kw">impl</span>&lt;SetSelf, SetOther, Item&gt; ConvertFrom&lt;SetUnion&lt;SetOther&gt;&gt; <span class="kw">for </span>SetUnion&lt;SetSelf&gt;
 <span class="kw">where
-    </span>TagSelf: tag::Tag1&lt;T&gt;,
-    TagOther: tag::Tag1&lt;T&gt;,
-    TagSelf::Bind: FromIterator&lt;T&gt;,
-    TagOther::Bind: Collection&lt;T, ()&gt;,
+    </span>SetSelf: FromIterator&lt;Item&gt;,
+    SetOther: IntoIterator&lt;Item = Item&gt;,
 {
-    <span class="kw">fn </span>from(other: SetUnion&lt;TagOther, T&gt;) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>(
-            other
-                .<span class="number">0
-                </span>.into_entries()
-                .map(|(t_other, ())| t_other)
-                .collect(),
-        )
+    <span class="kw">fn </span>from(other: SetUnion&lt;SetOther&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>(other.<span class="number">0</span>.into_iter().collect())
     }
 }
 
-<span class="kw">impl</span>&lt;Tag, T&gt; Default <span class="kw">for </span>SetUnion&lt;Tag, T&gt;
+<span class="kw">impl</span>&lt;SetSelf, SetOther, Item&gt; Compare&lt;SetUnion&lt;SetOther&gt;&gt; <span class="kw">for </span>SetUnion&lt;SetSelf&gt;
 <span class="kw">where
-    </span>Tag: tag::Tag1&lt;T&gt;,
-    Tag::Bind: Default,
+    </span>SetSelf: Set&lt;Item, Item = Item&gt; + Iter,
+    SetOther: Set&lt;Item, Item = Item&gt; + Iter,
 {
-    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>(Default::default())
-    }
-}
-
-<span class="kw">impl</span>&lt;TagSelf, TagOther, T&gt; Compare&lt;SetUnion&lt;TagOther, T&gt;&gt; <span class="kw">for </span>SetUnion&lt;TagSelf, T&gt;
-<span class="kw">where
-    </span>TagSelf: tag::Tag1&lt;T&gt;,
-    TagOther: tag::Tag1&lt;T&gt;,
-    TagSelf::Bind: Collection&lt;T, ()&gt;,
-    TagOther::Bind: Collection&lt;T, ()&gt;,
-{
-    <span class="kw">fn </span>compare(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>SetUnion&lt;TagOther, T&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Ordering&gt; {
+    <span class="kw">fn </span>compare(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>SetUnion&lt;SetOther&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Ordering&gt; {
         <span class="kw">match </span><span class="self">self</span>.<span class="number">0</span>.len().cmp(<span class="kw-2">&amp;</span>other.<span class="number">0</span>.len()) {
             Ordering::Greater =&gt; {
-                <span class="kw">if </span>other.<span class="number">0</span>.keys().all(|key| <span class="self">self</span>.<span class="number">0</span>.get(key).is_some()) {
+                <span class="kw">if </span>other.<span class="number">0</span>.iter().all(|key| <span class="self">self</span>.<span class="number">0</span>.contains(<span class="kw-2">&amp;*</span>key)) {
                     <span class="prelude-val">Some</span>(Ordering::Greater)
                 } <span class="kw">else </span>{
                     <span class="prelude-val">None
                 </span>}
             }
             Ordering::Equal =&gt; {
-                <span class="kw">if </span><span class="self">self</span>.<span class="number">0</span>.keys().all(|key| other.<span class="number">0</span>.get(key).is_some()) {
+                <span class="kw">if </span><span class="self">self</span>.<span class="number">0</span>.iter().all(|key| other.<span class="number">0</span>.contains(<span class="kw-2">&amp;*</span>key)) {
                     <span class="prelude-val">Some</span>(Ordering::Equal)
                 } <span class="kw">else </span>{
                     <span class="prelude-val">None
                 </span>}
             }
             Ordering::Less =&gt; {
-                <span class="kw">if </span><span class="self">self</span>.<span class="number">0</span>.keys().all(|key| other.<span class="number">0</span>.get(key).is_some()) {
+                <span class="kw">if </span><span class="self">self</span>.<span class="number">0</span>.iter().all(|key| other.<span class="number">0</span>.contains(<span class="kw-2">&amp;*</span>key)) {
                     <span class="prelude-val">Some</span>(Ordering::Less)
                 } <span class="kw">else </span>{
                     <span class="prelude-val">None
@@ -303,37 +232,34 @@
 }
 
 <span class="doccomment">/// [`std::collections::HashSet`]-backed [`SetUnion`] lattice.
-</span><span class="kw">pub type </span>SetUnionHashSet&lt;T&gt; = SetUnion&lt;tag::HASH_SET, T&gt;;
+</span><span class="kw">pub type </span>SetUnionHashSet&lt;Item&gt; = SetUnion&lt;HashSet&lt;Item&gt;&gt;;
 
 <span class="doccomment">/// [`std::collections::BTreeSet`]-backed [`SetUnion`] lattice.
-</span><span class="kw">pub type </span>SetUnionBTreeSet&lt;T&gt; = SetUnion&lt;tag::BTREE_SET, T&gt;;
+</span><span class="kw">pub type </span>SetUnionBTreeSet&lt;Item&gt; = SetUnion&lt;BTreeSet&lt;Item&gt;&gt;;
 
 <span class="doccomment">/// [`Vec`]-backed [`SetUnion`] lattice.
-</span><span class="kw">pub type </span>SetUnionVec&lt;T&gt; = SetUnion&lt;tag::VEC, T&gt;;
+</span><span class="kw">pub type </span>SetUnionVec&lt;Item&gt; = SetUnion&lt;Vec&lt;Item&gt;&gt;;
 
-<span class="doccomment">/// Array-backed [`SetUnion`] lattice.
-</span><span class="kw">pub type </span>SetUnionArray&lt;T, <span class="kw">const </span>N: usize&gt; = SetUnion&lt;tag::ARRAY&lt;N&gt;, T&gt;;
+<span class="doccomment">/// [`crate::collections::ArraySet`]-backed [`SetUnion`] lattice.
+</span><span class="kw">pub type </span>SetUnionArray&lt;Item, <span class="kw">const </span>N: usize&gt; = SetUnion&lt;ArraySet&lt;Item, N&gt;&gt;;
 
-<span class="doccomment">/// [`crate::collections::MaskedArray`]-backed [`SetUnion`] lattice.
-</span><span class="kw">pub type </span>SetUnionMaskedArray&lt;T, <span class="kw">const </span>N: usize&gt; = SetUnion&lt;tag::MASKED_ARRAY&lt;N&gt;, T&gt;;
-
-<span class="doccomment">/// [`crate::collections::Single`]-backed [`SetUnion`] lattice.
-</span><span class="kw">pub type </span>SetUnionSingle&lt;T&gt; = SetUnion&lt;tag::SINGLE, T&gt;;
+<span class="doccomment">/// [`crate::collections::SingletonSet`]-backed [`SetUnion`] lattice.
+</span><span class="kw">pub type </span>SetUnionSingletonSet&lt;Item&gt; = SetUnion&lt;SingletonSet&lt;Item&gt;&gt;;
 
 <span class="doccomment">/// [`Option`]-backed [`SetUnion`] lattice.
-</span><span class="kw">pub type </span>SetUnionOption&lt;T&gt; = SetUnion&lt;tag::OPTION, T&gt;;
+</span><span class="kw">pub type </span>SetUnionOption&lt;Item&gt; = SetUnion&lt;<span class="prelude-ty">Option</span>&lt;Item&gt;&gt;;
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="kw">use </span><span class="kw">crate</span>::collections::Single;
+    <span class="kw">use </span><span class="kw">crate</span>::collections::SingletonSet;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_set_union() {
-        <span class="kw">let </span><span class="kw-2">mut </span>my_set_a = SetUnion::&lt;tag::HASH_SET, <span class="kw-2">&amp;</span>str&gt;(Default::default());
-        <span class="kw">let </span>my_set_b = SetUnion::&lt;tag::BTREE_SET, <span class="kw-2">&amp;</span>str&gt;(Default::default());
-        <span class="kw">let </span>my_set_c = SetUnion::&lt;tag::SINGLE, <span class="kw">_</span>&gt;(Single(<span class="string">&quot;hello world&quot;</span>));
+        <span class="kw">let </span><span class="kw-2">mut </span>my_set_a = SetUnionHashSet::&lt;<span class="kw-2">&amp;</span>str&gt;::new(HashSet::new());
+        <span class="kw">let </span>my_set_b = SetUnionBTreeSet::&lt;<span class="kw-2">&amp;</span>str&gt;::new(BTreeSet::new());
+        <span class="kw">let </span>my_set_c = SetUnionSingletonSet::new(SingletonSet(<span class="string">&quot;hello world&quot;</span>));
 
         <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Equal), my_set_a.compare(<span class="kw-2">&amp;</span>my_set_a));
         <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Equal), my_set_a.compare(<span class="kw-2">&amp;</span>my_set_b));
@@ -345,6 +271,10 @@
         <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Greater), my_set_c.compare(<span class="kw-2">&amp;</span>my_set_b));
         <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Equal), my_set_c.compare(<span class="kw-2">&amp;</span>my_set_c));
 
+        my_set_a.compare(<span class="kw-2">&amp;</span>my_set_b);
+        my_set_a.compare(<span class="kw-2">&amp;</span>my_set_c);
+        my_set_b.compare(<span class="kw-2">&amp;</span>my_set_c);
+
         my_set_a.merge(my_set_b);
         my_set_a.merge(my_set_c);
     }
@@ -352,7 +282,7 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_singleton_example() {
         <span class="kw">let </span><span class="kw-2">mut </span>my_hash_set = SetUnionHashSet::&lt;<span class="kw-2">&amp;</span>str&gt;::default();
-        <span class="kw">let </span>my_delta_set = SetUnionSingle::new_from(<span class="string">&quot;hello world&quot;</span>);
+        <span class="kw">let </span>my_delta_set = SetUnionSingletonSet::new_from(<span class="string">&quot;hello world&quot;</span>);
         <span class="kw">let </span>my_array_set = SetUnionArray::new_from([<span class="string">&quot;hello world&quot;</span>, <span class="string">&quot;b&quot;</span>, <span class="string">&quot;c&quot;</span>, <span class="string">&quot;d&quot;</span>]);
 
         <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(Ordering::Equal), my_delta_set.compare(<span class="kw-2">&amp;</span>my_delta_set));

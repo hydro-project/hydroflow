@@ -225,13 +225,9 @@
 <a href="#225" id="225">225</a>
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
-<a href="#228" id="228">228</a>
-<a href="#229" id="229">229</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::lang::{
-    clear::Clear,
-    lattice2::{map_union::MapUnionHashMap, Merge},
-};
-<span class="kw">use </span>lattices::ConvertFrom;
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::lang::clear::Clear;
+<span class="kw">use </span>lattices::map_union::MapUnionHashMap;
+<span class="kw">use </span>lattices::{ConvertFrom, Merge};
 <span class="kw">use </span>rustc_hash::FxHashSet;
 <span class="kw">use </span>std::collections::{hash_map::Entry, hash_set};
 
@@ -351,7 +347,7 @@
     );
 
     <span class="kw">use super</span>::{HalfJoinStateLattice, SymmetricHashJoinLattice};
-    <span class="kw">use </span><span class="kw">crate</span>::lang::lattice2::ord::Max;
+    <span class="kw">use </span>lattices::ord::Max;
     <span class="kw">use </span>rustc_hash::FxHashSet;
 
     <span class="kw">type </span>MyLattice = Max&lt;usize&gt;;

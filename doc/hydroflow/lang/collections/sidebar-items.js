@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["Array","MaskedArray","Single"],"trait":["Collection"]};

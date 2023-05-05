@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["SetUnion"],"type":["SetUnionArray","SetUnionBTreeSet","SetUnionHashSet","SetUnionMaskedArray","SetUnionOption","SetUnionSingle","SetUnionVec"]};
+window.SIDEBAR_ITEMS = {"struct":["SetUnion"],"type":["SetUnionArray","SetUnionBTreeSet","SetUnionHashSet","SetUnionOption","SetUnionSingletonSet","SetUnionVec"]};

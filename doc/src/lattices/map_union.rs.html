@@ -178,102 +178,48 @@
 <a href="#178" id="178">178</a>
 <a href="#179" id="179">179</a>
 <a href="#180" id="180">180</a>
-<a href="#181" id="181">181</a>
-<a href="#182" id="182">182</a>
-<a href="#183" id="183">183</a>
-<a href="#184" id="184">184</a>
-<a href="#185" id="185">185</a>
-<a href="#186" id="186">186</a>
-<a href="#187" id="187">187</a>
-<a href="#188" id="188">188</a>
-<a href="#189" id="189">189</a>
-<a href="#190" id="190">190</a>
-<a href="#191" id="191">191</a>
-<a href="#192" id="192">192</a>
-<a href="#193" id="193">193</a>
-<a href="#194" id="194">194</a>
-<a href="#195" id="195">195</a>
-<a href="#196" id="196">196</a>
-<a href="#197" id="197">197</a>
-<a href="#198" id="198">198</a>
-<a href="#199" id="199">199</a>
-<a href="#200" id="200">200</a>
-<a href="#201" id="201">201</a>
-<a href="#202" id="202">202</a>
-<a href="#203" id="203">203</a>
-<a href="#204" id="204">204</a>
-<a href="#205" id="205">205</a>
-<a href="#206" id="206">206</a>
-<a href="#207" id="207">207</a>
-<a href="#208" id="208">208</a>
-<a href="#209" id="209">209</a>
-<a href="#210" id="210">210</a>
-<a href="#211" id="211">211</a>
-<a href="#212" id="212">212</a>
-<a href="#213" id="213">213</a>
-<a href="#214" id="214">214</a>
-<a href="#215" id="215">215</a>
-<a href="#216" id="216">216</a>
-<a href="#217" id="217">217</a>
-<a href="#218" id="218">218</a>
-<a href="#219" id="219">219</a>
-<a href="#220" id="220">220</a>
-<a href="#221" id="221">221</a>
-<a href="#222" id="222">222</a>
-<a href="#223" id="223">223</a>
-<a href="#224" id="224">224</a>
-<a href="#225" id="225">225</a>
-<a href="#226" id="226">226</a>
-<a href="#227" id="227">227</a>
-<a href="#228" id="228">228</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Map-union compound lattice.
 //!
 //! Each key corresponds to a lattice value instance. Merging map-union lattices is done by
 //! unioning the keys and merging the values of intersecting keys.
 
 </span><span class="kw">use </span>std::cmp::Ordering;
-
-<span class="kw">use crate</span>::{collections::Collection, tag};
-
-<span class="kw">use super</span>::{Compare, ConvertFrom, Merge};
-<span class="kw">use </span>serde::{Deserialize, Serialize};
-
+<span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::fmt::Debug;
+
+<span class="kw">use </span><span class="kw">crate</span>::cc_traits::{GetMut, Keyed, Map, MapIter, SimpleKeyedRef};
+<span class="kw">use </span><span class="kw">crate</span>::collections::{ArrayMap, SingletonMap, VecMap};
+<span class="kw">use crate</span>::{Compare, ConvertFrom, Merge};
 
 <span class="doccomment">/// A map-union lattice.
 ///
 /// `Tag` specifies what datastructure to use, allowing us to deal with different datastructures
 /// generically.
 </span><span class="attr">#[repr(transparent)]
-#[derive(Serialize, Deserialize)]
-</span><span class="kw">pub struct </span>MapUnion&lt;Tag, K, Val&gt;(<span class="kw">pub </span>Tag::Bind)
-<span class="kw">where
-    </span>Tag: tag::Tag2&lt;K, Val&gt;;
-<span class="kw">impl</span>&lt;Tag, K, Val&gt; MapUnion&lt;Tag, K, Val&gt;
-<span class="kw">where
-    </span>Tag: tag::Tag2&lt;K, Val&gt;,
-{
+#[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+</span><span class="kw">pub struct </span>MapUnion&lt;Map&gt;(<span class="kw">pub </span>Map);
+<span class="kw">impl</span>&lt;Map&gt; MapUnion&lt;Map&gt; {
     <span class="doccomment">/// Create a new `MapUnion` from a `Map`.
-    </span><span class="kw">pub fn </span>new(val: Tag::Bind) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>new(val: Map) -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>(val)
     }
 
     <span class="doccomment">/// Create a new `MapUnion` from an `Into&lt;Map&gt;`.
-    </span><span class="kw">pub fn </span>new_from(val: <span class="kw">impl </span>Into&lt;Tag::Bind&gt;) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>new_from(val: <span class="kw">impl </span>Into&lt;Map&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>::new(val.into())
     }
 }
 
-<span class="kw">impl</span>&lt;TagSelf, TagOther, K, ValSelf, ValOther&gt; Merge&lt;MapUnion&lt;TagOther, K, ValOther&gt;&gt;
-    <span class="kw">for </span>MapUnion&lt;TagSelf, K, ValSelf&gt;
+<span class="kw">impl</span>&lt;MapSelf, MapOther, K, ValSelf, ValOther&gt; Merge&lt;MapUnion&lt;MapOther&gt;&gt; <span class="kw">for </span>MapUnion&lt;MapSelf&gt;
 <span class="kw">where
-    </span>TagSelf: tag::Tag2&lt;K, ValSelf&gt;,
-    TagOther: tag::Tag2&lt;K, ValOther&gt;,
-    TagSelf::Bind: Collection&lt;K, ValSelf&gt; + Extend&lt;(K, ValSelf)&gt;,
-    TagOther::Bind: IntoIterator&lt;Item = (K, ValOther)&gt;,
+    </span>MapSelf: Keyed&lt;Key = K, Item = ValSelf&gt;
+        + Extend&lt;(K, ValSelf)&gt;
+        + <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; GetMut&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>K, Item = ValSelf&gt;,
+    MapOther: IntoIterator&lt;Item = (K, ValOther)&gt;,
     ValSelf: Merge&lt;ValOther&gt; + ConvertFrom&lt;ValOther&gt;,
 {
-    <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: MapUnion&lt;TagOther, K, ValOther&gt;) -&gt; bool {
+    <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: MapUnion&lt;MapOther&gt;) -&gt; bool {
         <span class="kw">let </span><span class="kw-2">mut </span>changed = <span class="bool-val">false</span>;
         <span class="comment">// This vec collect is needed to prevent simultaneous mut references `self.0.extend` and
         // `self.0.get_mut`.
@@ -285,12 +231,15 @@
             .filter_map(|(k_other, val_other)| {
                 <span class="kw">match </span><span class="self">self</span>.<span class="number">0</span>.get_mut(<span class="kw-2">&amp;</span>k_other) {
                     <span class="comment">// Key collision, merge into `self`.
-                    </span><span class="prelude-val">Some</span>(val_self) =&gt; {
+                    </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>val_self) =&gt; {
                         changed |= val_self.merge(val_other);
                         <span class="prelude-val">None
                     </span>}
                     <span class="comment">// New value, convert for extending.
-                    </span><span class="prelude-val">None </span>=&gt; <span class="prelude-val">Some</span>((k_other, ValSelf::from(val_other))),
+                    </span><span class="prelude-val">None </span>=&gt; {
+                        changed = <span class="bool-val">true</span>;
+                        <span class="prelude-val">Some</span>((k_other, ValSelf::from(val_other)))
+                    }
                 }
             })
             .collect();
@@ -299,41 +248,45 @@
     }
 }
 
-<span class="kw">impl</span>&lt;TagSelf, TagOther, K, ValSelf, ValOther&gt; ConvertFrom&lt;MapUnion&lt;TagOther, K, ValOther&gt;&gt;
-    <span class="kw">for </span>MapUnion&lt;TagSelf, K, ValSelf&gt;
+<span class="kw">impl</span>&lt;MapSelf, MapOther, K, ValSelf, ValOther&gt; ConvertFrom&lt;MapUnion&lt;MapOther&gt;&gt; <span class="kw">for </span>MapUnion&lt;MapSelf&gt;
 <span class="kw">where
-    </span>TagSelf: tag::Tag2&lt;K, ValSelf&gt;,
-    TagOther: tag::Tag2&lt;K, ValOther&gt;,
-    TagSelf::Bind: FromIterator&lt;(K, ValSelf)&gt;,
-    TagOther::Bind: Collection&lt;K, ValOther&gt;,
+    </span>MapSelf: Keyed&lt;Key = K, Item = ValSelf&gt; + FromIterator&lt;(K, ValSelf)&gt;,
+    MapOther: IntoIterator&lt;Item = (K, ValOther)&gt;,
     ValSelf: ConvertFrom&lt;ValOther&gt;,
 {
-    <span class="kw">fn </span>from(other: MapUnion&lt;TagOther, K, ValOther&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">fn </span>from(other: MapUnion&lt;MapOther&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>(
             other
                 .<span class="number">0
-                </span>.into_entries()
+                </span>.into_iter()
                 .map(|(k_other, val_other)| (k_other, ConvertFrom::from(val_other)))
                 .collect(),
         )
     }
 }
 
-<span class="kw">impl</span>&lt;TagSelf, TagOther, K, ValSelf, ValOther&gt; Compare&lt;MapUnion&lt;TagOther, K, ValOther&gt;&gt;
-    <span class="kw">for </span>MapUnion&lt;TagSelf, K, ValSelf&gt;
+<span class="kw">impl</span>&lt;MapSelf, MapOther, K, ValSelf, ValOther&gt; Compare&lt;MapUnion&lt;MapOther&gt;&gt; <span class="kw">for </span>MapUnion&lt;MapSelf&gt;
 <span class="kw">where
-    </span>TagSelf: tag::Tag2&lt;K, ValSelf&gt;,
-    TagOther: tag::Tag2&lt;K, ValOther&gt;,
-    TagSelf::Bind: Collection&lt;K, ValSelf&gt;,
-    TagOther::Bind: Collection&lt;K, ValOther&gt;,
+    </span>MapSelf: Map&lt;K, ValSelf, Key = K, Item = ValSelf&gt; + MapIter + SimpleKeyedRef,
+    MapOther: Map&lt;K, ValOther, Key = K, Item = ValOther&gt; + MapIter + SimpleKeyedRef,
     ValSelf: Compare&lt;ValOther&gt;,
 {
-    <span class="kw">fn </span>compare(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>MapUnion&lt;TagOther, K, ValOther&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;std::cmp::Ordering&gt; {
+    <span class="kw">fn </span>compare(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>MapUnion&lt;MapOther&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;std::cmp::Ordering&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>self_any_greater = <span class="bool-val">false</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>other_any_greater = <span class="bool-val">false</span>;
-        <span class="kw">for </span>k <span class="kw">in </span><span class="self">self</span>.<span class="number">0</span>.keys().chain(other.<span class="number">0</span>.keys()) {
+        <span class="kw">for </span>k <span class="kw">in </span><span class="self">self
+            </span>.<span class="number">0
+            </span>.iter()
+            .map(|(k, _v)| &lt;MapSelf <span class="kw">as </span>SimpleKeyedRef&gt;::into_ref(k))
+            .chain(
+                other
+                    .<span class="number">0
+                    </span>.iter()
+                    .map(|(k, _v)| &lt;MapOther <span class="kw">as </span>SimpleKeyedRef&gt;::into_ref(k)),
+            )
+        {
             <span class="kw">match </span>(<span class="self">self</span>.<span class="number">0</span>.get(k), other.<span class="number">0</span>.get(k)) {
-                (<span class="prelude-val">Some</span>(self_value), <span class="prelude-val">Some</span>(other_value)) =&gt; <span class="kw">match </span>self_value.compare(other_value) {
+                (<span class="prelude-val">Some</span>(self_value), <span class="prelude-val">Some</span>(other_value)) =&gt; <span class="kw">match </span>self_value.compare(<span class="kw-2">&amp;*</span>other_value) {
                     <span class="prelude-val">None </span>=&gt; {
                         <span class="kw">return </span><span class="prelude-val">None</span>;
                     }
@@ -367,89 +320,40 @@
     }
 }
 
-<span class="kw">impl</span>&lt;Tag, K, Val&gt; Default <span class="kw">for </span>MapUnion&lt;Tag, K, Val&gt;
-<span class="kw">where
-    </span>Tag: tag::Tag2&lt;K, Val&gt;,
-    Tag::Bind: Default,
-{
-    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>(Default::default())
-    }
-}
-
-<span class="kw">impl</span>&lt;Tag, K, Val&gt; Clone <span class="kw">for </span>MapUnion&lt;Tag, K, Val&gt;
-<span class="kw">where
-    </span>Tag: tag::Tag2&lt;K, Val&gt;,
-    Tag::Bind: Clone,
-{
-    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>(<span class="self">self</span>.<span class="number">0</span>.clone())
-    }
-}
-
-<span class="kw">impl</span>&lt;Tag, K, Val&gt; PartialEq <span class="kw">for </span>MapUnion&lt;Tag, K, Val&gt;
-<span class="kw">where
-    </span>Tag: tag::Tag2&lt;K, Val&gt;,
-    Tag::Bind: PartialEq,
-{
-    <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
-        <span class="self">self</span>.<span class="number">0 </span>== other.<span class="number">0
-    </span>}
-}
-
-<span class="kw">impl</span>&lt;Tag, K, Val&gt; Eq <span class="kw">for </span>MapUnion&lt;Tag, K, Val&gt;
-<span class="kw">where
-    </span>Tag: tag::Tag2&lt;K, Val&gt;,
-    Tag::Bind: Eq,
-{
-}
-
-<span class="kw">impl</span>&lt;Tag, K, Val&gt; Debug <span class="kw">for </span>MapUnion&lt;Tag, K, Val&gt;
-<span class="kw">where
-    </span>Tag: tag::Tag2&lt;K, Val&gt;,
-    Tag::Bind: Debug,
-{
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
-        f.debug_tuple(<span class="string">&quot;MapUnion&quot;</span>).field(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>).finish()
-    }
-}
-
 <span class="doccomment">/// [`std::collections::HashMap`]-backed [`MapUnion`] lattice.
-</span><span class="kw">pub type </span>MapUnionHashMap&lt;K, Val&gt; = MapUnion&lt;tag::HASH_MAP, K, Val&gt;;
+</span><span class="kw">pub type </span>MapUnionHashMap&lt;K, Val&gt; = MapUnion&lt;HashMap&lt;K, Val&gt;&gt;;
 
 <span class="doccomment">/// [`std::collections::BTreeMap`]-backed [`MapUnion`] lattice.
-</span><span class="kw">pub type </span>MapUnionBTreeMap&lt;K, Val&gt; = MapUnion&lt;tag::BTREE_MAP, K, Val&gt;;
+</span><span class="kw">pub type </span>MapUnionBTreeMap&lt;K, Val&gt; = MapUnion&lt;BTreeMap&lt;K, Val&gt;&gt;;
 
 <span class="doccomment">/// [`Vec`]-backed [`MapUnion`] lattice.
-</span><span class="kw">pub type </span>MapUnionVec&lt;K, Val&gt; = MapUnion&lt;tag::VEC, K, Val&gt;;
+</span><span class="kw">pub type </span>MapUnionVec&lt;K, Val&gt; = MapUnion&lt;VecMap&lt;K, Val&gt;&gt;;
 
 <span class="doccomment">/// Array-backed [`MapUnion`] lattice.
-</span><span class="kw">pub type </span>MapUnionArray&lt;K, Val, <span class="kw">const </span>N: usize&gt; = MapUnion&lt;tag::ARRAY&lt;N&gt;, K, Val&gt;;
+</span><span class="kw">pub type </span>MapUnionArrayMap&lt;K, Val, <span class="kw">const </span>N: usize&gt; = MapUnion&lt;ArrayMap&lt;K, Val, N&gt;&gt;;
 
-<span class="doccomment">/// [`crate::collections::MaskedArray`]-backed [`MapUnion`] lattice.
-</span><span class="kw">pub type </span>MapUnionMaskedArray&lt;K, Val, <span class="kw">const </span>N: usize&gt; = MapUnion&lt;tag::MASKED_ARRAY&lt;N&gt;, K, Val&gt;;
-
-<span class="doccomment">/// [`crate::collections::Single`]-backed [`MapUnion`] lattice.
-</span><span class="kw">pub type </span>MapUnionSingle&lt;K, Val&gt; = MapUnion&lt;tag::SINGLE, K, Val&gt;;
+<span class="doccomment">/// [`crate::collections::SingletonMap`]-backed [`MapUnion`] lattice.
+</span><span class="kw">pub type </span>MapUnionSingletonMap&lt;K, Val&gt; = MapUnion&lt;SingletonMap&lt;K, Val&gt;&gt;;
 
 <span class="doccomment">/// [`Option`]-backed [`MapUnion`] lattice.
-</span><span class="kw">pub type </span>MapUnionOption&lt;K, Val&gt; = MapUnion&lt;tag::OPTION, K, Val&gt;;
+</span><span class="kw">pub type </span>MapUnionOption&lt;K, Val&gt; = MapUnion&lt;<span class="prelude-ty">Option</span>&lt;(K, Val)&gt;&gt;;
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="kw">use </span><span class="kw">crate</span>::collections::Single;
-    <span class="kw">use </span><span class="kw">crate</span>::set_union::{SetUnionHashSet, SetUnionSingle};
+    <span class="kw">use </span><span class="kw">crate</span>::collections::{SingletonMap, SingletonSet};
+    <span class="kw">use </span><span class="kw">crate</span>::set_union::{SetUnionHashSet, SetUnionSingletonSet};
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_map_union() {
         <span class="kw">let </span><span class="kw-2">mut </span>my_map_a = &lt;MapUnionHashMap&lt;<span class="kw-2">&amp;</span>str, SetUnionHashSet&lt;u64&gt;&gt;&gt;::default();
-        <span class="kw">let </span>my_map_b = &lt;MapUnionSingle&lt;<span class="kw-2">&amp;</span>str, SetUnionSingle&lt;u64&gt;&gt;&gt;::new(Single((
+        <span class="kw">let </span>my_map_b = &lt;MapUnionSingletonMap&lt;<span class="kw-2">&amp;</span>str, SetUnionSingletonSet&lt;u64&gt;&gt;&gt;::new(SingletonMap(
             <span class="string">&quot;hello&quot;</span>,
-            SetUnionSingle::new(Single(<span class="number">100</span>)),
-        )));
-        <span class="kw">let </span>my_map_c = MapUnionSingle::new_from((<span class="string">&quot;hello&quot;</span>, SetUnionHashSet::new_from([<span class="number">100</span>, <span class="number">200</span>])));
+            SetUnionSingletonSet::new(SingletonSet(<span class="number">100</span>)),
+        ));
+        <span class="kw">let </span>my_map_c =
+            MapUnionSingletonMap::new_from((<span class="string">&quot;hello&quot;</span>, SetUnionHashSet::new_from([<span class="number">100</span>, <span class="number">200</span>])));
         my_map_a.merge(my_map_b);
         my_map_a.merge(my_map_c);
     }
