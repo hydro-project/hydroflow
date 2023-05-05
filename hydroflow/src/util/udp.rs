@@ -9,7 +9,9 @@ use tokio_util::codec::length_delimited::LengthDelimitedCodec;
 use tokio_util::codec::{BytesCodec, Decoder, Encoder, LinesCodec};
 use tokio_util::udp::UdpFramed;
 
+/// A framed UDP `Sink` (sending).
 pub type UdpFramedSink<Codec, Item> = SplitSink<UdpFramed<Codec>, (Item, SocketAddr)>;
+/// A framed UDP `Stream` (receiving).
 pub type UdpFramedStream<Codec> = SplitStream<UdpFramed<Codec>>;
 /// Helper creates a UDP `Stream` and `Sink` from the given socket, using the given `Codec` to
 /// handle delineation between inputs/outputs. Also returns the bound UdpSocket, which will be
@@ -31,7 +33,9 @@ where
     (split.0, split.1, addr)
 }
 
+/// A UDP length-delimited frame `Sink` (sending).
 pub type UdpSink = UdpFramedSink<LengthDelimitedCodec, Bytes>;
+/// A UDP length-delimited frame `Stream` (receiving).
 pub type UdpStream = UdpFramedStream<LengthDelimitedCodec>;
 /// Helper creates a UDP `Stream` and `Sink` for `Bytes` strings where each string is
 /// length-delimited.
@@ -39,16 +43,20 @@ pub fn udp_bytes(socket: UdpSocket) -> (UdpSink, UdpStream, SocketAddr) {
     udp_framed(socket, LengthDelimitedCodec::new())
 }
 
+/// A UDP undelimited bytes `Sink` (sending).
 pub type UdpBytesSink = UdpFramedSink<BytesCodec, Bytes>;
+/// A UDP undelimited bytes `Stream` (receiving).
 pub type UdpBytesStream = UdpFramedStream<BytesCodec>;
 /// Helper creates a UDP `Stream` and `Sink` for undelimited streams of `Bytes`.
 pub fn udp_bytestream(socket: UdpSocket) -> (UdpBytesSink, UdpBytesStream, SocketAddr) {
     udp_framed(socket, BytesCodec::new())
 }
 
+/// A UDP newline-delimited `String` `Sink` (sending).
 pub type UdpLinesSink = UdpFramedSink<LinesCodec, String>;
+/// A UDP newline-delimited `String` `Stream` (receivng).
 pub type UdpLinesStream = UdpFramedStream<LinesCodec>;
-/// Helper creates a UDP `Stream` and `Sink` for `str`ings delimited by newlines.
+/// Helper creates a UDP `Stream` and `Sink` for `String`s delimited by newlines.
 pub fn udp_lines(
     socket: UdpSocket,
 ) -> (
