@@ -1,3 +1,4 @@
+#![deny(missing_docs)]
 //! Helper utilities for the Hydroflow surface syntax.
 
 mod udp;
@@ -16,13 +17,17 @@ pub use socket::*;
 #[cfg(feature = "cli_integration")]
 pub mod cli;
 
+pub mod unsync;
+
 use std::net::SocketAddr;
+use std::num::NonZeroUsize;
 use std::task::{Context, Poll};
 
 use bincode;
 use futures::Stream;
 use serde::{Deserialize, Serialize};
 
+/// Returns a channel as a (1) unbounded sender and (2) unbounded receiver `Stream` for use in Hydroflow.
 pub fn unbounded_channel<T>() -> (
     tokio::sync::mpsc::UnboundedSender<T>,
     tokio_stream::wrappers::UnboundedReceiverStream<T>,
@@ -32,6 +37,14 @@ pub fn unbounded_channel<T>() -> (
     (send, recv)
 }
 
+/// Returns an unsync channel as a (1) sender and (2) receiver `Stream` for use in Hydroflow.
+pub fn unsync_channel<T>(
+    capacity: Option<NonZeroUsize>,
+) -> (unsync::mpsc::Sender<T>, unsync::mpsc::Receiver<T>) {
+    unsync::mpsc::channel(capacity)
+}
+
+/// Returns an [`Iterator`] of any immediately available items from the [`Stream`].
 pub fn ready_iter<S>(stream: S) -> impl Iterator<Item = S::Item>
 where
     S: Stream,
@@ -82,6 +95,7 @@ where
     out
 }
 
+/// Serialize a message to bytes using bincode.
 pub fn serialize_to_bytes<T>(msg: T) -> bytes::Bytes
 where
     T: Serialize + for<'a> Deserialize<'a> + Clone,
@@ -89,6 +103,7 @@ where
     bytes::Bytes::from(bincode::serialize(&msg).unwrap())
 }
 
+/// Serialize a message from bytes using bincode.
 pub fn deserialize_from_bytes<T>(msg: impl AsRef<[u8]>) -> bincode::Result<T>
 where
     T: Serialize + for<'a> Deserialize<'a> + Clone,
@@ -96,6 +111,7 @@ where
     bincode::deserialize(msg.as_ref())
 }
 
+/// Resolve the `ipv4` [`SocketAddr`] from an IP or hostname string.
 pub fn ipv4_resolve(addr: &str) -> Result<SocketAddr, std::io::Error> {
     use std::net::ToSocketAddrs;
     let mut addrs = addr.to_socket_addrs()?;
@@ -110,19 +126,25 @@ pub fn ipv4_resolve(addr: &str) -> Result<SocketAddr, std::io::Error> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+/// Returns a length-delimited bytes `Sink`, `Stream`, and `SocketAddr` bound to the given address.
+/// The input `addr` may have a port of `0`, the returned `SocketAddr` will have the chosen port.
 pub async fn bind_udp_bytes(addr: SocketAddr) -> (UdpSink, UdpStream, SocketAddr) {
     let socket = tokio::net::UdpSocket::bind(addr).await.unwrap();
     udp_bytes(socket)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+/// Returns a newline-delimited bytes `Sink`, `Stream`, and `SocketAddr` bound to the given address.
+/// The input `addr` may have a port of `0`, the returned `SocketAddr` will have the chosen port.
 pub async fn bind_udp_lines(addr: SocketAddr) -> (UdpLinesSink, UdpLinesStream, SocketAddr) {
     let socket = tokio::net::UdpSocket::bind(addr).await.unwrap();
     udp_lines(socket)
 }
 
-// from addendum in
-// https://stackoverflow.com/questions/56105305/how-to-sort-a-vec-of-structs-by-a-string-field
+/// Sort a slice using a key fn which returns references.
+///
+/// From addendum in
+/// <https://stackoverflow.com/questions/56105305/how-to-sort-a-vec-of-structs-by-a-string-field>
 pub fn sort_unstable_by_key_hrtb<T, F, K>(slice: &mut [T], f: F)
 where
     F: for<'a> Fn(&'a T) -> &'a K,
