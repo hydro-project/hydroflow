@@ -157,7 +157,30 @@
 <a href="#157" id="157">157</a>
 <a href="#158" id="158">158</a>
 <a href="#159" id="159">159</a>
-</pre></div><pre class="rust"><code><span class="doccomment">//! Helper utilities for the Hydroflow surface syntax.
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+</pre></div><pre class="rust"><code><span class="attr">#![deny(missing_docs)]
+</span><span class="doccomment">//! Helper utilities for the Hydroflow surface syntax.
 
 </span><span class="kw">mod </span>udp;
 <span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
@@ -175,14 +198,18 @@
 <span class="attr">#[cfg(feature = <span class="string">&quot;cli_integration&quot;</span>)]
 </span><span class="kw">pub mod </span>cli;
 
+<span class="kw">pub mod </span>unsync;
+
 <span class="kw">use </span>std::net::SocketAddr;
+<span class="kw">use </span>std::num::NonZeroUsize;
 <span class="kw">use </span>std::task::{Context, Poll};
 
 <span class="kw">use </span>bincode;
 <span class="kw">use </span>futures::Stream;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
-<span class="kw">pub fn </span>unbounded_channel&lt;T&gt;() -&gt; (
+<span class="doccomment">/// Returns a channel as a (1) unbounded sender and (2) unbounded receiver `Stream` for use in Hydroflow.
+</span><span class="kw">pub fn </span>unbounded_channel&lt;T&gt;() -&gt; (
     tokio::sync::mpsc::UnboundedSender&lt;T&gt;,
     tokio_stream::wrappers::UnboundedReceiverStream&lt;T&gt;,
 ) {
@@ -191,7 +218,15 @@
     (send, recv)
 }
 
-<span class="kw">pub fn </span>ready_iter&lt;S&gt;(stream: S) -&gt; <span class="kw">impl </span>Iterator&lt;Item = S::Item&gt;
+<span class="doccomment">/// Returns an unsync channel as a (1) sender and (2) receiver `Stream` for use in Hydroflow.
+</span><span class="kw">pub fn </span>unsync_channel&lt;T&gt;(
+    capacity: <span class="prelude-ty">Option</span>&lt;NonZeroUsize&gt;,
+) -&gt; (unsync::mpsc::Sender&lt;T&gt;, unsync::mpsc::Receiver&lt;T&gt;) {
+    unsync::mpsc::channel(capacity)
+}
+
+<span class="doccomment">/// Returns an [`Iterator`] of any immediately available items from the [`Stream`].
+</span><span class="kw">pub fn </span>ready_iter&lt;S&gt;(stream: S) -&gt; <span class="kw">impl </span>Iterator&lt;Item = S::Item&gt;
 <span class="kw">where
     </span>S: Stream,
 {
@@ -241,21 +276,24 @@
     out
 }
 
-<span class="kw">pub fn </span>serialize_to_bytes&lt;T&gt;(msg: T) -&gt; bytes::Bytes
+<span class="doccomment">/// Serialize a message to bytes using bincode.
+</span><span class="kw">pub fn </span>serialize_to_bytes&lt;T&gt;(msg: T) -&gt; bytes::Bytes
 <span class="kw">where
     </span>T: Serialize + <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Deserialize&lt;<span class="lifetime">&#39;a</span>&gt; + Clone,
 {
     bytes::Bytes::from(bincode::serialize(<span class="kw-2">&amp;</span>msg).unwrap())
 }
 
-<span class="kw">pub fn </span>deserialize_from_bytes&lt;T&gt;(msg: <span class="kw">impl </span>AsRef&lt;[u8]&gt;) -&gt; bincode::Result&lt;T&gt;
+<span class="doccomment">/// Serialize a message from bytes using bincode.
+</span><span class="kw">pub fn </span>deserialize_from_bytes&lt;T&gt;(msg: <span class="kw">impl </span>AsRef&lt;[u8]&gt;) -&gt; bincode::Result&lt;T&gt;
 <span class="kw">where
     </span>T: Serialize + <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Deserialize&lt;<span class="lifetime">&#39;a</span>&gt; + Clone,
 {
     bincode::deserialize(msg.as_ref())
 }
 
-<span class="kw">pub fn </span>ipv4_resolve(addr: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;SocketAddr, std::io::Error&gt; {
+<span class="doccomment">/// Resolve the `ipv4` [`SocketAddr`] from an IP or hostname string.
+</span><span class="kw">pub fn </span>ipv4_resolve(addr: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;SocketAddr, std::io::Error&gt; {
     <span class="kw">use </span>std::net::ToSocketAddrs;
     <span class="kw">let </span><span class="kw-2">mut </span>addrs = addr.to_socket_addrs()<span class="question-mark">?</span>;
     <span class="kw">let </span>result = addrs.find(|addr| addr.is_ipv4());
@@ -269,19 +307,25 @@
 }
 
 <span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
+</span><span class="doccomment">/// Returns a length-delimited bytes `Sink`, `Stream`, and `SocketAddr` bound to the given address.
+/// The input `addr` may have a port of `0`, the returned `SocketAddr` will have the chosen port.
 </span><span class="kw">pub async fn </span>bind_udp_bytes(addr: SocketAddr) -&gt; (UdpSink, UdpStream, SocketAddr) {
     <span class="kw">let </span>socket = tokio::net::UdpSocket::bind(addr).<span class="kw">await</span>.unwrap();
     udp_bytes(socket)
 }
 
 <span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
+</span><span class="doccomment">/// Returns a newline-delimited bytes `Sink`, `Stream`, and `SocketAddr` bound to the given address.
+/// The input `addr` may have a port of `0`, the returned `SocketAddr` will have the chosen port.
 </span><span class="kw">pub async fn </span>bind_udp_lines(addr: SocketAddr) -&gt; (UdpLinesSink, UdpLinesStream, SocketAddr) {
     <span class="kw">let </span>socket = tokio::net::UdpSocket::bind(addr).<span class="kw">await</span>.unwrap();
     udp_lines(socket)
 }
 
-<span class="comment">// from addendum in
-// https://stackoverflow.com/questions/56105305/how-to-sort-a-vec-of-structs-by-a-string-field
+<span class="doccomment">/// Sort a slice using a key fn which returns references.
+///
+/// From addendum in
+/// &lt;https://stackoverflow.com/questions/56105305/how-to-sort-a-vec-of-structs-by-a-string-field&gt;
 </span><span class="kw">pub fn </span>sort_unstable_by_key_hrtb&lt;T, F, K&gt;(slice: <span class="kw-2">&amp;mut </span>[T], f: F)
 <span class="kw">where
     </span>F: <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Fn(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>T) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>K,
