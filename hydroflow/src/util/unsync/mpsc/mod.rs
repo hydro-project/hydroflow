@@ -32,7 +32,7 @@ impl<T> Sender<T> {
                     Poll::Pending
                 } else {
                     shared.buffer.push_back(value.take().unwrap());
-                    shared.recv_waker.take().map(Waker::wake);
+                    shared.wake_receiver();
                     Poll::Ready(Ok(()))
                 }
             } else {
@@ -58,7 +58,7 @@ impl<T> Sender<T> {
                 Err(TrySendError::Full(value))
             } else {
                 shared.buffer.push_back(value);
-                shared.recv_waker.take().map(Waker::wake);
+                shared.wake_receiver();
                 Ok(())
             }
         } else {
@@ -83,7 +83,7 @@ impl<T> Drop for Sender<T> {
         // Really we should only do this if we're the very last sender,
         // But `1 == self.weak.weak_count()` seems unreliable.
         if let Some(strong) = self.weak.upgrade() {
-            strong.borrow_mut().recv_waker.take().map(Waker::wake);
+            strong.borrow_mut().wake_receiver();
         }
     }
 }
@@ -103,7 +103,7 @@ impl<T> Receiver<T> {
     pub fn poll_recv(&mut self, ctx: &mut Context<'_>) -> Poll<Option<T>> {
         let mut shared = self.strong.borrow_mut();
         if let Some(value) = shared.buffer.pop_front() {
-            shared.send_wakers.pop().map(Waker::wake);
+            shared.wake_sender();
             Poll::Ready(Some(value))
         } else if 0 == Rc::weak_count(&self.strong) {
             Poll::Ready(None) // Empty and dropped.
@@ -123,14 +123,11 @@ impl<T> Receiver<T> {
 
         let new_shared = {
             let mut shared = self.strong.borrow_mut();
-            shared.send_wakers.drain(..).for_each(Waker::wake);
+            shared.wake_all_senders();
 
-            let (capacity, send_wakers, recv_waker) = Default::default();
             Shared {
                 buffer: std::mem::take(&mut shared.buffer),
-                capacity,
-                send_wakers,
-                recv_waker,
+                ..Default::default()
             }
         };
         self.strong = Rc::new(RefCell::new(new_shared));
@@ -159,6 +156,35 @@ struct Shared<T> {
     capacity: Option<NonZeroUsize>,
     send_wakers: SmallVec<[Waker; 1]>,
     recv_waker: Option<Waker>,
+}
+impl<T> Shared<T> {
+    /// Wakes one sender (if there are any wakers), and removes the waker.
+    pub fn wake_sender(&mut self) {
+        if let Some(waker) = self.send_wakers.pop() {
+            waker.wake();
+        }
+    }
+    /// Wakes all senders and removes their wakers.
+    pub fn wake_all_senders(&mut self) {
+        self.send_wakers.drain(..).for_each(Waker::wake);
+    }
+    /// Wakes the receiver (if the waker is set) and removes it.
+    pub fn wake_receiver(&mut self) {
+        if let Some(waker) = self.recv_waker.take() {
+            waker.wake();
+        }
+    }
+}
+impl<T> Default for Shared<T> {
+    fn default() -> Self {
+        let (buffer, capacity, send_wakers, recv_waker) = Default::default();
+        Self {
+            buffer,
+            capacity,
+            send_wakers,
+            recv_waker,
+        }
+    }
 }
 
 /// Create an unsync MPSC channel, either bounded (if `capacity` is `Some`) or unbounded (if `capacity` is `None`).
@@ -288,8 +314,8 @@ mod test {
                 }
                 assert_eq!(300, vec.len());
                 vec.sort_unstable();
-                for i in 0..300 {
-                    assert_eq!(i as u64, vec[i]);
+                for (i, &x) in vec.iter().enumerate() {
+                    assert_eq!(i as u64, x);
                 }
             });
             local.await;

@@ -144,7 +144,7 @@ pub async fn bind_udp_lines(addr: SocketAddr) -> (UdpLinesSink, UdpLinesStream, 
 /// Sort a slice using a key fn which returns references.
 ///
 /// From addendum in
-/// https://stackoverflow.com/questions/56105305/how-to-sort-a-vec-of-structs-by-a-string-field
+/// <https://stackoverflow.com/questions/56105305/how-to-sort-a-vec-of-structs-by-a-string-field>
 pub fn sort_unstable_by_key_hrtb<T, F, K>(slice: &mut [T], f: F)
 where
     F: for<'a> Fn(&'a T) -> &'a K,
