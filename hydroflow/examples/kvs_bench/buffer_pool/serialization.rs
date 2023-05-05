@@ -2,7 +2,7 @@ use super::{AutoReturnBuffer, BufferPool};
 use crate::buffer_pool::BufferType;
 use serde::{
     de::{DeserializeSeed, Visitor},
-    Serialize, Serializer,
+    Deserializer, Serialize, Serializer,
 };
 use std::{cell::RefCell, rc::Rc};
 
@@ -11,7 +11,7 @@ impl Serialize for AutoReturnBuffer {
     where
         S: Serializer,
     {
-        serializer.serialize_bytes(&*self.borrow().unwrap())
+        serializer.serialize_bytes(&*self.borrow())
     }
 }
 
@@ -24,7 +24,7 @@ impl<'de> DeserializeSeed<'de> for AutoReturnBufferDeserializer {
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
-        D: serde::Deserializer<'de>,
+        D: Deserializer<'de>,
     {
         struct BytesVisitor;
         impl<'de> Visitor<'de> for BytesVisitor {
@@ -56,12 +56,56 @@ impl<'de> DeserializeSeed<'de> for AutoReturnBufferDeserializer {
         }
 
         let buff = BufferPool::get_from_buffer_pool(&self.collector);
+        *buff.borrow_mut() = deserializer.deserialize_bytes(BytesVisitor)?;
+        Ok(buff)
+    }
+}
 
-        {
-            let mut borrow = buff.borrow_mut().unwrap();
-            *borrow = deserializer.deserialize_bytes(BytesVisitor)?;
+pub struct OptionalAutoReturnBufferDeserializer {
+    pub collector: Rc<RefCell<BufferPool>>,
+}
+impl<'de> DeserializeSeed<'de> for OptionalAutoReturnBufferDeserializer {
+    type Value = Option<AutoReturnBuffer>;
+
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct OptionVisitor {
+            pub collector: Rc<RefCell<BufferPool>>,
         }
 
-        Ok(buff)
+        impl<'de> Visitor<'de> for OptionVisitor {
+            type Value = Option<AutoReturnBuffer>;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str(std::any::type_name::<Self::Value>())
+            }
+
+            fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                Ok(Some(
+                    <AutoReturnBufferDeserializer as DeserializeSeed>::deserialize(
+                        AutoReturnBufferDeserializer {
+                            collector: self.collector,
+                        },
+                        deserializer,
+                    )?,
+                ))
+            }
+
+            fn visit_none<E>(self) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(None)
+            }
+        }
+
+        deserializer.deserialize_option(OptionVisitor {
+            collector: self.collector,
+        })
     }
 }
