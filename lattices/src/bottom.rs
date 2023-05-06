@@ -2,11 +2,14 @@
 //!
 //! This can be used for giving a sensible default repersentation to types that don't necessarily have one.
 
-use super::{Compare, ConvertFrom, Merge, Ordering};
+use std::cmp::Ordering::{self, *};
 
-#[derive(Clone, Debug)]
-#[repr(transparent)]
+use super::{ConvertFrom, Merge};
+
 /// Bottom wrapper.
+#[repr(transparent)]
+#[derive(Copy, Clone, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Bottom<Inner>(pub Option<Inner>);
 impl<Inner> Bottom<Inner> {
     /// Create a new `Bottom` lattice instance from a value.
@@ -17,12 +20,6 @@ impl<Inner> Bottom<Inner> {
     /// Create a new `Bottom` lattice instance from a value using `Into`.
     pub fn new_from(val: impl Into<Inner>) -> Self {
         Self::new(val.into())
-    }
-}
-
-impl<Inner> Default for Bottom<Inner> {
-    fn default() -> Self {
-        Self(Default::default())
     }
 }
 
@@ -49,51 +46,52 @@ impl<Inner> ConvertFrom<Bottom<Inner>> for Bottom<Inner> {
     }
 }
 
-impl<Inner, Other> Compare<Bottom<Other>> for Bottom<Inner>
+impl<Inner, Other> PartialOrd<Bottom<Other>> for Bottom<Inner>
 where
-    Inner: Compare<Other>,
+    Inner: PartialOrd<Other>,
 {
-    fn compare(&self, other: &Bottom<Other>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Bottom<Other>) -> Option<Ordering> {
         match (&self.0, &other.0) {
-            (None, None) => Some(Ordering::Equal),
-            (None, Some(_)) => Some(Ordering::Less),
-            (Some(_), None) => Some(Ordering::Greater),
-            (Some(this_inner), Some(other_inner)) => this_inner.compare(other_inner),
+            (None, None) => Some(Equal),
+            (None, Some(_)) => Some(Less),
+            (Some(_), None) => Some(Greater),
+            (Some(this_inner), Some(other_inner)) => this_inner.partial_cmp(other_inner),
         }
     }
 }
 
+impl<Inner, Other> PartialEq<Bottom<Other>> for Bottom<Inner>
+where
+    Inner: PartialEq<Other>,
+{
+    fn eq(&self, other: &Bottom<Other>) -> bool {
+        match (&self.0, &other.0) {
+            (None, None) => true,
+            (None, Some(_)) => false,
+            (Some(_), None) => false,
+            (Some(this_inner), Some(other_inner)) => this_inner == other_inner,
+        }
+    }
+}
+impl<Inner> Eq for Bottom<Inner> where Inner: PartialEq {}
+
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::ord::Max;
-    use crate::Ordering::*;
-
-    type Bottom = super::Bottom<Max<usize>>;
+    use crate::set_union::SetUnionHashSet;
+    use crate::test::{assert_lattice_identities, assert_partial_ord_identities};
 
     #[test]
-    #[rustfmt::skip]
-    fn merge() {
-        assert!(Bottom::new(Max::new(0)).merge(Bottom::new(Max::new(1))));
-        assert!(!Bottom::new(Max::new(1)).merge(Bottom::new(Max::new(0))));
-        assert!(!Bottom::new(Max::new(0)).merge(Bottom::new(Max::new(0))));
+    fn consistency() {
+        let test_vec = vec![
+            Bottom::default(),
+            Bottom::new(SetUnionHashSet::new_from([])),
+            Bottom::new(SetUnionHashSet::new_from([0])),
+            Bottom::new(SetUnionHashSet::new_from([1])),
+            Bottom::new(SetUnionHashSet::new_from([0, 1])),
+        ];
 
-        assert!(Bottom::default().merge(Bottom::new(Max::new(0))));
-        assert!(!Bottom::new(Max::new(1)).merge(Bottom::default()));
-
-        assert!(!Bottom::default().merge(Bottom::default()));
-    }
-
-    #[test]
-    #[rustfmt::skip]
-    fn compare() {
-        assert_eq!(Bottom::new(Max::new(0)).compare(&Bottom::new(Max::new(1))), Some(Less));
-        assert_eq!(Bottom::new(Max::new(1)).compare(&Bottom::new(Max::new(0))), Some(Greater));
-        assert_eq!(Bottom::new(Max::new(0)).compare(&Bottom::new(Max::new(0))), Some(Equal));
-
-        assert_eq!(Bottom::default().compare(&Bottom::new(Max::new(1))), Some(Less));
-        assert_eq!(Bottom::new(Max::new(1)).compare(&Bottom::default()), Some(Greater));
-
-        assert_eq!(Bottom::default().compare(&Bottom::default()), Some(Equal));
+        assert_partial_ord_identities(&test_vec);
+        assert_lattice_identities(&test_vec);
     }
 }

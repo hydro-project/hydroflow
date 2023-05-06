@@ -4,14 +4,15 @@
 //! then both that `Key` and corresponding `Val` are selected. If the `Key`s are equal or
 //! incomparable, then both the `Key`s and `Val`s are merged.
 
-use std::cmp::Ordering;
+use std::cmp::Ordering::{self, *};
 
-use super::{Compare, ConvertFrom, Merge};
+use super::{ConvertFrom, Merge};
 
 /// Dominating pair lattice.
 ///
 /// `Key` specifies the key lattice (usually a timestamp), and `Val` specifies the value lattice.
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DomPair<Key, Val> {
     /// The `Key` of the  dominating pair lattice, usually a timestamp
     pub key: Key,
@@ -34,22 +35,22 @@ impl<Key, Val> DomPair<Key, Val> {
 impl<KeySelf, KeyOther, ValSelf, ValOther> Merge<DomPair<KeyOther, ValOther>>
     for DomPair<KeySelf, ValSelf>
 where
-    KeySelf: Merge<KeyOther> + ConvertFrom<KeyOther> + Compare<KeyOther>,
+    KeySelf: Merge<KeyOther> + ConvertFrom<KeyOther> + PartialOrd<KeyOther>,
     ValSelf: Merge<ValOther> + ConvertFrom<ValOther>,
 {
     fn merge(&mut self, other: DomPair<KeyOther, ValOther>) -> bool {
-        match self.key.compare(&other.key) {
+        match self.key.partial_cmp(&other.key) {
             None => {
                 assert!(self.key.merge(other.key));
                 self.val.merge(other.val);
                 true
             }
-            Some(Ordering::Equal) => self.val.merge(other.val),
-            Some(Ordering::Less) => {
+            Some(Equal) => self.val.merge(other.val),
+            Some(Less) => {
                 *self = ConvertFrom::from(other);
                 true
             }
-            Some(Ordering::Greater) => false,
+            Some(Greater) => false,
         }
     }
 }
@@ -68,27 +69,69 @@ where
     }
 }
 
-impl<KeySelf, KeyOther, ValSelf, ValOther> Compare<DomPair<KeyOther, ValOther>>
+impl<KeySelf, KeyOther, ValSelf, ValOther> PartialOrd<DomPair<KeyOther, ValOther>>
     for DomPair<KeySelf, ValSelf>
 where
-    KeySelf: Compare<KeyOther>,
-    ValSelf: Compare<ValOther>,
+    KeySelf: PartialOrd<KeyOther>,
+    ValSelf: PartialOrd<ValOther>,
 {
-    fn compare(&self, other: &DomPair<KeyOther, ValOther>) -> Option<Ordering> {
-        match self.key.compare(&other.key) {
-            Some(Ordering::Equal) => self.val.compare(&other.val),
+    fn partial_cmp(&self, other: &DomPair<KeyOther, ValOther>) -> Option<Ordering> {
+        match self.key.partial_cmp(&other.key) {
+            Some(Equal) => self.val.partial_cmp(&other.val),
             otherwise => otherwise,
         }
     }
 }
 
-impl<Key, Val> Default for DomPair<Key, Val>
+impl<KeySelf, KeyOther, ValSelf, ValOther> PartialEq<DomPair<KeyOther, ValOther>>
+    for DomPair<KeySelf, ValSelf>
 where
-    Key: Default,
-    Val: Default,
+    KeySelf: PartialEq<KeyOther>,
+    ValSelf: PartialEq<ValOther>,
 {
-    fn default() -> Self {
-        let (key, val) = Default::default();
-        Self { key, val }
+    fn eq(&self, other: &DomPair<KeyOther, ValOther>) -> bool {
+        if self.key != other.key {
+            return false;
+        }
+
+        if self.val != other.val {
+            return false;
+        }
+
+        true
+    }
+}
+impl<KeySelf, ValSelf> Eq for DomPair<KeySelf, ValSelf>
+where
+    KeySelf: PartialEq,
+    ValSelf: PartialEq,
+{
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::{
+        set_union::SetUnionHashSet,
+        test::{assert_lattice_identities, assert_partial_ord_identities},
+    };
+    use std::collections::HashSet;
+
+    #[test]
+    fn consistency() {
+        let mut test_vec = Vec::new();
+
+        for a in [vec![], vec![0], vec![1], vec![0, 1]] {
+            for b in [vec![], vec![0], vec![1], vec![0, 1]] {
+                test_vec.push(DomPair::new(
+                    SetUnionHashSet::new_from(HashSet::from_iter(a.clone())),
+                    SetUnionHashSet::new_from(HashSet::from_iter(b.clone())),
+                ));
+            }
+        }
+
+        assert_partial_ord_identities(&test_vec);
+        // DomPair is not actually a lattice.
+        assert!(std::panic::catch_unwind(|| assert_lattice_identities(&test_vec)).is_err());
     }
 }

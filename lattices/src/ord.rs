@@ -2,11 +2,11 @@
 //!
 //! Uses [std::cmp::Ord`].
 
-use super::{Compare, ConvertFrom, Merge};
+use super::{ConvertFrom, Merge};
 
 /// A totally ordered max lattice. Merging takes the larger value.
 #[repr(transparent)]
-#[derive(Default, PartialEq, PartialOrd, Eq, Ord, Debug, Clone)]
+#[derive(Copy, Clone, Debug, Default, PartialOrd, Ord, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Max<T>(pub T);
 impl<T> Max<T> {
@@ -41,18 +41,9 @@ impl<T> ConvertFrom<Max<T>> for Max<T> {
     }
 }
 
-impl<T> Compare<Max<T>> for Max<T>
-where
-    T: Ord,
-{
-    fn compare(&self, other: &Max<T>) -> Option<std::cmp::Ordering> {
-        Some(Ord::cmp(&self.0, &other.0))
-    }
-}
-
 /// A totally ordered min lattice. Merging takes the smaller value.
 #[repr(transparent)]
-#[derive(Default, PartialEq, PartialOrd, Eq, Ord, Debug, Clone)]
+#[derive(Copy, Clone, Debug, Default, PartialOrd, Ord, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Min<T>(pub T);
 impl<T> Min<T> {
@@ -87,11 +78,21 @@ impl<T> ConvertFrom<Min<T>> for Min<T> {
     }
 }
 
-impl<T> Compare<Min<T>> for Min<T>
-where
-    T: Ord,
-{
-    fn compare(&self, other: &Min<T>) -> Option<std::cmp::Ordering> {
-        Some(Ord::cmp(&self.0, &other.0).reverse())
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::test::{assert_lattice_identities, assert_partial_ord_identities};
+
+    #[test]
+    fn consistency() {
+        let test_vec = vec![Max::new(0), Max::new(1)];
+
+        assert_partial_ord_identities(&test_vec);
+        assert_lattice_identities(&test_vec);
+
+        let test_vec = vec![Min::new(0), Min::new(1)];
+
+        assert_partial_ord_identities(&test_vec);
+        assert_lattice_identities(&test_vec);
     }
 }
