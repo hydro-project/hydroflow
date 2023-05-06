@@ -78,7 +78,7 @@ where
     Other: Clone + Merge<Self>,
 {
     /// Naive compare based on the [`Merge::merge`] method. This method can be very inefficient;
-    /// use [`Compare::compare`] instead.
+    /// use [`PartialOrd::partial_cmp`] instead.
     ///
     /// This method should not be overridden.
     fn naive_compare(&self, other: &Other) -> Option<Ordering> {
