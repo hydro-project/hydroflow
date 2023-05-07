@@ -11,7 +11,7 @@ use super::{ConvertFrom, Merge};
 /// Dominating pair lattice.
 ///
 /// `Key` specifies the key lattice (usually a timestamp), and `Val` specifies the value lattice.
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DomPair<Key, Val> {
     /// The `Key` of the  dominating pair lattice, usually a timestamp
@@ -101,17 +101,12 @@ where
         true
     }
 }
-impl<KeySelf, ValSelf> Eq for DomPair<KeySelf, ValSelf>
-where
-    KeySelf: PartialEq,
-    ValSelf: PartialEq,
-{
-}
 
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::{
+        ord::Max,
         set_union::SetUnionHashSet,
         test::{assert_lattice_identities, assert_partial_ord_identities},
     };
@@ -133,5 +128,22 @@ mod test {
         assert_partial_ord_identities(&test_vec);
         // DomPair is not actually a lattice.
         assert!(std::panic::catch_unwind(|| assert_lattice_identities(&test_vec)).is_err());
+    }
+
+    #[test]
+    fn consistency_with_ord_lhs() {
+        let mut test_vec = Vec::new();
+
+        for a in [0, 1, 2] {
+            for b in [vec![], vec![0], vec![1], vec![0, 1]] {
+                test_vec.push(DomPair::new(
+                    Max::new(a),
+                    SetUnionHashSet::new_from(HashSet::from_iter(b.clone())),
+                ));
+            }
+        }
+
+        assert_partial_ord_identities(&test_vec);
+        assert_lattice_identities(&test_vec);
     }
 }

@@ -96,7 +96,7 @@ where
         self.0.iter().all(|key| other.0.contains(&*key))
     }
 }
-impl<SetSelf, Item> Eq for SetUnion<SetSelf> where SetSelf: Set<Item, Item = Item> + Iter {}
+impl<SetSelf> Eq for SetUnion<SetSelf> where Self: PartialEq {}
 
 /// [`std::collections::HashSet`]-backed [`SetUnion`] lattice.
 pub type SetUnionHashSet<Item> = SetUnion<HashSet<Item>>;

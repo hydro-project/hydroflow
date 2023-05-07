@@ -180,10 +180,10 @@ where
         true
     }
 }
-impl<MapSelf, K, ValSelf> Eq for MapUnion<MapSelf>
+impl<MapSelf> Eq for MapUnion<MapSelf>
 where
-    MapSelf: Map<K, ValSelf, Key = K, Item = ValSelf> + MapIter + SimpleKeyedRef,
-    ValSelf: PartialEq,
+    Self: PartialEq,
+    MapSelf: Eq,
 {
 }
 

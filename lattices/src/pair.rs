@@ -9,7 +9,7 @@ use super::{ConvertFrom, Merge};
 /// Pair lattice.
 ///
 /// `LatA` and `LatB` specify the nested lattice types.
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Pair<LatA, LatB> {
     a: LatA,
@@ -78,22 +78,8 @@ where
     LatBSelf: PartialEq<LatBOther>,
 {
     fn eq(&self, other: &Pair<LatAOther, LatBOther>) -> bool {
-        if self.a != other.a {
-            return false;
-        }
-
-        if self.b != other.b {
-            return false;
-        }
-
-        true
+        self.a == other.a && self.b == other.b
     }
-}
-impl<LatASelf, LatBSelf> Eq for Pair<LatASelf, LatBSelf>
-where
-    LatASelf: PartialEq,
-    LatBSelf: PartialEq,
-{
 }
 
 #[cfg(test)]

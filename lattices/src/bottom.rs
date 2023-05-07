@@ -2,13 +2,11 @@
 //!
 //! This can be used for giving a sensible default repersentation to types that don't necessarily have one.
 
-use std::cmp::Ordering::{self, *};
-
 use super::{ConvertFrom, Merge};
 
 /// Bottom wrapper.
 #[repr(transparent)]
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialOrd, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Bottom<Inner>(pub Option<Inner>);
 impl<Inner> Bottom<Inner> {
@@ -46,40 +44,63 @@ impl<Inner> ConvertFrom<Bottom<Inner>> for Bottom<Inner> {
     }
 }
 
-impl<Inner, Other> PartialOrd<Bottom<Other>> for Bottom<Inner>
-where
-    Inner: PartialOrd<Other>,
-{
-    fn partial_cmp(&self, other: &Bottom<Other>) -> Option<Ordering> {
-        match (&self.0, &other.0) {
-            (None, None) => Some(Equal),
-            (None, Some(_)) => Some(Less),
-            (Some(_), None) => Some(Greater),
-            (Some(this_inner), Some(other_inner)) => this_inner.partial_cmp(other_inner),
-        }
-    }
-}
+// impl<Inner, Other> PartialOrd<Bottom<Other>> for Bottom<Inner>
+// where
+//     Inner: PartialOrd<Other>,
+// {
+//     fn partial_cmp(&self, other: &Bottom<Other>) -> Option<Ordering> {
+//         match (&self.0, &other.0) {
+//             (None, None) => Some(Equal),
+//             (None, Some(_)) => Some(Less),
+//             (Some(_), None) => Some(Greater),
+//             (Some(this_inner), Some(other_inner)) => this_inner.partial_cmp(other_inner),
+//         }
+//     }
+// }
 
-impl<Inner, Other> PartialEq<Bottom<Other>> for Bottom<Inner>
-where
-    Inner: PartialEq<Other>,
-{
-    fn eq(&self, other: &Bottom<Other>) -> bool {
-        match (&self.0, &other.0) {
-            (None, None) => true,
-            (None, Some(_)) => false,
-            (Some(_), None) => false,
-            (Some(this_inner), Some(other_inner)) => this_inner == other_inner,
-        }
-    }
-}
-impl<Inner> Eq for Bottom<Inner> where Inner: PartialEq {}
+// impl<Inner, Other> PartialEq<Bottom<Other>> for Bottom<Inner>
+// where
+//     Inner: PartialEq<Other>,
+// {
+//     fn eq(&self, other: &Bottom<Other>) -> bool {
+//         match (&self.0, &other.0) {
+//             (None, None) => true,
+//             (None, Some(_)) => false,
+//             (Some(_), None) => false,
+//             (Some(this_inner), Some(other_inner)) => this_inner == other_inner,
+//         }
+//     }
+// }
+// impl<Inner> Eq for Bottom<Inner> where Inner: PartialEq {}
 
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::set_union::SetUnionHashSet;
     use crate::test::{assert_lattice_identities, assert_partial_ord_identities};
+    use std::cmp::Ordering::*;
+
+    #[test]
+    #[rustfmt::skip]
+    fn auto_derives() {
+        type B = Bottom<SetUnionHashSet<usize>>;
+
+        assert_eq!(B::default().partial_cmp(&B::default()), Some(Equal));
+        assert_eq!(B::new(SetUnionHashSet::new_from([])).partial_cmp(&B::default()), Some(Greater));
+        assert_eq!(B::default().partial_cmp(&B::new_from(SetUnionHashSet::new_from([]))), Some(Less));
+        assert_eq!(B::new(SetUnionHashSet::new_from([])).partial_cmp(&B::new(SetUnionHashSet::new_from([]))), Some(Equal));
+        assert_eq!(B::new(SetUnionHashSet::new_from([0])).partial_cmp(&B::new(SetUnionHashSet::new_from([]))), Some(Greater));
+        assert_eq!(B::new(SetUnionHashSet::new_from([])).partial_cmp(&B::new(SetUnionHashSet::new_from([0]))), Some(Less));
+        assert_eq!(B::new(SetUnionHashSet::new_from([0])).partial_cmp(&B::new(SetUnionHashSet::new_from([1]))), None);
+
+        assert!(B::default().eq(&B::default()));
+        assert!(!B::new(SetUnionHashSet::new_from([])).eq(&B::default()));
+        assert!(!B::default().eq(&B::new_from(SetUnionHashSet::new_from([]))));
+        assert!(B::new(SetUnionHashSet::new_from([])).eq(&B::new(SetUnionHashSet::new_from([]))));
+        assert!(!B::new(SetUnionHashSet::new_from([0])).eq(&B::new(SetUnionHashSet::new_from([]))));
+        assert!(!B::new(SetUnionHashSet::new_from([])).eq(&B::new(SetUnionHashSet::new_from([0]))));
+        assert!(!B::new(SetUnionHashSet::new_from([0])).eq(&B::new(SetUnionHashSet::new_from([1]))));
+    }
 
     #[test]
     fn consistency() {

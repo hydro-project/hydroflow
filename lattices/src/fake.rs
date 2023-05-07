@@ -6,7 +6,7 @@ use super::{ConvertFrom, Merge};
 
 /// Fake lattice.
 #[repr(transparent)]
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Fake<T>(pub T);
 impl<T> Fake<T> {
@@ -37,8 +37,8 @@ impl<T, O> PartialOrd<Fake<O>> for Fake<T>
 where
     T: PartialOrd<O>,
 {
-    fn partial_cmp(&self, other: &Fake<O>) -> Option<std::cmp::Ordering> {
-        self.0.partial_cmp(&other.0)
+    fn partial_cmp(&self, _: &Fake<O>) -> Option<std::cmp::Ordering> {
+        panic!("The fake lattice does not have a partial order")
     }
 }
 
@@ -50,7 +50,6 @@ where
         self.0 == other.0
     }
 }
-impl<T> Eq for Fake<T> where T: PartialEq {}
 
 #[cfg(test)]
 mod test {
@@ -69,7 +68,8 @@ mod test {
             Fake::new(SetUnionHashSet::new_from([0, 1])),
         ];
 
-        assert_partial_ord_identities(&test_vec);
+        // Fake does not have a partial order.
+        assert!(std::panic::catch_unwind(|| assert_partial_ord_identities(&test_vec)).is_err());
         // Fake is not actually a lattice.
         assert!(std::panic::catch_unwind(|| assert_lattice_identities(&test_vec)).is_err());
     }
