@@ -244,7 +244,7 @@ async fn accept(bound: BoundConnection) -> ConnectedBidi {
             }
 
             let merge_source: DynStream = Box::pin(MergeSource {
-                marker: PhantomData::default(),
+                marker: PhantomData,
                 sources,
             });
 
@@ -359,7 +359,7 @@ impl Connected for ConnectedBidi {
                 .await;
 
                 let merged = MergeSource {
-                    marker: PhantomData::default(),
+                    marker: PhantomData,
                     sources,
                 };
 
@@ -381,7 +381,7 @@ impl Connected for ConnectedBidi {
                 stream_sink: None,
                 source_only: Some(Box::pin(stream::empty())),
                 sink_only: Some(Box::pin(IoErrorDrain {
-                    marker: PhantomData::default(),
+                    marker: PhantomData,
                 })),
             },
 
@@ -496,7 +496,7 @@ where
                 }
 
                 let demuxer = DemuxDrain {
-                    marker: PhantomData::default(),
+                    marker: PhantomData,
                     sinks: connected_demux,
                 };
 
@@ -522,7 +522,7 @@ where
                 }
 
                 let demuxer = DemuxDrain {
-                    marker: PhantomData::default(),
+                    marker: PhantomData,
                     sinks: connected_demux,
                 };
 
@@ -696,14 +696,14 @@ where
         let mut connected_mux = Vec::new();
         for (pipe, id) in sources {
             connected_mux.push(Box::pin(TaggedSource {
-                marker: PhantomData::default(),
+                marker: PhantomData,
                 id,
                 source: pipe,
             }));
         }
 
         let muxer = MergeSource {
-            marker: PhantomData::default(),
+            marker: PhantomData,
             sources: connected_mux,
         };
 
