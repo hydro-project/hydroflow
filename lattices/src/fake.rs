@@ -3,6 +3,7 @@
 //! This is used to wrap non lattice data into a lattice in a way that typechecks
 
 use super::{ConvertFrom, Merge};
+use crate::LatticeOrd;
 
 /// Fake lattice.
 #[repr(transparent)]
@@ -41,6 +42,7 @@ where
         panic!("The fake lattice does not have a partial order")
     }
 }
+impl<T, O> LatticeOrd<Fake<O>> for Fake<T> where Self: PartialOrd<Fake<O>> {}
 
 impl<T, O> PartialEq<Fake<O>> for Fake<T>
 where

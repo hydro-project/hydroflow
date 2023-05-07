@@ -7,6 +7,7 @@
 use std::cmp::Ordering::{self, *};
 
 use super::{ConvertFrom, Merge};
+use crate::LatticeOrd;
 
 /// Dominating pair lattice.
 ///
@@ -81,6 +82,12 @@ where
             otherwise => otherwise,
         }
     }
+}
+impl<KeySelf, KeyOther, ValSelf, ValOther> LatticeOrd<DomPair<KeyOther, ValOther>>
+    for DomPair<KeySelf, ValSelf>
+where
+    Self: PartialOrd<DomPair<KeyOther, ValOther>>,
+{
 }
 
 impl<KeySelf, KeyOther, ValSelf, ValOther> PartialEq<DomPair<KeyOther, ValOther>>

@@ -9,7 +9,7 @@ use std::fmt::Debug;
 
 use crate::cc_traits::{GetMut, Keyed, Map, MapIter, SimpleKeyedRef};
 use crate::collections::{ArrayMap, SingletonMap, VecMap};
-use crate::{ConvertFrom, Merge};
+use crate::{ConvertFrom, LatticeOrd, Merge};
 
 /// A map-union lattice.
 ///
@@ -140,6 +140,10 @@ where
             (true, true) => unreachable!(),
         }
     }
+}
+impl<MapSelf, MapOther> LatticeOrd<MapUnion<MapOther>> for MapUnion<MapSelf> where
+    Self: PartialOrd<MapUnion<MapOther>>
+{
 }
 
 impl<MapSelf, MapOther, K, ValSelf, ValOther> PartialEq<MapUnion<MapOther>> for MapUnion<MapSelf>

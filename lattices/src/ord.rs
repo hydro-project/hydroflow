@@ -3,6 +3,7 @@
 //! Uses [std::cmp::Ord`].
 
 use super::{ConvertFrom, Merge};
+use crate::LatticeOrd;
 use std::cmp::Ordering;
 
 /// A totally ordered max lattice. Merging takes the larger value.
@@ -41,6 +42,8 @@ impl<T> ConvertFrom<Max<T>> for Max<T> {
         other
     }
 }
+
+impl<T> LatticeOrd<Self> for Max<T> where Self: PartialOrd<Self> {}
 
 /// A totally ordered min lattice. Merging takes the smaller value.
 #[repr(transparent)]
@@ -87,6 +90,7 @@ where
         self.0.partial_cmp(&other.0).map(Ordering::reverse)
     }
 }
+impl<T> LatticeOrd<Self> for Min<T> where Self: PartialOrd<Self> {}
 
 impl<T> Ord for Min<T>
 where

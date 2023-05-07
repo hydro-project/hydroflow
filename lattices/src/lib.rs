@@ -70,6 +70,10 @@ pub trait Merge<Other> {
     }
 }
 
+/// Trait for lattice partial order comparison
+/// PartialOrd is implemented for many things, this trait can be used to require the type be a lattice.
+pub trait LatticeOrd<Rhs>: PartialOrd<Rhs> {}
+
 /// Naive lattice compare, based on the [`Merge::merge`] function.
 #[sealed]
 pub trait NaiveCompare<Other>

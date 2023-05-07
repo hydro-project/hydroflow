@@ -3,10 +3,13 @@
 //! This can be used for giving a sensible default repersentation to types that don't necessarily have one.
 
 use super::{ConvertFrom, Merge};
+use crate::LatticeOrd;
+use std::cmp::Ordering;
+use std::cmp::Ordering::*;
 
 /// Bottom wrapper.
 #[repr(transparent)]
-#[derive(Copy, Clone, Debug, Default, PartialOrd, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Default, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Bottom<Inner>(pub Option<Inner>);
 impl<Inner> Bottom<Inner> {
@@ -44,41 +47,40 @@ impl<Inner> ConvertFrom<Bottom<Inner>> for Bottom<Inner> {
     }
 }
 
-// impl<Inner, Other> PartialOrd<Bottom<Other>> for Bottom<Inner>
-// where
-//     Inner: PartialOrd<Other>,
-// {
-//     fn partial_cmp(&self, other: &Bottom<Other>) -> Option<Ordering> {
-//         match (&self.0, &other.0) {
-//             (None, None) => Some(Equal),
-//             (None, Some(_)) => Some(Less),
-//             (Some(_), None) => Some(Greater),
-//             (Some(this_inner), Some(other_inner)) => this_inner.partial_cmp(other_inner),
-//         }
-//     }
-// }
+impl<Inner, Other> PartialOrd<Bottom<Other>> for Bottom<Inner>
+where
+    Inner: PartialOrd<Other>,
+{
+    fn partial_cmp(&self, other: &Bottom<Other>) -> Option<Ordering> {
+        match (&self.0, &other.0) {
+            (None, None) => Some(Equal),
+            (None, Some(_)) => Some(Less),
+            (Some(_), None) => Some(Greater),
+            (Some(this_inner), Some(other_inner)) => this_inner.partial_cmp(other_inner),
+        }
+    }
+}
+impl<Inner, Other> LatticeOrd<Bottom<Other>> for Bottom<Inner> where Self: PartialOrd<Bottom<Other>> {}
 
-// impl<Inner, Other> PartialEq<Bottom<Other>> for Bottom<Inner>
-// where
-//     Inner: PartialEq<Other>,
-// {
-//     fn eq(&self, other: &Bottom<Other>) -> bool {
-//         match (&self.0, &other.0) {
-//             (None, None) => true,
-//             (None, Some(_)) => false,
-//             (Some(_), None) => false,
-//             (Some(this_inner), Some(other_inner)) => this_inner == other_inner,
-//         }
-//     }
-// }
-// impl<Inner> Eq for Bottom<Inner> where Inner: PartialEq {}
+impl<Inner, Other> PartialEq<Bottom<Other>> for Bottom<Inner>
+where
+    Inner: PartialEq<Other>,
+{
+    fn eq(&self, other: &Bottom<Other>) -> bool {
+        match (&self.0, &other.0) {
+            (None, None) => true,
+            (None, Some(_)) => false,
+            (Some(_), None) => false,
+            (Some(this_inner), Some(other_inner)) => this_inner == other_inner,
+        }
+    }
+}
 
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::set_union::SetUnionHashSet;
     use crate::test::{assert_lattice_identities, assert_partial_ord_identities};
-    use std::cmp::Ordering::*;
 
     #[test]
     #[rustfmt::skip]

@@ -5,6 +5,7 @@
 use std::cmp::Ordering;
 
 use super::{ConvertFrom, Merge};
+use crate::LatticeOrd;
 
 /// Pair lattice.
 ///
@@ -69,6 +70,12 @@ where
             None
         }
     }
+}
+impl<LatASelf, LatAOther, LatBSelf, LatBOther> LatticeOrd<Pair<LatAOther, LatBOther>>
+    for Pair<LatASelf, LatBSelf>
+where
+    Self: PartialOrd<Pair<LatAOther, LatBOther>>,
+{
 }
 
 impl<LatASelf, LatAOther, LatBSelf, LatBOther> PartialEq<Pair<LatAOther, LatBOther>>
