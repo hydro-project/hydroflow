@@ -36,7 +36,7 @@ impl<Key, ValBuild, ValProbe> HalfJoinState<Key, ValBuild, ValProbe>
     for HalfMultisetJoinState<Key, ValBuild, ValProbe>
 where
     Key: Clone + Eq + std::hash::Hash,
-    ValBuild: Clone + Eq,
+    ValBuild: Clone,
     ValProbe: Clone,
 {
     fn build(&mut self, k: Key, v: &ValBuild) -> bool {

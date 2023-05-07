@@ -79,9 +79,3 @@ impl AutoReturnBuffer {
         self.inner.borrow()
     }
 }
-
-// This is a lie, if these buffers are shared across threads it will explode.
-// They are marked as send and sync so they can be used in hydroflow channels in a single threaded transducer.
-// Otherwise we would need to make our own channel type.
-unsafe impl Send for AutoReturnBuffer {}
-unsafe impl Sync for AutoReturnBuffer {}

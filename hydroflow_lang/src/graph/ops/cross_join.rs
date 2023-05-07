@@ -1,5 +1,5 @@
 use super::{FlowProperties, FlowPropertyVal};
-use super::{OperatorConstraints, WriteContextArgs, RANGE_0, RANGE_1};
+use super::{OperatorConstraints, WriteContextArgs, RANGE_1};
 
 use quote::quote_spanned;
 use syn::parse_quote;
@@ -43,7 +43,7 @@ pub const CROSS_JOIN: OperatorConstraints = OperatorConstraints {
     soft_range_out: RANGE_1,
     num_args: 0,
     persistence_args: &(0..=2),
-    type_args: RANGE_0,
+    type_args: &(0..=1),
     is_external_input: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,

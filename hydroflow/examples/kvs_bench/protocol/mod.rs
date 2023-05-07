@@ -10,8 +10,10 @@ use lattices::bottom::Bottom;
 use lattices::set_union::SetUnionHashSet;
 use lattices::{dom_pair::DomPair, fake::Fake, ord::Max};
 
+pub type NodeId = usize;
+
 pub type MyLastWriteWins = DomPair<Max<u128>, Bottom<Fake<AutoReturnBuffer>>>;
-pub type MySetUnion = SetUnionHashSet<(Vec<u8>, usize)>;
+pub type MySetUnion = SetUnionHashSet<(NodeId, usize)>;
 
 #[derive(Clone, Debug)]
 pub enum KvsRequest {

@@ -75,17 +75,17 @@ pub const ENUMERATE: OperatorConstraints = OperatorConstraints {
             Persistence::Tick => (
                 quote_spanned! {op_span=>
                     let #counter_ident = #hydroflow.add_state(::std::cell::RefCell::new(
-                        #root::lang::monotonic_map::MonotonicMap::new_init((0..)),
+                        #root::lang::monotonic_map::MonotonicMap::new_init(0..),
                     ));
                 },
                 quote_spanned! {op_span=>
                     let mut borrow = #context.state_ref(#counter_ident).borrow_mut();
-                    let counter = borrow.get_mut_with((#context.current_tick(), #context.current_stratum()), || (0..));
+                    let counter = borrow.get_mut_with((#context.current_tick(), #context.current_stratum()), || 0..);
                 },
             ),
             Persistence::Static => (
                 quote_spanned! {op_span=>
-                    let #counter_ident = #hydroflow.add_state(::std::cell::RefCell::new((0..)));
+                    let #counter_ident = #hydroflow.add_state(::std::cell::RefCell::new(0..));
                 },
                 quote_spanned! {op_span=>
                     let mut counter = #context.state_ref(#counter_ident).borrow_mut();
