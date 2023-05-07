@@ -4,11 +4,14 @@
 
 use std::cmp::Ordering;
 
-use super::{Compare, ConvertFrom, Merge};
+use super::{ConvertFrom, Merge};
+use crate::LatticeOrd;
 
 /// Pair lattice.
 ///
 /// `LatA` and `LatB` specify the nested lattice types.
+#[derive(Copy, Clone, Debug, Default, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Pair<LatA, LatB> {
     a: LatA,
     b: LatB,
@@ -52,15 +55,15 @@ where
     }
 }
 
-impl<LatASelf, LatAOther, LatBSelf, LatBOther> Compare<Pair<LatAOther, LatBOther>>
+impl<LatASelf, LatAOther, LatBSelf, LatBOther> PartialOrd<Pair<LatAOther, LatBOther>>
     for Pair<LatASelf, LatBSelf>
 where
-    LatASelf: Compare<LatAOther>,
-    LatBSelf: Compare<LatBOther>,
+    LatASelf: PartialOrd<LatAOther>,
+    LatBSelf: PartialOrd<LatBOther>,
 {
-    fn compare(&self, other: &Pair<LatAOther, LatBOther>) -> Option<Ordering> {
-        let ord_a = self.a.compare(&other.a);
-        let ord_b = self.b.compare(&other.b);
+    fn partial_cmp(&self, other: &Pair<LatAOther, LatBOther>) -> Option<Ordering> {
+        let ord_a = self.a.partial_cmp(&other.a);
+        let ord_b = self.b.partial_cmp(&other.b);
         if ord_a == ord_b {
             ord_a
         } else {
@@ -68,14 +71,45 @@ where
         }
     }
 }
-
-impl<LatA, LatB> Default for Pair<LatA, LatB>
+impl<LatASelf, LatAOther, LatBSelf, LatBOther> LatticeOrd<Pair<LatAOther, LatBOther>>
+    for Pair<LatASelf, LatBSelf>
 where
-    LatA: Default,
-    LatB: Default,
+    Self: PartialOrd<Pair<LatAOther, LatBOther>>,
 {
-    fn default() -> Self {
-        let (a, b) = Default::default();
-        Self { a, b }
+}
+
+impl<LatASelf, LatAOther, LatBSelf, LatBOther> PartialEq<Pair<LatAOther, LatBOther>>
+    for Pair<LatASelf, LatBSelf>
+where
+    LatASelf: PartialEq<LatAOther>,
+    LatBSelf: PartialEq<LatBOther>,
+{
+    fn eq(&self, other: &Pair<LatAOther, LatBOther>) -> bool {
+        self.a == other.a && self.b == other.b
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::set_union::SetUnionHashSet;
+    use crate::test::{assert_lattice_identities, assert_partial_ord_identities};
+    use std::collections::HashSet;
+
+    #[test]
+    fn consistency() {
+        let mut test_vec = Vec::new();
+
+        for a in [vec![], vec![0], vec![1], vec![0, 1]] {
+            for b in [vec![], vec![0], vec![1], vec![0, 1]] {
+                test_vec.push(Pair::new(
+                    SetUnionHashSet::new_from(HashSet::from_iter(a.clone())),
+                    SetUnionHashSet::new_from(HashSet::from_iter(b.clone())),
+                ));
+            }
+        }
+
+        assert_partial_ord_identities(&test_vec);
+        assert_lattice_identities(&test_vec);
     }
 }
