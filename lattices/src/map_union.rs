@@ -3,21 +3,21 @@
 //! Each key corresponds to a lattice value instance. Merging map-union lattices is done by
 //! unioning the keys and merging the values of intersecting keys.
 
-use std::cmp::Ordering;
+use std::cmp::Ordering::*;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
 
 use crate::cc_traits::{GetMut, Keyed, Map, MapIter, SimpleKeyedRef};
 use crate::collections::{ArrayMap, SingletonMap, VecMap};
-use crate::{Compare, ConvertFrom, Merge};
+use crate::{ConvertFrom, LatticeOrd, Merge};
 
 /// A map-union lattice.
 ///
 /// `Tag` specifies what datastructure to use, allowing us to deal with different datastructures
 /// generically.
 #[repr(transparent)]
+#[derive(Copy, Clone, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct MapUnion<Map>(pub Map);
 impl<Map> MapUnion<Map> {
     /// Create a new `MapUnion` from a `Map`.
@@ -85,13 +85,13 @@ where
     }
 }
 
-impl<MapSelf, MapOther, K, ValSelf, ValOther> Compare<MapUnion<MapOther>> for MapUnion<MapSelf>
+impl<MapSelf, MapOther, K, ValSelf, ValOther> PartialOrd<MapUnion<MapOther>> for MapUnion<MapSelf>
 where
     MapSelf: Map<K, ValSelf, Key = K, Item = ValSelf> + MapIter + SimpleKeyedRef,
     MapOther: Map<K, ValOther, Key = K, Item = ValOther> + MapIter + SimpleKeyedRef,
-    ValSelf: Compare<ValOther>,
+    ValSelf: PartialOrd<ValOther>,
 {
-    fn compare(&self, other: &MapUnion<MapOther>) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &MapUnion<MapOther>) -> Option<std::cmp::Ordering> {
         let mut self_any_greater = false;
         let mut other_any_greater = false;
         for k in self
@@ -106,18 +106,20 @@ where
             )
         {
             match (self.0.get(k), other.0.get(k)) {
-                (Some(self_value), Some(other_value)) => match self_value.compare(&*other_value) {
-                    None => {
-                        return None;
+                (Some(self_value), Some(other_value)) => {
+                    match self_value.partial_cmp(&*other_value) {
+                        None => {
+                            return None;
+                        }
+                        Some(Less) => {
+                            other_any_greater = true;
+                        }
+                        Some(Greater) => {
+                            self_any_greater = true;
+                        }
+                        Some(Equal) => {}
                     }
-                    Some(Ordering::Less) => {
-                        other_any_greater = true;
-                    }
-                    Some(Ordering::Greater) => {
-                        self_any_greater = true;
-                    }
-                    Some(Ordering::Equal) => {}
-                },
+                }
                 (Some(_), None) => {
                     self_any_greater = true;
                 }
@@ -131,13 +133,62 @@ where
             }
         }
         match (self_any_greater, other_any_greater) {
-            (true, false) => Some(Ordering::Greater),
-            (false, true) => Some(Ordering::Less),
-            (false, false) => Some(Ordering::Equal),
+            (true, false) => Some(Greater),
+            (false, true) => Some(Less),
+            (false, false) => Some(Equal),
             // We check this one after each loop iteration.
             (true, true) => unreachable!(),
         }
     }
+}
+impl<MapSelf, MapOther> LatticeOrd<MapUnion<MapOther>> for MapUnion<MapSelf> where
+    Self: PartialOrd<MapUnion<MapOther>>
+{
+}
+
+impl<MapSelf, MapOther, K, ValSelf, ValOther> PartialEq<MapUnion<MapOther>> for MapUnion<MapSelf>
+where
+    MapSelf: Map<K, ValSelf, Key = K, Item = ValSelf> + MapIter + SimpleKeyedRef,
+    MapOther: Map<K, ValOther, Key = K, Item = ValOther> + MapIter + SimpleKeyedRef,
+    ValSelf: PartialEq<ValOther>,
+{
+    fn eq(&self, other: &MapUnion<MapOther>) -> bool {
+        if self.0.len() != other.0.len() {
+            return false;
+        }
+
+        for k in self
+            .0
+            .iter()
+            .map(|(k, _v)| <MapSelf as SimpleKeyedRef>::into_ref(k))
+            .chain(
+                other
+                    .0
+                    .iter()
+                    .map(|(k, _v)| <MapOther as SimpleKeyedRef>::into_ref(k)),
+            )
+        {
+            match (self.0.get(k), other.0.get(k)) {
+                (Some(self_value), Some(other_value)) => {
+                    if *self_value != *other_value {
+                        return false;
+                    }
+                }
+                (None, None) => unreachable!(),
+                _ => {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+}
+impl<MapSelf> Eq for MapUnion<MapSelf>
+where
+    Self: PartialEq,
+    MapSelf: Eq,
+{
 }
 
 /// [`std::collections::HashMap`]-backed [`MapUnion`] lattice.
@@ -164,6 +215,8 @@ mod test {
 
     use crate::collections::{SingletonMap, SingletonSet};
     use crate::set_union::{SetUnionHashSet, SetUnionSingletonSet};
+    use crate::test::{assert_lattice_identities, assert_partial_ord_identities};
+    use std::collections::HashSet;
 
     #[test]
     fn test_map_union() {
@@ -176,5 +229,22 @@ mod test {
             MapUnionSingletonMap::new_from(("hello", SetUnionHashSet::new_from([100, 200])));
         my_map_a.merge(my_map_b);
         my_map_a.merge(my_map_c);
+    }
+
+    #[test]
+    fn consistency() {
+        let mut test_vec = Vec::new();
+
+        for key in [0, 1, 2] {
+            for value in [vec![], vec![0], vec![1], vec![0, 1]] {
+                test_vec.push(MapUnionHashMap::new_from(HashMap::from_iter([(
+                    key,
+                    SetUnionHashSet::new_from(HashSet::from_iter(value.clone())),
+                )])));
+            }
+        }
+
+        assert_partial_ord_identities(&test_vec);
+        assert_lattice_identities(&test_vec);
     }
 }

@@ -7,9 +7,8 @@
 //! Conversely, Generic parameters that are single letters or acronyms (e.g. `K`, `T`) are scalar
 //! non-`Lattice` types.
 
-use std::cmp::Ordering;
-
 use sealed::sealed;
+use std::cmp::Ordering::{self, *};
 
 pub mod bottom;
 pub mod collections;
@@ -19,6 +18,7 @@ pub mod map_union;
 pub mod ord;
 pub mod pair;
 pub mod set_union;
+
 /// Re-export of the [`cc_traits`](::cc_traits) crate with [`SimpleKeyedRef`](cc_traits::SimpleKeyedRef) added.
 pub mod cc_traits {
     pub use ::cc_traits::*;
@@ -70,6 +70,10 @@ pub trait Merge<Other> {
     }
 }
 
+/// Trait for lattice partial order comparison
+/// PartialOrd is implemented for many things, this trait can be used to require the type be a lattice.
+pub trait LatticeOrd<Rhs>: PartialOrd<Rhs> {}
+
 /// Naive lattice compare, based on the [`Merge::merge`] function.
 #[sealed]
 pub trait NaiveCompare<Other>
@@ -78,7 +82,7 @@ where
     Other: Clone + Merge<Self>,
 {
     /// Naive compare based on the [`Merge::merge`] method. This method can be very inefficient;
-    /// use [`Compare::compare`] instead.
+    /// use [`PartialOrd::partial_cmp`] instead.
     ///
     /// This method should not be overridden.
     fn naive_compare(&self, other: &Other) -> Option<Ordering> {
@@ -88,9 +92,9 @@ where
         let mut other_b = other.clone();
         match (self_a.merge(other_a), other_b.merge(self_b)) {
             (true, true) => None,
-            (true, false) => Some(Ordering::Less),
-            (false, true) => Some(Ordering::Greater),
-            (false, false) => Some(Ordering::Equal),
+            (true, false) => Some(Less),
+            (false, true) => Some(Greater),
+            (false, false) => Some(Equal),
         }
     }
 }
@@ -102,17 +106,6 @@ where
 {
 }
 
-/// Compare the partial order of two lattices.
-///
-/// Same signature as [`std::cmp::PartialOrd`] but without the connotation and also without the
-/// [`std::cmp::PartialEq`] requirement.
-pub trait Compare<Other> {
-    /// Compare the partial order of self with other.
-    ///
-    /// `Some(Ordering::Less)` means `self` is less than `other`.
-    fn compare(&self, other: &Other) -> Option<Ordering>;
-}
-
 /// Same as `From` but for lattices.
 ///
 /// Do not convert non-lattice (AKA scalar) types if you implement this trait.
@@ -120,3 +113,6 @@ pub trait ConvertFrom<Other> {
     /// Convert from the `Other` lattice into `Self`.
     fn from(other: Other) -> Self;
 }
+
+#[cfg(test)]
+mod test;

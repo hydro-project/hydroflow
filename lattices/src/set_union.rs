@@ -2,19 +2,20 @@
 //!
 //! Merging set-union lattices is done by unioning the keys.
 
-use std::cmp::Ordering;
+use std::cmp::Ordering::{self, *};
 use std::collections::{BTreeSet, HashSet};
 
 use crate::cc_traits::{Iter, Len, Set};
 use crate::collections::{ArraySet, SingletonSet};
-use crate::{Compare, ConvertFrom, Merge};
+use crate::{ConvertFrom, Merge};
 
 /// A set-union lattice.
 ///
 /// `Tag` specifies what datastructure to use, allowing us to deal with different datastructures
 /// generically.
-#[derive(Clone, Debug, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
+#[derive(Copy, Clone, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SetUnion<Set>(pub Set);
 impl<Set> SetUnion<Set> {
     /// Create a new `SetUnion` from a `Set`.
@@ -50,30 +51,30 @@ where
     }
 }
 
-impl<SetSelf, SetOther, Item> Compare<SetUnion<SetOther>> for SetUnion<SetSelf>
+impl<SetSelf, SetOther, Item> PartialOrd<SetUnion<SetOther>> for SetUnion<SetSelf>
 where
     SetSelf: Set<Item, Item = Item> + Iter,
     SetOther: Set<Item, Item = Item> + Iter,
 {
-    fn compare(&self, other: &SetUnion<SetOther>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &SetUnion<SetOther>) -> Option<Ordering> {
         match self.0.len().cmp(&other.0.len()) {
-            Ordering::Greater => {
+            Greater => {
                 if other.0.iter().all(|key| self.0.contains(&*key)) {
-                    Some(Ordering::Greater)
+                    Some(Greater)
                 } else {
                     None
                 }
             }
-            Ordering::Equal => {
+            Equal => {
                 if self.0.iter().all(|key| other.0.contains(&*key)) {
-                    Some(Ordering::Equal)
+                    Some(Equal)
                 } else {
                     None
                 }
             }
-            Ordering::Less => {
+            Less => {
                 if self.0.iter().all(|key| other.0.contains(&*key)) {
-                    Some(Ordering::Less)
+                    Some(Less)
                 } else {
                     None
                 }
@@ -81,6 +82,21 @@ where
         }
     }
 }
+
+impl<SetSelf, SetOther, Item> PartialEq<SetUnion<SetOther>> for SetUnion<SetSelf>
+where
+    SetSelf: Set<Item, Item = Item> + Iter,
+    SetOther: Set<Item, Item = Item> + Iter,
+{
+    fn eq(&self, other: &SetUnion<SetOther>) -> bool {
+        if self.0.len() != other.0.len() {
+            return false;
+        }
+
+        self.0.iter().all(|key| other.0.contains(&*key))
+    }
+}
+impl<SetSelf> Eq for SetUnion<SetSelf> where Self: PartialEq {}
 
 /// [`std::collections::HashSet`]-backed [`SetUnion`] lattice.
 pub type SetUnionHashSet<Item> = SetUnion<HashSet<Item>>;
@@ -104,7 +120,10 @@ pub type SetUnionOption<Item> = SetUnion<Option<Item>>;
 mod test {
     use super::*;
 
-    use crate::collections::SingletonSet;
+    use crate::{
+        collections::SingletonSet,
+        test::{assert_lattice_identities, assert_partial_ord_identities},
+    };
 
     #[test]
     fn test_set_union() {
@@ -112,22 +131,18 @@ mod test {
         let my_set_b = SetUnionBTreeSet::<&str>::new(BTreeSet::new());
         let my_set_c = SetUnionSingletonSet::new(SingletonSet("hello world"));
 
-        assert_eq!(Some(Ordering::Equal), my_set_a.compare(&my_set_a));
-        assert_eq!(Some(Ordering::Equal), my_set_a.compare(&my_set_b));
-        assert_eq!(Some(Ordering::Less), my_set_a.compare(&my_set_c));
-        assert_eq!(Some(Ordering::Equal), my_set_b.compare(&my_set_a));
-        assert_eq!(Some(Ordering::Equal), my_set_b.compare(&my_set_b));
-        assert_eq!(Some(Ordering::Less), my_set_b.compare(&my_set_c));
-        assert_eq!(Some(Ordering::Greater), my_set_c.compare(&my_set_a));
-        assert_eq!(Some(Ordering::Greater), my_set_c.compare(&my_set_b));
-        assert_eq!(Some(Ordering::Equal), my_set_c.compare(&my_set_c));
+        assert_eq!(Some(Equal), my_set_a.partial_cmp(&my_set_a));
+        assert_eq!(Some(Equal), my_set_a.partial_cmp(&my_set_b));
+        assert_eq!(Some(Less), my_set_a.partial_cmp(&my_set_c));
+        assert_eq!(Some(Equal), my_set_b.partial_cmp(&my_set_a));
+        assert_eq!(Some(Equal), my_set_b.partial_cmp(&my_set_b));
+        assert_eq!(Some(Less), my_set_b.partial_cmp(&my_set_c));
+        assert_eq!(Some(Greater), my_set_c.partial_cmp(&my_set_a));
+        assert_eq!(Some(Greater), my_set_c.partial_cmp(&my_set_b));
+        assert_eq!(Some(Equal), my_set_c.partial_cmp(&my_set_c));
 
-        my_set_a.compare(&my_set_b);
-        my_set_a.compare(&my_set_c);
-        my_set_b.compare(&my_set_c);
-
-        my_set_a.merge(my_set_b);
-        my_set_a.merge(my_set_c);
+        assert!(!my_set_a.merge(my_set_b));
+        assert!(my_set_a.merge(my_set_c));
     }
 
     #[test]
@@ -136,14 +151,25 @@ mod test {
         let my_delta_set = SetUnionSingletonSet::new_from("hello world");
         let my_array_set = SetUnionArray::new_from(["hello world", "b", "c", "d"]);
 
-        assert_eq!(Some(Ordering::Equal), my_delta_set.compare(&my_delta_set));
-        assert_eq!(Some(Ordering::Less), my_delta_set.compare(&my_array_set));
-        assert_eq!(Some(Ordering::Greater), my_array_set.compare(&my_delta_set));
-        assert_eq!(Some(Ordering::Equal), my_array_set.compare(&my_array_set));
+        assert_eq!(Some(Equal), my_delta_set.partial_cmp(&my_delta_set));
+        assert_eq!(Some(Less), my_delta_set.partial_cmp(&my_array_set));
+        assert_eq!(Some(Greater), my_array_set.partial_cmp(&my_delta_set));
+        assert_eq!(Some(Equal), my_array_set.partial_cmp(&my_array_set));
 
         assert!(my_hash_set.merge(my_array_set)); // Changes
         assert!(!my_hash_set.merge(my_delta_set)); // No changes
+    }
 
-        println!("{:?}", my_hash_set.0);
+    #[test]
+    fn consistency() {
+        let test_vec = vec![
+            SetUnionHashSet::new_from([]),
+            SetUnionHashSet::new_from([0]),
+            SetUnionHashSet::new_from([1]),
+            SetUnionHashSet::new_from([0, 1]),
+        ];
+
+        assert_partial_ord_identities(&test_vec);
+        assert_lattice_identities(&test_vec);
     }
 }

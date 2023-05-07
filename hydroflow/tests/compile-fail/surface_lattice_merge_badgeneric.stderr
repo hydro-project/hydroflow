@@ -7,7 +7,7 @@ error[E0277]: the trait bound `usize: hydroflow::lattices::Merge<usize>` is not 
   = help: the following other types implement trait `hydroflow::lattices::Merge<Other>`:
             <Bottom<Inner> as hydroflow::lattices::Merge<Bottom<Other>>>
             <DomPair<KeySelf, ValSelf> as hydroflow::lattices::Merge<DomPair<KeyOther, ValOther>>>
-            <Fake<T> as hydroflow::lattices::Merge<Fake<T>>>
+            <Fake<T> as hydroflow::lattices::Merge<Fake<O>>>
             <MapUnion<MapSelf> as hydroflow::lattices::Merge<MapUnion<MapOther>>>
             <Max<T> as hydroflow::lattices::Merge<Max<T>>>
             <Min<T> as hydroflow::lattices::Merge<Min<T>>>
