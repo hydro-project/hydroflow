@@ -19,6 +19,13 @@ use syn::parse_quote;
 /// `cross_join` can also be provided with one or two generic lifetime persistence arguments
 /// in the same was as [`join`](#join), see [`join`'s documentation](#join) for more info.
 ///
+/// `cross_join` also accepts one type argument that controls how the join state is built up. This (currently) allows switching between a SetUnion and NonSetUnion implementation.
+/// For example:
+/// ```hydroflow,ignore
+/// join::<HalfSetJoinState>();
+/// join::<HalfMultisetJoinState>();
+/// ```
+///
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<&str>();
 /// let mut flow = hydroflow::hydroflow_syntax! {
