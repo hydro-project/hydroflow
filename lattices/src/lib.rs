@@ -72,20 +72,20 @@ pub trait Merge<Other> {
 
 /// Trait for lattice partial order comparison
 /// PartialOrd is implemented for many things, this trait can be used to require the type be a lattice.
-pub trait LatticeOrd<Rhs>: PartialOrd<Rhs> {}
+pub trait LatticeOrd<Rhs = Self>: PartialOrd<Rhs> {}
 
 /// Naive lattice compare, based on the [`Merge::merge`] function.
 #[sealed]
-pub trait NaiveCompare<Other>
+pub trait NaiveOrd<Rhs = Self>
 where
-    Self: Clone + Merge<Other> + Sized,
-    Other: Clone + Merge<Self>,
+    Self: Clone + Merge<Rhs> + Sized,
+    Rhs: Clone + Merge<Self>,
 {
     /// Naive compare based on the [`Merge::merge`] method. This method can be very inefficient;
     /// use [`PartialOrd::partial_cmp`] instead.
     ///
     /// This method should not be overridden.
-    fn naive_compare(&self, other: &Other) -> Option<Ordering> {
+    fn naive_cmp(&self, other: &Rhs) -> Option<Ordering> {
         let mut self_a = self.clone();
         let other_a = other.clone();
         let self_b = self.clone();
@@ -99,7 +99,7 @@ where
     }
 }
 #[sealed]
-impl<This, Other> NaiveCompare<Other> for This
+impl<This, Other> NaiveOrd<Other> for This
 where
     Self: Clone + Merge<Other>,
     Other: Clone + Merge<Self>,

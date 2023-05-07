@@ -2,7 +2,7 @@
 //!
 //! Merge both nested lattices.
 
-use std::cmp::Ordering;
+use std::cmp::Ordering::{self, *};
 
 use super::{ConvertFrom, Merge};
 use crate::LatticeOrd;
@@ -67,7 +67,11 @@ where
         if ord_a == ord_b {
             ord_a
         } else {
-            None
+            match (ord_a, ord_b) {
+                (ord_a, Some(Equal)) => ord_a,
+                (Some(Equal), ord_b) => ord_b,
+                _conflicting => None,
+            }
         }
     }
 }

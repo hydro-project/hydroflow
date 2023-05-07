@@ -1,14 +1,20 @@
 use std::fmt::Debug;
 
-use crate::Merge;
+use crate::{Merge, NaiveOrd};
 
 #[allow(clippy::eq_op)]
 #[allow(clippy::double_comparisons)]
-pub fn assert_partial_ord_identities<T: PartialOrd>(test_vec: &Vec<T>) {
+pub fn assert_partial_ord_identities<T: PartialOrd + NaiveOrd>(test_vec: &[T]) {
     use std::cmp::Ordering::*;
 
     for a in test_vec {
         for b in test_vec {
+            // `NaiveOrd` is a better source of truth, as it is based on the `Merge` impl. But it
+            // is inefficient. It also could be wrong if `Merge` doesn't properly return true/false
+            // iff the merge changed things.
+            assert_eq!(a.naive_cmp(b), a.partial_cmp(b));
+            assert_eq!(b.naive_cmp(a), b.partial_cmp(a));
+
             for c in test_vec {
                 // Partial Eq:
                 // a != b if and only if !(a == b).
@@ -54,7 +60,7 @@ pub fn assert_partial_ord_identities<T: PartialOrd>(test_vec: &Vec<T>) {
     }
 }
 
-pub fn assert_lattice_identities<T: Merge<T> + Clone + Eq + Debug>(test_vec: &Vec<T>) {
+pub fn assert_lattice_identities<T: Merge<T> + Clone + Eq + Debug>(test_vec: &[T]) {
     for x in test_vec {
         for y in test_vec {
             for z in test_vec {
