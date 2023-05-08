@@ -9,7 +9,7 @@ use std::cmp::Ordering::*;
 
 /// Bottom wrapper.
 #[repr(transparent)]
-#[derive(Copy, Clone, Debug, Default, Eq)]
+#[derive(Copy, Clone, Debug, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Bottom<Inner>(pub Option<Inner>);
 impl<Inner> Bottom<Inner> {
@@ -21,6 +21,14 @@ impl<Inner> Bottom<Inner> {
     /// Create a new `Bottom` lattice instance from a value using `Into`.
     pub fn new_from(val: impl Into<Inner>) -> Self {
         Self::new(val.into())
+    }
+}
+
+// Cannot auto derive because the generated implementation has the wrong trait bounds.
+// https://github.com/rust-lang/rust/issues/26925
+impl<Inner> Default for Bottom<Inner> {
+    fn default() -> Self {
+        Self(None)
     }
 }
 

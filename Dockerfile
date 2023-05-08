@@ -5,7 +5,6 @@ ARG TARGETOS TARGETARCH
 
 RUN apt-get update && apt-get install -y git
 RUN apt-get update && apt-get install -y pkg-config
-RUN apt-get update && apt-get install -y libzmq3-dev
 
 RUN /bin/bash -c "if [ "${TARGETARCH}" == "arm64" ]; then apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu ; else apt-get install -y gcc-x86-64-linux-gnu g++-x86-64-linux-gnu ; fi"
 
@@ -23,7 +22,6 @@ RUN mkdir -p xfer/example_utils && cp hydroflow/example_utils/* xfer/example_uti
 FROM rust:slim-buster
 
 RUN apt-get update && apt-get install -y python3
-RUN apt-get update && apt-get install -y libzmq3-dev
 
 WORKDIR /usr/src/myapp
 COPY --from=build /usr/src/myapp/xfer/examples/* .

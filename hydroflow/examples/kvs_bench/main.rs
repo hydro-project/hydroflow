@@ -1,7 +1,8 @@
+#![feature(core_intrinsics)]
+
 mod buffer_pool;
 mod protocol;
 mod server;
-mod util;
 
 use crate::server::run_server;
 
@@ -9,11 +10,16 @@ use clap::command;
 use clap::Parser;
 use clap::Subcommand;
 
+use crate::protocol::NodeId;
+use futures::Stream;
+use std::collections::HashMap;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
+use tokio::sync::mpsc::UnboundedSender;
+use tokio_stream::StreamExt;
 
 #[derive(Debug, Parser)]
 struct Cli {
@@ -38,14 +44,35 @@ enum Commands {
 
         #[clap(long, default_value_t = false)]
         report: bool,
+
+        #[clap(long, default_value_t = false)]
+        print_mermaid: bool,
     },
 }
 
+pub struct Topology<RX>
+where
+    RX: Stream<Item = (usize, Vec<u8>)>,
+{
+    pub lookup: Vec<usize>,
+    pub tx: Vec<UnboundedSender<Vec<u8>>>,
+    pub rx: Vec<RX>,
+}
+
+impl<RX> Default for Topology<RX>
+where
+    RX: Stream<Item = (usize, Vec<u8>)> + StreamExt + Unpin,
+{
+    fn default() -> Self {
+        Self {
+            lookup: Default::default(),
+            tx: Default::default(),
+            rx: Default::default(),
+        }
+    }
+}
+
 fn main() {
-    let ctx = tmq::Context::new();
-
-    let throughput = Arc::new(AtomicUsize::new(0));
-
     match Cli::parse().command {
         Commands::Bench {
             threads,
@@ -53,24 +80,67 @@ fn main() {
             warmup,
             duration,
             report,
+            mut print_mermaid,
         } => {
-            let topology: Vec<_> = (0..threads).collect();
+            let mut throughputs = Vec::new();
+            let mut nodes: HashMap<NodeId, Topology<_>> = HashMap::default();
+            // let mut receivers_for: HashMap<NodeId, Vec<_>> = HashMap::default();
 
-            for addr in topology.iter() {
-                run_server(
-                    *addr,
-                    topology.clone(),
-                    dist,
-                    ctx.clone(),
-                    throughput.clone(),
-                );
+            for n1 in 0..threads {
+                throughputs.push(Arc::new(AtomicUsize::new(0)));
+
+                nodes.entry(n1).or_default();
+
+                for n2 in 0..threads {
+                    if n2 == n1 {
+                        continue;
+                    }
+
+                    let (tx, rx) = hydroflow::util::unbounded_channel::<Vec<u8>>();
+
+                    {
+                        let entry = nodes.entry(n1).or_default();
+
+                        entry.lookup.push(n2);
+                        entry.tx.push(tx);
+                    }
+
+                    {
+                        nodes
+                            .entry(n2)
+                            .or_default()
+                            .rx
+                            .push(rx.map(move |x| (n2, x)));
+                    }
+                }
             }
+
+            for (node_id, topology) in nodes {
+                run_server(
+                    node_id,
+                    topology,
+                    dist,
+                    throughputs[node_id].clone(),
+                    print_mermaid,
+                );
+
+                print_mermaid = false; // Only want one node to print the mermaid since it is the same for all of them.
+            }
+
+            let get_reset_throughputs = || {
+                let mut sum = 0;
+                for x in throughputs.iter() {
+                    sum += x.swap(0, Ordering::SeqCst);
+                }
+
+                sum
+            };
 
             let mut total_writes_so_far = 0;
 
             std::thread::sleep(Duration::from_secs(warmup));
 
-            throughput.store(0, Ordering::SeqCst);
+            get_reset_throughputs();
             let start_time = Instant::now();
             let mut time_last_interval = start_time;
 
@@ -82,7 +152,7 @@ fn main() {
                 std::thread::sleep(Duration::from_secs(1));
 
                 if report {
-                    let writes_this_interval = throughput.swap(0, Ordering::SeqCst);
+                    let writes_this_interval = get_reset_throughputs();
                     let puts =
                         writes_this_interval as f64 / time_last_interval.elapsed().as_secs_f64();
                     time_last_interval = Instant::now();
@@ -92,7 +162,7 @@ fn main() {
                 }
             }
 
-            total_writes_so_far += throughput.swap(0, Ordering::SeqCst);
+            total_writes_so_far += get_reset_throughputs();
             let puts = total_writes_so_far as f64 / start_time.elapsed().as_secs_f64();
 
             println!("{puts}");
