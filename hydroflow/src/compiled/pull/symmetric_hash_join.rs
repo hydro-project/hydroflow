@@ -3,8 +3,8 @@ use super::HalfJoinState;
 pub struct SymmetricHashJoin<'a, Key, I1, V1, I2, V2, LhsState, RhsState>
 where
     Key: Eq + std::hash::Hash + Clone,
-    V1: Eq + Clone,
-    V2: Eq + Clone,
+    V1: Clone,
+    V2: Clone,
     I1: Iterator<Item = (Key, V1)>,
     I2: Iterator<Item = (Key, V2)>,
     LhsState: HalfJoinState<Key, V1, V2>,
@@ -20,8 +20,8 @@ impl<'a, Key, I1, V1, I2, V2, LhsState, RhsState> Iterator
     for SymmetricHashJoin<'a, Key, I1, V1, I2, V2, LhsState, RhsState>
 where
     Key: Eq + std::hash::Hash + Clone,
-    V1: Eq + Clone,
-    V2: Eq + Clone,
+    V1: Clone,
+    V2: Clone,
     I1: Iterator<Item = (Key, V1)>,
     I2: Iterator<Item = (Key, V2)>,
     LhsState: HalfJoinState<Key, V1, V2>,
@@ -59,8 +59,8 @@ impl<'a, Key, I1, V1, I2, V2, LhsState, RhsState>
     SymmetricHashJoin<'a, Key, I1, V1, I2, V2, LhsState, RhsState>
 where
     Key: Eq + std::hash::Hash + Clone,
-    V1: Eq + Clone,
-    V2: Eq + Clone,
+    V1: Clone,
+    V2: Clone,
     I1: Iterator<Item = (Key, V1)>,
     I2: Iterator<Item = (Key, V2)>,
     LhsState: HalfJoinState<Key, V1, V2>,

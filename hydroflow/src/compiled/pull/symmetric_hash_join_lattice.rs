@@ -1,11 +1,12 @@
 use crate::lang::clear::Clear;
-use lattices::map_union::MapUnionHashMap;
+use lattices::map_union::MapUnion;
 use lattices::{ConvertFrom, Merge};
+use rustc_hash::FxHashMap;
 use rustc_hash::FxHashSet;
 use std::collections::{hash_map::Entry, hash_set};
 
 pub struct HalfJoinStateLattice<K, Lattice> {
-    table: MapUnionHashMap<K, Lattice>,
+    table: MapUnion<FxHashMap<K, Lattice>>,
 }
 
 impl<K, Lattice> Default for HalfJoinStateLattice<K, Lattice> {

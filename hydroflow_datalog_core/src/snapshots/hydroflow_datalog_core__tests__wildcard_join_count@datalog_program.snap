@@ -842,7 +842,6 @@ fn main() {
                     .state_ref(sg_5v1_node_17v1_joindata_rhs)
                     .borrow_mut();
                 let op_17v1 = {
-                    /// Limit error propagation by bounding locally, erasing output iterator type.
                     #[inline(always)]
                     fn check_inputs<'a, K, I1, V1, I2, V2>(
                         lhs: I1,
@@ -860,8 +859,8 @@ fn main() {
                     ) -> impl 'a + Iterator<Item = (K, (V1, V2))>
                     where
                         K: Eq + std::hash::Hash + Clone,
-                        V1: Eq + Clone,
-                        V2: Eq + Clone,
+                        V1: Clone,
+                        V2: Clone,
                         I1: 'a + Iterator<Item = (K, V1)>,
                         I2: 'a + Iterator<Item = (K, V2)>,
                     {
@@ -1066,7 +1065,6 @@ fn main() {
                     .state_ref(sg_6v1_node_24v1_joindata_rhs)
                     .borrow_mut();
                 let op_24v1 = {
-                    /// Limit error propagation by bounding locally, erasing output iterator type.
                     #[inline(always)]
                     fn check_inputs<'a, K, I1, V1, I2, V2>(
                         lhs: I1,
@@ -1084,8 +1082,8 @@ fn main() {
                     ) -> impl 'a + Iterator<Item = (K, (V1, V2))>
                     where
                         K: Eq + std::hash::Hash + Clone,
-                        V1: Eq + Clone,
-                        V2: Eq + Clone,
+                        V1: Clone,
+                        V2: Clone,
                         I1: 'a + Iterator<Item = (K, V1)>,
                         I2: 'a + Iterator<Item = (K, V2)>,
                     {

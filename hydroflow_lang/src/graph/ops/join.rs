@@ -130,6 +130,20 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                     #root::compiled::pull::HalfSetJoinState
                 ));
 
+        // TODO: This is really bad.
+        // This will break if the user aliases HalfSetJoinState to something else. Temporary hacky solution.
+        // Note that cross_join() depends on the implementation here as well.
+        // Need to decide on what to do about multisetjoin.
+        // Should it be a separate operator (multisetjoin() and multisetcrossjoin())?
+        // Should the default be multiset join? And setjoin requires the use of lattice_join() with SetUnion lattice?
+        let additional_trait_bounds = if join_type.to_string().contains("HalfSetJoinState") {
+            quote_spanned!(op_span=>
+                + ::std::cmp::Eq
+            )
+        } else {
+            quote_spanned!(op_span=>)
+        };
+
         let persistences = match persistence_args[..] {
             [] => [Persistence::Static, Persistence::Static],
             [a] => [a, a],
@@ -137,33 +151,31 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
             _ => unreachable!(),
         };
         // TODO(mingwei): This is messy
-        let items = persistences
-            .zip(["lhs", "rhs"])
-            .map(|(persistence, side)| {
-                let joindata_ident = wc.make_ident(format!("joindata_{}", side));
-                let borrow_ident = wc.make_ident(format!("joindata_{}_borrow", side));
-                let (init, borrow) = match persistence {
-                    Persistence::Tick => (
-                        quote_spanned! {op_span=>
-                            #root::lang::monotonic_map::MonotonicMap::new_init(
-                                #join_type::default()
-                            )
-                        },
-                        quote_spanned! {op_span=>
-                            &mut *#borrow_ident.get_mut_clear(#context.current_tick())
-                        },
-                    ),
-                    Persistence::Static => (
-                        quote_spanned! {op_span=>
+        let items = persistences.zip(["lhs", "rhs"]).map(|(persistence, side)| {
+            let joindata_ident = wc.make_ident(format!("joindata_{}", side));
+            let borrow_ident = wc.make_ident(format!("joindata_{}_borrow", side));
+            let (init, borrow) = match persistence {
+                Persistence::Tick => (
+                    quote_spanned! {op_span=>
+                        #root::lang::monotonic_map::MonotonicMap::new_init(
                             #join_type::default()
-                        },
-                        quote_spanned! {op_span=>
-                            &mut #borrow_ident
-                        },
-                    ),
-                };
-                (joindata_ident, borrow_ident, init, borrow)
-            });
+                        )
+                    },
+                    quote_spanned! {op_span=>
+                        &mut *#borrow_ident.get_mut_clear(#context.current_tick())
+                    },
+                ),
+                Persistence::Static => (
+                    quote_spanned! {op_span=>
+                        #join_type::default()
+                    },
+                    quote_spanned! {op_span=>
+                        &mut *#borrow_ident
+                    },
+                ),
+            };
+            (joindata_ident, borrow_ident, init, borrow)
+        });
         let [(lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow), (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow)] =
             items;
 
@@ -182,7 +194,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
             let mut #lhs_borrow_ident = #context.state_ref(#lhs_joindata_ident).borrow_mut();
             let mut #rhs_borrow_ident = #context.state_ref(#rhs_joindata_ident).borrow_mut();
             let #ident = {
-                /// Limit error propagation by bounding locally, erasing output iterator type.
+                // Limit error propagation by bounding locally, erasing output iterator type.
                 #[inline(always)]
                 fn check_inputs<'a, K, I1, V1, I2, V2>(
                     lhs: I1,
@@ -192,8 +204,8 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                 ) -> impl 'a + Iterator<Item = (K, (V1, V2))>
                 where
                     K: Eq + std::hash::Hash + Clone,
-                    V1: Eq + Clone,
-                    V2: Eq + Clone,
+                    V1: Clone #additional_trait_bounds,
+                    V2: Clone #additional_trait_bounds,
                     I1: 'a + Iterator<Item = (K, V1)>,
                     I2: 'a + Iterator<Item = (K, V2)>,
                 {

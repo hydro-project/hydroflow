@@ -14,7 +14,6 @@ macros = [ "hydroflow_macro", "hydroflow_datalog" ]
 hydroflow_macro = [ "dep:hydroflow_macro" ]
 hydroflow_datalog = [ "dep:hydroflow_datalog" ]
 cli_integration = [ "dep:hydroflow_cli_integration" ]
-kvs_bench = []
 
 [dependencies]
 bincode = "1.3"
@@ -75,10 +74,3 @@ zipf = "7.0.0"
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 # Rayon (rust data-parallelism library) does not compile on WASM.
 criterion = { version = "0.4", features = [ "async_tokio", "html_reports" ] }
-
-[target.'cfg(not(any(target_arch = "wasm32", target_family = "windows")))'.dev-dependencies]
-tmq = "0.3.2"
-
-[[example]]
-name = "kvs_bench"
-required-features = [ "kvs_bench" ]
