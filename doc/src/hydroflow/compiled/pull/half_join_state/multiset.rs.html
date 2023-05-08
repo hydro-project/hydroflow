@@ -111,7 +111,7 @@
     <span class="kw">for </span>HalfMultisetJoinState&lt;Key, ValBuild, ValProbe&gt;
 <span class="kw">where
     </span>Key: Clone + Eq + std::hash::Hash,
-    ValBuild: Clone + Eq,
+    ValBuild: Clone,
     ValProbe: Clone,
 {
     <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>, k: Key, v: <span class="kw-2">&amp;</span>ValBuild) -&gt; bool {

@@ -1950,6 +1950,11 @@ my_join = cross_join() -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, 
 </span></code></pre></pre>
 <p><code>cross_join</code> can also be provided with one or two generic lifetime persistence arguments
 in the same was as <a href="surface_ops.gen.html#join"><code>join</code></a>, see <a href="surface_ops.gen.html#join"><code>join</code>'s documentation</a> for more info.</p>
+<p><code>cross_join</code> also accepts one type argument that controls how the join state is built up. This (currently) allows switching between a SetUnion and NonSetUnion implementation.
+For example:</p>
+<pre><code class="language-hydroflow ignore">join::&lt;HalfSetJoinState&gt;();
+join::&lt;HalfMultisetJoinState&gt;();
+</code></pre>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;&amp;str&gt;();

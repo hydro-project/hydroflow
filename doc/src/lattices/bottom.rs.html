@@ -118,6 +118,14 @@
 <a href="#118" id="118">118</a>
 <a href="#119" id="119">119</a>
 <a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Gives a default representation that compares as less than to a lattice.
 //!
 //! This can be used for giving a sensible default repersentation to types that don&#39;t necessarily have one.
@@ -129,7 +137,7 @@
 
 <span class="doccomment">/// Bottom wrapper.
 </span><span class="attr">#[repr(transparent)]
-#[derive(Copy, Clone, Debug, Default, Eq)]
+#[derive(Copy, Clone, Debug, Eq)]
 #[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>Bottom&lt;Inner&gt;(<span class="kw">pub </span><span class="prelude-ty">Option</span>&lt;Inner&gt;);
 <span class="kw">impl</span>&lt;Inner&gt; Bottom&lt;Inner&gt; {
@@ -141,6 +149,14 @@
     <span class="doccomment">/// Create a new `Bottom` lattice instance from a value using `Into`.
     </span><span class="kw">pub fn </span>new_from(val: <span class="kw">impl </span>Into&lt;Inner&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>::new(val.into())
+    }
+}
+
+<span class="comment">// Cannot auto derive because the generated implementation has the wrong trait bounds.
+// https://github.com/rust-lang/rust/issues/26925
+</span><span class="kw">impl</span>&lt;Inner&gt; Default <span class="kw">for </span>Bottom&lt;Inner&gt; {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>(<span class="prelude-val">None</span>)
     }
 }
 

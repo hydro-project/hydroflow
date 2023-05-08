@@ -225,14 +225,16 @@
 <a href="#225" id="225">225</a>
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::lang::clear::Clear;
-<span class="kw">use </span>lattices::map_union::MapUnionHashMap;
+<span class="kw">use </span>lattices::map_union::MapUnion;
 <span class="kw">use </span>lattices::{ConvertFrom, Merge};
+<span class="kw">use </span>rustc_hash::FxHashMap;
 <span class="kw">use </span>rustc_hash::FxHashSet;
 <span class="kw">use </span>std::collections::{hash_map::Entry, hash_set};
 
 <span class="kw">pub struct </span>HalfJoinStateLattice&lt;K, Lattice&gt; {
-    table: MapUnionHashMap&lt;K, Lattice&gt;,
+    table: MapUnion&lt;FxHashMap&lt;K, Lattice&gt;&gt;,
 }
 
 <span class="kw">impl</span>&lt;K, Lattice&gt; Default <span class="kw">for </span>HalfJoinStateLattice&lt;K, Lattice&gt; {

@@ -210,6 +210,18 @@
 <a href="#210" id="210">210</a>
 <a href="#211" id="211">211</a>
 <a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
 
 <span class="kw">use super</span>::{
@@ -342,6 +354,20 @@
                     #root::compiled::pull::HalfSetJoinState
                 ));
 
+        <span class="comment">// TODO: This is really bad.
+        // This will break if the user aliases HalfSetJoinState to something else. Temporary hacky solution.
+        // Note that cross_join() depends on the implementation here as well.
+        // Need to decide on what to do about multisetjoin.
+        // Should it be a separate operator (multisetjoin() and multisetcrossjoin())?
+        // Should the default be multiset join? And setjoin requires the use of lattice_join() with SetUnion lattice?
+        </span><span class="kw">let </span>additional_trait_bounds = <span class="kw">if </span>join_type.to_string().contains(<span class="string">&quot;HalfSetJoinState&quot;</span>) {
+            <span class="macro">quote_spanned!</span>(op_span=&gt;
+                + ::std::cmp::Eq
+            )
+        } <span class="kw">else </span>{
+            <span class="macro">quote_spanned!</span>(op_span=&gt;)
+        };
+
         <span class="kw">let </span>persistences = <span class="kw">match </span>persistence_args[..] {
             [] =&gt; [Persistence::Static, Persistence::Static],
             [a] =&gt; [a, a],
@@ -349,33 +375,31 @@
             <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
         };
         <span class="comment">// TODO(mingwei): This is messy
-        </span><span class="kw">let </span>items = persistences
-            .zip([<span class="string">&quot;lhs&quot;</span>, <span class="string">&quot;rhs&quot;</span>])
-            .map(|(persistence, side)| {
-                <span class="kw">let </span>joindata_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">&quot;joindata_{}&quot;</span>, side));
-                <span class="kw">let </span>borrow_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">&quot;joindata_{}_borrow&quot;</span>, side));
-                <span class="kw">let </span>(init, borrow) = <span class="kw">match </span>persistence {
-                    Persistence::Tick =&gt; (
-                        <span class="macro">quote_spanned! </span>{op_span=&gt;
-                            #root::lang::monotonic_map::MonotonicMap::new_init(
-                                #join_type::default()
-                            )
-                        },
-                        <span class="macro">quote_spanned! </span>{op_span=&gt;
-                            <span class="kw-2">&amp;mut *</span>#borrow_ident.get_mut_clear(#context.current_tick())
-                        },
-                    ),
-                    Persistence::Static =&gt; (
-                        <span class="macro">quote_spanned! </span>{op_span=&gt;
+        </span><span class="kw">let </span>items = persistences.zip([<span class="string">&quot;lhs&quot;</span>, <span class="string">&quot;rhs&quot;</span>]).map(|(persistence, side)| {
+            <span class="kw">let </span>joindata_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">&quot;joindata_{}&quot;</span>, side));
+            <span class="kw">let </span>borrow_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">&quot;joindata_{}_borrow&quot;</span>, side));
+            <span class="kw">let </span>(init, borrow) = <span class="kw">match </span>persistence {
+                Persistence::Tick =&gt; (
+                    <span class="macro">quote_spanned! </span>{op_span=&gt;
+                        #root::lang::monotonic_map::MonotonicMap::new_init(
                             #join_type::default()
-                        },
-                        <span class="macro">quote_spanned! </span>{op_span=&gt;
-                            <span class="kw-2">&amp;mut </span>#borrow_ident
-                        },
-                    ),
-                };
-                (joindata_ident, borrow_ident, init, borrow)
-            });
+                        )
+                    },
+                    <span class="macro">quote_spanned! </span>{op_span=&gt;
+                        <span class="kw-2">&amp;mut *</span>#borrow_ident.get_mut_clear(#context.current_tick())
+                    },
+                ),
+                Persistence::Static =&gt; (
+                    <span class="macro">quote_spanned! </span>{op_span=&gt;
+                        #join_type::default()
+                    },
+                    <span class="macro">quote_spanned! </span>{op_span=&gt;
+                        <span class="kw-2">&amp;mut *</span>#borrow_ident
+                    },
+                ),
+            };
+            (joindata_ident, borrow_ident, init, borrow)
+        });
         <span class="kw">let </span>[(lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow), (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow)] =
             items;
 
@@ -394,7 +418,7 @@
             <span class="kw">let </span><span class="kw-2">mut </span>#lhs_borrow_ident = #context.state_ref(#lhs_joindata_ident).borrow_mut();
             <span class="kw">let </span><span class="kw-2">mut </span>#rhs_borrow_ident = #context.state_ref(#rhs_joindata_ident).borrow_mut();
             <span class="kw">let </span>#ident = {
-                <span class="doccomment">/// Limit error propagation by bounding locally, erasing output iterator type.
+                <span class="comment">// Limit error propagation by bounding locally, erasing output iterator type.
                 </span><span class="attr">#[inline(always)]
                 </span><span class="kw">fn </span>check_inputs&lt;<span class="lifetime">&#39;a</span>, K, I1, V1, I2, V2&gt;(
                     lhs: I1,
@@ -404,8 +428,8 @@
                 ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (K, (V1, V2))&gt;
                 <span class="kw">where
                     </span>K: Eq + std::hash::Hash + Clone,
-                    V1: Eq + Clone,
-                    V2: Eq + Clone,
+                    V1: Clone #additional_trait_bounds,
+                    V2: Clone #additional_trait_bounds,
                     I1: <span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (K, V1)&gt;,
                     I2: <span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (K, V2)&gt;,
                 {
