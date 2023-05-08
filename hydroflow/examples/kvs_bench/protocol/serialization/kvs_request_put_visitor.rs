@@ -5,11 +5,11 @@ use crate::{
 use serde::de::{SeqAccess, Visitor};
 use std::{cell::RefCell, rc::Rc};
 
-pub struct KvsRequestPutVisitor {
-    pub collector: Rc<RefCell<BufferPool>>,
+pub struct KvsRequestPutVisitor<const SIZE: usize> {
+    pub collector: Rc<RefCell<BufferPool<SIZE>>>,
 }
-impl<'de> Visitor<'de> for KvsRequestPutVisitor {
-    type Value = KvsRequest;
+impl<'de, const SIZE: usize> Visitor<'de> for KvsRequestPutVisitor<SIZE> {
+    type Value = KvsRequest<SIZE>;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         formatter.write_str("KvsRequest::Put")

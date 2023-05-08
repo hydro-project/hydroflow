@@ -8,9 +8,6 @@ use std::{
     rc::{Rc, Weak},
 };
 
-pub const BUFFER_SIZE: usize = 1024;
-pub type BufferType = [u8; BUFFER_SIZE];
-
 /// It is slow to allocate and, in particular, free blocks of memory.
 /// If we know ahead of time what size buffers we will need then we can pre-allocate a bunch of them and
 /// reuse those allocations.
@@ -18,8 +15,8 @@ pub type BufferType = [u8; BUFFER_SIZE];
 /// Eventually these buffers can be made more dynamic by using scatter-gather I/O and a buffer-of-buffers pattern.
 /// We are not there yet and so this is a simple approximation of what it will eventually look like.
 #[derive(Debug)]
-pub struct BufferPool {
-    buffers: Vec<Rc<RefCell<BufferType>>>,
+pub struct BufferPool<const SIZE: usize> {
+    buffers: Vec<Rc<RefCell<[u8; SIZE]>>>,
 }
 
 /// This buffer will be returned to it's owning buffer pool when it is dropped.
@@ -27,19 +24,19 @@ pub struct BufferPool {
 /// The collector pointer is weak because otherwise there would be a cycle between BufferPool and AutoReturnBufferInner
 /// and an AutoReturnBufferInner does not logically have any kind of ownership over the BufferPool shared pool.
 #[derive(Clone, Debug)]
-pub struct AutoReturnBuffer {
-    pub collector: Weak<RefCell<BufferPool>>,
-    pub inner: Rc<RefCell<BufferType>>,
+pub struct AutoReturnBuffer<const SIZE: usize> {
+    pub collector: Weak<RefCell<BufferPool<SIZE>>>,
+    pub inner: Rc<RefCell<[u8; SIZE]>>,
 }
 
-impl BufferPool {
-    pub fn create_buffer_pool() -> Rc<RefCell<BufferPool>> {
+impl<const SIZE: usize> BufferPool<SIZE> {
+    pub fn create_buffer_pool() -> Rc<RefCell<BufferPool<SIZE>>> {
         Rc::new(RefCell::new(BufferPool {
             buffers: Vec::new(),
         }))
     }
 
-    pub fn get_from_buffer_pool(pool: &Rc<RefCell<BufferPool>>) -> AutoReturnBuffer {
+    pub fn get_from_buffer_pool(pool: &Rc<RefCell<BufferPool<SIZE>>>) -> AutoReturnBuffer<SIZE> {
         let buffer = pool.borrow_mut().buffers.pop();
 
         if let Some(buffer) = buffer {
@@ -50,13 +47,13 @@ impl BufferPool {
         } else {
             AutoReturnBuffer {
                 collector: Rc::downgrade(pool),
-                inner: Rc::new(RefCell::new([0; BUFFER_SIZE])),
+                inner: Rc::new(RefCell::new([0; SIZE])),
             }
         }
     }
 }
 
-impl Drop for AutoReturnBuffer {
+impl<const SIZE: usize> Drop for AutoReturnBuffer<SIZE> {
     fn drop(&mut self) {
         if Rc::strong_count(&self.inner) == 1 {
             // This is the last one, give the buffer back to the collection.
@@ -70,12 +67,12 @@ impl Drop for AutoReturnBuffer {
     }
 }
 
-impl AutoReturnBuffer {
-    pub fn borrow_mut(&self) -> RefMut<BufferType> {
+impl<const SIZE: usize> AutoReturnBuffer<SIZE> {
+    pub fn borrow_mut(&self) -> RefMut<[u8; SIZE]> {
         self.inner.borrow_mut()
     }
 
-    pub fn borrow(&self) -> Ref<BufferType> {
+    pub fn borrow(&self) -> Ref<[u8; SIZE]> {
         self.inner.borrow()
     }
 }

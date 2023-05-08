@@ -12,19 +12,35 @@ use lattices::{dom_pair::DomPair, fake::Fake, ord::Max};
 
 pub type NodeId = usize;
 
-pub type MyLastWriteWins = DomPair<Max<u128>, Bottom<Fake<AutoReturnBuffer>>>;
+pub type MyLastWriteWins<const SIZE: usize> =
+    DomPair<Max<u128>, Bottom<Fake<AutoReturnBuffer<SIZE>>>>;
 pub type MySetUnion = SetUnionHashSet<(NodeId, usize)>;
 
 #[derive(Clone, Debug)]
-pub enum KvsRequest {
-    Put { key: u64, value: AutoReturnBuffer },
-    Get { key: u64 },
-    Gossip { key: u64, reg: MyLastWriteWins },
-    Delete { key: u64 },
+pub enum KvsRequest<const SIZE: usize> {
+    Put {
+        key: u64,
+        value: AutoReturnBuffer<SIZE>,
+    },
+    Get {
+        key: u64,
+    },
+    Gossip {
+        key: u64,
+        reg: MyLastWriteWins<SIZE>,
+    },
+    Delete {
+        key: u64,
+    },
 }
 
 #[derive(Clone, Debug)]
-pub enum KvsResponse {
-    _PutResponse { key: u64 },
-    GetResponse { key: u64, reg: MyLastWriteWins },
+pub enum KvsResponse<const SIZE: usize> {
+    _PutResponse {
+        key: u64,
+    },
+    GetResponse {
+        key: u64,
+        reg: MyLastWriteWins<SIZE>,
+    },
 }

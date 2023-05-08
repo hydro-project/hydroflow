@@ -1,9 +1,9 @@
 use crate::protocol::KvsRequest;
 use serde::de::{SeqAccess, Visitor};
 
-pub struct KvsRequestGetVisitor;
-impl<'de> Visitor<'de> for KvsRequestGetVisitor {
-    type Value = KvsRequest;
+pub struct KvsRequestGetVisitor<const SIZE: usize>;
+impl<'de, const SIZE: usize> Visitor<'de> for KvsRequestGetVisitor<SIZE> {
+    type Value = KvsRequest<SIZE>;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         formatter.write_str("KvsRequest::Get")

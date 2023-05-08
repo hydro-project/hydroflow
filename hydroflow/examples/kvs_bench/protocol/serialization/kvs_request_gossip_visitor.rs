@@ -6,11 +6,11 @@ use lattices::{bottom::Bottom, fake::Fake, ord::Max};
 use serde::de::{SeqAccess, Visitor};
 use std::{cell::RefCell, rc::Rc};
 
-pub struct KvsRequestGossipVisitor {
-    pub collector: Rc<RefCell<BufferPool>>,
+pub struct KvsRequestGossipVisitor<const SIZE: usize> {
+    pub collector: Rc<RefCell<BufferPool<SIZE>>>,
 }
-impl<'de> Visitor<'de> for KvsRequestGossipVisitor {
-    type Value = KvsRequest;
+impl<'de, const SIZE: usize> Visitor<'de> for KvsRequestGossipVisitor<SIZE> {
+    type Value = KvsRequest<SIZE>;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         formatter.write_str("KvsRequest::Gossip")
@@ -46,7 +46,7 @@ impl<'de> Visitor<'de> for KvsRequestGossipVisitor {
     {
         let mut key = None;
         let mut marker = None;
-        let mut buffer: Option<Option<AutoReturnBuffer>> = None;
+        let mut buffer: Option<Option<AutoReturnBuffer<SIZE>>> = None;
 
         loop {
             let k: Option<String> = map.next_key()?;
