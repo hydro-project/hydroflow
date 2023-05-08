@@ -1,12 +1,11 @@
 use super::{AutoReturnBuffer, BufferPool};
-use crate::buffer_pool::BufferType;
 use serde::{
     de::{DeserializeSeed, Visitor},
     Deserializer, Serialize, Serializer,
 };
 use std::{cell::RefCell, rc::Rc};
 
-impl Serialize for AutoReturnBuffer {
+impl<const SIZE: usize> Serialize for AutoReturnBuffer<SIZE> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -15,20 +14,20 @@ impl Serialize for AutoReturnBuffer {
     }
 }
 
-pub struct AutoReturnBufferDeserializer {
-    pub collector: Rc<RefCell<BufferPool>>,
+pub struct AutoReturnBufferDeserializer<const SIZE: usize> {
+    pub collector: Rc<RefCell<BufferPool<SIZE>>>,
 }
 
-impl<'de> DeserializeSeed<'de> for AutoReturnBufferDeserializer {
-    type Value = AutoReturnBuffer;
+impl<'de, const SIZE: usize> DeserializeSeed<'de> for AutoReturnBufferDeserializer<SIZE> {
+    type Value = AutoReturnBuffer<SIZE>;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,
     {
-        struct BytesVisitor;
-        impl<'de> Visitor<'de> for BytesVisitor {
-            type Value = BufferType;
+        struct BytesVisitor<const SIZE: usize>;
+        impl<'de, const SIZE: usize> Visitor<'de> for BytesVisitor<SIZE> {
+            type Value = [u8; SIZE];
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                 formatter.write_str(std::any::type_name::<Self::Value>())
@@ -61,22 +60,22 @@ impl<'de> DeserializeSeed<'de> for AutoReturnBufferDeserializer {
     }
 }
 
-pub struct OptionalAutoReturnBufferDeserializer {
-    pub collector: Rc<RefCell<BufferPool>>,
+pub struct OptionalAutoReturnBufferDeserializer<const SIZE: usize> {
+    pub collector: Rc<RefCell<BufferPool<SIZE>>>,
 }
-impl<'de> DeserializeSeed<'de> for OptionalAutoReturnBufferDeserializer {
-    type Value = Option<AutoReturnBuffer>;
+impl<'de, const SIZE: usize> DeserializeSeed<'de> for OptionalAutoReturnBufferDeserializer<SIZE> {
+    type Value = Option<AutoReturnBuffer<SIZE>>;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        struct OptionVisitor {
-            pub collector: Rc<RefCell<BufferPool>>,
+        struct OptionVisitor<const SIZE: usize> {
+            pub collector: Rc<RefCell<BufferPool<SIZE>>>,
         }
 
-        impl<'de> Visitor<'de> for OptionVisitor {
-            type Value = Option<AutoReturnBuffer>;
+        impl<'de, const SIZE: usize> Visitor<'de> for OptionVisitor<SIZE> {
+            type Value = Option<AutoReturnBuffer<SIZE>>;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                 formatter.write_str(std::any::type_name::<Self::Value>())
@@ -87,7 +86,7 @@ impl<'de> DeserializeSeed<'de> for OptionalAutoReturnBufferDeserializer {
                 D: Deserializer<'de>,
             {
                 Ok(Some(
-                    <AutoReturnBufferDeserializer as DeserializeSeed>::deserialize(
+                    <AutoReturnBufferDeserializer<SIZE> as DeserializeSeed>::deserialize(
                         AutoReturnBufferDeserializer {
                             collector: self.collector,
                         },

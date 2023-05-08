@@ -1,9 +1,9 @@
 use crate::protocol::KvsRequest;
 use serde::de::{SeqAccess, Visitor};
 
-pub struct KvsRequestDeleteVisitor;
-impl<'de> Visitor<'de> for KvsRequestDeleteVisitor {
-    type Value = KvsRequest;
+pub struct KvsRequestDeleteVisitor<const SIZE: usize>;
+impl<'de, const SIZE: usize> Visitor<'de> for KvsRequestDeleteVisitor<SIZE> {
+    type Value = KvsRequest<SIZE>;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         formatter.write_str("KvsRequest::Delete")
