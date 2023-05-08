@@ -47,16 +47,17 @@ pub fn run_server<RX>(
             .unwrap();
 
         rt.block_on(async {
+            const BUFFER_SIZE: usize = 1024;
 
-            let buffer_pool = BufferPool::create_buffer_pool();
+            let buffer_pool = BufferPool::<BUFFER_SIZE>::create_buffer_pool();
 
             let (transducer_to_peers_tx, mut transducer_to_peers_rx) =
-                hydroflow::util::unsync_channel::<(KvsRequest, NodeId)>(None);
+                hydroflow::util::unsync_channel::<(KvsRequest<BUFFER_SIZE>, NodeId)>(None);
 
             let (client_to_transducer_tx, client_to_transducer_rx) =
-                hydroflow::util::unsync_channel::<(KvsRequest, NodeId)>(None);
+                hydroflow::util::unsync_channel::<(KvsRequest<BUFFER_SIZE>, NodeId)>(None);
             let (transducer_to_client_tx, mut _transducer_to_client_rx) =
-                hydroflow::util::unsync_channel::<(KvsResponse, NodeId)>(None);
+                hydroflow::util::unsync_channel::<(KvsResponse<BUFFER_SIZE>, NodeId)>(None);
 
             let localset = tokio::task::LocalSet::new();
 
@@ -180,7 +181,7 @@ pub fn run_server<RX>(
 
                 client_input = merge_puts_and_gossip_requests
                     -> enumerate::<'static>()
-                    -> demux(|(e, (req, addr)): (usize, (KvsRequest, NodeId)), var_args!(gets, store, broadcast)| {
+                    -> demux(|(e, (req, addr)): (usize, (KvsRequest<BUFFER_SIZE>, NodeId)), var_args!(gets, store, broadcast)| {
                         match req {
                             KvsRequest::Put {key, value} => {
                                 throughput_internal += 1;
@@ -235,7 +236,7 @@ pub fn run_server<RX>(
                     -> for_each(|(node_id, req)| transducer_to_peers_tx.try_send((req, node_id)).unwrap());
 
                 // join for lookups
-                lookup = lattice_join::<'static, 'tick, MyLastWriteWins, MySetUnion>();
+                lookup = lattice_join::<'static, 'tick, MyLastWriteWins<BUFFER_SIZE>, MySetUnion>();
 
                 client_input[store]
                     // -> inspect(|x| println!("{server_id}:{:5}: stores-into-lookup: {x:?}", context.current_tick()))

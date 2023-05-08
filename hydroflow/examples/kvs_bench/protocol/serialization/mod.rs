@@ -20,7 +20,7 @@ use serde::{
 };
 use std::{cell::RefCell, rc::Rc};
 
-impl Serialize for KvsRequest {
+impl<const SIZE: usize> Serialize for KvsRequest<SIZE> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -53,22 +53,22 @@ impl Serialize for KvsRequest {
     }
 }
 
-pub struct KvsRequestDeserializer {
-    pub collector: Rc<RefCell<BufferPool>>,
+pub struct KvsRequestDeserializer<const SIZE: usize> {
+    pub collector: Rc<RefCell<BufferPool<SIZE>>>,
 }
 
-impl<'de> DeserializeSeed<'de> for KvsRequestDeserializer {
-    type Value = KvsRequest;
+impl<'de, const SIZE: usize> DeserializeSeed<'de> for KvsRequestDeserializer<SIZE> {
+    type Value = KvsRequest<SIZE>;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        struct KvsRequestVisitor {
-            collector: Rc<RefCell<BufferPool>>,
+        struct KvsRequestVisitor<const SIZE: usize> {
+            collector: Rc<RefCell<BufferPool<SIZE>>>,
         }
-        impl<'de> Visitor<'de> for KvsRequestVisitor {
-            type Value = KvsRequest;
+        impl<'de, const SIZE: usize> Visitor<'de> for KvsRequestVisitor<SIZE> {
+            type Value = KvsRequest<SIZE>;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                 formatter.write_str("KvsRequest enum")
