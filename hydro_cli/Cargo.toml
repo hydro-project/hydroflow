@@ -10,9 +10,6 @@ name = "hydro"
 # "cdylib" is necessary to produce a shared library for Python to import from.
 crate-type = ["cdylib"]
 
-[package.metadata.maturin]
-name = "hydro._core"
-
 [dependencies]
 tokio = { version = "1.16", features = [ "full" ] }
 tokio-util = { version = "0.7.7", features=[ "compat" ] }
