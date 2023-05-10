@@ -41,7 +41,7 @@ impl<const SIZE: usize> Serialize for KvsRequest<SIZE> {
             }
             KvsRequest::Gossip { map } => {
                 let mut s = serializer.serialize_struct_variant("KvsRequest", 2, "Gossip", 1)?;
-                s.serialize_field("map", &MapUnionHashMapWrapper(&map))?;
+                s.serialize_field("map", &MapUnionHashMapWrapper(map))?;
                 s.end()
             }
             KvsRequest::Delete { key } => {

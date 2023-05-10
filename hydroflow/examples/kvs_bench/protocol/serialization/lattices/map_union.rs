@@ -29,7 +29,7 @@ impl<'a, const SIZE: usize> Serialize for MapUnionHashMapWrapper<'a, SIZE> {
         let mut map_serializer = serializer.serialize_map(Some(inner_map.len()))?;
 
         for (k, v) in inner_map {
-            map_serializer.serialize_entry(k, &MyLastWriteWinsWrapper(&v))?;
+            map_serializer.serialize_entry(k, &MyLastWriteWinsWrapper(v))?;
         }
 
         map_serializer.end()

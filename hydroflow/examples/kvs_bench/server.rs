@@ -188,7 +188,7 @@ pub fn run_server<RX>(
                         match req {
                             KvsRequest::Put {key, value} => {
                                 throughput_internal += 1;
-                                const GATE: usize = 1 * 1024;
+                                const GATE: usize = 2 * 1024;
                                 if std::intrinsics::unlikely(throughput_internal % GATE == 0) {
                                     throughput.fetch_add(GATE, Ordering::SeqCst);
                                 }
