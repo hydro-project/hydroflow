@@ -248,6 +248,7 @@ declare_ops![
     join::JOIN,
     keyed_fold::KEYED_FOLD,
     keyed_reduce::KEYED_REDUCE,
+    lattice_batch::LATTICE_BATCH,
     lattice_join::LATTICE_JOIN,
     lattice_merge::LATTICE_MERGE,
     map::MAP,
