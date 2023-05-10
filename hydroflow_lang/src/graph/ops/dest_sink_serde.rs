@@ -1,8 +1,6 @@
 use super::{make_missing_runtime_msg, FlowProperties, FlowPropertyVal};
 
-use super::{
-    OperatorConstraints, OperatorInstance, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
-};
+use super::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1};
 
 use quote::quote_spanned;
 
@@ -44,55 +42,33 @@ pub const DEST_SINK_SERDE: OperatorConstraints = OperatorConstraints {
     input_delaytype_fn: |_| None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
-                   hydroflow,
                    op_span,
                    ident,
                    op_name,
-                   op_inst: OperatorInstance { arguments, .. },
                    ..
                },
-               _| {
-        let sink_arg = &arguments[0];
-
-        let send_ident = wc.make_ident("item_send");
-        let recv_ident = wc.make_ident("item_recv");
-
+               diagnostics| {
         let missing_runtime_msg = make_missing_runtime_msg(op_name);
 
-        let write_prologue = quote_spanned! {op_span=>
-            let (#send_ident, #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel();
-            #hydroflow
-                .spawn_task(async move {
-                    use #root::futures::sink::SinkExt;
-
-                    let mut recv = #recv_ident;
-                    let mut sink = #sink_arg;
-                    while let Some((payload, addr)) = recv.recv().await {
-                        let item = (#root::util::serialize_to_bytes(payload), addr);
-                        sink.feed(item).await.expect("Error processing async sink item.");
-                        // Receive as many items synchronously as possible before flushing.
-                        while let Ok((payload, addr)) = recv.try_recv() {
-                            let item = (#root::util::serialize_to_bytes(payload), addr);
-                            sink.feed(item).await.expect("Error processing async sink item.");
-                        }
-                        sink.flush().await.expect("Failed to flush async sink.");
-                    }
-                })
-                .expect(#missing_runtime_msg);
-        };
+        let OperatorWriteOutput {
+            write_prologue,
+            write_iterator,
+            write_iterator_after,
+        } = (super::dest_sink::DEST_SINK.write_fn)(&wc, diagnostics)?;
 
         let write_iterator = quote_spanned! {op_span=>
-            let #ident = #root::pusherator::for_each::ForEach::new(|item| {
-                if let Err(err) = #send_ident.send(item) {
-                    panic!("Failed to send async write item for processing.: {}", err);
-                }
-            });
+            ::std::debug_assert!(#root::tokio::runtime::Handle::try_current().is_ok(), #missing_runtime_msg);
+            #write_iterator
+            let #ident = #root::pusherator::map::Map::new(
+                |(payload, addr)| (#root::util::serialize_to_bytes(payload), addr),
+                #ident,
+            );
         };
 
         Ok(OperatorWriteOutput {
             write_prologue,
             write_iterator,
-            ..Default::default()
+            write_iterator_after,
         })
     },
 };
