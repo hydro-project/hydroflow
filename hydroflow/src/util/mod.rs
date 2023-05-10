@@ -25,7 +25,8 @@ use std::task::{Context, Poll};
 
 use bincode;
 use futures::Stream;
-use serde::{Deserialize, Serialize};
+use serde::de::DeserializeOwned;
+use serde::ser::Serialize;
 
 /// Returns a channel as a (1) unbounded sender and (2) unbounded receiver `Stream` for use in Hydroflow.
 pub fn unbounded_channel<T>() -> (
@@ -98,7 +99,7 @@ where
 /// Serialize a message to bytes using bincode.
 pub fn serialize_to_bytes<T>(msg: T) -> bytes::Bytes
 where
-    T: Serialize + for<'a> Deserialize<'a> + Clone,
+    T: Serialize,
 {
     bytes::Bytes::from(bincode::serialize(&msg).unwrap())
 }
@@ -106,7 +107,7 @@ where
 /// Serialize a message from bytes using bincode.
 pub fn deserialize_from_bytes<T>(msg: impl AsRef<[u8]>) -> bincode::Result<T>
 where
-    T: Serialize + for<'a> Deserialize<'a> + Clone,
+    T: DeserializeOwned,
 {
     bincode::deserialize(msg.as_ref())
 }

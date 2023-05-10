@@ -106,11 +106,14 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
                    hydroflow,
                    op_span,
                    ident,
+                   is_pull,
                    op_name,
                    op_inst: OperatorInstance { arguments, .. },
                    ..
                },
                _| {
+        assert!(!is_pull);
+
         let sink_arg = &arguments[0];
 
         let send_ident = wc.make_ident("item_send");
