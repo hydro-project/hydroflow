@@ -54,7 +54,7 @@ pub const DEST_SINK_SERDE: OperatorConstraints = OperatorConstraints {
             write_prologue,
             write_iterator,
             write_iterator_after,
-        } = (super::dest_sink::DEST_SINK.write_fn)(&wc, diagnostics)?;
+        } = (super::dest_sink::DEST_SINK.write_fn)(wc, diagnostics)?;
 
         let write_iterator = quote_spanned! {op_span=>
             ::std::debug_assert!(#root::tokio::runtime::Handle::try_current().is_ok(), #missing_runtime_msg);
