@@ -156,11 +156,15 @@ jobs:
           target: wasm32-unknown-unknown
           override: ${{ matrix.rust_release == 'latest-nightly' }}
 
+      - name: Get wasm-bindgen version
+        id: wasm-bindgen-version
+        run: echo "VERSION=$(cargo pkgid wasm-bindgen-shared | cut -d '@' -f2)" >> "$GITHUB_OUTPUT"
+
       - name: Install WebAssembly test runner
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: wasm-bindgen-cli
+          args: wasm-bindgen-cli@${{ steps.wasm-bindgen-version.outputs.VERSION }}
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
