@@ -14,7 +14,6 @@ use rand::Rng;
 use rand::SeedableRng;
 use serde::de::DeserializeSeed;
 use serde::Serialize;
-use std::io::Cursor;
 use std::rc::Rc;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
@@ -25,10 +24,14 @@ use crate::Topology;
 use futures::Stream;
 use lattices::bottom::Bottom;
 use lattices::fake::Fake;
+use lattices::map_union::MapUnionHashMap;
+use lattices::map_union::MapUnionSingletonMap;
 use lattices::ord::Max;
 use lattices::set_union::SetUnionSingletonSet;
-use lattices::Merge;
 
+use bytes::BufMut;
+use bytes::Bytes;
+use bytes::BytesMut;
 use hydroflow::compiled::pull::HalfMultisetJoinState;
 
 pub fn run_server<RX>(
@@ -38,7 +41,7 @@ pub fn run_server<RX>(
     throughput: Arc<AtomicUsize>,
     print_mermaid: bool,
 ) where
-    RX: Stream<Item = (usize, Vec<u8>)> + StreamExt + Unpin + Send + 'static,
+    RX: Stream<Item = (usize, Bytes)> + StreamExt + Unpin + Send + 'static,
 {
     std::thread::spawn(move || {
         let rt = tokio::runtime::Builder::new_current_thread()
@@ -52,7 +55,7 @@ pub fn run_server<RX>(
             let buffer_pool = BufferPool::<BUFFER_SIZE>::create_buffer_pool();
 
             let (transducer_to_peers_tx, mut transducer_to_peers_rx) =
-                hydroflow::util::unsync_channel::<(KvsRequest<BUFFER_SIZE>, NodeId)>(None);
+                hydroflow::util::unsync_channel::<(Bytes, NodeId)>(None);
 
             let (client_to_transducer_tx, client_to_transducer_rx) =
                 hydroflow::util::unsync_channel::<(KvsRequest<BUFFER_SIZE>, NodeId)>(None);
@@ -91,14 +94,9 @@ pub fn run_server<RX>(
                 // TODO: Eventually this would get moved into a hydroflow operator that would return a Bytes struct and be efficient and zero copy and etc.
                 async move {
                     loop {
-                        while let Some((req, node_id)) = transducer_to_peers_rx.next().await {
+                        while let Some((serialized_req, node_id)) = transducer_to_peers_rx.next().await {
                             let index = lookup.binary_search(&node_id).unwrap();
-
-                            let mut serialized = Vec::new();
-                            let mut serializer = bincode::Serializer::new(Cursor::new(&mut serialized), options());
-                            Serialize::serialize(&req, &mut serializer).unwrap();
-
-                            topology.tx[index].send(serialized).unwrap();
+                            topology.tx[index].send(serialized_req).unwrap();
                         }
                     }
                 }
@@ -137,12 +135,17 @@ pub fn run_server<RX>(
             let mut pre_gen_index = 0;
             let pre_gen_random_numbers: Vec<u64> = (0..(128*1024)).map(|_| rng.sample(dist) as u64).collect();
 
-            let create_unique_id = move |server_id: u128, e: u128| -> u128 {
+            let create_unique_id = move |server_id: u128, tick: usize, e: u128| -> u128 {
+                assert!(tick < 1_000_000_000);
+                assert!(e < 1_000_000_000);
+
                 (relatively_recent_timestamp.load(Ordering::Relaxed) as u128)
-                    .saturating_mul(100)
-                    .saturating_add(server_id)
-                    .saturating_mul(1_000_000_000)
-                    .saturating_add(e % 1_000_000_000)
+                    .checked_mul(100).unwrap()
+                    .checked_add(server_id).unwrap()
+                    .checked_mul(1_000_000_000).unwrap()
+                    .checked_add(tick as u128).unwrap()
+                    .checked_mul(1_000_000_000).unwrap()
+                    .checked_add(e).unwrap()
             };
 
             let mut throughput_internal = 0usize;
@@ -180,16 +183,16 @@ pub fn run_server<RX>(
                     -> merge_puts_and_gossip_requests;
 
                 client_input = merge_puts_and_gossip_requests
-                    -> enumerate::<'static>()
+                    -> enumerate::<'tick>()
                     -> demux(|(e, (req, addr)): (usize, (KvsRequest<BUFFER_SIZE>, NodeId)), var_args!(gets, store, broadcast)| {
                         match req {
                             KvsRequest::Put {key, value} => {
                                 throughput_internal += 1;
-                                const GATE: usize = 32 * 1024;
+                                const GATE: usize = 1 * 1024;
                                 if std::intrinsics::unlikely(throughput_internal % GATE == 0) {
                                     throughput.fetch_add(GATE, Ordering::SeqCst);
                                 }
-                                let marker = create_unique_id(server_id as u128, e as u128);
+                                let marker = create_unique_id(server_id as u128, context.current_tick(), e as u128);
 
                                 broadcast.give((key, MyLastWriteWins::new(
                                     Max::new(marker),
@@ -201,12 +204,14 @@ pub fn run_server<RX>(
                                     Bottom::new(Fake::new(value)),
                                 )));
                             },
-                            KvsRequest::Gossip {key, reg} => {
-                                store.give((key, reg));
+                            KvsRequest::Gossip {map} => {
+                                for (key, reg) in map.0 {
+                                    store.give((key, reg));
+                                }
                             },
                             KvsRequest::Get {key} => gets.give((key, addr)),
                             KvsRequest::Delete {key} => {
-                                let marker = create_unique_id(server_id as u128, e as u128);
+                                let marker = create_unique_id(server_id as u128, context.current_tick(), e as u128);
 
                                 broadcast.give((key, MyLastWriteWins::new(
                                     Max::new(marker),
@@ -226,14 +231,23 @@ pub fn run_server<RX>(
 
                 // broadcast out locally generated changes to other nodes.
                 client_input[broadcast]
-                    -> batch(1000, batch_interval_ticker) // TODO: What we really want here is merging them while batching.
-                    -> keyed_reduce::<'tick>(Merge::merge) // TODO: Change to reduce syntax.
+                    -> map(|(key, reg)| MapUnionSingletonMap::new_from((key, reg)))
+                    -> lattice_batch::<MapUnionHashMap<_, _>>(batch_interval_ticker)
+                    -> map(|lattice| {
+                        use bincode::Options;
+                        let serialization_options = options();
+                        let req = KvsRequest::Gossip { map: lattice };
+                        let mut serialized = BytesMut::with_capacity(serialization_options.serialized_size(&req).unwrap() as usize);
+                        let mut serializer = bincode::Serializer::new((&mut serialized).writer(), options());
+                        Serialize::serialize(&req, &mut serializer).unwrap();
+
+                        serialized.freeze()
+                    })
                     -> [1]peers;
 
                 peers
                     // -> inspect(|x| println!("{server_id}:{:5}: sending to peers: {x:?}", context.current_tick()))
-                    -> map(|(dst, (key, reg))| (dst, KvsRequest::Gossip { key, reg }) )
-                    -> for_each(|(node_id, req)| transducer_to_peers_tx.try_send((req, node_id)).unwrap());
+                    -> for_each(|(node_id, serialized_req)| transducer_to_peers_tx.try_send((serialized_req, node_id)).unwrap());
 
                 // join for lookups
                 lookup = lattice_join::<'static, 'tick, MyLastWriteWins<BUFFER_SIZE>, MySetUnion>();
