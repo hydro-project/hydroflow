@@ -7,24 +7,10 @@ use bincode::options;
 use serde::{de::DeserializeSeed, Serialize};
 use std::{cell::RefCell, rc::Rc};
 
-fn assert_eq_req(r1: &KvsRequest, r2: &KvsRequest) {
+fn assert_eq_req<const SIZE: usize>(r1: &KvsRequest<SIZE>, r2: &KvsRequest<SIZE>) {
     match (r1, r2) {
-        (
-            KvsRequest::Gossip {
-                key: key1,
-                reg: reg1,
-            },
-            KvsRequest::Gossip {
-                key: key2,
-                reg: reg2,
-            },
-        ) => {
-            assert_eq!(key1, key2);
-            assert_eq!(reg1.key, reg2.key);
-            assert_eq!(
-                *reg1.val.0.as_ref().unwrap().0.inner.borrow(),
-                *reg2.val.0.as_ref().unwrap().0.inner.borrow()
-            );
+        (KvsRequest::Gossip { map: map1 }, KvsRequest::Gossip { map: map2 }) => {
+            assert_eq!(map1, map2);
         }
         (KvsRequest::Delete { key: key1 }, KvsRequest::Delete { key: key2 }) => {
             assert_eq!(key1, key2);
@@ -49,12 +35,12 @@ fn assert_eq_req(r1: &KvsRequest, r2: &KvsRequest) {
     }
 }
 
-fn serialize_deserialize<'de, S, D>(
-    req: &KvsRequest,
-    buffer_pool: &Rc<RefCell<BufferPool>>,
+fn serialize_deserialize<'de, S, D, const SIZE: usize>(
+    req: &KvsRequest<SIZE>,
+    buffer_pool: &Rc<RefCell<BufferPool<SIZE>>>,
     mut serializer: S,
     mut deserializer: D,
-) -> KvsRequest
+) -> KvsRequest<SIZE>
 where
     for<'a> &'a mut S: serde::Serializer,
     for<'b> &'b mut D: serde::Deserializer<'de>,
@@ -72,7 +58,10 @@ where
     req2
 }
 
-pub fn check_all(buffer_pool: &Rc<RefCell<BufferPool>>, req: &KvsRequest) {
+pub fn check_all<const SIZE: usize>(
+    buffer_pool: &Rc<RefCell<BufferPool<SIZE>>>,
+    req: &KvsRequest<SIZE>,
+) {
     {
         let buffer = MagicBuffer::default();
 

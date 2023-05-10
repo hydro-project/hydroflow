@@ -7,6 +7,7 @@ pub use serialization::KvsRequestDeserializer;
 
 use crate::buffer_pool::AutoReturnBuffer;
 use lattices::bottom::Bottom;
+use lattices::map_union::MapUnionHashMap;
 use lattices::set_union::SetUnionHashSet;
 use lattices::{dom_pair::DomPair, fake::Fake, ord::Max};
 
@@ -26,8 +27,7 @@ pub enum KvsRequest<const SIZE: usize> {
         key: u64,
     },
     Gossip {
-        key: u64,
-        reg: MyLastWriteWins<SIZE>,
+        map: MapUnionHashMap<u64, MyLastWriteWins<SIZE>>,
     },
     Delete {
         key: u64,

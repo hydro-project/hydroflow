@@ -1,7 +1,6 @@
 mod serialization;
 
 pub use serialization::AutoReturnBufferDeserializer;
-pub use serialization::OptionalAutoReturnBufferDeserializer;
 
 use std::{
     cell::{Ref, RefCell, RefMut},
@@ -76,3 +75,10 @@ impl<const SIZE: usize> AutoReturnBuffer<SIZE> {
         self.inner.borrow()
     }
 }
+
+impl<const SIZE: usize> PartialEq for AutoReturnBuffer<SIZE> {
+    fn eq(&self, other: &Self) -> bool {
+        *self.inner.borrow() == *other.inner.borrow()
+    }
+}
+impl<const SIZE: usize> Eq for AutoReturnBuffer<SIZE> {}
