@@ -145,13 +145,13 @@ are based on the Rust equivalents for iterators; see the <a href="https://doc.ru
 <tr><td><a href="#enumerate"><code>enumerate</code></a></td><td><a href="#filter"><code>filter</code></a></td><td><a href="#filter_map"><code>filter_map</code></a></td><td><a href="#flat_map"><code>flat_map</code></a></td></tr>
 <tr><td><a href="#flatten"><code>flatten</code></a></td><td><a href="#fold"><code>fold</code></a></td><td><a href="#for_each"><code>for_each</code></a></td><td><a href="#group_by"><code>group_by</code></a></td></tr>
 <tr><td><a href="#identity"><code>identity</code></a></td><td><a href="#initialize"><code>initialize</code></a></td><td><a href="#inspect"><code>inspect</code></a></td><td><a href="#join"><code>join</code></a></td></tr>
-<tr><td><a href="#keyed_fold"><code>keyed_fold</code></a></td><td><a href="#keyed_reduce"><code>keyed_reduce</code></a></td><td><a href="#lattice_join"><code>lattice_join</code></a></td><td><a href="#lattice_merge"><code>lattice_merge</code></a></td></tr>
-<tr><td><a href="#map"><code>map</code></a></td><td><a href="#merge"><code>merge</code></a></td><td><a href="#next_stratum"><code>next_stratum</code></a></td><td><a href="#next_tick"><code>next_tick</code></a></td></tr>
-<tr><td><a href="#null"><code>null</code></a></td><td><a href="#persist"><code>persist</code></a></td><td><a href="#reduce"><code>reduce</code></a></td><td><a href="#repeat_fn"><code>repeat_fn</code></a></td></tr>
-<tr><td><a href="#repeat_iter"><code>repeat_iter</code></a></td><td><a href="#repeat_iter_external"><code>repeat_iter_external</code></a></td><td><a href="#sort"><code>sort</code></a></td><td><a href="#sort_by"><code>sort_by</code></a></td></tr>
-<tr><td><a href="#source_file"><code>source_file</code></a></td><td><a href="#source_interval"><code>source_interval</code></a></td><td><a href="#source_iter"><code>source_iter</code></a></td><td><a href="#source_json"><code>source_json</code></a></td></tr>
-<tr><td><a href="#source_stdin"><code>source_stdin</code></a></td><td><a href="#source_stream"><code>source_stream</code></a></td><td><a href="#source_stream_serde"><code>source_stream_serde</code></a></td><td><a href="#tee"><code>tee</code></a></td></tr>
-<tr><td><a href="#unique"><code>unique</code></a></td><td><a href="#unzip"><code>unzip</code></a></td><td></td><td></td></tr>
+<tr><td><a href="#keyed_fold"><code>keyed_fold</code></a></td><td><a href="#keyed_reduce"><code>keyed_reduce</code></a></td><td><a href="#lattice_batch"><code>lattice_batch</code></a></td><td><a href="#lattice_join"><code>lattice_join</code></a></td></tr>
+<tr><td><a href="#lattice_merge"><code>lattice_merge</code></a></td><td><a href="#map"><code>map</code></a></td><td><a href="#merge"><code>merge</code></a></td><td><a href="#next_stratum"><code>next_stratum</code></a></td></tr>
+<tr><td><a href="#next_tick"><code>next_tick</code></a></td><td><a href="#null"><code>null</code></a></td><td><a href="#persist"><code>persist</code></a></td><td><a href="#reduce"><code>reduce</code></a></td></tr>
+<tr><td><a href="#repeat_fn"><code>repeat_fn</code></a></td><td><a href="#repeat_iter"><code>repeat_iter</code></a></td><td><a href="#repeat_iter_external"><code>repeat_iter_external</code></a></td><td><a href="#sort"><code>sort</code></a></td></tr>
+<tr><td><a href="#sort_by"><code>sort_by</code></a></td><td><a href="#source_file"><code>source_file</code></a></td><td><a href="#source_interval"><code>source_interval</code></a></td><td><a href="#source_iter"><code>source_iter</code></a></td></tr>
+<tr><td><a href="#source_json"><code>source_json</code></a></td><td><a href="#source_stdin"><code>source_stdin</code></a></td><td><a href="#source_stream"><code>source_stream</code></a></td><td><a href="#source_stream_serde"><code>source_stream_serde</code></a></td></tr>
+<tr><td><a href="#tee"><code>tee</code></a></td><td><a href="#unique"><code>unique</code></a></td><td><a href="#unzip"><code>unzip</code></a></td><td></td></tr>
 </tbody></table>
 </div>
 <h2 id="anti_join"><a class="header" href="#anti_join"><code>anti_join</code></a></h2>
@@ -1117,6 +1117,38 @@ flow.run_available();
 input_send.send((&quot;hello&quot;, &quot;palo alto&quot;)).unwrap();
 flow.run_available();
 // (&quot;hello&quot;, &quot;palo alto, &quot;)
+<span class="boring">}
+</span></code></pre></pre>
+<h2 id="lattice_batch"><a class="header" href="#lattice_batch"><code>lattice_batch</code></a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
+<tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; lattice_batch(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
+</tbody></table>
+</div><!-- GENERATED "hydroflow_lang/src/graph/ops/lattice_batch.rs" -->
+<blockquote>
+<p>1 input stream, 1 output stream</p>
+</blockquote>
+<blockquote>
+<p>Arguments: The one and only argument is the receive end of a tokio channel that signals when to release the batch downstream.</p>
+</blockquote>
+<p>Given a <a href="https://docs.rs/futures/latest/futures/stream/trait.Stream.html"><code>Stream</code></a>
+created in Rust code, <code>lattice_batch</code>
+is passed the receive end of the channel and when receiving any element
+will pass through all received inputs to the output unchanged.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>    let (tx, rx) = hydroflow::util::unbounded_channel::&lt;()&gt;();
+
+    // Will print 0, 1, 2, 3, 4 each on a new line just once.
+    let mut df = hydroflow::hydroflow_syntax! {
+        repeat_iter(0..5)
+            -&gt; map(|x| hydroflow::lattices::ord::Max::new(x))
+            -&gt; lattice_batch::&lt;hydroflow::lattices::ord::Max&lt;usize&gt;&gt;(rx)
+            -&gt; for_each(|x| { println!(&quot;{x:?}&quot;); });
+    };
+
+    tx.send(()).unwrap();
+
+    df.run_available();
 <span class="boring">}
 </span></code></pre></pre>
 <h2 id="lattice_join"><a class="header" href="#lattice_join"><code>lattice_join</code></a></h2>
