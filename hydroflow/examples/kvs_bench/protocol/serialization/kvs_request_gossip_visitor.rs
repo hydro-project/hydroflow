@@ -1,8 +1,5 @@
-use crate::{
-    buffer_pool::{AutoReturnBuffer, BufferPool, OptionalAutoReturnBufferDeserializer},
-    protocol::{KvsRequest, MyLastWriteWins},
-};
-use lattices::{bottom::Bottom, fake::Fake, ord::Max};
+use super::lattices::MapUnionHashMapDeserializer;
+use crate::{buffer_pool::BufferPool, protocol::KvsRequest};
 use serde::de::{SeqAccess, Visitor};
 use std::{cell::RefCell, rc::Rc};
 
@@ -20,70 +17,26 @@ impl<'de, const SIZE: usize> Visitor<'de> for KvsRequestGossipVisitor<SIZE> {
     where
         A: SeqAccess<'de>,
     {
-        let key: u64 = seq.next_element()?.unwrap();
-        let marker: u128 = seq.next_element()?.unwrap();
-        let buffer = seq
-            .next_element_seed(OptionalAutoReturnBufferDeserializer {
+        let map = seq
+            .next_element_seed(MapUnionHashMapDeserializer {
                 collector: self.collector,
             })?
             .unwrap();
 
-        let val = if let Some(buffer) = buffer {
-            Bottom::new(Fake::new(buffer))
-        } else {
-            Bottom::default()
-        };
-
-        Ok(KvsRequest::Gossip {
-            key,
-            reg: MyLastWriteWins::new(Max::new(marker), val),
-        })
+        Ok(KvsRequest::Gossip { map })
     }
 
     fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
     where
         A: serde::de::MapAccess<'de>,
     {
-        let mut key = None;
-        let mut marker = None;
-        let mut buffer: Option<Option<AutoReturnBuffer<SIZE>>> = None;
-
-        loop {
-            let k: Option<String> = map.next_key()?;
-            if let Some(k) = k {
-                match k.as_str() {
-                    "key" => {
-                        key = Some(map.next_value()?);
-                    }
-                    "marker" => {
-                        marker = Some(map.next_value()?);
-                    }
-                    "buffer" => {
-                        buffer =
-                            Some(map.next_value_seed(OptionalAutoReturnBufferDeserializer {
-                                collector: self.collector.clone(),
-                            })?);
-                    }
-                    _ => panic!(),
-                }
-            } else {
-                break;
-            }
-        }
-
-        assert!(key.is_some());
-        assert!(marker.is_some());
-        assert!(buffer.is_some());
-
-        let val = if let Some(buffer) = buffer.unwrap() {
-            Bottom::new(Fake::new(buffer))
-        } else {
-            Bottom::default()
-        };
+        let k: Option<String> = map.next_key()?;
+        assert_eq!(k.unwrap(), "map");
 
         Ok(KvsRequest::Gossip {
-            key: key.unwrap(),
-            reg: MyLastWriteWins::new(Max::new(marker.unwrap()), val),
+            map: map.next_value_seed(MapUnionHashMapDeserializer {
+                collector: self.collector,
+            })?,
         })
     }
 }

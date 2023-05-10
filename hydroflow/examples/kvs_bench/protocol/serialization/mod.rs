@@ -2,7 +2,9 @@ mod kvs_request_delete_visitor;
 mod kvs_request_get_visitor;
 mod kvs_request_gossip_visitor;
 mod kvs_request_put_visitor;
+mod lattices;
 
+use self::lattices::MapUnionHashMapWrapper;
 use super::KvsRequest;
 use crate::{
     buffer_pool::BufferPool,
@@ -37,11 +39,9 @@ impl<const SIZE: usize> Serialize for KvsRequest<SIZE> {
                 s.serialize_field("key", key)?;
                 s.end()
             }
-            KvsRequest::Gossip { key, reg } => {
-                let mut s = serializer.serialize_struct_variant("KvsRequest", 2, "Gossip", 3)?;
-                s.serialize_field("key", key)?;
-                s.serialize_field("marker", &reg.key.0)?;
-                s.serialize_field("buffer", &reg.val.0.as_ref().map(|x| &x.0))?; // Serialize Option<AutoReturnBuffer> to minimze amount of boilerplate to write.
+            KvsRequest::Gossip { map } => {
+                let mut s = serializer.serialize_struct_variant("KvsRequest", 2, "Gossip", 1)?;
+                s.serialize_field("map", &MapUnionHashMapWrapper(map))?;
                 s.end()
             }
             KvsRequest::Delete { key } => {
@@ -90,7 +90,7 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for KvsRequestDeserializer<SIZ
                         variant.struct_variant(&["key"], KvsRequestGetVisitor)?
                     }
                     (KvsRequestField::Gossip, variant) => variant.struct_variant(
-                        &["key", "marker", "buffer"],
+                        &["map"],
                         KvsRequestGossipVisitor {
                             collector: self.collector,
                         },

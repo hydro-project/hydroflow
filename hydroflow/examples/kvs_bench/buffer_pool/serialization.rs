@@ -55,56 +55,7 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for AutoReturnBufferDeserializ
         }
 
         let buff = BufferPool::get_from_buffer_pool(&self.collector);
-        *buff.borrow_mut() = deserializer.deserialize_bytes(BytesVisitor)?;
+        *buff.borrow_mut() = deserializer.deserialize_bytes(BytesVisitor)?; // TODO: pass ref into deserialize_bytes so visitor can operate on it directly.
         Ok(buff)
-    }
-}
-
-pub struct OptionalAutoReturnBufferDeserializer<const SIZE: usize> {
-    pub collector: Rc<RefCell<BufferPool<SIZE>>>,
-}
-impl<'de, const SIZE: usize> DeserializeSeed<'de> for OptionalAutoReturnBufferDeserializer<SIZE> {
-    type Value = Option<AutoReturnBuffer<SIZE>>;
-
-    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        struct OptionVisitor<const SIZE: usize> {
-            pub collector: Rc<RefCell<BufferPool<SIZE>>>,
-        }
-
-        impl<'de, const SIZE: usize> Visitor<'de> for OptionVisitor<SIZE> {
-            type Value = Option<AutoReturnBuffer<SIZE>>;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str(std::any::type_name::<Self::Value>())
-            }
-
-            fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-            where
-                D: Deserializer<'de>,
-            {
-                Ok(Some(
-                    <AutoReturnBufferDeserializer<SIZE> as DeserializeSeed>::deserialize(
-                        AutoReturnBufferDeserializer {
-                            collector: self.collector,
-                        },
-                        deserializer,
-                    )?,
-                ))
-            }
-
-            fn visit_none<E>(self) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                Ok(None)
-            }
-        }
-
-        deserializer.deserialize_option(OptionVisitor {
-            collector: self.collector,
-        })
     }
 }

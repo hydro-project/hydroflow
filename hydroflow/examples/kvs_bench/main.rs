@@ -11,6 +11,7 @@ use clap::Parser;
 use clap::Subcommand;
 
 use crate::protocol::NodeId;
+use bytes::Bytes;
 use futures::Stream;
 use std::collections::HashMap;
 use std::sync::atomic::AtomicUsize;
@@ -52,16 +53,16 @@ enum Commands {
 
 pub struct Topology<RX>
 where
-    RX: Stream<Item = (usize, Vec<u8>)>,
+    RX: Stream<Item = (usize, Bytes)>,
 {
     pub lookup: Vec<usize>,
-    pub tx: Vec<UnboundedSender<Vec<u8>>>,
+    pub tx: Vec<UnboundedSender<Bytes>>,
     pub rx: Vec<RX>,
 }
 
 impl<RX> Default for Topology<RX>
 where
-    RX: Stream<Item = (usize, Vec<u8>)> + StreamExt + Unpin,
+    RX: Stream<Item = (usize, Bytes)> + StreamExt + Unpin,
 {
     fn default() -> Self {
         Self {
@@ -96,7 +97,7 @@ fn main() {
                         continue;
                     }
 
-                    let (tx, rx) = hydroflow::util::unbounded_channel::<Vec<u8>>();
+                    let (tx, rx) = hydroflow::util::unbounded_channel::<Bytes>();
 
                     {
                         let entry = nodes.entry(n1).or_default();
