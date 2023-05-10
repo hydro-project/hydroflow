@@ -179,6 +179,7 @@
 <a href="#179" id="179">179</a>
 <a href="#180" id="180">180</a>
 <a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
 </pre></div><pre class="rust"><code><span class="attr">#![deny(missing_docs)]
 </span><span class="doccomment">//! Helper utilities for the Hydroflow surface syntax.
 
@@ -206,7 +207,8 @@
 
 <span class="kw">use </span>bincode;
 <span class="kw">use </span>futures::Stream;
-<span class="kw">use </span>serde::{Deserialize, Serialize};
+<span class="kw">use </span>serde::de::DeserializeOwned;
+<span class="kw">use </span>serde::ser::Serialize;
 
 <span class="doccomment">/// Returns a channel as a (1) unbounded sender and (2) unbounded receiver `Stream` for use in Hydroflow.
 </span><span class="kw">pub fn </span>unbounded_channel&lt;T&gt;() -&gt; (
@@ -279,7 +281,7 @@
 <span class="doccomment">/// Serialize a message to bytes using bincode.
 </span><span class="kw">pub fn </span>serialize_to_bytes&lt;T&gt;(msg: T) -&gt; bytes::Bytes
 <span class="kw">where
-    </span>T: Serialize + <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Deserialize&lt;<span class="lifetime">&#39;a</span>&gt; + Clone,
+    </span>T: Serialize,
 {
     bytes::Bytes::from(bincode::serialize(<span class="kw-2">&amp;</span>msg).unwrap())
 }
@@ -287,7 +289,7 @@
 <span class="doccomment">/// Serialize a message from bytes using bincode.
 </span><span class="kw">pub fn </span>deserialize_from_bytes&lt;T&gt;(msg: <span class="kw">impl </span>AsRef&lt;[u8]&gt;) -&gt; bincode::Result&lt;T&gt;
 <span class="kw">where
-    </span>T: Serialize + <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; Deserialize&lt;<span class="lifetime">&#39;a</span>&gt; + Clone,
+    </span>T: DeserializeOwned,
 {
     bincode::deserialize(msg.as_ref())
 }
