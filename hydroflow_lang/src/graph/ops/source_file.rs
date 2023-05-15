@@ -52,7 +52,7 @@ pub const SOURCE_FILE: OperatorConstraints = OperatorConstraints {
 
         let ident_filelines = wc.make_ident("filelines");
 
-        let missing_runtime_msg = make_missing_runtime_msg(op_name);
+        let missing_runtime_msg = make_missing_runtime_msg(op_name, op_span);
 
         let write_prologue = quote_spanned! {op_span=>
             let #ident_filelines = {
