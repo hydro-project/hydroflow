@@ -1,10 +1,14 @@
 //! Module for the user-facing [`Context`] object.
+#![deny(missing_docs)]
 
 use std::any::Any;
 use std::future::Future;
 use std::marker::PhantomData;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
 use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::Notify;
 use tokio::task::JoinHandle;
 
 use super::graph::StateData;
@@ -35,8 +39,29 @@ pub struct Context {
 
     /// Join handles for spawned tasks.
     pub(crate) task_join_handles: Vec<JoinHandle<()>>,
+
+    /// Number of backpressure events triggered. Backpressure is binary: if anything triggers
+    /// backpressure the graph will block until all backpressure triggers are released.
+    pub(crate) backpresure_count: Arc<BackpressureInner>,
 }
 impl Context {
+    pub(crate) fn new(event_queue_send: UnboundedSender<(SubgraphId, bool)>) -> Self {
+        Self {
+            states: Vec::new(),
+
+            event_queue_send,
+
+            current_stratum: 0,
+            current_tick: 0,
+
+            subgraph_id: SubgraphId(0),
+
+            task_join_handles: Vec::new(),
+
+            backpresure_count: Default::default(),
+        }
+    }
+
     /// Gets the current tick (local time) count.
     pub fn current_tick(&self) -> usize {
         self.current_tick
@@ -60,8 +85,6 @@ impl Context {
     /// Returns a `Waker` for interacting with async Rust.
     /// Waker events are considered to be extenral.
     pub fn waker(&self) -> std::task::Waker {
-        use std::sync::Arc;
-
         use futures::task::ArcWake;
 
         struct ContextWaker {
@@ -159,5 +182,38 @@ impl Context {
     /// Will probably just hang.
     pub async fn join_tasks(&mut self) {
         futures::future::join_all(self.task_join_handles.drain(..)).await;
+    }
+
+    /// Return a handle to a [`BackpressureValve`] for triggering (and later releasing) backpressure.
+    pub fn backpressure_valve(&self) -> BackpressureValve {
+        BackpressureValve {
+            backpresure_count: Arc::clone(&self.backpresure_count),
+        }
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct BackpressureInner {
+    pub(crate) notify: Notify,
+    pub(crate) count: AtomicUsize,
+}
+
+/// Represents control over backpressure for a Hydroflow instance.
+#[derive(Clone)]
+pub struct BackpressureValve {
+    backpresure_count: Arc<BackpressureInner>,
+}
+
+impl BackpressureValve {
+    /// Trigger backpressure. It is an error to call this if backpressure is currently triggered.
+    pub fn trigger(&self) {
+        self.backpresure_count.count.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Release backpressure. It is an error to call this if backpressure is not currently triggered.
+    pub fn release(&self) {
+        if 0 == self.backpresure_count.count.fetch_sub(1, Ordering::Relaxed) {
+            self.backpresure_count.notify.notify_one();
+        }
     }
 }

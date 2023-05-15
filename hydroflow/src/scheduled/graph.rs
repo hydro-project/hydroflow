@@ -1,3 +1,4 @@
+#![deny(missing_docs)]
 //! Module for the [`Hydroflow`] struct and helper items.
 
 use std::any::Any;
@@ -6,13 +7,15 @@ use std::cell::Cell;
 use std::collections::VecDeque;
 use std::future::Future;
 use std::marker::PhantomData;
+use std::sync::atomic::Ordering;
 
 use hydroflow_lang::diagnostic::{Diagnostic, SerdeSpan};
 use hydroflow_lang::graph::HydroflowGraph;
 use ref_cast::RefCast;
+use tokio::runtime::Handle;
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 
-use super::context::Context;
+use super::context::{BackpressureValve, Context};
 use super::handoff::handoff_list::PortList;
 use super::handoff::{Handoff, HandoffMeta};
 use super::port::{RecvCtx, RecvPort, SendCtx, SendPort, RECV, SEND};
@@ -44,18 +47,7 @@ impl Default for Hydroflow {
     fn default() -> Self {
         let stratum_queues = vec![Default::default()]; // Always initialize stratum #0.
         let (event_queue_send, event_queue_recv) = mpsc::unbounded_channel();
-        let context = Context {
-            states: Vec::new(),
-
-            event_queue_send,
-
-            current_stratum: 0,
-            current_tick: 0,
-
-            subgraph_id: SubgraphId(0),
-
-            task_join_handles: Vec::new(),
-        };
+        let context = Context::new(event_queue_send);
         Self {
             subgraphs: Vec::new(),
             context,
@@ -137,6 +129,8 @@ impl Hydroflow {
             work_done = true;
             // Do any work.
             self.run_stratum();
+            // Wait for backpressure to release (if any).
+            self.wait_backpressure();
         }
         work_done
     }
@@ -152,6 +146,8 @@ impl Hydroflow {
             work_done = true;
             // Do any work.
             self.run_stratum();
+            // Wait for backpressure to release (if any).
+            self.wait_backpressure();
         }
         work_done
     }
@@ -169,6 +165,8 @@ impl Hydroflow {
             // Do any work.
             self.run_stratum();
 
+            // Wait for backpressure to release (if any).
+            self.wait_backpressure_async().await;
             // Yield between each stratum to receive more events.
             // TODO(mingwei): really only need to yield at start of ticks though.
             tokio::task::yield_now().await;
@@ -354,7 +352,26 @@ impl Hydroflow {
         Some(count + extra_count)
     }
 
-    /// Adds a new compiled subgraph with the specified inputs and outputs in stratum 0.
+    /// Wait for backpressure to release (blocking).
+    fn wait_backpressure(&mut self) {
+        while 0 < self.context.backpresure_count.count.load(Ordering::Relaxed) {
+            Handle::try_current()
+                .unwrap()
+                .block_on(self.context.backpresure_count.notify.notified())
+        }
+    }
+
+    /// Wait for backpressure to release (non-blocking).
+    async fn wait_backpressure_async(&mut self) {
+        // Await any backpressure.
+        while 0 < self.context.backpresure_count.count.load(Ordering::Relaxed) {
+            self.context.backpresure_count.notify.notified().await;
+        }
+    }
+
+    /// Add a subgraph, returns the subgraph ID.
+    ///
+    /// The subgraph will be in stratum 0.
     pub fn add_subgraph<Name, R, W, F>(
         &mut self,
         name: Name,
@@ -572,6 +589,11 @@ impl Hydroflow {
     pub fn join_tasks(&mut self) -> impl '_ + Future {
         self.context.join_tasks()
     }
+
+    /// Return a handle to a [`BackpressureValve`] for triggering (and later releasing) backpressure.
+    pub fn backpressure_valve(&self) -> BackpressureValve {
+        self.context.backpressure_valve()
+    }
 }
 
 impl Drop for Hydroflow {
@@ -604,7 +626,7 @@ impl std::fmt::Debug for HandoffData {
     }
 }
 impl HandoffData {
-    pub fn new(name: Cow<'static, str>, handoff: impl 'static + HandoffMeta) -> Self {
+    fn new(name: Cow<'static, str>, handoff: impl 'static + HandoffMeta) -> Self {
         let (preds, succs) = Default::default();
         Self {
             name,

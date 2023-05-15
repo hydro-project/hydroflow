@@ -2,8 +2,8 @@ use proc_macro2::Literal;
 use quote::quote_spanned;
 
 use super::{
-    make_missing_runtime_msg, FlowProperties, FlowPropertyVal, OperatorConstraints,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
 use crate::graph::OperatorInstance;
 use crate::pretty_span::PrettySpan;
@@ -114,6 +114,8 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
                    ..
                },
                _| {
+        const BUFFER_BACKPRESSURE_THRESHOLD: usize = 4096;
+
         assert!(!is_pull);
 
         let sink_arg = &arguments[0];
@@ -122,6 +124,9 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
         let recv_ident = wc.make_ident("item_recv");
         let count_ident_send = wc.make_ident("count_send");
         let count_ident_recv = wc.make_ident("count_recv");
+        let bp_ident_send = wc.make_ident("backpressure_valve_send");
+        let bp_ident_recv = wc.make_ident("backpressure_valve_recv");
+        let bp_threshold_lit = Literal::usize_suffixed(BUFFER_BACKPRESSURE_THRESHOLD);
 
         let sink_feed_msg = Literal::string(&*format!(
             "`{}()` ({}) encountered a error feeding async sink item.",
@@ -143,6 +148,8 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
             let #count_ident_send = ::std::sync::Arc::new(::std::sync::atomic::AtomicUsize::new(0));
             let #count_ident_recv = ::std::sync::Arc::clone(&#count_ident_send);
             let (#send_ident, #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel();
+            let #bp_ident_send = #hydroflow.backpressure_valve();
+            let #bp_ident_recv = ::std::clone::Clone::clone(&#bp_ident_send);
             {
                 /// Function is needed so `Item` is so no ambiguity for what `Item` is used
                 /// when calling `.flush()`.
@@ -150,25 +157,26 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
                     mut recv: #root::tokio::sync::mpsc::UnboundedReceiver<Item>,
                     mut sink: Sink,
                     count: ::std::sync::Arc<::std::sync::atomic::AtomicUsize>,
+                    backpressure_valve: #root::scheduled::context::BackpressureValve,
                 ) where
                     Sink: ::std::marker::Unpin + #root::futures::Sink<Item>,
                     Sink::Error: ::std::fmt::Debug,
                 {
                     while let Some(item) = recv.recv().await {
                         let mut recv_count = 1;
-                        count.fetch_sub(1, ::std::sync::atomic::Ordering::Relaxed);
                         #root::futures::SinkExt::feed(&mut sink, item)
                             .await
                             .expect(#sink_feed_msg);
                         while let Ok(item) = recv.try_recv() {
                             recv_count += 1;
-                            count.fetch_sub(1, ::std::sync::atomic::Ordering::Relaxed);
                             #root::futures::SinkExt::feed(&mut sink, item)
                                 .await
                                 .expect(#sink_feed_msg);
                         }
-                        // TODO(mingwei): trigger backpressure.
-                        count.fetch_sub(recv_count, ::std::sync::atomic::Ordering::Relaxed);
+                        let old_count = count.fetch_sub(recv_count, ::std::sync::atomic::Ordering::Relaxed);
+                        if #bp_threshold_lit <= old_count && old_count < #bp_threshold_lit + recv_count {
+                            backpressure_valve.release(); // Release backpressure.
+                        }
 
                         #root::futures::SinkExt::flush(&mut sink)
                             .await
@@ -176,7 +184,7 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
                     }
                 }
                 #hydroflow
-                    .spawn_task(sink_feed_flush(#recv_ident, #sink_arg));
+                    .spawn_task(sink_feed_flush(#recv_ident, #sink_arg, #count_ident_recv, #bp_ident_recv));
             }
         };
 
@@ -185,8 +193,10 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
                 if let Err(err) = #send_ident.send(item) {
                     panic!(#buffer_send_msg, err);
                 }
-                #count_ident_send.fetch_add(1, ::std::sync::atomic::Ordering::Relaxed);
-                // TODO(mingwei): trigger backpressure.
+                let count = #count_ident_send.fetch_add(1, ::std::sync::atomic::Ordering::Relaxed);
+                if #bp_threshold_lit == 1 + count {
+                    #bp_ident_send.trigger(); // Trigger backpressure.
+                }
             });
         };
 
