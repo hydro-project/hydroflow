@@ -390,7 +390,7 @@ mod test {
         let (mut send, mut recv) = unbounded::<usize>();
         send.send(0).await.unwrap();
         // Connect it to itself
-        let mut recv_ref = recv.by_ref().map(|x| x + 1).map(|x| Ok(x)).take(N);
+        let mut recv_ref = recv.by_ref().map(|x| x + 1).map(Ok).take(N);
         send.send_all(&mut recv_ref).await.unwrap();
         assert_eq!(Some(N), recv.recv().await);
     }
