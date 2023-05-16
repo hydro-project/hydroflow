@@ -56,57 +56,49 @@ impl<T> Hash for TimestampedValue<T> {
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let increment_requests = ports
-        .remove("increment_requests")
-        .unwrap()
+        .port("increment_requests")
         .connect::<ConnectedBidi>()
         .await
         .into_source();
 
     let query_responses = ports
-        .remove("query_responses")
-        .unwrap()
+        .port("query_responses")
         .connect::<ConnectedBidi>()
         .await
         .into_sink();
 
     let to_parent = ports
-        .remove("to_parent")
-        .unwrap()
+        .port("to_parent")
         .connect::<ConnectedBidi>()
         .await
         .into_sink();
 
     let from_parent = ports
-        .remove("from_parent")
-        .unwrap()
+        .port("from_parent")
         .connect::<ConnectedBidi>()
         .await
         .into_source();
 
     let to_left = ports
-        .remove("to_left")
-        .unwrap()
+        .port("to_left")
         .connect::<ConnectedBidi>()
         .await
         .into_sink();
 
     let from_left = ports
-        .remove("from_left")
-        .unwrap()
+        .port("from_left")
         .connect::<ConnectedBidi>()
         .await
         .into_source();
 
     let to_right = ports
-        .remove("to_right")
-        .unwrap()
+        .port("to_right")
         .connect::<ConnectedBidi>()
         .await
         .into_sink();
 
     let from_right = ports
-        .remove("from_right")
-        .unwrap()
+        .port("from_right")
         .connect::<ConnectedBidi>()
         .await
         .into_source();
