@@ -22,9 +22,15 @@ impl<T> Fake<T> {
     }
 }
 
-impl<T, O> Merge<Fake<O>> for Fake<T> {
-    fn merge(&mut self, _: Fake<O>) -> bool {
-        panic!("The fake lattice cannot be merged.")
+impl<T, O> Merge<Fake<O>> for Fake<T>
+where
+    T: PartialEq<O>,
+{
+    fn merge(&mut self, other: Fake<O>) -> bool {
+        if self.0 != other.0 {
+            panic!("The fake lattice cannot merge inequal elements.")
+        }
+        false
     }
 }
 
@@ -36,10 +42,13 @@ impl<T> ConvertFrom<Fake<T>> for Fake<T> {
 
 impl<T, O> PartialOrd<Fake<O>> for Fake<T>
 where
-    T: PartialOrd<O>,
+    T: PartialEq<O>,
 {
-    fn partial_cmp(&self, _: &Fake<O>) -> Option<std::cmp::Ordering> {
-        panic!("The fake lattice does not have a partial order")
+    fn partial_cmp(&self, other: &Fake<O>) -> Option<std::cmp::Ordering> {
+        if self.0 != other.0 {
+            panic!("The fake lattice does not have a partial order between inequal elements.");
+        }
+        Some(std::cmp::Ordering::Equal)
     }
 }
 impl<T, O> LatticeOrd<Fake<O>> for Fake<T> where Self: PartialOrd<Fake<O>> {}
@@ -56,18 +65,25 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{
-        set_union::SetUnionHashSet,
-        test::{assert_lattice_identities, assert_partial_ord_identities},
-    };
+    use crate::test::{assert_lattice_identities, assert_partial_ord_identities};
 
     #[test]
     fn consistency() {
+        let test_vec = vec![Fake::new("hello world")];
+
+        assert_partial_ord_identities(&test_vec);
+        assert_lattice_identities(&test_vec);
+    }
+
+    #[test]
+    fn consistency_inequal() {
+        use std::collections::BTreeSet;
+
         let test_vec = vec![
-            Fake::new(SetUnionHashSet::new_from([])),
-            Fake::new(SetUnionHashSet::new_from([0])),
-            Fake::new(SetUnionHashSet::new_from([1])),
-            Fake::new(SetUnionHashSet::new_from([0, 1])),
+            Fake::new(BTreeSet::from_iter([])),
+            Fake::new(BTreeSet::from_iter([0])),
+            Fake::new(BTreeSet::from_iter([1])),
+            Fake::new(BTreeSet::from_iter([0, 1])),
         ];
 
         // Fake does not have a partial order.
