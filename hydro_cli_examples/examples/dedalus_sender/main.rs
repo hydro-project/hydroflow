@@ -11,8 +11,7 @@ use hydroflow_datalog::datalog;
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let broadcast_port = ports
-        .remove("broadcast")
-        .unwrap()
+        .port("broadcast")
         .connect::<ConnectedDemux<ConnectedBidi>>()
         .await;
 

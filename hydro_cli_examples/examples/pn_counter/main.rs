@@ -34,29 +34,25 @@ async fn main() {
     let num_replicas = num_replicas[0];
 
     let increment_requests = ports
-        .remove("increment_requests")
-        .unwrap()
+        .port("increment_requests")
         .connect::<ConnectedBidi>()
         .await
         .into_source();
 
     let query_responses = ports
-        .remove("query_responses")
-        .unwrap()
+        .port("query_responses")
         .connect::<ConnectedBidi>()
         .await
         .into_sink();
 
     let to_peer = ports
-        .remove("to_peer")
-        .unwrap()
+        .port("to_peer")
         .connect::<ConnectedDemux<ConnectedBidi>>()
         .await
         .into_sink();
 
     let from_peer = ports
-        .remove("from_peer")
-        .unwrap()
+        .port("from_peer")
         .connect::<ConnectedBidi>()
         .await
         .into_source();

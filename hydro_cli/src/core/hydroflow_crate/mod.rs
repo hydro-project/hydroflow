@@ -25,6 +25,7 @@ pub struct HydroflowCrate {
     features: Option<Vec<String>>,
     args: Option<Vec<String>>,
     display_id: Option<String>,
+    external_ports: Vec<u16>,
 
     /// Configuration for the ports this service will connect to as a client.
     port_to_server: HashMap<String, ports::ServerConfig>,
@@ -45,6 +46,7 @@ pub struct HydroflowCrate {
 }
 
 impl HydroflowCrate {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: usize,
         src: PathBuf,
@@ -53,6 +55,7 @@ impl HydroflowCrate {
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
         display_id: Option<String>,
+        external_ports: Vec<u16>,
     ) -> Self {
         Self {
             id,
@@ -62,6 +65,7 @@ impl HydroflowCrate {
             features,
             args,
             display_id,
+            external_ports,
             port_to_server: HashMap::new(),
             port_to_bind: HashMap::new(),
             built_binary: None,
@@ -184,6 +188,10 @@ impl Service for HydroflowCrate {
         host.request_custom_binary();
         for (_, bind_type) in self.port_to_bind.iter() {
             host.request_port(bind_type);
+        }
+
+        for port in self.external_ports.iter() {
+            host.request_port(&ServerStrategy::ExternalTcpPort(*port));
         }
     }
 

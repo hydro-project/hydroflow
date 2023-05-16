@@ -43,6 +43,9 @@ name = "pn_counter"
 [[example]]
 name = "pn_counter_delta"
 
+[[example]]
+name = "ws_chat_server"
+
 [dev-dependencies]
 hydroflow = { path = "../hydroflow", features = [ "cli_integration" ] }
 hydroflow_datalog = { path = "../hydroflow_datalog" }
@@ -54,6 +57,8 @@ rand = "0.8.5"
 dashmap = "5.4.0"
 
 futures = "0.3.28"
+
+tokio-tungstenite = "0.19.0"
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 procinfo = "0.4.2"
