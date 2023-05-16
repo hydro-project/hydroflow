@@ -1,13 +1,13 @@
-#![deny(missing_docs)]
 //! Unsync single-producer single-consumer channel (i.e. a single-threaded queue with async hooks).
 
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::num::NonZeroUsize;
+use std::pin::Pin;
 use std::rc::{Rc, Weak};
 use std::task::{Context, Poll, Waker};
 
-use futures::Stream;
+use futures::{ready, Sink, Stream};
 use smallvec::SmallVec;
 #[doc(inline)]
 pub use tokio::sync::mpsc::error::{SendError, TrySendError};
@@ -18,8 +18,8 @@ pub struct Sender<T> {
 }
 impl<T> Sender<T> {
     /// Asynchronously sends value to the receiver.
-    pub async fn send(&self, value: T) -> Result<(), SendError<T>> {
-        let mut value = Some(value);
+    pub async fn send(&self, item: T) -> Result<(), SendError<T>> {
+        let mut item = Some(item);
         std::future::poll_fn(move |ctx| {
             if let Some(strong) = Weak::upgrade(&self.weak) {
                 let mut shared = strong.borrow_mut();
@@ -27,17 +27,17 @@ impl<T> Sender<T> {
                     .capacity
                     .map_or(false, |cap| cap.get() <= shared.buffer.len())
                 {
-                    // Full
+                    // Full.
                     shared.send_wakers.push(ctx.waker().clone());
                     Poll::Pending
                 } else {
-                    shared.buffer.push_back(value.take().unwrap());
+                    shared.buffer.push_back(item.take().unwrap());
                     shared.wake_receiver();
                     Poll::Ready(Ok(()))
                 }
             } else {
-                // Closed
-                Poll::Ready(Err(SendError(value.take().unwrap())))
+                // Closed.
+                Poll::Ready(Err(SendError(item.take().unwrap())))
             }
         })
         .await
@@ -48,25 +48,33 @@ impl<T> Sender<T> {
     /// Returns an error if the destination is closed or if the buffer is at capacity.
     ///
     /// [`TrySendError::Full`] will never be returned if this is an unbounded channel.
-    pub fn try_send(&self, value: T) -> Result<(), TrySendError<T>> {
+    pub fn try_send(&self, item: T) -> Result<(), TrySendError<T>> {
         if let Some(strong) = Weak::upgrade(&self.weak) {
             let mut shared = strong.borrow_mut();
             if shared
                 .capacity
                 .map_or(false, |cap| cap.get() <= shared.buffer.len())
             {
-                Err(TrySendError::Full(value))
+                Err(TrySendError::Full(item))
             } else {
-                shared.buffer.push_back(value);
+                shared.buffer.push_back(item);
                 shared.wake_receiver();
                 Ok(())
             }
         } else {
-            Err(TrySendError::Closed(value))
+            Err(TrySendError::Closed(item))
         }
     }
 
-    /// If the receiver is closed.
+    /// Close this sender. No more messages can be sent from this sender.
+    ///
+    /// Note that this only closes the channel from the view-point of this sender. The channel
+    /// remains open until all senders have gone away, or until the [`Receiver`] closes the channel.
+    pub fn close_this_sender(&mut self) {
+        self.weak = Weak::new();
+    }
+
+    /// If this sender or the corresponding [`Receiver`] is closed.
     pub fn is_closed(&self) -> bool {
         0 == self.weak.strong_count()
     }
@@ -85,6 +93,56 @@ impl<T> Drop for Sender<T> {
         if let Some(strong) = self.weak.upgrade() {
             strong.borrow_mut().wake_receiver();
         }
+    }
+}
+
+impl<T> Sink<T> for Sender<T> {
+    type Error = TrySendError<Option<T>>;
+
+    fn poll_ready(
+        self: std::pin::Pin<&mut Self>,
+        ctx: &mut Context<'_>,
+    ) -> Poll<Result<(), Self::Error>> {
+        if let Some(strong) = Weak::upgrade(&self.weak) {
+            let mut shared = strong.borrow_mut();
+            if shared
+                .capacity
+                .map_or(false, |cap| cap.get() <= shared.buffer.len())
+            {
+                // Full.
+                shared.send_wakers.push(ctx.waker().clone());
+                Poll::Pending
+            } else {
+                // Has room.
+                Poll::Ready(Ok(()))
+            }
+        } else {
+            // Closed
+            Poll::Ready(Err(TrySendError::Closed(None)))
+        }
+    }
+
+    fn start_send(self: std::pin::Pin<&mut Self>, item: T) -> Result<(), Self::Error> {
+        self.try_send(item).map_err(|e| match e {
+            TrySendError::Full(item) => TrySendError::Full(Some(item)),
+            TrySendError::Closed(item) => TrySendError::Closed(Some(item)),
+        })
+    }
+
+    fn poll_flush(
+        self: std::pin::Pin<&mut Self>,
+        _ctx: &mut Context<'_>,
+    ) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn poll_close(
+        mut self: std::pin::Pin<&mut Self>,
+        ctx: &mut Context<'_>,
+    ) -> Poll<Result<(), Self::Error>> {
+        ready!(self.as_mut().poll_flush(ctx))?;
+        Pin::into_inner(self).close_this_sender();
+        Poll::Ready(Ok(()))
     }
 }
 
@@ -321,5 +379,19 @@ mod test {
             local.await;
         });
         futures::future::join_all(runs).await;
+    }
+
+    #[tokio::test]
+    async fn test_stream_sink_loop() {
+        use futures::{SinkExt, StreamExt};
+
+        const N: usize = 100;
+
+        let (mut send, mut recv) = unbounded::<usize>();
+        send.send(0).await.unwrap();
+        // Connect it to itself
+        let mut recv_ref = recv.by_ref().map(|x| x + 1).map(Ok).take(N);
+        send.send_all(&mut recv_ref).await.unwrap();
+        assert_eq!(Some(N), recv.recv().await);
     }
 }
