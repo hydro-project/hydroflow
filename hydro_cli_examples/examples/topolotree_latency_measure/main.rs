@@ -23,15 +23,13 @@ struct IncrementRequest {
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let mut start_node = ports
-        .remove("increment_start_node")
-        .unwrap()
+        .port("increment_start_node")
         .connect::<ConnectedBidi>()
         .await
         .into_sink();
 
     let mut end_node = ports
-        .remove("end_node_query")
-        .unwrap()
+        .port("end_node_query")
         .connect::<ConnectedBidi>()
         .await
         .into_source();

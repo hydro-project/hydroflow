@@ -8,15 +8,13 @@ use hydroflow_datalog::datalog;
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let vote_to_participant_source = ports
-        .remove("vote_to_participant")
-        .unwrap()
+        .port("vote_to_participant")
         .connect::<ConnectedBidi>()
         .await
         .into_source();
 
     let vote_from_participant_port = ports
-        .remove("vote_from_participant")
-        .unwrap()
+        .port("vote_from_participant")
         .connect::<ConnectedDemux<ConnectedBidi>>()
         .await;
 
@@ -24,15 +22,13 @@ async fn main() {
     let vote_from_participant_sink = vote_from_participant_port.into_sink();
 
     let instruct_to_participant_source = ports
-        .remove("instruct_to_participant")
-        .unwrap()
+        .port("instruct_to_participant")
         .connect::<ConnectedBidi>()
         .await
         .into_source();
 
     let ack_from_participant_sink = ports
-        .remove("ack_from_participant")
-        .unwrap()
+        .port("ack_from_participant")
         .connect::<ConnectedDemux<ConnectedBidi>>()
         .await
         .into_sink();

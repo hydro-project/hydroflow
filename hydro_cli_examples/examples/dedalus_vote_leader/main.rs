@@ -8,8 +8,7 @@ use hydroflow_datalog::datalog;
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let to_replica_port = ports
-        .remove("to_replica")
-        .unwrap()
+        .port("to_replica")
         .connect::<ConnectedDemux<ConnectedBidi>>()
         .await;
 
@@ -18,8 +17,7 @@ async fn main() {
     let to_replica_sink = to_replica_port.into_sink();
 
     let from_replica_source = ports
-        .remove("from_replica")
-        .unwrap()
+        .port("from_replica")
         .connect::<ConnectedBidi>()
         .await
         .into_source();

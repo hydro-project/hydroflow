@@ -23,7 +23,17 @@ pub async fn launch_flow(mut flow: Hydroflow) {
     }
 }
 
-pub async fn init() -> HashMap<String, ServerOrBound> {
+pub struct HydroCLI {
+    ports: HashMap<String, ServerOrBound>,
+}
+
+impl HydroCLI {
+    pub fn port(&mut self, name: &str) -> ServerOrBound {
+        self.ports.remove(name).unwrap()
+    }
+}
+
+pub async fn init() -> HydroCLI {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
     let trimmed = input.trim();
@@ -62,5 +72,7 @@ pub async fn init() -> HashMap<String, ServerOrBound> {
         all_connected.insert(name, ServerOrBound::Bound(defn));
     }
 
-    all_connected
+    HydroCLI {
+        ports: all_connected,
+    }
 }
