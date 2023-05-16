@@ -619,7 +619,6 @@ fn main() {
                     .state_ref(sg_4v1_node_41v1_joindata_rhs)
                     .borrow_mut();
                 let op_41v1 = {
-                    /// Limit error propagation by bounding locally, erasing output iterator type.
                     #[inline(always)]
                     fn check_inputs<'a, K, I1, V1, I2, V2>(
                         lhs: I1,
@@ -637,8 +636,8 @@ fn main() {
                     ) -> impl 'a + Iterator<Item = (K, (V1, V2))>
                     where
                         K: Eq + std::hash::Hash + Clone,
-                        V1: Eq + Clone,
-                        V2: Eq + Clone,
+                        V1: Clone,
+                        V2: Clone,
                         I1: 'a + Iterator<Item = (K, V1)>,
                         I2: 'a + Iterator<Item = (K, V2)>,
                     {
@@ -652,8 +651,8 @@ fn main() {
                     check_inputs(
                         op_43v1,
                         op_44v1,
-                        &mut sg_4v1_node_41v1_joindata_lhs_borrow,
-                        &mut sg_4v1_node_41v1_joindata_rhs_borrow,
+                        &mut *sg_4v1_node_41v1_joindata_lhs_borrow,
+                        &mut *sg_4v1_node_41v1_joindata_rhs_borrow,
                     )
                 };
                 let op_41v1 = {
@@ -770,7 +769,6 @@ fn main() {
                     .state_ref(sg_4v1_node_45v1_joindata_rhs)
                     .borrow_mut();
                 let op_45v1 = {
-                    /// Limit error propagation by bounding locally, erasing output iterator type.
                     #[inline(always)]
                     fn check_inputs<'a, K, I1, V1, I2, V2>(
                         lhs: I1,
@@ -788,8 +786,8 @@ fn main() {
                     ) -> impl 'a + Iterator<Item = (K, (V1, V2))>
                     where
                         K: Eq + std::hash::Hash + Clone,
-                        V1: Eq + Clone,
-                        V2: Eq + Clone,
+                        V1: Clone,
+                        V2: Clone,
                         I1: 'a + Iterator<Item = (K, V1)>,
                         I2: 'a + Iterator<Item = (K, V2)>,
                     {
@@ -803,7 +801,7 @@ fn main() {
                     check_inputs(
                         op_47v1,
                         op_48v1,
-                        &mut sg_4v1_node_45v1_joindata_lhs_borrow,
+                        &mut *sg_4v1_node_45v1_joindata_lhs_borrow,
                         &mut *sg_4v1_node_45v1_joindata_rhs_borrow
                             .get_mut_clear(context.current_tick()),
                     )

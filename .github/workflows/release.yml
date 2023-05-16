@@ -26,6 +26,20 @@ jobs:
     timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
+      # Unfortunately branch protection means that this workflow can't push the updated changelogs
+      # and tags to `main` in the normal way. Instead we have an app:
+      # https://github.com/organizations/hydro-project/settings/apps/hydro-project-bot
+      # Which is added the the users allowed to bypass branch protections:
+      # https://github.com/hydro-project/hydroflow/settings/branches
+      # We grab a token from the app using this action via the `APP_ID` ("App ID") and an
+      # `APP_PRIVATE_KEY` ("Generate a private key").
+      - name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - run: |
           echo "Version bump: $BUMP"
           echo "Execute: $EXECUTE"
@@ -43,6 +57,7 @@ jobs:
         with:
           # Fetch all commit history so smart-release can generate changelogs.
           fetch-depth: 0
+          token: ${{ steps.generate_token.outputs.token }}
 
       - name: Install nightly toolchain
         uses: actions-rs/toolchain@v1
@@ -64,7 +79,11 @@ jobs:
 
       - name: Run cargo smart-release
         run: >-
-          cargo smart-release --update-crates-index --no-changelog-preview
+          cargo smart-release --update-crates-index
+          --no-changelog-preview --allow-fully-generated-changelogs
           --no-bump-on-demand --bump ${{ inputs.bump }} --bump-dependencies auto
           ${{ inputs.execute && '--execute' || '--dry-run-cargo-publish' }}
           hydroflow hydroflow_*
+        env:
+          # Make sure to set this so the `gh` CLI works using our token.
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}

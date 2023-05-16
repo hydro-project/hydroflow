@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use hydroflow::hydroflow_syntax;
-use hydroflow::lang::collections::Iter;
+use hydroflow::scheduled::handoff::Iter;
 use hydroflow::scheduled::query::Query as Q;
 use static_assertions::const_assert;
 use timely::dataflow::operators::{Concatenate, Inspect, ToStream};

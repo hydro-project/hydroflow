@@ -14,7 +14,7 @@ use syn::{parse_quote_spanned, spanned::Spanned};
 /// type.
 ///
 /// A specialized operator for merging lattices together into a accumulated value. Like [`fold()`](#fold)
-/// but specialized for lattice types. `lattice_merge::<MyLatRepr>()` is equivalent to `fold(Default::default, <MyLatRepr as LatticeRepr>::merge_owned)`.
+/// but specialized for lattice types. `lattice_merge::<MyLattice>()` is equivalent to `fold(Default::default, hydroflow::lattices::Merge::merge_owned)`.
 ///
 /// `lattice_merge` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
@@ -24,8 +24,9 @@ use syn::{parse_quote_spanned, spanned::Spanned};
 ///
 /// ```hydroflow
 /// source_iter([1,2,3,4,5])
-///     -> lattice_merge::<'static, hydroflow::lang::lattice::ord::MaxRepr<usize>>()
-///     -> for_each(|x| println!("Least upper bound: {}", x));
+///     -> map(hydroflow::lattices::ord::Max::new)
+///     -> lattice_merge::<'static, hydroflow::lattices::ord::Max<usize>>()
+///     -> for_each(|x: hydroflow::lattices::ord::Max<usize>| println!("Least upper bound: {}", x.0));
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
 pub const LATTICE_MERGE: OperatorConstraints = OperatorConstraints {
@@ -67,7 +68,7 @@ pub const LATTICE_MERGE: OperatorConstraints = OperatorConstraints {
         let lat_repr = &type_args[0];
 
         let arguments = parse_quote_spanned! {lat_repr.span()=> // Uses `lat_repr.span()`!
-            ::std::default::Default::default(), <#lat_repr as #root::lang::lattice::Merge<#lat_repr>>::merge_owned
+            ::std::default::Default::default(), #root::lattices::Merge::<#lat_repr>::merge_owned
         };
         let wc = WriteContextArgs {
             op_inst: &OperatorInstance {
@@ -87,10 +88,10 @@ pub const LATTICE_MERGE: OperatorConstraints = OperatorConstraints {
                 /// Improve errors with `#lat_repr` trait bound.
                 #[inline(always)]
                 fn check_inputs<Lr>(
-                    input: impl Iterator<Item = <Lr as #root::lang::lattice::LatticeRepr>::Repr>
-                ) -> impl Iterator<Item = <Lr as #root::lang::lattice::LatticeRepr>::Repr>
+                    input: impl Iterator<Item = Lr>
+                ) -> impl Iterator<Item = Lr>
                 where
-                    Lr: #root::lang::lattice::LatticeRepr,
+                    Lr: #root::lattices::Merge<Lr>,
                 {
                     input
                 }

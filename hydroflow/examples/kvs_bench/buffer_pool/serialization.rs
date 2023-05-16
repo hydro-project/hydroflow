@@ -1,34 +1,33 @@
 use super::{AutoReturnBuffer, BufferPool};
-use crate::buffer_pool::BufferType;
 use serde::{
     de::{DeserializeSeed, Visitor},
-    Serialize, Serializer,
+    Deserializer, Serialize, Serializer,
 };
 use std::{cell::RefCell, rc::Rc};
 
-impl Serialize for AutoReturnBuffer {
+impl<const SIZE: usize> Serialize for AutoReturnBuffer<SIZE> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        serializer.serialize_bytes(&*self.borrow().unwrap())
+        serializer.serialize_bytes(&*self.borrow())
     }
 }
 
-pub struct AutoReturnBufferDeserializer {
-    pub collector: Rc<RefCell<BufferPool>>,
+pub struct AutoReturnBufferDeserializer<const SIZE: usize> {
+    pub collector: Rc<RefCell<BufferPool<SIZE>>>,
 }
 
-impl<'de> DeserializeSeed<'de> for AutoReturnBufferDeserializer {
-    type Value = AutoReturnBuffer;
+impl<'de, const SIZE: usize> DeserializeSeed<'de> for AutoReturnBufferDeserializer<SIZE> {
+    type Value = AutoReturnBuffer<SIZE>;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
-        D: serde::Deserializer<'de>,
+        D: Deserializer<'de>,
     {
-        struct BytesVisitor;
-        impl<'de> Visitor<'de> for BytesVisitor {
-            type Value = BufferType;
+        struct BytesVisitor<const SIZE: usize>;
+        impl<'de, const SIZE: usize> Visitor<'de> for BytesVisitor<SIZE> {
+            type Value = [u8; SIZE];
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                 formatter.write_str(std::any::type_name::<Self::Value>())
@@ -56,12 +55,7 @@ impl<'de> DeserializeSeed<'de> for AutoReturnBufferDeserializer {
         }
 
         let buff = BufferPool::get_from_buffer_pool(&self.collector);
-
-        {
-            let mut borrow = buff.borrow_mut().unwrap();
-            *borrow = deserializer.deserialize_bytes(BytesVisitor)?;
-        }
-
+        *buff.borrow_mut() = deserializer.deserialize_bytes(BytesVisitor)?; // TODO: pass ref into deserialize_bytes so visitor can operate on it directly.
         Ok(buff)
     }
 }

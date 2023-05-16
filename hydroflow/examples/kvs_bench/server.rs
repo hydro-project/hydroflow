@@ -1,5 +1,3 @@
-use crate::util::bounded_broadcast_channel;
-use futures::SinkExt;
 use hydroflow::hydroflow_syntax;
 use std::time::Duration;
 use tokio::task;
@@ -10,32 +8,41 @@ use crate::protocol::KvsRequest;
 use crate::protocol::KvsRequestDeserializer;
 use crate::protocol::KvsResponse;
 use crate::protocol::MyLastWriteWins;
-use crate::protocol::MyLastWriteWinsRepr;
-use crate::protocol::SetUnion;
+use crate::protocol::MySetUnion;
 use bincode::options;
-use hydroflow::lang::lattice::bottom::BottomRepr;
-use hydroflow::lang::lattice::LatticeRepr;
-use hydroflow::lang::lattice::Merge;
 use rand::Rng;
 use rand::SeedableRng;
 use serde::de::DeserializeSeed;
 use serde::Serialize;
-use std::cell::RefCell;
-use std::collections::HashSet;
-use std::io::Cursor;
 use std::rc::Rc;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use tmq::Context;
 
-pub fn run_server(
-    gossip_addr: usize,
-    topology: Vec<usize>,
+use crate::protocol::NodeId;
+use crate::Topology;
+use futures::Stream;
+use lattices::bottom::Bottom;
+use lattices::fake::Fake;
+use lattices::map_union::MapUnionHashMap;
+use lattices::map_union::MapUnionSingletonMap;
+use lattices::ord::Max;
+use lattices::set_union::SetUnionSingletonSet;
+
+use bytes::BufMut;
+use bytes::Bytes;
+use bytes::BytesMut;
+use hydroflow::compiled::pull::HalfMultisetJoinState;
+
+pub fn run_server<RX>(
+    server_id: usize,
+    topology: Topology<RX>,
     dist: f64,
-    ctx: Context,
     throughput: Arc<AtomicUsize>,
-) {
+    print_mermaid: bool,
+) where
+    RX: Stream<Item = (usize, Bytes)> + StreamExt + Unpin + Send + 'static,
+{
     std::thread::spawn(move || {
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -43,44 +50,36 @@ pub fn run_server(
             .unwrap();
 
         rt.block_on(async {
+            const BUFFER_SIZE: usize = 1024;
 
-            let buffer_pool = BufferPool::create_buffer_pool();
+            let buffer_pool = BufferPool::<BUFFER_SIZE>::create_buffer_pool();
 
-            let (transducer_to_peers_tx, _) =
-                bounded_broadcast_channel::<(u64, MyLastWriteWinsRepr)>(500000);
+            let (transducer_to_peers_tx, mut transducer_to_peers_rx) =
+                hydroflow::util::unsync_channel::<(Bytes, NodeId)>(None);
 
             let (client_to_transducer_tx, client_to_transducer_rx) =
-                hydroflow::util::unbounded_channel::<(KvsRequest, Vec<u8>)>();
+                hydroflow::util::unsync_channel::<(KvsRequest<BUFFER_SIZE>, NodeId)>(None);
             let (transducer_to_client_tx, mut _transducer_to_client_rx) =
-                hydroflow::util::unbounded_channel::<(KvsResponse, Vec<u8>)>();
+                hydroflow::util::unsync_channel::<(KvsResponse<BUFFER_SIZE>, NodeId)>(None);
 
             let localset = tokio::task::LocalSet::new();
 
             let inbound_networking_task = localset.run_until({
-                let ctx = ctx.clone();
                 let buffer_pool = buffer_pool.clone();
 
                 async {
                     task::spawn_local({
 
                         async move {
-                            let mut router_socket = tmq::router(&ctx).bind(&format!("inproc://S{gossip_addr}")).unwrap();
+                            let mut joined_streams = futures::stream::select_all(topology.rx);
 
-                            loop {
-                                if let Some(x) = router_socket.next().await {
-                                    let multipart_buffer = x.unwrap();
-                                    assert_eq!(multipart_buffer.0.len(), 2);
+                            while let Some((node_id, req)) = joined_streams.next().await {
+                                let mut deserializer = bincode::Deserializer::from_slice(&req, options());
+                                let req = KvsRequestDeserializer {
+                                    collector: Rc::clone(&buffer_pool),
+                                }.deserialize(&mut deserializer).unwrap();
 
-                                    let routing_id = Vec::from(&multipart_buffer.0[0][..]);
-
-                                    let reader = std::io::Cursor::new(&multipart_buffer.0[1][..]);
-                                    let mut deserializer = bincode::Deserializer::with_reader(reader, options());
-                                    let req = KvsRequestDeserializer {
-                                        collector: Rc::clone(&buffer_pool),
-                                    }.deserialize(&mut deserializer).unwrap();
-
-                                    client_to_transducer_tx.send((req, routing_id)).unwrap();
-                                }
+                                client_to_transducer_tx.try_send((req, node_id)).unwrap();
                             }
                         }
                     })
@@ -90,47 +89,38 @@ pub fn run_server(
 
             // Handle outgoing peer-to-peer communication
             let outbound_networking_task = localset.run_until({
-                let ctx = ctx.clone();
-                let transducer_to_peers_tx = transducer_to_peers_tx.clone();
+                let lookup = topology.lookup.clone();
 
                 // TODO: Eventually this would get moved into a hydroflow operator that would return a Bytes struct and be efficient and zero copy and etc.
                 async move {
-                    if topology.len() > 1 {
-                        for addr in &topology {
-                            if *addr != gossip_addr {
-                                let mut socket = tmq::dealer(&ctx).connect(&format!("inproc://S{addr}")).unwrap();
-
-                                task::spawn_local({
-                                    let mut transducer_to_peers_rx = transducer_to_peers_tx.subscribe();
-
-                                    async move {
-                                        while let Ok((key, reg)) = transducer_to_peers_rx.recv().await {
-
-                                            let req = KvsRequest::Gossip { key, reg };
-
-                                            let mut serialized = Vec::new();
-                                            let mut serializer = bincode::Serializer::new(Cursor::new(&mut serialized), options());
-                                            Serialize::serialize(&req, &mut serializer).unwrap();
-
-                                            socket
-                                                .send(vec![serialized])
-                                                .await
-                                                .unwrap();
-                                        }
-                                    }
-                                });
-                            }
+                    loop {
+                        while let Some((serialized_req, node_id)) = transducer_to_peers_rx.next().await {
+                            let index = lookup.binary_search(&node_id).unwrap();
+                            topology.tx[index].send(serialized_req).unwrap();
                         }
-                    } else {
-                        task::spawn_local({
-                            let mut transducer_to_peers_rx = transducer_to_peers_tx.subscribe();
+                    }
+                }
+            });
 
-                            async move {
-                                loop {
-                                     transducer_to_peers_rx.recv().await.unwrap();
-                                }
-                            }
-                        });
+            let relatively_recent_timestamp: &'static _ = &*Box::leak(Box::new(std::sync::atomic::AtomicU64::new(
+                std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64)));
+
+            let f3 = localset.run_until({
+                async move {
+                    let mut interval = tokio::time::interval(
+                        Duration::from_millis(100),
+                    );
+
+                    loop {
+                        interval.tick().await;
+                        relatively_recent_timestamp.store(std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .unwrap()
+                            .as_millis() as u64,
+                            Ordering::Relaxed);
                     }
                 }
             });
@@ -145,14 +135,25 @@ pub fn run_server(
             let mut pre_gen_index = 0;
             let pre_gen_random_numbers: Vec<u64> = (0..(128*1024)).map(|_| rng.sample(dist) as u64).collect();
 
-            // Gets feed into the rhs of a lattice join which uses the SetUnion lattice
-            // To prevent multiple gets from the same src address being merged they are each tagged with a seq number.
-            let get_seq_num = Rc::new(RefCell::new(0usize));
+            let create_unique_id = move |server_id: u128, tick: usize, e: u128| -> u128 {
+                assert!(tick < 1_000_000_000);
+                assert!(e < 1_000_000_000);
+
+                (relatively_recent_timestamp.load(Ordering::Relaxed) as u128)
+                    .checked_mul(100).unwrap()
+                    .checked_add(server_id).unwrap()
+                    .checked_mul(1_000_000_000).unwrap()
+                    .checked_add(tick as u128).unwrap()
+                    .checked_mul(1_000_000_000).unwrap()
+                    .checked_add(e).unwrap()
+            };
+
+            let mut throughput_internal = 0usize;
 
             let mut df = hydroflow_syntax! {
 
                 simulated_put_requests = repeat_fn(2000, move || {
-                    let buff = BufferPool::get_from_buffer_pool(&buffer_pool);
+                    let value = BufferPool::get_from_buffer_pool(&buffer_pool);
 
                     // Did the original C++ benchmark do anything with the data..?
                     // Can uncomment this to modify the buffers then.
@@ -170,69 +171,96 @@ pub fn run_server(
 
                     (KvsRequest::Put {
                         key,
-                        value: buff
-                    }, Vec::new())
+                        value,
+                    }, 99999999)
                 });
 
                 merge_puts_and_gossip_requests = merge();
 
                 simulated_put_requests -> merge_puts_and_gossip_requests;
-                source_stream(client_to_transducer_rx) -> merge_puts_and_gossip_requests;
+                source_stream(client_to_transducer_rx)
+                    // -> inspect(|x| println!("{server_id}:{:5}: from peers: {x:?}", context.current_tick()))
+                    -> merge_puts_and_gossip_requests;
 
                 client_input = merge_puts_and_gossip_requests
-                    -> demux(|(req, addr): (KvsRequest, Vec<u8>), var_args!(gets, store, broadcast)| {
+                    -> enumerate::<'tick>()
+                    -> demux(|(e, (req, addr)): (usize, (KvsRequest<BUFFER_SIZE>, NodeId)), var_args!(gets, store, broadcast)| {
                         match req {
                             KvsRequest::Put {key, value} => {
-                                throughput.fetch_add(1, Ordering::SeqCst);
-                                let marker = (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() << 5) + (gossip_addr as u128);
+                                throughput_internal += 1;
+                                const GATE: usize = 2 * 1024;
+                                if std::intrinsics::unlikely(throughput_internal % GATE == 0) {
+                                    throughput.fetch_add(GATE, Ordering::SeqCst);
+                                }
+                                let marker = create_unique_id(server_id as u128, context.current_tick(), e as u128);
 
-                                broadcast.give((key, (
-                                    marker,
-                                    value.clone(),
+                                broadcast.give((key, MyLastWriteWins::new(
+                                    Max::new(marker),
+                                    Bottom::new(Fake::new(value.clone())),
                                 )));
 
-                                store.give((key, (
-                                    marker,
-                                    value,
+                                store.give((key, MyLastWriteWins::new(
+                                    Max::new(marker),
+                                    Bottom::new(Fake::new(value)),
                                 )));
                             },
-                            KvsRequest::Gossip {key, reg} => {
-                                broadcast.give((key, reg.clone()));
-                                store.give((key, reg));
+                            KvsRequest::Gossip {map} => {
+                                for (key, reg) in map.0 {
+                                    store.give((key, reg));
+                                }
                             },
-                            KvsRequest::_Get {key} => gets.give((key, addr)),
+                            KvsRequest::Get {key} => gets.give((key, addr)),
+                            KvsRequest::Delete {key} => {
+                                let marker = create_unique_id(server_id as u128, context.current_tick(), e as u128);
+
+                                broadcast.give((key, MyLastWriteWins::new(
+                                    Max::new(marker),
+                                    Bottom::default(),
+                                )));
+
+                                store.give((key, MyLastWriteWins::new(
+                                    Max::new(marker),
+                                    Bottom::default(),
+                                )));
+                            }
                         }
                     });
 
+                peers = cross_join::<'static, 'tick, HalfMultisetJoinState>();
+                source_iter(topology.lookup) -> [0]peers;
+
                 // broadcast out locally generated changes to other nodes.
                 client_input[broadcast]
-                    -> batch(1000, batch_interval_ticker)
-                    -> map(|(key, reg)| (key, Some(reg)))
-                    -> group_by::<'tick>(<BottomRepr<MyLastWriteWins> as LatticeRepr>::Repr::default, <BottomRepr<MyLastWriteWins> as Merge<BottomRepr<MyLastWriteWins>>>::merge)
-                    -> filter_map(|(key, opt_reg)| opt_reg.map(|reg| (key, reg))) // to filter out bottom types since they carry no useful info.
-                    // -> inspect(|x| println!("{gossip_addr}:{:5}: sending to peers: {x:?}", context.current_tick()))
-                    -> for_each(|x| { transducer_to_peers_tx.send(x).unwrap(); });
+                    -> map(|(key, reg)| MapUnionSingletonMap::new_from((key, reg)))
+                    -> lattice_batch::<MapUnionHashMap<_, _>>(batch_interval_ticker)
+                    -> map(|lattice| {
+                        use bincode::Options;
+                        let serialization_options = options();
+                        let req = KvsRequest::Gossip { map: lattice };
+                        let mut serialized = BytesMut::with_capacity(serialization_options.serialized_size(&req).unwrap() as usize);
+                        let mut serializer = bincode::Serializer::new((&mut serialized).writer(), options());
+                        Serialize::serialize(&req, &mut serializer).unwrap();
+
+                        serialized.freeze()
+                    })
+                    -> [1]peers;
+
+                peers
+                    // -> inspect(|x| println!("{server_id}:{:5}: sending to peers: {x:?}", context.current_tick()))
+                    -> for_each(|(node_id, serialized_req)| transducer_to_peers_tx.try_send((serialized_req, node_id)).unwrap());
 
                 // join for lookups
-                lookup = lattice_join::<'static, 'tick, MyLastWriteWins, SetUnion>();
+                lookup = lattice_join::<'static, 'tick, MyLastWriteWins<BUFFER_SIZE>, MySetUnion>();
 
                 client_input[store]
-                    // -> inspect(|x| println!("{gossip_addr}:{:5}: stores-into-lookup: {x:?}", context.current_tick()))
+                    // -> inspect(|x| println!("{server_id}:{:5}: stores-into-lookup: {x:?}", context.current_tick()))
                     -> [0]lookup;
 
                 // Feed gets into the join to make them do the actual matching.
                 client_input[gets]
-                    -> map(|(key, addr)| {
-                        let mut gset = HashSet::new();
-
-                        let seq_num = {
-                            let mut seq_borrow = get_seq_num.borrow_mut();
-                            *seq_borrow += 1;
-                            *seq_borrow
-                        };
-
-                        gset.insert((addr, seq_num));
-                        (key, gset)
+                    -> enumerate() // Ensure that two requests from the same client on the same tick do not get merged into a single request.
+                    -> map(|(id, (key, addr))| {
+                        (key, SetUnionSingletonSet::new_from((addr, id)))
                     })
                     // -> inspect(|x| println!("{gossip_addr}:{:5}: gets-into-lookup: {x:?}", context.current_tick()))
                     -> [1]lookup;
@@ -240,25 +268,27 @@ pub fn run_server(
                 // Send get results back to user
                 lookup
                     -> map(|(key, (reg, gets))| {
-                        gets.into_iter().map(move |(dest, _seq_num)| {
+                        gets.0.into_iter().map(move |(dest, _seq_num)| {
                             (KvsResponse::GetResponse { key, reg: reg.clone() }, dest)
                         })
                     })
                     -> flatten()
                     // -> inspect(|x| println!("{gossip_addr}:{:5}: Response to client: {x:?}", context.current_tick()))
-                    -> for_each(|x| transducer_to_client_tx.send(x).unwrap());
+                    -> for_each(|x| transducer_to_client_tx.try_send(x).unwrap());
 
             };
 
-            let serde_graph = df
-                .meta_graph()
-                .expect("No graph found, maybe failed to parse.");
+            if print_mermaid {
+                let serde_graph = df
+                    .meta_graph()
+                    .expect("No graph found, maybe failed to parse.");
 
-            println!("{}", serde_graph.to_mermaid());
+                println!("{}", serde_graph.to_mermaid());
+            }
 
             let hydroflow_task = df.run_async();
 
-            futures::join!(inbound_networking_task, outbound_networking_task, hydroflow_task);
+            futures::join!(inbound_networking_task, outbound_networking_task, hydroflow_task, f3);
         });
     });
 }

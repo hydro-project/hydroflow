@@ -7,8 +7,6 @@ use std::{
     rc::{Rc, Weak},
 };
 
-pub type BufferType = [u8; 1024];
-
 /// It is slow to allocate and, in particular, free blocks of memory.
 /// If we know ahead of time what size buffers we will need then we can pre-allocate a bunch of them and
 /// reuse those allocations.
@@ -16,8 +14,8 @@ pub type BufferType = [u8; 1024];
 /// Eventually these buffers can be made more dynamic by using scatter-gather I/O and a buffer-of-buffers pattern.
 /// We are not there yet and so this is a simple approximation of what it will eventually look like.
 #[derive(Debug)]
-pub struct BufferPool {
-    buffers: Vec<Rc<RefCell<BufferType>>>,
+pub struct BufferPool<const SIZE: usize> {
+    buffers: Vec<Rc<RefCell<[u8; SIZE]>>>,
 }
 
 /// This buffer will be returned to it's owning buffer pool when it is dropped.
@@ -25,85 +23,62 @@ pub struct BufferPool {
 /// The collector pointer is weak because otherwise there would be a cycle between BufferPool and AutoReturnBufferInner
 /// and an AutoReturnBufferInner does not logically have any kind of ownership over the BufferPool shared pool.
 #[derive(Clone, Debug)]
-pub struct AutoReturnBufferInner {
-    pub collector: Weak<RefCell<BufferPool>>,
-    pub inner: Rc<RefCell<BufferType>>,
+pub struct AutoReturnBuffer<const SIZE: usize> {
+    pub collector: Weak<RefCell<BufferPool<SIZE>>>,
+    pub inner: Rc<RefCell<[u8; SIZE]>>,
 }
 
-/// This extra layer of wrapping is necessary so that AutoReturnBuffer can have a reasonable default value.
-#[derive(Clone, Debug, Default)]
-pub struct AutoReturnBuffer {
-    pub inner: Option<AutoReturnBufferInner>,
-}
-
-impl BufferPool {
-    pub fn create_buffer_pool() -> Rc<RefCell<BufferPool>> {
+impl<const SIZE: usize> BufferPool<SIZE> {
+    pub fn create_buffer_pool() -> Rc<RefCell<BufferPool<SIZE>>> {
         Rc::new(RefCell::new(BufferPool {
             buffers: Vec::new(),
         }))
     }
 
-    pub fn get_from_buffer_pool(pool: &Rc<RefCell<BufferPool>>) -> AutoReturnBuffer {
+    pub fn get_from_buffer_pool(pool: &Rc<RefCell<BufferPool<SIZE>>>) -> AutoReturnBuffer<SIZE> {
         let buffer = pool.borrow_mut().buffers.pop();
 
         if let Some(buffer) = buffer {
             AutoReturnBuffer {
-                inner: Some(AutoReturnBufferInner {
-                    collector: Rc::downgrade(pool),
-                    inner: buffer,
-                }),
+                collector: Rc::downgrade(pool),
+                inner: buffer,
             }
         } else {
             AutoReturnBuffer {
-                inner: Some(AutoReturnBufferInner {
-                    collector: Rc::downgrade(pool),
-                    inner: Rc::new(RefCell::new([0; 1024])),
-                }),
+                collector: Rc::downgrade(pool),
+                inner: Rc::new(RefCell::new([0; SIZE])),
             }
         }
     }
 }
 
-impl Drop for AutoReturnBuffer {
+impl<const SIZE: usize> Drop for AutoReturnBuffer<SIZE> {
     fn drop(&mut self) {
-        if let Some(inner) = &self.inner {
-            if Rc::strong_count(&self.inner.as_ref().unwrap().inner) == 1 {
-                // This is the last one, give the buffer back to the collection.
-                if let Some(pool) = inner.collector.upgrade() {
-                    pool.borrow_mut().buffers.push(inner.inner.clone());
-                }
-
-                // If the upgrade fails then the buffer pool has been freed and so there
-                // is nothing to return this buffer to, just drop it instead.
+        if Rc::strong_count(&self.inner) == 1 {
+            // This is the last one, give the buffer back to the collection.
+            if let Some(pool) = self.collector.upgrade() {
+                pool.borrow_mut().buffers.push(self.inner.clone());
             }
+
+            // If the upgrade fails then the buffer pool has been freed and so there
+            // is nothing to return this buffer to, just drop it instead.
         }
     }
 }
 
-impl AutoReturnBuffer {
-    pub fn borrow_mut(&self) -> Option<RefMut<BufferType>> {
-        self.inner.as_ref().map(|x| x.inner.borrow_mut())
+impl<const SIZE: usize> AutoReturnBuffer<SIZE> {
+    pub fn borrow_mut(&self) -> RefMut<[u8; SIZE]> {
+        self.inner.borrow_mut()
     }
 
-    pub fn borrow(&self) -> Option<Ref<BufferType>> {
-        self.inner.as_ref().map(|x| x.inner.borrow())
-    }
-}
-
-// This is a lie, if these buffers are shared across threads it will explode.
-// They are marked as send and sync so they can be used in hydroflow channels in a single threaded transducer.
-// Otherwise we would need to make our own channel type.
-unsafe impl Send for AutoReturnBuffer {}
-unsafe impl Sync for AutoReturnBuffer {}
-
-impl PartialEq for AutoReturnBuffer {
-    fn eq(&self, other: &AutoReturnBuffer) -> bool {
-        match (&self.inner, &other.inner) {
-            (Some(x), Some(y)) => x.inner == y.inner,
-            (Some(_), None) => false,
-            (None, Some(_)) => false,
-            (None, None) => true,
-        }
+    pub fn borrow(&self) -> Ref<[u8; SIZE]> {
+        self.inner.borrow()
     }
 }
-impl Eq for AutoReturnBuffer {}
+
+impl<const SIZE: usize> PartialEq for AutoReturnBuffer<SIZE> {
+    fn eq(&self, other: &Self) -> bool {
+        *self.inner.borrow() == *other.inner.borrow()
+    }
+}
+impl<const SIZE: usize> Eq for AutoReturnBuffer<SIZE> {}

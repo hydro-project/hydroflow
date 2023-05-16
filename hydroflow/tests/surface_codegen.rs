@@ -239,16 +239,17 @@ pub fn test_cross_join() {
 
 #[multiplatform_test]
 pub fn test_lattice_join() {
-    use hydroflow::lang::lattice::ord::MaxRepr;
+    use hydroflow::lattices::ord::Max;
 
     // 'static, 'tick.
     {
-        let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (usize, usize))>();
-        let (lhs_tx, lhs_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
-        let (rhs_tx, rhs_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+        let (out_tx, mut out_rx) =
+            hydroflow::util::unbounded_channel::<(usize, (Max<usize>, Max<usize>))>();
+        let (lhs_tx, lhs_rx) = hydroflow::util::unbounded_channel::<(usize, Max<usize>)>();
+        let (rhs_tx, rhs_rx) = hydroflow::util::unbounded_channel::<(usize, Max<usize>)>();
 
         let mut df = hydroflow_syntax! {
-            my_join = lattice_join::<'static, 'tick, MaxRepr<usize>, MaxRepr<usize>>();
+            my_join = lattice_join::<'static, 'tick, Max<usize>, Max<usize>>();
 
             source_stream(lhs_rx) -> [0]my_join;
             source_stream(rhs_rx) -> [1]my_join;
@@ -257,34 +258,35 @@ pub fn test_lattice_join() {
         };
 
         // Merges forward correctly, without going backward
-        lhs_tx.send((7, 3)).unwrap();
-        lhs_tx.send((7, 4)).unwrap();
-        rhs_tx.send((7, 6)).unwrap();
-        rhs_tx.send((7, 5)).unwrap();
+        lhs_tx.send((7, Max::new(3))).unwrap();
+        lhs_tx.send((7, Max::new(4))).unwrap();
+        rhs_tx.send((7, Max::new(6))).unwrap();
+        rhs_tx.send((7, Max::new(5))).unwrap();
 
         df.run_tick();
 
         let out: Vec<_> = collect_ready(&mut out_rx);
-        assert_eq!(out, vec![(7, (4, 6))]);
+        assert_eq!(out, vec![(7, (Max::new(4), Max::new(6)))]);
 
         // Forgets rhs state
-        rhs_tx.send((7, 6)).unwrap();
-        rhs_tx.send((7, 5)).unwrap();
+        rhs_tx.send((7, Max::new(6))).unwrap();
+        rhs_tx.send((7, Max::new(5))).unwrap();
 
         df.run_tick();
 
         let out: Vec<_> = collect_ready(&mut out_rx);
-        assert_eq!(out, vec![(7, (4, 6))]);
+        assert_eq!(out, vec![(7, (Max::new(4), Max::new(6)))]);
     }
 
     // 'static, 'static.
     {
-        let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (usize, usize))>();
-        let (lhs_tx, lhs_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
-        let (rhs_tx, rhs_rx) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+        let (out_tx, mut out_rx) =
+            hydroflow::util::unbounded_channel::<(usize, (Max<usize>, Max<usize>))>();
+        let (lhs_tx, lhs_rx) = hydroflow::util::unbounded_channel::<(usize, Max<usize>)>();
+        let (rhs_tx, rhs_rx) = hydroflow::util::unbounded_channel::<(usize, Max<usize>)>();
 
         let mut df = hydroflow_syntax! {
-            my_join = lattice_join::<'static, 'static, MaxRepr<usize>, MaxRepr<usize>>();
+            my_join = lattice_join::<'static, 'static, Max<usize>, Max<usize>>();
 
             source_stream(lhs_rx) -> [0]my_join;
             source_stream(rhs_rx) -> [1]my_join;
@@ -292,18 +294,18 @@ pub fn test_lattice_join() {
             my_join -> for_each(|v| out_tx.send(v).unwrap());
         };
 
-        lhs_tx.send((7, 3)).unwrap();
-        lhs_tx.send((7, 4)).unwrap();
-        rhs_tx.send((7, 6)).unwrap();
-        rhs_tx.send((7, 5)).unwrap();
+        lhs_tx.send((7, Max::new(3))).unwrap();
+        lhs_tx.send((7, Max::new(4))).unwrap();
+        rhs_tx.send((7, Max::new(6))).unwrap();
+        rhs_tx.send((7, Max::new(5))).unwrap();
 
         df.run_tick();
         let out: Vec<_> = collect_ready(&mut out_rx);
-        assert_eq!(out, vec![(7, (4, 6))]);
+        assert_eq!(out, vec![(7, (Max::new(4), Max::new(6)))]);
 
         // Doesn't produce unless a lattice has changed.
-        lhs_tx.send((7, 4)).unwrap();
-        rhs_tx.send((7, 5)).unwrap();
+        lhs_tx.send((7, Max::new(4))).unwrap();
+        rhs_tx.send((7, Max::new(5))).unwrap();
 
         df.run_tick();
         let out: Vec<_> = collect_ready(&mut out_rx);
@@ -439,6 +441,51 @@ pub fn test_batch() {
     df.run_available();
     let out: Vec<_> = collect_ready(&mut rx);
     assert_eq!(out, vec![()]);
+}
+
+#[multiplatform_test]
+pub fn test_lattice_batch() {
+    type SetUnionHashSet = lattices::set_union::SetUnionHashSet<usize>;
+    type SetUnionSingletonSet = lattices::set_union::SetUnionSingletonSet<usize>;
+
+    let (batch1_tx, batch1_rx) = hydroflow::util::unbounded_channel::<()>();
+    let (batch2_tx, batch2_rx) = hydroflow::util::unbounded_channel::<()>();
+    let (tx_in, rx_in) = hydroflow::util::unbounded_channel::<SetUnionSingletonSet>();
+    let (tx_out, mut rx_out) = hydroflow::util::unbounded_channel::<SetUnionHashSet>();
+    let mut df = hydroflow_syntax! {
+        my_tee = tee();
+
+        source_stream(rx_in)
+            -> lattice_batch::<SetUnionHashSet>(batch1_rx) // pull
+            -> my_tee;
+
+        my_tee
+            -> for_each(|x| tx_out.send(x).unwrap());
+
+        my_tee
+            -> lattice_batch::<SetUnionHashSet>(batch2_rx) // push
+            -> for_each(|x| tx_out.send(x).unwrap());
+    };
+
+    tx_in.send(SetUnionSingletonSet::new_from(0)).unwrap();
+    df.run_available();
+    let out: Vec<_> = collect_ready(&mut rx_out);
+    assert_eq!(out, Vec::<SetUnionHashSet>::new());
+
+    batch1_tx.send(()).unwrap();
+    df.run_available();
+    let out: Vec<_> = collect_ready(&mut rx_out);
+    assert_eq!(out, vec![SetUnionHashSet::new_from([0])]);
+
+    batch1_tx.send(()).unwrap();
+    df.run_available();
+    let out: Vec<_> = collect_ready(&mut rx_out);
+    assert_eq!(out, Vec::<SetUnionHashSet>::new());
+
+    batch2_tx.send(()).unwrap();
+    df.run_available();
+    let out: Vec<_> = collect_ready(&mut rx_out);
+    assert_eq!(out, vec![SetUnionHashSet::new_from([0])]);
 }
 
 #[multiplatform_test]

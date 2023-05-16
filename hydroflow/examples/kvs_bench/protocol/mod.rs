@@ -1,28 +1,46 @@
 mod serialization;
+
 #[cfg(test)]
 mod test;
 
 pub use serialization::KvsRequestDeserializer;
 
 use crate::buffer_pool::AutoReturnBuffer;
-use hydroflow::lang::{
-    lattice::{last_write_wins::LastWriteWinsRepr, set_union::SetUnionRepr, LatticeRepr},
-    tag,
-};
+use lattices::bottom::Bottom;
+use lattices::map_union::MapUnionHashMap;
+use lattices::set_union::SetUnionHashSet;
+use lattices::{dom_pair::DomPair, fake::Fake, ord::Max};
 
-pub type MyLastWriteWins = LastWriteWinsRepr<u128, AutoReturnBuffer>;
-pub type MyLastWriteWinsRepr = <LastWriteWinsRepr<u128, AutoReturnBuffer> as LatticeRepr>::Repr;
-pub type SetUnion = SetUnionRepr<tag::HASH_SET, (Vec<u8>, usize)>;
+pub type NodeId = usize;
 
-#[derive(PartialEq, Eq, Clone, Debug)]
-pub enum KvsRequest {
-    Put { key: u64, value: AutoReturnBuffer },
-    _Get { key: u64 },
-    Gossip { key: u64, reg: MyLastWriteWinsRepr },
+pub type MyLastWriteWins<const SIZE: usize> =
+    DomPair<Max<u128>, Bottom<Fake<AutoReturnBuffer<SIZE>>>>;
+pub type MySetUnion = SetUnionHashSet<(NodeId, usize)>;
+
+#[derive(Clone, Debug)]
+pub enum KvsRequest<const SIZE: usize> {
+    Put {
+        key: u64,
+        value: AutoReturnBuffer<SIZE>,
+    },
+    Get {
+        key: u64,
+    },
+    Gossip {
+        map: MapUnionHashMap<u64, MyLastWriteWins<SIZE>>,
+    },
+    Delete {
+        key: u64,
+    },
 }
 
-#[derive(PartialEq, Eq, Clone, Debug)]
-pub enum KvsResponse {
-    _PutResponse { key: u64 },
-    GetResponse { key: u64, reg: MyLastWriteWinsRepr },
+#[derive(Clone, Debug)]
+pub enum KvsResponse<const SIZE: usize> {
+    _PutResponse {
+        key: u64,
+    },
+    GetResponse {
+        key: u64,
+        reg: MyLastWriteWins<SIZE>,
+    },
 }

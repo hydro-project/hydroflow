@@ -2,9 +2,7 @@ use std::any::Any;
 use std::cell::{RefCell, RefMut};
 use std::rc::Rc;
 
-use crate::lang::collections::Iter;
-
-use super::{CanReceive, Handoff, HandoffMeta};
+use super::{CanReceive, Handoff, HandoffMeta, Iter};
 
 /**
  * A [Vec]-based FIFO handoff.
@@ -61,12 +59,12 @@ where
         iter
     }
 }
-// impl<T> CanReceive<Vec<T>> for VecHandoff<T> {
-//     fn give(&self, mut vec: Vec<T>) -> Vec<T> {
-//         (*self.input).borrow_mut().extend(vec.drain(..));
-//         vec
-//     }
-// }
+impl<T> CanReceive<Vec<T>> for VecHandoff<T> {
+    fn give(&self, mut vec: Vec<T>) -> Vec<T> {
+        (*self.input).borrow_mut().extend(vec.drain(..));
+        vec
+    }
+}
 
 impl<T> HandoffMeta for VecHandoff<T> {
     fn any_ref(&self) -> &dyn Any {

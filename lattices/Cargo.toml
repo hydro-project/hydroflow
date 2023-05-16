@@ -1,0 +1,17 @@
+[package]
+name = "lattices"
+publish = true
+version = "0.0.0"
+edition = "2021"
+license = "Apache-2.0"
+documentation = "https://docs.rs/lattices/"
+description = "Lattice data types for simplifying distributed state by providing associativity, commutativity, and idempotence."
+
+[features]
+default = []
+serde = ["dep:serde"]
+
+[dependencies]
+cc-traits = "1.0.0"
+sealed = "0.5"
+serde = { version = "1.0.160", features = ["derive"], optional = true }

@@ -16,10 +16,10 @@ use syn::parse_quote;
 ///
 /// ```hydroflow
 /// // should print `(key, (2, 1))`
-/// my_join = lattice_join::<hydroflow::lang::lattice::ord::MaxRepr<usize>, hydroflow::lang::lattice::ord::MaxRepr<usize>>();
-/// source_iter(vec![("key", 0), ("key", 2)]) -> [0]my_join;
-/// source_iter(vec![("key", 1)]) -> [1]my_join;
-/// my_join -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
+/// my_join = lattice_join::<hydroflow::lattices::ord::Max<usize>, hydroflow::lattices::ord::Max<usize>>();
+/// source_iter(vec![("key", hydroflow::lattices::ord::Max::new(0)), ("key", hydroflow::lattices::ord::Max::new(2))]) -> [0]my_join;
+/// source_iter(vec![("key", hydroflow::lattices::ord::Max::new(1))]) -> [1]my_join;
+/// my_join -> for_each(|(k, (v1, v2))| println!("({}, ({:?}, {:?}))", k, v1, v2));
 /// ```
 ///
 /// `lattice_join` can also be provided with one or two generic lifetime persistence arguments, either
@@ -49,21 +49,21 @@ use syn::parse_quote;
 /// ### Examples
 ///
 /// ```rustbook
-/// use hydroflow::lang::lattice::ord::MaxRepr;
+/// use hydroflow::lattices::ord::Max;
 ///
-/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
-/// let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (usize, usize))>();
+/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(usize, Max<usize>)>();
+/// let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (Max<usize>, Max<usize>))>();
 ///
 /// let mut df = hydroflow::hydroflow_syntax! {
-///     my_join = lattice_join::<'tick, MaxRepr<usize>, MaxRepr<usize>>();
-///     source_iter([(7, 2), (7, 1)]) -> [0]my_join;
+///     my_join = lattice_join::<'tick, Max<usize>, Max<usize>>();
+///     source_iter([(7, Max::new(2)), (7, Max::new(1))]) -> [0]my_join;
 ///     source_stream(input_recv) -> [1]my_join;
 ///     my_join -> for_each(|v| out_tx.send(v).unwrap());
 /// };
-/// input_send.send((7, 5)).unwrap();
+/// input_send.send((7, Max::new(5))).unwrap();
 /// df.run_tick();
 /// let out: Vec<_> = hydroflow::util::collect_ready(&mut out_rx);
-/// assert_eq!(out, vec![(7, (2, 5))]);
+/// assert_eq!(out, vec![(7, (Max::new(2), Max::new(5)))]);
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
 pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
@@ -178,25 +178,19 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
                     lhs: I1,
                     rhs: I2,
                     updated_keys: &'a mut #root::rustc_hash::FxHashSet<Key>,
-                    lhs_state: &'a mut #root::compiled::pull::HalfJoinStateLattice<Key, Lhs, LhsDelta>,
-                    rhs_state: &'a mut #root::compiled::pull::HalfJoinStateLattice<Key, Rhs, RhsDelta>,
-                ) -> impl 'a + Iterator<Item = (Key, (Lhs::Repr, Rhs::Repr))>
+                    lhs_state: &'a mut #root::compiled::pull::HalfJoinStateLattice<Key, Lhs>,
+                    rhs_state: &'a mut #root::compiled::pull::HalfJoinStateLattice<Key, Rhs>,
+                ) -> impl 'a + Iterator<Item = (Key, (Lhs, Rhs))>
                 where
                     Key: Eq + std::hash::Hash + Clone,
-                    Lhs: #root::lang::lattice::Merge<LhsDelta> + #root::lang::lattice::Convert<LhsDelta>,
-                    Lhs::Repr: Eq + Clone,
-                    LhsDelta: #root::lang::lattice::LatticeRepr,
-                    LhsDelta::Repr: Eq + Clone,
-                    Rhs: #root::lang::lattice::Merge<RhsDelta> + #root::lang::lattice::Convert<RhsDelta>,
-                    Rhs::Repr: Eq + Clone,
-                    RhsDelta: #root::lang::lattice::LatticeRepr,
-                    RhsDelta::Repr: Eq + Clone,
-                    I1: Iterator<Item = (Key, Lhs::Repr)>,
-                    I2: Iterator<Item = (Key, Rhs::Repr)>,
+                    Lhs: #root::lattices::Merge<LhsDelta> + Clone + #root::lattices::ConvertFrom<LhsDelta>,
+                    Rhs: #root::lattices::Merge<RhsDelta> + Clone + #root::lattices::ConvertFrom<RhsDelta>,
+                    I1: Iterator<Item = (Key, LhsDelta)>,
+                    I2: Iterator<Item = (Key, RhsDelta)>,
                 {
                     #root::compiled::pull::SymmetricHashJoinLattice::new_from_mut(lhs, rhs, updated_keys, lhs_state, rhs_state)
                 }
-                check_inputs::<_, _, #lhs_type, #lhs_type, _, #rhs_type, #rhs_type>(#lhs, #rhs, &mut *#join_keys_borrow_ident, #lhs_borrow, #rhs_borrow)
+                check_inputs::<_, _, #lhs_type, _, _, #rhs_type, _>(#lhs, #rhs, &mut *#join_keys_borrow_ident, #lhs_borrow, #rhs_borrow)
             };
         };
 
