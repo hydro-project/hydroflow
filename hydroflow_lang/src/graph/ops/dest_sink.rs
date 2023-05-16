@@ -114,7 +114,7 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
                    ..
                },
                _| {
-        const BUFFER_BACKPRESSURE_THRESHOLD: usize = 4096;
+        const BUFFER_BACKPRESSURE_THRESHOLD: usize = 32;
 
         assert!(!is_pull);
 
@@ -173,10 +173,8 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
                                 .await
                                 .expect(#sink_feed_msg);
                         }
-                        let old_count = count.fetch_sub(recv_count, ::std::sync::atomic::Ordering::Relaxed);
-                        if #bp_threshold_lit <= old_count && old_count < #bp_threshold_lit + recv_count {
-                            backpressure_valve.release(); // Release backpressure.
-                        }
+                        let new_count = count.fetch_sub(recv_count, ::std::sync::atomic::Ordering::Relaxed) - recv_count;
+                        backpressure_valve.set(new_count / #bp_threshold_lit);
 
                         #root::futures::SinkExt::flush(&mut sink)
                             .await
@@ -193,10 +191,8 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
                 if let Err(err) = #send_ident.send(item) {
                     panic!(#buffer_send_msg, err);
                 }
-                let count = #count_ident_send.fetch_add(1, ::std::sync::atomic::Ordering::Relaxed);
-                if #bp_threshold_lit == 1 + count {
-                    #bp_ident_send.trigger(); // Trigger backpressure.
-                }
+                let count = 1 + #count_ident_send.fetch_add(1, ::std::sync::atomic::Ordering::Relaxed);
+                #bp_ident_send.set(count / #bp_threshold_lit);
             });
         };
 

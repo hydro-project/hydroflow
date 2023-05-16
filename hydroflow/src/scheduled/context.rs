@@ -42,7 +42,7 @@ pub struct Context {
 
     /// Number of backpressure events triggered. Backpressure is binary: if anything triggers
     /// backpressure the graph will block until all backpressure triggers are released.
-    pub(crate) backpresure_count: Arc<BackpressureInner>,
+    pub(crate) backpresure_amt: Arc<BackpressureInner>,
 }
 impl Context {
     pub(crate) fn new(event_queue_send: UnboundedSender<(SubgraphId, bool)>) -> Self {
@@ -58,7 +58,7 @@ impl Context {
 
             task_join_handles: Vec::new(),
 
-            backpresure_count: Default::default(),
+            backpresure_amt: Default::default(),
         }
     }
 
@@ -187,7 +187,7 @@ impl Context {
     /// Return a handle to a [`BackpressureValve`] for triggering (and later releasing) backpressure.
     pub fn backpressure_valve(&self) -> BackpressureValve {
         BackpressureValve {
-            backpresure_count: Arc::clone(&self.backpresure_count),
+            backpresure_amt: Arc::clone(&self.backpresure_amt),
         }
     }
 }
@@ -195,25 +195,21 @@ impl Context {
 #[derive(Default)]
 pub(crate) struct BackpressureInner {
     pub(crate) notify: Notify,
-    pub(crate) count: AtomicUsize,
+    pub(crate) amount: AtomicUsize,
 }
 
 /// Represents control over backpressure for a Hydroflow instance.
 #[derive(Clone)]
 pub struct BackpressureValve {
-    backpresure_count: Arc<BackpressureInner>,
+    backpresure_amt: Arc<BackpressureInner>,
 }
 
 impl BackpressureValve {
-    /// Trigger backpressure. It is an error to call this if backpressure is currently triggered.
-    pub fn trigger(&self) {
-        self.backpresure_count.count.fetch_add(1, Ordering::Relaxed);
-    }
-
-    /// Release backpressure. It is an error to call this if backpressure is not currently triggered.
-    pub fn release(&self) {
-        if 0 == self.backpresure_count.count.fetch_sub(1, Ordering::Relaxed) {
-            self.backpresure_count.notify.notify_one();
+    /// Set backpressure amount.
+    pub fn set(&self, amount: usize) {
+        let old_amount = self.backpresure_amt.amount.swap(amount, Ordering::Relaxed);
+        if amount <= 0 && 0 < old_amount {
+            self.backpresure_amt.notify.notify_one();
         }
     }
 }

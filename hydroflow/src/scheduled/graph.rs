@@ -354,18 +354,24 @@ impl Hydroflow {
 
     /// Wait for backpressure to release (blocking).
     fn wait_backpressure(&mut self) {
-        while 0 < self.context.backpresure_count.count.load(Ordering::Relaxed) {
+        while 0 < self.context.backpresure_amt.amount.load(Ordering::Relaxed) {
             Handle::try_current()
                 .unwrap()
-                .block_on(self.context.backpresure_count.notify.notified())
+                .block_on(self.context.backpresure_amt.notify.notified())
         }
     }
 
     /// Wait for backpressure to release (non-blocking).
     async fn wait_backpressure_async(&mut self) {
         // Await any backpressure.
-        while 0 < self.context.backpresure_count.count.load(Ordering::Relaxed) {
-            self.context.backpresure_count.notify.notified().await;
+        let amount = self.context.backpresure_amt.amount.load(Ordering::Relaxed);
+        if 0 < amount {
+            println!("BACKPRESSURE! {}", amount);
+            let _ = tokio::time::timeout(
+                std::time::Duration::from_millis((10 * amount * amount) as u64),
+                self.context.backpresure_amt.notify.notified(),
+            )
+            .await;
         }
     }
 
