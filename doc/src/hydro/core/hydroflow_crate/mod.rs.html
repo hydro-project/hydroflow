@@ -318,6 +318,14 @@
 <a href="#318" id="318">318</a>
 <a href="#319" id="319">319</a>
 <a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{bail, <span class="prelude-ty">Result</span>};
@@ -345,6 +353,7 @@
     features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    external_ports: Vec&lt;u16&gt;,
 
     <span class="doccomment">/// Configuration for the ports this service will connect to as a client.
     </span>port_to_server: HashMap&lt;String, ports::ServerConfig&gt;,
@@ -365,7 +374,8 @@
 }
 
 <span class="kw">impl </span>HydroflowCrate {
-    <span class="kw">pub fn </span>new(
+    <span class="attr">#[allow(clippy::too_many_arguments)]
+    </span><span class="kw">pub fn </span>new(
         id: usize,
         src: PathBuf,
         on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
@@ -373,6 +383,7 @@
         features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        external_ports: Vec&lt;u16&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             id,
@@ -382,6 +393,7 @@
             features,
             args,
             display_id,
+            external_ports,
             port_to_server: HashMap::new(),
             port_to_bind: HashMap::new(),
             built_binary: <span class="prelude-val">None</span>,
@@ -504,6 +516,10 @@
         host.request_custom_binary();
         <span class="kw">for </span>(<span class="kw">_</span>, bind_type) <span class="kw">in </span><span class="self">self</span>.port_to_bind.iter() {
             host.request_port(bind_type);
+        }
+
+        <span class="kw">for </span>port <span class="kw">in </span><span class="self">self</span>.external_ports.iter() {
+            host.request_port(<span class="kw-2">&amp;</span>ServerStrategy::ExternalTcpPort(<span class="kw-2">*</span>port));
         }
     }
 

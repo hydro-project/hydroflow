@@ -768,6 +768,8 @@
 <a href="#768" id="768">768</a>
 <a href="#769" id="769">769</a>
 <a href="#770" id="770">770</a>
+<a href="#771" id="771">771</a>
+<a href="#772" id="772">772</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::sync::Arc;
 
@@ -967,6 +969,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        external_ports: <span class="prelude-ty">Option</span>&lt;Vec&lt;u16&gt;&gt;,
     ) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
         <span class="kw">let </span>service = <span class="self">self</span>.underlying.blocking_write().add_service(|id| {
             <span class="kw">crate</span>::core::HydroflowCrate::new(
@@ -977,6 +980,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
                 features,
                 args,
                 display_id,
+                external_ports.unwrap_or_default(),
             )
         });
 
