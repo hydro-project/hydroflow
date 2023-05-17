@@ -7,8 +7,7 @@ use hydroflow::{
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let echo_recv = ports
-        .remove("echo")
-        .unwrap()
+        .port("echo")
         .connect::<ConnectedTagged<ConnectedBidi>>()
         .await
         .into_source();
