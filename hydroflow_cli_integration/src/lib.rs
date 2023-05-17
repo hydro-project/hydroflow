@@ -19,8 +19,11 @@ use async_recursion::async_recursion;
 use async_trait::async_trait;
 use pin_project::pin_project;
 
-use tokio::net::{TcpListener, TcpStream};
 use tokio::{io, task::JoinHandle};
+use tokio::{
+    net::{TcpListener, TcpStream},
+    sync::mpsc::UnboundedReceiver,
+};
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
 
 #[cfg(unix)]
@@ -71,10 +74,20 @@ impl ServerBindConfig {
             ServerBindConfig::TcpPort(host) => {
                 let listener = TcpListener::bind((host, 0)).await.unwrap();
                 let addr = listener.local_addr().unwrap();
-                BoundConnection::TcpPort(
-                    tokio::spawn(async move { Ok(listener.accept().await?.0) }),
-                    addr,
-                )
+                let (conn_send, conn_recv) = tokio::sync::mpsc::unbounded_channel();
+
+                tokio::spawn(async move {
+                    loop {
+                        if conn_send
+                            .send(listener.accept().await.map(|r| r.0))
+                            .is_err()
+                        {
+                            break;
+                        }
+                    }
+                });
+
+                BoundConnection::TcpPort(conn_recv, addr)
             }
             ServerBindConfig::Demux(bindings) => {
                 let mut demux = HashMap::new();
@@ -107,6 +120,14 @@ pub enum ServerOrBound {
 impl ServerOrBound {
     pub async fn connect<T: Connected>(self) -> T {
         T::from_defn(self).await
+    }
+
+    pub async fn accept_tcp(&mut self) -> TcpStream {
+        if let ServerOrBound::Bound(BoundConnection::TcpPort(handle, _)) = self {
+            handle.recv().await.unwrap().unwrap()
+        } else {
+            panic!("Not a TCP port")
+        }
     }
 }
 
@@ -158,7 +179,7 @@ pub trait ConnectedSource {
 #[derive(Debug)]
 pub enum BoundConnection {
     UnixSocket(JoinHandle<io::Result<UnixStream>>, tempfile::TempDir),
-    TcpPort(JoinHandle<io::Result<TcpStream>>, SocketAddr),
+    TcpPort(UnboundedReceiver<io::Result<TcpStream>>, SocketAddr),
     Demux(HashMap<u32, BoundConnection>),
     Merge(Vec<BoundConnection>),
     Tagged(Box<BoundConnection>, u32),
@@ -229,8 +250,8 @@ async fn accept(bound: BoundConnection) -> ConnectedBidi {
                 panic!("Unix sockets are not supported on this platform")
             }
         }
-        BoundConnection::TcpPort(listener, _) => {
-            let stream = listener.await.unwrap().unwrap();
+        BoundConnection::TcpPort(mut listener, _) => {
+            let stream = listener.recv().await.unwrap().unwrap();
             ConnectedBidi {
                 stream_sink: Some(Box::pin(tcp_bytes(stream))),
                 source_only: None,

@@ -197,6 +197,7 @@ impl Deployment {
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
         display_id: Option<String>,
+        external_ports: Option<Vec<u16>>,
     ) -> PyResult<Py<pyo3::PyAny>> {
         let service = self.underlying.blocking_write().add_service(|id| {
             crate::core::HydroflowCrate::new(
@@ -207,6 +208,7 @@ impl Deployment {
                 features,
                 args,
                 display_id,
+                external_ports.unwrap_or_default(),
             )
         });
 
