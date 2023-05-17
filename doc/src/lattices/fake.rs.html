@@ -76,6 +76,22 @@
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! A fake lattice that will runtime panic if a merge is attempted.
 //!
 //! This is used to wrap non lattice data into a lattice in a way that typechecks
@@ -100,10 +116,16 @@
     }
 }
 
-<span class="kw">impl</span>&lt;T, O&gt; Merge&lt;Fake&lt;O&gt;&gt; <span class="kw">for </span>Fake&lt;T&gt; {
-    <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw">_</span>: Fake&lt;O&gt;) -&gt; bool {
-        <span class="macro">panic!</span>(<span class="string">&quot;The fake lattice cannot be merged.&quot;</span>)
-    }
+<span class="kw">impl</span>&lt;T, O&gt; Merge&lt;Fake&lt;O&gt;&gt; <span class="kw">for </span>Fake&lt;T&gt;
+<span class="kw">where
+    </span>T: PartialEq&lt;O&gt;,
+{
+    <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: Fake&lt;O&gt;) -&gt; bool {
+        <span class="kw">if </span><span class="self">self</span>.<span class="number">0 </span>!= other.<span class="number">0 </span>{
+            <span class="macro">panic!</span>(<span class="string">&quot;The fake lattice cannot merge inequal elements.&quot;</span>)
+        }
+        <span class="bool-val">false
+    </span>}
 }
 
 <span class="kw">impl</span>&lt;T&gt; ConvertFrom&lt;Fake&lt;T&gt;&gt; <span class="kw">for </span>Fake&lt;T&gt; {
@@ -114,10 +136,13 @@
 
 <span class="kw">impl</span>&lt;T, O&gt; PartialOrd&lt;Fake&lt;O&gt;&gt; <span class="kw">for </span>Fake&lt;T&gt;
 <span class="kw">where
-    </span>T: PartialOrd&lt;O&gt;,
+    </span>T: PartialEq&lt;O&gt;,
 {
-    <span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span>Fake&lt;O&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;std::cmp::Ordering&gt; {
-        <span class="macro">panic!</span>(<span class="string">&quot;The fake lattice does not have a partial order&quot;</span>)
+    <span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Fake&lt;O&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;std::cmp::Ordering&gt; {
+        <span class="kw">if </span><span class="self">self</span>.<span class="number">0 </span>!= other.<span class="number">0 </span>{
+            <span class="macro">panic!</span>(<span class="string">&quot;The fake lattice does not have a partial order between inequal elements.&quot;</span>);
+        }
+        <span class="prelude-val">Some</span>(std::cmp::Ordering::Equal)
     }
 }
 <span class="kw">impl</span>&lt;T, O&gt; LatticeOrd&lt;Fake&lt;O&gt;&gt; <span class="kw">for </span>Fake&lt;T&gt; <span class="kw">where </span><span class="self">Self</span>: PartialOrd&lt;Fake&lt;O&gt;&gt; {}
@@ -134,18 +159,25 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use crate</span>::{
-        set_union::SetUnionHashSet,
-        test::{assert_lattice_identities, assert_partial_ord_identities},
-    };
+    <span class="kw">use </span><span class="kw">crate</span>::test::{assert_lattice_identities, assert_partial_ord_identities};
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>consistency() {
+        <span class="kw">let </span>test_vec = <span class="macro">vec!</span>[Fake::new(<span class="string">&quot;hello world&quot;</span>)];
+
+        assert_partial_ord_identities(<span class="kw-2">&amp;</span>test_vec);
+        assert_lattice_identities(<span class="kw-2">&amp;</span>test_vec);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>consistency_inequal() {
+        <span class="kw">use </span>std::collections::BTreeSet;
+
         <span class="kw">let </span>test_vec = <span class="macro">vec!</span>[
-            Fake::new(SetUnionHashSet::new_from([])),
-            Fake::new(SetUnionHashSet::new_from([<span class="number">0</span>])),
-            Fake::new(SetUnionHashSet::new_from([<span class="number">1</span>])),
-            Fake::new(SetUnionHashSet::new_from([<span class="number">0</span>, <span class="number">1</span>])),
+            Fake::new(BTreeSet::from_iter([])),
+            Fake::new(BTreeSet::from_iter([<span class="number">0</span>])),
+            Fake::new(BTreeSet::from_iter([<span class="number">1</span>])),
+            Fake::new(BTreeSet::from_iter([<span class="number">0</span>, <span class="number">1</span>])),
         ];
 
         <span class="comment">// Fake does not have a partial order.
