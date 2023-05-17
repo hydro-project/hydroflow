@@ -1196,6 +1196,8 @@
 <a href="#1196" id="1196">1196</a>
 <a href="#1197" id="1197">1197</a>
 <a href="#1198" id="1198">1198</a>
+<a href="#1199" id="1199">1199</a>
+<a href="#1200" id="1200">1200</a>
 </pre></div><pre class="rust"><code><span class="attr">#![deny(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -1208,10 +1210,6 @@
 <span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 <span class="kw">use </span>syn::spanned::Spanned;
 
-<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
-<span class="kw">use </span><span class="kw">crate</span>::graph::ops::null_write_iterator_fn;
-<span class="kw">use </span><span class="kw">crate</span>::pretty_span::{PrettyRowCol, PrettySpan};
-
 <span class="kw">use </span><span class="kw">super</span>::graph_write::{Dot, GraphWrite, Mermaid};
 <span class="kw">use </span><span class="kw">super</span>::ops::{find_op_op_constraints, OperatorWriteOutput, WriteContextArgs, OPERATORS};
 <span class="kw">use super</span>::{
@@ -1219,6 +1217,9 @@
     GraphSubgraphId, Node, OperatorInstance, PortIndexValue, Varname, CONTEXT, HANDOFF_NODE_STR,
     HYDROFLOW,
 };
+<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
+<span class="kw">use </span><span class="kw">crate</span>::graph::ops::null_write_iterator_fn;
+<span class="kw">use </span><span class="kw">crate</span>::pretty_span::{PrettyRowCol, PrettySpan};
 
 <span class="doccomment">/// A graph representing a hydroflow dataflow graph (with or without subgraph partitioning,
 /// stratification, and handoff insertion). This is a &quot;meta&quot; graph used for generating Rust source
@@ -1519,7 +1520,7 @@
             <span class="kw">let </span><span class="prelude-val">Some</span>(op_constraints) = find_op_op_constraints(operator) <span class="kw">else </span>{ <span class="kw">break </span><span class="lifetime">&#39;oc </span><span class="prelude-val">None</span>; };
             <span class="kw">let </span>(input_port, output_port) = <span class="self">self</span>.ports.get(edge_id).cloned().unwrap();
             <span class="kw">let </span>generics = get_operator_generics(
-                <span class="kw-2">&amp;mut </span>Vec::new(), <span class="comment">/* TODO(mingwei) diagnostics */
+                <span class="kw-2">&amp;mut </span>Vec::new(), <span class="comment">// TODO(mingwei) diagnostics
                 </span>operator,
             );
             <span class="prelude-val">Some</span>(OperatorInstance {
@@ -2078,15 +2079,18 @@
 
         <span class="macro">quote! </span>{
             {
-                <span class="kw">use </span>#root::{var_expr, var_args};
+                <span class="attr">#[allow(unused_qualifications)]
+                </span>{
+                    <span class="kw">use </span>#root::{var_expr, var_args};
 
-                <span class="kw">let </span><span class="kw-2">mut </span>#hf = #root::scheduled::graph::Hydroflow::new();
-                #hf.__assign_meta_graph(#meta_graph_json);
-                #hf.__assign_diagnostics(#diagnostics_json);
+                    <span class="kw">let </span><span class="kw-2">mut </span>#hf = #root::scheduled::graph::Hydroflow::new();
+                    #hf.__assign_meta_graph(#meta_graph_json);
+                    #hf.__assign_diagnostics(#diagnostics_json);
 
-                #code
+                    #code
 
-                #hf
+                    #hf
+                }
             }
         }
     }
@@ -2295,7 +2299,7 @@
 
         <span class="comment">// Write out external handoffs (handoffs between different subgraphs).
         // This is set up in an awkward way in order to preserve the old write order.
-        //write out handoffs outside the clusters and adjacent edges
+        // write out handoffs outside the clusters and adjacent edges
         </span><span class="kw">for </span>(src_id, src_node) <span class="kw">in </span><span class="self">self</span>.nodes() {
             <span class="kw">for </span>(edge_id, dst_id) <span class="kw">in </span><span class="self">self</span>.node_successors(src_id) {
                 <span class="kw">if </span>barrier_handoffs.contains(<span class="kw-2">&amp;</span>src_id) {

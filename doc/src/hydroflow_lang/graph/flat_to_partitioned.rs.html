@@ -454,19 +454,17 @@
 <a href="#454" id="454">454</a>
 <a href="#455" id="455">455</a>
 <a href="#456" id="456">456</a>
-<a href="#457" id="457">457</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 
 <span class="kw">use </span>proc_macro2::Span;
 <span class="kw">use </span>slotmap::{SecondaryMap, SparseSecondaryMap};
 <span class="kw">use </span>syn::parse_quote;
 
-<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
-<span class="kw">use </span><span class="kw">crate</span>::union_find::UnionFind;
-
 <span class="kw">use </span><span class="kw">super</span>::hydroflow_graph::HydroflowGraph;
 <span class="kw">use </span><span class="kw">super</span>::ops::{find_node_op_constraints, DelayType};
 <span class="kw">use super</span>::{graph_algorithms, node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node};
+<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
+<span class="kw">use </span><span class="kw">crate</span>::union_find::UnionFind;
 
 <span class="doccomment">/// Return a map containing all barrier crossers.
 </span><span class="kw">fn </span>find_barrier_crossers(

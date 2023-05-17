@@ -1177,33 +1177,26 @@
 <a href="#1177" id="1177">1177</a>
 <a href="#1178" id="1178">1178</a>
 <a href="#1179" id="1179">1179</a>
-<a href="#1180" id="1180">1180</a>
-<a href="#1181" id="1181">1181</a>
-<a href="#1182" id="1182">1182</a>
-<a href="#1183" id="1183">1183</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>rust_sitter::{
-    errors::{ParseError, ParseErrorReason},
-    Spanned,
-};
-<span class="kw">use </span>std::{
-    collections::{HashMap, HashSet},
-    ops::Deref,
-};
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap, HashSet};
+<span class="kw">use </span>std::ops::Deref;
 
-<span class="kw">use </span>hydroflow_lang::{
-    diagnostic::{Diagnostic, Level},
-    graph::{eliminate_extra_merges_tees, partition_graph, FlatGraphBuilder, HydroflowGraph},
-    parse::{IndexInt, Indexing, Pipeline, PipelineLink},
+<span class="kw">use </span>hydroflow_lang::diagnostic::{Diagnostic, Level};
+<span class="kw">use </span>hydroflow_lang::graph::{
+    eliminate_extra_merges_tees, partition_graph, FlatGraphBuilder, HydroflowGraph,
 };
+<span class="kw">use </span>hydroflow_lang::parse::{IndexInt, Indexing, Pipeline, PipelineLink};
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
+<span class="kw">use </span>rust_sitter::errors::{ParseError, ParseErrorReason};
 <span class="kw">use </span>syn::{parse_quote, parse_quote_spanned};
 
 <span class="kw">mod </span>grammar;
 <span class="kw">mod </span>join_plan;
 <span class="kw">mod </span>util;
 
-<span class="kw">use </span>grammar::datalog::<span class="kw-2">*</span>;
-<span class="kw">use </span>join_plan::<span class="kw-2">*</span>;
+<span class="kw">use </span>grammar::datalog::{
+    Aggregation, Atom, Declaration, Ident, IntExpr, Program, Rule, RuleType, TargetExpr,
+};
+<span class="kw">use </span>join_plan::{IntermediateJoinNode, JoinPlan};
 <span class="kw">use </span>util::{repeat_tuple, Counter};
 
 <span class="kw">static </span>MAGIC_RELATIONS: [<span class="kw-2">&amp;</span>str; <span class="number">1</span>] = [<span class="string">&quot;less_than&quot;</span>];
@@ -1520,7 +1513,7 @@
 <span class="attr">#[allow(clippy::too_many_arguments)]
 </span><span class="kw">fn </span>generate_rule(
     plan: JoinPlan&lt;<span class="lifetime">&#39;_</span>&gt;,
-    rule: <span class="kw-2">&amp;</span>Spanned&lt;Rule&gt;,
+    rule: <span class="kw-2">&amp;</span>rust_sitter::Spanned&lt;Rule&gt;,
     flat_graph_builder: <span class="kw-2">&amp;mut </span>FlatGraphBuilder,
     tee_counter: <span class="kw-2">&amp;mut </span>HashMap&lt;String, Counter&gt;,
     merge_counter: <span class="kw-2">&amp;mut </span>HashMap&lt;String, Counter&gt;,
@@ -1532,7 +1525,7 @@
     <span class="kw">let </span>target = <span class="kw-2">&amp;</span>rule.target.name;
     <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}_insert&quot;</span>, target.name), get_span(target.span));
 
-    <span class="kw">let </span>out_expanded = expand_join_plan(
+    <span class="kw">let </span>out_expanded = join_plan::expand_join_plan(
         <span class="kw-2">&amp;</span>plan,
         flat_graph_builder,
         tee_counter,
@@ -1692,7 +1685,7 @@
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>gen_value_expr(
     expr: <span class="kw-2">&amp;</span>IntExpr,
-    lookup_ident: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>Spanned&lt;Ident&gt;) -&gt; syn::Expr,
+    lookup_ident: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>rust_sitter::Spanned&lt;Ident&gt;) -&gt; syn::Expr,
     get_span: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn((usize, usize)) -&gt; Span,
 ) -&gt; syn::Expr {
     <span class="kw">match </span>expr {
@@ -1730,7 +1723,7 @@
 
 <span class="kw">fn </span>gen_target_expr(
     expr: <span class="kw-2">&amp;</span>TargetExpr,
-    lookup_ident: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>Spanned&lt;Ident&gt;) -&gt; syn::Expr,
+    lookup_ident: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>FnMut(<span class="kw-2">&amp;</span>rust_sitter::Spanned&lt;Ident&gt;) -&gt; syn::Expr,
     get_span: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn((usize, usize)) -&gt; Span,
 ) -&gt; syn::Expr {
     <span class="kw">match </span>expr {
@@ -1986,8 +1979,7 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>syn::parse_quote;
 
-    <span class="kw">use </span><span class="kw">super</span>::gen_hydroflow_graph;
-    <span class="kw">use </span><span class="kw">super</span>::hydroflow_graph_to_program;
+    <span class="kw">use super</span>::{gen_hydroflow_graph, hydroflow_graph_to_program};
 
     <span class="macro">macro_rules! </span>test_snapshots {
         (<span class="macro-nonterminal">$program</span>:literal) =&gt; {

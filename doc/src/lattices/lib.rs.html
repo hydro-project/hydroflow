@@ -116,6 +116,7 @@
 <a href="#116" id="116">116</a>
 <a href="#117" id="117">117</a>
 <a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
 </pre></div><pre class="rust"><code><span class="attr">#![deny(missing_docs)]
 #![feature(impl_trait_in_assoc_type)]
 </span><span class="doccomment">//! Module containing lattice traits and implementations.
@@ -125,8 +126,9 @@
 //! Conversely, Generic parameters that are single letters or acronyms (e.g. `K`, `T`) are scalar
 //! non-`Lattice` types.
 
-</span><span class="kw">use </span>sealed::sealed;
-<span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
+</span><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
+
+<span class="kw">use </span>sealed::sealed;
 
 <span class="kw">pub mod </span>bottom;
 <span class="kw">pub mod </span>collections;

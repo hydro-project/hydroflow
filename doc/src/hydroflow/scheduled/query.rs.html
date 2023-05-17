@@ -199,15 +199,15 @@
 <a href="#199" id="199">199</a>
 <a href="#200" id="200">200</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
-<span class="kw">use </span>std::{cell::RefCell, rc::Rc};
-
-<span class="kw">use </span><span class="kw">crate</span>::scheduled::graph::Hydroflow;
-<span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::VecHandoff;
+<span class="kw">use </span>std::cell::RefCell;
+<span class="kw">use </span>std::rc::Rc;
 
 <span class="kw">use </span><span class="kw">super</span>::context::Context;
 <span class="kw">use </span><span class="kw">super</span>::graph_ext::GraphExt;
 <span class="kw">use </span><span class="kw">super</span>::handoff::Iter;
 <span class="kw">use </span><span class="kw">super</span>::port::{RecvPort, SendCtx};
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::graph::Hydroflow;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::VecHandoff;
 
 <span class="kw">const </span>QUERY_EDGE_NAME: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt; = Cow::Borrowed(<span class="string">&quot;query handoff&quot;</span>);
 
@@ -290,7 +290,7 @@
             send.give(Iter(recv.take_inner().into_iter().map(<span class="kw-2">&amp;mut </span>f)));
         });
 
-        std::mem::drop(df);
+        drop(df);
         Operator {
             df: <span class="self">self</span>.df,
             recv_port,
@@ -314,7 +314,7 @@
             },
         );
 
-        std::mem::drop(df);
+        drop(df);
         Operator {
             df: <span class="self">self</span>.df,
             recv_port,
@@ -339,7 +339,7 @@
             },
         );
 
-        std::mem::drop(df);
+        drop(df);
         Operator {
             df: <span class="self">self</span>.df,
             recv_port,

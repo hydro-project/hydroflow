@@ -80,14 +80,14 @@
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Organizational module for Hydroflow Send/RecvCtx structs and Input/OutputPort structs.
-</span><span class="kw">use </span>std::{cell::RefMut, marker::PhantomData};
+</span><span class="kw">use </span>std::cell::RefMut;
+<span class="kw">use </span>std::marker::PhantomData;
 
 <span class="kw">use </span>ref_cast::RefCast;
 <span class="kw">use </span>sealed::sealed;
 
-<span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::{CanReceive, Handoff, TryCanReceive};
-
 <span class="kw">use </span><span class="kw">super</span>::HandoffId;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::{CanReceive, Handoff, TryCanReceive};
 
 <span class="doccomment">/// An empty trait used to denote [`Polarity`]: either **send** or **receive**.
 ///

@@ -139,24 +139,12 @@
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
 <a href="#141" id="141">141</a>
-<a href="#142" id="142">142</a>
-<a href="#143" id="143">143</a>
-<a href="#144" id="144">144</a>
-<a href="#145" id="145">145</a>
-<a href="#146" id="146">146</a>
-<a href="#147" id="147">147</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::ResourcePool;
-<span class="kw">use </span><span class="kw">super</span>::ResourceResult;
-<span class="kw">use </span><span class="kw">super</span>::Service;
-
-<span class="kw">use </span><span class="kw">super</span>::progress;
-<span class="kw">use </span><span class="kw">super</span>::Host;
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::{Arc, Weak};
 
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>tokio::sync::RwLock;
 
-<span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>std::sync::Weak;
+<span class="kw">use super</span>::{progress, Host, ResourcePool, ResourceResult, Service};
 
 <span class="attr">#[derive(Default)]
 </span><span class="kw">pub struct </span>Deployment {

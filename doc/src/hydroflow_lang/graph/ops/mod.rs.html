@@ -406,7 +406,6 @@
 <a href="#406" id="406">406</a>
 <a href="#407" id="407">407</a>
 <a href="#408" id="408">408</a>
-<a href="#409" id="409">409</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::{Debug, Display};
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
@@ -414,15 +413,14 @@
 
 <span class="kw">use </span>proc_macro2::{Ident, Literal, Span, TokenStream};
 <span class="kw">use </span>quote::quote_spanned;
+<span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>slotmap::Key;
 <span class="kw">use </span>syn::punctuated::Punctuated;
 <span class="kw">use </span>syn::{parse_quote_spanned, Token};
 
+<span class="kw">use super</span>::{GraphNodeId, GraphSubgraphId, Node, OpInstGenerics, OperatorInstance, PortIndexValue};
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::Diagnostic;
 <span class="kw">use </span><span class="kw">crate</span>::parse::{Operator, PortIndex};
-
-<span class="kw">use super</span>::{GraphNodeId, GraphSubgraphId, Node, OpInstGenerics, OperatorInstance, PortIndexValue};
-<span class="kw">use </span>serde::{Deserialize, Serialize};
 
 <span class="attr">#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
 </span><span class="kw">pub enum </span>DelayType {
@@ -747,7 +745,7 @@
     }
 }
 
-<span class="kw">pub trait </span>RangeTrait&lt;T&gt;: Send + Sync + std::fmt::Debug
+<span class="kw">pub trait </span>RangeTrait&lt;T&gt;: Send + Sync + Debug
 <span class="kw">where
     </span>T: <span class="question-mark">?</span>Sized,
 {
@@ -789,7 +787,7 @@
 
 <span class="kw">impl</span>&lt;R, T&gt; RangeTrait&lt;T&gt; <span class="kw">for </span>R
 <span class="kw">where
-    </span>R: RangeBounds&lt;T&gt; + Send + Sync + std::fmt::Debug,
+    </span>R: RangeBounds&lt;T&gt; + Send + Sync + Debug,
 {
     <span class="kw">fn </span>start_bound(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Bound&lt;<span class="kw-2">&amp;</span>T&gt; {
         <span class="self">self</span>.start_bound()

@@ -60,9 +60,9 @@
 <a href="#60" id="60">60</a>
 <a href="#61" id="61">61</a>
 <a href="#62" id="62">62</a>
-</pre></div><pre class="rust"><code><span class="kw">use super</span>::{Pusherator, PusheratorBuild};
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">use </span>std::marker::PhantomData;
+<span class="kw">use super</span>::{Pusherator, PusheratorBuild};
 
 <span class="kw">pub struct </span>Map&lt;Next, Func, In&gt; {
     next: Next,

@@ -26,9 +26,9 @@
 <a href="#26" id="26">26</a>
 <a href="#27" id="27">27</a>
 <a href="#28" id="28">28</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::Pusherator;
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">use </span>std::marker::PhantomData;
+<span class="kw">use </span><span class="kw">super</span>::Pusherator;
 
 <span class="kw">pub struct </span>ForEach&lt;Func, In&gt; {
     func: Func,

@@ -386,6 +386,7 @@
 <a href="#386" id="386">386</a>
 <a href="#387" id="387">387</a>
 <a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
 </pre></div><pre class="rust"><code><span class="attr">#![deny(missing_docs)]
 
 </span><span class="kw">use </span>std::error::Error;
@@ -393,7 +394,8 @@
 <span class="kw">use </span>auto_impl::auto_impl;
 <span class="kw">use </span>slotmap::Key;
 
-<span class="kw">use super</span>::{ops::DelayType, Color, GraphNodeId, GraphSubgraphId};
+<span class="kw">use </span><span class="kw">super</span>::ops::DelayType;
+<span class="kw">use super</span>::{Color, GraphNodeId, GraphSubgraphId};
 
 <span class="doccomment">/// Trait for writing textual representations of graphs, i.e. mermaid or dot graphs.
 </span><span class="attr">#[auto_impl(<span class="kw-2">&amp;mut</span>, Box)]

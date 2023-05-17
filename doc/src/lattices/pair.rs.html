@@ -117,6 +117,7 @@
 <a href="#117" id="117">117</a>
 <a href="#118" id="118">118</a>
 <a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Pair compound lattice.
 //!
 //! Merge both nested lattices.
@@ -214,10 +215,11 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
+    <span class="kw">use </span>std::collections::HashSet;
+
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::set_union::SetUnionHashSet;
     <span class="kw">use </span><span class="kw">crate</span>::test::{assert_lattice_identities, assert_partial_ord_identities};
-    <span class="kw">use </span>std::collections::HashSet;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>consistency() {

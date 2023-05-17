@@ -6,20 +6,19 @@ but it can also be used in <code>match</code>, <code>if let ...</code>, and <cod
 <p>Although it may somtimes be possible to use <code>var_expr!</code> in place of this macro, doing so may
 cause confusing errors.</p>
 <h2 id="examples"><a href="#examples">Examples</a></h2>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>variadics::{var_expr, var_args, var_type};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>variadics::{var_args, var_expr, var_type};
 
 <span class="kw">fn </span>my_fn(<span class="macro">var_args!</span>(a, b, c): <span class="macro">var_type!</span>(usize, <span class="kw-2">&amp;</span>str, bool)) {
     <span class="macro">println!</span>(<span class="string">&quot;{} {} {}&quot;</span>, a, b, c);
 }
 my_fn(<span class="macro">var_expr!</span>(<span class="number">12</span>, <span class="string">&quot;hello&quot;</span>, <span class="bool-val">false</span>));</code></pre></div>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>variadics::{var_expr, var_args};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>variadics::{var_args, var_expr};
 
 <span class="kw">let </span>val = <span class="macro">var_expr!</span>(<span class="bool-val">true</span>, <span class="prelude-val">Some</span>(<span class="string">&quot;foo&quot;</span>), <span class="number">2</span>);
 <span class="kw">if let </span><span class="macro">var_args!</span>(<span class="bool-val">true</span>, <span class="prelude-val">Some</span>(item), <span class="number">0</span>..=<span class="number">3</span>) = val {
     <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, item);
-}
-<span class="kw">else </span>{
+} <span class="kw">else </span>{
     <span class="macro">unreachable!</span>();
 }</code></pre></div>
 

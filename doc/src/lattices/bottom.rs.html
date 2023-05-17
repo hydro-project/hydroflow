@@ -126,14 +126,16 @@
 <a href="#126" id="126">126</a>
 <a href="#127" id="127">127</a>
 <a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Gives a default representation that compares as less than to a lattice.
 //!
 //! This can be used for giving a sensible default repersentation to types that don&#39;t necessarily have one.
 
-</span><span class="kw">use super</span>::{ConvertFrom, Merge};
-<span class="kw">use </span><span class="kw">crate</span>::LatticeOrd;
-<span class="kw">use </span>std::cmp::Ordering;
+</span><span class="kw">use </span>std::cmp::Ordering;
 <span class="kw">use </span>std::cmp::Ordering::<span class="kw-2">*</span>;
+
+<span class="kw">use super</span>::{ConvertFrom, Merge};
+<span class="kw">use </span><span class="kw">crate</span>::LatticeOrd;
 
 <span class="doccomment">/// Bottom wrapper.
 </span><span class="attr">#[repr(transparent)]

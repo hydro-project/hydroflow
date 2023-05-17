@@ -150,16 +150,14 @@
 <a href="#150" id="150">150</a>
 <a href="#151" id="151">151</a>
 <a href="#152" id="152">152</a>
-<a href="#153" id="153">153</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>ref_cast::RefCast;
 <span class="kw">use </span>sealed::sealed;
 <span class="kw">use </span>variadics::Variadic;
 
+<span class="kw">use </span><span class="kw">super</span>::Handoff;
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::graph::HandoffData;
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::port::{Polarity, Port, PortCtx};
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::{HandoffId, SubgraphId};
-
-<span class="kw">use </span><span class="kw">super</span>::Handoff;
 
 <span class="attr">#[sealed]
 </span><span class="kw">pub trait </span>PortList&lt;S&gt;: Variadic

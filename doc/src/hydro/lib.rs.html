@@ -770,6 +770,7 @@
 <a href="#770" id="770">770</a>
 <a href="#771" id="771">771</a>
 <a href="#772" id="772">772</a>
+<a href="#773" id="773">773</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::sync::Arc;
 
@@ -780,8 +781,9 @@
     ConnectedBidi, ConnectedSink, ConnectedSource, DynSink, DynStream, ServerOrBound,
 };
 <span class="kw">use </span>pyo3::exceptions::PyException;
+<span class="kw">use </span>pyo3::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>pyo3::types::{PyBytes, PyDict};
-<span class="kw">use </span>pyo3::{create_exception, prelude::<span class="kw-2">*</span>, wrap_pymodule};
+<span class="kw">use </span>pyo3::{create_exception, wrap_pymodule};
 <span class="kw">use </span>pythonize::pythonize;
 <span class="kw">use </span>tokio::sync::oneshot::Sender;
 <span class="kw">use </span>tokio::sync::RwLock;
@@ -887,7 +889,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
     }
 
     <span class="attr">#[allow(non_snake_case)]
-    </span><span class="kw">fn </span>Localhost(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
+    </span><span class="kw">fn </span>Localhost(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
         <span class="kw">let </span>arc = <span class="self">self
             </span>.underlying
             .blocking_write()
@@ -913,7 +915,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         region: String,
         network: GCPNetwork,
         user: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    ) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
+    ) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
         <span class="kw">let </span>arc = <span class="self">self</span>.underlying.blocking_write().add_host(|id| {
             <span class="kw">crate</span>::core::GCPComputeEngineHost::new(
                 id,
@@ -942,7 +944,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         py: Python&lt;<span class="lifetime">&#39;_</span>&gt;,
         on: <span class="kw-2">&amp;</span>Host,
         external_ports: Vec&lt;u16&gt;,
-    ) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
+    ) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
         <span class="kw">let </span>service = <span class="self">self</span>.underlying.blocking_write().add_service(|id| {
             <span class="kw">crate</span>::core::CustomService::new(id, on.underlying.clone(), external_ports)
         });
@@ -970,7 +972,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
         external_ports: <span class="prelude-ty">Option</span>&lt;Vec&lt;u16&gt;&gt;,
-    ) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
+    ) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
         <span class="kw">let </span>service = <span class="self">self</span>.underlying.blocking_write().add_service(|id| {
             <span class="kw">crate</span>::core::HydroflowCrate::new(
                 id,
@@ -996,7 +998,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         </span>.into_py(py))
     }
 
-    <span class="kw">fn </span>deploy&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
+    <span class="kw">fn </span>deploy&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             underlying.write().<span class="kw">await</span>.deploy().<span class="kw">await</span>.map_err(|e| {
@@ -1016,7 +1018,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         })
     }
 
-    <span class="kw">fn </span>start&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
+    <span class="kw">fn </span>start&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             underlying.write().<span class="kw">await</span>.start().<span class="kw">await</span>;
@@ -1037,7 +1039,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>LocalhostHost {
-    <span class="kw">fn </span>client_only(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
+    <span class="kw">fn </span>client_only(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
         <span class="kw">let </span>arc = Arc::new(RwLock::new(
             <span class="self">self</span>.underlying.try_read().unwrap().client_only(),
         ));
@@ -1121,7 +1123,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>Service {
-    <span class="kw">fn </span>stop&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
+    <span class="kw">fn </span>stop&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             underlying.write().<span class="kw">await</span>.stop().<span class="kw">await</span>.unwrap();
@@ -1137,7 +1139,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>PyReceiver {
-    <span class="kw">fn </span>next&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
+    <span class="kw">fn </span>next&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>my_receiver = <span class="self">self</span>.receiver.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = my_receiver.recv();
@@ -1153,7 +1155,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>CustomService {
-    <span class="kw">fn </span>client_port(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
+    <span class="kw">fn </span>client_port(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
         <span class="kw">let </span>arc = Arc::new(RwLock::new(
             <span class="kw">crate</span>::core::custom_service::CustomClientPort::new(Arc::downgrade(<span class="kw-2">&amp;</span><span class="self">self</span>.underlying)),
         ));
@@ -1195,7 +1197,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         }
     }
 
-    <span class="kw">fn </span>server_port&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
+    <span class="kw">fn </span>server_port&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
@@ -1238,7 +1240,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>HydroflowCrate {
-    <span class="kw">fn </span>stdout&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
+    <span class="kw">fn </span>stdout&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
@@ -1248,7 +1250,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
         })
     }
 
-    <span class="kw">fn </span>stderr&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
+    <span class="kw">fn </span>stderr&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
@@ -1258,7 +1260,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
         })
     }
 
-    <span class="kw">fn </span>exit_code&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
+    <span class="kw">fn </span>exit_code&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
@@ -1282,7 +1284,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>HydroflowCratePorts {
-    <span class="kw">fn </span>__getattribute__(<span class="kw-2">&amp;</span><span class="self">self</span>, name: String, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
+    <span class="kw">fn </span>__getattribute__(<span class="kw-2">&amp;</span><span class="self">self</span>, name: String, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
         <span class="kw">let </span>arc = Arc::new(RwLock::new(
             <span class="self">self</span>.underlying
                 .try_read()
@@ -1309,7 +1311,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>HydroflowCratePort {
-    <span class="kw">fn </span>merge(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
+    <span class="kw">fn </span>merge(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
         <span class="kw">let </span>arc = Arc::new(RwLock::new(
             <span class="self">self</span>.underlying.try_read().unwrap().clone().merge(),
         ));
@@ -1416,7 +1418,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
 }
 
 <span class="attr">#[pyfunction]
-</span><span class="kw">fn </span>null(py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;pyo3::PyAny&gt;&gt; {
+</span><span class="kw">fn </span>null(py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
     <span class="kw">let </span>arc = Arc::new(RwLock::new(
         <span class="kw">crate</span>::core::hydroflow_crate::ports::NullSourceSink,
     ));
@@ -1433,12 +1435,12 @@ async def pyreceiver_to_async_generator(pyreceiver):
 
 <span class="attr">#[pyclass]
 </span><span class="kw">struct </span>ServerPort {
-    underlying: <span class="prelude-ty">Option</span>&lt;hydroflow_cli_integration::ServerOrBound&gt;,
+    underlying: <span class="prelude-ty">Option</span>&lt;ServerOrBound&gt;,
 }
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>ServerPort {
-    <span class="kw">fn </span>json(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Py&lt;pyo3::PyAny&gt; {
+    <span class="kw">fn </span>json(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Py&lt;PyAny&gt; {
         <span class="kw">if let </span>ServerOrBound::Server(server) = <span class="self">self</span>.underlying.as_ref().unwrap() {
             pythonize(py, <span class="kw-2">&amp;</span>server).unwrap()
         } <span class="kw">else </span>{
@@ -1447,7 +1449,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
     }
 
     <span class="attr">#[allow(clippy::wrong_self_convention)]
-    </span><span class="kw">fn </span>into_source&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
+    </span><span class="kw">fn </span>into_source&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.take().unwrap();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             convert_next_to_generator(PythonStream {
@@ -1459,7 +1461,7 @@ async def pyreceiver_to_async_generator(pyreceiver):
     }
 
     <span class="attr">#[allow(clippy::wrong_self_convention)]
-    </span><span class="kw">fn </span>into_sink&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>pyo3::PyAny&gt; {
+    </span><span class="kw">fn </span>into_sink&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.take().unwrap();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>connected = underlying.connect::&lt;ConnectedBidi&gt;().<span class="kw">await</span>.into_sink();

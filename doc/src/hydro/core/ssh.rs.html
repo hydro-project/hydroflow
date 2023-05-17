@@ -248,26 +248,28 @@
 <a href="#248" id="248">248</a>
 <a href="#249" id="249">249</a>
 <a href="#250" id="250">250</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::{borrow::Cow, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
+<a href="#251" id="251">251</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
+<span class="kw">use </span>std::net::SocketAddr;
+<span class="kw">use </span>std::path::PathBuf;
+<span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_channel::{Receiver, Sender};
-<span class="kw">use </span>async_ssh2_lite::{ssh2::ErrorCode, AsyncChannel, AsyncSession, Error};
+<span class="kw">use </span>async_ssh2_lite::ssh2::ErrorCode;
+<span class="kw">use </span>async_ssh2_lite::{AsyncChannel, AsyncSession, Error};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::{AsyncWriteExt, StreamExt};
 <span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
 <span class="kw">use </span>nanoid::nanoid;
-<span class="kw">use </span>tokio::{
-    net::{TcpListener, TcpStream},
-    sync::RwLock,
-};
+<span class="kw">use </span>tokio::net::{TcpListener, TcpStream};
+<span class="kw">use </span>tokio::sync::RwLock;
 
+<span class="kw">use </span><span class="kw">super</span>::localhost::create_broadcast;
+<span class="kw">use </span><span class="kw">super</span>::progress::ProgressTracker;
+<span class="kw">use super</span>::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
 <span class="kw">use </span><span class="kw">crate</span>::core::util::async_retry;
-
-<span class="kw">use super</span>::{
-    localhost::create_broadcast, progress::ProgressTracker, LaunchedBinary, LaunchedHost,
-    ResourceResult, ServerStrategy,
-};
 
 <span class="kw">struct </span>LaunchedSSHBinary {
     _resource_result: Arc&lt;ResourceResult&gt;,

@@ -153,7 +153,6 @@
 <a href="#153" id="153">153</a>
 <a href="#154" id="154">154</a>
 <a href="#155" id="155">155</a>
-<a href="#156" id="156">156</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Dominating pair compound lattice.
 //!
 //! When merging if one `Key` (usually a timestamp) fully dominates (is greater than) the other,
@@ -267,13 +266,12 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
-    <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use crate</span>::{
-        ord::Max,
-        set_union::SetUnionHashSet,
-        test::{assert_lattice_identities, assert_partial_ord_identities},
-    };
     <span class="kw">use </span>std::collections::HashSet;
+
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::ord::Max;
+    <span class="kw">use </span><span class="kw">crate</span>::set_union::SetUnionHashSet;
+    <span class="kw">use </span><span class="kw">crate</span>::test::{assert_lattice_identities, assert_partial_ord_identities};
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>consistency() {

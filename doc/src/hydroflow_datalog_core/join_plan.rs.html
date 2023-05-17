@@ -663,21 +663,19 @@
 <a href="#663" id="663">663</a>
 <a href="#664" id="664">664</a>
 <a href="#665" id="665">665</a>
-<a href="#666" id="666">666</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{btree_map::Entry, BTreeMap, HashMap};
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::btree_map::Entry;
+<span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::ops::Deref;
 
-<span class="kw">use </span>hydroflow_lang::diagnostic::Level;
+<span class="kw">use </span>hydroflow_lang::diagnostic::{Diagnostic, Level};
+<span class="kw">use </span>hydroflow_lang::graph::FlatGraphBuilder;
 <span class="kw">use </span>hydroflow_lang::parse::Pipeline;
-<span class="kw">use </span>hydroflow_lang::{diagnostic::Diagnostic, graph::FlatGraphBuilder};
 <span class="kw">use </span>proc_macro2::Span;
 <span class="kw">use </span>rust_sitter::Spanned;
 <span class="kw">use </span>syn::{<span class="self">self</span>, parse_quote, parse_quote_spanned};
 
-<span class="kw">use crate</span>::{
-    grammar::datalog::{BoolExpr, BoolOp, IdentOrUnderscore, InputRelationExpr, IntExpr},
-    util::{repeat_tuple, Counter},
-};
+<span class="kw">use </span><span class="kw">crate</span>::grammar::datalog::{BoolExpr, BoolOp, IdentOrUnderscore, InputRelationExpr, IntExpr};
+<span class="kw">use </span><span class="kw">crate</span>::util::{repeat_tuple, Counter};
 
 <span class="doccomment">/// Captures the tree of joins used to compute contributions from a single rule.
 </span><span class="kw">pub enum </span>JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt; {

@@ -62,19 +62,15 @@
 <a href="#62" id="62">62</a>
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
-<a href="#65" id="65">65</a>
-<a href="#66" id="66">66</a>
-<a href="#67" id="67">67</a>
 </pre></div><pre class="rust"><code><span class="kw">pub mod </span>handoff_list;
 <span class="kw">mod </span>tee;
 <span class="kw">mod </span>vector;
 
+<span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::cell::RefMut;
 
 <span class="kw">pub use </span>tee::TeeingHandoff;
 <span class="kw">pub use </span>vector::VecHandoff;
-
-<span class="kw">use </span>std::any::Any;
 
 <span class="kw">pub trait </span>TryCanReceive&lt;T&gt; {
     <span class="kw">fn </span>try_give(<span class="kw-2">&amp;</span><span class="self">self</span>, item: T) -&gt; <span class="prelude-ty">Result</span>&lt;T, T&gt;;
@@ -83,9 +79,7 @@
     <span class="kw">fn </span>give(<span class="kw-2">&amp;</span><span class="self">self</span>, item: T) -&gt; T;
 }
 
-<span class="doccomment">/**
- * A handle onto the metadata part of a [Handoff], with no element type.
- */
+<span class="doccomment">/// A handle onto the metadata part of a [Handoff], with no element type.
 </span><span class="kw">pub trait </span>HandoffMeta: Any {
     <span class="kw">fn </span>any_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>Any;
 

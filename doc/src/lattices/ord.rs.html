@@ -142,13 +142,16 @@
 <a href="#142" id="142">142</a>
 <a href="#143" id="143">143</a>
 <a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Totally-ordered lattices, [`Max`] and [`Min`].
 //!
 //! Uses [std::cmp::Ord`].
 
-</span><span class="kw">use super</span>::{ConvertFrom, Merge};
+</span><span class="kw">use </span>std::cmp::Ordering;
+
+<span class="kw">use super</span>::{ConvertFrom, Merge};
 <span class="kw">use </span><span class="kw">crate</span>::LatticeOrd;
-<span class="kw">use </span>std::cmp::Ordering;
 
 <span class="doccomment">/// A totally ordered max lattice. Merging takes the larger value.
 </span><span class="attr">#[repr(transparent)]
@@ -247,9 +250,10 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
+    <span class="kw">use </span>std::cmp::Ordering::<span class="kw-2">*</span>;
+
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::test::{assert_lattice_identities, assert_partial_ord_identities};
-    <span class="kw">use </span>std::cmp::Ordering::<span class="kw-2">*</span>;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>ordering() {

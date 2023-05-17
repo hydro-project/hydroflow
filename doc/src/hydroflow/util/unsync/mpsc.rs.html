@@ -386,15 +386,6 @@
 <a href="#386" id="386">386</a>
 <a href="#387" id="387">387</a>
 <a href="#388" id="388">388</a>
-<a href="#389" id="389">389</a>
-<a href="#390" id="390">390</a>
-<a href="#391" id="391">391</a>
-<a href="#392" id="392">392</a>
-<a href="#393" id="393">393</a>
-<a href="#394" id="394">394</a>
-<a href="#395" id="395">395</a>
-<a href="#396" id="396">396</a>
-<a href="#397" id="397">397</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Unsync single-producer single-consumer channel (i.e. a single-threaded queue with async hooks).
 
 </span><span class="kw">use </span>std::cell::RefCell;
@@ -496,10 +487,7 @@
 <span class="kw">impl</span>&lt;T&gt; Sink&lt;T&gt; <span class="kw">for </span>Sender&lt;T&gt; {
     <span class="kw">type </span>Error = TrySendError&lt;<span class="prelude-ty">Option</span>&lt;T&gt;&gt;;
 
-    <span class="kw">fn </span>poll_ready(
-        <span class="self">self</span>: std::pin::Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-        ctx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
-    ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
+    <span class="kw">fn </span>poll_ready(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, ctx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(strong) = Weak::upgrade(<span class="kw-2">&amp;</span><span class="self">self</span>.weak) {
             <span class="kw">let </span><span class="kw-2">mut </span>shared = strong.borrow_mut();
             <span class="kw">if </span>shared
@@ -519,22 +507,19 @@
         }
     }
 
-    <span class="kw">fn </span>start_send(<span class="self">self</span>: std::pin::Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, item: T) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
+    <span class="kw">fn </span>start_send(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, item: T) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
         <span class="self">self</span>.try_send(item).map_err(|e| <span class="kw">match </span>e {
             TrySendError::Full(item) =&gt; TrySendError::Full(<span class="prelude-val">Some</span>(item)),
             TrySendError::Closed(item) =&gt; TrySendError::Closed(<span class="prelude-val">Some</span>(item)),
         })
     }
 
-    <span class="kw">fn </span>poll_flush(
-        <span class="self">self</span>: std::pin::Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-        _ctx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
-    ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
+    <span class="kw">fn </span>poll_flush(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _ctx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
         Poll::Ready(<span class="prelude-val">Ok</span>(()))
     }
 
     <span class="kw">fn </span>poll_close(
-        <span class="kw-2">mut </span><span class="self">self</span>: std::pin::Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        <span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
         ctx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
     ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
         <span class="macro">ready!</span>(<span class="self">self</span>.as_mut().poll_flush(ctx))<span class="question-mark">?</span>;
@@ -597,10 +582,7 @@
 <span class="kw">impl</span>&lt;T&gt; Stream <span class="kw">for </span>Receiver&lt;T&gt; {
     <span class="kw">type </span>Item = T;
 
-    <span class="kw">fn </span>poll_next(
-        <span class="kw-2">mut </span><span class="self">self</span>: std::pin::Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
-        ctx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
-    ) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
+    <span class="kw">fn </span>poll_next(<span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, ctx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
         <span class="self">self</span>.poll_recv(ctx)
     }
 }
@@ -693,7 +675,7 @@
         <span class="kw">let </span>b_fut = send.send(<span class="number">234</span>);
 
         futures::future::try_join(a_fut, b_fut).<span class="kw">await</span>.unwrap();
-        std::mem::drop(send);
+        drop(send);
 
         <span class="kw">let </span><span class="kw-2">mut </span>out: Vec&lt;<span class="kw">_</span>&gt; = recv.collect().<span class="kw">await</span>;
         out.sort_unstable();

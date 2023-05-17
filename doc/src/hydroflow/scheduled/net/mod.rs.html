@@ -162,10 +162,6 @@
 <a href="#162" id="162">162</a>
 <a href="#163" id="163">163</a>
 <a href="#164" id="164">164</a>
-<a href="#165" id="165">165</a>
-<a href="#166" id="166">166</a>
-<a href="#167" id="167">167</a>
-<a href="#168" id="168">168</a>
 </pre></div><pre class="rust"><code><span class="attr">#![cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
 
 </span><span class="doccomment">//! This module contiains networking code.
@@ -229,18 +225,14 @@
 
 <span class="kw">use </span>byteorder::{NetworkEndian, WriteBytesExt};
 <span class="kw">use </span>futures::{Sink, StreamExt};
-<span class="kw">use </span>tokio::net::{
-    tcp::{OwnedReadHalf, OwnedWriteHalf},
-    TcpStream,
-};
+<span class="kw">use </span>tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
+<span class="kw">use </span>tokio::net::TcpStream;
 <span class="kw">use </span>tokio_util::codec::{FramedRead, FramedWrite, LengthDelimitedCodec};
 
-<span class="kw">use super</span>::{
-    graph::Hydroflow,
-    graph_ext::GraphExt,
-    handoff::VecHandoff,
-    port::{RecvPort, SendPort},
-};
+<span class="kw">use </span><span class="kw">super</span>::graph::Hydroflow;
+<span class="kw">use </span><span class="kw">super</span>::graph_ext::GraphExt;
+<span class="kw">use </span><span class="kw">super</span>::handoff::VecHandoff;
+<span class="kw">use </span><span class="kw">super</span>::port::{RecvPort, SendPort};
 
 <span class="kw">pub mod </span>network_vertex;
 

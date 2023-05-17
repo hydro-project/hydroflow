@@ -63,9 +63,9 @@
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
-</pre></div><pre class="rust"><code><span class="kw">use super</span>::{Pusherator, PusheratorBuild};
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">use </span>std::marker::PhantomData;
+<span class="kw">use super</span>::{Pusherator, PusheratorBuild};
 
 <span class="kw">pub struct </span>Flatten&lt;Next, In&gt; {
     next: Next,

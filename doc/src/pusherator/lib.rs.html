@@ -333,6 +333,9 @@
 <a href="#333" id="333">333</a>
 <a href="#334" id="334">334</a>
 <a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Pusherator generics and argument order conventions:
 //! - `Next` (being the next owned pusherator) should come first in generic
 //!   arguments.
@@ -486,10 +489,13 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>std::rc::Rc;
 
-    <span class="kw">use super</span>::{
-        filter::Filter, for_each::ForEach, map::Map, partition::Partition, pivot::Pivot, tee::Tee,
-        Pusherator,
-    };
+    <span class="kw">use </span><span class="kw">super</span>::filter::Filter;
+    <span class="kw">use </span><span class="kw">super</span>::for_each::ForEach;
+    <span class="kw">use </span><span class="kw">super</span>::map::Map;
+    <span class="kw">use </span><span class="kw">super</span>::partition::Partition;
+    <span class="kw">use </span><span class="kw">super</span>::pivot::Pivot;
+    <span class="kw">use </span><span class="kw">super</span>::tee::Tee;
+    <span class="kw">use </span><span class="kw">super</span>::Pusherator;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>linear_chains() {

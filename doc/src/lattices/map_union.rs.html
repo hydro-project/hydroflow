@@ -461,12 +461,12 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
-    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span>std::collections::HashSet;
 
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::collections::{SingletonMap, SingletonSet};
     <span class="kw">use </span><span class="kw">crate</span>::set_union::{SetUnionHashSet, SetUnionSingletonSet};
     <span class="kw">use </span><span class="kw">crate</span>::test::{assert_lattice_identities, assert_partial_ord_identities};
-    <span class="kw">use </span>std::collections::HashSet;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_map_union() {

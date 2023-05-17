@@ -226,12 +226,17 @@
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
 <a href="#228" id="228">228</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::lang::clear::Clear;
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::hash_map::Entry;
+<span class="kw">use </span>std::collections::hash_set;
+
 <span class="kw">use </span>lattices::map_union::MapUnion;
 <span class="kw">use </span>lattices::{ConvertFrom, Merge};
-<span class="kw">use </span>rustc_hash::FxHashMap;
-<span class="kw">use </span>rustc_hash::FxHashSet;
-<span class="kw">use </span>std::collections::{hash_map::Entry, hash_set};
+<span class="kw">use </span>rustc_hash::{FxHashMap, FxHashSet};
+
+<span class="kw">use </span><span class="kw">crate</span>::lang::clear::Clear;
 
 <span class="kw">pub struct </span>HalfJoinStateLattice&lt;K, Lattice&gt; {
     table: MapUnion&lt;FxHashMap&lt;K, Lattice&gt;&gt;,
@@ -348,9 +353,10 @@
         HalfJoinStateLattice&lt;K, RhsLattice&gt;,
     );
 
-    <span class="kw">use super</span>::{HalfJoinStateLattice, SymmetricHashJoinLattice};
     <span class="kw">use </span>lattices::ord::Max;
     <span class="kw">use </span>rustc_hash::FxHashSet;
+
+    <span class="kw">use super</span>::{HalfJoinStateLattice, SymmetricHashJoinLattice};
 
     <span class="kw">type </span>MyLattice = Max&lt;usize&gt;;
     <span class="kw">type </span>JoinState = JoinStateLattice&lt;usize, MyLattice, MyLattice&gt;;

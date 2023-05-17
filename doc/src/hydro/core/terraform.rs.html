@@ -353,18 +353,12 @@
 <a href="#353" id="353">353</a>
 <a href="#354" id="354">354</a>
 <a href="#355" id="355">355</a>
-<a href="#356" id="356">356</a>
-<a href="#357" id="357">357</a>
-<a href="#358" id="358">358</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::{
-    collections::HashMap,
-    io::{BufRead, BufReader},
-    process::{Child, ChildStdout, Command},
-    sync::{Arc, RwLock},
-};
-
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
+<span class="kw">use </span>std::io::{BufRead, BufReader};
 <span class="attr">#[cfg(unix)]
 </span><span class="kw">use </span>std::os::unix::process::CommandExt;
+<span class="kw">use </span>std::process::{Child, ChildStdout, Command};
+<span class="kw">use </span>std::sync::{Arc, RwLock};
 
 <span class="kw">use </span>anyhow::{bail, Context, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>async_process::Stdio;
@@ -509,7 +503,7 @@
 
 <span class="kw">struct </span>TerraformApply {
     child: <span class="prelude-ty">Option</span>&lt;(u32, Arc&lt;RwLock&lt;Child&gt;&gt;)&gt;,
-    deployment_folder: <span class="prelude-ty">Option</span>&lt;tempfile::TempDir&gt;,
+    deployment_folder: <span class="prelude-ty">Option</span>&lt;TempDir&gt;,
 }
 
 <span class="kw">async fn </span>display_apply_outputs(stdout: <span class="kw-2">&amp;mut </span>ChildStdout) {
@@ -699,7 +693,7 @@
 </span><span class="kw">pub struct </span>TerraformResult {
     <span class="kw">pub </span>outputs: HashMap&lt;String, TerraformOutput&gt;,
     <span class="doccomment">/// `None` if no deployment was performed
-    </span><span class="kw">pub </span>deployment_folder: <span class="prelude-ty">Option</span>&lt;tempfile::TempDir&gt;,
+    </span><span class="kw">pub </span>deployment_folder: <span class="prelude-ty">Option</span>&lt;TempDir&gt;,
 }
 
 <span class="kw">impl </span>Drop <span class="kw">for </span>TerraformResult {

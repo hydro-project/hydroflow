@@ -80,17 +80,15 @@
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
 <a href="#82" id="82">82</a>
-<a href="#83" id="83">83</a>
 </pre></div><pre class="rust"><code><span class="attr">#![feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)]
 #![allow(clippy::explicit_auto_deref)]
 
-</span><span class="kw">use </span>proc_macro2::{Ident, Literal, Span};
-<span class="kw">use </span>quote::quote;
-<span class="kw">use </span>syn::{parse_macro_input, LitStr};
-
-<span class="kw">use </span>hydroflow_lang::diagnostic::{Diagnostic, Level};
+</span><span class="kw">use </span>hydroflow_lang::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span>hydroflow_lang::graph::{build_hfcode, partition_graph, FlatGraphBuilder};
 <span class="kw">use </span>hydroflow_lang::parse::HfCode;
+<span class="kw">use </span>proc_macro2::{Ident, Literal, Span};
+<span class="kw">use </span>quote::quote;
+<span class="kw">use </span>syn::{parse_macro_input, LitStr};
 
 <span class="attr">#[proc_macro]
 </span><span class="kw">pub fn </span>hydroflow_syntax(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
