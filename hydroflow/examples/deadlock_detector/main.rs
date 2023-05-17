@@ -49,7 +49,7 @@ fn read_addresses_from_file(path: impl AsRef<Path>) -> Result<Addresses, Box<dyn
     Ok(u)
 }
 
-#[tokio::main]
+#[hydroflow::main]
 async fn main() {
     let opts = Opts::parse();
     let path = Path::new(&opts.path);

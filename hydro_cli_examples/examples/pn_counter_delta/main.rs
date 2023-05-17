@@ -22,7 +22,7 @@ enum GossipOrIncrement {
 
 type NextStateType = (u64, bool, Rc<RefCell<(Vec<u32>, Vec<u32>)>>);
 
-#[tokio::main]
+#[hydroflow::main]
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
 

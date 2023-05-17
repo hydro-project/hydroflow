@@ -3,7 +3,7 @@ use hydroflow::util::cli::{ConnectedBidi, ConnectedDemux, ConnectedSink};
 use hydroflow::util::serialize_to_bytes;
 use hydroflow_datalog::datalog;
 
-#[tokio::main]
+#[hydroflow::main]
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let broadcast_port = ports

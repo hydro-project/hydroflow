@@ -8,7 +8,6 @@ use std::marker::PhantomData;
 use hydroflow_lang::diagnostic::{Diagnostic, SerdeSpan};
 use hydroflow_lang::graph::HydroflowGraph;
 use ref_cast::RefCast;
-use tokio::runtime::TryCurrentError;
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 
 use super::context::Context;
@@ -549,11 +548,11 @@ impl Hydroflow {
 }
 
 impl Hydroflow {
-    pub fn spawn_task<Fut>(&mut self, future: Fut) -> Result<(), TryCurrentError>
+    pub fn spawn_task<Fut>(&mut self, future: Fut)
     where
-        Fut: Future<Output = ()> + Send + 'static,
+        Fut: Future<Output = ()> + 'static,
     {
-        self.context.spawn_task(future)
+        self.context.spawn_task(future);
     }
 
     pub fn abort_tasks(&mut self) {

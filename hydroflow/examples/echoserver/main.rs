@@ -26,7 +26,7 @@ struct Opts {
     server_addr: Option<SocketAddr>,
 }
 
-#[tokio::main]
+#[hydroflow::main]
 async fn main() {
     // parse command line arguments
     let opts = Opts::parse();

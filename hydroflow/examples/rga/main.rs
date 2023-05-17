@@ -41,7 +41,7 @@ struct Opts {
     output: String,
 }
 
-#[tokio::main]
+#[hydroflow::main]
 pub async fn main() {
     // An edge in the input data = a pair of `Token` vertex IDs.
     let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(Token, Timestamp)>();
