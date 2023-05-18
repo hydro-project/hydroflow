@@ -979,7 +979,7 @@
 
             <span class="attr">#[cfg(not(unix))]
             </span>{
-                std::mem::drop(listener);
+                drop(listener);
                 <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>)
             }
         }
