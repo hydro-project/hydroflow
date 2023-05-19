@@ -124,9 +124,6 @@
 <a href="#124" id="124">124</a>
 <a href="#125" id="125">125</a>
 <a href="#126" id="126">126</a>
-<a href="#127" id="127">127</a>
-<a href="#128" id="128">128</a>
-<a href="#129" id="129">129</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Gives a default representation that compares as less than to a lattice.
 //!
 //! This can be used for giving a sensible default repersentation to types that don&#39;t necessarily have one.
@@ -218,7 +215,7 @@
 </span><span class="kw">mod </span>test {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::set_union::SetUnionHashSet;
-    <span class="kw">use </span><span class="kw">crate</span>::test::{assert_lattice_identities, assert_partial_ord_identities};
+    <span class="kw">use </span><span class="kw">crate</span>::test::check_all;
 
     <span class="attr">#[test]
     #[rustfmt::skip]
@@ -244,16 +241,13 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>consistency() {
-        <span class="kw">let </span>test_vec = <span class="macro">vec!</span>[
+        check_all(<span class="kw-2">&amp;</span>[
             Bottom::default(),
             Bottom::new(SetUnionHashSet::new_from([])),
             Bottom::new(SetUnionHashSet::new_from([<span class="number">0</span>])),
             Bottom::new(SetUnionHashSet::new_from([<span class="number">1</span>])),
             Bottom::new(SetUnionHashSet::new_from([<span class="number">0</span>, <span class="number">1</span>])),
-        ];
-
-        assert_partial_ord_identities(<span class="kw-2">&amp;</span>test_vec);
-        assert_lattice_identities(<span class="kw-2">&amp;</span>test_vec);
+        ])
     }
 }
 </code></pre></div></section></main></body></html>

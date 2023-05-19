@@ -153,6 +153,8 @@
 <a href="#153" id="153">153</a>
 <a href="#154" id="154">154</a>
 <a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Dominating pair compound lattice.
 //!
 //! When merging if one `Key` (usually a timestamp) fully dominates (is greater than) the other,
@@ -271,7 +273,9 @@
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::ord::Max;
     <span class="kw">use </span><span class="kw">crate</span>::set_union::SetUnionHashSet;
-    <span class="kw">use </span><span class="kw">crate</span>::test::{assert_lattice_identities, assert_partial_ord_identities};
+    <span class="kw">use </span><span class="kw">crate</span>::test::{
+        check_all, check_lattice_ord, check_lattice_properties, check_partial_ord_properties,
+    };
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>consistency() {
@@ -286,9 +290,10 @@
             }
         }
 
-        assert_partial_ord_identities(<span class="kw-2">&amp;</span>test_vec);
+        check_lattice_ord(<span class="kw-2">&amp;</span>test_vec);
+        check_partial_ord_properties(<span class="kw-2">&amp;</span>test_vec);
         <span class="comment">// DomPair is not actually a lattice.
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| assert_lattice_identities(<span class="kw-2">&amp;</span>test_vec)).is_err());
+        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| check_lattice_properties(<span class="kw-2">&amp;</span>test_vec)).is_err());
     }
 
     <span class="attr">#[test]
@@ -304,8 +309,7 @@
             }
         }
 
-        assert_partial_ord_identities(<span class="kw-2">&amp;</span>test_vec);
-        assert_lattice_identities(<span class="kw-2">&amp;</span>test_vec);
+        check_all(<span class="kw-2">&amp;</span>test_vec);
     }
 }
 </code></pre></div></section></main></body></html>

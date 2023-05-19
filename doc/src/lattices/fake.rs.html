@@ -92,6 +92,7 @@
 <a href="#92" id="92">92</a>
 <a href="#93" id="93">93</a>
 <a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! A fake lattice that will runtime panic if a merge is attempted.
 //!
 //! This is used to wrap non lattice data into a lattice in a way that typechecks
@@ -159,31 +160,32 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span><span class="kw">crate</span>::test::{assert_lattice_identities, assert_partial_ord_identities};
+    <span class="kw">use </span><span class="kw">crate</span>::test::{
+        check_all, check_lattice_ord, check_lattice_properties, check_partial_ord_properties,
+    };
 
     <span class="attr">#[test]
-    </span><span class="kw">fn </span>consistency() {
-        <span class="kw">let </span>test_vec = <span class="macro">vec!</span>[Fake::new(<span class="string">&quot;hello world&quot;</span>)];
-
-        assert_partial_ord_identities(<span class="kw-2">&amp;</span>test_vec);
-        assert_lattice_identities(<span class="kw-2">&amp;</span>test_vec);
+    </span><span class="kw">fn </span>consistency_equal() {
+        check_all(<span class="kw-2">&amp;</span>[Fake::new(<span class="string">&quot;hello world&quot;</span>)])
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>consistency_inequal() {
         <span class="kw">use </span>std::collections::BTreeSet;
 
-        <span class="kw">let </span>test_vec = <span class="macro">vec!</span>[
+        <span class="kw">let </span>items = [
             Fake::new(BTreeSet::from_iter([])),
             Fake::new(BTreeSet::from_iter([<span class="number">0</span>])),
             Fake::new(BTreeSet::from_iter([<span class="number">1</span>])),
             Fake::new(BTreeSet::from_iter([<span class="number">0</span>, <span class="number">1</span>])),
         ];
 
+        <span class="comment">// Merged inequal elements panic, therefore `NaiveMerge` panics.
+        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| check_lattice_ord(<span class="kw-2">&amp;</span>items)).is_err());
         <span class="comment">// Fake does not have a partial order.
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| assert_partial_ord_identities(<span class="kw-2">&amp;</span>test_vec)).is_err());
+        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| check_partial_ord_properties(<span class="kw-2">&amp;</span>items)).is_err());
         <span class="comment">// Fake is not actually a lattice.
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| assert_lattice_identities(<span class="kw-2">&amp;</span>test_vec)).is_err());
+        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| check_lattice_properties(<span class="kw-2">&amp;</span>items)).is_err());
     }
 }
 </code></pre></div></section></main></body></html>
