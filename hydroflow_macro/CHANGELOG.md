@@ -5,15 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.0.0 (2023-04-25)
+## 0.0.1 (2023-05-21)
+
+### Style
+
+ - <csr-id-20a1b2c0cd04a8b495a02ce345db3d48a99ea0e9/> rustfmt group imports
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 41 commits contributed to the release over the course of 301 calendar days.
+ - 2 commits contributed to the release over the course of 15 calendar days.
+ - 25 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 2 unique issues were worked on: [#643](https://github.com/hydro-project/hydroflow/issues/643), [#660](https://github.com/hydro-project/hydroflow/issues/660)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#643](https://github.com/hydro-project/hydroflow/issues/643)**
+    - Fix book operators build ([`30d68a6`](https://github.com/hydro-project/hydroflow/commit/30d68a6865ae9769b073d31c39ccf40f724355d9))
+ * **[#660](https://github.com/hydro-project/hydroflow/issues/660)**
+    - Rustfmt group imports ([`20a1b2c`](https://github.com/hydro-project/hydroflow/commit/20a1b2c0cd04a8b495a02ce345db3d48a99ea0e9))
+</details>
+
+## 0.0.0 (2023-04-26)
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 42 commits contributed to the release over the course of 302 calendar days.
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 13 unique issues were worked on: [#162](https://github.com/hydro-project/hydroflow/issues/162), [#310](https://github.com/hydro-project/hydroflow/issues/310), [#311](https://github.com/hydro-project/hydroflow/issues/311), [#318](https://github.com/hydro-project/hydroflow/issues/318), [#329](https://github.com/hydro-project/hydroflow/issues/329), [#404](https://github.com/hydro-project/hydroflow/issues/404), [#419](https://github.com/hydro-project/hydroflow/issues/419), [#441 11/14](https://github.com/hydro-project/hydroflow/issues/441), [#441 14/14](https://github.com/hydro-project/hydroflow/issues/441), [#501](https://github.com/hydro-project/hydroflow/issues/501), [#603](https://github.com/hydro-project/hydroflow/issues/603), [#609](https://github.com/hydro-project/hydroflow/issues/609), [#617](https://github.com/hydro-project/hydroflow/issues/617)
+ - 13 unique issues were worked on: [#162](https://github.com/hydro-project/hydroflow/issues/162), [#310](https://github.com/hydro-project/hydroflow/issues/310), [#311](https://github.com/hydro-project/hydroflow/issues/311), [#318](https://github.com/hydro-project/hydroflow/issues/318), [#329](https://github.com/hydro-project/hydroflow/issues/329), [#404](https://github.com/hydro-project/hydroflow/issues/404), [#419](https://github.com/hydro-project/hydroflow/issues/419), [#441 11/14](https://github.com/hydro-project/hydroflow/issues/441 11/14), [#441 14/14](https://github.com/hydro-project/hydroflow/issues/441 14/14), [#501](https://github.com/hydro-project/hydroflow/issues/501), [#603](https://github.com/hydro-project/hydroflow/issues/603), [#609](https://github.com/hydro-project/hydroflow/issues/609), [#617](https://github.com/hydro-project/hydroflow/issues/617)
 
 ### Commit Details
 
@@ -35,9 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Fix op docs "blocking" to check elided port names, fix #400 ([`608e65b`](https://github.com/hydro-project/hydroflow/commit/608e65b61788376a06ab56b7f92dfd45820b4c0e))
  * **[#419](https://github.com/hydro-project/hydroflow/issues/419)**
     - Encapsulate `FlatGraph`, separate `FlatGraphBuilder` ([`fceaea5`](https://github.com/hydro-project/hydroflow/commit/fceaea5659ac76c2275c1487582a17b646858602))
- * **[#441 11/14](https://github.com/hydro-project/hydroflow/issues/441)**
+ * **[#441 11/14](https://github.com/hydro-project/hydroflow/issues/441 11/14)**
     - Remove `FlatGraph`, unify under `PartitionedGraph` ([`b640b53`](https://github.com/hydro-project/hydroflow/commit/b640b532e34b29f44c768d523fbf780dba9785ff))
- * **[#441 14/14](https://github.com/hydro-project/hydroflow/issues/441)**
+ * **[#441 14/14](https://github.com/hydro-project/hydroflow/issues/441 14/14)**
     - Cleanup graph docs, organize method names ([`09d3b57`](https://github.com/hydro-project/hydroflow/commit/09d3b57eb03f3920bd10f5c10277d3ef4f9cb0ec))
  * **[#501](https://github.com/hydro-project/hydroflow/issues/501)**
     - Preserve serialize diagnostics for hydroflow graph, stop emitting expected warnings in tests ([`0c810e5`](https://github.com/hydro-project/hydroflow/commit/0c810e5fdd3445923c0c7afbe651f2b4a72c115e))
@@ -48,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#617](https://github.com/hydro-project/hydroflow/issues/617)**
     - Update `Cargo.toml`s for publishing ([`a78ff9a`](https://github.com/hydro-project/hydroflow/commit/a78ff9aace6771787c2b72aad83be6ad8d49a828))
  * **Uncategorized**
+    - Setup release workflow ([`108d0e9`](https://github.com/hydro-project/hydroflow/commit/108d0e933a08b183c4dadf8c3499e4946696e263))
     - Use `HydroflowGraph` for graph writing, delete `SerdeGraph` ([`d1ef14e`](https://github.com/hydro-project/hydroflow/commit/d1ef14ee459c51d5a2dd9e7ea03050772e14178c))
     - Refactor `FlatGraph` assembly into separate `FlatGraphBuilder` ([`9dd3bd9`](https://github.com/hydro-project/hydroflow/commit/9dd3bd91586966484abaf01c4330d831804b1983))
     - Emit type guards inline, configurable #263 ([`c6510da`](https://github.com/hydro-project/hydroflow/commit/c6510da4b4cb46ec026e3c1c69b5ce29b17c473c))
