@@ -5,7 +5,76 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.0.2 (2023-05-21)
+
+### Documentation
+
+ - <csr-id-95d23eaf8218002ad0a6a8c4c6e6c76e6b8f785b/> Update docs, add book chapter for `lattices` crate
+   - Adds `mdbook-katex` to the book build for latex support.
+   - Update `mdbook-*` plugins.
+   - Moves most lattice implementations to the top level of the crate
+     to eliminate redundant documentation.
+
+### Style
+
+ - <csr-id-4d4446c0988ee7c2a991d2845b66a281934d6100/> rustfmt normalize comments
+ - <csr-id-cd0a86d9271d0e3daab59c46f079925f863424e1/> Warn lint `unused_qualifications`
+ - <csr-id-20a1b2c0cd04a8b495a02ce345db3d48a99ea0e9/> rustfmt group imports
+ - <csr-id-1eda91a2ef8794711ef037240f15284e8085d863/> rustfmt prescribe flat-module `use` format
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 18 commits contributed to the release over the course of 17 calendar days.
+ - 18 days passed between releases.
+ - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 14 unique issues were worked on: [#625](https://github.com/hydro-project/hydroflow/issues/625), [#638](https://github.com/hydro-project/hydroflow/issues/638), [#640](https://github.com/hydro-project/hydroflow/issues/640), [#641](https://github.com/hydro-project/hydroflow/issues/641), [#642](https://github.com/hydro-project/hydroflow/issues/642), [#644](https://github.com/hydro-project/hydroflow/issues/644), [#649](https://github.com/hydro-project/hydroflow/issues/649), [#650](https://github.com/hydro-project/hydroflow/issues/650), [#651](https://github.com/hydro-project/hydroflow/issues/651), [#654](https://github.com/hydro-project/hydroflow/issues/654), [#656](https://github.com/hydro-project/hydroflow/issues/656), [#657](https://github.com/hydro-project/hydroflow/issues/657), [#660](https://github.com/hydro-project/hydroflow/issues/660), [#667](https://github.com/hydro-project/hydroflow/issues/667)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#625](https://github.com/hydro-project/hydroflow/issues/625)**
+    - Use `cc-traits` instead of own `Collection`, remove `tag` indirection ([`10ed00d`](https://github.com/hydro-project/hydroflow/commit/10ed00df8e6f2e86d7db737dd2049f2c5dbfeba0))
+ * **[#638](https://github.com/hydro-project/hydroflow/issues/638)**
+    - Remove old lattice code ([`f4915fa`](https://github.com/hydro-project/hydroflow/commit/f4915fab98c57652e5345d39076d95ebb0a43fd8))
+ * **[#640](https://github.com/hydro-project/hydroflow/issues/640)**
+    - Better kvs serialization ([`c81c2a8`](https://github.com/hydro-project/hydroflow/commit/c81c2a8d78165a298c36c2b2f3f20cf2bc203986))
+ * **[#641](https://github.com/hydro-project/hydroflow/issues/641)**
+    - Add unsync mpsc channel ([`827e522`](https://github.com/hydro-project/hydroflow/commit/827e522ef0c3e965bb4d2ae971ec56ef7421d798))
+ * **[#642](https://github.com/hydro-project/hydroflow/issues/642)**
+    - Remove zmq, use unsync channels locally, use sync mpsc cross-thread, use cross_join+enumerate instead of broadcast channel,remove Eq requirement from multisetjoin ([`b38f5cf`](https://github.com/hydro-project/hydroflow/commit/b38f5cf198e29a8de2f84eb4cd075818fbeffda6))
+ * **[#644](https://github.com/hydro-project/hydroflow/issues/644)**
+    - Remove Compare trait, add tests, make all lattice types PartialOrd, Eq, PartialEq ([`698b72f`](https://github.com/hydro-project/hydroflow/commit/698b72f8f013288f211a655bf93f2a3cd6d386e7))
+ * **[#649](https://github.com/hydro-project/hydroflow/issues/649)**
+    - Add lattice_batch ([`af26532`](https://github.com/hydro-project/hydroflow/commit/af265328179f1cb1f77663cbd3e414a618583bf1))
+ * **[#650](https://github.com/hydro-project/hydroflow/issues/650)**
+    - Autoreturn buffer now has a generic size. ([`7da63de`](https://github.com/hydro-project/hydroflow/commit/7da63de4b20ebb914e8f929205b21bd434f7bc12))
+ * **[#651](https://github.com/hydro-project/hydroflow/issues/651)**
+    - More kvs improvements ([`f7515c7`](https://github.com/hydro-project/hydroflow/commit/f7515c72513e50f7080aba072bec91deac5d80ca))
+ * **[#654](https://github.com/hydro-project/hydroflow/issues/654)**
+    - Deduplicate `dest_sink_serde` code by using `dest_sink`'s `write_fn` ([`3b8d2f5`](https://github.com/hydro-project/hydroflow/commit/3b8d2f5e1e3a16c825171adf610d4dd6fa47c6e3))
+ * **[#656](https://github.com/hydro-project/hydroflow/issues/656)**
+    - Add WebSocket with CLI example and simplify init API ([`1015980`](https://github.com/hydro-project/hydroflow/commit/1015980ed995634ff8735e4daf33796e73bab563))
+ * **[#657](https://github.com/hydro-project/hydroflow/issues/657)**
+    - Impl `Sink` for `unsync::mpsc::Sender` ([`bc3fc21`](https://github.com/hydro-project/hydroflow/commit/bc3fc214a205c5f9ad2e8275b7e5e92689b5d1ef))
+ * **[#660](https://github.com/hydro-project/hydroflow/issues/660)**
+    - Rustfmt normalize comments ([`4d4446c`](https://github.com/hydro-project/hydroflow/commit/4d4446c0988ee7c2a991d2845b66a281934d6100))
+    - Warn lint `unused_qualifications` ([`cd0a86d`](https://github.com/hydro-project/hydroflow/commit/cd0a86d9271d0e3daab59c46f079925f863424e1))
+    - Rustfmt group imports ([`20a1b2c`](https://github.com/hydro-project/hydroflow/commit/20a1b2c0cd04a8b495a02ce345db3d48a99ea0e9))
+    - Rustfmt prescribe flat-module `use` format ([`1eda91a`](https://github.com/hydro-project/hydroflow/commit/1eda91a2ef8794711ef037240f15284e8085d863))
+ * **[#667](https://github.com/hydro-project/hydroflow/issues/667)**
+    - Bump lattices version to `0.1.0` ([`a46ce4a`](https://github.com/hydro-project/hydroflow/commit/a46ce4a522b70661e5acf644f893bfdf56294578))
+    - Update docs, add book chapter for `lattices` crate ([`95d23ea`](https://github.com/hydro-project/hydroflow/commit/95d23eaf8218002ad0a6a8c4c6e6c76e6b8f785b))
+</details>
+
 ## 0.0.1 (2023-05-03)
+
+<csr-id-e58a58061de1e92f5176c01f4908dfe944a2b74a/>
+<csr-id-ad72c6d1f0e95a886d533621ae24afacf13de86a/>
 
 ### Other
 
@@ -21,8 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 6 commits contributed to the release over the course of 5 calendar days.
- - 7 days passed between releases.
+ - 7 commits contributed to the release over the course of 5 calendar days.
+ - 6 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 6 unique issues were worked on: [#622](https://github.com/hydro-project/hydroflow/issues/622), [#629](https://github.com/hydro-project/hydroflow/issues/629), [#632](https://github.com/hydro-project/hydroflow/issues/632), [#633](https://github.com/hydro-project/hydroflow/issues/633), [#634](https://github.com/hydro-project/hydroflow/issues/634), [#635](https://github.com/hydro-project/hydroflow/issues/635)
 
@@ -44,6 +113,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Move lattice2 into new separate `lattices` crate ([`c0006c4`](https://github.com/hydro-project/hydroflow/commit/c0006c4c73e0f3f5c65274e3ad76537ea9fe2643))
  * **[#635](https://github.com/hydro-project/hydroflow/issues/635)**
     - Cleanup `hydroflow` dependencies ([`daaa8fa`](https://github.com/hydro-project/hydroflow/commit/daaa8fa8c362d5d8136955c538db8482c65ec5eb))
+ * **Uncategorized**
+    - Release hydroflow v0.0.1 ([`0f91773`](https://github.com/hydro-project/hydroflow/commit/0f917734bd2c840e47acf788322dd1a4a4100488))
 </details>
 
 ## 0.0.0 (2023-04-26)

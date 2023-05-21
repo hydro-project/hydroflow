@@ -1305,7 +1305,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "bincode",
  "byteorder",
@@ -1352,7 +1352,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_cli_integration"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "async-recursion",
  "async-trait",
@@ -1368,7 +1368,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "hydroflow_datalog_core",
  "proc-macro-crate",
@@ -1379,7 +1379,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog_core"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "hydroflow_lang",
  "insta",
@@ -1406,7 +1406,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_lang"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "auto_impl",
  "hydroflow_internalmacro",
@@ -1422,7 +1422,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_macro"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "hydroflow_lang",
  "proc-macro-crate",
@@ -2125,7 +2125,7 @@ dependencies = [
 
 [[package]]
 name = "pusherator"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "either",
  "variadics",
@@ -3280,7 +3280,7 @@ checksum = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a"
 
 [[package]]
 name = "variadics"
-version = "0.0.1"
+version = "0.0.2"
 
 [[package]]
 name = "vcpkg"
