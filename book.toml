@@ -2,27 +2,11 @@
 authors = ["Mingwei Samuel"]
 language = "en"
 multilingual = false
-src = "book"
+src = "docs"
 title = "The Hydroflow Book"
 
 [build]
 build-dir = "target/mdbook"
 
-[preprocessor]
-
-[preprocessor.mermaid]
-# https://github.com/badboy/mdbook-mermaid
-# To update:
-# cargo install mdbook-mermaid && mdbook-mermaid install
-command = "mdbook-mermaid"
-
 [preprocessor.katex]
 after = ["links"]
-
-[output]
-
-[output.html]
-additional-css = []
-additional-js = ["mermaid.min.js", "mermaid-init.js"]
-
-[output.linkcheck]

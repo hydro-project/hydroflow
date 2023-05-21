@@ -1,0 +1,90 @@
+/**
+ * CSS files with the .module.css suffix will be treated as CSS modules
+ * and scoped locally.
+ */
+
+.jumbo {
+  max-width: calc(min(1100px, 100vw - 60px));
+  min-height: calc(100vh - 360px);
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-top: 80px;
+  box-sizing: border-box;
+  line-height: normal;
+}
+
+@media screen and (max-width: 800px) {
+  .jumbo {
+    min-height: initial;
+    margin-top: 40px;
+  }
+}
+
+.indexTitle {
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 130px;
+  font-weight: 800;
+  line-height: 105%;
+
+  color: #262626;
+
+  margin-top: 20px;
+  margin-bottom: 10px;
+
+  margin-left: auto;
+  margin-right: auto;
+}
+
+[data-theme="dark"] .indexTitle {
+  color: white;
+}
+
+@media screen and (max-width: 800px) {
+  .indexTitle {
+    font-size: 80px;
+  }
+}
+
+.blurb {
+  font-size: 22px;
+  font-weight: 300;
+  text-align: justify;
+}
+
+@media screen and (max-width: 800px) {
+  .blurb {
+    font-size: 18px;
+  }
+}
+
+.titleEveryScale {
+  font-weight: 900;
+  background: linear-gradient(86.92deg, #39F1BE 28.3%, #0096FF 100.05%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
+.heroBanner {
+  padding: 4rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 2rem;
+  }
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

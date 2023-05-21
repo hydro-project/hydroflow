@@ -28,25 +28,25 @@ pub use hydroflow_macro::*;
 #[cfg(doctest)]
 mod booktest {
     macro_rules! booktest {
-        ($i:ident $( $t:tt )*) => {
-            #[doc = include_str!(concat!("../../book/", stringify!($i), $( stringify!($t), )* ".md"))]
+        ($i:ident, $( $t:tt )*) => {
+            #[doc = include_str!(concat!("../../docs/docs/", $( stringify!($t), )* stringify!($i), ".md"))]
             mod $i {}
         };
     }
 
-    booktest!(example_1_simplest);
-    booktest!(example_2_simple);
-    booktest!(example_3_stream);
-    booktest!(example_4_neighbors);
-    booktest!(example_5_reachability);
-    booktest!(example_6_unreachability);
-    booktest!(example_7_echo_server);
-    booktest!(example_8_chat_server);
+    booktest!(example_1_simplest, quickstart/);
+    booktest!(example_2_simple, quickstart/);
+    booktest!(example_3_stream, quickstart/);
+    booktest!(example_4_neighbors, quickstart/);
+    booktest!(example_5_reachability, quickstart/);
+    booktest!(example_6_unreachability, quickstart/);
+    booktest!(example_7_echo_server, quickstart/);
+    booktest!(example_8_chat_server, quickstart/);
 
-    booktest!(surface_syntax);
-    booktest!(surface_embedding);
-    booktest!(surface_flows);
-    booktest!(surface_data);
+    booktest!(index, syntax/);
+    booktest!(surface_embedding, syntax/);
+    booktest!(surface_flows, syntax/);
+    booktest!(surface_data, syntax/);
 
     mod surface_ops {
         hydroflow_macro::surface_booktest_operators!();
