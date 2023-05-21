@@ -29,7 +29,7 @@ pub use hydroflow_macro::*;
 mod booktest {
     macro_rules! booktest {
         ($i:ident $( $t:tt )*) => {
-            #[doc = include_str!(concat!("../../book/", stringify!($i), $( stringify!($t), )* ".md"))]
+            #[doc = include_str!(concat!("../../docs/", stringify!($i), $( stringify!($t), )* ".md"))]
             mod $i {}
         };
     }
