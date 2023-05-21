@@ -1,6 +1,4 @@
-# `lattices`
-
-<!-- ANCHOR: book_include -->
+<h1 class="crate-title"><code>lattices</code></h1>
 
 The `lattices` crate provides ergonomic and compsable lattice types. Users can also implement
 their own lattices via a few simple traits.
