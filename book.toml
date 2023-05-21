@@ -2,7 +2,7 @@
 authors = ["Mingwei Samuel"]
 language = "en"
 multilingual = false
-src = "book"
+src = "docs"
 title = "The Hydroflow Book"
 
 [build]
