@@ -1,0 +1,31 @@
+.paperContainer {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+}
+
+@media screen and (max-width: 800px) {
+  .paperContainer .paper-thumb {
+    display: none !important;
+  }
+
+  .paperContainer .paper-desc-extended {
+    display: none;
+  }
+}
+
+.paperContainer .paper-thumb:hover .cardIcon {
+  background-color: rgba(47, 128, 237, 0.75);
+}
+
+.cardIcon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100px;
+  height: 100px;
+  background-color: rgba(51, 51, 51, 0.75);
+  transition: background 0.25s;
+  border-radius: 50%;
+}
