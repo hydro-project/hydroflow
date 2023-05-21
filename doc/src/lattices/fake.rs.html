@@ -91,16 +91,12 @@
 <a href="#91" id="91">91</a>
 <a href="#92" id="92">92</a>
 <a href="#93" id="93">93</a>
-<a href="#94" id="94">94</a>
-<a href="#95" id="95">95</a>
-</pre></div><pre class="rust"><code><span class="doccomment">//! A fake lattice that will runtime panic if a merge is attempted.
-//!
-//! This is used to wrap non lattice data into a lattice in a way that typechecks
-
-</span><span class="kw">use super</span>::{ConvertFrom, Merge};
+</pre></div><pre class="rust"><code><span class="kw">use super</span>::{ConvertFrom, Merge};
 <span class="kw">use </span><span class="kw">crate</span>::LatticeOrd;
 
-<span class="doccomment">/// Fake lattice.
+<span class="doccomment">/// A fake lattice that will runtime panic if a merge between inequal values is attempted.
+///
+/// This is used to wrap non lattice data into a lattice in a way that typechecks
 </span><span class="attr">#[repr(transparent)]
 #[derive(Copy, Clone, Debug, Default, Eq)]
 #[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]

@@ -4,8 +4,10 @@
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
         <title>Operators - The Hydroflow Book</title>
+
+
         <!-- Custom HTML head -->
-        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
@@ -16,25 +18,29 @@
         <link rel="stylesheet" href="css/general.css">
         <link rel="stylesheet" href="css/chrome.css">
         <link rel="stylesheet" href="css/print.css" media="print">
+
         <!-- Fonts -->
         <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
         <link rel="stylesheet" href="fonts/fonts.css">
+
         <!-- Highlight.js Stylesheets -->
         <link rel="stylesheet" href="highlight.css">
         <link rel="stylesheet" href="tomorrow-night.css">
         <link rel="stylesheet" href="ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
+
     </head>
     <body>
+    <div id="body-container">
         <!-- Provide site root to javascript -->
-        <script type="text/javascript">
+        <script>
             var path_to_root = "";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
-        <script type="text/javascript">
+        <script>
             try {
                 var theme = localStorage.getItem('mdbook-theme');
                 var sidebar = localStorage.getItem('mdbook-sidebar');
@@ -50,7 +56,7 @@
         </script>
 
         <!-- Set the theme before any content is loaded, prevents flash -->
-        <script type="text/javascript">
+        <script>
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
@@ -62,12 +68,14 @@
         </script>
 
         <!-- Hide / unhide sidebar before it is displayed -->
-        <script type="text/javascript">
+        <script>
             var html = document.querySelector('html');
-            var sidebar = 'hidden';
+            var sidebar = null;
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
             }
             html.classList.remove('sidebar-visible');
             html.classList.add("sidebar-" + sidebar);
@@ -75,7 +83,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">2.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">2.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">2.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">2.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">2.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">2.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">2.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">2.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html"><strong aria-hidden="true">2.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html" class="active"><strong aria-hidden="true">3.4.</strong> Operators</a></li><li class="chapter-item expanded "><a href="state.html"><strong aria-hidden="true">3.5.</strong> State and Lifetimes</a></li></ol></li><li class="chapter-item expanded "><a href="ecosystem.html"><strong aria-hidden="true">4.</strong> The Hydro Ecosystem</a></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">5.</strong> Concepts</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="life_and_times.html"><strong aria-hidden="true">5.1.</strong> Life and Times of Hydroflow</a></li><li class="chapter-item expanded "><a href="stratification.html"><strong aria-hidden="true">5.2.</strong> Blocking Ops and Stratification</a></li><li class="chapter-item expanded "><a href="distributed_time.html"><strong aria-hidden="true">5.3.</strong> Distributed Time</a></li><li class="chapter-item expanded "><a href="debugging.html"><strong aria-hidden="true">5.4.</strong> Debugging Hydroflow</a></li><li class="chapter-item expanded "><a href="error_handling.html"><strong aria-hidden="true">5.5.</strong> Error Handling</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">6.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="scheduling.html"><strong aria-hidden="true">6.1.</strong> Scheduling</a></li><li class="chapter-item expanded "><a href="handoffs.html"><strong aria-hidden="true">6.2.</strong> Handoffs</a></li><li class="chapter-item expanded "><a href="networking.html"><strong aria-hidden="true">6.3.</strong> Networking</a></li><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">6.4.</strong> Subgraph In-Out Trees</a></li></ol></li><li class="chapter-item expanded "><a href="todo.html"><strong aria-hidden="true">7.</strong> TODO</a></li><li class="chapter-item expanded "><a href="faq.html"><strong aria-hidden="true">8.</strong> FAQ</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">2.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">2.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">2.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">2.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">2.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">2.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">2.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">2.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html"><strong aria-hidden="true">2.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html" class="active"><strong aria-hidden="true">3.4.</strong> Operators</a></li><li class="chapter-item expanded "><a href="state.html"><strong aria-hidden="true">3.5.</strong> State and Lifetimes</a></li></ol></li><li class="chapter-item expanded "><a href="ecosystem.html"><strong aria-hidden="true">4.</strong> The Hydro Ecosystem</a></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">5.</strong> Concepts</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="life_and_times.html"><strong aria-hidden="true">5.1.</strong> Life and Times of Hydroflow</a></li><li class="chapter-item expanded "><a href="stratification.html"><strong aria-hidden="true">5.2.</strong> Blocking Ops and Stratification</a></li><li class="chapter-item expanded "><a href="distributed_time.html"><strong aria-hidden="true">5.3.</strong> Distributed Time</a></li><li class="chapter-item expanded "><a href="debugging.html"><strong aria-hidden="true">5.4.</strong> Debugging Hydroflow</a></li><li class="chapter-item expanded "><a href="error_handling.html"><strong aria-hidden="true">5.5.</strong> Error Handling</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">6.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="scheduling.html"><strong aria-hidden="true">6.1.</strong> Scheduling</a></li><li class="chapter-item expanded "><a href="handoffs.html"><strong aria-hidden="true">6.2.</strong> Handoffs</a></li><li class="chapter-item expanded "><a href="networking.html"><strong aria-hidden="true">6.3.</strong> Networking</a></li><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">6.4.</strong> Subgraph In-Out Trees</a></li></ol></li><li class="chapter-item expanded "><a href="lattices_crate.html"><strong aria-hidden="true">7.</strong> The Lattices Crate</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="lattice_math.html"><strong aria-hidden="true">7.1.</strong> Lattice Math</a></li></ol></li><li class="chapter-item expanded "><a href="todo.html"><strong aria-hidden="true">8.</strong> TODO</a></li><li class="chapter-item expanded "><a href="faq.html"><strong aria-hidden="true">9.</strong> FAQ</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -83,7 +91,7 @@
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="menu-bar-hover-placeholder"></div>
+                                <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky bordered">
                     <div class="left-buttons">
                         <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
@@ -93,7 +101,7 @@
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
@@ -110,6 +118,7 @@
                         <a href="print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
+
                     </div>
                 </div>
 
@@ -123,8 +132,9 @@
                         </ul>
                     </div>
                 </div>
+
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
-                <script type="text/javascript">
+                <script>
                     document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
                     document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
                     Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
@@ -134,7 +144,8 @@
 
                 <div id="content" class="content">
                     <main>
-                        <!-- GENERATED "hydroflow_macro/build.rs" -->
+                        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<!-- GENERATED "hydroflow_macro/build.rs" -->
 <h1 id="hydroflows-operators"><a class="header" href="#hydroflows-operators">Hydroflow's Operators</a></h1>
 <p>In our previous examples we made use of some of Hydroflow's operators.
 Here we document each operator in more detail. Most of these operators
@@ -191,8 +202,7 @@ diff = anti_join() -&gt; for_each(|v: (_, _)| println!(&quot;{}, {}&quot;, v.0, 
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="batch"><a class="header" href="#batch"><code>batch</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; batch(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -221,8 +231,7 @@ will pass through all received inputs to the output unchanged.</p>
     tx.send(()).unwrap();
 
     df.run_available();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="cross_join"><a class="header" href="#cross_join"><code>cross_join</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; [&lt;input_port&gt;]cross_join() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -257,8 +266,7 @@ my_join = cross_join() -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, 
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><code>cross_join</code> can also be provided with one or two generic lifetime persistence arguments
 in the same was as <a href="#join"><code>join</code></a>, see <a href="#join"><code>join</code>'s documentation</a> for more info.</p>
 <p><code>cross_join</code> also accepts one type argument that controls how the join state is built up. This (currently) allows switching between a SetUnion and NonSetUnion implementation.
@@ -279,8 +287,7 @@ input_send.send(&quot;oakland&quot;).unwrap();
 flow.run_tick();
 input_send.send(&quot;san francisco&quot;).unwrap();
 flow.run_tick();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <p>Prints only <code>&quot;(hello, oakland)&quot;</code> and <code>&quot;(bye, oakland)&quot;</code>. The <code>source_iter</code> is only included in
 the first tick, then forgotten.</p>
 <h2 id="demux"><a class="header" href="#demux"><code>demux</code></a></h2>
@@ -337,8 +344,7 @@ my_demux[vals] -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="dest_file"><a class="header" href="#dest_file"><code>dest_file</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; dest_file(A, B)</code></td><td><span title="exactly 0">exactly 0</span></td><td>Streaming</td></tr>
@@ -372,8 +378,7 @@ truncated before lines are written.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="dest_sink"><a class="header" href="#dest_sink"><code>dest_sink</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; dest_sink(A)</code></td><td><span title="exactly 0">exactly 0</span></td><td>Streaming</td></tr>
@@ -411,8 +416,7 @@ let mut recv = tokio_stream::wrappers::ReceiverStream::new(recv);
 // be possible for more items to be added as they're removed, resulting in &gt;5 collected.)
 let out: Vec&lt;_&gt; = hydroflow::util::ready_iter(&amp;mut recv).collect();
 assert_eq!(&amp;[0, 1, 2, 3, 4], &amp;*out);
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <p><code>Sink</code> is different from <a href="https://docs.rs/futures/latest/futures/io/trait.AsyncWrite.html"><code>AsyncWrite</code></a>.
 Instead of discrete values we send arbitrary streams of bytes into an <code>AsyncWrite</code> value. For
 example, writings a stream of bytes to a file, a socket, or stdout.</p>
@@ -445,8 +449,7 @@ tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
 let mut buf = Vec::&lt;u8&gt;::new();
 asyncread.read_buf(&amp;mut buf).await.unwrap();
 assert_eq!(b&quot;helloworld&quot;, &amp;*buf);
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="dest_sink_serde"><a class="header" href="#dest_sink_serde"><code>dest_sink_serde</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; dest_sink_serde(A)</code></td><td><span title="exactly 0">exactly 0</span></td><td>Streaming</td></tr>
@@ -469,8 +472,7 @@ assert_eq!(b&quot;helloworld&quot;, &amp;*buf);
     };
     flow.run_available();
 }
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="difference"><a class="header" href="#difference"><code>difference</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; [&lt;input_port&gt;]difference() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
@@ -506,8 +508,7 @@ diff = difference() -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="enumerate"><a class="header" href="#enumerate"><code>enumerate</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; enumerate() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -539,8 +540,7 @@ and count monotonically upwards.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="filter"><a class="header" href="#filter"><code>filter</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; filter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -572,8 +572,7 @@ use <a href="#filter_map"><code>filter_map</code></a> instead.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="filter_map"><a class="header" href="#filter_map"><code>filter_map</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; filter_map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -604,8 +603,7 @@ use <a href="#filter_map"><code>filter_map</code></a> instead.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="flat_map"><a class="header" href="#flat_map"><code>flat_map</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; flat_map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -641,8 +639,7 @@ source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; flat_map(|x| x.cha
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="flatten"><a class="header" href="#flatten"><code>flatten</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; flatten() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -672,8 +669,7 @@ source_iter(vec![[1, 2], [3, 4], [5, 6]]) -&gt; flatten()
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="fold"><a class="header" href="#fold"><code>fold</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; fold(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
@@ -719,8 +715,7 @@ source_iter([1,2,3,4,5])
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="for_each"><a class="header" href="#for_each"><code>for_each</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; for_each(A)</code></td><td><span title="exactly 0">exactly 0</span></td><td>Streaming</td></tr>
@@ -755,8 +750,7 @@ argument.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="group_by"><a class="header" href="#group_by"><code>group_by</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; group_by(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
@@ -791,8 +785,7 @@ source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; identity()
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p>You can also supply a type parameter <code>identity::&lt;MyType&gt;()</code> to specify what items flow thru the
 the pipeline. This can be useful for helping the compiler infer types.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -813,8 +806,7 @@ source_iter(0..10) -&gt; identity::&lt;i32&gt;() -&gt; for_each(|x| println!(&qu
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="initialize"><a class="header" href="#initialize"><code>initialize</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>initialize() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -844,8 +836,7 @@ source_iter(0..10) -&gt; identity::&lt;i32&gt;() -&gt; for_each(|x| println!(&qu
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="inspect"><a class="header" href="#inspect"><code>inspect</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; inspect(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -878,8 +869,7 @@ anti-pattern to provide a closure with side effects.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="join"><a class="header" href="#join"><code>join</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; [&lt;input_port&gt;]join() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -913,8 +903,7 @@ my_join = join() -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&qu
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><code>join</code> can also be provided with one or two generic lifetime persistence arguments, either
 <code>'tick</code> or <code>'static</code>, to specify how join data persists. With <code>'tick</code>, pairs will only be
 joined with corresponding pairs within the same tick. With <code>'static</code>, pairs will be remembered
@@ -953,8 +942,7 @@ input_send.send((&quot;hello&quot;, &quot;oakland&quot;)).unwrap();
 flow.run_tick();
 input_send.send((&quot;hello&quot;, &quot;san francisco&quot;)).unwrap();
 flow.run_tick();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <p>Prints out <code>&quot;(hello, (world, oakland))&quot;</code> since <code>source_iter([(&quot;hello&quot;, &quot;world&quot;)])</code> is only
 included in the first tick, then forgotten.</p>
 <hr />
@@ -970,8 +958,7 @@ input_send.send((&quot;hello&quot;, &quot;oakland&quot;)).unwrap();
 flow.run_tick();
 input_send.send((&quot;hello&quot;, &quot;san francisco&quot;)).unwrap();
 flow.run_tick();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <p>Prints out <code>&quot;(hello, (world, oakland))&quot;</code> and <code>&quot;(hello, (world, san francisco))&quot;</code> since the
 inputs are peristed across ticks.</p>
 <h2 id="keyed_fold"><a class="header" href="#keyed_fold"><code>keyed_fold</code></a></h2>
@@ -1023,8 +1010,7 @@ cannot infer the types.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p>Example using <code>'tick</code> persistence:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -1047,8 +1033,7 @@ flow.run_available();
 input_send.send((&quot;hello&quot;, &quot;palo alto&quot;)).unwrap();
 flow.run_available();
 // (&quot;hello&quot;, &quot;palo alto, &quot;)
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="keyed_reduce"><a class="header" href="#keyed_reduce"><code>keyed_reduce</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; keyed_reduce(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
@@ -1096,8 +1081,7 @@ required when using <code>'static</code> persistence if the compiler cannot infe
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p>Example using <code>'tick</code> persistence:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -1117,8 +1101,7 @@ flow.run_available();
 input_send.send((&quot;hello&quot;, &quot;palo alto&quot;)).unwrap();
 flow.run_available();
 // (&quot;hello&quot;, &quot;palo alto, &quot;)
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="lattice_batch"><a class="header" href="#lattice_batch"><code>lattice_batch</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; lattice_batch(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1141,16 +1124,15 @@ will pass through all received inputs to the output unchanged.</p>
     // Will print 0, 1, 2, 3, 4 each on a new line just once.
     let mut df = hydroflow::hydroflow_syntax! {
         repeat_iter(0..5)
-            -&gt; map(|x| hydroflow::lattices::ord::Max::new(x))
-            -&gt; lattice_batch::&lt;hydroflow::lattices::ord::Max&lt;usize&gt;&gt;(rx)
+            -&gt; map(|x| hydroflow::lattices::Max::new(x))
+            -&gt; lattice_batch::&lt;hydroflow::lattices::Max&lt;usize&gt;&gt;(rx)
             -&gt; for_each(|x| { println!(&quot;{x:?}&quot;); });
     };
 
     tx.send(()).unwrap();
 
     df.run_available();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="lattice_join"><a class="header" href="#lattice_join"><code>lattice_join</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; [&lt;input_port&gt;]lattice_join() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1174,9 +1156,9 @@ equijoin of the tuples in the input streams by their first (key) attribute. Note
 </span><span class="boring">__rt.block_on(async {
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print `(key, (2, 1))`
-my_join = lattice_join::&lt;hydroflow::lattices::ord::Max&lt;usize&gt;, hydroflow::lattices::ord::Max&lt;usize&gt;&gt;();
-source_iter(vec![(&quot;key&quot;, hydroflow::lattices::ord::Max::new(0)), (&quot;key&quot;, hydroflow::lattices::ord::Max::new(2))]) -&gt; [0]my_join;
-source_iter(vec![(&quot;key&quot;, hydroflow::lattices::ord::Max::new(1))]) -&gt; [1]my_join;
+my_join = lattice_join::&lt;hydroflow::lattices::Max&lt;usize&gt;, hydroflow::lattices::Max&lt;usize&gt;&gt;();
+source_iter(vec![(&quot;key&quot;, hydroflow::lattices::Max::new(0)), (&quot;key&quot;, hydroflow::lattices::Max::new(2))]) -&gt; [0]my_join;
+source_iter(vec![(&quot;key&quot;, hydroflow::lattices::Max::new(1))]) -&gt; [1]my_join;
 my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({:?}, {:?}))&quot;, k, v1, v2));
 <span class="boring">};
 </span><span class="boring">for _ in 0..100 {
@@ -1187,8 +1169,7 @@ my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({:?}, {:?}))&quot;, 
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><code>lattice_join</code> can also be provided with one or two generic lifetime persistence arguments, either
 <code>'tick</code> or <code>'static</code>, to specify how join data persists. With <code>'tick</code>, pairs will only be
 joined with corresponding pairs within the same tick. With <code>'static</code>, pairs will be remembered
@@ -1212,7 +1193,7 @@ lattice_join::&lt;'tick, 'static, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;&gt;
 <h3 id="examples-1"><a class="header" href="#examples-1">Examples</a></h3>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use hydroflow::lattices::ord::Max;
+</span>use hydroflow::lattices::Max;
 
 let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(usize, Max&lt;usize&gt;)&gt;();
 let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::&lt;(usize, (Max&lt;usize&gt;, Max&lt;usize&gt;))&gt;();
@@ -1227,8 +1208,7 @@ input_send.send((7, Max::new(5))).unwrap();
 df.run_tick();
 let out: Vec&lt;_&gt; = hydroflow::util::collect_ready(&amp;mut out_rx);
 assert_eq!(out, vec![(7, (Max::new(2), Max::new(5)))]);
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="lattice_merge"><a class="header" href="#lattice_merge"><code>lattice_merge</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; lattice_merge() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
@@ -1256,9 +1236,9 @@ defaults to <code>'static</code>.</p>
 </span><span class="boring">__rt.block_on(async {
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>source_iter([1,2,3,4,5])
-    -&gt; map(hydroflow::lattices::ord::Max::new)
-    -&gt; lattice_merge::&lt;'static, hydroflow::lattices::ord::Max&lt;usize&gt;&gt;()
-    -&gt; for_each(|x: hydroflow::lattices::ord::Max&lt;usize&gt;| println!(&quot;Least upper bound: {}&quot;, x.0));
+    -&gt; map(hydroflow::lattices::Max::new)
+    -&gt; lattice_merge::&lt;'static, hydroflow::lattices::Max&lt;usize&gt;&gt;()
+    -&gt; for_each(|x: hydroflow::lattices::Max&lt;usize&gt;| println!(&quot;Least upper bound: {}&quot;, x.0));
 <span class="boring">};
 </span><span class="boring">for _ in 0..100 {
 </span><span class="boring">    hydroflow::tokio::task::yield_now().await;
@@ -1268,8 +1248,7 @@ defaults to <code>'static</code>.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="map"><a class="header" href="#map"><code>map</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1305,8 +1284,7 @@ each item use the <a href="#inspect"><code>inspect</code></a> operator instead.<
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="merge"><a class="header" href="#merge"><code>merge</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="at least 0">at least 2</span></td><td><code>-&gt; [&lt;input_port&gt;]merge() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1339,8 +1317,7 @@ my_merge = merge() -&gt; map(|x| x.to_uppercase())
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="next_stratum"><a class="header" href="#next_stratum"><code>next_stratum</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; next_stratum() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
@@ -1383,8 +1360,7 @@ for x in [3, 4, 5, 6] {
     input_send.send(x).unwrap();
 }
 flow.run_tick();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="null"><a class="header" href="#null"><code>null</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="at least 0 and at most 1">at least 0 and at most 1</span></td><td><code>null()</code></td><td><span title="at least 0 and at most 1">at least 0 and at most 1</span></td><td>Streaming</td></tr>
@@ -1418,8 +1394,7 @@ source_iter([4,5,6]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; [0]null_si
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="persist"><a class="header" href="#persist"><code>persist</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; persist() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1447,8 +1422,7 @@ source_iter([&quot;hello&quot;])
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><code>persist()</code> can be used to introduce statefulness into stateless pipelines. For example this
 join only stores data for single <code>'tick</code>. The <code>persist()</code> operator introduces statefulness
 across ticks. This can be useful for optimization transformations within the hydroflow
@@ -1468,8 +1442,7 @@ flow.run_tick();
 // (hello, (world, oakland))
 // (hello, (world, oakland))
 // (hello, (world, san francisco))
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="reduce"><a class="header" href="#reduce"><code>reduce</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; reduce(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
@@ -1510,8 +1483,7 @@ source_iter([1,2,3,4,5])
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="repeat_fn"><a class="header" href="#repeat_fn"><code>repeat_fn</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>repeat_fn(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1541,8 +1513,7 @@ Similar to <code>repeat_iter</code>, but generates the items by calling the supp
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="repeat_iter"><a class="header" href="#repeat_iter"><code>repeat_iter</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>repeat_iter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1574,8 +1545,7 @@ on every tick (where <code>source_iter</code> only delivers on the first tick).<
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="repeat_iter_external"><a class="header" href="#repeat_iter_external"><code>repeat_iter_external</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>repeat_iter_external(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1609,8 +1579,7 @@ source_iter(vec![2, 3, 1])
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><code>sort</code> can also be provided with one generic lifetime persistence argument, either
 <code>'tick</code> or <code>'static</code>, to specify how data persists. The default is <code>'tick</code>. With <code>'tick</code> only
 the values will only be collected within a single tick will be sorted and emitted. With
@@ -1635,8 +1604,7 @@ input_send.send(1).unwrap();
 input_send.send(7).unwrap();
 flow.run_available();
 // 1, 3, 4, 6, 7
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="sort_by"><a class="header" href="#sort_by"><code>sort_by</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; sort_by(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
@@ -1667,8 +1635,7 @@ source_iter(vec![(2, 'y'), (3, 'x'), (1, 'z')])
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="source_file"><a class="header" href="#source_file"><code>source_file</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_file(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1700,8 +1667,7 @@ for a file to read as json.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="source_interval"><a class="header" href="#source_interval"><code>source_interval</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_interval(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1740,8 +1706,7 @@ async fn main() {
     // This runs every second: Instant { t: 27472.704813s }
     // This runs every second: Instant { t: 27473.704813s }
     // This runs every second: Instant { t: 27474.704813s }
-}
-</code></pre></pre>
+}</code></pre></pre>
 <h2 id="source_iter"><a class="header" href="#source_iter"><code>source_iter</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_iter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1774,8 +1739,7 @@ one by one.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="source_json"><a class="header" href="#source_json"><code>source_json</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_json(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1806,8 +1770,7 @@ for a file to read as json. This will emit the parsed value one time.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="source_stdin"><a class="header" href="#source_stdin"><code>source_stdin</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_stdin() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1828,8 +1791,7 @@ and emits each of the elements it receives downstream.</p>
         -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 };
 flow.run_async();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="source_stream"><a class="header" href="#source_stream"><code>source_stream</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_stream(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1855,8 +1817,7 @@ let mut flow = hydroflow::hydroflow_syntax! {
 input_send.send(&quot;Hello&quot;).unwrap();
 input_send.send(&quot;World&quot;).unwrap();
 flow.run_available();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="source_stream_serde"><a class="header" href="#source_stream_serde"><code>source_stream_serde</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_stream_serde(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1882,8 +1843,7 @@ elements it receives downstream.</p>
     };
     flow.run_available();
 }
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="tee"><a class="header" href="#tee"><code>tee</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; tee()[&lt;output_port&gt;] -&gt;</code></td><td><span title="at least 0">at least 2</span></td><td>Streaming</td></tr>
@@ -1918,8 +1878,7 @@ my_tee -&gt; for_each(|x: &amp;str| println!(&quot;{}&quot;, x));
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="unique"><a class="header" href="#unique"><code>unique</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; unique() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1947,8 +1906,7 @@ source_iter(vec![1, 1, 2, 3, 2, 1, 3])
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><code>unique</code> can also be provided with one generic lifetime persistence argument, either
 <code>'tick</code> or <code>'static</code>, to specify how data persists. The default is <code>'static</code>.
 With <code>'tick</code>, uniqueness is only considered within the current tick, so across multiple ticks
@@ -1975,8 +1933,7 @@ input_send.send(5).unwrap();
 flow.run_available();
 // 3, 5
 // Note: 3 is emitted again.
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="unzip"><a class="header" href="#unzip"><code>unzip</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; unzip()[&lt;output_port&gt;] -&gt;</code></td><td><span title="exactly 2">exactly 2</span></td><td>Streaming</td></tr>
@@ -2010,8 +1967,7 @@ my_unzip[1] -&gt; for_each(|x| println!(&quot;1: {}&quot;, x)); // Foo Bar
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 
                     </main>
 
@@ -2020,9 +1976,11 @@ my_unzip[1] -&gt; for_each(|x| println!(&quot;1: {}&quot;, x)); // Foo Bar
                             <a rel="prev" href="surface_data.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
+
                             <a rel="next" href="state.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
+
                         <div style="clear: both"></div>
                     </nav>
                 </div>
@@ -2032,6 +1990,7 @@ my_unzip[1] -&gt; for_each(|x| println!(&quot;1: {}&quot;, x)); // Foo Bar
                     <a rel="prev" href="surface_data.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
+
                     <a rel="next" href="state.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
@@ -2039,18 +1998,27 @@ my_unzip[1] -&gt; for_each(|x| println!(&quot;1: {}&quot;, x)); // Foo Bar
 
         </div>
 
-        <script type="text/javascript">
+
+
+
+        <script>
             window.playground_copyable = true;
         </script>
-        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
-        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
-        <script type="text/javascript" src="mermaid.min.js"></script>
-        <script type="text/javascript" src="mermaid-init.js"></script>
+        <script src="mermaid.min.js"></script>
+        <script src="mermaid-init.js"></script>
+
+
+    </div>
     </body>
 </html>

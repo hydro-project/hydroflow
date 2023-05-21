@@ -124,17 +124,17 @@
 <a href="#124" id="124">124</a>
 <a href="#125" id="125">125</a>
 <a href="#126" id="126">126</a>
-</pre></div><pre class="rust"><code><span class="doccomment">//! Gives a default representation that compares as less than to a lattice.
-//!
-//! This can be used for giving a sensible default repersentation to types that don&#39;t necessarily have one.
-
-</span><span class="kw">use </span>std::cmp::Ordering;
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering;
 <span class="kw">use </span>std::cmp::Ordering::<span class="kw-2">*</span>;
 
 <span class="kw">use super</span>::{ConvertFrom, Merge};
 <span class="kw">use </span><span class="kw">crate</span>::LatticeOrd;
 
-<span class="doccomment">/// Bottom wrapper.
+<span class="doccomment">/// Wraps a lattice in [`Option`], treating [`None`] as a new bottom element which compares as less
+/// than to all other values.
+///
+/// This can be used for giving a sensible default/bottom element to lattices that don&#39;t
+/// necessarily have one.
 </span><span class="attr">#[repr(transparent)]
 #[derive(Copy, Clone, Debug, Eq)]
 #[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]

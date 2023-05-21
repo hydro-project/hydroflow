@@ -136,17 +136,12 @@
 <a href="#136" id="136">136</a>
 <a href="#137" id="137">137</a>
 <a href="#138" id="138">138</a>
-<a href="#139" id="139">139</a>
-</pre></div><pre class="rust"><code><span class="doccomment">//! Totally-ordered lattices, [`Max`] and [`Min`].
-//!
-//! Uses [std::cmp::Ord`].
-
-</span><span class="kw">use </span>std::cmp::Ordering;
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering;
 
 <span class="kw">use super</span>::{ConvertFrom, Merge};
 <span class="kw">use </span><span class="kw">crate</span>::LatticeOrd;
 
-<span class="doccomment">/// A totally ordered max lattice. Merging takes the larger value.
+<span class="doccomment">/// A totally ordered max lattice. Merging returns the larger value.
 </span><span class="attr">#[repr(transparent)]
 #[derive(Copy, Clone, Debug, Default, PartialOrd, Ord, PartialEq, Eq)]
 #[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
@@ -185,7 +180,10 @@
 
 <span class="kw">impl</span>&lt;T&gt; LatticeOrd&lt;<span class="self">Self</span>&gt; <span class="kw">for </span>Max&lt;T&gt; <span class="kw">where </span><span class="self">Self</span>: PartialOrd&lt;<span class="self">Self</span>&gt; {}
 
-<span class="doccomment">/// A totally ordered min lattice. Merging takes the smaller value.
+<span class="doccomment">/// A totally ordered min lattice. Merging returns the smaller value.
+///
+/// This means the lattice order is the reverse of what you might naturally expect: 0 is greater
+/// than 1.
 </span><span class="attr">#[repr(transparent)]
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]

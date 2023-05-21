@@ -5,8 +5,10 @@
         <meta charset="UTF-8">
         <title>The Hydroflow Book</title>
         <meta name="robots" content="noindex" />
+
+
         <!-- Custom HTML head -->
-        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
@@ -17,25 +19,29 @@
         <link rel="stylesheet" href="css/general.css">
         <link rel="stylesheet" href="css/chrome.css">
         <link rel="stylesheet" href="css/print.css" media="print">
+
         <!-- Fonts -->
         <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
         <link rel="stylesheet" href="fonts/fonts.css">
+
         <!-- Highlight.js Stylesheets -->
         <link rel="stylesheet" href="highlight.css">
         <link rel="stylesheet" href="tomorrow-night.css">
         <link rel="stylesheet" href="ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
+
     </head>
     <body>
+    <div id="body-container">
         <!-- Provide site root to javascript -->
-        <script type="text/javascript">
+        <script>
             var path_to_root = "";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
-        <script type="text/javascript">
+        <script>
             try {
                 var theme = localStorage.getItem('mdbook-theme');
                 var sidebar = localStorage.getItem('mdbook-sidebar');
@@ -51,7 +57,7 @@
         </script>
 
         <!-- Set the theme before any content is loaded, prevents flash -->
-        <script type="text/javascript">
+        <script>
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
@@ -63,12 +69,14 @@
         </script>
 
         <!-- Hide / unhide sidebar before it is displayed -->
-        <script type="text/javascript">
+        <script>
             var html = document.querySelector('html');
-            var sidebar = 'hidden';
+            var sidebar = null;
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
             }
             html.classList.remove('sidebar-visible');
             html.classList.add("sidebar-" + sidebar);
@@ -76,7 +84,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">2.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">2.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">2.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">2.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">2.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">2.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">2.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">2.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html"><strong aria-hidden="true">2.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li><li class="chapter-item expanded "><a href="state.html"><strong aria-hidden="true">3.5.</strong> State and Lifetimes</a></li></ol></li><li class="chapter-item expanded "><a href="ecosystem.html"><strong aria-hidden="true">4.</strong> The Hydro Ecosystem</a></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">5.</strong> Concepts</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="life_and_times.html"><strong aria-hidden="true">5.1.</strong> Life and Times of Hydroflow</a></li><li class="chapter-item expanded "><a href="stratification.html"><strong aria-hidden="true">5.2.</strong> Blocking Ops and Stratification</a></li><li class="chapter-item expanded "><a href="distributed_time.html"><strong aria-hidden="true">5.3.</strong> Distributed Time</a></li><li class="chapter-item expanded "><a href="debugging.html"><strong aria-hidden="true">5.4.</strong> Debugging Hydroflow</a></li><li class="chapter-item expanded "><a href="error_handling.html"><strong aria-hidden="true">5.5.</strong> Error Handling</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">6.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="scheduling.html"><strong aria-hidden="true">6.1.</strong> Scheduling</a></li><li class="chapter-item expanded "><a href="handoffs.html"><strong aria-hidden="true">6.2.</strong> Handoffs</a></li><li class="chapter-item expanded "><a href="networking.html"><strong aria-hidden="true">6.3.</strong> Networking</a></li><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">6.4.</strong> Subgraph In-Out Trees</a></li></ol></li><li class="chapter-item expanded "><a href="todo.html"><strong aria-hidden="true">7.</strong> TODO</a></li><li class="chapter-item expanded "><a href="faq.html"><strong aria-hidden="true">8.</strong> FAQ</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">2.1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="example_1_simplest.html"><strong aria-hidden="true">2.2.</strong> Simplest Example</a></li><li class="chapter-item expanded "><a href="example_2_simple.html"><strong aria-hidden="true">2.3.</strong> Simple Example</a></li><li class="chapter-item expanded "><a href="example_3_stream.html"><strong aria-hidden="true">2.4.</strong> A Example With Streaming Input</a></li><li class="chapter-item expanded "><a href="example_4_neighbors.html"><strong aria-hidden="true">2.5.</strong> Graph Neighbors</a></li><li class="chapter-item expanded "><a href="example_5_reachability.html"><strong aria-hidden="true">2.6.</strong> Graph Reachability</a></li><li class="chapter-item expanded "><a href="example_6_unreachability.html"><strong aria-hidden="true">2.7.</strong> Graph Un-Reachability</a></li><li class="chapter-item expanded "><a href="example_7_echo_server.html"><strong aria-hidden="true">2.8.</strong> Networked Services 1: EchoServer</a></li><li class="chapter-item expanded "><a href="example_8_chat_server.html"><strong aria-hidden="true">2.9.</strong> Networked Services 2: ChatServer</a></li></ol></li><li class="chapter-item expanded "><a href="surface_syntax.html"><strong aria-hidden="true">3.</strong> Syntax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="surface_embedding.html"><strong aria-hidden="true">3.1.</strong> Rust Embedding</a></li><li class="chapter-item expanded "><a href="surface_flows.html"><strong aria-hidden="true">3.2.</strong> Flows</a></li><li class="chapter-item expanded "><a href="surface_data.html"><strong aria-hidden="true">3.3.</strong> Data Sources</a></li><li class="chapter-item expanded "><a href="surface_ops.gen.html"><strong aria-hidden="true">3.4.</strong> Operators</a></li><li class="chapter-item expanded "><a href="state.html"><strong aria-hidden="true">3.5.</strong> State and Lifetimes</a></li></ol></li><li class="chapter-item expanded "><a href="ecosystem.html"><strong aria-hidden="true">4.</strong> The Hydro Ecosystem</a></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">5.</strong> Concepts</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="life_and_times.html"><strong aria-hidden="true">5.1.</strong> Life and Times of Hydroflow</a></li><li class="chapter-item expanded "><a href="stratification.html"><strong aria-hidden="true">5.2.</strong> Blocking Ops and Stratification</a></li><li class="chapter-item expanded "><a href="distributed_time.html"><strong aria-hidden="true">5.3.</strong> Distributed Time</a></li><li class="chapter-item expanded "><a href="debugging.html"><strong aria-hidden="true">5.4.</strong> Debugging Hydroflow</a></li><li class="chapter-item expanded "><a href="error_handling.html"><strong aria-hidden="true">5.5.</strong> Error Handling</a></li></ol></li><li class="chapter-item expanded "><a href="architecture.html"><strong aria-hidden="true">6.</strong> Architecture</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="scheduling.html"><strong aria-hidden="true">6.1.</strong> Scheduling</a></li><li class="chapter-item expanded "><a href="handoffs.html"><strong aria-hidden="true">6.2.</strong> Handoffs</a></li><li class="chapter-item expanded "><a href="networking.html"><strong aria-hidden="true">6.3.</strong> Networking</a></li><li class="chapter-item expanded "><a href="in-out_trees.html"><strong aria-hidden="true">6.4.</strong> Subgraph In-Out Trees</a></li></ol></li><li class="chapter-item expanded "><a href="lattices_crate.html"><strong aria-hidden="true">7.</strong> The Lattices Crate</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="lattice_math.html"><strong aria-hidden="true">7.1.</strong> Lattice Math</a></li></ol></li><li class="chapter-item expanded "><a href="todo.html"><strong aria-hidden="true">8.</strong> TODO</a></li><li class="chapter-item expanded "><a href="faq.html"><strong aria-hidden="true">9.</strong> FAQ</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -84,7 +92,7 @@
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="menu-bar-hover-placeholder"></div>
+                                <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky bordered">
                     <div class="left-buttons">
                         <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
@@ -94,7 +102,7 @@
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
@@ -111,6 +119,7 @@
                         <a href="print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
+
                     </div>
                 </div>
 
@@ -124,8 +133,9 @@
                         </ul>
                     </div>
                 </div>
+
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
-                <script type="text/javascript">
+                <script>
                     document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
                     document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
                     Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
@@ -135,7 +145,8 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+                        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
 <p><a href="https://github.com/hydro-project/hydroflow">Hydroflow</a> is a compiler for low-latency 
 dataflow programs, written in Rust. Hydroflow is the runtime library for the 
 <a href="./ecosystem.html">Hydro language stack</a>, which is under development
@@ -153,11 +164,13 @@ requires some knowledge of Rust to use. </p>
 <p>Keep in mind that Hydroflow is under active development and is constantly
 changing. However the code in this book is tested with the Hydroflow library so should always be up-to-date.</p>
 <p>If you have any questions, feel free to <a href="https://github.com/hydro-project/hydroflow/issues/new">create an issue on Github</a>.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="quickstart"><a class="header" href="#quickstart">Quickstart</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="quickstart"><a class="header" href="#quickstart">Quickstart</a></h1>
 <p>This section will get you up and running with Rust and Hydroflow, and work you 
 through a set of concrete examples illustrating much of what you need to know to
 get productive with Hydroflow.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="setup"><a class="header" href="#setup">Setup</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="setup"><a class="header" href="#setup">Setup</a></h1>
 <p>This section explains how to get Hydroflow running, either for development or
 usage, even if you are not familiar with Rust development.</p>
 <h2 id="installing-rust"><a class="header" href="#installing-rust">Installing Rust</a></h2>
@@ -258,7 +271,8 @@ i.e. a repo containing a bunch of separate packages, <code>hydroflow</code> is j
 main one. So if you want to work in a proper separate cargo package, you can
 create one and add it into the <a href="https://github.com/hydro-project/hydroflow/blob/main/Cargo.toml">root <code>Cargo.toml</code></a>,
 much like the <a href="https://github.com/hydro-project/hydroflow-template/blob/main/Cargo.toml">provided template</a>.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="simplest-example"><a class="header" href="#simplest-example">Simplest Example</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="simplest-example"><a class="header" href="#simplest-example">Simplest Example</a></h1>
 <blockquote>
 <p>In this example we will cover:</p>
 <ul>
@@ -291,8 +305,7 @@ pub fn main() {
     };
 
     flow.run_available();
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p>And then run the program:</p>
 <pre><code class="language-console">% cargo run
 Hello 0
@@ -308,8 +321,7 @@ Hello 9
 </code></pre>
 <h2 id="understanding-the-code"><a class="header" href="#understanding-the-code">Understanding the Code</a></h2>
 <p>Although this is a trivial program, it's useful to go through it line by line.</p>
-<pre><code class="language-rust ignore">use hydroflow::hydroflow_syntax;
-</code></pre>
+<pre><code class="language-rust ignore">use hydroflow::hydroflow_syntax;</code></pre>
 <p>This import gives you everything you need from Hydroflow to write code with Hydroflow's 
 <a href="./surface_syntax.html"><em>surface syntax</em></a>.</p>
 <p>Next, inside the main method we specify a flow by calling the 
@@ -319,8 +331,7 @@ a mutable variable <code>flow</code>––mutable because we will be changing it
 </span>pub fn main() {
     let mut flow = hydroflow_syntax! {
         source_iter(0..10) -&gt; for_each(|n| println!(&quot;Hello {}&quot;, n));
-    };
-</code></pre>
+    };</code></pre>
 <p>Hydroflow surface syntax defines a &quot;flow&quot; consisting of <em>operators</em> connected via <code>-&gt;</code> arrows.
 This simplest example uses a simple two-step linear flow.
 It starts with a <a href="./surface_ops.gen.html#source_iter"><code>source_iter</code></a> operator that takes the Rust
@@ -331,8 +342,7 @@ item passed in.</p>
 <p>The Hydroflow surface syntax is merely a <em>specification</em>; it does not actually do anything
 until we run it.
 We run the flow from within Rust via the <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_available"><code>run_available()</code> method</a>.</p>
-<pre><code class="language-rust ignore">    flow.run_available();
-</code></pre>
+<pre><code class="language-rust ignore">    flow.run_available();</code></pre>
 <p>Note that <code>run_available()</code> runs the Hydroflow graph until no more work is immediately
 available. In this example flow, running the graph drains the iterator completely, so no
 more work will <em>ever</em> be available. In future examples we will use external inputs such as
@@ -340,7 +350,8 @@ network ingress, in which case more work might appear at any time. </p>
 <h3 id="a-note-on-project-structure"><a class="header" href="#a-note-on-project-structure">A Note on Project Structure</a></h3>
 <p>The template project is intended to be a starting point for your own Hydroflow project, and you can add files and directories as you see fit. The only requirement is that the <code>src/main.rs</code> file exists and contains a <code>main()</code> function.</p>
 <p>In this simplest example we did not use a number of the files in the template: notably everything in the <code>src/</code> subdirectory other than <code>src/main.rs</code>. If you'd like to delete those extraneous files you can do so, but it's not necessary, and we'll use them in subsequent examples. </p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="simple-example"><a class="header" href="#simple-example">Simple Example</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="simple-example"><a class="header" href="#simple-example">Simple Example</a></h1>
 <blockquote>
 <p>In this example we will cover some additional standard Hydroflow operators:</p>
 <ul>
@@ -370,8 +381,7 @@ pub fn main() {
     };
 
     flow.run_available();
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p>Let's take this one operator at a time, starting after the <code>source_iter</code> operator we saw in the previous example.</p>
 <ul>
 <li>
@@ -433,8 +443,7 @@ machine code.</p>
     };
 
     flow.run_available();
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p>Results:</p>
 <pre><code class="language-console">% cargo run
 &lt;build output&gt;
@@ -451,7 +460,8 @@ G'day 65
 G'day 81
 G'day 82
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="an-example-with-streaming-input"><a class="header" href="#an-example-with-streaming-input">An Example With Streaming Input</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="an-example-with-streaming-input"><a class="header" href="#an-example-with-streaming-input">An Example With Streaming Input</a></h1>
 <blockquote>
 <p>In this example we will cover:</p>
 <ul>
@@ -470,13 +480,11 @@ pub fn main() {
     };
 
     hydroflow.run_available();
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p><strong>TODO:</strong> Make the following less intimidating to users who are not Tokio experts.</p>
 <p>To add a new external input
 channel, we can use the <code>hydroflow::util::unbounded_channel()</code> function in Rust before we declare the Hydroflow spec:</p>
-<pre><code class="language-rust  ignore">    let (input_example, example_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();
-</code></pre>
+<pre><code class="language-rust  ignore">    let (input_example, example_recv) = hydroflow::util::unbounded_channel::&lt;usize&gt;();</code></pre>
 <p>Under the covers, this is a <a href="https://docs.rs/tokio/latest/tokio/sync/mpsc/fn.unbounded_channel.html">multiple-producer/single-consumer (<code>mpsc</code>) channel</a> provided by Rust's <a href="https://docs.rs/tokio/latest/tokio">tokio</a> library, which is usually the appropriate choice for an inbound Hydroflow stream.
 Think of it as a high-performance &quot;mailbox&quot; that any sender can fill with well-typed data.</p>
 <p>The Rust <code>::&lt;usize&gt;</code> syntax uses what is affectionately
@@ -524,8 +532,7 @@ pub fn main() {
     input_example.send(8).unwrap();
     input_example.send(9).unwrap();
     flow.run_available();
-}
-</code></pre></pre>
+}</code></pre></pre>
 <pre><code class="language-console">% cargo run
 &lt;build output&gt;
 A
@@ -547,7 +554,8 @@ Ahoy, 82
 <code>.send()</code> method.  We call Rust's <code>.unwrap()</code> method to ignore the error messages from 
 <code>.send()</code> in this simple case.  In later examples we'll see how to 
 allow for data coming in over a network.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="graph-neighbors"><a class="header" href="#graph-neighbors">Graph Neighbors</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="graph-neighbors"><a class="header" href="#graph-neighbors">Graph Neighbors</a></h1>
 <blockquote>
 <p>In this example we cover:</p>
 <ul>
@@ -630,8 +638,7 @@ pub fn main() {
     edges_send.send((0, 3)).unwrap();
     edges_send.send((0, 3)).unwrap();
     flow.run_available();
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p>Run the program and focus on the last three lines of output, which come from <code>flow.run_available()</code>:</p>
 <pre><code class="language-console">% cargo run
 &lt;build output&gt;
@@ -651,8 +658,7 @@ and the stream of edges coming in. Because this flow is a bit more complex
 than our earlier examples, we break it down into named &quot;subflows&quot;, assigning them variable
 names that we can reuse. Here we specify two subflows, <code>origin</code> and <code>stream_of_edges</code>:</p>
 <pre><code class="language-rust ignore">    origin = source_iter(vec![0]);
-    stream_of_edges = source_stream(edges_recv);
-</code></pre>
+    stream_of_edges = source_stream(edges_recv);</code></pre>
 <p>The Rust syntax <code>vec![0]</code> constructs a vector with a single element, <code>0</code>, which we iterate
 over using <code>source_iter</code>.</p>
 <p>We then set up a <a href="./surface_ops.gen.html#join"><code>join()</code></a> that we
@@ -660,8 +666,7 @@ name <code>my_join</code>, which acts like a SQL inner join. </p>
 <pre><code class="language-rust ignore">    // the join
     my_join = join() -&gt; flat_map(|(src, (_, dst))| [src, dst]);
     origin -&gt; map(|v| (v, ())) -&gt; [0]my_join;
-    stream_of_edges -&gt; [1]my_join;
-</code></pre>
+    stream_of_edges -&gt; [1]my_join;</code></pre>
 <p>First, note the syntax for passing data into a subflow with multiple inputs requires us to <em>prepend</em> 
 an input index (starting at <code>0</code>) in square brackets to the multi-input variable name or operator.  In this example we have <code>-&gt; [0]my_join</code>
 and <code>-&gt; [1]my_join</code>.</p>
@@ -676,8 +681,7 @@ to generate <code>(v, ())</code> elements as the first join input. </p>
 so the join's output is <code>(src, ((), dst))</code> where <code>dst</code> are new neighbor
 vertices. So the <code>my_join</code> variable feeds the output of the join through a <code>flat_map</code> to extract the pairs into 2-item arrays, which are flattened to give us a list of all vertices reached.
 Finally we print the neighbor vertices as follows:</p>
-<pre><code class="language-rust ignore">    my_join -&gt; unique() -&gt; for_each(|n| println!(&quot;Reached: {}&quot;, n));
-</code></pre>
+<pre><code class="language-rust ignore">    my_join -&gt; unique() -&gt; for_each(|n| println!(&quot;Reached: {}&quot;, n));</code></pre>
 <p>The <a href="./surface_ops.gen.html#unique">unique</a> operator removes duplicates from the stream to make things more readable. Note that <code>unique</code> does not run in a streaming fashion, which we will talk about more <a href="example_4_neighbors.html#strata-and-ticks">below</a>.</p>
 <p>There's
 also some extra code here, <code>flow.meta_graph().expect(...).to_mermaid()</code>, which tells
@@ -728,7 +732,8 @@ has vertices (<code>2</code>, <code>4</code>) that are more than one hop away fr
 not output by our simple program. To extend this example to graph <em>reachability</em>, 
 we need to recurse: find neighbors of our neighbors, neighbors of our neighbors' neighbors, and so on. In Hydroflow,
 this is done by adding a loop to the flow, as we'll see in our <a href="example_5_reachability.html">next example</a>.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="graph-reachability"><a class="header" href="#graph-reachability">Graph Reachability</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="graph-reachability"><a class="header" href="#graph-reachability">Graph Reachability</a></h1>
 <blockquote>
 <p>In this example we cover:</p>
 <ul>
@@ -811,8 +816,7 @@ pub fn main() {
     edges_send.send((0, 3)).unwrap();
     edges_send.send((0, 3)).unwrap();
     flow.run_available();
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p>And now we get the full set of vertices reachable from <code>0</code>:</p>
 <pre><code class="language-console">% cargo run
 &lt;build output&gt;
@@ -829,8 +833,7 @@ addition of the <code>reached_vertices</code> variable, which uses the <a href="
 op to merge the output of two operators into one. 
 We route the <code>origin</code> vertex into it as one input right away:</p>
 <pre><code class="language-rust ignore">    reached_vertices = merge();
-    origin -&gt; [0]reached_vertices;
-</code></pre>
+    origin -&gt; [0]reached_vertices;</code></pre>
 <p>Note the square-bracket syntax for differentiating the multiple inputs to <code>merge()</code>
 is the same as that of <code>join()</code> (except that merge can have an unbounded number of inputs,
 whereas <code>join()</code> is defined to only have two.)</p>
@@ -849,8 +852,7 @@ an output index in square brackets to the <code>tee</code> or variable. In this 
 One branch pushes reached vertices back up into the <code>reached_vertices</code> variable (which begins with a <code>merge</code>), while the other
 prints out all the reached vertices as in the simple program.</p>
 <pre><code class="language-rust ignore">        my_join_tee[0] -&gt; [1]reached_vertices;
-        my_join_tee[1] -&gt; for_each(|x| println!(&quot;Reached: {}&quot;, x));
-</code></pre>
+        my_join_tee[1] -&gt; for_each(|x| println!(&quot;Reached: {}&quot;, x));</code></pre>
 <p>Note the syntax for differentiating the <em>outputs</em> of a <code>tee()</code> is symmetric to that of <code>merge()</code>, 
 showing up to the right of the variable rather than the left.</p>
 <p>Below is the diagram rendered by <a href="https://mermaid-js.github.io/">mermaid</a> showing
@@ -891,7 +893,8 @@ end
 more complex. In particular, it includes the <code>merge</code> and <code>tee</code> operators, and a cycle-forming back-edge 
 that passes through an auto-generated <code>handoff</code> operator. This <code>handoff</code> is not a stratum boundary (after all, it connects stratum 0 to itself!) It simply enforces the rule that a push producer and a pull consumer must be separated by a <code>handoff</code>. </p>
 <p>Meanwhile, note that there is once again a stratum boundary between the stratum 0 with its recursive loop, and stratum 1 that computes <code>unique</code>, with the blocking input. This means that Hydroflow will first run the loop of stratum 0 repeatedly until all the transitive reached vertices are found, before moving on to compute the unique reached vertices.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="graph-un-reachability"><a class="header" href="#graph-un-reachability">Graph Un-Reachability</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="graph-un-reachability"><a class="header" href="#graph-un-reachability">Graph Un-Reachability</a></h1>
 <blockquote>
 <p>In this example we cover:</p>
 <ul>
@@ -973,8 +976,7 @@ pub fn main() {
     pairs_send.send((6, 5)).unwrap();
     pairs_send.send((11, 12)).unwrap();
     flow.run_available();
-}
-</code></pre></pre>
+}</code></pre></pre>
 <p>Notice that we are now sending in some new pairs to test this code. The output should be:</p>
 <pre><code class="language-console">% cargo run
 &lt;build output&gt;
@@ -1058,7 +1060,8 @@ discussed in the chapter on <a href="./architecture.html">Architecture</a>.</p>
 <p>All the subgraphs labeled <code>stratum 0</code> are run first to completion, 
 and then all the subgraphs labeled <code>stratum 1</code> are run. This captures the requirements of the <code>unique</code> and <code>difference</code> operators used in the lower subgraphs: each has to wait for its full inputs before it can start producing output. Note
 how the <code>difference</code> operator has two inputs (labeled <code>pos</code> and <code>neg</code>), and only the <code>neg</code> input shows up as blocking (with the bold edge ending in a ball).</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="networked-services-1-echoserver"><a class="header" href="#networked-services-1-echoserver">Networked Services 1: EchoServer</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="networked-services-1-echoserver"><a class="header" href="#networked-services-1-echoserver">Networked Services 1: EchoServer</a></h1>
 <blockquote>
 <p>In this example we cover:</p>
 <ul>
@@ -1113,8 +1116,7 @@ mod server;
 enum Role {
     Client,
     Server,
-}
-</code></pre>
+}</code></pre>
 <p>Following that, we use Rust's <a href="https://docs.rs/clap/latest/clap/"><code>clap</code></a> (Command Line Argument Parser) crate to parse command-line options:</p>
 <pre><code class="language-rust ignore">#[derive(Parser, Debug)]
 struct Opts {
@@ -1124,8 +1126,7 @@ struct Opts {
     addr: Option&lt;SocketAddr&gt;,
     #[clap(long, value_parser = ipv4_resolve)]
     server_addr: Option&lt;SocketAddr&gt;,
-}
-</code></pre>
+}</code></pre>
 <p>This sets up 3 command-line flags: <code>role</code>, <code>addr</code>, and <code>server_addr</code>. Note how the <code>addr</code> and <code>server_addr</code> flags are made optional via wrapping in a Rust <code>Option</code>; by contrast, the <code>role</code> option is required. The <code>clap</code> crate will parse the command-line options and populate the <code>Opts</code> struct with the values. <code>clap</code> handles parsing the command line strings into the associated Rust types --  the <code>value_parser</code> attribute tells <code>clap</code> to use Hydroflow's <code>ipv4_resolve</code> helper function to parse a string like &quot;127.0.0.1:6552&quot; into a <code>SocketAddr</code>.</p>
 <p>This brings us to the <code>main</code> function itself. It is prefaced by a <code>#[tokio::main]</code> attribute, which is a macro that sets up the tokio runtime. This is necessary because Hydroflow uses the tokio runtime for asynchronous execution as a service.</p>
 <pre><code class="language-rust ignore">#[tokio::main]
@@ -1139,8 +1140,7 @@ async fn main() {
 
     // allocate `outbound` sink and `inbound` stream
     let (outbound, inbound, addr) = bind_udp_bytes(addr).await;
-    println!(&quot;Listening on {:?}&quot;, addr);
-</code></pre>
+    println!(&quot;Listening on {:?}&quot;, addr);</code></pre>
 <p>After parsing the command line arguments we set up some Rust-based networking. Specifically, for either client or server roles we will need to allocate a UDP socket that is used for both sending and receiving messages. We do this by calling the async <code>bind_udp_bytes</code> function, which is defined in the <code>hydroflow/src/util</code> module. As an async function it returns a <code>Future</code>, so requires appending <code>.await</code>; the function returns a triple of type <code>(UdpSink, UdpSource, SocketAddr)</code>. The first two are the types that we'll use in Hydroflow to send and receive messages, respectively. (Note: your IDE might expand out the <code>UdpSink</code> and <code>UdpSource</code> traits to their more verbose definitions. That is fine; you can ignore those.) The SocketAddr is there in case you specified port 0 in your <code>addr</code> argument, in which case this return value tells you what port the OS has assigned for you.</p>
 <p>All that's left is to fire up the code for the appropriate role!</p>
 <pre><code class="language-rust ignore">    match opts.role {
@@ -1151,8 +1151,7 @@ async fn main() {
             run_client(outbound, inbound, opts).await;
         }
     }
-}
-</code></pre>
+}</code></pre>
 <h2 id="protocolrs"><a class="header" href="#protocolrs">protocol.rs</a></h2>
 <p>As a design pattern, it is natural in distributed Hydroflow programs to define various message types in a <code>protocol.rs</code> file with structures shared for use by all the Hydroflow logic across roles. In this simple example, we define only one message type: <code>EchoMsg</code>, and a simple struct with two fields: <code>payload</code> and <code>ts</code> (timestamp). The <code>payload</code> field is a string, and the <code>ts</code> field is a <code>DateTime&lt;Utc&gt;</code>, which is a type from the <a href="https://docs.rs/chrono/latest/chrono/"><code>chrono</code></a> crate. Note the various derived traits on <code>EchoMsg</code>—specifically <code>Serialize</code> and <code>Deserialize</code>—these are required for structs that we send over the network.</p>
 <pre><code class="language-rust ignore">use chrono::prelude::*;
@@ -1162,8 +1161,7 @@ use serde::{Deserialize, Serialize};
 pub struct EchoMsg {
     pub payload: String,
     pub ts: DateTime&lt;Utc&gt;,
-}
-</code></pre>
+}</code></pre>
 <h1 id="serverrs"><a class="header" href="#serverrs">server.rs</a></h1>
 <p>Things get interesting when we look at the <code>run_server</code> function. This function is the main entry point for the server. It takes as arguments the <code>outbound</code> and <code>inbound</code> sockets from <code>main</code>, and the <code>Opts</code> (which are ignored). </p>
 <p>After printing a cheery message, we get into the Hydroflow code for the server, consisting of three short pipelines.</p>
@@ -1192,8 +1190,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, _opts: cra
 
     // run the server
     flow.run_async().await;
-}
-</code></pre>
+}</code></pre>
 <p>Lets take the Hydroflow code one statement at a time. </p>
 <p>The first pipeline, <code>inbound_chan</code> uses a source operator we have not seen before, <a href="./surface_ops.gen.html#source_stream_serde"><code>source_stream_serde()</code></a>. This is a streaming source like <code>source_stream</code>, but for network streams. It takes a <code>UdpSource</code> as an argument, and has a particular output type: a stream of <code>(T, SocketAddr)</code> pairs where <code>T</code> is some type that implements the <code>Serialize</code> and <code>Deserialize</code> traits (together known as &quot;serde&quot;), and <code>SocketAddr</code> is the network address of the sender of the item. In this case, <code>T</code> is <code>EchoMsg</code>, which we defined in <code>protocol.rs</code>, and the <code>SocketAddr</code> is the address of the client that sent the message. We pipe the result into a <code>tee()</code> for reuse.</p>
 <p>The second pipeline is a simple <code>for_each</code> to print the messages received at the server.</p>
@@ -1236,8 +1233,7 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
     };
 
     flow.run_async().await.unwrap();
-}
-</code></pre>
+}</code></pre>
 <h2 id="running-the-example"><a class="header" href="#running-the-example">Running the example</a></h2>
 <p>As described in the <code>README.md</code> file, we can run the server in one terminal, and the client in another. The server will print the messages it receives, and the client will print the messages it receives back from the server. The client and servers' `--server-addr' arguments need to match or this won't work!</p>
 <p>Fire up the server in terminal 1:</p>
@@ -1259,7 +1255,8 @@ Server live!
 2022-12-15 05:40:11.256640 UTC: Got Echo { payload: &quot;This is a test&quot;, ts: 2022-12-15T05:40:11.254207Z } from 127.0.0.1:54532
 2022-12-15 05:40:14.023363 UTC: Got Echo { payload: &quot;This is the rest&quot;, ts: 2022-12-15T05:40:14.020897Z } from 127.0.0.1:54532
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="networked-services-2-chat-server"><a class="header" href="#networked-services-2-chat-server">Networked Services 2: Chat Server</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="networked-services-2-chat-server"><a class="header" href="#networked-services-2-chat-server">Networked Services 2: Chat Server</a></h1>
 <blockquote>
 <p>In this example we cover:</p>
 <ul>
@@ -1329,8 +1326,7 @@ async fn main() {
             run_server(outbound, inbound, opts).await;
         }
     }
-}
-</code></pre>
+}</code></pre>
 <h2 id="protocolrs-1"><a class="header" href="#protocolrs-1">protocol.rs</a></h2>
 <p>Our protocol file here expands upon what we saw with the echoserver by defining multiple message types. 
 Replace the template contents of <code>src/protocol.rs</code> with the following:</p>
@@ -1346,8 +1342,7 @@ pub enum Message {
         message: String,
         ts: DateTime&lt;Utc&gt;,
     },
-}
-</code></pre>
+}</code></pre>
 <p>Note how we use a single Rust <code>enum</code> to represent all varieties of message types; this allows us to handle <code>Message</code>s of different types with a single  Rust network channel. We will use the <a href="./surface_ops.gen.html#demux"><code>demux</code></a> operator to separate out these different message types on the receiving end. </p>
 <p>The <code>ConnectRequest</code> and <code>ConnectResponse</code> messages have no payload; 
 the address of the sender and the type of the message will be sufficient information. The <code>ChatMsg</code> message type has a <code>nickname</code> field, a <code>message</code> field, and a <code>ts</code> 
@@ -1379,8 +1374,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
                     }
                 );
         clients = inbound_chan[clients] -&gt; tee();
-        inbound_chan[errs] -&gt; for_each(|m| println!(&quot;Received unexpected message type: {:?}&quot;, m));
-</code></pre>
+        inbound_chan[errs] -&gt; for_each(|m| println!(&quot;Received unexpected message type: {:?}&quot;, m));</code></pre>
 <p>After a short prelude, we have the Hydroflow code near the top of <code>run_server()</code>. It begins by defining <code>outbound_chan</code> as a <code>merge</code>d destination sink for network messages. Then we get to the
 more interesting <code>inbound_chan</code> definition. </p>
 <p>The <code>inbound</code> channel is a source stream that will carry many
@@ -1421,8 +1415,7 @@ and the code to run the flow graph. To follow along, paste the following into th
     }
 
     df.run_async().await.unwrap();
-}
-</code></pre>
+}</code></pre>
 <p>The first pipeline is one line long, 
 and is responsible for acknowledging requests from <code>clients</code>: it takes the address of the incoming <code>Message::ConnectRequest</code> 
 and sends a <code>ConnectResponse</code> back to that address. The second pipeline is responsible for broadcasting 
@@ -1504,8 +1497,7 @@ fn pretty_print_msg(msg: Message) {
             message,
         );
     }
-}
-</code></pre>
+}</code></pre>
 <p>This brings us to the <code>run_client</code> function. As in <code>run_server</code> we begin by ensuring the server address 
 is supplied. We then have the hydroflow code starting with a standard pattern of a <code>merge</code>d <code>outbound_chan</code>, 
 and a <code>demux</code>ed <code>inbound_chan</code>. The client handles only two inbound <code>Message</code> types: <code>Message::ConnectResponse</code> and <code>Message::ChatMsg</code>.</p>
@@ -1526,8 +1518,7 @@ and a <code>demux</code>ed <code>inbound_chan</code>. The client handles only tw
                         _ =&gt; errs.give(m),
                     }
                 );
-        inbound_chan[errs] -&gt; for_each(|m| println!(&quot;Received unexpected message type: {:?}&quot;, m));
-</code></pre>
+        inbound_chan[errs] -&gt; for_each(|m| println!(&quot;Received unexpected message type: {:?}&quot;, m));</code></pre>
 <p>The core logic of the client consists of three dataflow pipelines shown below. Paste this into the
 bottom of your <code>src/client.rs</code> file.</p>
 <pre><code class="language-rust ignore">        // send a single connection request on startup
@@ -1546,8 +1537,7 @@ bottom of your <code>src/client.rs</code> file.</p>
 
         // receive and print messages
         inbound_chan[msgs] -&gt; for_each(pretty_print_msg);
-    };
-</code></pre>
+    };</code></pre>
 <ol>
 <li>
 <p>The first pipeline is the &quot;bootstrap&quot; alluded to above.
@@ -1586,8 +1576,7 @@ when the client receives its sole <code>ConnectResponse</code>.</p>
     }
 
     hf.run_async().await.unwrap();
-}
-</code></pre>
+}</code></pre>
 <p>The client's mermaid graph looks a bit different than the server's, mostly because it routes some data to
 the screen rather than to an outbound network channel.</p>
 <pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': {'clusterBkg':'#ddd'}}}%%
@@ -1665,7 +1654,8 @@ Dec 13, 12:05:05 bob: *nods*
 <p>and if we go back to terminal 2 we can see that Alice gets the message too:</p>
 <pre><code class="language-console">Dec 13, 12:05:05 bob: *nods*
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="hydroflow-surface-syntax"><a class="header" href="#hydroflow-surface-syntax">Hydroflow Surface Syntax</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="hydroflow-surface-syntax"><a class="header" href="#hydroflow-surface-syntax">Hydroflow Surface Syntax</a></h1>
 <p>The natural way to write a Hydroflow program is using the <em>Surface Syntax</em> documented here. 
 It is a chained <code>Iterator</code>-style syntax of operators built into Hydroflow that should be sufficient
 for most uses. If you want lower-level access you can work with the <code>Core API</code> documented in the <a href="./architecture.html">Architecture</a> section.</p>
@@ -1683,9 +1673,9 @@ pub fn test_hello_world() {
     };
     df.run_available();
 }
-<span class="boring">}
-</span></code></pre></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="embedding-a-flow-in-rust"><a class="header" href="#embedding-a-flow-in-rust">Embedding a Flow in Rust</a></h1>
+<span class="boring">}</span></code></pre></pre>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="embedding-a-flow-in-rust"><a class="header" href="#embedding-a-flow-in-rust">Embedding a Flow in Rust</a></h1>
 <p>Hydroflow's surface syntax is typically used within a Rust program. (An interactive client and/or external language bindings are TBD.)</p>
 <p>The surface syntax is embedded into Rust via a macro as follows</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -1697,23 +1687,21 @@ pub fn example() {
         // Hydroflow Surface Syntax goes here
     };
 }
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <p>The resulting <code>flow</code> object is of type <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html"><code>Hydroflow</code></a>.</p>
 <!-- TODO(mingwei): see the documentation on the
 [Hydroflow Object](./hydroflow_object.md) for details on how to use the result. -->
-<div style="break-before: page; page-break-before: always;"></div><h1 id="flow-syntax"><a class="header" href="#flow-syntax">Flow Syntax</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="flow-syntax"><a class="header" href="#flow-syntax">Flow Syntax</a></h1>
 <p>Flows consist of named <em>operators</em> that are connected via flow <em>edges</em> denoted by <code>-&gt;</code>. The example below
 uses the <a href="./surface_ops.gen.html#source_iter"><code>source_iter</code></a> operator to generate two strings from a Rust <code>vec</code>, the
 <a href="./surface_ops.gen.html#map"><code>map</code></a> operator to apply some Rust code to uppercase each string, and the <a href="./surface_ops.gen.html#for_each"><code>for_each</code></a>
 operator to print each string to stdout.</p>
 <pre><code class="language-rust ignore">source_iter(vec![&quot;Hello&quot;, &quot;world&quot;])
-    -&gt; map(|x| x.to_uppercase()) -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-</code></pre>
+    -&gt; map(|x| x.to_uppercase()) -&gt; for_each(|x| println!(&quot;{}&quot;, x));</code></pre>
 <p>Flows can be assigned to variable names for convenience. E.g, the above can be rewritten as follows:</p>
 <pre><code class="language-rust ignore">source_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) -&gt; upper_print;
-upper_print = map(|x| x.to_uppercase()) -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-</code></pre>
+upper_print = map(|x| x.to_uppercase()) -&gt; for_each(|x| println!(&quot;{}&quot;, x));</code></pre>
 <p>Note that the order of the statements (lines) doesn't matter. In this example, <code>upper_print</code> is
 referenced before it is assigned, and that is completely OK and better matches the flow of
 data, making the program more understandable.</p>
@@ -1728,8 +1716,7 @@ can distinguish output ports by an <em>indexing suffix</em> (e.g. <code>my_tee[0
 <pre><code class="language-rust ignore">my_tee = source_iter(vec![&quot;Hello&quot;, &quot;world&quot;]) -&gt; tee();
 my_tee -&gt; map(|x| x.to_uppercase()) -&gt; my_merge;
 my_tee -&gt; map(|x| x.to_lowercase()) -&gt; my_merge;
-my_merge = merge() -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-</code></pre>
+my_merge = merge() -&gt; for_each(|x| println!(&quot;{}&quot;, x));</code></pre>
 <p><code>merge()</code> and <code>tee()</code> treat all their input/outputs the same, so we omit the indexing.</p>
 <p>Here is a visualization of the flow that was generated:</p>
 <pre class="mermaid">%%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
@@ -1780,33 +1767,29 @@ access to scheduling, timing, and state APIs. The object is accessible as a shar
 <a href="https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/context/struct.Context.html">Here is the full API documentation for <code>Context</code></a>.</p>
 <pre><code class="language-rust ignore">source_iter([()])
     -&gt; for_each(|()| println!(&quot;Current tick: {}, stratum: {}&quot;, context.current_tick(), context.current_stratum()));
-// Current tick: 0, stratum: 0
-</code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="data-sources-and-sinks-in-rust"><a class="header" href="#data-sources-and-sinks-in-rust">Data Sources and Sinks in Rust</a></h1>
+// Current tick: 0, stratum: 0</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="data-sources-and-sinks-in-rust"><a class="header" href="#data-sources-and-sinks-in-rust">Data Sources and Sinks in Rust</a></h1>
 <p>Any useful flow requires us to define sources of data, either generated computationally or received from 
 and outside environment via I/O.</p>
 <h2 id="source_iter"><a class="header" href="#source_iter"><code>source_iter</code></a></h2>
 <p>A flow can receive data from a Rust collection object via the <code>source_iter</code> operator, which takes the 
 iterable collection as an argument and passes the items down the flow. 
 For example, here we iterate through a vector of <code>usize</code> items and push them down the flow:</p>
-<pre><code class="language-rust ignore">    source_iter(vec![0, 1]) -&gt; ...
-</code></pre>
+<pre><code class="language-rust ignore">    source_iter(vec![0, 1]) -&gt; ...</code></pre>
 <p>The Hello, World example above uses this construct.</p>
 <h2 id="source_stream"><a class="header" href="#source_stream"><code>source_stream</code></a></h2>
 <p>More commonly, a flow should handle external data coming in asynchronously from a <a href="https://tokio.rs/tokio/tutorial"><em>Tokio</em> runtime</a>.
 One way to do this is with <em>channels</em> that allow Rust code to send data into the Hydroflow inputs.
 The code below creates a channel for data of (Rust) type <code>(usize, usize)</code>:</p>
-<pre><code class="language-rust ignore">    let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(usize, usize)&gt;();
-</code></pre>
+<pre><code class="language-rust ignore">    let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(usize, usize)&gt;();</code></pre>
 <p>Under the hood this uses <a href="https://docs.rs/tokio/latest/tokio/sync/mpsc/fn.unbounded_channel.html">Tokio unbounded channels</a>.
 Now in Rust we can now push data into the channel. E.g. for testing we can do
 it explicitly as follows:</p>
-<pre><code class="language-rust ignore">    input_send.send((0, 1)).unwrap()
-</code></pre>
+<pre><code class="language-rust ignore">    input_send.send((0, 1)).unwrap()</code></pre>
 <p>And in our Hydroflow syntax we can receive the data from the channel using the <code>source_stream</code> syntax and
 pass it along a flow:</p>
-<pre><code class="language-rust ignore">    source_stream(input_recv) -&gt; ...
-</code></pre>
+<pre><code class="language-rust ignore">    source_stream(input_recv) -&gt; ...</code></pre>
 <p>To put this together, let's revisit our Hello, World example from above with data sent 
 in from outside the flow:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -1820,10 +1803,10 @@ let mut flow = hydroflow_syntax! {
 input_send.send(&quot;Hello&quot;).unwrap();
 input_send.send(&quot;World&quot;).unwrap();
 flow.run_available();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <p>TODO: add source_stream_serde</p>
-<div style="break-before: page; page-break-before: always;"></div><!-- GENERATED "hydroflow_macro/build.rs" -->
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<!-- GENERATED "hydroflow_macro/build.rs" -->
 <h1 id="hydroflows-operators"><a class="header" href="#hydroflows-operators">Hydroflow's Operators</a></h1>
 <p>In our previous examples we made use of some of Hydroflow's operators.
 Here we document each operator in more detail. Most of these operators
@@ -1880,8 +1863,7 @@ diff = anti_join() -&gt; for_each(|v: (_, _)| println!(&quot;{}, {}&quot;, v.0, 
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="batch"><a class="header" href="#batch"><code>batch</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; batch(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1910,8 +1892,7 @@ will pass through all received inputs to the output unchanged.</p>
     tx.send(()).unwrap();
 
     df.run_available();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="cross_join"><a class="header" href="#cross_join"><code>cross_join</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; [&lt;input_port&gt;]cross_join() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -1946,8 +1927,7 @@ my_join = cross_join() -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, 
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><code>cross_join</code> can also be provided with one or two generic lifetime persistence arguments
 in the same was as <a href="surface_ops.gen.html#join"><code>join</code></a>, see <a href="surface_ops.gen.html#join"><code>join</code>'s documentation</a> for more info.</p>
 <p><code>cross_join</code> also accepts one type argument that controls how the join state is built up. This (currently) allows switching between a SetUnion and NonSetUnion implementation.
@@ -1968,8 +1948,7 @@ input_send.send(&quot;oakland&quot;).unwrap();
 flow.run_tick();
 input_send.send(&quot;san francisco&quot;).unwrap();
 flow.run_tick();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <p>Prints only <code>&quot;(hello, oakland)&quot;</code> and <code>&quot;(bye, oakland)&quot;</code>. The <code>source_iter</code> is only included in
 the first tick, then forgotten.</p>
 <h2 id="demux"><a class="header" href="#demux"><code>demux</code></a></h2>
@@ -2026,8 +2005,7 @@ my_demux[vals] -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="dest_file"><a class="header" href="#dest_file"><code>dest_file</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; dest_file(A, B)</code></td><td><span title="exactly 0">exactly 0</span></td><td>Streaming</td></tr>
@@ -2061,8 +2039,7 @@ truncated before lines are written.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="dest_sink"><a class="header" href="#dest_sink"><code>dest_sink</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; dest_sink(A)</code></td><td><span title="exactly 0">exactly 0</span></td><td>Streaming</td></tr>
@@ -2100,8 +2077,7 @@ let mut recv = tokio_stream::wrappers::ReceiverStream::new(recv);
 // be possible for more items to be added as they're removed, resulting in &gt;5 collected.)
 let out: Vec&lt;_&gt; = hydroflow::util::ready_iter(&amp;mut recv).collect();
 assert_eq!(&amp;[0, 1, 2, 3, 4], &amp;*out);
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <p><code>Sink</code> is different from <a href="https://docs.rs/futures/latest/futures/io/trait.AsyncWrite.html"><code>AsyncWrite</code></a>.
 Instead of discrete values we send arbitrary streams of bytes into an <code>AsyncWrite</code> value. For
 example, writings a stream of bytes to a file, a socket, or stdout.</p>
@@ -2134,8 +2110,7 @@ tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
 let mut buf = Vec::&lt;u8&gt;::new();
 asyncread.read_buf(&amp;mut buf).await.unwrap();
 assert_eq!(b&quot;helloworld&quot;, &amp;*buf);
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="dest_sink_serde"><a class="header" href="#dest_sink_serde"><code>dest_sink_serde</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; dest_sink_serde(A)</code></td><td><span title="exactly 0">exactly 0</span></td><td>Streaming</td></tr>
@@ -2158,8 +2133,7 @@ assert_eq!(b&quot;helloworld&quot;, &amp;*buf);
     };
     flow.run_available();
 }
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="difference"><a class="header" href="#difference"><code>difference</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; [&lt;input_port&gt;]difference() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
@@ -2195,8 +2169,7 @@ diff = difference() -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="enumerate"><a class="header" href="#enumerate"><code>enumerate</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; enumerate() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -2228,8 +2201,7 @@ and count monotonically upwards.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="filter"><a class="header" href="#filter"><code>filter</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; filter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -2261,8 +2233,7 @@ use <a href="surface_ops.gen.html#filter_map"><code>filter_map</code></a> instea
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="filter_map"><a class="header" href="#filter_map"><code>filter_map</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; filter_map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -2293,8 +2264,7 @@ use <a href="surface_ops.gen.html#filter_map"><code>filter_map</code></a> instea
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="flat_map"><a class="header" href="#flat_map"><code>flat_map</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; flat_map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -2330,8 +2300,7 @@ source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; flat_map(|x| x.cha
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="flatten"><a class="header" href="#flatten"><code>flatten</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; flatten() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -2361,8 +2330,7 @@ source_iter(vec![[1, 2], [3, 4], [5, 6]]) -&gt; flatten()
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="fold"><a class="header" href="#fold"><code>fold</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; fold(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
@@ -2408,8 +2376,7 @@ source_iter([1,2,3,4,5])
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="for_each"><a class="header" href="#for_each"><code>for_each</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; for_each(A)</code></td><td><span title="exactly 0">exactly 0</span></td><td>Streaming</td></tr>
@@ -2444,8 +2411,7 @@ argument.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="group_by"><a class="header" href="#group_by"><code>group_by</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; group_by(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
@@ -2480,8 +2446,7 @@ source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; identity()
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p>You can also supply a type parameter <code>identity::&lt;MyType&gt;()</code> to specify what items flow thru the
 the pipeline. This can be useful for helping the compiler infer types.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -2502,8 +2467,7 @@ source_iter(0..10) -&gt; identity::&lt;i32&gt;() -&gt; for_each(|x| println!(&qu
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="initialize"><a class="header" href="#initialize"><code>initialize</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>initialize() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -2533,8 +2497,7 @@ source_iter(0..10) -&gt; identity::&lt;i32&gt;() -&gt; for_each(|x| println!(&qu
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="inspect"><a class="header" href="#inspect"><code>inspect</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; inspect(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -2567,8 +2530,7 @@ anti-pattern to provide a closure with side effects.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="join"><a class="header" href="#join"><code>join</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; [&lt;input_port&gt;]join() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -2602,8 +2564,7 @@ my_join = join() -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&qu
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><code>join</code> can also be provided with one or two generic lifetime persistence arguments, either
 <code>'tick</code> or <code>'static</code>, to specify how join data persists. With <code>'tick</code>, pairs will only be
 joined with corresponding pairs within the same tick. With <code>'static</code>, pairs will be remembered
@@ -2642,8 +2603,7 @@ input_send.send((&quot;hello&quot;, &quot;oakland&quot;)).unwrap();
 flow.run_tick();
 input_send.send((&quot;hello&quot;, &quot;san francisco&quot;)).unwrap();
 flow.run_tick();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <p>Prints out <code>&quot;(hello, (world, oakland))&quot;</code> since <code>source_iter([(&quot;hello&quot;, &quot;world&quot;)])</code> is only
 included in the first tick, then forgotten.</p>
 <hr />
@@ -2659,8 +2619,7 @@ input_send.send((&quot;hello&quot;, &quot;oakland&quot;)).unwrap();
 flow.run_tick();
 input_send.send((&quot;hello&quot;, &quot;san francisco&quot;)).unwrap();
 flow.run_tick();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <p>Prints out <code>&quot;(hello, (world, oakland))&quot;</code> and <code>&quot;(hello, (world, san francisco))&quot;</code> since the
 inputs are peristed across ticks.</p>
 <h2 id="keyed_fold"><a class="header" href="#keyed_fold"><code>keyed_fold</code></a></h2>
@@ -2712,8 +2671,7 @@ cannot infer the types.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p>Example using <code>'tick</code> persistence:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -2736,8 +2694,7 @@ flow.run_available();
 input_send.send((&quot;hello&quot;, &quot;palo alto&quot;)).unwrap();
 flow.run_available();
 // (&quot;hello&quot;, &quot;palo alto, &quot;)
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="keyed_reduce"><a class="header" href="#keyed_reduce"><code>keyed_reduce</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; keyed_reduce(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
@@ -2785,8 +2742,7 @@ required when using <code>'static</code> persistence if the compiler cannot infe
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p>Example using <code>'tick</code> persistence:</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -2806,8 +2762,7 @@ flow.run_available();
 input_send.send((&quot;hello&quot;, &quot;palo alto&quot;)).unwrap();
 flow.run_available();
 // (&quot;hello&quot;, &quot;palo alto, &quot;)
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="lattice_batch"><a class="header" href="#lattice_batch"><code>lattice_batch</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; lattice_batch(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -2830,16 +2785,15 @@ will pass through all received inputs to the output unchanged.</p>
     // Will print 0, 1, 2, 3, 4 each on a new line just once.
     let mut df = hydroflow::hydroflow_syntax! {
         repeat_iter(0..5)
-            -&gt; map(|x| hydroflow::lattices::ord::Max::new(x))
-            -&gt; lattice_batch::&lt;hydroflow::lattices::ord::Max&lt;usize&gt;&gt;(rx)
+            -&gt; map(|x| hydroflow::lattices::Max::new(x))
+            -&gt; lattice_batch::&lt;hydroflow::lattices::Max&lt;usize&gt;&gt;(rx)
             -&gt; for_each(|x| { println!(&quot;{x:?}&quot;); });
     };
 
     tx.send(()).unwrap();
 
     df.run_available();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="lattice_join"><a class="header" href="#lattice_join"><code>lattice_join</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 2">exactly 2</span></td><td><code>-&gt; [&lt;input_port&gt;]lattice_join() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -2863,9 +2817,9 @@ equijoin of the tuples in the input streams by their first (key) attribute. Note
 </span><span class="boring">__rt.block_on(async {
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>// should print `(key, (2, 1))`
-my_join = lattice_join::&lt;hydroflow::lattices::ord::Max&lt;usize&gt;, hydroflow::lattices::ord::Max&lt;usize&gt;&gt;();
-source_iter(vec![(&quot;key&quot;, hydroflow::lattices::ord::Max::new(0)), (&quot;key&quot;, hydroflow::lattices::ord::Max::new(2))]) -&gt; [0]my_join;
-source_iter(vec![(&quot;key&quot;, hydroflow::lattices::ord::Max::new(1))]) -&gt; [1]my_join;
+my_join = lattice_join::&lt;hydroflow::lattices::Max&lt;usize&gt;, hydroflow::lattices::Max&lt;usize&gt;&gt;();
+source_iter(vec![(&quot;key&quot;, hydroflow::lattices::Max::new(0)), (&quot;key&quot;, hydroflow::lattices::Max::new(2))]) -&gt; [0]my_join;
+source_iter(vec![(&quot;key&quot;, hydroflow::lattices::Max::new(1))]) -&gt; [1]my_join;
 my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({:?}, {:?}))&quot;, k, v1, v2));
 <span class="boring">};
 </span><span class="boring">for _ in 0..100 {
@@ -2876,8 +2830,7 @@ my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({:?}, {:?}))&quot;, 
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><code>lattice_join</code> can also be provided with one or two generic lifetime persistence arguments, either
 <code>'tick</code> or <code>'static</code>, to specify how join data persists. With <code>'tick</code>, pairs will only be
 joined with corresponding pairs within the same tick. With <code>'static</code>, pairs will be remembered
@@ -2901,7 +2854,7 @@ lattice_join::&lt;'tick, 'static, MaxRepr&lt;usize&gt;, MaxRepr&lt;usize&gt;&gt;
 <h3 id="examples-1"><a class="header" href="#examples-1">Examples</a></h3>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use hydroflow::lattices::ord::Max;
+</span>use hydroflow::lattices::Max;
 
 let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(usize, Max&lt;usize&gt;)&gt;();
 let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::&lt;(usize, (Max&lt;usize&gt;, Max&lt;usize&gt;))&gt;();
@@ -2916,8 +2869,7 @@ input_send.send((7, Max::new(5))).unwrap();
 df.run_tick();
 let out: Vec&lt;_&gt; = hydroflow::util::collect_ready(&amp;mut out_rx);
 assert_eq!(out, vec![(7, (Max::new(2), Max::new(5)))]);
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="lattice_merge"><a class="header" href="#lattice_merge"><code>lattice_merge</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; lattice_merge() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
@@ -2945,9 +2897,9 @@ defaults to <code>'static</code>.</p>
 </span><span class="boring">__rt.block_on(async {
 </span><span class="boring">let mut __hf = hydroflow::hydroflow_syntax! {
 </span>source_iter([1,2,3,4,5])
-    -&gt; map(hydroflow::lattices::ord::Max::new)
-    -&gt; lattice_merge::&lt;'static, hydroflow::lattices::ord::Max&lt;usize&gt;&gt;()
-    -&gt; for_each(|x: hydroflow::lattices::ord::Max&lt;usize&gt;| println!(&quot;Least upper bound: {}&quot;, x.0));
+    -&gt; map(hydroflow::lattices::Max::new)
+    -&gt; lattice_merge::&lt;'static, hydroflow::lattices::Max&lt;usize&gt;&gt;()
+    -&gt; for_each(|x: hydroflow::lattices::Max&lt;usize&gt;| println!(&quot;Least upper bound: {}&quot;, x.0));
 <span class="boring">};
 </span><span class="boring">for _ in 0..100 {
 </span><span class="boring">    hydroflow::tokio::task::yield_now().await;
@@ -2957,8 +2909,7 @@ defaults to <code>'static</code>.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="map"><a class="header" href="#map"><code>map</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; map(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -2994,8 +2945,7 @@ each item use the <a href="surface_ops.gen.html#inspect"><code>inspect</code></a
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="merge"><a class="header" href="#merge"><code>merge</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="at least 0">at least 2</span></td><td><code>-&gt; [&lt;input_port&gt;]merge() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -3028,8 +2978,7 @@ my_merge = merge() -&gt; map(|x| x.to_uppercase())
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="next_stratum"><a class="header" href="#next_stratum"><code>next_stratum</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; next_stratum() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
@@ -3072,8 +3021,7 @@ for x in [3, 4, 5, 6] {
     input_send.send(x).unwrap();
 }
 flow.run_tick();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="null"><a class="header" href="#null"><code>null</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="at least 0 and at most 1">at least 0 and at most 1</span></td><td><code>null()</code></td><td><span title="at least 0 and at most 1">at least 0 and at most 1</span></td><td>Streaming</td></tr>
@@ -3107,8 +3055,7 @@ source_iter([4,5,6]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; [0]null_si
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="persist"><a class="header" href="#persist"><code>persist</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; persist() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -3136,8 +3083,7 @@ source_iter([&quot;hello&quot;])
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><code>persist()</code> can be used to introduce statefulness into stateless pipelines. For example this
 join only stores data for single <code>'tick</code>. The <code>persist()</code> operator introduces statefulness
 across ticks. This can be useful for optimization transformations within the hydroflow
@@ -3157,8 +3103,7 @@ flow.run_tick();
 // (hello, (world, oakland))
 // (hello, (world, oakland))
 // (hello, (world, san francisco))
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="reduce"><a class="header" href="#reduce"><code>reduce</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; reduce(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
@@ -3199,8 +3144,7 @@ source_iter([1,2,3,4,5])
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="repeat_fn"><a class="header" href="#repeat_fn"><code>repeat_fn</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>repeat_fn(A, B) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -3230,8 +3174,7 @@ Similar to <code>repeat_iter</code>, but generates the items by calling the supp
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="repeat_iter"><a class="header" href="#repeat_iter"><code>repeat_iter</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>repeat_iter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -3263,8 +3206,7 @@ on every tick (where <code>source_iter</code> only delivers on the first tick).<
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="repeat_iter_external"><a class="header" href="#repeat_iter_external"><code>repeat_iter_external</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>repeat_iter_external(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -3298,8 +3240,7 @@ source_iter(vec![2, 3, 1])
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><code>sort</code> can also be provided with one generic lifetime persistence argument, either
 <code>'tick</code> or <code>'static</code>, to specify how data persists. The default is <code>'tick</code>. With <code>'tick</code> only
 the values will only be collected within a single tick will be sorted and emitted. With
@@ -3324,8 +3265,7 @@ input_send.send(1).unwrap();
 input_send.send(7).unwrap();
 flow.run_available();
 // 1, 3, 4, 6, 7
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="sort_by"><a class="header" href="#sort_by"><code>sort_by</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; sort_by(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Blocking</td></tr>
@@ -3356,8 +3296,7 @@ source_iter(vec![(2, 'y'), (3, 'x'), (1, 'z')])
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="source_file"><a class="header" href="#source_file"><code>source_file</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_file(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -3389,8 +3328,7 @@ for a file to read as json.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="source_interval"><a class="header" href="#source_interval"><code>source_interval</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_interval(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -3429,8 +3367,7 @@ async fn main() {
     // This runs every second: Instant { t: 27472.704813s }
     // This runs every second: Instant { t: 27473.704813s }
     // This runs every second: Instant { t: 27474.704813s }
-}
-</code></pre></pre>
+}</code></pre></pre>
 <h2 id="source_iter-1"><a class="header" href="#source_iter-1"><code>source_iter</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_iter(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -3463,8 +3400,7 @@ one by one.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="source_json"><a class="header" href="#source_json"><code>source_json</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_json(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -3495,8 +3431,7 @@ for a file to read as json. This will emit the parsed value one time.</p>
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="source_stdin"><a class="header" href="#source_stdin"><code>source_stdin</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_stdin() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -3517,8 +3452,7 @@ and emits each of the elements it receives downstream.</p>
         -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 };
 flow.run_async();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="source_stream-1"><a class="header" href="#source_stream-1"><code>source_stream</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_stream(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -3544,8 +3478,7 @@ let mut flow = hydroflow::hydroflow_syntax! {
 input_send.send(&quot;Hello&quot;).unwrap();
 input_send.send(&quot;World&quot;).unwrap();
 flow.run_available();
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="source_stream_serde"><a class="header" href="#source_stream_serde"><code>source_stream_serde</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 0">exactly 0</span></td><td><code>source_stream_serde(A) -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -3571,8 +3504,7 @@ elements it receives downstream.</p>
     };
     flow.run_available();
 }
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="tee"><a class="header" href="#tee"><code>tee</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; tee()[&lt;output_port&gt;] -&gt;</code></td><td><span title="at least 0">at least 2</span></td><td>Streaming</td></tr>
@@ -3607,8 +3539,7 @@ my_tee -&gt; for_each(|x: &amp;str| println!(&quot;{}&quot;, x));
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <h2 id="unique"><a class="header" href="#unique"><code>unique</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; unique() -&gt;</code></td><td><span title="exactly 1">exactly 1</span></td><td>Streaming</td></tr>
@@ -3636,8 +3567,7 @@ source_iter(vec![1, 1, 2, 3, 2, 1, 3])
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
+</span><span class="boring">}</span></code></pre></pre>
 <p><code>unique</code> can also be provided with one generic lifetime persistence argument, either
 <code>'tick</code> or <code>'static</code>, to specify how data persists. The default is <code>'static</code>.
 With <code>'tick</code>, uniqueness is only considered within the current tick, so across multiple ticks
@@ -3664,8 +3594,7 @@ input_send.send(5).unwrap();
 flow.run_available();
 // 3, 5
 // Note: 3 is emitted again.
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="unzip"><a class="header" href="#unzip"><code>unzip</code></a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Inputs</th><th>Syntax</th><th>Outputs</th><th>Flow</th></tr></thead><tbody>
 <tr><td><span title="exactly 1">exactly 1</span></td><td><code>-&gt; unzip()[&lt;output_port&gt;] -&gt;</code></td><td><span title="exactly 2">exactly 2</span></td><td>Streaming</td></tr>
@@ -3699,10 +3628,11 @@ my_unzip[1] -&gt; for_each(|x| println!(&quot;1: {}&quot;, x)); // Foo Bar
 </span><span class="boring">    }
 </span><span class="boring">}
 </span><span class="boring">})
-</span><span class="boring">}
-</span></code></pre></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="state-and-lifetimes"><a class="header" href="#state-and-lifetimes">State and Lifetimes</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="the-hydro-ecosystem"><a class="header" href="#the-hydro-ecosystem">The Hydro Ecosystem</a></h1>
+</span><span class="boring">}</span></code></pre></pre>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="state-and-lifetimes"><a class="header" href="#state-and-lifetimes">State and Lifetimes</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="the-hydro-ecosystem"><a class="header" href="#the-hydro-ecosystem">The Hydro Ecosystem</a></h1>
 <p>The Hydro Project is an evolving stack of libraries and languages for distributed programming.
 A rough picture of the envisioned Hydro stack is below:</p>
 <p><img src="./img/hydro_stack.png" alt="Hydro Stack" /></p>
@@ -3727,7 +3657,8 @@ A rough picture of the envisioned Hydro stack is below:</p>
 </ul>
 <p>The Hydro stack is inspired by previous language stacks including <a href="https://llvm.org">LLVM</a> and <a href="https://halide-lang.org">Halide</a>, which similarly expose multiple human-programmable Internal Representation langauges.</p>
 <p>An early paper on the Hydro vision appeared in CIDR 2021, under the title <a href="https://www.cidrdb.org/cidr2021/papers/cidr2021_paper16.pdf">New Directions in Cloud Programming</a>.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="concepts"><a class="header" href="#concepts">Concepts</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="concepts"><a class="header" href="#concepts">Concepts</a></h1>
 <p>Hydroflow is different from other distributed systems infrastructure, so you probably have questions, like:
 What is Hydroflow? How does it work? What is special about it, and what are the key concepts to understand?</p>
 <p>This chapter covers those basic questions. We start simple describing Hydroflow, and build up to an understanding of 
@@ -3802,7 +3733,8 @@ graph LR;
 </pre>
 </div>
 <p>We'd need to change the server code to get servers sharing their state in a correct and reliable manner. But that's a topic for another section <strong>TODO</strong>; for now, let's stay focused on the basics. </p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="the-life-and-times-of-a-hydroflow-transducer"><a class="header" href="#the-life-and-times-of-a-hydroflow-transducer">The Life and Times of a Hydroflow Transducer</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="the-life-and-times-of-a-hydroflow-transducer"><a class="header" href="#the-life-and-times-of-a-hydroflow-transducer">The Life and Times of a Hydroflow Transducer</a></h1>
 <p>Time is a fundamental concept in many distributed systems. Hydroflow's model of time is very simple, but 
 also powerful enough to serve as a building block for more complex models of time.</p>
 <p>Like most reactive services, we can envision a Hydroflow transducer running as an unbounded loop that is managed 
@@ -3832,14 +3764,14 @@ flowchart LR
     linkStyle 5 stroke:red,stroke-width:4px,color:red;
 </pre>
 <p>In sum, an individual transducer advances sequentially through logical time; in each tick of its clock it ingests a batch of data from its inbound channels, executes the Hydroflow spec, and sends any outbound data to its outbound channels.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="streaming-blocking-and-stratification"><a class="header" href="#streaming-blocking-and-stratification">Streaming, Blocking and Stratification</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="streaming-blocking-and-stratification"><a class="header" href="#streaming-blocking-and-stratification">Streaming, Blocking and Stratification</a></h1>
 <p>Many Hydroflow operators (e.g. <code>map</code>, <code>filter</code> and <code>join</code>) work in a streaming fashion. Streaming operators process data as it arrives, generating outputs in the midst of processing inputs. If you restrict yourself to operators that work in this streaming fashion, then your transducer may start sending data across the network mid-tick, even while it is still consuming the data in the input batch.</p>
 <p>But some operators are blocking, and must wait for all their input data to arrive before they can produce any output data. For example, a <code>sort</code> operator must wait for all its input data to arrive before it can produce a single output value. After all, the lowest value may be the last to arrive!</p>
 <h2 id="examples-of-blocking-operators"><a class="header" href="#examples-of-blocking-operators">Examples of Blocking Operators</a></h2>
 <p>The discussion above should raise questions in your mind. What do we mean by &quot;all the input data&quot; in a long-running service? We don't want to wait until the end of time—this is one reason we break time up into discrete &quot;ticks&quot; at each transducer. So when we say that a blocking operator waits for &quot;all the input data&quot;, we mean &quot;all the input data in the current tick&quot;.</p>
 <p>Consider the simple statement below, which receives data from a network source each tick, sorts that tick's worth of data, and prints it to stdout:</p>
-<pre><code class="language-rust ignore">source_stream(inbound) -&gt; sort() -&gt; for_each(|x| println!(&quot;{:?}&quot;, x));
-</code></pre>
+<pre><code class="language-rust ignore">source_stream(inbound) -&gt; sort() -&gt; for_each(|x| println!(&quot;{:?}&quot;, x));</code></pre>
 <p>The runtime determines arbitrarily what batch of data is taken from the channel and fed into the <code>source_stream_serde</code> operator for this tick. The sort operator will need to know that the <code>source_stream_serde</code> operator has no more data to send this tick, so that it can sort the data that got buffered and then send the sorted data to the <code>for_each</code> operator, which prints it to stdout. To do this, the runtime provides a mechanism for the <code>source_stream_serde</code> operator to buffer its output and notify the <code>sort</code> operator that it has no more data to send. This is called a <em>handoff</em>.</p>
 <p>You can see the mermaid graph for the statement above just below this paragraph. Notice the two outer rectangles and the handoff between them. Each rectangle is a subflow that is
 assigned a <em>stratum</em> number. (&quot;Stratum&quot; is latin for &quot;layer&quot;; the plural of &quot;stratum&quot; is &quot;strata&quot;.) </p>
@@ -3912,7 +3844,8 @@ flowchart LR
 <blockquote>
 <p>In future versions of Hydroflow, the type system will represent monotonicity explicitly and reason about it automatically.</p>
 </blockquote>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="distributed-time"><a class="header" href="#distributed-time">Distributed Time</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="distributed-time"><a class="header" href="#distributed-time">Distributed Time</a></h1>
 <p>Hydroflow does not embed a particular notion of distributed time, but instead provides primitives for 
 you to implement one of many possible distributed time models. If you're a distributed systems aficionado, you might
 be interested to read this chapter to learn about how Hydroflow's time model compares to classical distributed time models.</p>
@@ -3936,9 +3869,12 @@ Lamport timestamps track not only the order of events on a single node, they als
 <h2 id="implementing-distributed-time-in-hydroflow"><a class="header" href="#implementing-distributed-time-in-hydroflow">Implementing Distributed Time in Hydroflow</a></h2>
 <p>Although Lamport clocks are not built into Hydroflow, it is straightforward to implement them in Hydroflow. Alternatively, one can implement more sophisticated distributed clocks like <a href="https://en.wikipedia.org/wiki/Vector_clock">vector clocks</a> in Hydroflow instead. By leaving this decision to the user, Hydroflow can be used in a variety of distributed time models.</p>
 <p><em>TODO: add example of implementing Lamport clocks?</em>.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="debugging"><a class="header" href="#debugging">Debugging</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="error-handling"><a class="header" href="#error-handling">Error Handling</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="architecture"><a class="header" href="#architecture">Architecture</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="debugging"><a class="header" href="#debugging">Debugging</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="error-handling"><a class="header" href="#error-handling">Error Handling</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="architecture"><a class="header" href="#architecture">Architecture</a></h1>
 <p>Hydroflow graphs are divided into two layers: the outer <em>scheduled layer</em> and
 inner <em>compiled layer</em>.</p>
 <p>In the mermaid diagrams generated for Hydroflow, the scheduler is responsible for the outermost gray boxes 
@@ -4040,13 +3976,17 @@ mainly in methods on the <a href="https://hydro-project.github.io/hydroflow/doc/
 Hydroflow is in active development some operators might not be available in
 the Surface Syntax, in which case the Core API can be used instead. If you find
 yourself in this sitation be sure to <a href="https://github.com/hydro-project/hydroflow/issues/new">submit an issue</a>!</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="scheduling"><a class="header" href="#scheduling">Scheduling</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="scheduling"><a class="header" href="#scheduling">Scheduling</a></h1>
 <p>TODO</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="handoffs"><a class="header" href="#handoffs">Handoffs</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="handoffs"><a class="header" href="#handoffs">Handoffs</a></h1>
 <p>TODO</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="networking"><a class="header" href="#networking">Networking</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="networking"><a class="header" href="#networking">Networking</a></h1>
 <p>TODO</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="subgraph-in-out-trees"><a class="header" href="#subgraph-in-out-trees">Subgraph In-Out Trees</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="subgraph-in-out-trees"><a class="header" href="#subgraph-in-out-trees">Subgraph In-Out Trees</a></h1>
 <p>Formally, we define an in-out-tree is the union of an
 <em>in-tree</em> (<a href="https://en.wikipedia.org/wiki/Arborescence_%28graph_theory%29#cite_ref-KorteVygen2012b_17-0"><em>anti-arborescence</em></a>)
 with an <em>out-tree</em> (<a href="https://en.wikipedia.org/wiki/Arborescence_%28graph_theory%29"><em>arborescence</em></a>)
@@ -4092,7 +4032,173 @@ handoff with itself; this forms a loop.</p>
 </div>
 <p>In the example partitioning above, some nodes have been split into multiple and
 labelled with suffixes to make the pivots and handoffs more explicit.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="todo"><a class="header" href="#todo">TODO</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="the-lattices-crate"><a class="header" href="#the-lattices-crate">The <code>lattices</code> Crate</a></h1>
+<p>The <code>lattices</code> crate provides ergonomic and compsable lattice types. Users can also implement
+their own lattices via a few simple traits.</p>
+<p>Lattices are an incredibly powerful mathematical concept which can greatly simplify the trickiness
+of distributed computing. They align very well with the reality of what happens physically in a
+distrubted system; even when data messages are reordered or duplicated, if that data is represented
+as lattices all machines will always reach the same end result simply by merging the data together.
+One popular way of lattices are currently used in distributed systems is as the data underlying
+<a href="https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type">Conflict-free Replicated Data Types</a>
+(CRDTs).</p>
+<p>Lattices also allow us to harness the power of the CALM Theorem: &quot;a program has a consistent,
+coordination-free distributed implementation if and only if it is monotonic.&quot; Lattice state is
+always monotonic, meaning any part of a distributed system built on lattice state can be
+freely distributed with no coordination overhead. The goal of the <a href="https://hydro.run/">Hydro Project</a>
+is to allow users to write programs that automatically scale and distribute effortlessly.</p>
+<p>For more information on the underlying mathematics of lattices and monotonicity, take a look at
+<a href="https://hydro-project.github.io/hydroflow/book/lattice_math.html">Lattice Math section of the Hydroflow Book</a>
+and Section 2 of the <a href="https://hydro.run/papers/hydroflow-thesis.pdf">Hydroflow Thesis</a>.</p>
+<p>Take a look at the <a href="https://hydro-project.github.io/hydroflow/doc/lattices/index.html"><code>lattice</code> rustdocs</a>.</p>
+<h2 id="lattices"><a class="header" href="#lattices">Lattices</a></h2>
+<p><code>lattices</code> provides implementations of common lattice types:</p>
+<ul>
+<li><a href="https://hydro-project.github.io/hydroflow/doc/lattices/struct.Min.html"><code>Min&lt;T&gt;</code></a> and <a href="https://hydro-project.github.io/hydroflow/doc/lattices/struct.Min.html"><code>Max&lt;T&gt;</code></a> - totally-orderd lattices.</li>
+<li><a href="https://hydro-project.github.io/hydroflow/doc/lattices/set_union/struct.SetUnion.html"><code>set_union::SetUnion</code></a> - set-union lattice of scalar values.</li>
+<li><a href="https://hydro-project.github.io/hydroflow/doc/lattices/map_union/struct.MapUnion.html"><code>map_union::MapUnion</code></a> - scalar keys with nested lattice values.</li>
+<li><a href="https://hydro-project.github.io/hydroflow/doc/lattices/struct.Bottom.html"><code>Bottom&lt;Lat&gt;</code></a> - wraps a lattice in <code>Option</code> with <code>None</code> as the new bottom value.</li>
+<li><a href="https://hydro-project.github.io/hydroflow/doc/lattices/struct.Pair.html"><code>Pair&lt;LatA, LatB&gt;</code></a> - product of two nested lattices.</li>
+<li><a href="https://hydro-project.github.io/hydroflow/doc/lattices/struct.DomPair.html"><code>DomPair&lt;LatKey, LatVal&gt;</code></a>* - a versioned pair where the <code>LatKey</code> dominates the <code>LatVal</code>.</li>
+<li><a href="https://hydro-project.github.io/hydroflow/doc/lattices/struct.Fake.html"><code>Fake&lt;T&gt;</code></a>* - a single constant value which cannot be merged.</li>
+</ul>
+<p>*Special implementations which do not obey all lattice properties but are still useful under
+certain circumstances.</p>
+<p>Additionally, custom lattices can be made by implementing the traits below.</p>
+<h2 id="traits"><a class="header" href="#traits">Traits</a></h2>
+<p>A type becomes a lattice by implementing one or more traits starting with <code>Merge</code>. These traits
+are already implemented for all the provided lattice types.</p>
+<h3 id="merge-1"><a class="header" href="#merge-1"><code>Merge</code></a></h3>
+<p>The main trait is <a href="https://hydro-project.github.io/hydroflow/doc/lattices/struct.Merge.html"><code>Merge</code></a>, which defines a lattice merge function (AKA &quot;join&quot; or &quot;least upper
+bound&quot;). Implementors must define the <a href="https://hydro-project.github.io/hydroflow/doc/lattices/trait.Merge.html#tymethod.merge"><code>Merge::merge</code></a> method which does a merge in-place into
+<code>&amp;mut self</code>. The method must return <code>true</code> if <code>self</code> was modified (i.e. the value got larger in the
+lattice partial order) and <code>false</code> otherwise (i.e. <code>other</code> was smaller than <code>self</code>). The <a href="https://hydro-project.github.io/hydroflow/doc/lattices/trait.Merge.html#method.merge_owned"><code>Merge::merge_owned</code></a>
+function, which merges two owned values, is provided.</p>
+<p>The <code>merge</code> method must be associative, commutative, and idempotent. This is not checked by the
+compiler, but the implementor can use the <a href="https://hydro-project.github.io/hydroflow/doc/lattices/test/fn.check_lattice_properties.html"><code>test::check_lattice_properties</code></a> method to spot-check
+these properties on a collection of values.</p>
+<h3 id="partialord-latticeord-and-naivelatticeord"><a class="header" href="#partialord-latticeord-and-naivelatticeord"><code>PartialOrd</code>, <code>LatticeOrd</code>, and <code>NaiveLatticeOrd</code></a></h3>
+<p>Rust already has a trait for partial orders, <a href="https://doc.rust-lang.org/std/cmp/trait.PartialOrd.html"><code>PartialOrd</code></a>, which should be implemented on lattice
+types. However that trait is not specific to lattice partial orders, therefore we provide the<a href="https://hydro-project.github.io/hydroflow/doc/lattices/trait.LatticeOrd.html"><code>LatticeOrd&lt;Rhs&gt;</code></a><code>: PartialOrd&lt;Rhs&gt;</code>
+marker trait to denote when a <code>PartialOrd</code> implementation is a lattice partial order. <code>LatticeOrd</code>
+must always agree with the <code>Merge</code> function.</p>
+<p>Additionally, the sealed <a href="https://hydro-project.github.io/hydroflow/doc/lattices/trait.NaiveLatticeOrd.html"><code>NaiveLatticeOrd</code></a> trait is provided on all lattice types that implement
+<code>Merge</code> and <code>Clone</code>. This trait provides a <code>naive_cmp</code> method which derives a lattice order from
+the <code>Merge</code> function directly. However the implementation is generally slow and inefficient.</p>
+<p>Implementors should use the <a href="https://hydro-project.github.io/hydroflow/doc/lattices/test/fn.check_ord_properties.html"><code>test::check_partial_ord_properties</code></a> method to check their
+<code>PartialOrd</code> implementation, and should use the <a href="https://hydro-project.github.io/hydroflow/doc/lattices/test/fn.check_lattice_ord.html"><code>test::check_lattice_ord</code></a> to ensure the partial
+order agrees with the <code>Merge</code>-derived <code>NaiveLatticeOrd</code> order.</p>
+<h3 id="convertfrom"><a class="header" href="#convertfrom"><code>ConvertFrom</code></a></h3>
+<p><a href="https://hydro-project.github.io/hydroflow/doc/lattices/trait.ConvertFrom.html"><code>ConvertFrom</code></a> is equivalent to the <a href="https://doc.rust-lang.org/std/convert/trait.From.html"><code>std::convert::From</code></a> trait but with some extra
+lattice-specific semantics. <code>ConvertFrom</code> should be implemented only between different
+representations of the same lattice type, e.g. between <a href="https://hydro-project.github.io/hydroflow/doc/lattices/set_union/type.SetUnionBTreeSet.html"><code>set_union::SetUnionBTreeSet</code></a> and <a href="https://hydro-project.github.io/hydroflow/doc/lattices/set_union/type.SetUnionHashSet.html"><code>set_union::SetUnionHashSet</code></a>.
+For compound lattice (lattices with nested lattice types), the <code>ConvertFrom</code> implementation should
+be recursive for those nested lattices.</p>
+<h2 id="next"><a class="header" href="#next">Next</a></h2>
+<p>Take a look at <a href="./lattice_math.html">Lattice Math</a> for a simple explanation and summary of what
+lattices are exactly.
+See the <a href="https://hydro-project.github.io/hydroflow/doc/lattices/index.html"><code>lattice</code> rustdocs here</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="lattice-math"><a class="header" href="#lattice-math">Lattice Math</a></h1>
+<p>Lattices are a simple but powerful mathematic concept that can greatly simplify programming distributed systems.</p>
+<h2 id="lattices-for-dummies"><a class="header" href="#lattices-for-dummies">Lattices For Dummies</a></h2>
+<p>So, what is a lattice?
+Lattices are conceptually very simple, so lets explain them without too much mathy language.
+A lattice is some type of thing that has a very special <em>merge</em> function.
+The merge function combines two things and produces an output things. The core feature of
+lattices is that the merge function has some special properties: <em>associativity</em>, <em>commutativity</em>,
+and <em>idempotence</em> (ACI).</p>
+<p>Lets start with a simple example of something which turns out to <strong>not</strong> be a lattice; <em>numbers</em>
+and <em>addition</em>. Numbers are a type of thing, and addition is a function that takes two input
+numbers and produces and output numbers! But does it satisfy the ACI properties?</p>
+<p>Let's start with <em>commutativity</em>. A function is commutativity if it doesn't matter if you swap its
+two inputs:
+<span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">b</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span></span>
+Addition is commutative, so that property is satisfied! (In contrast, subtraction is <strong>not</strong>
+commutative).</p>
+<p>Next <em>associativity</em>. A function is associative if, when there are multiple calls together, it does
+not matter in what order you evaluate the calls:
+<span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">b</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">c</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathnormal">b</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">c</span><span class="mclose">)</span></span></span></span></span>
+Addition satisfies associativity! (Again, subtraction is not associative -- if you subtract a
+subtraction then you're doing addition!)</p>
+<p>Finally, <em>idempotence</em>. A function is idempotent if when you give it the same value twice it
+returns that same value.
+<span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel"><span class="mord vbox"><span class="thinbox"><span class="rlap"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="inner"><span class="mord"><span class="mrel"></span></span></span><span class="fix"></span></span></span></span></span><span class="mrel">=</span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span></span>
+Addition is <strong>NOT</strong> idempotent, because <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span> is <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">2</span><span class="mord mathnormal">a</span></span></span></span>, not just <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span>. This works for <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">0</span></span></span></span>, but
+not for all numbers.</p>
+<p>Now lets look at something that <em>is</em> a lattice. Numbers and <em>the <code>max</code> function</em>. It is
+commutiative; the max of <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">a</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">b</span></span></span></span> is the same as the max of <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">b</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">a</span></span></span></span>. It is associative; the max of
+<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">a</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">b</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">c</span></span></span></span> will always be the same no mater what order you look at them in. And, unlike addition,
+<em>it is idempotent;</em> the max of <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span> and <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span> is always just <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span>.</p>
+<p>The most standard, canonical example of a lattice is <em>sets</em> with the <em>union</em> function. It is
+commutative and associative; it doesn't matter what order you union sets together, the result will
+always be the same. And it is idempotent; a set unioned with itself is the same set.</p>
+<h3 id="lattice-partial-order"><a class="header" href="#lattice-partial-order">Lattice Partial Order</a></h3>
+<p>Lattices are tied to and often defined in terms of some sort of &quot;partial order&quot;. What is a partial
+order? It's like a normal order, where you can say &quot;<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span> comes before <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span>&quot;, but it is partial
+because sometimes say &quot;<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span> and <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span> are <em>incomparable</em>&quot; instead.</p>
+<p>The merge function actually creates a partial order on the elements of the lattice. If you merge
+<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span> and <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span> together, but the output is still just <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span> unchanged, than we can say that <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span> is
+smaller than <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span>. If you merge <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span> and <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span> and get <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span> out, then <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span>
+is larger. Finally, if you merge <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span> and <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span> and get a new value <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">c</span></span></span></span> out, then <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span> and <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span> are
+<em>incomparable</em>.</p>
+<p>For the number-max lattice, the partial order created by the <code>max</code> merge function is actually just
+numerical order. Additionally, it is a total order, meaning all pairs of items are comparable.</p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center"></th></tr></thead><tbody>
+<tr><td style="text-align: center"><img src="img/max-int-ord.png" alt="A vertical number line starting at 1, with arrows pointing from 1 to 2, 2 to 3, etc." /></td></tr>
+<tr><td style="text-align: center">A visualization of the <code>max</code> total order over positive integers.</td></tr>
+</tbody></table>
+</div>
+<p>For the
+set-union lattice the partial order matches <em>subset</em> order. <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span> before <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span> is the same as <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span> is a
+subset of <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span> (<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5782em;vertical-align:-0.0391em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">⊂</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span>). If two sets have mismatched elements than they are incomparable.</p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center"></th></tr></thead><tbody>
+<tr><td style="text-align: center"><img src="img/set-union-ord.png" alt="A graph showing the partial order of set-union with elements x, y, z. At the bottom is empty set, second row has singleton sets, third row has pairs, and top has a set with all three." /></td></tr>
+<tr><td style="text-align: center">A visualization of the set-union partial order over three elements, <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">x</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.04398em;">z</span></span></span></span>. <a href="https://commons.wikimedia.org/wiki/File:Hasse_diagram_of_powerset_of_3.svg">By KSmrq</a></td></tr>
+</tbody></table>
+</div>
+<p>In the example diagram, <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">{</span><span class="mord mathnormal">x</span><span class="mclose">}</span></span></span></span> is less (smaller) than <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">{</span><span class="mord mathnormal">x</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="mclose">}</span></span></span></span>, so there is a path from the
+former to the later. In contrast, there is no path between <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">{</span><span class="mord mathnormal">x</span><span class="mclose">}</span></span></span></span> and <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">{</span><span class="mord mathnormal" style="margin-right:0.04398em;">z</span><span class="mclose">}</span></span></span></span> for example, so they
+are incomparable.</p>
+<p>The <em>merge</em> function is also called the <em>least upper bound</em> (LUB). This name comes from the partial
+order interpretation. When merging two elements, the result is the smallest (least) item that is
+still greater than both elements. Hence <em>least upper bound</em>.</p>
+<hr />
+<h2 id="lattice-definitions-at-a-glance"><a class="header" href="#lattice-definitions-at-a-glance">Lattice Definitions, At A Glance</a></h2>
+<p>A join-semilattice with domain <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">S</span></span></span></span> with <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">a</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">b</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">c</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">S</span></span></span></span> and join (or &quot;merge&quot;) function
+<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5556em;"></span><span class="mord">⊔</span></span></span></span> has the following properties:
+<span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5556em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊔</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathnormal">b</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊔</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">c</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊔</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">b</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊔</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">c</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mord text"><span class="mord textit">(associative)</span></span></span><span class="mspace newline"></span><span class="base"><span class="strut" style="height:0.5556em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊔</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊔</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mord text"><span class="mord textit">(commutative)</span></span></span><span class="mspace newline"></span><span class="base"><span class="strut" style="height:0.5556em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊔</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mord text"><span class="mord textit">(idempotent)</span></span></span><span class="mspace newline"></span></span></span></span></p>
+<p>The join function creates a partial order <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7719em;vertical-align:-0.136em;"></span><span class="mrel">⊑</span></span></span></span>:
+<span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7719em;vertical-align:-0.136em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">⊑</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≡</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.5556em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">⊔</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span></span>
+Read as &quot;<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span> preceedes <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span>&quot;, or &quot;<span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span> dominates <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span>&quot;.</p>
+<p>The smallest element in a lattice domain <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">S</span></span></span></span>, if it exists, is the <em>bottom</em>, <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord">⊥</span></span></span></span>:
+<span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7335em;vertical-align:-0.0391em;"></span><span class="mord">∀</span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">S</span><span class="mpunct">,</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">⊥</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">⊑</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span></span>
+The largest element in a lattice domain <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">S</span></span></span></span>, if it exists, is the <em>top</em>, <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord">⊤</span></span></span></span>:
+<span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7335em;vertical-align:-0.0391em;"></span><span class="mord">∀</span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">S</span><span class="mpunct">,</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">⊤</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">⊒</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">a</span></span></span></span></span></p>
+<p>Separately, meet-semilattices and join-semilattices are equivalent structures.</p>
+<h3 id="the-calm-theorem-and-monotonicity"><a class="header" href="#the-calm-theorem-and-monotonicity">The CALM Theorem and Monotonicity</a></h3>
+<p>The <a href="https://cacm.acm.org/magazines/2020/9/246941-keeping-calm/fulltext">CALM Theorem (<em>Consistency As Logical Monotonicity</em>)</a>
+tells us: &quot;a program has a consistent, coordination-free distributed
+implementation if and only if it is monotonic&quot;</p>
+<p>A function <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">:</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">S</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">T</span></span></span></span> is <em>monotonic</em> if it preserves a partial ordering of its domain to a
+(possibly different) partial ordering of its codomain.
+<span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.786em;vertical-align:-0.15em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel">⊑</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05764em;">S</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.7184em;vertical-align:-0.024em;"></span><span class="mord mathnormal">b</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">⟹</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="mopen">(</span><span class="mord mathnormal">a</span><span class="mclose">)</span><span class="mspace"> </span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel">⊑</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.13889em;">T</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace"> </span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="mopen">(</span><span class="mord mathnormal">b</span><span class="mclose">)</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mord text"><span class="mord textit">(monotonicity)</span></span></span></span></span></span></p>
+<h3 id="lattice-morphism"><a class="header" href="#lattice-morphism">Lattice Morphism</a></h3>
+<p>A function <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">:</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">S</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">→</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">T</span></span></span></span> from lattice domain <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">S</span></span></span></span> to lattice codomain <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">T</span></span></span></span> is a <em>morphism</em> if
+it structurally preserves merges, i.e. merges distribute across the function. For all <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">a</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">b</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">∈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">S</span></span></span></span>:
+<span class="katex-display"><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="mopen">(</span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin"><span class="mbin">⊔</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05764em;">S</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">b</span><span class="mclose">)</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="mopen">(</span><span class="mord mathnormal">a</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin"><span class="mbin">⊔</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.13889em;">T</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="mopen">(</span><span class="mord mathnormal">b</span><span class="mclose">)</span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mspace" style="margin-right:1em;"></span><span class="mord text"><span class="mord textit">(morphism)</span></span></span></span></span></span>
+(Because both the domain and codomain are semilattice spaces, <em>semilattice homomorphism</em> is the
+most precise term for this.)</p>
+<p>Lattice morphisms are a special kind of monotonic function which are <em>differentially computable</em>.
+Because merge distributes over a morphism, we can evaluate the morphisms on a small &quot;delta&quot; of data
+and merge that delta into the existing result rather than recompute the entire morphism on all data.</p>
+<h3 id="further-reading"><a class="header" href="#further-reading">Further Reading</a></h3>
+<ul>
+<li><a href="https://hydro.run/papers/hydroflow-thesis.pdf">The Hydroflow Thesis</a></li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="todo"><a class="header" href="#todo">TODO</a></h1>
 <h2 id="concepts-1"><a class="header" href="#concepts-1">Concepts</a></h2>
 <ul>
 <li>p1 (Mingwei) Hydroflow and Rust: how do they go together?
@@ -4208,7 +4314,8 @@ labelled with suffixes to make the pivots and handoffs more explicit.</p>
 </ul>
 </li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="faq"><a class="header" href="#faq">FAQ</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<h1 id="faq"><a class="header" href="#faq">FAQ</a></h1>
 <h4 id="q-how-is-hydroflow-different-from-dataflow-systems-like-spark-flink-or-mapreduce"><a class="header" href="#q-how-is-hydroflow-different-from-dataflow-systems-like-spark-flink-or-mapreduce">Q: How is Hydroflow different from dataflow systems like Spark, Flink, or MapReduce?</a></h4>
 <p><strong>A:</strong> Hydroflow is designed as a substrate for building a wide range of distributed systems; traditional software dataflow systems
 like the ones mentioned are targeted more narrowly at large-scale data processing. As such, Hydroflow differs from these systems in several ways:</p>
@@ -4240,33 +4347,45 @@ therefore have some form of SPMD parallelism. (This is true of most distributed 
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+
+
                         <div style="clear: both"></div>
                     </nav>
                 </div>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
             </nav>
 
         </div>
 
-        <script type="text/javascript">
+
+
+
+        <script>
             window.playground_copyable = true;
         </script>
-        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
-        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
-        <script type="text/javascript" src="mermaid.min.js"></script>
-        <script type="text/javascript" src="mermaid-init.js"></script>
-        <script type="text/javascript">
+        <script src="mermaid.min.js"></script>
+        <script src="mermaid-init.js"></script>
+
+        <script>
         window.addEventListener('load', function() {
             window.setTimeout(window.print, 100);
         });
         </script>
+
+    </div>
     </body>
 </html>

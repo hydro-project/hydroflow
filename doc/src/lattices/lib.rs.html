@@ -88,95 +88,40 @@
 <a href="#88" id="88">88</a>
 <a href="#89" id="89">89</a>
 <a href="#90" id="90">90</a>
-<a href="#91" id="91">91</a>
-<a href="#92" id="92">92</a>
-<a href="#93" id="93">93</a>
-<a href="#94" id="94">94</a>
-<a href="#95" id="95">95</a>
-<a href="#96" id="96">96</a>
-<a href="#97" id="97">97</a>
-<a href="#98" id="98">98</a>
-<a href="#99" id="99">99</a>
-<a href="#100" id="100">100</a>
-<a href="#101" id="101">101</a>
-<a href="#102" id="102">102</a>
-<a href="#103" id="103">103</a>
-<a href="#104" id="104">104</a>
-<a href="#105" id="105">105</a>
-<a href="#106" id="106">106</a>
-<a href="#107" id="107">107</a>
-<a href="#108" id="108">108</a>
-<a href="#109" id="109">109</a>
-<a href="#110" id="110">110</a>
-<a href="#111" id="111">111</a>
-<a href="#112" id="112">112</a>
-<a href="#113" id="113">113</a>
-<a href="#114" id="114">114</a>
-<a href="#115" id="115">115</a>
-<a href="#116" id="116">116</a>
-<a href="#117" id="117">117</a>
 </pre></div><pre class="rust"><code><span class="attr">#![deny(missing_docs)]
 #![feature(impl_trait_in_assoc_type)]
-</span><span class="doccomment">//! Module containing lattice traits and implementations.
-//!
-//! Convention: Generic parameters that are full words (e.g. `Other`, `Key`, `Val`) are lattice
-//! types.
-//! Conversely, Generic parameters that are single letters or acronyms (e.g. `K`, `T`) are scalar
-//! non-`Lattice` types.
+#![doc = <span class="macro">include_str!</span>(<span class="string">&quot;../README.md&quot;</span>)]
 
 </span><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 
 <span class="kw">use </span>sealed::sealed;
 
-<span class="kw">pub mod </span>bottom;
+<span class="kw">mod </span>bottom;
 <span class="kw">pub mod </span>collections;
-<span class="kw">pub mod </span>dom_pair;
-<span class="kw">pub mod </span>fake;
-<span class="kw">pub mod </span>map_union;
-<span class="kw">pub mod </span>ord;
-<span class="kw">pub mod </span>pair;
-<span class="kw">pub mod </span>set_union;
 <span class="kw">pub mod </span>test;
+<span class="kw">pub use </span>bottom::Bottom;
+<span class="kw">mod </span>dom_pair;
+<span class="kw">pub use </span>dom_pair::DomPair;
+<span class="kw">mod </span>fake;
+<span class="kw">pub use </span>fake::Fake;
+<span class="kw">pub mod </span>map_union;
+<span class="kw">mod </span>ord;
+<span class="kw">pub use </span>ord::{Max, Min};
+<span class="kw">mod </span>pair;
+<span class="kw">pub use </span>pair::Pair;
+<span class="kw">pub mod </span>cc_traits;
+<span class="kw">pub mod </span>set_union;
 
-<span class="doccomment">/// Re-export of the [`cc_traits`](::cc_traits) crate with [`SimpleKeyedRef`](cc_traits::SimpleKeyedRef) added.
-</span><span class="kw">pub mod </span>cc_traits {
-    <span class="kw">pub use </span>::cc_traits::<span class="kw-2">*</span>;
-
-    <span class="doccomment">/// &lt;https://github.com/timothee-haudebourg/cc-traits/pull/8&gt;
-    ///
-    /// Keyed collection where each key reference can be converted into a standard
-    /// &quot;simple&quot; rust reference.
-    ///
-    /// This trait is particularly useful to avoid having to include where bounds
-    /// of the form `for&lt;&#39;r&gt; T::KeyRef&lt;&#39;r&gt;: Into&lt;&amp;&#39;r T::Key&gt;`, which can
-    /// currently lead the compiler to try to prove `T: &#39;static`
-    /// (see &lt;https://github.com/rust-lang/rust/pull/96709#issuecomment-1182403490&gt;)
-    /// for more details.
-    </span><span class="kw">pub trait </span>SimpleKeyedRef: KeyedRef {
-        <span class="doccomment">/// Convert the borrow into a simple `&amp;Key` ref.
-        </span><span class="kw">fn </span>into_ref&lt;<span class="lifetime">&#39;r</span>&gt;(r: <span class="self">Self</span>::KeyRef&lt;<span class="lifetime">&#39;r</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;r </span><span class="self">Self</span>::Key
-        <span class="kw">where
-            </span><span class="self">Self</span>: <span class="lifetime">&#39;r</span>;
-    }
-    <span class="kw">impl</span>&lt;T&gt; SimpleKeyedRef <span class="kw">for </span>T
-    <span class="kw">where
-        </span>T: KeyedRef,
-        <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; <span class="self">Self</span>::KeyRef&lt;<span class="lifetime">&#39;a</span>&gt;: Into&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">Self</span>::Key&gt;,
-    {
-        <span class="kw">fn </span>into_ref&lt;<span class="lifetime">&#39;r</span>&gt;(r: <span class="self">Self</span>::KeyRef&lt;<span class="lifetime">&#39;r</span>&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;r </span><span class="self">Self</span>::Key
-        <span class="kw">where
-            </span><span class="self">Self</span>: <span class="lifetime">&#39;r</span>,
-        {
-            r.into()
-        }
-    }
-}
-
-<span class="doccomment">/// Trait for lattice merge (least upper bound).
+<span class="doccomment">/// Trait for lattice merge (AKA &quot;join&quot; or &quot;least upper bound&quot;).
 </span><span class="kw">pub trait </span>Merge&lt;Other&gt; {
     <span class="doccomment">/// Merge `other` into the `self` lattice.
     ///
-    /// Returns whether `self` changed at all.
+    /// This operation must be associative, commutative, and idempotent.
+    ///
+    /// Returns `true` if `self` changed, `false` otherwise.
+    /// Returning `true` implies that the new value for `self` is later in the lattice order than
+    /// the old value. Returning `false` means that `self` was unchanged and therefore `other` came
+    /// before `self` (or the two are equal) in the lattice order.
     </span><span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: Other) -&gt; bool;
 
     <span class="doccomment">/// Merge `this` and `delta` together, returning the new value.
@@ -195,7 +140,7 @@
 
 <span class="doccomment">/// Naive lattice compare, based on the [`Merge::merge`] function.
 </span><span class="attr">#[sealed]
-</span><span class="kw">pub trait </span>NaiveOrd&lt;Rhs = <span class="self">Self</span>&gt;
+</span><span class="kw">pub trait </span>NaiveLatticeOrd&lt;Rhs = <span class="self">Self</span>&gt;
 <span class="kw">where
     </span><span class="self">Self</span>: Clone + Merge&lt;Rhs&gt; + Sized,
     Rhs: Clone + Merge&lt;<span class="self">Self</span>&gt;,
@@ -218,7 +163,7 @@
     }
 }
 <span class="attr">#[sealed]
-</span><span class="kw">impl</span>&lt;This, Other&gt; NaiveOrd&lt;Other&gt; <span class="kw">for </span>This
+</span><span class="kw">impl</span>&lt;This, Other&gt; NaiveLatticeOrd&lt;Other&gt; <span class="kw">for </span>This
 <span class="kw">where
     </span><span class="self">Self</span>: Clone + Merge&lt;Other&gt;,
     Other: Clone + Merge&lt;<span class="self">Self</span>&gt;,
@@ -227,7 +172,8 @@
 
 <span class="doccomment">/// Same as `From` but for lattices.
 ///
-/// Do not convert non-lattice (AKA scalar) types if you implement this trait.
+/// This should only be implemented between different representations of the same lattice type.
+/// This should recursively convert nested lattice types, but not non-lattice (&quot;scalar&quot;) types.
 </span><span class="kw">pub trait </span>ConvertFrom&lt;Other&gt; {
     <span class="doccomment">/// Convert from the `Other` lattice into `Self`.
     </span><span class="kw">fn </span>from(other: Other) -&gt; <span class="self">Self</span>;

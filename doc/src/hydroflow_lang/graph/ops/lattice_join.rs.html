@@ -219,9 +219,9 @@
 ///
 /// ```hydroflow
 /// // should print `(key, (2, 1))`
-/// my_join = lattice_join::&lt;hydroflow::lattices::ord::Max&lt;usize&gt;, hydroflow::lattices::ord::Max&lt;usize&gt;&gt;();
-/// source_iter(vec![(&quot;key&quot;, hydroflow::lattices::ord::Max::new(0)), (&quot;key&quot;, hydroflow::lattices::ord::Max::new(2))]) -&gt; [0]my_join;
-/// source_iter(vec![(&quot;key&quot;, hydroflow::lattices::ord::Max::new(1))]) -&gt; [1]my_join;
+/// my_join = lattice_join::&lt;hydroflow::lattices::Max&lt;usize&gt;, hydroflow::lattices::Max&lt;usize&gt;&gt;();
+/// source_iter(vec![(&quot;key&quot;, hydroflow::lattices::Max::new(0)), (&quot;key&quot;, hydroflow::lattices::Max::new(2))]) -&gt; [0]my_join;
+/// source_iter(vec![(&quot;key&quot;, hydroflow::lattices::Max::new(1))]) -&gt; [1]my_join;
 /// my_join -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({:?}, {:?}))&quot;, k, v1, v2));
 /// ```
 ///
@@ -252,7 +252,7 @@
 /// ### Examples
 ///
 /// ```rustbook
-/// use hydroflow::lattices::ord::Max;
+/// use hydroflow::lattices::Max;
 ///
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(usize, Max&lt;usize&gt;)&gt;();
 /// let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::&lt;(usize, (Max&lt;usize&gt;, Max&lt;usize&gt;))&gt;();

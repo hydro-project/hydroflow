@@ -132,9 +132,9 @@
 ///
 /// ```hydroflow
 /// source_iter([1,2,3,4,5])
-///     -&gt; map(hydroflow::lattices::ord::Max::new)
-///     -&gt; lattice_merge::&lt;&#39;static, hydroflow::lattices::ord::Max&lt;usize&gt;&gt;()
-///     -&gt; for_each(|x: hydroflow::lattices::ord::Max&lt;usize&gt;| println!(&quot;Least upper bound: {}&quot;, x.0));
+///     -&gt; map(hydroflow::lattices::Max::new)
+///     -&gt; lattice_merge::&lt;&#39;static, hydroflow::lattices::Max&lt;usize&gt;&gt;()
+///     -&gt; for_each(|x: hydroflow::lattices::Max&lt;usize&gt;| println!(&quot;Least upper bound: {}&quot;, x.0));
 /// ```
 </span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>LATTICE_MERGE: OperatorConstraints = OperatorConstraints {

@@ -182,8 +182,8 @@
 ///     // Will print 0, 1, 2, 3, 4 each on a new line just once.
 ///     let mut df = hydroflow::hydroflow_syntax! {
 ///         repeat_iter(0..5)
-///             -&gt; map(|x| hydroflow::lattices::ord::Max::new(x))
-///             -&gt; lattice_batch::&lt;hydroflow::lattices::ord::Max&lt;usize&gt;&gt;(rx)
+///             -&gt; map(|x| hydroflow::lattices::Max::new(x))
+///             -&gt; lattice_batch::&lt;hydroflow::lattices::Max&lt;usize&gt;&gt;(rx)
 ///             -&gt; for_each(|x| { println!(&quot;{x:?}&quot;); });
 ///     };
 ///

@@ -206,20 +206,20 @@
 
 </span><span class="kw">use </span>std::fmt::Debug;
 
-<span class="kw">use crate</span>::{LatticeOrd, Merge, NaiveOrd};
+<span class="kw">use crate</span>::{LatticeOrd, Merge, NaiveLatticeOrd};
 
 <span class="doccomment">/// Helper which calls [`check_lattice_ord`], [`check_partial_ord_properties`], and
 /// [`check_lattice_properties`].
-</span><span class="kw">pub fn </span>check_all&lt;T: LatticeOrd + NaiveOrd + Merge&lt;T&gt; + Clone + Eq + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
+</span><span class="kw">pub fn </span>check_all&lt;T: LatticeOrd + NaiveLatticeOrd + Merge&lt;T&gt; + Clone + Eq + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
     check_lattice_ord(items);
     check_partial_ord_properties(items);
     check_lattice_properties(items);
 }
 
-<span class="doccomment">/// Check that the lattice&#39;s `PartialOrd` implementation agrees with the `NaiveOrd` partial orde
-/// derived from `Merge.
-</span><span class="kw">pub fn </span>check_lattice_ord&lt;T: LatticeOrd + NaiveOrd&gt;(items: <span class="kw-2">&amp;</span>[T]) {
-    <span class="comment">// `NaiveOrd` is a better source of truth, as it is based on the `Merge` impl. But it
+<span class="doccomment">/// Check that the lattice&#39;s `PartialOrd` implementation agrees with the `NaiveLatticeOrd` partial
+/// order derived from `Merge`.
+</span><span class="kw">pub fn </span>check_lattice_ord&lt;T: LatticeOrd + NaiveLatticeOrd&gt;(items: <span class="kw-2">&amp;</span>[T]) {
+    <span class="comment">// `NaiveLatticeOrd` is a better source of truth, as it is based on the `Merge` impl. But it
     // is inefficient. It also could be wrong if `Merge` doesn&#39;t properly return true/false
     // iff the merge changed things.
     </span><span class="kw">for </span>[a, b] <span class="kw">in </span>cartesian_power(items) {
