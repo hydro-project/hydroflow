@@ -47,10 +47,11 @@ jobs:
           BUMP: ${{ inputs.bump }}
           EXECUTE: ${{ inputs.execute }}
 
+      # https://api.github.com/users/hydro-project-bot[bot]
       - name: Configure git
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "hydro-project-bot[bot]"
+          git config --global user.email "132423234+hydro-project-bot[bot]@users.noreply.github.com"
 
       - name: Checkout sources
         uses: actions/checkout@v3
