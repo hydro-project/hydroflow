@@ -60,7 +60,7 @@ fn operator_docgen_internal(item: &ItemConst) -> Result<(), Box<dyn Error>> {
 
     let docgen_path = PathBuf::from_iter([
         std::env!("CARGO_MANIFEST_DIR"),
-        "../book/docgen",
+        "../docs/docgen",
         &*format!("{}.md", op_name),
     ]);
     let mut docgen_write = BufWriter::new(File::create(docgen_path)?);
