@@ -205,7 +205,17 @@ jobs:
           source .venv/bin/activate
           cd python_tests
           pip install -r requirements.txt
-          pytest *.py
+          RUST_BACKTRACE=1 pytest *.py
+
+      - name: Make core dumps readable
+        if: ${{ failure() }}
+        run: sudo chmod -R +rwx /cores/*
+      - name: Upload core dumps
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@master
+        with:
+          name: core-dumps
+          path: /cores
 
   lints:
     name: Lints

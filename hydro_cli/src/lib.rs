@@ -36,27 +36,19 @@ impl SafeCancelToken {
     }
 }
 
-fn interruptible_future_to_py<F, T>(py: Python<'_>, fut: F) -> PyResult<&PyAny>
+static CONVERTERS_MODULE: std::sync::RwLock<Option<Py<PyModule>>> = std::sync::RwLock::new(None);
+
+fn interruptible_future_to_py<'a, F, T>(py: Python<'a>, fut: F) -> PyResult<&'a PyAny>
 where
     F: Future<Output = PyResult<T>> + Send + 'static,
     T: IntoPy<PyObject>,
 {
-    let module = PyModule::from_code(
-        py,
-        r#"
-import asyncio
-import sys
-async def coroutine_to_safely_cancellable(c, cancel_token):
-    try:
-        return await asyncio.shield(c)
-    except asyncio.CancelledError:
-        cancel_token.safe_cancel()
-        await c
-        raise asyncio.CancelledError()
-"#,
-        "coro_converter",
-        "coro_converter",
-    )?;
+    let module = CONVERTERS_MODULE
+        .read()
+        .unwrap()
+        .clone()
+        .unwrap()
+        .into_ref(py);
 
     let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::<()>();
 
@@ -68,7 +60,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         }
     })?;
 
-    module.call_method1(
+    let out: Result<&'a PyAny, _> = module.call_method1(
         "coroutine_to_safely_cancellable",
         (
             base_coro,
@@ -76,7 +68,9 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
                 cancel_tx: Some(cancel_tx),
             },
         ),
-    )
+    );
+
+    out
 }
 
 #[pyclass]
@@ -443,20 +437,8 @@ struct HydroflowCrate {
 fn convert_next_to_generator(receiver: impl IntoPy<PyObject>) -> PyResult<PyObject> {
     Python::with_gil(|py| {
         // load helper python function as a string
-        let module = PyModule::from_code(
-            py,
-            r#"
-async def pyreceiver_to_async_generator(pyreceiver):
-    while True:
-        res = await pyreceiver.next()
-        if res is None:
-            break
-        else:
-            yield res
-    "#,
-            "converter",
-            "converter",
-        )?;
+        let converters = CONVERTERS_MODULE.read().unwrap();
+        let module = converters.as_ref().unwrap().as_ref(py);
 
         Ok(module
             .call_method1("pyreceiver_to_async_generator", (receiver.into_py(py),))
@@ -742,6 +724,34 @@ impl PythonStream {
 
 #[pymodule]
 pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
+    *CONVERTERS_MODULE.write().unwrap() = Some(
+        PyModule::from_code(
+            py,
+            r#"
+import asyncio
+import sys
+async def coroutine_to_safely_cancellable(c, cancel_token):
+    try:
+        return await asyncio.shield(c)
+    except asyncio.CancelledError:
+        cancel_token.safe_cancel()
+        await c
+        raise asyncio.CancelledError()
+
+async def pyreceiver_to_async_generator(pyreceiver):
+    while True:
+        res = await pyreceiver.next()
+        if res is None:
+            break
+        else:
+            yield res
+"#,
+            "converters",
+            "converters",
+        )?
+        .into(),
+    );
+
     module.add("AnyhowError", py.get_type::<AnyhowError>())?;
     module.add_class::<AnyhowWrapper>()?;
 
