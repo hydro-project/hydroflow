@@ -4,6 +4,7 @@
 
 use std::cmp::Ordering::{self, *};
 
+pub use cc_traits;
 use sealed::sealed;
 
 mod bottom;
@@ -19,7 +20,6 @@ mod ord;
 pub use ord::{Max, Min};
 mod pair;
 pub use pair::Pair;
-pub mod cc_traits;
 pub mod set_union;
 
 /// Trait for lattice merge (AKA "join" or "least upper bound").
