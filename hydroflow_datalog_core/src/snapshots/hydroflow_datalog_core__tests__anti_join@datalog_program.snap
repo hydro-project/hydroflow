@@ -30,16 +30,15 @@ fn main() {
             let mut sg_2v1_node_15v1_stream = {
                 #[inline(always)]
                 fn check_stream<
-                    Stream: hydroflow::futures::stream::Stream<Item = Item>,
+                    Stream: hydroflow::futures::stream::Stream<Item = Item>
+                        + ::std::marker::Unpin,
                     Item,
                 >(
                     stream: Stream,
-                ) -> ::std::pin::Pin<
-                    ::std::boxed::Box<
-                        impl hydroflow::futures::stream::Stream<Item = Item>,
-                    >,
-                > {
-                    ::std::boxed::Box::pin(stream)
+                ) -> impl hydroflow::futures::stream::Stream<
+                    Item = Item,
+                > + ::std::marker::Unpin {
+                    stream
                 }
                 check_stream(ints_3)
             };
@@ -65,7 +64,7 @@ fn main() {
                     });
                     let op_15v1 = std::iter::from_fn(|| {
                         match hydroflow::futures::stream::Stream::poll_next(
-                            sg_2v1_node_15v1_stream.as_mut(),
+                            ::std::pin::Pin::new(&mut sg_2v1_node_15v1_stream),
                             &mut std::task::Context::from_waker(&context.waker()),
                         ) {
                             std::task::Poll::Ready(maybe) => maybe,
@@ -197,16 +196,15 @@ fn main() {
             let mut sg_3v1_node_13v1_stream = {
                 #[inline(always)]
                 fn check_stream<
-                    Stream: hydroflow::futures::stream::Stream<Item = Item>,
+                    Stream: hydroflow::futures::stream::Stream<Item = Item>
+                        + ::std::marker::Unpin,
                     Item,
                 >(
                     stream: Stream,
-                ) -> ::std::pin::Pin<
-                    ::std::boxed::Box<
-                        impl hydroflow::futures::stream::Stream<Item = Item>,
-                    >,
-                > {
-                    ::std::boxed::Box::pin(stream)
+                ) -> impl hydroflow::futures::stream::Stream<
+                    Item = Item,
+                > + ::std::marker::Unpin {
+                    stream
                 }
                 check_stream(ints_1)
             };
@@ -223,7 +221,7 @@ fn main() {
                     });
                     let op_13v1 = std::iter::from_fn(|| {
                         match hydroflow::futures::stream::Stream::poll_next(
-                            sg_3v1_node_13v1_stream.as_mut(),
+                            ::std::pin::Pin::new(&mut sg_3v1_node_13v1_stream),
                             &mut std::task::Context::from_waker(&context.waker()),
                         ) {
                             std::task::Poll::Ready(maybe) => maybe,
@@ -275,16 +273,15 @@ fn main() {
             let mut sg_4v1_node_14v1_stream = {
                 #[inline(always)]
                 fn check_stream<
-                    Stream: hydroflow::futures::stream::Stream<Item = Item>,
+                    Stream: hydroflow::futures::stream::Stream<Item = Item>
+                        + ::std::marker::Unpin,
                     Item,
                 >(
                     stream: Stream,
-                ) -> ::std::pin::Pin<
-                    ::std::boxed::Box<
-                        impl hydroflow::futures::stream::Stream<Item = Item>,
-                    >,
-                > {
-                    ::std::boxed::Box::pin(stream)
+                ) -> impl hydroflow::futures::stream::Stream<
+                    Item = Item,
+                > + ::std::marker::Unpin {
+                    stream
                 }
                 check_stream(ints_2)
             };
@@ -301,7 +298,7 @@ fn main() {
                     });
                     let op_14v1 = std::iter::from_fn(|| {
                         match hydroflow::futures::stream::Stream::poll_next(
-                            sg_4v1_node_14v1_stream.as_mut(),
+                            ::std::pin::Pin::new(&mut sg_4v1_node_14v1_stream),
                             &mut std::task::Context::from_waker(&context.waker()),
                         ) {
                             std::task::Poll::Ready(maybe) => maybe,
