@@ -75,7 +75,7 @@ async fn ws_server(
     (clients_connect, clients_disconnect, from_client, to_client)
 }
 
-#[tokio::main]
+#[hydroflow::main]
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
 
