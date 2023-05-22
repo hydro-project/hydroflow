@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["cc_traits","collections","map_union","set_union","test"],"struct":["Bottom","DomPair","Fake","Max","Min","Pair"],"trait":["ConvertFrom","LatticeOrd","Merge","NaiveLatticeOrd"]};
+window.SIDEBAR_ITEMS = {"mod":["collections","map_union","set_union","test"],"struct":["Bottom","DomPair","Fake","Max","Min","Pair"],"trait":["ConvertFrom","LatticeOrd","Merge","NaiveLatticeOrd"]};

@@ -81,15 +81,13 @@
 <a href="#81" id="81">81</a>
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
-<a href="#84" id="84">84</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
+</pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
-
-<span class="kw">use </span>quote::quote_spanned;
+<span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
 
 <span class="doccomment">/// &gt; 0 input streams, 1 output stream
 ///
@@ -143,17 +141,17 @@
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span><span class="kw-2">mut </span>#stream_ident = {
                 <span class="attr">#[inline(always)]
-                </span><span class="kw">fn </span>check_stream&lt;Stream: #root::futures::stream::Stream&lt;Item = Item&gt;, Item&gt;(stream: Stream)
-                    -&gt; ::std::pin::Pin&lt;::std::boxed::Box&lt;<span class="kw">impl </span>#root::futures::stream::Stream&lt;Item = Item&gt;&gt;&gt;
+                </span><span class="kw">fn </span>check_stream&lt;Stream: #root::futures::stream::Stream&lt;Item = Item&gt; + ::std::marker::Unpin, Item&gt;(stream: Stream)
+                    -&gt; <span class="kw">impl </span>#root::futures::stream::Stream&lt;Item = Item&gt; + ::std::marker::Unpin
                 {
-                    ::std::boxed::Box::pin(stream)
+                    stream
                 }
                 check_stream(#receiver)
             };
         };
         <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span>#ident = std::iter::from_fn(|| {
-                <span class="kw">match </span>#root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), <span class="kw-2">&amp;mut </span>std::task::Context::from_waker(<span class="kw-2">&amp;</span>#context.waker())) {
+                <span class="kw">match </span>#root::futures::stream::Stream::poll_next(::std::pin::Pin::new(<span class="kw-2">&amp;mut </span>#stream_ident), <span class="kw-2">&amp;mut </span>std::task::Context::from_waker(<span class="kw-2">&amp;</span>#context.waker())) {
                     std::task::Poll::Ready(maybe) =&gt; maybe,
                     std::task::Poll::Pending =&gt; <span class="prelude-val">None</span>,
                 }
