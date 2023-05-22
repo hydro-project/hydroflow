@@ -157,7 +157,6 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate as hydroflow;
 
     #[test]
     pub fn test_collect_ready() {
@@ -168,7 +167,7 @@ mod test {
         assert_eq!(1000, collect_ready::<Vec<_>, _>(&mut recv).len());
     }
 
-    #[hydroflow::test]
+    #[crate::test]
     pub async fn test_collect_ready_async() {
         // Tokio unbounded channel returns items in 128 item long chunks, so we have to be careful that everything gets returned.
         let (send, mut recv) = unbounded_channel::<usize>();

@@ -273,14 +273,13 @@ mod test {
     use tokio::task::LocalSet;
 
     use super::*;
-    use crate as hydroflow;
 
     async fn delay(n: u64) {
         let millis = rand::thread_rng().gen_range(0..n);
         tokio::time::sleep(Duration::from_millis(millis)).await;
     }
 
-    #[hydroflow::test]
+    #[crate::test]
     async fn test_send_multiple_outstanding() {
         let (send, recv) = bounded::<u64>(10);
 
@@ -295,7 +294,7 @@ mod test {
         assert_eq!([123, 234], &*out);
     }
 
-    #[hydroflow::test]
+    #[crate::test]
     async fn test_spsc_random() {
         let runs = (0..1_000).map(|_| async {
             let (send, recv) = bounded::<u64>(10);
@@ -325,7 +324,7 @@ mod test {
         futures::future::join_all(runs).await;
     }
 
-    #[hydroflow::test]
+    #[crate::test]
     async fn test_mpsc_random() {
         let runs = (0..1_000).map(|_| async {
             let (send, recv) = bounded::<u64>(30);
@@ -373,7 +372,7 @@ mod test {
         futures::future::join_all(runs).await;
     }
 
-    #[hydroflow::test]
+    #[crate::test]
     async fn test_stream_sink_loop() {
         use futures::{SinkExt, StreamExt};
 

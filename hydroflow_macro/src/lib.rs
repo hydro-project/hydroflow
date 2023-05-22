@@ -19,13 +19,26 @@ pub fn hydroflow_syntax_noemit(input: proc_macro::TokenStream) -> proc_macro::To
 }
 
 fn root() -> proc_macro2::TokenStream {
+    use std::env::{var as env_var, VarError};
+
     let hydroflow_crate = proc_macro_crate::crate_name("hydroflow")
         .expect("hydroflow should be present in `Cargo.toml`");
     match hydroflow_crate {
-        proc_macro_crate::FoundCrate::Itself => quote! { hydroflow },
+        proc_macro_crate::FoundCrate::Itself => {
+            if Err(VarError::NotPresent) == env_var("CARGO_BIN_NAME")
+                && Err(VarError::NotPresent) != env_var("CARGO_PRIMARY_PACKAGE")
+                && Ok("hydroflow") == env_var("CARGO_CRATE_NAME").as_deref()
+            {
+                // In the crate itself, including unit tests.
+                quote! { crate }
+            } else {
+                // In an integration test, example, bench, etc.
+                quote! { ::hydroflow }
+            }
+        }
         proc_macro_crate::FoundCrate::Name(name) => {
-            let ident = Ident::new(&name, Span::call_site());
-            quote! { #ident }
+            let ident: Ident = Ident::new(&name, Span::call_site());
+            quote! { ::#ident }
         }
     }
 }
