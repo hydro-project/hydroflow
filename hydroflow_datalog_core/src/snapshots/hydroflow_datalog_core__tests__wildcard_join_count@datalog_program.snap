@@ -60,7 +60,7 @@ fn main() {
             let sg_1v1_node_2v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::<
+                        hydroflow::util::monotonic_map::MonotonicMap::<
                             _,
                             hydroflow::rustc_hash::FxHashSet<_>,
                         >::default(),
@@ -232,7 +232,7 @@ fn main() {
             let sg_2v1_node_5v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::<
+                        hydroflow::util::monotonic_map::MonotonicMap::<
                             _,
                             hydroflow::rustc_hash::FxHashSet<_>,
                         >::default(),
@@ -395,7 +395,7 @@ fn main() {
             let sg_3v1_node_8v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::<
+                        hydroflow::util::monotonic_map::MonotonicMap::<
                             _,
                             hydroflow::rustc_hash::FxHashSet<_>,
                         >::default(),
@@ -600,7 +600,7 @@ fn main() {
             let sg_4v1_node_11v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::<
+                        hydroflow::util::monotonic_map::MonotonicMap::<
                             _,
                             hydroflow::rustc_hash::FxHashSet<_>,
                         >::default(),
@@ -813,7 +813,7 @@ fn main() {
             let sg_5v1_node_17v1_joindata_lhs = df
                 .add_state(
                     std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::new_init(
+                        hydroflow::util::monotonic_map::MonotonicMap::new_init(
                             hydroflow::compiled::pull::HalfMultisetJoinState::default(),
                         ),
                     ),
@@ -821,7 +821,7 @@ fn main() {
             let sg_5v1_node_17v1_joindata_rhs = df
                 .add_state(
                     std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::new_init(
+                        hydroflow::util::monotonic_map::MonotonicMap::new_init(
                             hydroflow::compiled::pull::HalfMultisetJoinState::default(),
                         ),
                     ),
@@ -1064,7 +1064,7 @@ fn main() {
             let sg_6v1_node_24v1_joindata_lhs = df
                 .add_state(
                     std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::new_init(
+                        hydroflow::util::monotonic_map::MonotonicMap::new_init(
                             hydroflow::compiled::pull::HalfMultisetJoinState::default(),
                         ),
                     ),
@@ -1072,7 +1072,7 @@ fn main() {
             let sg_6v1_node_24v1_joindata_rhs = df
                 .add_state(
                     std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::new_init(
+                        hydroflow::util::monotonic_map::MonotonicMap::new_init(
                             hydroflow::compiled::pull::HalfMultisetJoinState::default(),
                         ),
                     ),

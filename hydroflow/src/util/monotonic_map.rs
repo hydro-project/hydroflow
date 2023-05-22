@@ -1,3 +1,5 @@
+//! Module for [`MonotonicMap`].
+
 use super::clear::Clear;
 
 /// A map-like interface which in reality only stores one value at a time. The keys must be
@@ -66,6 +68,8 @@ where
     K: PartialOrd,
     V: Clear,
 {
+    /// Gets a mutable reference to the inner value. If `key` is strictly later than the existing
+    /// key, the value will be cleared via the [`Clear`] trait.
     pub fn get_mut_clear(&mut self, key: K) -> &mut V {
         if self.key.as_ref().map_or(true, |old_key| old_key < &key) {
             self.key = Some(key);

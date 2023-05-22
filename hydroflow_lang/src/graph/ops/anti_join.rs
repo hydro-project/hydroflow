@@ -60,7 +60,7 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
         let handle_ident = wc.make_ident("diffdata_handle");
         let write_prologue = quote_spanned! {op_span=>
             let #handle_ident = #hydroflow.add_state(::std::cell::RefCell::new(
-                #root::lang::monotonic_map::MonotonicMap::<_, #root::rustc_hash::FxHashSet<_>>::default(),
+                #root::util::monotonic_map::MonotonicMap::<_, #root::rustc_hash::FxHashSet<_>>::default(),
             ));
         };
         let write_iterator = {

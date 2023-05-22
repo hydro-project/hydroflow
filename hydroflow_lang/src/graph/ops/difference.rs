@@ -93,7 +93,7 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
                 Persistence::Tick => {
                     (quote_spanned! {op_span=>
                         let #handle_ident = #hydroflow.add_state(std::cell::RefCell::new(
-                            #root::lang::monotonic_map::MonotonicMap::<_, #root::rustc_hash::FxHashSet<_>>::default(),
+                            #root::util::monotonic_map::MonotonicMap::<_, #root::rustc_hash::FxHashSet<_>>::default(),
                         ));
                     }, quote_spanned! {op_span=>
                         let mut #borrow_ident = #context.state_ref(#handle_ident).borrow_mut();
