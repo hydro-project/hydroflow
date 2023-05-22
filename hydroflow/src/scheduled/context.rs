@@ -2,7 +2,6 @@ use std::any::Any;
 use std::future::Future;
 use std::marker::PhantomData;
 
-use tokio::runtime::{Handle, TryCurrentError};
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::task::JoinHandle;
 
@@ -137,11 +136,12 @@ impl Context {
             .expect("StateHandle wrong type T for casting.")
     }
 
-    pub fn spawn_task<Fut>(&mut self, future: Fut) -> Result<(), TryCurrentError>
+    pub fn spawn_task<Fut>(&mut self, future: Fut)
     where
-        Fut: Future<Output = ()> + Send + 'static,
+        Fut: Future<Output = ()> + 'static,
     {
-        Handle::try_current().map(|handle| self.task_join_handles.push(handle.spawn(future)))
+        self.task_join_handles
+            .push(tokio::task::spawn_local(future));
     }
 
     pub fn abort_tasks(&mut self) {

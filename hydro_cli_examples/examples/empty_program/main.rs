@@ -1,4 +1,4 @@
-#[tokio::main]
+#[hydroflow::main]
 async fn main() {
     let _ = hydroflow::util::cli::init().await;
     loop {

@@ -2,7 +2,7 @@ use hydroflow::util::cli::{ConnectedBidi, ConnectedDemux, ConnectedSink, Connect
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 use hydroflow_datalog::datalog;
 
-#[tokio::main]
+#[hydroflow::main]
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let vote_to_participant_source = ports

@@ -46,7 +46,7 @@ struct Addresses {
     subordinates: Vec<String>,
 }
 
-#[tokio::main]
+#[hydroflow::main]
 async fn main() {
     let opts = Opts::parse();
     let path = Path::new(&opts.path);
