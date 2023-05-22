@@ -21,7 +21,7 @@ export default function Home() {
               justifyContent: "center",
               flexWrap: "wrap"
             }}>
-              <Link href="/research/" style={{
+              <Link href="/docs/quickstart/" style={{
                 display: "block",
                 padding: "15px",
                 textDecoration: "none",
@@ -34,9 +34,9 @@ export default function Home() {
                 margin: "10px",
                 marginTop: 0,
                 fontSize: "1.25em"
-              }}>Latest Research</Link>
+              }}>Get Started</Link>
 
-              <Link href="https://github.com/hydro-project" style={{
+              <Link href="/research/" style={{
                 display: "block",
                 padding: "15px",
                 textDecoration: "none",
@@ -50,7 +50,7 @@ export default function Home() {
                 marginTop: 0,
                 fontSize: "1.25em"
               }}>
-                GitHub
+                Latest Research
               </Link>
             </div>
           </div>
