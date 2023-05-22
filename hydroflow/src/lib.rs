@@ -12,7 +12,7 @@
 //! The primary item in this crate is the [`Hydroflow`](crate::scheduled::graph::Hydroflow) struct,
 //! representing a Hydroflow dataflow graph. Although this graph can be manually constructed, the
 //! easiest way to instantiate a `Hydroflow` instance is with the [`hydroflow_syntax!`] macro using
-//! Hydroflow's custom "surface syntax".
+//! Hydroflow's custom "surface syntax."
 //!
 //! ```rust
 //! let mut hf = hydroflow::hydroflow_syntax! {
