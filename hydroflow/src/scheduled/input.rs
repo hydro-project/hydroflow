@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::rc::Rc;

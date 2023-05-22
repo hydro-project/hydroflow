@@ -1,3 +1,6 @@
+//! Hydroflow declarative macros.
+
+/// [`assert!`] but returns a [`Result<(), String>`] instead of panicking.
 #[macro_export]
 macro_rules! rassert {
     ($cond:expr $(,)?) => {
@@ -18,6 +21,7 @@ macro_rules! rassert {
     };
 }
 
+/// [`assert_eq!`] but returns a [`Result<(), String>`] instead of panicking.
 #[macro_export]
 macro_rules! rassert_eq {
     ($a:expr, $b:expr) => {
@@ -40,6 +44,8 @@ macro_rules! assert_var_impl {
     };
 }
 
+/// Test helper, emits and checks snapshots for the mermaid and dot graphs.
+#[doc(hidden)]
 #[macro_export]
 macro_rules! assert_graphvis_snapshots {
     ($df:ident) => {

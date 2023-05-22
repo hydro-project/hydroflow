@@ -1,3 +1,5 @@
+//! Module for the [`Hydroflow`] struct and helper items.
+
 use std::any::Any;
 use std::borrow::Cow;
 use std::cell::Cell;
@@ -116,12 +118,12 @@ impl Hydroflow {
         Reactor::new(self.context.event_queue_send.clone())
     }
 
-    // Gets the current tick (local time) count.
+    /// Gets the current tick (local time) count.
     pub fn current_tick(&self) -> usize {
         self.context.current_tick
     }
 
-    // Gets the current stratum nubmer.
+    /// Gets the current stratum nubmer.
     pub fn current_stratum(&self) -> usize {
         self.context.current_stratum
     }
@@ -352,6 +354,7 @@ impl Hydroflow {
         Some(count + extra_count)
     }
 
+    /// Adds a new compiled subgraph with the specified inputs and outputs in stratum 0.
     pub fn add_subgraph<Name, R, W, F>(
         &mut self,
         name: Name,
@@ -368,7 +371,7 @@ impl Hydroflow {
         self.add_subgraph_stratified(name, 0, recv_ports, send_ports, subgraph)
     }
 
-    /// Adds a new compiled subgraph with the specified inputs and outputs.
+    /// Adds a new compiled subgraph with the specified inputs, outputs, and stratum number.
     ///
     /// TODO(mingwei): add example in doc.
     pub fn add_subgraph_stratified<Name, R, W, F>(
@@ -533,6 +536,10 @@ impl Hydroflow {
         (input_port, output_port)
     }
 
+    /// Adds referenceable state into the `Hydroflow` instance. Returns a state handle which can be
+    /// used externally or by operators to access the state.
+    ///
+    /// This is part of the "state API".
     pub fn add_state<T>(&mut self, state: T) -> StateHandle<T>
     where
         T: Any,
@@ -548,6 +555,7 @@ impl Hydroflow {
 }
 
 impl Hydroflow {
+    /// Alias for [`Context::spawn_task`].
     pub fn spawn_task<Fut>(&mut self, future: Fut)
     where
         Fut: Future<Output = ()> + 'static,
@@ -555,10 +563,12 @@ impl Hydroflow {
         self.context.spawn_task(future);
     }
 
+    /// Alias for [`Context::abort_tasks`].
     pub fn abort_tasks(&mut self) {
         self.context.abort_tasks()
     }
 
+    /// Alias for [`Context::join_tasks`].
     pub fn join_tasks(&mut self) -> impl '_ + Future {
         self.context.join_tasks()
     }
@@ -575,6 +585,7 @@ impl Drop for Hydroflow {
 /// Internal use: used to track the hydroflow graph structure.
 ///
 /// TODO(mingwei): restructure `PortList` so this can be crate-private.
+#[doc(hidden)]
 pub struct HandoffData {
     /// A friendly name for diagnostics.
     #[allow(dead_code)] // TODO(mingwei): remove attr once used.

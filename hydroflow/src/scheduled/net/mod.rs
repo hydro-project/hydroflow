@@ -1,4 +1,5 @@
 #![cfg(not(target_arch = "wasm32"))]
+#![allow(missing_docs)]
 
 //! This module contiains networking code.
 //!

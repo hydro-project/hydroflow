@@ -1,3 +1,5 @@
+//! Module for [`Reactor`].
+
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -12,15 +14,17 @@ pub struct Reactor {
     event_queue_send: UnboundedSender<(SubgraphId, bool)>,
 }
 impl Reactor {
-    pub fn new(event_queue_send: UnboundedSender<(SubgraphId, bool)>) -> Self {
+    pub(crate) fn new(event_queue_send: UnboundedSender<(SubgraphId, bool)>) -> Self {
         Self { event_queue_send }
     }
 
+    /// Trigger a subgraph as an external event.
     pub fn trigger(&self, sg_id: SubgraphId) -> Result<(), SendError<(SubgraphId, bool)>> {
         self.event_queue_send.send((sg_id, true))
     }
 
     #[cfg(feature = "async")]
+    /// Convert this `Reactor` into a [`std::task::Waker`] for use with async runtimes.
     pub fn into_waker(self, sg_id: SubgraphId) -> std::task::Waker {
         use std::sync::Arc;
 
