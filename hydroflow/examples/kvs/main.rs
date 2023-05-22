@@ -35,7 +35,7 @@ struct Opts {
     graph: Option<GraphType>,
 }
 
-#[tokio::main]
+#[hydroflow::main]
 async fn main() {
     let opts = Opts::parse();
     let addr = opts.addr.unwrap();

@@ -1,6 +1,6 @@
 use hydroflow::{hydroflow_syntax, var_args};
 
-#[tokio::main]
+#[hydroflow::main]
 async fn main() {
     let mut df = hydroflow_syntax! {
         // Should be a `Duration`.

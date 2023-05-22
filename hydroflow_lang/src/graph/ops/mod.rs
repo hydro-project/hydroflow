@@ -404,5 +404,5 @@ pub enum Persistence {
 }
 
 fn make_missing_runtime_msg(op_name: &str) -> Literal {
-    Literal::string(&*format!("`{}()` must be used within a Tokio runtime. For example, use `#[tokio::main]` on your main method.", op_name))
+    Literal::string(&*format!("`{}()` must be used within a Tokio runtime. For example, use `#[hydroflow::main]` on your main method.", op_name))
 }

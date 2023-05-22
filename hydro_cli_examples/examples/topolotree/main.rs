@@ -49,7 +49,7 @@ impl<T> Hash for TimestampedValue<T> {
     }
 }
 
-#[tokio::main]
+#[hydroflow::main]
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let increment_requests = ports

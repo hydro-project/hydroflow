@@ -279,7 +279,7 @@ mod test {
         tokio::time::sleep(Duration::from_millis(millis)).await;
     }
 
-    #[tokio::test]
+    #[crate::test]
     async fn test_send_multiple_outstanding() {
         let (send, recv) = bounded::<u64>(10);
 
@@ -294,7 +294,7 @@ mod test {
         assert_eq!([123, 234], &*out);
     }
 
-    #[tokio::test]
+    #[crate::test]
     async fn test_spsc_random() {
         let runs = (0..1_000).map(|_| async {
             let (send, recv) = bounded::<u64>(10);
@@ -324,7 +324,7 @@ mod test {
         futures::future::join_all(runs).await;
     }
 
-    #[tokio::test]
+    #[crate::test]
     async fn test_mpsc_random() {
         let runs = (0..1_000).map(|_| async {
             let (send, recv) = bounded::<u64>(30);
@@ -372,7 +372,7 @@ mod test {
         futures::future::join_all(runs).await;
     }
 
-    #[tokio::test]
+    #[crate::test]
     async fn test_stream_sink_loop() {
         use futures::{SinkExt, StreamExt};
 

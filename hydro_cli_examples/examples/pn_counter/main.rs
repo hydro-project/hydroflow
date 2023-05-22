@@ -22,7 +22,7 @@ enum GossipOrIncrement {
     Increment(u64, i32),
 }
 
-#[tokio::main]
+#[hydroflow::main]
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
 

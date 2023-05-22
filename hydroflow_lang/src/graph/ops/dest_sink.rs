@@ -1,10 +1,9 @@
-use super::{make_missing_runtime_msg, FlowProperties, FlowPropertyVal};
+use quote::quote_spanned;
 
 use super::{
-    OperatorConstraints, OperatorInstance, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
-
-use quote::quote_spanned;
 
 /// > Arguments: An [async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
 ///
@@ -15,7 +14,7 @@ use quote::quote_spanned;
 /// Note this operator must be used within a Tokio runtime.
 ///
 /// ```rustbook
-/// # #[tokio::main(flavor = "current_thread")]
+/// # #[hydroflow::main]
 /// # async fn main() {
 /// // In this example we use a _bounded_ channel for our `Sink`. This is for demonstration only,
 /// // instead you should use [`hydroflow::util::unbounded_channel`]. A bounded channel results in
@@ -57,7 +56,7 @@ use quote::quote_spanned;
 /// `BytesCodec`.
 ///
 /// ```rustbook
-/// # #[tokio::main]
+/// # #[hydroflow::main]
 /// # async fn main() {
 /// use bytes::Bytes;
 /// use tokio::io::AsyncReadExt;
@@ -107,7 +106,6 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
                    op_span,
                    ident,
                    is_pull,
-                   op_name,
                    op_inst: OperatorInstance { arguments, .. },
                    ..
                },
@@ -118,8 +116,6 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
 
         let send_ident = wc.make_ident("item_send");
         let recv_ident = wc.make_ident("item_recv");
-
-        let missing_runtime_msg = make_missing_runtime_msg(op_name);
 
         let write_prologue = quote_spanned! {op_span=>
             let (#send_ident, #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel();
@@ -147,8 +143,7 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
                     }
                 }
                 #hydroflow
-                    .spawn_task(sink_feed_flush(#recv_ident, #sink_arg))
-                    .expect(#missing_runtime_msg);
+                    .spawn_task(sink_feed_flush(#recv_ident, #sink_arg));
             }
         };
 

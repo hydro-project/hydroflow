@@ -36,7 +36,7 @@ struct Opts {
     graph: Option<GraphType>,
 }
 
-#[tokio::main]
+#[hydroflow::main]
 async fn main() {
     let opts = Opts::parse();
     // if no addr was provided, we ask the OS to assign a local port by passing in "localhost:0"
