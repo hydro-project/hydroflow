@@ -16,7 +16,7 @@ struct IncrementRequest {
     likes: i32,
 }
 
-#[tokio::main]
+#[hydroflow::main]
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let mut start_node = ports

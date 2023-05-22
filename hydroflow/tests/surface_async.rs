@@ -15,7 +15,7 @@ use tokio::net::{TcpListener, TcpStream, UdpSocket};
 use tokio::task::LocalSet;
 use tokio_util::codec::{BytesCodec, FramedWrite, LinesCodec};
 
-#[tokio::test]
+#[hydroflow::test]
 pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
     let local = LocalSet::new();
 
@@ -126,7 +126,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[tokio::test]
+#[hydroflow::test]
 pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
     let local = LocalSet::new();
 
@@ -203,7 +203,7 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[tokio::test]
+#[hydroflow::test]
 pub async fn test_echo() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (lines_send, lines_recv) = hydroflow::util::unbounded_channel::<String>();
@@ -229,7 +229,7 @@ pub async fn test_echo() {
     tokio::time::sleep(Duration::from_secs(1)).await;
 }
 
-#[tokio::test]
+#[hydroflow::test]
 pub async fn test_futures_stream_sink() -> Result<(), Box<dyn Error>> {
     const MAX: usize = 20;
 
@@ -257,7 +257,7 @@ pub async fn test_futures_stream_sink() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[tokio::test(flavor = "current_thread")]
+#[hydroflow::test]
 async fn asynctest_dest_sink_bounded_channel() {
     // In this example we use a _bounded_ channel for our `Sink`. This is for demonstration only,
     // instead you should use [`hydroflow::util::unbounded_channel`]. A bounded channel results in
@@ -283,7 +283,7 @@ async fn asynctest_dest_sink_bounded_channel() {
     assert_eq!(&[5, 6, 7, 8, 9], &*out);
 }
 
-#[tokio::test(flavor = "current_thread")]
+#[hydroflow::test]
 async fn asynctest_dest_sink_duplex() {
     use bytes::Bytes;
     use tokio::io::AsyncReadExt;
@@ -313,7 +313,7 @@ async fn asynctest_dest_sink_duplex() {
     assert_eq!(b"\x05hello\x05world", &*buf);
 }
 
-#[tokio::test(flavor = "current_thread")]
+#[hydroflow::test]
 async fn asynctest_dest_asyncwrite_duplex() {
     use tokio::io::AsyncReadExt;
 
@@ -338,7 +338,7 @@ async fn asynctest_dest_asyncwrite_duplex() {
     assert_eq!(b"helloworld", &*buf);
 }
 
-#[tokio::test(flavor = "current_thread")]
+#[hydroflow::test]
 async fn asynctest_source_stream() {
     LocalSet::new()
         .run_until(async {
@@ -369,7 +369,7 @@ async fn asynctest_source_stream() {
 
 /// Check to make sure hf.run_async() does not hang due to replaying stateful operators saturating
 /// `run_available()`.
-#[tokio::test(flavor = "current_thread")]
+#[hydroflow::test]
 async fn asynctest_check_state_yielding() {
     LocalSet::new()
         .run_until(async {
@@ -409,7 +409,7 @@ async fn asynctest_check_state_yielding() {
         .await;
 }
 
-#[tokio::test(flavor = "current_thread")]
+#[hydroflow::test]
 async fn asynctest_repeat_iter() {
     let (b_send, b_recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -423,7 +423,7 @@ async fn asynctest_repeat_iter() {
     assert_eq!(&[0, 1, 2], &*seen);
 }
 
-#[tokio::test(flavor = "current_thread")]
+#[hydroflow::test]
 async fn asynctest_event_repeat_iter() {
     let (a_send, a_recv) = hydroflow::util::unbounded_channel::<usize>();
     let (b_send, b_recv) = hydroflow::util::unbounded_channel::<usize>();

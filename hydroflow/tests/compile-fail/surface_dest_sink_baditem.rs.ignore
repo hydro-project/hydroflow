@@ -3,7 +3,7 @@ use std::net::{Ipv4Addr, SocketAddr};
 use hydroflow::hydroflow_syntax;
 use hydroflow::util::bind_udp_bytes;
 
-#[tokio::main]
+#[hydroflow::main]
 async fn main() {
     let socket_addr: SocketAddr = (Ipv4Addr::LOCALHOST, 0).into();
     let (outbound, _inbound, _) = bind_udp_bytes(socket_addr).await;

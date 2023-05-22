@@ -13,7 +13,7 @@ fn test_surface_flows_1() {
     df.run_available();
 }
 
-#[tokio::test]
+#[hydroflow::test]
 async fn test_source_interval() {
     use std::time::Duration;
 

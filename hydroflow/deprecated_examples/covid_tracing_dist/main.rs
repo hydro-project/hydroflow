@@ -1,7 +1,8 @@
 use clap::{ArgEnum, Parser};
 use database::run_database;
 use hydroflow::tokio;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use tracker::run_tracker;
 
 mod database;
@@ -70,7 +71,7 @@ where
 const CONTACTS_ADDR: u32 = 0;
 const DIAGNOSES_ADDR: u32 = 1;
 
-#[tokio::main]
+#[hydroflow::main]
 async fn main() {
     let opts = Opts::parse();
 

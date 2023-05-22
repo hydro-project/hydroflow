@@ -1,12 +1,11 @@
 use quote::quote_spanned;
 use syn::parse_quote_spanned;
 
-use crate::graph::OperatorInstance;
-
 use super::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
+use crate::graph::OperatorInstance;
 
 /// > 0 input streams, 1 output stream
 ///
@@ -17,7 +16,7 @@ use super::{
 /// as possible, and the `Instant` will be the missed time, not the late time.
 ///
 /// Note that this requires the hydroflow instance be run within a [Tokio `Runtime`](https://docs.rs/tokio/1/tokio/runtime/struct.Runtime.html).
-/// The easiest way to do this is with a [`#[tokio::main]`](https://docs.rs/tokio/1/tokio/attr.main.html)
+/// The easiest way to do this is with a [`#[hydroflow::main]`](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.hydroflow_main.html)
 /// annotation on `async fn main() { ... }`.
 ///
 /// ```rustbook
@@ -25,7 +24,7 @@ use super::{
 ///
 /// use hydroflow::hydroflow_syntax;
 ///
-/// #[tokio::main]
+/// #[hydroflow::main]
 /// async fn main() {
 ///     let mut hf = hydroflow_syntax! {
 ///         source_interval(Duration::from_secs(1))
