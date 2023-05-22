@@ -81,6 +81,19 @@ const config = {
     ],
   ],
 
+  plugins: [
+    [
+      '@docusaurus/plugin-ideal-image',
+      {
+        quality: 75,
+        max: 1080,
+        min: 480,
+        steps: 6,
+        disableInDev: false,
+      },
+    ],
+  ],
+
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
@@ -103,6 +116,11 @@ const config = {
             to: '/research',
             position: 'left',
             label: 'Publications',
+          },
+          {
+            to: '/people',
+            position: 'left',
+            label: 'People',
           },
           // {to: '/blog', label: 'Blog', position: 'left'},
           {
@@ -132,23 +150,19 @@ const config = {
               },
             ],
           },
-          // {
-          //   title: 'Community',
-          //   items: [
-          //     {
-          //       label: 'Stack Overflow',
-          //       href: 'https://stackoverflow.com/questions/tagged/docusaurus',
-          //     },
-          //     {
-          //       label: 'Discord',
-          //       href: 'https://discordapp.com/invite/docusaurus',
-          //     },
-          //     {
-          //       label: 'Twitter',
-          //       href: 'https://twitter.com/docusaurus',
-          //     },
-          //   ],
-          // },
+          {
+            title: 'Research Group',
+            items: [
+              {
+                label: 'Publications',
+                to: '/research',
+              },
+              {
+                label: 'People',
+                to: '/people',
+              }
+            ],
+          },
           {
             title: 'More',
             items: [
@@ -163,7 +177,7 @@ const config = {
             ],
           },
         ],
-        // copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+        copyright: `Hydro is a project in the <a href="https://sky.cs.berkeley.edu">Sky Computing Lab</a> at UC Berkeley. We are grateful to be supported by <a href="https://shv.com">Sutter Hill Ventures</a>.`,
       },
       prism: {
         theme: lightCodeTheme,
