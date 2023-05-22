@@ -5,13 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.0.0 (2023-04-25)
+## 0.0.1 (2023-05-21)
+
+### Style
+
+ - <csr-id-cd0a86d9271d0e3daab59c46f079925f863424e1/> Warn lint `unused_qualifications`
+ - <csr-id-20a1b2c0cd04a8b495a02ce345db3d48a99ea0e9/> rustfmt group imports
+ - <csr-id-1eda91a2ef8794711ef037240f15284e8085d863/> rustfmt prescribe flat-module `use` format
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 19 commits contributed to the release over the course of 46 calendar days.
+ - 5 commits contributed to the release over the course of 13 calendar days.
+ - 25 days passed between releases.
+ - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 3 unique issues were worked on: [#646](https://github.com/hydro-project/hydroflow/issues/646), [#656](https://github.com/hydro-project/hydroflow/issues/656), [#660](https://github.com/hydro-project/hydroflow/issues/660)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#646](https://github.com/hydro-project/hydroflow/issues/646)**
+    - Update pinned `nightly-2023-05-07`, fix lints ([`19d5d96`](https://github.com/hydro-project/hydroflow/commit/19d5d963ac11bef951f00b93d0509679082cedef))
+ * **[#656](https://github.com/hydro-project/hydroflow/issues/656)**
+    - Add WebSocket with CLI example and simplify init API ([`1015980`](https://github.com/hydro-project/hydroflow/commit/1015980ed995634ff8735e4daf33796e73bab563))
+ * **[#660](https://github.com/hydro-project/hydroflow/issues/660)**
+    - Warn lint `unused_qualifications` ([`cd0a86d`](https://github.com/hydro-project/hydroflow/commit/cd0a86d9271d0e3daab59c46f079925f863424e1))
+    - Rustfmt group imports ([`20a1b2c`](https://github.com/hydro-project/hydroflow/commit/20a1b2c0cd04a8b495a02ce345db3d48a99ea0e9))
+    - Rustfmt prescribe flat-module `use` format ([`1eda91a`](https://github.com/hydro-project/hydroflow/commit/1eda91a2ef8794711ef037240f15284e8085d863))
+</details>
+
+## 0.0.0 (2023-04-26)
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 20 commits contributed to the release over the course of 46 calendar days.
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 19 unique issues were worked on: [#452](https://github.com/hydro-project/hydroflow/issues/452), [#461](https://github.com/hydro-project/hydroflow/issues/461), [#466](https://github.com/hydro-project/hydroflow/issues/466), [#472](https://github.com/hydro-project/hydroflow/issues/472), [#477](https://github.com/hydro-project/hydroflow/issues/477), [#479](https://github.com/hydro-project/hydroflow/issues/479), [#484](https://github.com/hydro-project/hydroflow/issues/484), [#498](https://github.com/hydro-project/hydroflow/issues/498), [#513](https://github.com/hydro-project/hydroflow/issues/513), [#533](https://github.com/hydro-project/hydroflow/issues/533), [#541](https://github.com/hydro-project/hydroflow/issues/541), [#545](https://github.com/hydro-project/hydroflow/issues/545), [#560](https://github.com/hydro-project/hydroflow/issues/560), [#563](https://github.com/hydro-project/hydroflow/issues/563), [#575](https://github.com/hydro-project/hydroflow/issues/575), [#576](https://github.com/hydro-project/hydroflow/issues/576), [#584](https://github.com/hydro-project/hydroflow/issues/584), [#613](https://github.com/hydro-project/hydroflow/issues/613), [#617](https://github.com/hydro-project/hydroflow/issues/617)
 
@@ -60,5 +93,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Improve error message when key is not found in a demux ([`f9f9e72`](https://github.com/hydro-project/hydroflow/commit/f9f9e729affe41d37b2414e7c5dfc5e54caf82a7))
  * **[#617](https://github.com/hydro-project/hydroflow/issues/617)**
     - Update `Cargo.toml`s for publishing ([`a78ff9a`](https://github.com/hydro-project/hydroflow/commit/a78ff9aace6771787c2b72aad83be6ad8d49a828))
+ * **Uncategorized**
+    - Setup release workflow ([`108d0e9`](https://github.com/hydro-project/hydroflow/commit/108d0e933a08b183c4dadf8c3499e4946696e263))
 </details>
 

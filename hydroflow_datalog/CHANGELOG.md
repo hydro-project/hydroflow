@@ -5,13 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.0.0 (2023-04-25)
+## 0.0.1 (2023-05-21)
+
+### Style
+
+ - <csr-id-20a1b2c0cd04a8b495a02ce345db3d48a99ea0e9/> rustfmt group imports
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 33 commits contributed to the release over the course of 243 calendar days.
+ - 1 commit contributed to the release.
+ - 25 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#660](https://github.com/hydro-project/hydroflow/issues/660)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#660](https://github.com/hydro-project/hydroflow/issues/660)**
+    - Rustfmt group imports ([`20a1b2c`](https://github.com/hydro-project/hydroflow/commit/20a1b2c0cd04a8b495a02ce345db3d48a99ea0e9))
+</details>
+
+## 0.0.0 (2023-04-26)
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 34 commits contributed to the release over the course of 244 calendar days.
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 17 unique issues were worked on: [#155](https://github.com/hydro-project/hydroflow/issues/155), [#184](https://github.com/hydro-project/hydroflow/issues/184), [#187](https://github.com/hydro-project/hydroflow/issues/187), [#204](https://github.com/hydro-project/hydroflow/issues/204), [#223](https://github.com/hydro-project/hydroflow/issues/223), [#232](https://github.com/hydro-project/hydroflow/issues/232), [#284](https://github.com/hydro-project/hydroflow/issues/284), [#302](https://github.com/hydro-project/hydroflow/issues/302), [#320](https://github.com/hydro-project/hydroflow/issues/320), [#321](https://github.com/hydro-project/hydroflow/issues/321), [#329](https://github.com/hydro-project/hydroflow/issues/329), [#360](https://github.com/hydro-project/hydroflow/issues/360), [#371](https://github.com/hydro-project/hydroflow/issues/371), [#467](https://github.com/hydro-project/hydroflow/issues/467), [#518](https://github.com/hydro-project/hydroflow/issues/518), [#609](https://github.com/hydro-project/hydroflow/issues/609), [#617](https://github.com/hydro-project/hydroflow/issues/617)
 
@@ -56,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#617](https://github.com/hydro-project/hydroflow/issues/617)**
     - Update `Cargo.toml`s for publishing ([`a78ff9a`](https://github.com/hydro-project/hydroflow/commit/a78ff9aace6771787c2b72aad83be6ad8d49a828))
  * **Uncategorized**
+    - Setup release workflow ([`108d0e9`](https://github.com/hydro-project/hydroflow/commit/108d0e933a08b183c4dadf8c3499e4946696e263))
     - Improve datalog diagnostic robustness ([`0b3e085`](https://github.com/hydro-project/hydroflow/commit/0b3e08521131989dfaee821c060a931771936f80))
     - Add persistence lifetimes to join #272 ([`47b2941`](https://github.com/hydro-project/hydroflow/commit/47b2941d74704792e5e2a7f30fa088c81c3ab506))
     - Add type guard before `Pivot` #263 ([`c215e8c`](https://github.com/hydro-project/hydroflow/commit/c215e8c4523a1e465eafa3320daa34d6cb35aa11))

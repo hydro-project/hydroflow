@@ -15,16 +15,15 @@ fn main() {
             let mut sg_1v1_node_10v1_stream = {
                 #[inline(always)]
                 fn check_stream<
-                    Stream: hydroflow::futures::stream::Stream<Item = Item>,
+                    Stream: hydroflow::futures::stream::Stream<Item = Item>
+                        + ::std::marker::Unpin,
                     Item,
                 >(
                     stream: Stream,
-                ) -> ::std::pin::Pin<
-                    ::std::boxed::Box<
-                        impl hydroflow::futures::stream::Stream<Item = Item>,
-                    >,
-                > {
-                    ::std::boxed::Box::pin(stream)
+                ) -> impl hydroflow::futures::stream::Stream<
+                    Item = Item,
+                > + ::std::marker::Unpin {
+                    stream
                 }
                 check_stream(in1)
             };
@@ -40,16 +39,15 @@ fn main() {
             let mut sg_1v1_node_11v1_stream = {
                 #[inline(always)]
                 fn check_stream<
-                    Stream: hydroflow::futures::stream::Stream<Item = Item>,
+                    Stream: hydroflow::futures::stream::Stream<Item = Item>
+                        + ::std::marker::Unpin,
                     Item,
                 >(
                     stream: Stream,
-                ) -> ::std::pin::Pin<
-                    ::std::boxed::Box<
-                        impl hydroflow::futures::stream::Stream<Item = Item>,
-                    >,
-                > {
-                    ::std::boxed::Box::pin(stream)
+                ) -> impl hydroflow::futures::stream::Stream<
+                    Item = Item,
+                > + ::std::marker::Unpin {
+                    stream
                 }
                 check_stream(in2)
             };
@@ -95,7 +93,7 @@ fn main() {
                 move |context, var_args!(), var_args!()| {
                     let op_10v1 = std::iter::from_fn(|| {
                         match hydroflow::futures::stream::Stream::poll_next(
-                            sg_1v1_node_10v1_stream.as_mut(),
+                            ::std::pin::Pin::new(&mut sg_1v1_node_10v1_stream),
                             &mut std::task::Context::from_waker(&context.waker()),
                         ) {
                             std::task::Poll::Ready(maybe) => maybe,
@@ -183,7 +181,7 @@ fn main() {
                     };
                     let op_11v1 = std::iter::from_fn(|| {
                         match hydroflow::futures::stream::Stream::poll_next(
-                            sg_1v1_node_11v1_stream.as_mut(),
+                            ::std::pin::Pin::new(&mut sg_1v1_node_11v1_stream),
                             &mut std::task::Context::from_waker(&context.waker()),
                         ) {
                             std::task::Poll::Ready(maybe) => maybe,
