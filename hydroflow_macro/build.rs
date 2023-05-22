@@ -15,7 +15,7 @@ const FILENAME: &str = "surface_ops.gen.md";
 fn book_file(filename: impl AsRef<Path>) -> Result<PathBuf, VarError> {
     let mut pathbuf = PathBuf::new();
     pathbuf.push(std::env::var("CARGO_MANIFEST_DIR")?);
-    pathbuf.push("../book/");
+    pathbuf.push("../docs/docs/syntax/");
     pathbuf.push(filename);
     Ok(pathbuf)
 }
@@ -28,7 +28,7 @@ fn book_file_writer(filename: impl AsRef<Path>) -> Result<BufWriter<File>, Box<d
 fn write_operator_docgen(op_name: &str, mut write: &mut impl Write) -> std::io::Result<()> {
     let doctest_path = PathBuf::from_iter([
         std::env!("CARGO_MANIFEST_DIR"),
-        "../book/docgen",
+        "../docs/docgen",
         &*format!("{}.md", op_name),
     ]);
     let mut read = BufReader::new(File::open(doctest_path)?);
@@ -41,12 +41,12 @@ fn update_book() -> Result<(), Box<dyn Error>> {
     ops.sort_by_key(|op| op.name);
 
     let mut write = book_file_writer(FILENAME)?;
+    writeln!(write, "{}", PREFIX)?;
     writeln!(
         write,
         "<!-- GENERATED {:?} -->",
         file!().replace(std::path::MAIN_SEPARATOR, "/")
     )?;
-    writeln!(write, "{}", PREFIX)?;
     writeln!(write)?;
     writeln!(write, "| All Operators | | | |")?;
     writeln!(write, "| --- | --- | --- | --- |")?;
@@ -171,6 +171,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 const PREFIX: &str = "\
+---
+sidebar_position: 4
+---
+
 # Hydroflow's Operators
 
 In our previous examples we made use of some of Hydroflow's operators.
