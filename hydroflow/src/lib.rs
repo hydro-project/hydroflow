@@ -7,7 +7,6 @@
 #![allow(clippy::explicit_auto_deref)]
 
 pub mod compiled;
-pub mod lang;
 pub mod props;
 pub mod scheduled;
 pub mod util;

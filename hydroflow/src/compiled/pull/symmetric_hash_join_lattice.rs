@@ -5,7 +5,7 @@ use lattices::map_union::MapUnion;
 use lattices::{ConvertFrom, Merge};
 use rustc_hash::{FxHashMap, FxHashSet};
 
-use crate::lang::clear::Clear;
+use crate::util::clear::Clear;
 
 pub struct HalfJoinStateLattice<K, Lattice> {
     table: MapUnion<FxHashMap<K, Lattice>>,

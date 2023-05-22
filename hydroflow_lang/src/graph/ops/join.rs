@@ -157,7 +157,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
             let (init, borrow) = match persistence {
                 Persistence::Tick => (
                     quote_spanned! {op_span=>
-                        #root::lang::monotonic_map::MonotonicMap::new_init(
+                        #root::util::monotonic_map::MonotonicMap::new_init(
                             #join_type::default()
                         )
                     },

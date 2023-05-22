@@ -1,3 +1,5 @@
+//! Module for the [`Clear`] trait.
+
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet, LinkedList, VecDeque};
 use std::ffi::OsString;
 
@@ -8,7 +10,7 @@ pub trait Clear {
     fn clear(&mut self);
 }
 
-// A wrapper struct which implements [`Clear`] by setting self to `Default::default()`.
+/// A wrapper struct which implements [`Clear`] by setting self to `Default::default()`.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ClearDefault<T>(pub T)
 where

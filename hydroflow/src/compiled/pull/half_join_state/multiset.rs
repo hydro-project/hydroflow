@@ -2,7 +2,7 @@ use std::collections::hash_map::Entry;
 use std::collections::VecDeque;
 
 use super::HalfJoinState;
-use crate::lang::clear::Clear;
+use crate::util::clear::Clear;
 
 type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 
