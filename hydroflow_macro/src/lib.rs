@@ -8,11 +8,20 @@ use proc_macro2::{Ident, Literal, Span};
 use quote::quote;
 use syn::{parse_macro_input, parse_quote, Attribute, LitStr};
 
+/// Create a Hydroflow instance using Hydroflow's custom "surface syntax."
+///
+/// For example usage, take a look at the [`surface_*` tests in the `tests` folder](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/tests)
+/// or the [`examples` folder](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples)
+/// in the [Hydroflow repo](https://github.com/hydro-project/hydroflow).
+// TODO(mingwei): rustdoc examples inline.
 #[proc_macro]
 pub fn hydroflow_syntax(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     hydroflow_syntax_internal(input, Some(Level::Help))
 }
 
+/// [`hydroflow_syntax!`] but will not emit any diagnostics (errors, warnings, etc.).
+///
+/// Used for testing, users will want to use [`hydroflow_syntax!`] instead.
 #[proc_macro]
 pub fn hydroflow_syntax_noemit(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     hydroflow_syntax_internal(input, None)
@@ -60,6 +69,9 @@ fn hydroflow_syntax_internal(
         .into()
 }
 
+/// Parse Hydroflow "surface syntax" without emitting code.
+///
+/// Used for testing, users will want to use [`hydroflow_syntax!`] instead.
 #[proc_macro]
 pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as HfCode);
