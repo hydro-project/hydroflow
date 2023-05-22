@@ -99,6 +99,11 @@ const config = {
             position: 'left',
             label: 'Docs',
           },
+          {
+            to: '/research',
+            position: 'left',
+            label: 'Publications',
+          },
           // {to: '/blog', label: 'Blog', position: 'left'},
           {
             href: 'https://github.com/hydro-project/hydroflow',
