@@ -1,3 +1,5 @@
+//! Module for all [`Handoff`]-related items.
+
 pub mod handoff_list;
 mod tee;
 mod vector;
@@ -8,28 +10,47 @@ use std::cell::RefMut;
 pub use tee::TeeingHandoff;
 pub use vector::VecHandoff;
 
+/// Trait representing something which we can attempt to give an item to.
 pub trait TryCanReceive<T> {
+    // TODO(mingwei): Isn't used.
+    /// Try to give a value to the handoff, may return an error if full, representing backpressure.
     fn try_give(&self, item: T) -> Result<T, T>;
 }
+
+/// Trait representing somethign which we can give an item to.
 pub trait CanReceive<T> {
+    // TODO: represent backpressure in this return value.
+    /// Give a value to the handoff.
     fn give(&self, item: T) -> T;
 }
 
 /// A handle onto the metadata part of a [Handoff], with no element type.
 pub trait HandoffMeta: Any {
+    /// Helper to cast an instance of `HandoffMeta` to [`Any`]. In general you cannot cast between
+    /// traits, including [`Any`], but this helper method works around that limitation.
+    ///
+    /// For implementors: the body of this method will generally just be `{ self }`.
     fn any_ref(&self) -> &dyn Any;
 
     // TODO(justin): more fine-grained info here.
+    /// Return if the handoff is empty.
     fn is_bottom(&self) -> bool;
 }
 
+/// Trait for handoffs to implement.
 pub trait Handoff: Default + HandoffMeta {
+    /// Inner datastructure type.
     type Inner;
 
+    /// Take the inner datastructure, similar to [`std::mem::take`].
     fn take_inner(&self) -> Self::Inner;
 
+    /// Take the inner datastructure by swapping input and output buffers.
+    ///
+    /// For better performance over [`Self::take_inner`].
     fn borrow_mut_swap(&self) -> RefMut<Self::Inner>;
 
+    /// See [`CanReceive::give`].
     fn give<T>(&self, item: T) -> T
     where
         Self: CanReceive<T>,
@@ -37,6 +58,7 @@ pub trait Handoff: Default + HandoffMeta {
         <Self as CanReceive<T>>::give(self, item)
     }
 
+    /// See [`TryCanReceive::try_give`].
     fn try_give<T>(&self, item: T) -> Result<T, T>
     where
         Self: TryCanReceive<T>,

@@ -1,3 +1,5 @@
+//! Module for variadic handoff port lists, [`PortList`].
+
 use ref_cast::RefCast;
 use sealed::sealed;
 use variadics::Variadic;
@@ -7,11 +9,15 @@ use crate::scheduled::graph::HandoffData;
 use crate::scheduled::port::{Polarity, Port, PortCtx};
 use crate::scheduled::{HandoffId, SubgraphId};
 
+/// Sealed trait for variadic lists of ports.
+///
+/// See the [`variadics`] crate for the strategy we use to implement variadics in Rust.
 #[sealed]
 pub trait PortList<S>: Variadic
 where
     S: Polarity,
 {
+    /// Iteratively/recursively set the graph metadata for each port in this list.
     fn set_graph_meta(
         &self,
         handoffs: &mut [HandoffData],
@@ -20,7 +26,9 @@ where
         out_handoff_ids: &mut Vec<HandoffId>,
     );
 
+    /// The [`Variadic`] return type of [`Self::make_ctx`].
     type Ctx<'a>: Variadic;
+    /// Iteratively/recursively construct a `Ctx` variadic list.
     fn make_ctx<'a>(&self, handoffs: &'a [HandoffData]) -> Self::Ctx<'a>;
 }
 #[sealed]
@@ -85,14 +93,17 @@ where
     fn make_ctx<'a>(&self, _handoffs: &'a [HandoffData]) -> Self::Ctx<'a> {}
 }
 
+/// Trait for splitting a list of ports into two.
 #[sealed]
 pub trait PortListSplit<S, A>: PortList<S>
 where
     S: Polarity,
     A: PortList<S>,
 {
+    /// The suffix, second half of the split.
     type Suffix: PortList<S>;
 
+    /// Split the port list, returning the prefix and [`Self::Suffix`] as the two halves.
     fn split_ctx(ctx: Self::Ctx<'_>) -> (A::Ctx<'_>, <Self::Suffix as PortList<S>>::Ctx<'_>);
 }
 #[sealed]
