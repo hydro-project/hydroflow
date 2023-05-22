@@ -1,3 +1,6 @@
+//! Hydroflow lattice and flow properties, very WIP.
+#![allow(missing_docs)]
+
 pub mod wrap;
 
 pub trait Spec {}

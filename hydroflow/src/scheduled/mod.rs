@@ -1,3 +1,8 @@
+//! Hydroflow's outer scheduled layer. Deals with inter-subgraph runtime data-passing and scheduling.
+//!
+//! The most important item is the [`Hydroflow`](graph::Hydroflow) struct. Most of the items in this
+//! module are supporting the implementation of the `Hydroflow` struct and its operation.
+
 use std::fmt::{Display, Formatter, Result};
 
 use serde::Serialize;

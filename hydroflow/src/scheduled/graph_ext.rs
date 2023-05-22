@@ -1,3 +1,6 @@
+//! Helper extensions for [`Hydroflow`](super::graph::Hydroflow).
+#![allow(missing_docs)]
+
 use core::task;
 use std::borrow::Cow;
 use std::sync::mpsc::SyncSender;
@@ -18,6 +21,10 @@ macro_rules! subgraph_ext {
         ( $($recv_param:ident : $recv_generic:ident),* ),
         ( $($send_param:ident : $send_generic:ident),* )
     ) => {
+        /// Adds a subgraph with specific topology:
+        ///
+        #[doc = concat!("* Inputs: ", $( stringify!( $recv_generic ), ", ", )*)]
+        #[doc = concat!("* Outputs: ", $( stringify!( $send_generic ), ", ", )*)]
         fn $fn_name <Name, F, $($recv_generic,)* $($send_generic),*> (
             &mut self,
             name: Name,

@@ -1,3 +1,6 @@
+//! Old query API, where each operator is a single subgraph. Deprecated.
+#![allow(missing_docs)]
+
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::rc::Rc;
