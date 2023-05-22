@@ -70,7 +70,7 @@ fn main() {
             let sg_3v1_node_2v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::<
+                        hydroflow::util::monotonic_map::MonotonicMap::<
                             _,
                             hydroflow::rustc_hash::FxHashSet<_>,
                         >::default(),
@@ -79,7 +79,7 @@ fn main() {
             let sg_3v1_node_5v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::<
+                        hydroflow::util::monotonic_map::MonotonicMap::<
                             _,
                             hydroflow::rustc_hash::FxHashSet<_>,
                         >::default(),
@@ -88,7 +88,7 @@ fn main() {
             let sg_3v1_node_34v1_counterdata = df
                 .add_state(
                     ::std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::new_init(0..),
+                        hydroflow::util::monotonic_map::MonotonicMap::new_init(0..),
                     ),
                 );
             df.add_subgraph_stratified(
@@ -629,13 +629,13 @@ fn main() {
             let sg_4v1_node_38v1_counterdata = df
                 .add_state(
                     ::std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::new_init(0..),
+                        hydroflow::util::monotonic_map::MonotonicMap::new_init(0..),
                     ),
                 );
             let sg_4v1_node_8v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::<
+                        hydroflow::util::monotonic_map::MonotonicMap::<
                             _,
                             hydroflow::rustc_hash::FxHashSet<_>,
                         >::default(),
@@ -894,7 +894,7 @@ fn main() {
             let sg_5v1_node_22v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::<
+                        hydroflow::util::monotonic_map::MonotonicMap::<
                             _,
                             hydroflow::rustc_hash::FxHashSet<_>,
                         >::default(),
@@ -909,7 +909,7 @@ fn main() {
             let sg_5v1_node_11v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::<
+                        hydroflow::util::monotonic_map::MonotonicMap::<
                             _,
                             hydroflow::rustc_hash::FxHashSet<_>,
                         >::default(),
@@ -1428,13 +1428,13 @@ fn main() {
             let sg_6v1_node_48v1_counterdata = df
                 .add_state(
                     ::std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::new_init(0..),
+                        hydroflow::util::monotonic_map::MonotonicMap::new_init(0..),
                     ),
                 );
             let sg_6v1_node_14v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::<
+                        hydroflow::util::monotonic_map::MonotonicMap::<
                             _,
                             hydroflow::rustc_hash::FxHashSet<_>,
                         >::default(),
@@ -1701,7 +1701,7 @@ fn main() {
             let sg_7v1_node_17v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
-                        hydroflow::lang::monotonic_map::MonotonicMap::<
+                        hydroflow::util::monotonic_map::MonotonicMap::<
                             _,
                             hydroflow::rustc_hash::FxHashSet<_>,
                         >::default(),
