@@ -203,10 +203,10 @@ jobs:
         run: |
           mkdir cli-core-dumps
           echo "$PWD/cli-core-dumps/corefile-%e-%p-%t" | sudo tee /proc/sys/kernel/core_pattern
-          ulimit -c unlimited
 
       - name: Run Python tests
         run: |
+          ulimit -c unlimited
           cd hydro_cli
           source .venv/bin/activate
           cd python_tests
@@ -218,7 +218,7 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: cli-core-dumps
-          path: cli-core-dumps
+          path: ./cli-core-dumps/*
 
   lints:
     name: Lints
