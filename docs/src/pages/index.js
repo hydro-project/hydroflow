@@ -21,7 +21,7 @@ export default function Home() {
               justifyContent: "center",
               flexWrap: "wrap"
             }}>
-              <Link href="/docs/quickstart/" style={{
+              <Link to="/docs/hydroflow/quickstart/" style={{
                 display: "block",
                 padding: "15px",
                 textDecoration: "none",
@@ -36,7 +36,7 @@ export default function Home() {
                 fontSize: "1.25em"
               }}>Get Started</Link>
 
-              <Link href="/research/" style={{
+              <Link to="/research/" style={{
                 display: "block",
                 padding: "15px",
                 textDecoration: "none",

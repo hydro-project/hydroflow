@@ -108,10 +108,20 @@ const config = {
         },
         items: [
           {
-            type: 'docSidebar',
-            sidebarId: 'docsSidebar',
-            position: 'left',
+            type: 'dropdown',
             label: 'Docs',
+            items: [
+              {
+                type: 'docSidebar',
+                sidebarId: 'hydroflowSidebar',
+                label: 'Hydroflow',
+              },
+              {
+                type: 'docSidebar',
+                sidebarId: 'deploySidebar',
+                label: 'Hydro Deploy',
+              }
+            ]
           },
           {
             to: '/playground',
@@ -189,6 +199,17 @@ const config = {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
         additionalLanguages: ['rust'],
+        magicComments: [
+          {
+            className: 'theme-code-block-highlighted-line',
+            line: 'highlight-next-line',
+            block: {start: 'highlight-start', end: 'highlight-end'},
+          },
+          {
+            className: 'shell-command-line',
+            line: 'shell-command-next-line',
+          }
+        ]
       },
     }),
 };
