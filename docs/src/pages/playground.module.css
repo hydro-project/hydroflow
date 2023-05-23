@@ -1,0 +1,50 @@
+.mermaidContainer {
+  margin-top: -7px;
+}
+
+.mermaidContainer > svg {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mermaidContainer code {
+  background: rgb(246, 247, 248);
+  color: black;
+}
+
+.panel {
+  width: calc(50% - 10px);
+  margin-right: 20px;
+}
+
+@media screen and (max-width: 1000px) {
+  .panel {
+    width: 100%;
+    margin-right: 0;
+  }
+}
+
+.unselected-tab {
+  color: gray;
+}
+
+.unselected-tab:hover {
+  color: gray;
+}
+
+.selected-tab {
+  color: black;
+}
+
+.selected-tab:hover {
+  color: black;
+}
+
+[data-theme='dark'] .selected-tab {
+  color: white;
+}
+
+[data-theme='dark'] .selected-tab:hover {
+  color: white;
+}
