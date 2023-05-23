@@ -5,9 +5,25 @@
 #![allow(clippy::let_and_return)]
 #![allow(clippy::iter_with_drain)]
 #![allow(clippy::explicit_auto_deref)]
+#![deny(missing_docs)] // TODO(mingwei): #![forbid(missing_docs)] when all docs are done.
+
+//! Hydroflow is a low-level dataflow-based runtime system for the [Hydro Project](https://hydro.run/).
+//!
+//! The primary item in this crate is the [`Hydroflow`](crate::scheduled::graph::Hydroflow) struct,
+//! representing a Hydroflow dataflow graph. Although this graph can be manually constructed, the
+//! easiest way to instantiate a `Hydroflow` instance is with the [`hydroflow_syntax!`] macro using
+//! Hydroflow's custom "surface syntax."
+//!
+//! ```rust
+//! let mut hf = hydroflow::hydroflow_syntax! {
+//!     source_iter(["hello", "world"]) -> for_each(|s| println!("{}", s));
+//! };
+//! hf.run_available();
+//! ```
+//!
+//! For more examples, check out the [`examples` folder on Github](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples).
 
 pub mod compiled;
-pub mod lang;
 pub mod props;
 pub mod scheduled;
 pub mod util;

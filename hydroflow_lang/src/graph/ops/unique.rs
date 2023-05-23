@@ -98,7 +98,7 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
             Persistence::Tick => {
                 let write_prologue = quote_spanned! {op_span=>
                     let #uniquedata_ident = #hydroflow.add_state(::std::cell::RefCell::new(
-                        #root::lang::monotonic_map::MonotonicMap::<_, #root::rustc_hash::FxHashSet<_>>::default(),
+                        #root::util::monotonic_map::MonotonicMap::<_, #root::rustc_hash::FxHashSet<_>>::default(),
                     ));
                 };
                 let get_set = quote_spanned! {op_span=>

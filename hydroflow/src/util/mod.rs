@@ -1,6 +1,10 @@
 #![deny(missing_docs)]
 //! Helper utilities for the Hydroflow surface syntax.
 
+pub mod clear;
+pub mod monotonic_map;
+pub mod unsync;
+
 mod udp;
 #[cfg(not(target_arch = "wasm32"))]
 pub use udp::*;
@@ -16,8 +20,6 @@ pub use socket::*;
 
 #[cfg(feature = "cli_integration")]
 pub mod cli;
-
-pub mod unsync;
 
 use std::net::SocketAddr;
 use std::num::NonZeroUsize;

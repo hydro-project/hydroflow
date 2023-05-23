@@ -1,3 +1,5 @@
+//! Module for the user-facing [`Context`] object.
+
 use std::any::Any;
 use std::future::Future;
 use std::marker::PhantomData;
@@ -136,6 +138,7 @@ impl Context {
             .expect("StateHandle wrong type T for casting.")
     }
 
+    /// Spawns an async task on the internal Tokio executor.
     pub fn spawn_task<Fut>(&mut self, future: Fut)
     where
         Fut: Future<Output = ()> + 'static,
@@ -144,12 +147,16 @@ impl Context {
             .push(tokio::task::spawn_local(future));
     }
 
+    /// Aborts all tasks spawned with [`Self::spawn_task`].
     pub fn abort_tasks(&mut self) {
         for task in self.task_join_handles.drain(..) {
             task.abort();
         }
     }
 
+    /// Waits for all tasks spawned with [`Self::spawn_task`] to complete.
+    ///
+    /// Will probably just hang.
     pub async fn join_tasks(&mut self) {
         futures::future::join_all(self.task_join_handles.drain(..)).await;
     }
