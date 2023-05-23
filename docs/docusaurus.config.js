@@ -190,6 +190,11 @@ const config = {
         darkTheme: darkCodeTheme,
         additionalLanguages: ['rust'],
       },
+      algolia: {
+        appId: 'C2TSTQAKIC',
+        apiKey: '38cef87035f42759bc1dd871e91e06ba',
+        indexName: 'hydro'
+      },  
     }),
 };
 
