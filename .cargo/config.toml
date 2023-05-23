@@ -1,5 +1,6 @@
 [build]
 rustflags = [
+    "--cfg", "procmacro2_semver_exempt",
     "-Zproc-macro-backtrace",
     "-Wunused_qualifications",
     # https://github.com/rust-lang/rust-clippy/issues/10087
