@@ -121,7 +121,7 @@
 </span><span class="kw">mod </span>booktest {
     <span class="macro">macro_rules! </span>booktest {
         (<span class="macro-nonterminal">$path</span>:literal, <span class="macro-nonterminal">$i</span>:ident) =&gt; {
-            <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="string">&quot;../../docs/docs/&quot;</span>, <span class="macro-nonterminal">$path</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$i</span>), <span class="string">&quot;.md&quot;</span>))]
+            <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="string">&quot;../../docs/docs/hydroflow/&quot;</span>, <span class="macro-nonterminal">$path</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$i</span>), <span class="string">&quot;.md&quot;</span>))]
             </span><span class="kw">mod </span><span class="macro-nonterminal">$i </span>{}
         };
     }

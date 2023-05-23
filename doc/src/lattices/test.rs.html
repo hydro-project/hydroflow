@@ -202,6 +202,30 @@
 <a href="#202" id="202">202</a>
 <a href="#203" id="203">203</a>
 <a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Helper test utils to test lattice implementation correctness.
 
 </span><span class="kw">use </span>std::fmt::Debug;
@@ -218,74 +242,86 @@
 
 <span class="doccomment">/// Check that the lattice&#39;s `PartialOrd` implementation agrees with the `NaiveLatticeOrd` partial
 /// order derived from `Merge`.
-</span><span class="kw">pub fn </span>check_lattice_ord&lt;T: LatticeOrd + NaiveLatticeOrd&gt;(items: <span class="kw-2">&amp;</span>[T]) {
+</span><span class="kw">pub fn </span>check_lattice_ord&lt;T: LatticeOrd + NaiveLatticeOrd + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
     <span class="comment">// `NaiveLatticeOrd` is a better source of truth, as it is based on the `Merge` impl. But it
     // is inefficient. It also could be wrong if `Merge` doesn&#39;t properly return true/false
     // iff the merge changed things.
     </span><span class="kw">for </span>[a, b] <span class="kw">in </span>cartesian_power(items) {
-        <span class="macro">assert_eq!</span>(a.naive_cmp(b), a.partial_cmp(b));
-        <span class="macro">assert_eq!</span>(b.naive_cmp(a), b.partial_cmp(a));
+        <span class="macro">assert_eq!</span>(a.naive_cmp(b), a.partial_cmp(b), <span class="string">&quot;`{:?}`, `{:?}`&quot;</span>, a, b);
     }
 }
 
 <span class="doccomment">/// Checks `PartialOrd`, `PartialEq`, and `Eq`&#39;s reflexivity, symmetry, transitivity, and duality.
 </span><span class="attr">#[allow(clippy::eq_op)]
 #[allow(clippy::double_comparisons)]
-</span><span class="kw">pub fn </span>check_partial_ord_properties&lt;T: PartialOrd + Eq&gt;(items: <span class="kw-2">&amp;</span>[T]) {
+</span><span class="kw">pub fn </span>check_partial_ord_properties&lt;T: PartialOrd + Eq + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
     <span class="kw">use </span>std::cmp::Ordering::<span class="kw-2">*</span>;
-
-    <span class="comment">// PartialEq:
-    // a != b if and only if !(a == b).
-    </span><span class="kw">for </span>[a, b] <span class="kw">in </span>cartesian_power(items) {
-        <span class="macro">assert_eq!</span>(a != b, !(a == b))
-    }
 
     <span class="comment">// Eq:
     // reflexive: a == a;
     </span><span class="kw">for </span>a <span class="kw">in </span>items {
-        <span class="macro">assert!</span>(a == a)
+        <span class="macro">assert!</span>(a == a, <span class="string">&quot;`{:?}`&quot;</span>, a);
     }
     <span class="comment">// symmetric: a == b implies b == a; and
     </span><span class="kw">for </span>[a, b] <span class="kw">in </span>cartesian_power(items) {
-        <span class="macro">assert_eq!</span>(a == b, b == a)
+        <span class="macro">assert_eq!</span>(a == b, b == a, <span class="string">&quot;`{:?}`, `{:?}`&quot;</span>, a, b);
     }
     <span class="comment">// transitive: a == b and b == c implies a == c.
     </span><span class="kw">for </span>[a, b, c] <span class="kw">in </span>cartesian_power(items) {
         <span class="kw">if </span>a == b &amp;&amp; b == c {
-            <span class="macro">assert_eq!</span>(a == b &amp;&amp; b == c, a == c);
+            <span class="macro">assert_eq!</span>(a == b &amp;&amp; b == c, a == c, <span class="string">&quot;`{:?}`, `{:?}`, `{:?}`&quot;</span>, a, b, c);
         }
     }
 
     <span class="comment">// PartialOrd
     </span><span class="kw">for </span>[a, b] <span class="kw">in </span>cartesian_power(items) {
         <span class="comment">// a == b if and only if partial_cmp(a, b) == Some(Equal).
-        </span><span class="macro">assert_eq!</span>(a == b, a.partial_cmp(b) == <span class="prelude-val">Some</span>(Equal));
+        </span><span class="macro">assert_eq!</span>(
+            a == b,
+            a.partial_cmp(b) == <span class="prelude-val">Some</span>(Equal),
+            <span class="string">&quot;`{:?}`, `{:?}`&quot;</span>,
+            a,
+            b,
+        );
         <span class="comment">// a &lt; b if and only if partial_cmp(a, b) == Some(Less)
-        </span><span class="macro">assert_eq!</span>(a &lt; b, a.partial_cmp(b) == <span class="prelude-val">Some</span>(Less));
+        </span><span class="macro">assert_eq!</span>(
+            a &lt; b,
+            a.partial_cmp(b) == <span class="prelude-val">Some</span>(Less),
+            <span class="string">&quot;`{:?}`, `{:?}`&quot;</span>,
+            a,
+            b,
+        );
         <span class="comment">// a &gt; b if and only if partial_cmp(a, b) == Some(Greater)
-        </span><span class="macro">assert_eq!</span>(a &gt; b, a.partial_cmp(b) == <span class="prelude-val">Some</span>(Greater));
+        </span><span class="macro">assert_eq!</span>(
+            a &gt; b,
+            a.partial_cmp(b) == <span class="prelude-val">Some</span>(Greater),
+            <span class="string">&quot;`{:?}`, `{:?}`&quot;</span>,
+            a,
+            b,
+        );
         <span class="comment">// a &lt;= b if and only if a &lt; b || a == b
-        </span><span class="macro">assert_eq!</span>(a &lt;= b, a &lt; b || a == b);
+        </span><span class="macro">assert_eq!</span>(a &lt;= b, a &lt; b || a == b, <span class="string">&quot;`{:?}`, `{:?}`&quot;</span>, a, b);
         <span class="comment">// a &gt;= b if and only if a &gt; b || a == b
-        </span><span class="macro">assert_eq!</span>(a &gt;= b, a &gt; b || a == b);
-        <span class="comment">// a != b if and only if !(a == b).
-        </span><span class="macro">assert_eq!</span>(a != b, !(a == b));
+        </span><span class="macro">assert_eq!</span>(a &gt;= b, a &gt; b || a == b, <span class="string">&quot;`{:?}`, `{:?}`&quot;</span>, a, b);
+        <span class="comment">// PartialEq:
+        // a != b if and only if !(a == b).
+        </span><span class="macro">assert_eq!</span>(a != b, !(a == b), <span class="string">&quot;`{:?}`, `{:?}`&quot;</span>, a, b);
     }
     <span class="comment">// transitivity: a &lt; b and b &lt; c implies a &lt; c. The same must hold for both == and &gt;.
     </span><span class="kw">for </span>[a, b, c] <span class="kw">in </span>cartesian_power(items) {
         <span class="kw">if </span>a &lt; b &amp;&amp; b &lt; c {
-            <span class="macro">assert!</span>(a &lt; c);
+            <span class="macro">assert!</span>(a &lt; c, <span class="string">&quot;`{:?}`, `{:?}`, `{:?}`&quot;</span>, a, b, c);
         }
         <span class="kw">if </span>a == b &amp;&amp; b == c {
-            <span class="macro">assert!</span>(a == c);
+            <span class="macro">assert!</span>(a == c, <span class="string">&quot;`{:?}`, `{:?}`, `{:?}`&quot;</span>, a, b, c);
         }
         <span class="kw">if </span>a &gt; b &amp;&amp; b &gt; c {
-            <span class="macro">assert!</span>(a &gt; c);
+            <span class="macro">assert!</span>(a &gt; c, <span class="string">&quot;`{:?}`, `{:?}`, `{:?}`&quot;</span>, a, b, c);
         }
     }
     <span class="comment">// duality: a &lt; b if and only if b &gt; a.
     </span><span class="kw">for </span>[a, b] <span class="kw">in </span>cartesian_power(items) {
-        <span class="macro">assert_eq!</span>(a &lt; b, b &gt; a)
+        <span class="macro">assert_eq!</span>(a &lt; b, b &gt; a, <span class="string">&quot;`{:?}`, `{:?}`&quot;</span>, a, b);
     }
 }
 
@@ -294,25 +330,37 @@
     <span class="comment">// Idempotency
     // x ∧ x = x
     </span><span class="kw">for </span>x <span class="kw">in </span>items {
-        <span class="macro">assert_eq!</span>(Merge::merge_owned(x.to_owned(), x.to_owned()), x.to_owned())
+        <span class="macro">assert_eq!</span>(
+            Merge::merge_owned(x.clone(), x.clone()),
+            x.clone(),
+            <span class="string">&quot;`{:?}`&quot;</span>,
+            x,
+        );
     }
 
     <span class="comment">// Commutativity
     // x ∧ y = y ∧ x
     </span><span class="kw">for </span>[x, y] <span class="kw">in </span>cartesian_power(items) {
         <span class="macro">assert_eq!</span>(
-            Merge::merge_owned(x.to_owned(), y.to_owned()),
-            Merge::merge_owned(y.to_owned(), x.to_owned())
-        )
+            Merge::merge_owned(x.clone(), y.clone()),
+            Merge::merge_owned(y.clone(), x.clone()),
+            <span class="string">&quot;`{:?}`, `{:?}`&quot;</span>,
+            x,
+            y,
+        );
     }
 
     <span class="comment">// Associativity
     // x ∧ (y ∧ z) = (x ∧ y) ∧ z
     </span><span class="kw">for </span>[x, y, z] <span class="kw">in </span>cartesian_power(items) {
         <span class="macro">assert_eq!</span>(
-            Merge::merge_owned(x.to_owned(), Merge::merge_owned(y.to_owned(), z.to_owned())),
-            Merge::merge_owned(Merge::merge_owned(x.to_owned(), y.to_owned()), z.to_owned())
-        )
+            Merge::merge_owned(x.clone(), Merge::merge_owned(y.clone(), z.clone())),
+            Merge::merge_owned(Merge::merge_owned(x.clone(), y.clone()), z.clone()),
+            <span class="string">&quot;`{:?}`, `{:?}`, `{:?}`&quot;</span>,
+            x,
+            y,
+            z,
+        );
     }
 }
 

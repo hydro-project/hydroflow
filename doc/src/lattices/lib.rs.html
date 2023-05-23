@@ -98,9 +98,8 @@
 <span class="kw">use </span>sealed::sealed;
 
 <span class="kw">mod </span>bottom;
-<span class="kw">pub mod </span>collections;
-<span class="kw">pub mod </span>test;
 <span class="kw">pub use </span>bottom::Bottom;
+<span class="kw">pub mod </span>collections;
 <span class="kw">mod </span>dom_pair;
 <span class="kw">pub use </span>dom_pair::DomPair;
 <span class="kw">mod </span>fake;
@@ -111,6 +110,7 @@
 <span class="kw">mod </span>pair;
 <span class="kw">pub use </span>pair::Pair;
 <span class="kw">pub mod </span>set_union;
+<span class="kw">pub mod </span>test;
 
 <span class="doccomment">/// Trait for lattice merge (AKA &quot;join&quot; or &quot;least upper bound&quot;).
 </span><span class="kw">pub trait </span>Merge&lt;Other&gt; {
