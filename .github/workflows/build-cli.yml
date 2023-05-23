@@ -23,20 +23,25 @@ jobs:
   macos-universal:
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: macos-latest
+    strategy:
+      matrix:
+        target:
+          - universal2-apple-darwin
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           architecture: x64
-      - name: "Build wheels - universal2"
+      - name: "Build wheels"
         uses: PyO3/maturin-action@v1
         with:
           working-directory: hydro_cli
-          args: --release --universal2 --out dist
-      - name: "Install built wheel - universal2"
+          target: ${{ matrix.target }}
+          args: --release --out dist
+      - name: "Install built wheel"
         run: |
-          pip install hydro_cli/dist/${{ env.PACKAGE_NAME }}-*universal2.whl --force-reinstall
+          pip install hydro_cli/dist/${{ env.PACKAGE_NAME }}-*.whl --force-reinstall
       - name: "Upload wheels"
         uses: actions/upload-artifact@v3
         with:
