@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
+import Image from '@theme/IdealImage';
 
 import styles from './research.module.css';
 
@@ -106,15 +107,12 @@ export default function Home() {
                   flexShrink: 0,
                 }}>
                   <div className={styles["cardIcon"]}>{linkIcon}</div>
-                  <img
-                    src={paper.thumb.default}
+                  <Image
+                    img={paper.thumb}
                     width={225}
-                    height={290}
                     placeholder="blur"
                     alt=""
                     style={{
-                      position: "static",
-                      objectFit: "contain",
                       width: "225px",
                       height: "auto",
                       display: "block",
