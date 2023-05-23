@@ -199,13 +199,26 @@ jobs:
           pip install maturin
           maturin develop
 
+      - name: Configure core dumps
+        run: |
+          mkdir cli-core-dumps
+          echo "$PWD/cli-core-dumps/corefile-%e-%p-%t" | sudo tee /proc/sys/kernel/core_pattern
+          ulimit -c unlimited
+
       - name: Run Python tests
         run: |
           cd hydro_cli
           source .venv/bin/activate
           cd python_tests
           pip install -r requirements.txt
-          pytest *.py
+          RUST_BACKTRACE=1 pytest *.py
+
+      - name: Upload core dumps
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@master
+        with:
+          name: cli-core-dumps
+          path: cli-core-dumps
 
   lints:
     name: Lints
