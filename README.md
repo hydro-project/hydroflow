@@ -40,7 +40,7 @@ Example binaries are located in `/usr/src/myapp`.
 
 ## Dev Setup
 
-See the [setup section of the book](https://hydro-project.github.io/hydroflow/book/setup.html).
+See the [setup section of the book](https://hydro.run/docs/quickstart/setup).
 
 ### mdBook Setup
 

@@ -18,7 +18,7 @@ freely distributed with no coordination overhead. The goal of the [Hydro Project
 is to allow users to write programs that automatically scale and distribute effortlessly.
 
 For more information on the underlying mathematics of lattices and monotonicity, take a look at
-[Lattice Math section of the Hydroflow Book](https://hydro-project.github.io/hydroflow/book/lattice_math.html)
+[Lattice Math section of the Hydroflow Book](https://hydro.run/docs/lattices_crate/lattice_math)
 and Section 2 of the [Hydroflow Thesis](https://hydro.run/papers/hydroflow-thesis.pdf).
 
 Take a look at the [`lattice` rustdocs](https://hydro-project.github.io/hydroflow/doc/lattices/index.html).
