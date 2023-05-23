@@ -1262,7 +1262,7 @@ checksum = "c4a1e36c821dbe04574f602848a19f742f4fb3c98d40449f11bcad18d6b17421"
 
 [[package]]
 name = "hydro_cli"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1311,7 +1311,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow"
-version = "0.0.2"
+version = "0.1.0"
 dependencies = [
  "bincode",
  "byteorder",
@@ -1358,7 +1358,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_cli_integration"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-recursion",
  "async-trait",
@@ -1374,7 +1374,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "hydroflow_datalog_core",
  "proc-macro-crate",
@@ -1385,7 +1385,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog_core"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "hydroflow_lang",
  "insta",
@@ -1402,7 +1402,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_internalmacro"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -1412,7 +1412,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_lang"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "auto_impl",
  "hydroflow_internalmacro",
@@ -1428,7 +1428,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_macro"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "hydroflow_lang",
  "proc-macro-crate",
