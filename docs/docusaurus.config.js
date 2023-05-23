@@ -92,13 +92,14 @@ const config = {
         disableInDev: false,
       },
     ],
+    require.resolve("./wasm-plugin.js")
   ],
 
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       // Replace with your project's social card
-      // image: 'img/docusaurus-social-card.jpg',
+      image: 'img/social-card.png',
       navbar: {
         title: 'Hydro',
         logo: {
@@ -111,6 +112,11 @@ const config = {
             sidebarId: 'docsSidebar',
             position: 'left',
             label: 'Docs',
+          },
+          {
+            to: '/playground',
+            position: 'left',
+            label: 'Playground',
           },
           {
             to: '/research',
