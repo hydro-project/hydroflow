@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["pull","push_handoff"]};
+window.SIDEBAR_ITEMS = {"mod":["pull"]};

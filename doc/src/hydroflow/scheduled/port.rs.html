@@ -79,6 +79,15 @@
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Organizational module for Hydroflow Send/RecvCtx structs and Input/OutputPort structs.
 </span><span class="kw">use </span>std::cell::RefMut;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -110,7 +119,9 @@
 <span class="attr">#[sealed]
 </span><span class="kw">impl </span>Polarity <span class="kw">for </span>RECV {}
 
-<span class="attr">#[must_use]
+<span class="doccomment">/// Lightweight ID struct representing an input or output port for a [`Handoff`] added to a
+/// [`Hydroflow`](super::graph::Hydroflow) instance..
+</span><span class="attr">#[must_use]
 </span><span class="kw">pub struct </span>Port&lt;S: Polarity, H&gt;
 <span class="kw">where
     </span>H: Handoff,
@@ -119,22 +130,26 @@
     <span class="attr">#[allow(clippy::type_complexity)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) _marker: PhantomData&lt;(<span class="kw-2">*const </span>S, <span class="kw">fn</span>() -&gt; H)&gt;,
 }
-<span class="kw">pub type </span>SendPort&lt;H&gt; = Port&lt;SEND, H&gt;;
-<span class="kw">pub type </span>RecvPort&lt;H&gt; = Port&lt;RECV, H&gt;;
+<span class="doccomment">/// Send-specific variant of [`Port`]. An output port.
+</span><span class="kw">pub type </span>SendPort&lt;H&gt; = Port&lt;SEND, H&gt;;
+<span class="doccomment">/// Recv-specific variant of [`Port`]. An input port.
+</span><span class="kw">pub type </span>RecvPort&lt;H&gt; = Port&lt;RECV, H&gt;;
 
-<span class="attr">#[derive(RefCast)]
+<span class="doccomment">/// Wrapper around a handoff to differentiate between output and input.
+</span><span class="attr">#[derive(RefCast)]
 #[repr(transparent)]
 </span><span class="kw">pub struct </span>PortCtx&lt;S: Polarity, H&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) handoff: H,
     <span class="kw">pub</span>(<span class="kw">crate</span>) _marker: PhantomData&lt;<span class="kw-2">*const </span>S&gt;,
 }
-
-<span class="kw">pub type </span>SendCtx&lt;H&gt; = PortCtx&lt;SEND, H&gt;;
-<span class="kw">pub type </span>RecvCtx&lt;H&gt; = PortCtx&lt;RECV, H&gt;;
+<span class="doccomment">/// Send-specific [`PortCtx`]. Output to send into a handoff.
+</span><span class="kw">pub type </span>SendCtx&lt;H&gt; = PortCtx&lt;SEND, H&gt;;
+<span class="doccomment">/// Recv-specific [`PortCtx`]. Input to receive from a handoff.
+</span><span class="kw">pub type </span>RecvCtx&lt;H&gt; = PortCtx&lt;RECV, H&gt;;
 
 <span class="doccomment">/// Context provided to a subgraph for reading from a handoff. Corresponds to a [`SendPort`].
 </span><span class="kw">impl</span>&lt;H: Handoff&gt; SendCtx&lt;H&gt; {
-    <span class="comment">// TODO: represent backpressure in this return value.
+    <span class="doccomment">/// Alias for [`Handoff::give`] on the inner `H`.
     </span><span class="kw">pub fn </span>give&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, item: T) -&gt; T
     <span class="kw">where
         </span>H: CanReceive&lt;T&gt;,
@@ -142,7 +157,8 @@
         &lt;H <span class="kw">as </span>CanReceive&lt;T&gt;&gt;::give(<span class="kw-2">&amp;</span><span class="self">self</span>.handoff, item)
     }
 
-    <span class="kw">pub fn </span>try_give&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, item: T) -&gt; <span class="prelude-ty">Result</span>&lt;T, T&gt;
+    <span class="doccomment">/// Alias for [`Handoff::try_give`] on the inner `H`.
+    </span><span class="kw">pub fn </span>try_give&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, item: T) -&gt; <span class="prelude-ty">Result</span>&lt;T, T&gt;
     <span class="kw">where
         </span>H: TryCanReceive&lt;T&gt;,
     {
@@ -152,11 +168,13 @@
 
 <span class="doccomment">/// Context provided to a subgraph for reading from a handoff. Corresponds to a [`RecvPort`].
 </span><span class="kw">impl</span>&lt;H: Handoff&gt; RecvCtx&lt;H&gt; {
-    <span class="kw">pub fn </span>take_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; H::Inner {
+    <span class="doccomment">/// See [`Handoff::take_inner`].
+    </span><span class="kw">pub fn </span>take_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; H::Inner {
         <span class="self">self</span>.handoff.take_inner()
     }
 
-    <span class="kw">pub fn </span>borrow_mut_swap(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; RefMut&lt;H::Inner&gt; {
+    <span class="doccomment">/// See [`Handoff::borrow_mut_swap`].
+    </span><span class="kw">pub fn </span>borrow_mut_swap(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; RefMut&lt;H::Inner&gt; {
         <span class="self">self</span>.handoff.borrow_mut_swap()
     }
 }

@@ -56,7 +56,16 @@
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
 <a href="#58" id="58">58</a>
-</pre></div><pre class="rust"><code><span class="attr">#[macro_export]
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! Hydroflow declarative macros.
+
+/// [`assert!`] but returns a [`Result&lt;(), String&gt;`] instead of panicking.
+</span><span class="attr">#[macro_export]
 </span><span class="macro">macro_rules! </span>rassert {
     (<span class="macro-nonterminal">$cond</span>:expr $(,)<span class="question-mark">?</span>) =&gt; {
         <span class="macro-nonterminal">$</span><span class="macro">crate::rassert!</span>(<span class="macro-nonterminal">$cond</span>, <span class="string">&quot;assertion failed: `{}`&quot;</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$cond</span>))
@@ -76,7 +85,8 @@
     };
 }
 
-<span class="attr">#[macro_export]
+<span class="doccomment">/// [`assert_eq!`] but returns a [`Result&lt;(), String&gt;`] instead of panicking.
+</span><span class="attr">#[macro_export]
 </span><span class="macro">macro_rules! </span>rassert_eq {
     (<span class="macro-nonterminal">$a</span>:expr, <span class="macro-nonterminal">$b</span>:expr) =&gt; {
         <span class="macro-nonterminal">$</span><span class="macro">crate::rassert!</span>(<span class="macro-nonterminal">$a </span>== <span class="macro-nonterminal">$b</span>,)
@@ -98,7 +108,9 @@
     };
 }
 
-<span class="attr">#[macro_export]
+<span class="doccomment">/// Test helper, emits and checks snapshots for the mermaid and dot graphs.
+</span><span class="attr">#[doc(hidden)]
+#[macro_export]
 </span><span class="macro">macro_rules! </span>assert_graphvis_snapshots {
     (<span class="macro-nonterminal">$df</span>:ident) =&gt; {
         {

@@ -52,6 +52,25 @@
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
 <a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
 </pre></div><pre class="rust"><code><span class="attr">#![feature(never_type)]
 #![feature(type_alias_impl_trait)]
 #![feature(impl_trait_in_assoc_type)]
@@ -59,9 +78,25 @@
 #![allow(clippy::let_and_return)]
 #![allow(clippy::iter_with_drain)]
 #![allow(clippy::explicit_auto_deref)]
+#![deny(missing_docs)] </span><span class="comment">// TODO(mingwei): #![forbid(missing_docs)] when all docs are done.
+
+</span><span class="doccomment">//! Hydroflow is a low-level dataflow-based runtime system for the [Hydro Project](https://hydro.run/).
+//!
+//! The primary item in this crate is the [`Hydroflow`](crate::scheduled::graph::Hydroflow) struct,
+//! representing a Hydroflow dataflow graph. Although this graph can be manually constructed, the
+//! easiest way to instantiate a `Hydroflow` instance is with the [`hydroflow_syntax!`] macro using
+//! Hydroflow&#39;s custom &quot;surface syntax.&quot;
+//!
+//! ```rust
+//! let mut hf = hydroflow::hydroflow_syntax! {
+//!     source_iter([&quot;hello&quot;, &quot;world&quot;]) -&gt; for_each(|s| println!(&quot;{}&quot;, s));
+//! };
+//! hf.run_available();
+//! ```
+//!
+//! For more examples, check out the [`examples` folder on Github](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples).
 
 </span><span class="kw">pub mod </span>compiled;
-<span class="kw">pub mod </span>lang;
 <span class="kw">pub mod </span>props;
 <span class="kw">pub mod </span>scheduled;
 <span class="kw">pub mod </span>util;
@@ -77,30 +112,33 @@
 <span class="attr">#[cfg(feature = <span class="string">&quot;hydroflow_datalog&quot;</span>)]
 </span><span class="kw">pub use </span>hydroflow_datalog::<span class="kw-2">*</span>;
 <span class="attr">#[cfg(feature = <span class="string">&quot;hydroflow_macro&quot;</span>)]
-</span><span class="kw">pub use </span>hydroflow_macro::<span class="kw-2">*</span>;
+</span><span class="kw">pub use </span>hydroflow_macro::{
+    hydroflow_main <span class="kw">as </span>main, hydroflow_parser, hydroflow_syntax, hydroflow_syntax_noemit,
+    hydroflow_test <span class="kw">as </span>test,
+};
 
 <span class="attr">#[cfg(doctest)]
 </span><span class="kw">mod </span>booktest {
     <span class="macro">macro_rules! </span>booktest {
-        (<span class="macro-nonterminal">$i</span>:ident $( <span class="macro-nonterminal">$t</span>:tt )<span class="kw-2">*</span>) =&gt; {
-            <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="string">&quot;../../book/&quot;</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$i</span>), $( <span class="macro">stringify!</span>(<span class="macro-nonterminal">$t</span>), )* <span class="string">&quot;.md&quot;</span>))]
+        (<span class="macro-nonterminal">$path</span>:literal, <span class="macro-nonterminal">$i</span>:ident) =&gt; {
+            <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="string">&quot;../../docs/docs/&quot;</span>, <span class="macro-nonterminal">$path</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$i</span>), <span class="string">&quot;.md&quot;</span>))]
             </span><span class="kw">mod </span><span class="macro-nonterminal">$i </span>{}
         };
     }
 
-    <span class="macro">booktest!</span>(example_1_simplest);
-    <span class="macro">booktest!</span>(example_2_simple);
-    <span class="macro">booktest!</span>(example_3_stream);
-    <span class="macro">booktest!</span>(example_4_neighbors);
-    <span class="macro">booktest!</span>(example_5_reachability);
-    <span class="macro">booktest!</span>(example_6_unreachability);
-    <span class="macro">booktest!</span>(example_7_echo_server);
-    <span class="macro">booktest!</span>(example_8_chat_server);
+    <span class="macro">booktest!</span>(<span class="string">&quot;quickstart/&quot;</span>, example_1_simplest);
+    <span class="macro">booktest!</span>(<span class="string">&quot;quickstart/&quot;</span>, example_2_simple);
+    <span class="macro">booktest!</span>(<span class="string">&quot;quickstart/&quot;</span>, example_3_stream);
+    <span class="macro">booktest!</span>(<span class="string">&quot;quickstart/&quot;</span>, example_4_neighbors);
+    <span class="macro">booktest!</span>(<span class="string">&quot;quickstart/&quot;</span>, example_5_reachability);
+    <span class="macro">booktest!</span>(<span class="string">&quot;quickstart/&quot;</span>, example_6_unreachability);
+    <span class="macro">booktest!</span>(<span class="string">&quot;quickstart/&quot;</span>, example_7_echo_server);
+    <span class="macro">booktest!</span>(<span class="string">&quot;quickstart/&quot;</span>, example_8_chat_server);
 
-    <span class="macro">booktest!</span>(surface_syntax);
-    <span class="macro">booktest!</span>(surface_embedding);
-    <span class="macro">booktest!</span>(surface_flows);
-    <span class="macro">booktest!</span>(surface_data);
+    <span class="macro">booktest!</span>(<span class="string">&quot;syntax/&quot;</span>, index);
+    <span class="macro">booktest!</span>(<span class="string">&quot;syntax/&quot;</span>, surface_embedding);
+    <span class="macro">booktest!</span>(<span class="string">&quot;syntax/&quot;</span>, surface_flows);
+    <span class="macro">booktest!</span>(<span class="string">&quot;syntax/&quot;</span>, surface_data);
 
     <span class="kw">mod </span>surface_ops {
         <span class="macro">hydroflow_macro::surface_booktest_operators!</span>();

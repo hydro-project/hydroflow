@@ -236,7 +236,7 @@
 <span class="kw">use </span>lattices::{ConvertFrom, Merge};
 <span class="kw">use </span>rustc_hash::{FxHashMap, FxHashSet};
 
-<span class="kw">use </span><span class="kw">crate</span>::lang::clear::Clear;
+<span class="kw">use </span><span class="kw">crate</span>::util::clear::Clear;
 
 <span class="kw">pub struct </span>HalfJoinStateLattice&lt;K, Lattice&gt; {
     table: MapUnion&lt;FxHashMap&lt;K, Lattice&gt;&gt;,

@@ -32,11 +32,23 @@
 <a href="#32" id="32">32</a>
 <a href="#33" id="33">33</a>
 <a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
+<a href="#36" id="36">36</a>
+<a href="#37" id="37">37</a>
+<a href="#38" id="38">38</a>
+<a href="#39" id="39">39</a>
+<a href="#40" id="40">40</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_datalog_core::{gen_hydroflow_graph, hydroflow_graph_to_program};
 <span class="kw">use </span>proc_macro2::Span;
 <span class="kw">use </span>quote::{quote, ToTokens};
 
-<span class="attr">#[proc_macro]
+<span class="doccomment">/// Generate a Hydroflow instance from [Datalog](https://en.wikipedia.org/wiki/Datalog) code.
+///
+/// This uses a variant of Datalog that is similar to [Dedalus](https://www2.eecs.berkeley.edu/Pubs/TechRpts/2009/EECS-2009-173.pdf).
+///
+/// For examples, see [the datalog tests in the Hydroflow repo](https://github.com/hydro-project/hydroflow/blob/main/hydroflow/tests/datalog_frontend.rs).
+</span><span class="comment">// TODO(mingwei): rustdoc examples inline.
+</span><span class="attr">#[proc_macro]
 </span><span class="kw">pub fn </span>datalog(item: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
     <span class="kw">let </span>item = proc_macro2::TokenStream::from(item);
     <span class="kw">let </span>literal: proc_macro2::Literal = <span class="macro">syn::parse_quote! </span>{

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["HandoffData","Hydroflow"]};
+window.SIDEBAR_ITEMS = {"struct":["Hydroflow"]};

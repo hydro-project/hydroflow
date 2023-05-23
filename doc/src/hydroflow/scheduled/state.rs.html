@@ -17,11 +17,19 @@
 <a href="#17" id="17">17</a>
 <a href="#18" id="18">18</a>
 <a href="#19" id="19">19</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
+<a href="#20" id="20">20</a>
+<a href="#21" id="21">21</a>
+<a href="#22" id="22">22</a>
+<a href="#23" id="23">23</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! Module for [`StateHandle`], part of the &quot;state API&quot;.
+
+</span><span class="kw">use </span>std::marker::PhantomData;
 
 <span class="kw">use </span><span class="kw">super</span>::StateId;
 
-<span class="attr">#[must_use]
+<span class="doccomment">/// A handle into a particular [`Hydroflow`](super::graph::Hydroflow) instance, referring to data
+/// inserted by [`add_state`](super::graph::Hydroflow::add_state).
+</span><span class="attr">#[must_use]
 #[derive(Debug)]
 </span><span class="kw">pub struct </span>StateHandle&lt;T&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) state_id: StateId,

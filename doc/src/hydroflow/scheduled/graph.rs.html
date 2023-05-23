@@ -651,7 +651,19 @@
 <a href="#651" id="651">651</a>
 <a href="#652" id="652">652</a>
 <a href="#653" id="653">653</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::any::Any;
+<a href="#654" id="654">654</a>
+<a href="#655" id="655">655</a>
+<a href="#656" id="656">656</a>
+<a href="#657" id="657">657</a>
+<a href="#658" id="658">658</a>
+<a href="#659" id="659">659</a>
+<a href="#660" id="660">660</a>
+<a href="#661" id="661">661</a>
+<a href="#662" id="662">662</a>
+<a href="#663" id="663">663</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! Module for the [`Hydroflow`] struct and helper items.
+
+</span><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::cell::Cell;
 <span class="kw">use </span>std::collections::VecDeque;
@@ -661,7 +673,6 @@
 <span class="kw">use </span>hydroflow_lang::diagnostic::{Diagnostic, SerdeSpan};
 <span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
 <span class="kw">use </span>ref_cast::RefCast;
-<span class="kw">use </span>tokio::runtime::TryCurrentError;
 <span class="kw">use </span>tokio::sync::mpsc::{<span class="self">self</span>, UnboundedReceiver};
 
 <span class="kw">use </span><span class="kw">super</span>::context::Context;
@@ -770,12 +781,12 @@
         Reactor::new(<span class="self">self</span>.context.event_queue_send.clone())
     }
 
-    <span class="comment">// Gets the current tick (local time) count.
+    <span class="doccomment">/// Gets the current tick (local time) count.
     </span><span class="kw">pub fn </span>current_tick(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.context.current_tick
     }
 
-    <span class="comment">// Gets the current stratum nubmer.
+    <span class="doccomment">/// Gets the current stratum nubmer.
     </span><span class="kw">pub fn </span>current_stratum(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.context.current_stratum
     }
@@ -1006,7 +1017,8 @@
         <span class="prelude-val">Some</span>(count + extra_count)
     }
 
-    <span class="kw">pub fn </span>add_subgraph&lt;Name, R, W, F&gt;(
+    <span class="doccomment">/// Adds a new compiled subgraph with the specified inputs and outputs in stratum 0.
+    </span><span class="kw">pub fn </span>add_subgraph&lt;Name, R, W, F&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         name: Name,
         recv_ports: R,
@@ -1022,7 +1034,7 @@
         <span class="self">self</span>.add_subgraph_stratified(name, <span class="number">0</span>, recv_ports, send_ports, subgraph)
     }
 
-    <span class="doccomment">/// Adds a new compiled subgraph with the specified inputs and outputs.
+    <span class="doccomment">/// Adds a new compiled subgraph with the specified inputs, outputs, and stratum number.
     ///
     /// TODO(mingwei): add example in doc.
     </span><span class="kw">pub fn </span>add_subgraph_stratified&lt;Name, R, W, F&gt;(
@@ -1187,7 +1199,11 @@
         (input_port, output_port)
     }
 
-    <span class="kw">pub fn </span>add_state&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, state: T) -&gt; StateHandle&lt;T&gt;
+    <span class="doccomment">/// Adds referenceable state into the `Hydroflow` instance. Returns a state handle which can be
+    /// used externally or by operators to access the state.
+    ///
+    /// This is part of the &quot;state API&quot;.
+    </span><span class="kw">pub fn </span>add_state&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, state: T) -&gt; StateHandle&lt;T&gt;
     <span class="kw">where
         </span>T: Any,
     {
@@ -1202,18 +1218,21 @@
 }
 
 <span class="kw">impl </span>Hydroflow {
-    <span class="kw">pub fn </span>spawn_task&lt;Fut&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, future: Fut) -&gt; <span class="prelude-ty">Result</span>&lt;(), TryCurrentError&gt;
+    <span class="doccomment">/// Alias for [`Context::spawn_task`].
+    </span><span class="kw">pub fn </span>spawn_task&lt;Fut&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, future: Fut)
     <span class="kw">where
-        </span>Fut: Future&lt;Output = ()&gt; + Send + <span class="lifetime">&#39;static</span>,
+        </span>Fut: Future&lt;Output = ()&gt; + <span class="lifetime">&#39;static</span>,
     {
-        <span class="self">self</span>.context.spawn_task(future)
+        <span class="self">self</span>.context.spawn_task(future);
     }
 
-    <span class="kw">pub fn </span>abort_tasks(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+    <span class="doccomment">/// Alias for [`Context::abort_tasks`].
+    </span><span class="kw">pub fn </span>abort_tasks(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.context.abort_tasks()
     }
 
-    <span class="kw">pub fn </span>join_tasks(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Future {
+    <span class="doccomment">/// Alias for [`Context::join_tasks`].
+    </span><span class="kw">pub fn </span>join_tasks(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Future {
         <span class="self">self</span>.context.join_tasks()
     }
 }
@@ -1229,6 +1248,7 @@
 /// Internal use: used to track the hydroflow graph structure.
 ///
 /// TODO(mingwei): restructure `PortList` so this can be crate-private.
+</span><span class="attr">#[doc(hidden)]
 </span><span class="kw">pub struct </span>HandoffData {
     <span class="doccomment">/// A friendly name for diagnostics.
     </span><span class="attr">#[allow(dead_code)] </span><span class="comment">// TODO(mingwei): remove attr once used.

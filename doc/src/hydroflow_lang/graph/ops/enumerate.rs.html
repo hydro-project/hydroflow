@@ -193,7 +193,7 @@
             Persistence::Tick =&gt; (
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="kw">let </span>#counter_ident = #hydroflow.add_state(::std::cell::RefCell::new(
-                        #root::lang::monotonic_map::MonotonicMap::new_init(<span class="number">0</span>..),
+                        #root::util::monotonic_map::MonotonicMap::new_init(<span class="number">0</span>..),
                     ));
                 },
                 <span class="macro">quote_spanned! </span>{op_span=&gt;

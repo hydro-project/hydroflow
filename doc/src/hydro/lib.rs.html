@@ -771,6 +771,14 @@
 <a href="#771" id="771">771</a>
 <a href="#772" id="772">772</a>
 <a href="#773" id="773">773</a>
+<a href="#774" id="774">774</a>
+<a href="#775" id="775">775</a>
+<a href="#776" id="776">776</a>
+<a href="#777" id="777">777</a>
+<a href="#778" id="778">778</a>
+<a href="#779" id="779">779</a>
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::sync::Arc;
 
@@ -809,27 +817,19 @@
     }
 }
 
+<span class="kw">static </span>CONVERTERS_MODULE: std::sync::RwLock&lt;<span class="prelude-ty">Option</span>&lt;Py&lt;PyModule&gt;&gt;&gt; = std::sync::RwLock::new(<span class="prelude-val">None</span>);
+
 <span class="kw">fn </span>interruptible_future_to_py&lt;F, T&gt;(py: Python&lt;<span class="lifetime">&#39;_</span>&gt;, fut: F) -&gt; PyResult&lt;<span class="kw-2">&amp;</span>PyAny&gt;
 <span class="kw">where
     </span>F: Future&lt;Output = PyResult&lt;T&gt;&gt; + Send + <span class="lifetime">&#39;static</span>,
     T: IntoPy&lt;PyObject&gt;,
 {
-    <span class="kw">let </span>module = PyModule::from_code(
-        py,
-        <span class="string">r#&quot;
-import asyncio
-import sys
-async def coroutine_to_safely_cancellable(c, cancel_token):
-    try:
-        return await asyncio.shield(c)
-    except asyncio.CancelledError:
-        cancel_token.safe_cancel()
-        await c
-        raise asyncio.CancelledError()
-&quot;#</span>,
-        <span class="string">&quot;coro_converter&quot;</span>,
-        <span class="string">&quot;coro_converter&quot;</span>,
-    )<span class="question-mark">?</span>;
+    <span class="kw">let </span>module = CONVERTERS_MODULE
+        .read()
+        .unwrap()
+        .clone()
+        .unwrap()
+        .into_ref(py);
 
     <span class="kw">let </span>(cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::&lt;()&gt;();
 
@@ -1216,20 +1216,8 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
 <span class="kw">fn </span>convert_next_to_generator(receiver: <span class="kw">impl </span>IntoPy&lt;PyObject&gt;) -&gt; PyResult&lt;PyObject&gt; {
     Python::with_gil(|py| {
         <span class="comment">// load helper python function as a string
-        </span><span class="kw">let </span>module = PyModule::from_code(
-            py,
-            <span class="string">r#&quot;
-async def pyreceiver_to_async_generator(pyreceiver):
-    while True:
-        res = await pyreceiver.next()
-        if res is None:
-            break
-        else:
-            yield res
-    &quot;#</span>,
-            <span class="string">&quot;converter&quot;</span>,
-            <span class="string">&quot;converter&quot;</span>,
-        )<span class="question-mark">?</span>;
+        </span><span class="kw">let </span>converters = CONVERTERS_MODULE.read().unwrap();
+        <span class="kw">let </span>module = converters.as_ref().unwrap().as_ref(py);
 
         <span class="prelude-val">Ok</span>(module
             .call_method1(<span class="string">&quot;pyreceiver_to_async_generator&quot;</span>, (receiver.into_py(py),))
@@ -1515,6 +1503,34 @@ async def pyreceiver_to_async_generator(pyreceiver):
 
 <span class="attr">#[pymodule]
 </span><span class="kw">pub fn </span>_core(py: Python&lt;<span class="lifetime">&#39;_</span>&gt;, module: <span class="kw-2">&amp;</span>PyModule) -&gt; PyResult&lt;()&gt; {
+    <span class="kw-2">*</span>CONVERTERS_MODULE.write().unwrap() = <span class="prelude-val">Some</span>(
+        PyModule::from_code(
+            py,
+            <span class="string">r#&quot;
+import asyncio
+import sys
+async def coroutine_to_safely_cancellable(c, cancel_token):
+    try:
+        return await asyncio.shield(c)
+    except asyncio.CancelledError:
+        cancel_token.safe_cancel()
+        await c
+        raise asyncio.CancelledError()
+
+async def pyreceiver_to_async_generator(pyreceiver):
+    while True:
+        res = await pyreceiver.next()
+        if res is None:
+            break
+        else:
+            yield res
+&quot;#</span>,
+            <span class="string">&quot;converters&quot;</span>,
+            <span class="string">&quot;converters&quot;</span>,
+        )<span class="question-mark">?
+        </span>.into(),
+    );
+
     module.add(<span class="string">&quot;AnyhowError&quot;</span>, py.get_type::&lt;AnyhowError&gt;())<span class="question-mark">?</span>;
     module.add_class::&lt;AnyhowWrapper&gt;()<span class="question-mark">?</span>;
 

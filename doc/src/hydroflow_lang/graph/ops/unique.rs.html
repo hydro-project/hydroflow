@@ -246,7 +246,7 @@
             Persistence::Tick =&gt; {
                 <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="kw">let </span>#uniquedata_ident = #hydroflow.add_state(::std::cell::RefCell::new(
-                        #root::lang::monotonic_map::MonotonicMap::&lt;<span class="kw">_</span>, #root::rustc_hash::FxHashSet&lt;<span class="kw">_</span>&gt;&gt;::default(),
+                        #root::util::monotonic_map::MonotonicMap::&lt;<span class="kw">_</span>, #root::rustc_hash::FxHashSet&lt;<span class="kw">_</span>&gt;&gt;::default(),
                     ));
                 };
                 <span class="kw">let </span>get_set = <span class="macro">quote_spanned! </span>{op_span=&gt;

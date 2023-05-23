@@ -330,7 +330,7 @@
             <span class="kw">let </span>(init, borrow) = <span class="kw">match </span>persistence {
                 Persistence::Tick =&gt; (
                     <span class="macro">quote_spanned! </span>{op_span=&gt;
-                        #root::lang::monotonic_map::MonotonicMap::new_init(
+                        #root::util::monotonic_map::MonotonicMap::new_init(
                             #root::compiled::pull::HalfJoinStateLattice::default()
                         )
                     },

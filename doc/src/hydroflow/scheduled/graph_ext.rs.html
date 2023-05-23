@@ -207,7 +207,17 @@
 <a href="#207" id="207">207</a>
 <a href="#208" id="208">208</a>
 <a href="#209" id="209">209</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>core::task;
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! Helper extensions for [`Hydroflow`](super::graph::Hydroflow).
+</span><span class="attr">#![allow(missing_docs)]
+
+</span><span class="kw">use </span>core::task;
 <span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::sync::mpsc::SyncSender;
 <span class="kw">use </span>std::task::Poll;
@@ -227,7 +237,11 @@
         ( $(<span class="macro-nonterminal">$recv_param</span>:ident : <span class="macro-nonterminal">$recv_generic</span>:ident),* ),
         ( $(<span class="macro-nonterminal">$send_param</span>:ident : <span class="macro-nonterminal">$send_generic</span>:ident),* )
     ) =&gt; {
-        <span class="kw">fn </span><span class="macro-nonterminal">$fn_name </span>&lt;Name, F, $(<span class="macro-nonterminal">$recv_generic</span>,)* $(<span class="macro-nonterminal">$send_generic</span>),<span class="kw-2">*</span>&gt; (
+        <span class="doccomment">/// Adds a subgraph with specific topology:
+        ///
+        </span><span class="attr">#[doc = <span class="macro">concat!</span>(<span class="string">&quot;* Inputs: &quot;</span>, $( <span class="macro">stringify!</span>( <span class="macro-nonterminal">$recv_generic </span>), <span class="string">&quot;, &quot;</span>, )<span class="kw-2">*</span>)]
+        #[doc = <span class="macro">concat!</span>(<span class="string">&quot;* Outputs: &quot;</span>, $( <span class="macro">stringify!</span>( <span class="macro-nonterminal">$send_generic </span>), <span class="string">&quot;, &quot;</span>, )<span class="kw-2">*</span>)]
+        </span><span class="kw">fn </span><span class="macro-nonterminal">$fn_name </span>&lt;Name, F, $(<span class="macro-nonterminal">$recv_generic</span>,)* $(<span class="macro-nonterminal">$send_generic</span>),<span class="kw-2">*</span>&gt; (
             <span class="kw-2">&amp;mut </span><span class="self">self</span>,
             name: Name,
             $(<span class="macro-nonterminal">$recv_param </span>: RecvPort&lt; <span class="macro-nonterminal">$recv_generic </span>&gt;,)*

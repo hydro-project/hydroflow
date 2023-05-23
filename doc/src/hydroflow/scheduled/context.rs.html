@@ -154,11 +154,19 @@
 <a href="#154" id="154">154</a>
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::any::Any;
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! Module for the user-facing [`Context`] object.
+
+</span><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>std::marker::PhantomData;
 
-<span class="kw">use </span>tokio::runtime::{Handle, TryCurrentError};
 <span class="kw">use </span>tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>tokio::task::JoinHandle;
 
@@ -293,20 +301,26 @@
             .expect(<span class="string">&quot;StateHandle wrong type T for casting.&quot;</span>)
     }
 
-    <span class="kw">pub fn </span>spawn_task&lt;Fut&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, future: Fut) -&gt; <span class="prelude-ty">Result</span>&lt;(), TryCurrentError&gt;
+    <span class="doccomment">/// Spawns an async task on the internal Tokio executor.
+    </span><span class="kw">pub fn </span>spawn_task&lt;Fut&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, future: Fut)
     <span class="kw">where
-        </span>Fut: Future&lt;Output = ()&gt; + Send + <span class="lifetime">&#39;static</span>,
+        </span>Fut: Future&lt;Output = ()&gt; + <span class="lifetime">&#39;static</span>,
     {
-        Handle::try_current().map(|handle| <span class="self">self</span>.task_join_handles.push(handle.spawn(future)))
+        <span class="self">self</span>.task_join_handles
+            .push(tokio::task::spawn_local(future));
     }
 
-    <span class="kw">pub fn </span>abort_tasks(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+    <span class="doccomment">/// Aborts all tasks spawned with [`Self::spawn_task`].
+    </span><span class="kw">pub fn </span>abort_tasks(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">for </span>task <span class="kw">in </span><span class="self">self</span>.task_join_handles.drain(..) {
             task.abort();
         }
     }
 
-    <span class="kw">pub async fn </span>join_tasks(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+    <span class="doccomment">/// Waits for all tasks spawned with [`Self::spawn_task`] to complete.
+    ///
+    /// Will probably just hang.
+    </span><span class="kw">pub async fn </span>join_tasks(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         futures::future::join_all(<span class="self">self</span>.task_join_handles.drain(..)).<span class="kw">await</span>;
     }
 }

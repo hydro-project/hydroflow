@@ -367,7 +367,7 @@
     <span class="doccomment">/// Configuration for the ports that this service will listen on a port for.
     </span>port_to_bind: HashMap&lt;String, ServerStrategy&gt;,
 
-    built_binary: <span class="prelude-ty">Option</span>&lt;JoinHandle&lt;BuildResult&gt;&gt;,
+    built_binary: <span class="prelude-ty">Option</span>&lt;JoinHandle&lt;<span class="prelude-ty">Result</span>&lt;BuiltCrate&gt;&gt;&gt;,
     launched_host: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt;,
 
     <span class="doccomment">/// A map of port names to config for how other services can connect to this one.
@@ -488,7 +488,7 @@
             .<span class="kw">await
     </span>}
 
-    <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; JoinHandle&lt;BuildResult&gt; {
+    <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; JoinHandle&lt;<span class="prelude-ty">Result</span>&lt;BuiltCrate&gt;&gt; {
         <span class="kw">let </span>src_cloned = <span class="self">self</span>.src.canonicalize().unwrap();
         <span class="kw">let </span>example_cloned = <span class="self">self</span>.example.clone();
         <span class="kw">let </span>features_cloned = <span class="self">self</span>.features.clone();

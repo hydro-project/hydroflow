@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":["hydroflow_parser","hydroflow_syntax","hydroflow_syntax_noemit"]};
+window.SIDEBAR_ITEMS = {"attr":["hydroflow_main","hydroflow_test"],"macro":["hydroflow_parser","hydroflow_syntax","hydroflow_syntax_noemit"]};

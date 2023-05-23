@@ -80,6 +80,87 @@
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
 <a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
 </pre></div><pre class="rust"><code><span class="attr">#![feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)]
 #![allow(clippy::explicit_auto_deref)]
 
@@ -88,33 +169,58 @@
 <span class="kw">use </span>hydroflow_lang::parse::HfCode;
 <span class="kw">use </span>proc_macro2::{Ident, Literal, Span};
 <span class="kw">use </span>quote::quote;
-<span class="kw">use </span>syn::{parse_macro_input, LitStr};
+<span class="kw">use </span>syn::{parse_macro_input, parse_quote, Attribute, LitStr};
 
-<span class="attr">#[proc_macro]
+<span class="doccomment">/// Create a Hydroflow instance using Hydroflow&#39;s custom &quot;surface syntax.&quot;
+///
+/// For example usage, take a look at the [`surface_*` tests in the `tests` folder](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/tests)
+/// or the [`examples` folder](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples)
+/// in the [Hydroflow repo](https://github.com/hydro-project/hydroflow).
+</span><span class="comment">// TODO(mingwei): rustdoc examples inline.
+</span><span class="attr">#[proc_macro]
 </span><span class="kw">pub fn </span>hydroflow_syntax(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
     hydroflow_syntax_internal(input, <span class="prelude-val">Some</span>(Level::Help))
 }
 
-<span class="attr">#[proc_macro]
+<span class="doccomment">/// [`hydroflow_syntax!`] but will not emit any diagnostics (errors, warnings, etc.).
+///
+/// Used for testing, users will want to use [`hydroflow_syntax!`] instead.
+</span><span class="attr">#[proc_macro]
 </span><span class="kw">pub fn </span>hydroflow_syntax_noemit(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
     hydroflow_syntax_internal(input, <span class="prelude-val">None</span>)
+}
+
+<span class="kw">fn </span>root() -&gt; proc_macro2::TokenStream {
+    <span class="kw">use </span>std::env::{var <span class="kw">as </span>env_var, VarError};
+
+    <span class="kw">let </span>hydroflow_crate = proc_macro_crate::crate_name(<span class="string">&quot;hydroflow&quot;</span>)
+        .expect(<span class="string">&quot;hydroflow should be present in `Cargo.toml`&quot;</span>);
+    <span class="kw">match </span>hydroflow_crate {
+        proc_macro_crate::FoundCrate::Itself =&gt; {
+            <span class="kw">if </span><span class="prelude-val">Err</span>(VarError::NotPresent) == env_var(<span class="string">&quot;CARGO_BIN_NAME&quot;</span>)
+                &amp;&amp; <span class="prelude-val">Err</span>(VarError::NotPresent) != env_var(<span class="string">&quot;CARGO_PRIMARY_PACKAGE&quot;</span>)
+                &amp;&amp; <span class="prelude-val">Ok</span>(<span class="string">&quot;hydroflow&quot;</span>) == env_var(<span class="string">&quot;CARGO_CRATE_NAME&quot;</span>).as_deref()
+            {
+                <span class="comment">// In the crate itself, including unit tests.
+                </span><span class="macro">quote! </span>{ <span class="kw">crate </span>}
+            } <span class="kw">else </span>{
+                <span class="comment">// In an integration test, example, bench, etc.
+                </span><span class="macro">quote! </span>{ ::hydroflow }
+            }
+        }
+        proc_macro_crate::FoundCrate::Name(name) =&gt; {
+            <span class="kw">let </span>ident: Ident = Ident::new(<span class="kw-2">&amp;</span>name, Span::call_site());
+            <span class="macro">quote! </span>{ ::#ident }
+        }
+    }
 }
 
 <span class="kw">fn </span>hydroflow_syntax_internal(
     input: proc_macro::TokenStream,
     min_diagnostic_level: <span class="prelude-ty">Option</span>&lt;Level&gt;,
 ) -&gt; proc_macro::TokenStream {
-    <span class="kw">let </span>hydroflow_crate = proc_macro_crate::crate_name(<span class="string">&quot;hydroflow&quot;</span>)
-        .expect(<span class="string">&quot;hydroflow should be present in `Cargo.toml`&quot;</span>);
-    <span class="kw">let </span>root = <span class="kw">match </span>hydroflow_crate {
-        proc_macro_crate::FoundCrate::Itself =&gt; <span class="macro">quote! </span>{ hydroflow },
-        proc_macro_crate::FoundCrate::Name(name) =&gt; {
-            <span class="kw">let </span>ident = Ident::new(<span class="kw-2">&amp;</span>name, Span::call_site());
-            <span class="macro">quote! </span>{ #ident }
-        }
-    };
-
     <span class="kw">let </span>input = <span class="macro">parse_macro_input!</span>(input <span class="kw">as </span>HfCode);
+    <span class="kw">let </span>root = root();
     <span class="kw">let </span>(graph_code_opt, diagnostics) = build_hfcode(input, <span class="kw-2">&amp;</span>root);
     diagnostics
         .iter()
@@ -126,7 +232,10 @@
         .into()
 }
 
-<span class="attr">#[proc_macro]
+<span class="doccomment">/// Parse Hydroflow &quot;surface syntax&quot; without emitting code.
+///
+/// Used for testing, users will want to use [`hydroflow_syntax!`] instead.
+</span><span class="attr">#[proc_macro]
 </span><span class="kw">pub fn </span>hydroflow_parser(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
     <span class="kw">let </span>input = <span class="macro">parse_macro_input!</span>(input <span class="kw">as </span>HfCode);
 
@@ -150,7 +259,7 @@
     <span class="macro">assert!</span>(input.is_empty(), <span class="string">&quot;Input must be empty&quot;</span>);
     <span class="kw">let </span>each = hydroflow_lang::graph::ops::OPERATORS.iter().map(|op| {
         <span class="kw">let </span>op_ident = Ident::new(op.name, Span::call_site());
-        <span class="kw">let </span>op_filename = <span class="macro">format!</span>(<span class="string">&quot;../../book/docgen/{}.md&quot;</span>, op.name);
+        <span class="kw">let </span>op_filename = <span class="macro">format!</span>(<span class="string">&quot;../../docs/docgen/{}.md&quot;</span>, op.name);
         <span class="kw">let </span>lit_filename = LitStr::new(<span class="kw-2">&amp;*</span>op_filename, Span::call_site());
         <span class="macro">quote! </span>{
             <span class="attr">#[doc = <span class="macro">include_str!</span>(#lit_filename)]
@@ -161,5 +270,58 @@
         #( #each )*
     };
     out.into()
+}
+
+<span class="kw">fn </span>hydroflow_wrap(item: proc_macro::TokenStream, attribute: Attribute) -&gt; proc_macro::TokenStream {
+    <span class="kw">use </span>quote::ToTokens;
+
+    <span class="kw">let </span>root = root();
+
+    <span class="kw">let </span><span class="kw-2">mut </span>input: syn::ItemFn = <span class="kw">match </span>syn::parse(item) {
+        <span class="prelude-val">Ok</span>(it) =&gt; it,
+        <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">return </span>e.into_compile_error().into(),
+    };
+
+    <span class="kw">let </span>statements = input.block.stmts;
+
+    input.block.stmts = <span class="macro">parse_quote!</span>(
+        #root::tokio::task::LocalSet::new().run_until(<span class="kw">async </span>{
+            #( #statements )*
+        }).<span class="kw">await
+    </span>);
+
+    input.attrs.push(attribute);
+
+    input.into_token_stream().into()
+}
+
+<span class="attr">#[proc_macro_attribute]
+</span><span class="kw">pub fn </span>hydroflow_test(
+    <span class="kw">_</span>: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -&gt; proc_macro::TokenStream {
+    <span class="kw">let </span>root = root();
+
+    hydroflow_wrap(
+        item,
+        <span class="macro">parse_quote!</span>(
+            <span class="attr">#[#root::tokio::test(flavor = <span class="string">&quot;current_thread&quot;</span>)]
+        </span>),
+    )
+}
+
+<span class="attr">#[proc_macro_attribute]
+</span><span class="kw">pub fn </span>hydroflow_main(
+    <span class="kw">_</span>: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -&gt; proc_macro::TokenStream {
+    <span class="kw">let </span>root = root();
+
+    hydroflow_wrap(
+        item,
+        <span class="macro">parse_quote!</span>(
+            <span class="attr">#[#root::tokio::main(flavor = <span class="string">&quot;current_thread&quot;</span>)]
+        </span>),
+    )
 }
 </code></pre></div></section></main></body></html>

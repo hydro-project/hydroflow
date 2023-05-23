@@ -1,6 +1,6 @@
 var sourcesIndex = JSON.parse('{\
 "hydro":["",[["core",[["hydroflow_crate",[],["build.rs","mod.rs","ports.rs"]]],["custom_service.rs","deployment.rs","gcp.rs","localhost.rs","mod.rs","progress.rs","ssh.rs","terraform.rs","util.rs"]]],["cli.rs","lib.rs"]],\
-"hydroflow":["",[["compiled",[["pull",[["half_join_state",[],["mod.rs","multiset.rs","set.rs"]]],["cross_join.rs","mod.rs","symmetric_hash_join.rs","symmetric_hash_join_lattice.rs"]]],["mod.rs","push_handoff.rs"]],["lang",[],["clear.rs","mod.rs","monotonic_map.rs"]],["props",[],["mod.rs","wrap.rs"]],["scheduled",[["handoff",[],["handoff_list.rs","mod.rs","tee.rs","vector.rs"]],["net",[],["mod.rs","network_vertex.rs"]]],["context.rs","graph.rs","graph_ext.rs","input.rs","mod.rs","port.rs","query.rs","reactor.rs","state.rs","subgraph.rs"]],["util",[["unsync",[],["mod.rs","mpsc.rs"]]],["mod.rs","socket.rs","tcp.rs","udp.rs"]]],["declarative_macro.rs","lib.rs"]],\
+"hydroflow":["",[["compiled",[["pull",[["half_join_state",[],["mod.rs","multiset.rs","set.rs"]]],["cross_join.rs","mod.rs","symmetric_hash_join.rs","symmetric_hash_join_lattice.rs"]]],["mod.rs"]],["props",[],["mod.rs","wrap.rs"]],["scheduled",[["handoff",[],["handoff_list.rs","mod.rs","tee.rs","vector.rs"]],["net",[],["mod.rs","network_vertex.rs"]]],["context.rs","graph.rs","graph_ext.rs","input.rs","mod.rs","port.rs","query.rs","reactor.rs","state.rs","subgraph.rs"]],["util",[["unsync",[],["mod.rs","mpsc.rs"]]],["clear.rs","mod.rs","monotonic_map.rs","socket.rs","tcp.rs","udp.rs"]]],["declarative_macro.rs","lib.rs"]],\
 "hydroflow_cli_integration":["",[],["lib.rs"]],\
 "hydroflow_datalog":["",[],["lib.rs"]],\
 "hydroflow_datalog_core":["",[],["grammar.rs","join_plan.rs","lib.rs","util.rs"]],\
@@ -11,6 +11,7 @@ var sourcesIndex = JSON.parse('{\
 "multiplatform_test":["",[],["lib.rs"]],\
 "pusherator":["",[],["demux.rs","filter.rs","filter_map.rs","flatten.rs","for_each.rs","inspect.rs","lib.rs","map.rs","partition.rs","pivot.rs","switch.rs","tee.rs","unzip.rs"]],\
 "relalg":["",[],["codegen.rs","lib.rs","runtime.rs","sexp.rs"]],\
-"variadics":["",[],["lib.rs"]]\
+"variadics":["",[],["lib.rs"]],\
+"website_playground":["",[],["lib.rs","utils.rs"]]\
 }');
 createSourceSidebar();

@@ -812,6 +812,6 @@
 }
 
 <span class="kw">fn </span>make_missing_runtime_msg(op_name: <span class="kw-2">&amp;</span>str) -&gt; Literal {
-    Literal::string(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;`{}()` must be used within a Tokio runtime. For example, use `#[tokio::main]` on your main method.&quot;</span>, op_name))
+    Literal::string(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;`{}()` must be used within a Tokio runtime. For example, use `#[hydroflow::main]` on your main method.&quot;</span>, op_name))
 }
 </code></pre></div></section></main></body></html>

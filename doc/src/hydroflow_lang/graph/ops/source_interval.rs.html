@@ -89,16 +89,14 @@
 <a href="#89" id="89">89</a>
 <a href="#90" id="90">90</a>
 <a href="#91" id="91">91</a>
-<a href="#92" id="92">92</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>syn::parse_quote_spanned;
-
-<span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
 
 <span class="kw">use super</span>::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
+<span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
 
 <span class="doccomment">/// &gt; 0 input streams, 1 output stream
 ///
@@ -109,7 +107,7 @@
 /// as possible, and the `Instant` will be the missed time, not the late time.
 ///
 /// Note that this requires the hydroflow instance be run within a [Tokio `Runtime`](https://docs.rs/tokio/1/tokio/runtime/struct.Runtime.html).
-/// The easiest way to do this is with a [`#[tokio::main]`](https://docs.rs/tokio/1/tokio/attr.main.html)
+/// The easiest way to do this is with a [`#[hydroflow::main]`](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.hydroflow_main.html)
 /// annotation on `async fn main() { ... }`.
 ///
 /// ```rustbook
@@ -117,7 +115,7 @@
 ///
 /// use hydroflow::hydroflow_syntax;
 ///
-/// #[tokio::main]
+/// #[hydroflow::main]
 /// async fn main() {
 ///     let mut hf = hydroflow_syntax! {
 ///         source_interval(Duration::from_secs(1))

@@ -184,7 +184,7 @@
 
     <span class="kw">let </span>docgen_path = PathBuf::from_iter([
         <span class="macro">std::env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
-        <span class="string">&quot;../book/docgen&quot;</span>,
+        <span class="string">&quot;../docs/docgen&quot;</span>,
         <span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;{}.md&quot;</span>, op_name),
     ]);
     <span class="kw">let </span><span class="kw-2">mut </span>docgen_write = BufWriter::new(File::create(docgen_path)<span class="question-mark">?</span>);
@@ -234,7 +234,7 @@
 # #[allow(unused_imports)] use hydroflow::{var_args, var_expr};
 # #[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
 # let __rt = hydroflow::tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-# __rt.block_on(async {
+# __rt.block_on(async { hydroflow::tokio::task::LocalSet::new().run_until(async {
 # let mut __hf = hydroflow::hydroflow_syntax! {&quot;</span>;
 <span class="kw">const </span>DOCTEST_HYDROFLOW_SUFFIX: <span class="kw-2">&amp;</span>str = <span class="string">&quot;\
 # };
@@ -245,5 +245,5 @@
 #         break;
 #     }
 # }
-# })&quot;</span>;
+# }).await})&quot;</span>;
 </code></pre></div></section></main></body></html>
