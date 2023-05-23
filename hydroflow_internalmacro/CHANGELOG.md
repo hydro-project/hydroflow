@@ -5,7 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.0.0 (2023-04-25)
+## 0.1.0 (2023-05-23)
+
+### Chore
+
+ - <csr-id-52ee8f8e443f0a8b5caf92d2c5f028c00302a79b/> bump versions to 0.1.0 for release
+   For release on crates.io for v0.1
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 3 commits contributed to the release over the course of 1 calendar day.
+ - 27 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 3 unique issues were worked on: [#661](https://github.com/hydro-project/hydroflow/issues/661), [#671](https://github.com/hydro-project/hydroflow/issues/671), [#684](https://github.com/hydro-project/hydroflow/issues/684)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#661](https://github.com/hydro-project/hydroflow/issues/661)**
+    - Add hydroflow_{test, main} so that hydroflow is actually singlethreaded ([`f61054e`](https://github.com/hydro-project/hydroflow/commit/f61054eaeca6fab1ab0cb588b7ed546b87772e91))
+ * **[#671](https://github.com/hydro-project/hydroflow/issues/671)**
+    - Migrate docs to a unified Docusuarus site ([`feed326`](https://github.com/hydro-project/hydroflow/commit/feed3268c0aabeb027b19abd9ed06c565a0462f4))
+ * **[#684](https://github.com/hydro-project/hydroflow/issues/684)**
+    - Bump versions to 0.1.0 for release ([`52ee8f8`](https://github.com/hydro-project/hydroflow/commit/52ee8f8e443f0a8b5caf92d2c5f028c00302a79b))
+</details>
+
+## 0.0.0 (2023-04-26)
+
+<csr-id-a2078f7056a54d20f91e2e0f9a7617dc6ef1f627/>
 
 ### Other
 
@@ -15,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 10 commits contributed to the release over the course of 157 calendar days.
+ - 11 commits contributed to the release over the course of 158 calendar days.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#261](https://github.com/hydro-project/hydroflow/issues/261), [#329](https://github.com/hydro-project/hydroflow/issues/329), [#609](https://github.com/hydro-project/hydroflow/issues/609), [#617](https://github.com/hydro-project/hydroflow/issues/617)
 
@@ -34,9 +66,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#617](https://github.com/hydro-project/hydroflow/issues/617)**
     - Update `Cargo.toml`s for publishing ([`a78ff9a`](https://github.com/hydro-project/hydroflow/commit/a78ff9aace6771787c2b72aad83be6ad8d49a828))
  * **Uncategorized**
+    - Setup release workflow ([`108d0e9`](https://github.com/hydro-project/hydroflow/commit/108d0e933a08b183c4dadf8c3499e4946696e263))
     - Use a tokio runtime for operator doctests ([`75a5ab0`](https://github.com/hydro-project/hydroflow/commit/75a5ab084997b4d530e659bb91e8e12cbe413dcd))
     - Serialize `HydroflowGraph` instead of `SerdeGraph` ([`ae205c6`](https://github.com/hydro-project/hydroflow/commit/ae205c69538fab9eeedd8fa460b8eef295d26bc2))
-    - :<'static> now replays #143 #364 ([`a2078f7`](https://github.com/hydro-project/hydroflow/commit/a2078f7056a54d20f91e2e0f9a7617dc6ef1f627))
+    - :<'static>` now replays #143 #364 ([`a2078f7`](https://github.com/hydro-project/hydroflow/commit/a2078f7056a54d20f91e2e0f9a7617dc6ef1f627))
     - Rename variadics/tuple_list macros ([`91d37b0`](https://github.com/hydro-project/hydroflow/commit/91d37b022b1cd0ed590765c40ef43244027c8035))
     - Add `hydroflow_macr/build.rs` to autogen operator book docs ([`a5de404`](https://github.com/hydro-project/hydroflow/commit/a5de404cd06c10137f7584d152269327c698a65d))
     - Implement `hydroflow_internalmacro::operator_docgen` for surface op docgen ([`5d56aaf`](https://github.com/hydro-project/hydroflow/commit/5d56aaf59a38ddb686862f8456e50d1b4025480a))

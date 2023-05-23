@@ -5,14 +5,64 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.1.0 (2023-05-23)
+
+### Chore
+
+ - <csr-id-52ee8f8e443f0a8b5caf92d2c5f028c00302a79b/> bump versions to 0.1.0 for release
+   For release on crates.io for v0.1
+
+### Documentation
+
+ - <csr-id-a8957ec4457aae1cfd6fae031bede5e3f4fcc75d/> Add rustdocs to hydroflow's proc macros
+ - <csr-id-7c40727db17c90406325b0f2537289b576c1122c/> Add rustdocs for the `hydroflow` crate
+
+### Refactor
+
+ - <csr-id-faab58f855e4d6f2ad885c6f39f57ebc5662ec20/> remove `hydroflow::lang` module, move `Clear`, `MonotonicMap` to `hydroflow::util` instead
+ - <csr-id-40d755e030d79def61132c005e08cd09e781fdcb/> remove unused `PushHandoff`
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 7 commits contributed to the release over the course of 1 calendar day.
+ - 3 days passed between releases.
+ - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 4 unique issues were worked on: [#661](https://github.com/hydro-project/hydroflow/issues/661), [#671](https://github.com/hydro-project/hydroflow/issues/671), [#677](https://github.com/hydro-project/hydroflow/issues/677), [#684](https://github.com/hydro-project/hydroflow/issues/684)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#661](https://github.com/hydro-project/hydroflow/issues/661)**
+    - Add hydroflow_{test, main} so that hydroflow is actually singlethreaded ([`f61054e`](https://github.com/hydro-project/hydroflow/commit/f61054eaeca6fab1ab0cb588b7ed546b87772e91))
+ * **[#671](https://github.com/hydro-project/hydroflow/issues/671)**
+    - Migrate docs to a unified Docusuarus site ([`feed326`](https://github.com/hydro-project/hydroflow/commit/feed3268c0aabeb027b19abd9ed06c565a0462f4))
+ * **[#677](https://github.com/hydro-project/hydroflow/issues/677)**
+    - Add rustdocs to hydroflow's proc macros ([`a8957ec`](https://github.com/hydro-project/hydroflow/commit/a8957ec4457aae1cfd6fae031bede5e3f4fcc75d))
+    - Add rustdocs for the `hydroflow` crate ([`7c40727`](https://github.com/hydro-project/hydroflow/commit/7c40727db17c90406325b0f2537289b576c1122c))
+    - Remove `hydroflow::lang` module, move `Clear`, `MonotonicMap` to `hydroflow::util` instead ([`faab58f`](https://github.com/hydro-project/hydroflow/commit/faab58f855e4d6f2ad885c6f39f57ebc5662ec20))
+    - Remove unused `PushHandoff` ([`40d755e`](https://github.com/hydro-project/hydroflow/commit/40d755e030d79def61132c005e08cd09e781fdcb))
+ * **[#684](https://github.com/hydro-project/hydroflow/issues/684)**
+    - Bump versions to 0.1.0 for release ([`52ee8f8`](https://github.com/hydro-project/hydroflow/commit/52ee8f8e443f0a8b5caf92d2c5f028c00302a79b))
+</details>
+
 ## 0.0.2 (2023-05-21)
+
+<csr-id-4d4446c0988ee7c2a991d2845b66a281934d6100/>
+<csr-id-cd0a86d9271d0e3daab59c46f079925f863424e1/>
+<csr-id-20a1b2c0cd04a8b495a02ce345db3d48a99ea0e9/>
+<csr-id-1eda91a2ef8794711ef037240f15284e8085d863/>
 
 ### Documentation
 
  - <csr-id-95d23eaf8218002ad0a6a8c4c6e6c76e6b8f785b/> Update docs, add book chapter for `lattices` crate
    - Adds `mdbook-katex` to the book build for latex support.
-   - Update `mdbook-*` plugins.
-   - Moves most lattice implementations to the top level of the crate
+- Update `mdbook-*` plugins.
+- Moves most lattice implementations to the top level of the crate
      to eliminate redundant documentation.
 
 ### Style
@@ -26,7 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 18 commits contributed to the release over the course of 17 calendar days.
+ - 19 commits contributed to the release over the course of 17 calendar days.
  - 18 days passed between releases.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 14 unique issues were worked on: [#625](https://github.com/hydro-project/hydroflow/issues/625), [#638](https://github.com/hydro-project/hydroflow/issues/638), [#640](https://github.com/hydro-project/hydroflow/issues/640), [#641](https://github.com/hydro-project/hydroflow/issues/641), [#642](https://github.com/hydro-project/hydroflow/issues/642), [#644](https://github.com/hydro-project/hydroflow/issues/644), [#649](https://github.com/hydro-project/hydroflow/issues/649), [#650](https://github.com/hydro-project/hydroflow/issues/650), [#651](https://github.com/hydro-project/hydroflow/issues/651), [#654](https://github.com/hydro-project/hydroflow/issues/654), [#656](https://github.com/hydro-project/hydroflow/issues/656), [#657](https://github.com/hydro-project/hydroflow/issues/657), [#660](https://github.com/hydro-project/hydroflow/issues/660), [#667](https://github.com/hydro-project/hydroflow/issues/667)
@@ -69,6 +119,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#667](https://github.com/hydro-project/hydroflow/issues/667)**
     - Bump lattices version to `0.1.0` ([`a46ce4a`](https://github.com/hydro-project/hydroflow/commit/a46ce4a522b70661e5acf644f893bfdf56294578))
     - Update docs, add book chapter for `lattices` crate ([`95d23ea`](https://github.com/hydro-project/hydroflow/commit/95d23eaf8218002ad0a6a8c4c6e6c76e6b8f785b))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.0.1, hydroflow_lang v0.0.1, hydroflow_datalog_core v0.0.1, hydroflow_datalog v0.0.1, hydroflow_macro v0.0.1, lattices v0.1.0, variadics v0.0.2, pusherator v0.0.1, hydroflow v0.0.2 ([`809395a`](https://github.com/hydro-project/hydroflow/commit/809395acddb78949d7a2bf036e1a94972f23b1ad))
 </details>
 
 ## 0.0.1 (2023-05-03)
