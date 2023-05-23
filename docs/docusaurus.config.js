@@ -92,6 +92,7 @@ const config = {
         disableInDev: false,
       },
     ],
+    require.resolve("./wasm-plugin.js")
   ],
 
   themeConfig:
@@ -111,6 +112,11 @@ const config = {
             sidebarId: 'docsSidebar',
             position: 'left',
             label: 'Docs',
+          },
+          {
+            to: '/playground',
+            position: 'left',
+            label: 'Playground',
           },
           {
             to: '/research',

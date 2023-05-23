@@ -30,7 +30,7 @@ div.personImage {
   margin-bottom: 0;
 }
 
-@media screen and (max-width: 800px) {
+@media screen and (max-width: 1000px) {
   .subtitle {
     font-size: 40px;
     margin-top: 30px;
