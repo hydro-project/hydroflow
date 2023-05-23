@@ -36,7 +36,7 @@ pub struct HydroflowCrate {
     /// Configuration for the ports that this service will listen on a port for.
     port_to_bind: HashMap<String, ServerStrategy>,
 
-    built_binary: Option<JoinHandle<BuildResult>>,
+    built_binary: Option<JoinHandle<Result<BuiltCrate>>>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
 
     /// A map of port names to config for how other services can connect to this one.
@@ -157,7 +157,7 @@ impl HydroflowCrate {
             .await
     }
 
-    fn build(&mut self) -> JoinHandle<BuildResult> {
+    fn build(&mut self) -> JoinHandle<Result<BuiltCrate>> {
         let src_cloned = self.src.canonicalize().unwrap();
         let example_cloned = self.example.clone();
         let features_cloned = self.features.clone();

@@ -14,9 +14,9 @@ use crate::core::HostTargetType;
 
 type CacheKey = (PathBuf, Option<String>, HostTargetType, Option<Vec<String>>);
 
-pub type BuildResult = Result<Arc<(String, Vec<u8>)>>;
+pub type BuiltCrate = Arc<(String, Vec<u8>)>;
 
-static BUILDS: Lazy<Mutex<HashMap<CacheKey, Arc<OnceCell<BuildResult>>>>> =
+static BUILDS: Lazy<Mutex<HashMap<CacheKey, Arc<OnceCell<BuiltCrate>>>>> =
     Lazy::new(Default::default);
 
 pub async fn build_crate(
@@ -24,15 +24,16 @@ pub async fn build_crate(
     example: Option<String>,
     target_type: HostTargetType,
     features: Option<Vec<String>>,
-) -> BuildResult {
+) -> Result<BuiltCrate> {
     let key = (src.clone(), example.clone(), target_type, features.clone());
     let unit_of_work = {
         let mut builds = BUILDS.lock().unwrap();
         builds.entry(key).or_default().clone()
         // Release BUILDS table lock here.
     };
+
     unit_of_work
-        .get_or_init(move || {
+        .get_or_try_init(move || {
             ProgressTracker::rich_leaf("build".to_string(), move |_, set_msg| async move {
                 tokio::task::spawn_blocking(move || {
                     let mut command = Command::new("cargo");
@@ -107,12 +108,9 @@ pub async fn build_crate(
                         bail!("failed to build crate")
                     }
                 })
-                .await
-                .unwrap()
+                .await?
             })
         })
         .await
-        .as_ref()
-        .map(|x| x.clone())
-        .map_err(|e| anyhow::anyhow!(e.to_string()))
+        .cloned()
 }
