@@ -9,17 +9,17 @@ Lattices are a simple but powerful mathematic concept that can greatly simplify 
 ## Lattices For Dummies
 
 So, what is a lattice?
-Lattices are conceptually very simple, so lets explain them without too much mathy language.
+Lattices are conceptually very simple, so let's explain them without too much mathy language.
 A lattice is some type of thing that has a very special _merge_ function.
-The merge function combines two things and produces an output things. The core feature of
+The merge function combines two things and produces an output thing. The core feature of
 lattices is that the merge function has some special properties: _associativity_, _commutativity_,
-and _idempotence_ (ACI).
+and _idempotence_ (abbreviated ACI).
 
-Lets start with a simple example of something which turns out to **not** be a lattice; _numbers_
+Lets start with a simple example of something which turns out to **not** be a lattice: _numbers_
 and _addition_. Numbers are a type of thing, and addition is a function that takes two input
-numbers and produces and output numbers! But does it satisfy the ACI properties?
+numbers and produces an output number! But does it satisfy the ACI properties?
 
-Let's start with _commutativity_. A function is commutativity if it doesn't matter if you swap its
+Let's start with _commutativity_. A function is commutative if it doesn't matter if you swap its
 two inputs:
 $$
     a + b = b + a
@@ -54,36 +54,54 @@ always be the same. And it is idempotent; a set unioned with itself is the same 
 
 ### Lattice Partial Order
 
-Lattices are tied to and often defined in terms of some sort of "partial order". What is a partial
-order? It's like a normal order, where you can say "$a$ comes before $b$", but it is partial
-because sometimes say "$a$ and $b$ are _incomparable_" instead.
+When learning about lattices you'll hear about some sort of "partial order" relating to them. What
+is a partial order? It's like a normal order, where you can say "$a$ comes before $b$", but it is
+partial because sometimes say "$a$ and $b$ are _incomparable_" instead. As it turns out, the
+lattice merge function actually creates a partial order on the elements of the lattice.
+Specifically, we say that whenever you merge two things, the thing you get out is always _bigger than_
+each of the inputs (or it might be equal to one or both of them).
 
-The merge function actually creates a partial order on the elements of the lattice. If you merge
-$a$ and $b$ together, but the output is still just $b$ unchanged, than we can say that $a$ is
-smaller than $b$. If you merge $a$ and $b$ and get $a$ out, then $a$
-is larger. Finally, if you merge $a$ and $b$ and get a new value $c$ out, then $a$ and $b$ are
-_incomparable_.
-
-For the number-max lattice, the partial order created by the `max` merge function is actually just
-numerical order. Additionally, it is a total order, meaning all pairs of items are comparable.
+So for the number-max lattice, $\operatorname{max}(3, 6) = 6$ tells us that $3\leq 6$ and $6\leq 6$.
+Ok duh. It turns out that the partial order created by the `max` merge function is naturally just
+numerical order (i.e. $\leq$). Additionally, it is a total order, meaning all pairs of items are
+comparable. But things get a bit more interesting with other lattices.
 
 ||
 | :---: |
 | ![A vertical number line starting at 1, with arrows pointing from 1 to 2, 2 to 3, etc.](../img/max-int-ord.png) |
 | A visualization of the `max` total order over positive integers. |
 
-For the
-set-union lattice the partial order matches _subset_ order. $a$ before $b$ is the same as $a$ is a
-subset of $b$ ($a \subset b$). If two sets have mismatched elements than they are incomparable.
+Let's consider the set-union lattice. As it turns out, the partial order created by the union
+($\cup$) function matches subset order, $\subseteq$.
+
+$$
+    \left\{ 1, 2, 3 \right\} \cup \left\{ 3, 4 \right\} = \left\{ 1, 2, 3, 4 \right\} \\
+    ~ \\
+    \left\{ 1, 2, 3 \right\} \subseteq \left\{ 1, 2, 3, 4 \right\} \\
+    \left\{ 3, 4 \right\} \subseteq \left\{ 1, 2, 3, 4 \right\}
+$$
+
+So, both of these subsets, $\left\{ 1, 2, 3 \right\}$ and $\left\{ 3, 4 \right\}$ are _before_ $\left\{ 1, 2, 3, 4 \right\}$.
+Or equivalently, $\left\{ 1, 2, 3, 4 \right\}$ is _larger_.
+
+But what about the ordering between $\left\{ 1, 2, 3 \right\}$ and $\left\{ 3, 4 \right\}$? It
+turns out these two sets are _incomparable_ under the set-union order. Neither is a subset of the
+other, so neither can come first. Equivalently, going back to the merge function, there is no thing
+which you could merge (union) into one of the sets in order to get the other set out.
+
+So above, we visualized the number-max lattice partial order as a graph, albeit a very flat,
+linear, number-line graph. We can visualize our set-union partial order as a (much more interesting)
+graph as well: (this is called a [Hasse diagram](https://en.wikipedia.org/wiki/Hasse_diagram))
 
 ||
 | :---: |
 | ![A graph showing the partial order of set-union with elements x, y, z. At the bottom is empty set, second row has singleton sets, third row has pairs, and top has a set with all three.](../img/set-union-ord.png) |
 | A visualization of the set-union partial order over three elements, $x, y, z$. [By KSmrq](https://commons.wikimedia.org/wiki/File:Hasse_diagram_of_powerset_of_3.svg) |
 
-In the example diagram, $\{x\}$ is less (smaller) than $\{x, y\}$, so there is a path from the
-former to the later. In contrast, there is no path between $\{x\}$ and $\{z\}$ for example, so they
-are incomparable.
+The directed paths represent things getting _larger_.
+In the diagram, $\{x\}$ is less (smaller) than $\{x, y, z\}$, represented as a path upwards from
+the former to the later. In contrast, there is no path between $\{x,y\}$ and $\{y,z\}$ for example,
+so they are incomparable.
 
 The _merge_ function is also called the _least upper bound_ (LUB). This name comes from the partial
 order interpretation. When merging two elements, the result is the smallest (least) item that is
@@ -91,7 +109,11 @@ still greater than both elements. Hence _least upper bound_.
 
 ---
 
-## Lattice Definitions, At A Glance
+## Reference
+
+This section is a quick reference for people already comfortable with abstract algebra basics.
+
+### Lattices
 
 A join-semilattice with domain $S$ with $a, b, c \in S$ and join (or "merge") function
 $\sqcup$ has the following properties:
@@ -102,27 +124,29 @@ $$
     \quad\quad
     a\sqcup a = a \quad\quad\quad\quad\quad\quad\mathrm{\textit{(idempotent)}} \\
 $$
+(Separately, meet-semilattices and join-semilattices are equivalent structures)
 
 The join function creates a partial order $\sqsubseteq$:
 $$
     a \sqsubseteq b \quad\equiv\quad a \sqcup b = b
+    \quad\quad\quad\mathrm{\textit{(semilattice partial order)}}
 $$
 Read as "$a$ preceedes $b$", or "$b$ dominates $a$".
 
 The smallest element in a lattice domain $S$, if it exists, is the _bottom_, $\bot$:
 $$
     \forall a\in S,\quad \bot \sqsubseteq a
+    \quad\quad\quad\mathrm{\textit{(bottom)}}
 $$
 The largest element in a lattice domain $S$, if it exists, is the _top_, $\top$:
 $$
     \forall a\in S,\quad \top \sqsupseteq a
+    \quad\quad\quad\quad\mathrm{\textit{(top)}}
 $$
-
-Separately, meet-semilattices and join-semilattices are equivalent structures.
 
 ### The CALM Theorem and Monotonicity
 
-The [CALM Theorem (_Consistency As Logical Monotonicity_)](https://cacm.acm.org/magazines/2020/9/246941-keeping-calm/fulltext)
+The [CALM Theorem _(Consistency As Logical Monotonicity)_](https://cacm.acm.org/magazines/2020/9/246941-keeping-calm/fulltext)
 tells us: "a program has a consistent, coordination-free distributed
 implementation if and only if it is monotonic"
 
@@ -150,4 +174,4 @@ and merge that delta into the existing result rather than recompute the entire m
 
 ### Further Reading
 
-* [The Hydroflow Thesis](https://hydro.run/papers/hydroflow-thesis.pdf)
+* [Hydroflow Thesis (2021)](https://hydro.run/papers/hydroflow-thesis.pdf)

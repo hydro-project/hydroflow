@@ -1,12 +1,12 @@
-<h1 class="crate-title"><code>lattices</code></h1>
+<h1 class="crate-title">The <code>lattices</code> Crate</h1>
 
-The `lattices` crate provides ergonomic and compsable lattice types. Users can also implement
-their own lattices via a few simple traits.
+The `lattices` crate provides ergonomic and compsable lattice types. You can also implement custom
+lattices via a few simple traits.
 
 Lattices are an incredibly powerful mathematical concept which can greatly simplify the trickiness
 of distributed computing. They align very well with the reality of what happens physically in a
-distrubted system; even when data messages are reordered or duplicated, if that data is represented
-as lattices all machines will always reach the same end result simply by merging the data together.
+distrubted system: messages can always arrive out-of-order or duplicated. But if that data is
+represented as lattices then all machines will always reach the same end result simply by merging the data together.
 One popular way of lattices are currently used in distributed systems is as the data underlying
 [Conflict-free Replicated Data Types](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type)
 (CRDTs).
@@ -19,7 +19,7 @@ is to allow users to write programs that automatically scale and distribute effo
 
 For more information on the underlying mathematics of lattices and monotonicity, take a look at
 [Lattice Math section of the Hydroflow Book](https://hydro.run/docs/lattices_crate/lattice_math)
-and Section 2 of the [Hydroflow Thesis](https://hydro.run/papers/hydroflow-thesis.pdf).
+and Section 2 of the [Hydroflow Thesis (2021)](https://hydro.run/papers/hydroflow-thesis.pdf).
 
 Take a look at the [`lattice` rustdocs](https://hydro-project.github.io/hydroflow/doc/lattices/index.html).
 
@@ -78,5 +78,3 @@ lattice-specific semantics. `ConvertFrom` should be implemented only between dif
 representations of the same lattice type, e.g. between [`set_union::SetUnionBTreeSet`] and [`set_union::SetUnionHashSet`].
 For compound lattice (lattices with nested lattice types), the `ConvertFrom` implementation should
 be recursive for those nested lattices.
-
-<!-- ANCHOR_END: book_include -->
