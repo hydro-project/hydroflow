@@ -261,6 +261,60 @@ jobs:
           command: clippy
           args: --all-targets -- -D warnings
 
+  docs:
+    name: Docs (rustdoc)
+    timeout-minutes: 10
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      WWW_DIR: target
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+
+      - name: Run cargo doc
+        uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --no-deps
+        env:
+          RUSTDOCFLAGS: -Dwarnings
+
+      - name: Move design docs to output
+        shell: bash
+        run: |
+          mv design_docs "$WWW_DIR/"
+
+      - name: Push to gh-pages
+        # Do not deploy PRs.
+        if: ${{ github.event_name != 'pull_request' }}
+        shell: bash
+        run: |
+          git -C "$WWW_DIR" init -q
+          git -C "$WWW_DIR" remote add origin "$(git remote get-url origin)"
+          git -C "$WWW_DIR" config credential.helper "$(git config credential.helper)"
+          git -C "$WWW_DIR" config 'http.https://github.com/.extraheader' "$(git config 'http.https://github.com/.extraheader')"
+          git -C "$WWW_DIR" config core.autocrlf input
+          git -C "$WWW_DIR" config core.safecrlf false
+          git -C "$WWW_DIR" fetch origin gh-pages:gh-pages || true
+          git -C "$WWW_DIR" symbolic-ref HEAD refs/heads/gh-pages
+          git -C "$WWW_DIR" reset
+          git -C "$WWW_DIR" add doc design_docs
+          if git -C "$WWW_DIR" -c 'user.name=github-actions[bot]' -c 'user.email=41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -m "Update rustdoc $(date -I) $(git rev-parse HEAD)";
+          then
+            git -C "$WWW_DIR" push -u origin gh-pages --quiet
+          else
+            echo 'No changes to commit'
+          fi
+
   benches:
     name: Benchmarks
     timeout-minutes: 30
