@@ -4,7 +4,7 @@
   flex-direction: row;
 }
 
-@media screen and (max-width: 800px) {
+@media screen and (max-width: 1000px) {
   .paperContainer .paper-thumb {
     display: none !important;
   }

@@ -23,6 +23,7 @@ members = [
     "pusherator",
     "relalg",
     "variadics",
+    "website_playground",
 ]
 
 resolver = "2"
@@ -39,3 +40,9 @@ lto = "fat"
 inherits = "release"
 debug = 2
 strip = "none"
+
+[profile.dev.package.website_playground]
+debug-assertions = false
+
+[profile.release.package.website_playground]
+opt-level = "s"
