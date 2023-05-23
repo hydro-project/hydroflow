@@ -8,9 +8,8 @@ pub use cc_traits;
 use sealed::sealed;
 
 mod bottom;
-pub mod collections;
-pub mod test;
 pub use bottom::Bottom;
+pub mod collections;
 mod dom_pair;
 pub use dom_pair::DomPair;
 mod fake;
@@ -21,6 +20,7 @@ pub use ord::{Max, Min};
 mod pair;
 pub use pair::Pair;
 pub mod set_union;
+pub mod test;
 
 /// Trait for lattice merge (AKA "join" or "least upper bound").
 pub trait Merge<Other> {
