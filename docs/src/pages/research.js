@@ -113,6 +113,8 @@ export default function Home() {
                     placeholder="blur"
                     alt=""
                     style={{
+                      position: "static",
+                      background: "white",
                       width: "225px",
                       height: "auto",
                       display: "block",
@@ -128,7 +130,7 @@ export default function Home() {
                   }}>{paper.conf}</b>
                   <p style={{ margin: 0, fontSize: "26px", fontWeight: "600" }}>
                     <Link href={paper.pdf} style={{
-                      color: "black",
+                      color: "inherit",
                       textDecoration: "none"
                     }}>{paper["title"]}</Link>
                   </p>
