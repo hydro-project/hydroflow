@@ -213,6 +213,17 @@ jobs:
           pip install -r requirements.txt
           RUST_BACKTRACE=1 pytest *.py
 
+      - name: Print backtraces
+        if: ${{ failure() }}
+        run: |
+          cd cli-core-dumps
+          sudo apt-get install gdb
+          for file in $(ls); do
+            echo "Backtrace for $file"
+            rust-gdb -ex "thread apply all bt" -batch ../.venv/bin/python $file
+          done
+          cd ..
+
       - name: Upload core dumps
         if: ${{ failure() }}
         uses: actions/upload-artifact@master
