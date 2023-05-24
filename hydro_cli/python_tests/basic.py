@@ -90,5 +90,5 @@ async def test_python_receiver():
 
     receiver_0_connection = await (await receiver_port_0.server_port()).into_source()
     async for received in receiver_0_connection:
-        assert decode(received[8:], "utf-8") == "Hello 123"
+        assert decode(bytes(received[8:]), "utf-8") == "Hello 123"
         break
