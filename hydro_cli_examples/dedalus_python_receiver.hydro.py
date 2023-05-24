@@ -56,7 +56,7 @@ async def main(args):
     print((await sender_port.server_port()).json())
     receiver_connection = await (await sender_port.server_port()).into_source()
     async for received in receiver_connection:
-        print(decode(received, "utf-8"))
+        print(decode(bytes(received), "utf-8"))
 
 if __name__ == "__main__":
     import sys
