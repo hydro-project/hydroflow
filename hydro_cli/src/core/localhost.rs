@@ -151,11 +151,22 @@ impl LaunchedHost for LaunchedLocalhost {
         file.write_all(binary.1.as_slice())?;
         drop(file);
 
-        #[allow(unused_mut)]
-        let mut orig_perms = std::fs::metadata(&temp_path)?.permissions();
         #[cfg(unix)]
-        orig_perms.set_mode(0o755);
-        std::fs::set_permissions(&temp_path, orig_perms)?;
+        {
+            let mut orig_perms = std::fs::metadata(&temp_path)?.permissions();
+            orig_perms.set_mode(0o755);
+            std::fs::set_permissions(&temp_path, orig_perms)?;
+
+            // some filesystems take a while to actually set the permissions
+            for _i in 0..10 {
+                let perms = std::fs::metadata(&temp_path)?.permissions();
+                if perms.mode() == 0o755 {
+                    break;
+                }
+
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+        }
 
         let mut child = Command::new(&temp_path)
             .args(args)
