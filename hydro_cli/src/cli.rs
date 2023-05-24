@@ -10,7 +10,7 @@ use pyo3::types::PyList;
 use crate::{AnyhowError, AnyhowWrapper};
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(name = "Hydro Deploy", author, version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -18,9 +18,11 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// deploys
+    /// Deploys an application given a Python deployment script.
     Deploy {
+        /// Path to the deployment script.
         config: PathBuf,
+        /// Additional arguments to pass to the deployment script.
         #[arg(last(true))]
         args: Vec<String>,
     },
