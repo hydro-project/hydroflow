@@ -142,7 +142,10 @@ impl LaunchedHost for LaunchedLocalhost {
         binary: Arc<(String, Vec<u8>)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
-        let temp_path = NamedTempFile::new()?.into_temp_path();
+        let dothydro_folder = std::env::current_dir().unwrap().join(".hydro");
+        std::fs::create_dir_all(&dothydro_folder).unwrap();
+        let binary_folder = tempfile::tempdir_in(dothydro_folder).unwrap();
+        let temp_path = NamedTempFile::new_in(binary_folder)?.into_temp_path();
 
         let mut file = File::create(&temp_path)?;
         file.write_all(binary.1.as_slice())?;
