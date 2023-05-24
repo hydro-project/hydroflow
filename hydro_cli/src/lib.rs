@@ -7,7 +7,7 @@ use futures::{Future, SinkExt, StreamExt};
 use hydroflow_cli_integration::{
     ConnectedBidi, ConnectedSink, ConnectedSource, DynSink, DynStream, ServerOrBound,
 };
-use pyo3::exceptions::PyException;
+use pyo3::exceptions::{PyException, PyStopAsyncIteration};
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyDict};
 use pyo3::{create_exception, wrap_pymodule};
@@ -219,29 +219,23 @@ impl Deployment {
 
     fn deploy<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.clone();
+        let py_none = py.None();
         interruptible_future_to_py(py, async move {
             underlying.write().await.deploy().await.map_err(|e| {
-                Python::with_gil(|py| {
-                    AnyhowError::new_err(
-                        Py::new(
-                            py,
-                            AnyhowWrapper {
-                                underlying: Arc::new(RwLock::new(Some(e))),
-                            },
-                        )
-                        .unwrap(),
-                    )
+                AnyhowError::new_err(AnyhowWrapper {
+                    underlying: Arc::new(RwLock::new(Some(e))),
                 })
             })?;
-            Python::with_gil(|py| Ok(py.None()))
+            Ok(py_none)
         })
     }
 
     fn start<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.clone();
+        let py_none = py.None();
         interruptible_future_to_py(py, async move {
             underlying.write().await.start().await;
-            Ok(Python::with_gil(|py| py.None()))
+            Ok(py_none)
         })
     }
 }
@@ -344,9 +338,10 @@ pub struct Service {
 impl Service {
     fn stop<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.clone();
+        let py_none = py.None();
         interruptible_future_to_py(py, async move {
             underlying.write().await.stop().await.unwrap();
-            Ok(Python::with_gil(|py| py.None()))
+            Ok(py_none)
         })
     }
 }
@@ -358,12 +353,21 @@ struct PyReceiver {
 
 #[pymethods]
 impl PyReceiver {
-    fn next<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
+    fn __aiter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __anext__<'p>(&self, py: Python<'p>) -> Option<&'p PyAny> {
         let my_receiver = self.receiver.clone();
-        interruptible_future_to_py(py, async move {
-            let underlying = my_receiver.recv();
-            Ok(underlying.await.map(Some).unwrap_or(None))
-        })
+        Some(
+            interruptible_future_to_py(py, async move {
+                let underlying = my_receiver.recv();
+                underlying
+                    .await
+                    .map_err(|_| PyStopAsyncIteration::new_err(()))
+            })
+            .unwrap(),
+        )
     }
 }
 
@@ -432,26 +436,13 @@ struct HydroflowCrate {
     underlying: Arc<RwLock<crate::core::HydroflowCrate>>,
 }
 
-fn convert_next_to_generator(receiver: impl IntoPy<PyObject>) -> PyResult<PyObject> {
-    Python::with_gil(|py| {
-        // load helper python function as a string
-        let converters = CONVERTERS_MODULE.read().unwrap();
-        let module = converters.as_ref().unwrap().as_ref(py);
-
-        Ok(module
-            .call_method1("pyreceiver_to_async_generator", (receiver.into_py(py),))
-            .unwrap()
-            .into())
-    })
-}
-
 #[pymethods]
 impl HydroflowCrate {
     fn stdout<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
-            convert_next_to_generator(PyReceiver {
+            Ok(PyReceiver {
                 receiver: Arc::new(underlying.stdout().await),
             })
         })
@@ -461,7 +452,7 @@ impl HydroflowCrate {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
-            convert_next_to_generator(PyReceiver {
+            Ok(PyReceiver {
                 receiver: Arc::new(underlying.stderr().await),
             })
         })
@@ -659,7 +650,7 @@ impl ServerPort {
     fn into_source<'p>(&mut self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.take().unwrap();
         interruptible_future_to_py(py, async move {
-            convert_next_to_generator(PythonStream {
+            Ok(PythonStream {
                 underlying: Arc::new(RwLock::new(
                     underlying.connect::<ConnectedBidi>().await.into_source(),
                 )),
@@ -706,17 +697,22 @@ struct PythonStream {
 
 #[pymethods]
 impl PythonStream {
-    fn next<'p>(&mut self, py: Python<'p>) -> PyResult<&'p PyAny> {
+    fn __aiter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __anext__<'p>(&self, py: Python<'p>) -> Option<&'p PyAny> {
         let underlying = self.underlying.clone();
-        interruptible_future_to_py(py, async move {
-            let read_res = underlying.write().await.next().await;
-            Python::with_gil(|py| {
-                Ok(read_res
-                    .map(|b| b.map(|b| Some(PyBytes::new(py, &b))).unwrap_or(None))
-                    .unwrap_or(None)
-                    .into_py(py))
+        Some(
+            interruptible_future_to_py(py, async move {
+                let read_res = underlying.write().await.next().await;
+                read_res
+                    .and_then(|b| b.ok().map(|b| b.to_vec()))
+                    .map(Ok)
+                    .unwrap_or(Err(PyStopAsyncIteration::new_err(())))
             })
-        })
+            .unwrap(),
+        )
     }
 }
 
@@ -727,7 +723,6 @@ pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
             py,
             r#"
 import asyncio
-import sys
 async def coroutine_to_safely_cancellable(c, cancel_token):
     try:
         return await asyncio.shield(c)
@@ -735,14 +730,6 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         cancel_token.safe_cancel()
         await c
         raise asyncio.CancelledError()
-
-async def pyreceiver_to_async_generator(pyreceiver):
-    while True:
-        res = await pyreceiver.next()
-        if res is None:
-            break
-        else:
-            yield res
 "#,
             "converters",
             "converters",
