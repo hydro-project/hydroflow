@@ -15,7 +15,7 @@ use async_trait::async_trait;
 use futures::io::BufReader;
 use futures::{AsyncBufReadExt, AsyncRead, AsyncWriteExt, StreamExt};
 use hydroflow_cli_integration::ServerBindConfig;
-use tempfile::{NamedTempFile, TempPath};
+use tempfile::{NamedTempFile, TempDir};
 use tokio::sync::RwLock;
 
 use super::{
@@ -25,7 +25,7 @@ use super::{
 
 struct LaunchedLocalhostBinary {
     child: RwLock<async_process::Child>,
-    _temp_path: TempPath,
+    _temp_dir: TempDir,
     stdin_sender: Sender<String>,
     stdout_receivers: Arc<RwLock<Vec<Sender<String>>>>,
     stderr_receivers: Arc<RwLock<Vec<Sender<String>>>>,
@@ -142,7 +142,10 @@ impl LaunchedHost for LaunchedLocalhost {
         binary: Arc<(String, Vec<u8>)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
-        let temp_path = NamedTempFile::new()?.into_temp_path();
+        let dothydro_folder = std::env::current_dir().unwrap().join(".hydro");
+        std::fs::create_dir_all(&dothydro_folder).unwrap();
+        let binary_folder = tempfile::tempdir_in(dothydro_folder).unwrap();
+        let temp_path = NamedTempFile::new_in(binary_folder.path())?.into_temp_path();
 
         let mut file = File::create(&temp_path)?;
         file.write_all(binary.1.as_slice())?;
@@ -184,7 +187,7 @@ impl LaunchedHost for LaunchedLocalhost {
 
         Ok(Arc::new(RwLock::new(LaunchedLocalhostBinary {
             child: RwLock::new(child),
-            _temp_path: temp_path,
+            _temp_dir: binary_folder,
             stdin_sender,
             stdout_receivers,
             stderr_receivers,
