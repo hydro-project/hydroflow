@@ -14,74 +14,86 @@ pub fn check_all<T: LatticeOrd + NaiveLatticeOrd + Merge<T> + Clone + Eq + Debug
 
 /// Check that the lattice's `PartialOrd` implementation agrees with the `NaiveLatticeOrd` partial
 /// order derived from `Merge`.
-pub fn check_lattice_ord<T: LatticeOrd + NaiveLatticeOrd>(items: &[T]) {
+pub fn check_lattice_ord<T: LatticeOrd + NaiveLatticeOrd + Debug>(items: &[T]) {
     // `NaiveLatticeOrd` is a better source of truth, as it is based on the `Merge` impl. But it
     // is inefficient. It also could be wrong if `Merge` doesn't properly return true/false
     // iff the merge changed things.
     for [a, b] in cartesian_power(items) {
-        assert_eq!(a.naive_cmp(b), a.partial_cmp(b));
-        assert_eq!(b.naive_cmp(a), b.partial_cmp(a));
+        assert_eq!(a.naive_cmp(b), a.partial_cmp(b), "`{:?}`, `{:?}`", a, b);
     }
 }
 
 /// Checks `PartialOrd`, `PartialEq`, and `Eq`'s reflexivity, symmetry, transitivity, and duality.
 #[allow(clippy::eq_op)]
 #[allow(clippy::double_comparisons)]
-pub fn check_partial_ord_properties<T: PartialOrd + Eq>(items: &[T]) {
+pub fn check_partial_ord_properties<T: PartialOrd + Eq + Debug>(items: &[T]) {
     use std::cmp::Ordering::*;
-
-    // PartialEq:
-    // a != b if and only if !(a == b).
-    for [a, b] in cartesian_power(items) {
-        assert_eq!(a != b, !(a == b))
-    }
 
     // Eq:
     // reflexive: a == a;
     for a in items {
-        assert!(a == a)
+        assert!(a == a, "`{:?}`", a);
     }
     // symmetric: a == b implies b == a; and
     for [a, b] in cartesian_power(items) {
-        assert_eq!(a == b, b == a)
+        assert_eq!(a == b, b == a, "`{:?}`, `{:?}`", a, b);
     }
     // transitive: a == b and b == c implies a == c.
     for [a, b, c] in cartesian_power(items) {
         if a == b && b == c {
-            assert_eq!(a == b && b == c, a == c);
+            assert_eq!(a == b && b == c, a == c, "`{:?}`, `{:?}`, `{:?}`", a, b, c);
         }
     }
 
     // PartialOrd
     for [a, b] in cartesian_power(items) {
         // a == b if and only if partial_cmp(a, b) == Some(Equal).
-        assert_eq!(a == b, a.partial_cmp(b) == Some(Equal));
+        assert_eq!(
+            a == b,
+            a.partial_cmp(b) == Some(Equal),
+            "`{:?}`, `{:?}`",
+            a,
+            b,
+        );
         // a < b if and only if partial_cmp(a, b) == Some(Less)
-        assert_eq!(a < b, a.partial_cmp(b) == Some(Less));
+        assert_eq!(
+            a < b,
+            a.partial_cmp(b) == Some(Less),
+            "`{:?}`, `{:?}`",
+            a,
+            b,
+        );
         // a > b if and only if partial_cmp(a, b) == Some(Greater)
-        assert_eq!(a > b, a.partial_cmp(b) == Some(Greater));
+        assert_eq!(
+            a > b,
+            a.partial_cmp(b) == Some(Greater),
+            "`{:?}`, `{:?}`",
+            a,
+            b,
+        );
         // a <= b if and only if a < b || a == b
-        assert_eq!(a <= b, a < b || a == b);
+        assert_eq!(a <= b, a < b || a == b, "`{:?}`, `{:?}`", a, b);
         // a >= b if and only if a > b || a == b
-        assert_eq!(a >= b, a > b || a == b);
+        assert_eq!(a >= b, a > b || a == b, "`{:?}`, `{:?}`", a, b);
+        // PartialEq:
         // a != b if and only if !(a == b).
-        assert_eq!(a != b, !(a == b));
+        assert_eq!(a != b, !(a == b), "`{:?}`, `{:?}`", a, b);
     }
     // transitivity: a < b and b < c implies a < c. The same must hold for both == and >.
     for [a, b, c] in cartesian_power(items) {
         if a < b && b < c {
-            assert!(a < c);
+            assert!(a < c, "`{:?}`, `{:?}`, `{:?}`", a, b, c);
         }
         if a == b && b == c {
-            assert!(a == c);
+            assert!(a == c, "`{:?}`, `{:?}`, `{:?}`", a, b, c);
         }
         if a > b && b > c {
-            assert!(a > c);
+            assert!(a > c, "`{:?}`, `{:?}`, `{:?}`", a, b, c);
         }
     }
     // duality: a < b if and only if b > a.
     for [a, b] in cartesian_power(items) {
-        assert_eq!(a < b, b > a)
+        assert_eq!(a < b, b > a, "`{:?}`, `{:?}`", a, b);
     }
 }
 
@@ -90,25 +102,37 @@ pub fn check_lattice_properties<T: Merge<T> + Clone + Eq + Debug>(items: &[T]) {
     // Idempotency
     // x ∧ x = x
     for x in items {
-        assert_eq!(Merge::merge_owned(x.to_owned(), x.to_owned()), x.to_owned())
+        assert_eq!(
+            Merge::merge_owned(x.clone(), x.clone()),
+            x.clone(),
+            "`{:?}`",
+            x,
+        );
     }
 
     // Commutativity
     // x ∧ y = y ∧ x
     for [x, y] in cartesian_power(items) {
         assert_eq!(
-            Merge::merge_owned(x.to_owned(), y.to_owned()),
-            Merge::merge_owned(y.to_owned(), x.to_owned())
-        )
+            Merge::merge_owned(x.clone(), y.clone()),
+            Merge::merge_owned(y.clone(), x.clone()),
+            "`{:?}`, `{:?}`",
+            x,
+            y,
+        );
     }
 
     // Associativity
     // x ∧ (y ∧ z) = (x ∧ y) ∧ z
     for [x, y, z] in cartesian_power(items) {
         assert_eq!(
-            Merge::merge_owned(x.to_owned(), Merge::merge_owned(y.to_owned(), z.to_owned())),
-            Merge::merge_owned(Merge::merge_owned(x.to_owned(), y.to_owned()), z.to_owned())
-        )
+            Merge::merge_owned(x.clone(), Merge::merge_owned(y.clone(), z.clone())),
+            Merge::merge_owned(Merge::merge_owned(x.clone(), y.clone()), z.clone()),
+            "`{:?}`, `{:?}`, `{:?}`",
+            x,
+            y,
+            z,
+        );
     }
 }
 
