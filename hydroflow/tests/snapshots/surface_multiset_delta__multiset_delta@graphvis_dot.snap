@@ -1,0 +1,17 @@
+---
+source: hydroflow/tests/surface_multiset_delta.rs
+expression: flow.meta_graph().unwrap().to_dot()
+---
+digraph {
+    subgraph "cluster n1v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_1v1\nstratum 0"
+        n1v1 [label="(n1v1) source_stream(input_recv)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n2v1 [label="(n2v1) multiset_delta()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n3v1 [label="(n3v1) for_each(|x| result_send.send(x).unwrap())", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n1v1 -> n2v1
+        n2v1 -> n3v1
+    }
+}
+
