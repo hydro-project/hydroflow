@@ -219,29 +219,23 @@ impl Deployment {
 
     fn deploy<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.clone();
+        let py_none = py.None();
         interruptible_future_to_py(py, async move {
             underlying.write().await.deploy().await.map_err(|e| {
-                Python::with_gil(|py| {
-                    AnyhowError::new_err(
-                        Py::new(
-                            py,
-                            AnyhowWrapper {
-                                underlying: Arc::new(RwLock::new(Some(e))),
-                            },
-                        )
-                        .unwrap(),
-                    )
+                AnyhowError::new_err(AnyhowWrapper {
+                    underlying: Arc::new(RwLock::new(Some(e))),
                 })
             })?;
-            Python::with_gil(|py| Ok(py.None()))
+            Ok(py_none)
         })
     }
 
     fn start<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.clone();
+        let py_none = py.None();
         interruptible_future_to_py(py, async move {
             underlying.write().await.start().await;
-            Ok(Python::with_gil(|py| py.None()))
+            Ok(py_none)
         })
     }
 }
@@ -344,9 +338,10 @@ pub struct Service {
 impl Service {
     fn stop<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.clone();
+        let py_none = py.None();
         interruptible_future_to_py(py, async move {
             underlying.write().await.stop().await.unwrap();
-            Ok(Python::with_gil(|py| py.None()))
+            Ok(py_none)
         })
     }
 }
@@ -710,12 +705,7 @@ impl PythonStream {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
             let read_res = underlying.write().await.next().await;
-            Python::with_gil(|py| {
-                Ok(read_res
-                    .map(|b| b.map(|b| Some(PyBytes::new(py, &b))).unwrap_or(None))
-                    .unwrap_or(None)
-                    .into_py(py))
-            })
+            Ok(read_res.and_then(|b| b.ok().map(|b| b.to_vec())))
         })
     }
 }
