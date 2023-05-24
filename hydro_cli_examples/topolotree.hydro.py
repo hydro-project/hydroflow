@@ -125,7 +125,7 @@ async def main(args):
     tree_stdouts = await tree.map_async(get_stdouts)
 
     def stream_printer(path, v):
-        parsed = json.loads(decode(v, "utf-8"))
+        parsed = json.loads(decode(bytes(v), "utf-8"))
         return f"{path}: {parsed}"
 
     print("deployed!")
