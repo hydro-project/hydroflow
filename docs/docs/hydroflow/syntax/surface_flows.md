@@ -22,22 +22,22 @@ referenced before it is assigned, and that is completely OK and better matches t
 data, making the program more understandable.
 
 ## Operators with Multiple Ports
-Some operators have more than one input _port_ that can be referenced by `->`. For example [`merge`](./surface_ops.gen.md#merge)
-merges the contents of many flows, so it can have an abitrary number of input ports. Some operators have multiple outputs, notably [`tee`](./surface_ops.gen.md#tee),
+Some operators have more than one input _port_ that can be referenced by `->`. For example [`union`](./surface_ops.gen.md#union)
+unions the contents of many flows, so it can have an abitrary number of input ports. Some operators have multiple outputs, notably [`tee`](./surface_ops.gen.md#tee),
 which has an arbitrary number of outputs.
 
 In the syntax, we optionally distinguish input ports via an _indexing prefix_ number
 in square brackets before the name (e.g. `[0]my_join` and `[1]my_join`). We
 can distinguish output ports by an _indexing suffix_ (e.g. `my_tee[0]`).
 
-Here is an example that tees one flow into two, handles each separately, and then merges them to print out the contents in both lowercase and uppercase:
+Here is an example that tees one flow into two, handles each separately, and then unions them to print out the contents in both lowercase and uppercase:
 ```rust,ignore
 my_tee = source_iter(vec!["Hello", "world"]) -> tee();
-my_tee -> map(|x| x.to_uppercase()) -> my_merge;
-my_tee -> map(|x| x.to_lowercase()) -> my_merge;
-my_merge = merge() -> for_each(|x| println!("{}", x));
+my_tee -> map(|x| x.to_uppercase()) -> my_union;
+my_tee -> map(|x| x.to_lowercase()) -> my_union;
+my_union = union() -> for_each(|x| println!("{}", x));
 ```
-`merge()` and `tee()` treat all their input/outputs the same, so we omit the indexing.
+`union()` and `tee()` treat all their input/outputs the same, so we omit the indexing.
 
 Here is a visualization of the flow that was generated:
 ```mermaid
@@ -58,12 +58,12 @@ end
 subgraph sg_2v1 ["sg_2v1 stratum 0"]
     3v1[\"(3v1) <tt>map(| x : &amp; str | x.to_uppercase())</tt>"/]:::pullClass
     4v1[\"(4v1) <tt>map(| x : &amp; str | x.to_lowercase())</tt>"/]:::pullClass
-    5v1[\"(5v1) <tt>merge()</tt>"/]:::pullClass
+    5v1[\"(5v1) <tt>union()</tt>"/]:::pullClass
     6v1[/"(6v1) <tt>for_each(| x | println! (&quot;{}&quot;, x))</tt>"\]:::pushClass
     3v1--0--->5v1
     4v1--1--->5v1
     5v1--->6v1
-    subgraph sg_2v1_var_my_merge ["var <tt>my_merge</tt>"]
+    subgraph sg_2v1_var_my_union ["var <tt>my_union</tt>"]
         5v1
         6v1
     end

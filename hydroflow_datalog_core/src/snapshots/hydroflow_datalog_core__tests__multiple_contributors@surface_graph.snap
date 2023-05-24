@@ -4,7 +4,7 @@ expression: flat_graph_ref.surface_syntax_string()
 ---
 2v1 = unique :: < 'tick > ();
 5v1 = unique :: < 'tick > ();
-7v1 = merge ();
+7v1 = union ();
 8v1 = unique :: < 'tick > ();
 10v1 = source_stream (in1);
 11v1 = source_stream (in2);

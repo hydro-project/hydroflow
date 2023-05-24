@@ -156,10 +156,10 @@ fn test_cycle() {
 
     let mut df = Hydroflow::new();
 
-    let (reachable, merge_lhs) = df.make_edge::<_, VecHandoff<usize>>("reachable -> merge_lhs");
-    let (neighbors_out, merge_rhs) =
-        df.make_edge::<_, VecHandoff<usize>>("neighbors_out -> merge_rhs");
-    let (merge_out, distinct_in) = df.make_edge::<_, VecHandoff<usize>>("merge_out -> distinct_in");
+    let (reachable, union_lhs) = df.make_edge::<_, VecHandoff<usize>>("reachable -> union_lhs");
+    let (neighbors_out, union_rhs) =
+        df.make_edge::<_, VecHandoff<usize>>("neighbors_out -> union_rhs");
+    let (union_out, distinct_in) = df.make_edge::<_, VecHandoff<usize>>("union_out -> distinct_in");
     let (distinct_out, tee_in) = df.make_edge::<_, VecHandoff<usize>>("distinct_out -> tee_in");
     let (tee_out1, neighbors_in) = df.make_edge::<_, VecHandoff<usize>>("tee_out1 -> neighbors_in");
     let (tee_out2, sink_in) = df.make_edge::<_, VecHandoff<usize>>("tee_out2 -> sink_in");
@@ -176,10 +176,10 @@ fn test_cycle() {
     );
 
     df.add_subgraph_2in_out(
-        "merge",
-        merge_lhs,
-        merge_rhs,
-        merge_out,
+        "union",
+        union_lhs,
+        union_rhs,
+        union_out,
         |_ctx, recv1, recv2, send| {
             for v in (recv1.take_inner().into_iter()).chain(recv2.take_inner().into_iter()) {
                 send.give(Some(v));

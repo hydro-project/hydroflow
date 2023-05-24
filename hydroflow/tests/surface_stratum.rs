@@ -81,7 +81,7 @@ pub fn test_tick_loop_1() {
     // Without `next_tick()` this would be "unsafe" although legal.
     // E.g. it would spin forever in a single infinite tick/tick.
     let mut df: Hydroflow = hydroflow_syntax! {
-        a = merge() -> tee();
+        a = union() -> tee();
         source_iter([1, 3]) -> [0]a;
         a[0] -> next_tick() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
@@ -107,7 +107,7 @@ pub fn test_tick_loop_2() {
     let output_inner = Rc::clone(&output);
 
     let mut df: Hydroflow = hydroflow_syntax! {
-        a = merge() -> tee();
+        a = union() -> tee();
         source_iter([1, 3]) -> [0]a;
         a[0] -> next_tick() -> next_tick() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
@@ -136,7 +136,7 @@ pub fn test_tick_loop_3() {
     let output_inner = Rc::clone(&output);
 
     let mut df: Hydroflow = hydroflow_syntax! {
-        a = merge() -> tee();
+        a = union() -> tee();
         source_iter([1, 3]) -> [0]a;
         a[0] -> next_tick() -> next_tick() -> next_tick() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
@@ -168,7 +168,7 @@ pub fn test_surface_syntax_graph_unreachability() {
 
     #[allow(clippy::map_identity)]
     let mut df = hydroflow_syntax! {
-        reached_vertices = merge() -> map(|v| (v, ()));
+        reached_vertices = union() -> map(|v| (v, ()));
         source_iter(vec![0]) -> [0]reached_vertices;
 
         edges = source_stream(pairs_recv) -> tee();
@@ -210,10 +210,10 @@ pub fn test_subgraph_stratum_consolidation() {
     // Bunch of triangles generate consecutive subgraphs, but since there are
     // no negative edges they can all be in the same stratum.
     let mut df: Hydroflow = hydroflow_syntax! {
-        a = merge() -> tee();
-        b = merge() -> tee();
-        c = merge() -> tee();
-        d = merge() -> for_each(|x| output_inner.borrow_mut().push(x));
+        a = union() -> tee();
+        b = union() -> tee();
+        c = union() -> tee();
+        d = union() -> for_each(|x| output_inner.borrow_mut().push(x));
         source_iter([0]) -> [0]a[0] -> [0]b[0] -> [0]c[0] -> [0]d;
         source_iter([1]) -> [1]a[1] -> [1]b[1] -> [1]c[1] -> [1]d;
     };

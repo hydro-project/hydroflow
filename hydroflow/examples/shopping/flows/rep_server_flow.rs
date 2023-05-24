@@ -52,7 +52,7 @@ pub(crate) async fn rep_server_flow(
           -> map(Result::unwrap)
           -> map(|(m, _a): (((usize, ClientClass), SealedSetOfIndexedValues<Request>), _)| m)
           -> all_in;
-        all_in = merge()
+        all_in = union()
           -> group_by(SSIV_BOT, ssiv_merge)
           -> unique()
           -> map(|m| (m, out_addr)) -> dest_sink_serde(out);

@@ -130,9 +130,9 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
             let mut df = Hydroflow::new();
 
             type Hoff = VecHandoff<usize>;
-            let (reachable_out, merge_lhs) = df.make_edge::<_, Hoff>("reachable_out -> merge_lhs");
-            let (neighbors_out, merge_rhs) = df.make_edge::<_, Hoff>("neighbors_out -> merge_rhs");
-            let (merge_out, distinct_in) = df.make_edge::<_, Hoff>("merge_out -> distinct_in");
+            let (reachable_out, union_lhs) = df.make_edge::<_, Hoff>("reachable_out -> union_lhs");
+            let (neighbors_out, union_rhs) = df.make_edge::<_, Hoff>("neighbors_out -> union_rhs");
+            let (union_out, distinct_in) = df.make_edge::<_, Hoff>("union_out -> distinct_in");
             let (distinct_out, tee_in) = df.make_edge::<_, Hoff>("distinct_out -> tee_in");
             let (tee_out1, neighbors_in) = df.make_edge::<_, Hoff>("tee_out1 -> neighbors_in");
             let (tee_out2, sink_in) = df.make_edge::<_, Hoff>("tee_out2 -> sink_in");
@@ -161,10 +161,10 @@ fn benchmark_hydroflow_scheduled(c: &mut Criterion) {
             );
 
             df.add_subgraph_2in_out(
-                "merge",
-                merge_lhs,
-                merge_rhs,
-                merge_out,
+                "union",
+                union_lhs,
+                union_rhs,
+                union_out,
                 |_ctx, recv1, recv2, send| {
                     send.give(Iter(recv1.take_inner().into_iter()));
                     send.give(Iter(recv2.take_inner().into_iter()));
@@ -299,7 +299,7 @@ fn benchmark_hydroflow_surface_cheating(c: &mut Criterion) {
 
                     hydroflow_syntax! {
                         origin = source_iter([1]);
-                        reached_vertices = merge();
+                        reached_vertices = union();
                         origin -> reached_vertices;
 
                         my_cheaty_join = reached_vertices -> filter_map(|v| EDGES.get(&v)) -> flatten() -> map(|&v| v);
@@ -336,7 +336,7 @@ fn benchmark_hydroflow_surface(c: &mut Criterion) {
                     hydroflow_syntax! {
                         origin = source_iter(vec![1]);
                         stream_of_edges = source_iter(edges);
-                        reached_vertices = merge();
+                        reached_vertices = union();
                         origin -> reached_vertices;
 
                         my_join_tee = join() -> flat_map(|(src, ((), dst))| [src, dst]) -> tee();

@@ -11,7 +11,7 @@ fn main() {
         inn_1 = [1]pivot;
         inn_0 = [0]pivot;
 
-        pivot = merge() -> tee();
+        pivot = union() -> tee();
     };
     df.run_available();
 }

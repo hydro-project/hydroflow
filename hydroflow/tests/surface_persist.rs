@@ -32,9 +32,9 @@ pub fn test_persist_pull() {
         // Structured to ensure `persist()` is pull-based.
         repeat_iter([1]) -> m0;
         null() -> m0;
-        m0 = merge() -> persist() -> m1;
+        m0 = union() -> persist() -> m1;
         null() -> m1;
-        m1 = merge()
+        m1 = union()
             -> fold(0, |a, b| (a + b))
             -> for_each(|x| result_send.send(x).unwrap());
     };
