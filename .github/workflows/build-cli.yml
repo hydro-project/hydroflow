@@ -8,7 +8,7 @@ on:
 
 env:
   PACKAGE_NAME: hydro_cli
-  PYTHON_VERSION: "3.7" # to build abi3 wheels
+  PYTHON_VERSION: "3.10" # to build abi3 wheels
 
 # based on Ruff's CI
 jobs:
