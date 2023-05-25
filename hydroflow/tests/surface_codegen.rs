@@ -49,11 +49,11 @@ pub fn test_basic_3() {
 }
 
 #[multiplatform_test]
-pub fn test_basic_merge() {
+pub fn test_basic_union() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
-        m = merge() -> for_each(|v| out_send.send(v).unwrap());
+        m = union() -> for_each(|v| out_send.send(v).unwrap());
         source_iter([1]) -> [0]m;
         source_iter([2]) -> [1]m;
     };
@@ -103,7 +103,7 @@ pub fn test_large_diamond() {
     #[allow(clippy::map_identity)]
     let mut df: Hydroflow = hydroflow_syntax! {
         t = source_iter([1]) -> tee();
-        j = merge() -> for_each(|x| println!("{}", x));
+        j = union() -> for_each(|x| println!("{}", x));
         t[0] -> map(std::convert::identity) -> map(std::convert::identity) -> [0]j;
         t[1] -> map(std::convert::identity) -> map(std::convert::identity) -> [1]j;
     };
@@ -621,7 +621,7 @@ pub fn test_demux_1() {
             }
         });
 
-        out = merge() -> for_each(|a| println!("area: {}", a));
+        out = union() -> for_each(|a| println!("area: {}", a));
 
         my_demux[circ] -> map(|r| std::f64::consts::PI * r * r) -> out;
         my_demux[rect] -> map(|(w, h)| w * h) -> out;
@@ -694,7 +694,7 @@ pub fn test_surface_syntax_reachability_generated() {
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut df: Hydroflow = hydroflow_syntax! {
-        reached_vertices = merge() -> map(|v| (v, ()));
+        reached_vertices = union() -> map(|v| (v, ()));
         source_iter(vec![0]) -> [0]reached_vertices;
 
         my_join_tee = join() -> map(|(_src, ((), dst))| dst) -> tee();
@@ -737,17 +737,17 @@ pub fn test_transitive_closure() {
 
     let mut df = hydroflow_syntax! {
         // edge(x,y) :- link(x,y)
-        edge_merge_tee = merge() -> tee();
+        edge_union_tee = union() -> tee();
         link_tee = tee();
         source_stream(pairs_recv) -> link_tee;
-        link_tee[0] -> [0]edge_merge_tee;
+        link_tee[0] -> [0]edge_union_tee;
 
         // edge(a,b) :- edge(a,k), link(k,b)
         the_join = join();
-        edge_merge_tee[0] -> map(|(a, k)| (k, a)) -> [0]the_join;
+        edge_union_tee[0] -> map(|(a, k)| (k, a)) -> [0]the_join;
         link_tee[1] -> [1]the_join;
-        the_join -> map(|(_k, (a, b))| (a, b)) -> [1]edge_merge_tee;
-        edge_merge_tee[1] -> for_each(|(a, b)| println!("transitive closure: ({},{})", a, b));
+        the_join -> map(|(_k, (a, b))| (a, b)) -> [1]edge_union_tee;
+        edge_union_tee[1] -> for_each(|(a, b)| println!("transitive closure: ({},{})", a, b));
     };
     assert_graphvis_snapshots!(df);
     df.run_available();
@@ -798,7 +798,7 @@ pub fn test_covid_tracing() {
     let mut hydroflow = hydroflow_syntax! {
         contacts = source_stream(contacts_recv) -> flat_map(|(pid_a, pid_b, time)| [(pid_a, (pid_b, time)), (pid_b, (pid_a, time))]);
 
-        exposed = merge();
+        exposed = union();
         source_stream(diagnosed_recv) -> [0]exposed;
 
         new_exposed = (

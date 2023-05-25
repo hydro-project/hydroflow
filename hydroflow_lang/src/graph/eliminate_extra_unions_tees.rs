@@ -1,5 +1,7 @@
 #![deny(missing_docs)]
 
+use super::ops::tee::TEE;
+use super::ops::union::UNION;
 use super::{GraphNodeId, HydroflowGraph};
 
 fn find_unary_ops<'a>(
@@ -18,10 +20,10 @@ fn find_unary_ops<'a>(
         })
 }
 
-/// Removes missing merges and tees. Must be applied BEFORE subgraph partitioning.
-pub fn eliminate_extra_merges_tees(graph: &mut HydroflowGraph) {
-    let extra_ops = find_unary_ops(graph, "merge")
-        .chain(find_unary_ops(graph, "tee"))
+/// Removes missing unions and tees. Must be applied BEFORE subgraph partitioning.
+pub fn eliminate_extra_unions_tees(graph: &mut HydroflowGraph) {
+    let extra_ops = find_unary_ops(graph, UNION.name)
+        .chain(find_unary_ops(graph, TEE.name))
         .collect::<Vec<_>>();
     for extra_op in extra_ops {
         graph.remove_intermediate_node(extra_op);

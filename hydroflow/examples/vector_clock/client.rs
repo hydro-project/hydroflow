@@ -23,7 +23,7 @@ pub(crate) async fn run_client(
     let mut flow = hydroflow_syntax! {
         // Define shared inbound and outbound channels
         inbound_chan = source_stream_serde(inbound) -> map(Result::unwrap) -> tee();
-        outbound_chan = // merge() ->  // commented out since we only use this once in the client template
+        outbound_chan = // union() ->  // commented out since we only use this once in the client template
             dest_sink_serde(outbound);
 
         // Print all messages for debugging purposes
@@ -32,7 +32,7 @@ pub(crate) async fn run_client(
 
         // given the inbound packet, bump the local clock and merge this in
         inbound_chan[merge] -> map(|(msg, _sender): (EchoMsg, SocketAddr)| msg.vc) -> [net]mergevc;
-        mergevc = merge() -> fold::<'static> (VecClock::default(), |mut old, vc| {
+        mergevc = union() -> fold::<'static> (VecClock::default(), |mut old, vc| {
                     let my_addr = format!("{:?}", addr);
                     let bump = MapUnionSingletonMap::new_from((my_addr.clone(), Max::new(old.0[&my_addr].0 + 1)));
                     old.merge(bump);

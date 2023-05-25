@@ -50,7 +50,7 @@ pub fn main() {
     let mut flow = hydroflow_syntax! {
         origin = source_iter(vec![0]);
         stream_of_edges = source_stream(pairs_recv) -> tee();
-        reached_vertices = merge()->tee();
+        reached_vertices = union()->tee();
         origin -> [0]reached_vertices;
 
         // the join for reachable vertices
@@ -126,7 +126,7 @@ subgraph "sg_1v1 stratum 0"
     8v1[\"(8v1) <tt>map(| v | (v, ()))</tt>"/]:::pullClass
     6v1[\"(6v1) <tt>join()</tt>"/]:::pullClass
     7v1[\"(7v1) <tt>flat_map(| (src, ((), dst)) | [src, dst])</tt>"/]:::pullClass
-    4v1[\"(4v1) <tt>merge()</tt>"/]:::pullClass
+    4v1[\"(4v1) <tt>union()</tt>"/]:::pullClass
     5v1[/"(5v1) <tt>tee()</tt>"\]:::pushClass
     15v1["(15v1) <tt>handoff</tt>"]:::otherClass
     15v1--->8v1

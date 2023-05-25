@@ -18,7 +18,7 @@ subgraph sg_1v1 ["sg_1v1 stratum 0"]
 end
 subgraph sg_2v1 ["sg_2v1 stratum 0"]
     3v1[\"(3v1) <code>source_iter(vec![0])</code>"/]:::pullClass
-    1v1[\"(1v1) <code>merge()</code>"/]:::pullClass
+    1v1[\"(1v1) <code>union()</code>"/]:::pullClass
     2v1[\"(2v1) <code>map(|v| (v, ()))</code>"/]:::pullClass
     6v1[\"(6v1) <code>join()</code>"/]:::pullClass
     7v1[\"(7v1) <code>map(|(_src, ((), dst))| dst)</code>"/]:::pullClass

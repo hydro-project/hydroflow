@@ -5,7 +5,7 @@ sidebar_position: 6
 # Graph Reachability
 > In this example we cover:
 > * Implementing a recursive algorithm (graph reachability) via cyclic dataflow
-> * Operators to merge data from multiple inputs ([`merge`](../syntax/surface_ops.gen.md#merge)), and send data to multiple outputs ([`tee`](../syntax/surface_ops.gen.md#tee))
+> * Operators to union data from multiple inputs ([`union`](../syntax/surface_ops.gen.md#union)), and send data to multiple outputs ([`tee`](../syntax/surface_ops.gen.md#tee))
 > * Indexing multi-output operators by appending a bracket expression
 > * An example of how a cyclic dataflow in one stratum executes to completion before starting the next stratum. 
 
@@ -42,12 +42,12 @@ graph TD
     
   end
 ```
-Note that we added a `Reached Vertices` box to the diagram to merge the two inbound edges corresponding to our 
+Note that we added a `Reached Vertices` box to the diagram to union the two inbound edges corresponding to our 
 two cases above. Similarly note that the join box `V ⨝ E` now has two _outbound_ edges; the sketch omits the operator 
 to copy ("tee") the output along 
 two paths.
 
-Now lets look at a modified version of our [graph neighbor](example_4_neighbors.md) code that implements this full program, including the loop as well as the Hydroflow [`merge`](../syntax/surface_ops.gen.md#merge) and [`tee`](../syntax/surface_ops.gen.md#tee).
+Now lets look at a modified version of our [graph neighbor](example_4_neighbors.md) code that implements this full program, including the loop as well as the Hydroflow [`union`](../syntax/surface_ops.gen.md#union) and [`tee`](../syntax/surface_ops.gen.md#tee).
 Modify src/main.rs to look like this:
 
 ```rust
@@ -61,7 +61,7 @@ pub fn main() {
         // inputs: the origin vertex (vertex 0) and stream of input edges
         origin = source_iter(vec![0]);
         stream_of_edges = source_stream(edges_recv);
-        reached_vertices = merge();
+        reached_vertices = union();
         origin -> [0]reached_vertices;
 
         // the join
@@ -105,37 +105,37 @@ Reached: 1
 
 ## Examining the Hydroflow Code
 Let's review the significant changes here. First, in setting up the inputs we have the 
-addition of the `reached_vertices` variable, which uses the [merge()](../syntax/surface_ops.gen.md#merge) 
-op to merge the output of two operators into one. 
+addition of the `reached_vertices` variable, which uses the [union()](../syntax/surface_ops.gen.md#union) 
+op to union the output of two operators into one. 
 We route the `origin` vertex into it as one input right away:
 ```rust,ignore
-    reached_vertices = merge();
+    reached_vertices = union();
     origin -> [0]reached_vertices;
 ```
-Note the square-bracket syntax for differentiating the multiple inputs to `merge()`
-is the same as that of `join()` (except that merge can have an unbounded number of inputs,
+Note the square-bracket syntax for differentiating the multiple inputs to `union()`
+is the same as that of `join()` (except that union can have an unbounded number of inputs,
 whereas `join()` is defined to only have two.)
 
 Now, `join()` is defined to only have one output. In our program, we want to copy 
 the joined output 
 output to two places: to the original `for_each` from above to print output, and *also* 
-back to the `merge` operator we called `reached_vertices`.
+back to the `union` operator we called `reached_vertices`.
 We feed the `join()` output 
 through a `flat_map()` as before, and then we feed the result into a [`tee()`](../syntax/surface_ops.gen.md#tee) operator,
-which is the mirror image of `merge()`:  instead of merging many inputs to one output, 
+which is the mirror image of `union()`:  instead of merging many inputs to one output, 
 it copies one input to many different outputs.  Each input element is _cloned_, in Rust terms, and
-given to each of the outputs. The syntax for the outputs of `tee()` mirrors that of merge: we *append* 
+given to each of the outputs. The syntax for the outputs of `tee()` mirrors that of union: we *append* 
 an output index in square brackets to the `tee` or variable. In this example we have
 `my_join_tee[0] ->` and `my_join_tee[1] ->`.
 
 Finally, we process the output of the `join` as passed through the `tee`.
-One branch pushes reached vertices back up into the `reached_vertices` variable (which begins with a `merge`), while the other
+One branch pushes reached vertices back up into the `reached_vertices` variable (which begins with a `union`), while the other
 prints out all the reached vertices as in the simple program.
 ```rust,ignore
         my_join_tee[0] -> [1]reached_vertices;
         my_join_tee[1] -> for_each(|x| println!("Reached: {}", x));
 ```
-Note the syntax for differentiating the *outputs* of a `tee()` is symmetric to that of `merge()`, 
+Note the syntax for differentiating the *outputs* of a `tee()` is symmetric to that of `union()`, 
 showing up to the right of the variable rather than the left.
 
 Below is the diagram rendered by [mermaid](https://mermaid-js.github.io/) showing
@@ -149,7 +149,7 @@ linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
 subgraph "sg_1v1 stratum 0"
     1v1[\"(1v1) <tt>source_iter(vec! [0])</tt>"/]:::pullClass
     2v1[\"(2v1) <tt>source_stream(edges_recv)</tt>"/]:::pullClass
-    3v1[\"(3v1) <tt>merge()</tt>"/]:::pullClass
+    3v1[\"(3v1) <tt>union()</tt>"/]:::pullClass
     7v1[\"(7v1) <tt>map(| v | (v, ()))</tt>"/]:::pullClass
     4v1[\"(4v1) <tt>join()</tt>"/]:::pullClass
     5v1[/"(5v1) <tt>flat_map(| (src, ((), dst)) | [src, dst])</tt>"\]:::pushClass
@@ -174,7 +174,7 @@ end
 11v1===o8v1
 ```
 This is similar to the flow for graph neighbors, but has a few more operators that make it look
-more complex. In particular, it includes the `merge` and `tee` operators, and a cycle-forming back-edge 
+more complex. In particular, it includes the `union` and `tee` operators, and a cycle-forming back-edge 
 that passes through an auto-generated `handoff` operator. This `handoff` is not a stratum boundary (after all, it connects stratum 0 to itself!) It simply enforces the rule that a push producer and a pull consumer must be separated by a `handoff`. 
 
 Meanwhile, note that there is once again a stratum boundary between the stratum 0 with its recursive loop, and stratum 1 that computes `unique`, with the blocking input. This means that Hydroflow will first run the loop of stratum 0 repeatedly until all the transitive reached vertices are found, before moving on to compute the unique reached vertices.
