@@ -112,7 +112,7 @@ pub fn test_reduce() {
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut df = hydroflow_syntax! {
-        reached_vertices = merge() -> map(|v| (v, ()));
+        reached_vertices = union() -> map(|v| (v, ()));
         source_iter(vec![0]) -> [0]reached_vertices;
 
         my_join_tee = join() -> map(|(_src, ((), dst))| dst) -> tee();

@@ -45,7 +45,7 @@ pub(crate) fn rga_datalog_agg(
         nextSibling = sibling -> group_by::<'static, Timestamp, Timestamp>(|| Timestamp{node_ts: 0, node_id: 0}, |accum: &mut Timestamp, s2: Timestamp| if s2 > *accum {*accum = s2});
 
         // nextSiblingAnc (Start, Next) :- nextSibling (Start, Next), Next != 0
-        nextSiblingAnc = merge() -> tee();
+        nextSiblingAnc = union() -> tee();
         nextSibling -> filter(|(_s1, s2)| *s2 != Timestamp{node_ts: 0, node_id: 0}) -> nextSiblingAnc;
 
         // nextSiblingAnc(Node, Next) :- lastChild(Parent, Node), nextSiblingAnc(Parent, Next)
@@ -54,7 +54,7 @@ pub(crate) fn rga_datalog_agg(
         nextSiblingAnc -> [1]upEdge;
 
         // nextElem(Prev, Next) :- firstChild(Prev, Next)
-        nextElem = merge();
+        nextElem = union();
         firstChild[firstChild] -> nextElem;
 
         // nextElem(Prev,Next) :- isListElem(Prev), !parents (Prev), nextSiblingAnc(Prev,Next)

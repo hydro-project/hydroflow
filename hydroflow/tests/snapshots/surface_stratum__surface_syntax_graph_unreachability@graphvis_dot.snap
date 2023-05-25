@@ -21,7 +21,7 @@ digraph {
         style=filled
         label = "sg_2v1\nstratum 0"
         n3v1 [label="(n3v1) source_iter(vec![0])", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n1v1 [label="(n1v1) merge()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n1v1 [label="(n1v1) union()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n2v1 [label="(n2v1) map(|v| (v, ()))", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n6v1 [label="(n6v1) join()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n7v1 [label="(n7v1) map(|(_src, ((), dst))| dst)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]

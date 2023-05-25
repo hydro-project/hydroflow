@@ -164,14 +164,14 @@ pub fn run_server<RX>(
                     }, 99999999)
                 });
 
-                merge_puts_and_gossip_requests = merge();
+                union_puts_and_gossip_requests = union();
 
-                simulated_put_requests -> merge_puts_and_gossip_requests;
+                simulated_put_requests -> union_puts_and_gossip_requests;
                 source_stream(client_to_transducer_rx)
                     // -> inspect(|x| println!("{server_id}:{:5}: from peers: {x:?}", context.current_tick()))
-                    -> merge_puts_and_gossip_requests;
+                    -> union_puts_and_gossip_requests;
 
-                client_input = merge_puts_and_gossip_requests
+                client_input = union_puts_and_gossip_requests
                     -> enumerate::<'tick>()
                     -> demux(|(e, (req, addr)): (usize, (KvsRequest<BUFFER_SIZE>, NodeId)), var_args!(gets, store, broadcast)| {
                         match req {

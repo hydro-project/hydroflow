@@ -19,7 +19,7 @@ subgraph sg_2v1 ["sg_2v1 stratum 0"]
     6v1[\"(6v1) <code>map(|(a, k)| (k, a))</code>"/]:::pullClass
     5v1[\"(5v1) <code>join()</code>"/]:::pullClass
     7v1[\"(7v1) <code>map(|(_k, (a, b))| (a, b))</code>"/]:::pullClass
-    1v1[\"(1v1) <code>merge()</code>"/]:::pullClass
+    1v1[\"(1v1) <code>union()</code>"/]:::pullClass
     2v1[/"(2v1) <code>tee()</code>"\]:::pushClass
     8v1[/"(8v1) <code>for_each(|(a, b)| println!(&quot;transitive closure: ({},{})&quot;, a, b))</code>"\]:::pushClass
     10v1["(10v1) <code>handoff</code>"]:::otherClass
@@ -30,7 +30,7 @@ subgraph sg_2v1 ["sg_2v1 stratum 0"]
     1v1--->2v1
     2v1--0--->10v1
     2v1--1--->8v1
-    subgraph sg_2v1_var_edge_merge_tee ["var <tt>edge_merge_tee</tt>"]
+    subgraph sg_2v1_var_edge_union_tee ["var <tt>edge_union_tee</tt>"]
         1v1
         2v1
     end

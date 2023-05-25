@@ -82,7 +82,7 @@ sidebar_position: 8
     - for_each
     - join
     - map
-    - merge
+    - union
     - source_iter
     - source_stdin
     - source_stream

@@ -1,27 +1,27 @@
+use quote::{quote_spanned, ToTokens};
+
 use super::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1, RANGE_ANY,
 };
 
-use quote::{quote_spanned, ToTokens};
-
 /// > *n* input streams of the same type, 1 output stream of the same type
 ///
-/// Merges an arbitrary number of input streams into a single stream. Each input sequence is a subsequence of the output, but no guarantee is given on how the inputs are interleaved.
+/// Unions an arbitrary number of input streams into a single stream. Each input sequence is a subsequence of the output, but no guarantee is given on how the inputs are interleaved.
 ///
-/// Since `merge` has multiple input streams, it needs to be assigned to
+/// Since `union` has multiple input streams, it needs to be assigned to
 /// a variable to reference its multiple input ports across statements.
 ///
 /// ```hydroflow
-/// source_iter(vec!["hello", "world"]) -> my_merge;
-/// source_iter(vec!["stay", "gold"]) -> my_merge;
-/// source_iter(vec!["don\'t", "give", "up"]) -> my_merge;
-/// my_merge = merge() -> map(|x| x.to_uppercase())
+/// source_iter(vec!["hello", "world"]) -> my_union;
+/// source_iter(vec!["stay", "gold"]) -> my_union;
+/// source_iter(vec!["don\'t", "give", "up"]) -> my_union;
+/// my_union = union() -> map(|x| x.to_uppercase())
 ///     -> for_each(|x| println!("{}", x));
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
-pub const MERGE: OperatorConstraints = OperatorConstraints {
-    name: "merge",
+pub const UNION: OperatorConstraints = OperatorConstraints {
+    name: "union",
     hard_range_inn: RANGE_ANY,
     soft_range_inn: &(2..),
     hard_range_out: RANGE_1,

@@ -5,9 +5,9 @@ use multiplatform_test::multiplatform_test;
 fn test_surface_flows_1() {
     let mut df = hydroflow::hydroflow_syntax! {
         my_tee = source_iter(vec!["Hello", "world"]) -> tee();
-        my_tee[0] -> map(|x| x.to_uppercase()) -> [0]my_merge;
-        my_tee[1] -> map(|x| x.to_lowercase()) -> [1]my_merge;
-        my_merge = merge() -> for_each(|x| println!("{}", x));
+        my_tee[0] -> map(|x| x.to_uppercase()) -> [0]my_union;
+        my_tee[1] -> map(|x| x.to_lowercase()) -> [1]my_union;
+        my_union = union() -> for_each(|x| println!("{}", x));
     };
     assert_graphvis_snapshots!(df);
     df.run_available();
