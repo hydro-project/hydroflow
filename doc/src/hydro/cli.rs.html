@@ -134,6 +134,8 @@
 <a href="#134" id="134">134</a>
 <a href="#135" id="135">135</a>
 <a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt::Display;
 <span class="kw">use </span>std::path::PathBuf;
 
@@ -146,7 +148,7 @@
 <span class="kw">use crate</span>::{AnyhowError, AnyhowWrapper};
 
 <span class="attr">#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = <span class="prelude-val">None</span>)]
+#[command(name = <span class="string">&quot;Hydro Deploy&quot;</span>, author, version, about, long_about = <span class="prelude-val">None</span>)]
 </span><span class="kw">struct </span>Cli {
     <span class="attr">#[command(subcommand)]
     </span>command: Commands,
@@ -154,10 +156,12 @@
 
 <span class="attr">#[derive(Subcommand, Debug)]
 </span><span class="kw">enum </span>Commands {
-    <span class="doccomment">/// deploys
+    <span class="doccomment">/// Deploys an application given a Python deployment script.
     </span>Deploy {
-        config: PathBuf,
-        <span class="attr">#[arg(last(<span class="bool-val">true</span>))]
+        <span class="doccomment">/// Path to the deployment script.
+        </span>config: PathBuf,
+        <span class="doccomment">/// Additional arguments to pass to the deployment script.
+        </span><span class="attr">#[arg(last(<span class="bool-val">true</span>))]
         </span>args: Vec&lt;String&gt;,
     },
 }

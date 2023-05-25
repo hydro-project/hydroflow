@@ -293,6 +293,20 @@
 <a href="#293" id="293">293</a>
 <a href="#294" id="294">294</a>
 <a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fs::File;
 <span class="kw">use </span>std::io::Write;
@@ -310,7 +324,7 @@
 <span class="kw">use </span>futures::io::BufReader;
 <span class="kw">use </span>futures::{AsyncBufReadExt, AsyncRead, AsyncWriteExt, StreamExt};
 <span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
-<span class="kw">use </span>tempfile::{NamedTempFile, TempPath};
+<span class="kw">use </span>tempfile::{NamedTempFile, TempDir};
 <span class="kw">use </span>tokio::sync::RwLock;
 
 <span class="kw">use super</span>::{
@@ -320,7 +334,7 @@
 
 <span class="kw">struct </span>LaunchedLocalhostBinary {
     child: RwLock&lt;async_process::Child&gt;,
-    _temp_path: TempPath,
+    _temp_dir: TempDir,
     stdin_sender: Sender&lt;String&gt;,
     stdout_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
     stderr_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
@@ -437,17 +451,31 @@
         binary: Arc&lt;(String, Vec&lt;u8&gt;)&gt;,
         args: <span class="kw-2">&amp;</span>[String],
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt; {
-        <span class="kw">let </span>temp_path = NamedTempFile::new()<span class="question-mark">?</span>.into_temp_path();
+        <span class="kw">let </span>dothydro_folder = std::env::current_dir().unwrap().join(<span class="string">&quot;.hydro&quot;</span>);
+        std::fs::create_dir_all(<span class="kw-2">&amp;</span>dothydro_folder).unwrap();
+        <span class="kw">let </span>binary_folder = tempfile::tempdir_in(dothydro_folder).unwrap();
+        <span class="kw">let </span>temp_path = NamedTempFile::new_in(binary_folder.path())<span class="question-mark">?</span>.into_temp_path();
 
         <span class="kw">let </span><span class="kw-2">mut </span>file = File::create(<span class="kw-2">&amp;</span>temp_path)<span class="question-mark">?</span>;
         file.write_all(binary.<span class="number">1</span>.as_slice())<span class="question-mark">?</span>;
         drop(file);
 
-        <span class="attr">#[allow(unused_mut)]
-        </span><span class="kw">let </span><span class="kw-2">mut </span>orig_perms = std::fs::metadata(<span class="kw-2">&amp;</span>temp_path)<span class="question-mark">?</span>.permissions();
         <span class="attr">#[cfg(unix)]
-        </span>orig_perms.set_mode(<span class="number">0o755</span>);
-        std::fs::set_permissions(<span class="kw-2">&amp;</span>temp_path, orig_perms)<span class="question-mark">?</span>;
+        </span>{
+            <span class="kw">let </span><span class="kw-2">mut </span>orig_perms = std::fs::metadata(<span class="kw-2">&amp;</span>temp_path)<span class="question-mark">?</span>.permissions();
+            orig_perms.set_mode(<span class="number">0o755</span>);
+            std::fs::set_permissions(<span class="kw-2">&amp;</span>temp_path, orig_perms)<span class="question-mark">?</span>;
+
+            <span class="comment">// some filesystems take a while to actually set the permissions
+            </span><span class="kw">for </span>_i <span class="kw">in </span><span class="number">0</span>..<span class="number">10 </span>{
+                <span class="kw">let </span>perms = std::fs::metadata(<span class="kw-2">&amp;</span>temp_path)<span class="question-mark">?</span>.permissions();
+                <span class="kw">if </span>perms.mode() == <span class="number">0o755 </span>{
+                    <span class="kw">break</span>;
+                }
+
+                std::thread::sleep(std::time::Duration::from_millis(<span class="number">100</span>));
+            }
+        }
 
         <span class="kw">let </span><span class="kw-2">mut </span>child = Command::new(<span class="kw-2">&amp;</span>temp_path)
             .args(args)
@@ -479,7 +507,7 @@
 
         <span class="prelude-val">Ok</span>(Arc::new(RwLock::new(LaunchedLocalhostBinary {
             child: RwLock::new(child),
-            _temp_path: temp_path,
+            _temp_dir: binary_folder,
             stdin_sender,
             stdout_receivers,
             stderr_receivers,

@@ -779,8 +779,66 @@
 <a href="#779" id="779">779</a>
 <a href="#780" id="780">780</a>
 <a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
+<a href="#789" id="789">789</a>
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a>
+<a href="#809" id="809">809</a>
+<a href="#810" id="810">810</a>
+<a href="#811" id="811">811</a>
+<a href="#812" id="812">812</a>
+<a href="#813" id="813">813</a>
+<a href="#814" id="814">814</a>
+<a href="#815" id="815">815</a>
+<a href="#816" id="816">816</a>
+<a href="#817" id="817">817</a>
+<a href="#818" id="818">818</a>
+<a href="#819" id="819">819</a>
+<a href="#820" id="820">820</a>
+<a href="#821" id="821">821</a>
+<a href="#822" id="822">822</a>
+<a href="#823" id="823">823</a>
+<a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a>
+<a href="#828" id="828">828</a>
+<a href="#829" id="829">829</a>
+<a href="#830" id="830">830</a>
+<a href="#831" id="831">831</a>
+<a href="#832" id="832">832</a>
+<a href="#833" id="833">833</a>
+<a href="#834" id="834">834</a>
+<a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a>
+<a href="#837" id="837">837</a>
+<a href="#838" id="838">838</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
-<span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>std::pin::Pin;
+<span class="kw">use </span>std::sync::{Arc, Weak};
 
 <span class="kw">use </span>async_channel::Receiver;
 <span class="kw">use </span>bytes::Bytes;
@@ -788,10 +846,11 @@
 <span class="kw">use </span>hydroflow_cli_integration::{
     ConnectedBidi, ConnectedSink, ConnectedSource, DynSink, DynStream, ServerOrBound,
 };
-<span class="kw">use </span>pyo3::exceptions::PyException;
+<span class="kw">use </span>pyo3::exceptions::{PyException, PyStopAsyncIteration};
 <span class="kw">use </span>pyo3::prelude::<span class="kw-2">*</span>;
 <span class="kw">use </span>pyo3::types::{PyBytes, PyDict};
 <span class="kw">use </span>pyo3::{create_exception, wrap_pymodule};
+<span class="kw">use </span>pyo3_asyncio::TaskLocals;
 <span class="kw">use </span>pythonize::pythonize;
 <span class="kw">use </span>tokio::sync::oneshot::Sender;
 <span class="kw">use </span>tokio::sync::RwLock;
@@ -800,6 +859,62 @@
 
 <span class="kw">mod </span>cli;
 <span class="kw">pub mod </span>core;
+
+<span class="comment">// crashes can occur if the runtime is not dropped with Python finalizes
+// this ensures that when the Python runtime is dropped, the Tokio runtime is dropped
+</span><span class="attr">#[pyclass]
+</span><span class="kw">struct </span>TokioRuntimeContainer {
+    _runtime: Arc&lt;tokio::runtime::Runtime&gt;,
+}
+
+<span class="kw">static </span>TOKIO_RUNTIME: once_cell::sync::OnceCell&lt;Weak&lt;tokio::runtime::Runtime&gt;&gt; =
+    once_cell::sync::OnceCell::new();
+
+<span class="kw">struct </span>TokioRuntime {}
+
+<span class="kw">impl </span>pyo3_asyncio::generic::Runtime <span class="kw">for </span>TokioRuntime {
+    <span class="kw">type </span>JoinError = tokio::task::JoinError;
+    <span class="kw">type </span>JoinHandle = tokio::task::JoinHandle&lt;()&gt;;
+
+    <span class="kw">fn </span>spawn&lt;F&gt;(fut: F) -&gt; <span class="self">Self</span>::JoinHandle
+    <span class="kw">where
+        </span>F: Future&lt;Output = ()&gt; + Send + <span class="lifetime">&#39;static</span>,
+    {
+        <span class="kw">let </span>handle = TOKIO_RUNTIME
+            .get()
+            .unwrap()
+            .upgrade()
+            .unwrap()
+            .handle()
+            .clone();
+        handle.spawn(<span class="kw">async move </span>{
+            fut.<span class="kw">await</span>;
+        })
+    }
+}
+
+<span class="macro">tokio::task_local! </span>{
+    <span class="kw">static </span>TASK_LOCALS: once_cell::unsync::OnceCell&lt;TaskLocals&gt;;
+}
+
+<span class="kw">impl </span>pyo3_asyncio::generic::ContextExt <span class="kw">for </span>TokioRuntime {
+    <span class="kw">fn </span>scope&lt;F, R&gt;(locals: TaskLocals, fut: F) -&gt; Pin&lt;Box&lt;<span class="kw">dyn </span>Future&lt;Output = R&gt; + Send&gt;&gt;
+    <span class="kw">where
+        </span>F: Future&lt;Output = R&gt; + Send + <span class="lifetime">&#39;static</span>,
+    {
+        <span class="kw">let </span>cell = once_cell::unsync::OnceCell::new();
+        cell.set(locals).unwrap();
+
+        Box::pin(TASK_LOCALS.scope(cell, fut))
+    }
+
+    <span class="kw">fn </span>get_task_locals() -&gt; <span class="prelude-ty">Option</span>&lt;TaskLocals&gt; {
+        <span class="kw">match </span>TASK_LOCALS.try_with(|c| c.get().cloned()) {
+            <span class="prelude-val">Ok</span>(locals) =&gt; locals,
+            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
+        }
+    }
+}
 
 <span class="macro">create_exception!</span>(hydro_cli_core, AnyhowError, PyException);
 
@@ -817,23 +932,19 @@
     }
 }
 
-<span class="kw">static </span>CONVERTERS_MODULE: std::sync::RwLock&lt;<span class="prelude-ty">Option</span>&lt;Py&lt;PyModule&gt;&gt;&gt; = std::sync::RwLock::new(<span class="prelude-val">None</span>);
+<span class="kw">static </span>CONVERTERS_MODULE: once_cell::sync::OnceCell&lt;Py&lt;PyModule&gt;&gt; =
+    once_cell::sync::OnceCell::new();
 
 <span class="kw">fn </span>interruptible_future_to_py&lt;F, T&gt;(py: Python&lt;<span class="lifetime">&#39;_</span>&gt;, fut: F) -&gt; PyResult&lt;<span class="kw-2">&amp;</span>PyAny&gt;
 <span class="kw">where
     </span>F: Future&lt;Output = PyResult&lt;T&gt;&gt; + Send + <span class="lifetime">&#39;static</span>,
     T: IntoPy&lt;PyObject&gt;,
 {
-    <span class="kw">let </span>module = CONVERTERS_MODULE
-        .read()
-        .unwrap()
-        .clone()
-        .unwrap()
-        .into_ref(py);
+    <span class="kw">let </span>module = CONVERTERS_MODULE.get().unwrap().clone().into_ref(py);
 
     <span class="kw">let </span>(cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::&lt;()&gt;();
 
-    <span class="kw">let </span>base_coro = pyo3_asyncio::tokio::future_into_py(py, <span class="kw">async move </span>{
+    <span class="kw">let </span>base_coro = pyo3_asyncio::generic::future_into_py::&lt;TokioRuntime, <span class="kw">_</span>, <span class="kw">_</span>&gt;(py, <span class="kw">async move </span>{
         <span class="macro">tokio::select! </span>{
             biased;
             <span class="kw">_ </span>= cancel_rx =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
@@ -1000,29 +1111,23 @@
 
     <span class="kw">fn </span>deploy&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
+        <span class="kw">let </span>py_none = py.<span class="prelude-val">None</span>();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             underlying.write().<span class="kw">await</span>.deploy().<span class="kw">await</span>.map_err(|e| {
-                Python::with_gil(|py| {
-                    AnyhowError::new_err(
-                        Py::new(
-                            py,
-                            AnyhowWrapper {
-                                underlying: Arc::new(RwLock::new(<span class="prelude-val">Some</span>(e))),
-                            },
-                        )
-                        .unwrap(),
-                    )
+                AnyhowError::new_err(AnyhowWrapper {
+                    underlying: Arc::new(RwLock::new(<span class="prelude-val">Some</span>(e))),
                 })
             })<span class="question-mark">?</span>;
-            Python::with_gil(|py| <span class="prelude-val">Ok</span>(py.<span class="prelude-val">None</span>()))
+            <span class="prelude-val">Ok</span>(py_none)
         })
     }
 
     <span class="kw">fn </span>start&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
+        <span class="kw">let </span>py_none = py.<span class="prelude-val">None</span>();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             underlying.write().<span class="kw">await</span>.start().<span class="kw">await</span>;
-            <span class="prelude-val">Ok</span>(Python::with_gil(|py| py.<span class="prelude-val">None</span>()))
+            <span class="prelude-val">Ok</span>(py_none)
         })
     }
 }
@@ -1125,9 +1230,10 @@
 </span><span class="kw">impl </span>Service {
     <span class="kw">fn </span>stop&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
+        <span class="kw">let </span>py_none = py.<span class="prelude-val">None</span>();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             underlying.write().<span class="kw">await</span>.stop().<span class="kw">await</span>.unwrap();
-            <span class="prelude-val">Ok</span>(Python::with_gil(|py| py.<span class="prelude-val">None</span>()))
+            <span class="prelude-val">Ok</span>(py_none)
         })
     }
 }
@@ -1139,12 +1245,21 @@
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>PyReceiver {
-    <span class="kw">fn </span>next&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
+    <span class="kw">fn </span>__aiter__(slf: PyRef&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>&gt;) -&gt; PyRef&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>&gt; {
+        slf
+    }
+
+    <span class="kw">fn </span>__anext__&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>my_receiver = <span class="self">self</span>.receiver.clone();
-        interruptible_future_to_py(py, <span class="kw">async move </span>{
-            <span class="kw">let </span>underlying = my_receiver.recv();
-            <span class="prelude-val">Ok</span>(underlying.<span class="kw">await</span>.map(<span class="prelude-val">Some</span>).unwrap_or(<span class="prelude-val">None</span>))
-        })
+        <span class="prelude-val">Some</span>(
+            interruptible_future_to_py(py, <span class="kw">async move </span>{
+                <span class="kw">let </span>underlying = my_receiver.recv();
+                underlying
+                    .<span class="kw">await
+                    </span>.map_err(|<span class="kw">_</span>| PyStopAsyncIteration::new_err(()))
+            })
+            .unwrap(),
+        )
     }
 }
 
@@ -1213,26 +1328,13 @@
     underlying: Arc&lt;RwLock&lt;<span class="kw">crate</span>::core::HydroflowCrate&gt;&gt;,
 }
 
-<span class="kw">fn </span>convert_next_to_generator(receiver: <span class="kw">impl </span>IntoPy&lt;PyObject&gt;) -&gt; PyResult&lt;PyObject&gt; {
-    Python::with_gil(|py| {
-        <span class="comment">// load helper python function as a string
-        </span><span class="kw">let </span>converters = CONVERTERS_MODULE.read().unwrap();
-        <span class="kw">let </span>module = converters.as_ref().unwrap().as_ref(py);
-
-        <span class="prelude-val">Ok</span>(module
-            .call_method1(<span class="string">&quot;pyreceiver_to_async_generator&quot;</span>, (receiver.into_py(py),))
-            .unwrap()
-            .into())
-    })
-}
-
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>HydroflowCrate {
     <span class="kw">fn </span>stdout&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
-            convert_next_to_generator(PyReceiver {
+            <span class="prelude-val">Ok</span>(PyReceiver {
                 receiver: Arc::new(underlying.stdout().<span class="kw">await</span>),
             })
         })
@@ -1242,7 +1344,7 @@
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
-            convert_next_to_generator(PyReceiver {
+            <span class="prelude-val">Ok</span>(PyReceiver {
                 receiver: Arc::new(underlying.stderr().<span class="kw">await</span>),
             })
         })
@@ -1440,7 +1542,7 @@
     </span><span class="kw">fn </span>into_source&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.take().unwrap();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
-            convert_next_to_generator(PythonStream {
+            <span class="prelude-val">Ok</span>(PythonStream {
                 underlying: Arc::new(RwLock::new(
                     underlying.connect::&lt;ConnectedBidi&gt;().<span class="kw">await</span>.into_source(),
                 )),
@@ -1487,28 +1589,37 @@
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>PythonStream {
-    <span class="kw">fn </span>next&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
+    <span class="kw">fn </span>__aiter__(slf: PyRef&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>&gt;) -&gt; PyRef&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>&gt; {
+        slf
+    }
+
+    <span class="kw">fn </span>__anext__&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
-        interruptible_future_to_py(py, <span class="kw">async move </span>{
-            <span class="kw">let </span>read_res = underlying.write().<span class="kw">await</span>.next().<span class="kw">await</span>;
-            Python::with_gil(|py| {
-                <span class="prelude-val">Ok</span>(read_res
-                    .map(|b| b.map(|b| <span class="prelude-val">Some</span>(PyBytes::new(py, <span class="kw-2">&amp;</span>b))).unwrap_or(<span class="prelude-val">None</span>))
-                    .unwrap_or(<span class="prelude-val">None</span>)
-                    .into_py(py))
+        <span class="prelude-val">Some</span>(
+            interruptible_future_to_py(py, <span class="kw">async move </span>{
+                <span class="kw">let </span>read_res = underlying.write().<span class="kw">await</span>.next().<span class="kw">await</span>;
+                read_res
+                    .and_then(|b| b.ok().map(|b| b.to_vec()))
+                    .map(<span class="prelude-val">Ok</span>)
+                    .unwrap_or(<span class="prelude-val">Err</span>(PyStopAsyncIteration::new_err(())))
             })
-        })
+            .unwrap(),
+        )
     }
 }
 
 <span class="attr">#[pymodule]
 </span><span class="kw">pub fn </span>_core(py: Python&lt;<span class="lifetime">&#39;_</span>&gt;, module: <span class="kw-2">&amp;</span>PyModule) -&gt; PyResult&lt;()&gt; {
-    <span class="kw-2">*</span>CONVERTERS_MODULE.write().unwrap() = <span class="prelude-val">Some</span>(
-        PyModule::from_code(
-            py,
-            <span class="string">r#&quot;
+    <span class="kw">unsafe </span>{
+        pyo3::ffi::PyEval_InitThreads();
+    }
+
+    CONVERTERS_MODULE
+        .set(
+            PyModule::from_code(
+                py,
+                <span class="string">r#&quot;
 import asyncio
-import sys
 async def coroutine_to_safely_cancellable(c, cancel_token):
     try:
         return await asyncio.shield(c)
@@ -1516,20 +1627,23 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         cancel_token.safe_cancel()
         await c
         raise asyncio.CancelledError()
-
-async def pyreceiver_to_async_generator(pyreceiver):
-    while True:
-        res = await pyreceiver.next()
-        if res is None:
-            break
-        else:
-            yield res
 &quot;#</span>,
-            <span class="string">&quot;converters&quot;</span>,
-            <span class="string">&quot;converters&quot;</span>,
-        )<span class="question-mark">?
-        </span>.into(),
-    );
+                <span class="string">&quot;converters&quot;</span>,
+                <span class="string">&quot;converters&quot;</span>,
+            )<span class="question-mark">?
+            </span>.into(),
+        )
+        .unwrap();
+
+    <span class="kw">let </span>runtime_arc = Arc::new(tokio::runtime::Runtime::new().unwrap());
+    module.add(
+        <span class="string">&quot;_internal_tokio_runtime&quot;</span>,
+        TokioRuntimeContainer {
+            _runtime: runtime_arc.clone(),
+        },
+    )<span class="question-mark">?</span>;
+    TOKIO_RUNTIME.set(Arc::downgrade(<span class="kw-2">&amp;</span>runtime_arc)).unwrap();
+    drop(runtime_arc);
 
     module.add(<span class="string">&quot;AnyhowError&quot;</span>, py.get_type::&lt;AnyhowError&gt;())<span class="question-mark">?</span>;
     module.add_class::&lt;AnyhowWrapper&gt;()<span class="question-mark">?</span>;
