@@ -1,5 +1,6 @@
 use std::ops::DerefMut;
-use std::sync::Arc;
+use std::pin::Pin;
+use std::sync::{Arc, Weak};
 
 use async_channel::Receiver;
 use bytes::Bytes;
@@ -7,10 +8,11 @@ use futures::{Future, SinkExt, StreamExt};
 use hydroflow_cli_integration::{
     ConnectedBidi, ConnectedSink, ConnectedSource, DynSink, DynStream, ServerOrBound,
 };
-use pyo3::exceptions::PyException;
+use pyo3::exceptions::{PyException, PyStopAsyncIteration};
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyDict};
 use pyo3::{create_exception, wrap_pymodule};
+use pyo3_asyncio::TaskLocals;
 use pythonize::pythonize;
 use tokio::sync::oneshot::Sender;
 use tokio::sync::RwLock;
@@ -19,6 +21,62 @@ use crate::core::hydroflow_crate::ports::HydroflowSource;
 
 mod cli;
 pub mod core;
+
+// crashes can occur if the runtime is not dropped with Python finalizes
+// this ensures that when the Python runtime is dropped, the Tokio runtime is dropped
+#[pyclass]
+struct TokioRuntimeContainer {
+    _runtime: Arc<tokio::runtime::Runtime>,
+}
+
+static TOKIO_RUNTIME: once_cell::sync::OnceCell<Weak<tokio::runtime::Runtime>> =
+    once_cell::sync::OnceCell::new();
+
+struct TokioRuntime {}
+
+impl pyo3_asyncio::generic::Runtime for TokioRuntime {
+    type JoinError = tokio::task::JoinError;
+    type JoinHandle = tokio::task::JoinHandle<()>;
+
+    fn spawn<F>(fut: F) -> Self::JoinHandle
+    where
+        F: Future<Output = ()> + Send + 'static,
+    {
+        let handle = TOKIO_RUNTIME
+            .get()
+            .unwrap()
+            .upgrade()
+            .unwrap()
+            .handle()
+            .clone();
+        handle.spawn(async move {
+            fut.await;
+        })
+    }
+}
+
+tokio::task_local! {
+    static TASK_LOCALS: once_cell::unsync::OnceCell<TaskLocals>;
+}
+
+impl pyo3_asyncio::generic::ContextExt for TokioRuntime {
+    fn scope<F, R>(locals: TaskLocals, fut: F) -> Pin<Box<dyn Future<Output = R> + Send>>
+    where
+        F: Future<Output = R> + Send + 'static,
+    {
+        let cell = once_cell::unsync::OnceCell::new();
+        cell.set(locals).unwrap();
+
+        Box::pin(TASK_LOCALS.scope(cell, fut))
+    }
+
+    fn get_task_locals() -> Option<TaskLocals> {
+        match TASK_LOCALS.try_with(|c| c.get().cloned()) {
+            Ok(locals) => locals,
+            Err(_) => None,
+        }
+    }
+}
 
 create_exception!(hydro_cli_core, AnyhowError, PyException);
 
@@ -36,23 +94,19 @@ impl SafeCancelToken {
     }
 }
 
-static CONVERTERS_MODULE: std::sync::RwLock<Option<Py<PyModule>>> = std::sync::RwLock::new(None);
+static CONVERTERS_MODULE: once_cell::sync::OnceCell<Py<PyModule>> =
+    once_cell::sync::OnceCell::new();
 
 fn interruptible_future_to_py<F, T>(py: Python<'_>, fut: F) -> PyResult<&PyAny>
 where
     F: Future<Output = PyResult<T>> + Send + 'static,
     T: IntoPy<PyObject>,
 {
-    let module = CONVERTERS_MODULE
-        .read()
-        .unwrap()
-        .clone()
-        .unwrap()
-        .into_ref(py);
+    let module = CONVERTERS_MODULE.get().unwrap().clone().into_ref(py);
 
     let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::<()>();
 
-    let base_coro = pyo3_asyncio::tokio::future_into_py(py, async move {
+    let base_coro = pyo3_asyncio::generic::future_into_py::<TokioRuntime, _, _>(py, async move {
         tokio::select! {
             biased;
             _ = cancel_rx => Ok(None),
@@ -219,29 +273,23 @@ impl Deployment {
 
     fn deploy<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.clone();
+        let py_none = py.None();
         interruptible_future_to_py(py, async move {
             underlying.write().await.deploy().await.map_err(|e| {
-                Python::with_gil(|py| {
-                    AnyhowError::new_err(
-                        Py::new(
-                            py,
-                            AnyhowWrapper {
-                                underlying: Arc::new(RwLock::new(Some(e))),
-                            },
-                        )
-                        .unwrap(),
-                    )
+                AnyhowError::new_err(AnyhowWrapper {
+                    underlying: Arc::new(RwLock::new(Some(e))),
                 })
             })?;
-            Python::with_gil(|py| Ok(py.None()))
+            Ok(py_none)
         })
     }
 
     fn start<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.clone();
+        let py_none = py.None();
         interruptible_future_to_py(py, async move {
             underlying.write().await.start().await;
-            Ok(Python::with_gil(|py| py.None()))
+            Ok(py_none)
         })
     }
 }
@@ -344,9 +392,10 @@ pub struct Service {
 impl Service {
     fn stop<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.clone();
+        let py_none = py.None();
         interruptible_future_to_py(py, async move {
             underlying.write().await.stop().await.unwrap();
-            Ok(Python::with_gil(|py| py.None()))
+            Ok(py_none)
         })
     }
 }
@@ -358,12 +407,21 @@ struct PyReceiver {
 
 #[pymethods]
 impl PyReceiver {
-    fn next<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
+    fn __aiter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __anext__<'p>(&self, py: Python<'p>) -> Option<&'p PyAny> {
         let my_receiver = self.receiver.clone();
-        interruptible_future_to_py(py, async move {
-            let underlying = my_receiver.recv();
-            Ok(underlying.await.map(Some).unwrap_or(None))
-        })
+        Some(
+            interruptible_future_to_py(py, async move {
+                let underlying = my_receiver.recv();
+                underlying
+                    .await
+                    .map_err(|_| PyStopAsyncIteration::new_err(()))
+            })
+            .unwrap(),
+        )
     }
 }
 
@@ -432,26 +490,13 @@ struct HydroflowCrate {
     underlying: Arc<RwLock<crate::core::HydroflowCrate>>,
 }
 
-fn convert_next_to_generator(receiver: impl IntoPy<PyObject>) -> PyResult<PyObject> {
-    Python::with_gil(|py| {
-        // load helper python function as a string
-        let converters = CONVERTERS_MODULE.read().unwrap();
-        let module = converters.as_ref().unwrap().as_ref(py);
-
-        Ok(module
-            .call_method1("pyreceiver_to_async_generator", (receiver.into_py(py),))
-            .unwrap()
-            .into())
-    })
-}
-
 #[pymethods]
 impl HydroflowCrate {
     fn stdout<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
-            convert_next_to_generator(PyReceiver {
+            Ok(PyReceiver {
                 receiver: Arc::new(underlying.stdout().await),
             })
         })
@@ -461,7 +506,7 @@ impl HydroflowCrate {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
-            convert_next_to_generator(PyReceiver {
+            Ok(PyReceiver {
                 receiver: Arc::new(underlying.stderr().await),
             })
         })
@@ -659,7 +704,7 @@ impl ServerPort {
     fn into_source<'p>(&mut self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.take().unwrap();
         interruptible_future_to_py(py, async move {
-            convert_next_to_generator(PythonStream {
+            Ok(PythonStream {
                 underlying: Arc::new(RwLock::new(
                     underlying.connect::<ConnectedBidi>().await.into_source(),
                 )),
@@ -706,28 +751,37 @@ struct PythonStream {
 
 #[pymethods]
 impl PythonStream {
-    fn next<'p>(&mut self, py: Python<'p>) -> PyResult<&'p PyAny> {
+    fn __aiter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __anext__<'p>(&self, py: Python<'p>) -> Option<&'p PyAny> {
         let underlying = self.underlying.clone();
-        interruptible_future_to_py(py, async move {
-            let read_res = underlying.write().await.next().await;
-            Python::with_gil(|py| {
-                Ok(read_res
-                    .map(|b| b.map(|b| Some(PyBytes::new(py, &b))).unwrap_or(None))
-                    .unwrap_or(None)
-                    .into_py(py))
+        Some(
+            interruptible_future_to_py(py, async move {
+                let read_res = underlying.write().await.next().await;
+                read_res
+                    .and_then(|b| b.ok().map(|b| b.to_vec()))
+                    .map(Ok)
+                    .unwrap_or(Err(PyStopAsyncIteration::new_err(())))
             })
-        })
+            .unwrap(),
+        )
     }
 }
 
 #[pymodule]
 pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
-    *CONVERTERS_MODULE.write().unwrap() = Some(
-        PyModule::from_code(
-            py,
-            r#"
+    unsafe {
+        pyo3::ffi::PyEval_InitThreads();
+    }
+
+    CONVERTERS_MODULE
+        .set(
+            PyModule::from_code(
+                py,
+                r#"
 import asyncio
-import sys
 async def coroutine_to_safely_cancellable(c, cancel_token):
     try:
         return await asyncio.shield(c)
@@ -735,20 +789,23 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         cancel_token.safe_cancel()
         await c
         raise asyncio.CancelledError()
-
-async def pyreceiver_to_async_generator(pyreceiver):
-    while True:
-        res = await pyreceiver.next()
-        if res is None:
-            break
-        else:
-            yield res
 "#,
-            "converters",
-            "converters",
-        )?
-        .into(),
-    );
+                "converters",
+                "converters",
+            )?
+            .into(),
+        )
+        .unwrap();
+
+    let runtime_arc = Arc::new(tokio::runtime::Runtime::new().unwrap());
+    module.add(
+        "_internal_tokio_runtime",
+        TokioRuntimeContainer {
+            _runtime: runtime_arc.clone(),
+        },
+    )?;
+    TOKIO_RUNTIME.set(Arc::downgrade(&runtime_arc)).unwrap();
+    drop(runtime_arc);
 
     module.add("AnyhowError", py.get_type::<AnyhowError>())?;
     module.add_class::<AnyhowWrapper>()?;

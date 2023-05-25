@@ -191,6 +191,11 @@ jobs:
           profile: minimal
           toolchain: nightly
 
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
       - name: Build CLI
         run: |
           cd hydro_cli
@@ -212,6 +217,17 @@ jobs:
           cd python_tests
           pip install -r requirements.txt
           RUST_BACKTRACE=1 pytest *.py
+
+      - name: Print backtraces
+        if: ${{ failure() }}
+        run: |
+          cd cli-core-dumps
+          sudo apt-get install gdb
+          for file in $(ls); do
+            echo "Backtrace for $file"
+            rust-gdb -ex "thread apply all bt" -batch ../.venv/bin/python $file
+          done
+          cd ..
 
       - name: Upload core dumps
         if: ${{ failure() }}

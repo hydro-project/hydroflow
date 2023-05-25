@@ -81,7 +81,7 @@ async def main(args):
     # cluster_stdouts = [await get_stdouts(node) for node in cluster]
 
     def stream_printer(i, v):
-        parsed = json.loads(decode(v, "utf-8"))
+        parsed = json.loads(decode(bytes(v), "utf-8"))
         return f"{i}: {parsed}"
 
     print("deployed!")
