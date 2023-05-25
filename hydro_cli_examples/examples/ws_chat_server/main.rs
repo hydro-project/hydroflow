@@ -7,7 +7,9 @@ use futures::{SinkExt, StreamExt};
 use hydroflow::bytes::Bytes;
 use hydroflow::hydroflow_syntax;
 use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
-use hydroflow::util::cli::ConnectedSink;
+use hydroflow::util::cli::{ConnectedSink, ConnectedSource};
+use hydroflow::util::deserialize_from_bytes;
+use serde::{Serialize, Deserialize};
 use tokio::net::TcpListener;
 use tokio_tungstenite::tungstenite::Message;
 
@@ -75,13 +77,24 @@ async fn ws_server(
     (clients_connect, clients_disconnect, from_client, to_client)
 }
 
+#[derive(Serialize, Deserialize)]
+struct PeerMessage {
+    
+}
+
 #[hydroflow::main]
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
 
-    let to_logger = ports
-        .port("to_logger")
+    let from_peer = ports
+        .port("from_peer")
         .connect::<hydroflow::util::cli::ConnectedBidi>()
+        .await
+        .into_source();
+
+    let to_peer = ports
+        .port("to_peer")
+        .connect::<hydroflow::util::cli::ConnectedDemux<hydroflow::util::cli::ConnectedBidi>>()
         .await
         .into_sink();
 
@@ -90,6 +103,9 @@ async fn main() {
     let (clients_connect, clients_disconnect, from_client, to_client) = ws_server(ws_port).await;
 
     let df = hydroflow_syntax! {
+        from_peer = source_stream(from_peer) -> map(|b| deserialize_from_bytes::<PeerMessage>(b.unwrap()).unwrap()) -> tee();
+        to_peer = dest_sink(to_peer);
+
         source_stream(clients_connect) -> for_each(|_| println!("got connection!"));
         source_stream(clients_disconnect) -> for_each(|_| println!("lost connection!"));
 
@@ -105,7 +121,9 @@ async fn main() {
         names -> [1] messages_with_names;
         messages_with_names = join::<'tick, 'tick>();
 
-        messages_with_names -> map(|(_, (msg, name))| format!("{}: {}", name, msg)) -> map(Bytes::from) -> dest_sink(to_logger);
+        null() -> to_peer;
+
+        messages_with_names -> map(|(_, (msg, name))| format!("{}: {}", name, msg)) -> for_each(|msg| println!("{}", msg));
     };
 
     hydroflow::util::cli::launch_flow(df).await;

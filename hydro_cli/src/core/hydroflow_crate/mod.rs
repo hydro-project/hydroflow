@@ -25,6 +25,7 @@ pub struct HydroflowCrate {
     src: PathBuf,
     on: Arc<RwLock<dyn Host>>,
     example: Option<String>,
+    profile: Option<String>,
     features: Option<Vec<String>>,
     args: Option<Vec<String>>,
     display_id: Option<String>,
@@ -55,6 +56,7 @@ impl HydroflowCrate {
         src: PathBuf,
         on: Arc<RwLock<dyn Host>>,
         example: Option<String>,
+        profile: Option<String>,
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
         display_id: Option<String>,
@@ -65,6 +67,7 @@ impl HydroflowCrate {
             src,
             on,
             example,
+            profile,
             features,
             args,
             display_id,
@@ -162,11 +165,13 @@ impl HydroflowCrate {
         let example_cloned = self.example.clone();
         let features_cloned = self.features.clone();
         let host = self.on.clone();
+        let profile_cloned = self.profile.clone();
         let target_type = host.try_read().unwrap().target_type();
 
         tokio::task::spawn(build_crate(
             src_cloned,
             example_cloned,
+            profile_cloned,
             target_type,
             features_cloned,
         ))

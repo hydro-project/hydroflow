@@ -26,7 +26,16 @@ pub mod core;
 // this ensures that when the Python runtime is dropped, the Tokio runtime is dropped
 #[pyclass]
 struct TokioRuntimeContainer {
-    _runtime: Arc<tokio::runtime::Runtime>,
+    runtime: Option<Arc<tokio::runtime::Runtime>>,
+}
+
+impl Drop for TokioRuntimeContainer {
+    fn drop(&mut self) {
+        assert!(Arc::strong_count(&self.runtime.unwrap()) == 1);
+        Python::with_gil(|_| {
+            drop(self.runtime.take());
+        })
+    }
 }
 
 static TOKIO_RUNTIME: once_cell::sync::OnceCell<Weak<tokio::runtime::Runtime>> =
@@ -241,6 +250,7 @@ impl Deployment {
         src: String,
         on: &Host,
         example: Option<String>,
+        profile: Option<String>,
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
         display_id: Option<String>,
@@ -252,6 +262,7 @@ impl Deployment {
                 src.into(),
                 on.underlying.clone(),
                 example,
+                profile,
                 features,
                 args,
                 display_id,
@@ -798,14 +809,13 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         .unwrap();
 
     let runtime_arc = Arc::new(tokio::runtime::Runtime::new().unwrap());
+    TOKIO_RUNTIME.set(Arc::downgrade(&runtime_arc)).unwrap();
     module.add(
         "_internal_tokio_runtime",
         TokioRuntimeContainer {
-            _runtime: runtime_arc.clone(),
+            runtime: Some(runtime_arc),
         },
     )?;
-    TOKIO_RUNTIME.set(Arc::downgrade(&runtime_arc)).unwrap();
-    drop(runtime_arc);
 
     module.add("AnyhowError", py.get_type::<AnyhowError>())?;
     module.add_class::<AnyhowWrapper>()?;
