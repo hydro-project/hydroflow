@@ -1,6 +1,6 @@
 use std::ops::DerefMut;
 use std::pin::Pin;
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 
 use async_channel::Receiver;
 use bytes::Bytes;
@@ -22,15 +22,13 @@ use crate::core::hydroflow_crate::ports::HydroflowSource;
 mod cli;
 pub mod core;
 
-// crashes can occur if the runtime is not dropped with Python finalizes
-// this ensures that when the Python runtime is dropped, the Tokio runtime is dropped
-#[pyclass]
-struct TokioRuntimeContainer {
-    _runtime: Arc<tokio::runtime::Runtime>,
-}
+static TOKIO_RUNTIME: std::sync::RwLock<Option<tokio::runtime::Runtime>> =
+    std::sync::RwLock::new(None);
 
-static TOKIO_RUNTIME: once_cell::sync::OnceCell<Weak<tokio::runtime::Runtime>> =
-    once_cell::sync::OnceCell::new();
+#[pyfunction]
+fn cleanup_runtime() {
+    drop(TOKIO_RUNTIME.write().unwrap().take());
+}
 
 struct TokioRuntime {}
 
@@ -42,16 +40,14 @@ impl pyo3_asyncio::generic::Runtime for TokioRuntime {
     where
         F: Future<Output = ()> + Send + 'static,
     {
-        let handle = TOKIO_RUNTIME
-            .get()
+        TOKIO_RUNTIME
+            .read()
             .unwrap()
-            .upgrade()
+            .as_ref()
             .unwrap()
-            .handle()
-            .clone();
-        handle.spawn(async move {
-            fut.await;
-        })
+            .spawn(async move {
+                fut.await;
+            })
     }
 }
 
@@ -241,6 +237,7 @@ impl Deployment {
         src: String,
         on: &Host,
         example: Option<String>,
+        profile: Option<String>,
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
         display_id: Option<String>,
@@ -252,6 +249,7 @@ impl Deployment {
                 src.into(),
                 on.underlying.clone(),
                 example,
+                profile,
                 features,
                 args,
                 display_id,
@@ -797,15 +795,9 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         )
         .unwrap();
 
-    let runtime_arc = Arc::new(tokio::runtime::Runtime::new().unwrap());
-    module.add(
-        "_internal_tokio_runtime",
-        TokioRuntimeContainer {
-            _runtime: runtime_arc.clone(),
-        },
-    )?;
-    TOKIO_RUNTIME.set(Arc::downgrade(&runtime_arc)).unwrap();
-    drop(runtime_arc);
+    *TOKIO_RUNTIME.write().unwrap() = Some(tokio::runtime::Runtime::new().unwrap());
+    let atexit = PyModule::import(py, "atexit")?;
+    atexit.call_method1("register", (wrap_pyfunction!(cleanup_runtime, module)?,))?;
 
     module.add("AnyhowError", py.get_type::<AnyhowError>())?;
     module.add_class::<AnyhowWrapper>()?;
