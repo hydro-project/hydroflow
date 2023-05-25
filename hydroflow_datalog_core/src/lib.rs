@@ -575,7 +575,7 @@ fn apply_aggregations(
     get_span: &impl Fn((usize, usize)) -> Span,
 ) -> Pipeline {
     let mut aggregations = vec![];
-    let mut group_by_exprs = vec![];
+    let mut fold_keyed_exprs = vec![];
     let mut agg_exprs = vec![];
 
     let mut field_use_count = HashMap::new();
@@ -637,7 +637,7 @@ fn apply_aggregations(
 
             match &field.value {
                 TargetExpr::Expr(_) => {
-                    group_by_exprs.push(expr);
+                    fold_keyed_exprs.push(expr);
                 }
                 TargetExpr::Aggregation(a) => {
                     aggregations.push(a.clone());
@@ -683,25 +683,25 @@ fn apply_aggregations(
         }
     }
 
-    let group_by_input_type =
-        repeat_tuple::<syn::Type, syn::Type>(|| parse_quote!(_), group_by_exprs.len());
+    let fold_keyed_input_type =
+        repeat_tuple::<syn::Type, syn::Type>(|| parse_quote!(_), fold_keyed_exprs.len());
 
     let after_group_pipeline: Pipeline = if has_index {
         if out_expanded.persisted && agg_exprs.is_empty() {
             // if there is an aggregation, we will use a group which replays so we should use `'tick` instead
-            parse_quote!(enumerate::<'static>() -> map(|(i, (g, a)): (_, (#group_by_input_type, _))| (#(#after_group_lookups, )*)))
+            parse_quote!(enumerate::<'static>() -> map(|(i, (g, a)): (_, (#fold_keyed_input_type, _))| (#(#after_group_lookups, )*)))
         } else {
-            parse_quote!(enumerate::<'tick>() -> map(|(i, (g, a)): (_, (#group_by_input_type, _))| (#(#after_group_lookups, )*)))
+            parse_quote!(enumerate::<'tick>() -> map(|(i, (g, a)): (_, (#fold_keyed_input_type, _))| (#(#after_group_lookups, )*)))
         }
     } else {
-        parse_quote!(map(|(g, a): (#group_by_input_type, _)| (#(#after_group_lookups, )*)))
+        parse_quote!(map(|(g, a): (#fold_keyed_input_type, _)| (#(#after_group_lookups, )*)))
     };
 
     if agg_exprs.is_empty() {
         if out_expanded.persisted && !consumer_is_persist {
-            parse_quote!(map(|row: #flattened_tuple_type| ((#(#group_by_exprs, )*), ())) -> #after_group_pipeline -> persist())
+            parse_quote!(map(|row: #flattened_tuple_type| ((#(#fold_keyed_exprs, )*), ())) -> #after_group_pipeline -> persist())
         } else {
-            parse_quote!(map(|row: #flattened_tuple_type| ((#(#group_by_exprs, )*), ())) -> #after_group_pipeline)
+            parse_quote!(map(|row: #flattened_tuple_type| ((#(#fold_keyed_exprs, )*), ())) -> #after_group_pipeline)
         }
     } else {
         let agg_initial =
@@ -712,7 +712,7 @@ fn apply_aggregations(
         let agg_type: syn::Type =
             repeat_tuple::<syn::Type, syn::Type>(|| parse_quote!(Option<_>), agg_exprs.len());
 
-        let group_by_stmts: Vec<syn::Stmt> = aggregations
+        let fold_keyed_stmts: Vec<syn::Stmt> = aggregations
             .iter()
             .enumerate()
             .map(|(i, agg)| {
@@ -778,19 +778,19 @@ fn apply_aggregations(
             })
             .collect();
 
-        let pre_group_by_map: syn::Expr = parse_quote!(|row: #flattened_tuple_type| ((#(#group_by_exprs, )*), (#(#agg_exprs, )*)));
+        let pre_fold_keyed_map: syn::Expr = parse_quote!(|row: #flattened_tuple_type| ((#(#fold_keyed_exprs, )*), (#(#agg_exprs, )*)));
 
-        let group_by_fn: syn::Expr = parse_quote!(|old: &mut #agg_type, val: #agg_input_type| {
-            #(#group_by_stmts)*
+        let fold_keyed_fn: syn::Expr = parse_quote!(|old: &mut #agg_type, val: #agg_input_type| {
+            #(#fold_keyed_stmts)*
         });
 
         if out_expanded.persisted {
             parse_quote! {
-                map(#pre_group_by_map) -> group_by::<'static, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> #after_group_pipeline
+                map(#pre_fold_keyed_map) -> fold_keyed::<'static, #fold_keyed_input_type, #agg_type>(|| #agg_initial, #fold_keyed_fn) -> #after_group_pipeline
             }
         } else {
             parse_quote! {
-                map(#pre_group_by_map) -> group_by::<'tick, #group_by_input_type, #agg_type>(|| #agg_initial, #group_by_fn) -> #after_group_pipeline
+                map(#pre_fold_keyed_map) -> fold_keyed::<'tick, #fold_keyed_input_type, #agg_type>(|| #agg_initial, #fold_keyed_fn) -> #after_group_pipeline
             }
         }
     }
@@ -1032,7 +1032,7 @@ mod tests {
     }
 
     #[test]
-    fn test_aggregations_group_by_expr() {
+    fn test_aggregations_fold_keyed_expr() {
         test_snapshots!(
             r#"
             .input ints `source_stream(ints)`

@@ -105,7 +105,7 @@ Reached: 1
 That looks right: the edges we "sent" into the flow that start at `0` are 
 `(0, 1)` and `(0, 3)`, so the nodes reachable from `0` in 0 or 1 hops are `0, 1, 3`.
 
-> Note: When you run the program you may see the lines printed out in a different order. That's OK; the flow we're defining here is producing a `set` of nodes, so the order in which they are printed out is not specified. The [`sort_by`](../syntax/surface_ops.gen.md#sort_by) operator can be used to sort the output of a flow.
+> Note: When you run the program you may see the lines printed out in a different order. That's OK; the flow we're defining here is producing a `set` of nodes, so the order in which they are printed out is not specified. The [`sort_by_key`](../syntax/surface_ops.gen.md#sort_by) operator can be used to sort the output of a flow.
 
 ## Examining the Hydroflow Code
 In the code, we want to start out with the origin vertex, `0`,

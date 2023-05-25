@@ -1,5 +1,5 @@
 ---
-source: hydroflow/tests/surface_codegen.rs
+source: hydroflow/tests/surface_keyed_fold.rs
 expression: df.meta_graph().unwrap().to_mermaid()
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
@@ -8,11 +8,11 @@ classDef pullClass fill:#02f,color:#fff,stroke:#000,text-align:left,white-space:
 classDef pushClass fill:#ff0,stroke:#000,text-align:left,white-space:pre
 linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
-    1v1[\"(1v1) <code>source_iter(vec!((2, 'y'), (3, 'x'), (1, 'z')))</code>"/]:::pullClass
+    1v1[\"(1v1) <code>source_stream(items_recv)</code>"/]:::pullClass
 end
 subgraph sg_2v1 ["sg_2v1 stratum 1"]
-    2v1[\"(2v1) <code>sort_by(|(k, _v)| k)</code>"/]:::pullClass
-    3v1[/"(3v1) <code>for_each(|v| println!(&quot;{:?}&quot;, v))</code>"\]:::pushClass
+    2v1[\"<div style=text-align:center>(2v1)</div> <code>fold_keyed::&lt;<br>    'tick,<br>&gt;(Vec::new, |old: &amp;mut Vec&lt;u32&gt;, mut x: Vec&lt;u32&gt;| old.append(&amp;mut x))</code>"/]:::pullClass
+    3v1[/"(3v1) <code>for_each(|v| result_send.send(v).unwrap())</code>"\]:::pushClass
     2v1--->3v1
 end
 1v1--->4v1

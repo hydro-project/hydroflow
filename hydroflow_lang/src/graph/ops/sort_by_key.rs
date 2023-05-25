@@ -15,12 +15,12 @@ use quote::quote_spanned;
 /// ```hydroflow
 /// // should print (1, 'z'), (2, 'y'), (3, 'x') (in order)
 /// source_iter(vec![(2, 'y'), (3, 'x'), (1, 'z')])
-///     -> sort_by(|(k, _v)| k)
+///     -> sort_by_key(|(k, _v)| k)
 ///     -> for_each(|x| println!("{:?}", x));
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
-pub const SORT_BY: OperatorConstraints = OperatorConstraints {
-    name: "sort_by",
+pub const SORT_BY_KEY: OperatorConstraints = OperatorConstraints {
+    name: "sort_by_key",
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

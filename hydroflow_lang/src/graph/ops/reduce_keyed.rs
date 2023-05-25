@@ -1,21 +1,19 @@
-use crate::graph::{OpInstGenerics, OperatorInstance};
+use quote::{quote_spanned, ToTokens};
 
 use super::{
     DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
     Persistence, WriteContextArgs, RANGE_1,
 };
+use crate::graph::{OpInstGenerics, OperatorInstance};
 
-use quote::{quote_spanned, ToTokens};
-
-/// > 1 input stream of type `(K, V1)`, 1 output stream of type `(K, V2)`.
-/// The output will have one tuple for each distinct `K`, with an accumulated value of type `V2`.
+/// > 1 input stream of type `(K, V)`, 1 output stream of type `(K, V)`.
+/// The output will have one tuple for each distinct `K`, with an accumulated (reduced) value of
+/// type `V`.
 ///
-/// If the input and output value types are the same and do not require initialization then use
-/// [`keyed_reduce`](#keyed_reduce).
+/// If you need the accumulated value to have a different type, use [`fold_keyed`](#keyed_fold).
 ///
-/// > Arguments: two Rust closures. The first generates an initial value per group. The second
-/// itself takes two arguments: an 'accumulator', and an element. The second closure returns the
-/// value that the accumulator should have for the next iteration.
+/// > Arguments: one Rust closures. The closure takes two arguments: an `&mut` 'accumulator', and
+/// an element. Accumulator should be updated based on the element.
 ///
 /// A special case of `fold`, in the spirit of SQL's GROUP BY and aggregation constructs. The input
 /// is partitioned into groups by the first field, and for each group the values in the second
@@ -23,19 +21,18 @@ use quote::{quote_spanned, ToTokens};
 ///
 /// > Note: The closures have access to the [`context` object](surface_flows.md#the-context-object).
 ///
-/// `keyed_fold` can also be provided with one generic lifetime persistence argument, either
+/// `reduce_keyed` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
 /// within the same tick. With `'static`, values will be remembered across ticks and will be
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
 /// defaults to `'static`.
 ///
-/// `keyed_fold` can also be provided with two type arguments, the key type `K` and aggregated
-/// output value type `V2`. This is required when using `'static` persistence if the compiler
-/// cannot infer the types.
+/// `reduce_keyed` can also be provided with two type arguments, the key and value type. This is
+/// required when using `'static` persistence if the compiler cannot infer the types.
 ///
 /// ```hydroflow
 /// source_iter([("toy", 1), ("toy", 2), ("shoe", 11), ("shoe", 35), ("haberdashery", 7)])
-///     -> keyed_fold(|| 0, |old: &mut u32, val: u32| *old += val)
+///     -> reduce_keyed(|old: &mut u32, val: u32| *old += val)
 ///     -> for_each(|(k, v)| println!("Total for group {} is {}", k, v));
 /// ```
 ///
@@ -44,10 +41,7 @@ use quote::{quote_spanned, ToTokens};
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
 /// let mut flow = hydroflow::hydroflow_syntax! {
 ///     source_stream(input_recv)
-///         -> keyed_fold::<'tick, &str, String>(String::new, |old: &mut _, val| {
-///             *old += val;
-///             *old += ", ";
-///         })
+///         -> reduce_keyed::<'tick, &str>(|old: &mut _, val| *old = std::cmp::max(*old, val))
 ///         -> for_each(|(k, v)| println!("({:?}, {:?})", k, v));
 /// };
 ///
@@ -62,13 +56,13 @@ use quote::{quote_spanned, ToTokens};
 /// // ("hello", "palo alto, ")
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
-pub const KEYED_FOLD: OperatorConstraints = OperatorConstraints {
-    name: "keyed_fold",
+pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
+    name: "reduce_keyed",
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
-    num_args: 2,
+    num_args: 1,
     persistence_args: &(0..=1),
     type_args: &(0..=2),
     is_external_input: false,
@@ -122,8 +116,7 @@ pub const KEYED_FOLD: OperatorConstraints = OperatorConstraints {
         ];
 
         let input = &inputs[0];
-        let initfn = &arguments[0];
-        let aggfn = &arguments[1];
+        let aggfn = &arguments[0];
 
         let (write_prologue, write_iterator, write_iterator_after) = match persistence {
             Persistence::Tick => {
@@ -143,8 +136,14 @@ pub const KEYED_FOLD: OperatorConstraints = OperatorConstraints {
                                 -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
 
                             for kv in check_input(#input) {
-                                let entry = #hashtable_ident.entry(kv.0).or_insert_with(#initfn);
-                                #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
+                                match #hashtable_ident.entry(kv.0) {
+                                    ::std::collections::hash_map::Entry::Vacant(vacant) => {
+                                        vacant.insert(kv.1);
+                                    }
+                                    ::std::collections::hash_map::Entry::Occupied(mut occupied) => {
+                                        #[allow(clippy::redundant_closure_call)] (#aggfn)(occupied.get_mut(), kv.1);
+                                    }
+                                }
                             }
                         }
 
@@ -170,8 +169,14 @@ pub const KEYED_FOLD: OperatorConstraints = OperatorConstraints {
                                 -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
 
                             for kv in check_input(#input) {
-                                let entry = #hashtable_ident.entry(kv.0).or_insert_with(#initfn);
-                                #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
+                                match #hashtable_ident.entry(kv.0) {
+                                    ::std::collections::hash_map::Entry::Vacant(vacant) => {
+                                        vacant.insert(kv.1);
+                                    }
+                                    ::std::collections::hash_map::Entry::Occupied(mut occupied) => {
+                                        #[allow(clippy::redundant_closure_call)] (#aggfn)(occupied.get_mut(), kv.1);
+                                    }
+                                }
                             }
                         }
 

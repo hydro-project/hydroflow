@@ -25,7 +25,7 @@ digraph {
     //     fillcolor="#dddddd"
     //     style=filled
     //     label = "sg_3v1\nstratum 1"
-    n7v1 [label = "group_by";fontname = Monaco;shape = box;style = filled;color = "#dddddd";fontcolor = "#000000";];
+    n7v1 [label = "fold_keyed";fontname = Monaco;shape = box;style = filled;color = "#dddddd";fontcolor = "#000000";];
     n8v1 [label = "source_iter";fontname = Monaco;shape = box;style = filled;color = "#dddddd";fontcolor = "#000000";];
     subgraph {
         rank = same;
@@ -81,7 +81,7 @@ digraph {
     subgraph {
         rank = same;
         n18v1 [label = "union";fontname = Monaco;shape = box;style = filled;color = "#dddddd";fontcolor = "#000000";];
-        n19v1 [label = "group_by";fontname = Monaco;shape = box;style = filled;color = "#dddddd";fontcolor = "#000000";];
+        n19v1 [label = "fold_keyed";fontname = Monaco;shape = box;style = filled;color = "#dddddd";fontcolor = "#000000";];
     }
     n20v1 [label = "unique";fontname = Monaco;shape = box;style = filled;color = "#dddddd";fontcolor = "#000000";];
     n21v1 [label = "map";fontname = Monaco;shape = box;style = filled;color = "#dddddd";fontcolor = "#000000";];
