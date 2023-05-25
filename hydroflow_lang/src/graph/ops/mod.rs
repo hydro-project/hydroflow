@@ -272,6 +272,7 @@ declare_ops![
     tee::TEE,
     unique::UNIQUE,
     unzip::UNZIP,
+    zip::ZIP,
 ];
 
 pub fn operator_lookup() -> &'static HashMap<&'static str, &'static OperatorConstraints> {

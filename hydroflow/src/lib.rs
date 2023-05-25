@@ -30,7 +30,7 @@ pub mod util;
 
 pub use variadics::{self, var_args, var_expr, var_type};
 pub use {
-    bincode, bytes, futures, lattices, pusherator, rustc_hash, serde, serde_json, tokio,
+    bincode, bytes, futures, itertools, lattices, pusherator, rustc_hash, serde, serde_json, tokio,
     tokio_stream, tokio_util,
 };
 
