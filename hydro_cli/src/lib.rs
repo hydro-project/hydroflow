@@ -476,8 +476,11 @@ impl CustomClientPort {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
+            let port = underlying.server_port().await;
+            let realized = (&port).into();
             Ok(ServerPort {
-                underlying: Some(underlying.server_port().await),
+                underlying: port,
+                underlying_realized: Some(ServerOrBound::Server(realized)),
             })
         })
     }
@@ -685,22 +688,19 @@ fn null(py: Python<'_>) -> PyResult<Py<PyAny>> {
 
 #[pyclass]
 struct ServerPort {
-    underlying: Option<ServerOrBound>,
+    underlying: hydroflow_cli_integration::ServerPort,
+    underlying_realized: Option<ServerOrBound>,
 }
 
 #[pymethods]
 impl ServerPort {
     fn json(&self, py: Python<'_>) -> Py<PyAny> {
-        if let ServerOrBound::Server(server) = self.underlying.as_ref().unwrap() {
-            pythonize(py, &server).unwrap()
-        } else {
-            panic!()
-        }
+        pythonize(py, &self.underlying).unwrap()
     }
 
     #[allow(clippy::wrong_self_convention)]
     fn into_source<'p>(&mut self, py: Python<'p>) -> PyResult<&'p PyAny> {
-        let underlying = self.underlying.take().unwrap();
+        let underlying = self.underlying_realized.take().unwrap();
         interruptible_future_to_py(py, async move {
             Ok(PythonStream {
                 underlying: Arc::new(RwLock::new(
@@ -712,7 +712,7 @@ impl ServerPort {
 
     #[allow(clippy::wrong_self_convention)]
     fn into_sink<'p>(&mut self, py: Python<'p>) -> PyResult<&'p PyAny> {
-        let underlying = self.underlying.take().unwrap();
+        let underlying = self.underlying_realized.take().unwrap();
         interruptible_future_to_py(py, async move {
             let connected = underlying.connect::<ConnectedBidi>().await.into_sink();
 
