@@ -261,7 +261,7 @@ declare_ops![
     repeat_iter::REPEAT_ITER,
     repeat_iter_external::REPEAT_ITER_EXTERNAL,
     sort::SORT,
-    sort_by::SORT_BY,
+    sort_by_key::SORT_BY_KEY,
     source_file::SOURCE_FILE,
     source_interval::SOURCE_INTERVAL,
     source_iter::SOURCE_ITER,
