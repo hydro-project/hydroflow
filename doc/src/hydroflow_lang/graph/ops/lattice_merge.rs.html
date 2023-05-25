@@ -106,23 +106,23 @@
 <a href="#106" id="106">106</a>
 <a href="#107" id="107">107</a>
 <a href="#108" id="108">108</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::ops::OperatorWriteOutput;
+</pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
+<span class="kw">use </span>syn::parse_quote_spanned;
+<span class="kw">use </span>syn::spanned::Spanned;
 
 <span class="kw">use super</span>::{
     DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorConstraints,
     OperatorInstance, WriteContextArgs, RANGE_1,
 };
-
-<span class="kw">use </span>quote::quote_spanned;
-<span class="kw">use </span>syn::{parse_quote_spanned, spanned::Spanned};
+<span class="kw">use </span><span class="kw">crate</span>::graph::ops::OperatorWriteOutput;
 
 <span class="doccomment">/// &gt; 1 input stream, 1 output stream
 ///
-/// &gt; Generic parameters: A [`LatticeRepr`](https://hydro-project.github.io/hydroflow/doc/hydroflow/lang/lattice/trait.LatticeRepr.html)
+/// &gt; Generic parameters: A `Lattice` type, must implement [`Merge&lt;Self&gt;`](https://hydro-project.github.io/hydroflow/doc/lattices/trait.Merge.html)
 /// type.
 ///
-/// A specialized operator for merging lattices together into a accumulated value. Like [`fold()`](#fold)
-/// but specialized for lattice types. `lattice_merge::&lt;MyLattice&gt;()` is equivalent to `fold(Default::default, hydroflow::lattices::Merge::merge_owned)`.
+/// A specialized operator for merging lattices together into a accumulated value. Like [`reduce()`](#reduce)
+/// but specialized for lattice types. `lattice_merge::&lt;MyLattice&gt;()` is equivalent to `reduce(hydroflow::lattices::Merge::merge_owned)`.
 ///
 /// `lattice_merge` can also be provided with one generic lifetime persistence argument, either
 /// `&#39;tick` or `&#39;static`, to specify how data persists. With `&#39;tick`, values will only be collected
@@ -173,10 +173,10 @@
         <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
 
         <span class="macro">assert_eq!</span>(<span class="number">1</span>, type_args.len());
-        <span class="kw">let </span>lat_repr = <span class="kw-2">&amp;</span>type_args[<span class="number">0</span>];
+        <span class="kw">let </span>lat_type = <span class="kw-2">&amp;</span>type_args[<span class="number">0</span>];
 
-        <span class="kw">let </span>arguments = <span class="macro">parse_quote_spanned! </span>{lat_repr.span()=&gt; <span class="comment">// Uses `lat_repr.span()`!
-            </span>::std::default::Default::default(), #root::lattices::Merge::&lt;#lat_repr&gt;::merge_owned
+        <span class="kw">let </span>arguments = <span class="macro">parse_quote_spanned! </span>{lat_type.span()=&gt; <span class="comment">// Uses `lat_type.span()`!
+            </span>#root::lattices::Merge::&lt;#lat_type&gt;::merge_owned
         };
         <span class="kw">let </span>wc = WriteContextArgs {
             op_inst: <span class="kw-2">&amp;</span>OperatorInstance {
@@ -190,20 +190,20 @@
             write_prologue,
             write_iterator,
             write_iterator_after,
-        } = (<span class="kw">super</span>::fold::FOLD.write_fn)(<span class="kw-2">&amp;</span>wc, diagnostics)<span class="question-mark">?</span>;
-        <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{lat_repr.span()=&gt; <span class="comment">// Uses `lat_repr.span()`!
+        } = (<span class="kw">super</span>::reduce::REDUCE.write_fn)(<span class="kw-2">&amp;</span>wc, diagnostics)<span class="question-mark">?</span>;
+        <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{lat_type.span()=&gt; <span class="comment">// Uses `lat_type.span()`!
             </span><span class="kw">let </span>#input = {
-                <span class="doccomment">/// Improve errors with `#lat_repr` trait bound.
+                <span class="doccomment">/// Improve errors with `#lat_type` trait bound.
                 </span><span class="attr">#[inline(always)]
-                </span><span class="kw">fn </span>check_inputs&lt;Lr&gt;(
-                    input: <span class="kw">impl </span>Iterator&lt;Item = Lr&gt;
-                ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = Lr&gt;
+                </span><span class="kw">fn </span>check_inputs&lt;Lat&gt;(
+                    input: <span class="kw">impl </span>::std::iter::Iterator&lt;Item = Lat&gt;
+                ) -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = Lat&gt;
                 <span class="kw">where
-                    </span>Lr: #root::lattices::Merge&lt;Lr&gt;,
+                    </span>Lat: #root::lattices::Merge&lt;Lat&gt;,
                 {
                     input
                 }
-                check_inputs::&lt;#lat_repr&gt;(#input)
+                check_inputs::&lt;#lat_type&gt;(#input)
             };
             #write_iterator
         };
