@@ -12,6 +12,7 @@ async def test_server_sink():
     sender = deployment.HydroflowCrate(
         src=str((Path(__file__).parent.parent.parent / "hydro_cli_examples").absolute()),
         example="dedalus_sender",
+        profile="dev",
         args=[json.dumps(([0, 1], 123))],
         on=localhost_machine.client_only()
     )
@@ -19,12 +20,14 @@ async def test_server_sink():
     receiver0 = deployment.HydroflowCrate(
         src=str((Path(__file__).parent.parent.parent / "hydro_cli_examples").absolute()),
         example="dedalus_receiver",
+        profile="dev",
         on=localhost_machine
     )
 
     receiver1 = deployment.HydroflowCrate(
         src=str((Path(__file__).parent.parent.parent / "hydro_cli_examples").absolute()),
         example="dedalus_receiver",
+        profile="dev",
         on=localhost_machine
     )
 
@@ -56,6 +59,7 @@ async def test_client_sink():
     sender = deployment.HydroflowCrate(
         src=str((Path(__file__).parent.parent.parent / "hydro_cli_examples").absolute()),
         example="dedalus_sender",
+        profile="dev",
         args=[json.dumps(([0, 1], 123))],
         on=localhost_machine
     )
@@ -63,12 +67,14 @@ async def test_client_sink():
     receiver0 = deployment.HydroflowCrate(
         src=str((Path(__file__).parent.parent.parent / "hydro_cli_examples").absolute()),
         example="dedalus_receiver",
+        profile="dev",
         on=localhost_machine.client_only()
     )
 
     receiver1 = deployment.HydroflowCrate(
         src=str((Path(__file__).parent.parent.parent / "hydro_cli_examples").absolute()),
         example="dedalus_receiver",
+        profile="dev",
         on=localhost_machine.client_only()
     )
 
