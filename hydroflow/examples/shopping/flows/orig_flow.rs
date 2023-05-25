@@ -27,7 +27,7 @@ pub(crate) async fn orig_flow(
         source_iter(client_class) -> [1]lookup_class;
         lookup_class = join()
           -> map(|(client, (li, class))| ((client, class), li))
-          -> group_by(Vec::new, Vec::push)
+          -> fold_keyed(Vec::new, Vec::push)
           -> map(|m| (m, out_addr)) -> dest_sink_serde(out);
     }
 }

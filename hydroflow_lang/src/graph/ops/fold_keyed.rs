@@ -1,11 +1,10 @@
-use crate::graph::{OpInstGenerics, OperatorInstance};
+use quote::{quote_spanned, ToTokens};
 
 use super::{
     DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
     Persistence, WriteContextArgs, RANGE_1,
 };
-
-use quote::{quote_spanned, ToTokens};
+use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// > 1 input stream of type `(K, V1)`, 1 output stream of type `(K, V2)`.
 /// The output will have one tuple for each distinct `K`, with an accumulated value of type `V2`.
@@ -23,19 +22,19 @@ use quote::{quote_spanned, ToTokens};
 ///
 /// > Note: The closures have access to the [`context` object](surface_flows.md#the-context-object).
 ///
-/// `keyed_fold` can also be provided with one generic lifetime persistence argument, either
+/// `fold_keyed` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
 /// within the same tick. With `'static`, values will be remembered across ticks and will be
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
 /// defaults to `'static`.
 ///
-/// `keyed_fold` can also be provided with two type arguments, the key type `K` and aggregated
+/// `fold_keyed` can also be provided with two type arguments, the key type `K` and aggregated
 /// output value type `V2`. This is required when using `'static` persistence if the compiler
 /// cannot infer the types.
 ///
 /// ```hydroflow
 /// source_iter([("toy", 1), ("toy", 2), ("shoe", 11), ("shoe", 35), ("haberdashery", 7)])
-///     -> keyed_fold(|| 0, |old: &mut u32, val: u32| *old += val)
+///     -> fold_keyed(|| 0, |old: &mut u32, val: u32| *old += val)
 ///     -> for_each(|(k, v)| println!("Total for group {} is {}", k, v));
 /// ```
 ///
@@ -44,7 +43,7 @@ use quote::{quote_spanned, ToTokens};
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
 /// let mut flow = hydroflow::hydroflow_syntax! {
 ///     source_stream(input_recv)
-///         -> keyed_fold::<'tick, &str, String>(String::new, |old: &mut _, val| {
+///         -> fold_keyed::<'tick, &str, String>(String::new, |old: &mut _, val| {
 ///             *old += val;
 ///             *old += ", ";
 ///         })
@@ -62,8 +61,8 @@ use quote::{quote_spanned, ToTokens};
 /// // ("hello", "palo alto, ")
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
-pub const KEYED_FOLD: OperatorConstraints = OperatorConstraints {
-    name: "keyed_fold",
+pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
+    name: "fold_keyed",
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

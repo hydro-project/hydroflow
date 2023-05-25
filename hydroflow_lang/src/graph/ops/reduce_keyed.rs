@@ -1,17 +1,16 @@
-use crate::graph::{OpInstGenerics, OperatorInstance};
+use quote::{quote_spanned, ToTokens};
 
 use super::{
     DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
     Persistence, WriteContextArgs, RANGE_1,
 };
-
-use quote::{quote_spanned, ToTokens};
+use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// > 1 input stream of type `(K, V)`, 1 output stream of type `(K, V)`.
 /// The output will have one tuple for each distinct `K`, with an accumulated (reduced) value of
 /// type `V`.
 ///
-/// If you need the accumulated value to have a different type, use [`keyed_fold`](#keyed_fold).
+/// If you need the accumulated value to have a different type, use [`fold_keyed`](#keyed_fold).
 ///
 /// > Arguments: one Rust closures. The closure takes two arguments: an `&mut` 'accumulator', and
 /// an element. Accumulator should be updated based on the element.
