@@ -9,7 +9,7 @@ classDef pushClass fill:#ff0,stroke:#000,text-align:left,white-space:pre
 linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
     3v1[\"(3v1) <code>source_iter(vec![0])</code>"/]:::pullClass
-    1v1[\"(1v1) <code>merge()</code>"/]:::pullClass
+    1v1[\"(1v1) <code>union()</code>"/]:::pullClass
     2v1[\"(2v1) <code>map(|v| (v, ()))</code>"/]:::pullClass
     7v1[\"(7v1) <code>source_stream(pairs_recv)</code>"/]:::pullClass
     4v1[\"(4v1) <code>join()</code>"/]:::pullClass

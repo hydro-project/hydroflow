@@ -21,7 +21,7 @@ pub fn main() {
         // inputs: the origin vertex (node 0) and stream of input edges
         origin = source_iter(vec![0]);
         stream_of_edges = source_stream(edges_recv);
-        reached_vertices = merge();
+        reached_vertices = union();
         origin -> [0]reached_vertices;
 
         // the join

@@ -32,14 +32,14 @@ macro_rules! test_warnings {
 }
 
 #[test]
-fn test_degenerate_merge() {
+fn test_degenerate_union() {
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = test_warnings! {
         {
-            source_iter([1, 2, 3]) -> merge() -> for_each(|x| result_send.send(x).unwrap());
+            source_iter([1, 2, 3]) -> union() -> for_each(|x| result_send.send(x).unwrap());
         },
-        "Warning: `merge` should have at least 2 input(s), actually has 1.\n  --> $FILE:2:39",
+        "Warning: `union` should have at least 2 input(s), actually has 1.\n  --> $FILE:2:39",
     };
     df.run_available();
 
@@ -47,12 +47,12 @@ fn test_degenerate_merge() {
 }
 
 #[test]
-fn test_empty_merge() {
+fn test_empty_union() {
     let mut df = test_warnings! {
         {
-            merge() -> for_each(|x: usize| println!("{}", x));
+            union() -> for_each(|x: usize| println!("{}", x));
         },
-        "Warning: `merge` should have at least 2 input(s), actually has 0.\n  --> $FILE:2:13",
+        "Warning: `union` should have at least 2 input(s), actually has 0.\n  --> $FILE:2:13",
     };
     df.run_available();
 }
@@ -95,7 +95,7 @@ pub fn test_warped_diamond() {
     let mut df = test_warnings! {
         {
             // active nodes
-            nodes = merge();
+            nodes = union();
 
             // stream of nodes into the system
             init = join() -> for_each(|(n, (a, b))| {
@@ -108,7 +108,7 @@ pub fn test_warped_diamond() {
             nodes -> [0]init;
             new_node[1] -> map(|n| (n, 'b')) -> [1]init;
         },
-        "Warning: `merge` should have at least 2 input(s), actually has 1.\n  --> $FILE:3:21",
+        "Warning: `union` should have at least 2 input(s), actually has 1.\n  --> $FILE:3:21",
     };
     df.run_available();
 }
@@ -118,7 +118,7 @@ pub fn test_warped_diamond_2() {
     let mut hf: Hydroflow = test_warnings! {
         {
             // active nodes
-            nodes = merge();
+            nodes = union();
 
             // stream of nodes into the system
             init = join() -> for_each(|(n, (a, b))| {
@@ -133,7 +133,7 @@ pub fn test_warped_diamond_2() {
 
             ntwk = source_iter([4, 5, 6]) -> tee();
         },
-        "Warning: `merge` should have at least 2 input(s), actually has 1.\n  --> $FILE:3:21",
+        "Warning: `union` should have at least 2 input(s), actually has 1.\n  --> $FILE:3:21",
         "Warning: `tee` should have at least 2 output(s), actually has 0.\n  --> $FILE:16:46",
     };
     hf.run_available();

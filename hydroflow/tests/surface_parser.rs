@@ -4,7 +4,7 @@ use multiplatform_test::multiplatform_test;
 #[multiplatform_test]
 pub fn test_parser_basic() {
     hydroflow_parser! {
-        reached_vertices = (merge() -> map(|v| (v, ())));
+        reached_vertices = (union() -> map(|v| (v, ())));
         (source_iter([0]) -> [0]reached_vertices);
 
         my_join = (join() -> map(|(_src, ((), dst))| dst) -> tee());
@@ -16,7 +16,7 @@ pub fn test_parser_basic() {
     }
 
     hydroflow_parser! {
-        shuffle = (merge() -> tee());
+        shuffle = (union() -> tee());
         (shuffle[0] -> [0]shuffle);
         (shuffle[1] -> [1]shuffle);
         (shuffle[2] -> [2]shuffle);
@@ -30,12 +30,12 @@ pub fn test_parser_basic() {
 
     hydroflow_parser! {
         a = map(a); // 0
-        b = (merge() -> tee()); // 1
-        c = merge(); // 2
+        b = (union() -> tee()); // 1
+        c = union(); // 2
         d = tee(); // 3
-        e = (merge() -> tee()); // 4
+        e = (union() -> tee()); // 4
         f = map(f); // 5
-        g = merge(); // 6
+        g = union(); // 6
         h = tee(); // 7
 
         (a[0] -> [0]b);
@@ -99,7 +99,7 @@ pub fn test_parser_port_naked_basic() {
 #[multiplatform_test]
 pub fn test_parser_port_naked_knot() {
     hydroflow_parser! {
-        pivot = merge() -> tee();
+        pivot = union() -> tee();
 
         inn_0 = [0]pivot;
         inn_1 = [1]pivot;
@@ -112,7 +112,7 @@ pub fn test_parser_port_naked_knot() {
     };
 
     hydroflow_parser! {
-        pivot = merge() -> tee();
+        pivot = union() -> tee();
 
         x_0 = [0]pivot[0];
         x_1 = [1]pivot[1];
@@ -122,7 +122,7 @@ pub fn test_parser_port_naked_knot() {
     };
 
     hydroflow_parser! {
-        pivot = merge() -> tee();
+        pivot = union() -> tee();
 
         x_0 = pivot[0];
         x_1 = pivot[1];
@@ -132,7 +132,7 @@ pub fn test_parser_port_naked_knot() {
     };
 
     hydroflow_parser! {
-        pivot = merge() -> tee();
+        pivot = union() -> tee();
 
         x_0 = pivot;
         x_1 = pivot;
@@ -207,9 +207,9 @@ pub fn test_parser_forwardref_tee() {
 }
 
 #[multiplatform_test]
-pub fn test_parser_forwardref_merge() {
+pub fn test_parser_forwardref_union() {
     hydroflow_parser! {
-        c = merge() -> c;
+        c = union() -> c;
         source_iter(0..10) -> c;
     };
 }
@@ -226,7 +226,7 @@ pub fn test_parser_forwardref_knot() {
         out_0 -> inn_0;
         out_1 -> inn_1;
 
-        pivot = merge() -> tee();
+        pivot = union() -> tee();
     };
 }
 

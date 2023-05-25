@@ -42,7 +42,7 @@ pub(crate) async fn run_coordinator(
 
         // setup broadcast channel to all subords
         broadcast_join = cross_join() -> outbound_chan;
-        broadcast = merge() -> [0]broadcast_join;
+        broadcast = union() -> [0]broadcast_join;
         subords[1] -> [1]broadcast_join;
         subords[2] -> for_each(|s| println!("Subordinate: {:?}", s));
 

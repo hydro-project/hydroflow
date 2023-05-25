@@ -58,7 +58,7 @@ source_iter(0..10)
   "Chat Server": `\
 // https://hydro.run/docs/quickstart/example_8_chat_server
 // Define shared inbound and outbound channels
-outbound_chan = merge() -> dest_sink_serde(outbound);
+outbound_chan = union() -> dest_sink_serde(outbound);
 inbound_chan = source_stream_serde(inbound)
     ->  demux(|(msg, addr), var_args!(clients, msgs, errs)|
             match msg {
@@ -79,7 +79,7 @@ inbound_chan[msgs] -> [0]broadcast;
   "Chat Client": `\
 // https://hydro.run/docs/quickstart/example_8_chat_server
 // set up channels
-outbound_chan = merge() -> dest_sink_serde(outbound);
+outbound_chan = union() -> dest_sink_serde(outbound);
 inbound_chan = source_stream_serde(inbound) -> map(|(m, _)| m)
     ->  demux(|m, var_args!(acks, msgs, errs)|
             match m {
@@ -121,7 +121,7 @@ my_join -> unique() -> for_each(|n| println!("Reached: {}", n));`,
 // inputs: the origin vertex (vertex 0) and stream of input edges
 origin = source_iter(vec![0]);
 stream_of_edges = source_stream(edges_recv);
-reached_vertices = merge();
+reached_vertices = union();
 origin -> [0]reached_vertices;
 // the join
 my_join_tee = join() -> flat_map(|(src, ((), dst))| [src, dst]) -> tee();
@@ -135,7 +135,7 @@ my_join_tee[1] -> unique() -> for_each(|x| println!("Reached: {}", x));`,
 // https://hydro.run/docs/quickstart/example_6_unreachability
 origin = source_iter(vec![0]);
 stream_of_edges = source_stream(pairs_recv) -> tee();
-reached_vertices = merge()->tee();
+reached_vertices = union()->tee();
 origin -> [0]reached_vertices;
 // the join for reachable vertices
 my_join = join() -> flat_map(|(src, ((), dst))| [src, dst]);
@@ -278,11 +278,11 @@ export default function Playground() {
           <h1 style={{
             fontSize: "2.5rem"
           }}>Hydroflow</h1>
-          <HydroflowSurfaceDemo/>
+          <HydroflowSurfaceDemo />
           <h1 style={{
             fontSize: "2.5rem"
           }}>Datalog</h1>
-          <DatalogDemo/>
+          <DatalogDemo />
         </div>
       </main>
     </Layout>

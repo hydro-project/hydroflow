@@ -241,7 +241,7 @@ fn group_by_monotonic_core() {
 //         ),
 //     );
 //     hf_builder.add_subgraph_stratified(
-//         "merge",
+//         "union",
 //         0,
 //         a_recv
 //             .flatten()

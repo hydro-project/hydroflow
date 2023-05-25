@@ -429,9 +429,9 @@ async fn asynctest_event_repeat_iter() {
     let (b_send, b_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut hf = hydroflow_syntax! {
-        repeat_iter(0..3) -> my_merge;
-        source_stream(a_recv) -> my_merge;
-        my_merge = merge() -> for_each(|x| b_send.send(x).unwrap());
+        repeat_iter(0..3) -> my_union;
+        source_stream(a_recv) -> my_union;
+        my_union = union() -> for_each(|x| b_send.send(x).unwrap());
     };
 
     tokio::task::spawn(async move {

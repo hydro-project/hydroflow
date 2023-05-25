@@ -36,7 +36,7 @@ pub(crate) fn rga_adjacency(
         split[1] -> [neg]leaves;
 
         // nextSiblingAnc
-        nextSiblingAnc = merge() -> tee();
+        nextSiblingAnc = union() -> tee();
         // siblings(bigger, smaller)
         siblings -> nextSiblingAnc;
         // lastChild(parent, lastChild)
@@ -47,7 +47,7 @@ pub(crate) fn rga_adjacency(
         upEdge -> nextSiblingAnc;
 
         // nextElem
-        nextElem = merge();
+        nextElem = union();
         adjacency[nextElem] -> map(|(parent, kids): (Timestamp, VecDeque<Timestamp>)| (parent, *kids.back().unwrap())) -> nextElem;
         // nextElem(Prev,Next) :- isListElem(Prev), !hasChild (Prev), nextSiblingAnc(Prev,Next)
         ne_join = join() -> map(|(prev, (_, next))| (prev, next));

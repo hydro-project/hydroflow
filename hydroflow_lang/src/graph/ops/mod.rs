@@ -218,7 +218,7 @@ pub const NULL_WRITE_FN: WriteFn = |write_context_args, _| {
 
 macro_rules! declare_ops {
     ( $( $mod:ident :: $op:ident, )* ) => {
-        $( mod $mod; )*
+        $( pub(crate) mod $mod; )*
         pub const OPERATORS: &[OperatorConstraints] = &[
             $( $mod :: $op, )*
         ];
@@ -251,7 +251,7 @@ declare_ops![
     lattice_join::LATTICE_JOIN,
     lattice_merge::LATTICE_MERGE,
     map::MAP,
-    merge::MERGE,
+    union::UNION,
     next_stratum::NEXT_STRATUM,
     next_tick::NEXT_TICK,
     null::NULL,

@@ -3,7 +3,7 @@ use std::ops::Deref;
 
 use hydroflow_lang::diagnostic::{Diagnostic, Level};
 use hydroflow_lang::graph::{
-    eliminate_extra_merges_tees, partition_graph, FlatGraphBuilder, HydroflowGraph,
+    eliminate_extra_unions_tees, partition_graph, FlatGraphBuilder, HydroflowGraph,
 };
 use hydroflow_lang::parse::{IndexInt, Indexing, Pipeline, PipelineLink};
 use proc_macro2::{Span, TokenStream};
@@ -119,7 +119,7 @@ pub fn gen_hydroflow_graph(
 
     let mut flat_graph_builder = FlatGraphBuilder::new();
     let mut tee_counter = HashMap::new();
-    let mut merge_counter = HashMap::new();
+    let mut union_counter = HashMap::new();
 
     let mut created_rules = HashSet::new();
     for decl in &program.rules {
@@ -143,7 +143,7 @@ pub fn gen_hydroflow_graph(
             if persists.contains(&target_ident.value.name) {
                 // read outputs the *new* values for this tick
                 flat_graph_builder
-                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #insert_name = merge() -> unique::<'tick>()));
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #insert_name = union() -> unique::<'tick>()));
                 flat_graph_builder
                     .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #read_name = difference::<'tick, 'static>() -> tee()));
                 flat_graph_builder
@@ -152,7 +152,7 @@ pub fn gen_hydroflow_graph(
                     .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #read_name -> next_tick() -> [neg] #read_name));
             } else {
                 flat_graph_builder
-                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #insert_name = merge() -> unique::<'tick>()));
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #insert_name = union() -> unique::<'tick>()));
                 flat_graph_builder
                     .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #read_name = #insert_name -> tee()));
             }
@@ -160,20 +160,20 @@ pub fn gen_hydroflow_graph(
     }
 
     for (target, hf_code) in inputs {
-        let my_merge_index = merge_counter
+        let my_union_index = union_counter
             .entry(target.name.clone())
             .or_insert_with(|| 0..)
             .next()
-            .expect("Out of merge indices");
+            .expect("Out of union indices");
 
-        let my_merge_index_lit =
-            syn::LitInt::new(&format!("{}", my_merge_index), get_span(target.span));
+        let my_union_index_lit =
+            syn::LitInt::new(&format!("{}", my_union_index), get_span(target.span));
         let name = syn::Ident::new(&format!("{}_insert", target.name), get_span(target.span));
 
         let input_pipeline: Pipeline = parse_pipeline(&hf_code.code, &get_span)?;
 
         flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
-            #input_pipeline -> [#my_merge_index_lit] #name
+            #input_pipeline -> [#my_union_index_lit] #name
         });
     }
 
@@ -204,14 +204,14 @@ pub fn gen_hydroflow_graph(
         let async_send_pipeline = format!("{}_async_send", target.name);
         let async_send_pipeline = syn::Ident::new(&async_send_pipeline, get_span(target.span));
 
-        let recv_merge_index = merge_counter
+        let recv_union_index = union_counter
             .entry(target.name.clone())
             .or_insert_with(|| 0..)
             .next()
-            .expect("Out of merge indices");
+            .expect("Out of union indices");
 
-        let recv_merge_index_lit =
-            syn::LitInt::new(&format!("{}", recv_merge_index), get_span(target.span));
+        let recv_union_index_lit =
+            syn::LitInt::new(&format!("{}", recv_union_index), get_span(target.span));
         let target_ident =
             syn::Ident::new(&format!("{}_insert", target.name), get_span(target.span));
 
@@ -219,29 +219,29 @@ pub fn gen_hydroflow_graph(
         let recv_pipeline: Pipeline = parse_pipeline(&recv_hf.code, &get_span)?;
 
         flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
-            #async_send_pipeline = merge() -> unique::<'tick>() -> #send_pipeline
+            #async_send_pipeline = union() -> unique::<'tick>() -> #send_pipeline
         });
 
         flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
-            #recv_pipeline -> [#recv_merge_index_lit] #target_ident
+            #recv_pipeline -> [#recv_union_index_lit] #target_ident
         });
     }
 
     for (target, hf_code) in statics {
-        let my_merge_index = merge_counter
+        let my_union_index = union_counter
             .entry(target.name.clone())
             .or_insert_with(|| 0..)
             .next()
-            .expect("Out of merge indices");
+            .expect("Out of union indices");
 
-        let my_merge_index_lit =
-            syn::LitInt::new(&format!("{}", my_merge_index), get_span(target.span));
+        let my_union_index_lit =
+            syn::LitInt::new(&format!("{}", my_union_index), get_span(target.span));
         let name = syn::Ident::new(&format!("{}_insert", target.name), get_span(target.span));
 
         let static_expression: syn::Expr = parse_static(&hf_code.code, &get_span)?;
 
         flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
-            repeat_iter(#static_expression) -> [#my_merge_index_lit] #name
+            repeat_iter(#static_expression) -> [#my_union_index_lit] #name
         });
     }
 
@@ -254,7 +254,7 @@ pub fn gen_hydroflow_graph(
             rule,
             &mut flat_graph_builder,
             &mut tee_counter,
-            &mut merge_counter,
+            &mut union_counter,
             &mut next_join_idx,
             &persists,
             &mut diagnostics,
@@ -270,7 +270,7 @@ pub fn gen_hydroflow_graph(
         if !diagnostics.is_empty() {
             Err(diagnostics)
         } else {
-            eliminate_extra_merges_tees(&mut flat_graph);
+            eliminate_extra_unions_tees(&mut flat_graph);
             Ok(flat_graph)
         }
     }
@@ -337,7 +337,7 @@ fn generate_rule(
     rule: &rust_sitter::Spanned<Rule>,
     flat_graph_builder: &mut FlatGraphBuilder,
     tee_counter: &mut HashMap<String, Counter>,
-    merge_counter: &mut HashMap<String, Counter>,
+    union_counter: &mut HashMap<String, Counter>,
     next_join_idx: &mut Counter,
     persists: &HashSet<String>,
     diagnostics: &mut Vec<Diagnostic>,
@@ -364,13 +364,13 @@ fn generate_rule(
         get_span,
     );
 
-    let my_merge_index = merge_counter
+    let my_union_index = union_counter
         .entry(target.name.clone())
         .or_insert_with(|| 0..)
         .next()
-        .expect("Out of merge indices");
+        .expect("Out of union indices");
 
-    let my_merge_index_lit = syn::LitInt::new(&format!("{}", my_merge_index), Span::call_site());
+    let my_union_index_lit = syn::LitInt::new(&format!("{}", my_union_index), Span::call_site());
 
     let after_join_and_send: Pipeline = match rule.rule_type.value {
         RuleType::Sync(_) => {
@@ -378,14 +378,14 @@ fn generate_rule(
                 panic!("Rule must be async to send data to other nodes")
             }
 
-            parse_quote_spanned!(get_span(rule.rule_type.span)=> #after_join -> [#my_merge_index_lit] #target_ident)
+            parse_quote_spanned!(get_span(rule.rule_type.span)=> #after_join -> [#my_union_index_lit] #target_ident)
         }
         RuleType::NextTick(_) => {
             if rule.target.at_node.is_some() {
                 panic!("Rule must be async to send data to other nodes")
             }
 
-            parse_quote_spanned!(get_span(rule.rule_type.span)=> #after_join -> next_tick() -> [#my_merge_index_lit] #target_ident)
+            parse_quote_spanned!(get_span(rule.rule_type.span)=> #after_join -> next_tick() -> [#my_union_index_lit] #target_ident)
         }
         RuleType::Async(_) => {
             if rule.target.at_node.is_none() {

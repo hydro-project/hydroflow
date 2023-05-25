@@ -45,7 +45,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
                 parse_edge(line.unwrap())});
 
         // persist an edges set
-        edges = merge() -> tee();
+        edges = union() -> tee();
         edges[0] -> next_tick() -> [1]edges;
 
         // add new edges locally
@@ -63,7 +63,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
         // Rule 1: add inbound edges to paths
         // paths(from, to, [from, to] :- edges(from, to))
         inbound_chan[4] -> flat_map(|m| m.edges) -> [2]edges;
-        paths = merge();
+        paths = union();
         edges[2] -> map(|(from, to)| (from, to, SimplePath::new(vec![from, to]))) -> [0]paths;
 
         // Rule 2: form new_paths from the join of acyclic paths and edges

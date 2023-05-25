@@ -52,7 +52,7 @@ pub(crate) fn rga_datalog(
         hasNextSibling = laterSibling -> map(|(s1, _s2)| s1);
 
         // nextSiblingAnc(Start, Next) :- nextSibling (Start, Next)
-        nextSiblingAnc = merge() -> tee();
+        nextSiblingAnc = union() -> tee();
         nextSibling -> nextSiblingAnc;
 
         // nextSiblingAnc (Start, Next) :- !hasNextSibling (Start), insertAfter(Start, Parent), nextSiblingAnc( Parent, Next)
@@ -70,7 +70,7 @@ pub(crate) fn rga_datalog(
         hasSiblingAnc = nextSiblingAnc -> map(|(start, _next)| start) -> null();
 
         // nextElem(Prev,Next) :- firstChild(Prev, Next)
-        nextElem = merge();
+        nextElem = union();
         firstChild -> nextElem;
 
         // nextElem(Prev,Next) :- isListElem(Prev), - hasChild (Prev), nextSiblingAnc(Prev,Next)

@@ -80,7 +80,7 @@ digraph {
     //     label = "sg_6v1\nstratum 2"
     subgraph {
         rank = same;
-        n18v1 [label = "merge";fontname = Monaco;shape = box;style = filled;color = "#dddddd";fontcolor = "#000000";];
+        n18v1 [label = "union";fontname = Monaco;shape = box;style = filled;color = "#dddddd";fontcolor = "#000000";];
         n19v1 [label = "group_by";fontname = Monaco;shape = box;style = filled;color = "#dddddd";fontcolor = "#000000";];
     }
     n20v1 [label = "unique";fontname = Monaco;shape = box;style = filled;color = "#dddddd";fontcolor = "#000000";];

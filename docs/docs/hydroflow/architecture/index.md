@@ -18,7 +18,7 @@ linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
 subgraph "sg_1v1 stratum 0"
     1v1[\"(1v1) <tt>source_iter(vec! [0])</tt>"/]:::pullClass
     2v1[\"(2v1) <tt>source_stream(edges_recv)</tt>"/]:::pullClass
-    3v1[\"(3v1) <tt>merge()</tt>"/]:::pullClass
+    3v1[\"(3v1) <tt>union()</tt>"/]:::pullClass
     7v1[\"(7v1) <tt>map(| v | (v, ()))</tt>"/]:::pullClass
     4v1[\"(4v1) <tt>join()</tt>"/]:::pullClass
     5v1[/"(5v1) <tt>flat_map(| (src, ((), dst)) | [src, dst])</tt>"\]:::pushClass
