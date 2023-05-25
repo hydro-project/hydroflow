@@ -24,6 +24,7 @@ hydroflow_cli_integration = { optional = true, path = "../hydroflow_cli_integrat
 hydroflow_datalog = { optional = true, path = "../hydroflow_datalog", version = "^0.1.0" }
 hydroflow_lang = { path = "../hydroflow_lang", version = "^0.1.0" }
 hydroflow_macro = { optional = true, path = "../hydroflow_macro", version = "^0.1.0" }
+itertools = "0.10.3"
 lattices = { path = "../lattices", version = "^0.1.1", features = [ "serde" ] }
 pusherator = { path = "../pusherator", version = "^0.0.1" }
 ref-cast = "1.0"
@@ -58,7 +59,6 @@ core_affinity = "0.5.10"
 futures = { version = "0.3" }
 hdrhistogram = "7"
 insta = "1.7.1"
-itertools = "0.10.3"
 multiplatform_test = { path = "../multiplatform_test", version = "0.0.0" }
 wasm-bindgen-test-macro = "0.3.34"
 wasm-bindgen-test = "0.3.34"
