@@ -251,6 +251,7 @@ declare_ops![
     lattice_merge::LATTICE_MERGE,
     map::MAP,
     union::UNION,
+    multiset_delta::MULTISET_DELTA,
     next_stratum::NEXT_STRATUM,
     next_tick::NEXT_TICK,
     null::NULL,
