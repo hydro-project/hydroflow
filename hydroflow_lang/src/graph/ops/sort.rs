@@ -1,11 +1,9 @@
-use crate::graph::{OpInstGenerics, OperatorInstance};
+use quote::quote_spanned;
 
 use super::{
     DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
-    Persistence, WriteContextArgs, RANGE_0, RANGE_1,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
-
-use quote::quote_spanned;
 
 /// Takes a stream as input and produces a sorted version of the stream as output.
 ///
@@ -16,31 +14,8 @@ use quote::quote_spanned;
 ///     -> for_each(|x| println!("{}", x));
 /// ```
 ///
-/// `sort` can also be provided with one generic lifetime persistence argument, either
-/// `'tick` or `'static`, to specify how data persists. The default is `'tick`. With `'tick` only
-/// the values will only be collected within a single tick will be sorted and emitted. With
-/// `'static`, values will be remembered across ticks and will be repeatedly emitted each tick (in
-/// order).
-///
-/// ```rustbook
-/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<usize>();
-/// let mut flow = hydroflow::hydroflow_syntax! {
-///     source_stream(input_recv)
-///         -> sort::<'static>()
-///         -> for_each(|n| println!("{}", n));
-/// };
-///
-/// input_send.send(6).unwrap();
-/// input_send.send(3).unwrap();
-/// input_send.send(4).unwrap();
-/// flow.run_available();
-/// // 3, 4, 6
-///
-/// input_send.send(1).unwrap();
-/// input_send.send(7).unwrap();
-/// flow.run_available();
-/// // 1, 3, 4, 6, 7
-/// ```
+/// `sort` is partially blocking. Only the values collected within a single tick will be sorted and
+/// emitted.
 #[hydroflow_internalmacro::operator_docgen]
 pub const SORT: OperatorConstraints = OperatorConstraints {
     name: "sort",
@@ -49,7 +24,7 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: 0,
-    persistence_args: &(0..=1),
+    persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
     ports_inn: None,
@@ -60,70 +35,29 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| Some(DelayType::Stratum),
-    write_fn: |wc @ &WriteContextArgs {
-                   context,
-                   hydroflow,
+    write_fn: |&WriteContextArgs {
                    op_span,
                    ident,
                    inputs,
                    is_pull,
-                   op_inst:
-                       OperatorInstance {
-                           generics:
-                               OpInstGenerics {
-                                   persistence_args, ..
-                               },
-                           ..
-                       },
                    ..
                },
                _| {
         assert!(is_pull);
 
-        let persistence = match persistence_args[..] {
-            [] => Persistence::Tick,
-            [a] => a,
-            _ => unreachable!(),
-        };
-
         let input = &inputs[0];
-        match persistence {
-            Persistence::Tick => {
-                let write_iterator = quote_spanned! {op_span=>
-                    // TODO(mingwei): unneccesary extra into_iter() then collect()
-                    let #ident = {
-                        let mut v = #input.collect::<::std::vec::Vec<_>>();
-                        v.sort_unstable();
-                        v.into_iter()
-                    };
-                };
-                Ok(OperatorWriteOutput {
-                    write_iterator,
-                    ..Default::default()
-                })
-            }
-            Persistence::Static => {
-                let sortdata_ident = wc.make_ident("sortdata");
-
-                let write_prologue = quote_spanned! {op_span=>
-                    let #sortdata_ident = #hydroflow.add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
-                };
-                let write_iterator = quote_spanned! {op_span=>
-                    // TODO(mingwei): Better data structure for this?
-                    let #ident = {
-                        let mut v = #context.state_ref(#sortdata_ident).borrow_mut();
-                        v.extend(#input);
-                        v.sort_unstable();
-                        v.clone().into_iter()
-                    };
-                };
-
-                Ok(OperatorWriteOutput {
-                    write_prologue,
-                    write_iterator,
-                    ..Default::default()
-                })
-            }
-        }
+        let write_iterator = quote_spanned! {op_span=>
+            // TODO(mingwei): unneccesary extra handoff into_iter() then collect().
+            // Fix requires handoff specialization.
+            let #ident = {
+                let mut v = #input.collect::<::std::vec::Vec<_>>();
+                v.sort_unstable();
+                v.into_iter()
+            };
+        };
+        Ok(OperatorWriteOutput {
+            write_iterator,
+            ..Default::default()
+        })
     },
 };
