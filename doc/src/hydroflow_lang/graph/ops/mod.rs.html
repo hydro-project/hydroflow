@@ -626,7 +626,7 @@
 
 <span class="macro">macro_rules! </span>declare_ops {
     ( $( <span class="macro-nonterminal">$</span><span class="kw">mod</span>:<span class="macro-nonterminal">ident </span>:: <span class="macro-nonterminal">$op</span>:ident, )* ) =&gt; {
-        $( <span class="kw">mod </span><span class="macro-nonterminal">$</span><span class="kw">mod</span>; )*
+        $( <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span><span class="macro-nonterminal">$</span><span class="kw">mod</span>; )*
         <span class="kw">pub const </span><span class="macro-nonterminal">OPERATORS</span>: <span class="kw-2">&amp;</span>[OperatorConstraints] = <span class="kw-2">&amp;</span>[
             $( <span class="macro-nonterminal">$</span><span class="kw">mod </span>:: <span class="macro-nonterminal">$op</span>, )*
         ];
@@ -659,7 +659,7 @@
     lattice_join::LATTICE_JOIN,
     lattice_merge::LATTICE_MERGE,
     map::MAP,
-    merge::MERGE,
+    union::UNION,
     next_stratum::NEXT_STRATUM,
     next_tick::NEXT_TICK,
     null::NULL,

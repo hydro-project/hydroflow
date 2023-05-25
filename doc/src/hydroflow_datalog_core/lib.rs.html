@@ -1182,7 +1182,7 @@
 
 <span class="kw">use </span>hydroflow_lang::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span>hydroflow_lang::graph::{
-    eliminate_extra_merges_tees, partition_graph, FlatGraphBuilder, HydroflowGraph,
+    eliminate_extra_unions_tees, partition_graph, FlatGraphBuilder, HydroflowGraph,
 };
 <span class="kw">use </span>hydroflow_lang::parse::{IndexInt, Indexing, Pipeline, PipelineLink};
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
@@ -1298,7 +1298,7 @@
 
     <span class="kw">let </span><span class="kw-2">mut </span>flat_graph_builder = FlatGraphBuilder::new();
     <span class="kw">let </span><span class="kw-2">mut </span>tee_counter = HashMap::new();
-    <span class="kw">let </span><span class="kw-2">mut </span>merge_counter = HashMap::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>union_counter = HashMap::new();
 
     <span class="kw">let </span><span class="kw-2">mut </span>created_rules = HashSet::new();
     <span class="kw">for </span>decl <span class="kw">in </span><span class="kw-2">&amp;</span>program.rules {
@@ -1322,7 +1322,7 @@
             <span class="kw">if </span>persists.contains(<span class="kw-2">&amp;</span>target_ident.value.name) {
                 <span class="comment">// read outputs the *new* values for this tick
                 </span>flat_graph_builder
-                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #insert_name = merge() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;()));
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #insert_name = union() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;()));
                 flat_graph_builder
                     .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #read_name = difference::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;static</span>&gt;() -&gt; tee()));
                 flat_graph_builder
@@ -1331,7 +1331,7 @@
                     .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #read_name -&gt; next_tick() -&gt; [neg] #read_name));
             } <span class="kw">else </span>{
                 flat_graph_builder
-                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #insert_name = merge() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;()));
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #insert_name = union() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;()));
                 flat_graph_builder
                     .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #read_name = #insert_name -&gt; tee()));
             }
@@ -1339,20 +1339,20 @@
     }
 
     <span class="kw">for </span>(target, hf_code) <span class="kw">in </span>inputs {
-        <span class="kw">let </span>my_merge_index = merge_counter
+        <span class="kw">let </span>my_union_index = union_counter
             .entry(target.name.clone())
             .or_insert_with(|| <span class="number">0</span>..)
             .next()
-            .expect(<span class="string">&quot;Out of merge indices&quot;</span>);
+            .expect(<span class="string">&quot;Out of union indices&quot;</span>);
 
-        <span class="kw">let </span>my_merge_index_lit =
-            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_merge_index), get_span(target.span));
+        <span class="kw">let </span>my_union_index_lit =
+            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_union_index), get_span(target.span));
         <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}_insert&quot;</span>, target.name), get_span(target.span));
 
         <span class="kw">let </span>input_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
-            #input_pipeline -&gt; [#my_merge_index_lit] #name
+            #input_pipeline -&gt; [#my_union_index_lit] #name
         });
     }
 
@@ -1383,14 +1383,14 @@
         <span class="kw">let </span>async_send_pipeline = <span class="macro">format!</span>(<span class="string">&quot;{}_async_send&quot;</span>, target.name);
         <span class="kw">let </span>async_send_pipeline = syn::Ident::new(<span class="kw-2">&amp;</span>async_send_pipeline, get_span(target.span));
 
-        <span class="kw">let </span>recv_merge_index = merge_counter
+        <span class="kw">let </span>recv_union_index = union_counter
             .entry(target.name.clone())
             .or_insert_with(|| <span class="number">0</span>..)
             .next()
-            .expect(<span class="string">&quot;Out of merge indices&quot;</span>);
+            .expect(<span class="string">&quot;Out of union indices&quot;</span>);
 
-        <span class="kw">let </span>recv_merge_index_lit =
-            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, recv_merge_index), get_span(target.span));
+        <span class="kw">let </span>recv_union_index_lit =
+            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, recv_union_index), get_span(target.span));
         <span class="kw">let </span>target_ident =
             syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}_insert&quot;</span>, target.name), get_span(target.span));
 
@@ -1398,29 +1398,29 @@
         <span class="kw">let </span>recv_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>recv_hf.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
-            #async_send_pipeline = merge() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; #send_pipeline
+            #async_send_pipeline = union() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; #send_pipeline
         });
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
-            #recv_pipeline -&gt; [#recv_merge_index_lit] #target_ident
+            #recv_pipeline -&gt; [#recv_union_index_lit] #target_ident
         });
     }
 
     <span class="kw">for </span>(target, hf_code) <span class="kw">in </span>statics {
-        <span class="kw">let </span>my_merge_index = merge_counter
+        <span class="kw">let </span>my_union_index = union_counter
             .entry(target.name.clone())
             .or_insert_with(|| <span class="number">0</span>..)
             .next()
-            .expect(<span class="string">&quot;Out of merge indices&quot;</span>);
+            .expect(<span class="string">&quot;Out of union indices&quot;</span>);
 
-        <span class="kw">let </span>my_merge_index_lit =
-            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_merge_index), get_span(target.span));
+        <span class="kw">let </span>my_union_index_lit =
+            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_union_index), get_span(target.span));
         <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}_insert&quot;</span>, target.name), get_span(target.span));
 
         <span class="kw">let </span>static_expression: syn::Expr = parse_static(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
-            repeat_iter(#static_expression) -&gt; [#my_merge_index_lit] #name
+            repeat_iter(#static_expression) -&gt; [#my_union_index_lit] #name
         });
     }
 
@@ -1433,7 +1433,7 @@
             rule,
             <span class="kw-2">&amp;mut </span>flat_graph_builder,
             <span class="kw-2">&amp;mut </span>tee_counter,
-            <span class="kw-2">&amp;mut </span>merge_counter,
+            <span class="kw-2">&amp;mut </span>union_counter,
             <span class="kw-2">&amp;mut </span>next_join_idx,
             <span class="kw-2">&amp;</span>persists,
             <span class="kw-2">&amp;mut </span>diagnostics,
@@ -1449,7 +1449,7 @@
         <span class="kw">if </span>!diagnostics.is_empty() {
             <span class="prelude-val">Err</span>(diagnostics)
         } <span class="kw">else </span>{
-            eliminate_extra_merges_tees(<span class="kw-2">&amp;mut </span>flat_graph);
+            eliminate_extra_unions_tees(<span class="kw-2">&amp;mut </span>flat_graph);
             <span class="prelude-val">Ok</span>(flat_graph)
         }
     }
@@ -1516,7 +1516,7 @@
     rule: <span class="kw-2">&amp;</span>rust_sitter::Spanned&lt;Rule&gt;,
     flat_graph_builder: <span class="kw-2">&amp;mut </span>FlatGraphBuilder,
     tee_counter: <span class="kw-2">&amp;mut </span>HashMap&lt;String, Counter&gt;,
-    merge_counter: <span class="kw-2">&amp;mut </span>HashMap&lt;String, Counter&gt;,
+    union_counter: <span class="kw-2">&amp;mut </span>HashMap&lt;String, Counter&gt;,
     next_join_idx: <span class="kw-2">&amp;mut </span>Counter,
     persists: <span class="kw-2">&amp;</span>HashSet&lt;String&gt;,
     diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
@@ -1543,13 +1543,13 @@
         get_span,
     );
 
-    <span class="kw">let </span>my_merge_index = merge_counter
+    <span class="kw">let </span>my_union_index = union_counter
         .entry(target.name.clone())
         .or_insert_with(|| <span class="number">0</span>..)
         .next()
-        .expect(<span class="string">&quot;Out of merge indices&quot;</span>);
+        .expect(<span class="string">&quot;Out of union indices&quot;</span>);
 
-    <span class="kw">let </span>my_merge_index_lit = syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_merge_index), Span::call_site());
+    <span class="kw">let </span>my_union_index_lit = syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_union_index), Span::call_site());
 
     <span class="kw">let </span>after_join_and_send: Pipeline = <span class="kw">match </span>rule.rule_type.value {
         RuleType::Sync(<span class="kw">_</span>) =&gt; {
@@ -1557,14 +1557,14 @@
                 <span class="macro">panic!</span>(<span class="string">&quot;Rule must be async to send data to other nodes&quot;</span>)
             }
 
-            <span class="macro">parse_quote_spanned!</span>(get_span(rule.rule_type.span)=&gt; #after_join -&gt; [#my_merge_index_lit] #target_ident)
+            <span class="macro">parse_quote_spanned!</span>(get_span(rule.rule_type.span)=&gt; #after_join -&gt; [#my_union_index_lit] #target_ident)
         }
         RuleType::NextTick(<span class="kw">_</span>) =&gt; {
             <span class="kw">if </span>rule.target.at_node.is_some() {
                 <span class="macro">panic!</span>(<span class="string">&quot;Rule must be async to send data to other nodes&quot;</span>)
             }
 
-            <span class="macro">parse_quote_spanned!</span>(get_span(rule.rule_type.span)=&gt; #after_join -&gt; next_tick() -&gt; [#my_merge_index_lit] #target_ident)
+            <span class="macro">parse_quote_spanned!</span>(get_span(rule.rule_type.span)=&gt; #after_join -&gt; next_tick() -&gt; [#my_union_index_lit] #target_ident)
         }
         RuleType::Async(<span class="kw">_</span>) =&gt; {
             <span class="kw">if </span>rule.target.at_node.is_none() {

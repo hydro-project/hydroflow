@@ -363,14 +363,14 @@
 <span class="kw">use </span><span class="kw">crate</span>::pretty_span::PrettySpan;
 
 <span class="kw">mod </span>di_mul_graph;
-<span class="kw">mod </span>eliminate_extra_merges_tees;
+<span class="kw">mod </span>eliminate_extra_unions_tees;
 <span class="kw">mod </span>flat_graph_builder;
 <span class="kw">mod </span>flat_to_partitioned;
 <span class="kw">mod </span>graph_write;
 <span class="kw">mod </span>hydroflow_graph;
 
 <span class="kw">pub use </span>di_mul_graph::DiMulGraph;
-<span class="kw">pub use </span>eliminate_extra_merges_tees::eliminate_extra_merges_tees;
+<span class="kw">pub use </span>eliminate_extra_unions_tees::eliminate_extra_unions_tees;
 <span class="kw">pub use </span>flat_graph_builder::FlatGraphBuilder;
 <span class="kw">pub use </span>flat_to_partitioned::partition_graph;
 <span class="kw">pub use </span>hydroflow_graph::HydroflowGraph;
@@ -675,7 +675,7 @@
 ) -&gt; (<span class="prelude-ty">Option</span>&lt;(HydroflowGraph, TokenStream)&gt;, Vec&lt;Diagnostic&gt;) {
     <span class="kw">let </span>flat_graph_builder = FlatGraphBuilder::from_hfcode(hf_code);
     <span class="kw">let </span>(<span class="kw-2">mut </span>flat_graph, <span class="kw-2">mut </span>diagnostics) = flat_graph_builder.build();
-    eliminate_extra_merges_tees(<span class="kw-2">&amp;mut </span>flat_graph);
+    eliminate_extra_unions_tees(<span class="kw-2">&amp;mut </span>flat_graph);
     <span class="kw">if </span>!diagnostics.iter().any(Diagnostic::is_error) {
         <span class="kw">match </span>partition_graph(flat_graph) {
             <span class="prelude-val">Ok</span>(part_graph) =&gt; {
