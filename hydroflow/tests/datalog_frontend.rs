@@ -830,7 +830,7 @@ fn test_aggregations_and_comments() {
 }
 
 #[multiplatform_test]
-fn test_aggregations_group_by_expr() {
+fn test_aggregations_fold_keyed_expr() {
     let (ints_send, ints) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 

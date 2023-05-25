@@ -91,7 +91,7 @@ const BATCH_C: &[Employee] = &[
 /// Uses the core API.
 /// SQL: SELECT department FROM employees WHERE 20_000 <= SUM(salary) GROUP BY department
 #[multiplatform_test]
-fn group_by_monotonic_core() {
+fn fold_keyed_monotonic_core() {
     let mut hf = Hydroflow::new();
 
     let (source_send, source_recv) = hf.make_edge::<_, VecHandoff<Employee>>("source handoff");
@@ -146,7 +146,7 @@ fn group_by_monotonic_core() {
 // /// SQL: SELECT department FROM employees WHERE 20_000 <= SUM(salary) GROUP BY department
 // #[test]
 // #[multiplatform_test]
-// fn group_by_monotonic_surface() {
+// fn fold_keyed_monotonic_surface() {
 //     use hydroflow::builder::prelude::*;
 
 //     let mut hf_builder = HydroflowBuilder::new();
@@ -199,7 +199,7 @@ fn group_by_monotonic_core() {
 // /// SQL (per batch): SELECT department, name, salary FROM employees WHERE salary = MAX(salary) GROUP BY department
 // #[test]
 // #[multiplatform_test]
-// fn group_by_nonmon_surface() {
+// fn fold_keyed_nonmon_surface() {
 //     use hydroflow::builder::prelude::*;
 
 //     let mut hf_builder = HydroflowBuilder::new();

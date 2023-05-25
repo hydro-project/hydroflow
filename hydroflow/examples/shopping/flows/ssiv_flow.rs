@@ -33,7 +33,7 @@ pub(crate) async fn ssiv_flow(
         source_iter(client_class) -> [1]lookup_class;
         lookup_class = join()
           -> map(|(client, (li, class))| ((client, class), li))
-          -> group_by(SSIV_BOT, ssiv_merge)
+          -> fold_keyed(SSIV_BOT, ssiv_merge)
           -> map(|m| (m, out_addr)) -> dest_sink_serde(out);
     }
 }

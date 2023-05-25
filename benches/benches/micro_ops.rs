@@ -348,7 +348,7 @@ fn ops(c: &mut Criterion) {
 
                 hydroflow_syntax! {
                     source_iter(black_box(input0))
-                        -> group_by(|| 0, |x: &mut usize, n: usize| {
+                        -> fold_keyed(|| 0, |x: &mut usize, n: usize| {
                             *x += n;
                         })
                         -> for_each(|x| { black_box(x); });

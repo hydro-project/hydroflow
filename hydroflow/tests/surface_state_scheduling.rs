@@ -103,11 +103,11 @@ pub fn test_reduce_static() {
 }
 
 #[multiplatform_test]
-pub fn test_group_by_tick() {
+pub fn test_fold_keyed_tick() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(char, usize)>();
 
     let mut df = hydroflow_syntax! {
-        source_iter([('a', 1), ('a', 2)]) -> group_by::<'tick>(|| 0, |acc: &mut usize, item| { *acc += item; }) -> for_each(|v| out_send.send(v).unwrap());
+        source_iter([('a', 1), ('a', 2)]) -> fold_keyed::<'tick>(|| 0, |acc: &mut usize, item| { *acc += item; }) -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
     df.run_tick();
@@ -123,11 +123,11 @@ pub fn test_group_by_tick() {
 }
 
 #[multiplatform_test]
-pub fn test_group_by_static() {
+pub fn test_fold_keyed_static() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(char, usize)>();
 
     let mut df = hydroflow_syntax! {
-        source_iter([('a', 1), ('a', 2)]) -> group_by::<'static>(|| 0, |acc: &mut usize, item| { *acc += item; }) -> for_each(|v| out_send.send(v).unwrap());
+        source_iter([('a', 1), ('a', 2)]) -> fold_keyed::<'static>(|| 0, |acc: &mut usize, item| { *acc += item; }) -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
     df.run_tick();

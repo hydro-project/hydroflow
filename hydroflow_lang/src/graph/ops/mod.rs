@@ -240,7 +240,6 @@ declare_ops![
     flatten::FLATTEN,
     fold::FOLD,
     for_each::FOR_EACH,
-    group_by::GROUP_BY,
     identity::IDENTITY,
     initialize::INITIALIZE,
     inspect::INSPECT,
