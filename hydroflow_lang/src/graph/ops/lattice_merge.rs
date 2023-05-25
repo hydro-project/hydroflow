@@ -1,20 +1,20 @@
-use crate::graph::ops::OperatorWriteOutput;
+use quote::quote_spanned;
+use syn::parse_quote_spanned;
+use syn::spanned::Spanned;
 
 use super::{
     DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorConstraints,
     OperatorInstance, WriteContextArgs, RANGE_1,
 };
-
-use quote::quote_spanned;
-use syn::{parse_quote_spanned, spanned::Spanned};
+use crate::graph::ops::OperatorWriteOutput;
 
 /// > 1 input stream, 1 output stream
 ///
-/// > Generic parameters: A [`LatticeRepr`](https://hydro-project.github.io/hydroflow/doc/hydroflow/lang/lattice/trait.LatticeRepr.html)
+/// > Generic parameters: A `Lattice` type, must implement [`Merge<Self>`](https://hydro-project.github.io/hydroflow/doc/lattices/trait.Merge.html)
 /// type.
 ///
-/// A specialized operator for merging lattices together into a accumulated value. Like [`fold()`](#fold)
-/// but specialized for lattice types. `lattice_merge::<MyLattice>()` is equivalent to `fold(Default::default, hydroflow::lattices::Merge::merge_owned)`.
+/// A specialized operator for merging lattices together into a accumulated value. Like [`reduce()`](#reduce)
+/// but specialized for lattice types. `lattice_merge::<MyLattice>()` is equivalent to `reduce(hydroflow::lattices::Merge::merge_owned)`.
 ///
 /// `lattice_merge` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
@@ -65,10 +65,10 @@ pub const LATTICE_MERGE: OperatorConstraints = OperatorConstraints {
         let input = &inputs[0];
 
         assert_eq!(1, type_args.len());
-        let lat_repr = &type_args[0];
+        let lat_type = &type_args[0];
 
-        let arguments = parse_quote_spanned! {lat_repr.span()=> // Uses `lat_repr.span()`!
-            ::std::default::Default::default(), #root::lattices::Merge::<#lat_repr>::merge_owned
+        let arguments = parse_quote_spanned! {lat_type.span()=> // Uses `lat_type.span()`!
+            #root::lattices::Merge::<#lat_type>::merge_owned
         };
         let wc = WriteContextArgs {
             op_inst: &OperatorInstance {
@@ -82,20 +82,20 @@ pub const LATTICE_MERGE: OperatorConstraints = OperatorConstraints {
             write_prologue,
             write_iterator,
             write_iterator_after,
-        } = (super::fold::FOLD.write_fn)(&wc, diagnostics)?;
-        let write_iterator = quote_spanned! {lat_repr.span()=> // Uses `lat_repr.span()`!
+        } = (super::reduce::REDUCE.write_fn)(&wc, diagnostics)?;
+        let write_iterator = quote_spanned! {lat_type.span()=> // Uses `lat_type.span()`!
             let #input = {
-                /// Improve errors with `#lat_repr` trait bound.
+                /// Improve errors with `#lat_type` trait bound.
                 #[inline(always)]
-                fn check_inputs<Lr>(
-                    input: impl Iterator<Item = Lr>
-                ) -> impl Iterator<Item = Lr>
+                fn check_inputs<Lat>(
+                    input: impl ::std::iter::Iterator<Item = Lat>
+                ) -> impl ::std::iter::Iterator<Item = Lat>
                 where
-                    Lr: #root::lattices::Merge<Lr>,
+                    Lat: #root::lattices::Merge<Lat>,
                 {
                     input
                 }
-                check_inputs::<#lat_repr>(#input)
+                check_inputs::<#lat_type>(#input)
             };
             #write_iterator
         };
