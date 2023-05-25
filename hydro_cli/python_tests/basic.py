@@ -12,6 +12,7 @@ async def test_connect_to_self():
     program = deployment.HydroflowCrate(
         src=str((Path(__file__).parent.parent.parent / "hydro_cli_examples").absolute()),
         example="empty_program",
+        profile="dev",
         on=localhost_machine
     )
 
@@ -33,6 +34,7 @@ async def test_python_sender():
     receiver = deployment.HydroflowCrate(
         src=str((Path(__file__).parent.parent.parent / "hydro_cli_examples").absolute()),
         example="stdout_receiver",
+        profile="dev",
         on=localhost_machine
     )
 
@@ -71,6 +73,7 @@ async def test_python_receiver():
     sender = deployment.HydroflowCrate(
         src=str((Path(__file__).parent.parent.parent / "hydro_cli_examples").absolute()),
         example="dedalus_sender",
+        profile="dev",
         args=[json.dumps(([0], 123))],
         on=localhost_machine
     )
