@@ -66,6 +66,18 @@ where
 impl<K, V> MonotonicMap<K, V>
 where
     K: PartialOrd,
+    V: Default,
+{
+    /// Gets a mutable reference to the inner value. If `key` is strictly later than the existing
+    /// key, the value will be reset to `Default::default`.
+    pub fn get_mut_default(&mut self, key: K) -> &mut V {
+        self.get_mut_with(key, Default::default)
+    }
+}
+
+impl<K, V> MonotonicMap<K, V>
+where
+    K: PartialOrd,
     V: Clear,
 {
     /// Gets a mutable reference to the inner value. If `key` is strictly later than the existing
