@@ -8,7 +8,7 @@ pub fn test_zip_basic() {
         hydroflow::util::unbounded_channel::<(usize, &'static str)>();
 
     let mut df = hydroflow_syntax! {
-        source_iter(0..10) -> [0]my_zip;
+        source_iter(0..5) -> [0]my_zip;
         source_iter(["Hello", "World"]) -> [1]my_zip;
         my_zip = zip() -> for_each(|pair| result_send.send(pair).unwrap());
     };
@@ -48,6 +48,33 @@ pub fn test_zip_loop() {
             ('r', 3),
             ('l', 0),
             ('d', 1)
+        ],
+        &*result
+    );
+}
+
+#[multiplatform_test]
+pub fn test_zip_longest_basic() {
+    use hydroflow::itertools::EitherOrBoth::{self, *};
+
+    let (result_send, mut result_recv) =
+        hydroflow::util::unbounded_channel::<EitherOrBoth<usize, &'static str>>();
+
+    let mut df = hydroflow_syntax! {
+        source_iter(0..5) -> [0]my_zip_longest;
+        source_iter(["Hello", "World"]) -> [1]my_zip_longest;
+        my_zip_longest = zip_longest() -> for_each(|pair| result_send.send(pair).unwrap());
+    };
+    df.run_available();
+
+    let result: Vec<_> = collect_ready(&mut result_recv);
+    assert_eq!(
+        &[
+            Both(0, "Hello"),
+            Both(1, "World"),
+            Left(2),
+            Left(3),
+            Left(4)
         ],
         &*result
     );
