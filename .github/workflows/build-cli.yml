@@ -7,7 +7,7 @@ on:
     types: [published]
 
 env:
-  PACKAGE_NAME: hydro_cli
+  PACKAGE_NAME: hydro_deploy
   PYTHON_VERSION: "3.7" # to build abi3 wheels
 
 # based on Ruff's CI

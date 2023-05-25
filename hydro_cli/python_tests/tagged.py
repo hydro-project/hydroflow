@@ -22,6 +22,7 @@ async def test_server_sink():
     receiver = deployment.HydroflowCrate(
         src=str((Path(__file__).parent.parent.parent / "hydro_cli_examples").absolute()),
         example="tagged_stdout_receiver",
+        profile="dev",
         on=localhost_machine
     )
 
@@ -58,6 +59,7 @@ async def test_client_sink_demux():
     sender0 = deployment.HydroflowCrate(
         src=str((Path(__file__).parent.parent.parent / "hydro_cli_examples").absolute()),
         example="dedalus_sender",
+        profile="dev",
         args=[json.dumps(([0], 123))],
         on=localhost_machine
     )
@@ -65,6 +67,7 @@ async def test_client_sink_demux():
     sender1 = deployment.HydroflowCrate(
         src=str((Path(__file__).parent.parent.parent / "hydro_cli_examples").absolute()),
         example="dedalus_sender",
+        profile="dev",
         args=[json.dumps(([0], 124))],
         on=localhost_machine
     )
@@ -72,6 +75,7 @@ async def test_client_sink_demux():
     receiver = deployment.HydroflowCrate(
         src=str((Path(__file__).parent.parent.parent / "hydro_cli_examples").absolute()),
         example="tagged_stdout_receiver",
+        profile="dev",
         on=localhost_machine.client_only()
     )
 
