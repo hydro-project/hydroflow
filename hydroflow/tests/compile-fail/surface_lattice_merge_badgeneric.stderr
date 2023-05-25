@@ -24,3 +24,42 @@ note: required by a bound in `check_inputs`
 8 | |     };
   | |_____^ required by this bound in `check_inputs`
   = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `usize: hydroflow::lattices::Merge<usize>` is not satisfied
+ --> tests/compile-fail/surface_lattice_merge_badgeneric.rs:5:9
+  |
+5 | /         source_iter([1,2,3,4,5])
+6 | |             -> lattice_merge::<'static, usize>()
+  | |________________________________________________^ the trait `hydroflow::lattices::Merge<usize>` is not implemented for `usize`
+  |
+  = help: the following other types implement trait `hydroflow::lattices::Merge<Other>`:
+            <Bottom<Inner> as hydroflow::lattices::Merge<Bottom<Other>>>
+            <DomPair<KeySelf, ValSelf> as hydroflow::lattices::Merge<DomPair<KeyOther, ValOther>>>
+            <Fake<T> as hydroflow::lattices::Merge<Fake<O>>>
+            <MapUnion<MapSelf> as hydroflow::lattices::Merge<MapUnion<MapOther>>>
+            <Max<T> as hydroflow::lattices::Merge<Max<T>>>
+            <Min<T> as hydroflow::lattices::Merge<Min<T>>>
+            <Pair<LatASelf, LatBSelf> as hydroflow::lattices::Merge<Pair<LatAOther, LatBOther>>>
+            <SetUnion<SetSelf> as hydroflow::lattices::Merge<SetUnion<SetOther>>>
+
+error[E0277]: the trait bound `usize: hydroflow::lattices::Merge<usize>` is not satisfied
+ --> tests/compile-fail/surface_lattice_merge_badgeneric.rs:4:18
+  |
+4 |       let mut df = hydroflow_syntax! {
+  |  __________________^
+5 | |         source_iter([1,2,3,4,5])
+6 | |             -> lattice_merge::<'static, usize>()
+7 | |             -> for_each(|x| println!("Least upper bound: {:?}", x));
+8 | |     };
+  | |_____^ the trait `hydroflow::lattices::Merge<usize>` is not implemented for `usize`
+  |
+  = help: the following other types implement trait `hydroflow::lattices::Merge<Other>`:
+            <Bottom<Inner> as hydroflow::lattices::Merge<Bottom<Other>>>
+            <DomPair<KeySelf, ValSelf> as hydroflow::lattices::Merge<DomPair<KeyOther, ValOther>>>
+            <Fake<T> as hydroflow::lattices::Merge<Fake<O>>>
+            <MapUnion<MapSelf> as hydroflow::lattices::Merge<MapUnion<MapOther>>>
+            <Max<T> as hydroflow::lattices::Merge<Max<T>>>
+            <Min<T> as hydroflow::lattices::Merge<Min<T>>>
+            <Pair<LatASelf, LatBSelf> as hydroflow::lattices::Merge<Pair<LatAOther, LatBOther>>>
+            <SetUnion<SetSelf> as hydroflow::lattices::Merge<SetUnion<SetOther>>>
+  = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
