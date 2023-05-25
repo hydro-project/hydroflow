@@ -12,7 +12,13 @@ use tokio::sync::OnceCell;
 use crate::core::progress::ProgressTracker;
 use crate::core::HostTargetType;
 
-type CacheKey = (PathBuf, Option<String>, HostTargetType, Option<Vec<String>>);
+type CacheKey = (
+    PathBuf,
+    Option<String>,
+    Option<String>,
+    HostTargetType,
+    Option<Vec<String>>,
+);
 
 pub type BuiltCrate = Arc<(String, Vec<u8>)>;
 
@@ -22,10 +28,17 @@ static BUILDS: Lazy<Mutex<HashMap<CacheKey, Arc<OnceCell<BuiltCrate>>>>> =
 pub async fn build_crate(
     src: PathBuf,
     example: Option<String>,
+    profile: Option<String>,
     target_type: HostTargetType,
     features: Option<Vec<String>>,
 ) -> Result<BuiltCrate> {
-    let key = (src.clone(), example.clone(), target_type, features.clone());
+    let key = (
+        src.clone(),
+        example.clone(),
+        profile.clone(),
+        target_type,
+        features.clone(),
+    );
     let unit_of_work = {
         let mut builds = BUILDS.lock().unwrap();
         builds.entry(key).or_default().clone()
@@ -37,7 +50,11 @@ pub async fn build_crate(
             ProgressTracker::rich_leaf("build".to_string(), move |_, set_msg| async move {
                 tokio::task::spawn_blocking(move || {
                     let mut command = Command::new("cargo");
-                    command.args(["build".to_string(), "--release".to_string()]);
+                    command.args([
+                        "build".to_string(),
+                        "--profile".to_string(),
+                        profile.unwrap_or("release".to_string()),
+                    ]);
 
                     if let Some(example) = example.as_ref() {
                         command.args(["--example", example]);
