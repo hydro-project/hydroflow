@@ -336,7 +336,7 @@ fn ops(c: &mut Criterion) {
         })
     });
 
-    // TODO(mingwei): rename to `keyed_fold`
+    // TODO(mingwei): rename to `fold_keyed`
     c.bench_function("micro/ops/group_by", |b| {
         b.iter_batched_ref(
             || {
