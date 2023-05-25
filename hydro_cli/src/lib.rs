@@ -477,7 +477,7 @@ impl CustomClientPort {
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
             Ok(ServerPort {
-                underlying: Some(underlying.server_port().await),
+                underlying: underlying.server_port().await,
             })
         })
     }
@@ -685,26 +685,27 @@ fn null(py: Python<'_>) -> PyResult<Py<PyAny>> {
 
 #[pyclass]
 struct ServerPort {
-    underlying: Option<ServerOrBound>,
+    underlying: hydroflow_cli_integration::ServerPort,
 }
 
 #[pymethods]
 impl ServerPort {
     fn json(&self, py: Python<'_>) -> Py<PyAny> {
-        if let ServerOrBound::Server(server) = self.underlying.as_ref().unwrap() {
-            pythonize(py, &server).unwrap()
-        } else {
-            panic!()
-        }
+        pythonize(py, &self.underlying).unwrap()
     }
 
     #[allow(clippy::wrong_self_convention)]
     fn into_source<'p>(&mut self, py: Python<'p>) -> PyResult<&'p PyAny> {
-        let underlying = self.underlying.take().unwrap();
+        let runtime_read = TOKIO_RUNTIME.read().unwrap();
+        let guard = runtime_read.as_ref().unwrap().enter();
+        let realized = ServerOrBound::Server((&self.underlying).into());
+        drop(guard);
+        drop(runtime_read);
+
         interruptible_future_to_py(py, async move {
             Ok(PythonStream {
                 underlying: Arc::new(RwLock::new(
-                    underlying.connect::<ConnectedBidi>().await.into_source(),
+                    realized.connect::<ConnectedBidi>().await.into_source(),
                 )),
             })
         })
@@ -712,12 +713,17 @@ impl ServerPort {
 
     #[allow(clippy::wrong_self_convention)]
     fn into_sink<'p>(&mut self, py: Python<'p>) -> PyResult<&'p PyAny> {
-        let underlying = self.underlying.take().unwrap();
-        interruptible_future_to_py(py, async move {
-            let connected = underlying.connect::<ConnectedBidi>().await.into_sink();
+        let runtime_read = TOKIO_RUNTIME.read().unwrap();
+        let guard = runtime_read.as_ref().unwrap().enter();
+        let realized = ServerOrBound::Server((&self.underlying).into());
+        drop(guard);
+        drop(runtime_read);
 
+        interruptible_future_to_py(py, async move {
             Ok(PythonSink {
-                underlying: Arc::new(RwLock::new(connected)),
+                underlying: Arc::new(RwLock::new(
+                    realized.connect::<ConnectedBidi>().await.into_sink(),
+                )),
             })
         })
     }
