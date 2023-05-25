@@ -273,6 +273,7 @@ declare_ops![
     unique::UNIQUE,
     unzip::UNZIP,
     zip::ZIP,
+    zip_longest::ZIP_LONGEST,
 ];
 
 pub fn operator_lookup() -> &'static HashMap<&'static str, &'static OperatorConstraints> {
