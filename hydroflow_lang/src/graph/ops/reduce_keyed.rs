@@ -21,18 +21,18 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 ///
 /// > Note: The closures have access to the [`context` object](surface_flows.md#the-context-object).
 ///
-/// `keyed_reduce` can also be provided with one generic lifetime persistence argument, either
+/// `reduce_keyed` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
 /// within the same tick. With `'static`, values will be remembered across ticks and will be
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
 /// defaults to `'static`.
 ///
-/// `keyed_reduce` can also be provided with two type arguments, the key and value type. This is
+/// `reduce_keyed` can also be provided with two type arguments, the key and value type. This is
 /// required when using `'static` persistence if the compiler cannot infer the types.
 ///
 /// ```hydroflow
 /// source_iter([("toy", 1), ("toy", 2), ("shoe", 11), ("shoe", 35), ("haberdashery", 7)])
-///     -> keyed_reduce(|old: &mut u32, val: u32| *old += val)
+///     -> reduce_keyed(|old: &mut u32, val: u32| *old += val)
 ///     -> for_each(|(k, v)| println!("Total for group {} is {}", k, v));
 /// ```
 ///
@@ -41,7 +41,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
 /// let mut flow = hydroflow::hydroflow_syntax! {
 ///     source_stream(input_recv)
-///         -> keyed_reduce::<'tick, &str>(|old: &mut _, val| *old = std::cmp::max(*old, val))
+///         -> reduce_keyed::<'tick, &str>(|old: &mut _, val| *old = std::cmp::max(*old, val))
 ///         -> for_each(|(k, v)| println!("({:?}, {:?})", k, v));
 /// };
 ///
@@ -56,8 +56,8 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// // ("hello", "palo alto, ")
 /// ```
 #[hydroflow_internalmacro::operator_docgen]
-pub const KEYED_REDUCE: OperatorConstraints = OperatorConstraints {
-    name: "keyed_reduce",
+pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
+    name: "reduce_keyed",
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

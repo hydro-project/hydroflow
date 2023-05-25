@@ -245,7 +245,7 @@ declare_ops![
     inspect::INSPECT,
     join::JOIN,
     fold_keyed::FOLD_KEYED,
-    reduce_keyed::KEYED_REDUCE,
+    reduce_keyed::REDUCE_KEYED,
     lattice_batch::LATTICE_BATCH,
     lattice_join::LATTICE_JOIN,
     lattice_merge::LATTICE_MERGE,

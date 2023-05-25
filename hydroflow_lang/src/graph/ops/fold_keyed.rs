@@ -10,7 +10,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// The output will have one tuple for each distinct `K`, with an accumulated value of type `V2`.
 ///
 /// If the input and output value types are the same and do not require initialization then use
-/// [`keyed_reduce`](#keyed_reduce).
+/// [`reduce_keyed`](#reduce_keyed).
 ///
 /// > Arguments: two Rust closures. The first generates an initial value per group. The second
 /// itself takes two arguments: an 'accumulator', and an element. The second closure returns the
