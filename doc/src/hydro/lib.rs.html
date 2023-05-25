@@ -828,17 +828,9 @@
 <a href="#828" id="828">828</a>
 <a href="#829" id="829">829</a>
 <a href="#830" id="830">830</a>
-<a href="#831" id="831">831</a>
-<a href="#832" id="832">832</a>
-<a href="#833" id="833">833</a>
-<a href="#834" id="834">834</a>
-<a href="#835" id="835">835</a>
-<a href="#836" id="836">836</a>
-<a href="#837" id="837">837</a>
-<a href="#838" id="838">838</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::pin::Pin;
-<span class="kw">use </span>std::sync::{Arc, Weak};
+<span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>async_channel::Receiver;
 <span class="kw">use </span>bytes::Bytes;
@@ -860,15 +852,13 @@
 <span class="kw">mod </span>cli;
 <span class="kw">pub mod </span>core;
 
-<span class="comment">// crashes can occur if the runtime is not dropped with Python finalizes
-// this ensures that when the Python runtime is dropped, the Tokio runtime is dropped
-</span><span class="attr">#[pyclass]
-</span><span class="kw">struct </span>TokioRuntimeContainer {
-    _runtime: Arc&lt;tokio::runtime::Runtime&gt;,
-}
+<span class="kw">static </span>TOKIO_RUNTIME: std::sync::RwLock&lt;<span class="prelude-ty">Option</span>&lt;tokio::runtime::Runtime&gt;&gt; =
+    std::sync::RwLock::new(<span class="prelude-val">None</span>);
 
-<span class="kw">static </span>TOKIO_RUNTIME: once_cell::sync::OnceCell&lt;Weak&lt;tokio::runtime::Runtime&gt;&gt; =
-    once_cell::sync::OnceCell::new();
+<span class="attr">#[pyfunction]
+</span><span class="kw">fn </span>cleanup_runtime() {
+    drop(TOKIO_RUNTIME.write().unwrap().take());
+}
 
 <span class="kw">struct </span>TokioRuntime {}
 
@@ -880,16 +870,14 @@
     <span class="kw">where
         </span>F: Future&lt;Output = ()&gt; + Send + <span class="lifetime">&#39;static</span>,
     {
-        <span class="kw">let </span>handle = TOKIO_RUNTIME
-            .get()
+        TOKIO_RUNTIME
+            .read()
             .unwrap()
-            .upgrade()
+            .as_ref()
             .unwrap()
-            .handle()
-            .clone();
-        handle.spawn(<span class="kw">async move </span>{
-            fut.<span class="kw">await</span>;
-        })
+            .spawn(<span class="kw">async move </span>{
+                fut.<span class="kw">await</span>;
+            })
     }
 }
 
@@ -1079,6 +1067,7 @@
         src: String,
         on: <span class="kw-2">&amp;</span>Host,
         example: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
         features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
@@ -1090,6 +1079,7 @@
                 src.into(),
                 on.underlying.clone(),
                 example,
+                profile,
                 features,
                 args,
                 display_id,
@@ -1635,15 +1625,9 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         )
         .unwrap();
 
-    <span class="kw">let </span>runtime_arc = Arc::new(tokio::runtime::Runtime::new().unwrap());
-    module.add(
-        <span class="string">&quot;_internal_tokio_runtime&quot;</span>,
-        TokioRuntimeContainer {
-            _runtime: runtime_arc.clone(),
-        },
-    )<span class="question-mark">?</span>;
-    TOKIO_RUNTIME.set(Arc::downgrade(<span class="kw-2">&amp;</span>runtime_arc)).unwrap();
-    drop(runtime_arc);
+    <span class="kw-2">*</span>TOKIO_RUNTIME.write().unwrap() = <span class="prelude-val">Some</span>(tokio::runtime::Runtime::new().unwrap());
+    <span class="kw">let </span>atexit = PyModule::import(py, <span class="string">&quot;atexit&quot;</span>)<span class="question-mark">?</span>;
+    atexit.call_method1(<span class="string">&quot;register&quot;</span>, (<span class="macro">wrap_pyfunction!</span>(cleanup_runtime, module)<span class="question-mark">?</span>,))<span class="question-mark">?</span>;
 
     module.add(<span class="string">&quot;AnyhowError&quot;</span>, py.get_type::&lt;AnyhowError&gt;())<span class="question-mark">?</span>;
     module.add_class::&lt;AnyhowWrapper&gt;()<span class="question-mark">?</span>;

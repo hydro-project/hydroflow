@@ -1754,7 +1754,7 @@
     get_span: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn((usize, usize)) -&gt; Span,
 ) -&gt; Pipeline {
     <span class="kw">let </span><span class="kw-2">mut </span>aggregations = <span class="macro">vec!</span>[];
-    <span class="kw">let </span><span class="kw-2">mut </span>group_by_exprs = <span class="macro">vec!</span>[];
+    <span class="kw">let </span><span class="kw-2">mut </span>fold_keyed_exprs = <span class="macro">vec!</span>[];
     <span class="kw">let </span><span class="kw-2">mut </span>agg_exprs = <span class="macro">vec!</span>[];
 
     <span class="kw">let </span><span class="kw-2">mut </span>field_use_count = HashMap::new();
@@ -1816,7 +1816,7 @@
 
             <span class="kw">match </span><span class="kw-2">&amp;</span>field.value {
                 TargetExpr::Expr(<span class="kw">_</span>) =&gt; {
-                    group_by_exprs.push(expr);
+                    fold_keyed_exprs.push(expr);
                 }
                 TargetExpr::Aggregation(a) =&gt; {
                     aggregations.push(a.clone());
@@ -1862,25 +1862,25 @@
         }
     }
 
-    <span class="kw">let </span>group_by_input_type =
-        repeat_tuple::&lt;syn::Type, syn::Type&gt;(|| <span class="macro">parse_quote!</span>(<span class="kw">_</span>), group_by_exprs.len());
+    <span class="kw">let </span>fold_keyed_input_type =
+        repeat_tuple::&lt;syn::Type, syn::Type&gt;(|| <span class="macro">parse_quote!</span>(<span class="kw">_</span>), fold_keyed_exprs.len());
 
     <span class="kw">let </span>after_group_pipeline: Pipeline = <span class="kw">if </span>has_index {
         <span class="kw">if </span>out_expanded.persisted &amp;&amp; agg_exprs.is_empty() {
             <span class="comment">// if there is an aggregation, we will use a group which replays so we should use `&#39;tick` instead
-            </span><span class="macro">parse_quote!</span>(enumerate::&lt;<span class="lifetime">&#39;static</span>&gt;() -&gt; map(|(i, (g, a)): (<span class="kw">_</span>, (#group_by_input_type, <span class="kw">_</span>))| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
+            </span><span class="macro">parse_quote!</span>(enumerate::&lt;<span class="lifetime">&#39;static</span>&gt;() -&gt; map(|(i, (g, a)): (<span class="kw">_</span>, (#fold_keyed_input_type, <span class="kw">_</span>))| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
         } <span class="kw">else </span>{
-            <span class="macro">parse_quote!</span>(enumerate::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; map(|(i, (g, a)): (<span class="kw">_</span>, (#group_by_input_type, <span class="kw">_</span>))| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
+            <span class="macro">parse_quote!</span>(enumerate::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; map(|(i, (g, a)): (<span class="kw">_</span>, (#fold_keyed_input_type, <span class="kw">_</span>))| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
         }
     } <span class="kw">else </span>{
-        <span class="macro">parse_quote!</span>(map(|(g, a): (#group_by_input_type, <span class="kw">_</span>)| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
+        <span class="macro">parse_quote!</span>(map(|(g, a): (#fold_keyed_input_type, <span class="kw">_</span>)| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
     };
 
     <span class="kw">if </span>agg_exprs.is_empty() {
         <span class="kw">if </span>out_expanded.persisted &amp;&amp; !consumer_is_persist {
-            <span class="macro">parse_quote!</span>(map(|row: #flattened_tuple_type| ((#(#group_by_exprs, )<span class="kw-2">*</span>), ())) -&gt; #after_group_pipeline -&gt; persist())
+            <span class="macro">parse_quote!</span>(map(|row: #flattened_tuple_type| ((#(#fold_keyed_exprs, )<span class="kw-2">*</span>), ())) -&gt; #after_group_pipeline -&gt; persist())
         } <span class="kw">else </span>{
-            <span class="macro">parse_quote!</span>(map(|row: #flattened_tuple_type| ((#(#group_by_exprs, )<span class="kw-2">*</span>), ())) -&gt; #after_group_pipeline)
+            <span class="macro">parse_quote!</span>(map(|row: #flattened_tuple_type| ((#(#fold_keyed_exprs, )<span class="kw-2">*</span>), ())) -&gt; #after_group_pipeline)
         }
     } <span class="kw">else </span>{
         <span class="kw">let </span>agg_initial =
@@ -1891,7 +1891,7 @@
         <span class="kw">let </span>agg_type: syn::Type =
             repeat_tuple::&lt;syn::Type, syn::Type&gt;(|| <span class="macro">parse_quote!</span>(<span class="prelude-ty">Option</span>&lt;<span class="kw">_</span>&gt;), agg_exprs.len());
 
-        <span class="kw">let </span>group_by_stmts: Vec&lt;syn::Stmt&gt; = aggregations
+        <span class="kw">let </span>fold_keyed_stmts: Vec&lt;syn::Stmt&gt; = aggregations
             .iter()
             .enumerate()
             .map(|(i, agg)| {
@@ -1957,19 +1957,19 @@
             })
             .collect();
 
-        <span class="kw">let </span>pre_group_by_map: syn::Expr = <span class="macro">parse_quote!</span>(|row: #flattened_tuple_type| ((#(#group_by_exprs, )<span class="kw-2">*</span>), (#(#agg_exprs, )<span class="kw-2">*</span>)));
+        <span class="kw">let </span>pre_fold_keyed_map: syn::Expr = <span class="macro">parse_quote!</span>(|row: #flattened_tuple_type| ((#(#fold_keyed_exprs, )<span class="kw-2">*</span>), (#(#agg_exprs, )<span class="kw-2">*</span>)));
 
-        <span class="kw">let </span>group_by_fn: syn::Expr = <span class="macro">parse_quote!</span>(|old: <span class="kw-2">&amp;mut </span>#agg_type, val: #agg_input_type| {
-            #(#group_by_stmts)*
+        <span class="kw">let </span>fold_keyed_fn: syn::Expr = <span class="macro">parse_quote!</span>(|old: <span class="kw-2">&amp;mut </span>#agg_type, val: #agg_input_type| {
+            #(#fold_keyed_stmts)*
         });
 
         <span class="kw">if </span>out_expanded.persisted {
             <span class="macro">parse_quote! </span>{
-                map(#pre_group_by_map) -&gt; group_by::&lt;<span class="lifetime">&#39;static</span>, #group_by_input_type, #agg_type&gt;(|| #agg_initial, #group_by_fn) -&gt; #after_group_pipeline
+                map(#pre_fold_keyed_map) -&gt; fold_keyed::&lt;<span class="lifetime">&#39;static</span>, #fold_keyed_input_type, #agg_type&gt;(|| #agg_initial, #fold_keyed_fn) -&gt; #after_group_pipeline
             }
         } <span class="kw">else </span>{
             <span class="macro">parse_quote! </span>{
-                map(#pre_group_by_map) -&gt; group_by::&lt;<span class="lifetime">&#39;tick</span>, #group_by_input_type, #agg_type&gt;(|| #agg_initial, #group_by_fn) -&gt; #after_group_pipeline
+                map(#pre_fold_keyed_map) -&gt; fold_keyed::&lt;<span class="lifetime">&#39;tick</span>, #fold_keyed_input_type, #agg_type&gt;(|| #agg_initial, #fold_keyed_fn) -&gt; #after_group_pipeline
             }
         }
     }
@@ -2211,7 +2211,7 @@
     }
 
     <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_aggregations_group_by_expr() {
+    </span><span class="kw">fn </span>test_aggregations_fold_keyed_expr() {
         <span class="macro">test_snapshots!</span>(
             <span class="string">r#&quot;
             .input ints `source_stream(ints)`

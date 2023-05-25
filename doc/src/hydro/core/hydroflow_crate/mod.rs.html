@@ -329,6 +329,11 @@
 <a href="#329" id="329">329</a>
 <a href="#330" id="330">330</a>
 <a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
@@ -356,6 +361,7 @@
     src: PathBuf,
     on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
     example: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
     features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
@@ -386,6 +392,7 @@
         src: PathBuf,
         on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
         example: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
         features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
@@ -396,6 +403,7 @@
             src,
             on,
             example,
+            profile,
             features,
             args,
             display_id,
@@ -493,11 +501,13 @@
         <span class="kw">let </span>example_cloned = <span class="self">self</span>.example.clone();
         <span class="kw">let </span>features_cloned = <span class="self">self</span>.features.clone();
         <span class="kw">let </span>host = <span class="self">self</span>.on.clone();
+        <span class="kw">let </span>profile_cloned = <span class="self">self</span>.profile.clone();
         <span class="kw">let </span>target_type = host.try_read().unwrap().target_type();
 
         tokio::task::spawn(build_crate(
             src_cloned,
             example_cloned,
+            profile_cloned,
             target_type,
             features_cloned,
         ))
