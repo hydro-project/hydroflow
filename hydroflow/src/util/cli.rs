@@ -64,7 +64,7 @@ pub async fn init() -> HydroCLI {
 
     let mut all_connected = HashMap::new();
     for (name, defn) in connection_defns {
-        all_connected.insert(name, ServerOrBound::Server(defn));
+        all_connected.insert(name, ServerOrBound::Server((&defn).into()));
     }
 
     for (name, defn) in binds {

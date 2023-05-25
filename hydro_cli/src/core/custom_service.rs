@@ -4,7 +4,7 @@ use std::sync::{Arc, Weak};
 
 use anyhow::{bail, Result};
 use async_trait::async_trait;
-use hydroflow_cli_integration::ServerOrBound;
+use hydroflow_cli_integration::ServerPort;
 use tokio::sync::RwLock;
 
 use super::hydroflow_crate::ports::{
@@ -85,14 +85,12 @@ impl CustomClientPort {
         }
     }
 
-    pub async fn server_port(&self) -> ServerOrBound {
-        ServerOrBound::Server(
-            self.client_port
-                .as_ref()
-                .unwrap()
-                .load_instantiated(&|p| p)
-                .await,
-        )
+    pub async fn server_port(&self) -> ServerPort {
+        self.client_port
+            .as_ref()
+            .unwrap()
+            .load_instantiated(&|p| p)
+            .await
     }
 }
 
