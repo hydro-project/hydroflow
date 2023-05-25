@@ -18,7 +18,7 @@ pub(crate) fn rga_adjacency(
         // adjacency(parent:Timestamp, kids:VecDeque<Timestamp>, sibs:Vec<(Timestamp,Timestamp>)) tuples
         adjacency_sibs = insertAfter[adjacency]
           -> map(|(child, parent): (Token, Timestamp)| (parent, child.ts))
-          -> group_by::<'tick, Timestamp, (VecDeque<Timestamp>, Vec<(Timestamp, Timestamp)>)>(
+          -> fold_keyed::<'tick, Timestamp, (VecDeque<Timestamp>, Vec<(Timestamp, Timestamp)>)>(
                     || (VecDeque::<Timestamp>::new(), Vec::<(Timestamp, Timestamp)>::new()),
                     |(kids, sibs): &mut (VecDeque<Timestamp>, Vec::<(Timestamp, Timestamp)>), val: Timestamp| {
                         // siblings (older, younger)

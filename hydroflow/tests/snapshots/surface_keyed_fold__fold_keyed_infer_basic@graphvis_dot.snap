@@ -15,7 +15,7 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_2v1\nstratum 1"
-        n3v1 [label="(n3v1) keyed_fold::<'static>(|| 0, |old: &mut u32, val: u32| *old += val)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n3v1 [label="(n3v1) fold_keyed::<'static>(|| 0, |old: &mut u32, val: u32| *old += val)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n4v1 [label="(n4v1) for_each(|(k, v)| println!(\"{}: {}\", k, v))", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n3v1 -> n4v1
     }

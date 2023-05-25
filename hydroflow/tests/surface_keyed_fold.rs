@@ -4,7 +4,7 @@ use hydroflow::assert_graphvis_snapshots;
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
-pub fn test_keyed_fold_infer_basic() {
+pub fn test_fold_keyed_infer_basic() {
     pub struct SubordResponse {
         pub xid: &'static str,
         pub mtype: u32,
@@ -19,7 +19,7 @@ pub fn test_keyed_fold_infer_basic() {
             SubordResponse { xid: "123", mtype: 78 },
         ])
             -> map(|m: SubordResponse| (m.xid, 1))
-            -> keyed_fold::<'static>(|| 0, |old: &mut u32, val: u32| *old += val)
+            -> fold_keyed::<'static>(|| 0, |old: &mut u32, val: u32| *old += val)
             -> for_each(|(k, v)| println!("{}: {}", k, v));
     };
     assert_graphvis_snapshots!(df);
@@ -31,13 +31,13 @@ pub fn test_keyed_fold_infer_basic() {
 }
 
 #[multiplatform_test]
-pub fn test_keyed_fold_tick() {
+pub fn test_fold_keyed_tick() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
 
     let mut df = hydroflow::hydroflow_syntax! {
         source_stream(items_recv)
-            -> keyed_fold::<'tick>(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))
+            -> fold_keyed::<'tick>(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))
             -> for_each(|v| result_send.send(v).unwrap());
     };
     assert_graphvis_snapshots!(df);
@@ -77,13 +77,13 @@ pub fn test_keyed_fold_tick() {
 }
 
 #[multiplatform_test]
-pub fn test_keyed_fold_static() {
+pub fn test_fold_keyed_static() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<(u32, Vec<u32>)>();
 
     let mut df = hydroflow::hydroflow_syntax! {
         source_stream(items_recv)
-            -> keyed_fold::<'static>(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))
+            -> fold_keyed::<'static>(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| old.append(&mut x))
             -> for_each(|v| result_send.send(v).unwrap());
     };
     assert_graphvis_snapshots!(df);
