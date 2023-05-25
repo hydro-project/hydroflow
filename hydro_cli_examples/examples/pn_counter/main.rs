@@ -66,7 +66,7 @@ async fn main() {
     };
 
     let df = hydroflow_syntax! {
-        next_state = merge()
+        next_state = union()
             -> fold::<'static>((HashMap::<u64, Rc<RefCell<(Vec<u32>, Vec<u32>)>>>::new(), HashSet::new(), 0), |(mut cur_state, mut modified_tweets, last_tick), goi| {
                 if context.current_tick() != last_tick {
                     modified_tweets.clear();

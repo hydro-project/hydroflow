@@ -174,7 +174,7 @@ The remaining line of code runs the server. The `run_async()` function is a meth
 The client begins by making sure the user specified a server address at the command line. After printing a message to the terminal, it constructs a hydroflow graph.
 
 Again, we start the hydroflow code defining shared inbound and outbound channels. The code here is simplified compared
-to the server because the `inbound_chan` and `outbound_chan` are each referenced only once, so they do not require `tee` or `merge` operators, respectively (they have been commented out).
+to the server because the `inbound_chan` and `outbound_chan` are each referenced only once, so they do not require `tee` or `union` operators, respectively (they have been commented out).
 
 The `inbound_chan` drives a pipeline that prints messages to the screen. 
 
@@ -200,7 +200,7 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
         inbound_chan = source_stream_serde(inbound)
             // -> tee() // commented out since we only use this once in the client template
         ;
-        outbound_chan = // merge() ->  // commented out since we only use this once in the client template
+        outbound_chan = // union() ->  // commented out since we only use this once in the client template
             dest_sink_serde(outbound);
 
         // Print all messages for debugging purposes

@@ -72,7 +72,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
                 recv2 = next_recv2;
             }
 
-            df.add_subgraph_2sink("join (merge)", recv1, recv2, |_ctx, recv1, recv2| {
+            df.add_subgraph_2sink("join (union)", recv1, recv2, |_ctx, recv1, recv2| {
                 for x in recv1.take_inner() {
                     black_box(x);
                 }

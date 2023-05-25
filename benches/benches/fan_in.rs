@@ -42,33 +42,33 @@ fn benchmark_hydroflow_surface(c: &mut Criterion) {
         b.iter(|| {
             let mut df = hydroflow_syntax! {
 
-                my_merge = merge();
+                my_union = union();
 
-                source_iter(0..NUM_INTS) -> my_merge;
-                source_iter(0..NUM_INTS) -> my_merge;
-                source_iter(0..NUM_INTS) -> my_merge;
-                source_iter(0..NUM_INTS) -> my_merge;
-                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_union;
+                source_iter(0..NUM_INTS) -> my_union;
+                source_iter(0..NUM_INTS) -> my_union;
+                source_iter(0..NUM_INTS) -> my_union;
+                source_iter(0..NUM_INTS) -> my_union;
 
-                source_iter(0..NUM_INTS) -> my_merge;
-                source_iter(0..NUM_INTS) -> my_merge;
-                source_iter(0..NUM_INTS) -> my_merge;
-                source_iter(0..NUM_INTS) -> my_merge;
-                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_union;
+                source_iter(0..NUM_INTS) -> my_union;
+                source_iter(0..NUM_INTS) -> my_union;
+                source_iter(0..NUM_INTS) -> my_union;
+                source_iter(0..NUM_INTS) -> my_union;
 
-                source_iter(0..NUM_INTS) -> my_merge;
-                source_iter(0..NUM_INTS) -> my_merge;
-                source_iter(0..NUM_INTS) -> my_merge;
-                source_iter(0..NUM_INTS) -> my_merge;
-                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_union;
+                source_iter(0..NUM_INTS) -> my_union;
+                source_iter(0..NUM_INTS) -> my_union;
+                source_iter(0..NUM_INTS) -> my_union;
+                source_iter(0..NUM_INTS) -> my_union;
 
-                source_iter(0..NUM_INTS) -> my_merge;
-                source_iter(0..NUM_INTS) -> my_merge;
-                source_iter(0..NUM_INTS) -> my_merge;
-                source_iter(0..NUM_INTS) -> my_merge;
-                source_iter(0..NUM_INTS) -> my_merge;
+                source_iter(0..NUM_INTS) -> my_union;
+                source_iter(0..NUM_INTS) -> my_union;
+                source_iter(0..NUM_INTS) -> my_union;
+                source_iter(0..NUM_INTS) -> my_union;
+                source_iter(0..NUM_INTS) -> my_union;
 
-                my_merge -> for_each(|x| { black_box(x); });
+                my_union -> for_each(|x| { black_box(x); });
             };
 
             df.run_available();

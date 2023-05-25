@@ -219,7 +219,7 @@ async fn main() {
             -> flat_map(|(state, modified_tweets, _)| modified_tweets.iter().map(|t| (*t, *state.get(t).unwrap())).collect::<Vec<_>>())
             -> tee();
 
-        to_right = merge();
+        to_right = union();
 
         from_parent -> map(|v| (0, v)) -> to_right;
         from_left -> map(|v| (1, v)) -> to_right;
@@ -248,7 +248,7 @@ async fn main() {
             -> map(serialize_to_bytes::<Vec<(u64, TimestampedValue<i32>)>>)
             -> dest_sink(to_right);
 
-        to_left = merge();
+        to_left = union();
 
         from_parent -> map(|v| (0, v)) -> to_left;
         from_right -> map(|v| (1, v)) -> to_left;
@@ -277,7 +277,7 @@ async fn main() {
             -> map(serialize_to_bytes::<Vec<(u64, TimestampedValue<i32>)>>)
             -> dest_sink(to_left);
 
-        to_parent = merge();
+        to_parent = union();
 
         from_right -> map(|v| (0, v)) -> to_parent;
         from_left -> map(|v| (1, v)) -> to_parent;
@@ -306,7 +306,7 @@ async fn main() {
             -> map(serialize_to_bytes::<Vec<(u64, TimestampedValue<i32>)>>)
             -> dest_sink(to_parent);
 
-        to_query = merge();
+        to_query = union();
 
         from_parent -> map(|v| (0, v)) -> to_query;
         from_left -> map(|v| (1, v)) -> to_query;

@@ -120,7 +120,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
 
     let mut df: Hydroflow = hydroflow_syntax! {
         // Define shared inbound and outbound channels
-        outbound_chan = merge() -> dest_sink_serde(outbound);
+        outbound_chan = union() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound)
             ->  demux(|(msg, addr), var_args!(clients, msgs, errs)|
                     match msg {
@@ -133,7 +133,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
         inbound_chan[errs] -> for_each(|m| println!("Received unexpected message type: {:?}", m));
 ```
 
-After a short prelude, we have the Hydroflow code near the top of `run_server()`. It begins by defining `outbound_chan` as a `merge`d destination sink for network messages. Then we get to the
+After a short prelude, we have the Hydroflow code near the top of `run_server()`. It begins by defining `outbound_chan` as a `union`d destination sink for network messages. Then we get to the
 more interesting `inbound_chan` definition. 
 
 The `inbound` channel is a source stream that will carry many
@@ -193,7 +193,7 @@ We call the cross-join pipeline `broadcast` because it effectively broadcasts al
 
 
 The mermaid graph for the server is below. The three branches of the `demux` are very clear toward the top. Note also the `tee` of the `clients` channel
-for both `ClientResponse` and broadcasting, and the `merge` of all outbound messages into `dest_sink_serde`.
+for both `ClientResponse` and broadcasting, and the `union` of all outbound messages into `dest_sink_serde`.
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'clusterBkg':'#ddd'}}}%%
@@ -204,7 +204,7 @@ linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
 subgraph "sg_1v1 stratum 0"
     7v1[\"(7v1) <tt>map(| addr | (Message :: ConnectResponse, addr))</tt>"/]:::pullClass
     8v1[\"(8v1) <tt>cross_join()</tt>"/]:::pullClass
-    1v1[\"(1v1) <tt>merge()</tt>"/]:::pullClass
+    1v1[\"(1v1) <tt>union()</tt>"/]:::pullClass
     2v1[/"(2v1) <tt>dest_sink_serde(outbound)</tt>"\]:::pushClass
     7v1--0--->1v1
     8v1--1--->1v1
@@ -274,7 +274,7 @@ fn pretty_print_msg(msg: Message) {
 ```
 
 This brings us to the `run_client` function. As in `run_server` we begin by ensuring the server address 
-is supplied. We then have the hydroflow code starting with a standard pattern of a `merge`d `outbound_chan`, 
+is supplied. We then have the hydroflow code starting with a standard pattern of a `union`d `outbound_chan`, 
 and a `demux`ed `inbound_chan`. The client handles only two inbound `Message` types: `Message::ConnectResponse` and `Message::ChatMsg`.
 
 Paste the following to the bottom of `src/client.rs`:
@@ -286,7 +286,7 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
 
     let mut hf = hydroflow_syntax! {
         // set up channels
-        outbound_chan = merge() -> dest_sink_serde(outbound);
+        outbound_chan = union() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound) -> map(|(m, _)| m)
             ->  demux(|m, var_args!(acks, msgs, errs)|
                     match m {
@@ -372,7 +372,7 @@ subgraph "sg_1v1 stratum 0"
     12v1[\"(12v1) <tt>map(| l | Message :: ChatMsg<br>{ nickname : opts.name.clone(), message : l.unwrap(), ts : Utc :: now() })</tt>"/]:::pullClass
     9v1[\"(9v1) <tt>cross_join()</tt>"/]:::pullClass
     10v1[\"(10v1) <tt>map(| (msg, _) | (msg, server_addr))</tt>"/]:::pullClass
-    1v1[\"(1v1) <tt>merge()</tt>"/]:::pullClass
+    1v1[\"(1v1) <tt>union()</tt>"/]:::pullClass
     2v1[/"(2v1) <tt>dest_sink_serde(outbound)</tt>"\]:::pushClass
     7v1--->8v1
     8v1--0--->1v1

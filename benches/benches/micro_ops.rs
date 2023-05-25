@@ -131,7 +131,7 @@ fn ops(c: &mut Criterion) {
         )
     });
 
-    c.bench_function("micro/ops/merge", |b| {
+    c.bench_function("micro/ops/union", |b| {
         b.iter_batched_ref(
             || {
                 const NUM_INTS: usize = 10_000;
@@ -140,12 +140,12 @@ fn ops(c: &mut Criterion) {
                 let input1: Vec<usize> = (0..NUM_INTS).map(|_| dist.sample(&mut rng)).collect();
 
                 hydroflow_syntax! {
-                    my_merge = merge();
+                    my_union = union();
 
-                    source_iter(black_box(input0)) -> my_merge;
-                    source_iter(black_box(input1)) -> my_merge;
+                    source_iter(black_box(input0)) -> my_union;
+                    source_iter(black_box(input1)) -> my_union;
 
-                    my_merge -> for_each(|x| { black_box(x); });
+                    my_union -> for_each(|x| { black_box(x); });
                 }
             },
             |df| {

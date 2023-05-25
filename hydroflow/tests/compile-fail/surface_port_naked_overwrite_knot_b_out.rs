@@ -2,7 +2,7 @@ use hydroflow::hydroflow_syntax;
 
 fn main() {
     let mut df = hydroflow_syntax! {
-        pivot = merge() -> tee();
+        pivot = union() -> tee();
 
         x_0 = pivot[0];
         x_1 = pivot[1];
