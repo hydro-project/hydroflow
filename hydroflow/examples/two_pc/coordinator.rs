@@ -63,7 +63,7 @@ pub(crate) async fn run_coordinator(
         // count commit votes
         commit_votes = msgs[commits]
             -> map(|m: SubordResponse| (m.xid, 1))
-            -> group_by::<'static, u16, u32>(|| 0, |acc: &mut _, val| *acc += val);
+            -> fold_keyed::<'static, u16, u32>(|| 0, |acc: &mut _, val| *acc += val);
 
         // count subordinates
         subord_total = subords[0] -> fold::<'tick>(0, |a,_b| a+1); // -> for_each(|n| println!("There are {} subordinates.", n));

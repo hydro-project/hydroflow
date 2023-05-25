@@ -11,7 +11,7 @@ To run the driver on an example from the paper, choose one of the following numb
 1. the original flow (`flows/orig_flow.rs`)
 2. the bounded prefix (bp) lattice (`flows/bp_flow.rs`)
 3. the sealed set of indexed values (ssiv) lattice (`flows/ssiv_flow.rs`)
-4. the sealed set of indexed values (ssiv) lattice with group_by pushed through join (`flows/ssiv_flow_groupby.rs`)
+4. the sealed set of indexed values (ssiv) lattice with fold_keyed pushed through join (`flows/ssiv_flow_groupby.rs`)
 5. decoupled across a network with state at the server (`flows/server_state_flow.rs`)
 6. decoupled across a network with state at the client (`flows/client_state_flow.rs`)
 7. decoupled across a network with state at a triply-replicated server (`flows/rep_server_flow.rs`)

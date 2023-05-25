@@ -1,10 +1,10 @@
 error: expected `;`
- --> tests/compile-fail/surface_group_by_badtype_int.rs:4:18
+ --> tests/compile-fail/surface_fold_keyed_badtype_int.rs:4:18
   |
 4 |       let mut df = hydroflow_syntax! {
   |  __________________^
 5 | |         source_iter(0..1)
-6 | |             -> group_by(|| 0, |old: &mut u32, val: u32| *old += val)
+6 | |             -> fold_keyed(|| 0, |old: &mut u32, val: u32| *old += val)
 7 | |             -> for_each(std::mem::drop)
 8 | |     };
   | |_____^

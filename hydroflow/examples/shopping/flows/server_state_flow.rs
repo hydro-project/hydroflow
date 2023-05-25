@@ -31,13 +31,13 @@ pub(crate) async fn server_state_flow(
 
     // This is like push_group_flow, but we split it into two transducers that communicate via reqs_out and reqs_in.
     // The first transducer takes in shopping_ssiv requests, and forwards them via reqs_out to the second transducer.
-    // The second transducer listens on reqs_in and runs the stateful logic of group_by and join.
+    // The second transducer listens on reqs_in and runs the stateful logic of fold_keyed and join.
     hydroflow_syntax! {
         // Networked: Server-Side State
         source_iter(shopping_ssiv)
           -> map(|pair| (pair, remote_addr)) -> dest_sink_serde(reqs_out);
         source_stream_serde(reqs_in) -> map(Result::unwrap) -> map(|((client, req), _a): ((usize, SealedSetOfIndexedValues<Request>), _)| (client, req))
-          -> group_by(SSIV_BOT, ssiv_merge) -> [0]lookup_class;
+          -> fold_keyed(SSIV_BOT, ssiv_merge) -> [0]lookup_class;
         source_iter(client_class) -> [1]lookup_class;
         lookup_class = join()
           -> map(|(client, (li, class))| ((client, class), li))

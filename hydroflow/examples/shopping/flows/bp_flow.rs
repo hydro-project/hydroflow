@@ -33,7 +33,7 @@ pub(crate) async fn bp_flow(
         source_iter(client_class) -> [1]lookup_class;
         lookup_class = join()
           -> map(|(client, (li, class))| ((client, class), li))
-          -> group_by(BP_BOT, bp_merge)
+          -> fold_keyed(BP_BOT, bp_merge)
           -> map(|m| (m, out_addr)) -> dest_sink_serde(out);
     }
 }

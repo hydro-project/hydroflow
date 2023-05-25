@@ -24,7 +24,7 @@ sidebar_position: 8
     - unzip
     - p1 *fold* -- add to chapter on [state](./syntax/state.md)
     - p1 *reduce* -- add to chapter on [state](./syntax/state.md)
-    - p1 *group_by* -- add to chapter on [state](./syntax/state.md)
+    - p1 *fold_keyed* -- add to chapter on [state](./syntax/state.md)
     - p3 *sort_by* -- add to chapter on [state](./syntax/state.md)
     - p2 *next_stratum* -- add to chapter on [time](./concepts/life_and_times.md)
     - p2 *next_tick* -- add to chapter on [time](./concepts/life_and_times.md)
