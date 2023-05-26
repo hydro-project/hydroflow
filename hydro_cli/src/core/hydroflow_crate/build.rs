@@ -20,7 +20,7 @@ type CacheKey = (
     Option<Vec<String>>,
 );
 
-pub type BuiltCrate = Arc<(String, Vec<u8>)>;
+pub type BuiltCrate = Arc<(String, Vec<u8>, PathBuf)>;
 
 static BUILDS: Lazy<Mutex<HashMap<CacheKey, Arc<OnceCell<BuiltCrate>>>>> =
     Lazy::new(Default::default);
@@ -107,9 +107,10 @@ pub async fn build_crate(
 
                                 if is_output {
                                     let path = artifact.executable.unwrap();
+                                    let path_buf: PathBuf = path.clone().into();
                                     let path = path.into_string();
                                     let data = std::fs::read(path).unwrap();
-                                    return Ok(Arc::new((nanoid!(8), data)));
+                                    return Ok(Arc::new((nanoid!(8), data, path_buf)));
                                 }
                             }
                             cargo_metadata::Message::CompilerMessage(msg) => {
