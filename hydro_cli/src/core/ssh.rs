@@ -99,7 +99,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
     async fn launch_binary(
         &self,
         id: String,
-        binary: Arc<(String, Vec<u8>)>,
+        binary: Arc<(String, Vec<u8>, PathBuf)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let session = self.open_ssh_session().await?;
