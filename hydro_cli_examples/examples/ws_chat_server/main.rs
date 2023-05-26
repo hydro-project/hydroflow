@@ -54,31 +54,31 @@ async fn main() {
         util::ws_server(ws_port).await;
 
     let df = hydroflow_syntax! {
-        all_peers = source_iter((0..number_of_nodes).filter(move |&i| i != self_node_id)) -> persist() -> tee();
+        all_peers = source_iter((0..number_of_nodes).filter(move |&i| i != self_node_id)) -> persist();
 
         // networking
-        from_peer = source_stream(from_peer) -> map(|b| deserialize_from_bytes::<PeerMessage>(b.unwrap()).unwrap()) -> tee();
+        from_peer = source_stream(from_peer) -> map(|b| deserialize_from_bytes::<PeerMessage>(b.unwrap()).unwrap());
         to_peer = map(|(peer, v): (u32, PeerMessage)| (peer, serialize_to_bytes(v))) -> dest_sink(to_peer);
 
         from_client = source_stream(from_client) -> map(|(id, json)| (id, serde_json::from_str::<FromClient>(&json).unwrap())) -> tee();
         to_client = map(|(id, data)| (id, serde_json::to_string(&data).unwrap())) -> dest_sink(to_client);
 
         clients_connect = source_stream(clients_connect) -> tee();
-        clients_disconnect = source_stream(clients_disconnect) -> tee();
+        clients_disconnect = source_stream(clients_disconnect);
 
         // helpers
         peer_broadcast = cross_join::<'tick, 'tick, HalfMultisetJoinState>() -> to_peer;
         all_peers -> [0] peer_broadcast;
-        to_peers = union() -> [1] peer_broadcast;
+        to_peers =  [1] peer_broadcast;
 
         names = from_client ->
-            filter_map(|(client, msg)| if let FromClient::Name(name) = msg { Some((client, name)) } else { None }) -> tee();
+            filter_map(|(client, msg)| if let FromClient::Name(name) = msg { Some((client, name)) } else { None });
         messages = from_client ->
-            filter_map(|(client, msg)| if let FromClient::Message { id, text } = msg { Some((client, (id, text))) } else { None }) -> tee();
+            filter_map(|(client, msg)| if let FromClient::Message { id, text } = msg { Some((client, (id, text))) } else { None });
 
         clients_connect -> persist() -> [pos] active_clients;
         clients_disconnect -> persist() -> [neg] active_clients;
-        active_clients = difference() -> tee();
+        active_clients = difference() -> null();
 
         // logic
         // echo server
