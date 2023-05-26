@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -85,7 +86,7 @@ pub trait LaunchedHost: Send + Sync {
     async fn launch_binary(
         &self,
         id: String,
-        binary: Arc<(String, Vec<u8>)>,
+        binary: Arc<(String, Vec<u8>, PathBuf)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;
 
