@@ -1,20 +1,17 @@
-use crate::{
-    diagnostic::{Diagnostic, Level},
-    graph::{OpInstGenerics, OperatorInstance},
-};
+use quote::quote_spanned;
 
 use super::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, Persistence,
     WriteContextArgs, RANGE_0, RANGE_1,
 };
-
-use quote::quote_spanned;
+use crate::diagnostic::{Diagnostic, Level};
+use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// Stores each item as it passes through, and replays all item every tick.
 ///
 /// ```hydroflow
 /// // Normally `source_iter(...)` only emits once, but with `persist()` will replay the `"hello"`
-/// // on every tick. This is equivalent to `repeat_iter(["hello"])`.
+/// // on every tick.
 /// source_iter(["hello"])
 ///     -> persist()
 ///     -> for_each(|item| println!("{}: {}", context.current_tick(), item));
@@ -27,7 +24,7 @@ use quote::quote_spanned;
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
 /// let mut flow = hydroflow::hydroflow_syntax! {
-///     repeat_iter([("hello", "world")]) -> [0]my_join;
+///     source_iter([("hello", "world")]) -> persist() -> [0]my_join;
 ///     source_stream(input_recv) -> persist() -> [1]my_join;
 ///     my_join = join::<'tick>() -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
 /// };

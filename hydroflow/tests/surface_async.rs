@@ -414,7 +414,7 @@ async fn asynctest_repeat_iter() {
     let (b_send, b_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut hf = hydroflow_syntax! {
-        repeat_iter(0..3)
+        source_iter(0..3) -> persist()
             -> for_each(|x| b_send.send(x).unwrap());
     };
     hf.run_available_async().await;
@@ -429,7 +429,7 @@ async fn asynctest_event_repeat_iter() {
     let (b_send, b_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut hf = hydroflow_syntax! {
-        repeat_iter(0..3) -> my_union;
+        source_iter(0..3) -> persist() -> my_union;
         source_stream(a_recv) -> my_union;
         my_union = union() -> for_each(|x| b_send.send(x).unwrap());
     };

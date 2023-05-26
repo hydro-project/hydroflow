@@ -38,10 +38,10 @@ pub fn test_unique_tick_pull() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
-        repeat_iter(0..10) -> m1;
-        repeat_iter(5..15) -> m1;
+        source_iter(0..10) -> persist() -> m1;
+        source_iter(5..15) -> persist() -> m1;
         m1 = union() -> unique::<'tick>() -> m2;
-        repeat_iter(0..0) -> m2; // Extra union to force `unique()` to be pull.
+        source_iter(0..0) -> persist() -> m2; // Extra union to force `unique()` to be pull.
         m2 = union() -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_graphvis_snapshots!(df);
@@ -61,10 +61,10 @@ pub fn test_unique_static_pull() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
-        repeat_iter(0..10) -> m1;
-        repeat_iter(5..15) -> m1;
+        source_iter(0..10) -> persist() -> m1;
+        source_iter(5..15) -> persist() -> m1;
         m1 = union() -> unique::<'static>() -> m2;
-        repeat_iter(0..0) -> m2; // Extra union to force `unique()` to be pull.
+        source_iter(0..0) -> persist() -> m2; // Extra union to force `unique()` to be pull.
         m2 = union() -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_graphvis_snapshots!(df);
@@ -84,8 +84,8 @@ pub fn test_unique_tick_push() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
-        repeat_iter(0..10) -> pivot;
-        repeat_iter(5..15) -> pivot;
+        source_iter(0..10) -> persist() -> pivot;
+        source_iter(5..15) -> persist() -> pivot;
         pivot = union() -> tee();
         pivot -> unique::<'tick>() -> for_each(|v| out_send.send(v).unwrap());
         pivot -> for_each(std::mem::drop); // Force to be push.
@@ -107,8 +107,8 @@ pub fn test_unique_static_push() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
-        repeat_iter(0..10) -> pivot;
-        repeat_iter(5..15) -> pivot;
+        source_iter(0..10) -> persist() -> pivot;
+        source_iter(5..15) -> persist() -> pivot;
         pivot = union() -> tee();
         pivot -> unique::<'static>() -> for_each(|v| out_send.send(v).unwrap());
         pivot -> for_each(std::mem::drop); // Force to be push.

@@ -54,7 +54,7 @@ async fn main() {
         util::ws_server(ws_port).await;
 
     let df = hydroflow_syntax! {
-        all_peers = repeat_iter((0..number_of_nodes).filter(|&i| i != self_node_id)) -> tee();
+        all_peers = source_iter((0..number_of_nodes).filter(move |&i| i != self_node_id)) -> persist() -> tee();
 
         // networking
         from_peer = source_stream(from_peer) -> map(|b| deserialize_from_bytes::<PeerMessage>(b.unwrap()).unwrap()) -> tee();
