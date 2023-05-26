@@ -14,6 +14,7 @@ env:
 jobs:
   pre_job:
     runs-on: ubuntu-latest
+    if: "github.event_name != 'release' || startsWith(github.ref, 'refs/tags/hydro_cli-')"
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
@@ -160,7 +161,7 @@ jobs:
       - linux
       - musllinux-cross
       - windows
-    if: "startsWith(github.ref, 'refs/tags/')"
+    if: "github.event_name == 'release'"
     steps:
       - uses: actions/download-artifact@v3
         with:
