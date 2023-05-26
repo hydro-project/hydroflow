@@ -1,11 +1,8 @@
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::Write;
 use std::net::SocketAddr;
 #[cfg(unix)]
-use std::os::unix::prelude::PermissionsExt;
-#[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -15,7 +12,6 @@ use async_trait::async_trait;
 use futures::io::BufReader;
 use futures::{AsyncBufReadExt, AsyncRead, AsyncWriteExt, StreamExt};
 use hydroflow_cli_integration::ServerBindConfig;
-use tempfile::{NamedTempFile, TempDir};
 use tokio::sync::RwLock;
 
 use super::{
@@ -25,7 +21,6 @@ use super::{
 
 struct LaunchedLocalhostBinary {
     child: RwLock<async_process::Child>,
-    _temp_dir: TempDir,
     stdin_sender: Sender<String>,
     stdout_receivers: Arc<RwLock<Vec<Sender<String>>>>,
     stderr_receivers: Arc<RwLock<Vec<Sender<String>>>>,
@@ -139,36 +134,10 @@ impl LaunchedHost for LaunchedLocalhost {
     async fn launch_binary(
         &self,
         id: String,
-        binary: Arc<(String, Vec<u8>)>,
+        binary: Arc<(String, Vec<u8>, PathBuf)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
-        let dothydro_folder = std::env::current_dir().unwrap().join(".hydro");
-        std::fs::create_dir_all(&dothydro_folder).unwrap();
-        let binary_folder = tempfile::tempdir_in(dothydro_folder).unwrap();
-        let temp_path = NamedTempFile::new_in(binary_folder.path())?.into_temp_path();
-
-        let mut file = File::create(&temp_path)?;
-        file.write_all(binary.1.as_slice())?;
-        drop(file);
-
-        #[cfg(unix)]
-        {
-            let mut orig_perms = std::fs::metadata(&temp_path)?.permissions();
-            orig_perms.set_mode(0o755);
-            std::fs::set_permissions(&temp_path, orig_perms)?;
-
-            // some filesystems take a while to actually set the permissions
-            for _i in 0..10 {
-                let perms = std::fs::metadata(&temp_path)?.permissions();
-                if perms.mode() == 0o755 {
-                    break;
-                }
-
-                std::thread::sleep(std::time::Duration::from_millis(100));
-            }
-        }
-
-        let mut child = Command::new(&temp_path)
+        let mut child = Command::new(&binary.2)
             .args(args)
             .kill_on_drop(true)
             .stdin(Stdio::piped())
@@ -198,7 +167,6 @@ impl LaunchedHost for LaunchedLocalhost {
 
         Ok(Arc::new(RwLock::new(LaunchedLocalhostBinary {
             child: RwLock::new(child),
-            _temp_dir: binary_folder,
             stdin_sender,
             stdout_receivers,
             stderr_receivers,
