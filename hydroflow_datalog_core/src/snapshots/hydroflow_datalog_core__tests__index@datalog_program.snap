@@ -916,7 +916,7 @@ fn main() {
                     ),
                 );
             let sg_5v1_node_45v1_persistdata = df
-                .add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
+                .add_state(::std::cell::RefCell::new((0_usize, ::std::vec::Vec::new())));
             let sg_5v1_node_43v1_counterdata = df
                 .add_state(::std::cell::RefCell::new(0..));
             df.add_subgraph_stratified(
@@ -1214,8 +1214,14 @@ fn main() {
                     let mut sg_5v1_node_45v1_persistvec = context
                         .state_ref(sg_5v1_node_45v1_persistdata)
                         .borrow_mut();
+                    let (
+                        ref mut sg_5v1_node_45v1_persisttick,
+                        ref mut sg_5v1_node_45v1_persistvec,
+                    ) = &mut *sg_5v1_node_45v1_persistvec;
                     let op_45v1 = {
                         fn constrain_types<'ctx, Push, Item>(
+                            curr_tick: usize,
+                            tick: &'ctx mut usize,
                             vec: &'ctx mut Vec<Item>,
                             mut output: Push,
                         ) -> impl 'ctx + hydroflow::pusherator::Pusherator<Item = Item>
@@ -1223,11 +1229,14 @@ fn main() {
                             Push: 'ctx + hydroflow::pusherator::Pusherator<Item = Item>,
                             Item: ::std::clone::Clone,
                         {
-                            vec.iter()
-                                .cloned()
-                                .for_each(|item| {
-                                    hydroflow::pusherator::Pusherator::give(&mut output, item);
-                                });
+                            if *tick <= curr_tick {
+                                *tick = 1 + curr_tick;
+                                vec.iter()
+                                    .cloned()
+                                    .for_each(|item| {
+                                        hydroflow::pusherator::Pusherator::give(&mut output, item);
+                                    });
+                            }
                             hydroflow::pusherator::map::Map::new(
                                 |item| {
                                     vec.push(item);
@@ -1236,7 +1245,12 @@ fn main() {
                                 output,
                             )
                         }
-                        constrain_types(&mut *sg_5v1_node_45v1_persistvec, op_11v1)
+                        constrain_types(
+                            context.current_tick(),
+                            sg_5v1_node_45v1_persisttick,
+                            sg_5v1_node_45v1_persistvec,
+                            op_11v1,
+                        )
                     };
                     let op_45v1 = {
                         #[allow(non_snake_case)]
@@ -1714,7 +1728,7 @@ fn main() {
                     ),
                 );
             let sg_7v1_node_31v1_persistdata = df
-                .add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
+                .add_state(::std::cell::RefCell::new((0_usize, ::std::vec::Vec::new())));
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(7v1)",
                 1,
@@ -1927,8 +1941,14 @@ fn main() {
                     let mut sg_7v1_node_31v1_persistvec = context
                         .state_ref(sg_7v1_node_31v1_persistdata)
                         .borrow_mut();
+                    let (
+                        ref mut sg_7v1_node_31v1_persisttick,
+                        ref mut sg_7v1_node_31v1_persistvec,
+                    ) = &mut *sg_7v1_node_31v1_persistvec;
                     let op_31v1 = {
                         fn constrain_types<'ctx, Push, Item>(
+                            curr_tick: usize,
+                            tick: &'ctx mut usize,
                             vec: &'ctx mut Vec<Item>,
                             mut output: Push,
                         ) -> impl 'ctx + hydroflow::pusherator::Pusherator<Item = Item>
@@ -1936,11 +1956,14 @@ fn main() {
                             Push: 'ctx + hydroflow::pusherator::Pusherator<Item = Item>,
                             Item: ::std::clone::Clone,
                         {
-                            vec.iter()
-                                .cloned()
-                                .for_each(|item| {
-                                    hydroflow::pusherator::Pusherator::give(&mut output, item);
-                                });
+                            if *tick <= curr_tick {
+                                *tick = 1 + curr_tick;
+                                vec.iter()
+                                    .cloned()
+                                    .for_each(|item| {
+                                        hydroflow::pusherator::Pusherator::give(&mut output, item);
+                                    });
+                            }
                             hydroflow::pusherator::map::Map::new(
                                 |item| {
                                     vec.push(item);
@@ -1949,7 +1972,12 @@ fn main() {
                                 output,
                             )
                         }
-                        constrain_types(&mut *sg_7v1_node_31v1_persistvec, op_32v1)
+                        constrain_types(
+                            context.current_tick(),
+                            sg_7v1_node_31v1_persisttick,
+                            sg_7v1_node_31v1_persistvec,
+                            op_32v1,
+                        )
                     };
                     let op_31v1 = {
                         #[allow(non_snake_case)]
