@@ -83,7 +83,7 @@ jobs:
           cargo smart-release --update-crates-index
           --no-changelog-preview --allow-fully-generated-changelogs
           --bump ${{ inputs.bump }} --bump-dependencies auto
-          ${{ inputs.execute && '--execute' || '--dry-run-cargo-publish' }}
+          ${{ inputs.execute && '--execute' || '--no-publish' }}
           hydroflow hydro_cli hydroflow_*
         env:
           # Make sure to set this so the `gh` CLI works using our token.
