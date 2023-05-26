@@ -1,3 +1,4 @@
+use hydroflow::compiled::pull::HalfMultisetJoinState;
 use hydroflow::util::collect_ready;
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
 use multiplatform_test::multiplatform_test;
@@ -119,4 +120,89 @@ pub fn test_persist_replay_join() {
     other_input_send.send(3).unwrap();
     hf.run_tick();
     assert_eq!(&[(3, 3)], &*collect_ready::<Vec<_>, _>(&mut result_recv));
+}
+
+#[multiplatform_test]
+pub fn test_persist_double_handoff() {
+    let (input_send, input_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let (input_2_send, input_2_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let (output_send, mut output_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let mut flow = hydroflow::hydroflow_syntax! {
+        teed_first_sg = source_stream(input_2_recv) -> tee();
+        teed_first_sg -> [0] joined_second_sg;
+        teed_first_sg -> [1] joined_second_sg;
+
+        source_stream(input_recv) -> persist()
+            -> inspect(|x| println!("LHS {} {}:{}", x, context.current_tick(), context.current_stratum())) -> [0] cross;
+        joined_second_sg = cross_join::<'tick, 'tick>() -> map(|t| t.0)
+            -> inspect(|x| println!("RHS {} {}:{}", x, context.current_tick(), context.current_stratum())) -> [1] cross;
+        cross = cross_join::<'tick, 'tick, HalfMultisetJoinState>() -> for_each(|x| output_send.send(x).unwrap());
+    };
+    println!("A {}:{}", flow.current_tick(), flow.current_stratum());
+
+    input_send.send(0).unwrap();
+    flow.run_tick();
+    println!("B {}:{}", flow.current_tick(), flow.current_stratum());
+    assert!(collect_ready::<Vec<_>, _>(&mut output_recv).is_empty());
+
+    input_2_send.send(1).unwrap();
+    flow.run_tick();
+    println!("C {}:{}", flow.current_tick(), flow.current_stratum());
+    assert_eq!(&[(0, 1)], &*collect_ready::<Vec<_>, _>(&mut output_recv));
+}
+
+#[multiplatform_test]
+pub fn test_persist_single_handoff() {
+    let (input_send, input_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let (input_2_send, input_2_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let (output_send, mut output_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let mut flow = hydroflow::hydroflow_syntax! {
+        teed_first_sg = source_stream(input_2_recv) -> tee();
+        teed_first_sg [0] -> null();
+        teed_first_sg [1] -> joined_second_sg;
+        null() -> joined_second_sg;
+
+        source_stream(input_recv) -> persist()
+            -> inspect(|x| println!("LHS {} {}:{}", x, context.current_tick(), context.current_stratum())) -> [0] cross;
+        joined_second_sg = union()
+            -> inspect(|x| println!("RHS {} {}:{}", x, context.current_tick(), context.current_stratum())) -> [1] cross;
+        cross = cross_join::<'tick, 'tick, HalfMultisetJoinState>() -> for_each(|x| output_send.send(x).unwrap());
+    };
+    println!("A {}:{}", flow.current_tick(), flow.current_stratum());
+
+    input_send.send(0).unwrap();
+    flow.run_tick();
+    println!("B {}:{}", flow.current_tick(), flow.current_stratum());
+    assert!(collect_ready::<Vec<_>, _>(&mut output_recv).is_empty());
+
+    input_2_send.send(1).unwrap();
+    flow.run_tick();
+    println!("C {}:{}", flow.current_tick(), flow.current_stratum());
+    assert_eq!(&[(0, 1)], &*collect_ready::<Vec<_>, _>(&mut output_recv));
+}
+
+#[multiplatform_test]
+pub fn test_persist_single_subgraph() {
+    let (input_send, input_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let (input_2_send, input_2_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let (output_send, mut output_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let mut flow = hydroflow::hydroflow_syntax! {
+        source_stream(input_2_recv) -> joined_second_sg;
+
+        source_stream(input_recv) -> persist()
+            -> inspect(|x| println!("LHS {} {}:{}", x, context.current_tick(), context.current_stratum())) -> [0] cross;
+        joined_second_sg = inspect(|x| println!("RHS {} {}:{}", x, context.current_tick(), context.current_stratum())) -> [1] cross;
+        cross = cross_join::<'tick, 'tick, HalfMultisetJoinState>() -> for_each(|x| output_send.send(x).unwrap());
+    };
+    println!("A {}:{}", flow.current_tick(), flow.current_stratum());
+
+    input_send.send(0).unwrap();
+    flow.run_tick();
+    println!("B {}:{}", flow.current_tick(), flow.current_stratum());
+    assert!(collect_ready::<Vec<_>, _>(&mut output_recv).is_empty());
+
+    input_2_send.send(1).unwrap();
+    flow.run_tick();
+    println!("C {}:{}", flow.current_tick(), flow.current_stratum());
+    assert_eq!(&[(0, 1)], &*collect_ready::<Vec<_>, _>(&mut output_recv));
 }

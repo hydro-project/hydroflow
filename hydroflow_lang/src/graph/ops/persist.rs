@@ -90,36 +90,54 @@ pub const PERSIST: OperatorConstraints = OperatorConstraints {
 
         let persistdata_ident = wc.make_ident("persistdata");
         let vec_ident = wc.make_ident("persistvec");
+        let tick_ident = wc.make_ident("persisttick");
         let write_prologue = quote_spanned! {op_span=>
-            let #persistdata_ident = #hydroflow.add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
+            let #persistdata_ident = #hydroflow.add_state(::std::cell::RefCell::new((
+                0_usize, // tick
+                ::std::vec::Vec::new(),
+            )));
         };
 
         let write_iterator = if is_pull {
             let input = &inputs[0];
             quote_spanned! {op_span=>
                 let mut #vec_ident = #context.state_ref(#persistdata_ident).borrow_mut();
-                #vec_ident.extend(#input);
-                let #ident = #vec_ident.iter().cloned();
+                let (ref mut #tick_ident, ref mut #vec_ident) = &mut *#vec_ident;
+                let #ident = {
+                    if *#tick_ident <= #context.current_tick() {
+                        *#tick_ident = 1 + #context.current_tick();
+                        #vec_ident.extend(#input);
+                        #vec_ident.iter().cloned()
+                    } else {
+                        let len = #vec_ident.len();
+                        #vec_ident.extend(#input);
+                        #vec_ident[len..].iter().cloned()
+                    }
+                };
             }
         } else {
             let output = &outputs[0];
             quote_spanned! {op_span=>
                 let mut #vec_ident = #context.state_ref(#persistdata_ident).borrow_mut();
+                let (ref mut #tick_ident, ref mut #vec_ident) = &mut *#vec_ident;
                 let #ident = {
-                    fn constrain_types<'ctx, Push, Item>(vec: &'ctx mut Vec<Item>, mut output: Push) -> impl 'ctx + #root::pusherator::Pusherator<Item = Item>
+                    fn constrain_types<'ctx, Push, Item>(curr_tick: usize, tick: &'ctx mut usize, vec: &'ctx mut Vec<Item>, mut output: Push) -> impl 'ctx + #root::pusherator::Pusherator<Item = Item>
                     where
                         Push: 'ctx + #root::pusherator::Pusherator<Item = Item>,
                         Item: ::std::clone::Clone,
                     {
-                        vec.iter().cloned().for_each(|item| {
-                            #root::pusherator::Pusherator::give(&mut output, item);
-                        });
+                        if *tick <= curr_tick {
+                            *tick = 1 + curr_tick;
+                            vec.iter().cloned().for_each(|item| {
+                                #root::pusherator::Pusherator::give(&mut output, item);
+                            });
+                        }
                         #root::pusherator::map::Map::new(|item| {
                             vec.push(item);
                             vec.last().unwrap().clone()
                         }, output)
                     }
-                    constrain_types(&mut *#vec_ident, #output)
+                    constrain_types(#context.current_tick(), #tick_ident, #vec_ident, #output)
                 };
             }
         };
