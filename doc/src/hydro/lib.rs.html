@@ -828,6 +828,10 @@
 <a href="#828" id="828">828</a>
 <a href="#829" id="829">829</a>
 <a href="#830" id="830">830</a>
+<a href="#831" id="831">831</a>
+<a href="#832" id="832">832</a>
+<a href="#833" id="833">833</a>
+<a href="#834" id="834">834</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::pin::Pin;
 <span class="kw">use </span>std::sync::Arc;
@@ -1307,7 +1311,7 @@
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
             <span class="prelude-val">Ok</span>(ServerPort {
-                underlying: <span class="prelude-val">Some</span>(underlying.server_port().<span class="kw">await</span>),
+                underlying: underlying.server_port().<span class="kw">await</span>,
             })
         })
     }
@@ -1515,26 +1519,29 @@
 
 <span class="attr">#[pyclass]
 </span><span class="kw">struct </span>ServerPort {
-    underlying: <span class="prelude-ty">Option</span>&lt;ServerOrBound&gt;,
+    underlying: hydroflow_cli_integration::ServerPort,
+}
+
+<span class="kw">fn </span>with_tokio_runtime&lt;T&gt;(f: <span class="kw">impl </span>Fn() -&gt; T) -&gt; T {
+    <span class="kw">let </span>runtime_read = TOKIO_RUNTIME.read().unwrap();
+    <span class="kw">let </span>_guard = runtime_read.as_ref().unwrap().enter();
+    f()
 }
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>ServerPort {
     <span class="kw">fn </span>json(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Py&lt;PyAny&gt; {
-        <span class="kw">if let </span>ServerOrBound::Server(server) = <span class="self">self</span>.underlying.as_ref().unwrap() {
-            pythonize(py, <span class="kw-2">&amp;</span>server).unwrap()
-        } <span class="kw">else </span>{
-            <span class="macro">panic!</span>()
-        }
+        pythonize(py, <span class="kw-2">&amp;</span><span class="self">self</span>.underlying).unwrap()
     }
 
     <span class="attr">#[allow(clippy::wrong_self_convention)]
     </span><span class="kw">fn </span>into_source&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
-        <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.take().unwrap();
+        <span class="kw">let </span>realized = with_tokio_runtime(|| ServerOrBound::Server((<span class="kw-2">&amp;</span><span class="self">self</span>.underlying).into()));
+
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="prelude-val">Ok</span>(PythonStream {
                 underlying: Arc::new(RwLock::new(
-                    underlying.connect::&lt;ConnectedBidi&gt;().<span class="kw">await</span>.into_source(),
+                    realized.connect::&lt;ConnectedBidi&gt;().<span class="kw">await</span>.into_source(),
                 )),
             })
         })
@@ -1542,12 +1549,13 @@
 
     <span class="attr">#[allow(clippy::wrong_self_convention)]
     </span><span class="kw">fn </span>into_sink&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
-        <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.take().unwrap();
-        interruptible_future_to_py(py, <span class="kw">async move </span>{
-            <span class="kw">let </span>connected = underlying.connect::&lt;ConnectedBidi&gt;().<span class="kw">await</span>.into_sink();
+        <span class="kw">let </span>realized = with_tokio_runtime(|| ServerOrBound::Server((<span class="kw-2">&amp;</span><span class="self">self</span>.underlying).into()));
 
+        interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="prelude-val">Ok</span>(PythonSink {
-                underlying: Arc::new(RwLock::new(connected)),
+                underlying: Arc::new(RwLock::new(
+                    realized.connect::&lt;ConnectedBidi&gt;().<span class="kw">await</span>.into_sink(),
+                )),
             })
         })
     }
