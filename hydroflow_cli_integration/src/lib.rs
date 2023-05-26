@@ -31,6 +31,66 @@ type UnixStream = !;
 #[allow(dead_code)]
 type UnixListener = !;
 
+/// Describes how to connect to a service which is listening on some port.
+#[allow(unreachable_code)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum ServerPort {
+    UnixSocket(PathBuf),
+    TcpPort(SocketAddr),
+    Demux(HashMap<u32, ServerPort>),
+    Merge(Vec<ServerPort>),
+    Tagged(Box<ServerPort>, u32),
+    Null,
+}
+
+#[derive(Debug)]
+pub enum RealizedServerPort {
+    UnixSocket(JoinHandle<io::Result<UnixStream>>),
+    TcpPort(JoinHandle<io::Result<TcpStream>>),
+    Demux(HashMap<u32, RealizedServerPort>),
+    Merge(Vec<RealizedServerPort>),
+    Tagged(Box<RealizedServerPort>, u32),
+    Null,
+}
+
+impl From<&ServerPort> for RealizedServerPort {
+    fn from(port: &ServerPort) -> Self {
+        match port {
+            ServerPort::UnixSocket(path) => {
+                #[cfg(unix)]
+                {
+                    let bound = UnixStream::connect(path.clone());
+                    RealizedServerPort::UnixSocket(tokio::spawn(bound))
+                }
+
+                #[cfg(not(unix))]
+                {
+                    panic!("Unix sockets are not supported on this platform")
+                }
+            }
+            ServerPort::TcpPort(addr) => {
+                let addr_clone = *addr;
+                let bound = async_retry(
+                    move || TcpStream::connect(addr_clone),
+                    10,
+                    Duration::from_secs(1),
+                );
+                RealizedServerPort::TcpPort(tokio::spawn(bound))
+            }
+            ServerPort::Demux(bindings) => {
+                RealizedServerPort::Demux(bindings.iter().map(|(k, v)| (*k, v.into())).collect())
+            }
+            ServerPort::Merge(ports) => {
+                RealizedServerPort::Merge(ports.iter().map(|p| p.into()).collect())
+            }
+            ServerPort::Tagged(port, tag) => {
+                RealizedServerPort::Tagged(Box::new(port.as_ref().into()), *tag)
+            }
+            ServerPort::Null => RealizedServerPort::Null,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ServerBindConfig {
     UnixSocket,
@@ -107,7 +167,7 @@ impl ServerBindConfig {
 
 #[derive(Debug)]
 pub enum ServerOrBound {
-    Server(ServerPort),
+    Server(RealizedServerPort),
     Bound(BoundConnection),
 }
 
@@ -123,18 +183,6 @@ impl ServerOrBound {
             panic!("Not a TCP port")
         }
     }
-}
-
-/// Describes how to connect to a service which is listening on some port.
-#[allow(unreachable_code)]
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum ServerPort {
-    UnixSocket(PathBuf),
-    TcpPort(SocketAddr),
-    Demux(HashMap<u32, ServerPort>),
-    Merge(Vec<ServerPort>),
-    Tagged(Box<ServerPort>, u32),
-    Null,
 }
 
 pub type DynStream = Pin<Box<dyn Stream<Item = Result<BytesMut, io::Error>> + Send + Sync>>;
@@ -272,7 +320,7 @@ async fn accept(bound: BoundConnection) -> ConnectedBidi {
         BoundConnection::Demux(_) => panic!("Cannot connect to a demux pipe directly"),
         BoundConnection::Tagged(_, _) => panic!("Cannot connect to a tagged pipe directly"),
         BoundConnection::Null => {
-            ConnectedBidi::from_defn(ServerOrBound::Server(ServerPort::Null)).await
+            ConnectedBidi::from_defn(ServerOrBound::Server(RealizedServerPort::Null)).await
         }
     }
 }
@@ -337,10 +385,10 @@ pub struct ConnectedBidi {
 impl Connected for ConnectedBidi {
     async fn from_defn(pipe: ServerOrBound) -> Self {
         match pipe {
-            ServerOrBound::Server(ServerPort::UnixSocket(path)) => {
+            ServerOrBound::Server(RealizedServerPort::UnixSocket(stream)) => {
                 #[cfg(unix)]
                 {
-                    let stream = UnixStream::connect(path).await.unwrap();
+                    let stream = stream.await.unwrap().unwrap();
                     ConnectedBidi {
                         stream_sink: Some(Box::pin(unix_bytes(stream))),
                         source_only: None,
@@ -354,10 +402,8 @@ impl Connected for ConnectedBidi {
                     panic!("Unix sockets are not supported on this platform");
                 }
             }
-            ServerOrBound::Server(ServerPort::TcpPort(addr)) => {
-                let stream = async_retry(|| TcpStream::connect(addr), 10, Duration::from_secs(1))
-                    .await
-                    .unwrap();
+            ServerOrBound::Server(RealizedServerPort::TcpPort(stream)) => {
+                let stream = stream.await.unwrap().unwrap();
                 stream.set_nodelay(true).unwrap();
                 ConnectedBidi {
                     stream_sink: Some(Box::pin(tcp_bytes(stream))),
@@ -365,9 +411,9 @@ impl Connected for ConnectedBidi {
                     sink_only: None,
                 }
             }
-            ServerOrBound::Server(ServerPort::Merge(merge)) => {
-                let sources = futures::future::join_all(merge.iter().map(|port| async {
-                    ConnectedBidi::from_defn(ServerOrBound::Server(port.clone()))
+            ServerOrBound::Server(RealizedServerPort::Merge(merge)) => {
+                let sources = futures::future::join_all(merge.into_iter().map(|port| async {
+                    ConnectedBidi::from_defn(ServerOrBound::Server(port))
                         .await
                         .into_source()
                 }))
@@ -384,15 +430,15 @@ impl Connected for ConnectedBidi {
                     sink_only: None,
                 }
             }
-            ServerOrBound::Server(ServerPort::Demux(_)) => {
+            ServerOrBound::Server(RealizedServerPort::Demux(_)) => {
                 panic!("Cannot connect to a demux pipe directly")
             }
 
-            ServerOrBound::Server(ServerPort::Tagged(_, _)) => {
+            ServerOrBound::Server(RealizedServerPort::Tagged(_, _)) => {
                 panic!("Cannot connect to a tagged pipe directly")
             }
 
-            ServerOrBound::Server(ServerPort::Null) => ConnectedBidi {
+            ServerOrBound::Server(RealizedServerPort::Null) => ConnectedBidi {
                 stream_sink: None,
                 source_only: Some(Box::pin(stream::empty())),
                 sink_only: Some(Box::pin(IoErrorDrain {
@@ -495,7 +541,7 @@ where
 {
     async fn from_defn(pipe: ServerOrBound) -> Self {
         match pipe {
-            ServerOrBound::Server(ServerPort::Demux(demux)) => {
+            ServerOrBound::Server(RealizedServerPort::Demux(demux)) => {
                 let mut connected_demux = HashMap::new();
                 let keys = demux.keys().cloned().collect();
                 for (id, pipe) in demux {
@@ -643,7 +689,7 @@ where
 {
     async fn from_defn(pipe: ServerOrBound) -> Self {
         let sources = match pipe {
-            ServerOrBound::Server(ServerPort::Tagged(pipe, id)) => {
+            ServerOrBound::Server(RealizedServerPort::Tagged(pipe, id)) => {
                 vec![(
                     Box::pin(
                         T::from_defn(ServerOrBound::Server(*pipe))
@@ -654,10 +700,10 @@ where
                 )]
             }
 
-            ServerOrBound::Server(ServerPort::Merge(m)) => {
+            ServerOrBound::Server(RealizedServerPort::Merge(m)) => {
                 let mut sources = Vec::new();
                 for port in m {
-                    if let ServerPort::Tagged(pipe, id) = port {
+                    if let RealizedServerPort::Tagged(pipe, id) = port {
                         sources.push((
                             Box::pin(
                                 T::from_defn(ServerOrBound::Server(*pipe))
