@@ -28,3 +28,25 @@ pub fn test_multiset_delta() {
     // First two "3"s are removed due to previous tick.
     assert_eq!(&[5, 3], &*collect_ready::<Vec<_>, _>(&mut result_recv));
 }
+
+#[multiplatform_test]
+pub fn test_persist_multiset_delta() {
+    let (input_send, input_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let (output_send, mut output_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let mut flow = hydroflow::hydroflow_syntax! {
+        source_stream(input_recv)
+            -> persist()
+            -> multiset_delta()
+            -> for_each(|x| output_send.send(x).unwrap());
+    };
+
+    input_send.send(1).unwrap();
+    flow.run_tick();
+    assert_eq!(&[(1)], &*collect_ready::<Vec<_>, _>(&mut output_recv));
+
+    flow.run_tick();
+    assert!(collect_ready::<Vec<_>, _>(&mut output_recv).is_empty());
+
+    flow.run_tick();
+    assert!(collect_ready::<Vec<_>, _>(&mut output_recv).is_empty());
+}
