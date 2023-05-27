@@ -81,7 +81,7 @@ pub const MULTISET_DELTA: OperatorConstraints = OperatorConstraints {
                 let mut curr_map = #context.state_ref(#curr_data).borrow_mut();
                 if tick.get() < #context.current_tick() {
                     tick.set(#context.current_tick());
-                    ::std::mem::swap(&mut prev_map, &mut curr_map);
+                    ::std::mem::swap(::std::ops::DerefMut::deref_mut(&mut prev_map), ::std::ops::DerefMut::deref_mut(&mut curr_map));
                     curr_map.clear();
                 }
 
