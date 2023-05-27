@@ -135,6 +135,24 @@
 <a href="#135" id="135">135</a>
 <a href="#136" id="136">136</a>
 <a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
 </pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     diagnostic::{Diagnostic, Level},
     graph::{OpInstGenerics, OperatorInstance},
@@ -227,36 +245,54 @@
 
         <span class="kw">let </span>persistdata_ident = wc.make_ident(<span class="string">&quot;persistdata&quot;</span>);
         <span class="kw">let </span>vec_ident = wc.make_ident(<span class="string">&quot;persistvec&quot;</span>);
+        <span class="kw">let </span>tick_ident = wc.make_ident(<span class="string">&quot;persisttick&quot;</span>);
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
-            <span class="kw">let </span>#persistdata_ident = #hydroflow.add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
+            <span class="kw">let </span>#persistdata_ident = #hydroflow.add_state(::std::cell::RefCell::new((
+                <span class="number">0_usize</span>, <span class="comment">// tick
+                </span>::std::vec::Vec::new(),
+            )));
         };
 
         <span class="kw">let </span>write_iterator = <span class="kw">if </span>is_pull {
             <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
             <span class="macro">quote_spanned! </span>{op_span=&gt;
                 <span class="kw">let </span><span class="kw-2">mut </span>#vec_ident = #context.state_ref(#persistdata_ident).borrow_mut();
-                #vec_ident.extend(#input);
-                <span class="kw">let </span>#ident = #vec_ident.iter().cloned();
+                <span class="kw">let </span>(<span class="kw-2">ref mut </span>#tick_ident, <span class="kw-2">ref mut </span>#vec_ident) = <span class="kw-2">&amp;mut *</span>#vec_ident;
+                <span class="kw">let </span>#ident = {
+                    <span class="kw">if </span><span class="kw-2">*</span>#tick_ident &lt;= #context.current_tick() {
+                        <span class="kw-2">*</span>#tick_ident = <span class="number">1 </span>+ #context.current_tick();
+                        #vec_ident.extend(#input);
+                        #vec_ident.iter().cloned()
+                    } <span class="kw">else </span>{
+                        <span class="kw">let </span>len = #vec_ident.len();
+                        #vec_ident.extend(#input);
+                        #vec_ident[len..].iter().cloned()
+                    }
+                };
             }
         } <span class="kw">else </span>{
             <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
             <span class="macro">quote_spanned! </span>{op_span=&gt;
                 <span class="kw">let </span><span class="kw-2">mut </span>#vec_ident = #context.state_ref(#persistdata_ident).borrow_mut();
+                <span class="kw">let </span>(<span class="kw-2">ref mut </span>#tick_ident, <span class="kw-2">ref mut </span>#vec_ident) = <span class="kw-2">&amp;mut *</span>#vec_ident;
                 <span class="kw">let </span>#ident = {
-                    <span class="kw">fn </span>constrain_types&lt;<span class="lifetime">&#39;ctx</span>, Push, Item&gt;(vec: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span><span class="kw-2">mut </span>Vec&lt;Item&gt;, <span class="kw-2">mut </span>output: Push) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;ctx </span>+ #root::pusherator::Pusherator&lt;Item = Item&gt;
+                    <span class="kw">fn </span>constrain_types&lt;<span class="lifetime">&#39;ctx</span>, Push, Item&gt;(curr_tick: usize, tick: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span><span class="kw-2">mut </span>usize, vec: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span><span class="kw-2">mut </span>Vec&lt;Item&gt;, <span class="kw-2">mut </span>output: Push) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;ctx </span>+ #root::pusherator::Pusherator&lt;Item = Item&gt;
                     <span class="kw">where
                         </span>Push: <span class="lifetime">&#39;ctx </span>+ #root::pusherator::Pusherator&lt;Item = Item&gt;,
                         Item: ::std::clone::Clone,
                     {
-                        vec.iter().cloned().for_each(|item| {
-                            #root::pusherator::Pusherator::give(<span class="kw-2">&amp;mut </span>output, item);
-                        });
+                        <span class="kw">if </span><span class="kw-2">*</span>tick &lt;= curr_tick {
+                            <span class="kw-2">*</span>tick = <span class="number">1 </span>+ curr_tick;
+                            vec.iter().cloned().for_each(|item| {
+                                #root::pusherator::Pusherator::give(<span class="kw-2">&amp;mut </span>output, item);
+                            });
+                        }
                         #root::pusherator::map::Map::new(|item| {
                             vec.push(item);
                             vec.last().unwrap().clone()
                         }, output)
                     }
-                    constrain_types(<span class="kw-2">&amp;mut *</span>#vec_ident, #output)
+                    constrain_types(#context.current_tick(), #tick_ident, #vec_ident, #output)
                 };
             }
         };

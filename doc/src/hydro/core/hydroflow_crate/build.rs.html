@@ -131,6 +131,7 @@
 <a href="#131" id="131">131</a>
 <a href="#132" id="132">132</a>
 <a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::io::BufRead;
 <span class="kw">use </span>std::path::PathBuf;
@@ -153,7 +154,7 @@
     <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
 );
 
-<span class="kw">pub type </span>BuiltCrate = Arc&lt;(String, Vec&lt;u8&gt;)&gt;;
+<span class="kw">pub type </span>BuiltCrate = Arc&lt;(String, Vec&lt;u8&gt;, PathBuf)&gt;;
 
 <span class="kw">static </span>BUILDS: Lazy&lt;Mutex&lt;HashMap&lt;CacheKey, Arc&lt;OnceCell&lt;BuiltCrate&gt;&gt;&gt;&gt;&gt; =
     Lazy::new(Default::default);
@@ -240,9 +241,10 @@
 
                                 <span class="kw">if </span>is_output {
                                     <span class="kw">let </span>path = artifact.executable.unwrap();
+                                    <span class="kw">let </span>path_buf: PathBuf = path.clone().into();
                                     <span class="kw">let </span>path = path.into_string();
                                     <span class="kw">let </span>data = std::fs::read(path).unwrap();
-                                    <span class="kw">return </span><span class="prelude-val">Ok</span>(Arc::new((<span class="macro">nanoid!</span>(<span class="number">8</span>), data)));
+                                    <span class="kw">return </span><span class="prelude-val">Ok</span>(Arc::new((<span class="macro">nanoid!</span>(<span class="number">8</span>), data, path_buf)));
                                 }
                             }
                             cargo_metadata::Message::CompilerMessage(msg) =&gt; {
