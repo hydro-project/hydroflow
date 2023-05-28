@@ -199,7 +199,7 @@
                 <span class="kw">let </span><span class="kw-2">mut </span>curr_map = #context.state_ref(#curr_data).borrow_mut();
                 <span class="kw">if </span>tick.get() &lt; #context.current_tick() {
                     tick.set(#context.current_tick());
-                    ::std::mem::swap(<span class="kw-2">&amp;mut </span>prev_map, <span class="kw-2">&amp;mut </span>curr_map);
+                    ::std::mem::swap(::std::ops::DerefMut::deref_mut(<span class="kw-2">&amp;mut </span>prev_map), ::std::ops::DerefMut::deref_mut(<span class="kw-2">&amp;mut </span>curr_map));
                     curr_map.clear();
                 }
 
