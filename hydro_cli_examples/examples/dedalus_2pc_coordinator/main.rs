@@ -34,16 +34,16 @@ async fn main() {
 
     let mut df = datalog!(
         r#"
-        .input clientIn `repeat_iter([("vote".to_string(),),])`
+        .input clientIn `source_iter([("vote".to_string(),),]) -> persist()`
         .output clientOut `for_each(|(i,msg):(u32,String,)| println!("committed {:?}: {:?}", i, msg))`
 
         # EDBs
-        .input startIndex `repeat_iter([(1u32,),])`
-        .input participants `repeat_iter(peers.clone()) -> map(|p| (p,))`
-        .input success `repeat_iter([(true,),])`
-        .input reject `repeat_iter([(false,),])`
-        .input commitInstruct `repeat_iter([(true,),])`
-        .input rollbackInstruct `repeat_iter([(false,),])`
+        .input startIndex `source_iter([(1u32,),]) -> persist()`
+        .input participants `source_iter(peers.clone()) -> map(|p| (p,)) -> persist()`
+        .input success `source_iter([(true,),]) -> persist()`
+        .input reject `source_iter([(false,),]) -> persist()`
+        .input commitInstruct `source_iter([(true,),]) -> persist()`
+        .input rollbackInstruct `source_iter([(false,),]) -> persist()`
 
         .async voteToParticipant `map(|(node_id, v):(u32,(u32,String))| (node_id, serialize_to_bytes(v))) -> dest_sink(vote_to_participant_sink)` `null::<(u32,String,)>()`
         .async voteFromParticipant `null::<(u32,String,bool,u32,)>()` `source_stream(vote_from_participant_source) -> map(|v| deserialize_from_bytes::<(u32,String,bool,u32,)>(v.unwrap()).unwrap())`

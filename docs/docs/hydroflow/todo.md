@@ -20,7 +20,6 @@ sidebar_position: 8
 ## Operators not discussed
     - dest_sink
     - identity
-    - repeat_iter
     - unzip
     - p1 *fold* -- add to chapter on [state](./syntax/state.md)
     - p1 *reduce* -- add to chapter on [state](./syntax/state.md)

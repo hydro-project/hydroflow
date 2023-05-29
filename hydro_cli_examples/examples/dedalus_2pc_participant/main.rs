@@ -37,9 +37,9 @@ async fn main() {
 
     let mut df = datalog!(
         r#"
-        .input myID `repeat_iter(my_id.clone()) -> map(|p| (p,))`
-        .input coordinator `repeat_iter(peers.clone()) -> map(|p| (p,))`
-        .input verdict `repeat_iter([(true,),])`
+        .input myID `source_iter(my_id.clone()) -> persist() -> map(|p| (p,))`
+        .input coordinator `source_iter(peers.clone()) -> persist() -> map(|p| (p,))`
+        .input verdict `source_iter([(true,),]) -> persist()`
         // .output voteOut `for_each(|(i,myID):(u32,u32,)| println!("participant {:?}: message {:?}", myID, i))`
         
         .async voteToParticipant `null::<(u32,String,)>()` `source_stream(vote_to_participant_source) -> map(|x| deserialize_from_bytes::<(u32,String,)>(x.unwrap()).unwrap())`

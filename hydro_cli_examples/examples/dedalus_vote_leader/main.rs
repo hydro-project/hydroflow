@@ -22,9 +22,9 @@ async fn main() {
 
     let mut df = datalog!(
         r#"
-        .input clientIn `repeat_iter([("vote".to_string(),),])`
+        .input clientIn `source_iter([("vote".to_string(),),]) -> persist()`
         .output stdout `for_each(|_:(String,)| println!("voted"))`
-        .input replicas `repeat_iter(peers.clone()) -> map(|p| (p,))`
+        .input replicas `source_iter(peers.clone()) -> persist() -> map(|p| (p,))`
 
         .async voteToReplica `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(to_replica_sink)` `null::<(String,)>()`
         .async voteFromReplica `null::<(u32,String,)>()` `source_stream(from_replica_source) -> map(|v| deserialize_from_bytes::<(u32,String,)>(v.unwrap()).unwrap())`
