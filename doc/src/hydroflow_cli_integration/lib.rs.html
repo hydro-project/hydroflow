@@ -783,6 +783,7 @@
 <a href="#783" id="783">783</a>
 <a href="#784" id="784">784</a>
 <a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
 </pre></div><pre class="rust"><code><span class="attr">#![feature(never_type)]
 
 </span><span class="kw">use </span>std::collections::HashMap;
@@ -850,6 +851,7 @@
 
                 <span class="attr">#[cfg(not(unix))]
                 </span>{
+                    <span class="kw">let _ </span>= path;
                     <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>)
                 }
             }
@@ -1183,7 +1185,7 @@
 
                 <span class="attr">#[cfg(not(unix))]
                 </span>{
-                    <span class="kw">let _ </span>= path;
+                    drop(stream);
                     <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>);
                 }
             }
