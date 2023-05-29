@@ -7,7 +7,7 @@ pub fn test_repeat_iter() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
-        repeat_iter([1]) -> for_each(|v| out_send.send(v).unwrap());
+        source_iter([1]) -> persist() -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
     df.run_tick();

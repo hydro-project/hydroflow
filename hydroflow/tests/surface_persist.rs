@@ -8,7 +8,8 @@ pub fn test_persist_basic() {
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<u32>();
 
     let mut hf = hydroflow_syntax! {
-        repeat_iter([1])
+        source_iter([1])
+            -> persist()
             -> persist()
             -> fold(0, |a, b| (a + b))
             -> for_each(|x| result_send.send(x).unwrap());
@@ -31,7 +32,7 @@ pub fn test_persist_pull() {
 
     let mut hf = hydroflow_syntax! {
         // Structured to ensure `persist()` is pull-based.
-        repeat_iter([1]) -> m0;
+        source_iter([1]) -> persist() -> m0;
         null() -> m0;
         m0 = union() -> persist() -> m1;
         null() -> m1;
@@ -56,7 +57,7 @@ pub fn test_persist_push() {
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<u32>();
 
     let mut hf = hydroflow_syntax! {
-        t0 = repeat_iter([1]) -> tee();
+        t0 = source_iter([1]) -> persist() -> tee();
         t0 -> null();
         t1 = t0 -> persist() -> tee();
         t1 -> null();
@@ -78,7 +79,7 @@ pub fn test_persist_push() {
 pub fn test_persist_join() {
     let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
     let mut flow = hydroflow::hydroflow_syntax! {
-        repeat_iter([("hello", "world")]) -> [0]my_join;
+        source_iter([("hello", "world")]) -> persist() -> [0]my_join;
         source_stream(input_recv) -> persist() -> [1]my_join;
         my_join = join::<'tick>() -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
     };

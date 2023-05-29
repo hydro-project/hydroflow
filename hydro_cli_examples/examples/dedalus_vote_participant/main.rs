@@ -24,8 +24,8 @@ async fn main() {
 
     let mut df = datalog!(
         r#"
-            .input myID `repeat_iter(my_id.clone()) -> map(|p| (p,))`
-            .input leader `repeat_iter(peers.clone()) -> map(|p| (p,))`
+            .input myID `source_iter(my_id.clone()) -> persist() -> map(|p| (p,))`
+            .input leader `source_iter(peers.clone()) -> persist() -> map(|p| (p,))`
             .async voteToReplica `null::<(String,)>()` `source_stream(to_replica_source) -> map(|x| deserialize_from_bytes::<(String,)>(x.unwrap()).unwrap())`
             .async voteFromReplica `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(from_replica_sink)` `null::<(u32,String,)>()`
             

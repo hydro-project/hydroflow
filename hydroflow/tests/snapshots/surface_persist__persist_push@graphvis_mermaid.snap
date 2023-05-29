@@ -8,32 +8,35 @@ classDef pullClass fill:#02f,color:#fff,stroke:#000,text-align:left,white-space:
 classDef pushClass fill:#ff0,stroke:#000,text-align:left,white-space:pre
 linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
-    1v1[\"(1v1) <code>repeat_iter([1])</code>"/]:::pullClass
-    2v1[/"(2v1) <code>tee()</code>"\]:::pushClass
-    3v1[/"(3v1) <code>null()</code>"\]:::pushClass
-    4v1[/"(4v1) <code>persist()</code>"\]:::pushClass
-    5v1[/"(5v1) <code>tee()</code>"\]:::pushClass
-    6v1[/"(6v1) <code>null()</code>"\]:::pushClass
+    1v1[\"(1v1) <code>source_iter([1])</code>"/]:::pullClass
+    2v1[\"(2v1) <code>persist()</code>"/]:::pullClass
+    3v1[/"(3v1) <code>tee()</code>"\]:::pushClass
+    4v1[/"(4v1) <code>null()</code>"\]:::pushClass
+    5v1[/"(5v1) <code>persist()</code>"\]:::pushClass
+    6v1[/"(6v1) <code>tee()</code>"\]:::pushClass
+    7v1[/"(7v1) <code>null()</code>"\]:::pushClass
     1v1--->2v1
     2v1--->3v1
-    2v1--->4v1
-    4v1--->5v1
+    3v1--->4v1
+    3v1--->5v1
     5v1--->6v1
+    6v1--->7v1
     subgraph sg_1v1_var_t0 ["var <tt>t0</tt>"]
         1v1
         2v1
+        3v1
     end
     subgraph sg_1v1_var_t1 ["var <tt>t1</tt>"]
-        4v1
         5v1
+        6v1
     end
 end
 subgraph sg_2v1 ["sg_2v1 stratum 1"]
-    7v1[\"(7v1) <code>fold(0, |a, b| (a + b))</code>"/]:::pullClass
-    8v1[/"(8v1) <code>for_each(|x| result_send.send(x).unwrap())</code>"\]:::pushClass
-    7v1--->8v1
+    8v1[\"(8v1) <code>fold(0, |a, b| (a + b))</code>"/]:::pullClass
+    9v1[/"(9v1) <code>for_each(|x| result_send.send(x).unwrap())</code>"\]:::pushClass
+    8v1--->9v1
 end
-5v1--->9v1
-9v1["(9v1) <code>handoff</code>"]:::otherClass
-9v1===o7v1
+6v1--->10v1
+10v1["(10v1) <code>handoff</code>"]:::otherClass
+10v1===o8v1
 

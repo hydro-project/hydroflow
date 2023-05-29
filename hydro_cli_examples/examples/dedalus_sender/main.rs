@@ -23,9 +23,9 @@ async fn main() {
 
     let df = datalog!(
         r#"
-        .input repeated `repeat_iter_external(to_repeat.iter().cloned())`
+        .input repeated `spin() -> flat_map(|_| to_repeat.iter().cloned())`
         .input periodic `source_stream(periodic) -> map(|_| ())`
-        .input peers `repeat_iter(peers.clone()) -> map(|p| (p,))`
+        .input peers `source_iter(peers.clone()) -> persist() -> map(|p| (p,))`
         .async broadcast `map(|(node_id, v)| (node_id, serialize_to_bytes(v))) -> dest_sink(broadcast_sink)` `null::<(String,)>()`
 
         broadcast@n(x) :~ repeated(x), periodic(), peers(n)
