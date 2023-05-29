@@ -241,7 +241,7 @@ pub fn gen_hydroflow_graph(
         let static_expression: syn::Expr = parse_static(&hf_code.code, &get_span)?;
 
         flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
-            repeat_iter(#static_expression) -> [#my_union_index_lit] #name
+            source_iter(#static_expression) -> persist() -> [#my_union_index_lit] #name
         });
     }
 

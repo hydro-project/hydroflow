@@ -1,10 +1,10 @@
+use quote::{quote_spanned, ToTokens};
+
 use super::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
-
 use crate::graph::{OpInstGenerics, OperatorInstance};
-use quote::{quote_spanned, ToTokens};
 
 /// > 1 input stream, 1 output stream
 ///
@@ -20,7 +20,7 @@ use quote::{quote_spanned, ToTokens};
 ///
 ///     // Will print 0, 1, 2, 3, 4 each on a new line just once.
 ///     let mut df = hydroflow::hydroflow_syntax! {
-///         repeat_iter(0..5)
+///         source_iter(0..5) -> persist()
 ///             -> map(|x| hydroflow::lattices::Max::new(x))
 ///             -> lattice_batch::<hydroflow::lattices::Max<usize>>(rx)
 ///             -> for_each(|x| { println!("{x:?}"); });

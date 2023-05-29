@@ -1,10 +1,10 @@
+use quote::quote_spanned;
+
 use super::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
-
 use crate::graph::OperatorInstance;
-use quote::quote_spanned;
 
 /// > 1 input stream, 1 output stream
 ///
@@ -21,7 +21,7 @@ use quote::quote_spanned;
 ///
 ///     // Will print 0, 1, 2, 3, 4 each on a new line just once.
 ///     let mut df = hydroflow::hydroflow_syntax! {
-///         repeat_iter(0..5) -> batch(10, rx) -> for_each(|x| { println!("{x}"); });
+///         source_iter(0..5) -> persist() -> batch(10, rx) -> for_each(|x| { println!("{x}"); });
 ///     };
 ///
 ///     tx.send(()).unwrap();
