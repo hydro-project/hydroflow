@@ -65,6 +65,7 @@ impl From<&ServerPort> for RealizedServerPort {
 
                 #[cfg(not(unix))]
                 {
+                    let _ = path;
                     panic!("Unix sockets are not supported on this platform")
                 }
             }
@@ -398,7 +399,7 @@ impl Connected for ConnectedBidi {
 
                 #[cfg(not(unix))]
                 {
-                    let _ = path;
+                    drop(stream);
                     panic!("Unix sockets are not supported on this platform");
                 }
             }
