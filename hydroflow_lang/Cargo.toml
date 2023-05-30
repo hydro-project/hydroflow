@@ -13,7 +13,6 @@ diagnostics = []
 
 [dependencies]
 auto_impl = "1.0.1"
-hydroflow_internalmacro = { path = "../hydroflow_internalmacro", version = "^0.1.0" }
 prettyplease = { version = "0.2.0", features = [ "verbatim" ] }
 proc-macro2 = { version = "1.0.0", features = ["span-locations"] }
 quote = "1.0.0"

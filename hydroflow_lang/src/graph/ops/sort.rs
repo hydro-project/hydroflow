@@ -16,7 +16,6 @@ use super::{
 ///
 /// `sort` is partially blocking. Only the values collected within a single tick will be sorted and
 /// emitted.
-#[hydroflow_internalmacro::operator_docgen]
 pub const SORT: OperatorConstraints = OperatorConstraints {
     name: "sort",
     hard_range_inn: RANGE_1,

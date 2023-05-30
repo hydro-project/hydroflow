@@ -15,7 +15,6 @@ use quote::quote_spanned;
 /// source_iter(vec!["1", "hello", "world", "2"]) -> filter_map(|s| s.parse().ok())
 ///     -> for_each(|x: usize| println!("{}", x));
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const FILTER_MAP: OperatorConstraints = OperatorConstraints {
     name: "filter_map",
     hard_range_inn: RANGE_1,

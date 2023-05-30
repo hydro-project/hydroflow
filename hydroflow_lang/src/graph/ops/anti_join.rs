@@ -23,7 +23,6 @@ use syn::parse_quote;
 /// diff = anti_join() -> for_each(|v: (_, _)| println!("{}, {}", v.0, v.1));
 /// // elephant 3
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
     name: "anti_join",
     hard_range_inn: &(2..=2),

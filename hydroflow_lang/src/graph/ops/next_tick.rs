@@ -35,7 +35,6 @@ use super::{
 /// }
 /// flow.run_tick();
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const NEXT_TICK: OperatorConstraints = OperatorConstraints {
     name: "next_tick",
     hard_range_inn: RANGE_1,

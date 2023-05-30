@@ -15,7 +15,6 @@ use super::{
 /// ```hydroflow
 /// initialize() -> for_each(|()| println!("This only runs one time!"));
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const INITIALIZE: OperatorConstraints = OperatorConstraints {
     name: "initialize",
     hard_range_inn: RANGE_0,

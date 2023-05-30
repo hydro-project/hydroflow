@@ -20,7 +20,6 @@ use quote::quote_spanned;
 /// source_iter(vec!["hello", "world"]) -> enumerate()
 ///     -> for_each(|(i, x)| println!("{}: {}", i, x));
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const ENUMERATE: OperatorConstraints = OperatorConstraints {
     name: "enumerate",
     hard_range_inn: RANGE_1,

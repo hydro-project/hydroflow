@@ -83,7 +83,6 @@ use syn::parse_quote;
 /// ```
 /// Prints out `"(hello, (world, oakland))"` and `"(hello, (world, san francisco))"` since the
 /// inputs are peristed across ticks.
-#[hydroflow_internalmacro::operator_docgen]
 pub const JOIN: OperatorConstraints = OperatorConstraints {
     name: "join",
     hard_range_inn: &(2..=2),

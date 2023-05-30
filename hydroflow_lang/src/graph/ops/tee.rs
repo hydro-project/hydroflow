@@ -18,7 +18,6 @@ use quote::{quote_spanned, ToTokens};
 ///     -> for_each(|x| println!("{}", x));
 /// my_tee -> for_each(|x: &str| println!("{}", x));
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const TEE: OperatorConstraints = OperatorConstraints {
     name: "tee",
     hard_range_inn: RANGE_1,

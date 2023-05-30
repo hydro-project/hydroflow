@@ -21,7 +21,6 @@ use quote::quote_spanned;
 ///     flow.run_available();
 /// }
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const DEST_SINK_SERDE: OperatorConstraints = OperatorConstraints {
     name: "dest_sink_serde",
     hard_range_inn: RANGE_1,

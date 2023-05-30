@@ -16,7 +16,6 @@ use syn::parse_quote;
 /// my_unzip[0] -> for_each(|x| println!("0: {}", x)); // Hello World
 /// my_unzip[1] -> for_each(|x| println!("1: {}", x)); // Foo Bar
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const UNZIP: OperatorConstraints = OperatorConstraints {
     name: "unzip",
     hard_range_inn: RANGE_1,
