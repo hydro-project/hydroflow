@@ -5,7 +5,6 @@ use super::{
 
 /// Delays all elements which pass through to the next stratum (in the same
 /// tick).
-#[hydroflow_internalmacro::operator_docgen]
 pub const NEXT_STRATUM: OperatorConstraints = OperatorConstraints {
     name: "next_stratum",
     hard_range_inn: RANGE_1,

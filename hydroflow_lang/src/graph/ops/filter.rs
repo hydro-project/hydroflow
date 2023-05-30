@@ -18,7 +18,6 @@ use quote::quote_spanned;
 /// source_iter(vec!["hello", "world"]) -> filter(|x| x.starts_with('w'))
 ///     -> for_each(|x| println!("{}", x));
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const FILTER: OperatorConstraints = OperatorConstraints {
     name: "filter",
     hard_range_inn: RANGE_1,

@@ -20,7 +20,6 @@ use super::{
 /// ```hydroflow
 /// source_file("Cargo.toml") -> for_each(|line| println!("{}", line));
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const SOURCE_FILE: OperatorConstraints = OperatorConstraints {
     name: "source_file",
     hard_range_inn: RANGE_0,

@@ -28,7 +28,6 @@ use crate::graph::OperatorInstance;
 ///
 ///     df.run_available();
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const BATCH: OperatorConstraints = OperatorConstraints {
     name: "batch",
     persistence_args: RANGE_0,

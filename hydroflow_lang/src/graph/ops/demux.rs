@@ -43,7 +43,6 @@ use syn::{Expr, Pat};
 /// my_demux[buzz] -> for_each(|v| println!("{}: buzz", v));
 /// my_demux[vals] -> for_each(|v| println!("{}", v));
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const DEMUX: OperatorConstraints = OperatorConstraints {
     name: "demux",
     hard_range_inn: RANGE_1,

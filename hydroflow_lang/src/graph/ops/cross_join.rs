@@ -41,7 +41,6 @@ use syn::parse_quote;
 /// ```
 /// Prints only `"(hello, oakland)"` and `"(bye, oakland)"`. The `source_iter` is only included in
 /// the first tick, then forgotten.
-#[hydroflow_internalmacro::operator_docgen]
 pub const CROSS_JOIN: OperatorConstraints = OperatorConstraints {
     name: "cross_join",
     hard_range_inn: &(2..=2),

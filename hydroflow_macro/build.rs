@@ -160,14 +160,11 @@ fn update_book() -> Result<(), Box<dyn Error>> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // Only try to update the book if the output directory exists.
-    if book_file(FILENAME)?
-        .parent()
-        .map_or(false, |dir| dir.is_dir())
-    {
-        update_book()?;
+    if Err(VarError::NotPresent) == std::env::var("CARGO_CFG_HYDROFLOW_GENERATE_DOCS") {
+        Ok(())
+    } else {
+        update_book()
     }
-    Ok(())
 }
 
 const PREFIX: &str = "\

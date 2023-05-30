@@ -30,7 +30,6 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 ///
 ///     df.run_available();
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const LATTICE_BATCH: OperatorConstraints = OperatorConstraints {
     name: "lattice_batch",
     persistence_args: RANGE_0,

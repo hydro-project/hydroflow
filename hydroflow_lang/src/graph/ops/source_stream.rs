@@ -25,7 +25,6 @@ use crate::graph::OperatorInstance;
 /// input_send.send("World").unwrap();
 /// flow.run_available();
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const SOURCE_STREAM: OperatorConstraints = OperatorConstraints {
     name: "source_stream",
     hard_range_inn: RANGE_0,

@@ -17,7 +17,6 @@ use quote::quote_spanned;
 /// ```hydroflow
 /// source_iter([1, 2, 3, 4]) -> inspect(|&x| println!("{}", x)) -> null();
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const INSPECT: OperatorConstraints = OperatorConstraints {
     name: "inspect",
     hard_range_inn: RANGE_1,

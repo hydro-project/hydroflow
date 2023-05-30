@@ -19,7 +19,6 @@ use quote::quote_spanned;
 /// };
 /// flow.run_async();
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const SOURCE_STDIN: OperatorConstraints = OperatorConstraints {
     name: "source_stdin",
     hard_range_inn: RANGE_0,

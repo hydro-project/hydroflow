@@ -30,7 +30,6 @@ use super::{
 /// // 5, 3
 /// // First two "3"s are removed due to previous tick.
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const MULTISET_DELTA: OperatorConstraints = OperatorConstraints {
     name: "multiset_delta",
     hard_range_inn: RANGE_1,

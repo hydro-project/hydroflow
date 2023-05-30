@@ -43,7 +43,6 @@ use crate::graph::OperatorInstance;
 ///     // This runs every second: Instant { t: 27474.704813s }
 /// }
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const SOURCE_INTERVAL: OperatorConstraints = OperatorConstraints {
     name: "source_interval",
     hard_range_inn: RANGE_0,

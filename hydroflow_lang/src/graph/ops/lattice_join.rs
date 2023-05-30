@@ -65,7 +65,6 @@ use syn::parse_quote;
 /// let out: Vec<_> = hydroflow::util::collect_ready(&mut out_rx);
 /// assert_eq!(out, vec![(7, (Max::new(2), Max::new(5)))]);
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
     name: "lattice_join",
     hard_range_inn: &(2..=2),

@@ -2,6 +2,9 @@
 rustflags = [
     "-Zproc-macro-backtrace",
     "-Wunused_qualifications",
+    # Flag to make build.rs scripts generate docs. Should only be used in this repository
+    # internally, not by dependants.
+    '--cfg=HYDROFLOW_GENERATE_DOCS',
     # https://github.com/rust-lang/rust-clippy/issues/10087
     ## TODO(mingwei): Need rust-analyzer support:
     # "-Aclippy::uninlined-format-args",

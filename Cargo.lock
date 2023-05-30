@@ -1401,21 +1401,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "hydroflow_internalmacro"
-version = "0.1.0"
-dependencies = [
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "syn 2.0.14",
-]
-
-[[package]]
 name = "hydroflow_lang"
 version = "0.1.1"
 dependencies = [
  "auto_impl",
- "hydroflow_internalmacro",
  "prettyplease",
  "proc-macro2",
  "quote",

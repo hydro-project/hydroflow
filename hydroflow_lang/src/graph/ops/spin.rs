@@ -6,7 +6,6 @@ use super::{
 };
 
 /// This operator will trigger the start of new ticks in order to repeat, which will cause spinning-like behavior.
-#[hydroflow_internalmacro::operator_docgen]
 pub const SPIN: OperatorConstraints = OperatorConstraints {
     name: "spin",
     hard_range_inn: RANGE_0,

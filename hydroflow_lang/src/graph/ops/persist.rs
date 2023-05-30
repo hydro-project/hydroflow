@@ -36,7 +36,6 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// // (hello, (world, oakland))
 /// // (hello, (world, san francisco))
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const PERSIST: OperatorConstraints = OperatorConstraints {
     name: "persist",
     hard_range_inn: RANGE_1,

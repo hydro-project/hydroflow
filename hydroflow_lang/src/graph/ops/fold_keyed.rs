@@ -60,7 +60,6 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// flow.run_available();
 /// // ("hello", "palo alto, ")
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
     name: "fold_keyed",
     hard_range_inn: RANGE_1,

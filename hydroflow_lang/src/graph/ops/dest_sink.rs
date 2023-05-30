@@ -81,7 +81,6 @@ use super::{
 /// assert_eq!(b"helloworld", &*buf);
 /// # }
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
     name: "dest_sink",
     hard_range_inn: RANGE_1,

@@ -19,7 +19,6 @@ use crate::diagnostic::{Diagnostic, Level};
 /// my_zip = zip() -> for_each(|(l, r)| println!("({}, {})", l, r));
 /// // prints `(0, 0)`, `(1, 1)`, `(2, 2)`.
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const ZIP: OperatorConstraints = OperatorConstraints {
     name: "zip",
     hard_range_inn: &(2..=2),
