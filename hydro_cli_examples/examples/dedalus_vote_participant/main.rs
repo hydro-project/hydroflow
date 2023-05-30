@@ -1,4 +1,4 @@
-use hydroflow::util::cli::{ConnectedBidi, ConnectedDemux, ConnectedSink, ConnectedSource};
+use hydroflow::util::cli::{ConnectedDirect, ConnectedDemux, ConnectedSink, ConnectedSource};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 use hydroflow_datalog::datalog;
 
@@ -7,13 +7,13 @@ async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let to_replica_source = ports
         .port("to_replica")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_source();
 
     let from_replica_port = ports
         .port("from_replica")
-        .connect::<ConnectedDemux<ConnectedBidi>>()
+        .connect::<ConnectedDemux<ConnectedDirect>>()
         .await;
 
     let peers = from_replica_port.keys.clone();

@@ -33,13 +33,13 @@ async fn main() {
 
     let from_peer = ports
         .port("from_peer")
-        .connect::<hydroflow::util::cli::ConnectedBidi>()
+        .connect::<hydroflow::util::cli::ConnectedDirect>()
         .await
         .into_source();
 
     let to_peer = ports
         .port("to_peer")
-        .connect::<hydroflow::util::cli::ConnectedDemux<hydroflow::util::cli::ConnectedBidi>>()
+        .connect::<hydroflow::util::cli::ConnectedDemux<hydroflow::util::cli::ConnectedDirect>>()
         .await
         .into_sink();
 
