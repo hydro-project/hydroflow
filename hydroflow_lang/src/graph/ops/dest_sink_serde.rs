@@ -48,7 +48,7 @@ pub const DEST_SINK_SERDE: OperatorConstraints = OperatorConstraints {
                    ..
                },
                diagnostics| {
-        let missing_runtime_msg = make_missing_runtime_msg(op_name);
+        let missing_runtime_msg = make_missing_runtime_msg(op_name, op_span);
 
         let OperatorWriteOutput {
             write_prologue,

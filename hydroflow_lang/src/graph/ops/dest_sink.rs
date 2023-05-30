@@ -1,9 +1,12 @@
+use proc_macro2::Literal;
 use quote::quote_spanned;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
+use crate::graph::OperatorInstance;
+use crate::pretty_span::PrettySpan;
 
 /// > Arguments: An [async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
 ///
@@ -106,52 +109,90 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
                    op_span,
                    ident,
                    is_pull,
+                   op_name,
                    op_inst: OperatorInstance { arguments, .. },
                    ..
                },
                _| {
+        const BUFFER_BACKPRESSURE_THRESHOLD: usize = 32;
+
         assert!(!is_pull);
 
         let sink_arg = &arguments[0];
 
         let send_ident = wc.make_ident("item_send");
         let recv_ident = wc.make_ident("item_recv");
+        let count_ident_send = wc.make_ident("count_send");
+        let count_ident_recv = wc.make_ident("count_recv");
+        let bp_ident_send = wc.make_ident("backpressure_valve_send");
+        let bp_ident_recv = wc.make_ident("backpressure_valve_recv");
+        let bp_threshold_lit = Literal::usize_suffixed(BUFFER_BACKPRESSURE_THRESHOLD);
+
+        let sink_feed_msg = Literal::string(&*format!(
+            "`{}()` ({}) encountered a error feeding async sink item.",
+            op_name,
+            PrettySpan(op_span)
+        ));
+        let sink_flush_msg = Literal::string(&*format!(
+            "`{}()` ({}) encountered a error flushing async sink.",
+            op_name,
+            PrettySpan(op_span)
+        ));
+        let buffer_send_msg = Literal::string(&*format!(
+            "`{}()` ({}) failed to send item into buffer channel (seeing this message constitutes a hydroflow bug): {{}}.",
+            op_name,
+            PrettySpan(op_span)
+        ));
 
         let write_prologue = quote_spanned! {op_span=>
+            let #count_ident_send = ::std::sync::Arc::new(::std::sync::atomic::AtomicUsize::new(0));
+            let #count_ident_recv = ::std::sync::Arc::clone(&#count_ident_send);
             let (#send_ident, #recv_ident) = #root::tokio::sync::mpsc::unbounded_channel();
+            let #bp_ident_send = #hydroflow.backpressure_valve();
+            let #bp_ident_recv = ::std::clone::Clone::clone(&#bp_ident_send);
             {
                 /// Function is needed so `Item` is so no ambiguity for what `Item` is used
                 /// when calling `.flush()`.
                 async fn sink_feed_flush<Sink, Item>(
                     mut recv: #root::tokio::sync::mpsc::UnboundedReceiver<Item>,
                     mut sink: Sink,
+                    count: ::std::sync::Arc<::std::sync::atomic::AtomicUsize>,
+                    backpressure_valve: #root::scheduled::context::BackpressureValve,
                 ) where
                     Sink: ::std::marker::Unpin + #root::futures::Sink<Item>,
                     Sink::Error: ::std::fmt::Debug,
                 {
-                    use #root::futures::SinkExt;
                     while let Some(item) = recv.recv().await {
-                        sink.feed(item)
+                        let mut recv_count = 1;
+                        #root::futures::SinkExt::feed(&mut sink, item)
                             .await
-                            .expect("Error processing async sink item.");
+                            .expect(#sink_feed_msg);
                         while let Ok(item) = recv.try_recv() {
-                            sink.feed(item)
+                            recv_count += 1;
+                            #root::futures::SinkExt::feed(&mut sink, item)
                                 .await
-                                .expect("Error processing async sink item.");
+                                .expect(#sink_feed_msg);
                         }
-                        sink.flush().await.expect("Failed to flush sink.");
+                        let new_count = count.fetch_sub(recv_count, ::std::sync::atomic::Ordering::Relaxed) - recv_count;
+                        backpressure_valve.set(new_count / #bp_threshold_lit);
+
+                        #root::futures::SinkExt::flush(&mut sink)
+                            .await
+                            .expect(#sink_flush_msg);
                     }
                 }
                 #hydroflow
-                    .spawn_task(sink_feed_flush(#recv_ident, #sink_arg));
+                    .spawn_task(sink_feed_flush(#recv_ident, #sink_arg, #count_ident_recv, #bp_ident_recv));
             }
         };
 
         let write_iterator = quote_spanned! {op_span=>
             let #ident = #root::pusherator::for_each::ForEach::new(|item| {
                 if let Err(err) = #send_ident.send(item) {
-                    panic!("Failed to send async write item for processing.: {}", err);
+                    panic!(#buffer_send_msg, err);
                 }
+                let count = 1 + #count_ident_send.fetch_add(1, ::std::sync::atomic::Ordering::Relaxed);
+                #bp_ident_send.set(count / #bp_threshold_lit);
             });
         };
 

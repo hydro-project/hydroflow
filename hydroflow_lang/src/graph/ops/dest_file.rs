@@ -53,7 +53,7 @@ pub const DEST_FILE: OperatorConstraints = OperatorConstraints {
 
         let ident_filesink = wc.make_ident("filesink");
 
-        let missing_runtime_msg = make_missing_runtime_msg(op_name);
+        let missing_runtime_msg = make_missing_runtime_msg(op_name, op_span);
 
         let write_prologue = quote_spanned! {op_span=>
             let #ident_filesink = {
