@@ -21,7 +21,7 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
         // Define shared inbound and outbound channels
         inbound_chan = source_stream_serde(inbound) -> map(|udp_msg| udp_msg.unwrap()) /* -> tee() */; // commented out since we only use this once in the client template
 
-        outbound_chan = // merge() ->  // commented out since we only use this once in the client template
+        outbound_chan = // union() ->  // commented out since we only use this once in the client template
             dest_sink_serde(outbound);
 
         // Print all messages for debugging purposes

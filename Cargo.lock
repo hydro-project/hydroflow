@@ -548,8 +548,8 @@ checksum = "c4a1e36c821dbe04574f602848a19f742f4fb3c98d40449f11bcad18d6b17421"
 
 [[package]]
 name = "hydroflow"
-version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow#8a5b487cc1d12dd1836254e31a6c505c8f785515"
+version = "0.1.1"
+source = "git+https://github.com/hydro-project/hydroflow#5d485442691f878ae6835f631ae13ff856fd941c"
 dependencies = [
  "bincode",
  "byteorder",
@@ -559,6 +559,7 @@ dependencies = [
  "hydroflow_datalog",
  "hydroflow_lang",
  "hydroflow_macro",
+ "itertools",
  "lattices",
  "pusherator",
  "ref-cast",
@@ -587,7 +588,7 @@ dependencies = [
 [[package]]
 name = "hydroflow_datalog"
 version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow#8a5b487cc1d12dd1836254e31a6c505c8f785515"
+source = "git+https://github.com/hydro-project/hydroflow#5d485442691f878ae6835f631ae13ff856fd941c"
 dependencies = [
  "hydroflow_datalog_core",
  "proc-macro-crate",
@@ -598,8 +599,8 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog_core"
-version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow#8a5b487cc1d12dd1836254e31a6c505c8f785515"
+version = "0.1.1"
+source = "git+https://github.com/hydro-project/hydroflow#5d485442691f878ae6835f631ae13ff856fd941c"
 dependencies = [
  "hydroflow_lang",
  "proc-macro-crate",
@@ -614,7 +615,7 @@ dependencies = [
 [[package]]
 name = "hydroflow_internalmacro"
 version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow#8a5b487cc1d12dd1836254e31a6c505c8f785515"
+source = "git+https://github.com/hydro-project/hydroflow#5d485442691f878ae6835f631ae13ff856fd941c"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -624,8 +625,8 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_lang"
-version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow#8a5b487cc1d12dd1836254e31a6c505c8f785515"
+version = "0.1.1"
+source = "git+https://github.com/hydro-project/hydroflow#5d485442691f878ae6835f631ae13ff856fd941c"
 dependencies = [
  "auto_impl",
  "hydroflow_internalmacro",
@@ -641,8 +642,8 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_macro"
-version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow#8a5b487cc1d12dd1836254e31a6c505c8f785515"
+version = "0.1.1"
+source = "git+https://github.com/hydro-project/hydroflow#5d485442691f878ae6835f631ae13ff856fd941c"
 dependencies = [
  "hydroflow_lang",
  "proc-macro-crate",
@@ -727,6 +728,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.10.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -765,8 +775,8 @@ dependencies = [
 
 [[package]]
 name = "lattices"
-version = "0.1.1"
-source = "git+https://github.com/hydro-project/hydroflow#8a5b487cc1d12dd1836254e31a6c505c8f785515"
+version = "0.1.2"
+source = "git+https://github.com/hydro-project/hydroflow#5d485442691f878ae6835f631ae13ff856fd941c"
 dependencies = [
  "cc-traits",
  "sealed",
@@ -994,7 +1004,7 @@ dependencies = [
 [[package]]
 name = "pusherator"
 version = "0.0.1"
-source = "git+https://github.com/hydro-project/hydroflow#8a5b487cc1d12dd1836254e31a6c505c8f785515"
+source = "git+https://github.com/hydro-project/hydroflow#5d485442691f878ae6835f631ae13ff856fd941c"
 dependencies = [
  "either",
  "variadics",
@@ -1667,7 +1677,7 @@ checksum = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a"
 [[package]]
 name = "variadics"
 version = "0.0.2"
-source = "git+https://github.com/hydro-project/hydroflow#8a5b487cc1d12dd1836254e31a6c505c8f785515"
+source = "git+https://github.com/hydro-project/hydroflow#5d485442691f878ae6835f631ae13ff856fd941c"
 
 [[package]]
 name = "vec_map"
