@@ -148,13 +148,13 @@
 <a href="#148" id="148">148</a>
 <a href="#149" id="149">149</a>
 <a href="#150" id="150">150</a>
-</pre></div><pre class="rust"><code><span class="kw">use super</span>::{
+</pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
+
+<span class="kw">use super</span>::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
-
 <span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
-<span class="kw">use </span>quote::quote_spanned;
 
 <span class="doccomment">/// &gt; 1 input stream, 1 output stream
 ///
@@ -171,7 +171,7 @@
 ///
 ///     // Will print 0, 1, 2, 3, 4 each on a new line just once.
 ///     let mut df = hydroflow::hydroflow_syntax! {
-///         repeat_iter(0..5) -&gt; batch(10, rx) -&gt; for_each(|x| { println!(&quot;{x}&quot;); });
+///         source_iter(0..5) -&gt; persist() -&gt; batch(10, rx) -&gt; for_each(|x| { println!(&quot;{x}&quot;); });
 ///     };
 ///
 ///     tx.send(()).unwrap();

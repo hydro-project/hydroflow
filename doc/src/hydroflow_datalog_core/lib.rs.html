@@ -1420,7 +1420,7 @@
         <span class="kw">let </span>static_expression: syn::Expr = parse_static(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
-            repeat_iter(#static_expression) -&gt; [#my_union_index_lit] #name
+            source_iter(#static_expression) -&gt; persist() -&gt; [#my_union_index_lit] #name
         });
     }
 

@@ -150,26 +150,20 @@
 <a href="#150" id="150">150</a>
 <a href="#151" id="151">151</a>
 <a href="#152" id="152">152</a>
-<a href="#153" id="153">153</a>
-<a href="#154" id="154">154</a>
-<a href="#155" id="155">155</a>
-</pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
-    diagnostic::{Diagnostic, Level},
-    graph::{OpInstGenerics, OperatorInstance},
-};
+</pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, Persistence,
     WriteContextArgs, RANGE_0, RANGE_1,
 };
-
-<span class="kw">use </span>quote::quote_spanned;
+<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
+<span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
 
 <span class="doccomment">/// Stores each item as it passes through, and replays all item every tick.
 ///
 /// ```hydroflow
 /// // Normally `source_iter(...)` only emits once, but with `persist()` will replay the `&quot;hello&quot;`
-/// // on every tick. This is equivalent to `repeat_iter([&quot;hello&quot;])`.
+/// // on every tick.
 /// source_iter([&quot;hello&quot;])
 ///     -&gt; persist()
 ///     -&gt; for_each(|item| println!(&quot;{}: {}&quot;, context.current_tick(), item));
@@ -182,7 +176,7 @@
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(&amp;str, &amp;str)&gt;();
 /// let mut flow = hydroflow::hydroflow_syntax! {
-///     repeat_iter([(&quot;hello&quot;, &quot;world&quot;)]) -&gt; [0]my_join;
+///     source_iter([(&quot;hello&quot;, &quot;world&quot;)]) -&gt; persist() -&gt; [0]my_join;
 ///     source_stream(input_recv) -&gt; persist() -&gt; [1]my_join;
 ///     my_join = join::&lt;&#39;tick&gt;() -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
 /// };
