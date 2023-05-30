@@ -2,9 +2,10 @@ name: Build CLI
 
 on:
   push:
-    branches: [main]
-  release:
-    types: [published]
+    branches:
+      - main
+    tags:
+      - 'hydro_cli-v[0-9]+.[0-9]+.[0-9]+'
 
 env:
   PACKAGE_NAME: hydro_deploy
@@ -14,7 +15,6 @@ env:
 jobs:
   pre_job:
     runs-on: ubuntu-latest
-    if: "github.event_name != 'release' || startsWith(github.ref, 'refs/tags/hydro_cli-')"
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
@@ -24,8 +24,9 @@ jobs:
           cancel_others: "true"
 
   macos-universal:
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: macos-latest
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    needs: pre_job
     strategy:
       matrix:
         target:
@@ -52,8 +53,9 @@ jobs:
           path: hydro_cli/dist
 
   linux:
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    needs: pre_job
     strategy:
       matrix:
         target:
@@ -83,8 +85,9 @@ jobs:
           path: hydro_cli/dist
 
   musllinux-cross:
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    needs: pre_job
     strategy:
       matrix:
         platform:
@@ -121,6 +124,8 @@ jobs:
 
   windows:
     runs-on: windows-latest
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    needs: pre_job
     strategy:
       matrix:
         platform:
@@ -161,7 +166,7 @@ jobs:
       - linux
       - musllinux-cross
       - windows
-    if: "github.event_name == 'release'"
+    if: ${{ startsWith(github.ref, 'refs/tags/hydro_cli-') }}
     steps:
       - uses: actions/download-artifact@v3
         with:
