@@ -4,6 +4,8 @@ publish = true
 version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
+documentation = "https://docs.rs/hydro_cli/"
+description = "Hydro Deploy Command Line Interface"
 
 [lib]
 name = "hydro"
