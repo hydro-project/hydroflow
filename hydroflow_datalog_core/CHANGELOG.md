@@ -5,7 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.1.1 (2023-05-30)
+
+### Bug Fixes
+
+ - <csr-id-075c99e7cdcf40ae5cab9efa787ba4447db8a479/> fix `persist` releasing multiple times during the same tick
+   Add surface_double_handoff tests
+
+### Other
+
+ - <csr-id-d574cb2661ba086059ba8cd6904fd6b6b0a5a8cb/> merge() to union()
+
+### Refactor
+
+ - <csr-id-d13a01b3a3fa0c52381833f88bcadac7a4ebcda9/> add spin(), remove repeat_iter,repeat_iter_external
+   * refactor: add spin(), remove repeat_iter,repeat_iter_external
+   
+   * fix: fix lints
+ - <csr-id-2843e7e114ac824a684a5400909819ccc5c88fe3/> Suffixes and remove keyed fold
+   * rename: keyed_fold/keyed_reduce -> fold_keyed/reduce_keyed
+   
+   * remove group_by
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release.
+ - 6 days passed between releases.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 4 unique issues were worked on: [#697](https://github.com/hydro-project/hydroflow/issues/697), [#702](https://github.com/hydro-project/hydroflow/issues/702), [#714](https://github.com/hydro-project/hydroflow/issues/714), [#716](https://github.com/hydro-project/hydroflow/issues/716)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#697](https://github.com/hydro-project/hydroflow/issues/697)**
+    - Merge() to union() ([`d574cb2`](https://github.com/hydro-project/hydroflow/commit/d574cb2661ba086059ba8cd6904fd6b6b0a5a8cb))
+ * **[#702](https://github.com/hydro-project/hydroflow/issues/702)**
+    - Suffixes and remove keyed fold ([`2843e7e`](https://github.com/hydro-project/hydroflow/commit/2843e7e114ac824a684a5400909819ccc5c88fe3))
+ * **[#714](https://github.com/hydro-project/hydroflow/issues/714)**
+    - Add spin(), remove repeat_iter,repeat_iter_external ([`d13a01b`](https://github.com/hydro-project/hydroflow/commit/d13a01b3a3fa0c52381833f88bcadac7a4ebcda9))
+ * **[#716](https://github.com/hydro-project/hydroflow/issues/716)**
+    - Fix `persist` releasing multiple times during the same tick ([`075c99e`](https://github.com/hydro-project/hydroflow/commit/075c99e7cdcf40ae5cab9efa787ba4447db8a479))
+</details>
+
 ## 0.1.0 (2023-05-23)
+
+<csr-id-52ee8f8e443f0a8b5caf92d2c5f028c00302a79b/>
+<csr-id-faab58f855e4d6f2ad885c6f39f57ebc5662ec20/>
 
 ### Chore
 
@@ -20,8 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release over the course of 1 calendar day.
- - 3 days passed between releases.
+ - 4 commits contributed to the release.
+ - 2 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 3 unique issues were worked on: [#673](https://github.com/hydro-project/hydroflow/issues/673), [#677](https://github.com/hydro-project/hydroflow/issues/677), [#684](https://github.com/hydro-project/hydroflow/issues/684)
 
@@ -37,6 +87,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Remove `hydroflow::lang` module, move `Clear`, `MonotonicMap` to `hydroflow::util` instead ([`faab58f`](https://github.com/hydro-project/hydroflow/commit/faab58f855e4d6f2ad885c6f39f57ebc5662ec20))
  * **[#684](https://github.com/hydro-project/hydroflow/issues/684)**
     - Bump versions to 0.1.0 for release ([`52ee8f8`](https://github.com/hydro-project/hydroflow/commit/52ee8f8e443f0a8b5caf92d2c5f028c00302a79b))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.1.0, hydroflow_internalmacro v0.1.0, hydroflow_lang v0.1.0, hydroflow_datalog_core v0.1.0, hydroflow_datalog v0.1.0, hydroflow_macro v0.1.0, lattices v0.1.1, hydroflow v0.1.0 ([`7324974`](https://github.com/hydro-project/hydroflow/commit/73249744293c9b89cbaa2d84b23ca3f25b00ae4e))
 </details>
 
 ## 0.0.1 (2023-05-21)

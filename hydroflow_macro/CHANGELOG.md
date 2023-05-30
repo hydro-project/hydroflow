@@ -5,7 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.1.1 (2023-05-30)
+
+### Documentation
+
+ - <csr-id-28c90251dd877dd84f28886eecb7b366abf3d45b/> Add initial Hydro Deploy docs
+   Renamed from Hydro CLI because the CLI isn't really the main thing. Also moves the Hydroflow docs to a subdirectory and sets up a dropdown for multiple docs.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 1 commit contributed to the release.
+ - 6 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#686](https://github.com/hydro-project/hydroflow/issues/686)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#686](https://github.com/hydro-project/hydroflow/issues/686)**
+    - Add initial Hydro Deploy docs ([`28c9025`](https://github.com/hydro-project/hydroflow/commit/28c90251dd877dd84f28886eecb7b366abf3d45b))
+</details>
+
 ## 0.1.0 (2023-05-23)
+
+<csr-id-52ee8f8e443f0a8b5caf92d2c5f028c00302a79b/>
 
 ### Chore
 
@@ -20,8 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release over the course of 1 calendar day.
- - 3 days passed between releases.
+ - 5 commits contributed to the release.
+ - 2 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#661](https://github.com/hydro-project/hydroflow/issues/661), [#671](https://github.com/hydro-project/hydroflow/issues/671), [#677](https://github.com/hydro-project/hydroflow/issues/677), [#684](https://github.com/hydro-project/hydroflow/issues/684)
 
@@ -39,6 +67,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Add rustdocs to hydroflow's proc macros ([`a8957ec`](https://github.com/hydro-project/hydroflow/commit/a8957ec4457aae1cfd6fae031bede5e3f4fcc75d))
  * **[#684](https://github.com/hydro-project/hydroflow/issues/684)**
     - Bump versions to 0.1.0 for release ([`52ee8f8`](https://github.com/hydro-project/hydroflow/commit/52ee8f8e443f0a8b5caf92d2c5f028c00302a79b))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.1.0, hydroflow_internalmacro v0.1.0, hydroflow_lang v0.1.0, hydroflow_datalog_core v0.1.0, hydroflow_datalog v0.1.0, hydroflow_macro v0.1.0, lattices v0.1.1, hydroflow v0.1.0 ([`7324974`](https://github.com/hydro-project/hydroflow/commit/73249744293c9b89cbaa2d84b23ca3f25b00ae4e))
 </details>
 
 ## 0.0.1 (2023-05-21)

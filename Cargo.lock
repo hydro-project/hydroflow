@@ -1311,7 +1311,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bincode",
  "byteorder",
@@ -1358,7 +1358,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_cli_integration"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-recursion",
  "async-trait",
@@ -1385,7 +1385,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog_core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "hydroflow_lang",
  "insta",
@@ -1412,7 +1412,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_lang"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "auto_impl",
  "hydroflow_internalmacro",
@@ -1428,7 +1428,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_macro"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "hydroflow_lang",
  "proc-macro-crate",
@@ -1602,7 +1602,7 @@ dependencies = [
 
 [[package]]
 name = "lattices"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "cc-traits",
  "sealed",

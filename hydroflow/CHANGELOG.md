@@ -5,7 +5,104 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.1.1 (2023-05-30)
+
+### Documentation
+
+ - <csr-id-98d900f44df8c621682cafe46ac76e912e8b25fe/> minor cleanup for shopping example
+ - <csr-id-28c90251dd877dd84f28886eecb7b366abf3d45b/> Add initial Hydro Deploy docs
+   Renamed from Hydro CLI because the CLI isn't really the main thing. Also moves the Hydroflow docs to a subdirectory and sets up a dropdown for multiple docs.
+
+### New Features
+
+ - <csr-id-4536ac6bbcd14a621b5a039d7fe213bff72a8db1/> finish up WebSocket chat example and avoid deadlocks in network setup
+ - <csr-id-977b9c4e8accd2ae4ae8e8798d7b72a637874b77/> add `zip_longest` operator, fix #707
+   With a test.
+ - <csr-id-78bc06eb09090acd46495b8e0147e3434378c9f6/> add per-tick truncating `zip` operator, fix #707
+   With tests.
+ - <csr-id-8d88e8e01a985db8ebd8dbc6768163452cedc3ab/> Add `multiset_delta` operator
+
+### Bug Fixes
+
+ - <csr-id-60afd074fdbf91268df6866716ad4c2aeb8ab9d8/> clippy fails on latest nightly in CLI integration
+ - <csr-id-c771879f2fb81658f59d286ee0899065b2f2ab90/> multiset_delta not correctly tracking counts beyond two ticks
+   We were swapping the `RefCell`s, but we need to swap what's _behind_ them.
+ - <csr-id-075c99e7cdcf40ae5cab9efa787ba4447db8a479/> fix `persist` releasing multiple times during the same tick
+   Add surface_double_handoff tests
+
+### Other
+
+ - <csr-id-d574cb2661ba086059ba8cd6904fd6b6b0a5a8cb/> merge() to union()
+ - <csr-id-9029539fb79a4ca843c0775452236f80bd9510fc/> shopping cart working
+ - <csr-id-e1f043c878858ea1d0531c4f318e5d011abfdb88/> shopping cart, compiling, wip
+ - <csr-id-86f730d55f0cf3ed922d4d1ab3b02eb86d5c77bd/> Add `lamport_clock` example
+
+### Refactor
+
+ - <csr-id-d13a01b3a3fa0c52381833f88bcadac7a4ebcda9/> add spin(), remove repeat_iter,repeat_iter_external
+   * refactor: add spin(), remove repeat_iter,repeat_iter_external
+   
+   * fix: fix lints
+ - <csr-id-ea21462cac6d14ad744d8f0c39d5bcddc33d82ce/> change `lattice_merge` to use `reduce` instead of `fold`, fix #710
+   `Default` no longer needed
+ - <csr-id-3608de2e8d0c8bbd67b6ecb9aa4261e5cfc955da/> rename `sort_by` -> `sort_by_key`, fix #705
+ - <csr-id-2843e7e114ac824a684a5400909819ccc5c88fe3/> Suffixes and remove keyed fold
+   * rename: keyed_fold/keyed_reduce -> fold_keyed/reduce_keyed
+   
+   * remove group_by
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 17 commits contributed to the release.
+ - 6 days passed between releases.
+ - 17 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 12 unique issues were worked on: [#686](https://github.com/hydro-project/hydroflow/issues/686), [#690](https://github.com/hydro-project/hydroflow/issues/690), [#692](https://github.com/hydro-project/hydroflow/issues/692), [#696](https://github.com/hydro-project/hydroflow/issues/696), [#697](https://github.com/hydro-project/hydroflow/issues/697), [#702](https://github.com/hydro-project/hydroflow/issues/702), [#706](https://github.com/hydro-project/hydroflow/issues/706), [#708](https://github.com/hydro-project/hydroflow/issues/708), [#714](https://github.com/hydro-project/hydroflow/issues/714), [#716](https://github.com/hydro-project/hydroflow/issues/716), [#719](https://github.com/hydro-project/hydroflow/issues/719), [#721](https://github.com/hydro-project/hydroflow/issues/721)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#686](https://github.com/hydro-project/hydroflow/issues/686)**
+    - Add initial Hydro Deploy docs ([`28c9025`](https://github.com/hydro-project/hydroflow/commit/28c90251dd877dd84f28886eecb7b366abf3d45b))
+ * **[#690](https://github.com/hydro-project/hydroflow/issues/690)**
+    - Shopping cart working ([`9029539`](https://github.com/hydro-project/hydroflow/commit/9029539fb79a4ca843c0775452236f80bd9510fc))
+    - Shopping cart, compiling, wip ([`e1f043c`](https://github.com/hydro-project/hydroflow/commit/e1f043c878858ea1d0531c4f318e5d011abfdb88))
+    - Add `lamport_clock` example ([`86f730d`](https://github.com/hydro-project/hydroflow/commit/86f730d55f0cf3ed922d4d1ab3b02eb86d5c77bd))
+ * **[#692](https://github.com/hydro-project/hydroflow/issues/692)**
+    - Minor cleanup for shopping example ([`98d900f`](https://github.com/hydro-project/hydroflow/commit/98d900f44df8c621682cafe46ac76e912e8b25fe))
+ * **[#696](https://github.com/hydro-project/hydroflow/issues/696)**
+    - Add `multiset_delta` operator ([`8d88e8e`](https://github.com/hydro-project/hydroflow/commit/8d88e8e01a985db8ebd8dbc6768163452cedc3ab))
+ * **[#697](https://github.com/hydro-project/hydroflow/issues/697)**
+    - Merge() to union() ([`d574cb2`](https://github.com/hydro-project/hydroflow/commit/d574cb2661ba086059ba8cd6904fd6b6b0a5a8cb))
+ * **[#702](https://github.com/hydro-project/hydroflow/issues/702)**
+    - Suffixes and remove keyed fold ([`2843e7e`](https://github.com/hydro-project/hydroflow/commit/2843e7e114ac824a684a5400909819ccc5c88fe3))
+ * **[#706](https://github.com/hydro-project/hydroflow/issues/706)**
+    - Rename `sort_by` -> `sort_by_key`, fix #705 ([`3608de2`](https://github.com/hydro-project/hydroflow/commit/3608de2e8d0c8bbd67b6ecb9aa4261e5cfc955da))
+ * **[#708](https://github.com/hydro-project/hydroflow/issues/708)**
+    - Finish up WebSocket chat example and avoid deadlocks in network setup ([`4536ac6`](https://github.com/hydro-project/hydroflow/commit/4536ac6bbcd14a621b5a039d7fe213bff72a8db1))
+ * **[#714](https://github.com/hydro-project/hydroflow/issues/714)**
+    - Add spin(), remove repeat_iter,repeat_iter_external ([`d13a01b`](https://github.com/hydro-project/hydroflow/commit/d13a01b3a3fa0c52381833f88bcadac7a4ebcda9))
+ * **[#716](https://github.com/hydro-project/hydroflow/issues/716)**
+    - Fix `persist` releasing multiple times during the same tick ([`075c99e`](https://github.com/hydro-project/hydroflow/commit/075c99e7cdcf40ae5cab9efa787ba4447db8a479))
+ * **[#719](https://github.com/hydro-project/hydroflow/issues/719)**
+    - Multiset_delta not correctly tracking counts beyond two ticks ([`c771879`](https://github.com/hydro-project/hydroflow/commit/c771879f2fb81658f59d286ee0899065b2f2ab90))
+ * **[#721](https://github.com/hydro-project/hydroflow/issues/721)**
+    - Clippy fails on latest nightly in CLI integration ([`60afd07`](https://github.com/hydro-project/hydroflow/commit/60afd074fdbf91268df6866716ad4c2aeb8ab9d8))
+ * **Uncategorized**
+    - Change `lattice_merge` to use `reduce` instead of `fold`, fix #710 ([`ea21462`](https://github.com/hydro-project/hydroflow/commit/ea21462cac6d14ad744d8f0c39d5bcddc33d82ce))
+    - Add `zip_longest` operator, fix #707 ([`977b9c4`](https://github.com/hydro-project/hydroflow/commit/977b9c4e8accd2ae4ae8e8798d7b72a637874b77))
+    - Add per-tick truncating `zip` operator, fix #707 ([`78bc06e`](https://github.com/hydro-project/hydroflow/commit/78bc06eb09090acd46495b8e0147e3434378c9f6))
+</details>
+
 ## 0.1.0 (2023-05-23)
+
+<csr-id-52ee8f8e443f0a8b5caf92d2c5f028c00302a79b/>
+<csr-id-faab58f855e4d6f2ad885c6f39f57ebc5662ec20/>
+<csr-id-40d755e030d79def61132c005e08cd09e781fdcb/>
 
 ### Chore
 
@@ -26,8 +123,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 7 commits contributed to the release over the course of 1 calendar day.
- - 3 days passed between releases.
+ - 8 commits contributed to the release.
+ - 2 days passed between releases.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#661](https://github.com/hydro-project/hydroflow/issues/661), [#671](https://github.com/hydro-project/hydroflow/issues/671), [#677](https://github.com/hydro-project/hydroflow/issues/677), [#684](https://github.com/hydro-project/hydroflow/issues/684)
 
@@ -48,6 +145,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Remove unused `PushHandoff` ([`40d755e`](https://github.com/hydro-project/hydroflow/commit/40d755e030d79def61132c005e08cd09e781fdcb))
  * **[#684](https://github.com/hydro-project/hydroflow/issues/684)**
     - Bump versions to 0.1.0 for release ([`52ee8f8`](https://github.com/hydro-project/hydroflow/commit/52ee8f8e443f0a8b5caf92d2c5f028c00302a79b))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.1.0, hydroflow_internalmacro v0.1.0, hydroflow_lang v0.1.0, hydroflow_datalog_core v0.1.0, hydroflow_datalog v0.1.0, hydroflow_macro v0.1.0, lattices v0.1.1, hydroflow v0.1.0 ([`7324974`](https://github.com/hydro-project/hydroflow/commit/73249744293c9b89cbaa2d84b23ca3f25b00ae4e))
 </details>
 
 ## 0.0.2 (2023-05-21)
@@ -61,9 +160,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-95d23eaf8218002ad0a6a8c4c6e6c76e6b8f785b/> Update docs, add book chapter for `lattices` crate
    - Adds `mdbook-katex` to the book build for latex support.
-- Update `mdbook-*` plugins.
-- Moves most lattice implementations to the top level of the crate
-     to eliminate redundant documentation.
 
 ### Style
 
@@ -122,6 +218,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **Uncategorized**
     - Release hydroflow_cli_integration v0.0.1, hydroflow_lang v0.0.1, hydroflow_datalog_core v0.0.1, hydroflow_datalog v0.0.1, hydroflow_macro v0.0.1, lattices v0.1.0, variadics v0.0.2, pusherator v0.0.1, hydroflow v0.0.2 ([`809395a`](https://github.com/hydro-project/hydroflow/commit/809395acddb78949d7a2bf036e1a94972f23b1ad))
 </details>
+
+<csr-unknown>
+Update mdbook-* plugins.Moves most lattice implementations to the top level of the crateto eliminate redundant documentation.<csr-unknown/>
 
 ## 0.0.1 (2023-05-03)
 
