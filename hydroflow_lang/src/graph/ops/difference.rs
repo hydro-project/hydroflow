@@ -20,7 +20,6 @@ use syn::parse_quote;
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
 /// diff = difference() -> for_each(|v| println!("{}", v));
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
     name: "difference",
     hard_range_inn: &(2..=2),

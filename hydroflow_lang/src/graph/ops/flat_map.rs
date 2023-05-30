@@ -19,7 +19,6 @@ use quote::quote_spanned;
 /// source_iter(vec!["hello", "world"]) -> flat_map(|x| x.chars())
 ///     -> for_each(|x| println!("{}", x));
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const FLAT_MAP: OperatorConstraints = OperatorConstraints {
     name: "flat_map",
     hard_range_inn: RANGE_1,

@@ -18,7 +18,6 @@ use quote::quote_spanned;
 ///     -> sort_by_key(|(k, _v)| k)
 ///     -> for_each(|x| println!("{:?}", x));
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const SORT_BY_KEY: OperatorConstraints = OperatorConstraints {
     name: "sort_by_key",
     hard_range_inn: RANGE_1,

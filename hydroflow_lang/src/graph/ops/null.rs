@@ -14,7 +14,6 @@ use super::{FlowProperties, FlowPropertyVal, OperatorConstraints, NULL_WRITE_FN,
 /// // note: use `for_each()` (or `inspect()`) instead of this:
 /// source_iter([4,5,6]) -> map(|i| println!("{}", i)) -> [0]null_sink;
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const NULL: OperatorConstraints = OperatorConstraints {
     name: "null",
     hard_range_inn: &(0..=1),

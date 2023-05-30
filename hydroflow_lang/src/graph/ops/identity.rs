@@ -19,7 +19,6 @@ use super::{
 /// // Use type parameter to ensure items are `i32`s.
 /// source_iter(0..10) -> identity::<i32>() -> for_each(|x| println!("{}", x));
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const IDENTITY: OperatorConstraints = OperatorConstraints {
     name: "identity",
     hard_range_inn: RANGE_1,

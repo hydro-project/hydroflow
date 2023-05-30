@@ -15,7 +15,6 @@ use quote::quote_spanned;
 /// source_iter(vec![[1, 2], [3, 4], [5, 6]]) -> flatten()
 /// -> for_each(|x| println!("{}", x));
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const FLATTEN: OperatorConstraints = OperatorConstraints {
     name: "flatten",
     hard_range_inn: RANGE_1,

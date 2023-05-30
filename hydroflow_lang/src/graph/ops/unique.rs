@@ -44,7 +44,6 @@ use quote::quote_spanned;
 /// // 3, 5
 /// // Note: 3 is emitted again.
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const UNIQUE: OperatorConstraints = OperatorConstraints {
     name: "unique",
     hard_range_inn: RANGE_1,

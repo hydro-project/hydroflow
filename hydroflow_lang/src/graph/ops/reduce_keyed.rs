@@ -55,7 +55,6 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// flow.run_available();
 /// // ("hello", "palo alto, ")
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
     name: "reduce_keyed",
     hard_range_inn: RANGE_1,

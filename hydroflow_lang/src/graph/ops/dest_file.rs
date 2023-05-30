@@ -21,7 +21,6 @@ use syn::parse_quote_spanned;
 /// ```hydroflow
 /// source_iter(1..=10) -> map(|n| format!("Line {}", n)) -> dest_file("dest.txt", false);
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const DEST_FILE: OperatorConstraints = OperatorConstraints {
     name: "dest_file",
     hard_range_inn: RANGE_1,

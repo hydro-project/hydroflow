@@ -24,7 +24,6 @@ use crate::diagnostic::{Diagnostic, Level};
 /// // Right(3)
 /// // Right(4)
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const ZIP_LONGEST: OperatorConstraints = OperatorConstraints {
     name: "zip_longest",
     hard_range_inn: &(2..=2),

@@ -18,7 +18,6 @@ use quote::quote_spanned;
 ///     source_iter(vec!["Hello", "World"])
 ///         -> for_each(|x| println!("{}", x));
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const FOR_EACH: OperatorConstraints = OperatorConstraints {
     name: "for_each",
     hard_range_inn: RANGE_1,

@@ -24,7 +24,6 @@ use quote::quote_spanned;
 ///     flow.run_available();
 /// }
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const SOURCE_STREAM_SERDE: OperatorConstraints = OperatorConstraints {
     name: "source_stream_serde",
     hard_range_inn: RANGE_0,

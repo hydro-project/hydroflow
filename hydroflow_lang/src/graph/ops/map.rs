@@ -19,7 +19,6 @@ use quote::quote_spanned;
 /// source_iter(vec!["hello", "world"]) -> map(|x| x.to_uppercase())
 ///     -> for_each(|x| println!("{}", x));
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const MAP: OperatorConstraints = OperatorConstraints {
     name: "map",
     hard_range_inn: RANGE_1,

@@ -17,7 +17,6 @@ use super::{
 /// ```hydroflow
 /// source_json("example.json") -> for_each(|json: hydroflow::serde_json::Value| println!("{:#?}", json));
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const SOURCE_JSON: OperatorConstraints = OperatorConstraints {
     name: "source_json",
     hard_range_inn: RANGE_0,

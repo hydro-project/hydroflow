@@ -19,7 +19,6 @@ use super::{
 /// my_union = union() -> map(|x| x.to_uppercase())
 ///     -> for_each(|x| println!("{}", x));
 /// ```
-#[hydroflow_internalmacro::operator_docgen]
 pub const UNION: OperatorConstraints = OperatorConstraints {
     name: "union",
     hard_range_inn: RANGE_ANY,
