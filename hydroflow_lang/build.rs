@@ -46,8 +46,9 @@ fn main() -> Result<()> {
             let op_name = op_name.value();
 
             let docgen_path = PathBuf::from_iter([
-                &*var("OUT_DIR").unwrap(),
-                &*format!("docgen_op_{}.md", op_name),
+                std::env!("CARGO_MANIFEST_DIR"),
+                "../docs/docgen",
+                &*format!("{}.md", op_name),
             ]);
             eprintln!("{:?}", docgen_path);
             let mut docgen_write = BufWriter::new(File::create(docgen_path)?);
