@@ -1,5 +1,5 @@
 use hydroflow::tokio_stream::wrappers::IntervalStream;
-use hydroflow::util::cli::{ConnectedBidi, ConnectedDemux, ConnectedSink};
+use hydroflow::util::cli::{ConnectedDemux, ConnectedDirect, ConnectedSink};
 use hydroflow::util::serialize_to_bytes;
 use hydroflow_datalog::datalog;
 
@@ -8,7 +8,7 @@ async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let broadcast_port = ports
         .port("broadcast")
-        .connect::<ConnectedDemux<ConnectedBidi>>()
+        .connect::<ConnectedDemux<ConnectedDirect>>()
         .await;
 
     let (peers, sender_i): (Vec<u32>, u32) =

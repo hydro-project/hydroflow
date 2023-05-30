@@ -274,13 +274,13 @@ impl BoundConnection {
 }
 
 #[async_recursion]
-async fn accept(bound: BoundConnection) -> ConnectedBidi {
+async fn accept(bound: BoundConnection) -> ConnectedDirect {
     match bound {
         BoundConnection::UnixSocket(listener, _) => {
             #[cfg(unix)]
             {
                 let stream = listener.await.unwrap().unwrap();
-                ConnectedBidi {
+                ConnectedDirect {
                     stream_sink: Some(Box::pin(unix_bytes(stream))),
                     source_only: None,
                     sink_only: None,
@@ -295,7 +295,7 @@ async fn accept(bound: BoundConnection) -> ConnectedBidi {
         }
         BoundConnection::TcpPort(mut listener, _) => {
             let stream = listener.recv().await.unwrap().unwrap();
-            ConnectedBidi {
+            ConnectedDirect {
                 stream_sink: Some(Box::pin(tcp_bytes(stream))),
                 source_only: None,
                 sink_only: None,
@@ -312,7 +312,7 @@ async fn accept(bound: BoundConnection) -> ConnectedBidi {
                 sources,
             });
 
-            ConnectedBidi {
+            ConnectedDirect {
                 stream_sink: None,
                 source_only: Some(merge_source),
                 sink_only: None,
@@ -321,7 +321,7 @@ async fn accept(bound: BoundConnection) -> ConnectedBidi {
         BoundConnection::Demux(_) => panic!("Cannot connect to a demux pipe directly"),
         BoundConnection::Tagged(_, _) => panic!("Cannot connect to a tagged pipe directly"),
         BoundConnection::Null => {
-            ConnectedBidi::from_defn(ServerOrBound::Server(RealizedServerPort::Null)).await
+            ConnectedDirect::from_defn(ServerOrBound::Server(RealizedServerPort::Null)).await
         }
     }
 }
@@ -376,21 +376,21 @@ async fn async_retry<T, E, F: Future<Output = Result<T, E>>>(
     thunk().await
 }
 
-pub struct ConnectedBidi {
+pub struct ConnectedDirect {
     stream_sink: Option<DynStreamSink>,
     source_only: Option<DynStream>,
     sink_only: Option<DynSink<Bytes>>,
 }
 
 #[async_trait]
-impl Connected for ConnectedBidi {
+impl Connected for ConnectedDirect {
     async fn from_defn(pipe: ServerOrBound) -> Self {
         match pipe {
             ServerOrBound::Server(RealizedServerPort::UnixSocket(stream)) => {
                 #[cfg(unix)]
                 {
                     let stream = stream.await.unwrap().unwrap();
-                    ConnectedBidi {
+                    ConnectedDirect {
                         stream_sink: Some(Box::pin(unix_bytes(stream))),
                         source_only: None,
                         sink_only: None,
@@ -406,7 +406,7 @@ impl Connected for ConnectedBidi {
             ServerOrBound::Server(RealizedServerPort::TcpPort(stream)) => {
                 let stream = stream.await.unwrap().unwrap();
                 stream.set_nodelay(true).unwrap();
-                ConnectedBidi {
+                ConnectedDirect {
                     stream_sink: Some(Box::pin(tcp_bytes(stream))),
                     source_only: None,
                     sink_only: None,
@@ -414,7 +414,7 @@ impl Connected for ConnectedBidi {
             }
             ServerOrBound::Server(RealizedServerPort::Merge(merge)) => {
                 let sources = futures::future::join_all(merge.into_iter().map(|port| async {
-                    ConnectedBidi::from_defn(ServerOrBound::Server(port))
+                    ConnectedDirect::from_defn(ServerOrBound::Server(port))
                         .await
                         .into_source()
                 }))
@@ -425,7 +425,7 @@ impl Connected for ConnectedBidi {
                     sources,
                 };
 
-                ConnectedBidi {
+                ConnectedDirect {
                     stream_sink: None,
                     source_only: Some(Box::pin(merged)),
                     sink_only: None,
@@ -439,7 +439,7 @@ impl Connected for ConnectedBidi {
                 panic!("Cannot connect to a tagged pipe directly")
             }
 
-            ServerOrBound::Server(RealizedServerPort::Null) => ConnectedBidi {
+            ServerOrBound::Server(RealizedServerPort::Null) => ConnectedDirect {
                 stream_sink: None,
                 source_only: Some(Box::pin(stream::empty())),
                 sink_only: Some(Box::pin(IoErrorDrain {
@@ -452,7 +452,7 @@ impl Connected for ConnectedBidi {
     }
 }
 
-impl ConnectedSource for ConnectedBidi {
+impl ConnectedSource for ConnectedDirect {
     type Output = BytesMut;
     type Stream = DynStream;
 
@@ -465,7 +465,7 @@ impl ConnectedSource for ConnectedBidi {
     }
 }
 
-impl ConnectedSink for ConnectedBidi {
+impl ConnectedSink for ConnectedDirect {
     type Input = Bytes;
     type Sink = DynSink<Bytes>;
 
