@@ -35,7 +35,7 @@ bytes = "1.1.0"
 nanoid = "0.4.0"
 ctrlc = "3.2.5"
 nix = "0.26.2"
-hydroflow_cli_integration = { path = "../hydroflow_cli_integration" }
+hydroflow_cli_integration = { path = "../hydroflow_cli_integration", version = "^0.1.1" }
 indicatif = "0.17.3"
 cargo_metadata = "0.15.4"
 
