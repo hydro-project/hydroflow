@@ -27,9 +27,8 @@ fn book_file_writer(filename: impl AsRef<Path>) -> Result<BufWriter<File>, Box<d
 
 fn write_operator_docgen(op_name: &str, mut write: &mut impl Write) -> std::io::Result<()> {
     let doctest_path = PathBuf::from_iter([
-        std::env!("CARGO_MANIFEST_DIR"),
-        "../docs/docgen",
-        &*format!("{}.md", op_name),
+        hydroflow_lang::__OUT_DIR,
+        &*format!("docgen_op_{}.md", op_name),
     ]);
     let mut read = BufReader::new(File::open(doctest_path)?);
     std::io::copy(&mut read, &mut write)?;
@@ -160,14 +159,12 @@ fn update_book() -> Result<(), Box<dyn Error>> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // Only try to update the book if the output directory exists.
-    if book_file(FILENAME)?
-        .parent()
-        .map_or(false, |dir| dir.is_dir())
-    {
-        update_book()?;
+    // println!("cargo:rerun-if-changed={}", hydroflow_lang::__OUT_DIR);
+    if Err(VarError::NotPresent) == std::env::var("CARGO_CFG_HYDROFLOW_GENERATE_DOCS") {
+        Ok(())
+    } else {
+        update_book()
     }
-    Ok(())
 }
 
 const PREFIX: &str = "\
