@@ -16,6 +16,14 @@ cargo install --locked cargo-generate
 cargo generate hydro-project/hydroflow-template
 ```
 
+We'll need to add an additional dependency for `hydroflow_cli_integration` to our `Cargo.toml`:
+
+```toml
+[dependencies]
+# ...
+hydroflow_cli_integration = "0.1.1"
+```
+
 Let's open up `src/main.rs` in the generated project and write a new `main` function that initializes Hydro Deploy:
 
 ```rust
