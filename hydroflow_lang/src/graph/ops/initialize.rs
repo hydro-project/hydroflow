@@ -1,10 +1,10 @@
 use syn::parse_quote_spanned;
 
-use crate::graph::OperatorInstance;
-
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, WriteContextArgs, RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
+use crate::graph::OperatorInstance;
 
 /// > 0 input streams, 1 output stream
 ///
@@ -17,6 +17,7 @@ use super::{
 /// ```
 pub const INITIALIZE: OperatorConstraints = OperatorConstraints {
     name: "initialize",
+    categories: &[OperatorCategory::Source],
     hard_range_inn: RANGE_0,
     soft_range_inn: RANGE_0,
     hard_range_out: RANGE_1,

@@ -1,13 +1,11 @@
-use crate::graph::PortIndexValue;
-
-use super::{FlowProperties, FlowPropertyVal};
-
-use super::{
-    DelayType, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
-};
-
 use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
+
+use super::{
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+};
+use crate::graph::PortIndexValue;
 
 /// > 2 input streams the first of type (K, T), the second of type K,
 /// > with output type (K, T)
@@ -25,6 +23,7 @@ use syn::parse_quote;
 /// ```
 pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
     name: "anti_join",
+    categories: &[OperatorCategory::MultiIn],
     hard_range_inn: &(2..=2),
     soft_range_inn: &(2..=2),
     hard_range_out: RANGE_1,

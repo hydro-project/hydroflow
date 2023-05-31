@@ -1,9 +1,9 @@
-use super::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
-};
-
 use quote::quote_spanned;
+
+use super::{
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+};
 
 /// > Arguments: A single closure `FnMut(&Item)`.
 ///
@@ -19,6 +19,7 @@ use quote::quote_spanned;
 /// ```
 pub const INSPECT: OperatorConstraints = OperatorConstraints {
     name: "inspect",
+    categories: &[OperatorCategory::Map],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

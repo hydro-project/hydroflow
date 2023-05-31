@@ -1,9 +1,9 @@
-use super::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
-};
-
 use quote::quote_spanned;
+
+use super::{
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+};
 
 /// > 1 input stream, 0 output streams
 ///
@@ -20,6 +20,7 @@ use quote::quote_spanned;
 /// ```
 pub const FOR_EACH: OperatorConstraints = OperatorConstraints {
     name: "for_each",
+    categories: &[OperatorCategory::Sink],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_0,

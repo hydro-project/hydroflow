@@ -1,8 +1,8 @@
 use quote::quote_spanned;
 
 use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 /// Takes a stream as input and produces a sorted version of the stream as output.
@@ -18,6 +18,7 @@ use super::{
 /// emitted.
 pub const SORT: OperatorConstraints = OperatorConstraints {
     name: "sort",
+    categories: &[OperatorCategory::Persistence],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

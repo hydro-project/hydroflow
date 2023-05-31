@@ -1,11 +1,10 @@
-use crate::graph::OpInstGenerics;
+use quote::quote_spanned;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
-    Persistence, WriteContextArgs, RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
-
-use quote::quote_spanned;
+use crate::graph::OpInstGenerics;
 
 /// > 1 input stream of type `T`, 1 output stream of type `(usize, T)`
 ///
@@ -22,6 +21,7 @@ use quote::quote_spanned;
 /// ```
 pub const ENUMERATE: OperatorConstraints = OperatorConstraints {
     name: "enumerate",
+    categories: &[OperatorCategory::Map],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

@@ -1,8 +1,8 @@
 use quote::{quote_spanned, ToTokens};
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_0, RANGE_1, RANGE_ANY,
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
 };
 
 /// > *n* input streams of the same type, 1 output stream of the same type
@@ -21,6 +21,7 @@ use super::{
 /// ```
 pub const UNION: OperatorConstraints = OperatorConstraints {
     name: "union",
+    categories: &[OperatorCategory::MultiIn],
     hard_range_inn: RANGE_ANY,
     soft_range_inn: &(2..),
     hard_range_out: RANGE_1,
