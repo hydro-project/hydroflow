@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.2.0 (2023-05-31)
+
+### Chore
+
+ - <csr-id-fd896fbe925fbd8ef1d16be7206ac20ba585081a/> manually bump versions for v0.2.0 release
+
+### Refactor (BREAKING)
+
+ - <csr-id-10b308532245db8f4480ce53b67aea050ae1918d/> rename `Fake` -> `Immut`
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release.
+ - 2 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Manually bump versions for v0.2.0 release ([`fd896fb`](https://github.com/hydro-project/hydroflow/commit/fd896fbe925fbd8ef1d16be7206ac20ba585081a))
+    - Rename `Fake` -> `Immut` ([`10b3085`](https://github.com/hydro-project/hydroflow/commit/10b308532245db8f4480ce53b67aea050ae1918d))
+</details>
+
 ## 0.1.2 (2023-05-30)
 
 ### New Features
@@ -15,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 1 commit contributed to the release over the course of 6 calendar days.
+ - 2 commits contributed to the release over the course of 5 calendar days.
  - 6 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#691](https://github.com/hydro-project/hydroflow/issues/691)
@@ -28,6 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  * **[#691](https://github.com/hydro-project/hydroflow/issues/691)**
     - Print out items when lattice identity tests fail ([`ecff609`](https://github.com/hydro-project/hydroflow/commit/ecff609a0153446efc1809230ae100964bb9f89b))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.1.1, hydroflow_lang v0.1.1, hydroflow_datalog_core v0.1.1, hydroflow_macro v0.1.1, lattices v0.1.2, hydroflow v0.1.1, hydro_cli v0.1.0 ([`d9fa8b3`](https://github.com/hydro-project/hydroflow/commit/d9fa8b387e303b33d9614dbde80abf1af08bd8eb))
 </details>
 
 ## 0.1.1 (2023-05-23)
@@ -132,9 +164,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **Uncategorized**
     - Release hydroflow_cli_integration v0.0.1, hydroflow_lang v0.0.1, hydroflow_datalog_core v0.0.1, hydroflow_datalog v0.0.1, hydroflow_macro v0.0.1, lattices v0.1.0, variadics v0.0.2, pusherator v0.0.1, hydroflow v0.0.2 ([`809395a`](https://github.com/hydro-project/hydroflow/commit/809395acddb78949d7a2bf036e1a94972f23b1ad))
 </details>
-
-<csr-unknown>
-Update mdbook-* plugins.Moves most lattice implementations to the top level of the crateto eliminate redundant documentation.<csr-unknown/>
 
 ## 0.0.0 (2023-05-03)
 

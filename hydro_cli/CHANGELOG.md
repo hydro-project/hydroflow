@@ -1,6 +1,46 @@
 
 
+## v0.2.0 (2023-05-31)
+
+### Chore
+
+ - <csr-id-fd896fbe925fbd8ef1d16be7206ac20ba585081a/> manually bump versions for v0.2.0 release
+
+### New Features
+
+ - <csr-id-8b2c9f09b1f423ac6d562c29d4ea587578f1c98a/> Add more detailed Hydro Deploy docs and rename `ConnectedBidi` => `ConnectedDirect`
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release.
+ - 1 day passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#723](https://github.com/hydro-project/hydroflow/issues/723)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#723](https://github.com/hydro-project/hydroflow/issues/723)**
+    - Add more detailed Hydro Deploy docs and rename `ConnectedBidi` => `ConnectedDirect` ([`8b2c9f0`](https://github.com/hydro-project/hydroflow/commit/8b2c9f09b1f423ac6d562c29d4ea587578f1c98a))
+ * **Uncategorized**
+    - Manually bump versions for v0.2.0 release ([`fd896fb`](https://github.com/hydro-project/hydroflow/commit/fd896fbe925fbd8ef1d16be7206ac20ba585081a))
+</details>
+
 ## v0.1.0 (2023-05-30)
+
+<csr-id-665ad20d996c7873117ff7cccfac22366117d71a/>
+<csr-id-382a83c2304eda476d4ff8195a96efebd8dbbcb7/>
+<csr-id-52ee8f8e443f0a8b5caf92d2c5f028c00302a79b/>
+<csr-id-51a3a9e5f19594a21702d66730d5d1668009b550/>
+<csr-id-2bd8517768ff3924b7af274d8d97f126143c4a2a/>
+<csr-id-cd0a86d9271d0e3daab59c46f079925f863424e1/>
+<csr-id-20a1b2c0cd04a8b495a02ce345db3d48a99ea0e9/>
+<csr-id-1eda91a2ef8794711ef037240f15284e8085d863/>
 
 ### Chore
 
@@ -8,6 +48,14 @@
  - <csr-id-382a83c2304eda476d4ff8195a96efebd8dbbcb7/> set hydroflow_cli_integration version
  - <csr-id-52ee8f8e443f0a8b5caf92d2c5f028c00302a79b/> bump versions to 0.1.0 for release
    For release on crates.io for v0.1
+
+### Other
+
+ - <csr-id-61a1a0509b465ed57003bd0cdfedee8b847a48c8/> initialize hydro_cli/CHANGELOG.md
+
+### Chore
+
+ - <csr-id-e3ddfb8b47effd03a9bb346811ea360a14ab17b3/> Cargo.toml documentation and description
 
 ### New Features
 
@@ -38,7 +86,7 @@
 
 <csr-read-only-do-not-edit/>
 
- - 70 commits contributed to the release over the course of 101 calendar days.
+ - 71 commits contributed to the release over the course of 101 calendar days.
  - 12 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 63 unique issues were worked on: [#390](https://github.com/hydro-project/hydroflow/issues/390), [#397](https://github.com/hydro-project/hydroflow/issues/397), [#410](https://github.com/hydro-project/hydroflow/issues/410), [#411](https://github.com/hydro-project/hydroflow/issues/411), [#417](https://github.com/hydro-project/hydroflow/issues/417), [#420](https://github.com/hydro-project/hydroflow/issues/420), [#433](https://github.com/hydro-project/hydroflow/issues/433), [#436](https://github.com/hydro-project/hydroflow/issues/436), [#437](https://github.com/hydro-project/hydroflow/issues/437), [#445](https://github.com/hydro-project/hydroflow/issues/445), [#446](https://github.com/hydro-project/hydroflow/issues/446), [#451](https://github.com/hydro-project/hydroflow/issues/451), [#452](https://github.com/hydro-project/hydroflow/issues/452), [#460](https://github.com/hydro-project/hydroflow/issues/460), [#461](https://github.com/hydro-project/hydroflow/issues/461), [#462](https://github.com/hydro-project/hydroflow/issues/462), [#466](https://github.com/hydro-project/hydroflow/issues/466), [#473](https://github.com/hydro-project/hydroflow/issues/473), [#474](https://github.com/hydro-project/hydroflow/issues/474), [#477](https://github.com/hydro-project/hydroflow/issues/477), [#479](https://github.com/hydro-project/hydroflow/issues/479), [#481](https://github.com/hydro-project/hydroflow/issues/481), [#484](https://github.com/hydro-project/hydroflow/issues/484), [#492](https://github.com/hydro-project/hydroflow/issues/492), [#494](https://github.com/hydro-project/hydroflow/issues/494), [#498](https://github.com/hydro-project/hydroflow/issues/498), [#503](https://github.com/hydro-project/hydroflow/issues/503), [#513](https://github.com/hydro-project/hydroflow/issues/513), [#515](https://github.com/hydro-project/hydroflow/issues/515), [#525](https://github.com/hydro-project/hydroflow/issues/525), [#527](https://github.com/hydro-project/hydroflow/issues/527), [#531](https://github.com/hydro-project/hydroflow/issues/531), [#532](https://github.com/hydro-project/hydroflow/issues/532), [#533](https://github.com/hydro-project/hydroflow/issues/533), [#534](https://github.com/hydro-project/hydroflow/issues/534), [#535](https://github.com/hydro-project/hydroflow/issues/535), [#537](https://github.com/hydro-project/hydroflow/issues/537), [#542](https://github.com/hydro-project/hydroflow/issues/542), [#557](https://github.com/hydro-project/hydroflow/issues/557), [#560](https://github.com/hydro-project/hydroflow/issues/560), [#576](https://github.com/hydro-project/hydroflow/issues/576), [#582](https://github.com/hydro-project/hydroflow/issues/582), [#586](https://github.com/hydro-project/hydroflow/issues/586), [#596](https://github.com/hydro-project/hydroflow/issues/596), [#600](https://github.com/hydro-project/hydroflow/issues/600), [#612](https://github.com/hydro-project/hydroflow/issues/612), [#617](https://github.com/hydro-project/hydroflow/issues/617), [#620](https://github.com/hydro-project/hydroflow/issues/620), [#626](https://github.com/hydro-project/hydroflow/issues/626), [#627](https://github.com/hydro-project/hydroflow/issues/627), [#628](https://github.com/hydro-project/hydroflow/issues/628), [#631](https://github.com/hydro-project/hydroflow/issues/631), [#647](https://github.com/hydro-project/hydroflow/issues/647), [#656](https://github.com/hydro-project/hydroflow/issues/656), [#660](https://github.com/hydro-project/hydroflow/issues/660), [#679](https://github.com/hydro-project/hydroflow/issues/679), [#681](https://github.com/hydro-project/hydroflow/issues/681), [#684](https://github.com/hydro-project/hydroflow/issues/684), [#694](https://github.com/hydro-project/hydroflow/issues/694), [#699](https://github.com/hydro-project/hydroflow/issues/699), [#708](https://github.com/hydro-project/hydroflow/issues/708), [#712](https://github.com/hydro-project/hydroflow/issues/712), [#715](https://github.com/hydro-project/hydroflow/issues/715)
 
@@ -179,8 +227,9 @@
  * **[#715](https://github.com/hydro-project/hydroflow/issues/715)**
     - Don't create file copies on when deploying to localhost ([`1c06b3b`](https://github.com/hydro-project/hydroflow/commit/1c06b3b9ed253aea8c1d2cfd87a1ea77ce550f70))
  * **Uncategorized**
-    - Cargo.toml documentation and description ([`665ad20`](https://github.com/hydro-project/hydroflow/commit/665ad20d996c7873117ff7cccfac22366117d71a))
-    - Initialize hydro_cli/CHANGELOG.md ([`51a3a9e`](https://github.com/hydro-project/hydroflow/commit/51a3a9e5f19594a21702d66730d5d1668009b550))
+    - Release hydro_cli v0.1.0 ([`5d48544`](https://github.com/hydro-project/hydroflow/commit/5d485442691f878ae6835f631ae13ff856fd941c))
+    - Cargo.toml documentation and description ([`e3ddfb8`](https://github.com/hydro-project/hydroflow/commit/e3ddfb8b47effd03a9bb346811ea360a14ab17b3))
+    - Initialize hydro_cli/CHANGELOG.md ([`61a1a05`](https://github.com/hydro-project/hydroflow/commit/61a1a0509b465ed57003bd0cdfedee8b847a48c8))
     - Set hydroflow_cli_integration version ([`382a83c`](https://github.com/hydro-project/hydroflow/commit/382a83c2304eda476d4ff8195a96efebd8dbbcb7))
     - Update pinned nightly rust version 2023-04-18 ([`6ced3c1`](https://github.com/hydro-project/hydroflow/commit/6ced3c177969dec3d3e3cf5938ab3973c1d1239b))
 </details>
