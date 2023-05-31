@@ -1060,13 +1060,13 @@
 }
 
 <span class="attr">#[async_recursion]
-</span><span class="kw">async fn </span>accept(bound: BoundConnection) -&gt; ConnectedBidi {
+</span><span class="kw">async fn </span>accept(bound: BoundConnection) -&gt; ConnectedDirect {
     <span class="kw">match </span>bound {
         BoundConnection::UnixSocket(listener, <span class="kw">_</span>) =&gt; {
             <span class="attr">#[cfg(unix)]
             </span>{
                 <span class="kw">let </span>stream = listener.<span class="kw">await</span>.unwrap().unwrap();
-                ConnectedBidi {
+                ConnectedDirect {
                     stream_sink: <span class="prelude-val">Some</span>(Box::pin(unix_bytes(stream))),
                     source_only: <span class="prelude-val">None</span>,
                     sink_only: <span class="prelude-val">None</span>,
@@ -1081,7 +1081,7 @@
         }
         BoundConnection::TcpPort(<span class="kw-2">mut </span>listener, <span class="kw">_</span>) =&gt; {
             <span class="kw">let </span>stream = listener.recv().<span class="kw">await</span>.unwrap().unwrap();
-            ConnectedBidi {
+            ConnectedDirect {
                 stream_sink: <span class="prelude-val">Some</span>(Box::pin(tcp_bytes(stream))),
                 source_only: <span class="prelude-val">None</span>,
                 sink_only: <span class="prelude-val">None</span>,
@@ -1098,7 +1098,7 @@
                 sources,
             });
 
-            ConnectedBidi {
+            ConnectedDirect {
                 stream_sink: <span class="prelude-val">None</span>,
                 source_only: <span class="prelude-val">Some</span>(merge_source),
                 sink_only: <span class="prelude-val">None</span>,
@@ -1107,7 +1107,7 @@
         BoundConnection::Demux(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a demux pipe directly&quot;</span>),
         BoundConnection::Tagged(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a tagged pipe directly&quot;</span>),
         BoundConnection::Null =&gt; {
-            ConnectedBidi::from_defn(ServerOrBound::Server(RealizedServerPort::Null)).<span class="kw">await
+            ConnectedDirect::from_defn(ServerOrBound::Server(RealizedServerPort::Null)).<span class="kw">await
         </span>}
     }
 }
@@ -1162,21 +1162,21 @@
     thunk().<span class="kw">await
 </span>}
 
-<span class="kw">pub struct </span>ConnectedBidi {
+<span class="kw">pub struct </span>ConnectedDirect {
     stream_sink: <span class="prelude-ty">Option</span>&lt;DynStreamSink&gt;,
     source_only: <span class="prelude-ty">Option</span>&lt;DynStream&gt;,
     sink_only: <span class="prelude-ty">Option</span>&lt;DynSink&lt;Bytes&gt;&gt;,
 }
 
 <span class="attr">#[async_trait]
-</span><span class="kw">impl </span>Connected <span class="kw">for </span>ConnectedBidi {
+</span><span class="kw">impl </span>Connected <span class="kw">for </span>ConnectedDirect {
     <span class="kw">async fn </span>from_defn(pipe: ServerOrBound) -&gt; <span class="self">Self </span>{
         <span class="kw">match </span>pipe {
             ServerOrBound::Server(RealizedServerPort::UnixSocket(stream)) =&gt; {
                 <span class="attr">#[cfg(unix)]
                 </span>{
                     <span class="kw">let </span>stream = stream.<span class="kw">await</span>.unwrap().unwrap();
-                    ConnectedBidi {
+                    ConnectedDirect {
                         stream_sink: <span class="prelude-val">Some</span>(Box::pin(unix_bytes(stream))),
                         source_only: <span class="prelude-val">None</span>,
                         sink_only: <span class="prelude-val">None</span>,
@@ -1192,7 +1192,7 @@
             ServerOrBound::Server(RealizedServerPort::TcpPort(stream)) =&gt; {
                 <span class="kw">let </span>stream = stream.<span class="kw">await</span>.unwrap().unwrap();
                 stream.set_nodelay(<span class="bool-val">true</span>).unwrap();
-                ConnectedBidi {
+                ConnectedDirect {
                     stream_sink: <span class="prelude-val">Some</span>(Box::pin(tcp_bytes(stream))),
                     source_only: <span class="prelude-val">None</span>,
                     sink_only: <span class="prelude-val">None</span>,
@@ -1200,7 +1200,7 @@
             }
             ServerOrBound::Server(RealizedServerPort::Merge(merge)) =&gt; {
                 <span class="kw">let </span>sources = futures::future::join_all(merge.into_iter().map(|port| <span class="kw">async </span>{
-                    ConnectedBidi::from_defn(ServerOrBound::Server(port))
+                    ConnectedDirect::from_defn(ServerOrBound::Server(port))
                         .<span class="kw">await
                         </span>.into_source()
                 }))
@@ -1211,7 +1211,7 @@
                     sources,
                 };
 
-                ConnectedBidi {
+                ConnectedDirect {
                     stream_sink: <span class="prelude-val">None</span>,
                     source_only: <span class="prelude-val">Some</span>(Box::pin(merged)),
                     sink_only: <span class="prelude-val">None</span>,
@@ -1225,7 +1225,7 @@
                 <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a tagged pipe directly&quot;</span>)
             }
 
-            ServerOrBound::Server(RealizedServerPort::Null) =&gt; ConnectedBidi {
+            ServerOrBound::Server(RealizedServerPort::Null) =&gt; ConnectedDirect {
                 stream_sink: <span class="prelude-val">None</span>,
                 source_only: <span class="prelude-val">Some</span>(Box::pin(stream::empty())),
                 sink_only: <span class="prelude-val">Some</span>(Box::pin(IoErrorDrain {
@@ -1238,7 +1238,7 @@
     }
 }
 
-<span class="kw">impl </span>ConnectedSource <span class="kw">for </span>ConnectedBidi {
+<span class="kw">impl </span>ConnectedSource <span class="kw">for </span>ConnectedDirect {
     <span class="kw">type </span>Output = BytesMut;
     <span class="kw">type </span>Stream = DynStream;
 
@@ -1251,7 +1251,7 @@
     }
 }
 
-<span class="kw">impl </span>ConnectedSink <span class="kw">for </span>ConnectedBidi {
+<span class="kw">impl </span>ConnectedSink <span class="kw">for </span>ConnectedDirect {
     <span class="kw">type </span>Input = Bytes;
     <span class="kw">type </span>Sink = DynSink&lt;Bytes&gt;;
 

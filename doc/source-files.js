@@ -6,7 +6,7 @@ var sourcesIndex = JSON.parse('{\
 "hydroflow_datalog_core":["",[],["grammar.rs","join_plan.rs","lib.rs","util.rs"]],\
 "hydroflow_lang":["",[["graph",[["ops",[],["anti_join.rs","batch.rs","cross_join.rs","demux.rs","dest_file.rs","dest_sink.rs","dest_sink_serde.rs","difference.rs","enumerate.rs","filter.rs","filter_map.rs","flat_map.rs","flatten.rs","fold.rs","fold_keyed.rs","for_each.rs","identity.rs","initialize.rs","inspect.rs","join.rs","lattice_batch.rs","lattice_join.rs","lattice_merge.rs","map.rs","mod.rs","multiset_delta.rs","next_stratum.rs","next_tick.rs","null.rs","persist.rs","reduce.rs","reduce_keyed.rs","sort.rs","sort_by_key.rs","source_file.rs","source_interval.rs","source_iter.rs","source_json.rs","source_stdin.rs","source_stream.rs","source_stream_serde.rs","spin.rs","tee.rs","union.rs","unique.rs","unzip.rs","zip.rs","zip_longest.rs"]]],["di_mul_graph.rs","eliminate_extra_unions_tees.rs","flat_graph_builder.rs","flat_to_partitioned.rs","graph_algorithms.rs","graph_write.rs","hydroflow_graph.rs","mod.rs"]]],["diagnostic.rs","lib.rs","parse.rs","pretty_span.rs","union_find.rs"]],\
 "hydroflow_macro":["",[],["lib.rs"]],\
-"lattices":["",[],["bottom.rs","collections.rs","dom_pair.rs","fake.rs","lib.rs","map_union.rs","ord.rs","pair.rs","set_union.rs","test.rs"]],\
+"lattices":["",[],["bottom.rs","collections.rs","dom_pair.rs","immut.rs","lib.rs","map_union.rs","ord.rs","pair.rs","set_union.rs","test.rs"]],\
 "multiplatform_test":["",[],["lib.rs"]],\
 "pusherator":["",[],["demux.rs","filter.rs","filter_map.rs","flatten.rs","for_each.rs","inspect.rs","lib.rs","map.rs","partition.rs","pivot.rs","switch.rs","tee.rs","unzip.rs"]],\
 "relalg":["",[],["codegen.rs","lib.rs","runtime.rs","sexp.rs"]],\

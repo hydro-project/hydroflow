@@ -840,7 +840,7 @@
 <span class="kw">use </span>bytes::Bytes;
 <span class="kw">use </span>futures::{Future, SinkExt, StreamExt};
 <span class="kw">use </span>hydroflow_cli_integration::{
-    ConnectedBidi, ConnectedSink, ConnectedSource, DynSink, DynStream, ServerOrBound,
+    ConnectedDirect, ConnectedSink, ConnectedSource, DynSink, DynStream, ServerOrBound,
 };
 <span class="kw">use </span>pyo3::exceptions::{PyException, PyStopAsyncIteration};
 <span class="kw">use </span>pyo3::prelude::<span class="kw-2">*</span>;
@@ -1541,7 +1541,7 @@
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="prelude-val">Ok</span>(PythonStream {
                 underlying: Arc::new(RwLock::new(
-                    realized.connect::&lt;ConnectedBidi&gt;().<span class="kw">await</span>.into_source(),
+                    realized.connect::&lt;ConnectedDirect&gt;().<span class="kw">await</span>.into_source(),
                 )),
             })
         })
@@ -1554,7 +1554,7 @@
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="prelude-val">Ok</span>(PythonSink {
                 underlying: Arc::new(RwLock::new(
-                    realized.connect::&lt;ConnectedBidi&gt;().<span class="kw">await</span>.into_sink(),
+                    realized.connect::&lt;ConnectedDirect&gt;().<span class="kw">await</span>.into_sink(),
                 )),
             })
         })
