@@ -1,29 +1,29 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use lattices::Fake;
+use lattices::Immut;
 use serde::de::{DeserializeSeed, Visitor};
 use serde::{Serialize, Serializer};
 
 use crate::buffer_pool::{AutoReturnBuffer, AutoReturnBufferDeserializer, BufferPool};
 
 #[repr(transparent)]
-pub struct FakeWrapper<'a, const SIZE: usize>(pub &'a Fake<AutoReturnBuffer<SIZE>>);
+pub struct ImmutWrapper<'a, const SIZE: usize>(pub &'a Immut<AutoReturnBuffer<SIZE>>);
 
-impl<'a, const SIZE: usize> Serialize for FakeWrapper<'a, SIZE> {
+impl<'a, const SIZE: usize> Serialize for ImmutWrapper<'a, SIZE> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        serializer.serialize_newtype_struct("Fake", &self.0)
+        serializer.serialize_newtype_struct("Immut", &self.0)
     }
 }
 
-pub struct FakeDeserializer<const SIZE: usize> {
+pub struct ImmutDeserializer<const SIZE: usize> {
     pub collector: Rc<RefCell<BufferPool<SIZE>>>,
 }
-impl<'de, const SIZE: usize> DeserializeSeed<'de> for FakeDeserializer<SIZE> {
-    type Value = Fake<AutoReturnBuffer<SIZE>>;
+impl<'de, const SIZE: usize> DeserializeSeed<'de> for ImmutDeserializer<SIZE> {
+    type Value = Immut<AutoReturnBuffer<SIZE>>;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
@@ -33,7 +33,7 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for FakeDeserializer<SIZE> {
             pub collector: Rc<RefCell<BufferPool<SIZE>>>,
         }
         impl<'de, const SIZE: usize> Visitor<'de> for V<SIZE> {
-            type Value = Fake<AutoReturnBuffer<SIZE>>;
+            type Value = Immut<AutoReturnBuffer<SIZE>>;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                 formatter.write_str(std::any::type_name::<Self::Value>())
@@ -70,18 +70,18 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for FakeDeserializer<SIZE> {
                 }
 
                 let inner = deserializer.deserialize_newtype_struct(
-                    "Fake",
+                    "Immut",
                     V {
                         collector: self.collector,
                     },
                 )?;
 
-                Ok(Fake::<AutoReturnBuffer<SIZE>>(inner))
+                Ok(Immut::<AutoReturnBuffer<SIZE>>(inner))
             }
         }
 
         deserializer.deserialize_newtype_struct(
-            "Fake",
+            "Immut",
             V {
                 collector: self.collector,
             },
