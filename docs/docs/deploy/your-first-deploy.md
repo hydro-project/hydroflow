@@ -16,6 +16,14 @@ cargo install --locked cargo-generate
 cargo generate hydro-project/hydroflow-template
 ```
 
+We'll need to add an additional dependency for `hydroflow_cli_integration` to our `Cargo.toml`:
+
+```toml
+[dependencies]
+# ...
+hydroflow_cli_integration = "0.1.1"
+```
+
 Let's open up `src/main.rs` in the generated project and write a new `main` function that initializes Hydro Deploy:
 
 ```rust
@@ -40,12 +48,12 @@ Next, we pick out the host we want to run the service on (localhost for now), an
     host = deployment.Localhost()
     echo_service_1 = deployment.HydroflowCrate(
         src=".",
-        on=localhost_machine
+        on=host
     )
 
     echo_service_2 = deployment.HydroflowCrate(
         src=".",
-        on=localhost_machine
+        on=host
     )
 ```
 
@@ -88,7 +96,7 @@ async fn main() {
 }
 ```
 
-Finally, can launch the application. First, `deploy` compiles the binaries, initializes hosts, and sets up the networking topology. Then, we use `start` to launch the services:
+Finally, can return to `echo.hydro.py` to launch the application. First, `deploy` compiles the binaries, initializes hosts, and sets up the networking topology. Then, we use `start` to launch the services:
 
 ```python
     await deployment.deploy()
