@@ -1,8 +1,8 @@
 use quote::{quote_spanned, ToTokens};
 
 use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
-    Persistence, WriteContextArgs, RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_1,
 };
 use crate::graph::{OpInstGenerics, OperatorInstance};
 
@@ -62,6 +62,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// ```
 pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
     name: "fold_keyed",
+    categories: &[OperatorCategory::KeyedFold],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

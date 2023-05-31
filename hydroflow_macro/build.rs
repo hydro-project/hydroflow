@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 
 use hydroflow_lang::graph::ops::{PortListSpec, OPERATORS};
 use hydroflow_lang::graph::PortIndexValue;
+use itertools::Itertools;
 use quote::ToTokens;
 
 const FILENAME: &str = "surface_ops.gen.md";
@@ -47,17 +48,44 @@ fn update_book() -> Result<(), Box<dyn Error>> {
         "<!-- GENERATED {:?} -->",
         file!().replace(std::path::MAIN_SEPARATOR, "/")
     )?;
-    writeln!(write)?;
-    writeln!(write, "| All Operators | | | |")?;
-    writeln!(write, "| --- | --- | --- | --- |")?;
-    for op_chunk in ops.chunks(4) {
-        write!(write, "|")?;
-        for op in op_chunk {
-            write!(write, " [`{0}`](#{0}) |", op.name)?;
+
+    // Table of contents.
+    {
+        let category_operators = OPERATORS
+            .iter()
+            .flat_map(|op| {
+                op.categories
+                    .iter()
+                    .copied()
+                    .map(|category| (category, op.name))
+            })
+            .into_group_map();
+        let categories = category_operators
+            .keys()
+            .copied()
+            .sorted()
+            .collect::<Vec<_>>();
+
+        for category in categories {
+            writeln!(write, "**{}:**", category.name())?;
+            writeln!(
+                write,
+                "{}  ",
+                category_operators
+                    .get(&category)
+                    .unwrap()
+                    .iter()
+                    .map(|&op_name| format!("[`{0}`](#{0})", op_name))
+                    .join(", ")
+            )?;
+            writeln!(write, "{}", category.description())?;
+            writeln!(write)?;
         }
-        writeln!(write)?;
     }
+    writeln!(write, "---")?;
     writeln!(write)?;
+
+    // Individual operator doc entries
     for &op in ops.iter() {
         writeln!(write, "## `{}`", op.name)?;
 

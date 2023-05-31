@@ -1,6 +1,6 @@
 use super::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_0, RANGE_1, RANGE_ANY,
+    RANGE_0, RANGE_1, RANGE_ANY, OperatorCategory,
 };
 
 use quote::{quote_spanned, ToTokens};
@@ -20,6 +20,7 @@ use quote::{quote_spanned, ToTokens};
 /// ```
 pub const TEE: OperatorConstraints = OperatorConstraints {
     name: "tee",
+    categories: &[OperatorCategory::MultiOut],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_ANY,

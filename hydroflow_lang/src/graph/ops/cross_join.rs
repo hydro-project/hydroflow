@@ -1,8 +1,7 @@
-use super::{FlowProperties, FlowPropertyVal};
-use super::{OperatorConstraints, WriteContextArgs, RANGE_1};
-
 use quote::quote_spanned;
 use syn::parse_quote;
+
+use super::{FlowProperties, FlowPropertyVal, OperatorConstraints, WriteContextArgs, RANGE_1, OperatorCategory};
 
 /// > 2 input streams of type S and T, 1 output stream of type (S, T)
 ///
@@ -43,6 +42,7 @@ use syn::parse_quote;
 /// the first tick, then forgotten.
 pub const CROSS_JOIN: OperatorConstraints = OperatorConstraints {
     name: "cross_join",
+    categories: &[OperatorCategory::MultiIn],
     hard_range_inn: &(2..=2),
     soft_range_inn: &(2..=2),
     hard_range_out: RANGE_1,

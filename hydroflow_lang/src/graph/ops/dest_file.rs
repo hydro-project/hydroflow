@@ -1,11 +1,10 @@
-use super::{make_missing_runtime_msg, FlowProperties, FlowPropertyVal};
-
-use super::{
-    OperatorConstraints, OperatorInstance, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
-};
-
 use quote::quote_spanned;
 use syn::parse_quote_spanned;
+
+use super::{
+    make_missing_runtime_msg, FlowProperties, FlowPropertyVal, OperatorCategory,
+    OperatorConstraints, OperatorInstance, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+};
 
 /// > 0 input streams, 1 output stream
 ///
@@ -23,6 +22,7 @@ use syn::parse_quote_spanned;
 /// ```
 pub const DEST_FILE: OperatorConstraints = OperatorConstraints {
     name: "dest_file",
+    categories: &[OperatorCategory::Sink],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_0,

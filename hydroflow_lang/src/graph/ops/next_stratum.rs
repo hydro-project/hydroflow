@@ -1,12 +1,13 @@
 use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0,
-    RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    IDENTITY_WRITE_FN, RANGE_0, RANGE_1,
 };
 
 /// Delays all elements which pass through to the next stratum (in the same
 /// tick).
 pub const NEXT_STRATUM: OperatorConstraints = OperatorConstraints {
     name: "next_stratum",
+    categories: &[OperatorCategory::Control],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

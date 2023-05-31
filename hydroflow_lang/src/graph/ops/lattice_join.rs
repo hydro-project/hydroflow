@@ -1,11 +1,11 @@
-use super::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, Persistence,
-    WriteContextArgs, RANGE_1,
-};
-
-use crate::graph::{OpInstGenerics, OperatorInstance};
 use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
+
+use super::{
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    Persistence, WriteContextArgs, RANGE_1,
+};
+use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
 ///
@@ -67,6 +67,7 @@ use syn::parse_quote;
 /// ```
 pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
     name: "lattice_join",
+    categories: &[OperatorCategory::MultiIn],
     hard_range_inn: &(2..=2),
     soft_range_inn: &(2..=2),
     hard_range_out: RANGE_1,

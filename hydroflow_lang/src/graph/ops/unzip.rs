@@ -1,10 +1,10 @@
-use super::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_0, RANGE_1,
-};
-
 use quote::quote_spanned;
 use syn::parse_quote;
+
+use super::{
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
+};
 
 /// > 1 input stream of pair tuples `(A, B)`, 2 output streams
 ///
@@ -18,6 +18,7 @@ use syn::parse_quote;
 /// ```
 pub const UNZIP: OperatorConstraints = OperatorConstraints {
     name: "unzip",
+    categories: &[OperatorCategory::MultiOut],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: &(2..=2),

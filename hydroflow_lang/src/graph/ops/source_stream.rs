@@ -1,8 +1,8 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::graph::OperatorInstance;
 
@@ -27,6 +27,7 @@ use crate::graph::OperatorInstance;
 /// ```
 pub const SOURCE_STREAM: OperatorConstraints = OperatorConstraints {
     name: "source_stream",
+    categories: &[OperatorCategory::Source],
     hard_range_inn: RANGE_0,
     soft_range_inn: RANGE_0,
     hard_range_out: RANGE_1,

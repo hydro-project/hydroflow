@@ -3,8 +3,8 @@ use syn::parse_quote_spanned;
 use syn::spanned::Spanned;
 
 use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorConstraints,
-    OperatorInstance, WriteContextArgs, RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorCategory,
+    OperatorConstraints, OperatorInstance, WriteContextArgs, RANGE_1,
 };
 use crate::graph::ops::OperatorWriteOutput;
 
@@ -30,6 +30,7 @@ use crate::graph::ops::OperatorWriteOutput;
 /// ```
 pub const LATTICE_MERGE: OperatorConstraints = OperatorConstraints {
     name: "lattice_merge",
+    categories: &[OperatorCategory::LatticeFold],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

@@ -1,12 +1,12 @@
-use crate::{graph::{PortIndexValue, OperatorInstance, OpInstGenerics}, diagnostic::{Level, Diagnostic}};
-
-use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1, Persistence,
-};
-
 use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
+
+use super::{
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
+};
+use crate::diagnostic::{Diagnostic, Level};
+use crate::graph::{OpInstGenerics, OperatorInstance, PortIndexValue};
 
 /// > 2 input streams of the same type T, 1 output stream of type T
 ///
@@ -22,6 +22,7 @@ use syn::parse_quote;
 /// ```
 pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
     name: "difference",
+    categories: &[OperatorCategory::MultiIn],
     hard_range_inn: &(2..=2),
     soft_range_inn: &(2..=2),
     hard_range_out: RANGE_1,
@@ -78,7 +79,7 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
                 ));
 
                 Persistence::Tick
-            },
+            }
         };
 
         let (write_prologue, write_iterator) = {
@@ -89,34 +90,39 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
             let input_pos = &inputs[1];
 
             let (write_prologue, get_set) = match persistence {
-                Persistence::Tick => {
-                    (quote_spanned! {op_span=>
+                Persistence::Tick => (
+                    quote_spanned! {op_span=>
                         let #handle_ident = #hydroflow.add_state(std::cell::RefCell::new(
                             #root::util::monotonic_map::MonotonicMap::<_, #root::rustc_hash::FxHashSet<_>>::default(),
                         ));
-                    }, quote_spanned! {op_span=>
+                    },
+                    quote_spanned! {op_span=>
                         let mut #borrow_ident = #context.state_ref(#handle_ident).borrow_mut();
                         let #negset_ident = #borrow_ident
                             .get_mut_with((#context.current_tick(), #context.current_stratum()), || {
                                 #input_neg.collect()
                             });
-                    })
-                }
+                    },
+                ),
 
-                Persistence::Static => {
-                    (quote_spanned! {op_span=>
+                Persistence::Static => (
+                    quote_spanned! {op_span=>
                         let #handle_ident = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashSet::default()));
-                    }, quote_spanned! {op_span=>
+                    },
+                    quote_spanned! {op_span=>
                         let mut #negset_ident = #context.state_ref(#handle_ident).borrow_mut();
                         #negset_ident.extend(#input_neg);
-                    })
-                }
+                    },
+                ),
             };
 
-            (write_prologue, quote_spanned! {op_span=>
-                #get_set
-                let #ident = #input_pos.filter(move |x| !#negset_ident.contains(x));
-            })
+            (
+                write_prologue,
+                quote_spanned! {op_span=>
+                    #get_set
+                    let #ident = #input_pos.filter(move |x| !#negset_ident.contains(x));
+                },
+            )
         };
         Ok(OperatorWriteOutput {
             write_prologue,
