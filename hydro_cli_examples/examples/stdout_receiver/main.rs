@@ -1,12 +1,12 @@
 use hydroflow::hydroflow_syntax;
-use hydroflow::util::cli::{ConnectedBidi, ConnectedSource};
+use hydroflow::util::cli::{ConnectedDirect, ConnectedSource};
 
 #[hydroflow::main]
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let echo_recv = ports
         .port("echo")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_source();
 

@@ -6,7 +6,7 @@ use async_channel::Receiver;
 use bytes::Bytes;
 use futures::{Future, SinkExt, StreamExt};
 use hydroflow_cli_integration::{
-    ConnectedBidi, ConnectedSink, ConnectedSource, DynSink, DynStream, ServerOrBound,
+    ConnectedDirect, ConnectedSink, ConnectedSource, DynSink, DynStream, ServerOrBound,
 };
 use pyo3::exceptions::{PyException, PyStopAsyncIteration};
 use pyo3::prelude::*;
@@ -707,7 +707,7 @@ impl ServerPort {
         interruptible_future_to_py(py, async move {
             Ok(PythonStream {
                 underlying: Arc::new(RwLock::new(
-                    realized.connect::<ConnectedBidi>().await.into_source(),
+                    realized.connect::<ConnectedDirect>().await.into_source(),
                 )),
             })
         })
@@ -720,7 +720,7 @@ impl ServerPort {
         interruptible_future_to_py(py, async move {
             Ok(PythonSink {
                 underlying: Arc::new(RwLock::new(
-                    realized.connect::<ConnectedBidi>().await.into_sink(),
+                    realized.connect::<ConnectedDirect>().await.into_sink(),
                 )),
             })
         })

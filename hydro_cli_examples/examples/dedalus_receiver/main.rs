@@ -1,4 +1,4 @@
-use hydroflow::util::cli::{ConnectedBidi, ConnectedSource};
+use hydroflow::util::cli::{ConnectedDirect, ConnectedSource};
 use hydroflow::util::deserialize_from_bytes;
 use hydroflow_datalog::datalog;
 
@@ -7,7 +7,7 @@ async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let broadcast_recv = ports
         .port("broadcast")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_source();
 

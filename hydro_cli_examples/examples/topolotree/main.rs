@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 
 use hydroflow::serde::{Deserialize, Serialize};
-use hydroflow::util::cli::{ConnectedBidi, ConnectedSink, ConnectedSource};
+use hydroflow::util::cli::{ConnectedDirect, ConnectedSink, ConnectedSource};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 use hydroflow::{hydroflow_syntax, tokio};
 
@@ -54,49 +54,49 @@ async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let increment_requests = ports
         .port("increment_requests")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_source();
 
     let query_responses = ports
         .port("query_responses")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_sink();
 
     let to_parent = ports
         .port("to_parent")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_sink();
 
     let from_parent = ports
         .port("from_parent")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_source();
 
     let to_left = ports
         .port("to_left")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_sink();
 
     let from_left = ports
         .port("from_left")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_source();
 
     let to_right = ports
         .port("to_right")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_sink();
 
     let from_right = ports
         .port("from_right")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_source();
 
