@@ -10,7 +10,7 @@ curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
 cd website_playground
 
-RUSTFLAGS="--cfg procmacro2_semver_exempt" CC="$PWD/../clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-16.04/bin/clang" wasm-pack build
+CARGO_CFG_HYDROFLOW_GENERATE_DOCS="1" RUSTFLAGS="--cfg procmacro2_semver_exempt" CC="$PWD/../clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-16.04/bin/clang" wasm-pack build
 
 cd ../docs
 
