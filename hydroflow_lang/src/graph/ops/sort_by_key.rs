@@ -1,11 +1,10 @@
-use crate::graph::OperatorInstance;
+use quote::quote_spanned;
 
 use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
-
-use quote::quote_spanned;
+use crate::graph::OperatorInstance;
 
 /// Takes a stream as input and produces a version of the stream as output
 /// sorted according to the key extracted by the closure.
@@ -20,6 +19,7 @@ use quote::quote_spanned;
 /// ```
 pub const SORT_BY_KEY: OperatorConstraints = OperatorConstraints {
     name: "sort_by_key",
+    categories: &[OperatorCategory::Persistence],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

@@ -1,11 +1,10 @@
 use quote::quote_spanned;
 
-use crate::graph::{OpInstGenerics, OperatorInstance};
-
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
+use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// > 0 input streams, 1 output stream
 ///
@@ -19,6 +18,7 @@ use super::{
 /// ```
 pub const SOURCE_JSON: OperatorConstraints = OperatorConstraints {
     name: "source_json",
+    categories: &[OperatorCategory::Source],
     hard_range_inn: RANGE_0,
     soft_range_inn: RANGE_0,
     hard_range_out: RANGE_1,

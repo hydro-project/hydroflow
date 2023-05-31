@@ -43,9 +43,12 @@ pub struct FlowProperties {
     pub inconsistency_tainted: bool,
 }
 
+/// An instance of this struct represents a single hydroflow operator.
 pub struct OperatorConstraints {
     /// Operator's name.
     pub name: &'static str,
+    /// Operator categories, for docs.
+    pub categories: &'static [OperatorCategory],
 
     // TODO: generic argument ranges.
     /// Input argument range required to not show an error.
@@ -405,4 +408,63 @@ pub enum Persistence {
 
 fn make_missing_runtime_msg(op_name: &str) -> Literal {
     Literal::string(&*format!("`{}()` must be used within a Tokio runtime. For example, use `#[hydroflow::main]` on your main method.", op_name))
+}
+
+/// Operator categories, for docs.
+///
+/// See source of [`Self::description`] for description of variants.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum OperatorCategory {
+    Map,
+    Filter,
+    Flatten,
+    Fold,
+    KeyedFold,
+    LatticeFold,
+    Persistence,
+    MultiIn,
+    MultiOut,
+    Source,
+    Sink,
+    Control,
+}
+impl OperatorCategory {
+    /// Human-readible heading name, for docs.
+    pub fn name(self) -> &'static str {
+        match self {
+            OperatorCategory::Map => "Maps",
+            OperatorCategory::Filter => "Filters",
+            OperatorCategory::Flatten => "Flattens",
+            OperatorCategory::Fold => "Folds",
+            OperatorCategory::KeyedFold => "Keyed Folds",
+            OperatorCategory::LatticeFold => "Lattice Folds",
+            OperatorCategory::Persistence => "Persistent Operators",
+            OperatorCategory::MultiIn => "Multi-Input Operators",
+            OperatorCategory::MultiOut => "Multi-Output Operators",
+            OperatorCategory::Source => "Sources",
+            OperatorCategory::Sink => "Sinks",
+            OperatorCategory::Control => "Control Flow Operators",
+        }
+    }
+    /// Human description, for docs.
+    pub fn description(self) -> &'static str {
+        match self {
+            OperatorCategory::Map => "Simple one-in-one-out operators.",
+            OperatorCategory::Filter => "One-in zero-or-one-out operators.",
+            OperatorCategory::Flatten => "One-in multiple-out operators.",
+            OperatorCategory::Fold => "Operators which accumulate elements together.",
+            OperatorCategory::KeyedFold => "Keyed fold operators.",
+            OperatorCategory::LatticeFold => "Folds based on lattice-merge.",
+            OperatorCategory::Persistence => "Persistent (stateful) operators.",
+            OperatorCategory::MultiIn => "Operators with multiple inputs.",
+            OperatorCategory::MultiOut => "Operators with multiple outputs.",
+            OperatorCategory::Source => {
+                "Operators which produce output elements (and consume no inputs)."
+            }
+            OperatorCategory::Sink => {
+                "Operators which consume input elements (and produce no outputs)."
+            }
+            OperatorCategory::Control => "Operators which affect control flow/scheduling.",
+        }
+    }
 }

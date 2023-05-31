@@ -2,8 +2,8 @@ use quote::quote_spanned;
 use syn::parse_quote;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorConstraints, OperatorInstance,
-    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
 
@@ -21,6 +21,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// ```
 pub const ZIP: OperatorConstraints = OperatorConstraints {
     name: "zip",
+    categories: &[OperatorCategory::MultiIn],
     hard_range_inn: &(2..=2),
     soft_range_inn: &(2..=2),
     hard_range_out: RANGE_1,

@@ -3,7 +3,7 @@ use syn::parse_quote;
 
 use super::{
     DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorConstraints,
-    OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
+    OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1, OperatorCategory,
 };
 use crate::diagnostic::{Diagnostic, Level};
 
@@ -26,6 +26,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// ```
 pub const ZIP_LONGEST: OperatorConstraints = OperatorConstraints {
     name: "zip_longest",
+    categories: &[OperatorCategory::MultiIn],
     hard_range_inn: &(2..=2),
     soft_range_inn: &(2..=2),
     hard_range_out: RANGE_1,

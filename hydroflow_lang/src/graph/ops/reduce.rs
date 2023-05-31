@@ -1,11 +1,10 @@
-use crate::graph::{OpInstGenerics, OperatorInstance};
+use quote::quote_spanned;
 
 use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
-    Persistence, WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
-
-use quote::quote_spanned;
+use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// > 1 input stream, 1 output stream
 ///
@@ -28,6 +27,7 @@ use quote::quote_spanned;
 /// ```
 pub const REDUCE: OperatorConstraints = OperatorConstraints {
     name: "reduce",
+    categories: &[OperatorCategory::Fold],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

@@ -1,6 +1,6 @@
 use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0,
-    RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    IDENTITY_WRITE_FN, RANGE_0, RANGE_1,
 };
 
 /// Delays all elements which pass through to the next tick. In short,
@@ -37,6 +37,7 @@ use super::{
 /// ```
 pub const NEXT_TICK: OperatorConstraints = OperatorConstraints {
     name: "next_tick",
+    categories: &[OperatorCategory::Control],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

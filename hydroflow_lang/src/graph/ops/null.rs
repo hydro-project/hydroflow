@@ -1,4 +1,6 @@
-use super::{FlowProperties, FlowPropertyVal, OperatorConstraints, NULL_WRITE_FN, RANGE_0};
+use super::{
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, NULL_WRITE_FN, RANGE_0,
+};
 
 /// > unbounded number of input streams of any type, unbounded number of output streams of any type.
 ///
@@ -16,6 +18,7 @@ use super::{FlowProperties, FlowPropertyVal, OperatorConstraints, NULL_WRITE_FN,
 /// ```
 pub const NULL: OperatorConstraints = OperatorConstraints {
     name: "null",
+    categories: &[OperatorCategory::Source, OperatorCategory::Sink],
     hard_range_inn: &(0..=1),
     soft_range_inn: &(0..=1),
     hard_range_out: &(0..=1),

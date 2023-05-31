@@ -1,18 +1,17 @@
 use std::collections::HashMap;
 
-use super::{FlowProperties, FlowPropertyVal};
-use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{OperatorInstance, PortIndexValue};
-use crate::pretty_span::PrettySpan;
-
-use super::{
-    OperatorConstraints, OperatorWriteOutput, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
-};
-
 use proc_macro2::{Ident, TokenTree};
 use quote::{quote, quote_spanned, ToTokens};
 use syn::spanned::Spanned;
 use syn::{Expr, Pat};
+
+use super::{
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
+};
+use crate::diagnostic::{Diagnostic, Level};
+use crate::graph::{OperatorInstance, PortIndexValue};
+use crate::pretty_span::PrettySpan;
 
 // TODO(mingwei): Preprocess rustdoc links in mdbook or in the `operator_docgen` macro.
 /// > Arguments: A Rust closure, the first argument is a received item and the
@@ -45,6 +44,7 @@ use syn::{Expr, Pat};
 /// ```
 pub const DEMUX: OperatorConstraints = OperatorConstraints {
     name: "demux",
+    categories: &[OperatorCategory::MultiOut],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: &(2..),

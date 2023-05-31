@@ -2,7 +2,7 @@ use quote::quote_spanned;
 
 use super::{
     FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_0, RANGE_1,
+    RANGE_0, RANGE_1, OperatorCategory,
 };
 use crate::graph::OperatorInstance;
 
@@ -30,6 +30,7 @@ use crate::graph::OperatorInstance;
 /// ```
 pub const BATCH: OperatorConstraints = OperatorConstraints {
     name: "batch",
+    categories: &[OperatorCategory::Persistence],
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     hard_range_inn: RANGE_1,
