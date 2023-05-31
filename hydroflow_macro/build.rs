@@ -1,9 +1,8 @@
 //! Build script to generate operator book docs.
 
 use std::env::VarError;
-use std::error::Error;
 use std::fs::File;
-use std::io::{BufReader, BufWriter, Write};
+use std::io::{BufReader, BufWriter, Result, Write};
 use std::path::{Path, PathBuf};
 
 use hydroflow_lang::graph::ops::{PortListSpec, OPERATORS};
@@ -13,20 +12,20 @@ use quote::ToTokens;
 
 const FILENAME: &str = "surface_ops.gen.md";
 
-fn book_file(filename: impl AsRef<Path>) -> Result<PathBuf, VarError> {
+fn book_file(filename: impl AsRef<Path>) -> PathBuf {
     let mut pathbuf = PathBuf::new();
-    pathbuf.push(std::env::var("CARGO_MANIFEST_DIR")?);
+    pathbuf.push(std::env!("CARGO_MANIFEST_DIR"));
     pathbuf.push("../docs/docs/hydroflow/syntax/");
     pathbuf.push(filename);
-    Ok(pathbuf)
+    pathbuf
 }
 
-fn book_file_writer(filename: impl AsRef<Path>) -> Result<BufWriter<File>, Box<dyn Error>> {
-    let pathbuf = book_file(filename)?;
+fn book_file_writer(filename: impl AsRef<Path>) -> Result<BufWriter<File>> {
+    let pathbuf = book_file(filename);
     Ok(BufWriter::new(File::create(pathbuf)?))
 }
 
-fn write_operator_docgen(op_name: &str, mut write: &mut impl Write) -> std::io::Result<()> {
+fn write_operator_docgen(op_name: &str, mut write: &mut impl Write) -> Result<()> {
     let doctest_path = PathBuf::from_iter([
         std::env!("CARGO_MANIFEST_DIR"),
         "../docs/docgen",
@@ -37,7 +36,7 @@ fn write_operator_docgen(op_name: &str, mut write: &mut impl Write) -> std::io::
     Ok(())
 }
 
-fn update_book() -> Result<(), Box<dyn Error>> {
+fn update_book() -> Result<()> {
     let mut ops: Vec<_> = OPERATORS.iter().collect();
     ops.sort_by_key(|op| op.name);
 
@@ -187,11 +186,11 @@ fn update_book() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    if Err(VarError::NotPresent) == std::env::var("CARGO_CFG_HYDROFLOW_GENERATE_DOCS") {
-        Ok(())
-    } else {
-        update_book()
+fn main() {
+    if Err(VarError::NotPresent) != std::env::var("CARGO_CFG_HYDROFLOW_GENERATE_DOCS") {
+        if let Err(err) = update_book() {
+            eprintln!("hydroflow_macro/build.rs error: {:?}", err);
+        }
     }
 }
 

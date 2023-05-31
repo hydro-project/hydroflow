@@ -10,12 +10,16 @@ use syn::{
 
 const OPS_PATH: &str = "src/graph/ops";
 
-fn main() -> Result<()> {
+fn main() {
     println!("cargo:rerun-if-changed={}", OPS_PATH);
-    if Err(VarError::NotPresent) == var("CARGO_CFG_HYDROFLOW_GENERATE_DOCS") {
-        return Ok(());
+    if Err(VarError::NotPresent) != var("CARGO_CFG_HYDROFLOW_GENERATE_DOCS") {
+        if let Err(err) = generate_op_docs() {
+            eprintln!("hydroflow_macro/build.rs error: {:?}", err);
+        }
     }
+}
 
+fn generate_op_docs() -> Result<()> {
     for dir_entry in std::fs::read_dir(OPS_PATH)? {
         let dir_entry = dir_entry?;
         if !dir_entry.file_type()?.is_file()
