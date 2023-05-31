@@ -221,16 +221,14 @@
 <a href="#221" id="221">221</a>
 <a href="#222" id="222">222</a>
 <a href="#223" id="223">223</a>
-<a href="#224" id="224">224</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
+</pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
+<span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use super</span>::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, Persistence,
-    WriteContextArgs, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    Persistence, WriteContextArgs, RANGE_1,
 };
-
-<span class="kw">use </span>quote::{quote_spanned, ToTokens};
-<span class="kw">use </span>syn::parse_quote;
+<span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
 
 <span class="doccomment">/// &gt; 2 input streams of type &lt;(K, V1)&gt; and &lt;(K, V2)&gt;, 1 output stream of type &lt;(K, (V1, V2))&gt;
 ///
@@ -307,9 +305,9 @@
 /// ```
 /// Prints out `&quot;(hello, (world, oakland))&quot;` and `&quot;(hello, (world, san francisco))&quot;` since the
 /// inputs are peristed across ticks.
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>JOIN: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;join&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::MultiIn],
     hard_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
     soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
     hard_range_out: RANGE_1,

@@ -64,15 +64,13 @@
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
 <a href="#66" id="66">66</a>
-<a href="#67" id="67">67</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
+</pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
-
-<span class="kw">use </span>quote::quote_spanned;
+<span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
 
 <span class="doccomment">/// &gt; 0 input streams, 1 output stream
 ///
@@ -86,9 +84,9 @@
 ///     source_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
 ///         -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 /// ```
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>SOURCE_ITER: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;source_iter&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::Source],
     hard_range_inn: RANGE_0,
     soft_range_inn: RANGE_0,
     hard_range_out: RANGE_1,

@@ -47,11 +47,11 @@
 <a href="#47" id="47">47</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>syn::parse_quote_spanned;
 
-<span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
-
 <span class="kw">use super</span>::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, WriteContextArgs, RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
+<span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
 
 <span class="doccomment">/// &gt; 0 input streams, 1 output stream
 ///
@@ -62,9 +62,9 @@
 /// ```hydroflow
 /// initialize() -&gt; for_each(|()| println!(&quot;This only runs one time!&quot;));
 /// ```
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>INITIALIZE: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;initialize&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::Source],
     hard_range_inn: RANGE_0,
     soft_range_inn: RANGE_0,
     hard_range_out: RANGE_1,

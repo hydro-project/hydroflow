@@ -54,12 +54,12 @@
 <a href="#54" id="54">54</a>
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
-</pre></div><pre class="rust"><code><span class="kw">use super</span>::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
-};
+</pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
-<span class="kw">use </span>quote::quote_spanned;
+<span class="kw">use super</span>::{
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+};
 
 <span class="doccomment">/// &gt; 1 input stream, 0 output streams
 ///
@@ -74,9 +74,9 @@
 ///     source_iter(vec![&quot;Hello&quot;, &quot;World&quot;])
 ///         -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 /// ```
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>FOR_EACH: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;for_each&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::Sink],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_0,

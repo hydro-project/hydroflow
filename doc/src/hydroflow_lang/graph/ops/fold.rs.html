@@ -122,12 +122,14 @@
 <a href="#122" id="122">122</a>
 <a href="#123" id="123">123</a>
 <a href="#124" id="124">124</a>
-</pre></div><pre class="rust"><code><span class="kw">use super</span>::{
-    DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorConstraints,
-    OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
-};
+<a href="#125" id="125">125</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
-<span class="kw">use </span>quote::quote_spanned;
+<span class="kw">use super</span>::{
+    DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorCategory,
+    OperatorConstraints, OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs,
+    RANGE_0, RANGE_1,
+};
 
 <span class="doccomment">/// &gt; 1 input stream, 1 output stream
 ///
@@ -154,9 +156,9 @@
 ///     })
 ///     -&gt; for_each(|e| println!(&quot;Ressembled vector {:?}&quot;, e));
 /// ```
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>FOLD: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;fold&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::Fold],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

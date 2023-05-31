@@ -93,8 +93,8 @@
 <span class="kw">use </span>syn::parse_quote_spanned;
 
 <span class="kw">use super</span>::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
 
@@ -134,9 +134,9 @@
 ///     // This runs every second: Instant { t: 27474.704813s }
 /// }
 /// ```
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>SOURCE_INTERVAL: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;source_interval&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::Source],
     hard_range_inn: RANGE_0,
     soft_range_inn: RANGE_0,
     hard_range_out: RANGE_1,

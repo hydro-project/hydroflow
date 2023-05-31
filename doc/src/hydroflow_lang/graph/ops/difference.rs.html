@@ -126,15 +126,20 @@
 <a href="#126" id="126">126</a>
 <a href="#127" id="127">127</a>
 <a href="#128" id="128">128</a>
-</pre></div><pre class="rust"><code><span class="kw">use crate</span>::{graph::{PortIndexValue, OperatorInstance, OpInstGenerics}, diagnostic::{Level, Diagnostic}};
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
+<span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use super</span>::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1, Persistence,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
-
-<span class="kw">use </span>quote::{quote_spanned, ToTokens};
-<span class="kw">use </span>syn::parse_quote;
+<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
+<span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance, PortIndexValue};
 
 <span class="doccomment">/// &gt; 2 input streams of the same type T, 1 output stream of type T
 ///
@@ -148,9 +153,9 @@
 /// source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;gorilla&quot;]) -&gt; [neg]diff;
 /// diff = difference() -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 /// ```
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>DIFFERENCE: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;difference&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::MultiIn],
     hard_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
     soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
     hard_range_out: RANGE_1,
@@ -207,7 +212,7 @@
                 ));
 
                 Persistence::Tick
-            },
+            }
         };
 
         <span class="kw">let </span>(write_prologue, write_iterator) = {
@@ -218,34 +223,39 @@
             </span><span class="kw">let </span>input_pos = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
 
             <span class="kw">let </span>(write_prologue, get_set) = <span class="kw">match </span>persistence {
-                Persistence::Tick =&gt; {
-                    (<span class="macro">quote_spanned! </span>{op_span=&gt;
+                Persistence::Tick =&gt; (
+                    <span class="macro">quote_spanned! </span>{op_span=&gt;
                         <span class="kw">let </span>#handle_ident = #hydroflow.add_state(std::cell::RefCell::new(
                             #root::util::monotonic_map::MonotonicMap::&lt;<span class="kw">_</span>, #root::rustc_hash::FxHashSet&lt;<span class="kw">_</span>&gt;&gt;::default(),
                         ));
-                    }, <span class="macro">quote_spanned! </span>{op_span=&gt;
+                    },
+                    <span class="macro">quote_spanned! </span>{op_span=&gt;
                         <span class="kw">let </span><span class="kw-2">mut </span>#borrow_ident = #context.state_ref(#handle_ident).borrow_mut();
                         <span class="kw">let </span>#negset_ident = #borrow_ident
                             .get_mut_with((#context.current_tick(), #context.current_stratum()), || {
                                 #input_neg.collect()
                             });
-                    })
-                }
+                    },
+                ),
 
-                Persistence::Static =&gt; {
-                    (<span class="macro">quote_spanned! </span>{op_span=&gt;
+                Persistence::Static =&gt; (
+                    <span class="macro">quote_spanned! </span>{op_span=&gt;
                         <span class="kw">let </span>#handle_ident = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashSet::default()));
-                    }, <span class="macro">quote_spanned! </span>{op_span=&gt;
+                    },
+                    <span class="macro">quote_spanned! </span>{op_span=&gt;
                         <span class="kw">let </span><span class="kw-2">mut </span>#negset_ident = #context.state_ref(#handle_ident).borrow_mut();
                         #negset_ident.extend(#input_neg);
-                    })
-                }
+                    },
+                ),
             };
 
-            (write_prologue, <span class="macro">quote_spanned! </span>{op_span=&gt;
-                #get_set
-                <span class="kw">let </span>#ident = #input_pos.filter(<span class="kw">move </span>|x| !#negset_ident.contains(x));
-            })
+            (
+                write_prologue,
+                <span class="macro">quote_spanned! </span>{op_span=&gt;
+                    #get_set
+                    <span class="kw">let </span>#ident = #input_pos.filter(<span class="kw">move </span>|x| !#negset_ident.contains(x));
+                },
+            )
         };
         <span class="prelude-val">Ok</span>(OperatorWriteOutput {
             write_prologue,

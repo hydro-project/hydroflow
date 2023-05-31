@@ -72,11 +72,13 @@
 <a href="#72" id="72">72</a>
 <a href="#73" id="73">73</a>
 <a href="#74" id="74">74</a>
-</pre></div><pre class="rust"><code><span class="kw">use super</span>::{make_missing_runtime_msg, FlowProperties, FlowPropertyVal};
+<a href="#75" id="75">75</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
-<span class="kw">use super</span>::{OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1};
-
-<span class="kw">use </span>quote::quote_spanned;
+<span class="kw">use super</span>::{
+    make_missing_runtime_msg, FlowProperties, FlowPropertyVal, OperatorCategory,
+    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+};
 
 <span class="doccomment">/// &gt; Arguments: A [serializing async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
 ///
@@ -95,9 +97,9 @@
 ///     flow.run_available();
 /// }
 /// ```
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>DEST_SINK_SERDE: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;dest_sink_serde&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::Sink],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_0,

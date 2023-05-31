@@ -69,12 +69,12 @@
 <a href="#69" id="69">69</a>
 <a href="#70" id="70">70</a>
 <a href="#71" id="71">71</a>
-</pre></div><pre class="rust"><code><span class="kw">use super</span>::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
-};
+</pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
-<span class="kw">use </span>quote::quote_spanned;
+<span class="kw">use super</span>::{
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+};
 
 <span class="doccomment">/// &gt; 1 input stream, 1 output stream
 ///
@@ -90,9 +90,9 @@
 /// source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; flat_map(|x| x.chars())
 ///     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 /// ```
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>FLAT_MAP: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;flat_map&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::Flatten],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

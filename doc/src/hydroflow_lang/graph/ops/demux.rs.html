@@ -214,22 +214,20 @@
 <a href="#214" id="214">214</a>
 <a href="#215" id="215">215</a>
 <a href="#216" id="216">216</a>
-<a href="#217" id="217">217</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
-
-<span class="kw">use super</span>::{FlowProperties, FlowPropertyVal};
-<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
-<span class="kw">use </span><span class="kw">crate</span>::graph::{OperatorInstance, PortIndexValue};
-<span class="kw">use </span><span class="kw">crate</span>::pretty_span::PrettySpan;
-
-<span class="kw">use super</span>::{
-    OperatorConstraints, OperatorWriteOutput, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
-};
 
 <span class="kw">use </span>proc_macro2::{Ident, TokenTree};
 <span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
 <span class="kw">use </span>syn::spanned::Spanned;
 <span class="kw">use </span>syn::{Expr, Pat};
+
+<span class="kw">use super</span>::{
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
+};
+<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
+<span class="kw">use </span><span class="kw">crate</span>::graph::{OperatorInstance, PortIndexValue};
+<span class="kw">use </span><span class="kw">crate</span>::pretty_span::PrettySpan;
 
 <span class="comment">// TODO(mingwei): Preprocess rustdoc links in mdbook or in the `operator_docgen` macro.
 </span><span class="doccomment">/// &gt; Arguments: A Rust closure, the first argument is a received item and the
@@ -260,9 +258,9 @@
 /// my_demux[buzz] -&gt; for_each(|v| println!(&quot;{}: buzz&quot;, v));
 /// my_demux[vals] -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 /// ```
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>DEMUX: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;demux&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::MultiOut],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: <span class="kw-2">&amp;</span>(<span class="number">2</span>..),

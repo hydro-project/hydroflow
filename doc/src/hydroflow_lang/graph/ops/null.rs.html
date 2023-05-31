@@ -35,7 +35,11 @@
 <a href="#35" id="35">35</a>
 <a href="#36" id="36">36</a>
 <a href="#37" id="37">37</a>
-</pre></div><pre class="rust"><code><span class="kw">use super</span>::{FlowProperties, FlowPropertyVal, OperatorConstraints, NULL_WRITE_FN, RANGE_0};
+<a href="#38" id="38">38</a>
+<a href="#39" id="39">39</a>
+</pre></div><pre class="rust"><code><span class="kw">use super</span>::{
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, NULL_WRITE_FN, RANGE_0,
+};
 
 <span class="doccomment">/// &gt; unbounded number of input streams of any type, unbounded number of output streams of any type.
 ///
@@ -51,9 +55,9 @@
 /// // note: use `for_each()` (or `inspect()`) instead of this:
 /// source_iter([4,5,6]) -&gt; map(|i| println!(&quot;{}&quot;, i)) -&gt; [0]null_sink;
 /// ```
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>NULL: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;null&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::Source, OperatorCategory::Sink],
     hard_range_inn: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     hard_range_out: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),

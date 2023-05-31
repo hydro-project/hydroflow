@@ -59,15 +59,13 @@
 <a href="#59" id="59">59</a>
 <a href="#60" id="60">60</a>
 <a href="#61" id="61">61</a>
-<a href="#62" id="62">62</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
+</pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
-
-<span class="kw">use </span>quote::quote_spanned;
+<span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
 
 <span class="doccomment">/// Takes a stream as input and produces a version of the stream as output
 /// sorted according to the key extracted by the closure.
@@ -80,9 +78,9 @@
 ///     -&gt; sort_by_key(|(k, _v)| k)
 ///     -&gt; for_each(|x| println!(&quot;{:?}&quot;, x));
 /// ```
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>SORT_BY_KEY: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;sort_by_key&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::Persistence],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

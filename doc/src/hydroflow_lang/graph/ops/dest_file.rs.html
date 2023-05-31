@@ -102,15 +102,13 @@
 <a href="#102" id="102">102</a>
 <a href="#103" id="103">103</a>
 <a href="#104" id="104">104</a>
-<a href="#105" id="105">105</a>
-</pre></div><pre class="rust"><code><span class="kw">use super</span>::{make_missing_runtime_msg, FlowProperties, FlowPropertyVal};
+</pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
+<span class="kw">use </span>syn::parse_quote_spanned;
 
 <span class="kw">use super</span>::{
+    make_missing_runtime_msg, FlowProperties, FlowPropertyVal, OperatorCategory,
     OperatorConstraints, OperatorInstance, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
-
-<span class="kw">use </span>quote::quote_spanned;
-<span class="kw">use </span>syn::parse_quote_spanned;
 
 <span class="doccomment">/// &gt; 0 input streams, 1 output stream
 ///
@@ -126,9 +124,9 @@
 /// ```hydroflow
 /// source_iter(1..=10) -&gt; map(|n| format!(&quot;Line {}&quot;, n)) -&gt; dest_file(&quot;dest.txt&quot;, false);
 /// ```
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>DEST_FILE: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;dest_file&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::Sink],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_0,

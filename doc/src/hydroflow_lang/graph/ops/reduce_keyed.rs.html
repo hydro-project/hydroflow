@@ -201,8 +201,8 @@
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 
 <span class="kw">use super</span>::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
-    Persistence, WriteContextArgs, RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
 
@@ -255,9 +255,9 @@
 /// flow.run_available();
 /// // (&quot;hello&quot;, &quot;palo alto, &quot;)
 /// ```
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;reduce_keyed&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::KeyedFold],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

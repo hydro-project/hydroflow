@@ -41,7 +41,7 @@
 <a href="#41" id="41">41</a>
 <a href="#42" id="42">42</a>
 </pre></div><pre class="rust"><code><span class="kw">use super</span>::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0, RANGE_1, OperatorCategory,
 };
 
 <span class="doccomment">/// &gt; 1 input stream of type T, 1 output stream of type T
@@ -61,9 +61,9 @@
 /// // Use type parameter to ensure items are `i32`s.
 /// source_iter(0..10) -&gt; identity::&lt;i32&gt;() -&gt; for_each(|x| println!(&quot;{}&quot;, x));
 /// ```
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>IDENTITY: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;identity&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::Map],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

@@ -27,15 +27,15 @@
 <a href="#27" id="27">27</a>
 <a href="#28" id="28">28</a>
 </pre></div><pre class="rust"><code><span class="kw">use super</span>::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0,
-    RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    IDENTITY_WRITE_FN, RANGE_0, RANGE_1,
 };
 
 <span class="doccomment">/// Delays all elements which pass through to the next stratum (in the same
 /// tick).
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>NEXT_STRATUM: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;next_stratum&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::Control],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,

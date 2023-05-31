@@ -50,14 +50,14 @@
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput,
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 <span class="doccomment">/// This operator will trigger the start of new ticks in order to repeat, which will cause spinning-like behavior.
-</span><span class="attr">#[hydroflow_internalmacro::operator_docgen]
 </span><span class="kw">pub const </span>SPIN: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;spin&quot;</span>,
+    categories: <span class="kw-2">&amp;</span>[OperatorCategory::Source],
     hard_range_inn: RANGE_0,
     soft_range_inn: RANGE_0,
     hard_range_out: RANGE_1,
