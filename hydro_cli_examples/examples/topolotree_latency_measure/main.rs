@@ -7,7 +7,7 @@ use futures::{SinkExt, StreamExt};
 use hydroflow::bytes::Bytes;
 use hydroflow::serde::{Deserialize, Serialize};
 use hydroflow::tokio;
-use hydroflow::util::cli::{ConnectedBidi, ConnectedSink, ConnectedSource};
+use hydroflow::util::cli::{ConnectedDirect, ConnectedSink, ConnectedSource};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -21,13 +21,13 @@ async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let mut start_node = ports
         .port("increment_start_node")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_sink();
 
     let mut end_node = ports
         .port("end_node_query")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_source();
 
