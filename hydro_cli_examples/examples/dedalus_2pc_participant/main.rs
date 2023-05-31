@@ -1,4 +1,4 @@
-use hydroflow::util::cli::{ConnectedBidi, ConnectedDemux, ConnectedSink, ConnectedSource};
+use hydroflow::util::cli::{ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 use hydroflow_datalog::datalog;
 
@@ -7,13 +7,13 @@ async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let vote_to_participant_source = ports
         .port("vote_to_participant")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_source();
 
     let vote_from_participant_port = ports
         .port("vote_from_participant")
-        .connect::<ConnectedDemux<ConnectedBidi>>()
+        .connect::<ConnectedDemux<ConnectedDirect>>()
         .await;
 
     let peers = vote_from_participant_port.keys.clone();
@@ -21,13 +21,13 @@ async fn main() {
 
     let instruct_to_participant_source = ports
         .port("instruct_to_participant")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_source();
 
     let ack_from_participant_sink = ports
         .port("ack_from_participant")
-        .connect::<ConnectedDemux<ConnectedBidi>>()
+        .connect::<ConnectedDemux<ConnectedDirect>>()
         .await
         .into_sink();
 
