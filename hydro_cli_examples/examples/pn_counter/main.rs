@@ -4,7 +4,7 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use hydroflow::serde::{Deserialize, Serialize};
-use hydroflow::util::cli::{ConnectedBidi, ConnectedDemux, ConnectedSink, ConnectedSource};
+use hydroflow::util::cli::{ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 use hydroflow::{hydroflow_syntax, tokio};
 
@@ -33,25 +33,25 @@ async fn main() {
 
     let increment_requests = ports
         .port("increment_requests")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_source();
 
     let query_responses = ports
         .port("query_responses")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_sink();
 
     let to_peer = ports
         .port("to_peer")
-        .connect::<ConnectedDemux<ConnectedBidi>>()
+        .connect::<ConnectedDemux<ConnectedDirect>>()
         .await
         .into_sink();
 
     let from_peer = ports
         .port("from_peer")
-        .connect::<ConnectedBidi>()
+        .connect::<ConnectedDirect>()
         .await
         .into_source();
 
