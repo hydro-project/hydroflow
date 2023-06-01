@@ -26,20 +26,23 @@ Some operators have more than one input _port_ that can be referenced by `->`. F
 unions the contents of many flows, so it can have an abitrary number of input ports. Some operators have multiple outputs, notably [`tee`](./surface_ops_gen.md#tee),
 which has an arbitrary number of outputs.
 
-In the syntax, we optionally distinguish input ports via an _indexing prefix_ number
-in square brackets before the name (e.g. `[0]my_join` and `[1]my_join`). We
-can distinguish output ports by an _indexing suffix_ (e.g. `my_tee[0]`).
+In the syntax, we optionally distinguish input ports via an _indexing prefix_ string
+in square brackets before the name (e.g. `[0]my_union` and `[1]my_union`). Binary operators --- 
+those with two distinct input ports --- require indexing prefixes, and require them to be `0` and `1`. 
+Operators with arbitrary numbers of inputs ([`union`](./surface_ops_gen.md#union)) and outputs 
+([`demux`](./surface_ops_gen.md#demux), [`tee`](./surface_ops_gen.md#tee)) 
+allow for arbitrary strings, which can make code and dataflow graphs more readable and understandable
+(e.g. `my_tee[print]` and `my_tee[continue]`).
 
 Here is an example that tees one flow into two, handles each separately, and then unions them to print out the contents in both lowercase and uppercase:
 ```rust,ignore
 my_tee = source_iter(vec!["Hello", "world"]) -> tee();
-my_tee -> map(|x| x.to_uppercase()) -> my_union;
-my_tee -> map(|x| x.to_lowercase()) -> my_union;
+my_tee -> map(|x| x.to_uppercase()) -> [low_road]my_union;
+my_tee -> map(|x| x.to_lowercase()) -> [high_road]my_union;
 my_union = union() -> for_each(|x| println!("{}", x));
 ```
-`union()` and `tee()` treat all their input/outputs the same, so we omit the indexing.
-
-Here is a visualization of the flow that was generated:
+Here is a visualization of the flow that was generated. Note that the outbound labels to `my_tee` 
+were auto-generated, but the inbound labels to `my_union` were specified by the code above:
 ```mermaid
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD
@@ -60,8 +63,8 @@ subgraph sg_2v1 ["sg_2v1 stratum 0"]
     4v1[\"(4v1) <tt>map(| x : &amp; str | x.to_lowercase())</tt>"/]:::pullClass
     5v1[\"(5v1) <tt>union()</tt>"/]:::pullClass
     6v1[/"(6v1) <tt>for_each(| x | println! (&quot;{}&quot;, x))</tt>"\]:::pushClass
-    3v1--0--->5v1
-    4v1--1--->5v1
+    3v1--low road--->5v1
+    4v1--high road--->5v1
     5v1--->6v1
     subgraph sg_2v1_var_my_union ["var <tt>my_union</tt>"]
         5v1
@@ -78,10 +81,6 @@ end
 Hydroflow compiled this flow into two subgraphs called _compiled components_, connected by _handoffs_. You can ignore
 these details unless you are interested in low-level performance tuning; they are explained in the discussion
 of [in-out trees](../architecture/in-out_trees.md).
-
-### A note on assigning flows with multiple ports
-> *TODO*: _Need to document the port numbers for variables assigned to tree- or dag-shaped flows_
-
 ## The `context` object
 
 Closures inside surface syntax operators have access to a special `context` object which provides

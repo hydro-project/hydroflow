@@ -207,7 +207,6 @@ Meanwhile, note stratum 0 has a recursive loop, and stratum 1 that computes `dif
 
 After all strata are run, Hydroflow returns to the stratum 0; this begins the next _tick_. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world. More on this topic in the chapter on [time](../concepts/life_and_times.md).
 
-
 If you look carefully, you'll see two subgraphs labeled with `stratum 0`. The reason that stratum 0 was broken into subgraphs has nothing to do with
 correctness, but rather the way that Hydroflow graphs are compiled and scheduled, as 
 discussed in the chapter on [Architecture](../architecture/index.md).
