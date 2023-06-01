@@ -133,7 +133,7 @@ where
             (true, false) => Some(Greater),
             (false, true) => Some(Less),
             (false, false) => Some(Equal),
-            // We check this one after each loop iteration.
+            // We check this one after each loop iteration above.
             (true, true) => unreachable!(),
         }
     }
@@ -236,7 +236,7 @@ mod test {
             for value in [vec![], vec![0], vec![1], vec![0, 1]] {
                 test_vec.push(MapUnionHashMap::new_from(HashMap::from_iter([(
                     key,
-                    SetUnionHashSet::new_from(HashSet::from_iter(value.clone())),
+                    SetUnionHashSet::new(HashSet::from_iter(value.clone())),
                 )])));
             }
         }
