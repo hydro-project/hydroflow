@@ -446,3 +446,71 @@ async fn asynctest_event_repeat_iter() {
     let seen: Vec<_> = collect_ready_async(b_recv).await;
     assert_eq!(&[0, 1, 2, 0, 1, 2, 10], &*seen);
 }
+
+#[hydroflow::test]
+async fn asynctest_tcp() {
+    let (tx_out, rx_out) = hydroflow::util::unbounded_channel::<String>();
+
+    let (tx, rx, server_addr) =
+        hydroflow::util::bind_tcp_lines("127.0.0.0:0".parse().unwrap()).await;
+    let mut echo_server = hydroflow_syntax! {
+        source_stream(rx)
+            -> filter_map(Result::ok)
+            -> dest_sink(tx);
+    };
+
+    let (tx, rx) = hydroflow::util::connect_tcp_lines();
+    let mut echo_client = hydroflow_syntax! {
+        source_iter([("Hello".to_owned(), server_addr)])
+            -> dest_sink(tx);
+
+        source_stream(rx)
+            -> filter_map(Result::ok)
+            -> map(|(string, _)| string)
+            -> for_each(|x| tx_out.send(x).unwrap());
+    };
+
+    tokio::time::timeout(
+        Duration::from_millis(200),
+        futures::future::join(echo_server.run_async(), echo_client.run_async()),
+    )
+    .await
+    .expect_err("Expected timeout");
+
+    let seen: Vec<_> = collect_ready_async(rx_out).await;
+    assert_eq!(&["Hello".to_owned()], &*seen);
+}
+
+#[hydroflow::test]
+async fn asynctest_udp() {
+    let (tx_out, rx_out) = hydroflow::util::unbounded_channel::<String>();
+
+    let (tx, rx, server_addr) =
+        hydroflow::util::bind_udp_lines("127.0.0.0:0".parse().unwrap()).await;
+    let mut echo_server = hydroflow_syntax! {
+        source_stream(rx)
+            -> filter_map(Result::ok)
+            -> dest_sink(tx);
+    };
+
+    let (tx, rx, _) = hydroflow::util::bind_udp_lines("127.0.0.0:0".parse().unwrap()).await;
+    let mut echo_client = hydroflow_syntax! {
+        source_iter([("Hello".to_owned(), server_addr)])
+            -> dest_sink(tx);
+
+        source_stream(rx)
+            -> filter_map(Result::ok)
+            -> map(|(string, _)| string)
+            -> for_each(|x| tx_out.send(x).unwrap());
+    };
+
+    tokio::time::timeout(
+        Duration::from_millis(200),
+        futures::future::join(echo_server.run_async(), echo_client.run_async()),
+    )
+    .await
+    .expect_err("Expected timeout");
+
+    let seen: Vec<_> = collect_ready_async(rx_out).await;
+    assert_eq!(&["Hello".to_owned()], &*seen);
+}
