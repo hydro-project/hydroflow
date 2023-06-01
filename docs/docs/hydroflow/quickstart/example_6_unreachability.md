@@ -6,7 +6,7 @@ sidebar_position: 7
 > In this example we cover:
 > * Extending a program with additional downstream logic.
 > * Hydroflow's ([`difference`](../syntax/surface_ops_gen.md#difference)) operator
-> * Further examples of automatic stratification.
+> * A first exposure to the concepts of _strata_ and _ticks_
 
 Our next example builds on the previous by finding vertices that are _not_ reachable. To do this, we need to capture the set `all_vertices`, and use a [difference](../syntax/surface_ops_gen.md#difference) operator to form the difference between that set of vertices and `reachable_vertices`.
 
@@ -116,19 +116,19 @@ Finally we print both `all_vertices` and `unreached_vertices`.
 
 The auto-generated mermaid looks like so:
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'clusterBkg':'#ddd'}}}%%
+%%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD
-classDef pullClass fill:#02f,color:#fff,stroke:#000
-classDef pushClass fill:#ff0,stroke:#000
+classDef pullClass fill:#02f,color:#999,stroke:#000,text-align:left,white-space:pre
+classDef pushClass fill:#ff0,stroke:#000,text-align:left,white-space:pre
 linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
-subgraph "sg_1v1 stratum 0"
-    1v1[\"(1v1) <tt>source_iter(vec! [0])</tt>"/]:::pullClass
-    8v1[\"(8v1) <tt>map(| v | (v, ()))</tt>"/]:::pullClass
-    6v1[\"(6v1) <tt>join()</tt>"/]:::pullClass
-    7v1[\"(7v1) <tt>flat_map(| (src, ((), dst)) | [src, dst])</tt>"/]:::pullClass
-    4v1[\"(4v1) <tt>union()</tt>"/]:::pullClass
-    5v1[/"(5v1) <tt>tee()</tt>"\]:::pushClass
-    15v1["(15v1) <tt>handoff</tt>"]:::otherClass
+subgraph sg_1v1 ["sg_1v1 stratum 0"]
+    1v1[\"(1v1) <code>source_iter(vec![0])</code>"/]:::pullClass
+    8v1[\"(8v1) <code>map(|v| (v, ()))</code>"/]:::pullClass
+    6v1[\"(6v1) <code>join()</code>"/]:::pullClass
+    7v1[\"(7v1) <code>flat_map(|(src, ((), dst))| [src, dst])</code>"/]:::pullClass
+    4v1[\"(4v1) <code>union()</code>"/]:::pullClass
+    5v1[/"(5v1) <code>tee()</code>"\]:::pushClass
+    15v1["(15v1) <code>handoff</code>"]:::otherClass
     15v1--->8v1
     1v1--0--->4v1
     8v1--0--->6v1
@@ -136,44 +136,80 @@ subgraph "sg_1v1 stratum 0"
     7v1--1--->4v1
     4v1--->5v1
     5v1--0--->15v1
+    subgraph sg_1v1_var_my_join ["var <tt>my_join</tt>"]
+        6v1
+        7v1
+    end
+    subgraph sg_1v1_var_origin ["var <tt>origin</tt>"]
+        1v1
+    end
+    subgraph sg_1v1_var_reached_vertices ["var <tt>reached_vertices</tt>"]
+        4v1
+        5v1
+    end
 end
-subgraph "sg_2v1 stratum 0"
-    2v1[\"(2v1) <tt>source_stream(pairs_recv)</tt>"/]:::pullClass
-    3v1[/"(3v1) <tt>tee()</tt>"\]:::pushClass
-    9v1[/"(9v1) <tt>flat_map(| (src, dst) | [src, dst])</tt>"\]:::pushClass
-    10v1[/"(10v1) <tt>tee()</tt>"\]:::pushClass
+subgraph sg_2v1 ["sg_2v1 stratum 0"]
+    2v1[\"(2v1) <code>source_stream(pairs_recv)</code>"/]:::pullClass
+    3v1[/"(3v1) <code>tee()</code>"\]:::pushClass
+    9v1[/"(9v1) <code>flat_map(|(src, dst)| [src, dst])</code>"\]:::pushClass
+    10v1[/"(10v1) <code>tee()</code>"\]:::pushClass
+    12v1[/"(12v1) <code>unique()</code>"\]:::pushClass
+    13v1[/"(13v1) <code>for_each(|v| println!(&quot;Received vertex: {}&quot;, v))</code>"\]:::pushClass
     2v1--->3v1
     3v1--0--->9v1
     9v1--->10v1
-end
-subgraph "sg_3v1 stratum 1"
-    12v1[/"(12v1) <tt>unique()</tt>"\]:::pushClass
-    13v1[/"(13v1) <tt>for_each(| v | println! (&quot;Received vertex: {}&quot;, v))</tt>"\]:::pushClass
+    10v1--1--->12v1
     12v1--->13v1
+    subgraph sg_2v1_var_all_vertices ["var <tt>all_vertices</tt>"]
+        9v1
+        10v1
+    end
+    subgraph sg_2v1_var_stream_of_edges ["var <tt>stream_of_edges</tt>"]
+        2v1
+        3v1
+    end
 end
-subgraph "sg_4v1 stratum 1"
-    11v1[\"(11v1) <tt>difference()</tt>"/]:::pullClass
-    14v1[/"(14v1) <tt>for_each(| v | println! (&quot;unreached_vertices vertex: {}&quot;, v))</tt>"\]:::pushClass
+subgraph sg_3v1 ["sg_3v1 stratum 1"]
+    11v1[\"(11v1) <code>difference()</code>"/]:::pullClass
+    14v1[/"(14v1) <code>for_each(|v| println!(&quot;unreached_vertices vertex: {}&quot;, v))</code>"\]:::pushClass
     11v1--->14v1
+    subgraph sg_3v1_var_unreached_vertices ["var <tt>unreached_vertices</tt>"]
+        11v1
+    end
 end
 3v1--1--->16v1
 5v1--1--->18v1
 10v1--0--->17v1
-10v1--1--->19v1
-16v1["(16v1) <tt>handoff</tt>"]:::otherClass
+16v1["(16v1) <code>handoff</code>"]:::otherClass
 16v1--1--->6v1
-17v1["(17v1) <tt>handoff</tt>"]:::otherClass
+17v1["(17v1) <code>handoff</code>"]:::otherClass
 17v1--pos--->11v1
-18v1["(18v1) <tt>handoff</tt>"]:::otherClass
+18v1["(18v1) <code>handoff</code>"]:::otherClass
 18v1==neg===o11v1
-19v1["(19v1) <tt>handoff</tt>"]:::otherClass
-19v1===o12v1
 ```
-If you look carefully, you'll see two subgraphs labeled with `stratum 0`, and two with
-`stratum 1`. The reason the strata were broken into subgraphs has nothing to do with
+
+## Strata and Ticks
+Notice in the mermaid graph how Hydroflow separates the `difference` operator and its downstream dependencies into its own
+_stratum_ (plural: _strata_). Note also the edge coming into the `neg` input to `difference` is bold and ends in a ball: this is because that input to `difference` is
+"blocking", meaning that `difference` should not run until all of the input on that edge has been received.
+The stratum boundary before `difference` ensures that the blocking property is respected.
+
+Hydroflow runs each stratum
+in order, one at a time, ensuring all values are computed
+before moving on to the next stratum. Between strata we see a _handoff_, which logically buffers the 
+output of the first stratum, and delineates the separation of execution between the 2 strata.
+
+All the subgraphs labeled `stratum 0` are run first to completion, 
+and then all the subgraphs labeled `stratum 1` are run. This captures the requirements of the `difference` operator: it has to wait for its full negative input before it can start producing output. Note
+how the `difference` operator has two inputs (labeled `pos` and `neg`), and only the `neg` input shows up as blocking (with the bold edge ending in a ball).
+
+Meanwhile, note stratum 0 has a recursive loop, and stratum 1 that computes `difference`, with the blocking input. This means that Hydroflow will first run the loop of stratum 0 repeatedly until all the transitive reached vertices are found, before moving on to compute the unreached vertices.
+
+After all strata are run, Hydroflow returns to the stratum 0; this begins the next _tick_. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world. More on this topic in the chapter on [time](../concepts/life_and_times.md).
+
+
+If you look carefully, you'll see two subgraphs labeled with `stratum 0`. The reason that stratum 0 was broken into subgraphs has nothing to do with
 correctness, but rather the way that Hydroflow graphs are compiled and scheduled, as 
 discussed in the chapter on [Architecture](../architecture/index.md).
 
-All the subgraphs labeled `stratum 0` are run first to completion, 
-and then all the subgraphs labeled `stratum 1` are run. This captures the requirements of the `unique` and `difference` operators used in the lower subgraphs: each has to wait for its full inputs before it can start producing output. Note
-how the `difference` operator has two inputs (labeled `pos` and `neg`), and only the `neg` input shows up as blocking (with the bold edge ending in a ball).
+

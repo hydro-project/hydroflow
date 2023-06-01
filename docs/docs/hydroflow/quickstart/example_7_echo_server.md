@@ -222,26 +222,26 @@ As described in the `README.md` file, we can run the server in one terminal, and
 Fire up the server in terminal 1:
 ```console
 #shell-command-next-line
-cargo run -p hydroflow --example echoserver -- --role server --addr localhost:12347
+cargo run -- --role server --addr localhost:12347
 ```
 
 Then start the client in terminal 2 and type some messages!
 ```console
 #shell-command-next-line
-cargo run -p hydroflow --example echoserver -- --role client --server-addr localhost:12347
-Listening on 127.0.0.1:54532
+cargo run -- --role client --server-addr localhost:12347
+Listening on 127.0.0.1:51778
 Connecting to server at 127.0.0.1:12347
 Client live!
 This is a test
-2022-12-15 05:40:11.258052 UTC: Got Echo { payload: "This is a test", ts: 2022-12-15T05:40:11.257145Z } from 127.0.0.1:12347
+2023-05-31 23:13:26.717165 UTC: Got Echo { payload: "This is a test", ts: 2023-05-31T23:13:26.715997Z } from 127.0.0.1:12347
 This is the rest
-2022-12-15 05:40:14.025216 UTC: Got Echo { payload: "This is the rest", ts: 2022-12-15T05:40:14.023577Z } from 127.0.0.1:12347
+2023-05-31 23:13:47.117957 UTC: Got Echo { payload: "This is the rest", ts: 2023-05-31T23:13:47.117236Z } from 127.0.0.1:12347
 ```
 
 And have a look back at the server console!
 ```console
 Listening on 127.0.0.1:12347
 Server live!
-2022-12-15 05:40:11.256640 UTC: Got Echo { payload: "This is a test", ts: 2022-12-15T05:40:11.254207Z } from 127.0.0.1:54532
-2022-12-15 05:40:14.023363 UTC: Got Echo { payload: "This is the rest", ts: 2022-12-15T05:40:14.020897Z } from 127.0.0.1:54532
+2023-05-31 23:13:26.715063 UTC: Got Echo { payload: "This is a test", ts: 2023-05-31T23:13:26.713063Z } from 127.0.0.1:51778
+2023-05-31 23:13:47.117165 UTC: Got Echo { payload: "This is the rest", ts: 2023-05-31T23:13:47.115551Z } from 127.0.0.1:51778
 ```
