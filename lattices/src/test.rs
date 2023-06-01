@@ -221,6 +221,14 @@ fn test_cartesian_power() {
 }
 
 #[test]
+fn test_cartesian_power_zero() {
+    let mut iter = cartesian_power::<_, 0>(&[0, 1, 2]);
+    assert_eq!(1, iter.len());
+    assert_eq!(Some([]), iter.next());
+    assert_eq!(None, iter.next());
+}
+
+#[test]
 fn test_cartesian_power_empty() {
     let mut iter = cartesian_power::<_, 4>(&[] as &[usize]);
     assert_eq!(0, iter.len());
