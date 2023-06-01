@@ -1,15 +1,13 @@
-//! Pair compound lattice.
-//!
-//! Merge both nested lattices.
-
 use std::cmp::Ordering::{self, *};
 
 use super::{ConvertFrom, Merge};
 use crate::LatticeOrd;
 
-/// Pair lattice.
+/// Pair compound lattice.
 ///
 /// `LatA` and `LatB` specify the nested lattice types.
+///
+/// When merging, both sub-lattices are always merged.
 #[derive(Copy, Clone, Debug, Default, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Pair<LatA, LatB> {

@@ -19,6 +19,8 @@ mod ord;
 pub use ord::{Max, Min};
 mod pair;
 pub use pair::Pair;
+mod seq;
+pub use seq::Seq;
 pub mod set_union;
 pub mod test;
 

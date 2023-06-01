@@ -31,6 +31,7 @@ Take a look at the [`lattice` rustdocs](https://hydro-project.github.io/hydroflo
 * [`map_union::MapUnion`] - scalar keys with nested lattice values.
 * [`Bottom<Lat>`] - wraps a lattice in `Option` with `None` as the new bottom value.
 * [`Pair<LatA, LatB>`] - product of two nested lattices.
+* [`Seq<Lat>`] - growing `Vec` of nested lattices, like `MapUnion<<usize, Lat>>` but without missing entries.
 * [`DomPair<LatKey, LatVal>`]* - a versioned pair where the `LatKey` dominates the `LatVal`.
 * [`Immut<T>`]* - a single constant value which cannot be merged.
 
