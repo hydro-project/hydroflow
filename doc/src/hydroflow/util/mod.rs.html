@@ -182,6 +182,57 @@
 <a href="#182" id="182">182</a>
 <a href="#183" id="183">183</a>
 <a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
 </pre></div><pre class="rust"><code><span class="attr">#![deny(missing_docs)]
 </span><span class="doccomment">//! Helper utilities for the Hydroflow surface syntax.
 
@@ -312,20 +363,71 @@
     }
 }
 
-<span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
-</span><span class="doccomment">/// Returns a length-delimited bytes `Sink`, `Stream`, and `SocketAddr` bound to the given address.
+<span class="doccomment">/// Returns a length-delimited bytes `Sink`, `Stream`, and `SocketAddr` bound to the given address.
 /// The input `addr` may have a port of `0`, the returned `SocketAddr` will have the chosen port.
+</span><span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
 </span><span class="kw">pub async fn </span>bind_udp_bytes(addr: SocketAddr) -&gt; (UdpSink, UdpStream, SocketAddr) {
     <span class="kw">let </span>socket = tokio::net::UdpSocket::bind(addr).<span class="kw">await</span>.unwrap();
     udp_bytes(socket)
 }
 
-<span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
-</span><span class="doccomment">/// Returns a newline-delimited bytes `Sink`, `Stream`, and `SocketAddr` bound to the given address.
+<span class="doccomment">/// Returns a newline-delimited bytes `Sink`, `Stream`, and `SocketAddr` bound to the given address.
 /// The input `addr` may have a port of `0`, the returned `SocketAddr` will have the chosen port.
+</span><span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
 </span><span class="kw">pub async fn </span>bind_udp_lines(addr: SocketAddr) -&gt; (UdpLinesSink, UdpLinesStream, SocketAddr) {
     <span class="kw">let </span>socket = tokio::net::UdpSocket::bind(addr).<span class="kw">await</span>.unwrap();
     udp_lines(socket)
+}
+
+<span class="doccomment">/// Returns a newline-delimited bytes `Sender`, `Receiver`, and `SocketAddr` bound to the given address.
+/// The input `addr` may have a port of `0`, the returned `SocketAddr` will be the address of the newly bound endpoint.
+/// The inbound connections can be used in full duplex mode. When a `(T, SocketAddr)` pair is fed to the `Sender`
+/// returned by this function, the `SocketAddr` will be looked up against the currently existing connections.
+/// If a match is found then the data will be sent on that connection. If no match is found then the data is silently dropped.
+</span><span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
+</span><span class="kw">pub async fn </span>bind_tcp_bytes(
+    addr: SocketAddr,
+) -&gt; (
+    unsync::mpsc::Sender&lt;(bytes::Bytes, SocketAddr)&gt;,
+    unsync::mpsc::Receiver&lt;<span class="prelude-ty">Result</span>&lt;(bytes::BytesMut, SocketAddr), std::io::Error&gt;&gt;,
+    SocketAddr,
+) {
+    bind_tcp(addr, tokio_util::codec::LengthDelimitedCodec::new())
+        .<span class="kw">await
+        </span>.unwrap()
+}
+
+<span class="doccomment">/// This is the same thing as `bind_tcp_bytes` except instead of using a length-delimited encoding scheme it uses new lines to separate frames.
+</span><span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
+</span><span class="kw">pub async fn </span>bind_tcp_lines(
+    addr: SocketAddr,
+) -&gt; (
+    unsync::mpsc::Sender&lt;(String, SocketAddr)&gt;,
+    unsync::mpsc::Receiver&lt;<span class="prelude-ty">Result</span>&lt;(String, SocketAddr), tokio_util::codec::LinesCodecError&gt;&gt;,
+    SocketAddr,
+) {
+    bind_tcp(addr, tokio_util::codec::LinesCodec::new())
+        .<span class="kw">await
+        </span>.unwrap()
+}
+
+<span class="doccomment">/// This is inverse of bind_tcp_bytes. `(Bytes, SocketAddr)` pairs fed to the returned `Sender` will initiate new tcp connections to the specified `SocketAddr`.
+/// These connections will be cached and reused, so that there will only be one connection per destination endpoint. When the endpoint sends data back it will be available via the returned `Receiver`
+</span><span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
+</span><span class="kw">pub fn </span>connect_tcp_bytes() -&gt; (
+    TcpFramedSink&lt;bytes::Bytes&gt;,
+    TcpFramedStream&lt;tokio_util::codec::LengthDelimitedCodec&gt;,
+) {
+    connect_tcp(tokio_util::codec::LengthDelimitedCodec::new())
+}
+
+<span class="doccomment">/// This is the same thing as `connect_tcp_bytes` except instead of using a length-delimited encoding scheme it uses new lines to separate frames.
+</span><span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
+</span><span class="kw">pub fn </span>connect_tcp_lines() -&gt; (
+    TcpFramedSink&lt;String&gt;,
+    TcpFramedStream&lt;tokio_util::codec::LinesCodec&gt;,
+) {
+    connect_tcp(tokio_util::codec::LinesCodec::new())
 }
 
 <span class="doccomment">/// Sort a slice using a key fn which returns references.
