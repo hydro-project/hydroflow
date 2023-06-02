@@ -103,13 +103,6 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
                    ..
                },
                _| {
-        let persistences = match persistence_args[..] {
-            [] => [Persistence::Static, Persistence::Static],
-            [a] => [a, a],
-            [a, b] => [a, b],
-            _ => unreachable!(),
-        };
-
         let lhs_type = type_args
             .get(0)
             .map(ToTokens::to_token_stream)
@@ -120,8 +113,7 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
             .map(ToTokens::to_token_stream)
             .unwrap_or(quote_spanned!(op_span=> _));
 
-        // TODO(mingwei): This is messy
-        let items = persistences.zip(["lhs", "rhs"]).map(|(persistence, side)| {
+        let make_joindata = |persistence, side| {
             let joindata_ident = wc.make_ident(format!("joindata_{}", side));
             let borrow_ident = wc.make_ident(format!("joindata_{}_borrow", side));
             let (init, borrow) = match persistence {
@@ -145,9 +137,19 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
                 ),
             };
             (joindata_ident, borrow_ident, init, borrow)
-        });
-        let [(lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow), (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow)] =
-            items;
+        };
+
+        let persistences = match persistence_args[..] {
+            [] => [Persistence::Static, Persistence::Static],
+            [a] => [a, a],
+            [a, b] => [a, b],
+            _ => unreachable!(),
+        };
+
+        let (lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow) =
+            make_joindata(persistences[0], "lhs");
+        let (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow) =
+            make_joindata(persistences[1], "rhs");
 
         let join_keys_ident = wc.make_ident("joinkeys");
         let join_keys_borrow_ident = wc.make_ident("joinkeys_borrow");

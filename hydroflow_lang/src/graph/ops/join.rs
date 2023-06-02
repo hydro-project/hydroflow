@@ -143,14 +143,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
             quote_spanned!(op_span=>)
         };
 
-        let persistences = match persistence_args[..] {
-            [] => [Persistence::Static, Persistence::Static],
-            [a] => [a, a],
-            [a, b] => [a, b],
-            _ => unreachable!(),
-        };
-        // TODO(mingwei): This is messy
-        let items = persistences.zip(["lhs", "rhs"]).map(|(persistence, side)| {
+        let make_joindata = |persistence, side| {
             let joindata_ident = wc.make_ident(format!("joindata_{}", side));
             let borrow_ident = wc.make_ident(format!("joindata_{}_borrow", side));
             let (init, borrow) = match persistence {
@@ -174,9 +167,19 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                 ),
             };
             (joindata_ident, borrow_ident, init, borrow)
-        });
-        let [(lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow), (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow)] =
-            items;
+        };
+
+        let persistences = match persistence_args[..] {
+            [] => [Persistence::Static, Persistence::Static],
+            [a] => [a, a],
+            [a, b] => [a, b],
+            _ => unreachable!(),
+        };
+
+        let (lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow) =
+            make_joindata(persistences[0], "lhs");
+        let (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow) =
+            make_joindata(persistences[1], "rhs");
 
         let write_prologue = quote_spanned! {op_span=>
             let #lhs_joindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
