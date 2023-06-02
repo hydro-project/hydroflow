@@ -2,7 +2,7 @@
     feature = "diagnostics",
     feature(proc_macro_diagnostic, proc_macro_span)
 )]
-#![feature(iter_intersperse, array_zip)]
+#![feature(iter_intersperse)]
 #![allow(clippy::let_and_return)]
 #![allow(clippy::explicit_auto_deref)]
 pub mod diagnostic;
