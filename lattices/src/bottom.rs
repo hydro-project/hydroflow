@@ -55,11 +55,7 @@ where
     Inner: ConvertFrom<Other>,
 {
     fn from(other: Bottom<Other>) -> Self {
-        if let Some(other) = other.0 {
-            Bottom::new(ConvertFrom::from(other))
-        } else {
-            Bottom::default()
-        }
+        Self(other.0.map(Inner::from))
     }
 }
 
