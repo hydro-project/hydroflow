@@ -50,9 +50,16 @@ where
     }
 }
 
-impl<Inner> ConvertFrom<Bottom<Inner>> for Bottom<Inner> {
-    fn from(other: Bottom<Inner>) -> Self {
-        other
+impl<Inner, Other> ConvertFrom<Bottom<Other>> for Bottom<Inner>
+where
+    Inner: ConvertFrom<Other>,
+{
+    fn from(other: Bottom<Other>) -> Self {
+        if let Some(other) = other.0 {
+            Bottom::new(ConvertFrom::from(other))
+        } else {
+            Bottom::default()
+        }
     }
 }
 
@@ -88,8 +95,26 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::set_union::SetUnionHashSet;
+    use crate::set_union::{SetUnionHashSet, SetUnionSingletonSet};
     use crate::test::check_all;
+
+    #[test]
+    fn test_singly_nested_singleton_example() {
+        let mut my_hash_set = Bottom::new(SetUnionHashSet::<&str>::default());
+        let my_delta_set = Bottom::new(SetUnionSingletonSet::new_from("hello world"));
+
+        assert!(my_hash_set.merge(my_delta_set)); // Changes
+        assert!(!my_hash_set.merge(my_delta_set)); // No changes
+    }
+
+    #[test]
+    fn test_doubly_nested_singleton_example() {
+        let mut my_hash_set = Bottom::new(Bottom::new(SetUnionHashSet::<&str>::default()));
+        let my_delta_set = Bottom::new(Bottom::new(SetUnionSingletonSet::new_from("hello world")));
+
+        assert!(my_hash_set.merge(my_delta_set)); // Changes
+        assert!(!my_hash_set.merge(my_delta_set)); // No changes
+    }
 
     #[test]
     #[rustfmt::skip]
