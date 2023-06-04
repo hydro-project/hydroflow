@@ -124,6 +124,27 @@
 <a href="#124" id="124">124</a>
 <a href="#125" id="125">125</a>
 <a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering;
 <span class="kw">use </span>std::cmp::Ordering::<span class="kw-2">*</span>;
 
@@ -176,9 +197,12 @@
     }
 }
 
-<span class="kw">impl</span>&lt;Inner&gt; ConvertFrom&lt;Bottom&lt;Inner&gt;&gt; <span class="kw">for </span>Bottom&lt;Inner&gt; {
-    <span class="kw">fn </span>from(other: Bottom&lt;Inner&gt;) -&gt; <span class="self">Self </span>{
-        other
+<span class="kw">impl</span>&lt;Inner, Other&gt; ConvertFrom&lt;Bottom&lt;Other&gt;&gt; <span class="kw">for </span>Bottom&lt;Inner&gt;
+<span class="kw">where
+    </span>Inner: ConvertFrom&lt;Other&gt;,
+{
+    <span class="kw">fn </span>from(other: Bottom&lt;Other&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>(other.<span class="number">0</span>.map(Inner::from))
     }
 }
 
@@ -214,8 +238,26 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span><span class="kw">crate</span>::set_union::SetUnionHashSet;
+    <span class="kw">use </span><span class="kw">crate</span>::set_union::{SetUnionHashSet, SetUnionSingletonSet};
     <span class="kw">use </span><span class="kw">crate</span>::test::check_all;
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_singly_nested_singleton_example() {
+        <span class="kw">let </span><span class="kw-2">mut </span>my_hash_set = Bottom::new(SetUnionHashSet::&lt;<span class="kw-2">&amp;</span>str&gt;::default());
+        <span class="kw">let </span>my_delta_set = Bottom::new(SetUnionSingletonSet::new_from(<span class="string">&quot;hello world&quot;</span>));
+
+        <span class="macro">assert!</span>(my_hash_set.merge(my_delta_set)); <span class="comment">// Changes
+        </span><span class="macro">assert!</span>(!my_hash_set.merge(my_delta_set)); <span class="comment">// No changes
+    </span>}
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_doubly_nested_singleton_example() {
+        <span class="kw">let </span><span class="kw-2">mut </span>my_hash_set = Bottom::new(Bottom::new(SetUnionHashSet::&lt;<span class="kw-2">&amp;</span>str&gt;::default()));
+        <span class="kw">let </span>my_delta_set = Bottom::new(Bottom::new(SetUnionSingletonSet::new_from(<span class="string">&quot;hello world&quot;</span>)));
+
+        <span class="macro">assert!</span>(my_hash_set.merge(my_delta_set)); <span class="comment">// Changes
+        </span><span class="macro">assert!</span>(!my_hash_set.merge(my_delta_set)); <span class="comment">// No changes
+    </span>}
 
     <span class="attr">#[test]
     #[rustfmt::skip]
