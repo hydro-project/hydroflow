@@ -34,7 +34,7 @@ impl<T> Clone for Buffer<T> {
 
 impl<T> Give<T> for SyncSender<T> {
     fn give(&self, t: T) -> bool {
-        matches!(self.send(t), Ok(_))
+        self.send(t).is_ok()
     }
 }
 
