@@ -452,7 +452,7 @@ async fn asynctest_tcp() {
     let (tx_out, rx_out) = hydroflow::util::unbounded_channel::<String>();
 
     let (tx, rx, server_addr) =
-        hydroflow::util::bind_tcp_lines("127.0.0.0:0".parse().unwrap()).await;
+        hydroflow::util::bind_tcp_lines("127.0.0.1:0".parse().unwrap()).await;
     let mut echo_server = hydroflow_syntax! {
         source_stream(rx)
             -> filter_map(Result::ok)
@@ -486,14 +486,14 @@ async fn asynctest_udp() {
     let (tx_out, rx_out) = hydroflow::util::unbounded_channel::<String>();
 
     let (tx, rx, server_addr) =
-        hydroflow::util::bind_udp_lines("127.0.0.0:0".parse().unwrap()).await;
+        hydroflow::util::bind_udp_lines("127.0.0.1:0".parse().unwrap()).await;
     let mut echo_server = hydroflow_syntax! {
         source_stream(rx)
             -> filter_map(Result::ok)
             -> dest_sink(tx);
     };
 
-    let (tx, rx, _) = hydroflow::util::bind_udp_lines("127.0.0.0:0".parse().unwrap()).await;
+    let (tx, rx, _) = hydroflow::util::bind_udp_lines("127.0.0.1:0".parse().unwrap()).await;
     let mut echo_client = hydroflow_syntax! {
         source_iter([("Hello".to_owned(), server_addr)])
             -> dest_sink(tx);
