@@ -90,6 +90,8 @@
 <a href="#90" id="90">90</a>
 <a href="#91" id="91">91</a>
 <a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
 </pre></div><pre class="rust"><code><span class="attr">#![deny(missing_docs)]
 #![feature(impl_trait_in_assoc_type)]
 #![doc = <span class="macro">include_str!</span>(<span class="string">&quot;../README.md&quot;</span>)]
@@ -100,7 +102,9 @@
 <span class="kw">use </span>sealed::sealed;
 
 <span class="kw">mod </span>bottom;
+<span class="kw">mod </span>top;
 <span class="kw">pub use </span>bottom::Bottom;
+<span class="kw">pub use </span>top::Top;
 <span class="kw">pub mod </span>collections;
 <span class="kw">mod </span>dom_pair;
 <span class="kw">pub use </span>dom_pair::DomPair;
