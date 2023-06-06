@@ -13,3 +13,10 @@ proc-macro = true
 [dependencies]
 proc-macro2 = "1.0"
 quote = "1.0"
+
+[dev-dependencies]
+env_logger = "0.10"
+log = "0.4"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = [ "env-filter" ] }
+wasm-bindgen-test = "0.3"
