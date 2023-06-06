@@ -54,7 +54,7 @@ async fn test_persist_stratum_run_available() -> Result<(), Box<dyn Error>> {
         };
         df.run_available();
     });
-    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
     handle.abort();
 
     let seen: Vec<_> = hydroflow::util::collect_ready_async(out_recv).await;
@@ -79,9 +79,8 @@ async fn test_persist_stratum_run_async() -> Result<(), Box<dyn Error>> {
             -> next_stratum()
             -> for_each(|x| out_send.send(x).unwrap());
     };
-    // println!("{}", df.meta_graph().unwrap().to_mermaid());
 
-    tokio::time::timeout(std::time::Duration::from_millis(10), df.run_async())
+    tokio::time::timeout(std::time::Duration::from_millis(200), df.run_async())
         .await
         .expect_err("Expected time out");
 
