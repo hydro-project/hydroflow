@@ -1,0 +1,10 @@
+{
+    "rust-analyzer.runnableEnv": [
+        {
+            // Set output levels for `tracing` logging.
+            "env": {
+                "RUST_LOG": "debug,hydroflow=trace"
+            }
+        }
+    ]
+}

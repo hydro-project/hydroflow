@@ -60,7 +60,6 @@ futures = { version = "0.3" }
 hdrhistogram = "7"
 insta = "1.7.1"
 multiplatform_test = { path = "../multiplatform_test", version = "0.0.0" }
-wasm-bindgen-test-macro = "0.3.34"
 wasm-bindgen-test = "0.3.34"
 rand = {version = "0.8.4", features = ["small_rng"]}
 rand_distr = "0.4.3"
