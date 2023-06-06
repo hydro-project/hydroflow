@@ -130,6 +130,7 @@ impl Hydroflow {
 
     /// Runs the dataflow until the next tick begins.
     /// Returns true if any work was done.
+    #[tracing::instrument(level = "trace", skip(self), ret)]
     pub fn run_tick(&mut self) -> bool {
         let mut work_done = false;
         // While work is immediately available *on the current tick*.
@@ -145,6 +146,7 @@ impl Hydroflow {
     /// Runs at least one tick of dataflow, even if no external events have been received.
     /// If the dataflow contains loops this method may run forever.
     /// Returns true if any work was done.
+    #[tracing::instrument(level = "trace", skip(self), ret)]
     pub fn run_available(&mut self) -> bool {
         let mut work_done = false;
         // While work is immediately available.
@@ -161,6 +163,7 @@ impl Hydroflow {
     /// If the dataflow contains loops this method may run forever.
     /// Returns true if any work was done.
     /// Yields repeatedly to allow external events to happen.
+    #[tracing::instrument(level = "trace", skip(self), ret)]
     pub async fn run_available_async(&mut self) -> bool {
         let mut work_done = false;
         // While work is immediately available.
@@ -178,6 +181,7 @@ impl Hydroflow {
 
     /// Runs the current stratum of the dataflow until no more local work is available (does not receive events).
     /// Returns true if any work was done.
+    #[tracing::instrument(level = "trace", skip(self), fields(tick = self.context.current_tick, stratum = self.context.current_stratum), ret)]
     pub fn run_stratum(&mut self) -> bool {
         let mut work_done = false;
 
@@ -187,6 +191,7 @@ impl Hydroflow {
                 let sg_data = &mut self.subgraphs[sg_id.0];
                 // This must be true for the subgraph to be enqueued.
                 assert!(sg_data.is_scheduled.take());
+                tracing::trace!(sg_id = sg_id.0, "Running subgraph.");
 
                 self.context.subgraph_id = sg_id;
                 sg_data.subgraph.run(&mut self.context, &mut self.handoffs);
@@ -221,7 +226,10 @@ impl Hydroflow {
     ///
     /// If this returns false then the graph will be at the start of a tick (at stratum 0, can
     /// receive more external events).
+    #[tracing::instrument(level = "trace", skip(self), fields(tick = self.context.current_tick, stratum = self.context.current_stratum), ret)]
     pub fn next_stratum(&mut self, current_tick_only: bool) -> bool {
+        tracing::trace!(events_received_tick = self.events_received_tick);
+
         if 0 == self.context.current_stratum && !self.events_received_tick {
             // Add any external jobs to ready queue.
             self.try_recv_events();
@@ -233,14 +241,21 @@ impl Hydroflow {
         loop {
             // If current stratum has work, return true.
             if !self.stratum_queues[self.context.current_stratum].is_empty() {
+                tracing::trace!(
+                    stratum = self.context.current_stratum,
+                    "Work found on stratum."
+                );
                 return true;
             }
 
             // Increment stratum counter.
             self.context.current_stratum += 1;
             if self.context.current_stratum >= self.stratum_queues.len() {
+                tracing::trace!(tick = self.context.current_tick, "End of tick.");
+
                 self.context.current_stratum = 0;
                 self.context.current_tick += 1;
+
                 if current_tick_only {
                     self.events_received_tick = false;
                     return false;
@@ -270,6 +285,7 @@ impl Hydroflow {
     /// Runs the dataflow graph forever.
     ///
     /// TODO(mingwei): Currently blockes forever, no notion of "completion."
+    #[tracing::instrument(level = "trace", skip(self), ret)]
     pub fn run(&mut self) -> Option<!> {
         loop {
             self.run_tick();
@@ -279,6 +295,7 @@ impl Hydroflow {
     /// Runs the dataflow graph forever.
     ///
     /// TODO(mingwei): Currently blockes forever, no notion of "completion."
+    #[tracing::instrument(level = "trace", skip(self), ret)]
     pub async fn run_async(&mut self) -> Option<!> {
         loop {
             // Run any work which is immediately available.
@@ -291,6 +308,7 @@ impl Hydroflow {
     /// Enqueues subgraphs triggered by events without blocking.
     ///
     /// Returns the number of subgraphs enqueued, and if any were external.
+    #[tracing::instrument(level = "trace", skip(self), ret)]
     pub fn try_recv_events(&mut self) -> (usize, bool) {
         self.events_received_tick = true;
 
@@ -309,6 +327,7 @@ impl Hydroflow {
 
     /// Enqueues subgraphs triggered by external events, blocking until at
     /// least one subgraph is scheduled **from an external event**.
+    #[tracing::instrument(level = "trace", skip(self), ret)]
     pub fn recv_events(&mut self) -> Option<usize> {
         self.events_received_tick = true;
 
@@ -334,6 +353,7 @@ impl Hydroflow {
     /// which may be zero if an external event scheduled an already-scheduled subgraph.
     ///
     /// Returns `None` if the event queue is closed, but that should not happen normally.
+    #[tracing::instrument(level = "trace", skip(self), ret)]
     pub async fn recv_events_async(&mut self) -> Option<usize> {
         self.events_received_tick = true;
 

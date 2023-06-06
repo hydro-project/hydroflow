@@ -28,6 +28,8 @@ pub mod props;
 pub mod scheduled;
 pub mod util;
 
+#[cfg(feature = "tracing")]
+pub use tracing;
 pub use variadics::{self, var_args, var_expr, var_type};
 pub use {
     bincode, bytes, futures, itertools, lattices, pusherator, rustc_hash, serde, serde_json, tokio,
