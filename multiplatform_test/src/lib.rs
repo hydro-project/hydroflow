@@ -106,7 +106,7 @@ fn multiplatform_test_impl(
             .iter()
             .find(|platform| name == platform.name())
         else {
-            let msg = proc_macro2::Literal::string(&*format!(
+            let msg = proc_macro2::Literal::string(&format!(
                 "unknown platform {}; expected one of [{}]",
                 name,
                 Platform::ALL.map(Platform::name).join(", "),
