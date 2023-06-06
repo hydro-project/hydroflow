@@ -152,20 +152,172 @@
 <a href="#152" id="152">152</a>
 <a href="#153" id="153">153</a>
 <a href="#154" id="154">154</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::iter::Iterator;
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+</pre></div><pre class="rust"><code><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">&quot;../README.md&quot;</span>)]
+
+</span><span class="kw">use </span>std::iter::Iterator;
 
 <span class="kw">use </span>proc_macro::TokenStream;
-<span class="kw">use </span>quote::quote;
+<span class="kw">use </span>quote::{quote, quote_spanned};
 
-<span class="attr">#[derive(Clone, Copy, Debug)]
+<span class="attr">#[derive(Clone, Copy)]
 </span><span class="kw">enum </span>Platform {
     Default,
+    Tokio,
+    AsyncStd,
+    Hydroflow,
     Wasm,
+    EnvLogging,
+    EnvTracing,
+}
+<span class="kw">impl </span>Platform {
+    <span class="comment">// All platforms.
+    </span><span class="kw">const </span>ALL: [<span class="self">Self</span>; <span class="number">7</span>] = [
+        <span class="self">Self</span>::Default,
+        <span class="self">Self</span>::Tokio,
+        <span class="self">Self</span>::AsyncStd,
+        <span class="self">Self</span>::Hydroflow,
+        <span class="self">Self</span>::Wasm,
+        <span class="self">Self</span>::EnvLogging,
+        <span class="self">Self</span>::EnvTracing,
+    ];
+    <span class="comment">// Default when no platforms are specified.
+    </span><span class="kw">const </span>DEFAULT: [<span class="self">Self</span>; <span class="number">2</span>] = [<span class="self">Self</span>::Default, <span class="self">Self</span>::Wasm];
+
+    <span class="doccomment">/// Name of platform ident in attribute.
+    </span><span class="kw">const fn </span>name(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::Default =&gt; <span class="string">&quot;test&quot;</span>,
+            <span class="self">Self</span>::Tokio =&gt; <span class="string">&quot;tokio&quot;</span>,
+            <span class="self">Self</span>::AsyncStd =&gt; <span class="string">&quot;async_std&quot;</span>,
+            <span class="self">Self</span>::Hydroflow =&gt; <span class="string">&quot;hydroflow&quot;</span>,
+            <span class="self">Self</span>::Wasm =&gt; <span class="string">&quot;wasm&quot;</span>,
+            <span class="self">Self</span>::EnvLogging =&gt; <span class="string">&quot;env_logging&quot;</span>,
+            <span class="self">Self</span>::EnvTracing =&gt; <span class="string">&quot;env_tracing&quot;</span>,
+        }
+    }
+
+    <span class="doccomment">/// Generate the attribute for this platform (if any).
+    </span><span class="kw">fn </span>make_attribute(<span class="self">self</span>) -&gt; proc_macro2::TokenStream {
+        <span class="comment">// Fully specify crate names so that the consumer does not need to add another
+        // use statement. They still need to depend on the crate in their `Cargo.toml`,
+        // though.
+        // TODO(mingwei): use `proc_macro_crate::crate_name(...)` to handle renames.
+        </span><span class="kw">match </span><span class="self">self </span>{
+            Platform::Default =&gt; <span class="macro">quote! </span>{ <span class="attr">#[test] </span>},
+            Platform::Tokio =&gt; <span class="macro">quote! </span>{ <span class="attr">#[tokio::test ] </span>},
+            Platform::AsyncStd =&gt; <span class="macro">quote! </span>{ <span class="attr">#[async_std::test] </span>},
+            Platform::Hydroflow =&gt; <span class="macro">quote! </span>{ <span class="attr">#[hydroflow::test] </span>},
+            Platform::Wasm =&gt; {
+                <span class="macro">quote! </span>{ <span class="attr">#[wasm_bindgen_test::wasm_bindgen_test] </span>}
+            }
+            Platform::EnvLogging | Platform::EnvTracing =&gt; Default::default(),
+        }
+    }
+
+    <span class="doccomment">/// Generate the initialization code statements for this platform (if any).
+    </span><span class="kw">fn </span>make_init_code(<span class="self">self</span>) -&gt; proc_macro2::TokenStream {
+        <span class="kw">match </span><span class="self">self </span>{
+            Platform::EnvLogging =&gt; <span class="macro">quote! </span>{
+                <span class="kw">let _ </span>= env_logger::builder().is_test(<span class="bool-val">true</span>).try_init();
+            },
+            Platform::EnvTracing =&gt; <span class="macro">quote! </span>{
+                <span class="kw">let </span>subscriber = tracing_subscriber::FmtSubscriber::builder()
+                    .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+                    .with_test_writer()
+                    .finish();
+                <span class="kw">let _ </span>= tracing::subscriber::set_global_default(subscriber);
+            },
+            <span class="kw">_ </span>=&gt; Default::default(),
+        }
+    }
 }
 
-<span class="kw">const </span>DEFAULT_PLATFORMS: [Platform; <span class="number">2</span>] = [Platform::Default, Platform::Wasm];
-
-<span class="attr">#[proc_macro_attribute]
+<span class="doccomment">/// See the [crate] docs for usage information.
+</span><span class="attr">#[proc_macro_attribute]
 </span><span class="kw">pub fn </span>multiplatform_test(attr: TokenStream, body: TokenStream) -&gt; TokenStream {
     <span class="kw">let </span>ts = multiplatform_test_impl(
         proc_macro2::TokenStream::from(attr),
@@ -182,46 +334,62 @@
     <span class="kw">let </span><span class="kw-2">mut </span>platforms = Vec::&lt;Platform&gt;::new();
 
     <span class="kw">while let </span><span class="prelude-val">Some</span>(token) = attr.next() {
-        <span class="kw">let </span>platform = <span class="kw">match </span><span class="kw-2">&amp;</span>token {
-            proc_macro2::TokenTree::Ident(i) =&gt; <span class="kw">match </span>i.to_string().as_str() {
-                <span class="string">&quot;default&quot; </span>=&gt; Platform::Default,
-                <span class="string">&quot;wasm&quot; </span>=&gt; Platform::Wasm,
-                other =&gt; <span class="macro">panic!</span>(
-                    <span class="string">&quot;unknown platform {}; want platform in [default, wasm]&quot;</span>,
-                    other
-                ),
-            },
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;malformed #[multiplatform_test] attribute; expected identifier&quot;</span>),
+        <span class="kw">let </span>proc_macro2::TokenTree::Ident(i) = <span class="kw-2">&amp;</span>token <span class="kw">else </span>{
+            <span class="kw">return </span><span class="macro">quote_spanned! </span>{token.span()=&gt;
+                <span class="macro">compile_error!</span>(<span class="string">&quot;malformed #[multiplatform_test] attribute; expected identifier.&quot;</span>);
+            };
+        };
+        <span class="kw">let </span>name = i.to_string();
+        <span class="kw">let </span><span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>platform) = Platform::ALL
+            .iter()
+            .find(|platform| name == platform.name())
+        <span class="kw">else </span>{
+            <span class="kw">let </span>msg = proc_macro2::Literal::string(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
+                <span class="string">&quot;unknown platform {}; expected one of [{}]&quot;</span>,
+                name,
+                Platform::ALL.map(Platform::name).join(<span class="string">&quot;, &quot;</span>),
+            ));
+            <span class="kw">return </span><span class="macro">quote_spanned! </span>{token.span()=&gt; <span class="macro">compile_error!</span>(#msg); };
         };
         platforms.push(platform);
 
         <span class="kw">match </span><span class="kw-2">&amp;</span>attr.next() {
             <span class="prelude-val">Some</span>(proc_macro2::TokenTree::Punct(op)) <span class="kw">if </span>op.as_char() == <span class="string">&#39;,&#39; </span>=&gt; {}
-            <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;malformed `#[multiplatform_test]` attribute; expected `,`&quot;</span>),
+            <span class="prelude-val">Some</span>(other) =&gt; {
+                <span class="kw">return </span><span class="macro">quote_spanned! </span>{other.span()=&gt;
+                    <span class="macro">compile_error!</span>(<span class="string">&quot;malformed `#[multiplatform_test]` attribute; expected `,`.&quot;</span>);
+                };
+            }
             <span class="prelude-val">None </span>=&gt; <span class="kw">break</span>,
         }
     }
-
-    <span class="kw">let </span><span class="kw-2">mut </span>output = Vec::&lt;proc_macro2::TokenStream&gt;::new();
-
     <span class="kw">if </span>platforms.is_empty() {
-        platforms.extend(DEFAULT_PLATFORMS.iter());
+        platforms.extend(Platform::DEFAULT.iter());
     }
+
+    <span class="kw">let </span><span class="kw-2">mut </span>output = proc_macro2::TokenStream::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>init_code = proc_macro2::TokenStream::new();
 
     <span class="kw">for </span>p <span class="kw">in </span>platforms {
-        <span class="kw">let </span>tokens = <span class="kw">match </span>p {
-            Platform::Default =&gt; <span class="macro">quote! </span>{ <span class="attr">#[test] </span>},
-            <span class="comment">// Fully specify wasm_bindgen_test so that the consumer does not need to add another
-            // use statement. They still need to depend on the wasm_bindgen_test_macro crate,
-            // though.
-            </span>Platform::Wasm =&gt; <span class="macro">quote! </span>{ <span class="attr">#[wasm_bindgen_test_macro::wasm_bindgen_test] </span>},
-        };
-        output.push(tokens);
+        output.extend(p.make_attribute());
+        init_code.extend(p.make_init_code());
     }
 
-    output.push(body);
+    <span class="kw">if </span>init_code.is_empty() {
+        output.extend(body);
+    } <span class="kw">else </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>body_head = body.into_iter().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        <span class="kw">let </span><span class="prelude-val">Some</span>(proc_macro2::TokenTree::Group(body_code)) = body_head.pop() <span class="kw">else </span>{ <span class="macro">panic!</span>(); };
 
-    output.into_iter().collect()
+        output.extend(body_head);
+        output.extend(<span class="macro">quote! </span>{
+            {
+                { #init_code };
+                #body_code
+            }
+        });
+    }
+    output
 }
 
 <span class="attr">#[cfg(test)]
@@ -230,12 +398,12 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_default_platforms() {
-        <span class="kw">let </span>test_fn = <span class="macro">quote! </span>{ <span class="kw">fn </span>test() { } };
+        <span class="kw">let </span>test_fn: proc_macro2::TokenStream = <span class="macro">quote! </span>{ <span class="kw">fn </span>test() { } };
         <span class="kw">let </span>attrs = proc_macro2::TokenStream::new();
-        <span class="kw">let </span>got = multiplatform_test_impl(attrs, test_fn);
+        <span class="kw">let </span>got: proc_macro2::TokenStream = multiplatform_test_impl(attrs, test_fn);
         <span class="kw">let </span>want = <span class="macro">quote! </span>{
             <span class="attr">#[test]
-            #[wasm_bindgen_test_macro::wasm_bindgen_test]
+            #[wasm_bindgen_test::wasm_bindgen_test]
             </span><span class="kw">fn </span>test() { }
         };
 
@@ -245,7 +413,7 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_host_platform() {
         <span class="kw">let </span>test_fn = <span class="macro">quote! </span>{ <span class="kw">fn </span>test() { } };
-        <span class="kw">let </span>attrs = <span class="macro">quote! </span>{ default };
+        <span class="kw">let </span>attrs = <span class="macro">quote! </span>{ test };
         <span class="kw">let </span>got = multiplatform_test_impl(attrs, test_fn);
         <span class="kw">let </span>want = <span class="macro">quote! </span>{
             <span class="attr">#[test]
@@ -261,7 +429,7 @@
         <span class="kw">let </span>attrs = <span class="macro">quote! </span>{ wasm };
         <span class="kw">let </span>got = multiplatform_test_impl(attrs, test_fn);
         <span class="kw">let </span>want = <span class="macro">quote! </span>{
-            <span class="attr">#[wasm_bindgen_test_macro::wasm_bindgen_test]
+            <span class="attr">#[wasm_bindgen_test::wasm_bindgen_test]
             </span><span class="kw">fn </span>test() { }
         };
 
@@ -271,11 +439,11 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_host_wasm_platform() {
         <span class="kw">let </span>test_fn = <span class="macro">quote! </span>{ <span class="kw">fn </span>test() { } };
-        <span class="kw">let </span>attrs = <span class="macro">quote! </span>{ default, wasm };
+        <span class="kw">let </span>attrs = <span class="macro">quote! </span>{ test, wasm };
         <span class="kw">let </span>got = multiplatform_test_impl(attrs, test_fn);
         <span class="kw">let </span>want = <span class="macro">quote! </span>{
             <span class="attr">#[test]
-            #[wasm_bindgen_test_macro::wasm_bindgen_test]
+            #[wasm_bindgen_test::wasm_bindgen_test]
             </span><span class="kw">fn </span>test() { }
         };
 
@@ -283,27 +451,27 @@
     }
 
     <span class="attr">#[test]
-    #[should_panic(expected = <span class="string">&quot;unknown platform&quot;</span>)]
     </span><span class="kw">fn </span>test_unknown_platform() {
         <span class="kw">let </span>test_fn = <span class="macro">quote! </span>{ <span class="kw">fn </span>test() { } };
         <span class="kw">let </span>attrs = <span class="macro">quote! </span>{ hello };
-        multiplatform_test_impl(attrs, test_fn);
+        <span class="kw">let </span>got = multiplatform_test_impl(attrs, test_fn);
+        <span class="macro">assert!</span>(got.to_string().starts_with(<span class="string">&quot;compile_error !&quot;</span>));
     }
 
     <span class="attr">#[test]
-    #[should_panic(expected = <span class="string">&quot;expected `,`&quot;</span>)]
     </span><span class="kw">fn </span>test_invalid_attr_nocomma_platform() {
         <span class="kw">let </span>test_fn = <span class="macro">quote! </span>{ <span class="kw">fn </span>test() { } };
         <span class="kw">let </span>attrs = <span class="macro">quote! </span>{ wasm() };
-        multiplatform_test_impl(attrs, test_fn);
+        <span class="kw">let </span>got = multiplatform_test_impl(attrs, test_fn);
+        <span class="macro">assert!</span>(got.to_string().starts_with(<span class="string">&quot;compile_error !&quot;</span>));
     }
 
     <span class="attr">#[test]
-    #[should_panic(expected = <span class="string">&quot;expected identifier&quot;</span>)]
     </span><span class="kw">fn </span>test_invalid_attr_noident_platform() {
         <span class="kw">let </span>test_fn = <span class="macro">quote! </span>{ <span class="kw">fn </span>test() { } };
         <span class="kw">let </span>attrs = <span class="macro">quote! </span>{ () };
-        multiplatform_test_impl(attrs, test_fn);
+        <span class="kw">let </span>got = multiplatform_test_impl(attrs, test_fn);
+        <span class="macro">assert!</span>(got.to_string().starts_with(<span class="string">&quot;compile_error !&quot;</span>));
     }
 }
 </code></pre></div></section></main></body></html>
