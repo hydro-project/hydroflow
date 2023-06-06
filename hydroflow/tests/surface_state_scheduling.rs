@@ -147,7 +147,7 @@ pub fn test_fold_keyed_static() {
 
 /// Check that the scheduler does not unnecsarily schedule internal events,
 /// but will resume when external events come in.
-#[multiplatform_test]
+#[multiplatform_test(test, wasm, env_tracing)]
 pub fn test_resume_external_event() {
     let (in_send, in_recv) = hydroflow::util::unbounded_channel::<usize>();
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
