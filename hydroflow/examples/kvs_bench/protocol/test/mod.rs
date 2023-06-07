@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use bincode::options;
 use lattices::map_union::MapUnionHashMap;
-use lattices::{Bottom, Immut, Max};
+use lattices::{Bottom, Max, Point};
 
 use self::util::check_all;
 use crate::protocol::{KvsRequestDeserializer, MyLastWriteWins};
@@ -20,7 +20,7 @@ fn test_gossip() {
     let req = {
         let buffer = BufferPool::get_from_buffer_pool(&buffer_pool);
         buffer.borrow_mut()[0] = 117;
-        let reg = MyLastWriteWins::new(Max::new(49), Bottom::new(Immut::new(buffer)));
+        let reg = MyLastWriteWins::new(Max::new(49), Bottom::new(Point::new(buffer)));
         let mut map = MapUnionHashMap::default();
 
         map.0.insert(7, reg);
@@ -68,7 +68,7 @@ fn test_json() {
     let req = {
         let buffer = BufferPool::get_from_buffer_pool(&buffer_pool);
         buffer.borrow_mut()[0] = 117;
-        let reg = MyLastWriteWins::new(Max::new(49), Bottom::new(Immut::new(buffer)));
+        let reg = MyLastWriteWins::new(Max::new(49), Bottom::new(Point::new(buffer)));
         let mut map = MapUnionHashMap::default();
 
         map.0.insert(7, reg);
@@ -89,7 +89,7 @@ fn test_json() {
                 7,
                 MyLastWriteWins::new(
                     Max::new(49),
-                    Bottom::new(Immut::new(BufferPool::get_from_buffer_pool(&buffer_pool)))
+                    Bottom::new(Point::new(BufferPool::get_from_buffer_pool(&buffer_pool)))
                 )
             )]))
             .unwrap()
@@ -117,7 +117,7 @@ fn test_bincode() {
     let req = {
         let buffer = BufferPool::get_from_buffer_pool(&buffer_pool);
         buffer.borrow_mut()[0] = 117;
-        let reg = MyLastWriteWins::new(Max::new(49), Bottom::new(Immut::new(buffer)));
+        let reg = MyLastWriteWins::new(Max::new(49), Bottom::new(Point::new(buffer)));
         let mut map = MapUnionHashMap::default();
 
         map.0.insert(7, reg);
