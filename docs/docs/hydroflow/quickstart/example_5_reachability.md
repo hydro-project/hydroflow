@@ -5,7 +5,7 @@ sidebar_position: 6
 # Graph Reachability
 > In this example we cover:
 > * Implementing a recursive algorithm (graph reachability) via cyclic dataflow
-> * Operators to union data from multiple inputs ([`union`](../syntax/surface_ops.gen.md#union)), and send data to multiple outputs ([`tee`](../syntax/surface_ops.gen.md#tee))
+> * Operators to union data from multiple inputs ([`union`](../syntax/surface_ops_gen.md#union)), and send data to multiple outputs ([`tee`](../syntax/surface_ops_gen.md#tee))
 > * Indexing multi-output operators by appending a bracket expression
 > * An example of how a cyclic dataflow in one stratum executes to completion before starting the next stratum. 
 
@@ -47,7 +47,7 @@ two cases above. Similarly note that the join box `V ⨝ E` now has two _outboun
 to copy ("tee") the output along 
 two paths.
 
-Now lets look at a modified version of our [graph neighbor](example_4_neighbors.md) code that implements this full program, including the loop as well as the Hydroflow [`union`](../syntax/surface_ops.gen.md#union) and [`tee`](../syntax/surface_ops.gen.md#tee).
+Now lets look at a modified version of our [graph neighbor](example_4_neighbors.md) code that implements this full program, including the loop as well as the Hydroflow [`union`](../syntax/surface_ops_gen.md#union) and [`tee`](../syntax/surface_ops_gen.md#tee).
 Modify src/main.rs to look like this:
 
 ```rust
@@ -105,7 +105,7 @@ Reached: 1
 
 ## Examining the Hydroflow Code
 Let's review the significant changes here. First, in setting up the inputs we have the 
-addition of the `reached_vertices` variable, which uses the [union()](../syntax/surface_ops.gen.md#union) 
+addition of the `reached_vertices` variable, which uses the [union()](../syntax/surface_ops_gen.md#union) 
 op to union the output of two operators into one. 
 We route the `origin` vertex into it as one input right away:
 ```rust,ignore
@@ -121,7 +121,7 @@ the joined output
 output to two places: to the original `for_each` from above to print output, and *also* 
 back to the `union` operator we called `reached_vertices`.
 We feed the `join()` output 
-through a `flat_map()` as before, and then we feed the result into a [`tee()`](../syntax/surface_ops.gen.md#tee) operator,
+through a `flat_map()` as before, and then we feed the result into a [`tee()`](../syntax/surface_ops_gen.md#tee) operator,
 which is the mirror image of `union()`:  instead of merging many inputs to one output, 
 it copies one input to many different outputs.  Each input element is _cloned_, in Rust terms, and
 given to each of the outputs. The syntax for the outputs of `tee()` mirrors that of union: we *append* 
