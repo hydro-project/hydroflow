@@ -10,6 +10,7 @@ $ npm install
 Next, you'll need to build the WebAssembly components of the website. This requires Rust and [wasm-pack](https://rustwasm.github.io/wasm-pack/):
 
 ```bash
+$ rustup target add wasm32-unknown-unknown
 $ cargo install wasm-pack
 $ cd ../website_playground
 $ CARGO_CFG_HYDROFLOW_GENERATE_DOCS="1" wasm-pack build
