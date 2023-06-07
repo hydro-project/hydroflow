@@ -11,11 +11,13 @@ use bytes::Bytes;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{collect_ready_async, ready_iter, tcp_lines};
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax, rassert, rassert_eq};
+use multiplatform_test::multiplatform_test;
 use tokio::net::{TcpListener, TcpStream, UdpSocket};
 use tokio::task::LocalSet;
 use tokio_util::codec::{BytesCodec, FramedWrite, LinesCodec};
+use tracing::Instrument;
 
-#[hydroflow::test]
+#[multiplatform_test(hydroflow, env_tracing)]
 pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
     let local = LocalSet::new();
 
@@ -126,7 +128,7 @@ pub async fn test_echo_udp() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[hydroflow::test]
+#[multiplatform_test(hydroflow, env_tracing)]
 pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
     let local = LocalSet::new();
 
@@ -203,7 +205,7 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[hydroflow::test]
+#[multiplatform_test(hydroflow, env_tracing)]
 pub async fn test_echo() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (lines_send, lines_recv) = hydroflow::util::unbounded_channel::<String>();
@@ -229,8 +231,8 @@ pub async fn test_echo() {
     tokio::time::sleep(Duration::from_secs(1)).await;
 }
 
-#[hydroflow::test]
-pub async fn test_futures_stream_sink() -> Result<(), Box<dyn Error>> {
+#[multiplatform_test(hydroflow, env_tracing)]
+pub async fn test_futures_stream_sink() {
     const MAX: usize = 20;
 
     let (mut send, recv) = hydroflow::futures::channel::mpsc::channel::<usize>(5);
@@ -246,18 +248,15 @@ pub async fn test_futures_stream_sink() -> Result<(), Box<dyn Error>> {
         recv[1] -> for_each(|x| seen_send.send(x).unwrap());
     };
 
-    tokio::select! {
-        _ = df.run_async() => (),
-        _ = tokio::time::sleep(Duration::from_secs(1)) => (),
-    };
+    tokio::time::timeout(Duration::from_secs(1), df.run_async())
+        .await
+        .expect_err("Expected timeout, `run_async` doesn't return.");
 
     let seen: Vec<_> = collect_ready_async(seen_recv).await;
-    rassert_eq!(&std::array::from_fn::<_, MAX, _>(|i| i), &*seen)?;
-
-    Ok(())
+    assert_eq!(&std::array::from_fn::<_, MAX, _>(|i| i), &*seen);
 }
 
-#[hydroflow::test]
+#[multiplatform_test(hydroflow, env_tracing)]
 async fn asynctest_dest_sink_bounded_channel() {
     // In this example we use a _bounded_ channel for our `Sink`. This is for demonstration only,
     // instead you should use [`hydroflow::util::unbounded_channel`]. A bounded channel results in
@@ -283,7 +282,7 @@ async fn asynctest_dest_sink_bounded_channel() {
     assert_eq!(&[5, 6, 7, 8, 9], &*out);
 }
 
-#[hydroflow::test]
+#[multiplatform_test(hydroflow, env_tracing)]
 async fn asynctest_dest_sink_duplex() {
     use bytes::Bytes;
     use tokio::io::AsyncReadExt;
@@ -313,7 +312,7 @@ async fn asynctest_dest_sink_duplex() {
     assert_eq!(b"\x05hello\x05world", &*buf);
 }
 
-#[hydroflow::test]
+#[multiplatform_test(hydroflow, env_tracing)]
 async fn asynctest_dest_asyncwrite_duplex() {
     use tokio::io::AsyncReadExt;
 
@@ -338,7 +337,7 @@ async fn asynctest_dest_asyncwrite_duplex() {
     assert_eq!(b"helloworld", &*buf);
 }
 
-#[hydroflow::test]
+#[multiplatform_test(hydroflow, env_tracing)]
 async fn asynctest_source_stream() {
     LocalSet::new()
         .run_until(async {
@@ -369,47 +368,66 @@ async fn asynctest_source_stream() {
 
 /// Check to make sure hf.run_async() does not hang due to replaying stateful operators saturating
 /// `run_available()`.
-#[hydroflow::test]
+///
+/// This test is a little bit race-ey... if for some insane reason a tick (task_b) runs longer than
+/// the send loop delay (task_a).
+#[multiplatform_test(hydroflow, env_tracing)]
 async fn asynctest_check_state_yielding() {
     LocalSet::new()
         .run_until(async {
             let (a_send, a_recv) = hydroflow::util::unbounded_channel::<usize>();
             let (b_send, mut b_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-            let task_a = tokio::task::spawn_local(async move {
-                for a in 0..10 {
-                    tokio::time::sleep(Duration::from_millis(10)).await;
-                    a_send.send(a).unwrap();
+            let task_a = tokio::task::spawn_local(
+                async move {
+                    for a in 0..10 {
+                        tokio::time::sleep(Duration::from_millis(100)).await;
+                        tracing::debug!(a = a, "Sending.");
+                        a_send.send(a).unwrap();
+                    }
                 }
-            });
+                .instrument(tracing::debug_span!("task_a")),
+            );
 
-            let task_b = tokio::task::spawn_local(async move {
-                let mut hf = hydroflow_syntax! {
-                    source_stream(a_recv)
-                        -> reduce::<'static>(|a, b| a + b)
-                        -> for_each(|x| b_send.send(x).unwrap());
-                };
+            let task_b = tokio::task::spawn_local(
+                async move {
+                    let mut hf = hydroflow_syntax! {
+                        source_stream(a_recv)
+                            -> reduce::<'static>(|a, b| a + b)
+                            -> for_each(|x| b_send.send(x).unwrap());
+                    };
 
-                tokio::time::timeout(Duration::from_millis(200), hf.run_async())
-                    .await
-                    .expect_err("Expected time out");
+                    // Run 100 millis longer than the sending task.
+                    let done_sending = async {
+                        task_a.await.unwrap();
+                        tokio::time::sleep(Duration::from_millis(100)).await;
+                    };
 
-                assert_eq!(
-                    [0, 1, 3, 6, 10, 15, 21, 28, 36, 45]
-                        .into_iter()
-                        .collect::<BTreeSet<_>>(),
-                    collect_ready_async(&mut b_recv).await
-                );
-            });
+                    tokio::select! {
+                        _ = done_sending => {
+                            tracing::info!("`task_a` (sending) complete.");
+                        },
+                        _ = hf.run_async() => {
+                            panic!("`run_async()` should run forever.");
+                        }
+                    }
 
-            let (result_a, result_b) = tokio::join!(task_a, task_b);
-            result_a.unwrap();
-            result_b.unwrap();
+                    assert_eq!(
+                        [0, 1, 3, 6, 10, 15, 21, 28, 36, 45]
+                            .into_iter()
+                            .collect::<BTreeSet<_>>(),
+                        collect_ready_async(&mut b_recv).await
+                    );
+                }
+                .instrument(tracing::debug_span!("task_b")),
+            );
+
+            task_b.await.unwrap();
         })
         .await;
 }
 
-#[hydroflow::test]
+#[multiplatform_test(hydroflow, env_tracing)]
 async fn asynctest_repeat_iter() {
     let (b_send, b_recv) = hydroflow::util::unbounded_channel::<usize>();
 
@@ -423,7 +441,7 @@ async fn asynctest_repeat_iter() {
     assert_eq!(&[0, 1, 2], &*seen);
 }
 
-#[hydroflow::test]
+#[multiplatform_test(hydroflow, env_tracing)]
 async fn asynctest_event_repeat_iter() {
     let (a_send, a_recv) = hydroflow::util::unbounded_channel::<usize>();
     let (b_send, b_recv) = hydroflow::util::unbounded_channel::<usize>();
@@ -434,10 +452,14 @@ async fn asynctest_event_repeat_iter() {
         my_union = union() -> for_each(|x| b_send.send(x).unwrap());
     };
 
-    tokio::task::spawn(async move {
-        tokio::time::sleep(Duration::from_millis(100)).await;
-        a_send.send(10).unwrap();
-    });
+    tokio::task::spawn(
+        async move {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            tracing::debug!("sending `10`.");
+            a_send.send(10).unwrap();
+        }
+        .instrument(tracing::debug_span!("sender")),
+    );
 
     tokio::time::timeout(Duration::from_millis(200), hf.run_async())
         .await
@@ -447,12 +469,12 @@ async fn asynctest_event_repeat_iter() {
     assert_eq!(&[0, 1, 2, 0, 1, 2, 10], &*seen);
 }
 
-#[hydroflow::test]
+#[multiplatform_test(hydroflow, env_tracing)]
 async fn asynctest_tcp() {
     let (tx_out, rx_out) = hydroflow::util::unbounded_channel::<String>();
 
     let (tx, rx, server_addr) =
-        hydroflow::util::bind_tcp_lines("127.0.0.0:0".parse().unwrap()).await;
+        hydroflow::util::bind_tcp_lines("127.0.0.1:0".parse().unwrap()).await;
     let mut echo_server = hydroflow_syntax! {
         source_stream(rx)
             -> filter_map(Result::ok)
@@ -481,19 +503,19 @@ async fn asynctest_tcp() {
     assert_eq!(&["Hello".to_owned()], &*seen);
 }
 
-#[hydroflow::test]
+#[multiplatform_test(hydroflow, env_tracing)]
 async fn asynctest_udp() {
     let (tx_out, rx_out) = hydroflow::util::unbounded_channel::<String>();
 
     let (tx, rx, server_addr) =
-        hydroflow::util::bind_udp_lines("127.0.0.0:0".parse().unwrap()).await;
+        hydroflow::util::bind_udp_lines("127.0.0.1:0".parse().unwrap()).await;
     let mut echo_server = hydroflow_syntax! {
         source_stream(rx)
             -> filter_map(Result::ok)
             -> dest_sink(tx);
     };
 
-    let (tx, rx, _) = hydroflow::util::bind_udp_lines("127.0.0.0:0".parse().unwrap()).await;
+    let (tx, rx, _) = hydroflow::util::bind_udp_lines("127.0.0.1:0".parse().unwrap()).await;
     let mut echo_client = hydroflow_syntax! {
         source_iter([("Hello".to_owned(), server_addr)])
             -> dest_sink(tx);
