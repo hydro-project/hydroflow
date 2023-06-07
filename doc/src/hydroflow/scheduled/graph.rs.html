@@ -681,6 +681,97 @@
 <a href="#681" id="681">681</a>
 <a href="#682" id="682">682</a>
 <a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a>
+<a href="#687" id="687">687</a>
+<a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a>
+<a href="#690" id="690">690</a>
+<a href="#691" id="691">691</a>
+<a href="#692" id="692">692</a>
+<a href="#693" id="693">693</a>
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a>
+<a href="#764" id="764">764</a>
+<a href="#765" id="765">765</a>
+<a href="#766" id="766">766</a>
+<a href="#767" id="767">767</a>
+<a href="#768" id="768">768</a>
+<a href="#769" id="769">769</a>
+<a href="#770" id="770">770</a>
+<a href="#771" id="771">771</a>
+<a href="#772" id="772">772</a>
+<a href="#773" id="773">773</a>
+<a href="#774" id="774">774</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for the [`Hydroflow`] struct and helper items.
 
 </span><span class="kw">use </span>std::any::Any;
@@ -715,6 +806,8 @@
     </span>stratum_queues: Vec&lt;VecDeque&lt;SubgraphId&gt;&gt;,
     <span class="doccomment">/// Receive events, if second arg indicates if it is an external &quot;important&quot; event (true).
     </span>event_queue_recv: UnboundedReceiver&lt;(SubgraphId, bool)&gt;,
+    <span class="doccomment">/// If external events or data can justify starting the next tick.
+    </span>can_start_tick: bool,
     <span class="doccomment">/// If the events have been received for this tick.
     </span>events_received_tick: bool,
 
@@ -746,6 +839,7 @@
 
             stratum_queues,
             event_queue_recv,
+            can_start_tick: <span class="bool-val">false</span>,
             events_received_tick: <span class="bool-val">false</span>,
 
             meta_graph: <span class="prelude-val">None</span>,
@@ -885,12 +979,14 @@
                 <span class="kw">if </span>!handoff.handoff.is_bottom() {
                     <span class="kw">for </span><span class="kw-2">&amp;</span>succ_id <span class="kw">in </span>handoff.succs.iter() {
                         <span class="kw">let </span>succ_sg_data = <span class="kw-2">&amp;</span><span class="self">self</span>.subgraphs[succ_id.<span class="number">0</span>];
-                        <span class="kw">if </span>succ_sg_data.is_scheduled.get() {
-                            <span class="comment">// Skip if task is already scheduled.
-                            </span><span class="kw">continue</span>;
+                        <span class="comment">// If we have sent data to the next tick, then we can start the next tick.
+                        </span><span class="kw">if </span>succ_sg_data.stratum &lt; <span class="self">self</span>.context.current_stratum {
+                            <span class="self">self</span>.can_start_tick = <span class="bool-val">true</span>;
                         }
-                        succ_sg_data.is_scheduled.set(<span class="bool-val">true</span>);
-                        <span class="self">self</span>.stratum_queues[succ_sg_data.stratum].push_back(succ_id);
+                        <span class="comment">// Add subgraph to stratum queue if it is not already scheduled.
+                        </span><span class="kw">if </span>!succ_sg_data.is_scheduled.replace(<span class="bool-val">true</span>) {
+                            <span class="self">self</span>.stratum_queues[succ_sg_data.stratum].push_back(succ_id);
+                        }
                     }
                 }
             }
@@ -909,22 +1005,40 @@
     ///
     /// If this returns false then the graph will be at the start of a tick (at stratum 0, can
     /// receive more external events).
-    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), fields(tick = <span class="self">self</span>.context.current_tick, stratum = <span class="self">self</span>.context.current_stratum), ret)]
+    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), ret)]
     </span><span class="kw">pub fn </span>next_stratum(<span class="kw-2">&amp;mut </span><span class="self">self</span>, current_tick_only: bool) -&gt; bool {
-        <span class="macro">tracing::trace!</span>(events_received_tick = <span class="self">self</span>.events_received_tick);
+        <span class="macro">tracing::trace!</span>(
+            events_received_tick = <span class="self">self</span>.events_received_tick,
+            can_start_tick = <span class="self">self</span>.can_start_tick,
+            <span class="string">&quot;Starting `next_stratum` call.&quot;</span>,
+        );
 
-        <span class="kw">if </span><span class="number">0 </span>== <span class="self">self</span>.context.current_stratum &amp;&amp; !<span class="self">self</span>.events_received_tick {
-            <span class="comment">// Add any external jobs to ready queue.
-            </span><span class="self">self</span>.try_recv_events();
+        <span class="kw">if </span><span class="number">0 </span>== <span class="self">self</span>.context.current_stratum {
+            <span class="comment">// Starting the tick, reset this to `false`.
+            </span><span class="macro">tracing::trace!</span>(<span class="string">&quot;Starting tick, setting `can_start_tick = false`.&quot;</span>);
+            <span class="self">self</span>.can_start_tick = <span class="bool-val">false</span>;
+
+            <span class="comment">// Ensure external events are received before running the tick.
+            </span><span class="kw">if </span>!<span class="self">self</span>.events_received_tick {
+                <span class="comment">// Add any external jobs to ready queue.
+                </span><span class="self">self</span>.try_recv_events();
+            }
         }
 
         <span class="comment">// The stratum we will stop searching at, i.e. made a full loop around.
         </span><span class="kw">let </span><span class="kw-2">mut </span>end_stratum = <span class="self">self</span>.context.current_stratum;
 
         <span class="kw">loop </span>{
+            <span class="macro">tracing::trace!</span>(
+                tick = <span class="self">self</span>.context.current_tick,
+                stratum = <span class="self">self</span>.context.current_stratum,
+                <span class="string">&quot;Looking for work on stratum.&quot;
+            </span>);
+
             <span class="comment">// If current stratum has work, return true.
             </span><span class="kw">if </span>!<span class="self">self</span>.stratum_queues[<span class="self">self</span>.context.current_stratum].is_empty() {
                 <span class="macro">tracing::trace!</span>(
+                    tick = <span class="self">self</span>.context.current_tick,
                     stratum = <span class="self">self</span>.context.current_stratum,
                     <span class="string">&quot;Work found on stratum.&quot;
                 </span>);
@@ -934,26 +1048,45 @@
             <span class="comment">// Increment stratum counter.
             </span><span class="self">self</span>.context.current_stratum += <span class="number">1</span>;
             <span class="kw">if </span><span class="self">self</span>.context.current_stratum &gt;= <span class="self">self</span>.stratum_queues.len() {
-                <span class="macro">tracing::trace!</span>(tick = <span class="self">self</span>.context.current_tick, <span class="string">&quot;End of tick.&quot;</span>);
+                <span class="macro">tracing::trace!</span>(
+                    can_start_tick = <span class="self">self</span>.can_start_tick,
+                    <span class="string">&quot;End of tick {}, starting tick {}.&quot;</span>,
+                    <span class="self">self</span>.context.current_tick,
+                    <span class="self">self</span>.context.current_tick + <span class="number">1</span>,
+                );
 
                 <span class="self">self</span>.context.current_stratum = <span class="number">0</span>;
                 <span class="self">self</span>.context.current_tick += <span class="number">1</span>;
+                <span class="self">self</span>.events_received_tick = <span class="bool-val">false</span>;
 
                 <span class="kw">if </span>current_tick_only {
-                    <span class="self">self</span>.events_received_tick = <span class="bool-val">false</span>;
+                    <span class="macro">tracing::trace!</span>(
+                        <span class="string">&quot;`current_tick_only` is `true`, returning `false` before receiving events.&quot;
+                    </span>);
                     <span class="kw">return </span><span class="bool-val">false</span>;
                 } <span class="kw">else </span>{
-                    <span class="kw">let </span>(_num_events, has_external) = <span class="self">self</span>.try_recv_events();
-                    <span class="kw">if </span>has_external {
+                    <span class="self">self</span>.try_recv_events();
+                    <span class="kw">if </span>std::mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.can_start_tick, <span class="bool-val">false</span>) {
+                        <span class="macro">tracing::trace!</span>(
+                            tick = <span class="self">self</span>.context.current_tick,
+                            <span class="string">&quot;`can_start_tick` is `true`, continuing.&quot;
+                        </span>);
                         <span class="comment">// Do a full loop more to find where events have been added.
                         </span>end_stratum = <span class="number">0</span>;
                         <span class="kw">continue</span>;
+                    } <span class="kw">else </span>{
+                        <span class="macro">tracing::trace!</span>(
+                            <span class="string">&quot;`can_start_tick` is `false`, re-setting `events_received_tick = false`, returning `false`.&quot;
+                        </span>);
+                        <span class="self">self</span>.events_received_tick = <span class="bool-val">false</span>;
+                        <span class="kw">return </span><span class="bool-val">false</span>;
                     }
                 }
             }
 
             <span class="comment">// After incrementing, exit if we made a full loop around the strata.
             </span><span class="kw">if </span>end_stratum == <span class="self">self</span>.context.current_stratum {
+                <span class="macro">tracing::trace!</span>(<span class="string">&quot;Made full loop around stratum, re-setting `current_stratum = 0`, returning `false`.&quot;</span>);
                 <span class="comment">// Note: if current stratum had work, the very first loop iteration would&#39;ve
                 // returned true. Therefore we can return false without checking.
                 // Also means nothing was done so we can reset the stratum to zero and wait for
@@ -991,43 +1124,75 @@
     <span class="doccomment">/// Enqueues subgraphs triggered by events without blocking.
     ///
     /// Returns the number of subgraphs enqueued, and if any were external.
-    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), ret)]
-    </span><span class="kw">pub fn </span>try_recv_events(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (usize, bool) {
-        <span class="self">self</span>.events_received_tick = <span class="bool-val">true</span>;
-
-        <span class="kw">let </span><span class="kw-2">mut </span>events_has_external = <span class="bool-val">false</span>;
+    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), fields(events_received_tick = <span class="self">self</span>.events_received_tick), ret)]
+    </span><span class="kw">pub fn </span>try_recv_events(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; usize {
         <span class="kw">let </span><span class="kw-2">mut </span>enqueued_count = <span class="number">0</span>;
         <span class="kw">while let </span><span class="prelude-val">Ok</span>((sg_id, is_external)) = <span class="self">self</span>.event_queue_recv.try_recv() {
             <span class="kw">let </span>sg_data = <span class="kw-2">&amp;</span><span class="self">self</span>.subgraphs[sg_id.<span class="number">0</span>];
-            events_has_external |= is_external;
+            <span class="macro">tracing::trace!</span>(
+                sg_id = sg_id.<span class="number">0</span>,
+                is_external = is_external,
+                sg_stratum = sg_data.stratum,
+                <span class="string">&quot;Event received.&quot;
+            </span>);
             <span class="kw">if </span>!sg_data.is_scheduled.replace(<span class="bool-val">true</span>) {
                 <span class="self">self</span>.stratum_queues[sg_data.stratum].push_back(sg_id);
                 enqueued_count += <span class="number">1</span>;
             }
+            <span class="kw">if </span>is_external {
+                <span class="comment">// Next tick is triggered if we are at the start of the next tick (`!self.events_receved_tick`).
+                // Or if the stratum is in the next tick.
+                </span><span class="kw">if </span>!<span class="self">self</span>.events_received_tick || sg_data.stratum &lt; <span class="self">self</span>.context.current_stratum {
+                    <span class="macro">tracing::trace!</span>(
+                        current_stratum = <span class="self">self</span>.context.current_stratum,
+                        sg_stratum = sg_data.stratum,
+                        <span class="string">&quot;External event, setting `can_start_tick = true`.&quot;
+                    </span>);
+                    <span class="self">self</span>.can_start_tick = <span class="bool-val">true</span>;
+                }
+            }
         }
-        (enqueued_count, events_has_external)
+        <span class="self">self</span>.events_received_tick = <span class="bool-val">true</span>;
+
+        enqueued_count
     }
 
     <span class="doccomment">/// Enqueues subgraphs triggered by external events, blocking until at
     /// least one subgraph is scheduled **from an external event**.
-    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), ret)]
+    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), fields(events_received_tick = <span class="self">self</span>.events_received_tick), ret)]
     </span><span class="kw">pub fn </span>recv_events(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
-        <span class="self">self</span>.events_received_tick = <span class="bool-val">true</span>;
-
         <span class="kw">let </span><span class="kw-2">mut </span>count = <span class="number">0</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>external = <span class="bool-val">false</span>;
-        <span class="kw">while </span>!external {
+        <span class="kw">loop </span>{
             <span class="kw">let </span>(sg_id, is_external) = <span class="self">self</span>.event_queue_recv.blocking_recv()<span class="question-mark">?</span>;
-            external |= is_external;
             <span class="kw">let </span>sg_data = <span class="kw-2">&amp;</span><span class="self">self</span>.subgraphs[sg_id.<span class="number">0</span>];
+            <span class="macro">tracing::trace!</span>(
+                sg_id = sg_id.<span class="number">0</span>,
+                is_external = is_external,
+                sg_stratum = sg_data.stratum,
+                <span class="string">&quot;Event received.&quot;
+            </span>);
             <span class="kw">if </span>!sg_data.is_scheduled.replace(<span class="bool-val">true</span>) {
                 <span class="self">self</span>.stratum_queues[sg_data.stratum].push_back(sg_id);
                 count += <span class="number">1</span>;
             }
+            <span class="kw">if </span>is_external {
+                <span class="comment">// Next tick is triggered if we are at the start of the next tick (`!self.events_receved_tick`).
+                // Or if the stratum is in the next tick.
+                </span><span class="kw">if </span>!<span class="self">self</span>.events_received_tick || sg_data.stratum &lt; <span class="self">self</span>.context.current_stratum {
+                    <span class="macro">tracing::trace!</span>(
+                        current_stratum = <span class="self">self</span>.context.current_stratum,
+                        sg_stratum = sg_data.stratum,
+                        <span class="string">&quot;External event, setting `can_start_tick = true`.&quot;
+                    </span>);
+                    <span class="self">self</span>.can_start_tick = <span class="bool-val">true</span>;
+                }
+                <span class="kw">break</span>;
+            }
         }
-        <span class="macro">debug_assert!</span>(external);
+        <span class="self">self</span>.events_received_tick = <span class="bool-val">true</span>;
+
         <span class="comment">// Enqueue any other immediate events.
-        </span><span class="kw">let </span>(extra_count, _extra_external) = <span class="self">self</span>.try_recv_events();
+        </span><span class="kw">let </span>extra_count = <span class="self">self</span>.try_recv_events();
         <span class="prelude-val">Some</span>(count + extra_count)
     }
 
@@ -1036,24 +1201,41 @@
     /// which may be zero if an external event scheduled an already-scheduled subgraph.
     ///
     /// Returns `None` if the event queue is closed, but that should not happen normally.
-    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), ret)]
+    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), fields(events_received_tick = <span class="self">self</span>.events_received_tick), ret)]
     </span><span class="kw">pub async fn </span>recv_events_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
-        <span class="self">self</span>.events_received_tick = <span class="bool-val">true</span>;
-
         <span class="kw">let </span><span class="kw-2">mut </span>count = <span class="number">0</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>external = <span class="bool-val">false</span>;
-        <span class="kw">while </span>!external {
+        <span class="kw">loop </span>{
+            <span class="macro">tracing::trace!</span>(<span class="string">&quot;Awaiting events (`event_queue_recv`).&quot;</span>);
             <span class="kw">let </span>(sg_id, is_external) = <span class="self">self</span>.event_queue_recv.recv().<span class="kw">await</span><span class="question-mark">?</span>;
-            external |= is_external;
             <span class="kw">let </span>sg_data = <span class="kw-2">&amp;</span><span class="self">self</span>.subgraphs[sg_id.<span class="number">0</span>];
+            <span class="macro">tracing::trace!</span>(
+                sg_id = sg_id.<span class="number">0</span>,
+                is_external = is_external,
+                sg_stratum = sg_data.stratum,
+                <span class="string">&quot;Event received.&quot;
+            </span>);
             <span class="kw">if </span>!sg_data.is_scheduled.replace(<span class="bool-val">true</span>) {
                 <span class="self">self</span>.stratum_queues[sg_data.stratum].push_back(sg_id);
                 count += <span class="number">1</span>;
             }
+            <span class="kw">if </span>is_external {
+                <span class="comment">// Next tick is triggered if we are at the start of the next tick (`!self.events_receved_tick`).
+                // Or if the stratum is in the next tick.
+                </span><span class="kw">if </span>!<span class="self">self</span>.events_received_tick || sg_data.stratum &lt; <span class="self">self</span>.context.current_stratum {
+                    <span class="macro">tracing::trace!</span>(
+                        current_stratum = <span class="self">self</span>.context.current_stratum,
+                        sg_stratum = sg_data.stratum,
+                        <span class="string">&quot;External event, setting `can_start_tick = true`.&quot;
+                    </span>);
+                    <span class="self">self</span>.can_start_tick = <span class="bool-val">true</span>;
+                }
+                <span class="kw">break</span>;
+            }
         }
-        <span class="macro">debug_assert!</span>(external);
+        <span class="self">self</span>.events_received_tick = <span class="bool-val">true</span>;
+
         <span class="comment">// Enqueue any other immediate events.
-        </span><span class="kw">let </span>(extra_count, _extra_external) = <span class="self">self</span>.try_recv_events();
+        </span><span class="kw">let </span>extra_count = <span class="self">self</span>.try_recv_events();
         <span class="prelude-val">Some</span>(count + extra_count)
     }
 
