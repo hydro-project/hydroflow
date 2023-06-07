@@ -79,10 +79,10 @@ pub fn main() {
 
 Hydroflow surface syntax defines a "flow" consisting of *operators* connected via `->` arrows.
 This simplest example uses a simple two-step linear flow.
-It starts with a [`source_iter`](../syntax/surface_ops.gen.md#source_iter) operator that takes the Rust
+It starts with a [`source_iter`](../syntax/surface_ops_gen.md#source_iter) operator that takes the Rust
 iterator `0..10` and iterates it to emit the 
 numbers 0 through 9. That operator then passes those numbers along the `->` arrow downstream to a 
-[`for_each`](../syntax/surface_ops.gen.md#for_each) operator that invokes its closure argument to print each
+[`for_each`](../syntax/surface_ops_gen.md#for_each) operator that invokes its closure argument to print each
 item passed in.
 
 The Hydroflow surface syntax is merely a *specification*; it does not actually do anything

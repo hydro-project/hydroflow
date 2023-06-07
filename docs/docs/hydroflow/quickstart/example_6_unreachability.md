@@ -5,10 +5,10 @@ sidebar_position: 7
 # Graph Un-Reachability
 > In this example we cover:
 > * Extending a program with additional downstream logic.
-> * Hydroflow's ([`difference`](../syntax/surface_ops.gen.md#difference)) operator
+> * Hydroflow's ([`difference`](../syntax/surface_ops_gen.md#difference)) operator
 > * Further examples of automatic stratification.
 
-Our next example builds on the previous by finding vertices that are _not_ reachable. To do this, we need to capture the set `all_vertices`, and use a [difference](../syntax/surface_ops.gen.md#difference) operator to form the difference between that set of vertices and `reachable_vertices`.
+Our next example builds on the previous by finding vertices that are _not_ reachable. To do this, we need to capture the set `all_vertices`, and use a [difference](../syntax/surface_ops_gen.md#difference) operator to form the difference between that set of vertices and `reachable_vertices`.
 
 Essentially we want a flow like this:
 ```mermaid
@@ -109,7 +109,7 @@ Let's review the changes, all of which come at the end of the program. First,
 we remove code to print `reached_vertices`. Then we define `all_vertices` to be
 the vertices that appear in any edge (using familiar `flat_map` code from the previous 
 examples.) In the last few lines, we wire up a 
-[difference](../syntax/surface_ops.gen.md#difference) operator
+[difference](../syntax/surface_ops_gen.md#difference) operator
 to compute the difference between `all_vertices` and `reached_vertices`; note 
 how we wire up the `pos` and `neg` inputs to the `difference` operator! 
 Finally we print both `all_vertices` and `unreached_vertices`.
