@@ -1,10 +1,19 @@
-# Hydroflow
+<h1 align="center">
+    <img src="https://hydro.run/img/hydroflow_100.png" width="50" height="50" alt='"hf"'>
+    Hydroflow<br>
+</h1>
+<p align="center">
+    <a href="https://crates.io/crates/hydroflow"><img src="https://img.shields.io/crates/v/hydroflow?style=flat-square&logo=rust" alt="Crates.io"></a>
+    <a href="https://docs.rs/hydroflow/"><img src="https://img.shields.io/badge/docs.rs-Hydroflow-blue?style=flat-square&logo=read-the-docs&logoColor=white" alt="Docs.rs"></a>
+</p>
 
-Hydro's low-level dataflow runtime.
+Hydroflow is a low-latency dataflow runtime written in Rust. The [Hydro Project](https://hydro.run/docs/hydroflow/ecosystem/)
+will empower developers to harness the full potential of the cloud by making distributed programs easy to specify and automatic to scale. Hydroflow serves as the lowest level in the [Hydro stack](https://hydro.run/docs/hydroflow/ecosystem/),
+serving as a single-node low-latency runtime with explicit networking. This allows us to support
+not just data processing pipelines, but distributed protocols (e.g. Paxos) and real-world
+long-running applications as well.
 
-See the [Github Pages index](https://hydro-project.github.io/hydroflow/) for more documentation.
-
-Read the [Hydroflow Book](https://hydro-project.github.io/hydroflow/book/).
+Take a look at the [Hydroflow Book](https://hydro.run/docs/hydroflow/).
 
 ## Start with a Template Program
 We provide a `cargo-generate` template for you to get started from a simple working example.
