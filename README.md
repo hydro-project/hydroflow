@@ -1,5 +1,5 @@
 <h1 align="center">
-    <img src="https://hydro.run/img/hydroflow_100.png" width="50" height="50" alt='"hf"'>
+    <img src="https://raw.githubusercontent.com/hydro-project/hydroflow/main/docs/static/img/hydroflow_100.png" width="50" height="50" alt='"hf"'>
     Hydroflow<br>
 </h1>
 <p align="center">
