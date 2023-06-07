@@ -4,8 +4,8 @@ sidebar_position: 2
 
 # Flow Syntax
 Flows consist of named _operators_ that are connected via flow _edges_ denoted by `->`. The example below
-uses the [`source_iter`](./surface_ops.gen.md#source_iter) operator to generate two strings from a Rust `vec`, the
-[`map`](./surface_ops.gen.md#map) operator to apply some Rust code to uppercase each string, and the [`for_each`](./surface_ops.gen.md#for_each)
+uses the [`source_iter`](./surface_ops_gen.md#source_iter) operator to generate two strings from a Rust `vec`, the
+[`map`](./surface_ops_gen.md#map) operator to apply some Rust code to uppercase each string, and the [`for_each`](./surface_ops_gen.md#for_each)
 operator to print each string to stdout.
 ```rust,ignore
 source_iter(vec!["Hello", "world"])
@@ -22,8 +22,8 @@ referenced before it is assigned, and that is completely OK and better matches t
 data, making the program more understandable.
 
 ## Operators with Multiple Ports
-Some operators have more than one input _port_ that can be referenced by `->`. For example [`union`](./surface_ops.gen.md#union)
-unions the contents of many flows, so it can have an abitrary number of input ports. Some operators have multiple outputs, notably [`tee`](./surface_ops.gen.md#tee),
+Some operators have more than one input _port_ that can be referenced by `->`. For example [`union`](./surface_ops_gen.md#union)
+unions the contents of many flows, so it can have an abitrary number of input ports. Some operators have multiple outputs, notably [`tee`](./surface_ops_gen.md#tee),
 which has an arbitrary number of outputs.
 
 In the syntax, we optionally distinguish input ports via an _indexing prefix_ number

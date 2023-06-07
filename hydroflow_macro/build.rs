@@ -10,7 +10,7 @@ use hydroflow_lang::graph::PortIndexValue;
 use itertools::Itertools;
 use quote::ToTokens;
 
-const FILENAME: &str = "surface_ops.gen.md";
+const FILENAME: &str = "surface_ops_gen.md";
 
 fn book_file(filename: impl AsRef<Path>) -> PathBuf {
     let mut pathbuf = PathBuf::new();

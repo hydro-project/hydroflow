@@ -5,9 +5,9 @@ sidebar_position: 5
 # Graph Neighbors
 > In this example we cover:
 > * Assigning sub-flows to variables
-> * Our first multi-input operator, [`join`](../syntax/surface_ops.gen.md#join)
+> * Our first multi-input operator, [`join`](../syntax/surface_ops_gen.md#join)
 > * Indexing multi-input operators by prepending a bracket expression
-> * The [`unique`](../syntax/surface_ops.gen.md#unique) operator for removing duplicates from a stream
+> * The [`unique`](../syntax/surface_ops_gen.md#unique) operator for removing duplicates from a stream
 > * Visualizing hydroflow code via `flow.meta_graph().to_mermaid()`
 > * A first exposure to the concepts of _strata_ and _ticks_
 
@@ -105,7 +105,7 @@ Reached: 1
 That looks right: the edges we "sent" into the flow that start at `0` are 
 `(0, 1)` and `(0, 3)`, so the nodes reachable from `0` in 0 or 1 hops are `0, 1, 3`.
 
-> Note: When you run the program you may see the lines printed out in a different order. That's OK; the flow we're defining here is producing a `set` of nodes, so the order in which they are printed out is not specified. The [`sort_by_key`](../syntax/surface_ops.gen.md#sort_by) operator can be used to sort the output of a flow.
+> Note: When you run the program you may see the lines printed out in a different order. That's OK; the flow we're defining here is producing a `set` of nodes, so the order in which they are printed out is not specified. The [`sort_by_key`](../syntax/surface_ops_gen.md#sort_by) operator can be used to sort the output of a flow.
 
 ## Examining the Hydroflow Code
 In the code, we want to start out with the origin vertex, `0`,
@@ -119,7 +119,7 @@ names that we can reuse. Here we specify two subflows, `origin` and `stream_of_e
 The Rust syntax `vec![0]` constructs a vector with a single element, `0`, which we iterate
 over using `source_iter`.
 
-We then set up a [`join()`](../syntax/surface_ops.gen.md#join) that we
+We then set up a [`join()`](../syntax/surface_ops_gen.md#join) that we
 name `my_join`, which acts like a SQL inner join. 
 ```rust,ignore
     // the join
@@ -136,7 +136,7 @@ a little massaging of its inputs to work properly.
 The inputs must be of the form of a pair of elements `(K, V1)`
 and `(K, V2)`, and the operator joins them on equal keys `K` and produces an
 output of `(K, (V1, V2))` elements. In this case we only want to join on the key `v` and
-don't have any corresponding value, so we feed `origin` through a [`map()`](../syntax/surface_ops.gen.md#map)
+don't have any corresponding value, so we feed `origin` through a [`map()`](../syntax/surface_ops_gen.md#map)
 to generate `(v, ())` elements as the first join input. 
 
 The `stream_of_edges` are `(src, dst)` pairs,
@@ -146,7 +146,7 @@ Finally we print the neighbor vertices as follows:
 ```rust,ignore
     my_join -> unique() -> for_each(|n| println!("Reached: {}", n));
 ```
-The [unique](../syntax/surface_ops.gen.md#unique) operator removes duplicates from the stream to make things more readable. Note that `unique` does not run in a streaming fashion, which we will talk about more [below](#strata-and-ticks).
+The [unique](../syntax/surface_ops_gen.md#unique) operator removes duplicates from the stream to make things more readable. Note that `unique` does not run in a streaming fashion, which we will talk about more [below](#strata-and-ticks).
 
 There's
 also some extra code here, `flow.meta_graph().expect(...).to_mermaid()`, which tells
