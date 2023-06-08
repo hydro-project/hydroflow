@@ -10,7 +10,7 @@ use hydroflow::compiled::pull::HalfMultisetJoinState;
 use hydroflow::hydroflow_syntax;
 use lattices::map_union::{MapUnionHashMap, MapUnionSingletonMap};
 use lattices::set_union::SetUnionSingletonSet;
-use lattices::{Bottom, Max, Point};
+use lattices::{Max, Point, WithBot};
 use rand::{Rng, SeedableRng};
 use serde::de::DeserializeSeed;
 use serde::Serialize;
@@ -189,12 +189,12 @@ pub fn run_server<RX>(
 
                                 broadcast.give((key, MyLastWriteWins::new(
                                     Max::new(marker),
-                                    Bottom::new(Point::new(value.clone())),
+                                    WithBot::new_from(Point::new(value.clone())),
                                 )));
 
                                 store.give((key, MyLastWriteWins::new(
                                     Max::new(marker),
-                                    Bottom::new(Point::new(value)),
+                                    WithBot::new_from(Point::new(value)),
                                 )));
                             },
                             KvsRequest::Gossip {map} => {
@@ -208,12 +208,12 @@ pub fn run_server<RX>(
 
                                 broadcast.give((key, MyLastWriteWins::new(
                                     Max::new(marker),
-                                    Bottom::default(),
+                                    WithBot::default(),
                                 )));
 
                                 store.give((key, MyLastWriteWins::new(
                                     Max::new(marker),
-                                    Bottom::default(),
+                                    WithBot::default(),
                                 )));
                             }
                         }

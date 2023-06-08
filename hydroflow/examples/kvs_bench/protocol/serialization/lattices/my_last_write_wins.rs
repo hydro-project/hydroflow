@@ -5,7 +5,7 @@ use serde::de::{DeserializeSeed, Visitor};
 use serde::{Serialize, Serializer};
 
 use crate::buffer_pool::BufferPool;
-use crate::protocol::serialization::lattices::bottom::{BottomDeserializer, BottomWrapper};
+use crate::protocol::serialization::lattices::with_bot::{WithBotDeserializer, WithBotWrapper};
 use crate::protocol::MyLastWriteWins;
 
 #[repr(transparent)]
@@ -21,7 +21,7 @@ impl<'a, const SIZE: usize> Serialize for MyLastWriteWinsWrapper<'a, SIZE> {
         let mut struct_serializer = serializer.serialize_struct("DomPair", 2)?;
 
         struct_serializer.serialize_field("key", &self.0.key)?;
-        struct_serializer.serialize_field("val", &BottomWrapper(&self.0.val))?;
+        struct_serializer.serialize_field("val", &WithBotWrapper(&self.0.val))?;
 
         struct_serializer.end()
     }
@@ -53,7 +53,7 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for MyLastWriteWinsDeserialize
             {
                 let key = seq.next_element()?.unwrap();
                 let val = seq
-                    .next_element_seed(BottomDeserializer {
+                    .next_element_seed(WithBotDeserializer {
                         collector: self.collector,
                     })?
                     .unwrap();
@@ -76,7 +76,7 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for MyLastWriteWinsDeserialize
                                 key = Some(map.next_value()?);
                             }
                             "val" => {
-                                val = Some(map.next_value_seed(BottomDeserializer {
+                                val = Some(map.next_value_seed(WithBotDeserializer {
                                     collector: self.collector.clone(),
                                 })?);
                             }
