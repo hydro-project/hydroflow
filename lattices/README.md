@@ -34,6 +34,7 @@ Take a look at the [`lattice` rustdocs](https://hydro-project.github.io/hydroflo
 * [`Pair<LatA, LatB>`] - product of two nested lattices.
 * [`Seq<Lat>`] - growing `Vec` of nested lattices, like `MapUnion<<usize, Lat>>` but without missing entries.
 * [`DomPair<LatKey, LatVal>`]* - a versioned pair where the `LatKey` dominates the `LatVal`.
+* [`Conflict<T>`]* - adds a "conflict" top to domain `T`. Merging inequal `T`s results in top.
 * [`Point<T>`]* - a single "point lattice" value which cannot be merged with any inequal value.
 
 *Special implementations which do not obey all lattice properties but are still useful under
