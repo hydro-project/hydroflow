@@ -1,7 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use super::{LatticeFrom, Merge};
-use crate::LatticeOrd;
+use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Dominating pair compound lattice.
 ///
@@ -112,6 +111,26 @@ where
     }
 }
 
+impl<Key, Val> IsBot for DomPair<Key, Val>
+where
+    Key: IsBot,
+    Val: IsBot,
+{
+    fn is_bot(&self) -> bool {
+        self.key.is_bot() && self.val.is_bot()
+    }
+}
+
+impl<Key, Val> IsTop for DomPair<Key, Val>
+where
+    Key: IsTop,
+    Val: IsTop,
+{
+    fn is_top(&self) -> bool {
+        self.key.is_top() && self.val.is_top()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;
@@ -120,8 +139,10 @@ mod test {
     use crate::ord::Max;
     use crate::set_union::SetUnionHashSet;
     use crate::test::{
-        check_all, check_lattice_ord, check_lattice_properties, check_partial_ord_properties,
+        check_lattice_bot, check_lattice_ord, check_lattice_properties, check_lattice_top,
+        check_partial_ord_properties,
     };
+    use crate::WithTop;
 
     #[test]
     fn consistency() {
@@ -138,6 +159,40 @@ mod test {
 
         check_lattice_ord(&test_vec);
         check_partial_ord_properties(&test_vec);
+        check_lattice_bot(&test_vec);
+        // DomPair is not actually a lattice.
+        assert!(std::panic::catch_unwind(|| check_lattice_properties(&test_vec)).is_err());
+    }
+
+    #[test]
+    fn consistency_withtop() {
+        let mut test_vec = vec![];
+
+        let sub_items = &[
+            Some(&[] as &[usize]),
+            Some(&[0]),
+            Some(&[1]),
+            Some(&[0, 1]),
+            None,
+        ];
+
+        for a in sub_items {
+            for b in sub_items {
+                test_vec.push(DomPair::new(
+                    WithTop::new(
+                        a.map(|x| SetUnionHashSet::new_from(HashSet::from_iter(x.iter().cloned()))),
+                    ),
+                    WithTop::new(
+                        b.map(|x| SetUnionHashSet::new_from(HashSet::from_iter(x.iter().cloned()))),
+                    ),
+                ));
+            }
+        }
+
+        check_lattice_ord(&test_vec);
+        check_partial_ord_properties(&test_vec);
+        check_lattice_bot(&test_vec);
+        check_lattice_top(&test_vec);
         // DomPair is not actually a lattice.
         assert!(std::panic::catch_unwind(|| check_lattice_properties(&test_vec)).is_err());
     }
@@ -155,6 +210,8 @@ mod test {
             }
         }
 
-        check_all(&test_vec);
+        check_lattice_ord(&test_vec);
+        check_lattice_properties(&test_vec);
+        check_partial_ord_properties(&test_vec);
     }
 }

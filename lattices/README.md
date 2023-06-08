@@ -80,3 +80,9 @@ order agrees with the `Merge`-derived `NaiveLatticeOrd` order.
 type, e.g. between [`set_union::SetUnionBTreeSet`] and [`set_union::SetUnionHashSet`]. For compound
 lattice (lattices with nested lattice types), the `LatticeFrom` implementation should be recursive
 for those nested lattices.
+
+### `IsBot` and `IsTop`
+
+A bottom (⊥) is strictly less than all other values. A top (⊤) is strictly greater than all other
+values. `IsBot::is_bot` and `IsTop::is_top` determine if a lattice instance is top or
+bottom respectively.

@@ -1,5 +1,4 @@
-use super::{LatticeFrom, Merge};
-use crate::LatticeOrd;
+use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// A `Point` lattice, corresponding to a single instance of `T`.
 ///
@@ -62,6 +61,18 @@ where
 {
     fn eq(&self, other: &Point<O>) -> bool {
         self.0 == other.0
+    }
+}
+
+impl<T> IsBot for Point<T> {
+    fn is_bot(&self) -> bool {
+        true
+    }
+}
+
+impl<T> IsTop for Point<T> {
+    fn is_top(&self) -> bool {
+        true
     }
 }
 
