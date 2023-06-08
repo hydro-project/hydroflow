@@ -25,14 +25,6 @@ impl<Inner> WithTop<Inner> {
     }
 }
 
-// Cannot auto derive because the generated implementation has the wrong trait bounds.
-// https://github.com/rust-lang/rust/issues/26925
-impl<Inner> Default for WithTop<Inner> {
-    fn default() -> Self {
-        Self(None)
-    }
-}
-
 impl<Inner, Other> Merge<WithTop<Other>> for WithTop<Inner>
 where
     Inner: Merge<Other> + ConvertFrom<Other>,
@@ -123,17 +115,17 @@ mod test {
     fn auto_derives() {
         type B = WithTop<SetUnionHashSet<usize>>;
 
-        assert_eq!(B::default().partial_cmp(&B::default()), Some(Equal));
-        assert_eq!(B::new_from(SetUnionHashSet::new_from([])).partial_cmp(&B::default()), Some(Less));
-        assert_eq!(B::default().partial_cmp(&B::new_from(SetUnionHashSet::new_from([]))), Some(Greater));
+        assert_eq!(B::new(None).partial_cmp(&B::new(None)), Some(Equal));
+        assert_eq!(B::new_from(SetUnionHashSet::new_from([])).partial_cmp(&B::new(None)), Some(Less));
+        assert_eq!(B::new(None).partial_cmp(&B::new_from(SetUnionHashSet::new_from([]))), Some(Greater));
         assert_eq!(B::new_from(SetUnionHashSet::new_from([])).partial_cmp(&B::new_from(SetUnionHashSet::new_from([]))), Some(Equal));
         assert_eq!(B::new_from(SetUnionHashSet::new_from([0])).partial_cmp(&B::new_from(SetUnionHashSet::new_from([]))), Some(Greater));
         assert_eq!(B::new_from(SetUnionHashSet::new_from([])).partial_cmp(&B::new_from(SetUnionHashSet::new_from([0]))), Some(Less));
         assert_eq!(B::new_from(SetUnionHashSet::new_from([0])).partial_cmp(&B::new_from(SetUnionHashSet::new_from([1]))), None);
 
-        assert!(B::default().eq(&B::default()));
-        assert!(!B::new_from(SetUnionHashSet::new_from([])).eq(&B::default()));
-        assert!(!B::default().eq(&B::new_from(SetUnionHashSet::new_from([]))));
+        assert!(B::new(None).eq(&B::new(None)));
+        assert!(!B::new_from(SetUnionHashSet::new_from([])).eq(&B::new(None)));
+        assert!(!B::new(None).eq(&B::new_from(SetUnionHashSet::new_from([]))));
         assert!(B::new_from(SetUnionHashSet::new_from([])).eq(&B::new_from(SetUnionHashSet::new_from([]))));
         assert!(!B::new_from(SetUnionHashSet::new_from([0])).eq(&B::new_from(SetUnionHashSet::new_from([]))));
         assert!(!B::new_from(SetUnionHashSet::new_from([])).eq(&B::new_from(SetUnionHashSet::new_from([0]))));
@@ -143,7 +135,7 @@ mod test {
     #[test]
     fn consistency() {
         check_all(&[
-            WithTop::default(),
+            WithTop::new(None),
             WithTop::new_from(SetUnionHashSet::new_from([])),
             WithTop::new_from(SetUnionHashSet::new_from([0])),
             WithTop::new_from(SetUnionHashSet::new_from([1])),
