@@ -2,7 +2,7 @@ use std::collections::hash_map::Entry;
 use std::collections::hash_set;
 
 use lattices::map_union::MapUnion;
-use lattices::{ConvertFrom, Merge};
+use lattices::{LatticeFrom, Merge};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::util::clear::Clear;
@@ -31,14 +31,14 @@ where
 {
     fn build<LatticeDelta>(&mut self, k: K, v: LatticeDelta) -> bool
     where
-        Lattice: Merge<LatticeDelta> + ConvertFrom<LatticeDelta>,
+        Lattice: Merge<LatticeDelta> + LatticeFrom<LatticeDelta>,
     {
         let entry = self.table.0.entry(k);
 
         match entry {
             Entry::Occupied(mut e) => e.get_mut().merge(v),
             Entry::Vacant(e) => {
-                e.insert(ConvertFrom::from(v));
+                e.insert(LatticeFrom::lattice_from(v));
                 true
             }
         }
@@ -93,8 +93,8 @@ where
     where
         I1: Iterator<Item = (K, LhsDelta)>,
         I2: Iterator<Item = (K, RhsDelta)>,
-        LhsLattice: Merge<LhsDelta> + ConvertFrom<LhsDelta>,
-        RhsLattice: Merge<RhsDelta> + ConvertFrom<RhsDelta>,
+        LhsLattice: Merge<LhsDelta> + LatticeFrom<LhsDelta>,
+        RhsLattice: Merge<RhsDelta> + LatticeFrom<RhsDelta>,
     {
         for (k, v1) in lhs {
             if state_lhs.build(k.clone(), v1) {

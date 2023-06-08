@@ -94,7 +94,7 @@ pub const LATTICE_BATCH: OperatorConstraints = OperatorConstraints {
                             if let Some(lattice) = &mut *lattice {
                                 #root::lattices::Merge::merge(lattice, i);
                             } else {
-                                *lattice = Some(#root::lattices::ConvertFrom::from(i));
+                                *lattice = Some(#root::lattices::LatticeFrom::lattice_from(i));
                             };
                         }
                     }
@@ -129,7 +129,7 @@ pub const LATTICE_BATCH: OperatorConstraints = OperatorConstraints {
                         if let Some(lattice) = &mut *lattice {
                             #root::lattices::Merge::merge(&mut *lattice, x);
                         } else {
-                            *lattice = Some(#root::lattices::ConvertFrom::from(x));
+                            *lattice = Some(#root::lattices::LatticeFrom::lattice_from(x));
                         };
                     });
                 },

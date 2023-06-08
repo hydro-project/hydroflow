@@ -5,7 +5,7 @@ use std::collections::{BTreeSet, HashSet};
 
 use crate::cc_traits::{Iter, Len, Set};
 use crate::collections::{ArraySet, SingletonSet};
-use crate::{ConvertFrom, LatticeOrd, Merge};
+use crate::{LatticeFrom, LatticeOrd, Merge};
 
 /// Set-union lattice.
 ///
@@ -38,12 +38,12 @@ where
     }
 }
 
-impl<SetSelf, SetOther, Item> ConvertFrom<SetUnion<SetOther>> for SetUnion<SetSelf>
+impl<SetSelf, SetOther, Item> LatticeFrom<SetUnion<SetOther>> for SetUnion<SetSelf>
 where
     SetSelf: FromIterator<Item>,
     SetOther: IntoIterator<Item = Item>,
 {
-    fn from(other: SetUnion<SetOther>) -> Self {
+    fn lattice_from(other: SetUnion<SetOther>) -> Self {
         Self(other.0.into_iter().collect())
     }
 }

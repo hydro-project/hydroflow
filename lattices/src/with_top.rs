@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::cmp::Ordering::*;
 
-use super::{ConvertFrom, Merge};
+use super::{LatticeFrom, Merge};
 use crate::LatticeOrd;
 
 /// Wraps a lattice in [`Option`], treating [`None`] as a new top element which compares as greater
@@ -27,7 +27,7 @@ impl<Inner> WithTop<Inner> {
 
 impl<Inner, Other> Merge<WithTop<Other>> for WithTop<Inner>
 where
-    Inner: Merge<Other> + ConvertFrom<Other>,
+    Inner: Merge<Other> + LatticeFrom<Other>,
 {
     fn merge(&mut self, other: WithTop<Other>) -> bool {
         match (&mut self.0, other.0) {
@@ -42,12 +42,12 @@ where
     }
 }
 
-impl<Inner, Other> ConvertFrom<WithTop<Other>> for WithTop<Inner>
+impl<Inner, Other> LatticeFrom<WithTop<Other>> for WithTop<Inner>
 where
-    Inner: ConvertFrom<Other>,
+    Inner: LatticeFrom<Other>,
 {
-    fn from(other: WithTop<Other>) -> Self {
-        Self(other.0.map(Inner::from))
+    fn lattice_from(other: WithTop<Other>) -> Self {
+        Self(other.0.map(Inner::lattice_from))
     }
 }
 

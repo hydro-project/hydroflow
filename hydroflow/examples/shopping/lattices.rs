@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
-use hydroflow::lattices::{ConvertFrom, LatticeOrd, Merge};
+use hydroflow::lattices::{LatticeFrom, LatticeOrd, Merge};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -119,8 +119,8 @@ impl<T: Eq + std::fmt::Debug> PartialOrd<Self> for SealedSetOfIndexedValues<T> {
 }
 impl<T: Eq + std::fmt::Debug> LatticeOrd<Self> for SealedSetOfIndexedValues<T> {}
 
-impl<T> ConvertFrom<Self> for SealedSetOfIndexedValues<T> {
-    fn from(other: Self) -> Self {
+impl<T> LatticeFrom<Self> for SealedSetOfIndexedValues<T> {
+    fn lattice_from(other: Self) -> Self {
         other
     }
 }
