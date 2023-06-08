@@ -94,7 +94,7 @@ pub enum Message {
 }
 ```
 
-Note how we use a single Rust `enum` to represent all varieties of message types; this allows us to handle `Message`s of different types with a single  Rust network channel. We will use the [`demux`](../syntax/surface_ops.gen.md#demux) operator to separate out these different message types on the receiving end. 
+Note how we use a single Rust `enum` to represent all varieties of message types; this allows us to handle `Message`s of different types with a single  Rust network channel. We will use the [`demux`](../syntax/surface_ops_gen.md#demux) operator to separate out these different message types on the receiving end. 
 
 The `ConnectRequest` and `ConnectResponse` messages have no payload; 
 the address of the sender and the type of the message will be sufficient information. The `ChatMsg` message type has a `nickname` field, a `message` field, and a `ts` 
@@ -137,7 +137,7 @@ After a short prelude, we have the Hydroflow code near the top of `run_server()`
 more interesting `inbound_chan` definition. 
 
 The `inbound` channel is a source stream that will carry many
-types of `Message`s. We use the [`demux`](../syntax/surface_ops.gen.md#demux) operator to partition the stream objects into three channels. The `clients` channel 
+types of `Message`s. We use the [`demux`](../syntax/surface_ops_gen.md#demux) operator to partition the stream objects into three channels. The `clients` channel 
 will carry the addresses of clients that have connected to the server. The `msgs` channel will carry the `ChatMsg` messages that clients send to the server. 
 The `errs` channel will carry any other messages that clients send to the server. 
 
@@ -186,7 +186,7 @@ The first pipeline is one line long,
 and is responsible for acknowledging requests from `clients`: it takes the address of the incoming `Message::ConnectRequest` 
 and sends a `ConnectResponse` back to that address. The second pipeline is responsible for broadcasting 
 all chat messages to all clients. This all-to-all pairing corresponds to the notion of a cartesian product
-or [`cross_join`](../syntax/surface_ops.gen.md#cross_join) in Hydroflow. The `cross_join` operator takes two input 
+or [`cross_join`](../syntax/surface_ops_gen.md#cross_join) in Hydroflow. The `cross_join` operator takes two input 
 channels and produces a single output channel with a tuple for each pair of inputs, in this case it produces
 `(Message, SocketAddr)` pairs. Conveniently, that is exactly the structure needed for sending to the `outbound_chan` sink!
 We call the cross-join pipeline `broadcast` because it effectively broadcasts all messages to all clients.
