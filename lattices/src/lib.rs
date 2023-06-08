@@ -7,10 +7,10 @@ use std::cmp::Ordering::{self, *};
 pub use cc_traits;
 use sealed::sealed;
 
-mod bottom;
-mod top;
-pub use bottom::Bottom;
-pub use top::Top;
+mod with_bot;
+mod with_top;
+pub use with_bot::Bottom;
+pub use with_top::Top;
 pub mod collections;
 mod dom_pair;
 pub use dom_pair::DomPair;
