@@ -12,32 +12,32 @@ use crate::LatticeOrd;
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Top<Inner>(pub Option<Inner>);
-impl<Inner> Top<Inner> {
-    /// Create a new `Bottom` lattice instance from a value.
-    pub fn new(val: Inner) -> Self {
-        Self(Some(val))
+pub struct WithTop<Inner>(pub Option<Inner>);
+impl<Inner> WithTop<Inner> {
+    /// Create a new `WithTop` lattice instance from a value.
+    pub fn new(val: Option<Inner>) -> Self {
+        Self(val)
     }
 
-    /// Create a new `Bottom` lattice instance from a value using `Into`.
-    pub fn new_from(val: impl Into<Inner>) -> Self {
+    /// Create a new `WithTop` lattice instance from a value using `Into`.
+    pub fn new_from(val: impl Into<Option<Inner>>) -> Self {
         Self::new(val.into())
     }
 }
 
 // Cannot auto derive because the generated implementation has the wrong trait bounds.
 // https://github.com/rust-lang/rust/issues/26925
-impl<Inner> Default for Top<Inner> {
+impl<Inner> Default for WithTop<Inner> {
     fn default() -> Self {
         Self(None)
     }
 }
 
-impl<Inner, Other> Merge<Top<Other>> for Top<Inner>
+impl<Inner, Other> Merge<WithTop<Other>> for WithTop<Inner>
 where
     Inner: Merge<Other> + ConvertFrom<Other>,
 {
-    fn merge(&mut self, other: Top<Other>) -> bool {
+    fn merge(&mut self, other: WithTop<Other>) -> bool {
         match (&mut self.0, other.0) {
             (None, None) => false,
             (this @ Some(_), None) => {
@@ -50,20 +50,20 @@ where
     }
 }
 
-impl<Inner, Other> ConvertFrom<Top<Other>> for Top<Inner>
+impl<Inner, Other> ConvertFrom<WithTop<Other>> for WithTop<Inner>
 where
     Inner: ConvertFrom<Other>,
 {
-    fn from(other: Top<Other>) -> Self {
+    fn from(other: WithTop<Other>) -> Self {
         Self(other.0.map(Inner::from))
     }
 }
 
-impl<Inner, Other> PartialOrd<Top<Other>> for Top<Inner>
+impl<Inner, Other> PartialOrd<WithTop<Other>> for WithTop<Inner>
 where
     Inner: PartialOrd<Other>,
 {
-    fn partial_cmp(&self, other: &Top<Other>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &WithTop<Other>) -> Option<Ordering> {
         match (&self.0, &other.0) {
             (None, None) => Some(Equal),
             (None, Some(_)) => Some(Greater),
@@ -72,13 +72,16 @@ where
         }
     }
 }
-impl<Inner, Other> LatticeOrd<Top<Other>> for Top<Inner> where Self: PartialOrd<Top<Other>> {}
+impl<Inner, Other> LatticeOrd<WithTop<Other>> for WithTop<Inner> where
+    Self: PartialOrd<WithTop<Other>>
+{
+}
 
-impl<Inner, Other> PartialEq<Top<Other>> for Top<Inner>
+impl<Inner, Other> PartialEq<WithTop<Other>> for WithTop<Inner>
 where
     Inner: PartialEq<Other>,
 {
-    fn eq(&self, other: &Top<Other>) -> bool {
+    fn eq(&self, other: &WithTop<Other>) -> bool {
         match (&self.0, &other.0) {
             (None, None) => true,
             (None, Some(_)) => false,
@@ -96,8 +99,8 @@ mod test {
 
     #[test]
     fn test_singly_nested_singleton_example() {
-        let mut my_hash_set = Top::new(SetUnionHashSet::<&str>::default());
-        let my_delta_set = Top::new(SetUnionSingletonSet::new_from("hello world"));
+        let mut my_hash_set = WithTop::new_from(SetUnionHashSet::<&str>::default());
+        let my_delta_set = WithTop::new_from(SetUnionSingletonSet::new_from("hello world"));
 
         assert!(my_hash_set.merge(my_delta_set)); // Changes
         assert!(!my_hash_set.merge(my_delta_set)); // No changes
@@ -105,8 +108,11 @@ mod test {
 
     #[test]
     fn test_doubly_nested_singleton_example() {
-        let mut my_hash_set = Top::new(Top::new(SetUnionHashSet::<&str>::default()));
-        let my_delta_set = Top::new(Top::new(SetUnionSingletonSet::new_from("hello world")));
+        let mut my_hash_set =
+            WithTop::new_from(WithTop::new_from(SetUnionHashSet::<&str>::default()));
+        let my_delta_set = WithTop::new_from(WithTop::new_from(SetUnionSingletonSet::new_from(
+            "hello world",
+        )));
 
         assert!(my_hash_set.merge(my_delta_set)); // Changes
         assert!(!my_hash_set.merge(my_delta_set)); // No changes
@@ -115,33 +121,33 @@ mod test {
     #[test]
     #[rustfmt::skip]
     fn auto_derives() {
-        type B = Top<SetUnionHashSet<usize>>;
+        type B = WithTop<SetUnionHashSet<usize>>;
 
         assert_eq!(B::default().partial_cmp(&B::default()), Some(Equal));
-        assert_eq!(B::new(SetUnionHashSet::new_from([])).partial_cmp(&B::default()), Some(Less));
+        assert_eq!(B::new_from(SetUnionHashSet::new_from([])).partial_cmp(&B::default()), Some(Less));
         assert_eq!(B::default().partial_cmp(&B::new_from(SetUnionHashSet::new_from([]))), Some(Greater));
-        assert_eq!(B::new(SetUnionHashSet::new_from([])).partial_cmp(&B::new(SetUnionHashSet::new_from([]))), Some(Equal));
-        assert_eq!(B::new(SetUnionHashSet::new_from([0])).partial_cmp(&B::new(SetUnionHashSet::new_from([]))), Some(Greater));
-        assert_eq!(B::new(SetUnionHashSet::new_from([])).partial_cmp(&B::new(SetUnionHashSet::new_from([0]))), Some(Less));
-        assert_eq!(B::new(SetUnionHashSet::new_from([0])).partial_cmp(&B::new(SetUnionHashSet::new_from([1]))), None);
+        assert_eq!(B::new_from(SetUnionHashSet::new_from([])).partial_cmp(&B::new_from(SetUnionHashSet::new_from([]))), Some(Equal));
+        assert_eq!(B::new_from(SetUnionHashSet::new_from([0])).partial_cmp(&B::new_from(SetUnionHashSet::new_from([]))), Some(Greater));
+        assert_eq!(B::new_from(SetUnionHashSet::new_from([])).partial_cmp(&B::new_from(SetUnionHashSet::new_from([0]))), Some(Less));
+        assert_eq!(B::new_from(SetUnionHashSet::new_from([0])).partial_cmp(&B::new_from(SetUnionHashSet::new_from([1]))), None);
 
         assert!(B::default().eq(&B::default()));
-        assert!(!B::new(SetUnionHashSet::new_from([])).eq(&B::default()));
+        assert!(!B::new_from(SetUnionHashSet::new_from([])).eq(&B::default()));
         assert!(!B::default().eq(&B::new_from(SetUnionHashSet::new_from([]))));
-        assert!(B::new(SetUnionHashSet::new_from([])).eq(&B::new(SetUnionHashSet::new_from([]))));
-        assert!(!B::new(SetUnionHashSet::new_from([0])).eq(&B::new(SetUnionHashSet::new_from([]))));
-        assert!(!B::new(SetUnionHashSet::new_from([])).eq(&B::new(SetUnionHashSet::new_from([0]))));
-        assert!(!B::new(SetUnionHashSet::new_from([0])).eq(&B::new(SetUnionHashSet::new_from([1]))));
+        assert!(B::new_from(SetUnionHashSet::new_from([])).eq(&B::new_from(SetUnionHashSet::new_from([]))));
+        assert!(!B::new_from(SetUnionHashSet::new_from([0])).eq(&B::new_from(SetUnionHashSet::new_from([]))));
+        assert!(!B::new_from(SetUnionHashSet::new_from([])).eq(&B::new_from(SetUnionHashSet::new_from([0]))));
+        assert!(!B::new_from(SetUnionHashSet::new_from([0])).eq(&B::new_from(SetUnionHashSet::new_from([1]))));
     }
 
     #[test]
     fn consistency() {
         check_all(&[
-            Top::default(),
-            Top::new(SetUnionHashSet::new_from([])),
-            Top::new(SetUnionHashSet::new_from([0])),
-            Top::new(SetUnionHashSet::new_from([1])),
-            Top::new(SetUnionHashSet::new_from([0, 1])),
+            WithTop::default(),
+            WithTop::new_from(SetUnionHashSet::new_from([])),
+            WithTop::new_from(SetUnionHashSet::new_from([0])),
+            WithTop::new_from(SetUnionHashSet::new_from([1])),
+            WithTop::new_from(SetUnionHashSet::new_from([0, 1])),
         ])
     }
 }
