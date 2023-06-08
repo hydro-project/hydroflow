@@ -9,8 +9,8 @@ use sealed::sealed;
 
 mod with_bot;
 mod with_top;
-pub use with_bot::Bottom;
-pub use with_top::Top;
+pub use with_bot::WithBot;
+pub use with_top::WithTop;
 pub mod collections;
 mod dom_pair;
 pub use dom_pair::DomPair;
