@@ -2,8 +2,6 @@
 This is a remedial 2PC implementation. 
 
 Design limitations:
-- No database logging (just log statements via println)
-- No distinction between forced and non-forced logs, no presumed commit/abort optimizations
 - No recovery manager implementation (yet)
 - Subordinates make random decisions whether to commit or abort
 
@@ -24,6 +22,6 @@ cargo run --example two_pc -- --path hydroflow/examples/two_pc/members.json --ro
 Now, in the coordinator process you can type an integer at `stdin`. Each integer you type is considered a transaction ID, 
 and a two-phase commit process is run for that transaction. Votes to commit or abort are randomized.
 
-You should see logging information on screen at both the coordinator and the subordinates.
+You should see log files generated, where each log is named `{port}.txt`.
 
 Adding the `--graph <graph_type>` flag to the end of the command lines above will print out a node-and-edge diagram of the program. Supported values for `<graph_type>` include [mermaid](https://mermaid-js.github.io/) and [dot](https://graphviz.org/doc/info/lang.html).

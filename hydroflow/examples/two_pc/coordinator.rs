@@ -13,6 +13,7 @@ pub(crate) async fn run_coordinator(
     outbound: UdpSink,
     inbound: UdpStream,
     path: impl AsRef<Path>,
+    log: &String,
     graph: Option<GraphType>,
 ) {
     let mut df: Hydroflow = hydroflow_syntax! {
@@ -23,10 +24,10 @@ pub(crate) async fn run_coordinator(
             -> tee();
 
         // set up channels
-        outbound_chan = tee();
-        outbound_chan[0] -> dest_sink_serde(outbound);
-        inbound_chan = source_stream_serde(inbound) -> map(Result::unwrap) -> map(|(m, _a)| m) -> tee();
-        msgs = inbound_chan[0] ->  demux(|m:SubordResponse, var_args!(commits, aborts, acks, endeds, errs)| match m.mtype {
+        msgs = source_stream_serde(inbound)
+            -> map(Result::unwrap)
+            -> map(|(m, _a)| m)
+            -> demux(|m:SubordResponse, var_args!(commits, aborts, acks, endeds, errs)| match m.mtype {
                     MsgType::Commit => commits.give(m),
                     MsgType::Abort => aborts.give(m),
                     MsgType::AckP2 {..} => acks.give(m),
@@ -35,13 +36,10 @@ pub(crate) async fn run_coordinator(
                 });
         msgs[errs] -> for_each(|m| println!("Received unexpected message type: {:?}", m));
         msgs[endeds] -> null();
-
-        // we log all messages (in this prototype we just print)
-        inbound_chan[1] -> for_each(|m| println!("Received {:?}", m));
-        outbound_chan[1] -> for_each(|(m, a)| println!("Sending {:?} to {:?}", m, a));
+        log_to_disk = union() -> dest_file(log, true);
 
         // setup broadcast channel to all subords
-        broadcast_join = cross_join() -> outbound_chan;
+        broadcast_join = cross_join() -> dest_sink_serde(outbound);
         broadcast = union() -> [0]broadcast_join;
         subords[1] -> [1]broadcast_join;
         subords[2] -> for_each(|s| println!("Subordinate: {:?}", s));
@@ -66,17 +64,33 @@ pub(crate) async fn run_coordinator(
             -> fold_keyed::<'static, u16, u32>(|| 0, |acc: &mut _, val| *acc += val);
 
         // count subordinates
-        subord_total = subords[0] -> fold::<'tick>(0, |a,_b| a+1); // -> for_each(|n| println!("There are {} subordinates.", n));
+        subord_total = subords[0] -> fold::<'tick>(0, |a,_b| a+1) -> tee(); // -> for_each(|n| println!("There are {} subordinates.", n));
 
-        // If commit_votes for this xid is the same as all_votes, send a P2 Commit message
-        committed = join() -> map(|(_c, (xid, ()))| xid);
+        // If commit_votes for this xid is the same as subord_total, send a P2 Commit message
+        committed = join() -> map(|(_c, (xid, ()))| xid) -> tee();
         commit_votes -> map(|(xid, c)| (c, xid)) -> [0]committed;
-        subord_total -> map(|c| (c, ())) -> [1]committed;
-        committed -> map(|xid| CoordMsg{xid, mtype: MsgType::Commit}) -> [2]broadcast;
+        subord_total[0] -> map(|c| (c, ())) -> [1]committed;
+        // Presumed abort: log commits (send commit only after flushing to disk)
+        committed[0] -> map(|xid| format!("Commit {:?}", xid))
+            -> [0]log_to_disk;
+        committed[1] -> next_tick()
+            -> map(|xid| CoordMsg{xid, mtype: MsgType::Commit})
+            -> [2]broadcast;
 
-        // Handle p2 acknowledgments by sending an End message
-        msgs[acks]  -> map(|m:SubordResponse| CoordMsg{xid: m.xid, mtype: MsgType::End,})
-                    -> [3]broadcast;
+        // count ack votes
+        ack_votes = msgs[acks]
+            -> map(|m: SubordResponse| (m.xid, 1))
+            -> fold_keyed::<'static, u16, u32>(|| 0, |acc: &mut _, val| *acc += val);
+
+        // If ack_votes for this xid is the same as subord_total, send a End message
+        acked = join() -> map(|(_c, (xid, ()))| xid) -> tee(); 
+        ack_votes -> map(|(xid, c)| (c, xid)) -> [0]acked;
+        subord_total[1] -> map(|c| (c, ())) -> [1]acked;
+        // Presumed abort: log ends (don't need to flush)
+        acked[0] -> map(|xid| format!("Ended {:?}", xid))
+            -> [1]log_to_disk;
+        acked[1] -> map(|xid| CoordMsg{xid, mtype: MsgType::End})
+            -> [3]broadcast;
 
         // Handler for ended acknowledgments not necessary; we just print them
     };

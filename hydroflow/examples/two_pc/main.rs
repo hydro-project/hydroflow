@@ -3,6 +3,7 @@ use std::path::Path;
 
 use clap::{Parser, ValueEnum};
 use coordinator::run_coordinator;
+use helpers::get_output_file;
 use hydroflow::tokio;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use serde::Deserialize;
@@ -51,15 +52,16 @@ async fn main() {
     let opts = Opts::parse();
     let path = Path::new(&opts.path);
     let addr = opts.addr;
+    let filename = get_output_file(addr);
 
     match opts.role {
         Role::Coordinator => {
             let (outbound, inbound, _) = bind_udp_bytes(addr).await;
-            run_coordinator(outbound, inbound, path, opts.graph.clone()).await;
+            run_coordinator(outbound, inbound, path, &filename, opts.graph.clone()).await;
         }
         Role::Subordinate => {
             let (outbound, inbound, _) = bind_udp_bytes(addr).await;
-            run_subordinate(outbound, inbound, path, opts.graph.clone()).await;
+            run_subordinate(outbound, inbound, path, &filename, opts.graph.clone()).await;
         }
     }
 }
