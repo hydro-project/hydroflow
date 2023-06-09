@@ -185,8 +185,8 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
                 ) -> impl 'a + Iterator<Item = (Key, (Lhs, Rhs))>
                 where
                     Key: Eq + std::hash::Hash + Clone,
-                    Lhs: #root::lattices::Merge<LhsDelta> + Clone + #root::lattices::ConvertFrom<LhsDelta>,
-                    Rhs: #root::lattices::Merge<RhsDelta> + Clone + #root::lattices::ConvertFrom<RhsDelta>,
+                    Lhs: #root::lattices::Merge<LhsDelta> + Clone + #root::lattices::LatticeFrom<LhsDelta>,
+                    Rhs: #root::lattices::Merge<RhsDelta> + Clone + #root::lattices::LatticeFrom<RhsDelta>,
                     I1: Iterator<Item = (Key, LhsDelta)>,
                     I2: Iterator<Item = (Key, RhsDelta)>,
                 {

@@ -1,6 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use super::{ConvertFrom, Merge};
+use super::{LatticeFrom, Merge};
 use crate::LatticeOrd;
 
 /// Dominating pair compound lattice.
@@ -39,8 +39,8 @@ impl<Key, Val> DomPair<Key, Val> {
 impl<KeySelf, KeyOther, ValSelf, ValOther> Merge<DomPair<KeyOther, ValOther>>
     for DomPair<KeySelf, ValSelf>
 where
-    KeySelf: Merge<KeyOther> + ConvertFrom<KeyOther> + PartialOrd<KeyOther>,
-    ValSelf: Merge<ValOther> + ConvertFrom<ValOther>,
+    KeySelf: Merge<KeyOther> + LatticeFrom<KeyOther> + PartialOrd<KeyOther>,
+    ValSelf: Merge<ValOther> + LatticeFrom<ValOther>,
 {
     fn merge(&mut self, other: DomPair<KeyOther, ValOther>) -> bool {
         match self.key.partial_cmp(&other.key) {
@@ -51,7 +51,7 @@ where
             }
             Some(Equal) => self.val.merge(other.val),
             Some(Less) => {
-                *self = ConvertFrom::from(other);
+                *self = LatticeFrom::lattice_from(other);
                 true
             }
             Some(Greater) => false,
@@ -59,16 +59,16 @@ where
     }
 }
 
-impl<KeySelf, KeyOther, ValSelf, ValOther> ConvertFrom<DomPair<KeyOther, ValOther>>
+impl<KeySelf, KeyOther, ValSelf, ValOther> LatticeFrom<DomPair<KeyOther, ValOther>>
     for DomPair<KeySelf, ValSelf>
 where
-    KeySelf: ConvertFrom<KeyOther>,
-    ValSelf: ConvertFrom<ValOther>,
+    KeySelf: LatticeFrom<KeyOther>,
+    ValSelf: LatticeFrom<ValOther>,
 {
-    fn from(other: DomPair<KeyOther, ValOther>) -> Self {
+    fn lattice_from(other: DomPair<KeyOther, ValOther>) -> Self {
         Self {
-            key: ConvertFrom::from(other.key),
-            val: ConvertFrom::from(other.val),
+            key: LatticeFrom::lattice_from(other.key),
+            val: LatticeFrom::lattice_from(other.val),
         }
     }
 }

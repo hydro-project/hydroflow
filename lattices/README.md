@@ -73,10 +73,10 @@ Implementors should use the [`test::check_partial_ord_properties`] method to che
 `PartialOrd` implementation, and should use the [`test::check_lattice_ord`] to ensure the partial
 order agrees with the `Merge`-derived `NaiveLatticeOrd` order.
 
-### `ConvertFrom`
+### `LatticeFrom`
 
-[`ConvertFrom`] is equivalent to the [`std::convert::From`] trait but with some extra
-lattice-specific semantics. `ConvertFrom` should be implemented only between different
-representations of the same lattice type, e.g. between [`set_union::SetUnionBTreeSet`] and [`set_union::SetUnionHashSet`].
-For compound lattice (lattices with nested lattice types), the `ConvertFrom` implementation should
-be recursive for those nested lattices.
+[`LatticeFrom`] is equivalent to the [`std::convert::From`] trait but specific to lattices.
+`LatticeFrom` should be implemented only between different representations of the same lattice
+type, e.g. between [`set_union::SetUnionBTreeSet`] and [`set_union::SetUnionHashSet`]. For compound
+lattice (lattices with nested lattice types), the `LatticeFrom` implementation should be recursive
+for those nested lattices.
