@@ -1,8 +1,6 @@
-use std::cmp::Ordering;
-use std::cmp::Ordering::*;
+use std::cmp::Ordering::{self, *};
 
-use super::{LatticeFrom, Merge};
-use crate::LatticeOrd;
+use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Wraps a lattice in [`Option`], treating [`None`] as a new bottom element which compares as less
 /// than to all other values.
@@ -88,6 +86,21 @@ where
             (Some(_), None) => false,
             (Some(this_inner), Some(other_inner)) => this_inner == other_inner,
         }
+    }
+}
+
+impl<Inner> IsBot for WithBot<Inner> {
+    fn is_bot(&self) -> bool {
+        self.0.is_none()
+    }
+}
+
+impl<Inner> IsTop for WithBot<Inner>
+where
+    Inner: IsTop,
+{
+    fn is_top(&self) -> bool {
+        self.0.as_ref().map_or(false, IsTop::is_top)
     }
 }
 

@@ -1,12 +1,14 @@
 //! Module containing the [`MapUnion`] lattice and aliases for different datastructures.
 
-use std::cmp::Ordering::*;
+use std::cmp::Ordering::{self, *};
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
 
+use cc_traits::Len;
+
 use crate::cc_traits::{GetMut, Keyed, Map, MapIter, SimpleKeyedRef};
 use crate::collections::{ArrayMap, SingletonMap, VecMap};
-use crate::{LatticeFrom, LatticeOrd, Merge};
+use crate::{IsBot, LatticeFrom, LatticeOrd, Merge};
 
 /// Map-union compound lattice.
 ///
@@ -88,7 +90,7 @@ where
     MapOther: Map<K, ValOther, Key = K, Item = ValOther> + MapIter + SimpleKeyedRef,
     ValSelf: PartialOrd<ValOther>,
 {
-    fn partial_cmp(&self, other: &MapUnion<MapOther>) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &MapUnion<MapOther>) -> Option<Ordering> {
         let mut self_any_greater = false;
         let mut other_any_greater = false;
         for k in self
@@ -188,6 +190,15 @@ where
 {
 }
 
+impl<Map> IsBot for MapUnion<Map>
+where
+    Map: Len,
+{
+    fn is_bot(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
 /// [`std::collections::HashMap`]-backed [`MapUnion`] lattice.
 pub type MapUnionHashMap<K, Val> = MapUnion<HashMap<K, Val>>;
 
@@ -213,7 +224,7 @@ mod test {
     use super::*;
     use crate::collections::{SingletonMap, SingletonSet};
     use crate::set_union::{SetUnionHashSet, SetUnionSingletonSet};
-    use crate::test::check_all;
+    use crate::test::{cartesian_power, check_all};
 
     #[test]
     fn test_map_union() {
@@ -232,13 +243,23 @@ mod test {
     fn consistency() {
         let mut test_vec = Vec::new();
 
-        for key in [0, 1, 2] {
+        // Size 0.
+        test_vec.push(MapUnionHashMap::default());
+        // Size 1.
+        for key in [0, 1] {
             for value in [vec![], vec![0], vec![1], vec![0, 1]] {
-                test_vec.push(MapUnionHashMap::new_from(HashMap::from_iter([(
+                test_vec.push(MapUnionHashMap::new(HashMap::from_iter([(
                     key,
-                    SetUnionHashSet::new(HashSet::from_iter(value.clone())),
+                    SetUnionHashSet::new(HashSet::from_iter(value)),
                 )])));
             }
+        }
+        // Size 2.
+        for [val_a, val_b] in cartesian_power(&[vec![], vec![0], vec![1], vec![0, 1]]) {
+            test_vec.push(MapUnionHashMap::new(HashMap::from_iter([
+                (0, SetUnionHashSet::new(HashSet::from_iter(val_a.clone()))),
+                (1, SetUnionHashSet::new(HashSet::from_iter(val_b.clone()))),
+            ])));
         }
 
         check_all(&test_vec);

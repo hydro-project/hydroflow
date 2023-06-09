@@ -1,8 +1,6 @@
-use std::cmp::Ordering;
-use std::cmp::Ordering::*;
+use std::cmp::Ordering::{self, *};
 
-use super::{LatticeFrom, Merge};
-use crate::LatticeOrd;
+use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Wraps a lattice in [`Option`], treating [`None`] as a new top element which compares as greater
 /// than to all other values.
@@ -83,11 +81,26 @@ where
     }
 }
 
+impl<Inner> IsBot for WithTop<Inner>
+where
+    Inner: IsBot,
+{
+    fn is_bot(&self) -> bool {
+        self.0.as_ref().map_or(false, IsBot::is_bot)
+    }
+}
+
+impl<Inner> IsTop for WithTop<Inner> {
+    fn is_top(&self) -> bool {
+        self.0.is_none()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::set_union::{SetUnionHashSet, SetUnionSingletonSet};
-    use crate::test::check_all;
+    use crate::test::{check_all, check_lattice_top};
 
     #[test]
     fn test_singly_nested_singleton_example() {
@@ -134,12 +147,14 @@ mod test {
 
     #[test]
     fn consistency() {
-        check_all(&[
+        let items = &[
             WithTop::new(None),
             WithTop::new_from(SetUnionHashSet::new_from([])),
             WithTop::new_from(SetUnionHashSet::new_from([0])),
             WithTop::new_from(SetUnionHashSet::new_from([1])),
             WithTop::new_from(SetUnionHashSet::new_from([0, 1])),
-        ])
+        ];
+        check_all(items);
+        check_lattice_top(items);
     }
 }

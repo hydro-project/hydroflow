@@ -7,24 +7,25 @@ use std::cmp::Ordering::{self, *};
 pub use cc_traits;
 use sealed::sealed;
 
-mod with_bot;
-mod with_top;
-pub use with_bot::WithBot;
-pub use with_top::WithTop;
 pub mod collections;
 mod dom_pair;
-pub use dom_pair::DomPair;
-mod point;
-pub use point::Point;
 pub mod map_union;
 mod ord;
-pub use ord::{Max, Min};
 mod pair;
-pub use pair::Pair;
+mod point;
 mod seq;
-pub use seq::Seq;
 pub mod set_union;
 pub mod test;
+mod with_bot;
+mod with_top;
+
+pub use dom_pair::DomPair;
+pub use ord::{Max, Min};
+pub use pair::Pair;
+pub use point::Point;
+pub use seq::Seq;
+pub use with_bot::WithBot;
+pub use with_top::WithTop;
 
 /// Trait for lattice merge (AKA "join" or "least upper bound").
 pub trait Merge<Other> {
@@ -91,4 +92,16 @@ where
 pub trait LatticeFrom<Other> {
     /// Convert from the `Other` lattice into `Self`.
     fn lattice_from(other: Other) -> Self;
+}
+
+/// Trait to check if a lattice instance is bottom (⊥).
+pub trait IsBot {
+    /// Returns if `self` is lattice bottom (⊥).
+    fn is_bot(&self) -> bool;
+}
+
+/// Trait to check if a lattice instance is top (⊤) and therefore cannot change any futher.
+pub trait IsTop {
+    /// Returns if `self` is lattice top (⊤).
+    fn is_top(&self) -> bool;
 }

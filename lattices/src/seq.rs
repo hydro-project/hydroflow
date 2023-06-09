@@ -2,7 +2,7 @@ use std::cmp::Ordering::{self, *};
 
 use cc_traits::Iter;
 
-use crate::{LatticeFrom, LatticeOrd, Merge};
+use crate::{IsBot, LatticeFrom, LatticeOrd, Merge};
 
 /// Sequence compound lattice.
 ///
@@ -119,6 +119,12 @@ where
 impl<LatSelf, LatOther> LatticeOrd<Seq<LatOther>> for Seq<LatSelf> where
     Self: PartialOrd<Seq<LatOther>>
 {
+}
+
+impl<Lat> IsBot for Seq<Lat> {
+    fn is_bot(&self) -> bool {
+        self.seq.is_empty()
+    }
 }
 
 #[cfg(test)]
