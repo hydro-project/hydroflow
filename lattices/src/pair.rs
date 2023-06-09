@@ -1,6 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use super::{ConvertFrom, Merge};
+use super::{LatticeFrom, Merge};
 use crate::LatticeOrd;
 
 /// Pair compound lattice.
@@ -39,16 +39,16 @@ where
     }
 }
 
-impl<LatASelf, LatAOther, LatBSelf, LatBOther> ConvertFrom<Pair<LatAOther, LatBOther>>
+impl<LatASelf, LatAOther, LatBSelf, LatBOther> LatticeFrom<Pair<LatAOther, LatBOther>>
     for Pair<LatASelf, LatBSelf>
 where
-    LatASelf: ConvertFrom<LatAOther>,
-    LatBSelf: ConvertFrom<LatBOther>,
+    LatASelf: LatticeFrom<LatAOther>,
+    LatBSelf: LatticeFrom<LatBOther>,
 {
-    fn from(other: Pair<LatAOther, LatBOther>) -> Self {
+    fn lattice_from(other: Pair<LatAOther, LatBOther>) -> Self {
         Self {
-            a: ConvertFrom::from(other.a),
-            b: ConvertFrom::from(other.b),
+            a: LatticeFrom::lattice_from(other.a),
+            b: LatticeFrom::lattice_from(other.b),
         }
     }
 }

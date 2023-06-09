@@ -88,7 +88,7 @@ where
 ///
 /// This should only be implemented between different representations of the same lattice type.
 /// This should recursively convert nested lattice types, but not non-lattice ("scalar") types.
-pub trait ConvertFrom<Other> {
+pub trait LatticeFrom<Other> {
     /// Convert from the `Other` lattice into `Self`.
-    fn from(other: Other) -> Self;
+    fn lattice_from(other: Other) -> Self;
 }

@@ -6,7 +6,7 @@ use std::fmt::Debug;
 
 use crate::cc_traits::{GetMut, Keyed, Map, MapIter, SimpleKeyedRef};
 use crate::collections::{ArrayMap, SingletonMap, VecMap};
-use crate::{ConvertFrom, LatticeOrd, Merge};
+use crate::{LatticeFrom, LatticeOrd, Merge};
 
 /// Map-union compound lattice.
 ///
@@ -34,7 +34,7 @@ where
         + Extend<(K, ValSelf)>
         + for<'a> GetMut<&'a K, Item = ValSelf>,
     MapOther: IntoIterator<Item = (K, ValOther)>,
-    ValSelf: Merge<ValOther> + ConvertFrom<ValOther>,
+    ValSelf: Merge<ValOther> + LatticeFrom<ValOther>,
 {
     fn merge(&mut self, other: MapUnion<MapOther>) -> bool {
         let mut changed = false;
@@ -55,7 +55,7 @@ where
                     // New value, convert for extending.
                     None => {
                         changed = true;
-                        Some((k_other, ValSelf::from(val_other)))
+                        Some((k_other, ValSelf::lattice_from(val_other)))
                     }
                 }
             })
@@ -65,18 +65,18 @@ where
     }
 }
 
-impl<MapSelf, MapOther, K, ValSelf, ValOther> ConvertFrom<MapUnion<MapOther>> for MapUnion<MapSelf>
+impl<MapSelf, MapOther, K, ValSelf, ValOther> LatticeFrom<MapUnion<MapOther>> for MapUnion<MapSelf>
 where
     MapSelf: Keyed<Key = K, Item = ValSelf> + FromIterator<(K, ValSelf)>,
     MapOther: IntoIterator<Item = (K, ValOther)>,
-    ValSelf: ConvertFrom<ValOther>,
+    ValSelf: LatticeFrom<ValOther>,
 {
-    fn from(other: MapUnion<MapOther>) -> Self {
+    fn lattice_from(other: MapUnion<MapOther>) -> Self {
         Self(
             other
                 .0
                 .into_iter()
-                .map(|(k_other, val_other)| (k_other, ConvertFrom::from(val_other)))
+                .map(|(k_other, val_other)| (k_other, LatticeFrom::lattice_from(val_other)))
                 .collect(),
         )
     }

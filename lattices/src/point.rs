@@ -1,4 +1,4 @@
-use super::{ConvertFrom, Merge};
+use super::{LatticeFrom, Merge};
 use crate::LatticeOrd;
 
 /// A `Point` lattice, corresponding to a single instance of `T`.
@@ -37,8 +37,8 @@ where
     }
 }
 
-impl<T> ConvertFrom<Point<T>> for Point<T> {
-    fn from(other: Point<T>) -> Self {
+impl<T> LatticeFrom<Point<T>> for Point<T> {
+    fn lattice_from(other: Point<T>) -> Self {
         other
     }
 }

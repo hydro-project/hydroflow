@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use super::{ConvertFrom, Merge};
+use super::{LatticeFrom, Merge};
 use crate::LatticeOrd;
 
 /// A totally ordered max lattice. Merging returns the larger value.
@@ -34,8 +34,8 @@ where
     }
 }
 
-impl<T> ConvertFrom<Max<T>> for Max<T> {
-    fn from(other: Max<T>) -> Self {
+impl<T> LatticeFrom<Max<T>> for Max<T> {
+    fn lattice_from(other: Max<T>) -> Self {
         other
     }
 }
@@ -76,8 +76,8 @@ where
     }
 }
 
-impl<T> ConvertFrom<Min<T>> for Min<T> {
-    fn from(other: Min<T>) -> Self {
+impl<T> LatticeFrom<Min<T>> for Min<T> {
+    fn lattice_from(other: Min<T>) -> Self {
         other
     }
 }
