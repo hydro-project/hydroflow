@@ -5,7 +5,7 @@ use std::collections::{BTreeSet, HashSet};
 
 use crate::cc_traits::{Iter, Len, Set};
 use crate::collections::{ArraySet, SingletonSet};
-use crate::{LatticeFrom, LatticeOrd, Merge};
+use crate::{IsBot, LatticeFrom, LatticeOrd, Merge};
 
 /// Set-union lattice.
 ///
@@ -98,6 +98,15 @@ where
     }
 }
 impl<SetSelf> Eq for SetUnion<SetSelf> where Self: PartialEq {}
+
+impl<Set> IsBot for SetUnion<Set>
+where
+    Set: Len,
+{
+    fn is_bot(&self) -> bool {
+        self.0.is_empty()
+    }
+}
 
 /// [`std::collections::HashSet`]-backed [`SetUnion`] lattice.
 pub type SetUnionHashSet<Item> = SetUnion<HashSet<Item>>;
