@@ -115,10 +115,58 @@
 <a href="#115" id="115">115</a>
 <a href="#116" id="116">116</a>
 <a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 
-<span class="kw">use super</span>::{ConvertFrom, Merge};
-<span class="kw">use </span><span class="kw">crate</span>::LatticeOrd;
+<span class="kw">use crate</span>::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 <span class="doccomment">/// Pair compound lattice.
 ///
@@ -156,16 +204,16 @@
     }
 }
 
-<span class="kw">impl</span>&lt;LatASelf, LatAOther, LatBSelf, LatBOther&gt; ConvertFrom&lt;Pair&lt;LatAOther, LatBOther&gt;&gt;
+<span class="kw">impl</span>&lt;LatASelf, LatAOther, LatBSelf, LatBOther&gt; LatticeFrom&lt;Pair&lt;LatAOther, LatBOther&gt;&gt;
     <span class="kw">for </span>Pair&lt;LatASelf, LatBSelf&gt;
 <span class="kw">where
-    </span>LatASelf: ConvertFrom&lt;LatAOther&gt;,
-    LatBSelf: ConvertFrom&lt;LatBOther&gt;,
+    </span>LatASelf: LatticeFrom&lt;LatAOther&gt;,
+    LatBSelf: LatticeFrom&lt;LatBOther&gt;,
 {
-    <span class="kw">fn </span>from(other: Pair&lt;LatAOther, LatBOther&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">fn </span>lattice_from(other: Pair&lt;LatAOther, LatBOther&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            a: ConvertFrom::from(other.a),
-            b: ConvertFrom::from(other.b),
+            a: LatticeFrom::lattice_from(other.a),
+            b: LatticeFrom::lattice_from(other.b),
         }
     }
 }
@@ -208,13 +256,34 @@
     }
 }
 
+<span class="kw">impl</span>&lt;Key, Val&gt; IsBot <span class="kw">for </span>Pair&lt;Key, Val&gt;
+<span class="kw">where
+    </span>Key: IsBot,
+    Val: IsBot,
+{
+    <span class="kw">fn </span>is_bot(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.a.is_bot() &amp;&amp; <span class="self">self</span>.b.is_bot()
+    }
+}
+
+<span class="kw">impl</span>&lt;Key, Val&gt; IsTop <span class="kw">for </span>Pair&lt;Key, Val&gt;
+<span class="kw">where
+    </span>Key: IsTop,
+    Val: IsTop,
+{
+    <span class="kw">fn </span>is_top(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.a.is_top() &amp;&amp; <span class="self">self</span>.b.is_top()
+    }
+}
+
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use </span>std::collections::HashSet;
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::set_union::SetUnionHashSet;
-    <span class="kw">use </span><span class="kw">crate</span>::test::check_all;
+    <span class="kw">use </span><span class="kw">crate</span>::test::{check_all, check_lattice_top};
+    <span class="kw">use </span><span class="kw">crate</span>::WithTop;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>consistency() {
@@ -230,6 +299,35 @@
         }
 
         check_all(<span class="kw-2">&amp;</span>test_vec);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>consistency_withtop() {
+        <span class="kw">let </span><span class="kw-2">mut </span>test_vec = <span class="macro">vec!</span>[];
+
+        <span class="kw">let </span>sub_items = <span class="kw-2">&amp;</span>[
+            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>[] <span class="kw">as </span><span class="kw-2">&amp;</span>[usize]),
+            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>[<span class="number">0</span>]),
+            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>[<span class="number">1</span>]),
+            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">1</span>]),
+            <span class="prelude-val">None</span>,
+        ];
+
+        <span class="kw">for </span>a <span class="kw">in </span>sub_items {
+            <span class="kw">for </span>b <span class="kw">in </span>sub_items {
+                test_vec.push(Pair::new(
+                    WithTop::new(
+                        a.map(|x| SetUnionHashSet::new_from(HashSet::from_iter(x.iter().cloned()))),
+                    ),
+                    WithTop::new(
+                        b.map(|x| SetUnionHashSet::new_from(HashSet::from_iter(x.iter().cloned()))),
+                    ),
+                ));
+            }
+        }
+
+        check_all(<span class="kw-2">&amp;</span>test_vec);
+        check_lattice_top(<span class="kw-2">&amp;</span>test_vec);
     }
 }
 </code></pre></div></section></main></body></html>

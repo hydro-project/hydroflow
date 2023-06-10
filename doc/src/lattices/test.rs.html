@@ -234,18 +234,46 @@
 <a href="#234" id="234">234</a>
 <a href="#235" id="235">235</a>
 <a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Helper test utils to test lattice implementation correctness.
 
 </span><span class="kw">use </span>std::fmt::Debug;
 
-<span class="kw">use crate</span>::{LatticeOrd, Merge, NaiveLatticeOrd};
+<span class="kw">use crate</span>::{IsBot, IsTop, LatticeOrd, Merge, NaiveLatticeOrd};
 
-<span class="doccomment">/// Helper which calls [`check_lattice_ord`], [`check_partial_ord_properties`], and
-/// [`check_lattice_properties`].
-</span><span class="kw">pub fn </span>check_all&lt;T: LatticeOrd + NaiveLatticeOrd + Merge&lt;T&gt; + Clone + Eq + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
+<span class="doccomment">/// Helper which calls [`check_lattice_ord`], [`check_partial_ord_properties`],
+/// [`check_lattice_properties`], and [`check_lattice_bot`].
+</span><span class="kw">pub fn </span>check_all&lt;T: LatticeOrd + NaiveLatticeOrd + Merge&lt;T&gt; + IsBot + Clone + Eq + Debug&gt;(
+    items: <span class="kw-2">&amp;</span>[T],
+) {
     check_lattice_ord(items);
     check_partial_ord_properties(items);
     check_lattice_properties(items);
+    check_lattice_bot(items);
 }
 
 <span class="doccomment">/// Check that the lattice&#39;s `PartialOrd` implementation agrees with the `NaiveLatticeOrd` partial
@@ -369,6 +397,28 @@
             y,
             z,
         );
+    }
+}
+
+<span class="doccomment">/// Checks that the item which is bot is less than (or equal to) all other items.
+</span><span class="kw">pub fn </span>check_lattice_bot&lt;T: IsBot + LatticeOrd&gt;(items: <span class="kw-2">&amp;</span>[T]) {
+    <span class="kw">let </span>bot = items
+        .iter()
+        .find(|<span class="kw-2">&amp;</span>x| IsBot::is_bot(x))
+        .expect(<span class="string">&quot;Expected `items` to contain bottom.&quot;</span>);
+    <span class="kw">for </span>x <span class="kw">in </span>items {
+        <span class="macro">assert!</span>(bot &lt;= x);
+    }
+}
+
+<span class="doccomment">/// Checks that the item which is top is greater than (or equal to) all other items.
+</span><span class="kw">pub fn </span>check_lattice_top&lt;T: IsTop + LatticeOrd&gt;(items: <span class="kw-2">&amp;</span>[T]) {
+    <span class="kw">let </span>top = items
+        .iter()
+        .find(|<span class="kw-2">&amp;</span>x| IsTop::is_top(x))
+        .expect(<span class="string">&quot;Expected `items` to contain top.&quot;</span>);
+    <span class="kw">for </span>x <span class="kw">in </span>items {
+        <span class="macro">assert!</span>(x &lt;= top);
     }
 }
 

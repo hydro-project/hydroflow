@@ -255,7 +255,7 @@
                             <span class="kw">if let </span><span class="prelude-val">Some</span>(lattice) = <span class="kw-2">&amp;mut *</span>lattice {
                                 #root::lattices::Merge::merge(lattice, i);
                             } <span class="kw">else </span>{
-                                <span class="kw-2">*</span>lattice = <span class="prelude-val">Some</span>(#root::lattices::ConvertFrom::from(i));
+                                <span class="kw-2">*</span>lattice = <span class="prelude-val">Some</span>(#root::lattices::LatticeFrom::lattice_from(i));
                             };
                         }
                     }
@@ -290,7 +290,7 @@
                         <span class="kw">if let </span><span class="prelude-val">Some</span>(lattice) = <span class="kw-2">&amp;mut *</span>lattice {
                             #root::lattices::Merge::merge(<span class="kw-2">&amp;mut *</span>lattice, x);
                         } <span class="kw">else </span>{
-                            <span class="kw-2">*</span>lattice = <span class="prelude-val">Some</span>(#root::lattices::ConvertFrom::from(x));
+                            <span class="kw-2">*</span>lattice = <span class="prelude-val">Some</span>(#root::lattices::LatticeFrom::lattice_from(x));
                         };
                     });
                 },

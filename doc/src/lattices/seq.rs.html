@@ -160,11 +160,17 @@
 <a href="#160" id="160">160</a>
 <a href="#161" id="161">161</a>
 <a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 
 <span class="kw">use </span>cc_traits::Iter;
 
-<span class="kw">use crate</span>::{ConvertFrom, LatticeOrd, Merge};
+<span class="kw">use crate</span>::{IsBot, LatticeFrom, LatticeOrd, Merge};
 
 <span class="doccomment">/// Sequence compound lattice.
 ///
@@ -201,14 +207,14 @@
 
 <span class="kw">impl</span>&lt;LatSelf, LatOther&gt; Merge&lt;Seq&lt;LatOther&gt;&gt; <span class="kw">for </span>Seq&lt;LatSelf&gt;
 <span class="kw">where
-    </span>LatSelf: Merge&lt;LatOther&gt; + ConvertFrom&lt;LatOther&gt;,
+    </span>LatSelf: Merge&lt;LatOther&gt; + LatticeFrom&lt;LatOther&gt;,
 {
     <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>other: Seq&lt;LatOther&gt;) -&gt; bool {
         <span class="kw">let </span><span class="kw-2">mut </span>changed = <span class="bool-val">false</span>;
         <span class="comment">// Extend `self` if `other` is longer.
         </span><span class="kw">if </span><span class="self">self</span>.seq.len() &lt; other.seq.len() {
             <span class="self">self</span>.seq
-                .extend(other.seq.drain(<span class="self">self</span>.seq.len()..).map(LatSelf::from));
+                .extend(other.seq.drain(<span class="self">self</span>.seq.len()..).map(LatSelf::lattice_from));
             changed = <span class="bool-val">true</span>;
         }
         <span class="comment">// Merge intersecting indices.
@@ -219,12 +225,12 @@
     }
 }
 
-<span class="kw">impl</span>&lt;LatSelf, LatOther&gt; ConvertFrom&lt;Seq&lt;LatOther&gt;&gt; <span class="kw">for </span>Seq&lt;LatSelf&gt;
+<span class="kw">impl</span>&lt;LatSelf, LatOther&gt; LatticeFrom&lt;Seq&lt;LatOther&gt;&gt; <span class="kw">for </span>Seq&lt;LatSelf&gt;
 <span class="kw">where
-    </span>LatSelf: ConvertFrom&lt;LatOther&gt;,
+    </span>LatSelf: LatticeFrom&lt;LatOther&gt;,
 {
-    <span class="kw">fn </span>from(other: Seq&lt;LatOther&gt;) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>::new(other.seq.into_iter().map(LatSelf::from).collect())
+    <span class="kw">fn </span>lattice_from(other: Seq&lt;LatOther&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::new(other.seq.into_iter().map(LatSelf::lattice_from).collect())
     }
 }
 
@@ -281,6 +287,12 @@
 <span class="kw">impl</span>&lt;LatSelf, LatOther&gt; LatticeOrd&lt;Seq&lt;LatOther&gt;&gt; <span class="kw">for </span>Seq&lt;LatSelf&gt; <span class="kw">where
     </span><span class="self">Self</span>: PartialOrd&lt;Seq&lt;LatOther&gt;&gt;
 {
+}
+
+<span class="kw">impl</span>&lt;Lat&gt; IsBot <span class="kw">for </span>Seq&lt;Lat&gt; {
+    <span class="kw">fn </span>is_bot(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.seq.is_empty()
+    }
 }
 
 <span class="attr">#[cfg(test)]

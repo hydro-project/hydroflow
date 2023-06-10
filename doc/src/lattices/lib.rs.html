@@ -92,6 +92,19 @@
 <a href="#92" id="92">92</a>
 <a href="#93" id="93">93</a>
 <a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
 </pre></div><pre class="rust"><code><span class="attr">#![deny(missing_docs)]
 #![feature(impl_trait_in_assoc_type)]
 #![doc = <span class="macro">include_str!</span>(<span class="string">&quot;../README.md&quot;</span>)]
@@ -101,24 +114,25 @@
 <span class="kw">pub use </span>cc_traits;
 <span class="kw">use </span>sealed::sealed;
 
-<span class="kw">mod </span>with_bot;
-<span class="kw">mod </span>with_top;
-<span class="kw">pub use </span>with_bot::WithBot;
-<span class="kw">pub use </span>with_top::WithTop;
 <span class="kw">pub mod </span>collections;
 <span class="kw">mod </span>dom_pair;
-<span class="kw">pub use </span>dom_pair::DomPair;
-<span class="kw">mod </span>point;
-<span class="kw">pub use </span>point::Point;
 <span class="kw">pub mod </span>map_union;
 <span class="kw">mod </span>ord;
-<span class="kw">pub use </span>ord::{Max, Min};
 <span class="kw">mod </span>pair;
-<span class="kw">pub use </span>pair::Pair;
+<span class="kw">mod </span>point;
 <span class="kw">mod </span>seq;
-<span class="kw">pub use </span>seq::Seq;
 <span class="kw">pub mod </span>set_union;
 <span class="kw">pub mod </span>test;
+<span class="kw">mod </span>with_bot;
+<span class="kw">mod </span>with_top;
+
+<span class="kw">pub use </span>dom_pair::DomPair;
+<span class="kw">pub use </span>ord::{Max, Min};
+<span class="kw">pub use </span>pair::Pair;
+<span class="kw">pub use </span>point::Point;
+<span class="kw">pub use </span>seq::Seq;
+<span class="kw">pub use </span>with_bot::WithBot;
+<span class="kw">pub use </span>with_top::WithTop;
 
 <span class="doccomment">/// Trait for lattice merge (AKA &quot;join&quot; or &quot;least upper bound&quot;).
 </span><span class="kw">pub trait </span>Merge&lt;Other&gt; {
@@ -182,8 +196,20 @@
 ///
 /// This should only be implemented between different representations of the same lattice type.
 /// This should recursively convert nested lattice types, but not non-lattice (&quot;scalar&quot;) types.
-</span><span class="kw">pub trait </span>ConvertFrom&lt;Other&gt; {
+</span><span class="kw">pub trait </span>LatticeFrom&lt;Other&gt; {
     <span class="doccomment">/// Convert from the `Other` lattice into `Self`.
-    </span><span class="kw">fn </span>from(other: Other) -&gt; <span class="self">Self</span>;
+    </span><span class="kw">fn </span>lattice_from(other: Other) -&gt; <span class="self">Self</span>;
+}
+
+<span class="doccomment">/// Trait to check if a lattice instance is bottom (⊥).
+</span><span class="kw">pub trait </span>IsBot {
+    <span class="doccomment">/// Returns if `self` is lattice bottom (⊥).
+    </span><span class="kw">fn </span>is_bot(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool;
+}
+
+<span class="doccomment">/// Trait to check if a lattice instance is top (⊤) and therefore cannot change any futher.
+</span><span class="kw">pub trait </span>IsTop {
+    <span class="doccomment">/// Returns if `self` is lattice top (⊤).
+    </span><span class="kw">fn </span>is_top(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool;
 }
 </code></pre></div></section></main></body></html>

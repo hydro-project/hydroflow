@@ -244,15 +244,38 @@
 <a href="#244" id="244">244</a>
 <a href="#245" id="245">245</a>
 <a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module containing the [`MapUnion`] lattice and aliases for different datastructures.
 
-</span><span class="kw">use </span>std::cmp::Ordering::<span class="kw-2">*</span>;
+</span><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::fmt::Debug;
 
+<span class="kw">use </span>cc_traits::Len;
+
 <span class="kw">use </span><span class="kw">crate</span>::cc_traits::{GetMut, Keyed, Map, MapIter, SimpleKeyedRef};
 <span class="kw">use </span><span class="kw">crate</span>::collections::{ArrayMap, SingletonMap, VecMap};
-<span class="kw">use crate</span>::{ConvertFrom, LatticeOrd, Merge};
+<span class="kw">use crate</span>::{IsBot, LatticeFrom, LatticeOrd, Merge};
 
 <span class="doccomment">/// Map-union compound lattice.
 ///
@@ -280,7 +303,7 @@
         + Extend&lt;(K, ValSelf)&gt;
         + <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; GetMut&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>K, Item = ValSelf&gt;,
     MapOther: IntoIterator&lt;Item = (K, ValOther)&gt;,
-    ValSelf: Merge&lt;ValOther&gt; + ConvertFrom&lt;ValOther&gt;,
+    ValSelf: Merge&lt;ValOther&gt; + LatticeFrom&lt;ValOther&gt;,
 {
     <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: MapUnion&lt;MapOther&gt;) -&gt; bool {
         <span class="kw">let </span><span class="kw-2">mut </span>changed = <span class="bool-val">false</span>;
@@ -301,7 +324,7 @@
                     <span class="comment">// New value, convert for extending.
                     </span><span class="prelude-val">None </span>=&gt; {
                         changed = <span class="bool-val">true</span>;
-                        <span class="prelude-val">Some</span>((k_other, ValSelf::from(val_other)))
+                        <span class="prelude-val">Some</span>((k_other, ValSelf::lattice_from(val_other)))
                     }
                 }
             })
@@ -311,18 +334,18 @@
     }
 }
 
-<span class="kw">impl</span>&lt;MapSelf, MapOther, K, ValSelf, ValOther&gt; ConvertFrom&lt;MapUnion&lt;MapOther&gt;&gt; <span class="kw">for </span>MapUnion&lt;MapSelf&gt;
+<span class="kw">impl</span>&lt;MapSelf, MapOther, K, ValSelf, ValOther&gt; LatticeFrom&lt;MapUnion&lt;MapOther&gt;&gt; <span class="kw">for </span>MapUnion&lt;MapSelf&gt;
 <span class="kw">where
     </span>MapSelf: Keyed&lt;Key = K, Item = ValSelf&gt; + FromIterator&lt;(K, ValSelf)&gt;,
     MapOther: IntoIterator&lt;Item = (K, ValOther)&gt;,
-    ValSelf: ConvertFrom&lt;ValOther&gt;,
+    ValSelf: LatticeFrom&lt;ValOther&gt;,
 {
-    <span class="kw">fn </span>from(other: MapUnion&lt;MapOther&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">fn </span>lattice_from(other: MapUnion&lt;MapOther&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>(
             other
                 .<span class="number">0
                 </span>.into_iter()
-                .map(|(k_other, val_other)| (k_other, ConvertFrom::from(val_other)))
+                .map(|(k_other, val_other)| (k_other, LatticeFrom::lattice_from(val_other)))
                 .collect(),
         )
     }
@@ -334,7 +357,7 @@
     MapOther: Map&lt;K, ValOther, Key = K, Item = ValOther&gt; + MapIter + SimpleKeyedRef,
     ValSelf: PartialOrd&lt;ValOther&gt;,
 {
-    <span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>MapUnion&lt;MapOther&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;std::cmp::Ordering&gt; {
+    <span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>MapUnion&lt;MapOther&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Ordering&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>self_any_greater = <span class="bool-val">false</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>other_any_greater = <span class="bool-val">false</span>;
         <span class="kw">for </span>k <span class="kw">in </span><span class="self">self
@@ -434,6 +457,15 @@
 {
 }
 
+<span class="kw">impl</span>&lt;Map&gt; IsBot <span class="kw">for </span>MapUnion&lt;Map&gt;
+<span class="kw">where
+    </span>Map: Len,
+{
+    <span class="kw">fn </span>is_bot(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.<span class="number">0</span>.is_empty()
+    }
+}
+
 <span class="doccomment">/// [`std::collections::HashMap`]-backed [`MapUnion`] lattice.
 </span><span class="kw">pub type </span>MapUnionHashMap&lt;K, Val&gt; = MapUnion&lt;HashMap&lt;K, Val&gt;&gt;;
 
@@ -459,7 +491,7 @@
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::collections::{SingletonMap, SingletonSet};
     <span class="kw">use </span><span class="kw">crate</span>::set_union::{SetUnionHashSet, SetUnionSingletonSet};
-    <span class="kw">use </span><span class="kw">crate</span>::test::check_all;
+    <span class="kw">use </span><span class="kw">crate</span>::test::{cartesian_power, check_all};
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_map_union() {
@@ -478,13 +510,23 @@
     </span><span class="kw">fn </span>consistency() {
         <span class="kw">let </span><span class="kw-2">mut </span>test_vec = Vec::new();
 
-        <span class="kw">for </span>key <span class="kw">in </span>[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>] {
+        <span class="comment">// Size 0.
+        </span>test_vec.push(MapUnionHashMap::default());
+        <span class="comment">// Size 1.
+        </span><span class="kw">for </span>key <span class="kw">in </span>[<span class="number">0</span>, <span class="number">1</span>] {
             <span class="kw">for </span>value <span class="kw">in </span>[<span class="macro">vec!</span>[], <span class="macro">vec!</span>[<span class="number">0</span>], <span class="macro">vec!</span>[<span class="number">1</span>], <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">1</span>]] {
-                test_vec.push(MapUnionHashMap::new_from(HashMap::from_iter([(
+                test_vec.push(MapUnionHashMap::new(HashMap::from_iter([(
                     key,
-                    SetUnionHashSet::new(HashSet::from_iter(value.clone())),
+                    SetUnionHashSet::new(HashSet::from_iter(value)),
                 )])));
             }
+        }
+        <span class="comment">// Size 2.
+        </span><span class="kw">for </span>[val_a, val_b] <span class="kw">in </span>cartesian_power(<span class="kw-2">&amp;</span>[<span class="macro">vec!</span>[], <span class="macro">vec!</span>[<span class="number">0</span>], <span class="macro">vec!</span>[<span class="number">1</span>], <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">1</span>]]) {
+            test_vec.push(MapUnionHashMap::new(HashMap::from_iter([
+                (<span class="number">0</span>, SetUnionHashSet::new(HashSet::from_iter(val_a.clone()))),
+                (<span class="number">1</span>, SetUnionHashSet::new(HashSet::from_iter(val_b.clone()))),
+            ])));
         }
 
         check_all(<span class="kw-2">&amp;</span>test_vec);

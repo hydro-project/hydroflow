@@ -390,8 +390,8 @@
                 ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (Key, (Lhs, Rhs))&gt;
                 <span class="kw">where
                     </span>Key: Eq + std::hash::Hash + Clone,
-                    Lhs: #root::lattices::Merge&lt;LhsDelta&gt; + Clone + #root::lattices::ConvertFrom&lt;LhsDelta&gt;,
-                    Rhs: #root::lattices::Merge&lt;RhsDelta&gt; + Clone + #root::lattices::ConvertFrom&lt;RhsDelta&gt;,
+                    Lhs: #root::lattices::Merge&lt;LhsDelta&gt; + Clone + #root::lattices::LatticeFrom&lt;LhsDelta&gt;,
+                    Rhs: #root::lattices::Merge&lt;RhsDelta&gt; + Clone + #root::lattices::LatticeFrom&lt;RhsDelta&gt;,
                     I1: Iterator&lt;Item = (Key, LhsDelta)&gt;,
                     I2: Iterator&lt;Item = (Key, RhsDelta)&gt;,
                 {

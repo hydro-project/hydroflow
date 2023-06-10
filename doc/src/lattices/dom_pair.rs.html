@@ -158,10 +158,66 @@
 <a href="#158" id="158">158</a>
 <a href="#159" id="159">159</a>
 <a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 
-<span class="kw">use super</span>::{ConvertFrom, Merge};
-<span class="kw">use </span><span class="kw">crate</span>::LatticeOrd;
+<span class="kw">use crate</span>::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 <span class="doccomment">/// Dominating pair compound lattice.
 ///
@@ -199,8 +255,8 @@
 <span class="kw">impl</span>&lt;KeySelf, KeyOther, ValSelf, ValOther&gt; Merge&lt;DomPair&lt;KeyOther, ValOther&gt;&gt;
     <span class="kw">for </span>DomPair&lt;KeySelf, ValSelf&gt;
 <span class="kw">where
-    </span>KeySelf: Merge&lt;KeyOther&gt; + ConvertFrom&lt;KeyOther&gt; + PartialOrd&lt;KeyOther&gt;,
-    ValSelf: Merge&lt;ValOther&gt; + ConvertFrom&lt;ValOther&gt;,
+    </span>KeySelf: Merge&lt;KeyOther&gt; + LatticeFrom&lt;KeyOther&gt; + PartialOrd&lt;KeyOther&gt;,
+    ValSelf: Merge&lt;ValOther&gt; + LatticeFrom&lt;ValOther&gt;,
 {
     <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: DomPair&lt;KeyOther, ValOther&gt;) -&gt; bool {
         <span class="kw">match </span><span class="self">self</span>.key.partial_cmp(<span class="kw-2">&amp;</span>other.key) {
@@ -211,7 +267,7 @@
             </span>}
             <span class="prelude-val">Some</span>(Equal) =&gt; <span class="self">self</span>.val.merge(other.val),
             <span class="prelude-val">Some</span>(Less) =&gt; {
-                <span class="kw-2">*</span><span class="self">self </span>= ConvertFrom::from(other);
+                <span class="kw-2">*</span><span class="self">self </span>= LatticeFrom::lattice_from(other);
                 <span class="bool-val">true
             </span>}
             <span class="prelude-val">Some</span>(Greater) =&gt; <span class="bool-val">false</span>,
@@ -219,16 +275,16 @@
     }
 }
 
-<span class="kw">impl</span>&lt;KeySelf, KeyOther, ValSelf, ValOther&gt; ConvertFrom&lt;DomPair&lt;KeyOther, ValOther&gt;&gt;
+<span class="kw">impl</span>&lt;KeySelf, KeyOther, ValSelf, ValOther&gt; LatticeFrom&lt;DomPair&lt;KeyOther, ValOther&gt;&gt;
     <span class="kw">for </span>DomPair&lt;KeySelf, ValSelf&gt;
 <span class="kw">where
-    </span>KeySelf: ConvertFrom&lt;KeyOther&gt;,
-    ValSelf: ConvertFrom&lt;ValOther&gt;,
+    </span>KeySelf: LatticeFrom&lt;KeyOther&gt;,
+    ValSelf: LatticeFrom&lt;ValOther&gt;,
 {
-    <span class="kw">fn </span>from(other: DomPair&lt;KeyOther, ValOther&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">fn </span>lattice_from(other: DomPair&lt;KeyOther, ValOther&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            key: ConvertFrom::from(other.key),
-            val: ConvertFrom::from(other.val),
+            key: LatticeFrom::lattice_from(other.key),
+            val: LatticeFrom::lattice_from(other.val),
         }
     }
 }
@@ -272,6 +328,26 @@
     </span>}
 }
 
+<span class="kw">impl</span>&lt;Key, Val&gt; IsBot <span class="kw">for </span>DomPair&lt;Key, Val&gt;
+<span class="kw">where
+    </span>Key: IsBot,
+    Val: IsBot,
+{
+    <span class="kw">fn </span>is_bot(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.key.is_bot() &amp;&amp; <span class="self">self</span>.val.is_bot()
+    }
+}
+
+<span class="kw">impl</span>&lt;Key, Val&gt; IsTop <span class="kw">for </span>DomPair&lt;Key, Val&gt;
+<span class="kw">where
+    </span>Key: IsTop,
+    Val: IsTop,
+{
+    <span class="kw">fn </span>is_top(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.key.is_top() &amp;&amp; <span class="self">self</span>.val.is_top()
+    }
+}
+
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use </span>std::collections::HashSet;
@@ -280,8 +356,10 @@
     <span class="kw">use </span><span class="kw">crate</span>::ord::Max;
     <span class="kw">use </span><span class="kw">crate</span>::set_union::SetUnionHashSet;
     <span class="kw">use </span><span class="kw">crate</span>::test::{
-        check_all, check_lattice_ord, check_lattice_properties, check_partial_ord_properties,
+        check_lattice_bot, check_lattice_ord, check_lattice_properties, check_lattice_top,
+        check_partial_ord_properties,
     };
+    <span class="kw">use </span><span class="kw">crate</span>::WithTop;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>consistency() {
@@ -298,6 +376,40 @@
 
         check_lattice_ord(<span class="kw-2">&amp;</span>test_vec);
         check_partial_ord_properties(<span class="kw-2">&amp;</span>test_vec);
+        check_lattice_bot(<span class="kw-2">&amp;</span>test_vec);
+        <span class="comment">// DomPair is not actually a lattice.
+        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| check_lattice_properties(<span class="kw-2">&amp;</span>test_vec)).is_err());
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>consistency_withtop() {
+        <span class="kw">let </span><span class="kw-2">mut </span>test_vec = <span class="macro">vec!</span>[];
+
+        <span class="kw">let </span>sub_items = <span class="kw-2">&amp;</span>[
+            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>[] <span class="kw">as </span><span class="kw-2">&amp;</span>[usize]),
+            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>[<span class="number">0</span>]),
+            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>[<span class="number">1</span>]),
+            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>[<span class="number">0</span>, <span class="number">1</span>]),
+            <span class="prelude-val">None</span>,
+        ];
+
+        <span class="kw">for </span>a <span class="kw">in </span>sub_items {
+            <span class="kw">for </span>b <span class="kw">in </span>sub_items {
+                test_vec.push(DomPair::new(
+                    WithTop::new(
+                        a.map(|x| SetUnionHashSet::new_from(HashSet::from_iter(x.iter().cloned()))),
+                    ),
+                    WithTop::new(
+                        b.map(|x| SetUnionHashSet::new_from(HashSet::from_iter(x.iter().cloned()))),
+                    ),
+                ));
+            }
+        }
+
+        check_lattice_ord(<span class="kw-2">&amp;</span>test_vec);
+        check_partial_ord_properties(<span class="kw-2">&amp;</span>test_vec);
+        check_lattice_bot(<span class="kw-2">&amp;</span>test_vec);
+        check_lattice_top(<span class="kw-2">&amp;</span>test_vec);
         <span class="comment">// DomPair is not actually a lattice.
         </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| check_lattice_properties(<span class="kw-2">&amp;</span>test_vec)).is_err());
     }
@@ -315,7 +427,9 @@
             }
         }
 
-        check_all(<span class="kw-2">&amp;</span>test_vec);
+        check_lattice_ord(<span class="kw-2">&amp;</span>test_vec);
+        check_lattice_properties(<span class="kw-2">&amp;</span>test_vec);
+        check_partial_ord_properties(<span class="kw-2">&amp;</span>test_vec);
     }
 }
 </code></pre></div></section></main></body></html>

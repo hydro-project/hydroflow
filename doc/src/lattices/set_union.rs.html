@@ -168,6 +168,15 @@
 <a href="#168" id="168">168</a>
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module containing the [`SetUnion`] lattice and aliases for different datastructures.
 
 </span><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
@@ -175,7 +184,7 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::cc_traits::{Iter, Len, Set};
 <span class="kw">use </span><span class="kw">crate</span>::collections::{ArraySet, SingletonSet};
-<span class="kw">use crate</span>::{ConvertFrom, LatticeOrd, Merge};
+<span class="kw">use crate</span>::{IsBot, LatticeFrom, LatticeOrd, Merge};
 
 <span class="doccomment">/// Set-union lattice.
 ///
@@ -208,12 +217,12 @@
     }
 }
 
-<span class="kw">impl</span>&lt;SetSelf, SetOther, Item&gt; ConvertFrom&lt;SetUnion&lt;SetOther&gt;&gt; <span class="kw">for </span>SetUnion&lt;SetSelf&gt;
+<span class="kw">impl</span>&lt;SetSelf, SetOther, Item&gt; LatticeFrom&lt;SetUnion&lt;SetOther&gt;&gt; <span class="kw">for </span>SetUnion&lt;SetSelf&gt;
 <span class="kw">where
     </span>SetSelf: FromIterator&lt;Item&gt;,
     SetOther: IntoIterator&lt;Item = Item&gt;,
 {
-    <span class="kw">fn </span>from(other: SetUnion&lt;SetOther&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">fn </span>lattice_from(other: SetUnion&lt;SetOther&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>(other.<span class="number">0</span>.into_iter().collect())
     }
 }
@@ -268,6 +277,15 @@
     }
 }
 <span class="kw">impl</span>&lt;SetSelf&gt; Eq <span class="kw">for </span>SetUnion&lt;SetSelf&gt; <span class="kw">where </span><span class="self">Self</span>: PartialEq {}
+
+<span class="kw">impl</span>&lt;Set&gt; IsBot <span class="kw">for </span>SetUnion&lt;Set&gt;
+<span class="kw">where
+    </span>Set: Len,
+{
+    <span class="kw">fn </span>is_bot(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.<span class="number">0</span>.is_empty()
+    }
+}
 
 <span class="doccomment">/// [`std::collections::HashSet`]-backed [`SetUnion`] lattice.
 </span><span class="kw">pub type </span>SetUnionHashSet&lt;Item&gt; = SetUnion&lt;HashSet&lt;Item&gt;&gt;;

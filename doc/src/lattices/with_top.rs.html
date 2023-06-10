@@ -143,11 +143,24 @@
 <a href="#143" id="143">143</a>
 <a href="#144" id="144">144</a>
 <a href="#145" id="145">145</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering;
-<span class="kw">use </span>std::cmp::Ordering::<span class="kw-2">*</span>;
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 
-<span class="kw">use super</span>::{ConvertFrom, Merge};
-<span class="kw">use </span><span class="kw">crate</span>::LatticeOrd;
+<span class="kw">use crate</span>::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 <span class="doccomment">/// Wraps a lattice in [`Option`], treating [`None`] as a new top element which compares as greater
 /// than to all other values.
@@ -172,7 +185,7 @@
 
 <span class="kw">impl</span>&lt;Inner, Other&gt; Merge&lt;WithTop&lt;Other&gt;&gt; <span class="kw">for </span>WithTop&lt;Inner&gt;
 <span class="kw">where
-    </span>Inner: Merge&lt;Other&gt; + ConvertFrom&lt;Other&gt;,
+    </span>Inner: Merge&lt;Other&gt; + LatticeFrom&lt;Other&gt;,
 {
     <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: WithTop&lt;Other&gt;) -&gt; bool {
         <span class="kw">match </span>(<span class="kw-2">&amp;mut </span><span class="self">self</span>.<span class="number">0</span>, other.<span class="number">0</span>) {
@@ -187,12 +200,12 @@
     }
 }
 
-<span class="kw">impl</span>&lt;Inner, Other&gt; ConvertFrom&lt;WithTop&lt;Other&gt;&gt; <span class="kw">for </span>WithTop&lt;Inner&gt;
+<span class="kw">impl</span>&lt;Inner, Other&gt; LatticeFrom&lt;WithTop&lt;Other&gt;&gt; <span class="kw">for </span>WithTop&lt;Inner&gt;
 <span class="kw">where
-    </span>Inner: ConvertFrom&lt;Other&gt;,
+    </span>Inner: LatticeFrom&lt;Other&gt;,
 {
-    <span class="kw">fn </span>from(other: WithTop&lt;Other&gt;) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>(other.<span class="number">0</span>.map(Inner::from))
+    <span class="kw">fn </span>lattice_from(other: WithTop&lt;Other&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>(other.<span class="number">0</span>.map(Inner::lattice_from))
     }
 }
 
@@ -228,11 +241,26 @@
     }
 }
 
+<span class="kw">impl</span>&lt;Inner&gt; IsBot <span class="kw">for </span>WithTop&lt;Inner&gt;
+<span class="kw">where
+    </span>Inner: IsBot,
+{
+    <span class="kw">fn </span>is_bot(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.<span class="number">0</span>.as_ref().map_or(<span class="bool-val">false</span>, IsBot::is_bot)
+    }
+}
+
+<span class="kw">impl</span>&lt;Inner&gt; IsTop <span class="kw">for </span>WithTop&lt;Inner&gt; {
+    <span class="kw">fn </span>is_top(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.<span class="number">0</span>.is_none()
+    }
+}
+
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::set_union::{SetUnionHashSet, SetUnionSingletonSet};
-    <span class="kw">use </span><span class="kw">crate</span>::test::check_all;
+    <span class="kw">use </span><span class="kw">crate</span>::test::{check_all, check_lattice_top};
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_singly_nested_singleton_example() {
@@ -279,13 +307,15 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>consistency() {
-        check_all(<span class="kw-2">&amp;</span>[
+        <span class="kw">let </span>items = <span class="kw-2">&amp;</span>[
             WithTop::new(<span class="prelude-val">None</span>),
             WithTop::new_from(SetUnionHashSet::new_from([])),
             WithTop::new_from(SetUnionHashSet::new_from([<span class="number">0</span>])),
             WithTop::new_from(SetUnionHashSet::new_from([<span class="number">1</span>])),
             WithTop::new_from(SetUnionHashSet::new_from([<span class="number">0</span>, <span class="number">1</span>])),
-        ])
+        ];
+        check_all(items);
+        check_lattice_top(items);
     }
 }
 </code></pre></div></section></main></body></html>

@@ -136,10 +136,15 @@
 <a href="#136" id="136">136</a>
 <a href="#137" id="137">137</a>
 <a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering;
 
-<span class="kw">use super</span>::{ConvertFrom, Merge};
-<span class="kw">use </span><span class="kw">crate</span>::LatticeOrd;
+<span class="kw">use crate</span>::{LatticeFrom, LatticeOrd, Merge};
 
 <span class="doccomment">/// A totally ordered max lattice. Merging returns the larger value.
 </span><span class="attr">#[repr(transparent)]
@@ -172,8 +177,8 @@
     }
 }
 
-<span class="kw">impl</span>&lt;T&gt; ConvertFrom&lt;Max&lt;T&gt;&gt; <span class="kw">for </span>Max&lt;T&gt; {
-    <span class="kw">fn </span>from(other: Max&lt;T&gt;) -&gt; <span class="self">Self </span>{
+<span class="kw">impl</span>&lt;T&gt; LatticeFrom&lt;Max&lt;T&gt;&gt; <span class="kw">for </span>Max&lt;T&gt; {
+    <span class="kw">fn </span>lattice_from(other: Max&lt;T&gt;) -&gt; <span class="self">Self </span>{
         other
     }
 }
@@ -214,8 +219,8 @@
     }
 }
 
-<span class="kw">impl</span>&lt;T&gt; ConvertFrom&lt;Min&lt;T&gt;&gt; <span class="kw">for </span>Min&lt;T&gt; {
-    <span class="kw">fn </span>from(other: Min&lt;T&gt;) -&gt; <span class="self">Self </span>{
+<span class="kw">impl</span>&lt;T&gt; LatticeFrom&lt;Min&lt;T&gt;&gt; <span class="kw">for </span>Min&lt;T&gt; {
+    <span class="kw">fn </span>lattice_from(other: Min&lt;T&gt;) -&gt; <span class="self">Self </span>{
         other
     }
 }
@@ -244,7 +249,7 @@
     <span class="kw">use </span>std::cmp::Ordering::<span class="kw-2">*</span>;
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span><span class="kw">crate</span>::test::check_all;
+    <span class="kw">use </span><span class="kw">crate</span>::test::{check_lattice_ord, check_lattice_properties, check_partial_ord_properties};
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>ordering() {
@@ -270,8 +275,15 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>consistency() {
-        check_all(<span class="kw-2">&amp;</span>[Max::new(<span class="number">0</span>), Max::new(<span class="number">1</span>)]);
-        check_all(<span class="kw-2">&amp;</span>[Min::new(<span class="number">0</span>), Min::new(<span class="number">1</span>)]);
+        <span class="kw">let </span>items_max = <span class="kw-2">&amp;</span>[Max::new(<span class="number">0</span>), Max::new(<span class="number">1</span>)];
+        check_lattice_ord(items_max);
+        check_partial_ord_properties(items_max);
+        check_lattice_properties(items_max);
+
+        <span class="kw">let </span>items_min = <span class="kw-2">&amp;</span>[Min::new(<span class="number">0</span>), Min::new(<span class="number">1</span>)];
+        check_lattice_ord(items_min);
+        check_partial_ord_properties(items_min);
+        check_lattice_properties(items_min);
     }
 }
 </code></pre></div></section></main></body></html>
