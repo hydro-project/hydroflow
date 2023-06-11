@@ -1,16 +1,16 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use lattices::{Bottom, Immut};
+use lattices::{Bottom, Point};
 use serde::de::{DeserializeSeed, Visitor};
 use serde::{Serialize, Serializer};
 
-use super::immut::ImmutWrapper;
+use super::point::PointWrapper;
 use crate::buffer_pool::{AutoReturnBuffer, BufferPool};
-use crate::protocol::serialization::lattices::immut::ImmutDeserializer;
+use crate::protocol::serialization::lattices::point::PointDeserializer;
 
 #[repr(transparent)]
-pub struct BottomWrapper<'a, const SIZE: usize>(pub &'a Bottom<Immut<AutoReturnBuffer<SIZE>>>);
+pub struct BottomWrapper<'a, const SIZE: usize>(pub &'a Bottom<Point<AutoReturnBuffer<SIZE>>>);
 
 impl<'a, const SIZE: usize> Serialize for BottomWrapper<'a, SIZE> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -18,7 +18,7 @@ impl<'a, const SIZE: usize> Serialize for BottomWrapper<'a, SIZE> {
         S: Serializer,
     {
         if let Some(inner) = &self.0 .0 {
-            serializer.serialize_some(&ImmutWrapper(inner))
+            serializer.serialize_some(&PointWrapper(inner))
         } else {
             serializer.serialize_none()
         }
@@ -29,7 +29,7 @@ pub struct BottomDeserializer<const SIZE: usize> {
     pub collector: Rc<RefCell<BufferPool<SIZE>>>,
 }
 impl<'de, const SIZE: usize> DeserializeSeed<'de> for BottomDeserializer<SIZE> {
-    type Value = Bottom<Immut<AutoReturnBuffer<SIZE>>>;
+    type Value = Bottom<Point<AutoReturnBuffer<SIZE>>>;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
@@ -39,7 +39,7 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for BottomDeserializer<SIZE> {
             pub collector: Rc<RefCell<BufferPool<SIZE>>>,
         }
         impl<'de, const SIZE: usize> Visitor<'de> for V<SIZE> {
-            type Value = Bottom<Immut<AutoReturnBuffer<SIZE>>>;
+            type Value = Bottom<Point<AutoReturnBuffer<SIZE>>>;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                 formatter.write_str(std::any::type_name::<Self::Value>())
@@ -53,7 +53,7 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for BottomDeserializer<SIZE> {
                     pub collector: Rc<RefCell<BufferPool<SIZE>>>,
                 }
                 impl<'de, const SIZE: usize> Visitor<'de> for V<SIZE> {
-                    type Value = Immut<AutoReturnBuffer<SIZE>>;
+                    type Value = Point<AutoReturnBuffer<SIZE>>;
 
                     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                         formatter.write_str(std::any::type_name::<Self::Value>())
@@ -67,7 +67,7 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for BottomDeserializer<SIZE> {
                         D: serde::Deserializer<'de>,
                     {
                         serde::de::DeserializeSeed::deserialize(
-                            ImmutDeserializer {
+                            PointDeserializer {
                                 collector: self.collector,
                             },
                             deserializer,
@@ -76,20 +76,20 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for BottomDeserializer<SIZE> {
                 }
 
                 let inner = deserializer.deserialize_newtype_struct(
-                    "Immut",
+                    "Point",
                     V {
                         collector: self.collector,
                     },
                 )?;
 
-                Ok(Bottom::<Immut<AutoReturnBuffer<SIZE>>>(Some(inner)))
+                Ok(Bottom::<Point<AutoReturnBuffer<SIZE>>>(Some(inner)))
             }
 
             fn visit_none<E>(self) -> Result<Self::Value, E>
             where
                 E: serde::de::Error,
             {
-                Ok(Bottom::<Immut<AutoReturnBuffer<SIZE>>>(None))
+                Ok(Bottom::<Point<AutoReturnBuffer<SIZE>>>(None))
             }
         }
 

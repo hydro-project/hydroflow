@@ -5,7 +5,7 @@ mod test;
 
 use lattices::map_union::MapUnionHashMap;
 use lattices::set_union::SetUnionHashSet;
-use lattices::{Bottom, DomPair, Immut, Max};
+use lattices::{Bottom, DomPair, Max, Point};
 pub use serialization::KvsRequestDeserializer;
 
 use crate::buffer_pool::AutoReturnBuffer;
@@ -13,7 +13,7 @@ use crate::buffer_pool::AutoReturnBuffer;
 pub type NodeId = usize;
 
 pub type MyLastWriteWins<const SIZE: usize> =
-    DomPair<Max<u128>, Bottom<Immut<AutoReturnBuffer<SIZE>>>>;
+    DomPair<Max<u128>, Bottom<Point<AutoReturnBuffer<SIZE>>>>;
 pub type MySetUnion = SetUnionHashSet<(NodeId, usize)>;
 
 #[derive(Clone, Debug)]
