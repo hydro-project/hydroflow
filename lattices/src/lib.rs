@@ -8,6 +8,7 @@ pub use cc_traits;
 use sealed::sealed;
 
 pub mod collections;
+mod conflict;
 mod dom_pair;
 pub mod map_union;
 mod ord;
@@ -19,6 +20,7 @@ pub mod test;
 mod with_bot;
 mod with_top;
 
+pub use conflict::Conflict;
 pub use dom_pair::DomPair;
 pub use ord::{Max, Min};
 pub use pair::Pair;
