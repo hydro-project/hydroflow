@@ -4,6 +4,9 @@ use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 ///
 /// Will runtime panic if a merge between inequal values is attempted.
 ///
+/// Like [`Conflict<T>`](crate::Conflict) but will panic instead of going to a "conflict" top
+/// state.
+///
 /// Can be thought of as a lattice with a domain of size one, corresponding to the specific value
 /// inside.
 ///
