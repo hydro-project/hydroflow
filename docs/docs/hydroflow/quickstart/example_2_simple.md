@@ -4,15 +4,15 @@ sidebar_position: 3
 
 # Simple Example
 > In this example we will cover some additional standard Hydroflow operators:
-> - [`map`](../syntax/surface_ops.gen.md#map)
-> - [`filter`](../syntax/surface_ops.gen.md#filter)
-> - [`flatten`](../syntax/surface_ops.gen.md#flatten)
-> - [`filter_map`](../syntax/surface_ops.gen.md#filter_map)
-> - [`flat_map`](../syntax/surface_ops.gen.md#flat_map)
+> - [`map`](../syntax/surface_ops_gen.md#map)
+> - [`filter`](../syntax/surface_ops_gen.md#filter)
+> - [`flatten`](../syntax/surface_ops_gen.md#flatten)
+> - [`filter_map`](../syntax/surface_ops_gen.md#filter_map)
+> - [`flat_map`](../syntax/surface_ops_gen.md#flat_map)
 
 Lets build on the simplest example to explore some of the operators available
-in Hydroflow. You may be familiar with operators such as [`map(...)`](../syntax/surface_ops.gen.md#map),
-[`filter(...)`](../syntax/surface_ops.gen.md#filter), [`flatten`(...)](../syntax/surface_ops.gen.md#flatten),
+in Hydroflow. You may be familiar with operators such as [`map(...)`](../syntax/surface_ops_gen.md#map),
+[`filter(...)`](../syntax/surface_ops_gen.md#filter), [`flatten`(...)](../syntax/surface_ops_gen.md#flatten),
 etc. from Rust iterators or from other programming languages, and these are
 also available in Hydroflow.
 
@@ -69,7 +69,7 @@ Howdy 82
 
 ## Rewriting with Composite Operators
 We can also express the same program with more aggressive use of composite operators like
-[`filter_map()`](../syntax/surface_ops.gen.md#filtermap) and [`flat_map()`](../syntax/surface_ops.gen.md#flat_map). Hydroflow will compile these down to the same
+[`filter_map()`](../syntax/surface_ops_gen.md#filtermap) and [`flat_map()`](../syntax/surface_ops_gen.md#flat_map). Hydroflow will compile these down to the same
 machine code.
 
 Replace the contents of `src/main.rs` with the following:

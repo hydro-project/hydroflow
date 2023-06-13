@@ -32,6 +32,8 @@ pub struct Hydroflow {
     stratum_queues: Vec<VecDeque<SubgraphId>>,
     /// Receive events, if second arg indicates if it is an external "important" event (true).
     event_queue_recv: UnboundedReceiver<(SubgraphId, bool)>,
+    /// If external events or data can justify starting the next tick.
+    can_start_tick: bool,
     /// If the events have been received for this tick.
     events_received_tick: bool,
 
@@ -63,6 +65,7 @@ impl Default for Hydroflow {
 
             stratum_queues,
             event_queue_recv,
+            can_start_tick: false,
             events_received_tick: false,
 
             meta_graph: None,
@@ -202,12 +205,14 @@ impl Hydroflow {
                 if !handoff.handoff.is_bottom() {
                     for &succ_id in handoff.succs.iter() {
                         let succ_sg_data = &self.subgraphs[succ_id.0];
-                        if succ_sg_data.is_scheduled.get() {
-                            // Skip if task is already scheduled.
-                            continue;
+                        // If we have sent data to the next tick, then we can start the next tick.
+                        if succ_sg_data.stratum < self.context.current_stratum {
+                            self.can_start_tick = true;
                         }
-                        succ_sg_data.is_scheduled.set(true);
-                        self.stratum_queues[succ_sg_data.stratum].push_back(succ_id);
+                        // Add subgraph to stratum queue if it is not already scheduled.
+                        if !succ_sg_data.is_scheduled.replace(true) {
+                            self.stratum_queues[succ_sg_data.stratum].push_back(succ_id);
+                        }
                     }
                 }
             }
@@ -226,22 +231,40 @@ impl Hydroflow {
     ///
     /// If this returns false then the graph will be at the start of a tick (at stratum 0, can
     /// receive more external events).
-    #[tracing::instrument(level = "trace", skip(self), fields(tick = self.context.current_tick, stratum = self.context.current_stratum), ret)]
+    #[tracing::instrument(level = "trace", skip(self), ret)]
     pub fn next_stratum(&mut self, current_tick_only: bool) -> bool {
-        tracing::trace!(events_received_tick = self.events_received_tick);
+        tracing::trace!(
+            events_received_tick = self.events_received_tick,
+            can_start_tick = self.can_start_tick,
+            "Starting `next_stratum` call.",
+        );
 
-        if 0 == self.context.current_stratum && !self.events_received_tick {
-            // Add any external jobs to ready queue.
-            self.try_recv_events();
+        if 0 == self.context.current_stratum {
+            // Starting the tick, reset this to `false`.
+            tracing::trace!("Starting tick, setting `can_start_tick = false`.");
+            self.can_start_tick = false;
+
+            // Ensure external events are received before running the tick.
+            if !self.events_received_tick {
+                // Add any external jobs to ready queue.
+                self.try_recv_events();
+            }
         }
 
         // The stratum we will stop searching at, i.e. made a full loop around.
         let mut end_stratum = self.context.current_stratum;
 
         loop {
+            tracing::trace!(
+                tick = self.context.current_tick,
+                stratum = self.context.current_stratum,
+                "Looking for work on stratum."
+            );
+
             // If current stratum has work, return true.
             if !self.stratum_queues[self.context.current_stratum].is_empty() {
                 tracing::trace!(
+                    tick = self.context.current_tick,
                     stratum = self.context.current_stratum,
                     "Work found on stratum."
                 );
@@ -251,26 +274,45 @@ impl Hydroflow {
             // Increment stratum counter.
             self.context.current_stratum += 1;
             if self.context.current_stratum >= self.stratum_queues.len() {
-                tracing::trace!(tick = self.context.current_tick, "End of tick.");
+                tracing::trace!(
+                    can_start_tick = self.can_start_tick,
+                    "End of tick {}, starting tick {}.",
+                    self.context.current_tick,
+                    self.context.current_tick + 1,
+                );
 
                 self.context.current_stratum = 0;
                 self.context.current_tick += 1;
+                self.events_received_tick = false;
 
                 if current_tick_only {
-                    self.events_received_tick = false;
+                    tracing::trace!(
+                        "`current_tick_only` is `true`, returning `false` before receiving events."
+                    );
                     return false;
                 } else {
-                    let (_num_events, has_external) = self.try_recv_events();
-                    if has_external {
+                    self.try_recv_events();
+                    if std::mem::replace(&mut self.can_start_tick, false) {
+                        tracing::trace!(
+                            tick = self.context.current_tick,
+                            "`can_start_tick` is `true`, continuing."
+                        );
                         // Do a full loop more to find where events have been added.
                         end_stratum = 0;
                         continue;
+                    } else {
+                        tracing::trace!(
+                            "`can_start_tick` is `false`, re-setting `events_received_tick = false`, returning `false`."
+                        );
+                        self.events_received_tick = false;
+                        return false;
                     }
                 }
             }
 
             // After incrementing, exit if we made a full loop around the strata.
             if end_stratum == self.context.current_stratum {
+                tracing::trace!("Made full loop around stratum, re-setting `current_stratum = 0`, returning `false`.");
                 // Note: if current stratum had work, the very first loop iteration would've
                 // returned true. Therefore we can return false without checking.
                 // Also means nothing was done so we can reset the stratum to zero and wait for
@@ -308,43 +350,75 @@ impl Hydroflow {
     /// Enqueues subgraphs triggered by events without blocking.
     ///
     /// Returns the number of subgraphs enqueued, and if any were external.
-    #[tracing::instrument(level = "trace", skip(self), ret)]
-    pub fn try_recv_events(&mut self) -> (usize, bool) {
-        self.events_received_tick = true;
-
-        let mut events_has_external = false;
+    #[tracing::instrument(level = "trace", skip(self), fields(events_received_tick = self.events_received_tick), ret)]
+    pub fn try_recv_events(&mut self) -> usize {
         let mut enqueued_count = 0;
         while let Ok((sg_id, is_external)) = self.event_queue_recv.try_recv() {
             let sg_data = &self.subgraphs[sg_id.0];
-            events_has_external |= is_external;
+            tracing::trace!(
+                sg_id = sg_id.0,
+                is_external = is_external,
+                sg_stratum = sg_data.stratum,
+                "Event received."
+            );
             if !sg_data.is_scheduled.replace(true) {
                 self.stratum_queues[sg_data.stratum].push_back(sg_id);
                 enqueued_count += 1;
             }
+            if is_external {
+                // Next tick is triggered if we are at the start of the next tick (`!self.events_receved_tick`).
+                // Or if the stratum is in the next tick.
+                if !self.events_received_tick || sg_data.stratum < self.context.current_stratum {
+                    tracing::trace!(
+                        current_stratum = self.context.current_stratum,
+                        sg_stratum = sg_data.stratum,
+                        "External event, setting `can_start_tick = true`."
+                    );
+                    self.can_start_tick = true;
+                }
+            }
         }
-        (enqueued_count, events_has_external)
+        self.events_received_tick = true;
+
+        enqueued_count
     }
 
     /// Enqueues subgraphs triggered by external events, blocking until at
     /// least one subgraph is scheduled **from an external event**.
-    #[tracing::instrument(level = "trace", skip(self), ret)]
+    #[tracing::instrument(level = "trace", skip(self), fields(events_received_tick = self.events_received_tick), ret)]
     pub fn recv_events(&mut self) -> Option<usize> {
-        self.events_received_tick = true;
-
         let mut count = 0;
-        let mut external = false;
-        while !external {
+        loop {
             let (sg_id, is_external) = self.event_queue_recv.blocking_recv()?;
-            external |= is_external;
             let sg_data = &self.subgraphs[sg_id.0];
+            tracing::trace!(
+                sg_id = sg_id.0,
+                is_external = is_external,
+                sg_stratum = sg_data.stratum,
+                "Event received."
+            );
             if !sg_data.is_scheduled.replace(true) {
                 self.stratum_queues[sg_data.stratum].push_back(sg_id);
                 count += 1;
             }
+            if is_external {
+                // Next tick is triggered if we are at the start of the next tick (`!self.events_receved_tick`).
+                // Or if the stratum is in the next tick.
+                if !self.events_received_tick || sg_data.stratum < self.context.current_stratum {
+                    tracing::trace!(
+                        current_stratum = self.context.current_stratum,
+                        sg_stratum = sg_data.stratum,
+                        "External event, setting `can_start_tick = true`."
+                    );
+                    self.can_start_tick = true;
+                }
+                break;
+            }
         }
-        debug_assert!(external);
+        self.events_received_tick = true;
+
         // Enqueue any other immediate events.
-        let (extra_count, _extra_external) = self.try_recv_events();
+        let extra_count = self.try_recv_events();
         Some(count + extra_count)
     }
 
@@ -353,24 +427,41 @@ impl Hydroflow {
     /// which may be zero if an external event scheduled an already-scheduled subgraph.
     ///
     /// Returns `None` if the event queue is closed, but that should not happen normally.
-    #[tracing::instrument(level = "trace", skip(self), ret)]
+    #[tracing::instrument(level = "trace", skip(self), fields(events_received_tick = self.events_received_tick), ret)]
     pub async fn recv_events_async(&mut self) -> Option<usize> {
-        self.events_received_tick = true;
-
         let mut count = 0;
-        let mut external = false;
-        while !external {
+        loop {
+            tracing::trace!("Awaiting events (`event_queue_recv`).");
             let (sg_id, is_external) = self.event_queue_recv.recv().await?;
-            external |= is_external;
             let sg_data = &self.subgraphs[sg_id.0];
+            tracing::trace!(
+                sg_id = sg_id.0,
+                is_external = is_external,
+                sg_stratum = sg_data.stratum,
+                "Event received."
+            );
             if !sg_data.is_scheduled.replace(true) {
                 self.stratum_queues[sg_data.stratum].push_back(sg_id);
                 count += 1;
             }
+            if is_external {
+                // Next tick is triggered if we are at the start of the next tick (`!self.events_receved_tick`).
+                // Or if the stratum is in the next tick.
+                if !self.events_received_tick || sg_data.stratum < self.context.current_stratum {
+                    tracing::trace!(
+                        current_stratum = self.context.current_stratum,
+                        sg_stratum = sg_data.stratum,
+                        "External event, setting `can_start_tick = true`."
+                    );
+                    self.can_start_tick = true;
+                }
+                break;
+            }
         }
-        debug_assert!(external);
+        self.events_received_tick = true;
+
         // Enqueue any other immediate events.
-        let (extra_count, _extra_external) = self.try_recv_events();
+        let extra_count = self.try_recv_events();
         Some(count + extra_count)
     }
 

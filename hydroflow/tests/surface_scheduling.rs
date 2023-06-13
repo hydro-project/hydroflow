@@ -1,4 +1,6 @@
-use hydroflow::hydroflow_syntax;
+use std::error::Error;
+
+use hydroflow::{hydroflow_syntax, rassert_eq};
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test(test, wasm, env_tracing)]
@@ -37,4 +39,58 @@ pub fn test_tick_loop() {
         &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut out_recv)
     );
     assert_eq!((10, 0), (df.current_tick(), df.current_stratum()));
+}
+
+#[multiplatform_test(hydroflow, env_tracing)]
+async fn test_persist_stratum_run_available() -> Result<(), Box<dyn Error>> {
+    let (out_send, out_recv) = hydroflow::util::unbounded_channel();
+
+    let handle = tokio::task::spawn_blocking(|| {
+        let mut df = hydroflow_syntax! {
+            a = source_iter([0])
+                -> persist()
+                -> next_stratum()
+                -> for_each(|x| out_send.send(x).unwrap());
+        };
+        df.run_available();
+    });
+    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+    handle.abort();
+
+    let seen: Vec<_> = hydroflow::util::collect_ready_async(out_recv).await;
+    rassert_eq!(
+        &[0],
+        &*seen,
+        "Only one tick should have run, actually ran {}",
+        seen.len()
+    )?;
+
+    handle.await.unwrap();
+    Ok(())
+}
+
+#[multiplatform_test(hydroflow, env_tracing)]
+async fn test_persist_stratum_run_async() -> Result<(), Box<dyn Error>> {
+    let (out_send, out_recv) = hydroflow::util::unbounded_channel();
+
+    let mut df = hydroflow_syntax! {
+        source_iter([0])
+            -> persist()
+            -> next_stratum()
+            -> for_each(|x| out_send.send(x).unwrap());
+    };
+
+    tokio::time::timeout(std::time::Duration::from_millis(200), df.run_async())
+        .await
+        .expect_err("Expected time out");
+
+    let seen: Vec<_> = hydroflow::util::collect_ready_async(out_recv).await;
+    rassert_eq!(
+        &[0],
+        &*seen,
+        "Only one tick should have run, actually ran {}",
+        seen.len()
+    )?;
+
+    Ok(())
 }
