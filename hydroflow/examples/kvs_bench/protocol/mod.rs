@@ -13,7 +13,7 @@ use crate::buffer_pool::AutoReturnBuffer;
 pub type NodeId = usize;
 
 pub type MyLastWriteWins<const SIZE: usize> =
-    DomPair<Max<u128>, WithBot<Point<AutoReturnBuffer<SIZE>>>>;
+    DomPair<Max<u128>, WithBot<Point<AutoReturnBuffer<SIZE>, ()>>>;
 pub type MySetUnion = SetUnionHashSet<(NodeId, usize)>;
 
 #[derive(Clone, Debug)]
