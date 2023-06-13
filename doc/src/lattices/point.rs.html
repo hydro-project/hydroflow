@@ -110,11 +110,33 @@
 <a href="#110" id="110">110</a>
 <a href="#111" id="111">111</a>
 <a href="#112" id="112">112</a>
-</pre></div><pre class="rust"><code><span class="kw">use crate</span>::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
+
+<span class="kw">use crate</span>::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 <span class="doccomment">/// A `Point` lattice, corresponding to a single instance of `T`.
 ///
 /// Will runtime panic if a merge between inequal values is attempted.
+///
+/// The `Provenance` generic param is a token for the origin of this point. The parameter can be
+/// used to differentiate between points with different provenances. This will prevent them from
+/// being merged together, avoiding any posibility of panic.
 ///
 /// Like [`Conflict&lt;T&gt;`](crate::Conflict) but will panic instead of going to a &quot;conflict&quot; top
 /// state.
@@ -126,11 +148,18 @@
 </span><span class="attr">#[repr(transparent)]
 #[derive(Copy, Clone, Debug, Default, Eq)]
 #[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
-</span><span class="kw">pub struct </span>Point&lt;T&gt;(<span class="kw">pub </span>T);
-<span class="kw">impl</span>&lt;T&gt; Point&lt;T&gt; {
+</span><span class="kw">pub struct </span>Point&lt;T, Provenance&gt; {
+    <span class="doccomment">/// The value stored inside. This should not be mutated.
+    </span><span class="kw">pub </span>val: T,
+    _token: PhantomData&lt;<span class="kw-2">*mut </span>Provenance&gt;,
+}
+<span class="kw">impl</span>&lt;T, Provenance&gt; Point&lt;T, Provenance&gt; {
     <span class="doccomment">/// Create a new `Point` lattice instance from a value.
     </span><span class="kw">pub fn </span>new(val: T) -&gt; <span class="self">Self </span>{
-        <span class="self">Self</span>(val)
+        <span class="self">Self </span>{
+            val,
+            _token: PhantomData,
+        }
     }
 
     <span class="doccomment">/// Create a new `Point` lattice instance from a value using `Into`.
@@ -139,53 +168,56 @@
     }
 }
 
-<span class="kw">impl</span>&lt;T, O&gt; Merge&lt;Point&lt;O&gt;&gt; <span class="kw">for </span>Point&lt;T&gt;
+<span class="kw">impl</span>&lt;T, Provenance&gt; Merge&lt;Point&lt;T, Provenance&gt;&gt; <span class="kw">for </span>Point&lt;T, Provenance&gt;
 <span class="kw">where
-    </span>T: PartialEq&lt;O&gt;,
+    </span>T: PartialEq,
 {
-    <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: Point&lt;O&gt;) -&gt; bool {
-        <span class="kw">if </span><span class="self">self</span>.<span class="number">0 </span>!= other.<span class="number">0 </span>{
+    <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: Point&lt;T, Provenance&gt;) -&gt; bool {
+        <span class="kw">if </span><span class="self">self</span>.val != other.val {
             <span class="macro">panic!</span>(<span class="string">&quot;The `Point` lattice cannot merge inequal elements.&quot;</span>)
         }
         <span class="bool-val">false
     </span>}
 }
 
-<span class="kw">impl</span>&lt;T&gt; LatticeFrom&lt;Point&lt;T&gt;&gt; <span class="kw">for </span>Point&lt;T&gt; {
-    <span class="kw">fn </span>lattice_from(other: Point&lt;T&gt;) -&gt; <span class="self">Self </span>{
+<span class="kw">impl</span>&lt;T, Provenance&gt; LatticeFrom&lt;Point&lt;T, Provenance&gt;&gt; <span class="kw">for </span>Point&lt;T, Provenance&gt; {
+    <span class="kw">fn </span>lattice_from(other: Point&lt;T, Provenance&gt;) -&gt; <span class="self">Self </span>{
         other
     }
 }
 
-<span class="kw">impl</span>&lt;T, O&gt; PartialOrd&lt;Point&lt;O&gt;&gt; <span class="kw">for </span>Point&lt;T&gt;
+<span class="kw">impl</span>&lt;T, Provenance&gt; PartialOrd&lt;Point&lt;T, Provenance&gt;&gt; <span class="kw">for </span>Point&lt;T, Provenance&gt;
 <span class="kw">where
-    </span>T: PartialEq&lt;O&gt;,
+    </span>T: PartialEq,
 {
-    <span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Point&lt;O&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;std::cmp::Ordering&gt; {
-        <span class="kw">if </span><span class="self">self</span>.<span class="number">0 </span>!= other.<span class="number">0 </span>{
+    <span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Point&lt;T, Provenance&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;std::cmp::Ordering&gt; {
+        <span class="kw">if </span><span class="self">self</span>.val != other.val {
             <span class="macro">panic!</span>(<span class="string">&quot;The `Point` lattice does not have a partial order between inequal elements.&quot;</span>);
         }
         <span class="prelude-val">Some</span>(std::cmp::Ordering::Equal)
     }
 }
-<span class="kw">impl</span>&lt;T, O&gt; LatticeOrd&lt;Point&lt;O&gt;&gt; <span class="kw">for </span>Point&lt;T&gt; <span class="kw">where </span><span class="self">Self</span>: PartialOrd&lt;Point&lt;O&gt;&gt; {}
-
-<span class="kw">impl</span>&lt;T, O&gt; PartialEq&lt;Point&lt;O&gt;&gt; <span class="kw">for </span>Point&lt;T&gt;
-<span class="kw">where
-    </span>T: PartialEq&lt;O&gt;,
+<span class="kw">impl</span>&lt;T, Provenance&gt; LatticeOrd&lt;Point&lt;T, Provenance&gt;&gt; <span class="kw">for </span>Point&lt;T, Provenance&gt; <span class="kw">where
+    </span><span class="self">Self</span>: PartialOrd&lt;Point&lt;T, Provenance&gt;&gt;
 {
-    <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Point&lt;O&gt;) -&gt; bool {
-        <span class="self">self</span>.<span class="number">0 </span>== other.<span class="number">0
-    </span>}
 }
 
-<span class="kw">impl</span>&lt;T&gt; IsBot <span class="kw">for </span>Point&lt;T&gt; {
+<span class="kw">impl</span>&lt;T, Provenance&gt; PartialEq&lt;Point&lt;T, Provenance&gt;&gt; <span class="kw">for </span>Point&lt;T, Provenance&gt;
+<span class="kw">where
+    </span>T: PartialEq,
+{
+    <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Point&lt;T, Provenance&gt;) -&gt; bool {
+        <span class="self">self</span>.val == other.val
+    }
+}
+
+<span class="kw">impl</span>&lt;T, Provenance&gt; IsBot <span class="kw">for </span>Point&lt;T, Provenance&gt; {
     <span class="kw">fn </span>is_bot(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="bool-val">true
     </span>}
 }
 
-<span class="kw">impl</span>&lt;T&gt; IsTop <span class="kw">for </span>Point&lt;T&gt; {
+<span class="kw">impl</span>&lt;T, Provenance&gt; IsTop <span class="kw">for </span>Point&lt;T, Provenance&gt; {
     <span class="kw">fn </span>is_top(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="bool-val">true
     </span>}
@@ -200,14 +232,14 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>consistency_equal() {
-        check_all(<span class="kw-2">&amp;</span>[Point::new(<span class="string">&quot;hello world&quot;</span>)])
+        check_all(<span class="kw-2">&amp;</span>[Point::&lt;<span class="kw">_</span>, ()&gt;::new(<span class="string">&quot;hello world&quot;</span>)])
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>consistency_inequal() {
         <span class="kw">use </span>std::collections::BTreeSet;
 
-        <span class="kw">let </span>items = [
+        <span class="kw">let </span>items: <span class="kw-2">&amp;</span>[Point&lt;<span class="kw">_</span>, ()&gt;] = <span class="kw-2">&amp;</span>[
             Point::new(BTreeSet::from_iter([])),
             Point::new(BTreeSet::from_iter([<span class="number">0</span>])),
             Point::new(BTreeSet::from_iter([<span class="number">1</span>])),
@@ -215,11 +247,11 @@
         ];
 
         <span class="comment">// Merged inequal elements panic, therefore `NaiveMerge` panics.
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| check_lattice_ord(<span class="kw-2">&amp;</span>items)).is_err());
+        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| check_lattice_ord(items)).is_err());
         <span class="comment">// `Point` does not have a partial order.
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| check_partial_ord_properties(<span class="kw-2">&amp;</span>items)).is_err());
+        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| check_partial_ord_properties(items)).is_err());
         <span class="comment">// `Point` is not actually a lattice.
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| check_lattice_properties(<span class="kw-2">&amp;</span>items)).is_err());
+        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| check_lattice_properties(items)).is_err());
     }
 }
 </code></pre></div></section></main></body></html>
