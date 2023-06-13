@@ -5,7 +5,7 @@ error[E0277]: the trait bound `usize: Merge<usize>` is not satisfied
   |                                         ^^^^^ the trait `Merge<usize>` is not implemented for `usize`
   |
   = help: the following other types implement trait `Merge<Other>`:
-            <Bottom<Inner> as Merge<Bottom<Other>>>
+            <WithBot<Inner> as Merge<WithBot<Other>>>
             <DomPair<KeySelf, ValSelf> as Merge<DomPair<KeyOther, ValOther>>>
             <MapUnion<MapSelf> as Merge<MapUnion<MapOther>>>
             <Max<T> as Merge<Max<T>>>
@@ -34,7 +34,7 @@ error[E0277]: the trait bound `usize: Merge<usize>` is not satisfied
   | |________________________________________________^ the trait `Merge<usize>` is not implemented for `usize`
   |
   = help: the following other types implement trait `Merge<Other>`:
-            <Bottom<Inner> as Merge<Bottom<Other>>>
+            <WithBot<Inner> as Merge<WithBot<Other>>>
             <DomPair<KeySelf, ValSelf> as Merge<DomPair<KeyOther, ValOther>>>
             <MapUnion<MapSelf> as Merge<MapUnion<MapOther>>>
             <Max<T> as Merge<Max<T>>>
@@ -56,7 +56,7 @@ error[E0277]: the trait bound `usize: Merge<usize>` is not satisfied
   | |_____^ the trait `Merge<usize>` is not implemented for `usize`
   |
   = help: the following other types implement trait `Merge<Other>`:
-            <Bottom<Inner> as Merge<Bottom<Other>>>
+            <WithBot<Inner> as Merge<WithBot<Other>>>
             <DomPair<KeySelf, ValSelf> as Merge<DomPair<KeyOther, ValOther>>>
             <MapUnion<MapSelf> as Merge<MapUnion<MapOther>>>
             <Max<T> as Merge<Max<T>>>

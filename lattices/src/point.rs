@@ -1,9 +1,11 @@
-use super::{ConvertFrom, Merge};
-use crate::LatticeOrd;
+use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// A `Point` lattice, corresponding to a single instance of `T`.
 ///
 /// Will runtime panic if a merge between inequal values is attempted.
+///
+/// Like [`Conflict<T>`](crate::Conflict) but will panic instead of going to a "conflict" top
+/// state.
 ///
 /// Can be thought of as a lattice with a domain of size one, corresponding to the specific value
 /// inside.
@@ -37,8 +39,8 @@ where
     }
 }
 
-impl<T> ConvertFrom<Point<T>> for Point<T> {
-    fn from(other: Point<T>) -> Self {
+impl<T> LatticeFrom<Point<T>> for Point<T> {
+    fn lattice_from(other: Point<T>) -> Self {
         other
     }
 }
@@ -62,6 +64,18 @@ where
 {
     fn eq(&self, other: &Point<O>) -> bool {
         self.0 == other.0
+    }
+}
+
+impl<T> IsBot for Point<T> {
+    fn is_bot(&self) -> bool {
+        true
+    }
+}
+
+impl<T> IsTop for Point<T> {
+    fn is_top(&self) -> bool {
+        true
     }
 }
 
