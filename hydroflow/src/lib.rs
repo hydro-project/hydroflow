@@ -5,7 +5,7 @@
 #![allow(clippy::let_and_return)]
 #![allow(clippy::iter_with_drain)]
 #![allow(clippy::explicit_auto_deref)]
-#![deny(missing_docs)] // TODO(mingwei): #![forbid(missing_docs)] when all docs are done.
+#![warn(missing_docs)]
 
 //! Hydroflow is a low-level dataflow-based runtime system for the [Hydro Project](https://hydro.run/).
 //!

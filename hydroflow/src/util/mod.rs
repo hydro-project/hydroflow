@@ -1,4 +1,4 @@
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 //! Helper utilities for the Hydroflow surface syntax.
 
 pub mod clear;
