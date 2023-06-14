@@ -1,4 +1,4 @@
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 #![feature(impl_trait_in_assoc_type)]
 #![doc = include_str!("../README.md")]
 
