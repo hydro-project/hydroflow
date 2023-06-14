@@ -9,7 +9,6 @@ sidebar_position: 5
 > * Indexing multi-input operators by prepending a bracket expression
 > * The [`unique`](../syntax/surface_ops_gen.md#unique) operator for removing duplicates from a stream
 > * Visualizing hydroflow code via `flow.meta_graph().to_mermaid()`
-> * A first exposure to the concepts of _strata_ and _ticks_
 
 So far all the operators we've used have one input and one output and therefore
 create a linear flow of operators. Let's now take a look at a Hydroflow program containing
@@ -105,7 +104,7 @@ Reached: 1
 That looks right: the edges we "sent" into the flow that start at `0` are 
 `(0, 1)` and `(0, 3)`, so the nodes reachable from `0` in 0 or 1 hops are `0, 1, 3`.
 
-> Note: When you run the program you may see the lines printed out in a different order. That's OK; the flow we're defining here is producing a `set` of nodes, so the order in which they are printed out is not specified. The [`sort_by_key`](../syntax/surface_ops_gen.md#sort_by) operator can be used to sort the output of a flow.
+> Note: When you run the program you may see the lines printed out in a different order. That's OK; the flow we're defining here is producing a `set` of nodes, so the order in which they are printed out is not specified. The [`sort_by_key`](../syntax/surface_ops_gen.md#sort_by_key) operator can be used to sort the output of a flow.
 
 ## Examining the Hydroflow Code
 In the code, we want to start out with the origin vertex, `0`,
@@ -140,13 +139,13 @@ don't have any corresponding value, so we feed `origin` through a [`map()`](../s
 to generate `(v, ())` elements as the first join input. 
 
 The `stream_of_edges` are `(src, dst)` pairs,
-so the join's output is `(src, ((), dst))` where `dst` are new neighbor
+so the join's output is `(src, ((), dst))` where `dst` values are new neighbor
 vertices. So the `my_join` variable feeds the output of the join through a `flat_map` to extract the pairs into 2-item arrays, which are flattened to give us a list of all vertices reached.
 Finally we print the neighbor vertices as follows:
 ```rust,ignore
     my_join -> unique() -> for_each(|n| println!("Reached: {}", n));
 ```
-The [unique](../syntax/surface_ops_gen.md#unique) operator removes duplicates from the stream to make things more readable. Note that `unique` does not run in a streaming fashion, which we will talk about more [below](#strata-and-ticks).
+The [unique](../syntax/surface_ops_gen.md#unique) operator removes duplicates from the stream to make things more readable. Note that `unique` runs in a streaming fashion, which we will talk about more [later](./example_6_unreachability#strata-and-ticks).
 
 There's
 also some extra code here, `flow.meta_graph().expect(...).to_mermaid()`, which tells
@@ -155,50 +154,42 @@ generate a diagram rendered by [Mermaid](https://mermaid-js.github.io/) showing
 the structure of the graph, and print it to stdout. You can copy that text and paste it into the [Mermaid Live Editor](https://mermaid-js.github.io/mermaid-live-editor/) to see the graph, which should look as follows:
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'clusterBkg':'#ddd'}}}%%
+%%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD
-classDef pullClass fill:#02f,color:#fff,stroke:#000
-classDef pushClass fill:#ff0,stroke:#000
+classDef pullClass fill:#02f,color:#999,stroke:#000,text-align:left,white-space:pre
+classDef pushClass fill:#ff0,stroke:#000,text-align:left,white-space:pre
 linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
-subgraph "sg_1v1 stratum 0"
-    1v1[\"(1v1) <tt>source_iter(vec! [0])</tt>"/]:::pullClass
-    2v1[\"(2v1) <tt>source_stream(edges_recv)</tt>"/]:::pullClass
-    5v1[\"(5v1) <tt>map(| v | (v, ()))</tt>"/]:::pullClass
-    3v1[\"(3v1) <tt>join()</tt>"/]:::pullClass
-    4v1[\"(4v1) <tt>flat_map(| (src, (_, dst)) | [src, dst])</tt>"/]:::pullClass
+subgraph sg_1v1 ["sg_1v1 stratum 0"]
+    1v1[\"(1v1) <code>source_iter(vec![0])</code>"/]:::pullClass
+    2v1[\"(2v1) <code>source_stream(edges_recv)</code>"/]:::pullClass
+    5v1[\"(5v1) <code>map(|v| (v, ()))</code>"/]:::pullClass
+    3v1[\"(3v1) <code>join()</code>"/]:::pullClass
+    4v1[\"(4v1) <code>flat_map(|(src, (_, dst))| [src, dst])</code>"/]:::pullClass
+    6v1[\"(6v1) <code>unique()</code>"/]:::pullClass
+    7v1[/"(7v1) <code>for_each(|n| println!(&quot;Reached: {}&quot;, n))</code>"\]:::pushClass
     1v1--->5v1
     2v1--1--->3v1
     5v1--0--->3v1
     3v1--->4v1
-end
-subgraph "sg_2v1 stratum 1"
-    6v1[/"(6v1) <tt>unique()</tt>"\]:::pushClass
-    7v1[/"(7v1) <tt>for_each(| n | println! (&quot;Reached: {}&quot;, n))</tt>"\]:::pushClass
+    4v1--->6v1
     6v1--->7v1
+    subgraph sg_1v1_var_my_join ["var <tt>my_join</tt>"]
+        3v1
+        4v1
+    end
+    subgraph sg_1v1_var_origin ["var <tt>origin</tt>"]
+        1v1
+    end
+    subgraph sg_1v1_var_stream_of_edges ["var <tt>stream_of_edges</tt>"]
+        2v1
+    end
 end
-4v1--->8v1
-8v1["(8v1) <tt>handoff</tt>"]:::otherClass
-8v1===o6v1
 ```
 
-Notice in the mermaid graph how Hydroflow separates the `unique` operator and its downstream dependencies into their own
-_stratum_ (plural: _strata_). Note also the edge coming into `unique` is bold and ends in a ball: this is because the input to `unique` is 
-``blocking'', meaning that `unique` should not run until all of the input on that edge has been received.
-The stratum boundary before `unique` ensures that the blocking property is respected.
-
-You may also be wondering why the nodes in the graph have different colors (and shapes, for readers who cannot distinguish
+You may be wondering why the nodes in the graph have different colors (and shapes, for readers who cannot distinguish
 colors easily). The answer has nothing to do with the meaning of the program, only with the way that Hydroflow compiles 
 operators into Rust. Simply put, blue (wide-topped) boxes _pull_ data, yellow (wide-bottomed) boxes _push_ data, and the `handoff` is a special operator that buffers pushed data for subsequent pulling. Hydroflow always places a handoff
 between a push producer and a pull consumer, for reasons explained in the [Architecture](../architecture/index.md) chapter.
-
-
-## Strata and Ticks
-Hydroflow runs each stratum
-in order, one at a time, ensuring all values are computed
-before moving on to the next stratum. Between strata we see a _handoff_, which logically buffers the 
-output of the first stratum, and delineates the separation of execution between the 2 strata.
-
-After all strata are run, Hydroflow returns to the first stratum; this begins the next _tick_. This doesn't really matter for this example, but it is important for long-running Hydroflow services that accept input from the outside world. More on this topic in the chapter on [time](../concepts/life_and_times.md).
 
 Returning to the code, if you read the `edges_send` calls carefully, you'll see that the example data 
 has vertices (`2`, `4`) that are more than one hop away from `0`, which were

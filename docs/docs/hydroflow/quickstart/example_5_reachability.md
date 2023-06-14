@@ -117,7 +117,7 @@ is the same as that of `join()` (except that union can have an unbounded number 
 whereas `join()` is defined to only have two.)
 
 Now, `join()` is defined to only have one output. In our program, we want to copy 
-the joined output 
+the joined 
 output to two places: to the original `for_each` from above to print output, and *also* 
 back to the `union` operator we called `reached_vertices`.
 We feed the `join()` output 
@@ -141,20 +141,22 @@ showing up to the right of the variable rather than the left.
 Below is the diagram rendered by [mermaid](https://mermaid-js.github.io/) showing
 the structure of the full flow:
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'clusterBkg':'#ddd'}}}%%
+%%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD
-classDef pullClass fill:#02f,color:#fff,stroke:#000
-classDef pushClass fill:#ff0,stroke:#000
+classDef pullClass fill:#02f,color:#999,stroke:#000,text-align:left,white-space:pre
+classDef pushClass fill:#ff0,stroke:#000,text-align:left,white-space:pre
 linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
-subgraph "sg_1v1 stratum 0"
-    1v1[\"(1v1) <tt>source_iter(vec! [0])</tt>"/]:::pullClass
-    2v1[\"(2v1) <tt>source_stream(edges_recv)</tt>"/]:::pullClass
-    3v1[\"(3v1) <tt>union()</tt>"/]:::pullClass
-    7v1[\"(7v1) <tt>map(| v | (v, ()))</tt>"/]:::pullClass
-    4v1[\"(4v1) <tt>join()</tt>"/]:::pullClass
-    5v1[/"(5v1) <tt>flat_map(| (src, ((), dst)) | [src, dst])</tt>"\]:::pushClass
-    6v1[/"(6v1) <tt>tee()</tt>"\]:::pushClass
-    10v1["(10v1) <tt>handoff</tt>"]:::otherClass
+subgraph sg_1v1 ["sg_1v1 stratum 0"]
+    1v1[\"(1v1) <code>source_iter(vec![0])</code>"/]:::pullClass
+    2v1[\"(2v1) <code>source_stream(edges_recv)</code>"/]:::pullClass
+    3v1[\"(3v1) <code>union()</code>"/]:::pullClass
+    7v1[\"(7v1) <code>map(|v| (v, ()))</code>"/]:::pullClass
+    4v1[\"(4v1) <code>join()</code>"/]:::pullClass
+    5v1[\"(5v1) <code>flat_map(|(src, ((), dst))| [src, dst])</code>"/]:::pullClass
+    6v1[/"(6v1) <code>tee()</code>"\]:::pushClass
+    8v1[/"(8v1) <code>unique()</code>"\]:::pushClass
+    9v1[/"(9v1) <code>for_each(|x| println!(&quot;Reached: {}&quot;, x))</code>"\]:::pushClass
+    10v1["(10v1) <code>handoff</code>"]:::otherClass
     10v1--1--->3v1
     1v1--0--->3v1
     2v1--1--->4v1
@@ -163,18 +165,24 @@ subgraph "sg_1v1 stratum 0"
     4v1--->5v1
     5v1--->6v1
     6v1--0--->10v1
-end
-subgraph "sg_2v1 stratum 1"
-    8v1[/"(8v1) <tt>unique()</tt>"\]:::pushClass
-    9v1[/"(9v1) <tt>for_each(| x | println! (&quot;Reached: {}&quot;, x))</tt>"\]:::pushClass
+    6v1--1--->8v1
     8v1--->9v1
+    subgraph sg_1v1_var_my_join_tee ["var <tt>my_join_tee</tt>"]
+        4v1
+        5v1
+        6v1
+    end
+    subgraph sg_1v1_var_origin ["var <tt>origin</tt>"]
+        1v1
+    end
+    subgraph sg_1v1_var_reached_vertices ["var <tt>reached_vertices</tt>"]
+        3v1
+    end
+    subgraph sg_1v1_var_stream_of_edges ["var <tt>stream_of_edges</tt>"]
+        2v1
+    end
 end
-6v1--1--->11v1
-11v1["(11v1) <tt>handoff</tt>"]:::otherClass
-11v1===o8v1
 ```
 This is similar to the flow for graph neighbors, but has a few more operators that make it look
-more complex. In particular, it includes the `union` and `tee` operators, and a cycle-forming back-edge 
-that passes through an auto-generated `handoff` operator. This `handoff` is not a stratum boundary (after all, it connects stratum 0 to itself!) It simply enforces the rule that a push producer and a pull consumer must be separated by a `handoff`. 
-
-Meanwhile, note that there is once again a stratum boundary between the stratum 0 with its recursive loop, and stratum 1 that computes `unique`, with the blocking input. This means that Hydroflow will first run the loop of stratum 0 repeatedly until all the transitive reached vertices are found, before moving on to compute the unique reached vertices.
+more complex. In particular, it includes the `union` and `tee` operators, and a cycle-forming back-edge.
+There is also an auto-generated `handoff` operator that enforces the rule that a push producer and a pull consumer must be separated by a `handoff`. 

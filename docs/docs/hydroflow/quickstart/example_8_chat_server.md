@@ -11,16 +11,26 @@ sidebar_position: 9
 
 Our previous [echo server](./example_7_echo_server.md) example was admittedly simplistic.  In this example, we'll build something a bit more useful: a simple chat server. We will again have two roles: a `Client` and a `Server`. `Clients` will register their presence with the `Server`, which maintains a list of clients. Each `Client` sends messages to the `Server`, which will then broadcast those messages to all other clients. 
 
+## Cargo.toml
+We will use a text-coloring crate called `colored` in this example. 
+To follow along, add the following line to the bottom of the `Cargo.toml` file
+that appears at that root of your template:
+
+```toml
+colored = "2.0.0"
+```
+
 ## main.rs
 The `main.rs` file here is very similar to that of the echo server, just with two new command-line arguments: one called `name` for a "nickname" in the chatroom, and another optional argument `graph` for printing a dataflow graph if desired. To follow along, you can copy the contents of this file into the `src/main.rs` file of your template.
 
 ```rust,ignore
+use std::net::SocketAddr;
+
 use clap::{Parser, ValueEnum};
 use client::run_client;
 use hydroflow::tokio;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use server::run_server;
-use std::net::SocketAddr;
 
 mod client;
 mod protocol;
@@ -45,7 +55,7 @@ struct Opts {
     #[clap(value_enum, long)]
     role: Role,
     #[clap(long, value_parser = ipv4_resolve)]
-    client_addr: Option<SocketAddr>,
+    addr: Option<SocketAddr>,
     #[clap(long, value_parser = ipv4_resolve)]
     server_addr: Option<SocketAddr>,
     #[clap(value_enum, long)]
@@ -107,13 +117,12 @@ The chat server is nearly as simple as the echo server. The main differences are
 To follow along, replace the contents of `src/server.rs` with the code below:
 
 ```rust,ignore
-use crate::{GraphType, Opts};
+use hydroflow::hydroflow_syntax;
+use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
 
 use crate::protocol::Message;
-
-use hydroflow::hydroflow_syntax;
-use hydroflow::scheduled::graph::Hydroflow;
+use crate::{GraphType, Opts};
 
 pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts) {
     println!("Server live!");
@@ -122,6 +131,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
         // Define shared inbound and outbound channels
         outbound_chan = union() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound)
+            -> map(Result::unwrap)
             ->  demux(|(msg, addr), var_args!(clients, msgs, errs)|
                     match msg {
                         Message::ConnectRequest => clients.give(addr),
@@ -151,7 +161,7 @@ that the different output channels can have different-typed messages! Note also 
 The remainder of the server consists of two independent pipelines, the code to print out the flow graph,
 and the code to run the flow graph. To follow along, paste the following into the bottom of your `src/server.rs` file:
 ```rust,ignore
-       // Pipeline 1: Acknowledge client connections
+        // Pipeline 1: Acknowledge client connections
         clients[0] -> map(|addr| (Message::ConnectResponse, addr)) -> [0]outbound_chan;
 
         // Pipeline 2: Broadcast messages to all clients
@@ -160,7 +170,7 @@ and the code to run the flow graph. To follow along, paste the following into th
         clients[1] -> [1]broadcast;
     };
 
-    if let Some(graph) = graph {
+    if let Some(graph) = opts.graph {
         let serde_graph = df
             .meta_graph()
             .expect("No graph found, maybe failed to parse.");
@@ -196,38 +206,55 @@ The mermaid graph for the server is below. The three branches of the `demux` are
 for both `ClientResponse` and broadcasting, and the `union` of all outbound messages into `dest_sink_serde`.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'clusterBkg':'#ddd'}}}%%
+%%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD
-classDef pullClass fill:#02f,color:#fff,stroke:#000
-classDef pushClass fill:#ff0,stroke:#000
+classDef pullClass fill:#02f,color:#999,stroke:#000,text-align:left,white-space:pre
+classDef pushClass fill:#ff0,stroke:#000,text-align:left,white-space:pre
 linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
-subgraph "sg_1v1 stratum 0"
-    7v1[\"(7v1) <tt>map(| addr | (Message :: ConnectResponse, addr))</tt>"/]:::pullClass
-    8v1[\"(8v1) <tt>cross_join()</tt>"/]:::pullClass
-    1v1[\"(1v1) <tt>union()</tt>"/]:::pullClass
-    2v1[/"(2v1) <tt>dest_sink_serde(outbound)</tt>"\]:::pushClass
-    7v1--0--->1v1
-    8v1--1--->1v1
+subgraph sg_1v1 ["sg_1v1 stratum 0"]
+    8v1[\"(8v1) <code>map(|addr| (Message::ConnectResponse, addr))</code>"/]:::pullClass
+    9v1[\"(9v1) <code>cross_join()</code>"/]:::pullClass
+    1v1[\"(1v1) <code>union()</code>"/]:::pullClass
+    2v1[/"(2v1) <code>dest_sink_serde(outbound)</code>"\]:::pushClass
+    8v1--0--->1v1
+    9v1--1--->1v1
     1v1--->2v1
+    subgraph sg_1v1_var_broadcast ["var <tt>broadcast</tt>"]
+        9v1
+    end
+    subgraph sg_1v1_var_outbound_chan ["var <tt>outbound_chan</tt>"]
+        1v1
+        2v1
+    end
 end
-subgraph "sg_2v1 stratum 0"
-    3v1[\"(3v1) <tt>source_stream_serde(inbound)</tt>"/]:::pullClass
-    4v1[/"(4v1) <tt>demux(| (msg, addr), var_args! (clients, msgs, errs) | match msg<br>{<br>    Message :: ConnectRequest =&gt; clients.give(addr), Message :: ChatMsg { .. }<br>    =&gt; msgs.give(msg), _ =&gt; errs.give(msg),<br>})</tt>"\]:::pushClass
-    5v1[/"(5v1) <tt>tee()</tt>"\]:::pushClass
-    6v1[/"(6v1) <tt>for_each(| m | println! (&quot;Received unexpected message type: {:?}&quot;, m))</tt>"\]:::pushClass
+subgraph sg_2v1 ["sg_2v1 stratum 0"]
+    3v1[\"(3v1) <code>source_stream_serde(inbound)</code>"/]:::pullClass
+    4v1[\"(4v1) <code>map(Result::unwrap)</code>"/]:::pullClass
+    5v1[/"<div style=text-align:center>(5v1)</div> <code>demux(|(msg, addr), var_args!(clients, msgs, errs)| match msg {<br>    Message::ConnectRequest =&gt; clients.give(addr),<br>    Message::ChatMsg { .. } =&gt; msgs.give(msg),<br>    _ =&gt; errs.give(msg),<br>})</code>"\]:::pushClass
+    6v1[/"(6v1) <code>tee()</code>"\]:::pushClass
+    7v1[/"(7v1) <code>for_each(|m| println!(&quot;Received unexpected message type: {:?}&quot;, m))</code>"\]:::pushClass
     3v1--->4v1
-    4v1--clients--->5v1
-    4v1--errs--->6v1
+    4v1--->5v1
+    5v1--clients--->6v1
+    5v1--errs--->7v1
+    subgraph sg_2v1_var_clients ["var <tt>clients</tt>"]
+        6v1
+    end
+    subgraph sg_2v1_var_inbound_chan ["var <tt>inbound_chan</tt>"]
+        3v1
+        4v1
+        5v1
+    end
 end
-4v1--msgs--->10v1
-5v1--0--->9v1
-5v1--1--->11v1
-9v1["(9v1) <tt>handoff</tt>"]:::otherClass
-9v1--->7v1
-10v1["(10v1) <tt>handoff</tt>"]:::otherClass
-10v1--0--->8v1
-11v1["(11v1) <tt>handoff</tt>"]:::otherClass
-11v1--1--->8v1
+5v1--msgs--->11v1
+6v1--0--->10v1
+6v1--1--->12v1
+10v1["(10v1) <code>handoff</code>"]:::otherClass
+10v1--->8v1
+11v1["(11v1) <code>handoff</code>"]:::otherClass
+11v1--0--->9v1
+12v1["(12v1) <code>handoff</code>"]:::otherClass
+12v1--1--->9v1
 ```
 
 ## client.rs
@@ -238,19 +265,18 @@ as a "bootstrap" in the first tick
 
 We also include a Rust helper routine `pretty_print_msg` for formatting output.
 
-The prelude of the file is almost the same as the echo server client, with the addition of a crate for 
+The prelude of the file is almost the same as the echo server client, with the addition of the crate for 
 handling `colored` text output. This is followed by the `pretty_print_msg` function, which is fairly self-explanatory. 
 To follow along, start by replacing the contents of `src/client.rs` with the following:
 
 ```rust,ignore
-use crate::protocol::Message;
-use crate::{GraphType, Opts};
 use chrono::prelude::*;
+use colored::Colorize;
 use hydroflow::hydroflow_syntax;
 use hydroflow::util::{UdpSink, UdpStream};
 
-use chrono::Utc;
-use colored::Colorize;
+use crate::protocol::Message;
+use crate::{GraphType, Opts};
 
 fn pretty_print_msg(msg: Message) {
     if let Message::ChatMsg {
@@ -287,7 +313,7 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
     let mut hf = hydroflow_syntax! {
         // set up channels
         outbound_chan = union() -> dest_sink_serde(outbound);
-        inbound_chan = source_stream_serde(inbound) -> map(|(m, _)| m)
+        inbound_chan = source_stream_serde(inbound) -> map(Result::unwrap) -> map(|(m, _)| m)
             ->  demux(|m, var_args!(acks, msgs, errs)|
                     match m {
                         Message::ConnectResponse => acks.give(m),
@@ -318,6 +344,9 @@ bottom of your `src/client.rs` file.
         // receive and print messages
         inbound_chan[msgs] -> for_each(pretty_print_msg);
     };
+
+    hf.run_async().await.unwrap();
+}
 ```
 
 1. The first pipeline is the "bootstrap" alluded to above.
@@ -360,52 +389,72 @@ Finish up the file by pasting the code below for optionally generating the graph
 The client's mermaid graph looks a bit different than the server's, mostly because it routes some data to
 the screen rather than to an outbound network channel.
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'clusterBkg':'#ddd'}}}%%
+%%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD
-classDef pullClass fill:#02f,color:#fff,stroke:#000
-classDef pushClass fill:#ff0,stroke:#000
+classDef pullClass fill:#02f,color:#999,stroke:#000,text-align:left,white-space:pre
+classDef pushClass fill:#ff0,stroke:#000,text-align:left,white-space:pre
 linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
-subgraph "sg_1v1 stratum 0"
-    7v1[\"(7v1) <tt>source_iter([()])</tt>"/]:::pullClass
-    8v1[\"(8v1) <tt>map(| _m | (Message :: ConnectRequest, server_addr))</tt>"/]:::pullClass
-    11v1[\"(11v1) <tt>source_stdin()</tt>"/]:::pullClass
-    12v1[\"(12v1) <tt>map(| l | Message :: ChatMsg<br>{ nickname : opts.name.clone(), message : l.unwrap(), ts : Utc :: now() })</tt>"/]:::pullClass
-    9v1[\"(9v1) <tt>cross_join()</tt>"/]:::pullClass
-    10v1[\"(10v1) <tt>map(| (msg, _) | (msg, server_addr))</tt>"/]:::pullClass
-    1v1[\"(1v1) <tt>union()</tt>"/]:::pullClass
-    2v1[/"(2v1) <tt>dest_sink_serde(outbound)</tt>"\]:::pushClass
-    7v1--->8v1
-    8v1--0--->1v1
-    11v1--->12v1
-    12v1--0--->9v1
-    9v1--->10v1
-    10v1--1--->1v1
+subgraph sg_1v1 ["sg_1v1 stratum 0"]
+    8v1[\"(8v1) <code>source_iter([()])</code>"/]:::pullClass
+    9v1[\"(9v1) <code>map(|_m| (Message::ConnectRequest, server_addr))</code>"/]:::pullClass
+    12v1[\"(12v1) <code>source_stdin()</code>"/]:::pullClass
+    13v1[\"<div style=text-align:center>(13v1)</div> <code>map(|l| Message::ChatMsg {<br>    nickname: opts.name.clone(),<br>    message: l.unwrap(),<br>    ts: Utc::now(),<br>})</code>"/]:::pullClass
+    10v1[\"(10v1) <code>cross_join()</code>"/]:::pullClass
+    11v1[\"(11v1) <code>map(|(msg, _)| (msg, server_addr))</code>"/]:::pullClass
+    1v1[\"(1v1) <code>union()</code>"/]:::pullClass
+    2v1[/"(2v1) <code>dest_sink_serde(outbound)</code>"\]:::pushClass
+    8v1--->9v1
+    9v1--0--->1v1
+    12v1--->13v1
+    13v1--0--->10v1
+    10v1--->11v1
+    11v1--1--->1v1
     1v1--->2v1
+    subgraph sg_1v1_var_lines ["var <tt>lines</tt>"]
+        12v1
+        13v1
+    end
+    subgraph sg_1v1_var_msg_send ["var <tt>msg_send</tt>"]
+        10v1
+        11v1
+    end
+    subgraph sg_1v1_var_outbound_chan ["var <tt>outbound_chan</tt>"]
+        1v1
+        2v1
+    end
 end
-subgraph "sg_2v1 stratum 0"
-    3v1[\"(3v1) <tt>source_stream_serde(inbound)</tt>"/]:::pullClass
-    4v1[/"(4v1) <tt>map(| (m, _) | m)</tt>"\]:::pushClass
-    5v1[/"(5v1) <tt>demux(| m, var_args! (acks, msgs, errs) | match m<br>{<br>    Message :: ConnectResponse =&gt; acks.give(m), Message :: ChatMsg { .. } =&gt;<br>    msgs.give(m), _ =&gt; errs.give(m),<br>})</tt>"\]:::pushClass
-    6v1[/"(6v1) <tt>for_each(| m | println! (&quot;Received unexpected message type: {:?}&quot;, m))</tt>"\]:::pushClass
-    13v1[/"(13v1) <tt>for_each(pretty_print_msg)</tt>"\]:::pushClass
+subgraph sg_2v1 ["sg_2v1 stratum 0"]
+    3v1[\"(3v1) <code>source_stream_serde(inbound)</code>"/]:::pullClass
+    4v1[\"(4v1) <code>map(Result::unwrap)</code>"/]:::pullClass
+    5v1[\"(5v1) <code>map(|(m, _)| m)</code>"/]:::pullClass
+    6v1[/"<div style=text-align:center>(6v1)</div> <code>demux(|m, var_args!(acks, msgs, errs)| match m {<br>    Message::ConnectResponse =&gt; acks.give(m),<br>    Message::ChatMsg { .. } =&gt; msgs.give(m),<br>    _ =&gt; errs.give(m),<br>})</code>"\]:::pushClass
+    7v1[/"(7v1) <code>for_each(|m| println!(&quot;Received unexpected message type: {:?}&quot;, m))</code>"\]:::pushClass
+    14v1[/"(14v1) <code>for_each(pretty_print_msg)</code>"\]:::pushClass
     3v1--->4v1
     4v1--->5v1
-    5v1--errs--->6v1
-    5v1--msgs--->13v1
+    5v1--->6v1
+    6v1--errs--->7v1
+    6v1--msgs--->14v1
+    subgraph sg_2v1_var_inbound_chan ["var <tt>inbound_chan</tt>"]
+        3v1
+        4v1
+        5v1
+        6v1
+    end
 end
-5v1--acks--->14v1
-14v1["(14v1) <tt>handoff</tt>"]:::otherClass
-14v1--1--->9v1
+6v1--acks--->15v1
+15v1["(15v1) <code>handoff</code>"]:::otherClass
+15v1--1--->10v1
 ```
 
 ## Running the example
 As described in `hydroflow/hydroflow/example/chat/README.md`, we can run the server in one terminal, and run clients in additional terminals.
-The client and server need to agree on `server-addr` or this won't work!
+The server's `addr` and the client's `server-addr` need to agree or this won't work!
 
 Fire up the server in terminal 1:
 ```console
 #shell-command-next-line
-cargo run -p hydroflow --example chat -- --name "_" --role server --server-addr 127.0.0.1:12347
+cargo run -- --name "_" --role server --addr 127.0.0.1:12347
 ```
 
 Start client "alice" in terminal 2 and type some messages, and you'll see them 
@@ -413,16 +462,15 @@ echoed back to you. This will appear in colored fonts in most terminals
 (but unfortunately not in this markdown-based book!)
 ```console
 #shell-command-next-line
-cargo run -p hydroflow --example chat -- --name "alice" --role client --server-addr 127.0.0.1:12347
-Listening on 127.0.0.1:50617
-Connecting to server at 127.0.0.1:12347
+cargo run -- --name "alice" --role client --server-addr 127.0.0.1:12347
+Listening on 127.0.0.1:50460
 Client live!
 Hello (hello hello) ... is there anybody in here?
-Dec 13, 12:04:34 alice: Hello (hello hello) ... is there anybody in here?
+May 31, 5:12:23 alice: Hello (hello hello) ... is there anybody in here?
 Just nod if you can hear me.
-Dec 13, 12:04:58 alice: Just nod if you can hear me.
+May 31, 5:12:36 alice: Just nod if you can hear me.
 Is there anyone home?
-Dec 13, 12:05:01 alice: Is there anyone home?
+May 31, 5:12:40 alice: Is there anyone home?
 ```
 
 Now start client "bob" in terminal 3, and notice how he instantly receives the backlog of Alice's messages from the server's `cross_join`. 
@@ -430,20 +478,19 @@ Now start client "bob" in terminal 3, and notice how he instantly receives the b
 is the udp network. Fixing these issues requires extra client logic that we leave as an exercise to the reader.)
 ```console
 #shell-command-next-line
-cargo run -p hydroflow --example chat -- --name "bob" --role client --server-addr 127.0.0.1:12347
-Listening on 127.0.0.1:63018
-Connecting to server at 127.0.0.1:12347
+cargo run -- --name "bob" --role client --server-addr 127.0.0.1:12347
+Listening on 127.0.0.1:49298
 Client live!
-Dec 13, 12:05:01 alice: Is there anyone home?
-Dec 13, 12:04:58 alice: Just nod if you can hear me.
-Dec 13, 12:04:34 alice: Hello (hello hello) ... is there anybody in here?
+May 31, 5:12:23 alice: Hello (hello hello) ... is there anybody in here?
+May 31, 5:12:36 alice: Just nod if you can hear me.
+May 31, 5:12:40 alice: Is there anyone home?
 ```
 Now in terminal 3, Bob can respond:
 ```console
 *nods*
-Dec 13, 12:05:05 bob: *nods*
+May 31, 5:13:43 bob: *nods*
 ```
 and if we go back to terminal 2 we can see that Alice gets the message too:
 ```console
-Dec 13, 12:05:05 bob: *nods*
+May 31, 5:13:43 bob: *nods*
 ```
