@@ -1,4 +1,4 @@
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 
 use std::collections::BTreeSet;
 use std::fmt::Debug;
