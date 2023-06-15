@@ -4,8 +4,8 @@ expression: hf.meta_graph().unwrap().to_mermaid()
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD
-classDef pullClass fill:#02f,color:#fff,stroke:#000,text-align:left,white-space:pre
-classDef pushClass fill:#ff0,stroke:#000,text-align:left,white-space:pre
+classDef pullClass fill:#8af,stroke:#000,text-align:left,white-space:pre
+classDef pushClass fill:#ff8,stroke:#000,text-align:left,white-space:pre
 linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
     1v1[\"(1v1) <code>source_stream(persist_input)</code>"/]:::pullClass
