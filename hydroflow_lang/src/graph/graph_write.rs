@@ -76,11 +76,11 @@ where
         writeln!(self.write, "flowchart TD")?;
         writeln!(
             self.write,
-            "classDef pullClass fill:#02f,color:#fff,stroke:#000,text-align:left,white-space:pre"
+            "classDef pullClass fill:#8af,stroke:#000,text-align:left,white-space:pre"
         )?;
         writeln!(
             self.write,
-            "classDef pushClass fill:#ff0,stroke:#000,text-align:left,white-space:pre"
+            "classDef pushClass fill:#ff8,stroke:#000,text-align:left,white-space:pre"
         )?;
 
         writeln!(
