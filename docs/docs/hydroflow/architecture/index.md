@@ -3,11 +3,11 @@
 Hydroflow graphs are divided into two layers: the outer _scheduled layer_ and
 inner _compiled layer_.
 
-In the mermaid diagrams generated for Hydroflow, the scheduler is responsible for the outermost gray boxes 
+In the mermaid diagrams generated for Hydroflow, the scheduler is responsible for the outermost gray boxes
 (the *subgraphs*)
 and handoffs, while the insides of the gray boxes are compiled via the compiled layer. As a reminder,
 here is the graph from the
-[reachability](../quickstart/example_5_reachability.md) chapter, which we will use a running example:
+[reachability](../quickstart/example_5_reachability) chapter, which we will use a running example:
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'clusterBkg':'#ddd'}}}%%
@@ -100,14 +100,14 @@ We refer to this structure as an _in-out tree_.
 
 In the reachability example above, the pivot is the `flat_map()` operator: it pulls from the join that feeds it, and pushes to the tee that follows it. In essence that `flat_map()` serves as the main thread of the compiled component.
 
-See [Subgraph In-Out Trees](./in-out_trees.md) for more, including how to
+See [Subgraph In-Out Trees](./in-out_trees) for more, including how to
 convert a graph into in-out trees.
 
 ## Surface Syntax and APIs
 
 Hydroflow's _Surface Syntax_ hides
-the distinction between these two layers. It offers a natural `Iterator`-like chaining syntax for building 
-graphs that get parsed and compiled into a scheduled graph of one or more compiled subgraphs. Please see the [Surface Syntax](../syntax/index.md) docs for more information.
+the distinction between these two layers. It offers a natural `Iterator`-like chaining syntax for building
+graphs that get parsed and compiled into a scheduled graph of one or more compiled subgraphs. Please see the [Surface Syntax](../syntax/index) docs for more information.
 
 Alternatively, the _Core API_ allows you to interact with handoffs directly at a low
 level. It doesn't provide any notion of chainable operators. You can use Rust `Iterator`s
