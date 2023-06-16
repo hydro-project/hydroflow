@@ -182,7 +182,8 @@ pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
 
                         let #ident = #hashtable_ident
                             .iter()
-                            .map(#[allow(suspicious_double_ref_op, clippy::clone_on_copy)] |(k, v)| (k.clone(), v.clone()));
+                            // TODO(mingwei): remove `unknown_lints` when `suspicious_double_ref_op` is stabilized.
+                            .map(#[allow(unknown_lints, suspicious_double_ref_op, clippy::clone_on_copy)] |(k, v)| (k.clone(), v.clone()));
                     },
                     quote_spanned! {op_span=>
                         #context.schedule_subgraph(#context.current_subgraph(), false);
