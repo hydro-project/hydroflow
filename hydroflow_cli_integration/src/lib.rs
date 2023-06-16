@@ -1,5 +1,3 @@
-#![feature(never_type)]
-
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::net::SocketAddr;
@@ -25,11 +23,11 @@ use tokio_util::codec::{Framed, LengthDelimitedCodec};
 
 #[cfg(not(unix))]
 #[allow(dead_code)]
-type UnixStream = !;
+type UnixStream = ();
 
 #[cfg(not(unix))]
 #[allow(dead_code)]
-type UnixListener = !;
+type UnixListener = ();
 
 /// Describes how to connect to a service which is listening on some port.
 #[allow(unreachable_code)]
