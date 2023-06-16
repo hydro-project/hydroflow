@@ -6,8 +6,6 @@
 //! - Any closures `Func` should come before their arguments, so:
 //!   `<Func: Fn(A) -> B, A, B>`
 
-#![feature(never_type)]
-
 #[cfg(feature = "demux")]
 pub mod demux;
 pub mod filter;
