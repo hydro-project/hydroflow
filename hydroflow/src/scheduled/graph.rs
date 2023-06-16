@@ -20,6 +20,7 @@ use super::reactor::Reactor;
 use super::state::StateHandle;
 use super::subgraph::Subgraph;
 use super::{HandoffId, SubgraphId};
+use crate::Never;
 
 /// A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
 pub struct Hydroflow {
@@ -328,7 +329,7 @@ impl Hydroflow {
     ///
     /// TODO(mingwei): Currently blockes forever, no notion of "completion."
     #[tracing::instrument(level = "trace", skip(self), ret)]
-    pub fn run(&mut self) -> Option<!> {
+    pub fn run(&mut self) -> Option<Never> {
         loop {
             self.run_tick();
         }
@@ -338,7 +339,7 @@ impl Hydroflow {
     ///
     /// TODO(mingwei): Currently blockes forever, no notion of "completion."
     #[tracing::instrument(level = "trace", skip(self), ret)]
-    pub async fn run_async(&mut self) -> Option<!> {
+    pub async fn run_async(&mut self) -> Option<Never> {
         loop {
             // Run any work which is immediately available.
             self.run_available_async().await;

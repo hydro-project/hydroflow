@@ -1,4 +1,7 @@
-#![feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)]
+#![cfg_attr(
+    nightly,
+    feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)
+)]
 #![allow(clippy::explicit_auto_deref)]
 
 use hydroflow_lang::diagnostic::{Diagnostic, Level};
