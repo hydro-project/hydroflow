@@ -1,4 +1,4 @@
-#![feature(never_type)]
+#![cfg_attr(nightly, feature(never_type))]
 #![allow(type_alias_bounds)]
 #![allow(clippy::let_and_return)]
 #![allow(clippy::iter_with_drain)]
@@ -43,6 +43,13 @@ pub use hydroflow_macro::{
     hydroflow_main as main, hydroflow_parser, hydroflow_syntax, hydroflow_syntax_noemit,
     hydroflow_test as test,
 };
+
+#[cfg(not(nightly))]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+/// Stand-in for the [nightly "never" type `!`](https://doc.rust-lang.org/std/primitive.never.html)
+pub enum Never {}
+#[cfg(nightly)]
+pub type Never = !;
 
 #[cfg(doctest)]
 mod booktest {

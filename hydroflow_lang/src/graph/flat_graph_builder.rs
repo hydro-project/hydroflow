@@ -438,13 +438,14 @@ impl FlatGraphBuilder {
                                             "Unexpected {} port: {}. Expected one of: `{}`",
                                             input_output,
                                             actual_port_iv.as_error_message_string(),
-                                            expected_ports
-                                                .iter()
-                                                .map(|port| Cow::Owned(
-                                                    port.to_token_stream().to_string()
-                                                ))
-                                                .intersperse(Cow::Borrowed("`, `"))
-                                                .collect::<String>()
+                                            itertools::Itertools::intersperse(
+                                                expected_ports
+                                                    .iter()
+                                                    .map(|port| Cow::Owned(
+                                                        port.to_token_stream().to_string()
+                                                    )),
+                                                Cow::Borrowed("`, `")
+                                            ).collect::<String>()
                                         ),
                                     ))
                                 }
@@ -470,11 +471,13 @@ impl FlatGraphBuilder {
                                 format!(
                                     "Missing expected {} port(s): `{}`.",
                                     input_output,
-                                    missing
-                                        .into_iter()
-                                        .map(|port| Cow::Owned(port.to_token_stream().to_string()))
-                                        .intersperse(Cow::Borrowed("`, `"))
-                                        .collect::<String>()
+                                    itertools::Itertools::intersperse(
+                                        missing.into_iter().map(|port| Cow::Owned(
+                                            port.to_token_stream().to_string()
+                                        )),
+                                        Cow::Borrowed("`, `")
+                                    )
+                                    .collect::<String>()
                                 ),
                             ));
                         }
