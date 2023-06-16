@@ -10,7 +10,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// Stores each item as it passes through, and replays all item every tick.
 ///
 /// ```hydroflow
-/// // Normally `source_iter(...)` only emits once, but with `persist()` will replay the `"hello"`
+/// // Normally `source_iter(...)` only emits once, but `persist()` will replay the `"hello"`
 /// // on every tick.
 /// source_iter(["hello"])
 ///     -> persist()

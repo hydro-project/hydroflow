@@ -5,6 +5,7 @@ use super::{
     FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     Persistence, WriteContextArgs, RANGE_1,
 };
+use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
@@ -102,7 +103,7 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
                        },
                    ..
                },
-               _| {
+               diagnostics| {
         let lhs_type = type_args
             .get(0)
             .map(ToTokens::to_token_stream)
@@ -113,7 +114,7 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
             .map(ToTokens::to_token_stream)
             .unwrap_or(quote_spanned!(op_span=> _));
 
-        let make_joindata = |persistence, side| {
+        let mut make_joindata = |persistence, side| {
             let joindata_ident = wc.make_ident(format!("joindata_{}", side));
             let borrow_ident = wc.make_ident(format!("joindata_{}_borrow", side));
             let (init, borrow) = match persistence {
@@ -135,8 +136,16 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
                         &mut #borrow_ident
                     },
                 ),
+                Persistence::Mutable => {
+                    diagnostics.push(Diagnostic::spanned(
+                        op_span,
+                        Level::Error,
+                        "An implementation of 'mut does not exist",
+                    ));
+                    return Err(());
+                }
             };
-            (joindata_ident, borrow_ident, init, borrow)
+            Ok((joindata_ident, borrow_ident, init, borrow))
         };
 
         let persistences = match persistence_args[..] {
@@ -147,9 +156,9 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
         };
 
         let (lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow) =
-            make_joindata(persistences[0], "lhs");
+            make_joindata(persistences[0], "lhs")?;
         let (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow) =
-            make_joindata(persistences[1], "rhs");
+            make_joindata(persistences[1], "rhs")?;
 
         let join_keys_ident = wc.make_ident("joinkeys");
         let join_keys_borrow_ident = wc.make_ident("joinkeys_borrow");
