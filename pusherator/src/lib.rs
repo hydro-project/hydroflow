@@ -7,7 +7,6 @@
 //!   `<Func: Fn(A) -> B, A, B>`
 
 #![feature(never_type)]
-#![feature(type_alias_impl_trait)]
 
 #[cfg(feature = "demux")]
 pub mod demux;
