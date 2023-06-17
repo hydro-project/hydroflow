@@ -52,27 +52,6 @@
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
 <a href="#54" id="54">54</a>
-<a href="#55" id="55">55</a>
-<a href="#56" id="56">56</a>
-<a href="#57" id="57">57</a>
-<a href="#58" id="58">58</a>
-<a href="#59" id="59">59</a>
-<a href="#60" id="60">60</a>
-<a href="#61" id="61">61</a>
-<a href="#62" id="62">62</a>
-<a href="#63" id="63">63</a>
-<a href="#64" id="64">64</a>
-<a href="#65" id="65">65</a>
-<a href="#66" id="66">66</a>
-<a href="#67" id="67">67</a>
-<a href="#68" id="68">68</a>
-<a href="#69" id="69">69</a>
-<a href="#70" id="70">70</a>
-<a href="#71" id="71">71</a>
-<a href="#72" id="72">72</a>
-<a href="#73" id="73">73</a>
-<a href="#74" id="74">74</a>
-<a href="#75" id="75">75</a>
 </pre></div><pre class="rust"><code><span class="attr">#![feature(never_type)]
 #![feature(type_alias_impl_trait)]
 #![feature(impl_trait_in_assoc_type)]
@@ -123,27 +102,6 @@
 
 <span class="attr">#[cfg(doctest)]
 </span><span class="kw">mod </span>booktest {
-    <span class="macro">macro_rules! </span>booktest {
-        (<span class="macro-nonterminal">$path</span>:literal, <span class="macro-nonterminal">$i</span>:ident) =&gt; {
-            <span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="macro">concat!</span>(<span class="string">&quot;../../docs/docs/hydroflow/&quot;</span>, <span class="macro-nonterminal">$path</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$i</span>), <span class="string">&quot;.md&quot;</span>))]
-            </span><span class="kw">mod </span><span class="macro-nonterminal">$i </span>{}
-        };
-    }
-
-    <span class="macro">booktest!</span>(<span class="string">&quot;quickstart/&quot;</span>, example_1_simplest);
-    <span class="macro">booktest!</span>(<span class="string">&quot;quickstart/&quot;</span>, example_2_simple);
-    <span class="macro">booktest!</span>(<span class="string">&quot;quickstart/&quot;</span>, example_3_stream);
-    <span class="macro">booktest!</span>(<span class="string">&quot;quickstart/&quot;</span>, example_4_neighbors);
-    <span class="macro">booktest!</span>(<span class="string">&quot;quickstart/&quot;</span>, example_5_reachability);
-    <span class="macro">booktest!</span>(<span class="string">&quot;quickstart/&quot;</span>, example_6_unreachability);
-    <span class="macro">booktest!</span>(<span class="string">&quot;quickstart/&quot;</span>, example_7_echo_server);
-    <span class="macro">booktest!</span>(<span class="string">&quot;quickstart/&quot;</span>, example_8_chat_server);
-
-    <span class="macro">booktest!</span>(<span class="string">&quot;syntax/&quot;</span>, index);
-    <span class="macro">booktest!</span>(<span class="string">&quot;syntax/&quot;</span>, surface_embedding);
-    <span class="macro">booktest!</span>(<span class="string">&quot;syntax/&quot;</span>, surface_flows);
-    <span class="macro">booktest!</span>(<span class="string">&quot;syntax/&quot;</span>, surface_data);
-
     <span class="kw">mod </span>surface_ops {
         <span class="macro">hydroflow_macro::surface_booktest_operators!</span>();
     }
