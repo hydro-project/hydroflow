@@ -807,3 +807,32 @@ pub fn test_covid_tracing() {
         hydroflow.run_available();
     }
 }
+
+#[multiplatform_test]
+pub fn test_assert() {
+    let mut df = hydroflow_syntax! {
+        source_iter([1, 2, 3]) -> assert([1, 2, 3]) -> assert([1, 2, 3]); // one in pull, one in push
+        source_iter([1, 2, 3]) -> assert([1, 2, 3]) -> assert(vec![1, 2, 3]);
+        source_iter([1, 2, 3]) -> assert(vec![1, 2, 3]) -> assert([1, 2, 3]);
+        source_iter(vec![1, 2, 3]) -> assert([1, 2, 3]) -> assert([1, 2, 3]);
+    };
+    df.run_available();
+
+    assert!(std::panic::catch_unwind(|| {
+        let mut df = hydroflow_syntax! {
+            source_iter([0]) -> assert([1]);
+        };
+
+        df.run_available();
+    })
+    .is_err());
+
+    assert!(std::panic::catch_unwind(|| {
+        let mut df = hydroflow_syntax! {
+            source_iter([0]) -> assert([1]) -> null();
+        };
+
+        df.run_available();
+    })
+    .is_err());
+}

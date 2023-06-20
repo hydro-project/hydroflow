@@ -50,21 +50,16 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// ### Examples
 ///
 /// ```rustbook
+/// use hydroflow::lattices::Min;
 /// use hydroflow::lattices::Max;
 ///
-/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(usize, Max<usize>)>();
-/// let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (Max<usize>, Max<usize>))>();
-///
 /// let mut df = hydroflow::hydroflow_syntax! {
-///     my_join = lattice_join::<'tick, Max<usize>, Max<usize>>();
-///     source_iter([(7, Max::new(2)), (7, Max::new(1))]) -> [0]my_join;
-///     source_stream(input_recv) -> [1]my_join;
-///     my_join -> for_each(|v| out_tx.send(v).unwrap());
+///     my_join = lattice_join::<'tick, Min<usize>, Max<usize>>();
+///     source_iter([(7, Min::new(1)), (7, Min::new(2))]) -> [0]my_join;
+///     source_iter([(7, Max::new(1)), (7, Max::new(2))]) -> [1]my_join;
+///     my_join -> assert([(7, (Min::new(1), Max::new(2)))]);
 /// };
-/// input_send.send((7, Max::new(5))).unwrap();
-/// df.run_tick();
-/// let out: Vec<_> = hydroflow::util::collect_ready(&mut out_rx);
-/// assert_eq!(out, vec![(7, (Max::new(2), Max::new(5)))]);
+/// df.run_available();
 /// ```
 pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
     name: "lattice_join",

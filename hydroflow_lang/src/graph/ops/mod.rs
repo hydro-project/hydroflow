@@ -229,6 +229,7 @@ macro_rules! declare_ops {
 }
 declare_ops![
     anti_join::ANTI_JOIN,
+    assert::ASSERT,
     batch::BATCH,
     cross_join::CROSS_JOIN,
     demux::DEMUX,
