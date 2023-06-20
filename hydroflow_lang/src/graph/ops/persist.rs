@@ -2,10 +2,8 @@ use quote::quote_spanned;
 
 use super::{
     FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    Persistence, WriteContextArgs, RANGE_0, RANGE_1,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// Stores each item as it passes through, and replays all item every tick.
 ///
@@ -44,7 +42,7 @@ pub const PERSIST: OperatorConstraints = OperatorConstraints {
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: 0,
-    persistence_args: &(0..=1),
+    persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
     ports_inn: None,
@@ -64,27 +62,9 @@ pub const PERSIST: OperatorConstraints = OperatorConstraints {
                    inputs,
                    outputs,
                    is_pull,
-                   op_name,
-                   op_inst:
-                       OperatorInstance {
-                           generics:
-                               OpInstGenerics {
-                                   persistence_args, ..
-                               },
-                           ..
-                       },
                    ..
                },
-               diagnostics| {
-        if matches!(persistence_args[..], [Persistence::Tick]) {
-            diagnostics.push(Diagnostic::spanned(
-                op_span,
-                Level::Error,
-                format!("`{}()` can only have `'static` persistence.", op_name),
-            ));
-            return Err(());
-        };
-
+               _| {
         let persistdata_ident = wc.make_ident("persistdata");
         let vec_ident = wc.make_ident("persistvec");
         let tick_ident = wc.make_ident("persisttick");

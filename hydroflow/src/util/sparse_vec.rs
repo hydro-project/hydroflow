@@ -1,36 +1,37 @@
 //! A vector that supports efficient deletion without reordering all subsequent items.
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::iter::FusedIterator;
 
 #[derive(Default)]
 /// A vector that supports efficient deletion without reordering all subsequent items.
 pub struct SparseVec<T> {
-    vec: Vec<Option<T>>,
-    hash_map: HashMap<T, Vec<usize>>,
+    items: Vec<Option<T>>,
+    item_locs: HashMap<T, Vec<usize>>,
 }
 
 impl<T: Clone + Eq + Hash> SparseVec<T> {
     /// Insert item into the vector, see `https://doc.rust-lang.org/std/vec/struct.Vec.html#method.push`
     pub fn push(&mut self, item: T) {
-        self.vec.push(Some(item.clone()));
-        self.hash_map
+        self.items.push(Some(item.clone()));
+        self.item_locs
             .entry(item)
             .or_insert(Vec::with_capacity(1))
-            .push(self.vec.len() - 1);
+            .push(self.items.len() - 1);
     }
 
-    /// Delete all items of a specific value from this vector. This takes time proportional to the amount of items of that value in the vector, not the total size of th vector.
+    /// Delete all items of a specific value from this vector. This takes time proportional to the amount of items with that value in the vector, not the total size of the vector.
     pub fn delete(&mut self, item: &T) {
-        if let Some(indices) = self.hash_map.get(item) {
+        if let Some(indices) = self.item_locs.get(item) {
             for index in indices {
-                self.vec[*index] = None;
+                self.items[*index] = None;
             }
         }
     }
 
     /// Iterate through all items in the vector in order. Deleted items will not appear in the iteration.
-    pub fn iter(&self) -> impl Iterator<Item = &T> {
-        self.vec.iter().filter_map(|x| x.as_ref())
+    pub fn iter(&self) -> impl Iterator<Item = &T> + FusedIterator + DoubleEndedIterator + Clone {
+        self.items.iter().filter_map(|x| x.as_ref())
     }
 }
 

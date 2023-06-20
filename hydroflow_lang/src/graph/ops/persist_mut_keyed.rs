@@ -2,10 +2,8 @@ use quote::quote_spanned;
 
 use super::{
     DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// `persist_mut_keyed()` is similar to `persist_mut()` except that it also enables key-based deletions
 /// `persist_mut()` expects an input of type `PersistenceKeyed<T>`, and it is this enumeration that enables the user to communicate deletion.
@@ -24,7 +22,7 @@ pub const PERSIST_MUT_KEYED: OperatorConstraints = OperatorConstraints {
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: 0,
-    persistence_args: &(0..=1),
+    persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
     ports_inn: None,
@@ -43,28 +41,10 @@ pub const PERSIST_MUT_KEYED: OperatorConstraints = OperatorConstraints {
                    ident,
                    inputs,
                    is_pull,
-                   op_name,
-                   op_inst:
-                       OperatorInstance {
-                           generics:
-                               OpInstGenerics {
-                                   persistence_args, ..
-                               },
-                           ..
-                       },
                    ..
                },
-               diagnostics| {
+               _| {
         assert!(is_pull);
-
-        if matches!(persistence_args[..], [Persistence::Tick]) {
-            diagnostics.push(Diagnostic::spanned(
-                op_span,
-                Level::Error,
-                format!("`{}()` can only have `'static` persistence.", op_name),
-            ));
-            return Err(());
-        };
 
         let persistdata_ident = wc.make_ident("persistdata");
         let vec_ident = wc.make_ident("persistvec");
