@@ -170,7 +170,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                     diagnostics.push(Diagnostic::spanned(
                         op_span,
                         Level::Error,
-                        "An implementation of 'mut does not exist",
+                        "An implementation of 'mutable does not exist",
                     ));
                     return Err(());
                 }

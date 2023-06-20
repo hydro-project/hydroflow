@@ -149,12 +149,12 @@ pub fn get_operator_generics(
                 match &*lifetime.ident.to_string() {
                     "static" => Some(Persistence::Static),
                     "tick" => Some(Persistence::Tick),
-                    "mut" => Some(Persistence::Mutable),
+                    "mutable" => Some(Persistence::Mutable),
                     _ => {
                         diagnostics.push(Diagnostic::spanned(
                             generic_arg.span(),
                             Level::Error,
-                            format!("Unknown lifetime generic argument `'{}`, expected `'tick`, `'static`, or `'mut`.", lifetime.ident),
+                            format!("Unknown lifetime generic argument `'{}`, expected `'tick`, `'static`, or `'mutable`.", lifetime.ident),
                         ));
                         // TODO(mingwei): should really keep going and not short circuit?
                         None
