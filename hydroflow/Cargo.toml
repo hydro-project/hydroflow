@@ -8,8 +8,8 @@ documentation = "https://docs.rs/hydroflow/"
 description = "Hydro's low-level dataflow runtime and IR"
 
 [features]
-default = [ "async", "macros", "nightly" ]
-nightly = [ "hydroflow_macro", "hydroflow_macro/nightly" ]
+default = [ "async", "macros" , "nightly" ]
+nightly = [ "hydroflow_macro", "hydroflow_macro/diagnostics" ]
 async = [ "dep:futures" ]
 macros = [ "hydroflow_macro", "hydroflow_datalog" ]
 hydroflow_macro = [ "dep:hydroflow_macro" ]

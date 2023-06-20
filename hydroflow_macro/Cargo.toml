@@ -11,7 +11,7 @@ description = "Macro for using Hydroflow's Surface Syntax"
 proc-macro = true
 
 [features]
-nightly = [ "hydroflow_lang/diagnostics" ]
+diagnostics = [ "hydroflow_lang/diagnostics" ]
 
 [dependencies]
 # Note: If we ever compile this proc macro crate to WASM (e.g., if we are
