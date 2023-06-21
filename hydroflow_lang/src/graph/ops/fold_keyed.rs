@@ -183,6 +183,44 @@ pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
                     },
                 )
             }
+            Persistence::Mutable => {
+                let groupbydata_ident = wc.make_ident("groupbydata");
+                let hashtable_ident = wc.make_ident("hashtable");
+
+                (
+                    quote_spanned! {op_span=>
+                        let #groupbydata_ident = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashMap::<#( #generic_type_args ),*>::default()));
+                    },
+                    quote_spanned! {op_span=>
+                        let mut #hashtable_ident = #context.state_ref(#groupbydata_ident).borrow_mut();
+
+                        {
+                            #[inline(always)]
+                            fn check_input<Iter: ::std::iter::Iterator<Item = #root::util::PersistenceKeyed::<K, V>>, K: ::std::clone::Clone, V: ::std::clone::Clone>(iter: Iter)
+                                -> impl ::std::iter::Iterator<Item = #root::util::PersistenceKeyed::<K, V>> { iter }
+
+                            for item in check_input(#input) {
+                                match item {
+                                    Persist(k, v) => {
+                                        let entry = #hashtable_ident.entry(k).or_insert_with(#initfn);
+                                        #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, v);
+                                    },
+                                    Delete(k) => {
+                                        #hashtable_ident.remove(&k);
+                                    },
+                                }
+                            }
+                        }
+
+                        let #ident = #hashtable_ident
+                            .iter()
+                            .map(#[allow(suspicious_double_ref_op, clippy::clone_on_copy)] |(k, v)| (k.clone(), v.clone()));
+                    },
+                    quote_spanned! {op_span=>
+                        #context.schedule_subgraph(#context.current_subgraph(), false);
+                    },
+                )
+            }
         };
 
         Ok(OperatorWriteOutput {

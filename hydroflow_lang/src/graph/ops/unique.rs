@@ -4,6 +4,7 @@ use super::{
     FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
+use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// Takes one stream as input and filters out any duplicate occurrences. The output
@@ -81,7 +82,7 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
                        },
                    ..
                },
-               _| {
+               diagnostics| {
         let persistence = match persistence_args[..] {
             [] => Persistence::Static,
             [a] => a,
@@ -114,6 +115,14 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
                     let mut set = #context.state_ref(#uniquedata_ident).borrow_mut();
                 };
                 (write_prologue, get_set)
+            }
+            Persistence::Mutable => {
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    "An implementation of 'mutable does not exist",
+                ));
+                return Err(());
             }
         };
 
