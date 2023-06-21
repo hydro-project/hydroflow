@@ -5,6 +5,7 @@ use super::{
     OperatorConstraints, OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
+use crate::diagnostic::{Diagnostic, Level};
 
 /// > 1 input stream, 1 output stream
 ///
@@ -68,7 +69,7 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
                        },
                    ..
                },
-               _| {
+               diagnostics| {
         assert!(is_pull);
 
         let persistence = match persistence_args[..] {
@@ -114,6 +115,14 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
                     #context.schedule_subgraph(#context.current_subgraph(), false);
                 },
             ),
+            Persistence::Mutable => {
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    "An implementation of 'mutable does not exist",
+                ));
+                return Err(());
+            }
         };
 
         Ok(OperatorWriteOutput {

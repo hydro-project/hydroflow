@@ -114,6 +114,15 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
                         #negset_ident.extend(#input_neg);
                     },
                 ),
+
+                Persistence::Mutable => {
+                    diagnostics.push(Diagnostic::spanned(
+                        op_span,
+                        Level::Error,
+                        "An implementation of 'mutable does not exist",
+                    ));
+                    return Err(());
+                }
             };
 
             (
