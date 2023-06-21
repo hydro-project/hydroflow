@@ -15,7 +15,9 @@ use super::{
 /// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
 ///
 /// ```hydroflow
-/// source_iter([1, 2, 3, 4]) -> inspect(|&x| println!("{}", x)) -> null();
+/// source_iter([1, 2, 3, 4])
+///     -> inspect(|&x| println!("{}", x))
+///     -> assert([1, 2, 3, 4]);
 /// ```
 pub const INSPECT: OperatorConstraints = OperatorConstraints {
     name: "inspect",

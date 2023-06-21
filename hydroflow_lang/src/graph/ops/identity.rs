@@ -1,5 +1,6 @@
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0, RANGE_1, OperatorCategory,
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, IDENTITY_WRITE_FN,
+    RANGE_0, RANGE_1,
 };
 
 /// > 1 input stream of type T, 1 output stream of type T
@@ -9,7 +10,7 @@ use super::{
 /// ```hydroflow
 /// // should print "hello" and "world" on separate lines (in either order)
 /// source_iter(vec!["hello", "world"]) -> identity()
-///     -> for_each(|x| println!("{}", x));
+///     -> assert(["hello", "world"]);
 /// ```
 ///
 /// You can also supply a type parameter `identity::<MyType>()` to specify what items flow thru the
@@ -17,7 +18,9 @@ use super::{
 ///
 /// ```hydroflow
 /// // Use type parameter to ensure items are `i32`s.
-/// source_iter(0..10) -> identity::<i32>() -> for_each(|x| println!("{}", x));
+/// source_iter(0..10)
+///     -> identity::<i32>()
+///     -> assert([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
 /// ```
 pub const IDENTITY: OperatorConstraints = OperatorConstraints {
     name: "identity",

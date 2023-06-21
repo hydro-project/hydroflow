@@ -12,8 +12,9 @@ use super::{
 /// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
 ///
 /// ```hydroflow
-/// source_iter(vec!["1", "hello", "world", "2"]) -> filter_map(|s| s.parse().ok())
-///     -> for_each(|x: usize| println!("{}", x));
+/// source_iter(vec!["1", "hello", "world", "2"])
+///     -> filter_map(|s| s.parse::<usize>().ok())
+///     -> assert([1, 2]);
 /// ```
 pub const FILTER_MAP: OperatorConstraints = OperatorConstraints {
     name: "filter_map",

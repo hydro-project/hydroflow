@@ -1,7 +1,10 @@
 use quote::quote_spanned;
 use syn::parse_quote;
 
-use super::{FlowProperties, FlowPropertyVal, OperatorConstraints, WriteContextArgs, RANGE_1, OperatorCategory};
+use super::{
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, WriteContextArgs,
+    RANGE_1,
+};
 
 /// > 2 input streams of type S and T, 1 output stream of type (S, T)
 ///
@@ -12,7 +15,7 @@ use super::{FlowProperties, FlowPropertyVal, OperatorConstraints, WriteContextAr
 /// // should print all 4 pairs of emotion and animal
 /// source_iter(vec!["happy", "sad"]) -> [0]my_join;
 /// source_iter(vec!["dog", "cat"]) -> [1]my_join;
-/// my_join = cross_join() -> for_each(|(v1, v2)| println!("({}, {})", v1, v2));
+/// my_join = cross_join() -> assert([("happy", "dog"), ("sad", "dog"), ("happy", "cat"), ("sad", "cat")]);
 /// ```
 ///
 /// `cross_join` can also be provided with one or two generic lifetime persistence arguments

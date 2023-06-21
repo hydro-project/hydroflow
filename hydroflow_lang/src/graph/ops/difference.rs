@@ -18,7 +18,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance, PortIndexValue};
 /// // should print "elephant"
 /// source_iter(vec!["dog", "cat", "elephant"]) -> [pos]diff;
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
-/// diff = difference() -> for_each(|v| println!("{}", v));
+/// diff = difference() -> assert(["elephant"]);
 /// ```
 pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
     name: "difference",

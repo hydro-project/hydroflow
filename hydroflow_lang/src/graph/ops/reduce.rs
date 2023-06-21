@@ -18,13 +18,12 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
 ///
 /// ```hydroflow
-/// // should print 120 (i.e., 1*2*3*4*5)
 /// source_iter([1,2,3,4,5])
 ///     -> reduce(|mut accum, elem| {
 ///         accum *= elem;
 ///         accum
 ///     })
-///     -> for_each(|e| println!("{}", e));
+///     -> assert([120]);
 /// ```
 pub const REDUCE: OperatorConstraints = OperatorConstraints {
     name: "reduce",

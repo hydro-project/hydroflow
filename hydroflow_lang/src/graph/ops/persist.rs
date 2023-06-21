@@ -12,7 +12,7 @@ use super::{
 /// // on every tick.
 /// source_iter(["hello"])
 ///     -> persist()
-///     -> for_each(|item| println!("{}: {}", context.current_tick(), item));
+///     -> assert(["hello"]);
 /// ```
 ///
 /// `persist()` can be used to introduce statefulness into stateless pipelines. For example this

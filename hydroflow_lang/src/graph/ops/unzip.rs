@@ -13,8 +13,8 @@ use super::{
 ///
 /// ```hydroflow
 /// my_unzip = source_iter(vec![("Hello", "Foo"), ("World", "Bar")]) -> unzip();
-/// my_unzip[0] -> for_each(|x| println!("0: {}", x)); // Hello World
-/// my_unzip[1] -> for_each(|x| println!("1: {}", x)); // Foo Bar
+/// my_unzip[0] -> assert(["Hello", "World"]);
+/// my_unzip[1] -> assert(["Foo", "Bar"]);
 /// ```
 pub const UNZIP: OperatorConstraints = OperatorConstraints {
     name: "unzip",

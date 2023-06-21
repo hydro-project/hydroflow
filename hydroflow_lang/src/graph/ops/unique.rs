@@ -11,10 +11,9 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// contains all unique values from the input.
 ///
 /// ```hydroflow
-/// // should print 1, 2, 3 (in any order)
 /// source_iter(vec![1, 1, 2, 3, 2, 1, 3])
 ///     -> unique()
-///     -> for_each(|x| println!("{}", x));
+///     -> assert([1, 2, 3]);
 /// ```
 ///
 /// `unique` can also be provided with one generic lifetime persistence argument, either
