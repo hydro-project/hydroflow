@@ -130,39 +130,17 @@
 <a href="#130" id="130">130</a>
 <a href="#131" id="131">131</a>
 <a href="#132" id="132">132</a>
-<a href="#133" id="133">133</a>
-<a href="#134" id="134">134</a>
-<a href="#135" id="135">135</a>
-<a href="#136" id="136">136</a>
-<a href="#137" id="137">137</a>
-<a href="#138" id="138">138</a>
-<a href="#139" id="139">139</a>
-<a href="#140" id="140">140</a>
-<a href="#141" id="141">141</a>
-<a href="#142" id="142">142</a>
-<a href="#143" id="143">143</a>
-<a href="#144" id="144">144</a>
-<a href="#145" id="145">145</a>
-<a href="#146" id="146">146</a>
-<a href="#147" id="147">147</a>
-<a href="#148" id="148">148</a>
-<a href="#149" id="149">149</a>
-<a href="#150" id="150">150</a>
-<a href="#151" id="151">151</a>
-<a href="#152" id="152">152</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
     FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    Persistence, WriteContextArgs, RANGE_0, RANGE_1,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
-<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
-<span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
 
 <span class="doccomment">/// Stores each item as it passes through, and replays all item every tick.
 ///
 /// ```hydroflow
-/// // Normally `source_iter(...)` only emits once, but with `persist()` will replay the `&quot;hello&quot;`
+/// // Normally `source_iter(...)` only emits once, but `persist()` will replay the `&quot;hello&quot;`
 /// // on every tick.
 /// source_iter([&quot;hello&quot;])
 ///     -&gt; persist()
@@ -196,7 +174,7 @@
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: <span class="number">0</span>,
-    persistence_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
+    persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
@@ -216,27 +194,9 @@
                    inputs,
                    outputs,
                    is_pull,
-                   op_name,
-                   op_inst:
-                       OperatorInstance {
-                           generics:
-                               OpInstGenerics {
-                                   persistence_args, ..
-                               },
-                           ..
-                       },
                    ..
                },
-               diagnostics| {
-        <span class="kw">if </span><span class="macro">matches!</span>(persistence_args[..], [Persistence::Tick]) {
-            diagnostics.push(Diagnostic::spanned(
-                op_span,
-                Level::Error,
-                <span class="macro">format!</span>(<span class="string">&quot;`{}()` can only have `&#39;static` persistence.&quot;</span>, op_name),
-            ));
-            <span class="kw">return </span><span class="prelude-val">Err</span>(());
-        };
-
+               <span class="kw">_</span>| {
         <span class="kw">let </span>persistdata_ident = wc.make_ident(<span class="string">&quot;persistdata&quot;</span>);
         <span class="kw">let </span>vec_ident = wc.make_ident(<span class="string">&quot;persistvec&quot;</span>);
         <span class="kw">let </span>tick_ident = wc.make_ident(<span class="string">&quot;persisttick&quot;</span>);

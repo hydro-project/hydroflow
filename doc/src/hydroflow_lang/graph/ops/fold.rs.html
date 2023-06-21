@@ -123,6 +123,15 @@
 <a href="#123" id="123">123</a>
 <a href="#124" id="124">124</a>
 <a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -130,6 +139,7 @@
     OperatorConstraints, OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
+<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 
 <span class="doccomment">/// &gt; 1 input stream, 1 output stream
 ///
@@ -193,7 +203,7 @@
                        },
                    ..
                },
-               <span class="kw">_</span>| {
+               diagnostics| {
         <span class="macro">assert!</span>(is_pull);
 
         <span class="kw">let </span>persistence = <span class="kw">match </span>persistence_args[..] {
@@ -239,6 +249,14 @@
                     #context.schedule_subgraph(#context.current_subgraph(), <span class="bool-val">false</span>);
                 },
             ),
+            Persistence::Mutable =&gt; {
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    <span class="string">&quot;An implementation of &#39;mutable does not exist&quot;</span>,
+                ));
+                <span class="kw">return </span><span class="prelude-val">Err</span>(());
+            }
         };
 
         <span class="prelude-val">Ok</span>(OperatorWriteOutput {

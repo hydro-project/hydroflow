@@ -203,6 +203,15 @@
 <a href="#203" id="203">203</a>
 <a href="#204" id="204">204</a>
 <a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
@@ -210,6 +219,7 @@
     FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     Persistence, WriteContextArgs, RANGE_1,
 };
+<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
 
 <span class="doccomment">/// &gt; 2 input streams of type &lt;(K, V1)&gt; and &lt;(K, V2)&gt;, 1 output stream of type &lt;(K, (V1, V2))&gt;
@@ -307,7 +317,7 @@
                        },
                    ..
                },
-               <span class="kw">_</span>| {
+               diagnostics| {
         <span class="kw">let </span>lhs_type = type_args
             .get(<span class="number">0</span>)
             .map(ToTokens::to_token_stream)
@@ -318,7 +328,7 @@
             .map(ToTokens::to_token_stream)
             .unwrap_or(<span class="macro">quote_spanned!</span>(op_span=&gt; <span class="kw">_</span>));
 
-        <span class="kw">let </span>make_joindata = |persistence, side| {
+        <span class="kw">let </span><span class="kw-2">mut </span>make_joindata = |persistence, side| {
             <span class="kw">let </span>joindata_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">&quot;joindata_{}&quot;</span>, side));
             <span class="kw">let </span>borrow_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">&quot;joindata_{}_borrow&quot;</span>, side));
             <span class="kw">let </span>(init, borrow) = <span class="kw">match </span>persistence {
@@ -340,8 +350,16 @@
                         <span class="kw-2">&amp;mut </span>#borrow_ident
                     },
                 ),
+                Persistence::Mutable =&gt; {
+                    diagnostics.push(Diagnostic::spanned(
+                        op_span,
+                        Level::Error,
+                        <span class="string">&quot;An implementation of &#39;mutable does not exist&quot;</span>,
+                    ));
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(());
+                }
             };
-            (joindata_ident, borrow_ident, init, borrow)
+            <span class="prelude-val">Ok</span>((joindata_ident, borrow_ident, init, borrow))
         };
 
         <span class="kw">let </span>persistences = <span class="kw">match </span>persistence_args[..] {
@@ -352,9 +370,9 @@
         };
 
         <span class="kw">let </span>(lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow) =
-            make_joindata(persistences[<span class="number">0</span>], <span class="string">&quot;lhs&quot;</span>);
+            make_joindata(persistences[<span class="number">0</span>], <span class="string">&quot;lhs&quot;</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>(rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow) =
-            make_joindata(persistences[<span class="number">1</span>], <span class="string">&quot;rhs&quot;</span>);
+            make_joindata(persistences[<span class="number">1</span>], <span class="string">&quot;rhs&quot;</span>)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>join_keys_ident = wc.make_ident(<span class="string">&quot;joinkeys&quot;</span>);
         <span class="kw">let </span>join_keys_borrow_ident = wc.make_ident(<span class="string">&quot;joinkeys_borrow&quot;</span>);

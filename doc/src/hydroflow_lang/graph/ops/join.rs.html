@@ -224,6 +224,15 @@
 <a href="#224" id="224">224</a>
 <a href="#225" id="225">225</a>
 <a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
@@ -231,6 +240,7 @@
     FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     Persistence, WriteContextArgs, RANGE_1,
 };
+<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
 
 <span class="doccomment">/// &gt; 2 input streams of type &lt;(K, V1)&gt; and &lt;(K, V2)&gt;, 1 output stream of type &lt;(K, (V1, V2))&gt;
@@ -346,7 +356,7 @@
                        },
                    ..
                },
-               <span class="kw">_</span>| {
+               diagnostics| {
         <span class="kw">let </span>join_type =
             type_args
                 .get(<span class="number">0</span>)
@@ -369,7 +379,7 @@
             <span class="macro">quote_spanned!</span>(op_span=&gt;)
         };
 
-        <span class="kw">let </span>make_joindata = |persistence, side| {
+        <span class="kw">let </span><span class="kw-2">mut </span>make_joindata = |persistence, side| {
             <span class="kw">let </span>joindata_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">&quot;joindata_{}&quot;</span>, side));
             <span class="kw">let </span>borrow_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">&quot;joindata_{}_borrow&quot;</span>, side));
             <span class="kw">let </span>(init, borrow) = <span class="kw">match </span>persistence {
@@ -391,8 +401,16 @@
                         <span class="kw-2">&amp;mut *</span>#borrow_ident
                     },
                 ),
+                Persistence::Mutable =&gt; {
+                    diagnostics.push(Diagnostic::spanned(
+                        op_span,
+                        Level::Error,
+                        <span class="string">&quot;An implementation of &#39;mutable does not exist&quot;</span>,
+                    ));
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(());
+                }
             };
-            (joindata_ident, borrow_ident, init, borrow)
+            <span class="prelude-val">Ok</span>((joindata_ident, borrow_ident, init, borrow))
         };
 
         <span class="kw">let </span>persistences = <span class="kw">match </span>persistence_args[..] {
@@ -403,9 +421,9 @@
         };
 
         <span class="kw">let </span>(lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow) =
-            make_joindata(persistences[<span class="number">0</span>], <span class="string">&quot;lhs&quot;</span>);
+            make_joindata(persistences[<span class="number">0</span>], <span class="string">&quot;lhs&quot;</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>(rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow) =
-            make_joindata(persistences[<span class="number">1</span>], <span class="string">&quot;rhs&quot;</span>);
+            make_joindata(persistences[<span class="number">1</span>], <span class="string">&quot;rhs&quot;</span>)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span>#lhs_joindata_ident = #hydroflow.add_state(std::cell::RefCell::new(

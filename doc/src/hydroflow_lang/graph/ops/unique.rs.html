@@ -145,12 +145,22 @@
 <a href="#145" id="145">145</a>
 <a href="#146" id="146">146</a>
 <a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
     FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
+<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
 
 <span class="doccomment">/// Takes one stream as input and filters out any duplicate occurrences. The output
@@ -228,7 +238,7 @@
                        },
                    ..
                },
-               <span class="kw">_</span>| {
+               diagnostics| {
         <span class="kw">let </span>persistence = <span class="kw">match </span>persistence_args[..] {
             [] =&gt; Persistence::Static,
             [a] =&gt; a,
@@ -261,6 +271,14 @@
                     <span class="kw">let </span><span class="kw-2">mut </span>set = #context.state_ref(#uniquedata_ident).borrow_mut();
                 };
                 (write_prologue, get_set)
+            }
+            Persistence::Mutable =&gt; {
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    <span class="string">&quot;An implementation of &#39;mutable does not exist&quot;</span>,
+                ));
+                <span class="kw">return </span><span class="prelude-val">Err</span>(());
             }
         };
 
