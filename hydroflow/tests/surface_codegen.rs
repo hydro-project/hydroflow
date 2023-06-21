@@ -817,7 +817,10 @@ pub fn test_assert() {
         source_iter(vec![1, 2, 3]) -> assert([1, 2, 3]) -> assert([1, 2, 3]);
     };
     df.run_available();
+}
 
+#[multiplatform_test(test)]
+pub fn test_assert_failures() {
     assert!(std::panic::catch_unwind(|| {
         let mut df = hydroflow_syntax! {
             source_iter([0]) -> assert([1]);
