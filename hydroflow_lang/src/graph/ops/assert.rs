@@ -15,10 +15,12 @@ use crate::graph::OperatorInstance;
 ///
 /// assert() will pass through the items to its output channel unchanged and in-order.
 ///
+/// assert() will perform the assertion on each tick, so it cannot be used to easily assert the contents of a stream across ticks.
+///
 /// ```hydroflow
 /// source_iter([1, 2, 3])
 ///     -> assert([1, 2, 3])
-///     -> assert([1, 2, 3]);
+///     -> for_each(|x| println!("{x}"));
 /// ```
 pub const ASSERT: OperatorConstraints = OperatorConstraints {
     name: "assert",
@@ -54,23 +56,23 @@ pub const ASSERT: OperatorConstraints = OperatorConstraints {
                _| {
         let vec = &arguments[0];
 
+        let assert_data_ident = wc.make_ident("assert_data");
+
         let (write_prologue, write_iterator, write_iterator_after) = if is_pull {
             let input = &inputs[0];
 
             (
                 Default::default(),
                 quote_spanned! {op_span=>
-                    let input_vec = #input.collect::<::std::vec::Vec<_>>();
+                    let #assert_data_ident = #input.collect::<::std::vec::Vec<_>>();
 
-                    assert_eq!(input_vec, #vec, "lhs = dataflow input, rhs = expected value (provided as argument to assert())");
+                    assert_eq!(#assert_data_ident, #vec, "lhs = dataflow input, rhs = expected value (provided as argument to assert())");
 
-                    let #ident = input_vec.into_iter();
+                    let #ident = #assert_data_ident.into_iter();
                 },
                 Default::default(),
             )
         } else {
-            let assert_data_ident = wc.make_ident("assert_data");
-
             (
                 quote_spanned! {op_span=>
                     let #assert_data_ident = #hydroflow.add_state(

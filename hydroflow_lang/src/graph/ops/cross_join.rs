@@ -12,7 +12,6 @@ use super::{
 /// tupled pairs.
 ///
 /// ```hydroflow
-/// // should print all 4 pairs of emotion and animal
 /// source_iter(vec!["happy", "sad"]) -> [0]my_join;
 /// source_iter(vec!["dog", "cat"]) -> [1]my_join;
 /// my_join = cross_join() -> assert([("happy", "dog"), ("sad", "dog"), ("happy", "cat"), ("sad", "cat")]);

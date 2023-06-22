@@ -11,7 +11,6 @@ use super::{
 /// The type of the input items must be iterable.
 ///
 /// ```hydroflow
-/// // should print the numbers 1-6 without any nesting
 /// source_iter(vec![[1, 2], [3, 4], [5, 6]])
 ///     -> flatten()
 ///     -> assert([1, 2, 3, 4, 5, 6]);

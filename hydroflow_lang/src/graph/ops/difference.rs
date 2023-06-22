@@ -15,7 +15,6 @@ use crate::graph::{OpInstGenerics, OperatorInstance, PortIndexValue};
 /// `neg` input.
 ///
 /// ```hydroflow
-/// // should print "elephant"
 /// source_iter(vec!["dog", "cat", "elephant"]) -> [pos]diff;
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
 /// diff = difference() -> assert(["elephant"]);

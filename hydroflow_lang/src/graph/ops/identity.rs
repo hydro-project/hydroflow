@@ -8,12 +8,12 @@ use super::{
 /// For each item passed in, pass it out without any change.
 ///
 /// ```hydroflow
-/// // should print "hello" and "world" on separate lines (in either order)
-/// source_iter(vec!["hello", "world"]) -> identity()
+/// source_iter(vec!["hello", "world"])
+///     -> identity()
 ///     -> assert(["hello", "world"]);
 /// ```
 ///
-/// You can also supply a type parameter `identity::<MyType>()` to specify what items flow thru the
+/// You can also supply a type parameter `identity::<MyType>()` to specify what items flow through the
 /// the pipeline. This can be useful for helping the compiler infer types.
 ///
 /// ```hydroflow
