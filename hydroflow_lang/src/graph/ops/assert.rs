@@ -94,11 +94,12 @@ pub const ASSERT: OperatorConstraints = OperatorConstraints {
                             quote_spanned! {op_span=>
                                 let #ident = #root::pusherator::inspect::Inspect::new(|v| {
                                     let mut accum = #context.state_ref(#assert_data_ident).take();
-                                    accum.push(v);
+                                    accum.push(v.clone());
                                     #context.state_ref(#assert_data_ident).set(accum);
                                 }, #output);
                             }
                         }
+                        // This should be a diagnostic but since output streams is limited by the declaration above to 0..=1 then this can never happen, so an assert is appropriate.
                         _ => panic!(),
                     }
                 },
