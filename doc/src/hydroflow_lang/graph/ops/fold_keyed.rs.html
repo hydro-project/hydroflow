@@ -230,6 +230,7 @@
 <a href="#230" id="230">230</a>
 <a href="#231" id="231">231</a>
 <a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 
 <span class="kw">use super</span>::{
@@ -408,7 +409,8 @@
 
                         <span class="kw">let </span>#ident = #hashtable_ident
                             .iter()
-                            .map(<span class="attr">#[allow(suspicious_double_ref_op, clippy::clone_on_copy)] </span>|(k, v)| (k.clone(), v.clone()));
+                            <span class="comment">// TODO(mingwei): remove `unknown_lints` when `suspicious_double_ref_op` is stabilized.
+                            </span>.map(<span class="attr">#[allow(unknown_lints, suspicious_double_ref_op, clippy::clone_on_copy)] </span>|(k, v)| (k.clone(), v.clone()));
                     },
                     <span class="macro">quote_spanned! </span>{op_span=&gt;
                         #context.schedule_subgraph(#context.current_subgraph(), <span class="bool-val">false</span>);

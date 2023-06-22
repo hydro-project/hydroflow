@@ -772,6 +772,7 @@
 <a href="#772" id="772">772</a>
 <a href="#773" id="773">773</a>
 <a href="#774" id="774">774</a>
+<a href="#775" id="775">775</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for the [`Hydroflow`] struct and helper items.
 
 </span><span class="kw">use </span>std::any::Any;
@@ -794,6 +795,7 @@
 <span class="kw">use </span><span class="kw">super</span>::state::StateHandle;
 <span class="kw">use </span><span class="kw">super</span>::subgraph::Subgraph;
 <span class="kw">use super</span>::{HandoffId, SubgraphId};
+<span class="kw">use </span><span class="kw">crate</span>::Never;
 
 <span class="doccomment">/// A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
 </span><span class="kw">pub struct </span>Hydroflow {
@@ -1102,7 +1104,7 @@
     ///
     /// TODO(mingwei): Currently blockes forever, no notion of &quot;completion.&quot;
     </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), ret)]
-    </span><span class="kw">pub fn </span>run(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;!&gt; {
+    </span><span class="kw">pub fn </span>run(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Never&gt; {
         <span class="kw">loop </span>{
             <span class="self">self</span>.run_tick();
         }
@@ -1112,7 +1114,7 @@
     ///
     /// TODO(mingwei): Currently blockes forever, no notion of &quot;completion.&quot;
     </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), ret)]
-    </span><span class="kw">pub async fn </span>run_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;!&gt; {
+    </span><span class="kw">pub async fn </span>run_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Never&gt; {
         <span class="kw">loop </span>{
             <span class="comment">// Run any work which is immediately available.
             </span><span class="self">self</span>.run_available_async().<span class="kw">await</span>;

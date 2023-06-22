@@ -782,11 +782,7 @@
 <a href="#782" id="782">782</a>
 <a href="#783" id="783">783</a>
 <a href="#784" id="784">784</a>
-<a href="#785" id="785">785</a>
-<a href="#786" id="786">786</a>
-</pre></div><pre class="rust"><code><span class="attr">#![feature(never_type)]
-
-</span><span class="kw">use </span>std::collections::HashMap;
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::path::PathBuf;
@@ -811,11 +807,11 @@
 
 <span class="attr">#[cfg(not(unix))]
 #[allow(dead_code)]
-</span><span class="kw">type </span>UnixStream = !;
+</span><span class="kw">type </span>UnixStream = ();
 
 <span class="attr">#[cfg(not(unix))]
 #[allow(dead_code)]
-</span><span class="kw">type </span>UnixListener = !;
+</span><span class="kw">type </span>UnixListener = ();
 
 <span class="doccomment">/// Describes how to connect to a service which is listening on some port.
 </span><span class="attr">#[allow(unreachable_code)]

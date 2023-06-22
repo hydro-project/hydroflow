@@ -572,6 +572,9 @@
 <a href="#572" id="572">572</a>
 <a href="#573" id="573">573</a>
 <a href="#574" id="574">574</a>
+<a href="#575" id="575">575</a>
+<a href="#576" id="576">576</a>
+<a href="#577" id="577">577</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::collections::btree_map::Entry;
 <span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -1012,13 +1015,14 @@
                                             <span class="string">&quot;Unexpected {} port: {}. Expected one of: `{}`&quot;</span>,
                                             input_output,
                                             actual_port_iv.as_error_message_string(),
-                                            expected_ports
-                                                .iter()
-                                                .map(|port| Cow::Owned(
-                                                    port.to_token_stream().to_string()
-                                                ))
-                                                .intersperse(Cow::Borrowed(<span class="string">&quot;`, `&quot;</span>))
-                                                .collect::&lt;String&gt;()
+                                            itertools::Itertools::intersperse(
+                                                expected_ports
+                                                    .iter()
+                                                    .map(|port| Cow::Owned(
+                                                        port.to_token_stream().to_string()
+                                                    )),
+                                                Cow::Borrowed(<span class="string">&quot;`, `&quot;</span>)
+                                            ).collect::&lt;String&gt;()
                                         ),
                                     ))
                                 }
@@ -1044,11 +1048,13 @@
                                 <span class="macro">format!</span>(
                                     <span class="string">&quot;Missing expected {} port(s): `{}`.&quot;</span>,
                                     input_output,
-                                    missing
-                                        .into_iter()
-                                        .map(|port| Cow::Owned(port.to_token_stream().to_string()))
-                                        .intersperse(Cow::Borrowed(<span class="string">&quot;`, `&quot;</span>))
-                                        .collect::&lt;String&gt;()
+                                    itertools::Itertools::intersperse(
+                                        missing.into_iter().map(|port| Cow::Owned(
+                                            port.to_token_stream().to_string()
+                                        )),
+                                        Cow::Borrowed(<span class="string">&quot;`, `&quot;</span>)
+                                    )
+                                    .collect::&lt;String&gt;()
                                 ),
                             ));
                         }

@@ -52,9 +52,12 @@
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
 <a href="#54" id="54">54</a>
-</pre></div><pre class="rust"><code><span class="attr">#![feature(never_type)]
-#![feature(type_alias_impl_trait)]
-#![feature(impl_trait_in_assoc_type)]
+<a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+</pre></div><pre class="rust"><code><span class="attr">#![cfg_attr(nightly, feature(never_type))]
 #![allow(type_alias_bounds)]
 #![allow(clippy::let_and_return)]
 #![allow(clippy::iter_with_drain)]
@@ -99,6 +102,13 @@
     hydroflow_main <span class="kw">as </span>main, hydroflow_parser, hydroflow_syntax, hydroflow_syntax_noemit,
     hydroflow_test <span class="kw">as </span>test,
 };
+
+<span class="attr">#[cfg(not(nightly))]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+</span><span class="doccomment">/// Stand-in for the [nightly &quot;never&quot; type `!`](https://doc.rust-lang.org/std/primitive.never.html)
+</span><span class="kw">pub enum </span>Never {}
+<span class="attr">#[cfg(nightly)]
+</span><span class="kw">pub type </span>Never = !;
 
 <span class="attr">#[cfg(doctest)]
 </span><span class="kw">mod </span>booktest {
