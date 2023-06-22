@@ -64,6 +64,8 @@
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
 <a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -81,7 +83,9 @@
 /// &gt; Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
 ///
 /// ```hydroflow
-/// source_iter([1, 2, 3, 4]) -&gt; inspect(|&amp;x| println!(&quot;{}&quot;, x)) -&gt; null();
+/// source_iter([1, 2, 3, 4])
+///     -&gt; inspect(|&amp;x| println!(&quot;{}&quot;, x))
+///     -&gt; assert([1, 2, 3, 4]);
 /// ```
 </span><span class="kw">pub const </span>INSPECT: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;inspect&quot;</span>,

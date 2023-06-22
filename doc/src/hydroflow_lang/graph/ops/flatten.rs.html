@@ -74,9 +74,9 @@
 /// The type of the input items must be iterable.
 ///
 /// ```hydroflow
-/// // should print the numbers 1-6 without any nesting
-/// source_iter(vec![[1, 2], [3, 4], [5, 6]]) -&gt; flatten()
-/// -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+/// source_iter(vec![[1, 2], [3, 4], [5, 6]])
+///     -&gt; flatten()
+///     -&gt; assert([1, 2, 3, 4, 5, 6]);
 /// ```
 </span><span class="kw">pub const </span>FLATTEN: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;flatten&quot;</span>,

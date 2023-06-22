@@ -99,8 +99,6 @@
 <a href="#99" id="99">99</a>
 <a href="#100" id="100">100</a>
 <a href="#101" id="101">101</a>
-<a href="#102" id="102">102</a>
-<a href="#103" id="103">103</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
@@ -118,11 +116,9 @@
 /// in the `neg` input.
 ///
 /// ```hydroflow
-/// // should print (&quot;elephant&quot;, 3)
 /// source_iter(vec![(&quot;dog&quot;, 1), (&quot;cat&quot;, 2), (&quot;elephant&quot;, 3)]) -&gt; [pos]diff;
 /// source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;gorilla&quot;]) -&gt; [neg]diff;
-/// diff = anti_join() -&gt; for_each(|v: (_, _)| println!(&quot;{}, {}&quot;, v.0, v.1));
-/// // elephant 3
+/// diff = anti_join() -&gt; assert([(&quot;elephant&quot;, 3)]);
 /// ```
 </span><span class="kw">pub const </span>ANTI_JOIN: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;anti_join&quot;</span>,

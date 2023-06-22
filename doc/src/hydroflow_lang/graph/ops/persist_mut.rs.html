@@ -110,7 +110,7 @@
 /// ```hydroflow
 /// source_iter([hydroflow::util::Persistence::Persist(1), hydroflow::util::Persistence::Persist(2), hydroflow::util::Persistence::Delete(1)])
 ///     -&gt; persist_mut()
-///     -&gt; for_each(|item| println!(&quot;{}&quot;, item));
+///     -&gt; assert([2]);
 /// ```
 </span><span class="kw">pub const </span>PERSIST_MUT: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;persist_mut&quot;</span>,

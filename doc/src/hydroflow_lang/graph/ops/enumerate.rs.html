@@ -144,7 +144,7 @@
 ///
 /// ```hydroflow
 /// source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; enumerate()
-///     -&gt; for_each(|(i, x)| println!(&quot;{}: {}&quot;, i, x));
+///     -&gt; assert([(0, &quot;hello&quot;), (1, &quot;world&quot;)]);
 /// ```
 </span><span class="kw">pub const </span>ENUMERATE: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;enumerate&quot;</span>,

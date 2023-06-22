@@ -81,10 +81,15 @@
 <a href="#81" id="81">81</a>
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>syn::parse_quote;
 
-<span class="kw">use super</span>::{FlowProperties, FlowPropertyVal, OperatorConstraints, WriteContextArgs, RANGE_1, OperatorCategory};
+<span class="kw">use super</span>::{
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, WriteContextArgs,
+    RANGE_1,
+};
 
 <span class="doccomment">/// &gt; 2 input streams of type S and T, 1 output stream of type (S, T)
 ///
@@ -92,10 +97,9 @@
 /// tupled pairs.
 ///
 /// ```hydroflow
-/// // should print all 4 pairs of emotion and animal
 /// source_iter(vec![&quot;happy&quot;, &quot;sad&quot;]) -&gt; [0]my_join;
 /// source_iter(vec![&quot;dog&quot;, &quot;cat&quot;]) -&gt; [1]my_join;
-/// my_join = cross_join() -&gt; for_each(|(v1, v2)| println!(&quot;({}, {})&quot;, v1, v2));
+/// my_join = cross_join() -&gt; assert([(&quot;happy&quot;, &quot;dog&quot;), (&quot;sad&quot;, &quot;dog&quot;), (&quot;happy&quot;, &quot;cat&quot;), (&quot;sad&quot;, &quot;cat&quot;)]);
 /// ```
 ///
 /// `cross_join` can also be provided with one or two generic lifetime persistence arguments

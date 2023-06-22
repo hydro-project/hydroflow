@@ -45,6 +45,7 @@
 <a href="#45" id="45">45</a>
 <a href="#46" id="46">46</a>
 <a href="#47" id="47">47</a>
+<a href="#48" id="48">48</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>syn::parse_quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -60,7 +61,8 @@
 /// Emits a single unit `()` at the start of the first tick.
 ///
 /// ```hydroflow
-/// initialize() -&gt; for_each(|()| println!(&quot;This only runs one time!&quot;));
+/// initialize()
+///     -&gt; assert([()]);
 /// ```
 </span><span class="kw">pub const </span>INITIALIZE: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;initialize&quot;</span>,

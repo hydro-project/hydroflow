@@ -70,14 +70,12 @@
 <a href="#70" id="70">70</a>
 <a href="#71" id="71">71</a>
 <a href="#72" id="72">72</a>
-<a href="#73" id="73">73</a>
-<a href="#74" id="74">74</a>
-</pre></div><pre class="rust"><code><span class="kw">use super</span>::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_0, RANGE_1, RANGE_ANY, OperatorCategory,
-};
+</pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 
-<span class="kw">use </span>quote::{quote_spanned, ToTokens};
+<span class="kw">use super</span>::{
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
+};
 
 <span class="doccomment">/// &gt; 1 input stream, *n* output streams
 ///
@@ -86,11 +84,9 @@
 ///
 /// ```hydroflow
 /// my_tee = source_iter(vec![&quot;Hello&quot;, &quot;World&quot;]) -&gt; tee();
-/// my_tee -&gt; map(|x: &amp;str| x.to_uppercase())
-///     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-/// my_tee -&gt; map(|x: &amp;str| x.to_lowercase())
-///     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
-/// my_tee -&gt; for_each(|x: &amp;str| println!(&quot;{}&quot;, x));
+/// my_tee -&gt; map(|x: &amp;str| x.to_uppercase()) -&gt; assert([&quot;HELLO&quot;, &quot;WORLD&quot;]);
+/// my_tee -&gt; map(|x: &amp;str| x.to_lowercase()) -&gt; assert([&quot;hello&quot;, &quot;world&quot;]);
+/// my_tee -&gt; assert([&quot;Hello&quot;, &quot;World&quot;]);
 /// ```
 </span><span class="kw">pub const </span>TEE: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;tee&quot;</span>,

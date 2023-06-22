@@ -76,6 +76,7 @@
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 
 <span class="kw">use super</span>::{
@@ -93,9 +94,10 @@
 /// ```hydroflow
 /// source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; my_union;
 /// source_iter(vec![&quot;stay&quot;, &quot;gold&quot;]) -&gt; my_union;
-/// source_iter(vec![&quot;don\&#39;t&quot;, &quot;give&quot;, &quot;up&quot;]) -&gt; my_union;
-/// my_union = union() -&gt; map(|x| x.to_uppercase())
-///     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+/// source_iter(vec![&quot;don&#39;t&quot;, &quot;give&quot;, &quot;up&quot;]) -&gt; my_union;
+/// my_union = union()
+///     -&gt; map(|x| x.to_uppercase())
+///     -&gt; assert([&quot;HELLO&quot;, &quot;WORLD&quot;, &quot;STAY&quot;, &quot;GOLD&quot;, &quot;DON&#39;T&quot;, &quot;GIVE&quot;, &quot;UP&quot;]);
 /// ```
 </span><span class="kw">pub const </span>UNION: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;union&quot;</span>,

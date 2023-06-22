@@ -89,13 +89,13 @@
 <a href="#89" id="89">89</a>
 <a href="#90" id="90">90</a>
 <a href="#91" id="91">91</a>
-<a href="#92" id="92">92</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use super</span>::{
-    DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorConstraints,
-    OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1, OperatorCategory,
+    DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorCategory,
+    OperatorConstraints, OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 
@@ -106,15 +106,13 @@
 /// If you intead want to discard the excess, use [`zip`](#zip) instead.
 ///
 /// ```hydroflow
-/// source_iter(0..3) -&gt; [0]my_zip_longest;
-/// source_iter(0..5) -&gt; [1]my_zip_longest;
-/// my_zip_longest = zip_longest() -&gt; for_each(|either| println!(&quot;{:?}&quot;, either));
-/// // prints:
-/// // Both(0, 0)
-/// // Both(1, 1)
-/// // Both(2, 2)
-/// // Right(3)
-/// // Right(4)
+/// source_iter(0..2) -&gt; [0]my_zip_longest;
+/// source_iter(0..3) -&gt; [1]my_zip_longest;
+/// my_zip_longest = zip_longest()
+///     -&gt; assert([
+///         itertools::EitherOrBoth::Both(0, 0),
+///         itertools::EitherOrBoth::Both(1, 1),
+///         itertools::EitherOrBoth::Right(2)]);
 /// ```
 </span><span class="kw">pub const </span>ZIP_LONGEST: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;zip_longest&quot;</span>,

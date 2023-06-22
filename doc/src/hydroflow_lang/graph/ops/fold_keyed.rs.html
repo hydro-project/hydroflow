@@ -268,7 +268,7 @@
 /// ```hydroflow
 /// source_iter([(&quot;toy&quot;, 1), (&quot;toy&quot;, 2), (&quot;shoe&quot;, 11), (&quot;shoe&quot;, 35), (&quot;haberdashery&quot;, 7)])
 ///     -&gt; fold_keyed(|| 0, |old: &amp;mut u32, val: u32| *old += val)
-///     -&gt; for_each(|(k, v)| println!(&quot;Total for group {} is {}&quot;, k, v));
+///     -&gt; assert([(&quot;toy&quot;, 3), (&quot;shoe&quot;, 46), (&quot;haberdashery&quot;, 7)]);
 /// ```
 ///
 /// Example using `&#39;tick` persistence:

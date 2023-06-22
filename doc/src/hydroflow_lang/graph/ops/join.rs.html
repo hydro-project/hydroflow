@@ -233,6 +233,7 @@
 <a href="#233" id="233">233</a>
 <a href="#234" id="234">234</a>
 <a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
@@ -251,7 +252,8 @@
 /// // should print `(hello, (world, cleveland))`
 /// source_iter(vec![(&quot;hello&quot;, &quot;world&quot;), (&quot;stay&quot;, &quot;gold&quot;)]) -&gt; [0]my_join;
 /// source_iter(vec![(&quot;hello&quot;, &quot;cleveland&quot;)]) -&gt; [1]my_join;
-/// my_join = join() -&gt; for_each(|(k, (v1, v2))| println!(&quot;({}, ({}, {}))&quot;, k, v1, v2));
+/// my_join = join()
+///     -&gt; assert([(&quot;hello&quot;, (&quot;world&quot;, &quot;cleveland&quot;))]);
 /// ```
 ///
 /// `join` can also be provided with one or two generic lifetime persistence arguments, either

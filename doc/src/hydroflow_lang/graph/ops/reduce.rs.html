@@ -121,7 +121,6 @@
 <a href="#121" id="121">121</a>
 <a href="#122" id="122">122</a>
 <a href="#123" id="123">123</a>
-<a href="#124" id="124">124</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -142,13 +141,12 @@
 /// &gt; Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
 ///
 /// ```hydroflow
-/// // should print 120 (i.e., 1*2*3*4*5)
 /// source_iter([1,2,3,4,5])
 ///     -&gt; reduce(|mut accum, elem| {
 ///         accum *= elem;
 ///         accum
 ///     })
-///     -&gt; for_each(|e| println!(&quot;{}&quot;, e));
+///     -&gt; assert([120]);
 /// ```
 </span><span class="kw">pub const </span>REDUCE: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;reduce&quot;</span>,

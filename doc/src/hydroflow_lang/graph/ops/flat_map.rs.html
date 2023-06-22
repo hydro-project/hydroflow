@@ -69,6 +69,7 @@
 <a href="#69" id="69">69</a>
 <a href="#70" id="70">70</a>
 <a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -87,8 +88,9 @@
 ///
 /// ```hydroflow
 /// // should print out each character of each word on a separate line
-/// source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; flat_map(|x| x.chars())
-///     -&gt; for_each(|x| println!(&quot;{}&quot;, x));
+/// source_iter(vec![&quot;hello&quot;, &quot;world&quot;])
+///     -&gt; flat_map(|x| x.chars())
+///     -&gt; assert([&#39;h&#39;, &#39;e&#39;, &#39;l&#39;, &#39;l&#39;, &#39;o&#39;, &#39;w&#39;, &#39;o&#39;, &#39;r&#39;, &#39;l&#39;, &#39;d&#39;]);
 /// ```
 </span><span class="kw">pub const </span>FLAT_MAP: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;flat_map&quot;</span>,

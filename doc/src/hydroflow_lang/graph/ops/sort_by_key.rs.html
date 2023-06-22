@@ -58,7 +58,6 @@
 <a href="#58" id="58">58</a>
 <a href="#59" id="59">59</a>
 <a href="#60" id="60">60</a>
-<a href="#61" id="61">61</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -73,10 +72,9 @@
 /// &gt; Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
 ///
 /// ```hydroflow
-/// // should print (1, &#39;z&#39;), (2, &#39;y&#39;), (3, &#39;x&#39;) (in order)
 /// source_iter(vec![(2, &#39;y&#39;), (3, &#39;x&#39;), (1, &#39;z&#39;)])
 ///     -&gt; sort_by_key(|(k, _v)| k)
-///     -&gt; for_each(|x| println!(&quot;{:?}&quot;, x));
+///     -&gt; assert([(1, &#39;z&#39;), (2, &#39;y&#39;), (3, &#39;x&#39;)]);
 /// ```
 </span><span class="kw">pub const </span>SORT_BY_KEY: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;sort_by_key&quot;</span>,

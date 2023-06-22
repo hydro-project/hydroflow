@@ -144,7 +144,7 @@
 /// // on every tick.
 /// source_iter([&quot;hello&quot;])
 ///     -&gt; persist()
-///     -&gt; for_each(|item| println!(&quot;{}: {}&quot;, context.current_tick(), item));
+///     -&gt; assert([&quot;hello&quot;]);
 /// ```
 ///
 /// `persist()` can be used to introduce statefulness into stateless pipelines. For example this
