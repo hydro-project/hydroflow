@@ -30,7 +30,7 @@ use crate::diagnostic::{Diagnostic, Level};
 ///         accum.push(elem);
 ///         accum
 ///     })
-///     -> for_each(|e| println!("Ressembled vector {:?}", e));
+///     -> assert([vec![1, 2, 3, 4, 5]]);
 /// ```
 pub const FOLD: OperatorConstraints = OperatorConstraints {
     name: "fold",

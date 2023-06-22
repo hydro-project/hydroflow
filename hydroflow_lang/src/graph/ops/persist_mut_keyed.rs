@@ -12,7 +12,7 @@ use super::{
 /// ```hydroflow
 /// source_iter([hydroflow::util::PersistenceKeyed::Persist(0, 1), hydroflow::util::PersistenceKeyed::Persist(1, 1), hydroflow::util::PersistenceKeyed::Delete(1)])
 ///     -> persist_mut_keyed()
-///     -> for_each(|item| println!("{:?}", item));
+///     -> assert([(0, 1)]);
 /// ```
 pub const PERSIST_MUT_KEYED: OperatorConstraints = OperatorConstraints {
     name: "persist_mut_keyed",
