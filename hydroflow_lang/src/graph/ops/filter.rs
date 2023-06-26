@@ -16,7 +16,7 @@ use super::{
 ///
 /// ```hydroflow
 /// source_iter(vec!["hello", "world"]) -> filter(|x| x.starts_with('w'))
-///     -> for_each(|x| println!("{}", x));
+///     -> assert(["world"]);
 /// ```
 pub const FILTER: OperatorConstraints = OperatorConstraints {
     name: "filter",

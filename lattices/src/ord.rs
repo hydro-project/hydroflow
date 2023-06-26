@@ -1,7 +1,6 @@
 use std::cmp::Ordering;
 
-use super::{ConvertFrom, Merge};
-use crate::LatticeOrd;
+use crate::{LatticeFrom, LatticeOrd, Merge};
 
 /// A totally ordered max lattice. Merging returns the larger value.
 #[repr(transparent)]
@@ -34,8 +33,8 @@ where
     }
 }
 
-impl<T> ConvertFrom<Max<T>> for Max<T> {
-    fn from(other: Max<T>) -> Self {
+impl<T> LatticeFrom<Max<T>> for Max<T> {
+    fn lattice_from(other: Max<T>) -> Self {
         other
     }
 }
@@ -76,8 +75,8 @@ where
     }
 }
 
-impl<T> ConvertFrom<Min<T>> for Min<T> {
-    fn from(other: Min<T>) -> Self {
+impl<T> LatticeFrom<Min<T>> for Min<T> {
+    fn lattice_from(other: Min<T>) -> Self {
         other
     }
 }
@@ -106,7 +105,7 @@ mod test {
     use std::cmp::Ordering::*;
 
     use super::*;
-    use crate::test::check_all;
+    use crate::test::{check_lattice_ord, check_lattice_properties, check_partial_ord_properties};
 
     #[test]
     fn ordering() {
@@ -132,7 +131,14 @@ mod test {
 
     #[test]
     fn consistency() {
-        check_all(&[Max::new(0), Max::new(1)]);
-        check_all(&[Min::new(0), Min::new(1)]);
+        let items_max = &[Max::new(0), Max::new(1)];
+        check_lattice_ord(items_max);
+        check_partial_ord_properties(items_max);
+        check_lattice_properties(items_max);
+
+        let items_min = &[Min::new(0), Min::new(1)];
+        check_lattice_ord(items_min);
+        check_partial_ord_properties(items_min);
+        check_lattice_properties(items_min);
     }
 }

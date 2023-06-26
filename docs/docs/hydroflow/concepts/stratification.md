@@ -38,9 +38,9 @@ end
 4v1===o2v1
 ```
 
-At compile time, the Hydroflow spec is *stratified*: partitioned into subflows, where each subflow is assigned a stratum number. Subsequently at runtime, each tick executes the strata one-by-one in ascending order of stratum number. In the example above, the `source_stream` operator is in stratum 0, and the `sort` and `for_each` operators are in stratum 1. The runtime executes the `source_stream` operator first, buffering output in the Handoff. The `sort` operator will not receive any data until the `source_stream` operator has finished executing. When stratum 0 is complete, the subflow in stratum 1 is scheduled and executes the `sort` and `for_each` operators to complete the tick. 
+At compile time, the Hydroflow spec is *stratified*: partitioned into subflows, where each subflow is assigned a stratum number. Subsequently at runtime, each tick executes the strata one-by-one in ascending order of stratum number. In the example above, the `source_stream` operator is in stratum 0, and the `sort` and `for_each` operators are in stratum 1. The runtime executes the `source_stream` operator first, buffering output in the Handoff. The `sort` operator will not receive any data until the `source_stream` operator has finished executing. When stratum 0 is complete, the subflow in stratum 1 is scheduled and executes the `sort` and `for_each` operators to complete the tick.
 
-Let's look back at the [`difference`](../syntax/surface_ops_gen.md#difference) operator as used in the [Graph Unreachability example](../quickstart/example_6_unreachability.md).
+Let's look back at the [`difference`](../syntax/surface_ops_gen.md#difference) operator as used in the [Graph Unreachability example](../quickstart/example_6_unreachability).
 ```mermaid
 flowchart TD
 classDef pullClass fill:#02f,color:#fff,stroke:#000

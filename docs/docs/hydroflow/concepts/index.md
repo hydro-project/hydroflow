@@ -38,11 +38,11 @@ which send and receive flows of data to each other.
 > In the [Hydro Project](https://hydro.run), higher-level languages are being built on top of Hydroflow to generate 
 > distributed code in the form of multiple transducers. 
 > Meanwhile, you can use Hydroflow to write your own distributed code, by writing individual transducers that work together, 
-> and deploying them manually or with a tool like [Hydroplane](https://github.com/hydro-project/hydroplane). See the [Hydro Ecosystem](../ecosystem.md) for more on this.
+> and deploying them manually or with a tool like [Hydroplane](https://github.com/hydro-project/hydroplane). See the [Hydro Ecosystem](../ecosystem) for more on this.
 
 ### So how might a human write distributed systems with Hydroflow?
 As an illustration of how you can work at the Hydroflow layer, consider the 
-[Chat Server example](../quickstart/example_8_chat_server.md). If you run that binary
+[Chat Server example](../quickstart/example_8_chat_server). If you run that binary
 with the command-line argument `--role server` it will start a single transducer that is responsible for a chat server: receiving
 membership requests and messages from clients, and forwarding messages from individual clients to all other clients.
 If you run that binary with the argument `--role client` it will start a transducer that is responsible for a chat client, which 

@@ -1,0 +1,48 @@
+---
+source: hydroflow/tests/surface_persist.rs
+expression: df.meta_graph().unwrap().to_dot()
+---
+digraph {
+    subgraph "cluster n1v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_1v1\nstratum 0"
+        n1v1 [label="(n1v1) source_iter([Persist(1, 1), Persist(2, 2), Persist(3, 3), Persist(4, 4), Delete(2)])", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        subgraph "cluster sg_1v1_var_my_tee" {
+            label="var my_tee"
+            n1v1
+        }
+    }
+    subgraph "cluster n2v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_2v1\nstratum 1"
+        n2v1 [label="(n2v1) persist_mut_keyed()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n3v1 [label="(n3v1) tee()", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n4v1 [label="(n4v1) for_each(|(_k, v)| pull_tx.send(v).unwrap())", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n5v1 [label="(n5v1) flat_map(|(k, v)| {\l    if v == 3 { vec![Persist(k, v), Delete(k)] } else { vec![Persist(k, v)] }\l})\l", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n2v1 -> n3v1
+        n3v1 -> n4v1
+        n3v1 -> n5v1
+        subgraph "cluster sg_2v1_var_my_tee" {
+            label="var my_tee"
+            n2v1
+            n3v1
+        }
+    }
+    subgraph "cluster n3v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_3v1\nstratum 2"
+        n6v1 [label="(n6v1) persist_mut_keyed()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n7v1 [label="(n7v1) for_each(|(_k, v)| push_tx.send(v).unwrap())", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n6v1 -> n7v1
+    }
+    n1v1 -> n8v1
+    n5v1 -> n9v1
+    n8v1 [label="(n8v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
+    n8v1 -> n2v1 [arrowhead=box, color=red]
+    n9v1 [label="(n9v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
+    n9v1 -> n6v1 [arrowhead=box, color=red]
+}
+

@@ -4,6 +4,7 @@ use super::{
     DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
     OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_1,
 };
+use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// > 1 input stream of type `(K, V)`, 1 output stream of type `(K, V)`.
@@ -33,7 +34,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// ```hydroflow
 /// source_iter([("toy", 1), ("toy", 2), ("shoe", 11), ("shoe", 35), ("haberdashery", 7)])
 ///     -> reduce_keyed(|old: &mut u32, val: u32| *old += val)
-///     -> for_each(|(k, v)| println!("Total for group {} is {}", k, v));
+///     -> assert([("toy", 3), ("shoe", 46), ("haberdashery", 7)]);
 /// ```
 ///
 /// Example using `'tick` persistence:
@@ -95,7 +96,7 @@ pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
                        },
                    ..
                },
-               _| {
+               diagnostics| {
         assert!(is_pull);
 
         let persistence = match persistence_args[..] {
@@ -182,12 +183,22 @@ pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
 
                         let #ident = #hashtable_ident
                             .iter()
-                            .map(#[allow(suspicious_double_ref_op, clippy::clone_on_copy)] |(k, v)| (k.clone(), v.clone()));
+                            // TODO(mingwei): remove `unknown_lints` when `suspicious_double_ref_op` is stabilized.
+                            .map(#[allow(unknown_lints, suspicious_double_ref_op, clippy::clone_on_copy)] |(k, v)| (k.clone(), v.clone()));
                     },
                     quote_spanned! {op_span=>
                         #context.schedule_subgraph(#context.current_subgraph(), false);
                     },
                 )
+            }
+
+            Persistence::Mutable => {
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    "An implementation of 'mutable does not exist",
+                ));
+                return Err(());
             }
         };
 

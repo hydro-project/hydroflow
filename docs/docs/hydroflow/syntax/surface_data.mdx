@@ -1,14 +1,16 @@
 ---
 sidebar_position: 3
 ---
+import CodeBlock from '@theme/CodeBlock';
+import exampleCode from '!!raw-loader!../../../../hydroflow/examples/example_syntax_input.rs';
 
 # Data Sources and Sinks in Rust
-Any useful flow requires us to define sources of data, either generated computationally or received from 
+Any useful flow requires us to define sources of data, either generated computationally or received from
 and outside environment via I/O.
 
 ## `source_iter`
-A flow can receive data from a Rust collection object via the `source_iter` operator, which takes the 
-iterable collection as an argument and passes the items down the flow. 
+A flow can receive data from a Rust collection object via the `source_iter` operator, which takes the
+iterable collection as an argument and passes the items down the flow.
 For example, here we iterate through a vector of `usize` items and push them down the flow:
 ```rust,ignore
     source_iter(vec![0, 1]) -> ...
@@ -34,18 +36,9 @@ pass it along a flow:
     source_stream(input_recv) -> ...
 ```
 
-To put this together, let's revisit our Hello, World example from above with data sent 
+To put this together, let's revisit our Hello, World example from above with data sent
 in from outside the flow:
-```rust
-# use hydroflow::hydroflow_syntax;
-let (input_send, input_recv) = hydroflow::util::unbounded_channel::<&str>();
-let mut flow = hydroflow_syntax! {
-    source_stream(input_recv) -> map(|x| x.to_uppercase())
-        -> for_each(|x| println!("{}", x));
-};
-input_send.send("Hello").unwrap();
-input_send.send("World").unwrap();
-flow.run_available();
-```
 
-TODO: add source_stream_serde
+<CodeBlock language="rust" showLineNumbers>{exampleCode}</CodeBlock>
+
+TODO: add the remaining sources.

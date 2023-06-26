@@ -15,11 +15,9 @@ use crate::graph::PortIndexValue;
 /// in the `neg` input.
 ///
 /// ```hydroflow
-/// // should print ("elephant", 3)
 /// source_iter(vec![("dog", 1), ("cat", 2), ("elephant", 3)]) -> [pos]diff;
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
-/// diff = anti_join() -> for_each(|v: (_, _)| println!("{}, {}", v.0, v.1));
-/// // elephant 3
+/// diff = anti_join() -> assert([("elephant", 3)]);
 /// ```
 pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
     name: "anti_join",

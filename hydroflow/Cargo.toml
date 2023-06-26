@@ -8,12 +8,17 @@ documentation = "https://docs.rs/hydroflow/"
 description = "Hydro's low-level dataflow runtime and IR"
 
 [features]
-default = [ "async", "macros" ]
+default = [ "async", "macros" , "nightly" ]
+nightly = [ "hydroflow_macro", "hydroflow_macro/diagnostics" ]
 async = [ "dep:futures" ]
 macros = [ "hydroflow_macro", "hydroflow_datalog" ]
 hydroflow_macro = [ "dep:hydroflow_macro" ]
 hydroflow_datalog = [ "dep:hydroflow_datalog" ]
 cli_integration = [ "dep:hydroflow_cli_integration" ]
+
+[[example]]
+name = "kvs_bench"
+required-features = [ "nightly" ]
 
 [dependencies]
 bincode = "1.3"
@@ -24,7 +29,7 @@ hydroflow_cli_integration = { optional = true, path = "../hydroflow_cli_integrat
 hydroflow_datalog = { optional = true, path = "../hydroflow_datalog", version = "^0.2.0" }
 hydroflow_lang = { path = "../hydroflow_lang", version = "^0.2.0" }
 hydroflow_macro = { optional = true, path = "../hydroflow_macro", version = "^0.2.0" }
-itertools = "0.10.3"
+itertools = "0.10"
 lattices = { path = "../lattices", version = "^0.2.0", features = [ "serde" ] }
 pusherator = { path = "../pusherator", version = "^0.0.1" }
 ref-cast = "1.0"

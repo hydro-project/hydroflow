@@ -1,7 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use super::{ConvertFrom, Merge};
-use crate::LatticeOrd;
+use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Pair compound lattice.
 ///
@@ -39,16 +38,16 @@ where
     }
 }
 
-impl<LatASelf, LatAOther, LatBSelf, LatBOther> ConvertFrom<Pair<LatAOther, LatBOther>>
+impl<LatASelf, LatAOther, LatBSelf, LatBOther> LatticeFrom<Pair<LatAOther, LatBOther>>
     for Pair<LatASelf, LatBSelf>
 where
-    LatASelf: ConvertFrom<LatAOther>,
-    LatBSelf: ConvertFrom<LatBOther>,
+    LatASelf: LatticeFrom<LatAOther>,
+    LatBSelf: LatticeFrom<LatBOther>,
 {
-    fn from(other: Pair<LatAOther, LatBOther>) -> Self {
+    fn lattice_from(other: Pair<LatAOther, LatBOther>) -> Self {
         Self {
-            a: ConvertFrom::from(other.a),
-            b: ConvertFrom::from(other.b),
+            a: LatticeFrom::lattice_from(other.a),
+            b: LatticeFrom::lattice_from(other.b),
         }
     }
 }
@@ -91,13 +90,34 @@ where
     }
 }
 
+impl<Key, Val> IsBot for Pair<Key, Val>
+where
+    Key: IsBot,
+    Val: IsBot,
+{
+    fn is_bot(&self) -> bool {
+        self.a.is_bot() && self.b.is_bot()
+    }
+}
+
+impl<Key, Val> IsTop for Pair<Key, Val>
+where
+    Key: IsTop,
+    Val: IsTop,
+{
+    fn is_top(&self) -> bool {
+        self.a.is_top() && self.b.is_top()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;
 
     use super::*;
     use crate::set_union::SetUnionHashSet;
-    use crate::test::check_all;
+    use crate::test::{check_all, check_lattice_top};
+    use crate::WithTop;
 
     #[test]
     fn consistency() {
@@ -113,5 +133,34 @@ mod test {
         }
 
         check_all(&test_vec);
+    }
+
+    #[test]
+    fn consistency_withtop() {
+        let mut test_vec = vec![];
+
+        let sub_items = &[
+            Some(&[] as &[usize]),
+            Some(&[0]),
+            Some(&[1]),
+            Some(&[0, 1]),
+            None,
+        ];
+
+        for a in sub_items {
+            for b in sub_items {
+                test_vec.push(Pair::new(
+                    WithTop::new(
+                        a.map(|x| SetUnionHashSet::new_from(HashSet::from_iter(x.iter().cloned()))),
+                    ),
+                    WithTop::new(
+                        b.map(|x| SetUnionHashSet::new_from(HashSet::from_iter(x.iter().cloned()))),
+                    ),
+                ));
+            }
+        }
+
+        check_all(&test_vec);
+        check_lattice_top(&test_vec);
     }
 }

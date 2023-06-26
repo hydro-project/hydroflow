@@ -1,5 +1,3 @@
-#![feature(never_type)]
-
 use std::cell::RefCell;
 use std::time::Duration;
 

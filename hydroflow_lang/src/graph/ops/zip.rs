@@ -16,8 +16,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// ```hydroflow
 /// source_iter(0..3) -> [0]my_zip;
 /// source_iter(0..5) -> [1]my_zip;
-/// my_zip = zip() -> for_each(|(l, r)| println!("({}, {})", l, r));
-/// // prints `(0, 0)`, `(1, 1)`, `(2, 2)`.
+/// my_zip = zip() -> assert([(0, 0), (1, 1), (2, 2)]);
 /// ```
 pub const ZIP: OperatorConstraints = OperatorConstraints {
     name: "zip",

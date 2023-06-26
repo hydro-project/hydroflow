@@ -1,8 +1,9 @@
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 //! Helper utilities for the Hydroflow surface syntax.
 
 pub mod clear;
 pub mod monotonic_map;
+pub mod sparse_vec;
 pub mod unsync;
 
 mod udp;
@@ -29,6 +30,22 @@ use bincode;
 use futures::Stream;
 use serde::de::DeserializeOwned;
 use serde::ser::Serialize;
+
+/// Persit or delete tuples
+pub enum Persistence<T> {
+    /// Persist T values
+    Persist(T),
+    /// Delete all values that exactly match
+    Delete(T),
+}
+
+/// Persit or delete key-value pairs
+pub enum PersistenceKeyed<K, V> {
+    /// Persist key-value pairs
+    Persist(K, V),
+    /// Delete all tuples that have the key K
+    Delete(K),
+}
 
 /// Returns a channel as a (1) unbounded sender and (2) unbounded receiver `Stream` for use in Hydroflow.
 pub fn unbounded_channel<T>() -> (

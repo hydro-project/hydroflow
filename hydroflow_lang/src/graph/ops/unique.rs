@@ -4,16 +4,16 @@ use super::{
     FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
+use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// Takes one stream as input and filters out any duplicate occurrences. The output
 /// contains all unique values from the input.
 ///
 /// ```hydroflow
-/// // should print 1, 2, 3 (in any order)
 /// source_iter(vec![1, 1, 2, 3, 2, 1, 3])
 ///     -> unique()
-///     -> for_each(|x| println!("{}", x));
+///     -> assert([1, 2, 3]);
 /// ```
 ///
 /// `unique` can also be provided with one generic lifetime persistence argument, either
@@ -81,7 +81,7 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
                        },
                    ..
                },
-               _| {
+               diagnostics| {
         let persistence = match persistence_args[..] {
             [] => Persistence::Static,
             [a] => a,
@@ -114,6 +114,14 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
                     let mut set = #context.state_ref(#uniquedata_ident).borrow_mut();
                 };
                 (write_prologue, get_set)
+            }
+            Persistence::Mutable => {
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    "An implementation of 'mutable does not exist",
+                ));
+                return Err(());
             }
         };
 

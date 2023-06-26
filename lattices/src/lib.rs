@@ -1,5 +1,4 @@
-#![deny(missing_docs)]
-#![feature(impl_trait_in_assoc_type)]
+#![warn(missing_docs)]
 #![doc = include_str!("../README.md")]
 
 use std::cmp::Ordering::{self, *};
@@ -7,24 +6,27 @@ use std::cmp::Ordering::{self, *};
 pub use cc_traits;
 use sealed::sealed;
 
-mod bottom;
-mod top;
-pub use bottom::Bottom;
-pub use top::Top;
 pub mod collections;
+mod conflict;
 mod dom_pair;
-pub use dom_pair::DomPair;
-mod point;
-pub use point::Point;
 pub mod map_union;
 mod ord;
-pub use ord::{Max, Min};
 mod pair;
-pub use pair::Pair;
+mod point;
 mod seq;
-pub use seq::Seq;
 pub mod set_union;
 pub mod test;
+mod with_bot;
+mod with_top;
+
+pub use conflict::Conflict;
+pub use dom_pair::DomPair;
+pub use ord::{Max, Min};
+pub use pair::Pair;
+pub use point::Point;
+pub use seq::Seq;
+pub use with_bot::WithBot;
+pub use with_top::WithTop;
 
 /// Trait for lattice merge (AKA "join" or "least upper bound").
 pub trait Merge<Other> {
@@ -88,7 +90,19 @@ where
 ///
 /// This should only be implemented between different representations of the same lattice type.
 /// This should recursively convert nested lattice types, but not non-lattice ("scalar") types.
-pub trait ConvertFrom<Other> {
+pub trait LatticeFrom<Other> {
     /// Convert from the `Other` lattice into `Self`.
-    fn from(other: Other) -> Self;
+    fn lattice_from(other: Other) -> Self;
+}
+
+/// Trait to check if a lattice instance is bottom (⊥).
+pub trait IsBot {
+    /// Returns if `self` is lattice bottom (⊥).
+    fn is_bot(&self) -> bool;
+}
+
+/// Trait to check if a lattice instance is top (⊤) and therefore cannot change any futher.
+pub trait IsTop {
+    /// Returns if `self` is lattice top (⊤).
+    fn is_top(&self) -> bool;
 }

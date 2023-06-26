@@ -2,7 +2,7 @@ use std::cmp::Ordering::{self, *};
 
 use cc_traits::Iter;
 
-use crate::{ConvertFrom, LatticeOrd, Merge};
+use crate::{IsBot, LatticeFrom, LatticeOrd, Merge};
 
 /// Sequence compound lattice.
 ///
@@ -39,14 +39,14 @@ impl<Lat> Default for Seq<Lat> {
 
 impl<LatSelf, LatOther> Merge<Seq<LatOther>> for Seq<LatSelf>
 where
-    LatSelf: Merge<LatOther> + ConvertFrom<LatOther>,
+    LatSelf: Merge<LatOther> + LatticeFrom<LatOther>,
 {
     fn merge(&mut self, mut other: Seq<LatOther>) -> bool {
         let mut changed = false;
         // Extend `self` if `other` is longer.
         if self.seq.len() < other.seq.len() {
             self.seq
-                .extend(other.seq.drain(self.seq.len()..).map(LatSelf::from));
+                .extend(other.seq.drain(self.seq.len()..).map(LatSelf::lattice_from));
             changed = true;
         }
         // Merge intersecting indices.
@@ -57,12 +57,12 @@ where
     }
 }
 
-impl<LatSelf, LatOther> ConvertFrom<Seq<LatOther>> for Seq<LatSelf>
+impl<LatSelf, LatOther> LatticeFrom<Seq<LatOther>> for Seq<LatSelf>
 where
-    LatSelf: ConvertFrom<LatOther>,
+    LatSelf: LatticeFrom<LatOther>,
 {
-    fn from(other: Seq<LatOther>) -> Self {
-        Self::new(other.seq.into_iter().map(LatSelf::from).collect())
+    fn lattice_from(other: Seq<LatOther>) -> Self {
+        Self::new(other.seq.into_iter().map(LatSelf::lattice_from).collect())
     }
 }
 
@@ -119,6 +119,12 @@ where
 impl<LatSelf, LatOther> LatticeOrd<Seq<LatOther>> for Seq<LatSelf> where
     Self: PartialOrd<Seq<LatOther>>
 {
+}
+
+impl<Lat> IsBot for Seq<Lat> {
+    fn is_bot(&self) -> bool {
+        self.seq.is_empty()
+    }
 }
 
 #[cfg(test)]
