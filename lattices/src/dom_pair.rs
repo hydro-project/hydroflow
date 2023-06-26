@@ -17,10 +17,12 @@ use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 #[derive(Copy, Clone, Debug, Default, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DomPair<Key, Val> {
-    /// The `Key` of the  dominating pair lattice, usually a timestamp
+    /// The `Key` of the  dominating pair lattice, usually a timestamp.
+    ///
+    /// This field is public as it is always monotonically increasing in its lattice.
     pub key: Key,
     /// The `Val` of the dominating pair lattice.
-    pub val: Val,
+    val: Val,
 }
 
 impl<Key, Val> DomPair<Key, Val> {
@@ -32,6 +34,21 @@ impl<Key, Val> DomPair<Key, Val> {
     /// Create a `DomPair` from the given `Into<Key>` and `Into<Val>`.
     pub fn new_from(key: impl Into<Key>, val: impl Into<Val>) -> Self {
         Self::new(key.into(), val.into())
+    }
+
+    /// Reveal the inner value as a shared reference.
+    pub fn as_reveal_ref(&self) -> (&Key, &Val) {
+        (&self.key, &self.val)
+    }
+
+    /// Reveal the inner value as an exclusive reference.
+    pub fn as_reveal_mut(&mut self) -> (&mut Key, &mut Val) {
+        (&mut self.key, &mut self.val)
+    }
+
+    /// Gets the inner by value, consuming self.
+    pub fn into_reveal(self) -> (Key, Val) {
+        (self.key, self.val)
     }
 }
 

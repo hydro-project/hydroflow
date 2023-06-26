@@ -14,7 +14,7 @@ use crate::{IsTop, LatticeFrom, LatticeOrd, Merge};
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug, Default, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Conflict<T>(pub Option<T>);
+pub struct Conflict<T>(Option<T>);
 impl<T> Conflict<T> {
     /// Create a new `Conflict` lattice instance from a value.
     pub fn new(val: Option<T>) -> Self {
@@ -24,6 +24,21 @@ impl<T> Conflict<T> {
     /// Create a new `Conflict` lattice instance from a value using `Into`.
     pub fn new_from(val: impl Into<Option<T>>) -> Self {
         Self::new(val.into())
+    }
+
+    /// Reveal the inner value as a shared reference.
+    pub fn as_reveal_ref(&self) -> Option<&T> {
+        self.0.as_ref()
+    }
+
+    /// Reveal the inner value as an exclusive reference.
+    pub fn as_reveal_mut(&mut self) -> Option<&mut T> {
+        self.0.as_mut()
+    }
+
+    /// Gets the inner by value, consuming self.
+    pub fn into_reveal(self) -> Option<T> {
+        self.0
     }
 }
 

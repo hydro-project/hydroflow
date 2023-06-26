@@ -24,6 +24,21 @@ impl<LatA, LatB> Pair<LatA, LatB> {
     pub fn new_from(a: impl Into<LatA>, b: impl Into<LatB>) -> Self {
         Self::new(a.into(), b.into())
     }
+
+    /// Reveal the inner value as a shared reference.
+    pub fn as_reveal_ref(&self) -> (&LatA, &LatB) {
+        (&self.a, &self.b)
+    }
+
+    /// Reveal the inner value as an exclusive reference.
+    pub fn as_reveal_mut(&mut self) -> (&mut LatA, &mut LatB) {
+        (&mut self.a, &mut self.b)
+    }
+
+    /// Gets the inner by value, consuming self.
+    pub fn into_reveal(self) -> (LatA, LatB) {
+        (self.a, self.b)
+    }
 }
 
 impl<LatASelf, LatAOther, LatBSelf, LatBOther> Merge<Pair<LatAOther, LatBOther>>
