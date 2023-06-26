@@ -1,4 +1,7 @@
-#![feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)]
+#![cfg_attr(
+    feature = "diagnostics",
+    feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)
+)]
 #![allow(clippy::explicit_auto_deref)]
 
 use hydroflow_lang::diagnostic::{Diagnostic, Level};
@@ -59,14 +62,33 @@ fn hydroflow_syntax_internal(
     let input = parse_macro_input!(input as HfCode);
     let root = root();
     let (graph_code_opt, diagnostics) = build_hfcode(input, &root);
-    diagnostics
-        .iter()
-        .filter(|diag| Some(diag.level) <= min_diagnostic_level)
-        .for_each(Diagnostic::emit);
-    graph_code_opt
+    let tokens = graph_code_opt
         .map(|(_graph, code)| code)
-        .unwrap_or_else(|| quote! { #root::scheduled::graph::Hydroflow::new() })
+        .unwrap_or_else(|| quote! { #root::scheduled::graph::Hydroflow::new() });
+
+    let diagnostics = diagnostics
+        .iter()
+        .filter(|diag: &&Diagnostic| Some(diag.level) <= min_diagnostic_level);
+
+    #[cfg(feature = "diagnostics")]
+    {
+        diagnostics.for_each(Diagnostic::emit);
+        tokens.into()
+    }
+
+    #[cfg(not(feature = "diagnostics"))]
+    {
+        let diagnostics = diagnostics.map(Diagnostic::to_tokens);
+        quote! {
+            {
+                #(
+                    #diagnostics
+                )*
+                #tokens
+            }
+        }
         .into()
+    }
 }
 
 /// Parse Hydroflow "surface syntax" without emitting code.

@@ -99,7 +99,7 @@ Client live!
 Now you can type strings in the client, which are sent to the server, echo'ed back, and printed at the client. E.g.:
 ```console
 Hello!
-2022-12-20 18:51:50.181647 UTC: Got Echo { payload: "Hello!", ts: 2022-12-20T18:51:50.180874Z } from 127.0.0.1:61065
+2023-06-01 00:19:53.906635 UTC: Got Echo { payload: "Hello!", ts: 2023-06-01T00:19:53.906123Z } from 127.0.0.1:61019
 ```
 
 ## Alternative: Checking out the Hydroflow Repository

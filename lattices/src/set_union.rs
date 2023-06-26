@@ -5,7 +5,7 @@ use std::collections::{BTreeSet, HashSet};
 
 use crate::cc_traits::{Iter, Len, Set};
 use crate::collections::{ArraySet, SingletonSet};
-use crate::{ConvertFrom, LatticeOrd, Merge};
+use crate::{IsBot, LatticeFrom, LatticeOrd, Merge};
 
 /// Set-union lattice.
 ///
@@ -38,12 +38,12 @@ where
     }
 }
 
-impl<SetSelf, SetOther, Item> ConvertFrom<SetUnion<SetOther>> for SetUnion<SetSelf>
+impl<SetSelf, SetOther, Item> LatticeFrom<SetUnion<SetOther>> for SetUnion<SetSelf>
 where
     SetSelf: FromIterator<Item>,
     SetOther: IntoIterator<Item = Item>,
 {
-    fn from(other: SetUnion<SetOther>) -> Self {
+    fn lattice_from(other: SetUnion<SetOther>) -> Self {
         Self(other.0.into_iter().collect())
     }
 }
@@ -98,6 +98,15 @@ where
     }
 }
 impl<SetSelf> Eq for SetUnion<SetSelf> where Self: PartialEq {}
+
+impl<Set> IsBot for SetUnion<Set>
+where
+    Set: Len,
+{
+    fn is_bot(&self) -> bool {
+        self.0.is_empty()
+    }
+}
 
 /// [`std::collections::HashSet`]-backed [`SetUnion`] lattice.
 pub type SetUnionHashSet<Item> = SetUnion<HashSet<Item>>;

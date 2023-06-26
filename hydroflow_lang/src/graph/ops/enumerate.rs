@@ -4,6 +4,7 @@ use super::{
     FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorInstance,
     OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
+use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::OpInstGenerics;
 
 /// > 1 input stream of type `T`, 1 output stream of type `(usize, T)`
@@ -17,7 +18,7 @@ use crate::graph::OpInstGenerics;
 ///
 /// ```hydroflow
 /// source_iter(vec!["hello", "world"]) -> enumerate()
-///     -> for_each(|(i, x)| println!("{}: {}", i, x));
+///     -> assert([(0, "hello"), (1, "world")]);
 /// ```
 pub const ENUMERATE: OperatorConstraints = OperatorConstraints {
     name: "enumerate",
@@ -58,7 +59,7 @@ pub const ENUMERATE: OperatorConstraints = OperatorConstraints {
                        },
                    ..
                },
-               _| {
+               diagnostics| {
         let persistence = match persistence_args[..] {
             [] => Persistence::Static,
             [a] => a,
@@ -90,6 +91,14 @@ pub const ENUMERATE: OperatorConstraints = OperatorConstraints {
                     let mut counter = #context.state_ref(#counter_ident).borrow_mut();
                 },
             ),
+            Persistence::Mutable => {
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    "An implementation of 'mutable does not exist",
+                ));
+                return Err(());
+            }
         };
 
         let map_fn = quote_spanned! {op_span=>

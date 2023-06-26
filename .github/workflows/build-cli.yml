@@ -84,16 +84,16 @@ jobs:
           name: wheels
           path: hydro_cli/dist
 
-  musllinux-cross:
+  linux-cross:
     runs-on: ubuntu-latest
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     needs: pre_job
     strategy:
       matrix:
         platform:
-          - target: aarch64-unknown-linux-musl
+          - target: aarch64-unknown-linux-gnu
             arch: aarch64
-          - target: armv7-unknown-linux-musleabihf
+          - target: armv7-unknown-linux-gnueabihf
             arch: armv7
     steps:
       - uses: actions/checkout@v3
@@ -164,7 +164,7 @@ jobs:
     needs:
       - macos-universal
       - linux
-      - musllinux-cross
+      - linux-cross
       - windows
     if: ${{ startsWith(github.ref, 'refs/tags/hydro_cli-') }}
     steps:

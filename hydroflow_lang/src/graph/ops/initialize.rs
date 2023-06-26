@@ -13,7 +13,8 @@ use crate::graph::OperatorInstance;
 /// Emits a single unit `()` at the start of the first tick.
 ///
 /// ```hydroflow
-/// initialize() -> for_each(|()| println!("This only runs one time!"));
+/// initialize()
+///     -> assert([()]);
 /// ```
 pub const INITIALIZE: OperatorConstraints = OperatorConstraints {
     name: "initialize",

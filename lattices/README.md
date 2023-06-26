@@ -29,10 +29,12 @@ Take a look at the [`lattice` rustdocs](https://hydro-project.github.io/hydroflo
 * [`Min<T>`] and [`Max<T>`] - totally-orderd lattices.
 * [`set_union::SetUnion`] - set-union lattice of scalar values.
 * [`map_union::MapUnion`] - scalar keys with nested lattice values.
-* [`Bottom<Lat>`] - wraps a lattice in `Option` with `None` as the new bottom value.
+* [`WithBot<Lat>`] - wraps a lattice in `Option` with `None` as the new bottom value.
+* [`WithTop<Lat>`] - wraps a lattice in `Option` with `None` as the new _top_ value.
 * [`Pair<LatA, LatB>`] - product of two nested lattices.
 * [`Seq<Lat>`] - growing `Vec` of nested lattices, like `MapUnion<<usize, Lat>>` but without missing entries.
 * [`DomPair<LatKey, LatVal>`]* - a versioned pair where the `LatKey` dominates the `LatVal`.
+* [`Conflict<T>`]* - adds a "conflict" top to domain `T`. Merging inequal `T`s results in top.
 * [`Point<T>`]* - a single "point lattice" value which cannot be merged with any inequal value.
 
 *Special implementations which do not obey all lattice properties but are still useful under
@@ -72,10 +74,16 @@ Implementors should use the [`test::check_partial_ord_properties`] method to che
 `PartialOrd` implementation, and should use the [`test::check_lattice_ord`] to ensure the partial
 order agrees with the `Merge`-derived `NaiveLatticeOrd` order.
 
-### `ConvertFrom`
+### `LatticeFrom`
 
-[`ConvertFrom`] is equivalent to the [`std::convert::From`] trait but with some extra
-lattice-specific semantics. `ConvertFrom` should be implemented only between different
-representations of the same lattice type, e.g. between [`set_union::SetUnionBTreeSet`] and [`set_union::SetUnionHashSet`].
-For compound lattice (lattices with nested lattice types), the `ConvertFrom` implementation should
-be recursive for those nested lattices.
+[`LatticeFrom`] is equivalent to the [`std::convert::From`] trait but specific to lattices.
+`LatticeFrom` should be implemented only between different representations of the same lattice
+type, e.g. between [`set_union::SetUnionBTreeSet`] and [`set_union::SetUnionHashSet`]. For compound
+lattice (lattices with nested lattice types), the `LatticeFrom` implementation should be recursive
+for those nested lattices.
+
+### `IsBot` and `IsTop`
+
+A bottom (⊥) is strictly less than all other values. A top (⊤) is strictly greater than all other
+values. `IsBot::is_bot` and `IsTop::is_top` determine if a lattice instance is top or
+bottom respectively.

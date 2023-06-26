@@ -1,4 +1,4 @@
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 
 use super::ops::tee::TEE;
 use super::ops::union::UNION;

@@ -1,11 +1,9 @@
-#![feature(never_type)]
-#![feature(type_alias_impl_trait)]
-#![feature(impl_trait_in_assoc_type)]
+#![cfg_attr(nightly, feature(never_type))]
 #![allow(type_alias_bounds)]
 #![allow(clippy::let_and_return)]
 #![allow(clippy::iter_with_drain)]
 #![allow(clippy::explicit_auto_deref)]
-#![deny(missing_docs)] // TODO(mingwei): #![forbid(missing_docs)] when all docs are done.
+#![warn(missing_docs)]
 
 //! Hydroflow is a low-level dataflow-based runtime system for the [Hydro Project](https://hydro.run/).
 //!
@@ -46,29 +44,15 @@ pub use hydroflow_macro::{
     hydroflow_test as test,
 };
 
+#[cfg(not(nightly))]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+/// Stand-in for the [nightly "never" type `!`](https://doc.rust-lang.org/std/primitive.never.html)
+pub enum Never {}
+#[cfg(nightly)]
+pub type Never = !;
+
 #[cfg(doctest)]
 mod booktest {
-    macro_rules! booktest {
-        ($path:literal, $i:ident) => {
-            #[doc = include_str!(concat!("../../docs/docs/hydroflow/", $path, stringify!($i), ".md"))]
-            mod $i {}
-        };
-    }
-
-    booktest!("quickstart/", example_1_simplest);
-    booktest!("quickstart/", example_2_simple);
-    booktest!("quickstart/", example_3_stream);
-    booktest!("quickstart/", example_4_neighbors);
-    booktest!("quickstart/", example_5_reachability);
-    booktest!("quickstart/", example_6_unreachability);
-    booktest!("quickstart/", example_7_echo_server);
-    booktest!("quickstart/", example_8_chat_server);
-
-    booktest!("syntax/", index);
-    booktest!("syntax/", surface_embedding);
-    booktest!("syntax/", surface_flows);
-    booktest!("syntax/", surface_data);
-
     mod surface_ops {
         hydroflow_macro::surface_booktest_operators!();
     }

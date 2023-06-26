@@ -16,14 +16,15 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// will pass through all received inputs to the output unchanged.
 ///
 /// ```rustbook
+///     use hydroflow::lattices::Max;
+///
 ///     let (tx, rx) = hydroflow::util::unbounded_channel::<()>();
 ///
-///     // Will print 0, 1, 2, 3, 4 each on a new line just once.
 ///     let mut df = hydroflow::hydroflow_syntax! {
 ///         source_iter(0..5) -> persist()
-///             -> map(|x| hydroflow::lattices::Max::new(x))
-///             -> lattice_batch::<hydroflow::lattices::Max<usize>>(rx)
-///             -> for_each(|x| { println!("{x:?}"); });
+///             -> map(|x| Max::new(x))
+///             -> lattice_batch::<Max<usize>>(rx)
+///             -> assert([Max::new(4)]);
 ///     };
 ///
 ///     tx.send(()).unwrap();
@@ -94,7 +95,7 @@ pub const LATTICE_BATCH: OperatorConstraints = OperatorConstraints {
                             if let Some(lattice) = &mut *lattice {
                                 #root::lattices::Merge::merge(lattice, i);
                             } else {
-                                *lattice = Some(#root::lattices::ConvertFrom::from(i));
+                                *lattice = Some(#root::lattices::LatticeFrom::lattice_from(i));
                             };
                         }
                     }
@@ -129,7 +130,7 @@ pub const LATTICE_BATCH: OperatorConstraints = OperatorConstraints {
                         if let Some(lattice) = &mut *lattice {
                             #root::lattices::Merge::merge(&mut *lattice, x);
                         } else {
-                            *lattice = Some(#root::lattices::ConvertFrom::from(x));
+                            *lattice = Some(#root::lattices::LatticeFrom::lattice_from(x));
                         };
                     });
                 },

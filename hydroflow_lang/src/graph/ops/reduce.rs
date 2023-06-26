@@ -4,6 +4,7 @@ use super::{
     DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
     OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
+use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// > 1 input stream, 1 output stream
@@ -17,13 +18,12 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
 ///
 /// ```hydroflow
-/// // should print 120 (i.e., 1*2*3*4*5)
 /// source_iter([1,2,3,4,5])
 ///     -> reduce(|mut accum, elem| {
 ///         accum *= elem;
 ///         accum
 ///     })
-///     -> for_each(|e| println!("{}", e));
+///     -> assert([120]);
 /// ```
 pub const REDUCE: OperatorConstraints = OperatorConstraints {
     name: "reduce",
@@ -62,7 +62,7 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
                        },
                    ..
                },
-               _| {
+               diagnostics| {
         assert!(is_pull);
 
         let persistence = match persistence_args[..] {
@@ -104,6 +104,14 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
                     #context.schedule_subgraph(#context.current_subgraph(), false);
                 },
             ),
+            Persistence::Mutable => {
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    "An implementation of 'mutable does not exist",
+                ));
+                return Err(());
+            }
         };
 
         Ok(OperatorWriteOutput {

@@ -239,7 +239,11 @@ fn main() {
                     let op_17v1 = sg_2v1_node_17v1_hashtable
                         .iter()
                         .map(
-                            #[allow(suspicious_double_ref_op, clippy::clone_on_copy)]
+                            #[allow(
+                                unknown_lints,
+                                suspicious_double_ref_op,
+                                clippy::clone_on_copy
+                            )]
                             |(k, v)| (k.clone(), v.clone()),
                         );
                     let op_17v1 = {

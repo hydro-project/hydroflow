@@ -15,9 +15,10 @@ use super::{
 /// ```hydroflow
 /// source_iter(vec!["hello", "world"]) -> my_union;
 /// source_iter(vec!["stay", "gold"]) -> my_union;
-/// source_iter(vec!["don\'t", "give", "up"]) -> my_union;
-/// my_union = union() -> map(|x| x.to_uppercase())
-///     -> for_each(|x| println!("{}", x));
+/// source_iter(vec!["don't", "give", "up"]) -> my_union;
+/// my_union = union()
+///     -> map(|x| x.to_uppercase())
+///     -> assert(["HELLO", "WORLD", "STAY", "GOLD", "DON'T", "GIVE", "UP"]);
 /// ```
 pub const UNION: OperatorConstraints = OperatorConstraints {
     name: "union",

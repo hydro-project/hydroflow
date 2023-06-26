@@ -51,7 +51,7 @@ const config = {
         'sha384-odtC+0UGzzFL/6PNoE8rX/SPcQDXBJ+uRepguP4QkPCm2LBxH3FA3y+fKSiJ+AmM',
       crossorigin: 'anonymous',
     },
-  ],  
+  ],
 
   presets: [
     [
@@ -211,7 +211,7 @@ const config = {
         appId: 'C2TSTQAKIC',
         apiKey: '38cef87035f42759bc1dd871e91e06ba',
         indexName: 'hydro'
-      },  
+      },
     }),
 };
 

@@ -229,6 +229,7 @@ macro_rules! declare_ops {
 }
 declare_ops![
     anti_join::ANTI_JOIN,
+    assert::ASSERT,
     batch::BATCH,
     cross_join::CROSS_JOIN,
     demux::DEMUX,
@@ -259,6 +260,8 @@ declare_ops![
     next_tick::NEXT_TICK,
     null::NULL,
     persist::PERSIST,
+    persist_mut::PERSIST_MUT,
+    persist_mut_keyed::PERSIST_MUT_KEYED,
     reduce::REDUCE,
     spin::SPIN,
     sort::SORT,
@@ -404,6 +407,7 @@ where
 pub enum Persistence {
     Tick,
     Static,
+    Mutable,
 }
 
 fn make_missing_runtime_msg(op_name: &str) -> Literal {

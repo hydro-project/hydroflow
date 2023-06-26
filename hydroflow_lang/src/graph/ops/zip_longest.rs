@@ -2,8 +2,9 @@ use quote::quote_spanned;
 use syn::parse_quote;
 
 use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorConstraints,
-    OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1, OperatorCategory,
+    DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorCategory,
+    OperatorConstraints, OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
 
@@ -14,15 +15,13 @@ use crate::diagnostic::{Diagnostic, Level};
 /// If you intead want to discard the excess, use [`zip`](#zip) instead.
 ///
 /// ```hydroflow
-/// source_iter(0..3) -> [0]my_zip_longest;
-/// source_iter(0..5) -> [1]my_zip_longest;
-/// my_zip_longest = zip_longest() -> for_each(|either| println!("{:?}", either));
-/// // prints:
-/// // Both(0, 0)
-/// // Both(1, 1)
-/// // Both(2, 2)
-/// // Right(3)
-/// // Right(4)
+/// source_iter(0..2) -> [0]my_zip_longest;
+/// source_iter(0..3) -> [1]my_zip_longest;
+/// my_zip_longest = zip_longest()
+///     -> assert([
+///         itertools::EitherOrBoth::Both(0, 0),
+///         itertools::EitherOrBoth::Both(1, 1),
+///         itertools::EitherOrBoth::Right(2)]);
 /// ```
 pub const ZIP_LONGEST: OperatorConstraints = OperatorConstraints {
     name: "zip_longest",

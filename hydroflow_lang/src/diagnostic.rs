@@ -1,6 +1,8 @@
 use std::borrow::Cow;
+use std::hash::{Hash, Hasher};
 
-use proc_macro2::Span;
+use proc_macro2::{Ident, Literal, Span, TokenStream};
+use quote::quote_spanned;
 use serde::{Deserialize, Serialize};
 
 use crate::pretty_span::PrettySpan;
@@ -51,6 +53,7 @@ impl Diagnostic {
             message,
         }
     }
+
     pub fn emit(&self) {
         #[cfg(feature = "diagnostics")]
         {
@@ -63,6 +66,40 @@ impl Diagnostic {
             pm_diag.emit();
         }
     }
+
+    pub fn to_tokens(&self) -> TokenStream {
+        let msg_lit: Literal = Literal::string(&self.message);
+        let unique_ident = {
+            let mut hasher = std::collections::hash_map::DefaultHasher::new();
+            self.level.hash(&mut hasher);
+            self.message.hash(&mut hasher);
+            let hash = hasher.finish();
+            Ident::new(&format!("diagnostic_{}", hash), self.span)
+        };
+
+        if Level::Error == self.level {
+            quote_spanned! {self.span=>
+                {
+                    ::std::compile_error!(#msg_lit);
+                }
+            }
+        } else {
+            // Emit as a `#[deprecated]` warning message.
+            let level_ident = Ident::new(&format!("{:?}", self.level), self.span);
+            quote_spanned! {self.span=>
+                {
+                    #[allow(dead_code, non_snake_case)]
+                    fn #unique_ident() {
+                        #[deprecated = #msg_lit]
+                        struct #level_ident {}
+                        #[warn(deprecated)]
+                        #level_ident {};
+                    }
+                }
+            }
+        }
+    }
+
     pub fn to_serde(&self) -> Diagnostic<SerdeSpan> {
         let Self {
             span,

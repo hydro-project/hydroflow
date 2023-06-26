@@ -5,6 +5,7 @@ use super::{
     FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     Persistence, WriteContextArgs, RANGE_1,
 };
+use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
@@ -15,7 +16,8 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// // should print `(hello, (world, cleveland))`
 /// source_iter(vec![("hello", "world"), ("stay", "gold")]) -> [0]my_join;
 /// source_iter(vec![("hello", "cleveland")]) -> [1]my_join;
-/// my_join = join() -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
+/// my_join = join()
+///     -> assert([("hello", ("world", "cleveland"))]);
 /// ```
 ///
 /// `join` can also be provided with one or two generic lifetime persistence arguments, either
@@ -120,7 +122,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                        },
                    ..
                },
-               _| {
+               diagnostics| {
         let join_type =
             type_args
                 .get(0)
@@ -143,7 +145,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
             quote_spanned!(op_span=>)
         };
 
-        let make_joindata = |persistence, side| {
+        let mut make_joindata = |persistence, side| {
             let joindata_ident = wc.make_ident(format!("joindata_{}", side));
             let borrow_ident = wc.make_ident(format!("joindata_{}_borrow", side));
             let (init, borrow) = match persistence {
@@ -165,8 +167,16 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                         &mut *#borrow_ident
                     },
                 ),
+                Persistence::Mutable => {
+                    diagnostics.push(Diagnostic::spanned(
+                        op_span,
+                        Level::Error,
+                        "An implementation of 'mutable does not exist",
+                    ));
+                    return Err(());
+                }
             };
-            (joindata_ident, borrow_ident, init, borrow)
+            Ok((joindata_ident, borrow_ident, init, borrow))
         };
 
         let persistences = match persistence_args[..] {
@@ -177,9 +187,9 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
         };
 
         let (lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow) =
-            make_joindata(persistences[0], "lhs");
+            make_joindata(persistences[0], "lhs")?;
         let (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow) =
-            make_joindata(persistences[1], "rhs");
+            make_joindata(persistences[1], "rhs")?;
 
         let write_prologue = quote_spanned! {op_span=>
             let #lhs_joindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
