@@ -20,8 +20,9 @@ impl<'a, const SIZE: usize> Serialize for MyLastWriteWinsWrapper<'a, SIZE> {
 
         let mut struct_serializer = serializer.serialize_struct("DomPair", 2)?;
 
-        struct_serializer.serialize_field("key", &self.0.key)?;
-        struct_serializer.serialize_field("val", &WithBotWrapper(&self.0.val))?;
+        let (key, val) = self.0.as_reveal_ref();
+        struct_serializer.serialize_field("key", key)?;
+        struct_serializer.serialize_field("val", &WithBotWrapper(val))?;
 
         struct_serializer.end()
     }
@@ -58,7 +59,7 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for MyLastWriteWinsDeserialize
                     })?
                     .unwrap();
 
-                Ok(Self::Value { key, val })
+                Ok(Self::Value::new(key, val))
             }
 
             fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
@@ -90,7 +91,7 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for MyLastWriteWinsDeserialize
                 let key = key.unwrap();
                 let val = val.unwrap();
 
-                Ok(Self::Value { key, val })
+                Ok(Self::Value::new(key, val))
             }
         }
 

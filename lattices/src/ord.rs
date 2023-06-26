@@ -6,7 +6,7 @@ use crate::{LatticeFrom, LatticeOrd, Merge};
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug, Default, PartialOrd, Ord, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Max<T>(pub T);
+pub struct Max<T>(T);
 impl<T> Max<T> {
     /// Create a new `Max` lattice instance from a `T`.
     pub fn new(val: T) -> Self {
@@ -16,6 +16,21 @@ impl<T> Max<T> {
     /// Create a new `Max` lattice instance from an `Into<T>` value.
     pub fn from(val: impl Into<T>) -> Self {
         Self::new(val.into())
+    }
+
+    /// Reveal the inner value as a shared reference.
+    pub fn as_reveal_ref(&self) -> &T {
+        &self.0
+    }
+
+    /// Reveal the inner value as an exclusive reference.
+    pub fn as_reveal_mut(&mut self) -> &mut T {
+        &mut self.0
+    }
+
+    /// Gets the inner by value, consuming self.
+    pub fn into_reveal(self) -> T {
+        self.0
     }
 }
 
@@ -48,7 +63,7 @@ impl<T> LatticeOrd<Self> for Max<T> where Self: PartialOrd<Self> {}
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Min<T>(pub T);
+pub struct Min<T>(T);
 impl<T> Min<T> {
     /// Create a new `Min` lattice instance from a `T`.
     pub fn new(val: T) -> Self {
@@ -58,6 +73,21 @@ impl<T> Min<T> {
     /// Create a new `Min` lattice instance from an `Into<T>` value.
     pub fn new_from(val: impl Into<T>) -> Self {
         Self::new(val.into())
+    }
+
+    /// Reveal the inner value as a shared reference.
+    pub fn as_reveal_ref(&self) -> &T {
+        &self.0
+    }
+
+    /// Reveal the inner value as an exclusive reference.
+    pub fn as_reveal_mut(&mut self) -> &mut T {
+        &mut self.0
+    }
+
+    /// Gets the inner by value, consuming self.
+    pub fn into_reveal(self) -> T {
+        self.0
     }
 }
 
