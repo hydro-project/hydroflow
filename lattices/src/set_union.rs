@@ -24,6 +24,21 @@ impl<Set> SetUnion<Set> {
     pub fn new_from(val: impl Into<Set>) -> Self {
         Self::new(val.into())
     }
+
+    /// Reveal the inner value as a shared reference.
+    pub fn as_reveal_ref(&self) -> &Set {
+        &self.0
+    }
+
+    /// Reveal the inner value as an exclusive reference.
+    pub fn as_reveal_mut(&mut self) -> &mut Set {
+        &mut self.0
+    }
+
+    /// Gets the inner by value, consuming self.
+    pub fn into_reveal(self) -> Set {
+        self.0
+    }
 }
 
 impl<SetSelf, SetOther, Item> Merge<SetUnion<SetOther>> for SetUnion<SetSelf>

@@ -27,6 +27,21 @@ impl<Lat> Seq<Lat> {
     pub fn new_from(seq: impl Into<Vec<Lat>>) -> Self {
         Self::new(seq.into())
     }
+
+    /// Reveal the inner value as a shared reference.
+    pub fn as_reveal_ref(&self) -> &Vec<Lat> {
+        &self.seq
+    }
+
+    /// Reveal the inner value as an exclusive reference.
+    pub fn as_reveal_mut(&mut self) -> &mut Vec<Lat> {
+        &mut self.seq
+    }
+
+    /// Gets the inner by value, consuming self.
+    pub fn into_reveal(self) -> Vec<Lat> {
+        self.seq
+    }
 }
 
 impl<Lat> Default for Seq<Lat> {

@@ -21,7 +21,7 @@ impl<K, Lattice> Default for HalfJoinStateLattice<K, Lattice> {
 
 impl<K, Lattice> Clear for HalfJoinStateLattice<K, Lattice> {
     fn clear(&mut self) {
-        self.table.0.clear()
+        self.table.as_reveal_mut().clear()
     }
 }
 
@@ -33,7 +33,7 @@ where
     where
         Lattice: Merge<LatticeDelta> + LatticeFrom<LatticeDelta>,
     {
-        let entry = self.table.0.entry(k);
+        let entry = self.table.as_reveal_mut().entry(k);
 
         match entry {
             Entry::Occupied(mut e) => e.get_mut().merge(v),
@@ -69,8 +69,8 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(key) = self.updated_keys.next() {
-            if let Some(lhs) = self.state.0.table.0.get(&key) {
-                if let Some(rhs) = self.state.1.table.0.get(&key) {
+            if let Some(lhs) = self.state.0.table.as_reveal_ref().get(&key) {
+                if let Some(rhs) = self.state.1.table.as_reveal_ref().get(&key) {
                     return Some((key, (lhs.clone(), rhs.clone())));
                 }
             }
