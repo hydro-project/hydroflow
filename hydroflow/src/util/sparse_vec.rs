@@ -3,11 +3,19 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::iter::FusedIterator;
 
-#[derive(Default)]
 /// A vector that supports efficient deletion without reordering all subsequent items.
 pub struct SparseVec<T> {
     items: Vec<Option<T>>,
     item_locs: HashMap<T, Vec<usize>>,
+}
+
+impl<T> Default for SparseVec<T> {
+    fn default() -> Self {
+        SparseVec {
+            items: Vec::default(),
+            item_locs: HashMap::default(),
+        }
+    }
 }
 
 impl<T: Clone + Eq + Hash> SparseVec<T> {
@@ -54,5 +62,15 @@ mod test {
         x.delete(&1);
 
         assert_eq!(collect(&x), vec![0, 2]);
+    }
+
+    #[test]
+    fn can_implement_default_on_types_that_dont_implement_default() {
+        struct NoDefault;
+
+        let x = SparseVec::<NoDefault>::default();
+
+        assert_eq!(x.items.len(), 0);
+        assert_eq!(x.item_locs.len(), 0);
     }
 }
