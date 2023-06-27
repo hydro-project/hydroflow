@@ -1,17 +1,17 @@
 use std::net::SocketAddr;
 use std::path::Path;
 
-use clap::{Parser, ValueEnum};
-use proposer::run_proposer;
-use hydroflow::tokio;
-use hydroflow::util::{ipv4_resolve};
-use serde::Deserialize;
 use acceptor::run_acceptor;
+use clap::{Parser, ValueEnum};
+use hydroflow::tokio;
+use hydroflow::util::ipv4_resolve;
+use proposer::run_proposer;
+use serde::Deserialize;
 
-mod proposer;
-mod helpers;
-mod protocol;
 mod acceptor;
+mod helpers;
+mod proposer;
+mod protocol;
 
 #[derive(Clone, ValueEnum, Debug)]
 enum Role {

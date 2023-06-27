@@ -1,11 +1,12 @@
-use std::{net::SocketAddr, collections::HashSet};
+use std::collections::HashSet;
+use std::net::SocketAddr;
 
 use serde::{Deserialize, Serialize};
 
 #[derive(Ord, PartialEq, Eq, Clone, Serialize, Deserialize, Debug, Hash, Copy)]
 pub struct Ballot {
     pub id: u16,
-    pub num: u16
+    pub num: u16,
 }
 
 impl PartialOrd for Ballot {
@@ -50,5 +51,5 @@ pub struct P2b {
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug, Hash)]
 pub struct IAmLeader {
-    pub ballot: Ballot
+    pub ballot: Ballot,
 }

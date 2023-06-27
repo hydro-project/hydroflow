@@ -6,11 +6,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use futures::join;
 use hydroflow::compiled::pull::HalfMultisetJoinState;
 use hydroflow::hydroflow_syntax;
+use hydroflow::lattices::{DomPair, Max};
 use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow::util::{UdpSink, UdpStream, bind_udp_bytes, Persistence::*};
-use hydroflow::lattices::{Max, DomPair};
+use hydroflow::util::Persistence::*;
+use hydroflow::util::{bind_udp_bytes, UdpSink, UdpStream};
 
-use crate::helpers::{periodic, get_phase_1_addr, get_phase_2_addr, get_config};
+use crate::helpers::{get_config, get_phase_1_addr, get_phase_2_addr, periodic};
 use crate::protocol::*;
 use crate::{Config, GraphType};
 
@@ -31,12 +32,13 @@ pub(crate) async fn run_proposer(
     let leader_future = bind_udp_bytes(stable_leader_addr);
     let p1a_future = bind_udp_bytes(phase_1_addr);
     let p2a_future = bind_udp_bytes(phase_2_addr);
-    let ((stable_leader_sink, stable_leader_src, _),
+    let (
+        (stable_leader_sink, stable_leader_src, _),
         (p1a_sink, p1b_src, _),
-        (p2a_sink, p2b_src, _))
-        = join!(leader_future, p1a_future, p2a_future);
+        (p2a_sink, p2b_src, _),
+    ) = join!(leader_future, p1a_future, p2a_future);
 
-    let id = addr.port(); //TODO assumes that each proposer has a different port. True locally, but may not be true in distributed setting
+    let id = addr.port(); // TODO assumes that each proposer has a different port. True locally, but may not be true in distributed setting
     let config = get_config(path);
     let f = config.f;
 
@@ -44,7 +46,11 @@ pub(crate) async fn run_proposer(
     let is_node_0 = addr == config.proposers[0].parse::<SocketAddr>().unwrap();
     println!("is_node_0: {:?}", is_node_0);
     let i_am_leader_resend_trigger = periodic(config.i_am_leader_resend_timeout);
-    let i_am_leader_check_timeout = if is_node_0 { config.i_am_leader_check_timeout_node_0} else { config.i_am_leader_check_timeout_other_nodes};
+    let i_am_leader_check_timeout = if is_node_0 {
+        config.i_am_leader_check_timeout_node_0
+    } else {
+        config.i_am_leader_check_timeout_other_nodes
+    };
     let i_am_leader_check_trigger = periodic(i_am_leader_check_timeout);
 
     let mut df: Hydroflow = hydroflow_syntax! {
@@ -61,7 +67,7 @@ pub(crate) async fn run_proposer(
                 }
             })
             -> inspect(|p| println!("Proposer: {:?}", p))
-            -> persist(); 
+            -> persist();
         leader_recv = source_stream_serde(stable_leader_src)
             -> map(Result::unwrap)
             -> inspect(|(m, a)| println!("Received {:?} from {:?}", m, a))
@@ -134,7 +140,7 @@ pub(crate) async fn run_proposer(
                 None
             }
         }) -> tee();
-        
+
         // send heartbeat if we're the leader
         source_stream(i_am_leader_resend_trigger) -> [0]leader_and_resend_timeout;
         is_leader[0] -> [1]leader_and_resend_timeout;
@@ -150,7 +156,7 @@ pub(crate) async fn run_proposer(
             -> lattice_merge::<'static, Max<u64>>()
             -> map(|lattice: Max<u64>| lattice.0);
         leader_recv[1] -> map(|_| SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()) -> [1]latest_heartbeat;
-        
+
         // if there was no previous heartbeat when the i_am_leader_check triggers again, send p1a
         i_am_leader_check = source_stream(i_am_leader_check_trigger)
             -> map(|_| SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs())
@@ -246,7 +252,7 @@ pub(crate) async fn run_proposer(
                     ballot: b,
                 },
             }) -> [1]p2a;
-        
+
         leader_and_reproposing[1] -> [0]leader_and_reproposing_and_max_slot;
         max_proposed_slot[1] -> [1]leader_and_reproposing_and_max_slot;
         leader_and_reproposing_and_max_slot = cross_join::<'tick>()
@@ -299,7 +305,7 @@ pub(crate) async fn run_proposer(
             -> map(|(slot, num): (u16, u16)| slot + num)
             -> next_tick()
             -> [1]new_slots;
-        
+
         /////////////////////////////////////////////////////////////////////// process p2bs
         all_commit = p2b[1] -> map(|m: P2b| (m, 1))
             -> reduce_keyed::<'tick>(|sum: &mut u16, _| *sum += 1)

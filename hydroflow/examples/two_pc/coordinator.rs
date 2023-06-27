@@ -83,7 +83,7 @@ pub(crate) async fn run_coordinator(
             -> fold_keyed::<'static, u16, u32>(|| 0, |acc: &mut _, val| *acc += val);
 
         // If ack_votes for this xid is the same as subord_total, send a End message
-        acked = join() -> map(|(_c, (xid, ()))| xid) -> tee(); 
+        acked = join() -> map(|(_c, (xid, ()))| xid) -> tee();
         ack_votes -> map(|(xid, c)| (c, xid)) -> [0]acked;
         subord_total[1] -> map(|c| (c, ())) -> [1]acked;
         // Presumed abort: log ends (don't need to flush)

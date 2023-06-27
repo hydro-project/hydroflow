@@ -54,7 +54,7 @@ pub(crate) async fn run_subordinate(
         // handle p2 message: acknowledge (and print)
         ack_p2_chan = msgs[p2] -> tee();
         // Presumed abort: log commits/aborts (reply only after flushing to disk)
-        ack_p2_chan[0] -> map(|m:CoordMsg| format!("Phase 2 {:?}, {:?}", m.xid, m.mtype)) -> log_to_disk[1]; 
+        ack_p2_chan[0] -> map(|m:CoordMsg| format!("Phase 2 {:?}, {:?}", m.xid, m.mtype)) -> log_to_disk[1];
         ack_p2_chan[1] -> map(|m:CoordMsg| SubordResponse {
             xid: m.xid,
             mtype: MsgType::AckP2,

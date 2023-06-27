@@ -4,24 +4,19 @@ use std::net::SocketAddr;
 use futures::join;
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow::util::{bind_udp_bytes};
+use hydroflow::util::bind_udp_bytes;
 
 use crate::helpers::{get_phase_1_addr, get_phase_2_addr};
 use crate::protocol::*;
-use crate::{GraphType};
+use crate::GraphType;
 
-pub(crate) async fn run_acceptor(
-    addr: SocketAddr,
-    graph: Option<GraphType>,
-) {
+pub(crate) async fn run_acceptor(addr: SocketAddr, graph: Option<GraphType>) {
     let phase_1_addr = get_phase_1_addr(addr);
     let phase_2_addr = get_phase_2_addr(addr);
 
     let p1a_future = bind_udp_bytes(phase_1_addr);
     let p2a_future = bind_udp_bytes(phase_2_addr);
-    let ((p1b_sink, p1a_src, _),
-        (p2b_sink, p2a_src, _))
-        = join!(p1a_future, p2a_future);
+    let ((p1b_sink, p1a_src, _), (p2b_sink, p2a_src, _)) = join!(p1a_future, p2a_future);
 
     let mut df: Hydroflow = hydroflow_syntax! {
         // define inputs/outputs
@@ -30,7 +25,7 @@ pub(crate) async fn run_acceptor(
             -> inspect(|(m, a)| println!("Received {:?} from {:?}", m, a))
             -> tee();
         p1b = cross_join::<'tick>()
-            -> map(|(((p1a, proposer), log), max_ballot): (((P1a, SocketAddr), HashSet<Entry>), Ballot)| 
+            -> map(|(((p1a, proposer), log), max_ballot): (((P1a, SocketAddr), HashSet<Entry>), Ballot)|
             (P1b {
                 ballot: p1a.ballot,
                 max_ballot,
@@ -74,7 +69,7 @@ pub(crate) async fn run_acceptor(
                 log.insert(e);
                 log
             });
-        
+
         // reply with p1b
         p1a_and_log = cross_join::<'tick>() -> [0]p1b;
         p1a[1] -> [0]p1a_and_log;
