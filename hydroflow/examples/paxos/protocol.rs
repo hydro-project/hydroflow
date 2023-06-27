@@ -42,7 +42,7 @@ pub struct P2a {
     pub entry: Entry,
 }
 
-#[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug)]
+#[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug, Hash)]
 pub struct P2b {
     pub entry: Entry,
     pub max_ballot: Ballot,
