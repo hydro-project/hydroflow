@@ -85,3 +85,18 @@ pub fn main() {
     // three_clique found: (0, 3, 6)
     // three_clique found: (5, 6, 10)
 }
+
+#[test]
+fn test() {
+    use hydroflow::util::{run_cargo_example, wait_for_process_output};
+
+    let (_child, _, mut stdout) = run_cargo_example("three_clique", "");
+
+    let mut output = String::new();
+    wait_for_process_output(&mut output, &mut stdout, r#"0, 3, 6"#);
+    wait_for_process_output(&mut output, &mut stdout, r#"5, 6, 10"#);
+    wait_for_process_output(&mut output, &mut stdout, r#"0, 3, 6"#);
+    wait_for_process_output(&mut output, &mut stdout, r#"5, 6, 10"#);
+    wait_for_process_output(&mut output, &mut stdout, r#"0, 3, 6"#);
+    wait_for_process_output(&mut output, &mut stdout, r#"5, 6, 10"#);
+}

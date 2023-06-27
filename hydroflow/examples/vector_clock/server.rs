@@ -24,7 +24,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: crat
         inbound_chan[merge] -> map(|(msg, _addr): (EchoMsg, SocketAddr)| msg.vc) -> mergevc;
         mergevc = fold::<'static> (VecClock::default(), |mut old, vc| {
                 let my_addr = format!("{:?}", opts.addr.unwrap());
-                let bump = MapUnionSingletonMap::new_from((my_addr.clone(), Max::new(old.as_reveal_ref()[&my_addr].into_reveal() + 1)));
+                let bump = MapUnionSingletonMap::new_from((my_addr.clone(), Max::new(old.as_reveal_mut().entry(my_addr).or_insert(Max::new(0)).into_reveal() + 1)));
                 old.merge(bump);
                 old.merge(vc);
                 old

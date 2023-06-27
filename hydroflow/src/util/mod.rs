@@ -250,3 +250,70 @@ mod test {
         );
     }
 }
+
+use std::io::Read;
+use std::process::{Child, ChildStdin, ChildStdout, Stdio};
+
+/// When a child process is spawned often you want to wait until the child process is ready before moving on.
+/// One way to do that synchronization is by waiting for the child process to output something and match regex against that output.
+/// For example, you could wait until the child process outputs "Client live!" which would indicate that it is ready to receive input now on stdin.
+pub fn wait_for_process_output(
+    output_so_far: &mut String,
+    output: &mut ChildStdout,
+    wait_for: &str,
+) {
+    let re = regex::Regex::new(wait_for).unwrap();
+
+    while !re.is_match(output_so_far) {
+        println!("waiting: {}", output_so_far);
+        let mut buffer = [0u8; 1024];
+        let bytes_read = output.read(&mut buffer).unwrap();
+
+        if bytes_read == 0 {
+            panic!();
+        }
+
+        output_so_far.push_str(&String::from_utf8_lossy(&buffer[0..bytes_read]));
+    }
+}
+
+/// When a `Child` is dropped normally nothing happens but in unit tests you usually want to terminate
+/// the child and wait for it to terminate. `DroppableChild` does that for us.
+pub struct DroppableChild(Child);
+
+impl Drop for DroppableChild {
+    fn drop(&mut self) {
+        self.0.kill().unwrap();
+        self.0.wait().unwrap();
+    }
+}
+
+/// rust examples are meant to be run by people and have a natural interface for that. This makes unit testing them cumbersome.
+/// This function wraps calling cargo run and piping the stdin/stdout of the example to easy to handle returned objects.
+/// The function also returns a `DroppableChild` which will ensure that the child processes will be cleaned up appropriately.
+pub fn run_cargo_example(test_name: &str, args: &str) -> (DroppableChild, ChildStdin, ChildStdout) {
+    let mut server = if args.is_empty() {
+        std::process::Command::new("cargo")
+            .args(["run", "-p", "hydroflow", "--example"])
+            .arg(test_name)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap()
+    } else {
+        std::process::Command::new("cargo")
+            .args(["run", "-p", "hydroflow", "--example"])
+            .arg(test_name)
+            .arg("--")
+            .args(args.split(' '))
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap()
+    };
+
+    let stdin = server.stdin.take().unwrap();
+    let stdout = server.stdout.take().unwrap();
+
+    (DroppableChild(server), stdin, stdout)
+}
