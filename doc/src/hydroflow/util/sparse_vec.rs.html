@@ -56,16 +56,42 @@
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
 <a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! A vector that supports efficient deletion without reordering all subsequent items.
 </span><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::iter::FusedIterator;
 
-<span class="attr">#[derive(Default)]
-</span><span class="doccomment">/// A vector that supports efficient deletion without reordering all subsequent items.
+<span class="doccomment">/// A vector that supports efficient deletion without reordering all subsequent items.
 </span><span class="kw">pub struct </span>SparseVec&lt;T&gt; {
     items: Vec&lt;<span class="prelude-ty">Option</span>&lt;T&gt;&gt;,
     item_locs: HashMap&lt;T, Vec&lt;usize&gt;&gt;,
+}
+
+<span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span>SparseVec&lt;T&gt; {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        SparseVec {
+            items: Vec::default(),
+            item_locs: HashMap::default(),
+        }
+    }
 }
 
 <span class="kw">impl</span>&lt;T: Clone + Eq + Hash&gt; SparseVec&lt;T&gt; {
@@ -112,6 +138,16 @@
         x.delete(<span class="kw-2">&amp;</span><span class="number">1</span>);
 
         <span class="macro">assert_eq!</span>(collect(<span class="kw-2">&amp;</span>x), <span class="macro">vec!</span>[<span class="number">0</span>, <span class="number">2</span>]);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>can_implement_default_on_types_that_dont_implement_default() {
+        <span class="kw">struct </span>NoDefault;
+
+        <span class="kw">let </span>x = SparseVec::&lt;NoDefault&gt;::default();
+
+        <span class="macro">assert_eq!</span>(x.items.len(), <span class="number">0</span>);
+        <span class="macro">assert_eq!</span>(x.item_locs.len(), <span class="number">0</span>);
     }
 }
 </code></pre></div></section></main></body></html>
