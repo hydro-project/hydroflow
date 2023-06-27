@@ -9,7 +9,6 @@ use serde::Deserialize;
 use subordinate::run_subordinate;
 
 mod coordinator;
-mod helpers;
 mod protocol;
 mod subordinate;
 
