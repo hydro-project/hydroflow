@@ -134,7 +134,7 @@
 /// source_iter([1,2,3,4,5])
 ///     -&gt; map(hydroflow::lattices::Max::new)
 ///     -&gt; lattice_merge::&lt;&#39;static, hydroflow::lattices::Max&lt;usize&gt;&gt;()
-///     -&gt; assert([hydroflow::lattices::Max(5)]);
+///     -&gt; assert([hydroflow::lattices::Max::new(5)]);
 /// ```
 </span><span class="kw">pub const </span>LATTICE_MERGE: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;lattice_merge&quot;</span>,

@@ -215,6 +215,23 @@
 <a href="#215" id="215">215</a>
 <a href="#216" id="216">216</a>
 <a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 
 <span class="kw">use crate</span>::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
@@ -234,10 +251,12 @@
 </span><span class="attr">#[derive(Copy, Clone, Debug, Default, Eq)]
 #[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>DomPair&lt;Key, Val&gt; {
-    <span class="doccomment">/// The `Key` of the  dominating pair lattice, usually a timestamp
+    <span class="doccomment">/// The `Key` of the  dominating pair lattice, usually a timestamp.
+    ///
+    /// This field is public as it is always monotonically increasing in its lattice.
     </span><span class="kw">pub </span>key: Key,
     <span class="doccomment">/// The `Val` of the dominating pair lattice.
-    </span><span class="kw">pub </span>val: Val,
+    </span>val: Val,
 }
 
 <span class="kw">impl</span>&lt;Key, Val&gt; DomPair&lt;Key, Val&gt; {
@@ -249,6 +268,21 @@
     <span class="doccomment">/// Create a `DomPair` from the given `Into&lt;Key&gt;` and `Into&lt;Val&gt;`.
     </span><span class="kw">pub fn </span>new_from(key: <span class="kw">impl </span>Into&lt;Key&gt;, val: <span class="kw">impl </span>Into&lt;Val&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>::new(key.into(), val.into())
+    }
+
+    <span class="doccomment">/// Reveal the inner value as a shared reference.
+    </span><span class="kw">pub fn </span>as_reveal_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span>Key, <span class="kw-2">&amp;</span>Val) {
+        (<span class="kw-2">&amp;</span><span class="self">self</span>.key, <span class="kw-2">&amp;</span><span class="self">self</span>.val)
+    }
+
+    <span class="doccomment">/// Reveal the inner value as an exclusive reference.
+    </span><span class="kw">pub fn </span>as_reveal_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;mut </span>Key, <span class="kw-2">&amp;mut </span>Val) {
+        (<span class="kw-2">&amp;mut </span><span class="self">self</span>.key, <span class="kw-2">&amp;mut </span><span class="self">self</span>.val)
+    }
+
+    <span class="doccomment">/// Gets the inner by value, consuming self.
+    </span><span class="kw">pub fn </span>into_reveal(<span class="self">self</span>) -&gt; (Key, Val) {
+        (<span class="self">self</span>.key, <span class="self">self</span>.val)
     }
 }
 

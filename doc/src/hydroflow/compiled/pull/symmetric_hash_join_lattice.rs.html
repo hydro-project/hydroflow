@@ -252,7 +252,7 @@
 
 <span class="kw">impl</span>&lt;K, Lattice&gt; Clear <span class="kw">for </span>HalfJoinStateLattice&lt;K, Lattice&gt; {
     <span class="kw">fn </span>clear(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="self">self</span>.table.<span class="number">0</span>.clear()
+        <span class="self">self</span>.table.as_reveal_mut().clear()
     }
 }
 
@@ -264,7 +264,7 @@
     <span class="kw">where
         </span>Lattice: Merge&lt;LatticeDelta&gt; + LatticeFrom&lt;LatticeDelta&gt;,
     {
-        <span class="kw">let </span>entry = <span class="self">self</span>.table.<span class="number">0</span>.entry(k);
+        <span class="kw">let </span>entry = <span class="self">self</span>.table.as_reveal_mut().entry(k);
 
         <span class="kw">match </span>entry {
             Entry::Occupied(<span class="kw-2">mut </span>e) =&gt; e.get_mut().merge(v),
@@ -300,8 +300,8 @@
 
     <span class="kw">fn </span>next(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(key) = <span class="self">self</span>.updated_keys.next() {
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(lhs) = <span class="self">self</span>.state.<span class="number">0</span>.table.<span class="number">0</span>.get(<span class="kw-2">&amp;</span>key) {
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(rhs) = <span class="self">self</span>.state.<span class="number">1</span>.table.<span class="number">0</span>.get(<span class="kw-2">&amp;</span>key) {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(lhs) = <span class="self">self</span>.state.<span class="number">0</span>.table.as_reveal_ref().get(<span class="kw-2">&amp;</span>key) {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(rhs) = <span class="self">self</span>.state.<span class="number">1</span>.table.as_reveal_ref().get(<span class="kw-2">&amp;</span>key) {
                     <span class="kw">return </span><span class="prelude-val">Some</span>((key, (lhs.clone(), rhs.clone())));
                 }
             }
