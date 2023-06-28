@@ -1,9 +1,9 @@
 use std::collections::HashSet;
-use std::net::SocketAddr;
+
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Ord, PartialEq, Eq, Clone, Serialize, Deserialize, Debug, Hash, Copy)]
+#[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug, Hash, Copy)]
 pub struct Ballot {
     pub id: u16,
     pub num: u16,
@@ -16,6 +16,12 @@ impl PartialOrd for Ballot {
         } else {
             self.num.partial_cmp(&other.num)
         }
+    }
+}
+
+impl Ord for Ballot {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.partial_cmp(other).unwrap()
     }
 }
 

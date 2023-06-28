@@ -9,11 +9,11 @@ use hydroflow::hydroflow_syntax;
 use hydroflow::lattices::{DomPair, Max};
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::Persistence::*;
-use hydroflow::util::{bind_udp_bytes, UdpSink, UdpStream};
+use hydroflow::util::{bind_udp_bytes};
 
 use crate::helpers::{get_config, get_phase_1_addr, get_phase_2_addr, periodic};
 use crate::protocol::*;
-use crate::{Config, GraphType};
+use crate::{GraphType};
 
 pub(crate) async fn run_proposer(
     addr: SocketAddr,
@@ -86,7 +86,7 @@ pub(crate) async fn run_proposer(
         p1a = cross_join::<'tick>()
             -> inspect(|(m, a)| println!("Sending {:?} to {:?}", m, a))
             -> dest_sink_serde(p1a_sink);
-        acceptors[0] -> map(|s| get_phase_1_addr(s)) -> [1]p1a;
+        acceptors[0] -> map(get_phase_1_addr) -> [1]p1a;
         p1b = source_stream_serde(p1b_src)
             -> map(Result::unwrap)
             -> inspect(|(m, a)| println!("Received {:?} from {:?}", m, a))
@@ -97,7 +97,7 @@ pub(crate) async fn run_proposer(
             -> inspect(|(m, a)| println!("Sending {:?} to {:?}", m, a))
             -> dest_sink_serde(p2a_sink);
         p2a = union() -> [0]p2a_out;
-        acceptors[1] -> map(|s| get_phase_2_addr(s)) -> [1]p2a_out;
+        acceptors[1] -> map(get_phase_2_addr) -> [1]p2a_out;
         p2b_in = source_stream_serde(p2b_src)
             -> map(Result::unwrap)
             -> inspect(|(m, a)| println!("Received {:?} from {:?}", m, a))
@@ -190,9 +190,9 @@ pub(crate) async fn run_proposer(
         // check if we've received a quorum of p1bs
         p1b[1] -> map(|m: P1b| (m.ballot, m)) -> [0]relevant_p1bs;
         ballot[3] -> map(|b: Ballot| (b, ())) -> [1]relevant_p1bs;
-        relevant_p1bs = join::<'tick, HalfMultisetJoinState>() -> map(|(b, (m, _)): (Ballot, (P1b, ()))| m) -> tee();
-        num_p1bs = relevant_p1bs[0] -> fold::<'tick>(0, |mut sum: u16, m: P1b| sum + 1);
-        p1b_quorum_reached = num_p1bs  -> filter_map(|num_p1bs: u16| if num_p1bs >= config.f + 1 {Some(())} else {None});
+        relevant_p1bs = join::<'tick, HalfMultisetJoinState>() -> map(|(_b, (m, _)): (Ballot, (P1b, ()))| m) -> tee();
+        num_p1bs = relevant_p1bs[0] -> fold::<'tick>(0, |sum: u16, _m: P1b| sum + 1);
+        p1b_quorum_reached = num_p1bs  -> filter_map(|num_p1bs: u16| if num_p1bs > config.f {Some(())} else {None});
 
         p1b_quorum_reached -> [0]is_leader;
         has_largest_ballot[1] -> [1]is_leader;
@@ -217,14 +217,14 @@ pub(crate) async fn run_proposer(
         });
         is_leader[2] -> map(|()| true) -> [pos]leader_and_reproposing;
         next_slot[0] -> fold::<'tick>(false, |_, _| true) -> [neg]leader_and_reproposing;
-        leader_and_reproposing = difference::<'tick, 'tick>() -> map(|b| ()) -> tee(); // type: ()
+        leader_and_reproposing = difference::<'tick, 'tick>() -> map(|_b| ()) -> tee(); // type: ()
         leader_and_reproposing[0] -> [0]leader_and_reproposing_and_ballot;
         ballot[4] -> [1]leader_and_reproposing_and_ballot;
         leader_and_reproposing_and_ballot = cross_join::<'tick>() // type: ((), ballot)
             -> map(|((), b): ((), Ballot)| b)
             -> tee();
         leader_and_reproposing_and_ballot[0] -> [0]leader_and_reproposing_and_ballot_and_largest_uncommitted;
-        p1b_largest_uncommitted -> map(|(slot, e): (u16, Entry)| e) -> [1]leader_and_reproposing_and_ballot_and_largest_uncommitted;
+        p1b_largest_uncommitted -> map(|(_slot, e): (u16, Entry)| e) -> [1]leader_and_reproposing_and_ballot_and_largest_uncommitted;
         leader_and_reproposing_and_ballot_and_largest_uncommitted = cross_join::<'tick>() // type: (ballot, entry)
             -> map(|(b, e): (Ballot, Entry)| P2a {
                 entry: Entry {
@@ -238,7 +238,7 @@ pub(crate) async fn run_proposer(
         p1b_log[2] -> map(|m: Entry| m.slot) -> [0]proposed_slots;
         source_iter(vec![start_slot]) -> persist() -> [1]proposed_slots;
         proposed_slots = union() -> tee();
-        max_proposed_slot = proposed_slots[0] -> reduce::<'tick>(|mut max: u16, s: u16| cmp::max(max, s)) -> tee();
+        max_proposed_slot = proposed_slots[0] -> reduce::<'tick>(cmp::max) -> tee();
         prev_slots = max_proposed_slot[0] -> flat_map(|max: u16| 0..max);
         prev_slots -> [pos]holes;
         proposed_slots[1] -> [neg]holes;
@@ -270,7 +270,7 @@ pub(crate) async fn run_proposer(
         ballot[6] -> map(|b: Ballot| (b, ())) -> [1]next_slot;
         // find the next slot for the current ballot
         next_slot = join::<'tick>()
-            -> map(|(ballot, (slot, ())): (Ballot, (u16, ()))| slot)
+            -> map(|(_ballot, (slot, ())): (Ballot, (u16, ()))| slot)
             -> tee();
 
 
@@ -297,7 +297,7 @@ pub(crate) async fn run_proposer(
 
         // increment the slot if a payload was chosen
         num_payloads = leader_and_slot_and_ballot_and_payload[1]
-            -> fold::<'tick>(0, |mut sum: u16, _| sum + 1)
+            -> fold::<'tick>(0, |sum: u16, _| sum + 1)
             -> filter(|s: &u16| *s > 0); // avoid emitting 0, even if it's correct, since it will trigger the calculation of a new slot each tick
         next_slot[2] -> [0]slot_plus_num_indexed;
         num_payloads -> [1]slot_plus_num_indexed;
@@ -318,7 +318,7 @@ pub(crate) async fn run_proposer(
                 }
             })
             -> inspect(|m: &P2b| println!("Committed slot {:?}: {:?}", m.entry.slot, m.entry.payload))
-            -> map(|m: P2b| Delete(m)) // delete p2bs for committed slots
+            -> map(Delete) // delete p2bs for committed slots
             -> next_tick()
             -> [1]p2b;
     };

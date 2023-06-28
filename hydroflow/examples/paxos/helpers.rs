@@ -7,13 +7,6 @@ use tokio_stream::wrappers::IntervalStream;
 
 use crate::Config;
 
-pub fn parse_out<T: std::str::FromStr>(line: String) -> Option<T> {
-    match line.trim().parse::<T>() {
-        Ok(the_xid) => Some(the_xid),
-        Err(_) => None,
-    }
-}
-
 pub fn get_phase_1_addr(addr: SocketAddr) -> SocketAddr {
     SocketAddr::new(addr.ip(), addr.port() + 1)
 }
