@@ -8,12 +8,12 @@ use hydroflow::compiled::pull::HalfMultisetJoinState;
 use hydroflow::hydroflow_syntax;
 use hydroflow::lattices::{DomPair, Max};
 use hydroflow::scheduled::graph::Hydroflow;
+use hydroflow::util::bind_udp_bytes;
 use hydroflow::util::Persistence::*;
-use hydroflow::util::{bind_udp_bytes};
 
 use crate::helpers::{get_config, get_phase_1_addr, get_phase_2_addr, periodic};
 use crate::protocol::*;
-use crate::{GraphType};
+use crate::GraphType;
 
 pub(crate) async fn run_proposer(
     addr: SocketAddr,
@@ -115,7 +115,7 @@ pub(crate) async fn run_proposer(
         ballot_num = union()
             -> map(Max::new)
             -> lattice_merge::<'static, Max<u16>>()
-            -> map(|lattice: Max<u16>| lattice.0);
+            -> map(|lattice: Max<u16>| lattice.into_reveal());
         source_iter(vec![start_ballot_num]) -> [0]ballot_num;
         ballot = ballot_num -> map(|num| Ballot {id, num}) -> tee();
 
@@ -128,7 +128,7 @@ pub(crate) async fn run_proposer(
         received_ballots = union()
             -> map(Max::new)
             -> lattice_merge::<'static, Max<Ballot>>()
-            -> map(|lattice: Max<Ballot>| lattice.0)
+            -> map(|lattice: Max<Ballot>| lattice.into_reveal())
             -> tee();
         received_ballots[0] -> [0]has_largest_ballot;
         ballot[0] -> [1]has_largest_ballot;
@@ -154,7 +154,7 @@ pub(crate) async fn run_proposer(
         latest_heartbeat = union()
             -> map(Max::new)
             -> lattice_merge::<'static, Max<u64>>()
-            -> map(|lattice: Max<u64>| lattice.0);
+            -> map(|lattice: Max<u64>| lattice.into_reveal());
         leader_recv[1] -> map(|_| SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()) -> [1]latest_heartbeat;
 
         // if there was no previous heartbeat when the i_am_leader_check triggers again, send p1a
@@ -265,7 +265,10 @@ pub(crate) async fn run_proposer(
         ballot_and_next_slot = cross_join::<'tick>()
             -> map(|(ballot, slot): (Ballot, u16)| DomPair::new(Max::new(ballot), Max::new(slot)))
             -> lattice_merge::<'static, DomPair<Max<Ballot>, Max<u16>>>()
-            -> map(|lattice: DomPair<Max<Ballot>, Max<u16>>| (lattice.key.0, lattice.val.0))
+            -> map(|lattice: DomPair<Max<Ballot>, Max<u16>>| {
+                let (max_key, max_val) = lattice.into_reveal();
+                (max_key.into_reveal(), max_val.into_reveal())
+            })
             -> [0]next_slot;
         ballot[6] -> map(|b: Ballot| (b, ())) -> [1]next_slot;
         // find the next slot for the current ballot
