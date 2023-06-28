@@ -178,7 +178,7 @@ jobs:
           CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
         with:
           command: test
-          args: -p hydroflow --target wasm32-unknown-unknown --tests --no-fail-fast
+          args: -p hydroflow --target wasm32-unknown-unknown --tests --no-fail-fast --no-default-features --features __default_wasm
 
   test-cli:
     name: Test CLI
