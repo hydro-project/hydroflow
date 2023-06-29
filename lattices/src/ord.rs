@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use crate::{LatticeFrom, LatticeOrd, Merge};
+use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// A totally ordered max lattice. Merging returns the larger value.
 #[repr(transparent)]
@@ -130,12 +130,110 @@ where
     }
 }
 
+// IsTop, IsBot impls
+
+impl IsTop for Max<()> {
+    fn is_top(&self) -> bool {
+        true
+    }
+}
+impl IsBot for Max<()> {
+    fn is_bot(&self) -> bool {
+        true
+    }
+}
+impl IsTop for Min<()> {
+    fn is_top(&self) -> bool {
+        true
+    }
+}
+impl IsBot for Min<()> {
+    fn is_bot(&self) -> bool {
+        true
+    }
+}
+
+impl IsTop for Max<bool> {
+    fn is_top(&self) -> bool {
+        self.0
+    }
+}
+impl IsBot for Max<bool> {
+    fn is_bot(&self) -> bool {
+        !self.0
+    }
+}
+impl IsTop for Min<bool> {
+    fn is_top(&self) -> bool {
+        !self.0
+    }
+}
+impl IsBot for Min<bool> {
+    fn is_bot(&self) -> bool {
+        self.0
+    }
+}
+
+impl IsTop for Max<char> {
+    fn is_top(&self) -> bool {
+        char::MAX == self.0
+    }
+}
+impl IsBot for Max<char> {
+    fn is_bot(&self) -> bool {
+        '\x00' == self.0
+    }
+}
+impl IsTop for Min<char> {
+    fn is_top(&self) -> bool {
+        '\x00' == self.0
+    }
+}
+impl IsBot for Min<char> {
+    fn is_bot(&self) -> bool {
+        char::MAX == self.0
+    }
+}
+
+macro_rules! impls_numeric {
+    (
+        $( $x:ty ),*
+    ) => {
+        $(
+            impl IsTop for Max<$x> {
+                fn is_top(&self) -> bool {
+                    <$x>::MAX == self.0
+                }
+            }
+            impl IsBot for Max<$x> {
+                fn is_bot(&self) -> bool {
+                    <$x>::MIN == self.0
+                }
+            }
+
+            impl IsTop for Min<$x> {
+                fn is_top(&self) -> bool {
+                    <$x>::MIN == self.0
+                }
+            }
+            impl IsBot for Min<$x> {
+                fn is_bot(&self) -> bool {
+                    <$x>::MAX == self.0
+                }
+            }
+        )*
+    };
+}
+impls_numeric! {
+    isize, i8, i16, i32, i64, i128, usize, u8, u16, u32, u64, u128
+}
+
 #[cfg(test)]
 mod test {
     use std::cmp::Ordering::*;
 
     use super::*;
-    use crate::test::{check_lattice_ord, check_lattice_properties, check_partial_ord_properties};
+    use crate::test::{check_all, check_lattice_top};
 
     #[test]
     fn ordering() {
@@ -160,15 +258,26 @@ mod test {
     }
 
     #[test]
-    fn consistency() {
-        let items_max = &[Max::new(0), Max::new(1)];
-        check_lattice_ord(items_max);
-        check_partial_ord_properties(items_max);
-        check_lattice_properties(items_max);
+    fn consistency_max() {
+        let items = &[
+            Max::new(0),
+            Max::new(1),
+            Max::new(i32::MIN),
+            Max::new(i32::MAX),
+        ];
+        check_all(items);
+        check_lattice_top(items);
+    }
 
-        let items_min = &[Min::new(0), Min::new(1)];
-        check_lattice_ord(items_min);
-        check_partial_ord_properties(items_min);
-        check_lattice_properties(items_min);
+    #[test]
+    fn consistency_min() {
+        let items = &[
+            Min::new(0),
+            Min::new(1),
+            Min::new(i32::MIN),
+            Min::new(i32::MAX),
+        ];
+        check_all(items);
+        check_lattice_top(items);
     }
 }
