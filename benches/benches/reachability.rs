@@ -336,7 +336,7 @@ fn benchmark_hydroflow_surface(c: &mut Criterion) {
                     hydroflow_syntax! {
                         origin = source_iter(vec![1]);
                         stream_of_edges = source_iter(edges);
-                        reached_vertices = union();
+                        reached_vertices = union() -> unique();
                         origin -> reached_vertices;
 
                         my_join_tee = join() -> flat_map(|(src, ((), dst))| [src, dst]) -> tee();

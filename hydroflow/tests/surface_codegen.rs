@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use hydroflow::compiled::pull::HalfSetJoinState;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::collect_ready;
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
@@ -739,7 +740,7 @@ pub fn test_covid_tracing() {
         source_stream(diagnosed_recv) -> [0]exposed;
 
         new_exposed = (
-            join() ->
+            join::<HalfSetJoinState>() ->
             filter(|(_pid_a, ((_pid_b, t_contact), (t_from, t_to)))| {
                 (t_from..=t_to).contains(&t_contact)
             }) ->

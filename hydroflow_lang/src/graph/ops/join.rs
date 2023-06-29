@@ -15,9 +15,8 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// ```hydroflow
 /// // should print `(hello, (world, cleveland))`
 /// source_iter(vec![("hello", "world"), ("stay", "gold")]) -> [0]my_join;
-/// source_iter(vec![("hello", "cleveland")]) -> [1]my_join;
-/// my_join = join()
-///     -> assert([("hello", ("world", "cleveland"))]);
+/// source_iter(vec![("hello", "cleveland"), ("hello", "cleveland")]) -> [1]my_join;
+/// my_join = join() -> assert([("hello", ("world", "cleveland")), ("hello", ("world", "cleveland"))]);
 /// ```
 ///
 /// `join` can also be provided with one or two generic lifetime persistence arguments, either
@@ -45,10 +44,23 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// ```
 ///
 /// Join also accepts one type argument that controls how the join state is built up. This (currently) allows switching between a SetUnion and NonSetUnion implementation.
+/// The default is HalfMultisetJoinState
 /// For example:
-/// ```hydroflow,ignore
-/// join::<HalfSetJoinState>();
-/// join::<HalfMultisetJoinState>();
+/// ```hydroflow
+/// lhs = source_iter([("a", 0), ("a", 0)]) -> tee();
+/// rhs = source_iter([("a", 0)]) -> tee();
+///
+/// lhs -> [0]default_join;
+/// rhs -> [1]default_join;
+/// default_join = join() -> assert([("a", (0, 0)), ("a", (0, 0))]);
+///
+/// lhs -> [0]multiset_join;
+/// rhs -> [1]multiset_join;
+/// multiset_join = join::<hydroflow::compiled::pull::HalfMultisetJoinState>() -> assert([("a", (0, 0)), ("a", (0, 0))]);
+///
+/// lhs -> [0]set_join;
+/// rhs -> [1]set_join;
+/// set_join = join::<hydroflow::compiled::pull::HalfSetJoinState>() -> assert([("a", (0, 0))]);
 /// ```
 ///
 /// ### Examples
@@ -128,7 +140,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                 .get(0)
                 .map(ToTokens::to_token_stream)
                 .unwrap_or(quote_spanned!(op_span=>
-                    #root::compiled::pull::HalfSetJoinState
+                    #root::compiled::pull::HalfMultisetJoinState
                 ));
 
         // TODO: This is really bad.
