@@ -67,14 +67,10 @@ We route the `origin` vertex into it as one input right away:
 
 <CodeBlock language="rust">{getLines(exampleCode, 8, 12)}</CodeBlock>
 
-Note the square-bracket syntax for differentiating the multiple inputs to `union()`
-is the same as that of `join()` (except that union can have an unbounded number of inputs,
-whereas `join()` is defined to only have two.)
-
 Now, `join()` is defined to only have one output. In our program, we want to copy the joined
 output to two places: to the original `for_each` from above to print output, and *also*
-back to the `union` operator we called `reached_vertices`. We feed the `join()` output
-through a `flat_map()` as before, and then we feed the result into a [`tee()`](../syntax/surface_ops_gen.md#tee) operator,
+back to the `union` operator we called `reached_vertices`. This is also the reason why `reached_vertices` must now also contain a `unique()` because without it the data would cycle endlessly in the graph.
+We feed the `join()` output through a `flat_map()` as before, and then we feed the result into a [`tee()`](../syntax/surface_ops_gen.md#tee) operator,
 which is the mirror image of `union()`:  instead of merging many inputs to one output,
 it copies one input to many different outputs.  Each input element is _cloned_, in Rust terms, and
 given to each of the outputs. The syntax for the outputs of `tee()` mirrors that of union: we *append*
