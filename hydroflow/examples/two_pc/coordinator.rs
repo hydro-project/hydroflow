@@ -15,6 +15,8 @@ pub(crate) async fn run_coordinator(
     path: impl AsRef<Path>,
     graph: Option<GraphType>,
 ) {
+    println!("Coordinator live!");
+
     let mut df: Hydroflow = hydroflow_syntax! {
         // fetch subordinates from file, convert ip:port to a SocketAddr, and tee
         subords = source_json(path)

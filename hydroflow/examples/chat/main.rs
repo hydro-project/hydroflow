@@ -57,3 +57,54 @@ async fn main() {
         }
     }
 }
+
+#[test]
+fn test() {
+    use std::io::Write;
+
+    use hydroflow::util::{run_cargo_example, wait_for_process_output};
+
+    let (_server, _, mut server_output) = run_cargo_example(
+        "chat",
+        "--role server --name server --addr 127.0.0.100:2050",
+    );
+
+    let mut server_output_so_far = String::new();
+    wait_for_process_output(
+        &mut server_output_so_far,
+        &mut server_output,
+        "Server live!",
+    );
+
+    let (_client1, mut client1_input, mut client1_output) = run_cargo_example(
+        "chat",
+        "--role client --name client1 --server-addr 127.0.0.100:2050",
+    );
+
+    let (_client2, _, mut client2_output) = run_cargo_example(
+        "chat",
+        "--role client --name client2 --server-addr 127.0.0.100:2050",
+    );
+
+    let mut client1_output_so_far = String::new();
+    let mut client2_output_so_far = String::new();
+
+    wait_for_process_output(
+        &mut client1_output_so_far,
+        &mut client1_output,
+        "Client live!",
+    );
+    wait_for_process_output(
+        &mut client2_output_so_far,
+        &mut client2_output,
+        "Client live!",
+    );
+
+    client1_input.write_all(b"Hello\n").unwrap();
+
+    wait_for_process_output(
+        &mut client2_output_so_far,
+        &mut client2_output,
+        ".*, .* client1: Hello",
+    );
+}

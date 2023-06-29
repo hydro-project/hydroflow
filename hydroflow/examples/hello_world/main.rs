@@ -2,10 +2,13 @@ use hydroflow::hydroflow_syntax;
 
 pub fn main() {
     let mut df = hydroflow_syntax! {
-        source_iter([1,2,3,4,5])
-            -> map(hydroflow::lattices::Max::new)
-            -> lattice_merge::<'static, hydroflow::lattices::Max<usize>>()
-            -> assert([hydroflow::lattices::Max::new(5)]);
+        source_iter(["Hello World"])
+            -> assert(["Hello World"]);
     };
     df.run_available();
+}
+
+#[test]
+fn test() {
+    main();
 }
