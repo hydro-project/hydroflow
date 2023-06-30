@@ -21,3 +21,8 @@ Finally, you can run the website locally:
 ```bash
 $ npm run start
 ```
+
+## Adding Papers
+1. Upload the paper PDF to the `static/papers` folder
+2. Run the script `./extract-paper-thumbnails` (from this `docs` directory), which requires Imagemagick to be installed
+3. Go to `src/pages/research.js` and add the paper to the array at the top of the file
