@@ -35,7 +35,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// ```hydroflow
 /// source_iter([("toy", 1), ("toy", 2), ("shoe", 11), ("shoe", 35), ("haberdashery", 7)])
 ///     -> fold_keyed(|| 0, |old: &mut u32, val: u32| *old += val)
-///     -> for_each(|(k, v)| println!("Total for group {} is {}", k, v));
+///     -> assert([("toy", 3), ("shoe", 46), ("haberdashery", 7)]);
 /// ```
 ///
 /// Example using `'tick` persistence:
@@ -171,6 +171,45 @@ pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
                             for kv in check_input(#input) {
                                 let entry = #hashtable_ident.entry(kv.0).or_insert_with(#initfn);
                                 #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
+                            }
+                        }
+
+                        let #ident = #hashtable_ident
+                            .iter()
+                            // TODO(mingwei): remove `unknown_lints` when `suspicious_double_ref_op` is stabilized.
+                            .map(#[allow(unknown_lints, suspicious_double_ref_op, clippy::clone_on_copy)] |(k, v)| (k.clone(), v.clone()));
+                    },
+                    quote_spanned! {op_span=>
+                        #context.schedule_subgraph(#context.current_subgraph(), false);
+                    },
+                )
+            }
+            Persistence::Mutable => {
+                let groupbydata_ident = wc.make_ident("groupbydata");
+                let hashtable_ident = wc.make_ident("hashtable");
+
+                (
+                    quote_spanned! {op_span=>
+                        let #groupbydata_ident = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashMap::<#( #generic_type_args ),*>::default()));
+                    },
+                    quote_spanned! {op_span=>
+                        let mut #hashtable_ident = #context.state_ref(#groupbydata_ident).borrow_mut();
+
+                        {
+                            #[inline(always)]
+                            fn check_input<Iter: ::std::iter::Iterator<Item = #root::util::PersistenceKeyed::<K, V>>, K: ::std::clone::Clone, V: ::std::clone::Clone>(iter: Iter)
+                                -> impl ::std::iter::Iterator<Item = #root::util::PersistenceKeyed::<K, V>> { iter }
+
+                            for item in check_input(#input) {
+                                match item {
+                                    Persist(k, v) => {
+                                        let entry = #hashtable_ident.entry(k).or_insert_with(#initfn);
+                                        #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, v);
+                                    },
+                                    Delete(k) => {
+                                        #hashtable_ident.remove(&k);
+                                    },
+                                }
                             }
                         }
 

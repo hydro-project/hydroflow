@@ -17,7 +17,7 @@ use crate::{IsBot, LatticeFrom, LatticeOrd, Merge};
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct MapUnion<Map>(pub Map);
+pub struct MapUnion<Map>(Map);
 impl<Map> MapUnion<Map> {
     /// Create a new `MapUnion` from a `Map`.
     pub fn new(val: Map) -> Self {
@@ -27,6 +27,21 @@ impl<Map> MapUnion<Map> {
     /// Create a new `MapUnion` from an `Into<Map>`.
     pub fn new_from(val: impl Into<Map>) -> Self {
         Self::new(val.into())
+    }
+
+    /// Reveal the inner value as a shared reference.
+    pub fn as_reveal_ref(&self) -> &Map {
+        &self.0
+    }
+
+    /// Reveal the inner value as an exclusive reference.
+    pub fn as_reveal_mut(&mut self) -> &mut Map {
+        &mut self.0
+    }
+
+    /// Gets the inner by value, consuming self.
+    pub fn into_reveal(self) -> Map {
+        self.0
     }
 }
 

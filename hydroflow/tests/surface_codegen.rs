@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use hydroflow::compiled::pull::HalfSetJoinState;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::collect_ready;
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
@@ -739,7 +740,7 @@ pub fn test_covid_tracing() {
         source_stream(diagnosed_recv) -> [0]exposed;
 
         new_exposed = (
-            join() ->
+            join::<HalfSetJoinState>() ->
             filter(|(_pid_a, ((_pid_b, t_contact), (t_from, t_to)))| {
                 (t_from..=t_to).contains(&t_contact)
             }) ->
@@ -806,4 +807,36 @@ pub fn test_covid_tracing() {
 
         hydroflow.run_available();
     }
+}
+
+#[multiplatform_test]
+pub fn test_assert() {
+    let mut df = hydroflow_syntax! {
+        source_iter([1, 2, 3]) -> assert([1, 2, 3]) -> assert([1, 2, 3]); // one in pull, one in push
+        source_iter([1, 2, 3]) -> assert([1, 2, 3]) -> assert(vec![1, 2, 3]);
+        source_iter([1, 2, 3]) -> assert(vec![1, 2, 3]) -> assert([1, 2, 3]);
+        source_iter(vec![1, 2, 3]) -> assert([1, 2, 3]) -> assert([1, 2, 3]);
+    };
+    df.run_available();
+}
+
+#[multiplatform_test(test)]
+pub fn test_assert_failures() {
+    assert!(std::panic::catch_unwind(|| {
+        let mut df = hydroflow_syntax! {
+            source_iter([0]) -> assert([1]);
+        };
+
+        df.run_available();
+    })
+    .is_err());
+
+    assert!(std::panic::catch_unwind(|| {
+        let mut df = hydroflow_syntax! {
+            source_iter([0]) -> assert([1]) -> null();
+        };
+
+        df.run_available();
+    })
+    .is_err());
 }

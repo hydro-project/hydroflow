@@ -8,10 +8,9 @@ use super::{
 /// Takes a stream as input and produces a sorted version of the stream as output.
 ///
 /// ```hydroflow
-/// // should print 1, 2, 3 (in order)
 /// source_iter(vec![2, 3, 1])
 ///     -> sort()
-///     -> for_each(|x| println!("{}", x));
+///     -> assert([1, 2, 3]);
 /// ```
 ///
 /// `sort` is partially blocking. Only the values collected within a single tick will be sorted and

@@ -21,7 +21,7 @@ export default function prismIncludeLanguages(PrismObject) {
   const origTokenize = PrismObject.tokenize;
   PrismObject.tokenize = (text, grammar) => {
     if (grammar == rustLanguage) {
-      text = text.split("\n").filter(line => !line.startsWith("#")).join("\n");
+      text = text.split("\n").filter(line => !line.startsWith("# ")).join("\n");
     }
     return origTokenize(text, grammar);
   };

@@ -5,6 +5,7 @@ use super::{
     FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     Persistence, WriteContextArgs, RANGE_1,
 };
+use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
@@ -14,8 +15,8 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// ```hydroflow
 /// // should print `(hello, (world, cleveland))`
 /// source_iter(vec![("hello", "world"), ("stay", "gold")]) -> [0]my_join;
-/// source_iter(vec![("hello", "cleveland")]) -> [1]my_join;
-/// my_join = join() -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
+/// source_iter(vec![("hello", "cleveland"), ("hello", "cleveland")]) -> [1]my_join;
+/// my_join = join() -> assert([("hello", ("world", "cleveland")), ("hello", ("world", "cleveland"))]);
 /// ```
 ///
 /// `join` can also be provided with one or two generic lifetime persistence arguments, either
@@ -43,10 +44,23 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// ```
 ///
 /// Join also accepts one type argument that controls how the join state is built up. This (currently) allows switching between a SetUnion and NonSetUnion implementation.
+/// The default is HalfMultisetJoinState
 /// For example:
-/// ```hydroflow,ignore
-/// join::<HalfSetJoinState>();
-/// join::<HalfMultisetJoinState>();
+/// ```hydroflow
+/// lhs = source_iter([("a", 0), ("a", 0)]) -> tee();
+/// rhs = source_iter([("a", 0)]) -> tee();
+///
+/// lhs -> [0]default_join;
+/// rhs -> [1]default_join;
+/// default_join = join() -> assert([("a", (0, 0)), ("a", (0, 0))]);
+///
+/// lhs -> [0]multiset_join;
+/// rhs -> [1]multiset_join;
+/// multiset_join = join::<hydroflow::compiled::pull::HalfMultisetJoinState>() -> assert([("a", (0, 0)), ("a", (0, 0))]);
+///
+/// lhs -> [0]set_join;
+/// rhs -> [1]set_join;
+/// set_join = join::<hydroflow::compiled::pull::HalfSetJoinState>() -> assert([("a", (0, 0))]);
 /// ```
 ///
 /// ### Examples
@@ -120,13 +134,13 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                        },
                    ..
                },
-               _| {
+               diagnostics| {
         let join_type =
             type_args
                 .get(0)
                 .map(ToTokens::to_token_stream)
                 .unwrap_or(quote_spanned!(op_span=>
-                    #root::compiled::pull::HalfSetJoinState
+                    #root::compiled::pull::HalfMultisetJoinState
                 ));
 
         // TODO: This is really bad.
@@ -143,7 +157,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
             quote_spanned!(op_span=>)
         };
 
-        let make_joindata = |persistence, side| {
+        let mut make_joindata = |persistence, side| {
             let joindata_ident = wc.make_ident(format!("joindata_{}", side));
             let borrow_ident = wc.make_ident(format!("joindata_{}_borrow", side));
             let (init, borrow) = match persistence {
@@ -165,8 +179,16 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                         &mut *#borrow_ident
                     },
                 ),
+                Persistence::Mutable => {
+                    diagnostics.push(Diagnostic::spanned(
+                        op_span,
+                        Level::Error,
+                        "An implementation of 'mutable does not exist",
+                    ));
+                    return Err(());
+                }
             };
-            (joindata_ident, borrow_ident, init, borrow)
+            Ok((joindata_ident, borrow_ident, init, borrow))
         };
 
         let persistences = match persistence_args[..] {
@@ -177,9 +199,9 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
         };
 
         let (lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow) =
-            make_joindata(persistences[0], "lhs");
+            make_joindata(persistences[0], "lhs")?;
         let (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow) =
-            make_joindata(persistences[1], "rhs");
+            make_joindata(persistences[1], "rhs")?;
 
         let write_prologue = quote_spanned! {op_span=>
             let #lhs_joindata_ident = #hydroflow.add_state(std::cell::RefCell::new(

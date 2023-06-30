@@ -12,10 +12,9 @@ use crate::graph::OperatorInstance;
 /// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
 ///
 /// ```hydroflow
-/// // should print (1, 'z'), (2, 'y'), (3, 'x') (in order)
 /// source_iter(vec![(2, 'y'), (3, 'x'), (1, 'z')])
 ///     -> sort_by_key(|(k, _v)| k)
-///     -> for_each(|x| println!("{:?}", x));
+///     -> assert([(1, 'z'), (2, 'y'), (3, 'x')]);
 /// ```
 pub const SORT_BY_KEY: OperatorConstraints = OperatorConstraints {
     name: "sort_by_key",

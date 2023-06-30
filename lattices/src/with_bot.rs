@@ -21,6 +21,21 @@ impl<Inner> WithBot<Inner> {
     pub fn new_from(val: impl Into<Option<Inner>>) -> Self {
         Self::new(val.into())
     }
+
+    /// Reveal the inner value as a shared reference.
+    pub fn as_reveal_ref(&self) -> Option<&Inner> {
+        self.0.as_ref()
+    }
+
+    /// Reveal the inner value as an exclusive reference.
+    pub fn as_reveal_mut(&mut self) -> Option<&mut Inner> {
+        self.0.as_mut()
+    }
+
+    /// Gets the inner by value, consuming self.
+    pub fn into_reveal(self) -> Option<Inner> {
+        self.0
+    }
 }
 
 // Cannot auto derive because the generated implementation has the wrong trait bounds.

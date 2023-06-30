@@ -16,8 +16,9 @@ use super::{
 ///
 /// ```hydroflow
 /// // should print out each character of each word on a separate line
-/// source_iter(vec!["hello", "world"]) -> flat_map(|x| x.chars())
-///     -> for_each(|x| println!("{}", x));
+/// source_iter(vec!["hello", "world"])
+///     -> flat_map(|x| x.chars())
+///     -> assert(['h', 'e', 'l', 'l', 'o', 'w', 'o', 'r', 'l', 'd']);
 /// ```
 pub const FLAT_MAP: OperatorConstraints = OperatorConstraints {
     name: "flat_map",

@@ -4,8 +4,8 @@ expression: hydroflow.meta_graph().unwrap().to_mermaid()
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD
-classDef pullClass fill:#02f,color:#fff,stroke:#000,text-align:left,white-space:pre
-classDef pushClass fill:#ff0,stroke:#000,text-align:left,white-space:pre
+classDef pullClass fill:#8af,stroke:#000,text-align:left,white-space:pre
+classDef pushClass fill:#ff8,stroke:#000,text-align:left,white-space:pre
 linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
     1v1[\"(1v1) <code>source_stream(contacts_recv)</code>"/]:::pullClass
@@ -13,7 +13,7 @@ subgraph sg_1v1 ["sg_1v1 stratum 0"]
     4v1[\"(4v1) <code>source_stream(diagnosed_recv)</code>"/]:::pullClass
     9v1[\"(9v1) <code>map(|(pid, t)| (pid, (t, t + TRANSMISSIBLE_DURATION)))</code>"/]:::pullClass
     3v1[\"(3v1) <code>union()</code>"/]:::pullClass
-    5v1[\"(5v1) <code>join()</code>"/]:::pullClass
+    5v1[\"(5v1) <code>join::&lt;HalfSetJoinState&gt;()</code>"/]:::pullClass
     6v1[\"<div style=text-align:center>(6v1)</div> <code>filter(|(_pid_a, ((_pid_b, t_contact), (t_from, t_to)))| {<br>    (t_from..=t_to).contains(&amp;t_contact)<br>})</code>"/]:::pullClass
     7v1[\"(7v1) <code>map(|(_pid_a, (pid_b_t_contact, _t_from_to))| pid_b_t_contact)</code>"/]:::pullClass
     8v1[/"(8v1) <code>tee()</code>"\]:::pushClass

@@ -5,6 +5,7 @@ use super::{
     FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     Persistence, WriteContextArgs, RANGE_1,
 };
+use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
@@ -49,21 +50,16 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// ### Examples
 ///
 /// ```rustbook
+/// use hydroflow::lattices::Min;
 /// use hydroflow::lattices::Max;
 ///
-/// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(usize, Max<usize>)>();
-/// let (out_tx, mut out_rx) = hydroflow::util::unbounded_channel::<(usize, (Max<usize>, Max<usize>))>();
-///
 /// let mut df = hydroflow::hydroflow_syntax! {
-///     my_join = lattice_join::<'tick, Max<usize>, Max<usize>>();
-///     source_iter([(7, Max::new(2)), (7, Max::new(1))]) -> [0]my_join;
-///     source_stream(input_recv) -> [1]my_join;
-///     my_join -> for_each(|v| out_tx.send(v).unwrap());
+///     my_join = lattice_join::<'tick, Min<usize>, Max<usize>>();
+///     source_iter([(7, Min::new(1)), (7, Min::new(2))]) -> [0]my_join;
+///     source_iter([(7, Max::new(1)), (7, Max::new(2))]) -> [1]my_join;
+///     my_join -> assert([(7, (Min::new(1), Max::new(2)))]);
 /// };
-/// input_send.send((7, Max::new(5))).unwrap();
-/// df.run_tick();
-/// let out: Vec<_> = hydroflow::util::collect_ready(&mut out_rx);
-/// assert_eq!(out, vec![(7, (Max::new(2), Max::new(5)))]);
+/// df.run_available();
 /// ```
 pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
     name: "lattice_join",
@@ -102,7 +98,7 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
                        },
                    ..
                },
-               _| {
+               diagnostics| {
         let lhs_type = type_args
             .get(0)
             .map(ToTokens::to_token_stream)
@@ -113,7 +109,7 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
             .map(ToTokens::to_token_stream)
             .unwrap_or(quote_spanned!(op_span=> _));
 
-        let make_joindata = |persistence, side| {
+        let mut make_joindata = |persistence, side| {
             let joindata_ident = wc.make_ident(format!("joindata_{}", side));
             let borrow_ident = wc.make_ident(format!("joindata_{}_borrow", side));
             let (init, borrow) = match persistence {
@@ -135,8 +131,16 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
                         &mut #borrow_ident
                     },
                 ),
+                Persistence::Mutable => {
+                    diagnostics.push(Diagnostic::spanned(
+                        op_span,
+                        Level::Error,
+                        "An implementation of 'mutable does not exist",
+                    ));
+                    return Err(());
+                }
             };
-            (joindata_ident, borrow_ident, init, borrow)
+            Ok((joindata_ident, borrow_ident, init, borrow))
         };
 
         let persistences = match persistence_args[..] {
@@ -147,9 +151,9 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
         };
 
         let (lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow) =
-            make_joindata(persistences[0], "lhs");
+            make_joindata(persistences[0], "lhs")?;
         let (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow) =
-            make_joindata(persistences[1], "rhs");
+            make_joindata(persistences[1], "rhs")?;
 
         let join_keys_ident = wc.make_ident("joinkeys");
         let join_keys_borrow_ident = wc.make_ident("joinkeys_borrow");

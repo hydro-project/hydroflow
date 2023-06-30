@@ -167,14 +167,14 @@ reachable(x) :- seed_reachable(x)
 reachable(y) :- reachable(x), edges(x, y)`
 };
 
-function HydroflowSurfaceDemo() {
+export function HydroflowSurfaceDemo() {
   return <EditorDemo compileFn={compile_hydroflow} examples={hydroflowExamples} mermaidId="mermaid-hydroflow"></EditorDemo>
 }
-function DatalogDemo() {
+export function DatalogDemo() {
   return <EditorDemo compileFn={compile_datalog} examples={datalogExamples} mermaidId="mermaid-datalog"></EditorDemo>
 }
 
-function EditorDemo({ compileFn, examples, mermaidId }) {
+export function EditorDemo({ compileFn, examples, mermaidId }) {
   const [program, setProgram] = useState(Object.values(examples)[0]);
   const [showingMermaid, setShowingMermaid] = useState(true);
   const [editorAndMonaco, setEditorAndMonaco] = useState(null);

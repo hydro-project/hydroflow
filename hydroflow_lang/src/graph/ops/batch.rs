@@ -1,8 +1,8 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_0, RANGE_1, OperatorCategory,
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::graph::OperatorInstance;
 
@@ -19,9 +19,8 @@ use crate::graph::OperatorInstance;
 /// ```rustbook
 ///     let (tx, rx) = hydroflow::util::unbounded_channel::<()>();
 ///
-///     // Will print 0, 1, 2, 3, 4 each on a new line just once.
 ///     let mut df = hydroflow::hydroflow_syntax! {
-///         source_iter(0..5) -> persist() -> batch(10, rx) -> for_each(|x| { println!("{x}"); });
+///         source_iter(0..5) -> persist() -> batch(10, rx) -> assert([0, 1, 2, 3, 4]);
 ///     };
 ///
 ///     tx.send(()).unwrap();

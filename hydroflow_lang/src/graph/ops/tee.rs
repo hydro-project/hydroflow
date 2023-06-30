@@ -1,9 +1,9 @@
-use super::{
-    FlowProperties, FlowPropertyVal, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_0, RANGE_1, RANGE_ANY, OperatorCategory,
-};
-
 use quote::{quote_spanned, ToTokens};
+
+use super::{
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
+};
 
 /// > 1 input stream, *n* output streams
 ///
@@ -12,11 +12,9 @@ use quote::{quote_spanned, ToTokens};
 ///
 /// ```hydroflow
 /// my_tee = source_iter(vec!["Hello", "World"]) -> tee();
-/// my_tee -> map(|x: &str| x.to_uppercase())
-///     -> for_each(|x| println!("{}", x));
-/// my_tee -> map(|x: &str| x.to_lowercase())
-///     -> for_each(|x| println!("{}", x));
-/// my_tee -> for_each(|x: &str| println!("{}", x));
+/// my_tee -> map(|x: &str| x.to_uppercase()) -> assert(["HELLO", "WORLD"]);
+/// my_tee -> map(|x: &str| x.to_lowercase()) -> assert(["hello", "world"]);
+/// my_tee -> assert(["Hello", "World"]);
 /// ```
 pub const TEE: OperatorConstraints = OperatorConstraints {
     name: "tee",

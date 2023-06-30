@@ -1,5 +1,4 @@
-#![deny(missing_docs)]
-#![feature(impl_trait_in_assoc_type)]
+#![warn(missing_docs)]
 #![doc = include_str!("../README.md")]
 
 use std::cmp::Ordering::{self, *};
@@ -17,6 +16,7 @@ mod point;
 mod seq;
 pub mod set_union;
 pub mod test;
+mod unit;
 mod with_bot;
 mod with_top;
 

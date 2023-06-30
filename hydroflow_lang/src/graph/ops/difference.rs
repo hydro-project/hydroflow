@@ -15,10 +15,9 @@ use crate::graph::{OpInstGenerics, OperatorInstance, PortIndexValue};
 /// `neg` input.
 ///
 /// ```hydroflow
-/// // should print "elephant"
 /// source_iter(vec!["dog", "cat", "elephant"]) -> [pos]diff;
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
-/// diff = difference() -> for_each(|v| println!("{}", v));
+/// diff = difference() -> assert(["elephant"]);
 /// ```
 pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
     name: "difference",
@@ -114,6 +113,15 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
                         #negset_ident.extend(#input_neg);
                     },
                 ),
+
+                Persistence::Mutable => {
+                    diagnostics.push(Diagnostic::spanned(
+                        op_span,
+                        Level::Error,
+                        "An implementation of 'mutable does not exist",
+                    ));
+                    return Err(());
+                }
             };
 
             (

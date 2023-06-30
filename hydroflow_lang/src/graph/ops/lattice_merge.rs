@@ -26,7 +26,7 @@ use crate::graph::ops::OperatorWriteOutput;
 /// source_iter([1,2,3,4,5])
 ///     -> map(hydroflow::lattices::Max::new)
 ///     -> lattice_merge::<'static, hydroflow::lattices::Max<usize>>()
-///     -> for_each(|x: hydroflow::lattices::Max<usize>| println!("Least upper bound: {}", x.0));
+///     -> assert([hydroflow::lattices::Max::new(5)]);
 /// ```
 pub const LATTICE_MERGE: OperatorConstraints = OperatorConstraints {
     name: "lattice_merge",
