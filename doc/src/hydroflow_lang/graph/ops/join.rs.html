@@ -226,26 +226,6 @@
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
 <a href="#228" id="228">228</a>
-<a href="#229" id="229">229</a>
-<a href="#230" id="230">230</a>
-<a href="#231" id="231">231</a>
-<a href="#232" id="232">232</a>
-<a href="#233" id="233">233</a>
-<a href="#234" id="234">234</a>
-<a href="#235" id="235">235</a>
-<a href="#236" id="236">236</a>
-<a href="#237" id="237">237</a>
-<a href="#238" id="238">238</a>
-<a href="#239" id="239">239</a>
-<a href="#240" id="240">240</a>
-<a href="#241" id="241">241</a>
-<a href="#242" id="242">242</a>
-<a href="#243" id="243">243</a>
-<a href="#244" id="244">244</a>
-<a href="#245" id="245">245</a>
-<a href="#246" id="246">246</a>
-<a href="#247" id="247">247</a>
-<a href="#248" id="248">248</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
@@ -261,10 +241,10 @@
 /// Forms the equijoin of the tuples in the input streams by their first (key) attribute. Note that the result nests the 2nd input field (values) into a tuple in the 2nd output field.
 ///
 /// ```hydroflow
-/// // should print `(hello, (world, cleveland))`
-/// source_iter(vec![(&quot;hello&quot;, &quot;world&quot;), (&quot;stay&quot;, &quot;gold&quot;)]) -&gt; [0]my_join;
-/// source_iter(vec![(&quot;hello&quot;, &quot;cleveland&quot;), (&quot;hello&quot;, &quot;cleveland&quot;)]) -&gt; [1]my_join;
-/// my_join = join() -&gt; assert([(&quot;hello&quot;, (&quot;world&quot;, &quot;cleveland&quot;)), (&quot;hello&quot;, (&quot;world&quot;, &quot;cleveland&quot;))]);
+/// source_iter(vec![(&quot;hello&quot;, &quot;world&quot;), (&quot;stay&quot;, &quot;gold&quot;), (&quot;hello&quot;, &quot;world&quot;)]) -&gt; [0]my_join;
+/// source_iter(vec![(&quot;hello&quot;, &quot;cleveland&quot;)]) -&gt; [1]my_join;
+/// my_join = join()
+///     -&gt; assert([(&quot;hello&quot;, (&quot;world&quot;, &quot;cleveland&quot;))]);
 /// ```
 ///
 /// `join` can also be provided with one or two generic lifetime persistence arguments, either
@@ -289,26 +269,6 @@
 ///
 /// join::&lt;&#39;tick, &#39;static&gt;();
 /// // etc.
-/// ```
-///
-/// Join also accepts one type argument that controls how the join state is built up. This (currently) allows switching between a SetUnion and NonSetUnion implementation.
-/// The default is HalfMultisetJoinState
-/// For example:
-/// ```hydroflow
-/// lhs = source_iter([(&quot;a&quot;, 0), (&quot;a&quot;, 0)]) -&gt; tee();
-/// rhs = source_iter([(&quot;a&quot;, 0)]) -&gt; tee();
-///
-/// lhs -&gt; [0]default_join;
-/// rhs -&gt; [1]default_join;
-/// default_join = join() -&gt; assert([(&quot;a&quot;, (0, 0)), (&quot;a&quot;, (0, 0))]);
-///
-/// lhs -&gt; [0]multiset_join;
-/// rhs -&gt; [1]multiset_join;
-/// multiset_join = join::&lt;hydroflow::compiled::pull::HalfMultisetJoinState&gt;() -&gt; assert([(&quot;a&quot;, (0, 0)), (&quot;a&quot;, (0, 0))]);
-///
-/// lhs -&gt; [0]set_join;
-/// rhs -&gt; [1]set_join;
-/// set_join = join::&lt;hydroflow::compiled::pull::HalfSetJoinState&gt;() -&gt; assert([(&quot;a&quot;, (0, 0))]);
 /// ```
 ///
 /// ### Examples
@@ -388,7 +348,7 @@
                 .get(<span class="number">0</span>)
                 .map(ToTokens::to_token_stream)
                 .unwrap_or(<span class="macro">quote_spanned!</span>(op_span=&gt;
-                    #root::compiled::pull::HalfMultisetJoinState
+                    #root::compiled::pull::HalfSetJoinState
                 ));
 
         <span class="comment">// TODO: This is really bad.

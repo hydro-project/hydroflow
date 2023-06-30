@@ -472,6 +472,8 @@
 <a href="#472" id="472">472</a>
 <a href="#473" id="473">473</a>
 <a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a>
+<a href="#476" id="476">476</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::{Debug, Display};
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
@@ -722,11 +724,13 @@
     initialize::INITIALIZE,
     inspect::INSPECT,
     join::JOIN,
+    join_multiset::JOIN_MULTISET,
     fold_keyed::FOLD_KEYED,
     reduce_keyed::REDUCE_KEYED,
     lattice_batch::LATTICE_BATCH,
+    lattice_fold::LATTICE_FOLD,
     lattice_join::LATTICE_JOIN,
-    lattice_merge::LATTICE_MERGE,
+    lattice_reduce::LATTICE_REDUCE,
     map::MAP,
     union::UNION,
     multiset_delta::MULTISET_DELTA,
