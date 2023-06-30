@@ -1,4 +1,3 @@
-use quote::quote_spanned;
 use syn::parse_quote_spanned;
 use syn::spanned::Spanned;
 
@@ -6,30 +5,31 @@ use super::{
     DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorCategory,
     OperatorConstraints, OperatorInstance, WriteContextArgs, RANGE_1,
 };
-use crate::graph::ops::OperatorWriteOutput;
 
 /// > 1 input stream, 1 output stream
 ///
 /// > Generic parameters: A `Lattice` type, must implement [`Merge<Self>`](https://hydro-project.github.io/hydroflow/doc/lattices/trait.Merge.html)
 /// type.
 ///
-/// A specialized operator for merging lattices together into a accumulated value. Like [`reduce()`](#reduce)
-/// but specialized for lattice types. `lattice_merge::<MyLattice>()` is equivalent to `reduce(hydroflow::lattices::Merge::merge_owned)`.
+/// A specialized operator for merging lattices together into a accumulated value. Like [`fold()`](#fold)
+/// but specialized for lattice types. `lattice_fold::<MyLattice>()` is equivalent to `fold(MyLattice::default(), hydroflow::lattices::Merge::merge_owned)`.
 ///
-/// `lattice_merge` can also be provided with one generic lifetime persistence argument, either
+/// `lattice_fold` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
 /// within the same tick. With `'static`, values will be remembered across ticks and will be
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
 /// defaults to `'static`.
 ///
+/// `lattice_fold` is differentiated from `lattice_reduce` in that `lattice_fold` can accumulate into a different type from its input.
+/// But it also means that the accumulating type must implement `Default`
+///
 /// ```hydroflow
-/// source_iter([1,2,3,4,5])
-///     -> map(hydroflow::lattices::Max::new)
-///     -> lattice_merge::<'static, hydroflow::lattices::Max<usize>>()
-///     -> assert([hydroflow::lattices::Max::new(5)]);
+/// source_iter([hydroflow::lattices::set_union::SetUnionSingletonSet::new_from(7)])
+///     -> lattice_fold::<'static, hydroflow::lattices::set_union::SetUnionHashSet<usize>>()
+///     -> assert([hydroflow::lattices::set_union::SetUnionHashSet::new_from([7])]);
 /// ```
-pub const LATTICE_MERGE: OperatorConstraints = OperatorConstraints {
-    name: "lattice_merge",
+pub const LATTICE_FOLD: OperatorConstraints = OperatorConstraints {
+    name: "lattice_fold",
     categories: &[OperatorCategory::LatticeFold],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
@@ -49,7 +49,6 @@ pub const LATTICE_MERGE: OperatorConstraints = OperatorConstraints {
     input_delaytype_fn: |_| Some(DelayType::Stratum),
     write_fn: |wc @ &WriteContextArgs {
                    root,
-                   inputs,
                    is_pull,
                    op_inst:
                        op_inst @ OperatorInstance {
@@ -61,15 +60,12 @@ pub const LATTICE_MERGE: OperatorConstraints = OperatorConstraints {
                diagnostics| {
         assert!(is_pull);
 
-        assert_eq!(1, inputs.len());
-        let input = &inputs[0];
-
-        assert_eq!(1, type_args.len());
         let lat_type = &type_args[0];
 
         let arguments = parse_quote_spanned! {lat_type.span()=> // Uses `lat_type.span()`!
-            #root::lattices::Merge::<#lat_type>::merge_owned
+            <#lat_type as ::std::default::Default>::default(), #root::lattices::Merge::merge_owned
         };
+
         let wc = WriteContextArgs {
             op_inst: &OperatorInstance {
                 arguments,
@@ -78,31 +74,6 @@ pub const LATTICE_MERGE: OperatorConstraints = OperatorConstraints {
             ..wc.clone()
         };
 
-        let OperatorWriteOutput {
-            write_prologue,
-            write_iterator,
-            write_iterator_after,
-        } = (super::reduce::REDUCE.write_fn)(&wc, diagnostics)?;
-        let write_iterator = quote_spanned! {lat_type.span()=> // Uses `lat_type.span()`!
-            let #input = {
-                /// Improve errors with `#lat_type` trait bound.
-                #[inline(always)]
-                fn check_inputs<Lat>(
-                    input: impl ::std::iter::Iterator<Item = Lat>
-                ) -> impl ::std::iter::Iterator<Item = Lat>
-                where
-                    Lat: #root::lattices::Merge<Lat>,
-                {
-                    input
-                }
-                check_inputs::<#lat_type>(#input)
-            };
-            #write_iterator
-        };
-        Ok(OperatorWriteOutput {
-            write_prologue,
-            write_iterator,
-            write_iterator_after,
-        })
+        (super::fold::FOLD.write_fn)(&wc, diagnostics)
     },
 };
