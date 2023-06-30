@@ -25,7 +25,6 @@ use crate::graph::ops::OperatorWriteOutput;
 /// `lattice_reduce` is differentiated from `lattice_fold` in that `lattice_reduce` the accumulating type does not need to have a sensible default.
 /// But it also means that the accumulating function inputs and the accumulating type must be the same.
 ///
-/// TODO: give example here that shows you don't need to implement Default
 /// ```hydroflow
 /// source_iter([1,2,3,4,5])
 ///     -> map(hydroflow::lattices::Max::new)

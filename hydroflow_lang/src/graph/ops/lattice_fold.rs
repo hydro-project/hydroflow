@@ -16,7 +16,6 @@ use crate::graph::ops::OperatorWriteOutput;
 /// A specialized operator for merging lattices together into a accumulated value. Like [`fold()`](#fold)
 /// but specialized for lattice types. `lattice_fold::<MyLattice>()` is equivalent to `fold(MyLattice::default(), hydroflow::lattices::Merge::merge_owned)`.
 ///
-///
 /// `lattice_fold` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
 /// within the same tick. With `'static`, values will be remembered across ticks and will be
