@@ -3,23 +3,19 @@
 pub struct PrettySpan(pub proc_macro2::Span);
 impl std::fmt::Display for PrettySpan {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let span = self.0;
-
         #[cfg(feature = "diagnostics")]
-        let path = span.unwrap().source_file().path();
+        let (path, line, column) = (
+            self.0.unwrap().source_file().path(),
+            self.0.unwrap().start().line(),
+            self.0.unwrap().start().column(),
+        );
         #[cfg(feature = "diagnostics")]
         let location = path.display();
 
         #[cfg(not(feature = "diagnostics"))]
-        let location = "unknown";
+        let (location, line, column) = ("unknown", 0, 0);
 
-        write!(
-            f,
-            "{}:{}:{}",
-            location,
-            span.start().line,
-            span.start().column
-        )
+        write!(f, "{}:{}:{}", location, line, column)
     }
 }
 
