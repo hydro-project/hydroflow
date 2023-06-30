@@ -13,7 +13,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// For example:
 /// ```hydroflow
 /// lhs = source_iter([("a", 0), ("a", 0)]) -> tee();
-/// rhs = source_iter([("a", 0)]) -> tee();
+/// rhs = source_iter([("a", "hydro")]) -> tee();
 ///
 /// lhs -> [0]multiset_join;
 /// rhs -> [1]multiset_join;
