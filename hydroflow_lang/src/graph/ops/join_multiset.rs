@@ -17,11 +17,11 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 ///
 /// lhs -> [0]multiset_join;
 /// rhs -> [1]multiset_join;
-/// multiset_join = join_multiset() -> assert([("a", (0, 0)), ("a", (0, 0))]);
+/// multiset_join = join_multiset() -> assert([("a", (0, "hydro")), ("a", (0, "hydro"))]);
 ///
 /// lhs -> [0]set_join;
 /// rhs -> [1]set_join;
-/// set_join = join() -> assert([("a", (0, 0))]);
+/// set_join = join() -> assert([("a", (0, "hydro"))]);
 /// ```
 pub const JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
     name: "join_multiset",
