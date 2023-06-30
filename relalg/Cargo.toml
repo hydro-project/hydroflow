@@ -9,7 +9,7 @@ license = "Apache-2.0"
 anyhow = "1.0"
 datadriven = "0.6.0"
 hydroflow = { path = "../hydroflow" }
-proc-macro2 = "1.0"
+proc-macro2 = "1.0.57"
 quote = "1.0"
 syn = { version = "2.0.0", features = [ "parsing", "extra-traits" ] }
 prettyplease = "0.2.0"
