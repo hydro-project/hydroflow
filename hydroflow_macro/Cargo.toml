@@ -18,7 +18,7 @@ diagnostics = [ "hydroflow_lang/diagnostics" ]
 # building on a WASM host), we may need to turn diagnostics off for WASM if
 # proc_macro2 still does not support WASM.
 hydroflow_lang = { path = "../hydroflow_lang", version = "^0.2.0" }
-proc-macro2 = "1.0.0"
+proc-macro2 = "1.0.57"
 proc-macro-crate = "1.1.0"
 quote = "1.0.0"
 syn = { version = "2.0.0", features = [ "parsing", "extra-traits" ] }
