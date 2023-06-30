@@ -21,7 +21,7 @@ use super::{
 /// defaults to `'static`.
 ///
 /// `lattice_fold` is differentiated from `lattice_reduce` in that `lattice_fold` can accumulate into a different type from its input.
-/// But it also means that the accumulating type must have a sensible default value.
+/// But it also means that the accumulating type must implement `Default`
 ///
 /// ```hydroflow
 /// source_iter([hydroflow::lattices::set_union::SetUnionSingletonSet::new_from(7)])
@@ -63,7 +63,7 @@ pub const LATTICE_FOLD: OperatorConstraints = OperatorConstraints {
         let lat_type = &type_args[0];
 
         let arguments = parse_quote_spanned! {lat_type.span()=> // Uses `lat_type.span()`!
-            <#lat_type>::default(), #root::lattices::Merge::merge_owned
+            <#lat_type as ::std::default::Default>::default(), #root::lattices::Merge::merge_owned
         };
 
         let wc = WriteContextArgs {

@@ -22,7 +22,7 @@ use crate::graph::ops::OperatorWriteOutput;
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
 /// defaults to `'static`.
 ///
-/// `lattice_reduce` is differentiated from `lattice_fold` in that `lattice_reduce` the accumulating type does not need to have a sensible default.
+/// `lattice_reduce` is differentiated from `lattice_fold` in that `lattice_reduce` the accumulating type does not need to implement `Default`.
 /// But it also means that the accumulating function inputs and the accumulating type must be the same.
 ///
 /// ```hydroflow
