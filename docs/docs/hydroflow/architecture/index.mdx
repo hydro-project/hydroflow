@@ -1,3 +1,6 @@
+import exampleOutput from '!!raw-loader!../../../../hydroflow/tests/snapshots/surface_examples__example_5_reachability.snap';
+import { extractMermaid } from '../../../src/util';
+
 # Architecture
 
 Hydroflow graphs are divided into two layers: the outer _scheduled layer_ and
@@ -9,39 +12,7 @@ and handoffs, while the insides of the gray boxes are compiled via the compiled 
 here is the graph from the
 [reachability](../quickstart/example_5_reachability) chapter, which we will use a running example:
 
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'clusterBkg':'#ddd'}}}%%
-flowchart TD
-classDef pullClass fill:#02f,color:#fff,stroke:#000
-classDef pushClass fill:#ff0,stroke:#000
-linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
-subgraph "sg_1v1 stratum 0"
-    1v1[\"(1v1) <tt>source_iter(vec! [0])</tt>"/]:::pullClass
-    2v1[\"(2v1) <tt>source_stream(edges_recv)</tt>"/]:::pullClass
-    3v1[\"(3v1) <tt>union()</tt>"/]:::pullClass
-    7v1[\"(7v1) <tt>map(| v | (v, ()))</tt>"/]:::pullClass
-    4v1[\"(4v1) <tt>join()</tt>"/]:::pullClass
-    5v1[/"(5v1) <tt>flat_map(| (src, ((), dst)) | [src, dst])</tt>"\]:::pushClass
-    6v1[/"(6v1) <tt>tee()</tt>"\]:::pushClass
-    10v1["(10v1) <tt>handoff</tt>"]:::otherClass
-    10v1--1--->3v1
-    1v1--0--->3v1
-    2v1--1--->4v1
-    3v1--->7v1
-    7v1--0--->4v1
-    4v1--->5v1
-    5v1--->6v1
-    6v1--0--->10v1
-end
-subgraph "sg_2v1 stratum 1"
-    8v1[/"(8v1) <tt>unique()</tt>"\]:::pushClass
-    9v1[/"(9v1) <tt>for_each(| x | println! (&quot;Reached: {}&quot;, x))</tt>"\]:::pushClass
-    8v1--->9v1
-end
-6v1--1--->11v1
-11v1["(11v1) <tt>handoff</tt>"]:::otherClass
-11v1===o8v1
-```
+<mermaid value={extractMermaid(exampleOutput)}></mermaid>
 
 The [Hydroflow Architecture Design Doc](https://hydro-project.github.io/hydroflow/design_docs/2021-10_architecture_design_doc.html)
 contains a more detailed explanation of this section. Note that some aspects of
