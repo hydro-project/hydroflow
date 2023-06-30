@@ -11,8 +11,8 @@ use super::{
 ///
 /// **Requires the "python" feature to be enabled.**
 ///
-/// An operator which allows you to run a python udf. Input arguments must be a stream of items
-/// which implement [`IntoPy`](https://docs.rs/pyo3/latest/pyo3/conversion/trait.IntoPy.html).
+/// An operator which allows you to run a python udf. Input arguments must be a stream of tuples
+/// whose items implement [`IntoPy`](https://docs.rs/pyo3/latest/pyo3/conversion/trait.IntoPy.html).
 /// See the [relevant pyo3 docs here](https://pyo3.rs/latest/conversions/tables#mapping-of-rust-types-to-python-types).
 ///
 /// Output items are of type `PyResult<Py<PyAny>>`. Rust native types can be extracted using
@@ -21,6 +21,7 @@ use super::{
 ///
 /// ```hydroflow
 /// source_iter(0..10)
+///     -> map(|x| (x,))
 ///     -> py_udf(r#"
 /// def fib(n):
 ///     if n < 2:
@@ -35,14 +36,15 @@ use super::{
 /// ```
 ///
 /// ```hydroflow
-/// source_iter([5])
-///     -> py_udf(r#"
+/// source_iter([(5,1)])
+/// -> py_udf(r#"
 /// def add(a, b):
 ///     return a + b
-///     "#, "add")
-///     -> map(PyResult::<Py<PyAny>>::unwrap_err)
-///     -> map(|py_err| py_err.to_string())
-///     -> assert(["TypeError: add() missing 1 required positional argument: 'b'"]);
+///             "#, "add")
+///             -> map(|x: PyResult<Py<PyAny>>| Python::with_gil(|py| {
+///                 usize::extract(x.unwrap().as_ref(py)).unwrap()
+///             }))
+///             -> assert([6]);
 /// ```
 pub const PY_UDF: OperatorConstraints = OperatorConstraints {
     name: "py_udf",
@@ -112,7 +114,8 @@ pub const PY_UDF: OperatorConstraints = OperatorConstraints {
                 {
                     // TODO(mingwei): maybe this can be outside the closure?
                     let py_func = #context.state_ref(#py_func_ident);
-                    ::pyo3::Python::with_gil(|py| py_func.call1(py, (x,)))
+                    //::pyo3::Python::with_gil(|py| py_func.call1(py, (x,)))
+                    ::pyo3::Python::with_gil(|py| py_func.call1(py, x))
                 }
                 #[cfg(not(feature = "python"))]
                 panic!()
