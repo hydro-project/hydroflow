@@ -8,17 +8,17 @@ pub fn main() {
         // inputs: the origin vertex (vertex 0) and stream of input edges
         origin = source_iter(vec![0]);
         stream_of_edges = source_stream(edges_recv);
-        origin -> reached_vertices;
-        reached_vertices = union() -> unique();
+        origin -> [0]reached_vertices;
+        reached_vertices = union();
 
         // the join
         reached_vertices -> map(|v| (v, ())) -> [0]my_join_tee;
         stream_of_edges -> [1]my_join_tee;
-        my_join_tee = join() -> flat_map(|(src, ((), dst))| [src, dst]) -> unique() -> tee();
+        my_join_tee = join() -> flat_map(|(src, ((), dst))| [src, dst]) -> tee();
 
         // the loop and the output
-        my_join_tee[0] -> reached_vertices;
-        my_join_tee[1] -> for_each(|x| println!("Reached: {}", x));
+        my_join_tee[0] -> [1]reached_vertices;
+        my_join_tee[1] -> unique() -> for_each(|x| println!("Reached: {}", x));
     };
 
     println!(

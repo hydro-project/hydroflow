@@ -248,6 +248,7 @@ declare_ops![
     initialize::INITIALIZE,
     inspect::INSPECT,
     join::JOIN,
+    join_multiset::JOIN_MULTISET,
     fold_keyed::FOLD_KEYED,
     reduce_keyed::REDUCE_KEYED,
     lattice_batch::LATTICE_BATCH,
