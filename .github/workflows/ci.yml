@@ -283,6 +283,20 @@ jobs:
           command: clippy
           args: --all-targets -- -D warnings
 
+  build-website:
+    name: Build Website
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
+    timeout-minutes: 25
+    needs: pre_job
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Build Website
+        run: bash build_docs.bash
+
   docs:
     name: Docs (rustdoc)
     timeout-minutes: 10
