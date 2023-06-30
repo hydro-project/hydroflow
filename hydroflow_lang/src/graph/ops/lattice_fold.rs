@@ -1,4 +1,3 @@
-use quote::quote_spanned;
 use syn::parse_quote_spanned;
 use syn::spanned::Spanned;
 
@@ -6,7 +5,6 @@ use super::{
     DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorCategory,
     OperatorConstraints, OperatorInstance, WriteContextArgs, RANGE_1,
 };
-use crate::graph::ops::OperatorWriteOutput;
 
 /// > 1 input stream, 1 output stream
 ///
@@ -51,7 +49,6 @@ pub const LATTICE_FOLD: OperatorConstraints = OperatorConstraints {
     input_delaytype_fn: |_| Some(DelayType::Stratum),
     write_fn: |wc @ &WriteContextArgs {
                    root,
-                   inputs,
                    is_pull,
                    op_inst:
                        op_inst @ OperatorInstance {
@@ -63,15 +60,12 @@ pub const LATTICE_FOLD: OperatorConstraints = OperatorConstraints {
                diagnostics| {
         assert!(is_pull);
 
-        assert_eq!(1, inputs.len());
-        let input = &inputs[0];
-
-        assert_eq!(1, type_args.len());
         let lat_type = &type_args[0];
 
         let arguments = parse_quote_spanned! {lat_type.span()=> // Uses `lat_type.span()`!
             <#lat_type>::default(), #root::lattices::Merge::merge_owned
         };
+
         let wc = WriteContextArgs {
             op_inst: &OperatorInstance {
                 arguments,
@@ -80,31 +74,6 @@ pub const LATTICE_FOLD: OperatorConstraints = OperatorConstraints {
             ..wc.clone()
         };
 
-        let OperatorWriteOutput {
-            write_prologue,
-            write_iterator,
-            write_iterator_after,
-        } = (super::fold::FOLD.write_fn)(&wc, diagnostics)?;
-        let write_iterator = quote_spanned! {lat_type.span()=> // Uses `lat_type.span()`!
-            let #input = {
-                /// Improve errors with `#lat_type` trait bound.
-                #[inline(always)]
-                fn check_inputs<Lat, LatOther>(
-                    input: impl ::std::iter::Iterator<Item = LatOther>
-                ) -> impl ::std::iter::Iterator<Item = LatOther>
-                where
-                    Lat: Default + #root::lattices::Merge<LatOther>,
-                {
-                    input
-                }
-                check_inputs::<#lat_type, _>(#input)
-            };
-            #write_iterator
-        };
-        Ok(OperatorWriteOutput {
-            write_prologue,
-            write_iterator,
-            write_iterator_after,
-        })
+        (super::fold::FOLD.write_fn)(&wc, diagnostics)
     },
 };
