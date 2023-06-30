@@ -16,7 +16,7 @@ use super::{
 ///
 /// ```hydroflow
 /// source_iter([1, 2, 3, 4])
-///     -> inspect(|&x| println!("{}", x))
+///     -> inspect(|x| println!("{}", x))
 ///     -> assert([1, 2, 3, 4]);
 /// ```
 pub const INSPECT: OperatorConstraints = OperatorConstraints {
