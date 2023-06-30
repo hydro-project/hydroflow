@@ -26,7 +26,7 @@ for an interactive demo.
 ```rust
 source_iter(0..10)
   -> map(|n| n * n)
-  -> filter(|&n| n > 10)
+  -> filter(|n| *n > 10)
   -> foo;
 
 foo = map(|n| (n..=n+1))
