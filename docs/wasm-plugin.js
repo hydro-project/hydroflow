@@ -14,7 +14,15 @@ module.exports = function (context, options) {
               type: "asset/inline",
             },
           ] : []
-        }
+        },
+        ...(process.env.LOAD_PLAYGROUND !== "1" ? {
+          resolve: {
+            alias: {
+              "website_playground/website_playground_bg.wasm": false,
+              "website_playground/website_playground_bg.js": false
+            }
+          }
+        } : {})
       };
     },
   };
