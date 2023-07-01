@@ -27,6 +27,10 @@ const config = {
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'throw',
 
+  customFields: {
+    'LOAD_PLAYGROUND': process.env.LOAD_PLAYGROUND || false,
+  },
+
   markdown: {
     mermaid: true
   },
