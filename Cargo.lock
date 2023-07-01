@@ -1363,6 +1363,7 @@ dependencies = [
  "lattices",
  "multiplatform_test",
  "pusherator",
+ "pyo3",
  "rand 0.8.5",
  "rand_distr",
  "ref-cast",
