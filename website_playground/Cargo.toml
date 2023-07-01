@@ -12,8 +12,8 @@ default = ["console_error_panic_hook"]
 
 [dependencies]
 futures = { version = "0.3" }
-hydroflow_datalog_core = { path = "../hydroflow_datalog_core" }
-hydroflow_lang = { path = "../hydroflow_lang" }
+hydroflow_datalog_core = { path = "../hydroflow_datalog_core", features = [ "diagnostics" ] }
+hydroflow_lang = { path = "../hydroflow_lang", features = [ "diagnostics" ] }
 hydroflow = { path = "../hydroflow" }
 prettyplease = "0.2.0"
 proc-macro2 = "1.0.57"
