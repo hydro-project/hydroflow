@@ -5,26 +5,33 @@ import Editor from "@monaco-editor/react";
 
 import ExecutionEnvironment from '@docusaurus/ExecutionEnvironment';
 
-import * as wasm from "website_playground/website_playground_bg.wasm";
-import { __wbg_set_wasm, init, compile_hydroflow, compile_datalog } from "website_playground/website_playground_bg.js";
+import siteConfig from '@generated/docusaurus.config';
 
-if (ExecutionEnvironment.canUseDOM) {
-  __wbg_set_wasm(wasm);
-} else {
-  const wasmUri = require("website_playground/website_playground_bg.wasm");
-  const wasmBuffer = Buffer.from(wasmUri.split(",")[1], 'base64');
-  const wasm = new WebAssembly.Module(wasmBuffer);
-  const instance = new WebAssembly.Instance(wasm, {
-    "./website_playground_bg.js": require("website_playground/website_playground_bg.js")
-  });
-  __wbg_set_wasm(instance.exports);
+let compile_hydroflow = null;
+let compile_datalog = null;
+
+if (siteConfig.customFields.LOAD_PLAYGROUND === '1') {
+  const wasm = require("website_playground/website_playground_bg.wasm");
+  const { __wbg_set_wasm, init, compile_hydroflow, compile_datalog } = require("website_playground/website_playground_bg.js");
+
+  if (ExecutionEnvironment.canUseDOM) {
+    __wbg_set_wasm(wasm);
+  } else {
+    const wasmUri = require("website_playground/website_playground_bg.wasm");
+    const wasmBuffer = Buffer.from(wasmUri.split(",")[1], 'base64');
+    const wasm = new WebAssembly.Module(wasmBuffer);
+    const instance = new WebAssembly.Instance(wasm, {
+      "./website_playground_bg.js": require("website_playground/website_playground_bg.js")
+    });
+    __wbg_set_wasm(instance.exports);
+  }
+
+  init();
 }
 
 import mermaid from "mermaid";
 
 import styles from "./playground.module.css";
-
-init();
 
 function MermaidGraph({ id, source }) {
   const [svg, setSvg] = useState({ __html: 'Loading Mermaid graph...' });
@@ -178,6 +185,10 @@ export function EditorDemo({ compileFn, examples, mermaidId }) {
   const [program, setProgram] = useState(Object.values(examples)[0]);
   const [showingMermaid, setShowingMermaid] = useState(true);
   const [editorAndMonaco, setEditorAndMonaco] = useState(null);
+
+  if (siteConfig.customFields.LOAD_PLAYGROUND !== '1') {
+    return <div>Please set LOAD_PLAYGROUND environment variable to 1 to enable the playground.</div>;
+  }
 
   const { output, diagnostics } = (compileFn)(program);
   const numberOfLines = program.split("\n").length;
