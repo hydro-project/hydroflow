@@ -18,4 +18,4 @@ cd ../docs
 
 npm ci
 
-npm run build
+LOAD_PLAYGROUND=1 npm run build
