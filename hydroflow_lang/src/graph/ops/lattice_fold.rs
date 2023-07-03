@@ -63,7 +63,7 @@ pub const LATTICE_FOLD: OperatorConstraints = OperatorConstraints {
         let lat_type = &type_args[0];
 
         let arguments = parse_quote_spanned! {lat_type.span()=> // Uses `lat_type.span()`!
-            <#lat_type as ::std::default::Default>::default(), #root::lattices::Merge::merge_owned
+            <#lat_type as ::std::default::Default>::default(), #root::lattices::Merge::merge
         };
 
         let wc = WriteContextArgs {

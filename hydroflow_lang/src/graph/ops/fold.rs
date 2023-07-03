@@ -10,9 +10,9 @@ use crate::diagnostic::{Diagnostic, Level};
 /// > 1 input stream, 1 output stream
 ///
 /// > Arguments: an initial value, and a closure which itself takes two arguments:
-/// an 'accumulator', and an element. The closure returns the value that the accumulator should have for the next iteration.
+/// an 'accumulator', and an element.
 ///
-/// Akin to Rust's built-in fold operator. Folds every element into an accumulator by applying a closure,
+/// Akin to Rust's built-in fold operator, except that it takes the accumulator by `&mut` instead of by value. Folds every element into an accumulator by applying a closure,
 /// returning the final result.
 ///
 /// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
@@ -26,9 +26,8 @@ use crate::diagnostic::{Diagnostic, Level};
 /// ```hydroflow
 /// // should print `Reassembled vector [1,2,3,4,5]`
 /// source_iter([1,2,3,4,5])
-///     -> fold::<'tick>(Vec::new(), |mut accum, elem| {
+///     -> fold::<'tick>(Vec::new(), |accum: &mut Vec<_>, elem| {
 ///         accum.push(elem);
-///         accum
 ///     })
 ///     -> assert([vec![1, 2, 3, 4, 5]]);
 /// ```
@@ -89,8 +88,13 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
             Persistence::Tick => (
                 Default::default(),
                 quote_spanned! {op_span=>
-                    #[allow(clippy::unnecessary_fold)]
-                    let #ident = ::std::iter::once(#input.fold(#init, #func));
+                    let input = #input;
+                    let mut accum = #init;
+                    for x in input {
+                        #[allow(clippy::redundant_closure_call)]
+                        (#func)(&mut accum, x);
+                    }
+                    let #ident = ::std::iter::once(accum);
                 },
                 Default::default(),
             ),
@@ -102,12 +106,17 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
                 },
                 quote_spanned! {op_span=>
                     let #ident = {
-                        let accum = #context.state_ref(#folddata_ident).take().expect("FOLD DATA MISSING");
-                        #[allow(clippy::unnecessary_fold)]
-                        let accum = #input.fold(accum, #func);
+                        let input = #input;
+                        let mut accum = #context.state_ref(#folddata_ident).take().expect("FOLD DATA MISSING");
+                        for x in input {
+                            #[allow(clippy::redundant_closure_call)]
+                            (#func)(&mut accum, x);
+                        }
+
                         #context.state_ref(#folddata_ident).set(
                             ::std::option::Option::Some(::std::clone::Clone::clone(&accum))
                         );
+
                         ::std::iter::once(accum)
                     };
                 },

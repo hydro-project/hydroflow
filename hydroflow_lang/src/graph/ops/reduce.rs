@@ -19,9 +19,8 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 ///
 /// ```hydroflow
 /// source_iter([1,2,3,4,5])
-///     -> reduce(|mut accum, elem| {
-///         accum *= elem;
-///         accum
+///     -> reduce::<'tick>(|accum: &mut _, elem| {
+///         *accum *= elem;
 ///     })
 ///     -> assert([120]);
 /// ```
@@ -79,7 +78,18 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
             Persistence::Tick => (
                 Default::default(),
                 quote_spanned! {op_span=>
-                    let #ident = #input.reduce(#func).into_iter();
+                    let mut input = #input;
+                    let accum = input.next();
+                    let #ident = if let ::std::option::Option::Some(mut accum) = accum {
+                        for x in input {
+                            #[allow(clippy::redundant_closure_call)]
+                            (#func)(&mut accum, x);
+                        }
+
+                        ::std::option::Option::Some(accum)
+                    } else {
+                        ::std::option::Option::None
+                    }.into_iter();
                 },
                 Default::default(),
             ),
@@ -90,15 +100,27 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
                     );
                 },
                 quote_spanned! {op_span=>
-                    let #ident = {
-                        let opt = #context.state_ref(#reducedata_ident).take();
-                        let opt = match opt {
-                            Some(accum) => Some(#input.fold(accum, #func)),
-                            None => #input.reduce(#func),
-                        };
-                        #context.state_ref(#reducedata_ident).set(::std::clone::Clone::clone(&opt));
-                        opt.into_iter()
+                    let mut input = #input;
+                    let accum = if let ::std::option::Option::Some(accum) = #context.state_ref(#reducedata_ident).take() {
+                        Some(accum)
+                    } else {
+                        input.next()
                     };
+
+                    let ret = if let ::std::option::Option::Some(mut accum) = accum {
+                        for x in input {
+                            #[allow(clippy::redundant_closure_call)]
+                            (#func)(&mut accum, x);
+                        }
+
+                        ::std::option::Option::Some(accum)
+                    } else {
+                        ::std::option::Option::None
+                    };
+
+                    #context.state_ref(#reducedata_ident).set(::std::clone::Clone::clone(&ret));
+
+                    let #ident = ret.into_iter();
                 },
                 quote_spanned! {op_span=>
                     #context.schedule_subgraph(#context.current_subgraph(), false);

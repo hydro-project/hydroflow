@@ -393,7 +393,7 @@ async fn asynctest_check_state_yielding() {
                 async move {
                     let mut hf = hydroflow_syntax! {
                         source_stream(a_recv)
-                            -> reduce::<'static>(|a, b| a + b)
+                            -> reduce::<'static>(|a: &mut _, b| *a += b)
                             -> for_each(|x| b_send.send(x).unwrap());
                     };
 

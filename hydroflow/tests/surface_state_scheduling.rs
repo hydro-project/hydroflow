@@ -27,7 +27,7 @@ pub fn test_fold_tick() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
-        source_iter([1]) -> fold::<'tick>(0, |accum, elem| accum + elem) -> for_each(|v| out_send.send(v).unwrap());
+        source_iter([1]) -> fold::<'tick>(0, |accum: &mut _, elem| *accum += elem) -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
     df.run_tick();
@@ -47,7 +47,7 @@ pub fn test_fold_static() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
-        source_iter([1]) -> fold::<'static>(0, |accum, elem| accum + elem) -> for_each(|v| out_send.send(v).unwrap());
+        source_iter([1]) -> fold::<'static>(0, |accum: &mut _, elem| *accum += elem) -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
     df.run_tick();
@@ -67,7 +67,7 @@ pub fn test_reduce_tick() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
-        source_iter([1]) -> reduce::<'tick>(|a, b| a + b) -> for_each(|v| out_send.send(v).unwrap());
+        source_iter([1]) -> reduce::<'tick>(|a: &mut _, b| *a += b) -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
     df.run_tick();
@@ -87,7 +87,7 @@ pub fn test_reduce_static() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
-        source_iter([1]) -> reduce::<'static>(|a, b| a + b) -> for_each(|v| out_send.send(v).unwrap());
+        source_iter([1]) -> reduce::<'static>(|a: &mut _, b| *a += b) -> for_each(|v| out_send.send(v).unwrap());
     };
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
     df.run_tick();
@@ -153,7 +153,7 @@ pub fn test_resume_external_event() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow_syntax! {
-        source_stream(in_recv) -> fold::<'static>(0, <usize as std::ops::Add<usize>>::add) -> for_each(|v| out_send.send(v).unwrap());
+        source_stream(in_recv) -> fold::<'static>(0, |a: &mut _, b| *a += b) -> for_each(|v| out_send.send(v).unwrap());
     };
 
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));

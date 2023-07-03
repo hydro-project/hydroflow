@@ -35,7 +35,7 @@ subgraph sg_1v1 ["sg_1v1 stratum 0"]
     end
 end
 subgraph sg_2v1 ["sg_2v1 stratum 1"]
-    8v1[\"(8v1) <code>reduce(|a, b| a + b)</code>"/]:::pullClass
+    8v1[\"(8v1) <code>reduce(|a: &amp;mut _, b| *a += b)</code>"/]:::pullClass
     9v1[/"(9v1) <code>for_each(|sum| println!(&quot;{}&quot;, sum))</code>"\]:::pushClass
     8v1--->9v1
 end
