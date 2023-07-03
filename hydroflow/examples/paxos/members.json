@@ -1,0 +1,15 @@
+{
+    "proposers": [
+        "127.0.0.1:12300",
+        "127.0.0.1:12310"
+    ],
+    "acceptors": [
+        "127.0.0.1:12320",
+        "127.0.0.1:12330",
+        "127.0.0.1:12340"
+    ],
+    "f": 1,
+    "i_am_leader_resend_timeout": 2000,
+    "i_am_leader_check_timeout_node_0": 5000,
+    "i_am_leader_check_timeout_other_nodes": 60000
+}

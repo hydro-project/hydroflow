@@ -13,6 +13,7 @@ pub(crate) async fn run_subordinate(
     outbound: UdpSink,
     inbound: UdpStream,
     path: impl AsRef<Path>,
+    log: &String,
     graph: Option<GraphType>,
 ) {
     println!("Subordinate live!");
@@ -23,12 +24,11 @@ pub(crate) async fn run_subordinate(
             -> map(|json: Addresses| json.coordinator)
             -> map(|s| s.parse::<SocketAddr>().unwrap())
             -> inspect(|coordinator| println!("Coordinator: {}", coordinator));
-        server_addr_join = cross_join();
+        server_addr_join = cross_join() -> dest_sink_serde(outbound);
         server_addr -> [1]server_addr_join;
 
         // set up channels
-        outbound_chan = union() -> [0]server_addr_join -> tee();
-        outbound_chan[0] -> dest_sink_serde(outbound);
+        outbound_chan = union() -> [0]server_addr_join;
         inbound_chan = source_stream_serde(inbound) -> map(Result::unwrap) -> map(|(m, _a)| m) -> tee();
         msgs = inbound_chan[0] ->  demux(|m:CoordMsg, var_args!(prepares, p2, ends, errs)| match m.mtype {
             MsgType::Prepare => prepares.give(m),
@@ -38,26 +38,29 @@ pub(crate) async fn run_subordinate(
             _ => errs.give(m),
         });
         msgs[errs] -> for_each(|m| println!("Received unexpected message type: {:?}", m));
+        log_to_disk = union() -> dest_file(log, true);
 
         // we log all messages (in this prototype we just print)
         inbound_chan[1] -> for_each(|m| println!("Received {:?}", m));
-        outbound_chan[1] -> for_each(|m| println!("Sending {:?}", m));
-
 
         // handle p1 message: choose vote and respond
         // in this prototype we choose randomly whether to abort via decide()
         report_chan = msgs[prepares] -> map(|m: CoordMsg| SubordResponse {
             xid: m.xid,
             mtype: if decide(67) { MsgType::Commit } else { MsgType::Abort }
-        });
-        report_chan -> [0]outbound_chan;
+        }) -> tee();
+        // Presumed abort: log prepares/aborts (reply only after flushing to disk)
+        report_chan[0] -> map(|m:SubordResponse| format!("Phase 1 {:?}, {:?}", m.xid, m.mtype)) -> log_to_disk[0];
+        report_chan[1] -> next_tick() -> [0]outbound_chan;
 
         // handle p2 message: acknowledge (and print)
-        p2_response = map(|(m, t)| SubordResponse {
+        ack_p2_chan = msgs[p2] -> tee();
+        // Presumed abort: log commits/aborts (reply only after flushing to disk)
+        ack_p2_chan[0] -> map(|m:CoordMsg| format!("Phase 2 {:?}, {:?}", m.xid, m.mtype)) -> log_to_disk[1];
+        ack_p2_chan[1] -> map(|m:CoordMsg| SubordResponse {
             xid: m.xid,
-            mtype: t,
-        }) -> [1]outbound_chan;
-        msgs[p2] -> map(|m:CoordMsg| (m, MsgType::AckP2)) -> p2_response;
+            mtype: MsgType::AckP2,
+        }) -> next_tick() -> [1]outbound_chan;
 
         // handle end message: acknowledge (and print)
         msgs[ends] -> map(|m:CoordMsg| SubordResponse {
