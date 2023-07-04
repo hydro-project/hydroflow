@@ -73,23 +73,28 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
         let input = &inputs[0];
         let func = &arguments[0];
         let reducedata_ident = wc.make_ident("reducedata_ident");
+        let accumulator_ident = wc.make_ident("accumulator");
+        let ret_ident = wc.make_ident("ret");
+        let iterator_item_ident = wc.make_ident("iterator_item");
 
         let (write_prologue, write_iterator, write_iterator_after) = match persistence {
             Persistence::Tick => (
                 Default::default(),
                 quote_spanned! {op_span=>
-                    let mut input = #input;
-                    let accum = input.next();
-                    let #ident = if let ::std::option::Option::Some(mut accum) = accum {
-                        for x in input {
-                            #[allow(clippy::redundant_closure_call)]
-                            (#func)(&mut accum, x);
-                        }
+                    let #ident = {
+                        let mut #input = #input;
+                        let #accumulator_ident = #input.next();
+                        if let ::std::option::Option::Some(mut #accumulator_ident) = #accumulator_ident {
+                            for #iterator_item_ident in #input {
+                                #[allow(clippy::redundant_closure_call)]
+                                (#func)(&mut #accumulator_ident, #iterator_item_ident);
+                            }
 
-                        ::std::option::Option::Some(accum)
-                    } else {
-                        ::std::option::Option::None
-                    }.into_iter();
+                            ::std::option::Option::Some(#accumulator_ident)
+                        } else {
+                            ::std::option::Option::None
+                        }.into_iter()
+                    };
                 },
                 Default::default(),
             ),
@@ -100,27 +105,29 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
                     );
                 },
                 quote_spanned! {op_span=>
-                    let mut input = #input;
-                    let accum = if let ::std::option::Option::Some(accum) = #context.state_ref(#reducedata_ident).take() {
-                        Some(accum)
-                    } else {
-                        input.next()
+                    let #ident = {
+                        let mut #input = #input;
+                        let #accumulator_ident = if let ::std::option::Option::Some(#accumulator_ident) = #context.state_ref(#reducedata_ident).take() {
+                            Some(#accumulator_ident)
+                        } else {
+                            #input.next()
+                        };
+
+                        let #ret_ident = if let ::std::option::Option::Some(mut #accumulator_ident) = #accumulator_ident {
+                            for #iterator_item_ident in #input {
+                                #[allow(clippy::redundant_closure_call)]
+                                (#func)(&mut #accumulator_ident, #iterator_item_ident);
+                            }
+
+                            ::std::option::Option::Some(#accumulator_ident)
+                        } else {
+                            ::std::option::Option::None
+                        };
+
+                        #context.state_ref(#reducedata_ident).set(::std::clone::Clone::clone(&#ret_ident));
+
+                        #ret_ident.into_iter()
                     };
-
-                    let ret = if let ::std::option::Option::Some(mut accum) = accum {
-                        for x in input {
-                            #[allow(clippy::redundant_closure_call)]
-                            (#func)(&mut accum, x);
-                        }
-
-                        ::std::option::Option::Some(accum)
-                    } else {
-                        ::std::option::Option::None
-                    };
-
-                    #context.state_ref(#reducedata_ident).set(::std::clone::Clone::clone(&ret));
-
-                    let #ident = ret.into_iter();
                 },
                 quote_spanned! {op_span=>
                     #context.schedule_subgraph(#context.current_subgraph(), false);

@@ -81,6 +81,8 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
         let init = &arguments[0];
         let func = &arguments[1];
         let folddata_ident = wc.make_ident("folddata");
+        let accumulator_ident = wc.make_ident("accumulator");
+        let iterator_item_ident = wc.make_ident("iterator_item");
 
         let (write_prologue, write_iterator, write_iterator_after) = match persistence {
             // TODO(mingwei): Issues if initial value is not copy.
@@ -88,13 +90,16 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
             Persistence::Tick => (
                 Default::default(),
                 quote_spanned! {op_span=>
-                    let input = #input;
-                    let mut accum = #init;
-                    for x in input {
-                        #[allow(clippy::redundant_closure_call)]
-                        (#func)(&mut accum, x);
-                    }
-                    let #ident = ::std::iter::once(accum);
+                    let #ident = {
+                        let mut #accumulator_ident = #init;
+
+                        for #iterator_item_ident in #input {
+                            #[allow(clippy::redundant_closure_call)]
+                            (#func)(&mut #accumulator_ident, #iterator_item_ident);
+                        }
+
+                        ::std::iter::once(#accumulator_ident)
+                    };
                 },
                 Default::default(),
             ),
@@ -106,18 +111,18 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
                 },
                 quote_spanned! {op_span=>
                     let #ident = {
-                        let input = #input;
-                        let mut accum = #context.state_ref(#folddata_ident).take().expect("FOLD DATA MISSING");
-                        for x in input {
+                        let mut #accumulator_ident = #context.state_ref(#folddata_ident).take().expect("FOLD DATA MISSING");
+
+                        for #iterator_item_ident in #input {
                             #[allow(clippy::redundant_closure_call)]
-                            (#func)(&mut accum, x);
+                            (#func)(&mut #accumulator_ident, #iterator_item_ident);
                         }
 
                         #context.state_ref(#folddata_ident).set(
-                            ::std::option::Option::Some(::std::clone::Clone::clone(&accum))
+                            ::std::option::Option::Some(::std::clone::Clone::clone(&#accumulator_ident))
                         );
 
-                        ::std::iter::once(accum)
+                        ::std::iter::once(#accumulator_ident)
                     };
                 },
                 quote_spanned! {op_span=>
