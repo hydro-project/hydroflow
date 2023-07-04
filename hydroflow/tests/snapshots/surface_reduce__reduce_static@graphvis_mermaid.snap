@@ -11,7 +11,7 @@ subgraph sg_1v1 ["sg_1v1 stratum 0"]
     1v1[\"(1v1) <code>source_stream(items_recv)</code>"/]:::pullClass
 end
 subgraph sg_2v1 ["sg_2v1 stratum 1"]
-    2v1[\"(2v1) <code>reduce::&lt;'static&gt;(|acc: u32, next: u32| acc + next)</code>"/]:::pullClass
+    2v1[\"(2v1) <code>reduce::&lt;'static&gt;(|acc: &amp;mut u32, next: u32| *acc += next)</code>"/]:::pullClass
     3v1[/"(3v1) <code>for_each(|v| result_send.send(v).unwrap())</code>"\]:::pushClass
     2v1--->3v1
 end
