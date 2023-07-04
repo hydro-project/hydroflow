@@ -23,6 +23,19 @@ $ cd ../website_playground
 $ CARGO_CFG_HYDROFLOW_GENERATE_DOCS="1" RUSTFLAGS="--cfg procmacro2_semver_exempt --cfg super_unstable" wasm-pack build
 ```
 
+### Notes on building on macOS
+If you're building on macOS, you may need to install the `llvm` package with Homebrew (because the default toolchain has WASM support missing):
+
+```bash
+$ brew install llvm
+```
+
+Then, you'll need to set `TARGET_CC` and `TARGET_AR` environment variables when building the playground:
+
+```bash
+$ TARGET_CC=/usr/local/opt/llvm/bin/clang TARGET_AR=/usr/local/opt/llvm/bin/llvm-ar CARGO_CFG_HYDROFLOW_GENERATE_DOCS="1" RUSTFLAGS="--cfg procmacro2_semver_exempt --cfg super_unstable" wasm-pack build
+```
+
 With the WASM portion built, we can launch the website with the playground loaded:
 
 ```bash
