@@ -30,7 +30,7 @@ subgraph sg_1v1 ["sg_1v1 stratum 0"]
     end
 end
 subgraph sg_2v1 ["sg_2v1 stratum 1"]
-    8v1[\"(8v1) <code>fold(0, |a, b| (a + b))</code>"/]:::pullClass
+    8v1[\"(8v1) <code>fold(0, |a: &amp;mut _, b| *a += b)</code>"/]:::pullClass
     9v1[/"(9v1) <code>for_each(|x| result_send.send(x).unwrap())</code>"\]:::pushClass
     8v1--->9v1
     subgraph sg_2v1_var_m1 ["var <tt>m1</tt>"]

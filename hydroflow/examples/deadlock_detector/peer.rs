@@ -52,9 +52,8 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
         new_edges -> [0]edges;
 
         // gossip all edges
-        edges[1] -> fold::<'static>(Message::new(), |mut m, edge| {
+        edges[1] -> fold::<'static>(Message::new(), |m: &mut Message, edge| {
             m.edges.insert(edge);
-            m
         }) -> gossip;
 
 

@@ -71,7 +71,7 @@ pub const LATTICE_REDUCE: OperatorConstraints = OperatorConstraints {
         let lat_type = &type_args[0];
 
         let arguments = parse_quote_spanned! {lat_type.span()=> // Uses `lat_type.span()`!
-            #root::lattices::Merge::<#lat_type>::merge_owned
+            #root::lattices::Merge::<#lat_type>::merge
         };
         let wc = WriteContextArgs {
             op_inst: &OperatorInstance {

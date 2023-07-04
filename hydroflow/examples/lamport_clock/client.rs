@@ -29,11 +29,10 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
         inbound_chan[merge] -> map(|(msg, _sender): (EchoMsg, SocketAddr)| msg.lamport_clock) -> [net]mergevc;
         mergevc = union() -> fold::<'static>(
             bot,
-            |mut old: Max<usize>, lamport_clock: Max<usize>| {
+            |old: &mut Max<usize>, lamport_clock: Max<usize>| {
                     let bump = Max::new(old.into_reveal() + 1);
                     old.merge(bump);
                     old.merge(lamport_clock);
-                    old
             }
         );
 
