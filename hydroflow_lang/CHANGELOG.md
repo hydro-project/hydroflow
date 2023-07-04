@@ -5,7 +5,127 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.3.0 (2023-07-04)
+
+### Documentation
+
+ - <csr-id-fa5b180d96498d144f3617bba7722e8f4ac9dd0e/> remove pattern deref from inspect, filter examples
+   `*` derefs are easier for Rust beginners to comprehend.
+ - <csr-id-f55d540532ba0a0970cab2bb5aef81b6a76b317a/> change mermaid colors
+   Use a lighter shade of blue and yellow, and dark text.
+
+### New Features
+
+ - <csr-id-b435bbb1d64d60f1248fdcd636635b15954e7325/> fold and reduce take accumulated value by mutable reference
+   * feat: fold and reduce take accumulated value by mutable reference
+   
+   * address comments
+ - <csr-id-6323980e83bee27a8233a69a35734b5970336701/> add lattice_reduce and lattice_fold
+   * feat: add lattice_reduce and lattice_fold
+   
+   * address comments
+   
+   * simplify lattice fold a bit
+   
+   * address comments
+ - <csr-id-010524615bb78288e339e03880c4dd3b432b6d7f/> add join_multiset()
+   * feat: add join_multiset()
+   
+   also remove documentation about HalfJoinMultiset, the way to access
+   that now is to use join_multiset()
+   
+   * address comments
+   
+   * fix assert
+ - <csr-id-d83b049e4d643617a2b15b3dbf1698aa79846aeb/> add assert() operator
+   * feat: add assert() operator
+   
+   * update: change for_each -> assert, make doctest use run_avaialble()
+   
+   * don't run tests that panic in wasm
+   
+   * update comments
+   
+   * address comments
+ - <csr-id-ea65349d241873f8460d7a8b024d64c63180246f/> emit `compile_error!` diagnostics for stable
+ - <csr-id-22abcaff806c7de6e4a7725656bbcf201e7d9259/> allow stable build, refactors behind `nightly` feature flag
+
+### Bug Fixes
+
+ - <csr-id-8d3494b5afee858114a602a3e23077bb6d24dd77/> update proc-macro2, use new span location API where possible
+   requires latest* rust nightly version
+   
+   *latest = 2023-06-28 or something
+ - <csr-id-20cb3811fc0da3ce1b36003c8823b4b242d64196/> fix nightly removing array_zip feature, bump pinned nightly to 06-01
+
+### Style
+
+ - <csr-id-70c88a51c4c83a4dc2fc67a0cd344786a4ff26f7/> `warn` missing docs (instead of `deny`) to allow code before docs
+
+### New Features (BREAKING)
+
+ - <csr-id-931d93887c238025596cb22226e16d43e16a7425/> Add `reveal` methods, make fields private
+
+### Bug Fixes (BREAKING)
+
+ - <csr-id-6f3c536fcd4d1305d478ec3db62416aad9cf3c68/> make join default to multiset join
+
+### Refactor (BREAKING)
+
+ - <csr-id-4a727ecf1232e0f03f5300547282bfbe73342cfa/> Rename `ConvertFrom::from` -> `LatticeFrom::lattice_from`
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 16 commits contributed to the release over the course of 32 calendar days.
+ - 33 days passed between releases.
+ - 14 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 15 unique issues were worked on: [#741](https://github.com/hydro-project/hydroflow/issues/741), [#765](https://github.com/hydro-project/hydroflow/issues/765), [#773](https://github.com/hydro-project/hydroflow/issues/773), [#774](https://github.com/hydro-project/hydroflow/issues/774), [#775](https://github.com/hydro-project/hydroflow/issues/775), [#778](https://github.com/hydro-project/hydroflow/issues/778), [#780](https://github.com/hydro-project/hydroflow/issues/780), [#784](https://github.com/hydro-project/hydroflow/issues/784), [#789](https://github.com/hydro-project/hydroflow/issues/789), [#792](https://github.com/hydro-project/hydroflow/issues/792), [#799](https://github.com/hydro-project/hydroflow/issues/799), [#801](https://github.com/hydro-project/hydroflow/issues/801), [#803](https://github.com/hydro-project/hydroflow/issues/803), [#804](https://github.com/hydro-project/hydroflow/issues/804), [#809](https://github.com/hydro-project/hydroflow/issues/809)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#741](https://github.com/hydro-project/hydroflow/issues/741)**
+    - Fix nightly removing array_zip feature, bump pinned nightly to 06-01 ([`20cb381`](https://github.com/hydro-project/hydroflow/commit/20cb3811fc0da3ce1b36003c8823b4b242d64196))
+ * **[#765](https://github.com/hydro-project/hydroflow/issues/765)**
+    - Rename `ConvertFrom::from` -> `LatticeFrom::lattice_from` ([`4a727ec`](https://github.com/hydro-project/hydroflow/commit/4a727ecf1232e0f03f5300547282bfbe73342cfa))
+ * **[#773](https://github.com/hydro-project/hydroflow/issues/773)**
+    - `warn` missing docs (instead of `deny`) to allow code before docs ([`70c88a5`](https://github.com/hydro-project/hydroflow/commit/70c88a51c4c83a4dc2fc67a0cd344786a4ff26f7))
+ * **[#774](https://github.com/hydro-project/hydroflow/issues/774)**
+    - Make join default to multiset join ([`6f3c536`](https://github.com/hydro-project/hydroflow/commit/6f3c536fcd4d1305d478ec3db62416aad9cf3c68))
+ * **[#775](https://github.com/hydro-project/hydroflow/issues/775)**
+    - Add persist_mut and persist_mut_keyed for non-monitone deletions ([`8d8247f`](https://github.com/hydro-project/hydroflow/commit/8d8247f0b37d53415f5738099c0c8a021415b158))
+ * **[#778](https://github.com/hydro-project/hydroflow/issues/778)**
+    - Change mermaid colors ([`f55d540`](https://github.com/hydro-project/hydroflow/commit/f55d540532ba0a0970cab2bb5aef81b6a76b317a))
+ * **[#780](https://github.com/hydro-project/hydroflow/issues/780)**
+    - Emit `compile_error!` diagnostics for stable ([`ea65349`](https://github.com/hydro-project/hydroflow/commit/ea65349d241873f8460d7a8b024d64c63180246f))
+    - Allow stable build, refactors behind `nightly` feature flag ([`22abcaf`](https://github.com/hydro-project/hydroflow/commit/22abcaff806c7de6e4a7725656bbcf201e7d9259))
+ * **[#784](https://github.com/hydro-project/hydroflow/issues/784)**
+    - Add assert() operator ([`d83b049`](https://github.com/hydro-project/hydroflow/commit/d83b049e4d643617a2b15b3dbf1698aa79846aeb))
+ * **[#789](https://github.com/hydro-project/hydroflow/issues/789)**
+    - Add `reveal` methods, make fields private ([`931d938`](https://github.com/hydro-project/hydroflow/commit/931d93887c238025596cb22226e16d43e16a7425))
+ * **[#792](https://github.com/hydro-project/hydroflow/issues/792)**
+    - Add `py_udf` operator [wip] ([`7dbd5e2`](https://github.com/hydro-project/hydroflow/commit/7dbd5e24d6e71cf8fab7c3ce09d5937c0f301456))
+ * **[#799](https://github.com/hydro-project/hydroflow/issues/799)**
+    - Remove pattern deref from inspect, filter examples ([`fa5b180`](https://github.com/hydro-project/hydroflow/commit/fa5b180d96498d144f3617bba7722e8f4ac9dd0e))
+ * **[#801](https://github.com/hydro-project/hydroflow/issues/801)**
+    - Update proc-macro2, use new span location API where possible ([`8d3494b`](https://github.com/hydro-project/hydroflow/commit/8d3494b5afee858114a602a3e23077bb6d24dd77))
+ * **[#803](https://github.com/hydro-project/hydroflow/issues/803)**
+    - Add lattice_reduce and lattice_fold ([`6323980`](https://github.com/hydro-project/hydroflow/commit/6323980e83bee27a8233a69a35734b5970336701))
+ * **[#804](https://github.com/hydro-project/hydroflow/issues/804)**
+    - Add join_multiset() ([`0105246`](https://github.com/hydro-project/hydroflow/commit/010524615bb78288e339e03880c4dd3b432b6d7f))
+ * **[#809](https://github.com/hydro-project/hydroflow/issues/809)**
+    - Fold and reduce take accumulated value by mutable reference ([`b435bbb`](https://github.com/hydro-project/hydroflow/commit/b435bbb1d64d60f1248fdcd636635b15954e7325))
+</details>
+
 ## 0.2.0 (2023-05-31)
+
+<csr-id-fd896fbe925fbd8ef1d16be7206ac20ba585081a/>
+<csr-id-c9e8603c6ede61d5098869d3d0b5e24c7254f7a4/>
 
 ### Chore
 
@@ -27,8 +147,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release.
- - 2 days passed between releases.
+ - 5 commits contributed to the release.
+ - 1 day passed between releases.
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#728](https://github.com/hydro-project/hydroflow/issues/728), [#730](https://github.com/hydro-project/hydroflow/issues/730)
 
@@ -43,6 +163,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#730](https://github.com/hydro-project/hydroflow/issues/730)**
     - Categorize operators, organize op docs, fix #727 ([`989adcb`](https://github.com/hydro-project/hydroflow/commit/989adcbcd304ad0890d71351d56a22977bdcf73f))
  * **Uncategorized**
+    - Release hydroflow_lang v0.2.0, hydroflow_datalog_core v0.2.0, hydroflow_datalog v0.2.0, hydroflow_macro v0.2.0, lattices v0.2.0, hydroflow v0.2.0, hydro_cli v0.2.0 ([`ca464c3`](https://github.com/hydro-project/hydroflow/commit/ca464c32322a7ad39eb53e1794777c849aa548a0))
     - Make `build.rs`s infallible, log to stderr, to fix release ([`554d563`](https://github.com/hydro-project/hydroflow/commit/554d563fe53a1303c5a5c9352197365235c607e3))
     - Manually bump versions for v0.2.0 release ([`fd896fb`](https://github.com/hydro-project/hydroflow/commit/fd896fbe925fbd8ef1d16be7206ac20ba585081a))
 </details>
