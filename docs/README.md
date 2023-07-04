@@ -4,22 +4,29 @@ This website is built using [Docusaurus 2](https://docusaurus.io/), a modern sta
 You'll need Node installed to build the website. First, install the necessary dependencies:
 
 ```bash
-$ npm install
-```
-
-Next, you'll need to build the WebAssembly components of the website. This requires Rust and [wasm-pack](https://rustwasm.github.io/wasm-pack/):
-
-```bash
-$ rustup target add wasm32-unknown-unknown
-$ cargo install wasm-pack
-$ cd ../website_playground
-$ CARGO_CFG_HYDROFLOW_GENERATE_DOCS="1" wasm-pack build
+$ npm ci
 ```
 
 Finally, you can run the website locally:
 
 ```bash
 $ npm run start
+```
+
+## Building the Playground
+By default, the Hydroflow / Datalog playgrounds are not loaded when launching the website. To build the playground, you'll need to follow a couple additional steps. This requires Rust and [wasm-pack](https://rustwasm.github.io/wasm-pack/):
+
+```bash
+$ rustup target add wasm32-unknown-unknown
+$ cargo install wasm-pack
+$ cd ../website_playground
+$ CARGO_CFG_HYDROFLOW_GENERATE_DOCS="1" RUSTFLAGS="--cfg procmacro2_semver_exempt --cfg super_unstable" wasm-pack build
+```
+
+With the WASM portion built, we can launch the website with the playground loaded:
+
+```bash
+$ LOAD_PLAYGROUND=1 npm run start
 ```
 
 ## Adding Papers
