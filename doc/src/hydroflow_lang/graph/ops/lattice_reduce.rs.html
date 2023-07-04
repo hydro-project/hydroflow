@@ -182,7 +182,7 @@
         <span class="kw">let </span>lat_type = <span class="kw-2">&amp;</span>type_args[<span class="number">0</span>];
 
         <span class="kw">let </span>arguments = <span class="macro">parse_quote_spanned! </span>{lat_type.span()=&gt; <span class="comment">// Uses `lat_type.span()`!
-            </span>#root::lattices::Merge::&lt;#lat_type&gt;::merge_owned
+            </span>#root::lattices::Merge::&lt;#lat_type&gt;::merge
         };
         <span class="kw">let </span>wc = WriteContextArgs {
             op_inst: <span class="kw-2">&amp;</span>OperatorInstance {

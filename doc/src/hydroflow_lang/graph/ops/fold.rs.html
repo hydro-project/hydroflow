@@ -132,6 +132,20 @@
 <a href="#132" id="132">132</a>
 <a href="#133" id="133">133</a>
 <a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -144,9 +158,9 @@
 <span class="doccomment">/// &gt; 1 input stream, 1 output stream
 ///
 /// &gt; Arguments: an initial value, and a closure which itself takes two arguments:
-/// an &#39;accumulator&#39;, and an element. The closure returns the value that the accumulator should have for the next iteration.
+/// an &#39;accumulator&#39;, and an element.
 ///
-/// Akin to Rust&#39;s built-in fold operator. Folds every element into an accumulator by applying a closure,
+/// Akin to Rust&#39;s built-in fold operator, except that it takes the accumulator by `&amp;mut` instead of by value. Folds every element into an accumulator by applying a closure,
 /// returning the final result.
 ///
 /// &gt; Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
@@ -160,9 +174,8 @@
 /// ```hydroflow
 /// // should print `Reassembled vector [1,2,3,4,5]`
 /// source_iter([1,2,3,4,5])
-///     -&gt; fold::&lt;&#39;tick&gt;(Vec::new(), |mut accum, elem| {
+///     -&gt; fold::&lt;&#39;tick&gt;(Vec::new(), |accum: &amp;mut Vec&lt;_&gt;, elem| {
 ///         accum.push(elem);
-///         accum
 ///     })
 ///     -&gt; assert([vec![1, 2, 3, 4, 5]]);
 /// ```
@@ -216,6 +229,8 @@
         <span class="kw">let </span>init = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
         <span class="kw">let </span>func = <span class="kw-2">&amp;</span>arguments[<span class="number">1</span>];
         <span class="kw">let </span>folddata_ident = wc.make_ident(<span class="string">&quot;folddata&quot;</span>);
+        <span class="kw">let </span>accumulator_ident = wc.make_ident(<span class="string">&quot;accumulator&quot;</span>);
+        <span class="kw">let </span>iterator_item_ident = wc.make_ident(<span class="string">&quot;iterator_item&quot;</span>);
 
         <span class="kw">let </span>(write_prologue, write_iterator, write_iterator_after) = <span class="kw">match </span>persistence {
             <span class="comment">// TODO(mingwei): Issues if initial value is not copy.
@@ -223,8 +238,16 @@
             </span>Persistence::Tick =&gt; (
                 Default::default(),
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
-                    <span class="attr">#[allow(clippy::unnecessary_fold)]
-                    </span><span class="kw">let </span>#ident = ::std::iter::once(#input.fold(#init, #func));
+                    <span class="kw">let </span>#ident = {
+                        <span class="kw">let </span><span class="kw-2">mut </span>#accumulator_ident = #init;
+
+                        <span class="kw">for </span>#iterator_item_ident <span class="kw">in </span>#input {
+                            <span class="attr">#[allow(clippy::redundant_closure_call)]
+                            </span>(#func)(<span class="kw-2">&amp;mut </span>#accumulator_ident, #iterator_item_ident);
+                        }
+
+                        ::std::iter::once(#accumulator_ident)
+                    };
                 },
                 Default::default(),
             ),
@@ -236,13 +259,18 @@
                 },
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="kw">let </span>#ident = {
-                        <span class="kw">let </span>accum = #context.state_ref(#folddata_ident).take().expect(<span class="string">&quot;FOLD DATA MISSING&quot;</span>);
-                        <span class="attr">#[allow(clippy::unnecessary_fold)]
-                        </span><span class="kw">let </span>accum = #input.fold(accum, #func);
+                        <span class="kw">let </span><span class="kw-2">mut </span>#accumulator_ident = #context.state_ref(#folddata_ident).take().expect(<span class="string">&quot;FOLD DATA MISSING&quot;</span>);
+
+                        <span class="kw">for </span>#iterator_item_ident <span class="kw">in </span>#input {
+                            <span class="attr">#[allow(clippy::redundant_closure_call)]
+                            </span>(#func)(<span class="kw-2">&amp;mut </span>#accumulator_ident, #iterator_item_ident);
+                        }
+
                         #context.state_ref(#folddata_ident).set(
-                            ::std::option::Option::Some(::std::clone::Clone::clone(<span class="kw-2">&amp;</span>accum))
+                            ::std::option::Option::Some(::std::clone::Clone::clone(<span class="kw-2">&amp;</span>#accumulator_ident))
                         );
-                        ::std::iter::once(accum)
+
+                        ::std::iter::once(#accumulator_ident)
                     };
                 },
                 <span class="macro">quote_spanned! </span>{op_span=&gt;

@@ -121,6 +121,35 @@
 <a href="#121" id="121">121</a>
 <a href="#122" id="122">122</a>
 <a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -142,9 +171,8 @@
 ///
 /// ```hydroflow
 /// source_iter([1,2,3,4,5])
-///     -&gt; reduce(|mut accum, elem| {
-///         accum *= elem;
-///         accum
+///     -&gt; reduce::&lt;&#39;tick&gt;(|accum: &amp;mut _, elem| {
+///         *accum *= elem;
 ///     })
 ///     -&gt; assert([120]);
 /// ```
@@ -197,12 +225,28 @@
         <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
         <span class="kw">let </span>func = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
         <span class="kw">let </span>reducedata_ident = wc.make_ident(<span class="string">&quot;reducedata_ident&quot;</span>);
+        <span class="kw">let </span>accumulator_ident = wc.make_ident(<span class="string">&quot;accumulator&quot;</span>);
+        <span class="kw">let </span>ret_ident = wc.make_ident(<span class="string">&quot;ret&quot;</span>);
+        <span class="kw">let </span>iterator_item_ident = wc.make_ident(<span class="string">&quot;iterator_item&quot;</span>);
 
         <span class="kw">let </span>(write_prologue, write_iterator, write_iterator_after) = <span class="kw">match </span>persistence {
             Persistence::Tick =&gt; (
                 Default::default(),
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
-                    <span class="kw">let </span>#ident = #input.reduce(#func).into_iter();
+                    <span class="kw">let </span>#ident = {
+                        <span class="kw">let </span><span class="kw-2">mut </span>#input = #input;
+                        <span class="kw">let </span>#accumulator_ident = #input.next();
+                        <span class="kw">if let </span>::std::option::Option::Some(<span class="kw-2">mut </span>#accumulator_ident) = #accumulator_ident {
+                            <span class="kw">for </span>#iterator_item_ident <span class="kw">in </span>#input {
+                                <span class="attr">#[allow(clippy::redundant_closure_call)]
+                                </span>(#func)(<span class="kw-2">&amp;mut </span>#accumulator_ident, #iterator_item_ident);
+                            }
+
+                            ::std::option::Option::Some(#accumulator_ident)
+                        } <span class="kw">else </span>{
+                            ::std::option::Option::None
+                        }.into_iter()
+                    };
                 },
                 Default::default(),
             ),
@@ -214,13 +258,27 @@
                 },
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="kw">let </span>#ident = {
-                        <span class="kw">let </span>opt = #context.state_ref(#reducedata_ident).take();
-                        <span class="kw">let </span>opt = <span class="kw">match </span>opt {
-                            <span class="prelude-val">Some</span>(accum) =&gt; <span class="prelude-val">Some</span>(#input.fold(accum, #func)),
-                            <span class="prelude-val">None </span>=&gt; #input.reduce(#func),
+                        <span class="kw">let </span><span class="kw-2">mut </span>#input = #input;
+                        <span class="kw">let </span>#accumulator_ident = <span class="kw">if let </span>::std::option::Option::Some(#accumulator_ident) = #context.state_ref(#reducedata_ident).take() {
+                            <span class="prelude-val">Some</span>(#accumulator_ident)
+                        } <span class="kw">else </span>{
+                            #input.next()
                         };
-                        #context.state_ref(#reducedata_ident).set(::std::clone::Clone::clone(<span class="kw-2">&amp;</span>opt));
-                        opt.into_iter()
+
+                        <span class="kw">let </span>#ret_ident = <span class="kw">if let </span>::std::option::Option::Some(<span class="kw-2">mut </span>#accumulator_ident) = #accumulator_ident {
+                            <span class="kw">for </span>#iterator_item_ident <span class="kw">in </span>#input {
+                                <span class="attr">#[allow(clippy::redundant_closure_call)]
+                                </span>(#func)(<span class="kw-2">&amp;mut </span>#accumulator_ident, #iterator_item_ident);
+                            }
+
+                            ::std::option::Option::Some(#accumulator_ident)
+                        } <span class="kw">else </span>{
+                            ::std::option::Option::None
+                        };
+
+                        #context.state_ref(#reducedata_ident).set(::std::clone::Clone::clone(<span class="kw-2">&amp;</span>#ret_ident));
+
+                        #ret_ident.into_iter()
                     };
                 },
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
