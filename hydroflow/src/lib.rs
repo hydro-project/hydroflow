@@ -26,6 +26,8 @@ pub mod props;
 pub mod scheduled;
 pub mod util;
 
+#[cfg(feature = "python")]
+pub use pyo3;
 #[cfg(feature = "tracing")]
 pub use tracing;
 pub use variadics::{self, var_args, var_expr, var_type};

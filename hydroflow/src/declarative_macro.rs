@@ -62,3 +62,35 @@ macro_rules! assert_graphvis_snapshots {
         }
     }
 }
+
+#[doc(hidden)]
+#[macro_export]
+#[cfg(feature = "python")]
+macro_rules! __python_feature_gate {
+    (
+        {
+            $( $ypy:tt )*
+        },
+        {
+            $( $npy:tt )*
+        }
+    ) => {
+        $( $ypy )*
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+#[cfg(not(feature = "python"))]
+macro_rules! __python_feature_gate {
+    (
+        {
+            $( $ypy:tt )*
+        },
+        {
+            $( $npy:tt )*
+        }
+    ) => {
+        $( $npy )*
+    };
+}
