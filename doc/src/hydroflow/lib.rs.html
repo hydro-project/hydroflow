@@ -57,6 +57,8 @@
 <a href="#57" id="57">57</a>
 <a href="#58" id="58">58</a>
 <a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
 </pre></div><pre class="rust"><code><span class="attr">#![cfg_attr(nightly, feature(never_type))]
 #![allow(type_alias_bounds)]
 #![allow(clippy::let_and_return)]
@@ -85,6 +87,8 @@
 <span class="kw">pub mod </span>scheduled;
 <span class="kw">pub mod </span>util;
 
+<span class="attr">#[cfg(feature = <span class="string">&quot;python&quot;</span>)]
+</span><span class="kw">pub use </span>pyo3;
 <span class="attr">#[cfg(feature = <span class="string">&quot;tracing&quot;</span>)]
 </span><span class="kw">pub use </span>tracing;
 <span class="kw">pub use </span>variadics::{<span class="self">self</span>, var_args, var_expr, var_type};

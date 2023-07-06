@@ -139,6 +139,11 @@
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
 <a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::Literal;
 <span class="kw">use </span>quote::quote_spanned;
 
@@ -231,35 +236,40 @@
         ));
 
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
-            <span class="attr">#[cfg(feature = <span class="string">&quot;python&quot;</span>)]
-            </span><span class="kw">let </span>#py_func_ident = {
-                ::pyo3::prepare_freethreaded_python();
-                <span class="kw">let </span>func = ::pyo3::Python::with_gil::&lt;<span class="kw">_</span>, ::pyo3::PyResult&lt;::pyo3::Py&lt;::pyo3::PyAny&gt;&gt;&gt;(|py| {
-                    <span class="prelude-val">Ok</span>(::pyo3::types::PyModule::from_code(
-                        py,
-                        #py_src,
-                        <span class="string">&quot;_filename&quot;</span>,
-                        <span class="string">&quot;_modulename&quot;</span>,
-                    )<span class="question-mark">?
-                    </span>.getattr(#py_func_name)<span class="question-mark">?
-                    </span>.into())
-                }).expect(<span class="string">&quot;Failed to compile python.&quot;</span>);
-                #hydroflow.add_state(func)
-            };
-            <span class="attr">#[cfg(not(feature = <span class="string">&quot;python&quot;</span>))]
-            </span><span class="macro">::std::compiler_error!</span>(#err_lit);
+            #<span class="macro">root::__python_feature_gate! </span>{
+                {
+                    <span class="kw">let </span>#py_func_ident = {
+                        #root::pyo3::prepare_freethreaded_python();
+                        <span class="kw">let </span>func = #root::pyo3::Python::with_gil::&lt;<span class="kw">_</span>, #root::pyo3::PyResult&lt;#root::pyo3::Py&lt;#root::pyo3::PyAny&gt;&gt;&gt;(|py| {
+                            <span class="prelude-val">Ok</span>(#root::pyo3::types::PyModule::from_code(
+                                py,
+                                #py_src,
+                                <span class="string">&quot;_filename&quot;</span>,
+                                <span class="string">&quot;_modulename&quot;</span>,
+                            )<span class="question-mark">?
+                            </span>.getattr(#py_func_name)<span class="question-mark">?
+                            </span>.into())
+                        }).expect(<span class="string">&quot;Failed to compile python.&quot;</span>);
+                        #hydroflow.add_state(func)
+                    };
+                },
+                {
+                    <span class="macro">::std::compile_error!</span>(#err_lit);
+                }
+            }
         };
         <span class="kw">let </span>closure = <span class="macro">quote_spanned! </span>{op_span=&gt;
             |x| {
-                <span class="attr">#[cfg(feature = <span class="string">&quot;python&quot;</span>)]
-                </span>{
-                    <span class="comment">// TODO(mingwei): maybe this can be outside the closure?
-                    </span><span class="kw">let </span>py_func = #context.state_ref(#py_func_ident);
-                    <span class="comment">//::pyo3::Python::with_gil(|py| py_func.call1(py, (x,)))
-                    </span>::pyo3::Python::with_gil(|py| py_func.call1(py, x))
+                #<span class="macro">root::__python_feature_gate! </span>{
+                    {
+                        <span class="comment">// TODO(mingwei): maybe this can be outside the closure?
+                        </span><span class="kw">let </span>py_func = #context.state_ref(#py_func_ident);
+                        #root::pyo3::Python::with_gil(|py| py_func.call1(py, x))
+                    },
+                    {
+                        <span class="macro">panic!</span>()
+                    }
                 }
-                <span class="attr">#[cfg(not(feature = <span class="string">&quot;python&quot;</span>))]
-                </span><span class="macro">panic!</span>()
             }
         };
         <span class="kw">let </span>write_iterator = <span class="kw">if </span>is_pull {
