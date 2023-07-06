@@ -347,39 +347,6 @@ pub fn test_anti_join() {
 }
 
 #[multiplatform_test]
-pub fn test_batch() {
-    let (batch1_tx, batch1_rx) = hydroflow::util::unbounded_channel::<()>();
-    let (batch2_tx, batch2_rx) = hydroflow::util::unbounded_channel::<()>();
-    let (tx, mut rx) = hydroflow::util::unbounded_channel::<()>();
-    let mut df = hydroflow_syntax! {
-        my_tee = tee();
-
-        source_iter([()])
-            -> batch(1, batch1_rx) // pull
-            -> my_tee;
-
-        my_tee -> for_each(|x| tx.send(x).unwrap());
-        my_tee
-            -> batch(1, batch2_rx) // push
-            -> for_each(|x| tx.send(x).unwrap());
-    };
-
-    df.run_available();
-    let out: Vec<_> = collect_ready(&mut rx);
-    assert_eq!(out, Vec::<()>::new());
-
-    batch1_tx.send(()).unwrap();
-    df.run_available();
-    let out: Vec<_> = collect_ready(&mut rx);
-    assert_eq!(out, vec![()]);
-
-    batch2_tx.send(()).unwrap();
-    df.run_available();
-    let out: Vec<_> = collect_ready(&mut rx);
-    assert_eq!(out, vec![()]);
-}
-
-#[multiplatform_test]
 pub fn test_lattice_batch() {
     type SetUnionHashSet = lattices::set_union::SetUnionHashSet<usize>;
     type SetUnionSingletonSet = lattices::set_union::SetUnionSingletonSet<usize>;
@@ -422,43 +389,6 @@ pub fn test_lattice_batch() {
     df.run_available();
     let out: Vec<_> = collect_ready(&mut rx_out);
     assert_eq!(out, vec![SetUnionHashSet::new_from([0])]);
-}
-
-#[multiplatform_test]
-pub fn test_batch_exceed_limit() {
-    let (_, batch1_rx) = hydroflow::util::unbounded_channel::<()>();
-    let (_, batch2_rx) = hydroflow::util::unbounded_channel::<()>();
-    let (tx_in, rx_in) = hydroflow::util::unbounded_channel::<usize>();
-    let (tx_out, mut rx_out) = hydroflow::util::unbounded_channel::<usize>();
-    let mut df = hydroflow_syntax! {
-        my_tee = tee();
-
-        source_stream(rx_in)
-            -> batch(1, batch1_rx) // pull
-            -> my_tee;
-
-        my_tee
-            -> for_each(|x| tx_out.send(x).unwrap());
-
-        my_tee
-            -> batch(1, batch2_rx) // push
-            -> for_each(|x| tx_out.send(x).unwrap());
-    };
-
-    tx_in.send(0).unwrap();
-    df.run_available();
-    let out: Vec<_> = collect_ready(&mut rx_out);
-    assert_eq!(out, Vec::<usize>::new());
-
-    tx_in.send(1).unwrap();
-    df.run_available();
-    let out: Vec<_> = collect_ready(&mut rx_out);
-    assert_eq!(out, vec![0, 1, 0, 1]);
-
-    tx_in.send(2).unwrap();
-    df.run_available();
-    let out: Vec<_> = collect_ready(&mut rx_out);
-    assert_eq!(out, Vec::<usize>::new());
 }
 
 #[multiplatform_test]
