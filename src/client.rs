@@ -37,5 +37,5 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
         print_graph(&flow, graph);
     }
 
-    flow.run_async().await.unwrap();
+    flow.run_async().await;
 }
