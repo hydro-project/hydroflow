@@ -22,6 +22,10 @@ python = [ "dep:pyo3" ]
 name = "kvs_bench"
 required-features = [ "nightly" ]
 
+[[example]]
+name = "python_udf"
+required-features = [ "python" ]
+
 [dependencies]
 bincode = "1.3"
 byteorder = "1.4.3"
