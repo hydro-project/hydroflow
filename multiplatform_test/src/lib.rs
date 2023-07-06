@@ -141,7 +141,9 @@ fn multiplatform_test_impl(
         output.extend(body);
     } else {
         let mut body_head = body.into_iter().collect::<Vec<_>>();
-        let Some(proc_macro2::TokenTree::Group(body_code)) = body_head.pop() else { panic!(); };
+        let Some(proc_macro2::TokenTree::Group(body_code)) = body_head.pop() else {
+            panic!();
+        };
 
         output.extend(body_head);
         output.extend(quote! {

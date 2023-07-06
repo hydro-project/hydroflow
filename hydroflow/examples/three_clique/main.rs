@@ -36,7 +36,7 @@ pub fn main() {
 
         // post-process: sort fields of each tuple by node ID
         triangle -> map(|(x, y, z)| {
-            let mut v = vec![x, y, z];
+            let mut v = [x, y, z];
             v.sort();
             (v[0], v[1], v[2])
         }) -> for_each(|e| println!("three_clique found: {:?}", e));

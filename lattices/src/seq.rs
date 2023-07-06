@@ -65,7 +65,7 @@ where
             changed = true;
         }
         // Merge intersecting indices.
-        for (self_val, other_val) in self.seq.iter_mut().zip(other.seq.into_iter()) {
+        for (self_val, other_val) in self.seq.iter_mut().zip(other.seq) {
             changed |= self_val.merge(other_val);
         }
         changed
