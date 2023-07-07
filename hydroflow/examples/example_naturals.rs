@@ -1,7 +1,7 @@
 use hydroflow::hydroflow_syntax;
 
 pub fn main() {
-    let mut flow = hydroflow_syntax! {
+    let mut _flow = hydroflow_syntax! {
         base = source_iter(vec![1]) -> cycle;
         cycle = union()
                 -> map(|i| i + 1)
@@ -9,5 +9,6 @@ pub fn main() {
                 -> cycle;
     };
 
-    flow.run_available();
+    // Let's not run this -- it will go forever!
+    // flow.run_available();
 }
