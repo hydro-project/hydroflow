@@ -17,7 +17,7 @@ pub fn main() {
         // the cycle: my_join_tee gets data from reached_vertices
         // and provides data back to reached_vertices!
         origin -> [base]reached_vertices;
-        my_join_tee -> [next]reached_vertices;
+        my_join_tee -> [cycle]reached_vertices;
         reached_vertices = union();
 
         // the output

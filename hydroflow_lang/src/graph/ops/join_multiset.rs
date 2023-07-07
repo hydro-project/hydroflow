@@ -11,7 +11,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// This operator is equivalent to `join` except that the LHS and RHS are collected into multisets rather than sets before joining.
 ///
 /// If you want
-/// duplicates eliminated from the inputs, use the `join` operator.
+/// duplicates eliminated from the inputs, use the [`join`](#join) operator.
 ///
 /// For example:
 /// ```hydroflow
