@@ -153,7 +153,7 @@ pub(crate) async fn run_driver(opts: Opts) {
             let addr1 = ipv4_resolve("localhost:23430").unwrap();
             let addr2 = ipv4_resolve("localhost:23431").unwrap();
             let addr3 = ipv4_resolve("localhost:23432").unwrap();
-            let server_addrs = vec![addr1, addr2, addr3];
+            let server_addrs = [addr1, addr2, addr3];
 
             // define the server addresses for gossip
             let gossip_addr1 = ipv4_resolve("localhost:23440").unwrap();
