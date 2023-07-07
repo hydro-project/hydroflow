@@ -62,12 +62,16 @@ item passed in.
 
 The Hydroflow surface syntax is merely a *specification*; it does not actually do anything
 until we run it.
-We run the flow from within Rust via the [`run_available()` method](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_available).
+We can run this flow from within Rust via the [`run_available()` method](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_available).
+
 <CodeBlock language="rust">{getLines(exampleCode, 8)}</CodeBlock>
+
 Note that `run_available()` runs the Hydroflow graph until no more work is immediately
 available. In this example flow, running the graph drains the iterator completely, so no
 more work will *ever* be available. In future examples we will use external inputs such as
-network ingress, in which case more work might appear at any time.
+network ingress, in which case more work might appear at any time. In those examples we may need a different method than `run_available()`, 
+e.g. the [`run_async()`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html#method.run_async) method we'll see
+in [the EchoServer example](./example_7_echo_server).
 
 ### A Note on Project Structure
 The template project is intended to be a starting point for your own Hydroflow project, and you can add files and directories as you see fit. The only requirement is that the `src/main.rs` file exists and contains a `main()` function.

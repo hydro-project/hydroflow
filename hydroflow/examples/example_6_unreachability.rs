@@ -5,25 +5,27 @@ pub fn main() {
     let (pairs_send, pairs_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut flow = hydroflow_syntax! {
+        // inputs: the origin vertex (vertex 0) and stream of input edges
         origin = source_iter(vec![0]);
         stream_of_edges = source_stream(pairs_recv) -> tee();
-        reached_vertices = union()->tee();
-        origin -> [0]reached_vertices;
 
         // the join for reachable vertices
-        my_join = join() -> flat_map(|(src, ((), dst))| [src, dst]);
         reached_vertices[0] -> map(|v| (v, ())) -> [0]my_join;
         stream_of_edges[1] -> [1]my_join;
+        my_join = join() -> flat_map(|(src, ((), dst))| [src, dst]);
 
-        // the loop
-        my_join -> [1]reached_vertices;
+        // the cycle: my_join gets data from reached_vertices
+        // and provides data back to reached_vertices!
+        origin -> [base]reached_vertices;
+        my_join -> [next]reached_vertices;
+        reached_vertices = union()->tee();
 
-        // the difference all_vertices - reached_vertices
+        // the difference: all_vertices - reached_vertices
         all_vertices = stream_of_edges[0]
           -> flat_map(|(src, dst)| [src, dst]) -> tee();
-        unreached_vertices = difference();
         all_vertices[0] -> [pos]unreached_vertices;
         reached_vertices[1] -> [neg]unreached_vertices;
+        unreached_vertices = difference();
 
         // the output
         all_vertices[1] -> unique() -> for_each(|v| println!("Received vertex: {}", v));

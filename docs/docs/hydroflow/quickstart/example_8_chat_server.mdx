@@ -53,18 +53,21 @@ To follow along, replace the contents of `src/server.rs` with the code below:
 
 <CodeBlock language="rust">{getLines(server, 1, 24)}</CodeBlock>
 
-After a short prelude, we have the Hydroflow code near the top of `run_server()`. It begins by defining `outbound_chan` as a `union`d destination sink for network messages. Then we get to the
+After a short prelude, we have the Hydroflow code near the top of `run_server()`. It begins by defining `outbound_chan` as a `union`ed destination sink for network messages. Then we get to the
 more interesting `inbound_chan` definition.
 
 The `inbound` channel is a source stream that will carry many
-types of `Message`s. We use the [`demux`](../syntax/surface_ops_gen.md#demux) operator to partition the stream objects into three channels. The `clients` channel
+types of `Message`s. 
+We first use a `map` operator to `unwrap` the Rust `Result` type that comes from deserializing the input
+from `source_stream_serde`.
+Then we use the [`demux`](../syntax/surface_ops_gen.md#demux) operator to partition the stream objects into three channels. The `clients` channel
 will carry the addresses of clients that have connected to the server. The `msgs` channel will carry the `ChatMsg` messages that clients send to the server.
 The `errs` channel will carry any other messages that clients send to the server.
 
 Note the structure of the `demux` operator: it takes a closure on
-`(Message, SocketAddr)` pairs, and a variadic tuple (`var_args!`) of output channel names—in this case `clients`, `msgs`, and `errs`. The closure is basically a big
+`(Message, SocketAddr)` pairs, and a variadic tuple (`var_args!`) of the output channel names—in this case `clients`, `msgs`, and `errs`. The closure is basically a big
 Rust pattern [`match`](https://doc.rust-lang.org/book/ch06-02-match.html), with one arm for each output channel name given in the variadic tuple. Note
-that the different output channels can have different-typed messages! Note also that we destructure the incoming `Message` types into tuples of fields. (If we didn't we'd either have to write boilerplate code for each message type in every downstream pipeline, or face Rust's dreaded [refutable pattern](https://doc.rust-lang.org/book/ch18-02-refutability.html) error!)
+that each output channel can have its own message type! Note also that we destructure the incoming `Message` types into component fields. (If we didn't we'd have to write boilerplate code to handle every possible `Message` type in every downstream pipeline!)
 
 The remainder of the server consists of two independent pipelines, the code to print out the flow graph,
 and the code to run the flow graph. To follow along, paste the following into the bottom of your `src/server.rs` file:
@@ -152,7 +155,7 @@ To follow along, start by replacing the contents of `src/client.rs` with the fol
 <CodeBlock language="rust">{getLines(client, 1, 27)}</CodeBlock>
 
 This brings us to the `run_client` function. As in `run_server` we begin by ensuring the server address
-is supplied. We then have the hydroflow code starting with a standard pattern of a `union`d `outbound_chan`,
+is supplied. We then have the hydroflow code starting with a standard pattern of a `union`ed `outbound_chan`,
 and a `demux`ed `inbound_chan`. The client handles only two inbound `Message` types: `Message::ConnectResponse` and `Message::ChatMsg`.
 
 Paste the following to the bottom of `src/client.rs`:
@@ -275,7 +278,7 @@ May 31, 5:12:40 alice: Is there anyone home?
 
 Now start client "bob" in terminal 3, and notice how he instantly receives the backlog of Alice's messages from the server's `cross_join`.
 (The messages may not be printed in the same order as they were timestamped! The `cross_join` operator is not guaranteed to preserve order, nor
-is the udp network. Fixing these issues requires extra client logic that we leave as an exercise to the reader.)
+is the udp network. Fixing these issues requires extra client logic (perhaps using the [`sort()`](../syntax/surface_ops_gen#sort) operator) that we leave as an exercise to the reader.)
 ```console
 #shell-command-next-line
 cargo run -- --name "bob" --role client --server-addr 127.0.0.1:12347

@@ -43,6 +43,10 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// // etc.
 /// ```
 ///
+/// `join` is defined to treat its inputs as *sets*, meaning that it
+/// eliminates duplicated values in its inputs. If you do not want
+/// duplicates eliminated, use the `join_multiset` operator.
+///
 /// ### Examples
 ///
 /// ```rustbook

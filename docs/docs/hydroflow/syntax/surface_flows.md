@@ -23,12 +23,11 @@ data, making the program more understandable.
 
 ## Operators with Multiple Ports
 Some operators have more than one input _port_ that can be referenced by `->`. For example [`union`](./surface_ops_gen.md#union)
-unions the contents of many flows, so it can have an abitrary number of input ports. Some operators have multiple outputs, notably [`tee`](./surface_ops_gen.md#tee),
-which has an arbitrary number of outputs.
+unions the contents of many flows, so it can have an abitrary number of input ports. Some operators have multiple outputs, notably [`tee`](./surface_ops_gen.md#tee), and [`demux`](./surface_ops_gen.md#demux)
+which have an arbitrary number of outputs.
 
 In the syntax, we optionally distinguish input ports via an _indexing prefix_ string
-in square brackets before the name (e.g. `[0]my_union` and `[1]my_union`). Binary operators --- 
-those with two distinct input ports --- require indexing prefixes, and require them to be `0` and `1`. 
+in square brackets before the name (e.g. `[0]my_union` and `[1]my_union`). Binary operators—those with two distinct input ports—require indexing prefixes to distinguish them.
 Operators with arbitrary numbers of inputs ([`union`](./surface_ops_gen.md#union)) and outputs 
 ([`demux`](./surface_ops_gen.md#demux), [`tee`](./surface_ops_gen.md#tee)) 
 allow for arbitrary strings, which can make code and dataflow graphs more readable and understandable
