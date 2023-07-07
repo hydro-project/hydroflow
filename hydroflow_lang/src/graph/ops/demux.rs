@@ -201,7 +201,7 @@ fn extract_closure_idents(arg2: &Pat) -> HashMap<Ident, usize> {
         match tt {
             TokenTree::Group(group) => {
                 let a = stack.len();
-                stack.extend(group.stream().into_iter());
+                stack.extend(group.stream());
                 let b = stack.len();
                 stack[a..b].reverse();
             }

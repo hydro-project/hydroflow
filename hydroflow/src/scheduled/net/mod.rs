@@ -123,7 +123,7 @@ impl Hydroflow {
 
             // TODO(mingwei): queue may grow unbounded? Subtle rate matching concern.
             // TODO(mingwei): put into state system.
-            message_queue.extend(recv.take_inner().into_iter());
+            message_queue.extend(recv.take_inner());
             while !message_queue.is_empty() {
                 if let std::task::Poll::Ready(Ok(())) = Pin::new(&mut writer).poll_ready(&mut cx) {
                     let v = message_queue.pop_front().unwrap();
