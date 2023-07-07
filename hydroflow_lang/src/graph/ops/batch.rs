@@ -1,148 +1,87 @@
 use quote::quote_spanned;
+use syn::parse_quote;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::graph::OperatorInstance;
 
-/// > 1 input stream, 1 output stream
+/// > 2 input streams, 1 output stream, no arguments.
 ///
-/// > Arguments: First argument is the maximum batch size that batch() will buffer up before completely releasing the batch.
-///  The second argument is the receive end of a tokio channel that signals when to release the batch downstream.
+/// Batches streaming input and releases it downstream when a signal is delivered. The order of input is preserved. This allows for buffering data and delivering it at a later, chosen, tick.
 ///
-/// Given a [`Stream`](https://docs.rs/futures/latest/futures/stream/trait.Stream.html)
-/// created in Rust code, `batch`
-/// is passed the receive end of the channel and when receiving any element
-/// will pass through all received inputs to the output unchanged.
+/// There are two inputs to `batch`, they are `input` and `signal`.
+/// `input` is the input data flow. Data that is delivered on this input is collected in order inside of the batch operator.
+/// When anything is sent to `signal` the collected data is released downstream. The entire `signal` input is consumed each tick, so sending 5 things on `signal` will not release inputs on the next 5 consecutive ticks.
 ///
-/// ```rustbook
-///     let (tx, rx) = hydroflow::util::unbounded_channel::<()>();
+/// ```hydroflow
+/// gate = batch();
 ///
-///     let mut df = hydroflow::hydroflow_syntax! {
-///         source_iter(0..5) -> persist() -> batch(10, rx) -> assert([0, 1, 2, 3, 4]);
-///     };
+/// source_iter([1, 2, 3]) -> [input]gate;
+/// source_iter([()]) -> [signal]gate;
 ///
-///     tx.send(()).unwrap();
-///
-///     df.run_available();
+/// gate -> assert([1, 2, 3]);
 /// ```
 pub const BATCH: OperatorConstraints = OperatorConstraints {
     name: "batch",
     categories: &[OperatorCategory::Persistence],
     persistence_args: RANGE_0,
     type_args: RANGE_0,
-    hard_range_inn: RANGE_1,
-    soft_range_inn: RANGE_1,
+    hard_range_inn: &(2..=2),
+    soft_range_inn: &(2..=2),
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
-    num_args: 2,
+    num_args: 0,
     is_external_input: false,
-    ports_inn: None,
+    ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { input, signal })),
     ports_out: None,
     properties: FlowProperties {
         deterministic: FlowPropertyVal::Preserve,
         monotonic: FlowPropertyVal::No,
         inconsistency_tainted: false,
     },
-    input_delaytype_fn: |_| None,
+    input_delaytype_fn: |_| Some(DelayType::Stratum),
     write_fn: |wc @ &WriteContextArgs {
                    context,
                    hydroflow,
                    ident,
                    op_span,
-                   root,
                    inputs,
-                   outputs,
                    is_pull,
-                   op_inst: OperatorInstance { arguments, .. },
                    ..
                },
                _| {
-        let internal_buffer = wc.make_ident("internal_buffer");
+        assert!(is_pull);
 
-        let max_queue_len = &arguments[0];
-        let receiver = &arguments[1];
-        let stream_ident = wc.make_ident("stream");
+        let internal_buffer = wc.make_ident("internal_buffer");
+        let borrow_ident = wc.make_ident("borrow_ident");
 
         let write_prologue = quote_spanned! {op_span=>
-            let mut #stream_ident = ::std::boxed::Box::pin(#receiver);
             let #internal_buffer = #hydroflow.add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
         };
 
-        let (write_iterator, write_iterator_after) = if is_pull {
-            let input = &inputs[0];
+        let input = &inputs[0];
+        let signal = &inputs[1];
 
-            (
-                quote_spanned! {op_span=>
+        let write_iterator = {
+            quote_spanned! {op_span=>
 
-                    {
-                        let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
-                        vec.extend(#input);
-                    }
+                let mut #borrow_ident = #context.state_ref(#internal_buffer).borrow_mut();
 
-                    let max_queue_len: usize = #max_queue_len;
+                #borrow_ident.extend(#input);
 
-                    let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
-                    let mut dummy = Vec::new();
-                    let #ident = match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
-                        ::std::task::Poll::Ready(Some(_)) => {
-                            vec.drain(..)
-                        }
-                        ::std::task::Poll::Ready(None) | ::std::task::Poll::Pending => {
-                            if vec.len() > max_queue_len {
-                                vec.drain(..)
-                            } else {
-                                dummy.drain(..)
-                            }
-                        }
-                    };
-                },
-                quote_spanned! {op_span=>},
-            )
-        } else {
-            let output = &outputs[0];
-
-            (
-                quote_spanned! {op_span=>
-
-                    let mut out = #output;
-
-                    let max_queue_len: usize = #max_queue_len;
-
-                    let #ident = #root::pusherator::for_each::ForEach::new(|x| {
-                        let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
-
-                        vec.push(x);
-                    });
-                },
-                quote_spanned! {op_span=>
-                    {
-                        let mut vec = #context.state_ref(#internal_buffer).borrow_mut();
-
-                        match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
-                            ::std::task::Poll::Ready(Some(_)) => {
-                                for x in vec.drain(..) {
-                                    #root::pusherator::Pusherator::give(&mut out, x);
-                                }
-                            },
-                            ::std::task::Poll::Ready(None) | ::std::task::Poll::Pending => {
-                                if vec.len() > max_queue_len {
-                                    for x in vec.drain(..) {
-                                        #root::pusherator::Pusherator::give(&mut out, x);
-                                    }
-                                }
-                            },
-                        }
-                    }
-                },
-            )
+                let #ident = if #signal.count() > 0 {
+                    ::std::option::Option::Some(#borrow_ident.drain(..))
+                } else {
+                    ::std::option::Option::None
+                }.into_iter().flatten();
+            }
         };
 
         Ok(OperatorWriteOutput {
             write_prologue,
             write_iterator,
-            write_iterator_after,
+            write_iterator_after: Default::default(),
             ..Default::default()
         })
     },
