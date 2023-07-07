@@ -417,7 +417,7 @@
         <span class="kw">match </span>tt {
             TokenTree::Group(group) =&gt; {
                 <span class="kw">let </span>a = stack.len();
-                stack.extend(group.stream().into_iter());
+                stack.extend(group.stream());
                 <span class="kw">let </span>b = stack.len();
                 stack[a..b].reverse();
             }

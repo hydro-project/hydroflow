@@ -248,7 +248,7 @@
             changed = <span class="bool-val">true</span>;
         }
         <span class="comment">// Merge intersecting indices.
-        </span><span class="kw">for </span>(self_val, other_val) <span class="kw">in </span><span class="self">self</span>.seq.iter_mut().zip(other.seq.into_iter()) {
+        </span><span class="kw">for </span>(self_val, other_val) <span class="kw">in </span><span class="self">self</span>.seq.iter_mut().zip(other.seq) {
             changed |= self_val.merge(other_val);
         }
         changed

@@ -575,6 +575,8 @@
 <a href="#575" id="575">575</a>
 <a href="#576" id="576">576</a>
 <a href="#577" id="577">577</a>
+<a href="#578" id="578">578</a>
+<a href="#579" id="579">579</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::collections::btree_map::Entry;
 <span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -899,7 +901,9 @@
         <span class="kw">for </span>(node_id, node) <span class="kw">in </span><span class="self">self</span>.flat_graph.nodes() {
             <span class="kw">match </span>node {
                 Node::Operator(operator) =&gt; {
-                    <span class="kw">let </span><span class="prelude-val">Some</span>(op_constraints) = find_op_op_constraints(operator) <span class="kw">else </span>{ <span class="kw">continue </span>};
+                    <span class="kw">let </span><span class="prelude-val">Some</span>(op_constraints) = find_op_op_constraints(operator) <span class="kw">else </span>{
+                        <span class="kw">continue</span>;
+                    };
                     <span class="comment">// Check number of args
                     </span><span class="kw">if </span>op_constraints.num_args != operator.args.len() {
                         <span class="self">self</span>.diagnostics.push(Diagnostic::spanned(

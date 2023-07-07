@@ -570,7 +570,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>right = Vec::new();
 
         <span class="kw">let </span>pivot = Pivot::new(
-            a.into_iter().chain(b.into_iter()),
+            a.into_iter().chain(b),
             Partition::new(
                 |x| x % <span class="number">2 </span>== <span class="number">0</span>,
                 ForEach::new(|x| left.push(x)),

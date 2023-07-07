@@ -288,7 +288,7 @@
 
             <span class="comment">// TODO(mingwei): queue may grow unbounded? Subtle rate matching concern.
             // TODO(mingwei): put into state system.
-            </span>message_queue.extend(recv.take_inner().into_iter());
+            </span>message_queue.extend(recv.take_inner());
             <span class="kw">while </span>!message_queue.is_empty() {
                 <span class="kw">if let </span>std::task::Poll::Ready(<span class="prelude-val">Ok</span>(())) = Pin::new(<span class="kw-2">&amp;mut </span>writer).poll_ready(<span class="kw-2">&amp;mut </span>cx) {
                     <span class="kw">let </span>v = message_queue.pop_front().unwrap();

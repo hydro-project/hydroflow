@@ -1198,6 +1198,12 @@
 <a href="#1198" id="1198">1198</a>
 <a href="#1199" id="1199">1199</a>
 <a href="#1200" id="1200">1200</a>
+<a href="#1201" id="1201">1201</a>
+<a href="#1202" id="1202">1202</a>
+<a href="#1203" id="1203">1203</a>
+<a href="#1204" id="1204">1204</a>
+<a href="#1205" id="1205">1205</a>
+<a href="#1206" id="1206">1206</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -1516,8 +1522,12 @@
 
         <span class="comment">// Make corresponding operator instance (if `node` is an operator).
         </span><span class="kw">let </span>op_inst_opt = <span class="lifetime">&#39;oc</span>: {
-            <span class="kw">let </span>Node::Operator(operator) = <span class="kw-2">&amp;</span>new_node <span class="kw">else </span>{ <span class="kw">break </span><span class="lifetime">&#39;oc </span><span class="prelude-val">None</span>; };
-            <span class="kw">let </span><span class="prelude-val">Some</span>(op_constraints) = find_op_op_constraints(operator) <span class="kw">else </span>{ <span class="kw">break </span><span class="lifetime">&#39;oc </span><span class="prelude-val">None</span>; };
+            <span class="kw">let </span>Node::Operator(operator) = <span class="kw-2">&amp;</span>new_node <span class="kw">else </span>{
+                <span class="kw">break </span><span class="lifetime">&#39;oc </span><span class="prelude-val">None</span>;
+            };
+            <span class="kw">let </span><span class="prelude-val">Some</span>(op_constraints) = find_op_op_constraints(operator) <span class="kw">else </span>{
+                <span class="kw">break </span><span class="lifetime">&#39;oc </span><span class="prelude-val">None</span>;
+            };
             <span class="kw">let </span>(input_port, output_port) = <span class="self">self</span>.ports.get(edge_id).cloned().unwrap();
             <span class="kw">let </span>generics = get_operator_generics(
                 <span class="kw-2">&amp;mut </span>Vec::new(), <span class="comment">// TODO(mingwei) diagnostics
@@ -2198,7 +2208,9 @@
         <span class="kw">let </span><span class="kw-2">mut </span>sg_varname_nodes =
             SparseSecondaryMap::&lt;GraphSubgraphId, BTreeMap&lt;Varname, BTreeSet&lt;GraphNodeId&gt;&gt;&gt;::new();
         <span class="kw">for </span>(node_id, varname) <span class="kw">in </span><span class="self">self</span>.node_varnames.iter() {
-            <span class="kw">let </span><span class="prelude-val">Some</span>(sg_id) = <span class="self">self</span>.node_subgraph(node_id) <span class="kw">else </span>{ <span class="kw">continue</span>; };
+            <span class="kw">let </span><span class="prelude-val">Some</span>(sg_id) = <span class="self">self</span>.node_subgraph(node_id) <span class="kw">else </span>{
+                <span class="kw">continue</span>;
+            };
             <span class="kw">let </span>varname_map = sg_varname_nodes.entry(sg_id).unwrap().or_default();
             varname_map
                 .entry(varname.clone())
