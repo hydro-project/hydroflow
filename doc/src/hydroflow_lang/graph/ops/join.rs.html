@@ -226,6 +226,10 @@
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
 <a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
@@ -270,6 +274,10 @@
 /// join::&lt;&#39;tick, &#39;static&gt;();
 /// // etc.
 /// ```
+///
+/// `join` is defined to treat its inputs as *sets*, meaning that it
+/// eliminates duplicated values in its inputs. If you do not want
+/// duplicates eliminated, use the [`join_multiset`](#join_multiset) operator.
 ///
 /// ### Examples
 ///

@@ -67,6 +67,9 @@
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>syn::{parse_quote, parse_quote_spanned};
 
 <span class="kw">use super</span>::{
@@ -78,6 +81,9 @@
 <span class="doccomment">/// &gt; 2 input streams of type &lt;(K, V1)&gt; and &lt;(K, V2)&gt;, 1 output stream of type &lt;(K, (V1, V2))&gt;
 ///
 /// This operator is equivalent to `join` except that the LHS and RHS are collected into multisets rather than sets before joining.
+///
+/// If you want
+/// duplicates eliminated from the inputs, use the [`join`](#join) operator.
 ///
 /// For example:
 /// ```hydroflow
