@@ -66,7 +66,7 @@ fn test() {
 
     let (_server, _, mut server_output) = run_cargo_example(
         "chat",
-        "--role server --name server --addr 127.0.0.100:2050",
+        "--role server --name server --addr 127.0.0.100:12347",
     );
 
     let mut server_output_so_far = String::new();
@@ -78,12 +78,12 @@ fn test() {
 
     let (_client1, mut client1_input, mut client1_output) = run_cargo_example(
         "chat",
-        "--role client --name client1 --server-addr 127.0.0.100:2050",
+        "--role client --name client1 --server-addr 127.0.0.100:12347",
     );
 
     let (_client2, _, mut client2_output) = run_cargo_example(
         "chat",
-        "--role client --name client2 --server-addr 127.0.0.100:2050",
+        "--role client --name client2 --server-addr 127.0.0.100:12347",
     );
 
     let mut client1_output_so_far = String::new();
