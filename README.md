@@ -17,7 +17,7 @@ Take a look at the [Hydroflow Book](https://hydro.run/docs/hydroflow/).
 
 ## The Hydroflow Surface Syntax
 
-Hydroflow comes with a custom "surface syntax" domain-specific language which serves as a very
+Hydroflow comes with a custom "surface syntax"—a domain-specific language which serves as a very
 simple, readable IR for specifying single-node Hydroflow programs, intended to be stitched together
 by the Hydro stack to create larger autoscaling distributed systems.'
 
