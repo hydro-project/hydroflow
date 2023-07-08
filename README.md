@@ -7,7 +7,7 @@
     <a href="https://docs.rs/hydroflow/"><img src="https://img.shields.io/badge/docs.rs-Hydroflow-blue?style=flat-square&logo=read-the-docs&logoColor=white" alt="Docs.rs"></a>
 </p>
 
-Hydroflow is a low-latency dataflow runtime written in Rust. The goal of the [Hydro Project](https://hydro.run/docs/hydroflow/ecosystem/)
+Hydroflow is a low-latency dataflow runtime written in Rust. The goal of the [Hydro Project](https://hydro.run)
 is to empower developers to harness the full potential of the cloud by making distributed programs easy to specify and automatic to scale. Hydroflow is the lowest level in the [Hydro stack](https://hydro.run/docs/hydroflow/ecosystem/),
 serving as a single-node low-latency runtime with explicit networking. This allows us to support
 not just data processing pipelines, but distributed protocols (e.g. Paxos) and real-world
