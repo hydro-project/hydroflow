@@ -7,7 +7,9 @@ use super::{
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::{FlowProps, LatticeFlowType};
 
-/// Stores each item as it passes through, and replays all item every tick.
+/// Stores each item as it passes through, and replays all items every tick.
+///
+/// > 1 input stream, 1 output stream
 ///
 /// ```hydroflow
 /// // Normally `source_iter(...)` only emits once, but `persist()` will replay the `"hello"`
