@@ -5,7 +5,7 @@ expression: flat_graph_ref.surface_syntax_string()
 2v1 = unique :: < 'tick > ();
 3v1 = difference :: < 'tick , 'static > ();
 4v1 = tee ();
-5v1 = next_tick ();
+5v1 = defer_tick ();
 7v1 = unique :: < 'tick > ();
 10v1 = unique :: < 'tick > ();
 12v1 = source_stream (ints2);
