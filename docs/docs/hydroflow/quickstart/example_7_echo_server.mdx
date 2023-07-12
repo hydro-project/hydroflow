@@ -31,22 +31,8 @@ cargo generate hydro-project/hydroflow-template
 ```
 Then change directory into the resulting project.
 
+The Hydroflow template project provides *this example* as its default, so there's no code for us to change.
 The `README.md` for the template project is a good place to start. It contains a brief overview of the project structure, and how to build and run the example. Here we'll spend more time learning from the code.
-
-## Hydroflow project structure
-The Hydroflow template project auto-generates this example for us. If you prefer, you can find the source in the `examples/echo_server` directory of the Hydroflow repository.
-
-The directory structure encouraged by the template is as follows:
-```txt
-project/README.md           # documentation
-project/Cargo.toml          # package and dependency info
-project/src/main.rs         # main function
-project/src/protocol.rs     # message types exchanged between roles
-project/src/helpers.rs      # helper functions used by all roles
-project/src/<roleA>.rs      # service definition for role A (e.g. server)
-project/src/<roleB>.rs      # service definition for role B (e.g. client)
-```
-In the default example, the roles we use are `Client` and `Server`, but you can imagine different roles depending on the structure of your service or application.
 
 ### `main.rs`
 We start with a `main` function that parses command-line options, and invokes the appropriate
@@ -61,7 +47,7 @@ Following that, we use Rust's [`clap`](https://docs.rs/clap/latest/clap/) (Comma
 
 This sets up 3 command-line flags: `role`, `addr`, and `server_addr`. Note how the `addr` and `server_addr` flags are made optional via wrapping in a Rust `Option`; by contrast, the `role` option is required. The `clap` crate will parse the command-line options and populate the `Opts` struct with the values. `clap` handles parsing the command line strings into the associated Rust types --  the `value_parser` attribute tells `clap` to use Hydroflow's `ipv4_resolve` helper function to parse a string like "127.0.0.1:6552" into a `SocketAddr`.
 
-This brings us to the `main` function itself. It is prefaced by a `#[hydroflow::main]` attribute, which is a macro that sets up the tokio runtime for Hydroflow. This is necessary because Hydroflow uses the tokio runtime for asynchronous execution as a service.
+This brings us to the `main` function itself. It is prefaced by a `#[hydroflow::main]` attribute, which is a macro that sets up the tokio runtime for Hydroflow. It is also an async function. This is necessary because Hydroflow uses the tokio runtime for asynchronous execution as a service.
 
 <CodeBlock language="rust">{getLines(main, 29, 40)}</CodeBlock>
 

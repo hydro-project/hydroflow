@@ -15,6 +15,8 @@ pub(crate) async fn run_subordinate(
     path: impl AsRef<Path>,
     graph: Option<GraphType>,
 ) {
+    println!("Subordinate live!");
+
     let mut df: Hydroflow = hydroflow_syntax! {
         // Outbound address
         server_addr = source_json(path)

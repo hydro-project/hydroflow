@@ -112,13 +112,14 @@ async fn main() {
 
     type UpdateType = (u64, i32);
 
+    #[allow(clippy::type_complexity)]
     let df = hydroflow_syntax! {
         from_parent = source_stream(from_parent)
             -> map(|x| deserialize_from_bytes::<Vec<(u64, TimestampedValue<i32>)>>(x.unwrap()).unwrap())
             -> fold::<'static>(
                 (HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
-                |(mut prev, mut modified_tweets, prev_tick), req: Vec<(u64, TimestampedValue<i32>)>| {
-                    if prev_tick != context.current_tick() {
+                |(prev, modified_tweets, prev_tick): &mut (HashMap<_, TimestampedValue<i32>>, HashSet<_>, _), req: Vec<(u64, TimestampedValue<i32>)>| {
+                    if *prev_tick != context.current_tick() {
                         modified_tweets.clear();
                     }
 
@@ -135,7 +136,7 @@ async fn main() {
                         }
                     }
 
-                    (prev, modified_tweets, context.current_tick())
+                    *prev_tick = context.current_tick();
                 }
             )
             -> filter(|(_, _, tick)| *tick == context.current_tick())
@@ -146,8 +147,8 @@ async fn main() {
             -> map(|x| deserialize_from_bytes::<Vec<(u64, TimestampedValue<i32>)>>(x.unwrap()).unwrap())
             -> fold::<'static>(
                 (HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
-                |(mut prev, mut modified_tweets, prev_tick), req: Vec<(u64, TimestampedValue<i32>)>| {
-                    if prev_tick != context.current_tick() {
+                |(prev, modified_tweets, prev_tick): &mut (HashMap<_, TimestampedValue<i32>>, HashSet<_>, _), req: Vec<(u64, TimestampedValue<i32>)>| {
+                    if *prev_tick != context.current_tick() {
                         modified_tweets.clear();
                     }
 
@@ -164,7 +165,7 @@ async fn main() {
                         }
                     }
 
-                    (prev, modified_tweets, context.current_tick())
+                    *prev_tick = context.current_tick();
                 }
             )
             -> filter(|(_, _, tick)| *tick == context.current_tick())
@@ -175,8 +176,8 @@ async fn main() {
             -> map(|x| deserialize_from_bytes::<Vec<(u64, TimestampedValue<i32>)>>(x.unwrap()).unwrap())
             -> fold::<'static>(
                 (HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
-                |(mut prev, mut modified_tweets, prev_tick), req: Vec<(u64, TimestampedValue<i32>)>| {
-                    if prev_tick != context.current_tick() {
+                |(prev, modified_tweets, prev_tick): &mut (HashMap<_, TimestampedValue<i32>>, HashSet<_>, _), req: Vec<(u64, TimestampedValue<i32>)>| {
+                    if *prev_tick != context.current_tick() {
                         modified_tweets.clear();
                     }
 
@@ -193,7 +194,7 @@ async fn main() {
                         }
                     }
 
-                    (prev, modified_tweets, context.current_tick())
+                    *prev_tick = context.current_tick();
                 }
             )
             -> filter(|(_, _, tick)| *tick == context.current_tick())
@@ -205,14 +206,14 @@ async fn main() {
             -> map(|x| (x.tweet_id, x.likes))
             -> fold::<'static>(
                 (HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
-                |(mut prev, mut modified_tweets, prev_tick), req: UpdateType| {
-                    if prev_tick != context.current_tick() {
+                |(prev, modified_tweets, prev_tick): &mut (HashMap<_, TimestampedValue<i32>>, HashSet<_>, usize), req: UpdateType| {
+                    if *prev_tick != context.current_tick() {
                         modified_tweets.clear();
                     }
 
                     prev.entry(req.0).or_default().update(|v| v + req.1);
                     modified_tweets.insert(req.0);
-                    (prev, modified_tweets, context.current_tick())
+                    *prev_tick = context.current_tick();
                 }
             )
             -> filter(|(_, _, tick)| *tick == context.current_tick())
@@ -228,8 +229,8 @@ async fn main() {
         to_right
             -> fold::<'static>(
                 (vec![HashMap::<u64, TimestampedValue<i32>>::new(); 3], HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
-                |(mut each_source, mut acc_source, mut modified_tweets, prev_tick), (source_i, (key, v))| {
-                    if prev_tick != context.current_tick() {
+                |(each_source, acc_source, modified_tweets, prev_tick): &mut (Vec<HashMap<u64, TimestampedValue<i32>>>, HashMap<_, TimestampedValue<i32>>, HashSet<_>, usize), (source_i, (key, v)): (usize, _)| {
+                    if *prev_tick != context.current_tick() {
                         modified_tweets.clear();
                     }
 
@@ -240,7 +241,7 @@ async fn main() {
                         modified_tweets.insert(key);
                     }
 
-                    (each_source, acc_source, modified_tweets, context.current_tick())
+                    *prev_tick = context.current_tick();
                 }
             )
             -> filter(|(_, _, _, tick)| *tick == context.current_tick())
@@ -257,8 +258,8 @@ async fn main() {
         to_left
             -> fold::<'static>(
                 (vec![HashMap::<u64, TimestampedValue<i32>>::new(); 3], HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
-                |(mut each_source, mut acc_source, mut modified_tweets, prev_tick), (source_i, (key, v))| {
-                    if prev_tick != context.current_tick() {
+                |(each_source, acc_source, modified_tweets, prev_tick): &mut (Vec<HashMap<u64, TimestampedValue<i32>>>, HashMap<_, TimestampedValue<i32>>, HashSet<_>, usize), (source_i, (key, v)): (usize, _)| {
+                    if *prev_tick != context.current_tick() {
                         modified_tweets.clear();
                     }
 
@@ -269,7 +270,7 @@ async fn main() {
                         modified_tweets.insert(key);
                     }
 
-                    (each_source, acc_source, modified_tweets, context.current_tick())
+                    *prev_tick = context.current_tick();
                 }
             )
             -> filter(|(_, _, _, tick)| *tick == context.current_tick())
@@ -286,8 +287,8 @@ async fn main() {
         to_parent
             -> fold::<'static>(
                 (vec![HashMap::<u64, TimestampedValue<i32>>::new(); 3], HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
-                |(mut each_source, mut acc_source, mut modified_tweets, prev_tick), (source_i, (key, v))| {
-                    if prev_tick != context.current_tick() {
+                |(each_source, acc_source, modified_tweets, prev_tick): &mut (Vec<HashMap<u64, TimestampedValue<i32>>>, HashMap<_, TimestampedValue<i32>>, HashSet<_>, usize), (source_i, (key, v)): (usize, _)| {
+                    if *prev_tick != context.current_tick() {
                         modified_tweets.clear();
                     }
 
@@ -298,7 +299,7 @@ async fn main() {
                         modified_tweets.insert(key);
                     }
 
-                    (each_source, acc_source, modified_tweets, context.current_tick())
+                    *prev_tick = context.current_tick();
                 }
             )
             -> filter(|(_, _, _, tick)| *tick == context.current_tick())
@@ -316,8 +317,8 @@ async fn main() {
         to_query
             -> fold::<'static>(
                 (vec![HashMap::<u64, TimestampedValue<i32>>::new(); 4], HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
-                |(mut each_source, mut acc_source, mut modified_tweets, prev_tick), (source_i, (key, v))| {
-                    if prev_tick != context.current_tick() {
+                |(each_source, acc_source, modified_tweets, prev_tick): &mut (Vec<HashMap<u64, TimestampedValue<i32>>>, HashMap<_, TimestampedValue<i32>>, HashSet<_>, usize), (source_i, (key, v)): (usize, _)| {
+                    if *prev_tick != context.current_tick() {
                         modified_tweets.clear();
                     }
 
@@ -328,7 +329,7 @@ async fn main() {
                         modified_tweets.insert(key);
                     }
 
-                    (each_source, acc_source, modified_tweets, context.current_tick())
+                    *prev_tick = context.current_tick();
                 }
             )
             -> filter(|(_, _, _, tick)| *tick == context.current_tick())

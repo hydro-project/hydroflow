@@ -322,7 +322,9 @@ impl FlatGraphBuilder {
         for (node_id, node) in self.flat_graph.nodes() {
             match node {
                 Node::Operator(operator) => {
-                    let Some(op_constraints) = find_op_op_constraints(operator) else { continue };
+                    let Some(op_constraints) = find_op_op_constraints(operator) else {
+                        continue;
+                    };
                     // Check number of args
                     if op_constraints.num_args != operator.args.len() {
                         self.diagnostics.push(Diagnostic::spanned(

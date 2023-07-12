@@ -16,6 +16,7 @@ mod point;
 mod seq;
 pub mod set_union;
 pub mod test;
+mod unit;
 mod with_bot;
 mod with_top;
 

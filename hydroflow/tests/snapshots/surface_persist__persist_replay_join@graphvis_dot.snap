@@ -15,7 +15,7 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_2v1\nstratum 1"
-        n3v1 [label="(n3v1) fold::<'tick>(0, |a, b| (a + b))", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n3v1 [label="(n3v1) fold::<'tick>(0, |a: &mut _, b| *a += b)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
     }
     subgraph "cluster n3v1" {
         fillcolor="#dddddd"

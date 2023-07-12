@@ -15,6 +15,8 @@ pub(crate) async fn run_coordinator(
     path: impl AsRef<Path>,
     graph: Option<GraphType>,
 ) {
+    println!("Coordinator live!");
+
     let mut df: Hydroflow = hydroflow_syntax! {
         // fetch subordinates from file, convert ip:port to a SocketAddr, and tee
         subords = source_json(path)
@@ -66,7 +68,7 @@ pub(crate) async fn run_coordinator(
             -> fold_keyed::<'static, u16, u32>(|| 0, |acc: &mut _, val| *acc += val);
 
         // count subordinates
-        subord_total = subords[0] -> fold::<'tick>(0, |a,_b| a+1); // -> for_each(|n| println!("There are {} subordinates.", n));
+        subord_total = subords[0] -> fold::<'tick>(0, |a: &mut _, _b| *a += 1); // -> for_each(|n| println!("There are {} subordinates.", n));
 
         // If commit_votes for this xid is the same as all_votes, send a P2 Commit message
         committed = join() -> map(|(_c, (xid, ()))| xid);

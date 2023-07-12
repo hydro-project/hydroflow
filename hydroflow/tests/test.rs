@@ -181,7 +181,7 @@ fn test_cycle() {
         union_rhs,
         union_out,
         |_ctx, recv1, recv2, send| {
-            for v in (recv1.take_inner().into_iter()).chain(recv2.take_inner().into_iter()) {
+            for v in (recv1.take_inner().into_iter()).chain(recv2.take_inner()) {
                 send.give(Some(v));
             }
         },

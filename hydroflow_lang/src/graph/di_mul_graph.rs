@@ -162,9 +162,13 @@ where
     /// Returns `None` if `vertex` is not in the graph or does not have the right degree in/out.
     pub fn remove_intermediate_vertex(&mut self, vertex: V) -> Option<(E, (E, E))> {
         let preds = self.preds.remove(vertex)?;
-        let &[pred_edge] = &*preds else { return None; };
+        let &[pred_edge] = &*preds else {
+            return None;
+        };
         let succs = self.succs.remove(vertex).unwrap();
-        let &[succ_edge] = &*succs else { return None; };
+        let &[succ_edge] = &*succs else {
+            return None;
+        };
 
         let (src, _v) = self.edges.remove(pred_edge).unwrap();
         let (_v, dst) = self.edges.remove(succ_edge).unwrap();

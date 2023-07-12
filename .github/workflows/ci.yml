@@ -121,11 +121,17 @@ jobs:
           toolchain: nightly
           override: ${{ matrix.rust_release == 'latest-nightly' }}
 
-      - name: Run cargo test
+      - name: Run cargo test all targets (which does not include doctests)
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --no-fail-fast
+          args: --no-fail-fast --all-targets
+
+      - name: Run cargo doc tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --no-fail-fast --doc
 
   test-wasm:
     name: Test Suite (WebAssembly)
@@ -172,7 +178,7 @@ jobs:
           CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
         with:
           command: test
-          args: -p hydroflow --target wasm32-unknown-unknown --tests --no-fail-fast
+          args: -p hydroflow --target wasm32-unknown-unknown --tests --no-fail-fast --no-default-features --features __default_wasm
 
   test-cli:
     name: Test CLI
@@ -276,6 +282,20 @@ jobs:
         with:
           command: clippy
           args: --all-targets -- -D warnings
+
+  build-website:
+    name: Build Website
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
+    timeout-minutes: 25
+    needs: pre_job
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Build Website
+        run: bash build_docs.bash x86_64-linux-gnu-ubuntu-20.04
 
   docs:
     name: Docs (rustdoc)

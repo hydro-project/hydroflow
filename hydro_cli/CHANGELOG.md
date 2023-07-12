@@ -1,6 +1,40 @@
+# Changelog
 
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## 0.3.0 (2023-07-04)
+
+Unchanged from previous release.
+
+### Chore
+
+ - <csr-id-4c2cf81411835529b5d7daa35717834e46e28b9b/> mark hydro_cli as unchanged for 0.3 release
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 1 commit contributed to the release.
+ - 33 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Mark hydro_cli as unchanged for 0.3 release ([`4c2cf81`](https://github.com/hydro-project/hydroflow/commit/4c2cf81411835529b5d7daa35717834e46e28b9b))
+</details>
 
 ## v0.2.0 (2023-05-31)
+
+<csr-id-fd896fbe925fbd8ef1d16be7206ac20ba585081a/>
 
 ### Chore
 
@@ -14,7 +48,7 @@
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release.
+ - 3 commits contributed to the release.
  - 1 day passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#723](https://github.com/hydro-project/hydroflow/issues/723)
@@ -28,6 +62,7 @@
  * **[#723](https://github.com/hydro-project/hydroflow/issues/723)**
     - Add more detailed Hydro Deploy docs and rename `ConnectedBidi` => `ConnectedDirect` ([`8b2c9f0`](https://github.com/hydro-project/hydroflow/commit/8b2c9f09b1f423ac6d562c29d4ea587578f1c98a))
  * **Uncategorized**
+    - Release hydroflow_lang v0.2.0, hydroflow_datalog_core v0.2.0, hydroflow_datalog v0.2.0, hydroflow_macro v0.2.0, lattices v0.2.0, hydroflow v0.2.0, hydro_cli v0.2.0 ([`ca464c3`](https://github.com/hydro-project/hydroflow/commit/ca464c32322a7ad39eb53e1794777c849aa548a0))
     - Manually bump versions for v0.2.0 release ([`fd896fb`](https://github.com/hydro-project/hydroflow/commit/fd896fbe925fbd8ef1d16be7206ac20ba585081a))
 </details>
 
@@ -41,6 +76,8 @@
 <csr-id-cd0a86d9271d0e3daab59c46f079925f863424e1/>
 <csr-id-20a1b2c0cd04a8b495a02ce345db3d48a99ea0e9/>
 <csr-id-1eda91a2ef8794711ef037240f15284e8085d863/>
+<csr-id-61a1a0509b465ed57003bd0cdfedee8b847a48c8/>
+<csr-id-e3ddfb8b47effd03a9bb346811ea360a14ab17b3/>
 
 ### Chore
 

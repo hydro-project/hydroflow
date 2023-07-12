@@ -1,38 +1,46 @@
 [package]
 name = "hydroflow"
 publish = true
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 license = "Apache-2.0"
 documentation = "https://docs.rs/hydroflow/"
 description = "Hydro's low-level dataflow runtime and IR"
 
 [features]
-default = [ "async", "macros" , "nightly" ]
+default = [ "macros" , "nightly", "python" ]
+__default_wasm = [ "macros", "nightly" ]
+
 nightly = [ "hydroflow_macro", "hydroflow_macro/diagnostics" ]
-async = [ "dep:futures" ]
 macros = [ "hydroflow_macro", "hydroflow_datalog" ]
 hydroflow_macro = [ "dep:hydroflow_macro" ]
 hydroflow_datalog = [ "dep:hydroflow_datalog" ]
 cli_integration = [ "dep:hydroflow_cli_integration" ]
+python = [ "dep:pyo3" ]
 
 [[example]]
 name = "kvs_bench"
 required-features = [ "nightly" ]
 
+[[example]]
+name = "python_udf"
+required-features = [ "python" ]
+
 [dependencies]
 bincode = "1.3"
 byteorder = "1.4.3"
 bytes = "1.1.0"
-futures = { version = "0.3", optional = true }
-hydroflow_cli_integration = { optional = true, path = "../hydroflow_cli_integration", version = "^0.2.0" }
-hydroflow_datalog = { optional = true, path = "../hydroflow_datalog", version = "^0.2.0" }
-hydroflow_lang = { path = "../hydroflow_lang", version = "^0.2.0" }
-hydroflow_macro = { optional = true, path = "../hydroflow_macro", version = "^0.2.0" }
+futures = "0.3"
+hydroflow_cli_integration = { optional = true, path = "../hydroflow_cli_integration", version = "^0.3.0" }
+hydroflow_datalog = { optional = true, path = "../hydroflow_datalog", version = "^0.3.0" }
+hydroflow_lang = { path = "../hydroflow_lang", version = "^0.3.0" }
+hydroflow_macro = { optional = true, path = "../hydroflow_macro", version = "^0.3.0" }
 itertools = "0.10"
-lattices = { path = "../lattices", version = "^0.2.0", features = [ "serde" ] }
-pusherator = { path = "../pusherator", version = "^0.0.1" }
+lattices = { path = "../lattices", version = "^0.3.0", features = [ "serde" ] }
+pusherator = { path = "../pusherator", version = "^0.0.2" }
+pyo3 = { optional = true, version = "0.18" }
 ref-cast = "1.0"
+regex = "1.8.4"
 rustc-hash = "1.1.0"
 sealed = "0.5"
 serde = { version = "1", features = [ "derive" ] }

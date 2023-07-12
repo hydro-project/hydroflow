@@ -48,15 +48,15 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
         source_iter([()]) -> map(|_m| (Message::ConnectRequest, server_addr)) -> [0]outbound_chan;
 
         // take stdin and send to server as a msg
-        // the cross_join serves to buffer msgs until the connection request is acked
-        msg_send = cross_join() -> map(|(msg, _)| (msg, server_addr)) -> [1]outbound_chan;
+        // the batch serves to buffer msgs until the connection request is acked
+        msg_send = batch() -> map(|msg| (msg, server_addr)) -> [1]outbound_chan;
         lines = source_stdin()
           -> map(|l| Message::ChatMsg {
                     nickname: opts.name.clone(),
                     message: l.unwrap(),
                     ts: Utc::now()})
-          -> [0]msg_send;
-        inbound_chan[acks] -> [1]msg_send;
+          -> [input]msg_send;
+        inbound_chan[acks] -> persist() -> [signal]msg_send;
 
         // receive and print messages
         inbound_chan[msgs] -> for_each(pretty_print_msg);

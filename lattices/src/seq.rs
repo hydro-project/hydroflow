@@ -27,6 +27,21 @@ impl<Lat> Seq<Lat> {
     pub fn new_from(seq: impl Into<Vec<Lat>>) -> Self {
         Self::new(seq.into())
     }
+
+    /// Reveal the inner value as a shared reference.
+    pub fn as_reveal_ref(&self) -> &Vec<Lat> {
+        &self.seq
+    }
+
+    /// Reveal the inner value as an exclusive reference.
+    pub fn as_reveal_mut(&mut self) -> &mut Vec<Lat> {
+        &mut self.seq
+    }
+
+    /// Gets the inner by value, consuming self.
+    pub fn into_reveal(self) -> Vec<Lat> {
+        self.seq
+    }
 }
 
 impl<Lat> Default for Seq<Lat> {
@@ -50,7 +65,7 @@ where
             changed = true;
         }
         // Merge intersecting indices.
-        for (self_val, other_val) in self.seq.iter_mut().zip(other.seq.into_iter()) {
+        for (self_val, other_val) in self.seq.iter_mut().zip(other.seq) {
             changed |= self_val.merge(other_val);
         }
         changed

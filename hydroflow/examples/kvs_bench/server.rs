@@ -198,7 +198,7 @@ pub fn run_server<RX>(
                                 )));
                             },
                             KvsRequest::Gossip {map} => {
-                                for (key, reg) in map.0 {
+                                for (key, reg) in map.into_reveal() {
                                     store.give((key, reg));
                                 }
                             },

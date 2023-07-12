@@ -36,7 +36,7 @@ pub fn main() {
 
         // post-process: sort fields of each tuple by node ID
         triangle -> map(|(x, y, z)| {
-            let mut v = vec![x, y, z];
+            let mut v = [x, y, z];
             v.sort();
             (v[0], v[1], v[2])
         }) -> for_each(|e| println!("three_clique found: {:?}", e));
@@ -84,4 +84,19 @@ pub fn main() {
     // three_clique found: (5, 6, 10)
     // three_clique found: (0, 3, 6)
     // three_clique found: (5, 6, 10)
+}
+
+#[test]
+fn test() {
+    use hydroflow::util::{run_cargo_example, wait_for_process_output};
+
+    let (_child, _, mut stdout) = run_cargo_example("three_clique", "");
+
+    let mut output = String::new();
+    wait_for_process_output(&mut output, &mut stdout, r#"0, 3, 6"#);
+    wait_for_process_output(&mut output, &mut stdout, r#"5, 6, 10"#);
+    wait_for_process_output(&mut output, &mut stdout, r#"0, 3, 6"#);
+    wait_for_process_output(&mut output, &mut stdout, r#"5, 6, 10"#);
+    wait_for_process_output(&mut output, &mut stdout, r#"0, 3, 6"#);
+    wait_for_process_output(&mut output, &mut stdout, r#"5, 6, 10"#);
 }

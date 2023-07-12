@@ -33,8 +33,12 @@ fn generate_op_docs() -> Result<()> {
             .map_err(|syn_err| Error::new(ErrorKind::InvalidData, syn_err))?;
 
         for item in op_parsed.items {
-            let Item::Const(item_const) = item else { continue; };
-            let Expr::Struct(expr_struct) = *item_const.expr else { continue; };
+            let Item::Const(item_const) = item else {
+                continue;
+            };
+            let Expr::Struct(expr_struct) = *item_const.expr else {
+                continue;
+            };
             if identity::<Path>(parse_quote!(OperatorConstraints)) != expr_struct.path {
                 continue;
             }
@@ -44,7 +48,11 @@ fn generate_op_docs() -> Result<()> {
                 .iter()
                 .find(|&field_value| identity::<Member>(parse_quote!(name)) == field_value.member)
                 .expect("Expected `name` field not found.");
-            let Expr::Lit(ExprLit { lit: Lit::Str(op_name), .. }) = &name_field.expr else {
+            let Expr::Lit(ExprLit {
+                lit: Lit::Str(op_name),
+                ..
+            }) = &name_field.expr
+            else {
                 panic!("Unexpected non-literal or non-str `name` field value.")
             };
             let op_name = op_name.value();
@@ -60,11 +68,26 @@ fn generate_op_docs() -> Result<()> {
 
             let mut in_hf_doctest = false;
             for attr in item_const.attrs.iter() {
-                let AttrStyle::Outer = attr.style else { continue; };
-                let Meta::NameValue(MetaNameValue { path, eq_token: _, value }) = &attr.meta else { continue; };
-                let Some("doc") = path.get_ident().map(Ident::to_string).as_deref() else { continue; };
-                let Expr::Lit(ExprLit { attrs: _, lit }) = value else { continue; };
-                let Lit::Str(doc_lit_str) = lit else { continue; };
+                let AttrStyle::Outer = attr.style else {
+                    continue;
+                };
+                let Meta::NameValue(MetaNameValue {
+                    path,
+                    eq_token: _,
+                    value,
+                }) = &attr.meta
+                else {
+                    continue;
+                };
+                let Some("doc") = path.get_ident().map(Ident::to_string).as_deref() else {
+                    continue;
+                };
+                let Expr::Lit(ExprLit { attrs: _, lit }) = value else {
+                    continue;
+                };
+                let Lit::Str(doc_lit_str) = lit else {
+                    continue;
+                };
                 // At this point we know we have a `#[doc = "..."]`.
                 let doc_str = doc_lit_str.value();
                 let doc_str = doc_str.strip_prefix(' ').unwrap_or(&*doc_str);
@@ -93,8 +116,8 @@ fn generate_op_docs() -> Result<()> {
 
 const DOCTEST_HYDROFLOW_PREFIX: &str = "\
 ```rust
-# #[allow(unused_imports)] use hydroflow::{var_args, var_expr};
-# #[allow(unused_imports)] use hydroflow::pusherator::Pusherator;
+# #[allow(unused_imports)] use hydroflow::{var_args, var_expr, pusherator::Pusherator};
+# #[cfg(feature = \"python\")] #[allow(unused_imports)] use pyo3::prelude::*;
 # let __rt = hydroflow::tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
 # __rt.block_on(async { hydroflow::tokio::task::LocalSet::new().run_until(async {
 # let mut __hf = hydroflow::hydroflow_syntax! {";

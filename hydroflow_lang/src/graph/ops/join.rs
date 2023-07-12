@@ -13,8 +13,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// Forms the equijoin of the tuples in the input streams by their first (key) attribute. Note that the result nests the 2nd input field (values) into a tuple in the 2nd output field.
 ///
 /// ```hydroflow
-/// // should print `(hello, (world, cleveland))`
-/// source_iter(vec![("hello", "world"), ("stay", "gold")]) -> [0]my_join;
+/// source_iter(vec![("hello", "world"), ("stay", "gold"), ("hello", "world")]) -> [0]my_join;
 /// source_iter(vec![("hello", "cleveland")]) -> [1]my_join;
 /// my_join = join()
 ///     -> assert([("hello", ("world", "cleveland"))]);
@@ -44,12 +43,9 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// // etc.
 /// ```
 ///
-/// Join also accepts one type argument that controls how the join state is built up. This (currently) allows switching between a SetUnion and NonSetUnion implementation.
-/// For example:
-/// ```hydroflow,ignore
-/// join::<HalfSetJoinState>();
-/// join::<HalfMultisetJoinState>();
-/// ```
+/// `join` is defined to treat its inputs as *sets*, meaning that it
+/// eliminates duplicated values in its inputs. If you do not want
+/// duplicates eliminated, use the [`join_multiset`](#join_multiset) operator.
 ///
 /// ### Examples
 ///

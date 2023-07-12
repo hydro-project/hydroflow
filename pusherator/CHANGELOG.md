@@ -5,7 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.0.2 (2023-07-04)
+
+### Bug Fixes
+
+ - <csr-id-a3c1fbbd1e3fa7a7299878f61b4bfd12dce0052c/> remove nightly feature `never_type` where unused
+ - <csr-id-9bb5528d99e83fdae5aeca9456802379131c2f90/> removed unused nightly features `impl_trait_in_assoc_type`, `type_alias_impl_trait`
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release over the course of 13 calendar days.
+ - 44 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#780](https://github.com/hydro-project/hydroflow/issues/780)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#780](https://github.com/hydro-project/hydroflow/issues/780)**
+    - Remove nightly feature `never_type` where unused ([`a3c1fbb`](https://github.com/hydro-project/hydroflow/commit/a3c1fbbd1e3fa7a7299878f61b4bfd12dce0052c))
+    - Removed unused nightly features `impl_trait_in_assoc_type`, `type_alias_impl_trait` ([`9bb5528`](https://github.com/hydro-project/hydroflow/commit/9bb5528d99e83fdae5aeca9456802379131c2f90))
+</details>
+
 ## 0.0.1 (2023-05-21)
+
+<csr-id-20a1b2c0cd04a8b495a02ce345db3d48a99ea0e9/>
+<csr-id-1eda91a2ef8794711ef037240f15284e8085d863/>
 
 ### Style
 
@@ -16,8 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release.
- - 25 days passed between releases.
+ - 3 commits contributed to the release.
+ - 24 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#660](https://github.com/hydro-project/hydroflow/issues/660)
 
@@ -30,6 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#660](https://github.com/hydro-project/hydroflow/issues/660)**
     - Rustfmt group imports ([`20a1b2c`](https://github.com/hydro-project/hydroflow/commit/20a1b2c0cd04a8b495a02ce345db3d48a99ea0e9))
     - Rustfmt prescribe flat-module `use` format ([`1eda91a`](https://github.com/hydro-project/hydroflow/commit/1eda91a2ef8794711ef037240f15284e8085d863))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.0.1, hydroflow_lang v0.0.1, hydroflow_datalog_core v0.0.1, hydroflow_datalog v0.0.1, hydroflow_macro v0.0.1, lattices v0.1.0, variadics v0.0.2, pusherator v0.0.1, hydroflow v0.0.2 ([`809395a`](https://github.com/hydro-project/hydroflow/commit/809395acddb78949d7a2bf036e1a94972f23b1ad))
 </details>
 
 ## 0.0.0 (2023-04-26)
