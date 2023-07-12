@@ -19,7 +19,7 @@ def fib(n):
             -> map(|x: PyResult<Py<PyAny>>| Python::with_gil(|py| {
                 usize::extract(x.unwrap().as_ref(py)).unwrap()
             }))
-            -> assert([0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
+            -> assert_eq([0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
     };
     assert_graphvis_snapshots!(hf);
 
@@ -36,7 +36,7 @@ def add(a, b):
             "#, "add")
             -> map(PyResult::<Py<PyAny>>::unwrap_err)
             -> map(|py_err| py_err.to_string())
-            -> assert(["TypeError: add() missing 1 required positional argument: 'b'"]);
+            -> assert_eq(["TypeError: add() missing 1 required positional argument: 'b'"]);
     };
     assert_graphvis_snapshots!(hf);
 
@@ -54,7 +54,7 @@ def add(a, b):
             -> map(|x: PyResult<Py<PyAny>>| Python::with_gil(|py| {
                 usize::extract(x.unwrap().as_ref(py)).unwrap()
             }))
-            -> assert([6]);
+            -> assert_eq([6]);
     };
     assert_graphvis_snapshots!(hf);
 

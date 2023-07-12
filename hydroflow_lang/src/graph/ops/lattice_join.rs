@@ -57,7 +57,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 ///     my_join = lattice_join::<'tick, Min<usize>, Max<usize>>();
 ///     source_iter([(7, Min::new(1)), (7, Min::new(2))]) -> [0]my_join;
 ///     source_iter([(7, Max::new(1)), (7, Max::new(2))]) -> [1]my_join;
-///     my_join -> assert([(7, (Min::new(1), Max::new(2)))]);
+///     my_join -> assert_eq([(7, (Min::new(1), Max::new(2)))]);
 /// };
 /// df.run_available();
 /// ```

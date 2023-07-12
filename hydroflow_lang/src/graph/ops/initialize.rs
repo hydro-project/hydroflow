@@ -14,7 +14,7 @@ use crate::graph::OperatorInstance;
 ///
 /// ```hydroflow
 /// initialize()
-///     -> assert([()]);
+///     -> assert_eq([()]);
 /// ```
 pub const INITIALIZE: OperatorConstraints = OperatorConstraints {
     name: "initialize",

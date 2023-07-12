@@ -26,7 +26,7 @@ use super::{
 /// ```hydroflow
 /// source_iter([hydroflow::lattices::set_union::SetUnionSingletonSet::new_from(7)])
 ///     -> lattice_fold::<'static, hydroflow::lattices::set_union::SetUnionHashSet<usize>>()
-///     -> assert([hydroflow::lattices::set_union::SetUnionHashSet::new_from([7])]);
+///     -> assert_eq([hydroflow::lattices::set_union::SetUnionHashSet::new_from([7])]);
 /// ```
 pub const LATTICE_FOLD: OperatorConstraints = OperatorConstraints {
     name: "lattice_fold",

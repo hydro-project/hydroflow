@@ -29,7 +29,7 @@ use crate::graph::ops::OperatorWriteOutput;
 /// source_iter([1,2,3,4,5])
 ///     -> map(hydroflow::lattices::Max::new)
 ///     -> lattice_reduce::<'static, hydroflow::lattices::Max<usize>>()
-///     -> assert([hydroflow::lattices::Max::new(5)]);
+///     -> assert_eq([hydroflow::lattices::Max::new(5)]);
 /// ```
 pub const LATTICE_REDUCE: OperatorConstraints = OperatorConstraints {
     name: "lattice_reduce",

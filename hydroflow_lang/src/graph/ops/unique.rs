@@ -13,7 +13,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// ```hydroflow
 /// source_iter(vec![1, 1, 2, 3, 2, 1, 3])
 ///     -> unique()
-///     -> assert([1, 2, 3]);
+///     -> assert_eq([1, 2, 3]);
 /// ```
 ///
 /// `unique` can also be provided with one generic lifetime persistence argument, either

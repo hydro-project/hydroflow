@@ -16,7 +16,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// source_iter(vec![("hello", "world"), ("stay", "gold"), ("hello", "world")]) -> [0]my_join;
 /// source_iter(vec![("hello", "cleveland")]) -> [1]my_join;
 /// my_join = join()
-///     -> assert([("hello", ("world", "cleveland"))]);
+///     -> assert_eq([("hello", ("world", "cleveland"))]);
 /// ```
 ///
 /// `join` can also be provided with one or two generic lifetime persistence arguments, either
