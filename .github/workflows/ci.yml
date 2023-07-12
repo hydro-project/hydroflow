@@ -56,7 +56,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --all-targets
+          args: --all-targets --features python
 
   check-wasm:
     name: Check WebAssembly
@@ -91,7 +91,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: -p hydroflow_lang --target wasm32-unknown-unknown --no-default-features
+          args: -p hydroflow_lang --target wasm32-unknown-unknown
 
   test:
     name: Test Suite
@@ -125,13 +125,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --no-fail-fast --all-targets
+          args: --no-fail-fast --all-targets --features python
 
       - name: Run cargo doc tests
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --no-fail-fast --doc
+          args: --no-fail-fast --doc --features python
 
   test-wasm:
     name: Test Suite (WebAssembly)
@@ -178,7 +178,7 @@ jobs:
           CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
         with:
           command: test
-          args: -p hydroflow --target wasm32-unknown-unknown --tests --no-fail-fast --no-default-features --features __default_wasm
+          args: -p hydroflow --target wasm32-unknown-unknown --tests --no-fail-fast
 
   test-cli:
     name: Test CLI
@@ -281,7 +281,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --all-targets -- -D warnings
+          args: --all-targets --features python -- -D warnings
 
   build-website:
     name: Build Website
