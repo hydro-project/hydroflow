@@ -315,5 +315,10 @@ pub fn run_cargo_example(test_name: &str, args: &str) -> (DroppableChild, ChildS
     let stdin = server.stdin.take().unwrap();
     let stdout = server.stdout.take().unwrap();
 
+    // There is some race condition that is hard to reproduce
+    // I believe it occurs when you spawn a process and then quickly try to read from it's stdout
+    // Sometimes that read returns immediately with EOF instead of blocking.
+    std::thread::sleep(std::time::Duration::from_secs(1));
+
     (DroppableChild(server), stdin, stdout)
 }
