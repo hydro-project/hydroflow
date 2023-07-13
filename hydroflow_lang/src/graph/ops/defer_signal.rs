@@ -15,15 +15,15 @@ use super::{
 /// When anything is sent to `signal` the collected data is released downstream. The entire `signal` input is consumed each tick, so sending 5 things on `signal` will not release inputs on the next 5 consecutive ticks.
 ///
 /// ```hydroflow
-/// gate = batch();
+/// gate = defer_signal();
 ///
 /// source_iter([1, 2, 3]) -> [input]gate;
 /// source_iter([()]) -> [signal]gate;
 ///
 /// gate -> assert_eq([1, 2, 3]);
 /// ```
-pub const BATCH: OperatorConstraints = OperatorConstraints {
-    name: "batch",
+pub const DEFER_SIGNAL: OperatorConstraints = OperatorConstraints {
+    name: "defer_signal",
     categories: &[OperatorCategory::Persistence],
     persistence_args: RANGE_0,
     type_args: RANGE_0,

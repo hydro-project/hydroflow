@@ -248,7 +248,7 @@ fn find_subgraph_strata(
     barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
 ) -> Result<(), Diagnostic> {
     // Determine subgraphs's stratum number.
-    // Find SCCs ignoring `next_tick()` (`DelayType::Tick`) edges, then do TopoSort on the
+    // Find SCCs ignoring `defer_tick()` (`DelayType::Tick`) edges, then do TopoSort on the
     // resulting DAG.
     // Cycles thru cross-stratum negative edges (both `DelayType::Tick` and `DelayType::Stratum`)
     // are an error.
@@ -259,7 +259,7 @@ fn find_subgraph_strata(
     let mut subgraph_preds: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
     let mut subgraph_succs: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
 
-    // Negative (next stratum) connections between subgraphs. (Ignore `next_tick()` connections).
+    // Negative (next stratum) connections between subgraphs. (Ignore `defer_tick()` connections).
     let mut subgraph_negative_connections: BTreeSet<(GraphSubgraphId, GraphSubgraphId)> =
         Default::default();
 
@@ -332,8 +332,8 @@ fn find_subgraph_strata(
         partitioned_graph.set_subgraph_stratum(sg_id, stratum);
     }
 
-    // Re-introduce the `next_tick()` edges, ensuring they actually go to the next tick.
-    let extra_stratum = partitioned_graph.max_stratum().unwrap_or(0) + 1; // Used for `next_tick()` delayer subgraphs.
+    // Re-introduce the `defer_tick()` edges, ensuring they actually go to the next tick.
+    let extra_stratum = partitioned_graph.max_stratum().unwrap_or(0) + 1; // Used for `defer_tick()` delayer subgraphs.
     for (edge_id, &delay_type) in barrier_crossers.iter() {
         let (hoff, dst) = partitioned_graph.edge(edge_id);
         let (_hoff_port, dst_port) = partitioned_graph.edge_ports(edge_id);
@@ -385,7 +385,7 @@ fn find_subgraph_strata(
                 // Any negative edges which go onto the same or previous stratum are bad.
                 // Indicates an unbroken negative cycle.
                 if dst_stratum <= src_stratum {
-                    return Err(Diagnostic::spanned(dst_port.span(), Level::Error, "Negative edge creates a negative cycle which must be broken with a `next_tick()` operator."));
+                    return Err(Diagnostic::spanned(dst_port.span(), Level::Error, "Negative edge creates a negative cycle which must be broken with a `defer_tick()` operator."));
                 }
             }
         }

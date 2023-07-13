@@ -19,7 +19,7 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_3v1\nstratum 1"
-        n1v1 [label="(n1v1) batch()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n1v1 [label="(n1v1) defer_signal()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n4v1 [label="(n4v1) for_each(|x| egress_tx.send(x).unwrap())", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n1v1 -> n4v1
         subgraph "cluster sg_3v1_var_gate" {

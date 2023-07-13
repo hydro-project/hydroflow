@@ -12,7 +12,7 @@ use super::{
 /// An tick may be divided into multiple _strata_, see the [`next_stratum()`](#next_stratum)
 /// operator.
 ///
-/// In the example below `next_tick()` is used alongside `difference()` to
+/// In the example below `defer_tick()` is used alongside `difference()` to
 /// ignore any items in the current tick that already appeared in the previous
 /// tick.
 /// ```rustbook
@@ -22,7 +22,7 @@ use super::{
 ///     inp = source_stream(input_recv) -> tee();
 ///     diff = difference() -> for_each(|x| println!("{}", x));
 ///     inp -> [pos]diff;
-///     inp -> next_tick() -> [neg]diff;
+///     inp -> defer_tick() -> [neg]diff;
 /// };
 ///
 /// for x in [1, 2, 3, 4] {
@@ -35,8 +35,8 @@ use super::{
 /// }
 /// flow.run_tick();
 /// ```
-pub const NEXT_TICK: OperatorConstraints = OperatorConstraints {
-    name: "next_tick",
+pub const DEFER_TICK: OperatorConstraints = OperatorConstraints {
+    name: "defer_tick",
     categories: &[OperatorCategory::Control],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,

@@ -23,7 +23,7 @@ use crate::graph::OperatorInstance;
 /// unioned = union();
 ///
 /// source_iter([1]) -> assert_eq([1]) -> unioned;
-/// source_iter([2]) -> next_tick() -> assert_eq([2]) -> unioned;
+/// source_iter([2]) -> defer_tick() -> assert_eq([2]) -> unioned;
 ///
 /// unioned -> assert_eq([1, 2]);
 /// ```

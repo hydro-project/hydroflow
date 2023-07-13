@@ -149,7 +149,7 @@ pub fn gen_hydroflow_graph(
                 flat_graph_builder
                     .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #insert_name -> [pos] #read_name));
                 flat_graph_builder
-                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #read_name -> next_tick() -> [neg] #read_name));
+                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #read_name -> defer_tick() -> [neg] #read_name));
             } else {
                 flat_graph_builder
                     .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #insert_name = union() -> unique::<'tick>()));
@@ -385,7 +385,7 @@ fn generate_rule(
                 panic!("Rule must be async to send data to other nodes")
             }
 
-            parse_quote_spanned!(get_span(rule.rule_type.span)=> #after_join -> next_tick() -> [#my_union_index_lit] #target_ident)
+            parse_quote_spanned!(get_span(rule.rule_type.span)=> #after_join -> defer_tick() -> [#my_union_index_lit] #target_ident)
         }
         RuleType::Async(_) => {
             if rule.target.at_node.is_none() {
