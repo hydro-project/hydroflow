@@ -29,7 +29,7 @@ pub fn test_tick_loop() {
     let mut df = hydroflow_syntax! {
         source_iter([0]) -> union_tee;
         union_tee = union() -> tee();
-        union_tee -> map(|n| n + 1) -> filter(|&n| n < 10) -> next_tick() -> union_tee;
+        union_tee -> map(|n| n + 1) -> filter(|&n| n < 10) -> defer_tick() -> union_tee;
         union_tee -> for_each(|v| out_send.send(v).unwrap());
     };
     df.run_available();

@@ -46,7 +46,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
 
         // persist an edges set
         edges = union() -> tee();
-        edges[0] -> next_tick() -> [1]edges;
+        edges[0] -> defer_tick() -> [1]edges;
 
         // add new edges locally
         new_edges -> [0]edges;

@@ -295,14 +295,14 @@ pub fn test_lattice_join() {
 }
 
 #[multiplatform_test]
-pub fn test_next_tick() {
+pub fn test_defer_tick() {
     let (inp_send, inp_recv) = hydroflow::util::unbounded_channel::<usize>();
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
     let mut flow = hydroflow::hydroflow_syntax! {
         inp = source_stream(inp_recv) -> tee();
         diff = difference() -> for_each(|x| out_send.send(x).unwrap());
         inp -> [pos]diff;
-        inp -> next_tick() -> [neg]diff;
+        inp -> defer_tick() -> [neg]diff;
     };
 
     for x in [1, 2, 3, 4] {
@@ -328,7 +328,7 @@ pub fn test_anti_join() {
         inp = source_stream(inp_recv) -> tee();
         diff = anti_join() -> for_each(|x| out_send.send(x).unwrap());
         inp -> [pos]diff;
-        inp -> next_tick() -> map(|x: (usize, usize)| x.0) -> [neg]diff;
+        inp -> defer_tick() -> map(|x: (usize, usize)| x.0) -> [neg]diff;
     };
 
     for x in [(1, 2), (2, 3), (3, 4), (4, 5)] {
@@ -347,7 +347,7 @@ pub fn test_anti_join() {
 }
 
 #[multiplatform_test]
-pub fn test_lattice_batch() {
+pub fn test_lattice_defer_signal() {
     type SetUnionHashSet = lattices::set_union::SetUnionHashSet<usize>;
     type SetUnionSingletonSet = lattices::set_union::SetUnionSingletonSet<usize>;
 

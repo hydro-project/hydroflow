@@ -8,7 +8,7 @@ pub fn test_basic_2() {
     let (egress_tx, mut egress_rx) = hydroflow::util::unbounded_channel();
 
     let mut df = hydroflow_syntax! {
-        gate = batch();
+        gate = defer_signal();
         source_iter([1, 2, 3]) -> [input]gate;
         source_stream(signal_rx) -> [signal]gate;
 
