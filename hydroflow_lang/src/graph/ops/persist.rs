@@ -12,7 +12,7 @@ use super::{
 /// // on every tick.
 /// source_iter(["hello"])
 ///     -> persist()
-///     -> assert(["hello"]);
+///     -> assert_eq(["hello"]);
 /// ```
 ///
 /// `persist()` can be used to introduce statefulness into stateless pipelines. For example this

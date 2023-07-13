@@ -14,7 +14,7 @@ use crate::graph::OperatorInstance;
 /// ```hydroflow
 /// source_iter(vec![(2, 'y'), (3, 'x'), (1, 'z')])
 ///     -> sort_by_key(|(k, _v)| k)
-///     -> assert([(1, 'z'), (2, 'y'), (3, 'x')]);
+///     -> assert_eq([(1, 'z'), (2, 'y'), (3, 'x')]);
 /// ```
 pub const SORT_BY_KEY: OperatorConstraints = OperatorConstraints {
     name: "sort_by_key",

@@ -11,7 +11,7 @@ digraph {
         n2v1 [label="(n2v1) py_udf(r#\"\ldef add(a, b):\lreturn a + b\l        \"#, \"add\")\l", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n3v1 [label="(n3v1) map(PyResult::<Py<PyAny>>::unwrap_err)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n4v1 [label="(n4v1) map(|py_err| py_err.to_string())", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
-        n5v1 [label="(n5v1) assert([\"TypeError: add() missing 1 required positional argument: 'b'\"])", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n5v1 [label="(n5v1) assert_eq([\"TypeError: add() missing 1 required positional argument: 'b'\"])", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n1v1 -> n2v1
         n2v1 -> n3v1
         n3v1 -> n4v1

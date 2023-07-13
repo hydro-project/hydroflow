@@ -24,7 +24,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 ///         source_iter(0..5) -> persist()
 ///             -> map(|x| Max::new(x))
 ///             -> lattice_batch::<Max<usize>>(rx)
-///             -> assert([Max::new(4)]);
+///             -> assert_eq([Max::new(4)]);
 ///     };
 ///
 ///     tx.send(()).unwrap();

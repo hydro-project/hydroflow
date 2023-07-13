@@ -17,7 +17,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance, PortIndexValue};
 /// ```hydroflow
 /// source_iter(vec!["dog", "cat", "elephant"]) -> [pos]diff;
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
-/// diff = difference() -> assert(["elephant"]);
+/// diff = difference() -> assert_eq(["elephant"]);
 /// ```
 pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
     name: "difference",

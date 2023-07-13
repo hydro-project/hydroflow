@@ -18,7 +18,7 @@ use crate::graph::OpInstGenerics;
 ///
 /// ```hydroflow
 /// source_iter(vec!["hello", "world"]) -> enumerate()
-///     -> assert([(0, "hello"), (1, "world")]);
+///     -> assert_eq([(0, "hello"), (1, "world")]);
 /// ```
 pub const ENUMERATE: OperatorConstraints = OperatorConstraints {
     name: "enumerate",

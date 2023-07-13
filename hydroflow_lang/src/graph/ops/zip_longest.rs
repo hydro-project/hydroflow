@@ -18,7 +18,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// source_iter(0..2) -> [0]my_zip_longest;
 /// source_iter(0..3) -> [1]my_zip_longest;
 /// my_zip_longest = zip_longest()
-///     -> assert([
+///     -> assert_eq([
 ///         itertools::EitherOrBoth::Both(0, 0),
 ///         itertools::EitherOrBoth::Both(1, 1),
 ///         itertools::EitherOrBoth::Right(2)]);
