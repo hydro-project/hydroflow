@@ -65,7 +65,7 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
         assert!(is_pull);
 
         let persistence = match persistence_args[..] {
-            [] => Persistence::Static,
+            [] => Persistence::Tick,
             [a] => a,
             _ => unreachable!(),
         };

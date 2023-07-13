@@ -21,7 +21,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
 /// within the same tick. With `'static`, values will be remembered across ticks and will be
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
-/// defaults to `'static`.
+/// defaults to `'tick`.
 ///
 /// ```hydroflow
 /// // should print `Reassembled vector [1,2,3,4,5]`
@@ -72,7 +72,7 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
         assert!(is_pull);
 
         let persistence = match persistence_args[..] {
-            [] => Persistence::Static,
+            [] => Persistence::Tick,
             [a] => a,
             _ => unreachable!(),
         };

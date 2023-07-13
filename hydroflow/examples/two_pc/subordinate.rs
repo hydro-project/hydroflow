@@ -23,7 +23,7 @@ pub(crate) async fn run_subordinate(
             -> map(|json: Addresses| json.coordinator)
             -> map(|s| s.parse::<SocketAddr>().unwrap())
             -> inspect(|coordinator| println!("Coordinator: {}", coordinator));
-        server_addr_join = cross_join();
+        server_addr_join = cross_join::<'static>();
         server_addr -> [1]server_addr_join;
 
         // set up channels

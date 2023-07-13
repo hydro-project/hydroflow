@@ -27,12 +27,12 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// `'tick` or `'static`, to specify how join data persists. With `'tick`, pairs will only be
 /// joined with corresponding pairs within the same tick. With `'static`, pairs will be remembered
 /// across ticks and will be joined with pairs arriving in later ticks. When not explicitly
-/// specified persistence defaults to `static.
+/// specified persistence defaults to `tick.
 ///
 /// When two persistence arguments are supplied the first maps to port `0` and the second maps to
 /// port `1`.
 /// When a single persistence argument is supplied, it is applied to both input ports.
-/// When no persistence arguments are applied it defaults to `'static` for both.
+/// When no persistence arguments are applied it defaults to `'tick` for both.
 ///
 /// The syntax is as follows:
 /// ```hydroflow,ignore
@@ -144,7 +144,7 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
         };
 
         let persistences = match persistence_args[..] {
-            [] => [Persistence::Static, Persistence::Static],
+            [] => [Persistence::Tick, Persistence::Tick],
             [a] => [a, a],
             [a, b] => [a, b],
             _ => unreachable!(),
