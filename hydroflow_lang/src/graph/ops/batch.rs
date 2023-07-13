@@ -20,7 +20,7 @@ use super::{
 /// source_iter([1, 2, 3]) -> [input]gate;
 /// source_iter([()]) -> [signal]gate;
 ///
-/// gate -> assert([1, 2, 3]);
+/// gate -> assert_eq([1, 2, 3]);
 /// ```
 pub const BATCH: OperatorConstraints = OperatorConstraints {
     name: "batch",

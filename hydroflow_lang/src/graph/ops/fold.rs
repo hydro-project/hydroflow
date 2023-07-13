@@ -29,7 +29,7 @@ use crate::diagnostic::{Diagnostic, Level};
 ///     -> fold::<'tick>(Vec::new(), |accum: &mut Vec<_>, elem| {
 ///         accum.push(elem);
 ///     })
-///     -> assert([vec![1, 2, 3, 4, 5]]);
+///     -> assert_eq([vec![1, 2, 3, 4, 5]]);
 /// ```
 pub const FOLD: OperatorConstraints = OperatorConstraints {
     name: "fold",

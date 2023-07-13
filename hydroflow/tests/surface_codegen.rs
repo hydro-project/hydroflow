@@ -739,12 +739,12 @@ pub fn test_covid_tracing() {
 }
 
 #[multiplatform_test]
-pub fn test_assert() {
+pub fn test_assert_eq() {
     let mut df = hydroflow_syntax! {
-        source_iter([1, 2, 3]) -> assert([1, 2, 3]) -> assert([1, 2, 3]); // one in pull, one in push
-        source_iter([1, 2, 3]) -> assert([1, 2, 3]) -> assert(vec![1, 2, 3]);
-        source_iter([1, 2, 3]) -> assert(vec![1, 2, 3]) -> assert([1, 2, 3]);
-        source_iter(vec![1, 2, 3]) -> assert([1, 2, 3]) -> assert([1, 2, 3]);
+        source_iter([1, 2, 3]) -> assert_eq([1, 2, 3]) -> assert_eq([1, 2, 3]); // one in pull, one in push
+        source_iter([1, 2, 3]) -> assert_eq([1, 2, 3]) -> assert_eq(vec![1, 2, 3]);
+        source_iter([1, 2, 3]) -> assert_eq(vec![1, 2, 3]) -> assert_eq([1, 2, 3]);
+        source_iter(vec![1, 2, 3]) -> assert_eq([1, 2, 3]) -> assert_eq([1, 2, 3]);
     };
     df.run_available();
 }
@@ -753,7 +753,7 @@ pub fn test_assert() {
 pub fn test_assert_failures() {
     assert!(std::panic::catch_unwind(|| {
         let mut df = hydroflow_syntax! {
-            source_iter([0]) -> assert([1]);
+            source_iter([0]) -> assert_eq([1]);
         };
 
         df.run_available();
@@ -762,7 +762,7 @@ pub fn test_assert_failures() {
 
     assert!(std::panic::catch_unwind(|| {
         let mut df = hydroflow_syntax! {
-            source_iter([0]) -> assert([1]) -> null();
+            source_iter([0]) -> assert_eq([1]) -> null();
         };
 
         df.run_available();

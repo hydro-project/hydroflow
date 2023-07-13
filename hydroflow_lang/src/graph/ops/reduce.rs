@@ -22,7 +22,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 ///     -> reduce::<'tick>(|accum: &mut _, elem| {
 ///         *accum *= elem;
 ///     })
-///     -> assert([120]);
+///     -> assert_eq([120]);
 /// ```
 pub const REDUCE: OperatorConstraints = OperatorConstraints {
     name: "reduce",

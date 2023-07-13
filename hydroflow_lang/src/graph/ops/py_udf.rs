@@ -32,7 +32,7 @@ use super::{
 ///     -> map(|x: PyResult<Py<PyAny>>| Python::with_gil(|py| {
 ///         usize::extract(x.unwrap().as_ref(py)).unwrap()
 ///     }))
-///     -> assert([0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
+///     -> assert_eq([0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
 /// ```
 ///
 /// ```hydroflow
@@ -44,7 +44,7 @@ use super::{
 ///             -> map(|x: PyResult<Py<PyAny>>| Python::with_gil(|py| {
 ///                 usize::extract(x.unwrap().as_ref(py)).unwrap()
 ///             }))
-///             -> assert([6]);
+///             -> assert_eq([6]);
 /// ```
 pub const PY_UDF: OperatorConstraints = OperatorConstraints {
     name: "py_udf",
