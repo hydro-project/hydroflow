@@ -154,14 +154,14 @@
         <span class="kw">let </span>args = <span class="kw-2">&amp;</span>op_inst.arguments[<span class="number">0</span>];
 
         <span class="kw">let </span>inspect_fn = <span class="macro">parse_quote_spanned! </span>{op_span=&gt;
-            |x| {
+            |__item| {
                 <span class="comment">// This is to help constrain the types so that type inference works nicely.
-                </span><span class="kw">fn </span>__constrain_types&lt;T&gt;(array: <span class="kw-2">&amp;</span><span class="kw">impl </span>std::ops::Index&lt;usize, Output = T&gt;, index: usize) -&gt; <span class="kw-2">&amp;</span>T {
+                </span><span class="kw">fn </span>__constrain_types&lt;T&gt;(array: <span class="kw-2">&amp;</span><span class="kw">impl </span>::std::ops::Index&lt;usize, Output = T&gt;, index: usize) -&gt; <span class="kw-2">&amp;</span>T {
                     <span class="kw-2">&amp;</span>array[index]
                 }
 
-                <span class="kw">let </span>__index = #context.state_ref(#assert_index_ident).take();
-                <span class="macro">assert_eq!</span>(__constrain_types(<span class="kw-2">&amp;</span>#args, __index), x);
+                <span class="kw">let </span>__index = #context.state_ref(#assert_index_ident).get();
+                <span class="macro">::std::assert_eq!</span>(__constrain_types(<span class="kw-2">&amp;</span>#args, __index), __item, <span class="string">&quot;Item (right) at index {} does not equal expected (left).&quot;</span>, __index);
                 #context.state_ref(#assert_index_ident).set(__index + <span class="number">1</span>);
             }
         };
