@@ -59,14 +59,14 @@ pub const ASSERT_EQ: OperatorConstraints = OperatorConstraints {
         let args = &op_inst.arguments[0];
 
         let inspect_fn = parse_quote_spanned! {op_span=>
-            |x| {
+            |__item| {
                 // This is to help constrain the types so that type inference works nicely.
-                fn __constrain_types<T>(array: &impl std::ops::Index<usize, Output = T>, index: usize) -> &T {
+                fn __constrain_types<T>(array: &impl ::std::ops::Index<usize, Output = T>, index: usize) -> &T {
                     &array[index]
                 }
 
-                let __index = #context.state_ref(#assert_index_ident).take();
-                assert_eq!(__constrain_types(&#args, __index), x);
+                let __index = #context.state_ref(#assert_index_ident).get();
+                ::std::assert_eq!(__constrain_types(&#args, __index), __item, "Item (right) at index {} does not equal expected (left).", __index);
                 #context.state_ref(#assert_index_ident).set(__index + 1);
             }
         };
