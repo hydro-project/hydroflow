@@ -158,7 +158,7 @@
 /// ```hydroflow
 /// source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;elephant&quot;]) -&gt; [pos]diff;
 /// source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;gorilla&quot;]) -&gt; [neg]diff;
-/// diff = difference() -&gt; assert([&quot;elephant&quot;]);
+/// diff = difference() -&gt; assert_eq([&quot;elephant&quot;]);
 /// ```
 </span><span class="kw">pub const </span>DIFFERENCE: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;difference&quot;</span>,

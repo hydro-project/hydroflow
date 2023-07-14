@@ -1328,7 +1328,7 @@
                 flat_graph_builder
                     .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #insert_name -&gt; [pos] #read_name));
                 flat_graph_builder
-                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #read_name -&gt; next_tick() -&gt; [neg] #read_name));
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #read_name -&gt; defer_tick() -&gt; [neg] #read_name));
             } <span class="kw">else </span>{
                 flat_graph_builder
                     .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #insert_name = union() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;()));
@@ -1564,7 +1564,7 @@
                 <span class="macro">panic!</span>(<span class="string">&quot;Rule must be async to send data to other nodes&quot;</span>)
             }
 
-            <span class="macro">parse_quote_spanned!</span>(get_span(rule.rule_type.span)=&gt; #after_join -&gt; next_tick() -&gt; [#my_union_index_lit] #target_ident)
+            <span class="macro">parse_quote_spanned!</span>(get_span(rule.rule_type.span)=&gt; #after_join -&gt; defer_tick() -&gt; [#my_union_index_lit] #target_ident)
         }
         RuleType::Async(<span class="kw">_</span>) =&gt; {
             <span class="kw">if </span>rule.target.at_node.is_none() {

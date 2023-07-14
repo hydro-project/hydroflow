@@ -118,7 +118,7 @@
 /// ```hydroflow
 /// source_iter(vec![(&quot;dog&quot;, 1), (&quot;cat&quot;, 2), (&quot;elephant&quot;, 3)]) -&gt; [pos]diff;
 /// source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;gorilla&quot;]) -&gt; [neg]diff;
-/// diff = anti_join() -&gt; assert([(&quot;elephant&quot;, 3)]);
+/// diff = anti_join() -&gt; assert_eq([(&quot;elephant&quot;, 3)]);
 /// ```
 </span><span class="kw">pub const </span>ANTI_JOIN: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;anti_join&quot;</span>,

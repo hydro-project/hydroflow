@@ -144,7 +144,7 @@
 /// // on every tick.
 /// source_iter([&quot;hello&quot;])
 ///     -&gt; persist()
-///     -&gt; assert([&quot;hello&quot;]);
+///     -&gt; assert_eq([&quot;hello&quot;]);
 /// ```
 ///
 /// `persist()` can be used to introduce statefulness into stateless pipelines. For example this

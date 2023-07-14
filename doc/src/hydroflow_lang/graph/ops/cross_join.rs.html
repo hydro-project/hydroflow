@@ -99,7 +99,7 @@
 /// ```hydroflow
 /// source_iter(vec![&quot;happy&quot;, &quot;sad&quot;]) -&gt; [0]my_join;
 /// source_iter(vec![&quot;dog&quot;, &quot;cat&quot;]) -&gt; [1]my_join;
-/// my_join = cross_join() -&gt; assert([(&quot;happy&quot;, &quot;dog&quot;), (&quot;sad&quot;, &quot;dog&quot;), (&quot;happy&quot;, &quot;cat&quot;), (&quot;sad&quot;, &quot;cat&quot;)]);
+/// my_join = cross_join() -&gt; assert_eq([(&quot;happy&quot;, &quot;dog&quot;), (&quot;sad&quot;, &quot;dog&quot;), (&quot;happy&quot;, &quot;cat&quot;), (&quot;sad&quot;, &quot;cat&quot;)]);
 /// ```
 ///
 /// `cross_join` can also be provided with one or two generic lifetime persistence arguments

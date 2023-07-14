@@ -248,7 +248,7 @@
 /// source_iter(vec![(&quot;hello&quot;, &quot;world&quot;), (&quot;stay&quot;, &quot;gold&quot;), (&quot;hello&quot;, &quot;world&quot;)]) -&gt; [0]my_join;
 /// source_iter(vec![(&quot;hello&quot;, &quot;cleveland&quot;)]) -&gt; [1]my_join;
 /// my_join = join()
-///     -&gt; assert([(&quot;hello&quot;, (&quot;world&quot;, &quot;cleveland&quot;))]);
+///     -&gt; assert_eq([(&quot;hello&quot;, (&quot;world&quot;, &quot;cleveland&quot;))]);
 /// ```
 ///
 /// `join` can also be provided with one or two generic lifetime persistence arguments, either

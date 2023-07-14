@@ -105,7 +105,7 @@
 /// ```hydroflow
 /// source_iter([hydroflow::lattices::set_union::SetUnionSingletonSet::new_from(7)])
 ///     -&gt; lattice_fold::&lt;&#39;static, hydroflow::lattices::set_union::SetUnionHashSet&lt;usize&gt;&gt;()
-///     -&gt; assert([hydroflow::lattices::set_union::SetUnionHashSet::new_from([7])]);
+///     -&gt; assert_eq([hydroflow::lattices::set_union::SetUnionHashSet::new_from([7])]);
 /// ```
 </span><span class="kw">pub const </span>LATTICE_FOLD: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;lattice_fold&quot;</span>,

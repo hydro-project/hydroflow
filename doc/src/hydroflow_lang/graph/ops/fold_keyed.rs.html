@@ -268,7 +268,7 @@
 /// ```hydroflow
 /// source_iter([(&quot;toy&quot;, 1), (&quot;toy&quot;, 2), (&quot;shoe&quot;, 11), (&quot;shoe&quot;, 35), (&quot;haberdashery&quot;, 7)])
 ///     -&gt; fold_keyed(|| 0, |old: &amp;mut u32, val: u32| *old += val)
-///     -&gt; assert([(&quot;toy&quot;, 3), (&quot;shoe&quot;, 46), (&quot;haberdashery&quot;, 7)]);
+///     -&gt; assert_eq([(&quot;toy&quot;, 3), (&quot;shoe&quot;, 46), (&quot;haberdashery&quot;, 7)]);
 /// ```
 ///
 /// Example using `&#39;tick` persistence:

@@ -178,7 +178,7 @@
 ///     -&gt; map(|x: PyResult&lt;Py&lt;PyAny&gt;&gt;| Python::with_gil(|py| {
 ///         usize::extract(x.unwrap().as_ref(py)).unwrap()
 ///     }))
-///     -&gt; assert([0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
+///     -&gt; assert_eq([0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
 /// ```
 ///
 /// ```hydroflow
@@ -190,7 +190,7 @@
 ///             -&gt; map(|x: PyResult&lt;Py&lt;PyAny&gt;&gt;| Python::with_gil(|py| {
 ///                 usize::extract(x.unwrap().as_ref(py)).unwrap()
 ///             }))
-///             -&gt; assert([6]);
+///             -&gt; assert_eq([6]);
 /// ```
 </span><span class="kw">pub const </span>PY_UDF: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;py_udf&quot;</span>,

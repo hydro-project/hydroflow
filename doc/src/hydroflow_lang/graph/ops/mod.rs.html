@@ -475,6 +475,7 @@
 <a href="#475" id="475">475</a>
 <a href="#476" id="476">476</a>
 <a href="#477" id="477">477</a>
+<a href="#478" id="478">478</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::{Debug, Display};
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
@@ -683,7 +684,7 @@
         <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="attr">#[allow(clippy::let_unit_value)]
             </span><span class="kw">let _ </span>= (#(#outputs),<span class="kw-2">*</span>);
-            <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::&lt;<span class="kw">_</span>, #iter_type&gt;::new(std::mem::drop);
+            <span class="kw">let </span>#ident = #root::pusherator::null::Null::&lt;#iter_type&gt;::new();
         }
     }
 }
@@ -707,7 +708,7 @@
 <span class="macro">declare_ops!</span>[
     anti_join::ANTI_JOIN,
     assert::ASSERT,
-    batch::BATCH,
+    assert_eq::ASSERT_EQ,
     cross_join::CROSS_JOIN,
     demux::DEMUX,
     dest_file::DEST_FILE,
@@ -736,7 +737,8 @@
     union::UNION,
     multiset_delta::MULTISET_DELTA,
     next_stratum::NEXT_STRATUM,
-    next_tick::NEXT_TICK,
+    defer_signal::DEFER_SIGNAL,
+    defer_tick::DEFER_TICK,
     null::NULL,
     persist::PERSIST,
     persist_mut::PERSIST_MUT,

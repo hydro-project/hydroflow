@@ -138,7 +138,7 @@
 /// ```hydroflow
 /// source_iter(0..3) -&gt; [0]my_zip;
 /// source_iter(0..5) -&gt; [1]my_zip;
-/// my_zip = zip() -&gt; assert([(0, 0), (1, 1), (2, 2)]);
+/// my_zip = zip() -&gt; assert_eq([(0, 0), (1, 1), (2, 2)]);
 /// ```
 </span><span class="kw">pub const </span>ZIP: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;zip&quot;</span>,

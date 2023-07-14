@@ -266,7 +266,7 @@
 ///     my_join = lattice_join::&lt;&#39;tick, Min&lt;usize&gt;, Max&lt;usize&gt;&gt;();
 ///     source_iter([(7, Min::new(1)), (7, Min::new(2))]) -&gt; [0]my_join;
 ///     source_iter([(7, Max::new(1)), (7, Max::new(2))]) -&gt; [1]my_join;
-///     my_join -&gt; assert([(7, (Min::new(1), Max::new(2)))]);
+///     my_join -&gt; assert_eq([(7, (Min::new(1), Max::new(2)))]);
 /// };
 /// df.run_available();
 /// ```

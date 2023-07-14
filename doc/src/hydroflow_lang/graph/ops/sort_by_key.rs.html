@@ -74,7 +74,7 @@
 /// ```hydroflow
 /// source_iter(vec![(2, &#39;y&#39;), (3, &#39;x&#39;), (1, &#39;z&#39;)])
 ///     -&gt; sort_by_key(|(k, _v)| k)
-///     -&gt; assert([(1, &#39;z&#39;), (2, &#39;y&#39;), (3, &#39;x&#39;)]);
+///     -&gt; assert_eq([(1, &#39;z&#39;), (2, &#39;y&#39;), (3, &#39;x&#39;)]);
 /// ```
 </span><span class="kw">pub const </span>SORT_BY_KEY: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;sort_by_key&quot;</span>,

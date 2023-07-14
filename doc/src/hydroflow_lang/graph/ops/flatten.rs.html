@@ -76,7 +76,7 @@
 /// ```hydroflow
 /// source_iter(vec![[1, 2], [3, 4], [5, 6]])
 ///     -&gt; flatten()
-///     -&gt; assert([1, 2, 3, 4, 5, 6]);
+///     -&gt; assert_eq([1, 2, 3, 4, 5, 6]);
 /// ```
 </span><span class="kw">pub const </span>FLATTEN: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;flatten&quot;</span>,

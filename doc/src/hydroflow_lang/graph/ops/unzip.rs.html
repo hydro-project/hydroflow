@@ -71,8 +71,8 @@
 ///
 /// ```hydroflow
 /// my_unzip = source_iter(vec![(&quot;Hello&quot;, &quot;Foo&quot;), (&quot;World&quot;, &quot;Bar&quot;)]) -&gt; unzip();
-/// my_unzip[0] -&gt; assert([&quot;Hello&quot;, &quot;World&quot;]);
-/// my_unzip[1] -&gt; assert([&quot;Foo&quot;, &quot;Bar&quot;]);
+/// my_unzip[0] -&gt; assert_eq([&quot;Hello&quot;, &quot;World&quot;]);
+/// my_unzip[1] -&gt; assert_eq([&quot;Foo&quot;, &quot;Bar&quot;]);
 /// ```
 </span><span class="kw">pub const </span>UNZIP: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;unzip&quot;</span>,

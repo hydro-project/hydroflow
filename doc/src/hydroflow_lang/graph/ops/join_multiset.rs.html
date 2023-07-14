@@ -92,11 +92,11 @@
 ///
 /// lhs -&gt; [0]multiset_join;
 /// rhs -&gt; [1]multiset_join;
-/// multiset_join = join_multiset() -&gt; assert([(&quot;a&quot;, (0, &quot;hydro&quot;)), (&quot;a&quot;, (0, &quot;hydro&quot;))]);
+/// multiset_join = join_multiset() -&gt; assert_eq([(&quot;a&quot;, (0, &quot;hydro&quot;)), (&quot;a&quot;, (0, &quot;hydro&quot;))]);
 ///
 /// lhs -&gt; [0]set_join;
 /// rhs -&gt; [1]set_join;
-/// set_join = join() -&gt; assert([(&quot;a&quot;, (0, &quot;hydro&quot;))]);
+/// set_join = join() -&gt; assert_eq([(&quot;a&quot;, (0, &quot;hydro&quot;))]);
 /// ```
 </span><span class="kw">pub const </span>JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;join_multiset&quot;</span>,

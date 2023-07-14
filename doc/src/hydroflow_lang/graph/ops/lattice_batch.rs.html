@@ -186,7 +186,7 @@
 ///         source_iter(0..5) -&gt; persist()
 ///             -&gt; map(|x| Max::new(x))
 ///             -&gt; lattice_batch::&lt;Max&lt;usize&gt;&gt;(rx)
-///             -&gt; assert([Max::new(4)]);
+///             -&gt; assert_eq([Max::new(4)]);
 ///     };
 ///
 ///     tx.send(()).unwrap();

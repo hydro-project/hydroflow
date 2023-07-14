@@ -118,7 +118,7 @@
 /// ```hydroflow
 /// source_iter([hydroflow::util::PersistenceKeyed::Persist(0, 1), hydroflow::util::PersistenceKeyed::Persist(1, 1), hydroflow::util::PersistenceKeyed::Delete(1)])
 ///     -&gt; persist_mut_keyed()
-///     -&gt; assert([(0, 1)]);
+///     -&gt; assert_eq([(0, 1)]);
 /// ```
 </span><span class="kw">pub const </span>PERSIST_MUT_KEYED: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;persist_mut_keyed&quot;</span>,

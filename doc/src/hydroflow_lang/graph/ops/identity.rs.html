@@ -55,7 +55,7 @@
 /// ```hydroflow
 /// source_iter(vec![&quot;hello&quot;, &quot;world&quot;])
 ///     -&gt; identity()
-///     -&gt; assert([&quot;hello&quot;, &quot;world&quot;]);
+///     -&gt; assert_eq([&quot;hello&quot;, &quot;world&quot;]);
 /// ```
 ///
 /// You can also supply a type parameter `identity::&lt;MyType&gt;()` to specify what items flow through the
@@ -65,7 +65,7 @@
 /// // Use type parameter to ensure items are `i32`s.
 /// source_iter(0..10)
 ///     -&gt; identity::&lt;i32&gt;()
-///     -&gt; assert([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+///     -&gt; assert_eq([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
 /// ```
 </span><span class="kw">pub const </span>IDENTITY: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;identity&quot;</span>,
