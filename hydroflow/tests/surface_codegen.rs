@@ -769,3 +769,20 @@ pub fn test_assert_failures() {
     })
     .is_err());
 }
+
+#[multiplatform_test]
+pub fn test_iter_stream_batches() {
+    const ITEMS: usize = 100;
+    const BATCH: usize = 5;
+    let stream = hydroflow::util::iter_batches_stream(0..ITEMS, BATCH);
+
+    // expect 5 items per tick.
+    let expected: Vec<_> = (0..ITEMS).map(|n| (n / BATCH, n)).collect();
+
+    let mut df = hydroflow_syntax! {
+        source_stream(stream)
+            -> map(|x| (context.current_tick(), x))
+            -> assert_eq(expected);
+    };
+    df.run_available();
+}
