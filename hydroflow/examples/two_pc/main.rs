@@ -129,16 +129,24 @@ fn test() {
     wait_for_process_output(
         &mut coordinator_output,
         &mut coordinator_stdout,
-        "Sending CoordMsg \\{ xid: 1, mtype: End \\} to 127.0.0.1:12347",
+        r#"Sending CoordMsg \{ xid: 1, mtype: Prepare \} to 127.0.0.1:12347"#,
     );
     wait_for_process_output(
         &mut coordinator_output,
         &mut coordinator_stdout,
-        "Sending CoordMsg \\{ xid: 1, mtype: End \\} to 127.0.0.1:12348",
+        r#"Sending CoordMsg \{ xid: 1, mtype: Prepare \} to 127.0.0.1:12348"#,
     );
     wait_for_process_output(
         &mut coordinator_output,
         &mut coordinator_stdout,
-        "Sending CoordMsg \\{ xid: 1, mtype: End \\} to 127.0.0.1:12349",
+        r#"Sending CoordMsg \{ xid: 1, mtype: Prepare \} to 127.0.0.1:12349"#,
+    );
+
+    // One of two things can happen now, all 3 members commit or at least one of them aborts the transaction.
+    // In the case of all 3 commits, then 3 "Commit" messages will be printed, in the case of an aborted transaction then 'Ended' will get printed, so:
+    wait_for_process_output(
+        &mut coordinator_output,
+        &mut coordinator_stdout,
+        r#"(Received SubordResponse \{ xid: 1, mtype: Commit \}|Received SubordResponse \{ xid: 1, mtype: Ended \})"#,
     );
 }
