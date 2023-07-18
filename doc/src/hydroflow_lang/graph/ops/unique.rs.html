@@ -172,7 +172,7 @@
 /// ```
 ///
 /// `unique` can also be provided with one generic lifetime persistence argument, either
-/// `&#39;tick` or `&#39;static`, to specify how data persists. The default is `&#39;static`.
+/// `&#39;tick` or `&#39;static`, to specify how data persists. The default is `&#39;tick`.
 /// With `&#39;tick`, uniqueness is only considered within the current tick, so across multiple ticks
 /// duplicate values may be emitted.
 /// With `&#39;static`, values will be remembered across ticks and no duplicates will ever be emitted.
@@ -238,7 +238,7 @@
                },
                diagnostics| {
         <span class="kw">let </span>persistence = <span class="kw">match </span>persistence_args[..] {
-            [] =&gt; Persistence::Static,
+            [] =&gt; Persistence::Tick,
             [a] =&gt; a,
             <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
         };

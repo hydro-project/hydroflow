@@ -255,12 +255,12 @@
 /// `&#39;tick` or `&#39;static`, to specify how join data persists. With `&#39;tick`, pairs will only be
 /// joined with corresponding pairs within the same tick. With `&#39;static`, pairs will be remembered
 /// across ticks and will be joined with pairs arriving in later ticks. When not explicitly
-/// specified persistence defaults to `static.
+/// specified persistence defaults to `tick.
 ///
 /// When two persistence arguments are supplied the first maps to port `0` and the second maps to
 /// port `1`.
 /// When a single persistence argument is supplied, it is applied to both input ports.
-/// When no persistence arguments are applied it defaults to `&#39;static` for both.
+/// When no persistence arguments are applied it defaults to `&#39;tick` for both.
 ///
 /// The syntax is as follows:
 /// ```hydroflow,ignore
@@ -408,7 +408,7 @@
         };
 
         <span class="kw">let </span>persistences = <span class="kw">match </span>persistence_args[..] {
-            [] =&gt; [Persistence::Static, Persistence::Static],
+            [] =&gt; [Persistence::Tick, Persistence::Tick],
             [a] =&gt; [a, a],
             [a, b] =&gt; [a, b],
             <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),

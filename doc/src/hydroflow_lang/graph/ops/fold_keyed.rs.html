@@ -259,7 +259,7 @@
 /// `&#39;tick` or `&#39;static`, to specify how data persists. With `&#39;tick`, values will only be collected
 /// within the same tick. With `&#39;static`, values will be remembered across ticks and will be
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
-/// defaults to `&#39;static`.
+/// defaults to `&#39;tick`.
 ///
 /// `fold_keyed` can also be provided with two type arguments, the key type `K` and aggregated
 /// output value type `V2`. This is required when using `&#39;static` persistence if the compiler
@@ -337,7 +337,7 @@
         <span class="macro">assert!</span>(is_pull);
 
         <span class="kw">let </span>persistence = <span class="kw">match </span>persistence_args[..] {
-            [] =&gt; Persistence::Static,
+            [] =&gt; Persistence::Tick,
             [a] =&gt; a,
             <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
         };

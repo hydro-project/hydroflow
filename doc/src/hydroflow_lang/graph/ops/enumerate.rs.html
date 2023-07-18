@@ -124,6 +124,7 @@
 <a href="#124" id="124">124</a>
 <a href="#125" id="125">125</a>
 <a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -138,12 +139,13 @@
 /// For each item passed in, enumerate it with its index: `(0, x_0)`, `(1, x_1)`, etc.
 ///
 /// `enumerate` can also be provided with one generic lifetime persistence argument, either
-/// `&#39;tick` or `&#39;static`, to specify if indexing resets. If `&#39;tick` is specified, indexing will
-/// restart at zero at the start of each tick. Otherwise `&#39;static` (the default) will never reset
+/// `&#39;tick` or `&#39;static`, to specify if indexing resets. If `&#39;tick` (the default) is specified, indexing will
+/// restart at zero at the start of each tick. Otherwise `&#39;static` will never reset
 /// and count monotonically upwards.
 ///
 /// ```hydroflow
-/// source_iter(vec![&quot;hello&quot;, &quot;world&quot;]) -&gt; enumerate()
+/// source_iter(vec![&quot;hello&quot;, &quot;world&quot;])
+///     -&gt; enumerate()
 ///     -&gt; assert_eq([(0, &quot;hello&quot;), (1, &quot;world&quot;)]);
 /// ```
 </span><span class="kw">pub const </span>ENUMERATE: OperatorConstraints = OperatorConstraints {
@@ -187,7 +189,7 @@
                },
                diagnostics| {
         <span class="kw">let </span>persistence = <span class="kw">match </span>persistence_args[..] {
-            [] =&gt; Persistence::Static,
+            [] =&gt; Persistence::Tick,
             [a] =&gt; a,
             <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
         };

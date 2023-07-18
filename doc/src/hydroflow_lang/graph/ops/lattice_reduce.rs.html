@@ -131,7 +131,7 @@
 /// `&#39;tick` or `&#39;static`, to specify how data persists. With `&#39;tick`, values will only be collected
 /// within the same tick. With `&#39;static`, values will be remembered across ticks and will be
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
-/// defaults to `&#39;static`.
+/// defaults to `&#39;tick`.
 ///
 /// `lattice_reduce` is differentiated from `lattice_fold` in that `lattice_reduce` the accumulating type does not need to implement `Default`.
 /// But it also means that the accumulating function inputs and the accumulating type must be the same.
