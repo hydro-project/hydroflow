@@ -20,7 +20,7 @@ use crate::graph::ops::OperatorWriteOutput;
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
 /// within the same tick. With `'static`, values will be remembered across ticks and will be
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
-/// defaults to `'static`.
+/// defaults to `'tick`.
 ///
 /// `lattice_reduce` is differentiated from `lattice_fold` in that `lattice_reduce` the accumulating type does not need to implement `Default`.
 /// But it also means that the accumulating function inputs and the accumulating type must be the same.

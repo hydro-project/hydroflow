@@ -23,7 +23,7 @@ pub fn test_persist_basic() {
         hf.run_tick();
     }
     assert_eq!(
-        &[1, 3, 6, 10, 15, 21, 28, 36, 45, 55],
+        &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         &*collect_ready::<Vec<_>, _>(&mut result_recv)
     );
 }
@@ -49,7 +49,7 @@ pub fn test_persist_pull() {
         hf.run_tick();
     }
     assert_eq!(
-        &[1, 3, 6, 10, 15, 21, 28, 36, 45, 55],
+        &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         &*collect_ready::<Vec<_>, _>(&mut result_recv)
     );
 }
@@ -72,7 +72,7 @@ pub fn test_persist_push() {
         hf.run_tick();
     }
     assert_eq!(
-        &[1, 3, 6, 10, 15, 21, 28, 36, 45, 55],
+        &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         &*collect_ready::<Vec<_>, _>(&mut result_recv)
     );
 }
