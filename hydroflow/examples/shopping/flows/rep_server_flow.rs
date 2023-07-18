@@ -39,21 +39,21 @@ pub(crate) async fn rep_server_flow(
         source_stream_serde(reqs_in)
           -> map(Result::unwrap)
           -> map(|((client, req), _a): ((usize, SealedSetOfIndexedValues<Request>), _)| (client, req))
-          -> fold_keyed(SSIV_BOT, ssiv_merge)
+          -> fold_keyed::<'static>(SSIV_BOT, ssiv_merge)
           -> [0]lookup_class;
         source_iter(client_class) -> [1]lookup_class;
-        lookup_class = join()
+        lookup_class = join::<'static>()
           -> map(|(client, (li, class))| ((client, class), li) ) -> tee();
         lookup_class[clients] -> all_in;
         lookup_class[broadcast] -> [0]broadcast;
         source_iter(server_addrs) -> [1]broadcast;
-        broadcast = cross_join() -> dest_sink_serde(broadcast_out);
+        broadcast = cross_join::<'static>() -> dest_sink_serde(broadcast_out);
         source_stream_serde(broadcast_in)
           -> map(Result::unwrap)
           -> map(|(m, _a): (((usize, ClientClass), SealedSetOfIndexedValues<Request>), _)| m)
           -> all_in;
         all_in = union()
-          -> fold_keyed(SSIV_BOT, ssiv_merge)
+          -> fold_keyed::<'static>(SSIV_BOT, ssiv_merge)
           -> unique()
           -> map(|m| (m, out_addr)) -> dest_sink_serde(out);
     }

@@ -31,7 +31,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
         inbound_chan = source_stream(inbound) -> map(deserialize_msg::<Message>);
 
         // setup gossip channel to all peers. gen_bool chooses True with the odds passed in.
-        gossip_join = cross_join()
+        gossip_join = cross_join::<'static>()
             -> filter(|_| gen_bool(0.8)) -> outbound_chan;
         gossip = map(identity) -> [0]gossip_join;
         peers[1] -> [1]gossip_join;
@@ -67,7 +67,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
 
         // Rule 2: form new_paths from the join of acyclic paths and edges
         // new_paths(from, to, path.append(to)) :- paths(from, mid, path), edges(mid, to), paths.cycle() == false
-        new_paths = join() -> map(|(_mid, ((from, mut path), to))| {
+        new_paths = join::<'static>() -> map(|(_mid, ((from, mut path), to))| {
             path.push(to);
             (from, to, path)
          }) -> tee();
@@ -79,7 +79,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
         // stdio(from, to, path) :- new_paths(from, to, path)
         new_paths[0]
             -> filter_map(|(from, to, path): (u32, u32, SimplePath<u32>)| if from == to {Some(path.canonical())} else {None})
-            -> unique()
+            -> unique::<'static>()
             -> for_each(|path: Vec<u32>| {
                     println!("path found: {}", format_cycle(path));
                });

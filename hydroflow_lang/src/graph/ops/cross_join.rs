@@ -18,7 +18,7 @@ use super::{
 /// ```
 ///
 /// `cross_join` can also be provided with one or two generic lifetime persistence arguments
-/// in the same was as [`join`](#join), see [`join`'s documentation](#join) for more info.
+/// in the same was as [`join`](#join), see [`join`'s documentation](#join) for more info. The default is `'tick` for both persistence arguments.
 ///
 /// `cross_join` also accepts one type argument that controls how the join state is built up. This (currently) allows switching between a SetUnion and NonSetUnion implementation.
 /// For example:
