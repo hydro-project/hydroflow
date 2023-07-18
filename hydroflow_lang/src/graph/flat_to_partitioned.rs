@@ -26,7 +26,7 @@ fn find_barrier_crossers(
 }
 
 fn find_subgraph_unionfind(
-    partitioned_graph: &mut HydroflowGraph,
+    partitioned_graph: &HydroflowGraph,
     barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
 ) -> (UnionFind<GraphNodeId>, BTreeSet<GraphEdgeId>) {
     // Modality (color) of nodes, push or pull.
@@ -99,7 +99,7 @@ fn find_subgraph_unionfind(
 /// after handoffs have already been inserted to partition subgraphs.
 /// This list of nodes in each subgraph are returned in topological sort order.
 fn make_subgraph_collect(
-    partitioned_graph: &mut HydroflowGraph,
+    partitioned_graph: &HydroflowGraph,
     mut subgraph_unionfind: UnionFind<GraphNodeId>,
 ) -> SecondaryMap<GraphNodeId, Vec<GraphNodeId>> {
     // We want the nodes of each subgraph to be listed in topo-sort order.

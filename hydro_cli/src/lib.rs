@@ -576,7 +576,7 @@ impl HydroflowCratePort {
         .into_py(py))
     }
 
-    fn send_to(&mut self, to: &mut HydroflowSink) {
+    fn send_to(&mut self, to: &HydroflowSink) {
         self.underlying
             .try_write()
             .unwrap()
@@ -621,7 +621,7 @@ struct TaggedSource {
 
 #[pymethods]
 impl TaggedSource {
-    fn send_to(&mut self, to: &mut HydroflowSink) {
+    fn send_to(&mut self, to: &HydroflowSink) {
         self.underlying
             .try_write()
             .unwrap()
@@ -648,7 +648,7 @@ struct HydroflowNull {
 
 #[pymethods]
 impl HydroflowNull {
-    fn send_to(&mut self, to: &mut HydroflowSink) {
+    fn send_to(&mut self, to: &HydroflowSink) {
         self.underlying
             .try_write()
             .unwrap()
