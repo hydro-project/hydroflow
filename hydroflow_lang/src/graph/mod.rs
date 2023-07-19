@@ -318,12 +318,13 @@ pub fn build_hfcode(
     root: &TokenStream,
 ) -> (Option<(HydroflowGraph, TokenStream)>, Vec<Diagnostic>) {
     let flat_graph_builder = FlatGraphBuilder::from_hfcode(hf_code);
-    let (mut flat_graph, mut diagnostics) = flat_graph_builder.build();
+    let (mut flat_graph, uses, mut diagnostics) = flat_graph_builder.build();
     eliminate_extra_unions_tees(&mut flat_graph);
     if !diagnostics.iter().any(Diagnostic::is_error) {
         match partition_graph(flat_graph) {
             Ok(part_graph) => {
-                let code = part_graph.as_code(root, true, &mut diagnostics);
+                let code =
+                    part_graph.as_code(root, true, quote::quote! { #( #uses )* }, &mut diagnostics);
                 if !diagnostics.iter().any(Diagnostic::is_error) {
                     // Success.
                     return (Some((part_graph, code)), diagnostics);

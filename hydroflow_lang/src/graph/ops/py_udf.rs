@@ -20,6 +20,8 @@ use super::{
 /// or the examples below.
 ///
 /// ```hydroflow
+/// use pyo3::prelude::*;
+///
 /// source_iter(0..10)
 ///     -> map(|x| (x,))
 ///     -> py_udf(r#"
@@ -28,7 +30,7 @@ use super::{
 ///         return n
 ///     else:
 ///         return fib(n - 2) + fib(n - 1)
-///     "#, "fib")
+/// "#, "fib")
 ///     -> map(|x: PyResult<Py<PyAny>>| Python::with_gil(|py| {
 ///         usize::extract(x.unwrap().as_ref(py)).unwrap()
 ///     }))
@@ -36,15 +38,17 @@ use super::{
 /// ```
 ///
 /// ```hydroflow
+/// use pyo3::prelude::*;
+///
 /// source_iter([(5,1)])
-/// -> py_udf(r#"
+///     -> py_udf(r#"
 /// def add(a, b):
 ///     return a + b
-///             "#, "add")
-///             -> map(|x: PyResult<Py<PyAny>>| Python::with_gil(|py| {
-///                 usize::extract(x.unwrap().as_ref(py)).unwrap()
-///             }))
-///             -> assert_eq([6]);
+/// "#, "add")
+///     -> map(|x: PyResult<Py<PyAny>>| Python::with_gil(|py| {
+///         usize::extract(x.unwrap().as_ref(py)).unwrap()
+///     }))
+///     -> assert_eq([6]);
 /// ```
 pub const PY_UDF: OperatorConstraints = OperatorConstraints {
     name: "py_udf",

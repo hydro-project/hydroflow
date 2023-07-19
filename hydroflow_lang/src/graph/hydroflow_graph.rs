@@ -558,6 +558,7 @@ impl HydroflowGraph {
         &self,
         root: &TokenStream,
         include_type_guards: bool,
+        prefix: TokenStream,
         diagnostics: &mut Vec<Diagnostic>,
     ) -> TokenStream {
         let hf = Ident::new(HYDROFLOW, Span::call_site());
@@ -885,6 +886,8 @@ impl HydroflowGraph {
             {
                 #[allow(unused_qualifications)]
                 {
+                    #prefix
+
                     use #root::{var_expr, var_args};
 
                     let mut #hf = #root::scheduled::graph::Hydroflow::new();
