@@ -406,17 +406,17 @@ impl Hash for IndexInt {
         self.value.hash(state);
     }
 }
-impl PartialOrd for IndexInt {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.value.partial_cmp(&other.value)
-    }
-}
 impl PartialEq for IndexInt {
     fn eq(&self, other: &Self) -> bool {
         self.value == other.value
     }
 }
 impl Eq for IndexInt {}
+impl PartialOrd for IndexInt {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
 impl Ord for IndexInt {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.value.cmp(&other.value)

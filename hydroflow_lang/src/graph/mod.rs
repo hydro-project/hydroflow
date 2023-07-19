@@ -293,18 +293,7 @@ impl PartialEq for PortIndexValue {
 impl Eq for PortIndexValue {}
 impl PartialOrd for PortIndexValue {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        match (self, other) {
-            (Self::Int(s), Self::Int(o)) => s.partial_cmp(o),
-            (Self::Path(s), Self::Path(o)) => s
-                .to_token_stream()
-                .to_string()
-                .partial_cmp(&o.to_token_stream().to_string()),
-            (Self::Elided(_), Self::Elided(_)) => Some(std::cmp::Ordering::Equal),
-            (Self::Int(_), Self::Path(_)) => Some(std::cmp::Ordering::Less),
-            (Self::Path(_), Self::Int(_)) => Some(std::cmp::Ordering::Greater),
-            (_, Self::Elided(_)) => Some(std::cmp::Ordering::Less),
-            (Self::Elided(_), _) => Some(std::cmp::Ordering::Greater),
-        }
+        Some(self.cmp(other))
     }
 }
 impl Ord for PortIndexValue {
