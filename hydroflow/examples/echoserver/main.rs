@@ -56,10 +56,10 @@ fn test() {
     use hydroflow::util::{run_cargo_example, wait_for_process_output};
 
     let (_server, _, mut server_output) =
-        run_cargo_example("echoserver", "--role server --addr 127.0.0.100:2048");
+        run_cargo_example("echoserver", "--role server --addr 127.0.0.1:2048");
 
     let (_client, mut client_input, mut client_output) =
-        run_cargo_example("echoserver", "--role client --server-addr 127.0.0.100:2048");
+        run_cargo_example("echoserver", "--role client --server-addr 127.0.0.1:2048");
 
     let mut server_output_so_far = String::new();
     let mut client_output_so_far = String::new();
