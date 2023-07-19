@@ -65,12 +65,12 @@ fn test() {
 
     let (_server, _, mut server_output) = run_cargo_example(
         "echo_serde_json",
-        "--role server --server-addr 127.0.0.100:2049",
+        "--role server --server-addr 127.0.0.1:2049",
     );
 
     let (_client, mut client_input, mut client_output) = run_cargo_example(
         "echo_serde_json",
-        "--role client --server-addr 127.0.0.100:2049",
+        "--role client --server-addr 127.0.0.1:2049",
     );
 
     let mut server_output_so_far = String::new();
