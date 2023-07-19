@@ -539,8 +539,8 @@
     </span>}
 
     <span class="doccomment">/// Poll for a value.
-    </span><span class="comment">// NOTE: takes `&amp;mut` to prevent multiple concurrent receives.
-    </span><span class="kw">pub fn </span>poll_recv(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;T&gt;&gt; {
+    /// NOTE: takes `&amp;mut self` to prevent multiple concurrent receives.
+    </span><span class="kw">pub fn </span>poll_recv(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctx: <span class="kw-2">&amp;</span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;T&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>shared = <span class="self">self</span>.strong.borrow_mut();
         <span class="kw">if let </span><span class="prelude-val">Some</span>(value) = shared.buffer.pop_front() {
             shared.wake_sender();

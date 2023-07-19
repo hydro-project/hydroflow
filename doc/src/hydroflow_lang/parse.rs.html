@@ -861,17 +861,17 @@
         <span class="self">self</span>.value.hash(state);
     }
 }
-<span class="kw">impl </span>PartialOrd <span class="kw">for </span>IndexInt {
-    <span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;std::cmp::Ordering&gt; {
-        <span class="self">self</span>.value.partial_cmp(<span class="kw-2">&amp;</span>other.value)
-    }
-}
 <span class="kw">impl </span>PartialEq <span class="kw">for </span>IndexInt {
     <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
         <span class="self">self</span>.value == other.value
     }
 }
 <span class="kw">impl </span>Eq <span class="kw">for </span>IndexInt {}
+<span class="kw">impl </span>PartialOrd <span class="kw">for </span>IndexInt {
+    <span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;std::cmp::Ordering&gt; {
+        <span class="prelude-val">Some</span>(<span class="self">self</span>.cmp(other))
+    }
+}
 <span class="kw">impl </span>Ord <span class="kw">for </span>IndexInt {
     <span class="kw">fn </span>cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; std::cmp::Ordering {
         <span class="self">self</span>.value.cmp(<span class="kw-2">&amp;</span>other.value)

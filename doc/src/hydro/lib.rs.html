@@ -1410,7 +1410,7 @@
         </span>.into_py(py))
     }
 
-    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: <span class="kw-2">&amp;mut </span>HydroflowSink) {
+    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: <span class="kw-2">&amp;</span>HydroflowSink) {
         <span class="self">self</span>.underlying
             .try_write()
             .unwrap()
@@ -1455,7 +1455,7 @@
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>TaggedSource {
-    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: <span class="kw-2">&amp;mut </span>HydroflowSink) {
+    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: <span class="kw-2">&amp;</span>HydroflowSink) {
         <span class="self">self</span>.underlying
             .try_write()
             .unwrap()
@@ -1482,7 +1482,7 @@
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>HydroflowNull {
-    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: <span class="kw-2">&amp;mut </span>HydroflowSink) {
+    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: <span class="kw-2">&amp;</span>HydroflowSink) {
         <span class="self">self</span>.underlying
             .try_write()
             .unwrap()

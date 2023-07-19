@@ -482,7 +482,7 @@
 }
 
 <span class="kw">fn </span>find_subgraph_unionfind(
-    partitioned_graph: <span class="kw-2">&amp;mut </span>HydroflowGraph,
+    partitioned_graph: <span class="kw-2">&amp;</span>HydroflowGraph,
     barrier_crossers: <span class="kw-2">&amp;</span>SecondaryMap&lt;GraphEdgeId, DelayType&gt;,
 ) -&gt; (UnionFind&lt;GraphNodeId&gt;, BTreeSet&lt;GraphEdgeId&gt;) {
     <span class="comment">// Modality (color) of nodes, push or pull.
@@ -555,7 +555,7 @@
 /// after handoffs have already been inserted to partition subgraphs.
 /// This list of nodes in each subgraph are returned in topological sort order.
 </span><span class="kw">fn </span>make_subgraph_collect(
-    partitioned_graph: <span class="kw-2">&amp;mut </span>HydroflowGraph,
+    partitioned_graph: <span class="kw-2">&amp;</span>HydroflowGraph,
     <span class="kw-2">mut </span>subgraph_unionfind: UnionFind&lt;GraphNodeId&gt;,
 ) -&gt; SecondaryMap&lt;GraphNodeId, Vec&lt;GraphNodeId&gt;&gt; {
     <span class="comment">// We want the nodes of each subgraph to be listed in topo-sort order.
