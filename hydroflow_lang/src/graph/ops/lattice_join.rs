@@ -49,17 +49,14 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 ///
 /// ### Examples
 ///
-/// ```rustbook
+/// ```hydroflow
 /// use hydroflow::lattices::Min;
 /// use hydroflow::lattices::Max;
 ///
-/// let mut df = hydroflow::hydroflow_syntax! {
-///     my_join = lattice_join::<'tick, Min<usize>, Max<usize>>();
-///     source_iter([(7, Min::new(1)), (7, Min::new(2))]) -> [0]my_join;
-///     source_iter([(7, Max::new(1)), (7, Max::new(2))]) -> [1]my_join;
-///     my_join -> assert_eq([(7, (Min::new(1), Max::new(2)))]);
-/// };
-/// df.run_available();
+/// my_join = lattice_join::<'tick, Min<usize>, Max<usize>>();
+/// source_iter([(7, Min::new(1)), (7, Min::new(2))]) -> [0]my_join;
+/// source_iter([(7, Max::new(1)), (7, Max::new(2))]) -> [1]my_join;
+/// my_join -> assert_eq([(7, (Min::new(1), Max::new(2)))]);
 /// ```
 pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
     name: "lattice_join",

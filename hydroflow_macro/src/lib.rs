@@ -99,7 +99,7 @@ pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStre
     let input = parse_macro_input!(input as HfCode);
 
     let flat_graph_builder = FlatGraphBuilder::from_hfcode(input);
-    let (flat_graph, diagnostics) = flat_graph_builder.build();
+    let (flat_graph, _uses, diagnostics) = flat_graph_builder.build();
     diagnostics.iter().for_each(Diagnostic::emit);
     let flat_mermaid = flat_graph.mermaid_string_flat();
 
