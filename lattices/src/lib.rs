@@ -13,10 +13,10 @@ pub mod map_union;
 mod ord;
 mod pair;
 mod point;
-mod seq;
 pub mod set_union;
 pub mod test;
 mod unit;
+mod vec_union;
 mod with_bot;
 mod with_top;
 
@@ -25,7 +25,7 @@ pub use dom_pair::DomPair;
 pub use ord::{Max, Min};
 pub use pair::Pair;
 pub use point::Point;
-pub use seq::Seq;
+pub use vec_union::VecUnion;
 pub use with_bot::WithBot;
 pub use with_top::WithTop;
 
