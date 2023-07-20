@@ -577,6 +577,12 @@
 <a href="#577" id="577">577</a>
 <a href="#578" id="578">578</a>
 <a href="#579" id="579">579</a>
+<a href="#580" id="580">580</a>
+<a href="#581" id="581">581</a>
+<a href="#582" id="582">582</a>
+<a href="#583" id="583">583</a>
+<a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::collections::btree_map::Entry;
 <span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -584,7 +590,7 @@
 <span class="kw">use </span>proc_macro2::Span;
 <span class="kw">use </span>quote::ToTokens;
 <span class="kw">use </span>syn::spanned::Spanned;
-<span class="kw">use </span>syn::Ident;
+<span class="kw">use </span>syn::{Ident, ItemUse};
 
 <span class="kw">use </span><span class="kw">super</span>::ops::find_op_op_constraints;
 <span class="kw">use super</span>::{GraphNodeId, HydroflowGraph, Node, PortIndexValue};
@@ -617,6 +623,9 @@
     </span>varname_ends: BTreeMap&lt;Ident, <span class="prelude-ty">Result</span>&lt;Ends, ()&gt;&gt;,
     <span class="doccomment">/// Each (out -&gt; inn) link inputted.
     </span>links: Vec&lt;Ends&gt;,
+
+    <span class="doccomment">/// Use statements.
+    </span>uses: Vec&lt;ItemUse&gt;,
 }
 
 <span class="kw">impl </span>FlatGraphBuilder {
@@ -634,18 +643,21 @@
     ///
     /// Even if there are errors, the `HydroflowGraph` will be returned (potentially in a invalid
     /// state). Does not call `emit` on any diagnostics.
-    </span><span class="kw">pub fn </span>build(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; (HydroflowGraph, Vec&lt;Diagnostic&gt;) {
+    </span><span class="kw">pub fn </span>build(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; (HydroflowGraph, Vec&lt;ItemUse&gt;, Vec&lt;Diagnostic&gt;) {
         <span class="self">self</span>.connect_operator_links();
         <span class="self">self</span>.process_operator_errors();
 
-        (<span class="self">self</span>.flat_graph, <span class="self">self</span>.diagnostics)
+        (<span class="self">self</span>.flat_graph, <span class="self">self</span>.uses, <span class="self">self</span>.diagnostics)
     }
 
     <span class="doccomment">/// Add a single [`HfStatement`] line to this `HydroflowGraph`.
     </span><span class="kw">pub fn </span>add_statement(<span class="kw-2">&amp;mut </span><span class="self">self</span>, stmt: HfStatement) {
-        <span class="kw">let </span>stmt_span = stmt.span();
         <span class="kw">match </span>stmt {
+            HfStatement::Use(yuse) =&gt; {
+                <span class="self">self</span>.uses.push(yuse);
+            }
             HfStatement::Named(named) =&gt; {
+                <span class="kw">let </span>stmt_span = named.span();
                 <span class="kw">let </span>ends = <span class="self">self</span>.add_pipeline(named.pipeline, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>named.name));
                 <span class="kw">match </span><span class="self">self</span>.varname_ends.entry(named.name) {
                     Entry::Vacant(vacant_entry) =&gt; {
@@ -674,8 +686,8 @@
                     }
                 }
             }
-            HfStatement::Pipeline(pipeline) =&gt; {
-                <span class="self">self</span>.add_pipeline(pipeline, <span class="prelude-val">None</span>);
+            HfStatement::Pipeline(pipeline_stmt) =&gt; {
+                <span class="self">self</span>.add_pipeline(pipeline_stmt.pipeline, <span class="prelude-val">None</span>);
             }
         }
     }

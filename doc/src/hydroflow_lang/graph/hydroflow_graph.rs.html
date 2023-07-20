@@ -1204,6 +1204,9 @@
 <a href="#1204" id="1204">1204</a>
 <a href="#1205" id="1205">1205</a>
 <a href="#1206" id="1206">1206</a>
+<a href="#1207" id="1207">1207</a>
+<a href="#1208" id="1208">1208</a>
+<a href="#1209" id="1209">1209</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -1764,6 +1767,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         root: <span class="kw-2">&amp;</span>TokenStream,
         include_type_guards: bool,
+        prefix: TokenStream,
         diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
     ) -&gt; TokenStream {
         <span class="kw">let </span>hf = Ident::new(HYDROFLOW, Span::call_site());
@@ -2091,6 +2095,8 @@
             {
                 <span class="attr">#[allow(unused_qualifications)]
                 </span>{
+                    #prefix
+
                     <span class="kw">use </span>#root::{var_expr, var_args};
 
                     <span class="kw">let </span><span class="kw-2">mut </span>#hf = #root::scheduled::graph::Hydroflow::new();

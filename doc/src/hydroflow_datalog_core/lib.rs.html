@@ -1177,6 +1177,9 @@
 <a href="#1177" id="1177">1177</a>
 <a href="#1178" id="1178">1178</a>
 <a href="#1179" id="1179">1179</a>
+<a href="#1180" id="1180">1180</a>
+<a href="#1181" id="1181">1181</a>
+<a href="#1182" id="1182">1182</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap, HashSet};
 <span class="kw">use </span>std::ops::Deref;
 
@@ -1184,10 +1187,12 @@
 <span class="kw">use </span>hydroflow_lang::graph::{
     eliminate_extra_unions_tees, partition_graph, FlatGraphBuilder, HydroflowGraph,
 };
-<span class="kw">use </span>hydroflow_lang::parse::{IndexInt, Indexing, Pipeline, PipelineLink};
+<span class="kw">use </span>hydroflow_lang::parse::{
+    HfStatement, IndexInt, Indexing, Pipeline, PipelineLink, PipelineStatement, PortIndex,
+};
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
 <span class="kw">use </span>rust_sitter::errors::{ParseError, ParseErrorReason};
-<span class="kw">use </span>syn::{parse_quote, parse_quote_spanned};
+<span class="kw">use </span>syn::{parse_quote, parse_quote_spanned, Token};
 
 <span class="kw">mod </span>grammar;
 <span class="kw">mod </span>join_plan;
@@ -1322,18 +1327,18 @@
             <span class="kw">if </span>persists.contains(<span class="kw-2">&amp;</span>target_ident.value.name) {
                 <span class="comment">// read outputs the *new* values for this tick
                 </span>flat_graph_builder
-                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #insert_name = union() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;()));
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>{get_span(target_ident.span)=&gt; #insert_name = union() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;(); });
                 flat_graph_builder
-                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #read_name = difference::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;static</span>&gt;() -&gt; tee()));
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>{get_span(target_ident.span)=&gt; #read_name = difference::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;static</span>&gt;() -&gt; tee(); });
                 flat_graph_builder
-                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #insert_name -&gt; [pos] #read_name));
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>{get_span(target_ident.span)=&gt; #insert_name -&gt; [pos] #read_name; });
                 flat_graph_builder
-                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #read_name -&gt; defer_tick() -&gt; [neg] #read_name));
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>{get_span(target_ident.span)=&gt; #read_name -&gt; defer_tick() -&gt; [neg] #read_name; });
             } <span class="kw">else </span>{
                 flat_graph_builder
-                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #insert_name = union() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;()));
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>{get_span(target_ident.span)=&gt; #insert_name = union() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;(); });
                 flat_graph_builder
-                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(target_ident.span)=&gt; #read_name = #insert_name -&gt; tee()));
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>{get_span(target_ident.span)=&gt; #read_name = #insert_name -&gt; tee(); });
             }
         }
     }
@@ -1352,7 +1357,7 @@
         <span class="kw">let </span>input_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
-            #input_pipeline -&gt; [#my_union_index_lit] #name
+            #input_pipeline -&gt; [#my_union_index_lit] #name;
         });
     }
 
@@ -1375,7 +1380,7 @@
         };
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
-            #target_ident [#my_tee_index_lit] -&gt; #output_pipeline
+            #target_ident [#my_tee_index_lit] -&gt; #output_pipeline;
         });
     }
 
@@ -1398,11 +1403,11 @@
         <span class="kw">let </span>recv_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>recv_hf.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
-            #async_send_pipeline = union() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; #send_pipeline
+            #async_send_pipeline = union() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; #send_pipeline;
         });
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
-            #recv_pipeline -&gt; [#recv_union_index_lit] #target_ident
+            #recv_pipeline -&gt; [#recv_union_index_lit] #target_ident;
         });
     }
 
@@ -1420,7 +1425,7 @@
         <span class="kw">let </span>static_expression: syn::Expr = parse_static(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
-            source_iter(#static_expression) -&gt; persist() -&gt; [#my_union_index_lit] #name
+            source_iter(#static_expression) -&gt; persist() -&gt; [#my_union_index_lit] #name;
         });
     }
 
@@ -1444,7 +1449,7 @@
     <span class="kw">if </span>!diagnostics.is_empty() {
         <span class="prelude-val">Err</span>(diagnostics)
     } <span class="kw">else </span>{
-        <span class="kw">let </span>(<span class="kw-2">mut </span>flat_graph, <span class="kw-2">mut </span>diagnostics) = flat_graph_builder.build();
+        <span class="kw">let </span>(<span class="kw-2">mut </span>flat_graph, _uses, <span class="kw-2">mut </span>diagnostics) = flat_graph_builder.build();
         diagnostics.retain(Diagnostic::is_error);
         <span class="kw">if </span>!diagnostics.is_empty() {
             <span class="prelude-val">Err</span>(diagnostics)
@@ -1500,7 +1505,7 @@
         partition_graph(flat_graph).expect(<span class="string">&quot;Failed to partition (cycle detected).&quot;</span>);
 
     <span class="kw">let </span><span class="kw-2">mut </span>diagnostics = Vec::new();
-    <span class="kw">let </span>code_tokens = partitioned_graph.as_code(<span class="kw-2">&amp;</span>root, <span class="bool-val">true</span>, <span class="kw-2">&amp;mut </span>diagnostics);
+    <span class="kw">let </span>code_tokens = partitioned_graph.as_code(<span class="kw-2">&amp;</span>root, <span class="bool-val">true</span>, <span class="macro">quote::quote!</span>(), <span class="kw-2">&amp;mut </span>diagnostics);
     <span class="macro">assert_eq!</span>(
         <span class="number">0</span>,
         diagnostics.len(),
@@ -1602,18 +1607,19 @@
     // directly outputting a transformation of a single relation on the RHS.
     </span><span class="kw">let </span>out_indexing = out_expanded.tee_idx.map(|i| Indexing {
         bracket_token: syn::token::Bracket::default(),
-        index: hydroflow_lang::parse::PortIndex::Int(IndexInt {
+        index: PortIndex::Int(IndexInt {
             value: i,
             span: Span::call_site(),
         }),
     });
-    flat_graph_builder.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
-        Pipeline::Link(PipelineLink {
+    flat_graph_builder.add_statement(HfStatement::Pipeline(PipelineStatement {
+        pipeline: Pipeline::Link(PipelineLink {
             lhs: Box::new(<span class="macro">parse_quote!</span>(#out_name #out_indexing)), <span class="comment">// out_name[idx]
             </span>arrow: <span class="macro">parse_quote!</span>(-&gt;),
             rhs: Box::new(after_join_and_send),
         }),
-    ));
+        semi_token: <span class="macro">Token!</span>[;](Span::call_site()),
+    }));
 }
 
 <span class="kw">fn </span>compute_join_plan&lt;<span class="lifetime">&#39;a</span>&gt;(sources: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Atom], persisted_rules: <span class="kw-2">&amp;</span>HashSet&lt;String&gt;) -&gt; JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt; {

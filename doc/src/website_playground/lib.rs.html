@@ -244,6 +244,11 @@
 <a href="#244" id="244">244</a>
 <a href="#245" id="245">245</a>
 <a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
 </pre></div><pre class="rust"><code><span class="kw">mod </span>utils;
 <span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashMap;
@@ -395,7 +400,12 @@
                 <span class="kw">let </span><span class="kw-2">mut </span>diagnostics = Vec::new();
                 <span class="kw">let </span>output = <span class="kw">match </span>partition_graph(flat_graph) {
                     <span class="prelude-val">Ok</span>(part_graph) =&gt; {
-                        <span class="kw">let </span>out = part_graph.as_code(<span class="kw-2">&amp;</span><span class="macro">quote!</span>(hydroflow), <span class="bool-val">true</span>, <span class="kw-2">&amp;mut </span>diagnostics);
+                        <span class="kw">let </span>out = part_graph.as_code(
+                            <span class="kw-2">&amp;</span><span class="macro">quote!</span>(hydroflow),
+                            <span class="bool-val">true</span>,
+                            <span class="macro">quote!</span>(),
+                            <span class="kw-2">&amp;mut </span>diagnostics,
+                        );
                         <span class="kw">let </span>file: syn::File = <span class="macro">syn::parse_quote! </span>{
                             <span class="kw">fn </span>main() {
                                 #out

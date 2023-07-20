@@ -144,6 +144,10 @@
 <a href="#144" id="144">144</a>
 <a href="#145" id="145">145</a>
 <a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::Literal;
 <span class="kw">use </span>quote::quote_spanned;
 
@@ -166,6 +170,8 @@
 /// or the examples below.
 ///
 /// ```hydroflow
+/// use pyo3::prelude::*;
+///
 /// source_iter(0..10)
 ///     -&gt; map(|x| (x,))
 ///     -&gt; py_udf(r#&quot;
@@ -174,7 +180,7 @@
 ///         return n
 ///     else:
 ///         return fib(n - 2) + fib(n - 1)
-///     &quot;#, &quot;fib&quot;)
+/// &quot;#, &quot;fib&quot;)
 ///     -&gt; map(|x: PyResult&lt;Py&lt;PyAny&gt;&gt;| Python::with_gil(|py| {
 ///         usize::extract(x.unwrap().as_ref(py)).unwrap()
 ///     }))
@@ -182,15 +188,17 @@
 /// ```
 ///
 /// ```hydroflow
+/// use pyo3::prelude::*;
+///
 /// source_iter([(5,1)])
-/// -&gt; py_udf(r#&quot;
+///     -&gt; py_udf(r#&quot;
 /// def add(a, b):
 ///     return a + b
-///             &quot;#, &quot;add&quot;)
-///             -&gt; map(|x: PyResult&lt;Py&lt;PyAny&gt;&gt;| Python::with_gil(|py| {
-///                 usize::extract(x.unwrap().as_ref(py)).unwrap()
-///             }))
-///             -&gt; assert_eq([6]);
+/// &quot;#, &quot;add&quot;)
+///     -&gt; map(|x: PyResult&lt;Py&lt;PyAny&gt;&gt;| Python::with_gil(|py| {
+///         usize::extract(x.unwrap().as_ref(py)).unwrap()
+///     }))
+///     -&gt; assert_eq([6]);
 /// ```
 </span><span class="kw">pub const </span>PY_UDF: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;py_udf&quot;</span>,

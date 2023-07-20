@@ -284,7 +284,7 @@
     <span class="kw">let </span>input = <span class="macro">parse_macro_input!</span>(input <span class="kw">as </span>HfCode);
 
     <span class="kw">let </span>flat_graph_builder = FlatGraphBuilder::from_hfcode(input);
-    <span class="kw">let </span>(flat_graph, diagnostics) = flat_graph_builder.build();
+    <span class="kw">let </span>(flat_graph, _uses, diagnostics) = flat_graph_builder.build();
     diagnostics.iter().for_each(Diagnostic::emit);
     <span class="kw">let </span>flat_mermaid = flat_graph.mermaid_string_flat();
 

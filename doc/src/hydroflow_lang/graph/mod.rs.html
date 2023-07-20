@@ -334,6 +334,7 @@
 <a href="#334" id="334">334</a>
 <a href="#335" id="335">335</a>
 <a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Graph representation stages for Hydroflow graphs.
 
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -654,12 +655,13 @@
     root: <span class="kw-2">&amp;</span>TokenStream,
 ) -&gt; (<span class="prelude-ty">Option</span>&lt;(HydroflowGraph, TokenStream)&gt;, Vec&lt;Diagnostic&gt;) {
     <span class="kw">let </span>flat_graph_builder = FlatGraphBuilder::from_hfcode(hf_code);
-    <span class="kw">let </span>(<span class="kw-2">mut </span>flat_graph, <span class="kw-2">mut </span>diagnostics) = flat_graph_builder.build();
+    <span class="kw">let </span>(<span class="kw-2">mut </span>flat_graph, uses, <span class="kw-2">mut </span>diagnostics) = flat_graph_builder.build();
     eliminate_extra_unions_tees(<span class="kw-2">&amp;mut </span>flat_graph);
     <span class="kw">if </span>!diagnostics.iter().any(Diagnostic::is_error) {
         <span class="kw">match </span>partition_graph(flat_graph) {
             <span class="prelude-val">Ok</span>(part_graph) =&gt; {
-                <span class="kw">let </span>code = part_graph.as_code(root, <span class="bool-val">true</span>, <span class="kw-2">&amp;mut </span>diagnostics);
+                <span class="kw">let </span>code =
+                    part_graph.as_code(root, <span class="bool-val">true</span>, <span class="macro">quote::quote! </span>{ #( #uses )* }, <span class="kw-2">&amp;mut </span>diagnostics);
                 <span class="kw">if </span>!diagnostics.iter().any(Diagnostic::is_error) {
                     <span class="comment">// Success.
                     </span><span class="kw">return </span>(<span class="prelude-val">Some</span>((part_graph, code)), diagnostics);

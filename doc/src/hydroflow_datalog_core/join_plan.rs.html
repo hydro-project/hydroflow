@@ -663,6 +663,7 @@
 <a href="#663" id="663">663</a>
 <a href="#664" id="664">664</a>
 <a href="#665" id="665">665</a>
+<a href="#666" id="666">666</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::btree_map::Entry;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::ops::Deref;
@@ -796,11 +797,9 @@
     <span class="kw">let </span>statement = <span class="kw">match </span>source_expanded.tee_idx {
         <span class="prelude-val">Some</span>(i) =&gt; {
             <span class="kw">let </span>in_index = syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, i), Span::call_site());
-            <span class="macro">parse_quote_spanned!</span>(source_expanded.span=&gt; #source_name [#in_index] -&gt; #rhs)
+            <span class="macro">parse_quote_spanned! </span>{source_expanded.span=&gt; #source_name [#in_index] -&gt; #rhs; }
         }
-        <span class="prelude-val">None </span>=&gt; {
-            <span class="macro">parse_quote_spanned!</span>(source_expanded.span=&gt; #source_name -&gt; #rhs)
-        }
+        <span class="prelude-val">None </span>=&gt; <span class="macro">parse_quote_spanned! </span>{source_expanded.span=&gt; #source_name -&gt; #rhs; },
     };
 
     flat_graph_builder.add_statement(statement);
@@ -951,7 +950,7 @@
             <span class="kw">let </span>conditions = build_local_constraint_conditions(<span class="kw-2">&amp;</span>local_constraints);
 
             flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(rule_span)=&gt;
-                #filter_node = #relation_node [#relation_idx] -&gt; filter(|row: <span class="kw-2">&amp;</span>#row_type| #conditions)
+                #filter_node = #relation_node [#relation_idx] -&gt; filter(|row: <span class="kw-2">&amp;</span>#row_type| #conditions);
             });
 
             IntermediateJoinNode {
@@ -1119,11 +1118,14 @@
 
             <span class="kw">if </span>is_anti {
                 <span class="comment">// this is always a &#39;tick join, so we place a persist operator in the join input pipeline
-                </span>flat_graph_builder
-                    .add_statement(<span class="macro">parse_quote_spanned!</span>(get_span(rule_span)=&gt; #join_node = anti_join() -&gt; map(#flatten_closure)));
+                </span>flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(rule_span)=&gt;
+                    #join_node = anti_join() -&gt; map(#flatten_closure);
+                });
             } <span class="kw">else </span>{
                 flat_graph_builder.add_statement(
-                    <span class="macro">parse_quote_spanned!</span>(get_span(rule_span)=&gt; #join_node = join::&lt;#lt_left, #lt_right, hydroflow::compiled::pull::HalfMultisetJoinState&gt;() -&gt; map(#flatten_closure)),
+                    <span class="macro">parse_quote_spanned! </span>{get_span(rule_span)=&gt;
+                        #join_node = join::&lt;#lt_left, #lt_right, hydroflow::compiled::pull::HalfMultisetJoinState&gt;() -&gt; map(#flatten_closure);
+                    }
                 );
             }
 
@@ -1226,7 +1228,7 @@
             );
 
             flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{ get_span(rule_span)=&gt;
-                #predicate_filter_node = #inner_name -&gt; filter(|row: <span class="kw-2">&amp;</span>#row_type| #conditions )
+                #predicate_filter_node = #inner_name -&gt; filter(|row: <span class="kw-2">&amp;</span>#row_type| #conditions );
             });
 
             IntermediateJoinNode {
@@ -1310,7 +1312,7 @@
             flattened_elements.push(<span class="macro">parse_quote!</span>(v));
 
             flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(rule_span)=&gt;
-                #magic_node = #inner_name -&gt; flat_map(|row: #row_type| (<span class="number">0</span>..(row.#threshold_index)).map(<span class="kw">move </span>|v| (#(#flattened_elements, )<span class="kw-2">*</span>)) )
+                #magic_node = #inner_name -&gt; flat_map(|row: #row_type| (<span class="number">0</span>..(row.#threshold_index)).map(<span class="kw">move </span>|v| (#(#flattened_elements, )<span class="kw-2">*</span>)) );
             });
 
             IntermediateJoinNode {
