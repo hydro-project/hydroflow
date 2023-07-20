@@ -149,7 +149,12 @@ pub fn compile_datalog(program: String) -> JsValue {
                 let mut diagnostics = Vec::new();
                 let output = match partition_graph(flat_graph) {
                     Ok(part_graph) => {
-                        let out = part_graph.as_code(&quote!(hydroflow), true, &mut diagnostics);
+                        let out = part_graph.as_code(
+                            &quote!(hydroflow),
+                            true,
+                            quote!(),
+                            &mut diagnostics,
+                        );
                         let file: syn::File = syn::parse_quote! {
                             fn main() {
                                 #out

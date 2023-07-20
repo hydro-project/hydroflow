@@ -13,11 +13,11 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// ```hydroflow
 /// source_iter(vec![1, 1, 2, 3, 2, 1, 3])
 ///     -> unique()
-///     -> assert([1, 2, 3]);
+///     -> assert_eq([1, 2, 3]);
 /// ```
 ///
 /// `unique` can also be provided with one generic lifetime persistence argument, either
-/// `'tick` or `'static`, to specify how data persists. The default is `'static`.
+/// `'tick` or `'static`, to specify how data persists. The default is `'tick`.
 /// With `'tick`, uniqueness is only considered within the current tick, so across multiple ticks
 /// duplicate values may be emitted.
 /// With `'static`, values will be remembered across ticks and no duplicates will ever be emitted.
@@ -83,7 +83,7 @@ pub const UNIQUE: OperatorConstraints = OperatorConstraints {
                },
                diagnostics| {
         let persistence = match persistence_args[..] {
-            [] => Persistence::Static,
+            [] => Persistence::Tick,
             [a] => a,
             _ => unreachable!(),
         };

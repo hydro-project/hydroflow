@@ -295,14 +295,14 @@ pub fn test_lattice_join() {
 }
 
 #[multiplatform_test]
-pub fn test_next_tick() {
+pub fn test_defer_tick() {
     let (inp_send, inp_recv) = hydroflow::util::unbounded_channel::<usize>();
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<usize>();
     let mut flow = hydroflow::hydroflow_syntax! {
         inp = source_stream(inp_recv) -> tee();
         diff = difference() -> for_each(|x| out_send.send(x).unwrap());
         inp -> [pos]diff;
-        inp -> next_tick() -> [neg]diff;
+        inp -> defer_tick() -> [neg]diff;
     };
 
     for x in [1, 2, 3, 4] {
@@ -328,7 +328,7 @@ pub fn test_anti_join() {
         inp = source_stream(inp_recv) -> tee();
         diff = anti_join() -> for_each(|x| out_send.send(x).unwrap());
         inp -> [pos]diff;
-        inp -> next_tick() -> map(|x: (usize, usize)| x.0) -> [neg]diff;
+        inp -> defer_tick() -> map(|x: (usize, usize)| x.0) -> [neg]diff;
     };
 
     for x in [(1, 2), (2, 3), (3, 4), (4, 5)] {
@@ -347,7 +347,7 @@ pub fn test_anti_join() {
 }
 
 #[multiplatform_test]
-pub fn test_lattice_batch() {
+pub fn test_lattice_defer_signal() {
     type SetUnionHashSet = lattices::set_union::SetUnionHashSet<usize>;
     type SetUnionSingletonSet = lattices::set_union::SetUnionSingletonSet<usize>;
 
@@ -739,12 +739,12 @@ pub fn test_covid_tracing() {
 }
 
 #[multiplatform_test]
-pub fn test_assert() {
+pub fn test_assert_eq() {
     let mut df = hydroflow_syntax! {
-        source_iter([1, 2, 3]) -> assert([1, 2, 3]) -> assert([1, 2, 3]); // one in pull, one in push
-        source_iter([1, 2, 3]) -> assert([1, 2, 3]) -> assert(vec![1, 2, 3]);
-        source_iter([1, 2, 3]) -> assert(vec![1, 2, 3]) -> assert([1, 2, 3]);
-        source_iter(vec![1, 2, 3]) -> assert([1, 2, 3]) -> assert([1, 2, 3]);
+        source_iter([1, 2, 3]) -> assert_eq([1, 2, 3]) -> assert_eq([1, 2, 3]); // one in pull, one in push
+        source_iter([1, 2, 3]) -> assert_eq([1, 2, 3]) -> assert_eq(vec![1, 2, 3]);
+        source_iter([1, 2, 3]) -> assert_eq(vec![1, 2, 3]) -> assert_eq([1, 2, 3]);
+        source_iter(vec![1, 2, 3]) -> assert_eq([1, 2, 3]) -> assert_eq([1, 2, 3]);
     };
     df.run_available();
 }
@@ -753,7 +753,7 @@ pub fn test_assert() {
 pub fn test_assert_failures() {
     assert!(std::panic::catch_unwind(|| {
         let mut df = hydroflow_syntax! {
-            source_iter([0]) -> assert([1]);
+            source_iter([0]) -> assert_eq([1]);
         };
 
         df.run_available();
@@ -762,10 +762,27 @@ pub fn test_assert_failures() {
 
     assert!(std::panic::catch_unwind(|| {
         let mut df = hydroflow_syntax! {
-            source_iter([0]) -> assert([1]) -> null();
+            source_iter([0]) -> assert_eq([1]) -> null();
         };
 
         df.run_available();
     })
     .is_err());
+}
+
+#[multiplatform_test]
+pub fn test_iter_stream_batches() {
+    const ITEMS: usize = 100;
+    const BATCH: usize = 5;
+    let stream = hydroflow::util::iter_batches_stream(0..ITEMS, BATCH);
+
+    // expect 5 items per tick.
+    let expected: Vec<_> = (0..ITEMS).map(|n| (n / BATCH, n)).collect();
+
+    let mut df = hydroflow_syntax! {
+        source_stream(stream)
+            -> map(|x| (context.current_tick(), x))
+            -> assert_eq(expected);
+    };
+    df.run_available();
 }

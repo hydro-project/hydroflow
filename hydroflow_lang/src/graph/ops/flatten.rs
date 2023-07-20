@@ -13,7 +13,7 @@ use super::{
 /// ```hydroflow
 /// source_iter(vec![[1, 2], [3, 4], [5, 6]])
 ///     -> flatten()
-///     -> assert([1, 2, 3, 4, 5, 6]);
+///     -> assert_eq([1, 2, 3, 4, 5, 6]);
 /// ```
 pub const FLATTEN: OperatorConstraints = OperatorConstraints {
     name: "flatten",

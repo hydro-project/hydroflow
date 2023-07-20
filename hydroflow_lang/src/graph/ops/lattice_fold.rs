@@ -18,7 +18,7 @@ use super::{
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
 /// within the same tick. With `'static`, values will be remembered across ticks and will be
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
-/// defaults to `'static`.
+/// defaults to `'tick`.
 ///
 /// `lattice_fold` is differentiated from `lattice_reduce` in that `lattice_fold` can accumulate into a different type from its input.
 /// But it also means that the accumulating type must implement `Default`
@@ -26,7 +26,7 @@ use super::{
 /// ```hydroflow
 /// source_iter([hydroflow::lattices::set_union::SetUnionSingletonSet::new_from(7)])
 ///     -> lattice_fold::<'static, hydroflow::lattices::set_union::SetUnionHashSet<usize>>()
-///     -> assert([hydroflow::lattices::set_union::SetUnionHashSet::new_from([7])]);
+///     -> assert_eq([hydroflow::lattices::set_union::SetUnionHashSet::new_from([7])]);
 /// ```
 pub const LATTICE_FOLD: OperatorConstraints = OperatorConstraints {
     name: "lattice_fold",

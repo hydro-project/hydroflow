@@ -10,7 +10,7 @@ use super::{
 /// ```hydroflow
 /// source_iter(vec![2, 3, 1])
 ///     -> sort()
-///     -> assert([1, 2, 3]);
+///     -> assert_eq([1, 2, 3]);
 /// ```
 ///
 /// `sort` is partially blocking. Only the values collected within a single tick will be sorted and

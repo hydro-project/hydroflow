@@ -10,7 +10,7 @@ use super::{
 /// ```hydroflow
 /// source_iter(vec!["hello", "world"])
 ///     -> identity()
-///     -> assert(["hello", "world"]);
+///     -> assert_eq(["hello", "world"]);
 /// ```
 ///
 /// You can also supply a type parameter `identity::<MyType>()` to specify what items flow through the
@@ -20,7 +20,7 @@ use super::{
 /// // Use type parameter to ensure items are `i32`s.
 /// source_iter(0..10)
 ///     -> identity::<i32>()
-///     -> assert([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+///     -> assert_eq([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
 /// ```
 pub const IDENTITY: OperatorConstraints = OperatorConstraints {
     name: "identity",

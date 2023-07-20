@@ -26,7 +26,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
 /// within the same tick. With `'static`, values will be remembered across ticks and will be
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
-/// defaults to `'static`.
+/// defaults to `'tick`.
 ///
 /// `reduce_keyed` can also be provided with two type arguments, the key and value type. This is
 /// required when using `'static` persistence if the compiler cannot infer the types.
@@ -34,7 +34,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// ```hydroflow
 /// source_iter([("toy", 1), ("toy", 2), ("shoe", 11), ("shoe", 35), ("haberdashery", 7)])
 ///     -> reduce_keyed(|old: &mut u32, val: u32| *old += val)
-///     -> assert([("toy", 3), ("shoe", 46), ("haberdashery", 7)]);
+///     -> assert_eq([("toy", 3), ("shoe", 46), ("haberdashery", 7)]);
 /// ```
 ///
 /// Example using `'tick` persistence:
@@ -100,7 +100,7 @@ pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
         assert!(is_pull);
 
         let persistence = match persistence_args[..] {
-            [] => Persistence::Static,
+            [] => Persistence::Tick,
             [a] => a,
             _ => unreachable!(),
         };

@@ -49,7 +49,7 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
 
         // take stdin and send to server as a msg
         // the batch serves to buffer msgs until the connection request is acked
-        msg_send = batch() -> map(|msg| (msg, server_addr)) -> [1]outbound_chan;
+        msg_send = defer_signal() -> map(|msg| (msg, server_addr)) -> [1]outbound_chan;
         lines = source_stdin()
           -> map(|l| Message::ChatMsg {
                     nickname: opts.name.clone(),

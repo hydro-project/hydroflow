@@ -5,11 +5,11 @@ expression: flat_graph_ref.surface_syntax_string()
 2v1 = unique :: < 'tick > ();
 3v1 = difference :: < 'tick , 'static > ();
 4v1 = tee ();
-5v1 = next_tick ();
+5v1 = defer_tick ();
 7v1 = unique :: < 'tick > ();
 8v1 = difference :: < 'tick , 'static > ();
 9v1 = tee ();
-10v1 = next_tick ();
+10v1 = defer_tick ();
 12v1 = unique :: < 'tick > ();
 15v1 = unique :: < 'tick > ();
 18v1 = unique :: < 'tick > ();
@@ -19,7 +19,7 @@ expression: flat_graph_ref.surface_syntax_string()
 30v1 = unique :: < 'tick > ();
 31v1 = difference :: < 'tick , 'static > ();
 32v1 = tee ();
-33v1 = next_tick ();
+33v1 = defer_tick ();
 34v1 = source_stream (ints1);
 35v1 = source_stream (ints2);
 36v1 = source_stream (ints3);
