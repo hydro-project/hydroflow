@@ -7,8 +7,8 @@
     <a href="https://docs.rs/hydroflow/"><img src="https://img.shields.io/badge/docs.rs-Hydroflow-blue?style=flat-square&logo=read-the-docs&logoColor=white" alt="Docs.rs"></a>
 </p>
 
-Hydroflow is a low-latency dataflow runtime written in Rust. The [Hydro Project](https://hydro.run/docs/hydroflow/ecosystem/)
-will empower developers to harness the full potential of the cloud by making distributed programs easy to specify and automatic to scale. Hydroflow serves as the lowest level in the [Hydro stack](https://hydro.run/docs/hydroflow/ecosystem/),
+Hydroflow is a low-latency dataflow runtime written in Rust. The goal of the [Hydro Project](https://hydro.run)
+is to empower developers to harness the full potential of the cloud by making distributed programs easy to specify and automatic to scale. Hydroflow is the lowest level in the [Hydro stack](https://hydro.run/docs/hydroflow/ecosystem/),
 serving as a single-node low-latency runtime with explicit networking. This allows us to support
 not just data processing pipelines, but distributed protocols (e.g. Paxos) and real-world
 long-running applications as well.
@@ -17,9 +17,9 @@ Take a look at the [Hydroflow Book](https://hydro.run/docs/hydroflow/).
 
 ## The Hydroflow Surface Syntax
 
-Hydroflow comes with a custom "surface syntax" domain-specific language which serves as a very
-simple, readable IR for specifying single-node Hydroflow programs, intended to be stitched together
-by the Hydro stack to create larger autoscaling distributed systems.'
+Hydroflow comes with a custom "surface syntax"—a domain-specific language which serves as a very
+simple, readable IR for specifying single-node Hydroflow programs. These programs are intended to be stitched together
+by the Hydro stack to create larger autoscaling distributed systems.
 
 Here's a simple example of the surface syntax. Check out the [Hydroflow Playground](https://hydro.run/playground)
 for an interactive demo.
