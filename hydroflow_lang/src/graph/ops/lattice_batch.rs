@@ -1,55 +1,55 @@
 use quote::{quote_spanned, ToTokens};
+use syn::parse_quote;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::graph::{OpInstGenerics, OperatorInstance};
 
-/// > 1 input stream, 1 output stream
+/// > 2 input streams, 1 output stream, no arguments.
 ///
-/// > Arguments: The one and only argument is the receive end of a tokio channel that signals when to release the batch downstream.
+/// Batches streaming input and releases it downstream when a signal is delivered. This allows for buffering data and delivering it later while also folding it into a single lattice data structure.
+/// This operator is similar to `defer_signal` in that it batches input and releases it when a signal is given. It is also similar to `lattice_fold` in that it folds the input into a single lattice.
+/// So, `lattice_batch` is a combination of both `defer_signal` and `lattice_fold`. This operator is useful when trying to combine a sequence of `defer_signal` and `lattice_fold` operators without unnecessary memory consumption.
 ///
-/// Given a [`Stream`](https://docs.rs/futures/latest/futures/stream/trait.Stream.html)
-/// created in Rust code, `lattice_batch`
-/// is passed the receive end of the channel and when receiving any element
-/// will pass through all received inputs to the output unchanged.
+/// There are two inputs to `lattice_batch`, they are `input` and `signal`.
+/// `input` is the input data flow. Data that is delivered on this input is collected in order inside of the `lattice_batch` operator.
+/// When anything is sent to `signal` the collected data is released downstream. The entire `signal` input is consumed each tick, so sending 5 things on `signal` will not release inputs on the next 5 consecutive ticks.
 ///
-/// ```rustbook
-///     use hydroflow::lattices::Max;
+/// ```hydroflow
+/// use lattices::set_union::SetUnionHashSet;
+/// use lattices::set_union::SetUnionSingletonSet;
 ///
-///     let (tx, rx) = hydroflow::util::unbounded_channel::<()>();
+/// source_iter([1, 2, 3])
+///     -> map(SetUnionSingletonSet::new_from)
+///     -> [input]batcher;
 ///
-///     let mut df = hydroflow::hydroflow_syntax! {
-///         source_iter(0..5) -> persist()
-///             -> map(|x| Max::new(x))
-///             -> lattice_batch::<Max<usize>>(rx)
-///             -> assert_eq([Max::new(4)]);
-///     };
+/// source_iter([()])
+///     -> [signal]batcher;
 ///
-///     tx.send(()).unwrap();
-///
-///     df.run_available();
+/// batcher = lattice_batch::<SetUnionHashSet<usize>>()
+///     -> assert_eq([SetUnionHashSet::new_from([1, 2, 3])]);
 /// ```
 pub const LATTICE_BATCH: OperatorConstraints = OperatorConstraints {
     name: "lattice_batch",
     categories: &[OperatorCategory::LatticeFold],
     persistence_args: RANGE_0,
     type_args: &(0..=1),
-    hard_range_inn: RANGE_1,
-    soft_range_inn: RANGE_1,
+    hard_range_inn: &(2..=2),
+    soft_range_inn: &(2..=2),
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
-    num_args: 1,
+    num_args: 0,
     is_external_input: false,
-    ports_inn: None,
+    ports_inn: Some(|| PortListSpec::Fixed(parse_quote! { input, signal })),
     ports_out: None,
     properties: FlowProperties {
         deterministic: FlowPropertyVal::Preserve,
         monotonic: FlowPropertyVal::No,
         inconsistency_tainted: false,
     },
-    input_delaytype_fn: |_| None,
+    input_delaytype_fn: |_| Some(DelayType::Stratum),
     write_fn: |wc @ &WriteContextArgs {
                    context,
                    hydroflow,
@@ -57,105 +57,54 @@ pub const LATTICE_BATCH: OperatorConstraints = OperatorConstraints {
                    op_span,
                    root,
                    inputs,
-                   outputs,
                    is_pull,
                    op_inst:
                        OperatorInstance {
-                           arguments,
                            generics: OpInstGenerics { type_args, .. },
                            ..
                        },
                    ..
                },
                _| {
-        let internal_buffer = wc.make_ident("internal_buffer");
+        assert!(is_pull);
 
         let lattice_type = type_args
             .get(0)
             .map(ToTokens::to_token_stream)
             .unwrap_or(quote_spanned!(op_span=> _));
 
-        let receiver = &arguments[0];
-        let stream_ident = wc.make_ident("stream");
+        let lattice_ident = wc.make_ident("lattice");
 
         let write_prologue = quote_spanned! {op_span=>
-            let mut #stream_ident = ::std::boxed::Box::pin(#receiver);
-            let #internal_buffer = #hydroflow.add_state(::std::cell::RefCell::<Option<#lattice_type>>::new(None));
+            let #lattice_ident = #hydroflow.add_state(::std::cell::RefCell::new(<#lattice_type as ::std::default::Default>::default()));
         };
 
-        let (write_iterator, write_iterator_after) = if is_pull {
-            let input = &inputs[0];
+        let input = &inputs[0];
+        let signal = &inputs[1];
 
-            (
-                quote_spanned! {op_span=>
+        let write_iterator = {
+            quote_spanned! {op_span=>
 
-                    {
-                        let mut lattice = #context.state_ref(#internal_buffer).borrow_mut();
-                        for i in #input {
-                            if let Some(lattice) = &mut *lattice {
-                                #root::lattices::Merge::merge(lattice, i);
-                            } else {
-                                *lattice = Some(#root::lattices::LatticeFrom::lattice_from(i));
-                            };
-                        }
+                {
+                    let mut __lattice = #context.state_ref(#lattice_ident).borrow_mut();
+
+                    for __item in #input {
+                        #root::lattices::Merge::merge(&mut *__lattice, __item);
                     }
+                }
 
-                    let mut lattice = #context.state_ref(#internal_buffer).borrow_mut();
-                    let #ident = match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
-                        ::std::task::Poll::Ready(Some(_)) => {
-                            if let Some(lattice) = lattice.take() {
-                                Some(lattice).into_iter()
-                            } else {
-                                None.into_iter()
-                            }
-                        }
-                        ::std::task::Poll::Ready(None) | ::std::task::Poll::Pending => {
-                            None.into_iter()
-                        }
-                    };
-                },
-                quote_spanned! {op_span=>},
-            )
-        } else {
-            let output = &outputs[0];
-
-            (
-                quote_spanned! {op_span=>
-
-                    let mut out = #output;
-
-                    let #ident = #root::pusherator::for_each::ForEach::new(|x| {
-                        let mut lattice = #context.state_ref(#internal_buffer).borrow_mut();
-
-                        if let Some(lattice) = &mut *lattice {
-                            #root::lattices::Merge::merge(&mut *lattice, x);
-                        } else {
-                            *lattice = Some(#root::lattices::LatticeFrom::lattice_from(x));
-                        };
-                    });
-                },
-                quote_spanned! {op_span=>
-                    {
-                        let mut lattice = #context.state_ref(#internal_buffer).borrow_mut();
-
-                        match #root::futures::stream::Stream::poll_next(#stream_ident.as_mut(), &mut ::std::task::Context::from_waker(&context.waker())) {
-                            ::std::task::Poll::Ready(Some(_)) => {
-                                if let Some(lattice) = lattice.take() {
-                                    #root::pusherator::Pusherator::give(&mut out, lattice);
-                                }
-                            },
-                            ::std::task::Poll::Ready(None) | ::std::task::Poll::Pending => {
-                            },
-                        }
-                    }
-                },
-            )
+                let #ident = if #signal.count() > 0 {
+                    ::std::option::Option::Some(#context.state_ref(#lattice_ident).take())
+                } else {
+                    ::std::option::Option::None
+                }.into_iter();
+            }
         };
 
         Ok(OperatorWriteOutput {
             write_prologue,
             write_iterator,
-            write_iterator_after,
+            write_iterator_after: Default::default(),
             ..Default::default()
         })
     },
