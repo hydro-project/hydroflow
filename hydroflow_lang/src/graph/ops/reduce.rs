@@ -22,7 +22,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 ///     -> reduce::<'tick>(|accum: &mut _, elem| {
 ///         *accum *= elem;
 ///     })
-///     -> assert([120]);
+///     -> assert_eq([120]);
 /// ```
 pub const REDUCE: OperatorConstraints = OperatorConstraints {
     name: "reduce",
@@ -65,7 +65,7 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
         assert!(is_pull);
 
         let persistence = match persistence_args[..] {
-            [] => Persistence::Static,
+            [] => Persistence::Tick,
             [a] => a,
             _ => unreachable!(),
         };

@@ -12,9 +12,9 @@ use super::{
 ///
 /// ```hydroflow
 /// my_tee = source_iter(vec!["Hello", "World"]) -> tee();
-/// my_tee -> map(|x: &str| x.to_uppercase()) -> assert(["HELLO", "WORLD"]);
-/// my_tee -> map(|x: &str| x.to_lowercase()) -> assert(["hello", "world"]);
-/// my_tee -> assert(["Hello", "World"]);
+/// my_tee -> map(|x: &str| x.to_uppercase()) -> assert_eq(["HELLO", "WORLD"]);
+/// my_tee -> map(|x: &str| x.to_lowercase()) -> assert_eq(["hello", "world"]);
+/// my_tee -> assert_eq(["Hello", "World"]);
 /// ```
 pub const TEE: OperatorConstraints = OperatorConstraints {
     name: "tee",

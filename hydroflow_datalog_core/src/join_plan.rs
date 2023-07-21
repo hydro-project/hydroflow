@@ -131,11 +131,9 @@ fn emit_join_input_pipeline(
     let statement = match source_expanded.tee_idx {
         Some(i) => {
             let in_index = syn::LitInt::new(&format!("{}", i), Span::call_site());
-            parse_quote_spanned!(source_expanded.span=> #source_name [#in_index] -> #rhs)
+            parse_quote_spanned! {source_expanded.span=> #source_name [#in_index] -> #rhs; }
         }
-        None => {
-            parse_quote_spanned!(source_expanded.span=> #source_name -> #rhs)
-        }
+        None => parse_quote_spanned! {source_expanded.span=> #source_name -> #rhs; },
     };
 
     flat_graph_builder.add_statement(statement);
@@ -286,7 +284,7 @@ pub fn expand_join_plan(
             let conditions = build_local_constraint_conditions(&local_constraints);
 
             flat_graph_builder.add_statement(parse_quote_spanned! {get_span(rule_span)=>
-                #filter_node = #relation_node [#relation_idx] -> filter(|row: &#row_type| #conditions)
+                #filter_node = #relation_node [#relation_idx] -> filter(|row: &#row_type| #conditions);
             });
 
             IntermediateJoinNode {
@@ -454,11 +452,14 @@ pub fn expand_join_plan(
 
             if is_anti {
                 // this is always a 'tick join, so we place a persist operator in the join input pipeline
-                flat_graph_builder
-                    .add_statement(parse_quote_spanned!(get_span(rule_span)=> #join_node = anti_join() -> map(#flatten_closure)));
+                flat_graph_builder.add_statement(parse_quote_spanned! {get_span(rule_span)=>
+                    #join_node = anti_join() -> map(#flatten_closure);
+                });
             } else {
                 flat_graph_builder.add_statement(
-                    parse_quote_spanned!(get_span(rule_span)=> #join_node = join::<#lt_left, #lt_right, hydroflow::compiled::pull::HalfMultisetJoinState>() -> map(#flatten_closure)),
+                    parse_quote_spanned! {get_span(rule_span)=>
+                        #join_node = join::<#lt_left, #lt_right, hydroflow::compiled::pull::HalfMultisetJoinState>() -> map(#flatten_closure);
+                    }
                 );
             }
 
@@ -561,7 +562,7 @@ pub fn expand_join_plan(
             );
 
             flat_graph_builder.add_statement(parse_quote_spanned! { get_span(rule_span)=>
-                #predicate_filter_node = #inner_name -> filter(|row: &#row_type| #conditions )
+                #predicate_filter_node = #inner_name -> filter(|row: &#row_type| #conditions );
             });
 
             IntermediateJoinNode {
@@ -645,7 +646,7 @@ pub fn expand_join_plan(
             flattened_elements.push(parse_quote!(v));
 
             flat_graph_builder.add_statement(parse_quote_spanned! {get_span(rule_span)=>
-                #magic_node = #inner_name -> flat_map(|row: #row_type| (0..(row.#threshold_index)).map(move |v| (#(#flattened_elements, )*)) )
+                #magic_node = #inner_name -> flat_map(|row: #row_type| (0..(row.#threshold_index)).map(move |v| (#(#flattened_elements, )*)) );
             });
 
             IntermediateJoinNode {

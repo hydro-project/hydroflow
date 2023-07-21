@@ -24,9 +24,9 @@ pub fn main() {
 
         // set up the two joins
         // edge_pairs((z,x), y) :- edges(x,y), edges(y,z)
-        edge_pairs = join() -> map(|(y, (x,z))| ((z,x), y)); //Here we have found all paths from x to z that go through y. Now we need to find edges that connect z back to x.
+        edge_pairs = join::<'static>() -> map(|(y, (x,z))| ((z,x), y)); //Here we have found all paths from x to z that go through y. Now we need to find edges that connect z back to x.
         // triangle(x,y,z) :- edge_pairs((z,x), y), edges(z, x)
-        triangle = join() -> map(|((z,x), (y, ()))| (x, y, z));
+        triangle = join::<'static>() -> map(|((z,x), (y, ()))| (x, y, z));
 
         // wire the inputs to the joins
         edges[0] -> map(|(y,z)| (z,y)) -> [0]edge_pairs;

@@ -12,12 +12,10 @@ use super::{
 /// `source_stdin` receives a Stream of lines from stdin
 /// and emits each of the elements it receives downstream.
 ///
-/// ```rustbook
-/// let mut flow = hydroflow::hydroflow_syntax! {
-///     source_stdin() -> map(|x| x.unwrap().to_uppercase())
-///         -> for_each(|x| println!("{}", x));
-/// };
-/// flow.run_async();
+/// ```hydroflow
+/// source_stdin()
+///     -> map(|x| x.unwrap().to_uppercase())
+///     -> for_each(|x| println!("{}", x));
 /// ```
 pub const SOURCE_STDIN: OperatorConstraints = OperatorConstraints {
     name: "source_stdin",

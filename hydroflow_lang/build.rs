@@ -98,6 +98,12 @@ fn generate_op_docs() -> Result<()> {
                         // Output `doc_str` below.
                     } else if doc_str.trim() == "```hydroflow" {
                         in_hf_doctest = true;
+
+                        writeln!(docgen_write, "```rust")?;
+                        // py_udf special-cased.
+                        if "py_udf" == op_name {
+                            writeln!(docgen_write, "# #[cfg(feature = \"python\")]")?;
+                        }
                         writeln!(docgen_write, "{}", DOCTEST_HYDROFLOW_PREFIX)?;
                         continue;
                     } else if doc_str.trim() == "```rustbook" {
@@ -115,13 +121,12 @@ fn generate_op_docs() -> Result<()> {
 }
 
 const DOCTEST_HYDROFLOW_PREFIX: &str = "\
-```rust
-# #[allow(unused_imports)] use hydroflow::{var_args, var_expr, pusherator::Pusherator};
-# #[cfg(feature = \"python\")] #[allow(unused_imports)] use pyo3::prelude::*;
-# let __rt = hydroflow::tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-# __rt.block_on(async { hydroflow::tokio::task::LocalSet::new().run_until(async {
-# let mut __hf = hydroflow::hydroflow_syntax! {";
+# {
+# let __rt = ::hydroflow::tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+# __rt.block_on(async { ::hydroflow::tokio::task::LocalSet::new().run_until(async {
+# let mut __hf = ::hydroflow::hydroflow_syntax! {";
 const DOCTEST_HYDROFLOW_SUFFIX: &str = "\
 # };
 # __hf.run_available();
-# }).await})";
+# }).await})
+# }";

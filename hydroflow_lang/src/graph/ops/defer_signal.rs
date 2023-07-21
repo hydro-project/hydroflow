@@ -8,22 +8,22 @@ use super::{
 
 /// > 2 input streams, 1 output stream, no arguments.
 ///
-/// Batches streaming input and releases it downstream when a signal is delivered. The order of input is preserved. This allows for buffering data and delivering it at a later, chosen, tick.
+/// Defers streaming input and releases it downstream when a signal is delivered. The order of input is preserved. This allows for buffering data and delivering it at a later, chosen, tick.
 ///
-/// There are two inputs to `batch`, they are `input` and `signal`.
-/// `input` is the input data flow. Data that is delivered on this input is collected in order inside of the batch operator.
+/// There are two inputs to `defer_signal`, they are `input` and `signal`.
+/// `input` is the input data flow. Data that is delivered on this input is collected in order inside of the `defer_signal` operator.
 /// When anything is sent to `signal` the collected data is released downstream. The entire `signal` input is consumed each tick, so sending 5 things on `signal` will not release inputs on the next 5 consecutive ticks.
 ///
 /// ```hydroflow
-/// gate = batch();
+/// gate = defer_signal();
 ///
 /// source_iter([1, 2, 3]) -> [input]gate;
 /// source_iter([()]) -> [signal]gate;
 ///
-/// gate -> assert([1, 2, 3]);
+/// gate -> assert_eq([1, 2, 3]);
 /// ```
-pub const BATCH: OperatorConstraints = OperatorConstraints {
-    name: "batch",
+pub const DEFER_SIGNAL: OperatorConstraints = OperatorConstraints {
+    name: "defer_signal",
     categories: &[OperatorCategory::Persistence],
     persistence_args: RANGE_0,
     type_args: RANGE_0,

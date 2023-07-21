@@ -9,43 +9,49 @@ use syn::punctuated::Punctuated;
 use syn::token::{Bracket, Paren};
 use syn::{
     bracketed, parenthesized, AngleBracketedGenericArguments, Expr, ExprPath, GenericArgument,
-    Ident, LitInt, Path, PathArguments, PathSegment, Token,
+    Ident, ItemUse, LitInt, Path, PathArguments, PathSegment, Token,
 };
 
 pub struct HfCode {
-    pub statements: Punctuated<HfStatement, Token![;]>,
+    pub statements: Vec<HfStatement>,
 }
 impl Parse for HfCode {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let statements = Punctuated::parse_terminated(input)?;
-        if !statements.empty_or_trailing() {
-            return Err(input.parse::<Token![;]>().unwrap_err());
+        let mut statements = Vec::new();
+        while !input.is_empty() {
+            statements.push(input.parse()?);
         }
         Ok(HfCode { statements })
     }
 }
 impl ToTokens for HfCode {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.statements.to_tokens(tokens)
+        for statement in self.statements.iter() {
+            statement.to_tokens(tokens);
+        }
     }
 }
 
 pub enum HfStatement {
+    Use(ItemUse),
     Named(NamedHfStatement),
-    Pipeline(Pipeline),
+    Pipeline(PipelineStatement),
 }
 impl Parse for HfStatement {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        if input.peek2(Token![=]) {
+        if input.peek(Token![use]) {
+            Ok(Self::Use(ItemUse::parse(input)?))
+        } else if input.peek2(Token![=]) {
             Ok(Self::Named(NamedHfStatement::parse(input)?))
         } else {
-            Ok(Self::Pipeline(Pipeline::parse(input)?))
+            Ok(Self::Pipeline(PipelineStatement::parse(input)?))
         }
     }
 }
 impl ToTokens for HfStatement {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
+            HfStatement::Use(x) => x.to_tokens(tokens),
             HfStatement::Named(x) => x.to_tokens(tokens),
             HfStatement::Pipeline(x) => x.to_tokens(tokens),
         }
@@ -56,16 +62,19 @@ pub struct NamedHfStatement {
     pub name: Ident,
     pub equals: Token![=],
     pub pipeline: Pipeline,
+    pub semi_token: Token![;],
 }
 impl Parse for NamedHfStatement {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let name = input.parse()?;
         let equals = input.parse()?;
         let pipeline = input.parse()?;
+        let semi_token = input.parse()?;
         Ok(Self {
             name,
             equals,
             pipeline,
+            semi_token,
         })
     }
 }
@@ -74,6 +83,28 @@ impl ToTokens for NamedHfStatement {
         self.name.to_tokens(tokens);
         self.equals.to_tokens(tokens);
         self.pipeline.to_tokens(tokens);
+        self.semi_token.to_tokens(tokens);
+    }
+}
+
+pub struct PipelineStatement {
+    pub pipeline: Pipeline,
+    pub semi_token: Token![;],
+}
+impl Parse for PipelineStatement {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let pipeline = input.parse()?;
+        let semi_token = input.parse()?;
+        Ok(Self {
+            pipeline,
+            semi_token,
+        })
+    }
+}
+impl ToTokens for PipelineStatement {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.pipeline.to_tokens(tokens);
+        self.semi_token.to_tokens(tokens);
     }
 }
 
@@ -406,17 +437,17 @@ impl Hash for IndexInt {
         self.value.hash(state);
     }
 }
-impl PartialOrd for IndexInt {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.value.partial_cmp(&other.value)
-    }
-}
 impl PartialEq for IndexInt {
     fn eq(&self, other: &Self) -> bool {
         self.value == other.value
     }
 }
 impl Eq for IndexInt {}
+impl PartialOrd for IndexInt {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
 impl Ord for IndexInt {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.value.cmp(&other.value)

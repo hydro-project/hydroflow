@@ -47,7 +47,7 @@ pub fn test_difference_b() -> Result<(), SendError<&'static str>> {
         a = difference();
         source_stream(inp_recv) -> [pos]a;
         b = a -> tee();
-        b[0] -> next_tick() -> [neg]a;
+        b[0] -> defer_tick() -> [neg]a;
         b[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
     assert_graphvis_snapshots!(df);
@@ -78,12 +78,12 @@ pub fn test_tick_loop_1() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = Rc::clone(&output);
 
-    // Without `next_tick()` this would be "unsafe" although legal.
+    // Without `defer_tick()` this would be "unsafe" although legal.
     // E.g. it would spin forever in a single infinite tick/tick.
     let mut df: Hydroflow = hydroflow_syntax! {
         a = union() -> tee();
         source_iter([1, 3]) -> [0]a;
-        a[0] -> next_tick() -> map(|x| 2 * x) -> [1]a;
+        a[0] -> defer_tick() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
     assert_graphvis_snapshots!(df);
@@ -109,7 +109,7 @@ pub fn test_tick_loop_2() {
     let mut df: Hydroflow = hydroflow_syntax! {
         a = union() -> tee();
         source_iter([1, 3]) -> [0]a;
-        a[0] -> next_tick() -> next_tick() -> map(|x| 2 * x) -> [1]a;
+        a[0] -> defer_tick() -> defer_tick() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
     assert_graphvis_snapshots!(df);
@@ -138,7 +138,7 @@ pub fn test_tick_loop_3() {
     let mut df: Hydroflow = hydroflow_syntax! {
         a = union() -> tee();
         source_iter([1, 3]) -> [0]a;
-        a[0] -> next_tick() -> next_tick() -> next_tick() -> map(|x| 2 * x) -> [1]a;
+        a[0] -> defer_tick() -> defer_tick() -> defer_tick() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
     assert_graphvis_snapshots!(df);

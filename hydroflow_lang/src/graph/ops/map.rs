@@ -17,7 +17,7 @@ use super::{
 ///
 /// ```hydroflow
 /// source_iter(vec!["hello", "world"]) -> map(|x| x.to_uppercase())
-///     -> assert(["HELLO", "WORLD"]);
+///     -> assert_eq(["HELLO", "WORLD"]);
 /// ```
 pub const MAP: OperatorConstraints = OperatorConstraints {
     name: "map",

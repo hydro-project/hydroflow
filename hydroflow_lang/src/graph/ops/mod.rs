@@ -206,7 +206,7 @@ pub fn null_write_iterator_fn(
         quote_spanned! {op_span=>
             #[allow(clippy::let_unit_value)]
             let _ = (#(#outputs),*);
-            let #ident = #root::pusherator::for_each::ForEach::<_, #iter_type>::new(std::mem::drop);
+            let #ident = #root::pusherator::null::Null::<#iter_type>::new();
         }
     }
 }
@@ -230,7 +230,7 @@ macro_rules! declare_ops {
 declare_ops![
     anti_join::ANTI_JOIN,
     assert::ASSERT,
-    batch::BATCH,
+    assert_eq::ASSERT_EQ,
     cross_join::CROSS_JOIN,
     demux::DEMUX,
     dest_file::DEST_FILE,
@@ -259,7 +259,8 @@ declare_ops![
     union::UNION,
     multiset_delta::MULTISET_DELTA,
     next_stratum::NEXT_STRATUM,
-    next_tick::NEXT_TICK,
+    defer_signal::DEFER_SIGNAL,
+    defer_tick::DEFER_TICK,
     null::NULL,
     persist::PERSIST,
     persist_mut::PERSIST_MUT,

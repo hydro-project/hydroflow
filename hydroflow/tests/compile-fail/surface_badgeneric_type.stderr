@@ -1,5 +1,5 @@
-error: `next_tick` should have exactly 0 generic type arguments, actually has 1.
- --> tests/compile-fail/surface_badgeneric_type.rs:6:43
+error: `defer_tick` should have exactly 0 generic type arguments, actually has 1.
+ --> tests/compile-fail/surface_badgeneric_type.rs:6:44
   |
-6 |         source_iter(0..10) -> next_tick::<usize>() -> for_each(std::mem::drop);
-  |                                           ^^^^^
+6 |         source_iter(0..10) -> defer_tick::<usize>() -> for_each(std::mem::drop);
+  |                                            ^^^^^

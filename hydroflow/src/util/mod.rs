@@ -317,3 +317,28 @@ pub fn run_cargo_example(test_name: &str, args: &str) -> (DroppableChild, ChildS
 
     (DroppableChild(server), stdin, stdout)
 }
+
+/// Returns an [`Stream`] that emits `n` items at a time from `iter` at a time, yielding in-between.
+/// This is useful for breaking up a large iterator across several ticks: `source_iter(...)` always
+/// releases all items in the first tick. However using `iter_batches_stream` with `source_stream(...)`
+/// will cause `n` items to be released each tick. (Although more than that may be emitted if there
+/// are loops in the stratum).
+pub fn iter_batches_stream<I>(
+    mut iter: I,
+    n: usize,
+) -> futures::stream::PollFn<impl FnMut(&mut Context<'_>) -> Poll<Option<I::Item>>>
+where
+    I: Iterator + Unpin,
+{
+    let mut count = 0;
+    futures::stream::poll_fn(move |ctx| {
+        count += 1;
+        if n < count {
+            count = 0;
+            ctx.waker().wake_by_ref();
+            Poll::Pending
+        } else {
+            Poll::Ready(iter.next())
+        }
+    })
+}
