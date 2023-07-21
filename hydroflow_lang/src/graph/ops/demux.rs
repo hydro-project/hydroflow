@@ -18,7 +18,7 @@ use crate::pretty_span::PrettySpan;
 /// > second argument is a variadic [`var_args!` tuple list](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.var_args.html)
 /// > where each item name is an output port.
 ///
-/// Takes the input stream and allows the user to determine what elemnt(s) to
+/// Takes the input stream and allows the user to determine what item(s) to
 /// deliver to any number of output streams.
 ///
 /// > Note: Downstream operators may need explicit type annotations.

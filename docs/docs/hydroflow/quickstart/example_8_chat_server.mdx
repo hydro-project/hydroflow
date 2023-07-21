@@ -142,8 +142,7 @@ end
 
 ### `client.rs`
 The chat client is not very different from the echo server client, with two new design patterns:
- 1. a degenerate `source_iter` pipeline that runs once
-as a "bootstrap" in the first tick
+ 1. a `initialize` operator that runs once to "bootstrap" action in the first tick
  2. the use of `cross_join` as a "gated buffer" to postpone sending messages.
 
 We also include a Rust helper routine `pretty_print_msg` for formatting output.
@@ -168,7 +167,7 @@ bottom of your `src/client.rs` file.
 <CodeBlock language="rust">{getLines(client, 47, 64)}</CodeBlock>
 
 1. The first pipeline is the "bootstrap" alluded to above.
-It starts with `source_iter` operator that emits a single, opaque "unit" (`()`) value. This value is available when the client begins, which means
+It starts with the `initialize` operator that emits a single, opaque "unit" (`()`) value. This value is emitted when the client begins, which means
 this pipeline runs once, immediately on startup, and generates a single `ConnectRequest` message which is sent to the server.
 
 2. The second pipeline reads from `source_stdin` and sends messages to the server. It differs from our echo-server example in the use of a `cross_join`
