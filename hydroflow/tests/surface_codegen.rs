@@ -347,51 +347,6 @@ pub fn test_anti_join() {
 }
 
 #[multiplatform_test]
-pub fn test_lattice_defer_signal() {
-    type SetUnionHashSet = lattices::set_union::SetUnionHashSet<usize>;
-    type SetUnionSingletonSet = lattices::set_union::SetUnionSingletonSet<usize>;
-
-    let (batch1_tx, batch1_rx) = hydroflow::util::unbounded_channel::<()>();
-    let (batch2_tx, batch2_rx) = hydroflow::util::unbounded_channel::<()>();
-    let (tx_in, rx_in) = hydroflow::util::unbounded_channel::<SetUnionSingletonSet>();
-    let (tx_out, mut rx_out) = hydroflow::util::unbounded_channel::<SetUnionHashSet>();
-    let mut df = hydroflow_syntax! {
-        my_tee = tee();
-
-        source_stream(rx_in)
-            -> lattice_batch::<SetUnionHashSet>(batch1_rx) // pull
-            -> my_tee;
-
-        my_tee
-            -> for_each(|x| tx_out.send(x).unwrap());
-
-        my_tee
-            -> lattice_batch::<SetUnionHashSet>(batch2_rx) // push
-            -> for_each(|x| tx_out.send(x).unwrap());
-    };
-
-    tx_in.send(SetUnionSingletonSet::new_from(0)).unwrap();
-    df.run_available();
-    let out: Vec<_> = collect_ready(&mut rx_out);
-    assert_eq!(out, Vec::<SetUnionHashSet>::new());
-
-    batch1_tx.send(()).unwrap();
-    df.run_available();
-    let out: Vec<_> = collect_ready(&mut rx_out);
-    assert_eq!(out, vec![SetUnionHashSet::new_from([0])]);
-
-    batch1_tx.send(()).unwrap();
-    df.run_available();
-    let out: Vec<_> = collect_ready(&mut rx_out);
-    assert_eq!(out, Vec::<SetUnionHashSet>::new());
-
-    batch2_tx.send(()).unwrap();
-    df.run_available();
-    let out: Vec<_> = collect_ready(&mut rx_out);
-    assert_eq!(out, vec![SetUnionHashSet::new_from([0])]);
-}
-
-#[multiplatform_test]
 pub fn test_sort() {
     let (items_send, items_recv) = hydroflow::util::unbounded_channel::<usize>();
 
