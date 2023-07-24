@@ -16,7 +16,7 @@ use super::{
 /// ```
 ///
 /// `persist()` can be used to introduce statefulness into stateless pipelines. In the example below, the
-/// join only stores data for single `'tick`. The `persist()` operator introduces statefulness
+/// join only stores data for single tick. The `persist()` operator introduces statefulness
 /// across ticks. This can be useful for optimization transformations within the hydroflow
 /// compiler. Equivalently, we could specify that the join has `static` persistence (`my_join = join::<'static>()`).
 /// ```rustbook

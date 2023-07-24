@@ -10,7 +10,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
 ///
-/// Performs a reduce_keyed with lattice-merge aggregate function on each input and then forms the
+/// Performs a [`fold_keyed`](#fold_keyed) with lattice-merge aggregate function on each input and then forms the
 /// equijoin of the resulting key/value pairs in the input streams by their first (key) attribute. Like [`join`](#join), the result nests the 2nd input field (values) into a tuple in the 2nd output field.
 ///
 /// You must specify the the input lattice types, they cannot be inferred.

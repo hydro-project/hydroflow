@@ -13,12 +13,14 @@ use super::{
 /// in order to preserve invariants. Consider the following example, which implements
 /// a flip-flop -- the invariant is that it emit one of true or false in a given tick
 /// (but never both!)
+///
+/// ```rustbook
 /// pub fn main() {
-///     let mut df = hydroflow_syntax! {
+///     let mut df = hydroflow::hydroflow_syntax! {
 ///         source_iter(vec!(true))
 ///                 -> state;
 ///         state = union()
-///                 -> inspect(|x| println!("x is {:?}", x))
+///                 -> assert(|x| if context.current_tick() % 2 == 0 { *x == true } else { *x == false })
 ///                 -> map(|x| !x)
 ///                 -> defer_tick()
 ///                 -> state;
@@ -28,6 +30,7 @@ use super::{
 ///         df.run_tick();
 ///     }
 /// }
+/// ```
 ///
 /// `defer_tick` can also be handy for comparing stream content across ticks.
 /// In the example below `defer_tick()` is used alongside `difference()` to
