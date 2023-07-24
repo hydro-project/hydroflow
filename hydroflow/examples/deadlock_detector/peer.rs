@@ -31,10 +31,10 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
         inbound_chan = source_stream(inbound) -> map(deserialize_msg::<Message>);
 
         // setup gossip channel to all peers. gen_bool chooses True with the odds passed in.
-        gossip_join = cross_join::<'static>()
-            -> filter(|_| gen_bool(0.8)) -> outbound_chan;
-        gossip = map(identity) -> [0]gossip_join;
-        peers[1] -> [1]gossip_join;
+        gossip_join = cross_join::<'tick>()
+            -> filter(|_| gen_bool(0.3)) -> outbound_chan;
+        gossip = map(identity) -> persist() -> [0]gossip_join;
+        peers[1] -> persist() -> [1]gossip_join;
         peers[2] -> for_each(|s| println!("Peer: {:?}", s));
 
         // prompt for input
