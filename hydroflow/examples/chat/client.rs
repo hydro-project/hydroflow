@@ -45,7 +45,7 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
         inbound_chan[errs] -> for_each(|m| println!("Received unexpected message type: {:?}", m));
 
         // send a single connection request on startup
-        source_iter([()]) -> map(|_m| (Message::ConnectRequest, server_addr)) -> [0]outbound_chan;
+        initialize() -> map(|_m| (Message::ConnectRequest, server_addr)) -> [0]outbound_chan;
 
         // take stdin and send to server as a msg
         // the batch serves to buffer msgs until the connection request is acked

@@ -13,7 +13,7 @@ use super::{
 ///     -> assert_eq([1, 2, 3]);
 /// ```
 ///
-/// `sort` is partially blocking. Only the values collected within a single tick will be sorted and
+/// `sort` is blocking. Only the values collected within a single tick will be sorted and
 /// emitted.
 pub const SORT: OperatorConstraints = OperatorConstraints {
     name: "sort",

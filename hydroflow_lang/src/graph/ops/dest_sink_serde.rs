@@ -7,7 +7,8 @@ use super::{
 
 /// > Arguments: A [serializing async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
 ///
-/// Consumes (payload, addr) pairs by serializing the payload and sending the resulting pair to an [async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html).
+/// Consumes (payload, addr) pairs by serializing the payload and sending the resulting pair to an [async `Sink`](https://docs.rs/futures/latest/futures/sink/trait.Sink.html)
+/// that delivers them to the `SocketAddr` specified by `addr`.
 ///
 /// Note this operator must be used within a Tokio runtime.
 /// ```rustbook
