@@ -14,6 +14,9 @@ use crate::graph::{OpInstGenerics, OperatorInstance, PortIndexValue};
 /// streams, returning items in the `pos` input that are not found in the
 /// `neg` input.
 ///
+/// `difference` can be provided with one or two generic lifetime persistence arguments
+/// in the same way as [`join`](#join), see [`join`'s documentation](#join) for more info.
+///
 /// ```hydroflow
 /// source_iter(vec!["dog", "cat", "elephant"]) -> [pos]diff;
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;

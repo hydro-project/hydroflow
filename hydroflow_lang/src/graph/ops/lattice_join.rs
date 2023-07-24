@@ -2,18 +2,18 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    Persistence, WriteContextArgs, RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::{OpInstGenerics, OperatorInstance};
 
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
 ///
-/// Performs a group-by with lattice-merge aggregate function on LHS and RHS inputs and then forms the
-/// equijoin of the tuples in the input streams by their first (key) attribute. Note that the result nests the 2nd input field (values) into a tuple in the 2nd output field.
+/// Performs a [`fold_keyed`](#fold_keyed) with lattice-merge aggregate function on each input and then forms the
+/// equijoin of the resulting key/value pairs in the input streams by their first (key) attribute. Like [`join`](#join), the result nests the 2nd input field (values) into a tuple in the 2nd output field.
 ///
-/// You must specify the LHS and RHS lattice types, they cannot be inferred.
+/// You must specify the the input lattice types, they cannot be inferred.
 ///
 /// ```hydroflow
 /// // should print `(key, (2, 1))`
@@ -23,13 +23,13 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// my_join -> for_each(|(k, (v1, v2))| println!("({}, ({:?}, {:?}))", k, v1, v2));
 /// ```
 ///
-/// `lattice_join` can also be provided with one or two generic lifetime persistence arguments, either
+/// Like [`join`](#join), `lattice_join` can also be provided with one or two generic lifetime persistence arguments, either
 /// `'tick` or `'static`, to specify how join data persists. With `'tick`, pairs will only be
 /// joined with corresponding pairs within the same tick. With `'static`, pairs will be remembered
 /// across ticks and will be joined with pairs arriving in later ticks. When not explicitly
 /// specified persistence defaults to `tick.
 ///
-/// When two persistence arguments are supplied the first maps to port `0` and the second maps to
+/// Like [`join`](#join), when two persistence arguments are supplied the first maps to port `0` and the second maps to
 /// port `1`.
 /// When a single persistence argument is supplied, it is applied to both input ports.
 /// When no persistence arguments are applied it defaults to `'tick` for both.
@@ -76,7 +76,7 @@ pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
         monotonic: FlowPropertyVal::Preserve,
         inconsistency_tainted: false,
     },
-    input_delaytype_fn: |_| None,
+    input_delaytype_fn: |_| Some(DelayType::Stratum),
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    context,

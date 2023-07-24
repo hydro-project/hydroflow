@@ -20,7 +20,7 @@ use super::{
 /// input_send.send(4).unwrap();
 /// input_send.send(3).unwrap();
 /// flow.run_tick();
-/// // 3, 4, 3
+/// // 3, 4,
 ///
 /// input_send.send(3).unwrap();
 /// input_send.send(5).unwrap();
