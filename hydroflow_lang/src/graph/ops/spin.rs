@@ -5,7 +5,18 @@ use super::{
     WriteContextArgs, RANGE_0, RANGE_1,
 };
 
-/// This operator will trigger the start of new ticks in order to repeat, which will cause spinning-like behavior.
+/// This operator emits Unit, and triggers the start of a new tick at the end of each tick,
+/// which will cause spinning-like behavior. Note that `run_available` will run forever,
+/// so in the example below we illustrate running manually for 100 ticks.
+///
+/// ```rustbook
+/// let mut flow = hydroflow::hydroflow_syntax! {
+///     spin() -> for_each(|x| println!("tick {}: {:?}", context.current_tick(), x));
+/// };
+/// for _ in 1..100 {
+///     flow.run_tick();
+/// }
+/// ```
 pub const SPIN: OperatorConstraints = OperatorConstraints {
     name: "spin",
     categories: &[OperatorCategory::Source],
