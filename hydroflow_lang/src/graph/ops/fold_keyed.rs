@@ -25,7 +25,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// ```hydroflow
 /// source_iter([("toy", 1), ("toy", 2), ("shoe", 11), ("shoe", 35), ("haberdashery", 7)])
 ///     -> fold_keyed(|| 0, |old: &mut u32, val: u32| *old += val)
-///     -> assert([("toy", 3), ("shoe", 46), ("haberdashery", 7)]);
+///     -> assert_eq([("toy", 3), ("shoe", 46), ("haberdashery", 7)]);
 /// ```
 ///
 /// `fold_keyed` can be provided with one generic lifetime persistence argument, either

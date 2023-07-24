@@ -10,53 +10,25 @@ use super::{
 /// operator.
 ///
 /// `defer_tick` is sometimes needed to separate conflicting data across time,
-/// in order to preserve invariants. Consider the following example. The `Point` lattice
-/// has an immutability invariant: if you merge a new value into it, that is a runtime error.
-/// Here we ensure that the `lattice_reduce` in `state` will have exactly one value per tick,
-/// and that value will be the negation of the previous value.
-/// ```rustbook
-/// // Outputs Point { val: true, _token: PhantomData<*mut ()> }, Point { val: false, _token: PhantomData<*mut ()> }, ...
-/// use hydroflow::hydroflow_syntax;
-/// use lattices::Point;
-///
+/// in order to preserve invariants. Consider the following example, which implements
+/// a flip-flop -- the invariant is that it emit one of true or false in a given tick
+/// (but never both!)
 /// pub fn main() {
 ///     let mut df = hydroflow_syntax! {
-///             source_iter(vec!(Point::<bool, ()>::new(true)))
-///                     -> state;
-///             state = union()
-///                     -> lattice_reduce::<'tick, Point<bool, ()>>()
-///                     -> inspect(|x| println!("{:?}", x));
-///             state -> map(|x| Point::<_, ()>::new(!x.as_reveal_ref()))
-///                   -> defer_tick()
-///                   -> state;
+///         source_iter(vec!(true))
+///                 -> state;
+///         state = union()
+///                 -> inspect(|x| println!("x is {:?}", x))
+///                 -> map(|x| !x)
+///                 -> defer_tick()
+///                 -> state;
 ///     };
-///     df.run_available();
+///     for i in 1..100 {
+///         println!("tick {}", i);
+///         df.run_tick();
+///     }
 /// }
-
-/// pub fn main() {
-//     let mut df = hydroflow_syntax! {
-//             source_iter(vec!(Point::<bool, ()>::new(true)))
-//                     -> state;
-//             state = union()
-//                     -> lattice_reduce::<'tick, Point<bool, ()>>()
-//                     -> inspect(|x| println!("{:?}", x))
-//                     -> map(|x| Point::<_, ()>::new(!x.as_reveal_ref()))
-//                     -> defer_tick()
-//                     -> state;
-//     };
-//     df.run_available();
-// }
-/// for x in [1, 2, 3, 4] {
-///     input_send.send(x).unwrap();
-/// }
-/// flow.run_tick();
 ///
-/// for x in [3, 4, 5, 6] {
-///     input_send.send(x).unwrap();
-/// }
-/// flow.run_tick();
-/// ```
-/// 
 /// `defer_tick` can also be handy for comparing stream content across ticks.
 /// In the example below `defer_tick()` is used alongside `difference()` to
 /// filter out any items that arrive from `inp` in the current tick which match
