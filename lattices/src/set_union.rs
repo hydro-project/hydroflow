@@ -5,7 +5,7 @@ use std::collections::{BTreeSet, HashSet};
 
 use crate::cc_traits::{Iter, Len, Set};
 use crate::collections::{ArraySet, SingletonSet};
-use crate::{IsBot, LatticeFrom, LatticeOrd, Merge};
+use crate::{Atomize, IsBot, LatticeFrom, LatticeOrd, Merge};
 
 /// Set-union lattice.
 ///
@@ -123,6 +123,26 @@ where
     }
 }
 
+impl<Set, Item> Atomize for SetUnion<Set>
+where
+    Set: Len + IntoIterator<Item = Item> + Extend<Item>,
+    Set::IntoIter: 'static,
+    Item: 'static,
+{
+    type Atom = SetUnionOption<Item>;
+
+    // TODO: use impl trait.
+    type AtomIter = Box<dyn Iterator<Item = Self::Atom>>;
+
+    fn atomize(self) -> Self::AtomIter {
+        if self.0.is_empty() {
+            Box::new(std::iter::once(SetUnionOption::default()))
+        } else {
+            Box::new(self.0.into_iter().map(SetUnionOption::new_from))
+        }
+    }
+}
+
 /// [`std::collections::HashSet`]-backed [`SetUnion`] lattice.
 pub type SetUnionHashSet<Item> = SetUnion<HashSet<Item>>;
 
@@ -145,7 +165,7 @@ pub type SetUnionOption<Item> = SetUnion<Option<Item>>;
 mod test {
     use super::*;
     use crate::collections::SingletonSet;
-    use crate::test::check_all;
+    use crate::test::{check_all, check_atomize_each};
 
     #[test]
     fn test_set_union() {
@@ -189,6 +209,17 @@ mod test {
             SetUnionHashSet::new_from([0]),
             SetUnionHashSet::new_from([1]),
             SetUnionHashSet::new_from([0, 1]),
+        ]);
+    }
+
+    #[test]
+    fn atomize() {
+        check_atomize_each(&[
+            SetUnionHashSet::new_from([]),
+            SetUnionHashSet::new_from([0]),
+            SetUnionHashSet::new_from([1]),
+            SetUnionHashSet::new_from([0, 1]),
+            SetUnionHashSet::new((0..10).collect()),
         ]);
     }
 }

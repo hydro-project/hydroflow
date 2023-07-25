@@ -8,7 +8,7 @@ use cc_traits::Len;
 
 use crate::cc_traits::{GetMut, Keyed, Map, MapIter, SimpleKeyedRef};
 use crate::collections::{ArrayMap, SingletonMap, VecMap};
-use crate::{IsBot, LatticeFrom, LatticeOrd, Merge};
+use crate::{Atomize, IsBot, LatticeFrom, LatticeOrd, Merge};
 
 /// Map-union compound lattice.
 ///
@@ -214,6 +214,34 @@ where
     }
 }
 
+impl<Map, K, Val> Atomize for MapUnion<Map>
+where
+    Map: 'static
+        + Len
+        + IntoIterator<Item = (K, Val)>
+        + Keyed<Key = K, Item = Val>
+        + Extend<(K, Val)>
+        + for<'a> GetMut<&'a K, Item = Val>,
+    K: 'static + Clone,
+    Val: 'static + Atomize + LatticeFrom<<Val as Atomize>::Atom>,
+{
+    type Atom = MapUnionOption<K, Val::Atom>;
+
+    // TODO: use impl trait.
+    type AtomIter = Box<dyn Iterator<Item = Self::Atom>>;
+
+    fn atomize(self) -> Self::AtomIter {
+        if self.0.is_empty() {
+            Box::new(std::iter::once(MapUnionOption::default()))
+        } else {
+            Box::new(self.0.into_iter().flat_map(|(k, val)| {
+                val.atomize()
+                    .map(move |v| MapUnionOption::new_from((k.clone(), v)))
+            }))
+        }
+    }
+}
+
 /// [`std::collections::HashMap`]-backed [`MapUnion`] lattice.
 pub type MapUnionHashMap<K, Val> = MapUnion<HashMap<K, Val>>;
 
@@ -239,7 +267,7 @@ mod test {
     use super::*;
     use crate::collections::{SingletonMap, SingletonSet};
     use crate::set_union::{SetUnionHashSet, SetUnionSingletonSet};
-    use crate::test::{cartesian_power, check_all};
+    use crate::test::{cartesian_power, check_all, check_atomize_each};
 
     #[test]
     fn test_map_union() {
@@ -255,7 +283,7 @@ mod test {
     }
 
     #[test]
-    fn consistency() {
+    fn consistency_atomize() {
         let mut test_vec = Vec::new();
 
         // Size 0.
@@ -278,5 +306,6 @@ mod test {
         }
 
         check_all(&test_vec);
+        check_atomize_each(&test_vec);
     }
 }
