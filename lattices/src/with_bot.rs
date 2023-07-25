@@ -1,6 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Wraps a lattice in [`Option`], treating [`None`] as a new bottom element which compares as less
 /// than to all other values.
@@ -119,11 +119,28 @@ where
     }
 }
 
+impl<Inner> Atomize for WithBot<Inner>
+where
+    Inner: Atomize + LatticeFrom<<Inner as Atomize>::Atom>,
+{
+    type Atom = WithBot<Inner::Atom>;
+
+    // TODO: use impl trait.
+    type AtomIter = Box<dyn Iterator<Item = Self::Atom>>;
+
+    fn atomize(self) -> Self::AtomIter {
+        match self.0 {
+            Some(inner) => Box::new(inner.atomize().map(WithBot::new_from)),
+            None => Box::new(std::iter::once(WithBot::new(None))),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::set_union::{SetUnionHashSet, SetUnionSingletonSet};
-    use crate::test::check_all;
+    use crate::test::{check_all, check_atomize_each};
 
     #[test]
     fn test_singly_nested_singleton_example() {
@@ -177,5 +194,17 @@ mod test {
             WithBot::new_from(SetUnionHashSet::new_from([1])),
             WithBot::new_from(SetUnionHashSet::new_from([0, 1])),
         ])
+    }
+
+    #[test]
+    fn atomize() {
+        check_atomize_each(&[
+            WithBot::default(),
+            WithBot::new_from(SetUnionHashSet::new_from([])),
+            WithBot::new_from(SetUnionHashSet::new_from([0])),
+            WithBot::new_from(SetUnionHashSet::new_from([1])),
+            WithBot::new_from(SetUnionHashSet::new_from([0, 1])),
+            WithBot::new_from(SetUnionHashSet::new((0..10).collect())),
+        ]);
     }
 }

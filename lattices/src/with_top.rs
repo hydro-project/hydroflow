@@ -1,6 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Wraps a lattice in [`Option`], treating [`None`] as a new top element which compares as greater
 /// than to all other values.
@@ -35,6 +35,16 @@ impl<Inner> WithTop<Inner> {
     /// Gets the inner by value, consuming self.
     pub fn into_reveal(self) -> Option<Inner> {
         self.0
+    }
+}
+
+// Use inner's default rather than `None` (which is top, not bot).
+impl<Inner> Default for WithTop<Inner>
+where
+    Inner: Default,
+{
+    fn default() -> Self {
+        Self(Some(Inner::default()))
     }
 }
 
@@ -111,11 +121,28 @@ impl<Inner> IsTop for WithTop<Inner> {
     }
 }
 
+impl<Inner> Atomize for WithTop<Inner>
+where
+    Inner: Atomize + LatticeFrom<<Inner as Atomize>::Atom>,
+{
+    type Atom = WithTop<Inner::Atom>;
+
+    // TODO: use impl trait.
+    type AtomIter = Box<dyn Iterator<Item = Self::Atom>>;
+
+    fn atomize(self) -> Self::AtomIter {
+        match self.0 {
+            Some(inner) => Box::new(inner.atomize().map(WithTop::new_from)),
+            None => Box::new(std::iter::once(WithTop::new(None))),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::set_union::{SetUnionHashSet, SetUnionSingletonSet};
-    use crate::test::{check_all, check_lattice_top};
+    use crate::test::{check_all, check_atomize_each, check_lattice_top};
 
     #[test]
     fn test_singly_nested_singleton_example() {
@@ -171,5 +198,17 @@ mod test {
         ];
         check_all(items);
         check_lattice_top(items);
+    }
+
+    #[test]
+    fn atomize() {
+        check_atomize_each(&[
+            WithTop::new(None),
+            WithTop::new_from(SetUnionHashSet::new_from([])),
+            WithTop::new_from(SetUnionHashSet::new_from([0])),
+            WithTop::new_from(SetUnionHashSet::new_from([1])),
+            WithTop::new_from(SetUnionHashSet::new_from([0, 1])),
+            WithTop::new_from(SetUnionHashSet::new((0..10).collect())),
+        ]);
     }
 }

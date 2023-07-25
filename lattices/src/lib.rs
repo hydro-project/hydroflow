@@ -107,3 +107,22 @@ pub trait IsTop {
     /// Returns if `self` is lattice top (⊤).
     fn is_top(&self) -> bool;
 }
+
+/// Trait to atomize a lattice into individual elements. For example, a [`set_union::SetUnion`]
+/// will be broken up into individual singleton elements.
+///
+/// Formally, breaks up `Self` into an set of lattice points forming a (strong) [antichain](https://en.wikipedia.org/wiki/Antichain).
+pub trait Atomize: Merge<Self::Atom> {
+    /// The type of atoms for this lattice.
+    type Atom: 'static;
+
+    /// The iter type iterating the antichain atoms.
+    type AtomIter: 'static + Iterator<Item = Self::Atom>;
+
+    /// Atomize self: convert into an iter of atoms.
+    ///
+    /// Must always return at least one value.
+    ///
+    /// Returned values must merge to reform a value equal to the original `self`.
+    fn atomize(self) -> Self::AtomIter;
+}

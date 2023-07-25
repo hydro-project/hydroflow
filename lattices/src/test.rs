@@ -2,7 +2,7 @@
 
 use std::fmt::Debug;
 
-use crate::{IsBot, IsTop, LatticeOrd, Merge, NaiveLatticeOrd};
+use crate::{Atomize, IsBot, IsTop, LatticeOrd, Merge, NaiveLatticeOrd};
 
 /// Helper which calls [`check_lattice_ord`], [`check_partial_ord_properties`],
 /// [`check_lattice_properties`], and [`check_lattice_bot`].
@@ -158,6 +158,25 @@ pub fn check_lattice_top<T: IsTop + LatticeOrd>(items: &[T]) {
         .expect("Expected `items` to contain top.");
     for x in items {
         assert!(x <= top);
+    }
+}
+
+/// Check that the atomized lattice points re-merge to form the same original lattice point, for each item in `items`.
+pub fn check_atomize_each<T: Atomize + Merge<T::Atom> + PartialEq + Default + Clone + Debug>(
+    items: &[T],
+) {
+    for item in items {
+        let mut reformed = T::default();
+        let mut atoms = item.clone().atomize().peekable();
+        assert!(
+            atoms.peek().is_some(),
+            "`{:?}` atomize must return at least one value",
+            item
+        );
+        for atom in atoms {
+            reformed.merge(atom);
+        }
+        assert_eq!(item, &reformed, "`{:?}` atomize failed to reform", item);
     }
 }
 
