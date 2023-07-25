@@ -1,4 +1,4 @@
-use crate::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 impl Merge<Self> for () {
     fn merge(&mut self, _other: Self) -> bool {
@@ -23,15 +23,5 @@ impl IsBot for () {
 impl IsTop for () {
     fn is_top(&self) -> bool {
         true
-    }
-}
-
-impl Atomize for () {
-    type Atom = Self;
-
-    type AtomIter = std::iter::Once<Self>;
-
-    fn atomize(self) -> Self::AtomIter {
-        std::iter::once(self)
     }
 }

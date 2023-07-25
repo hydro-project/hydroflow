@@ -3,9 +3,11 @@
 use std::cmp::Ordering::{self, *};
 use std::collections::{BTreeSet, HashSet};
 
+use cc_traits::{SetMut, SimpleCollectionRef};
+
 use crate::cc_traits::{Iter, Len, Set};
 use crate::collections::{ArraySet, SingletonSet};
-use crate::{Atomize, IsBot, LatticeFrom, LatticeOrd, Merge};
+use crate::{Atomize, IsBot, LatticeFrom, LatticeOrd, Merge, Unmerge};
 
 /// Set-union lattice.
 ///
@@ -123,6 +125,24 @@ where
     }
 }
 
+impl<SetSelf, SetOther, Item> Unmerge<SetUnion<SetOther>> for SetUnion<SetSelf>
+where
+    SetSelf: SetMut<Item, Item = Item>,
+    SetOther: Iter<Item = Item> + SimpleCollectionRef,
+{
+    fn unmerge(&mut self, other: &SetUnion<SetOther>) -> bool {
+        other
+            .0
+            .iter()
+            .map(|item| {
+                self.0
+                    .remove(<SetOther as SimpleCollectionRef>::into_ref(item))
+                    .is_some()
+            })
+            .fold(false, std::ops::BitOr::bitor)
+    }
+}
+
 impl<Set, Item> Atomize for SetUnion<Set>
 where
     Set: Len + IntoIterator<Item = Item> + Extend<Item>,
@@ -165,7 +185,7 @@ pub type SetUnionOption<Item> = SetUnion<Option<Item>>;
 mod test {
     use super::*;
     use crate::collections::SingletonSet;
-    use crate::test::{check_all, check_atomize_each};
+    use crate::test::{check_all, check_atomize_each, check_unmerge};
 
     #[test]
     fn test_set_union() {
@@ -215,6 +235,17 @@ mod test {
     #[test]
     fn atomize() {
         check_atomize_each(&[
+            SetUnionHashSet::new_from([]),
+            SetUnionHashSet::new_from([0]),
+            SetUnionHashSet::new_from([1]),
+            SetUnionHashSet::new_from([0, 1]),
+            SetUnionHashSet::new((0..10).collect()),
+        ]);
+    }
+
+    #[test]
+    fn unmerge() {
+        check_unmerge(&[
             SetUnionHashSet::new_from([]),
             SetUnionHashSet::new_from([0]),
             SetUnionHashSet::new_from([1]),

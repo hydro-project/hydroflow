@@ -4,11 +4,11 @@ use std::cmp::Ordering::{self, *};
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
 
-use cc_traits::Len;
+use cc_traits::{Len, MapMut};
 
 use crate::cc_traits::{GetMut, Keyed, Map, MapIter, SimpleKeyedRef};
 use crate::collections::{ArrayMap, SingletonMap, VecMap};
-use crate::{Atomize, IsBot, LatticeFrom, LatticeOrd, Merge};
+use crate::{Atomize, IsBot, LatticeFrom, LatticeOrd, Merge, Unmerge};
 
 /// Map-union compound lattice.
 ///
@@ -214,6 +214,25 @@ where
     }
 }
 
+impl<MapSelf, MapOther, K, ValSelf, ValOther> Unmerge<MapUnion<MapOther>> for MapUnion<MapSelf>
+where
+    MapSelf: MapMut<K, ValSelf, Key = K, Item = ValSelf>,
+    MapOther: MapIter<Key = K, Item = ValOther> + SimpleKeyedRef,
+    ValSelf: Unmerge<ValOther>,
+{
+    fn unmerge(&mut self, other: &MapUnion<MapOther>) -> bool {
+        other
+            .0
+            .iter()
+            .filter_map(|(k, val_other)| {
+                self.0
+                    .get_mut(<MapOther as SimpleKeyedRef>::into_ref(k))
+                    .map(|mut val_self| val_self.unmerge(&val_other))
+            })
+            .fold(false, std::ops::BitOr::bitor)
+    }
+}
+
 impl<Map, K, Val> Atomize for MapUnion<Map>
 where
     Map: 'static
@@ -267,7 +286,7 @@ mod test {
     use super::*;
     use crate::collections::{SingletonMap, SingletonSet};
     use crate::set_union::{SetUnionHashSet, SetUnionSingletonSet};
-    use crate::test::{cartesian_power, check_all, check_atomize_each};
+    use crate::test::{cartesian_power, check_all, check_atomize_each, check_unmerge};
 
     #[test]
     fn test_map_union() {
@@ -283,7 +302,7 @@ mod test {
     }
 
     #[test]
-    fn consistency_atomize() {
+    fn consistency_atomize_unmerge() {
         let mut test_vec = Vec::new();
 
         // Size 0.
@@ -307,5 +326,6 @@ mod test {
 
         check_all(&test_vec);
         check_atomize_each(&test_vec);
+        check_unmerge(&test_vec);
     }
 }

@@ -1,6 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge, Unmerge};
 
 /// Pair compound lattice.
 ///
@@ -125,13 +125,25 @@ where
     }
 }
 
+impl<LatASelf, LatAOther, LatBSelf, LatBOther> Unmerge<Pair<LatAOther, LatBOther>>
+    for Pair<LatASelf, LatBSelf>
+where
+    LatASelf: Unmerge<LatAOther>,
+    LatBSelf: Unmerge<LatBOther>,
+{
+    fn unmerge(&mut self, other: &Pair<LatAOther, LatBOther>) -> bool {
+        // Do not short circuit
+        self.a.unmerge(&other.a) | self.b.unmerge(&other.b)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;
 
     use super::*;
     use crate::set_union::SetUnionHashSet;
-    use crate::test::{check_all, check_lattice_top};
+    use crate::test::{check_all, check_lattice_top, check_unmerge};
     use crate::WithTop;
 
     #[test]
@@ -148,6 +160,7 @@ mod test {
         }
 
         check_all(&test_vec);
+        check_unmerge(&test_vec);
     }
 
     #[test]
@@ -177,5 +190,6 @@ mod test {
 
         check_all(&test_vec);
         check_lattice_top(&test_vec);
+        check_unmerge(&test_vec);
     }
 }

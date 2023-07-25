@@ -1,6 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use crate::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge, Unmerge};
 
 /// Wraps a lattice in [`Option`], treating [`None`] as a new bottom element which compares as less
 /// than to all other values.
@@ -119,6 +119,22 @@ where
     }
 }
 
+impl<Inner, Other> Unmerge<WithBot<Other>> for WithBot<Inner>
+where
+    Inner: Unmerge<Other>,
+{
+    fn unmerge(&mut self, other: &WithBot<Other>) -> bool {
+        if let (Some(this), Some(other)) = (&mut self.0, &other.0) {
+            this.unmerge(other)
+        } else {
+            // Interestingly if either is bot (`None`) it still leaves self unchanged:
+            // X   - bot =   X (unchanged)
+            // bot -   X = bot (also unchanged, due to bot being the floor)
+            false
+        }
+    }
+}
+
 impl<Inner> Atomize for WithBot<Inner>
 where
     Inner: Atomize + LatticeFrom<<Inner as Atomize>::Atom>,
@@ -140,7 +156,7 @@ where
 mod test {
     use super::*;
     use crate::set_union::{SetUnionHashSet, SetUnionSingletonSet};
-    use crate::test::{check_all, check_atomize_each};
+    use crate::test::{check_all, check_atomize_each, check_unmerge};
 
     #[test]
     fn test_singly_nested_singleton_example() {
@@ -194,6 +210,18 @@ mod test {
             WithBot::new_from(SetUnionHashSet::new_from([1])),
             WithBot::new_from(SetUnionHashSet::new_from([0, 1])),
         ])
+    }
+
+    #[test]
+    fn unmerge() {
+        check_unmerge(&[
+            WithBot::default(),
+            WithBot::new_from(SetUnionHashSet::new_from([])),
+            WithBot::new_from(SetUnionHashSet::new_from([0])),
+            WithBot::new_from(SetUnionHashSet::new_from([1])),
+            WithBot::new_from(SetUnionHashSet::new_from([0, 1])),
+            WithBot::new_from(SetUnionHashSet::new((0..10).collect())),
+        ]);
     }
 
     #[test]
