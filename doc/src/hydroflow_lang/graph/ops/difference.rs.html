@@ -139,6 +139,9 @@
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
 <a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
@@ -154,6 +157,9 @@
 /// For a given tick, forms the set difference of the items in the input
 /// streams, returning items in the `pos` input that are not found in the
 /// `neg` input.
+///
+/// `difference` can be provided with one or two generic lifetime persistence arguments
+/// in the same way as [`join`](#join), see [`join`&#39;s documentation](#join) for more info.
 ///
 /// ```hydroflow
 /// source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;elephant&quot;]) -&gt; [pos]diff;

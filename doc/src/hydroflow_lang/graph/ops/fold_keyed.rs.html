@@ -231,6 +231,12 @@
 <a href="#231" id="231">231</a>
 <a href="#232" id="232">232</a>
 <a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 
 <span class="kw">use super</span>::{
@@ -250,12 +256,18 @@
 /// value that the accumulator should have for the next iteration.
 ///
 /// A special case of `fold`, in the spirit of SQL&#39;s GROUP BY and aggregation constructs. The input
-/// is partitioned into groups by the first field, and for each group the values in the second
+/// is partitioned into groups by the first field (&quot;keys&quot;), and for each group the values in the second
 /// field are accumulated via the closures in the arguments.
 ///
 /// &gt; Note: The closures have access to the [`context` object](surface_flows.md#the-context-object).
 ///
-/// `fold_keyed` can also be provided with one generic lifetime persistence argument, either
+/// ```hydroflow
+/// source_iter([(&quot;toy&quot;, 1), (&quot;toy&quot;, 2), (&quot;shoe&quot;, 11), (&quot;shoe&quot;, 35), (&quot;haberdashery&quot;, 7)])
+///     -&gt; fold_keyed(|| 0, |old: &amp;mut u32, val: u32| *old += val)
+///     -&gt; assert_eq([(&quot;toy&quot;, 3), (&quot;shoe&quot;, 46), (&quot;haberdashery&quot;, 7)]);
+/// ```
+///
+/// `fold_keyed` can be provided with one generic lifetime persistence argument, either
 /// `&#39;tick` or `&#39;static`, to specify how data persists. With `&#39;tick`, values will only be collected
 /// within the same tick. With `&#39;static`, values will be remembered across ticks and will be
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence

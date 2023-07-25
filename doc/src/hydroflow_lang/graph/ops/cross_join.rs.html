@@ -77,12 +77,6 @@
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
-<a href="#80" id="80">80</a>
-<a href="#81" id="81">81</a>
-<a href="#82" id="82">82</a>
-<a href="#83" id="83">83</a>
-<a href="#84" id="84">84</a>
-<a href="#85" id="85">85</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>syn::parse_quote;
 
@@ -102,15 +96,8 @@
 /// my_join = cross_join() -&gt; assert_eq([(&quot;happy&quot;, &quot;dog&quot;), (&quot;sad&quot;, &quot;dog&quot;), (&quot;happy&quot;, &quot;cat&quot;), (&quot;sad&quot;, &quot;cat&quot;)]);
 /// ```
 ///
-/// `cross_join` can also be provided with one or two generic lifetime persistence arguments
-/// in the same was as [`join`](#join), see [`join`&#39;s documentation](#join) for more info. The default is `&#39;tick` for both persistence arguments.
-///
-/// `cross_join` also accepts one type argument that controls how the join state is built up. This (currently) allows switching between a SetUnion and NonSetUnion implementation.
-/// For example:
-/// ```hydroflow,ignore
-/// join::&lt;HalfSetJoinState&gt;();
-/// join::&lt;HalfMultisetJoinState&gt;();
-/// ```
+/// `cross_join` can be provided with one or two generic lifetime persistence arguments
+/// in the same way as [`join`](#join), see [`join`&#39;s documentation](#join) for more info.
 ///
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;&amp;str&gt;();
@@ -126,7 +113,8 @@
 /// flow.run_tick();
 /// ```
 /// Prints only `&quot;(hello, oakland)&quot;` and `&quot;(bye, oakland)&quot;`. The `source_iter` is only included in
-/// the first tick, then forgotten.
+/// the first tick, then forgotten, so when `&quot;san francisco&quot;` arrives on input `[1]` in the second tick,
+/// there is nothing for it to match with from input `[0]`, and therefore it does appear in the output.
 </span><span class="kw">pub const </span>CROSS_JOIN: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;cross_join&quot;</span>,
     categories: <span class="kw-2">&amp;</span>[OperatorCategory::MultiIn],

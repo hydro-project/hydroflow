@@ -222,12 +222,12 @@
 /// The output will have one tuple for each distinct `K`, with an accumulated (reduced) value of
 /// type `V`.
 ///
-/// If you need the accumulated value to have a different type, use [`fold_keyed`](#keyed_fold).
+/// If you need the accumulated value to have a different type than the input, use [`fold_keyed`](#keyed_fold).
 ///
 /// &gt; Arguments: one Rust closures. The closure takes two arguments: an `&amp;mut` &#39;accumulator&#39;, and
 /// an element. Accumulator should be updated based on the element.
 ///
-/// A special case of `fold`, in the spirit of SQL&#39;s GROUP BY and aggregation constructs. The input
+/// A special case of `reduce`, in the spirit of SQL&#39;s GROUP BY and aggregation constructs. The input
 /// is partitioned into groups by the first field, and for each group the values in the second
 /// field are accumulated via the closures in the arguments.
 ///
@@ -248,7 +248,7 @@
 ///     -&gt; assert_eq([(&quot;toy&quot;, 3), (&quot;shoe&quot;, 46), (&quot;haberdashery&quot;, 7)]);
 /// ```
 ///
-/// Example using `&#39;tick` persistence:
+/// Example using `&#39;tick` persistence and type arguments:
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(&amp;str, &amp;str)&gt;();
 /// let mut flow = hydroflow::hydroflow_syntax! {
