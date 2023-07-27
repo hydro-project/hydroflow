@@ -162,46 +162,114 @@ pub fn check_lattice_top<T: IsTop + LatticeOrd>(items: &[T]) {
 }
 
 /// Checks that [`Unmerge`] is implemented correctly for all pairs of items.
-pub fn check_unmerge<T: Unmerge<T> + Merge<T> + Clone + LatticeOrd + Debug>(items: &[T]) {
+pub fn check_unmerge<T: Unmerge<T> + Merge<T> + IsBot + Clone + LatticeOrd + Debug>(items: &[T]) {
+    use std::cmp::Ordering;
+
     for [x, y] in cartesian_power(items) {
+        // Z = X - Y
         let mut z = x.clone();
         let changed_unmerge = z.unmerge(y);
-        if changed_unmerge {
-            assert!(
-                &z < x,
-                "Result must be less than original (changed_unmerge `true`). Original {:?}, subtraction {:?}, result {:?}",
-                x,
-                y,
-                z
-            );
-        } else {
-            assert_eq!(&z, x,
-                "Result should be unchanged (changed_unmerge `false`). Original {:?}, subtraction {:?}, result {:?}",
-                x,
-                y,
-                z);
-        }
-        let changed_merge = z.merge(y.clone());
+        // W = Z merge Y
+        let mut w = z.clone();
+        let changed_merge = w.merge(y.clone());
 
-        if !(y <= x) {
-            // Subtraction not less than, contains extra fields, so no equality.
-            assert!(
-                changed_merge,
-                "Subtract was not less than or equal to original, merge should've returned true (changed). Original {:?}, subtraction {:?}, re-merged result {:?} unchanged.",
-                x, y, z
-            );
-            let w = x.clone().merge_owned(y.clone());
-            assert_eq!(w, z);
-        } else {
-            assert_eq!(
-                changed_unmerge, changed_merge,
-                "changed_unmerge {} should be the same as changed_merge {}. Original {:?}, subtraction {:?}, re-merged result {:?}.",
-                changed_unmerge, changed_merge, x, y, z
-            );
-            assert_eq!(x, &z,
-                "Re-merged result should equal original. Original {:?}, subtraction {:?}, re-merged result {:?}.",
-                x, y, z);
+        match x.partial_cmp(y) {
+            Some(Ordering::Greater) => {
+                if y.is_bot() {
+                    assert!(!changed_unmerge, "`X {:?} - Y {:?} = Z {:?}`. Expected `changed_unmerge` to be false `Y` is bot, but was true.", x, y, z);
+                    assert_eq!(
+                        &z, x,
+                        "`X {:?} - Y {:?} = Z {:?}`. Expected `Z == X` since `Y` is bot.",
+                        x, y, z
+                    );
+                    assert!(!changed_merge, "`X {:?} - Y {:?} = Z {:?}`. Expected `{:?} W = Z merge Y` to return `changed_merge` false since `Y` is bot.", x, y, z, w);
+                } else {
+                    assert!(changed_unmerge, "`X {:?} - Y {:?} = Z {:?}`. Expected `changed_unmerge` to be true since `X > Y` and `Y` is not bot, but was false.", x, y, z);
+                    assert!(
+                        &z < x,
+                        "`X {:?} - Y {:?} = Z {:?}`. Expected `Z < X` since `Y` is not bot.",
+                        x,
+                        y,
+                        z
+                    );
+                    assert_eq!(
+                        None,
+                        z.partial_cmp(y),
+                        "`X {:?} - Y {:?} = Z {:?}`. Expected `Z` to be incomparable with `X` since `Y` is not bot.",
+                        x,
+                        y,
+                        z
+                    );
+                    assert!(changed_merge, "`X {:?} - Y {:?} = Z {:?}`. Expected `W {:?} = Z merge Y` to return `changed_merge` true since `Y` is not bot.", x, y, z, w);
+                }
+                assert_eq!(
+                    x, &w,
+                    "`X {:?} - Y {:?} = Z {:?}`. Expected W `{:?}` to equal X.",
+                    x, y, z, w
+                );
+            }
+            Some(Ordering::Equal | Ordering::Less) => {
+                if x.is_bot() {
+                    assert!(!changed_unmerge, "`X {:?} - Y {:?} = Z {:?}`. Expected `changed_unmerge` to be false since `X` is bottom.", x, y, z);
+                } else {
+                    assert!(changed_unmerge, "`X {:?} - Y {:?} = Z {:?}`. Expected `changed_unmerge` to be true since `X >= Y` so Z should be changed to bottom", x, y, z);
+                    assert!(
+                        z.is_bot(),
+                        "`X {:?} - Y {:?} = Z {:?}`. Expected `Z` to be bottom",
+                        x,
+                        y,
+                        z
+                    );
+                }
+            }
+            None => {
+                assert!(changed_unmerge);
+                assert_eq!(x, &z);
+
+                // let w = x.clone().merge_owned(y.clone());
+                // assert_ne!(x, &z);
+                // assert_eq!(w, z);
+            }
         }
+
+        // let mut z = x.clone();
+        // let changed_unmerge = z.unmerge(y);
+        // if changed_unmerge {
+        //     assert!(
+        //         &z < x,
+        //         "Result must be less than original (changed_unmerge `true`). Original {:?}, subtraction {:?}, result {:?}",
+        //         x,
+        //         y,
+        //         z
+        //     );
+        // } else {
+        //     assert_eq!(&z, x,
+        //         "Result should be unchanged (changed_unmerge `false`). Original {:?}, subtraction {:?}, result {:?}",
+        //         x,
+        //         y,
+        //         z);
+        // }
+        // let changed_merge = z.merge(y.clone());
+
+        // if !(y <= x) {
+        //     // Subtraction not less than, contains extra fields, so no equality.
+        //     assert!(
+        //         changed_merge,
+        //         "Subtract was not less than or equal to original, merge should've returned true (changed). Original {:?}, subtraction {:?}, re-merged result {:?} unchanged.",
+        //         x, y, z
+        //     );
+        //     let w = x.clone().merge_owned(y.clone());
+        //     assert_eq!(w, z);
+        // } else {
+        //     assert_eq!(
+        //         changed_unmerge, changed_merge,
+        //         "changed_unmerge {} should be the same as changed_merge {}. Original {:?}, subtraction {:?}, re-merged result {:?}.",
+        //         changed_unmerge, changed_merge, x, y, z
+        //     );
+        //     assert_eq!(x, &z,
+        //         "Re-merged result should equal original. Original {:?}, subtraction {:?}, re-merged result {:?}.",
+        //         x, y, z);
+        // }
     }
 }
 

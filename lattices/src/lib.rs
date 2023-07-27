@@ -109,15 +109,35 @@ pub trait IsTop {
 }
 
 /// Trait for "un-merging" (subtracting or differentiating) lattices.
+///
+/// For `A unmerge B`:
+/// * `A > B`: In the simplest case, this acts as the inverse to [`Merge`]. This simplest case
+/// occurs only when the instances being subtracted is _strictly less than_ the instance being
+/// unmerged from. Mathematically, if `Z = A unmerge B` then `B merge Z = A`. If multiple values
+/// satisfy this condition, `Z` should be the smallest of such values, if a smallest value exists.
+/// * `A <= B`: In this case the instance being subtracted is greater than or equal the original.
+/// The result is bottom, and `true` is returned (unless `A` is already bottom, in which case `false`)
+/// is returned because it is unchanged.
+/// * `A` and `B` are incomparable. In this case, we logically substitute `B` for a different value
+/// `B'` which _is_ in the past of `A`: `A > B'`. `B'` is defined to be the largest value which is
+/// less than both `A` and `B`, the Greatest Lower Bound (GLB), also called the _meet_. Then
+/// subtract `B'` from `A` as in the simplest case above.
 pub trait Unmerge<Other> {
+    /// "Un-merges" `other` from `self`, roughly `self = self - other`.
+    ///
+    /// Returns `false` without modifying `self` if `other > self`. This can be thought of as
+    /// returning bottom (regardless of if bottom actually exists for `Self`).
     fn unmerge(&mut self, other: &Other) -> bool;
 
-    fn unmerge_owned(mut self, other: &Other) -> Self
+    /// "Un-merges" `other` from `self`, roughly `self - other`.
+    ///
+    /// Returns `None` if `other > self`. This can be thought of as returning bottom (regardless
+    /// of if bottom actually exists for `Self`).
+    fn unmerge_owned(mut self, other: &Other) -> Option<Self>
     where
         Self: Sized,
     {
-        Self::unmerge(&mut self, other);
-        self
+        Self::unmerge(&mut self, other).then_some(self)
     }
 }
 
