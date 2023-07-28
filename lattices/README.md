@@ -88,3 +88,9 @@ for those nested lattices.
 A bottom (⊥) is strictly less than all other values. A top (⊤) is strictly greater than all other
 values. `IsBot::is_bot` and `IsTop::is_top` determine if a lattice instance is top or
 bottom respectively.
+
+### `Atomize`
+
+[`Atomize::atomize`] converts a lattice point into a bunch of smaller lattice points. When these
+"atoms" are merged together they will form the original lattice point. See the docs for more
+precise semantics.
