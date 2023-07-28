@@ -161,18 +161,31 @@ pub fn check_lattice_top<T: IsTop + LatticeOrd + Debug>(items: &[T]) {
 }
 
 /// Check that the atomized lattice points re-merge to form the same original lattice point, for each item in `items`.
-pub fn check_atomize_each<T: Atomize + Merge<T::Atom> + PartialEq + Default + Clone + Debug>(
+pub fn check_atomize_each<
+    T: Atomize + Merge<T::Atom> + LatticeOrd + IsBot + Default + Clone + Debug,
+>(
     items: &[T],
-) {
+) where
+    T::Atom: Debug,
+{
     for item in items {
         let mut reformed = T::default();
         let mut atoms = item.clone().atomize().peekable();
-        assert!(
-            atoms.peek().is_some(),
-            "`{:?}` atomize must return at least one value",
-            item
+        assert_eq!(
+            atoms.peek().is_none(),
+            item.is_bot(),
+            "`{:?}` atomize should return empty iterator ({}) if and only if item is bot ({}).",
+            item,
+            atoms.peek().is_none(),
+            item.is_bot()
         );
         for atom in atoms {
+            assert!(
+                !atom.is_bot(),
+                "`{:?}` atomize illegally returned a bottom atom `{:?}`.",
+                item,
+                atom,
+            );
             reformed.merge(atom);
         }
         assert_eq!(item, &reformed, "`{:?}` atomize failed to reform", item);
