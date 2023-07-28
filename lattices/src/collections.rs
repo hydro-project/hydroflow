@@ -4,9 +4,9 @@ use std::borrow::Borrow;
 use std::hash::Hash;
 
 use cc_traits::{
-    covariant_item_mut, covariant_item_ref, covariant_key_ref, Collection, CollectionMut,
-    CollectionRef, Get, GetKeyValue, GetKeyValueMut, GetMut, Iter, IterMut, Keyed, KeyedRef, Len,
-    MapIter, MapIterMut,
+    covariant_item_mut, covariant_item_ref, covariant_key_ref, simple_keyed_ref, Collection,
+    CollectionMut, CollectionRef, Get, GetKeyValue, GetKeyValueMut, GetMut, Iter, IterMut, Keyed,
+    KeyedRef, Len, MapIter, MapIterMut, SimpleKeyedRef,
 };
 
 /// A [`Vec`]-wrapper representing a naively-implemented set.
@@ -198,6 +198,9 @@ where
             .find(|(k, _v)| key == K::borrow(k))
     }
 }
+impl<K, V> SimpleKeyedRef for VecMap<K, V> {
+    simple_keyed_ref!();
+}
 impl<K, V> MapIter for VecMap<K, V> {
     type Iter<'a> = std::iter::Zip<std::slice::Iter<'a, K>, std::slice::Iter<'a, V>>
 	where
@@ -386,9 +389,9 @@ impl<K, V> Iter for SingletonMap<K, V> {
         std::iter::once(&self.1)
     }
 }
-// impl<K, V> SimpleKeyedRef for SingletonMap<K, V> {
-//     simple_keyed_ref!();
-// }
+impl<K, V> SimpleKeyedRef for SingletonMap<K, V> {
+    simple_keyed_ref!();
+}
 impl<K, V> MapIter for SingletonMap<K, V> {
     type Iter<'a> = std::iter::Once<(&'a K, &'a V)>
 	where
@@ -605,9 +608,9 @@ impl<K, V> Iter for OptionMap<K, V> {
         self.0.as_ref().map(|(_k, v)| v).into_iter()
     }
 }
-// impl<K, V> SimpleKeyedRef for OptionMap<K, V> {
-//     simple_keyed_ref!();
-// }
+impl<K, V> SimpleKeyedRef for OptionMap<K, V> {
+    simple_keyed_ref!();
+}
 impl<K, V> MapIter for OptionMap<K, V> {
     type Iter<'a> = std::option::IntoIter<(&'a K, &'a V)>
 	where
@@ -818,6 +821,9 @@ impl<K, V, const N: usize> Iter for ArrayMap<K, V, N> {
     fn iter(&self) -> Self::Iter<'_> {
         self.vals.iter()
     }
+}
+impl<K, V, const N: usize> SimpleKeyedRef for ArrayMap<K, V, N> {
+    simple_keyed_ref!();
 }
 impl<K, V, const N: usize> MapIter for ArrayMap<K, V, N> {
     type Iter<'a> = std::iter::Zip<std::slice::Iter<'a, K>, std::slice::Iter<'a, V>>
