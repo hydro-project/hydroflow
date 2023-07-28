@@ -310,4 +310,22 @@ mod test {
         check_all(&test_vec);
         check_atomize_each(&test_vec);
     }
+
+    /// Check that a key with a value of bottom is the same as an empty map, etc.
+    #[test]
+    fn test_collapes_bot() {
+        let map_empty = <MapUnionHashMap<&str, SetUnionHashSet<u64>>>::default();
+        let map_a_bot = <MapUnionSingletonMap<&str, SetUnionHashSet<u64>>>::new(SingletonMap(
+            "a",
+            Default::default(),
+        ));
+        let map_b_bot = <MapUnionSingletonMap<&str, SetUnionHashSet<u64>>>::new(SingletonMap(
+            "b",
+            Default::default(),
+        ));
+
+        assert_eq!(map_empty, map_a_bot);
+        assert_eq!(map_empty, map_b_bot);
+        assert_eq!(map_a_bot, map_b_bot);
+    }
 }
