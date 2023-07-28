@@ -112,6 +112,8 @@ pub trait IsTop {
 /// will be broken up into individual singleton elements.
 ///
 /// Formally, breaks up `Self` into an set of lattice points forming a (strong) [antichain](https://en.wikipedia.org/wiki/Antichain).
+/// "Strong" in the sense that any pair of lattice points in the antichain should have a greatest
+/// lower bound (GLB or "meet") of bottom.
 pub trait Atomize: Merge<Self::Atom> {
     /// The type of atoms for this lattice.
     type Atom: 'static;
