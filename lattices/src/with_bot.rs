@@ -131,7 +131,7 @@ where
 
 impl<Inner> Atomize for WithBot<Inner>
 where
-    Inner: Atomize + LatticeFrom<<Inner as Atomize>::Atom>,
+    Inner: 'static + Atomize + LatticeFrom<<Inner as Atomize>::Atom>,
 {
     type Atom = WithBot<Inner::Atom>;
 
@@ -139,10 +139,12 @@ where
     type AtomIter = Box<dyn Iterator<Item = Self::Atom>>;
 
     fn atomize(self) -> Self::AtomIter {
-        match self.0 {
-            Some(inner) => Box::new(inner.atomize().map(WithBot::new_from)),
-            None => Box::new(std::iter::once(WithBot::new(None))),
-        }
+        Box::new(
+            self.0
+                .into_iter()
+                .flat_map(Atomize::atomize)
+                .map(WithBot::new_from),
+        )
     }
 }
 
