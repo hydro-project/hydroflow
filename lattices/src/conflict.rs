@@ -1,6 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use crate::{IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// A `Conflict` lattice, stores a single instance of `T` and goes to a "conflict" state (`None`)
 /// if inequal `T` instances are merged together.
@@ -91,6 +91,12 @@ where
     }
 }
 
+impl<T> IsBot for Conflict<T> {
+    fn is_bot(&self) -> bool {
+        false
+    }
+}
+
 impl<T> IsTop for Conflict<T> {
     fn is_top(&self) -> bool {
         self.0.is_none()
@@ -100,10 +106,7 @@ impl<T> IsTop for Conflict<T> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::test::{
-        check_all, check_lattice_ord, check_lattice_properties, check_lattice_top,
-        check_partial_ord_properties,
-    };
+    use crate::test::check_all;
     use crate::WithBot;
 
     #[test]
@@ -113,11 +116,7 @@ mod test {
             Conflict::new_from("bar"),
             Conflict::new(None),
         ];
-        check_lattice_ord(items);
-        check_partial_ord_properties(items);
-        check_lattice_properties(items);
-        // check_lattice_bot(items);
-        check_lattice_top(items);
+        check_all(items);
     }
 
     #[test]
@@ -129,6 +128,5 @@ mod test {
             WithBot::new(None),
         ];
         check_all(items);
-        check_lattice_top(items);
     }
 }
