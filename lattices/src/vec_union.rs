@@ -2,7 +2,7 @@ use std::cmp::Ordering::{self, *};
 
 use cc_traits::Iter;
 
-use crate::{IsBot, LatticeFrom, LatticeOrd, Merge};
+use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Vec-union compound lattice.
 ///
@@ -139,6 +139,12 @@ impl<LatSelf, LatOther> LatticeOrd<VecUnion<LatOther>> for VecUnion<LatSelf> whe
 impl<Lat> IsBot for VecUnion<Lat> {
     fn is_bot(&self) -> bool {
         self.vec.is_empty()
+    }
+}
+
+impl<Lat> IsTop for VecUnion<Lat> {
+    fn is_top(&self) -> bool {
+        false
     }
 }
 

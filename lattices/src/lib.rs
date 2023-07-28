@@ -29,6 +29,12 @@ pub use vec_union::VecUnion;
 pub use with_bot::WithBot;
 pub use with_top::WithTop;
 
+/// Alias trait for lattice types.
+#[sealed]
+pub trait Lattice: Sized + Merge<Self> + LatticeOrd + NaiveLatticeOrd + IsBot + IsTop {}
+#[sealed]
+impl<T> Lattice for T where T: Sized + Merge<Self> + LatticeOrd + NaiveLatticeOrd + IsBot + IsTop {}
+
 /// Trait for lattice merge (AKA "join" or "least upper bound").
 pub trait Merge<Other> {
     /// Merge `other` into the `self` lattice.
@@ -99,12 +105,16 @@ pub trait LatticeFrom<Other> {
 /// Trait to check if a lattice instance is bottom (⊥).
 pub trait IsBot {
     /// Returns if `self` is lattice bottom (⊥).
+    ///
+    /// Must be consistent with equality, any element equal to bottom is also considered to be bottom.
     fn is_bot(&self) -> bool;
 }
 
 /// Trait to check if a lattice instance is top (⊤) and therefore cannot change any futher.
 pub trait IsTop {
     /// Returns if `self` is lattice top (⊤).
+    ///
+    /// Must be consistent with equality, any element equal to top is also considered to be top.
     fn is_top(&self) -> bool;
 }
 
@@ -116,7 +126,7 @@ pub trait IsTop {
 /// lower bound (GLB or "meet") of bottom.
 pub trait Atomize: Merge<Self::Atom> {
     /// The type of atoms for this lattice.
-    type Atom: 'static;
+    type Atom: 'static + IsBot;
 
     /// The iter type iterating the antichain atoms.
     type AtomIter: 'static + Iterator<Item = Self::Atom>;

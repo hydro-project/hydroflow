@@ -4,8 +4,8 @@ use std::cmp::Ordering::{self, *};
 use std::collections::{BTreeSet, HashSet};
 
 use crate::cc_traits::{Iter, Len, Set};
-use crate::collections::{ArraySet, SingletonSet};
-use crate::{Atomize, IsBot, LatticeFrom, LatticeOrd, Merge};
+use crate::collections::{ArraySet, OptionSet, SingletonSet};
+use crate::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Set-union lattice.
 ///
@@ -123,22 +123,28 @@ where
     }
 }
 
+impl<Set> IsTop for SetUnion<Set> {
+    fn is_top(&self) -> bool {
+        false
+    }
+}
+
 impl<Set, Item> Atomize for SetUnion<Set>
 where
     Set: Len + IntoIterator<Item = Item> + Extend<Item>,
     Set::IntoIter: 'static,
     Item: 'static,
 {
-    type Atom = SetUnionOption<Item>;
+    type Atom = SetUnionOptionSet<Item>;
 
     // TODO: use impl trait.
     type AtomIter = Box<dyn Iterator<Item = Self::Atom>>;
 
     fn atomize(self) -> Self::AtomIter {
         if self.0.is_empty() {
-            Box::new(std::iter::once(SetUnionOption::default()))
+            Box::new(std::iter::once(SetUnionOptionSet::default()))
         } else {
-            Box::new(self.0.into_iter().map(SetUnionOption::new_from))
+            Box::new(self.0.into_iter().map(SetUnionOptionSet::new_from))
         }
     }
 }
@@ -159,7 +165,7 @@ pub type SetUnionArray<Item, const N: usize> = SetUnion<ArraySet<Item, N>>;
 pub type SetUnionSingletonSet<Item> = SetUnion<SingletonSet<Item>>;
 
 /// [`Option`]-backed [`SetUnion`] lattice.
-pub type SetUnionOption<Item> = SetUnion<Option<Item>>;
+pub type SetUnionOptionSet<Item> = SetUnion<OptionSet<Item>>;
 
 #[cfg(test)]
 mod test {
