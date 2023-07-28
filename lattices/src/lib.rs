@@ -133,7 +133,8 @@ pub trait Atomize: Merge<Self::Atom> {
 
     /// Atomize self: convert into an iter of atoms.
     ///
-    /// Must always return at least one value.
+    /// The returned iterator should be empty if and only if `self.is_bot()` is true.
+    /// All atoms in the returned iterator should have `self.is_bot()` be false.
     ///
     /// Returned values must merge to reform a value equal to the original `self`.
     fn atomize(self) -> Self::AtomIter;

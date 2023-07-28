@@ -141,11 +141,7 @@ where
     type AtomIter = Box<dyn Iterator<Item = Self::Atom>>;
 
     fn atomize(self) -> Self::AtomIter {
-        if self.0.is_empty() {
-            Box::new(std::iter::once(SetUnionOptionSet::default()))
-        } else {
-            Box::new(self.0.into_iter().map(SetUnionOptionSet::new_from))
-        }
+        Box::new(self.0.into_iter().map(SetUnionOptionSet::new_from))
     }
 }
 

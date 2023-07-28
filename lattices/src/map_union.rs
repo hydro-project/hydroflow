@@ -233,14 +233,10 @@ where
     type AtomIter = Box<dyn Iterator<Item = Self::Atom>>;
 
     fn atomize(self) -> Self::AtomIter {
-        if self.0.is_empty() {
-            Box::new(std::iter::once(MapUnionOptionMap::default()))
-        } else {
-            Box::new(self.0.into_iter().flat_map(|(k, val)| {
-                val.atomize()
-                    .map(move |v| MapUnionOptionMap::new_from((k.clone(), v)))
-            }))
-        }
+        Box::new(self.0.into_iter().flat_map(|(k, val)| {
+            val.atomize()
+                .map(move |v| MapUnionOptionMap::new_from((k.clone(), v)))
+        }))
     }
 }
 
