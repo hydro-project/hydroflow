@@ -131,7 +131,7 @@ mod test {
 
     use super::*;
     use crate::set_union::SetUnionHashSet;
-    use crate::test::{check_all, check_lattice_top};
+    use crate::test::check_all;
     use crate::WithTop;
 
     #[test]
@@ -176,6 +176,5 @@ mod test {
         }
 
         check_all(&test_vec);
-        check_lattice_top(&test_vec);
     }
 }

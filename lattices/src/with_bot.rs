@@ -8,7 +8,7 @@ use crate::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 /// This can be used for giving a sensible default/bottom element to lattices that don't
 /// necessarily have one.
 #[repr(transparent)]
-#[derive(Copy, Clone, Debug, Eq)]
+#[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct WithBot<Inner>(pub Option<Inner>);
 impl<Inner> WithBot<Inner> {
@@ -49,16 +49,16 @@ impl<Inner> Default for WithBot<Inner> {
 impl<Inner, Other> Merge<WithBot<Other>> for WithBot<Inner>
 where
     Inner: Merge<Other> + LatticeFrom<Other>,
+    Other: IsBot,
 {
     fn merge(&mut self, other: WithBot<Other>) -> bool {
         match (&mut self.0, other.0) {
-            (None, None) => false,
-            (Some(_), None) => false,
-            (this @ None, Some(other_inner)) => {
+            (this @ None, Some(other_inner)) if !other_inner.is_bot() => {
                 *this = Some(LatticeFrom::lattice_from(other_inner));
                 true
             }
             (Some(self_inner), Some(other_inner)) => self_inner.merge(other_inner),
+            (_self, _none_or_bot) => false,
         }
     }
 }
@@ -74,11 +74,14 @@ where
 
 impl<Inner, Other> PartialOrd<WithBot<Other>> for WithBot<Inner>
 where
-    Inner: PartialOrd<Other>,
+    Inner: PartialOrd<Other> + IsBot,
+    Other: IsBot,
 {
     fn partial_cmp(&self, other: &WithBot<Other>) -> Option<Ordering> {
         match (&self.0, &other.0) {
             (None, None) => Some(Equal),
+            (None, Some(bot)) if bot.is_bot() => Some(Equal),
+            (Some(bot), None) if bot.is_bot() => Some(Equal),
             (None, Some(_)) => Some(Less),
             (Some(_), None) => Some(Greater),
             (Some(this_inner), Some(other_inner)) => this_inner.partial_cmp(other_inner),
@@ -92,21 +95,28 @@ impl<Inner, Other> LatticeOrd<WithBot<Other>> for WithBot<Inner> where
 
 impl<Inner, Other> PartialEq<WithBot<Other>> for WithBot<Inner>
 where
-    Inner: PartialEq<Other>,
+    Inner: PartialEq<Other> + IsBot,
+    Other: IsBot,
 {
     fn eq(&self, other: &WithBot<Other>) -> bool {
         match (&self.0, &other.0) {
             (None, None) => true,
+            (None, Some(bot)) if bot.is_bot() => true,
+            (Some(bot), None) if bot.is_bot() => true,
             (None, Some(_)) => false,
             (Some(_), None) => false,
             (Some(this_inner), Some(other_inner)) => this_inner == other_inner,
         }
     }
 }
+impl<Inner> Eq for WithBot<Inner> where Self: PartialEq {}
 
-impl<Inner> IsBot for WithBot<Inner> {
+impl<Inner> IsBot for WithBot<Inner>
+where
+    Inner: IsBot,
+{
     fn is_bot(&self) -> bool {
-        self.0.is_none()
+        self.0.as_ref().map_or(true, IsBot::is_bot)
     }
 }
 
@@ -169,16 +179,21 @@ mod test {
         type B = WithBot<SetUnionHashSet<usize>>;
 
         assert_eq!(B::default().partial_cmp(&B::default()), Some(Equal));
-        assert_eq!(B::new_from(SetUnionHashSet::new_from([])).partial_cmp(&B::default()), Some(Greater));
-        assert_eq!(B::default().partial_cmp(&B::new_from(SetUnionHashSet::new_from([]))), Some(Less));
+
+        // Test bot collapsing - `WithBot(Some(Bot))` equals `WithBot(None)`.
+        assert_eq!(B::new_from(SetUnionHashSet::new_from([])).partial_cmp(&B::default()), Some(Equal));
+        assert_eq!(B::default().partial_cmp(&B::new_from(SetUnionHashSet::new_from([]))), Some(Equal));
+        assert!(B::new_from(SetUnionHashSet::new_from([])).eq(&B::default()));
+        assert!(B::default().eq(&B::new_from(SetUnionHashSet::new_from([]))));
+
+        // PartialOrd
         assert_eq!(B::new_from(SetUnionHashSet::new_from([])).partial_cmp(&B::new_from(SetUnionHashSet::new_from([]))), Some(Equal));
         assert_eq!(B::new_from(SetUnionHashSet::new_from([0])).partial_cmp(&B::new_from(SetUnionHashSet::new_from([]))), Some(Greater));
         assert_eq!(B::new_from(SetUnionHashSet::new_from([])).partial_cmp(&B::new_from(SetUnionHashSet::new_from([0]))), Some(Less));
         assert_eq!(B::new_from(SetUnionHashSet::new_from([0])).partial_cmp(&B::new_from(SetUnionHashSet::new_from([1]))), None);
 
+        // PartialEq
         assert!(B::default().eq(&B::default()));
-        assert!(!B::new_from(SetUnionHashSet::new_from([])).eq(&B::default()));
-        assert!(!B::default().eq(&B::new_from(SetUnionHashSet::new_from([]))));
         assert!(B::new_from(SetUnionHashSet::new_from([])).eq(&B::new_from(SetUnionHashSet::new_from([]))));
         assert!(!B::new_from(SetUnionHashSet::new_from([0])).eq(&B::new_from(SetUnionHashSet::new_from([]))));
         assert!(!B::new_from(SetUnionHashSet::new_from([])).eq(&B::new_from(SetUnionHashSet::new_from([0]))));

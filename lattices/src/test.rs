@@ -2,17 +2,16 @@
 
 use std::fmt::Debug;
 
-use crate::{Atomize, IsBot, IsTop, LatticeOrd, Merge, NaiveLatticeOrd};
+use crate::{Atomize, IsBot, IsTop, Lattice, LatticeOrd, Merge, NaiveLatticeOrd};
 
 /// Helper which calls [`check_lattice_ord`], [`check_partial_ord_properties`],
 /// [`check_lattice_properties`], and [`check_lattice_bot`].
-pub fn check_all<T: LatticeOrd + NaiveLatticeOrd + Merge<T> + IsBot + Clone + Eq + Debug>(
-    items: &[T],
-) {
+pub fn check_all<T: Lattice + Clone + Eq + Debug>(items: &[T]) {
     check_lattice_ord(items);
     check_partial_ord_properties(items);
     check_lattice_properties(items);
     check_lattice_bot(items);
+    check_lattice_top(items);
 }
 
 /// Check that the lattice's `PartialOrd` implementation agrees with the `NaiveLatticeOrd` partial
@@ -140,24 +139,24 @@ pub fn check_lattice_properties<T: Merge<T> + Clone + Eq + Debug>(items: &[T]) {
 }
 
 /// Checks that the item which is bot is less than (or equal to) all other items.
-pub fn check_lattice_bot<T: IsBot + LatticeOrd>(items: &[T]) {
-    let bot = items
-        .iter()
-        .find(|&x| IsBot::is_bot(x))
-        .expect("Expected `items` to contain bottom.");
+pub fn check_lattice_bot<T: IsBot + LatticeOrd + Debug>(items: &[T]) {
+    let Some(bot) = items.iter().find(|&x| IsBot::is_bot(x)) else {
+        return;
+    };
     for x in items {
         assert!(bot <= x);
+        assert_eq!(bot == x, x.is_bot(), "{:?}", x);
     }
 }
 
 /// Checks that the item which is top is greater than (or equal to) all other items.
-pub fn check_lattice_top<T: IsTop + LatticeOrd>(items: &[T]) {
-    let top = items
-        .iter()
-        .find(|&x| IsTop::is_top(x))
-        .expect("Expected `items` to contain top.");
+pub fn check_lattice_top<T: IsTop + LatticeOrd + Debug>(items: &[T]) {
+    let Some(top) = items.iter().find(|&x| IsTop::is_top(x)) else {
+        return;
+    };
     for x in items {
         assert!(x <= top);
+        assert_eq!(top == x, x.is_top(), "{:?}", x);
     }
 }
 

@@ -115,9 +115,12 @@ where
     }
 }
 
-impl<Inner> IsTop for WithTop<Inner> {
+impl<Inner> IsTop for WithTop<Inner>
+where
+    Inner: IsTop,
+{
     fn is_top(&self) -> bool {
-        self.0.is_none()
+        self.0.as_ref().map_or(true, IsTop::is_top)
     }
 }
 
