@@ -128,6 +128,16 @@
 <a href="#128" id="128">128</a>
 <a href="#129" id="129">129</a>
 <a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 #![doc = <span class="macro">include_str!</span>(<span class="string">&quot;../README.md&quot;</span>)]
 
@@ -158,6 +168,12 @@
 <span class="kw">pub use </span>vec_union::VecUnion;
 <span class="kw">pub use </span>with_bot::WithBot;
 <span class="kw">pub use </span>with_top::WithTop;
+
+<span class="doccomment">/// Alias trait for lattice types.
+</span><span class="attr">#[sealed]
+</span><span class="kw">pub trait </span>Lattice: Sized + Merge&lt;<span class="self">Self</span>&gt; + LatticeOrd + NaiveLatticeOrd + IsBot + IsTop {}
+<span class="attr">#[sealed]
+</span><span class="kw">impl</span>&lt;T&gt; Lattice <span class="kw">for </span>T <span class="kw">where </span>T: Sized + Merge&lt;<span class="self">Self</span>&gt; + LatticeOrd + NaiveLatticeOrd + IsBot + IsTop {}
 
 <span class="doccomment">/// Trait for lattice merge (AKA &quot;join&quot; or &quot;least upper bound&quot;).
 </span><span class="kw">pub trait </span>Merge&lt;Other&gt; {
@@ -229,12 +245,16 @@
 <span class="doccomment">/// Trait to check if a lattice instance is bottom (⊥).
 </span><span class="kw">pub trait </span>IsBot {
     <span class="doccomment">/// Returns if `self` is lattice bottom (⊥).
+    ///
+    /// Must be consistent with equality, any element equal to bottom is also considered to be bottom.
     </span><span class="kw">fn </span>is_bot(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool;
 }
 
 <span class="doccomment">/// Trait to check if a lattice instance is top (⊤) and therefore cannot change any futher.
 </span><span class="kw">pub trait </span>IsTop {
     <span class="doccomment">/// Returns if `self` is lattice top (⊤).
+    ///
+    /// Must be consistent with equality, any element equal to top is also considered to be top.
     </span><span class="kw">fn </span>is_top(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool;
 }
 
@@ -246,7 +266,7 @@
 /// lower bound (GLB or &quot;meet&quot;) of bottom.
 </span><span class="kw">pub trait </span>Atomize: Merge&lt;<span class="self">Self</span>::Atom&gt; {
     <span class="doccomment">/// The type of atoms for this lattice.
-    </span><span class="kw">type </span>Atom: <span class="lifetime">&#39;static</span>;
+    </span><span class="kw">type </span>Atom: <span class="lifetime">&#39;static </span>+ IsBot;
 
     <span class="doccomment">/// The iter type iterating the antichain atoms.
     </span><span class="kw">type </span>AtomIter: <span class="lifetime">&#39;static </span>+ Iterator&lt;Item = <span class="self">Self</span>::Atom&gt;;

@@ -130,11 +130,9 @@
 <a href="#130" id="130">130</a>
 <a href="#131" id="131">131</a>
 <a href="#132" id="132">132</a>
-<a href="#133" id="133">133</a>
-<a href="#134" id="134">134</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 
-<span class="kw">use crate</span>::{IsTop, LatticeFrom, LatticeOrd, Merge};
+<span class="kw">use crate</span>::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 <span class="doccomment">/// A `Conflict` lattice, stores a single instance of `T` and goes to a &quot;conflict&quot; state (`None`)
 /// if inequal `T` instances are merged together.
@@ -225,6 +223,12 @@
     }
 }
 
+<span class="kw">impl</span>&lt;T&gt; IsBot <span class="kw">for </span>Conflict&lt;T&gt; {
+    <span class="kw">fn </span>is_bot(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="bool-val">false
+    </span>}
+}
+
 <span class="kw">impl</span>&lt;T&gt; IsTop <span class="kw">for </span>Conflict&lt;T&gt; {
     <span class="kw">fn </span>is_top(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.<span class="number">0</span>.is_none()
@@ -234,10 +238,7 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span><span class="kw">crate</span>::test::{
-        check_all, check_lattice_ord, check_lattice_properties, check_lattice_top,
-        check_partial_ord_properties,
-    };
+    <span class="kw">use </span><span class="kw">crate</span>::test::check_all;
     <span class="kw">use </span><span class="kw">crate</span>::WithBot;
 
     <span class="attr">#[test]
@@ -247,11 +248,7 @@
             Conflict::new_from(<span class="string">&quot;bar&quot;</span>),
             Conflict::new(<span class="prelude-val">None</span>),
         ];
-        check_lattice_ord(items);
-        check_partial_ord_properties(items);
-        check_lattice_properties(items);
-        <span class="comment">// check_lattice_bot(items);
-        </span>check_lattice_top(items);
+        check_all(items);
     }
 
     <span class="attr">#[test]
@@ -263,7 +260,6 @@
             WithBot::new(<span class="prelude-val">None</span>),
         ];
         check_all(items);
-        check_lattice_top(items);
     }
 }
 </code></pre></div></section></main></body></html>

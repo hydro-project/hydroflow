@@ -277,22 +277,20 @@
 <a href="#277" id="277">277</a>
 <a href="#278" id="278">278</a>
 <a href="#279" id="279">279</a>
-<a href="#280" id="280">280</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Helper test utils to test lattice implementation correctness.
 
 </span><span class="kw">use </span>std::fmt::Debug;
 
-<span class="kw">use crate</span>::{Atomize, IsBot, IsTop, LatticeOrd, Merge, NaiveLatticeOrd};
+<span class="kw">use crate</span>::{Atomize, IsBot, IsTop, Lattice, LatticeOrd, Merge, NaiveLatticeOrd};
 
 <span class="doccomment">/// Helper which calls [`check_lattice_ord`], [`check_partial_ord_properties`],
 /// [`check_lattice_properties`], and [`check_lattice_bot`].
-</span><span class="kw">pub fn </span>check_all&lt;T: LatticeOrd + NaiveLatticeOrd + Merge&lt;T&gt; + IsBot + Clone + Eq + Debug&gt;(
-    items: <span class="kw-2">&amp;</span>[T],
-) {
+</span><span class="kw">pub fn </span>check_all&lt;T: Lattice + Clone + Eq + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
     check_lattice_ord(items);
     check_partial_ord_properties(items);
     check_lattice_properties(items);
     check_lattice_bot(items);
+    check_lattice_top(items);
 }
 
 <span class="doccomment">/// Check that the lattice&#39;s `PartialOrd` implementation agrees with the `NaiveLatticeOrd` partial
@@ -420,24 +418,24 @@
 }
 
 <span class="doccomment">/// Checks that the item which is bot is less than (or equal to) all other items.
-</span><span class="kw">pub fn </span>check_lattice_bot&lt;T: IsBot + LatticeOrd&gt;(items: <span class="kw-2">&amp;</span>[T]) {
-    <span class="kw">let </span>bot = items
-        .iter()
-        .find(|<span class="kw-2">&amp;</span>x| IsBot::is_bot(x))
-        .expect(<span class="string">&quot;Expected `items` to contain bottom.&quot;</span>);
+</span><span class="kw">pub fn </span>check_lattice_bot&lt;T: IsBot + LatticeOrd + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
+    <span class="kw">let </span><span class="prelude-val">Some</span>(bot) = items.iter().find(|<span class="kw-2">&amp;</span>x| IsBot::is_bot(x)) <span class="kw">else </span>{
+        <span class="kw">return</span>;
+    };
     <span class="kw">for </span>x <span class="kw">in </span>items {
         <span class="macro">assert!</span>(bot &lt;= x);
+        <span class="macro">assert_eq!</span>(bot == x, x.is_bot(), <span class="string">&quot;{:?}&quot;</span>, x);
     }
 }
 
 <span class="doccomment">/// Checks that the item which is top is greater than (or equal to) all other items.
-</span><span class="kw">pub fn </span>check_lattice_top&lt;T: IsTop + LatticeOrd&gt;(items: <span class="kw-2">&amp;</span>[T]) {
-    <span class="kw">let </span>top = items
-        .iter()
-        .find(|<span class="kw-2">&amp;</span>x| IsTop::is_top(x))
-        .expect(<span class="string">&quot;Expected `items` to contain top.&quot;</span>);
+</span><span class="kw">pub fn </span>check_lattice_top&lt;T: IsTop + LatticeOrd + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
+    <span class="kw">let </span><span class="prelude-val">Some</span>(top) = items.iter().find(|<span class="kw-2">&amp;</span>x| IsTop::is_top(x)) <span class="kw">else </span>{
+        <span class="kw">return</span>;
+    };
     <span class="kw">for </span>x <span class="kw">in </span>items {
         <span class="macro">assert!</span>(x &lt;= top);
+        <span class="macro">assert_eq!</span>(top == x, x.is_top(), <span class="string">&quot;{:?}&quot;</span>, x);
     }
 }
 
