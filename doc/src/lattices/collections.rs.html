@@ -858,15 +858,21 @@
 <a href="#858" id="858">858</a>
 <a href="#859" id="859">859</a>
 <a href="#860" id="860">860</a>
+<a href="#861" id="861">861</a>
+<a href="#862" id="862">862</a>
+<a href="#863" id="863">863</a>
+<a href="#864" id="864">864</a>
+<a href="#865" id="865">865</a>
+<a href="#866" id="866">866</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Simple singleton or array collection with [`cc_traits`](crate::cc_traits) implementations.
 
 </span><span class="kw">use </span>std::borrow::Borrow;
 <span class="kw">use </span>std::hash::Hash;
 
 <span class="kw">use </span>cc_traits::{
-    covariant_item_mut, covariant_item_ref, covariant_key_ref, Collection, CollectionMut,
-    CollectionRef, Get, GetKeyValue, GetKeyValueMut, GetMut, Iter, IterMut, Keyed, KeyedRef, Len,
-    MapIter, MapIterMut,
+    covariant_item_mut, covariant_item_ref, covariant_key_ref, simple_keyed_ref, Collection,
+    CollectionMut, CollectionRef, Get, GetKeyValue, GetKeyValueMut, GetMut, Iter, IterMut, Keyed,
+    KeyedRef, Len, MapIter, MapIterMut, SimpleKeyedRef,
 };
 
 <span class="doccomment">/// A [`Vec`]-wrapper representing a naively-implemented set.
@@ -1058,6 +1064,9 @@
             .find(|(k, _v)| key == K::borrow(k))
     }
 }
+<span class="kw">impl</span>&lt;K, V&gt; SimpleKeyedRef <span class="kw">for </span>VecMap&lt;K, V&gt; {
+    <span class="macro">simple_keyed_ref!</span>();
+}
 <span class="kw">impl</span>&lt;K, V&gt; MapIter <span class="kw">for </span>VecMap&lt;K, V&gt; {
     <span class="kw">type </span>Iter&lt;<span class="lifetime">&#39;a</span>&gt; = std::iter::Zip&lt;std::slice::Iter&lt;<span class="lifetime">&#39;a</span>, K&gt;, std::slice::Iter&lt;<span class="lifetime">&#39;a</span>, V&gt;&gt;
 	<span class="kw">where
@@ -1246,10 +1255,10 @@
         std::iter::once(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>)
     }
 }
-<span class="comment">// impl&lt;K, V&gt; SimpleKeyedRef for SingletonMap&lt;K, V&gt; {
-//     simple_keyed_ref!();
-// }
-</span><span class="kw">impl</span>&lt;K, V&gt; MapIter <span class="kw">for </span>SingletonMap&lt;K, V&gt; {
+<span class="kw">impl</span>&lt;K, V&gt; SimpleKeyedRef <span class="kw">for </span>SingletonMap&lt;K, V&gt; {
+    <span class="macro">simple_keyed_ref!</span>();
+}
+<span class="kw">impl</span>&lt;K, V&gt; MapIter <span class="kw">for </span>SingletonMap&lt;K, V&gt; {
     <span class="kw">type </span>Iter&lt;<span class="lifetime">&#39;a</span>&gt; = std::iter::Once&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>V)&gt;
 	<span class="kw">where
 		</span><span class="self">Self</span>: <span class="lifetime">&#39;a</span>;
@@ -1465,10 +1474,10 @@
         <span class="self">self</span>.<span class="number">0</span>.as_ref().map(|(_k, v)| v).into_iter()
     }
 }
-<span class="comment">// impl&lt;K, V&gt; SimpleKeyedRef for OptionMap&lt;K, V&gt; {
-//     simple_keyed_ref!();
-// }
-</span><span class="kw">impl</span>&lt;K, V&gt; MapIter <span class="kw">for </span>OptionMap&lt;K, V&gt; {
+<span class="kw">impl</span>&lt;K, V&gt; SimpleKeyedRef <span class="kw">for </span>OptionMap&lt;K, V&gt; {
+    <span class="macro">simple_keyed_ref!</span>();
+}
+<span class="kw">impl</span>&lt;K, V&gt; MapIter <span class="kw">for </span>OptionMap&lt;K, V&gt; {
     <span class="kw">type </span>Iter&lt;<span class="lifetime">&#39;a</span>&gt; = std::option::IntoIter&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>K, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>V)&gt;
 	<span class="kw">where
 		</span><span class="self">Self</span>: <span class="lifetime">&#39;a</span>;
@@ -1678,6 +1687,9 @@
     <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Iter&lt;<span class="lifetime">&#39;_</span>&gt; {
         <span class="self">self</span>.vals.iter()
     }
+}
+<span class="kw">impl</span>&lt;K, V, <span class="kw">const </span>N: usize&gt; SimpleKeyedRef <span class="kw">for </span>ArrayMap&lt;K, V, N&gt; {
+    <span class="macro">simple_keyed_ref!</span>();
 }
 <span class="kw">impl</span>&lt;K, V, <span class="kw">const </span>N: usize&gt; MapIter <span class="kw">for </span>ArrayMap&lt;K, V, N&gt; {
     <span class="kw">type </span>Iter&lt;<span class="lifetime">&#39;a</span>&gt; = std::iter::Zip&lt;std::slice::Iter&lt;<span class="lifetime">&#39;a</span>, K&gt;, std::slice::Iter&lt;<span class="lifetime">&#39;a</span>, V&gt;&gt;

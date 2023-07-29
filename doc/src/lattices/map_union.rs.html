@@ -311,6 +311,24 @@
 <a href="#311" id="311">311</a>
 <a href="#312" id="312">312</a>
 <a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module containing the [`MapUnion`] lattice and aliases for different datastructures.
 
 </span><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
@@ -622,6 +640,24 @@
 
         check_all(<span class="kw-2">&amp;</span>test_vec);
         check_atomize_each(<span class="kw-2">&amp;</span>test_vec);
+    }
+
+    <span class="doccomment">/// Check that a key with a value of bottom is the same as an empty map, etc.
+    </span><span class="attr">#[test]
+    </span><span class="kw">fn </span>test_collapes_bot() {
+        <span class="kw">let </span>map_empty = &lt;MapUnionHashMap&lt;<span class="kw-2">&amp;</span>str, SetUnionHashSet&lt;u64&gt;&gt;&gt;::default();
+        <span class="kw">let </span>map_a_bot = &lt;MapUnionSingletonMap&lt;<span class="kw-2">&amp;</span>str, SetUnionHashSet&lt;u64&gt;&gt;&gt;::new(SingletonMap(
+            <span class="string">&quot;a&quot;</span>,
+            Default::default(),
+        ));
+        <span class="kw">let </span>map_b_bot = &lt;MapUnionSingletonMap&lt;<span class="kw-2">&amp;</span>str, SetUnionHashSet&lt;u64&gt;&gt;&gt;::new(SingletonMap(
+            <span class="string">&quot;b&quot;</span>,
+            Default::default(),
+        ));
+
+        <span class="macro">assert_eq!</span>(map_empty, map_a_bot);
+        <span class="macro">assert_eq!</span>(map_empty, map_b_bot);
+        <span class="macro">assert_eq!</span>(map_a_bot, map_b_bot);
     }
 }
 </code></pre></div></section></main></body></html>
