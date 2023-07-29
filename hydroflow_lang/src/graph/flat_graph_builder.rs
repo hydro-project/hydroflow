@@ -5,7 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use proc_macro2::Span;
 use quote::ToTokens;
 use syn::spanned::Spanned;
-use syn::Ident;
+use syn::{Ident, ItemUse};
 
 use super::ops::find_op_op_constraints;
 use super::{GraphNodeId, HydroflowGraph, Node, PortIndexValue};
@@ -38,6 +38,9 @@ pub struct FlatGraphBuilder {
     varname_ends: BTreeMap<Ident, Result<Ends, ()>>,
     /// Each (out -> inn) link inputted.
     links: Vec<Ends>,
+
+    /// Use statements.
+    uses: Vec<ItemUse>,
 }
 
 impl FlatGraphBuilder {
@@ -55,18 +58,21 @@ impl FlatGraphBuilder {
     ///
     /// Even if there are errors, the `HydroflowGraph` will be returned (potentially in a invalid
     /// state). Does not call `emit` on any diagnostics.
-    pub fn build(mut self) -> (HydroflowGraph, Vec<Diagnostic>) {
+    pub fn build(mut self) -> (HydroflowGraph, Vec<ItemUse>, Vec<Diagnostic>) {
         self.connect_operator_links();
         self.process_operator_errors();
 
-        (self.flat_graph, self.diagnostics)
+        (self.flat_graph, self.uses, self.diagnostics)
     }
 
     /// Add a single [`HfStatement`] line to this `HydroflowGraph`.
     pub fn add_statement(&mut self, stmt: HfStatement) {
-        let stmt_span = stmt.span();
         match stmt {
+            HfStatement::Use(yuse) => {
+                self.uses.push(yuse);
+            }
             HfStatement::Named(named) => {
+                let stmt_span = named.span();
                 let ends = self.add_pipeline(named.pipeline, Some(&named.name));
                 match self.varname_ends.entry(named.name) {
                     Entry::Vacant(vacant_entry) => {
@@ -95,8 +101,8 @@ impl FlatGraphBuilder {
                     }
                 }
             }
-            HfStatement::Pipeline(pipeline) => {
-                self.add_pipeline(pipeline, None);
+            HfStatement::Pipeline(pipeline_stmt) => {
+                self.add_pipeline(pipeline_stmt.pipeline, None);
             }
         }
     }
@@ -322,7 +328,9 @@ impl FlatGraphBuilder {
         for (node_id, node) in self.flat_graph.nodes() {
             match node {
                 Node::Operator(operator) => {
-                    let Some(op_constraints) = find_op_op_constraints(operator) else { continue };
+                    let Some(op_constraints) = find_op_op_constraints(operator) else {
+                        continue;
+                    };
                     // Check number of args
                     if op_constraints.num_args != operator.args.len() {
                         self.diagnostics.push(Diagnostic::spanned(

@@ -316,8 +316,12 @@ impl HydroflowGraph {
 
         // Make corresponding operator instance (if `node` is an operator).
         let op_inst_opt = 'oc: {
-            let Node::Operator(operator) = &new_node else { break 'oc None; };
-            let Some(op_constraints) = find_op_op_constraints(operator) else { break 'oc None; };
+            let Node::Operator(operator) = &new_node else {
+                break 'oc None;
+            };
+            let Some(op_constraints) = find_op_op_constraints(operator) else {
+                break 'oc None;
+            };
             let (input_port, output_port) = self.ports.get(edge_id).cloned().unwrap();
             let generics = get_operator_generics(
                 &mut Vec::new(), // TODO(mingwei) diagnostics
@@ -554,6 +558,7 @@ impl HydroflowGraph {
         &self,
         root: &TokenStream,
         include_type_guards: bool,
+        prefix: TokenStream,
         diagnostics: &mut Vec<Diagnostic>,
     ) -> TokenStream {
         let hf = Ident::new(HYDROFLOW, Span::call_site());
@@ -881,6 +886,8 @@ impl HydroflowGraph {
             {
                 #[allow(unused_qualifications)]
                 {
+                    #prefix
+
                     use #root::{var_expr, var_args};
 
                     let mut #hf = #root::scheduled::graph::Hydroflow::new();
@@ -998,7 +1005,9 @@ impl HydroflowGraph {
         let mut sg_varname_nodes =
             SparseSecondaryMap::<GraphSubgraphId, BTreeMap<Varname, BTreeSet<GraphNodeId>>>::new();
         for (node_id, varname) in self.node_varnames.iter() {
-            let Some(sg_id) = self.node_subgraph(node_id) else { continue; };
+            let Some(sg_id) = self.node_subgraph(node_id) else {
+                continue;
+            };
             let varname_map = sg_varname_nodes.entry(sg_id).unwrap().or_default();
             varname_map
                 .entry(varname.clone())

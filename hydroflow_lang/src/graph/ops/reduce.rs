@@ -17,12 +17,18 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 ///
 /// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
 ///
+/// `reduce` can also be provided with one generic lifetime persistence argument, either
+/// `'tick` or `'static`, to specify how data persists. With `'tick`, elements will only be collected
+/// within the same tick. With `'static`, the accumulator will be remembered across ticks and elements
+/// are aggregated with elements arriving in later ticks. When not explicitly specified persistence
+/// defaults to `'tick`.
+///
 /// ```hydroflow
 /// source_iter([1,2,3,4,5])
 ///     -> reduce::<'tick>(|accum: &mut _, elem| {
 ///         *accum *= elem;
 ///     })
-///     -> assert([120]);
+///     -> assert_eq([120]);
 /// ```
 pub const REDUCE: OperatorConstraints = OperatorConstraints {
     name: "reduce",
@@ -65,7 +71,7 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
         assert!(is_pull);
 
         let persistence = match persistence_args[..] {
-            [] => Persistence::Static,
+            [] => Persistence::Tick,
             [a] => a,
             _ => unreachable!(),
         };

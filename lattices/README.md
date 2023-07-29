@@ -27,12 +27,12 @@ Take a look at the [`lattice` rustdocs](https://hydro-project.github.io/hydroflo
 
 `lattices` provides implementations of common lattice types:
 * [`Min<T>`] and [`Max<T>`] - totally-orderd lattices.
-* [`set_union::SetUnion`] - set-union lattice of scalar values.
-* [`map_union::MapUnion`] - scalar keys with nested lattice values.
+* [`set_union::SetUnion<T>`] - set-union lattice of scalar values.
+* [`map_union::MapUnion<K, Lat>`] - scalar keys with nested lattice values.
+* [`VecUnion<Lat>`] - growing `Vec` of nested lattices, like `MapUnion<<usize, Lat>>` but without missing entries.
 * [`WithBot<Lat>`] - wraps a lattice in `Option` with `None` as the new bottom value.
 * [`WithTop<Lat>`] - wraps a lattice in `Option` with `None` as the new _top_ value.
 * [`Pair<LatA, LatB>`] - product of two nested lattices.
-* [`Seq<Lat>`] - growing `Vec` of nested lattices, like `MapUnion<<usize, Lat>>` but without missing entries.
 * [`DomPair<LatKey, LatVal>`]* - a versioned pair where the `LatKey` dominates the `LatVal`.
 * [`Conflict<T>`]* - adds a "conflict" top to domain `T`. Merging inequal `T`s results in top.
 * [`Point<T, *>`]* - a single "point lattice" value which cannot be merged with any inequal value.
@@ -88,3 +88,9 @@ for those nested lattices.
 A bottom (⊥) is strictly less than all other values. A top (⊤) is strictly greater than all other
 values. `IsBot::is_bot` and `IsTop::is_top` determine if a lattice instance is top or
 bottom respectively.
+
+### `Atomize`
+
+[`Atomize::atomize`] converts a lattice point into a bunch of smaller lattice points. When these
+"atoms" are merged together they will form the original lattice point. See the docs for more
+precise semantics.

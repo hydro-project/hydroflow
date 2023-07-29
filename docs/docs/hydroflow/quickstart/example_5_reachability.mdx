@@ -11,8 +11,7 @@ import { getLines, extractOutput, extractMermaid } from '../../../src/util';
 > * Implementing a recursive algorithm (graph reachability) via cyclic dataflow
 > * Operators to union data from multiple inputs ([`union`](../syntax/surface_ops_gen.md#union)), and send data to multiple outputs ([`tee`](../syntax/surface_ops_gen.md#tee))
 > * Indexing multi-output operators by appending a bracket expression
-> * An example of how a cyclic dataflow in one stratum executes to completion before starting the next stratum.
-
+> * A first example of a cyclic (recursive) flow and the concept of fixpoint.
 
 To expand from graph neighbors to graph reachability, we want to find vertices that are connected not just to `origin`,
 but also to vertices reachable *transitively* from `origin`. Said differently, a vertex is reachable from `origin` if it is
@@ -67,28 +66,22 @@ We route the `origin` vertex into it as one input right away:
 
 <CodeBlock language="rust">{getLines(exampleCode, 8, 12)}</CodeBlock>
 
-Note the square-bracket syntax for differentiating the multiple inputs to `union()`
-is the same as that of `join()` (except that union can have an unbounded number of inputs,
-whereas `join()` is defined to only have two.)
+Note the square-bracket syntax for assigning index names to the multiple inputs to `union()`; this is similar
+to the indexes for `join()`, except that (a) union can have an arbitrary number of inputs, (b) the index names can be arbitrary strings, and (c) the indexes are optional can be omitted entirely. (By contrast, recall that
+`join()` is defined to take 2 required input indexes, `[0]` and `[1]`). The only reason to assign index names to the inputs of `union()` is for labeling edges in the generated (e.g. Mermaid) graphs.
 
-Now, `join()` is defined to only have one output. In our program, we want to copy the joined
-output to two places: to the original `for_each` from above to print output, and *also*
-back to the `union` operator we called `reached_vertices`. We feed the `join()` output
+The next group of statements lays out the join of `reached_vertices` and the `stream_of_edges`.  The `join()` operator is defined to only have one output, but in our program, we need its output twice: once to feed the original `for_each` from above to print output, and also to feed
+back to the `union` operator that we called `reached_vertices`. We pass the `join()` output
 through a `flat_map()` as before, and then we feed the result into a [`tee()`](../syntax/surface_ops_gen.md#tee) operator,
 which is the mirror image of `union()`:  instead of merging many inputs to one output,
-it copies one input to many different outputs.  Each input element is _cloned_, in Rust terms, and
-given to each of the outputs. The syntax for the outputs of `tee()` mirrors that of union: we *append*
-an output index in square brackets to the `tee` or variable. In this example we have
-`my_join_tee[0] ->` and `my_join_tee[1] ->`.
+it copies one input to many different outputs.  Each input element is _cloned_, in Rust terms, and separate copy is given to each of the outputs. The syntax for the outputs of `tee()` mirrors that of the inputs to union: we can (optionally) *append*
+an arbitrary output index name in square brackets to the `tee` or variable. In this example we have `my_join_tee[cycle] ->` and `my_join_tee[print] ->`.
 
 Finally, we process the output of the `join` as passed through the `tee`.
 One branch pushes reached vertices back up into the `reached_vertices` variable (which begins with a `union`), while the other
 prints out all the reached vertices as in the simple program.
 
 <CodeBlock language="rust">{getLines(exampleCode, 14, 17)}</CodeBlock>
-
-Note the syntax for differentiating the *outputs* of a `tee()` is symmetric to that of `union()`,
-showing up to the right of the variable rather than the left.
 
 Below is the diagram rendered by [mermaid](https://mermaid-js.github.io/) showing
 the structure of the full flow:
@@ -97,4 +90,7 @@ the structure of the full flow:
 
 This is similar to the flow for graph neighbors, but has a few more operators that make it look
 more complex. In particular, it includes the `union` and `tee` operators, and a cycle-forming back-edge.
-There is also an auto-generated `handoff` operator that enforces the rule that a push producer and a pull consumer must be separated by a `handoff`.
+There is also an auto-generated `handoff` operator that enforces the rule that a push producer and a pull consumer must be separated by a `handoff` (see the [Architecture section](../architecture/handoffs)).
+
+# Cyclic Dataflow
+Many dataflow and workflow systems are restricted to acyclic graphs (DAGs), but Hydroflow supports cycles, as we see in this example. 

@@ -14,7 +14,7 @@ import { getLines, extractOutput, extractMermaid } from '../../../src/util';
 > * The [`unique`](../syntax/surface_ops_gen.md#unique) operator for removing duplicates from a stream
 > * Visualizing hydroflow code via `flow.meta_graph().expect(...).to_mermaid()`
 
-So far all the operators we've used have one input and one output and therefore
+So far, all the operators we've used have one input and one output and therefore
 create a linear flow of operators. Let's now take a look at a Hydroflow program containing
 an operator which has multiple inputs; in the following examples we'll extend this to
 multiple outputs.
@@ -67,7 +67,7 @@ Run the program and focus on the last three lines of output, which come from `fl
 That looks right: the edges we "sent" into the flow that start at `0` are
 `(0, 1)` and `(0, 3)`, so the nodes reachable from `0` in 0 or 1 hops are `0, 1, 3`.
 
-> Note: When you run the program you may see the lines printed out in a different order. That's OK; the flow we're defining here is producing a `set` of nodes, so the order in which they are printed out is not specified. The [`sort_by_key`](../syntax/surface_ops_gen.md#sort_by_key) operator can be used to sort the output of a flow.
+> Note: When you run the program you may see the lines printed out in a different order. That's OK; the flow we're defining here uses the [`join()`](../syntax/surface_ops_gen.md#join) operator, which deals in `sets` of data items, so the order in which a `join()`'s output items are generated is not specified or guaranteed. The [`sort_by_key`](../syntax/surface_ops_gen.md#sort_by_key) operator can always be used to sort the output of a flow if needed.
 
 ## Examining the Hydroflow Code
 In the code, we want to start out with the origin vertex, `0`,

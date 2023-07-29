@@ -10,6 +10,9 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 ///
 /// This operator is equivalent to `join` except that the LHS and RHS are collected into multisets rather than sets before joining.
 ///
+/// If you want
+/// duplicates eliminated from the inputs, use the [`join`](#join) operator.
+///
 /// For example:
 /// ```hydroflow
 /// lhs = source_iter([("a", 0), ("a", 0)]) -> tee();
@@ -17,11 +20,11 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 ///
 /// lhs -> [0]multiset_join;
 /// rhs -> [1]multiset_join;
-/// multiset_join = join_multiset() -> assert([("a", (0, "hydro")), ("a", (0, "hydro"))]);
+/// multiset_join = join_multiset() -> assert_eq([("a", (0, "hydro")), ("a", (0, "hydro"))]);
 ///
 /// lhs -> [0]set_join;
 /// rhs -> [1]set_join;
-/// set_join = join() -> assert([("a", (0, "hydro"))]);
+/// set_join = join() -> assert_eq([("a", (0, "hydro"))]);
 /// ```
 pub const JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
     name: "join_multiset",

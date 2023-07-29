@@ -47,9 +47,7 @@ cargo install cargo-generate
 ## VS Code Setup
 
 We recommend using VS Code with the `rust-analyzer` extension (and NOT the
-`Rust` extension). To enable the pre-release version of `rust-analyzer`
-(required by some new nightly syntax we use, at least until 2022-03-14), click
-the "Switch to Pre-Release Version" button next to the uninstall button.
+`Rust` extension).
 
 ## Setting up a Hydroflow Project
 The easiest way to get started with Hydroflow is to begin with a template project. 
@@ -122,9 +120,10 @@ will provide inline type and error messages, code completion, etc.
 
 To work with the repository, it's best to start with an "example", found in the
 [`hydroflow/examples` folder](https://github.com/hydro-project/hydroflow/tree/main/hydroflow/examples).
-These examples are included via the [`hydroflow/Cargo.toml` file](https://github.com/hydro-project/hydroflow/blob/main/hydroflow/Cargo.toml),
-so make sure to add your example there if you create a new one. The simplest
-example is the [`echo server`](https://github.com/hydro-project/hydroflow/blob/main/hydroflow/examples/echoserver/main.rs).
+The simplest example is the 
+['hello world'](https://github.com/hydro-project/hydroflow/blob/main/hydroflow/examples/hello_world/main.rs) example;
+the simplest example with networking is the
+[`echo server`](https://github.com/hydro-project/hydroflow/blob/main/hydroflow/examples/echoserver/main.rs).
 
 The Hydroflow repository is set up as a [workspace](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html),
 i.e. a repo containing a bunch of separate packages, `hydroflow` is just the

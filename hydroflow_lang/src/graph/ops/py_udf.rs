@@ -20,6 +20,8 @@ use super::{
 /// or the examples below.
 ///
 /// ```hydroflow
+/// use pyo3::prelude::*;
+///
 /// source_iter(0..10)
 ///     -> map(|x| (x,))
 ///     -> py_udf(r#"
@@ -28,23 +30,25 @@ use super::{
 ///         return n
 ///     else:
 ///         return fib(n - 2) + fib(n - 1)
-///     "#, "fib")
+/// "#, "fib")
 ///     -> map(|x: PyResult<Py<PyAny>>| Python::with_gil(|py| {
 ///         usize::extract(x.unwrap().as_ref(py)).unwrap()
 ///     }))
-///     -> assert([0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
+///     -> assert_eq([0, 1, 1, 2, 3, 5, 8, 13, 21, 34]);
 /// ```
 ///
 /// ```hydroflow
+/// use pyo3::prelude::*;
+///
 /// source_iter([(5,1)])
-/// -> py_udf(r#"
+///     -> py_udf(r#"
 /// def add(a, b):
 ///     return a + b
-///             "#, "add")
-///             -> map(|x: PyResult<Py<PyAny>>| Python::with_gil(|py| {
-///                 usize::extract(x.unwrap().as_ref(py)).unwrap()
-///             }))
-///             -> assert([6]);
+/// "#, "add")
+///     -> map(|x: PyResult<Py<PyAny>>| Python::with_gil(|py| {
+///         usize::extract(x.unwrap().as_ref(py)).unwrap()
+///     }))
+///     -> assert_eq([6]);
 /// ```
 pub const PY_UDF: OperatorConstraints = OperatorConstraints {
     name: "py_udf",
@@ -90,35 +94,40 @@ pub const PY_UDF: OperatorConstraints = OperatorConstraints {
         ));
 
         let write_prologue = quote_spanned! {op_span=>
-            #[cfg(feature = "python")]
-            let #py_func_ident = {
-                ::pyo3::prepare_freethreaded_python();
-                let func = ::pyo3::Python::with_gil::<_, ::pyo3::PyResult<::pyo3::Py<::pyo3::PyAny>>>(|py| {
-                    Ok(::pyo3::types::PyModule::from_code(
-                        py,
-                        #py_src,
-                        "_filename",
-                        "_modulename",
-                    )?
-                    .getattr(#py_func_name)?
-                    .into())
-                }).expect("Failed to compile python.");
-                #hydroflow.add_state(func)
-            };
-            #[cfg(not(feature = "python"))]
-            ::std::compiler_error!(#err_lit);
+            #root::__python_feature_gate! {
+                {
+                    let #py_func_ident = {
+                        #root::pyo3::prepare_freethreaded_python();
+                        let func = #root::pyo3::Python::with_gil::<_, #root::pyo3::PyResult<#root::pyo3::Py<#root::pyo3::PyAny>>>(|py| {
+                            Ok(#root::pyo3::types::PyModule::from_code(
+                                py,
+                                #py_src,
+                                "_filename",
+                                "_modulename",
+                            )?
+                            .getattr(#py_func_name)?
+                            .into())
+                        }).expect("Failed to compile python.");
+                        #hydroflow.add_state(func)
+                    };
+                },
+                {
+                    ::std::compile_error!(#err_lit);
+                }
+            }
         };
         let closure = quote_spanned! {op_span=>
             |x| {
-                #[cfg(feature = "python")]
-                {
-                    // TODO(mingwei): maybe this can be outside the closure?
-                    let py_func = #context.state_ref(#py_func_ident);
-                    //::pyo3::Python::with_gil(|py| py_func.call1(py, (x,)))
-                    ::pyo3::Python::with_gil(|py| py_func.call1(py, x))
+                #root::__python_feature_gate! {
+                    {
+                        // TODO(mingwei): maybe this can be outside the closure?
+                        let py_func = #context.state_ref(#py_func_ident);
+                        #root::pyo3::Python::with_gil(|py| py_func.call1(py, x))
+                    },
+                    {
+                        panic!()
+                    }
                 }
-                #[cfg(not(feature = "python"))]
-                panic!()
             }
         };
         let write_iterator = if is_pull {

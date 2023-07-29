@@ -13,23 +13,23 @@ use crate::graph::ops::OperatorWriteOutput;
 /// > Generic parameters: A `Lattice` type, must implement [`Merge<Self>`](https://hydro-project.github.io/hydroflow/doc/lattices/trait.Merge.html)
 /// type.
 ///
-/// A specialized operator for merging lattices together into a accumulated value. Like [`reduce()`](#reduce)
+/// A specialized operator for merging lattices together into an accumulated value. Like [`reduce()`](#reduce)
 /// but specialized for lattice types. `lattice_reduce::<MyLattice>()` is equivalent to `reduce(hydroflow::lattices::Merge::merge_owned)`.
 ///
 /// `lattice_reduce` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
 /// within the same tick. With `'static`, values will be remembered across ticks and will be
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
-/// defaults to `'static`.
+/// defaults to `'tick`.
 ///
-/// `lattice_reduce` is differentiated from `lattice_fold` in that `lattice_reduce` the accumulating type does not need to implement `Default`.
+/// `lattice_reduce` is differentiated from `lattice_fold` in that `lattice_reduce` does not require the accumulating type to implement `Default`.
 /// But it also means that the accumulating function inputs and the accumulating type must be the same.
 ///
 /// ```hydroflow
 /// source_iter([1,2,3,4,5])
 ///     -> map(hydroflow::lattices::Max::new)
 ///     -> lattice_reduce::<'static, hydroflow::lattices::Max<usize>>()
-///     -> assert([hydroflow::lattices::Max::new(5)]);
+///     -> assert_eq([hydroflow::lattices::Max::new(5)]);
 /// ```
 pub const LATTICE_REDUCE: OperatorConstraints = OperatorConstraints {
     name: "lattice_reduce",

@@ -17,16 +17,22 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// value that the accumulator should have for the next iteration.
 ///
 /// A special case of `fold`, in the spirit of SQL's GROUP BY and aggregation constructs. The input
-/// is partitioned into groups by the first field, and for each group the values in the second
+/// is partitioned into groups by the first field ("keys"), and for each group the values in the second
 /// field are accumulated via the closures in the arguments.
 ///
 /// > Note: The closures have access to the [`context` object](surface_flows.md#the-context-object).
 ///
-/// `fold_keyed` can also be provided with one generic lifetime persistence argument, either
+/// ```hydroflow
+/// source_iter([("toy", 1), ("toy", 2), ("shoe", 11), ("shoe", 35), ("haberdashery", 7)])
+///     -> fold_keyed(|| 0, |old: &mut u32, val: u32| *old += val)
+///     -> assert_eq([("toy", 3), ("shoe", 46), ("haberdashery", 7)]);
+/// ```
+///
+/// `fold_keyed` can be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
 /// within the same tick. With `'static`, values will be remembered across ticks and will be
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
-/// defaults to `'static`.
+/// defaults to `'tick`.
 ///
 /// `fold_keyed` can also be provided with two type arguments, the key type `K` and aggregated
 /// output value type `V2`. This is required when using `'static` persistence if the compiler
@@ -35,7 +41,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// ```hydroflow
 /// source_iter([("toy", 1), ("toy", 2), ("shoe", 11), ("shoe", 35), ("haberdashery", 7)])
 ///     -> fold_keyed(|| 0, |old: &mut u32, val: u32| *old += val)
-///     -> assert([("toy", 3), ("shoe", 46), ("haberdashery", 7)]);
+///     -> assert_eq([("toy", 3), ("shoe", 46), ("haberdashery", 7)]);
 /// ```
 ///
 /// Example using `'tick` persistence:
@@ -104,7 +110,7 @@ pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
         assert!(is_pull);
 
         let persistence = match persistence_args[..] {
-            [] => Persistence::Static,
+            [] => Persistence::Tick,
             [a] => a,
             _ => unreachable!(),
         };

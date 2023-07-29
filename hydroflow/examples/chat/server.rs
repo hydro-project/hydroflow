@@ -13,13 +13,13 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
         outbound_chan = union() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound)
             -> map(Result::unwrap)
-            ->  demux(|(msg, addr), var_args!(clients, msgs, errs)|
+            -> demux(|(msg, addr), var_args!(clients, msgs, errs)|
                     match msg {
                         Message::ConnectRequest => clients.give(addr),
                         Message::ChatMsg {..} => msgs.give(msg),
                         _ => errs.give(msg),
                     }
-                );
+               );
         clients = inbound_chan[clients] -> tee();
         inbound_chan[errs] -> for_each(|m| println!("Received unexpected message type: {:?}", m));
 
@@ -27,9 +27,9 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
         clients[0] -> map(|addr| (Message::ConnectResponse, addr)) -> [0]outbound_chan;
 
         // Pipeline 2: Broadcast messages to all clients
-        broadcast = cross_join() -> [1]outbound_chan;
         inbound_chan[msgs] -> [0]broadcast;
         clients[1] -> [1]broadcast;
+        broadcast = cross_join::<'static>() -> [1]outbound_chan;
     };
 
     if let Some(graph) = opts.graph {

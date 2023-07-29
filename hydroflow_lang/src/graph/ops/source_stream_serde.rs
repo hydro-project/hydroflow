@@ -10,7 +10,7 @@ use super::{
 /// > Arguments: [`Stream`](https://docs.rs/futures/latest/futures/stream/trait.Stream.html)
 ///
 /// Given a [`Stream`](https://docs.rs/futures/latest/futures/stream/trait.Stream.html)
-/// of (serialized payload, addr) pairs, deserializes the payload and emits each of the
+/// of `(serialized payload, addr)` pairs, deserializes the payload and emits each of the
 /// elements it receives downstream.
 ///
 /// ```rustbook

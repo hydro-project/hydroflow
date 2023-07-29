@@ -8,8 +8,7 @@ documentation = "https://docs.rs/hydroflow/"
 description = "Hydro's low-level dataflow runtime and IR"
 
 [features]
-default = [ "macros" , "nightly", "python" ]
-__default_wasm = [ "macros", "nightly" ]
+default = [ "macros" , "nightly" ]
 
 nightly = [ "hydroflow_macro", "hydroflow_macro/diagnostics" ]
 macros = [ "hydroflow_macro", "hydroflow_datalog" ]
@@ -21,6 +20,10 @@ python = [ "dep:pyo3" ]
 [[example]]
 name = "kvs_bench"
 required-features = [ "nightly" ]
+
+[[example]]
+name = "python_udf"
+required-features = [ "python" ]
 
 [dependencies]
 bincode = "1.3"

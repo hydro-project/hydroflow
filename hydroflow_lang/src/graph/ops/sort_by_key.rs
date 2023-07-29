@@ -6,15 +6,15 @@ use super::{
 };
 use crate::graph::OperatorInstance;
 
-/// Takes a stream as input and produces a version of the stream as output
-/// sorted according to the key extracted by the closure.
+/// Like sort, takes a stream as input and produces a version of the stream as output.
+/// This operator sorts according to the key extracted by the closure.
 ///
 /// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
 ///
 /// ```hydroflow
 /// source_iter(vec![(2, 'y'), (3, 'x'), (1, 'z')])
 ///     -> sort_by_key(|(k, _v)| k)
-///     -> assert([(1, 'z'), (2, 'y'), (3, 'x')]);
+///     -> assert_eq([(1, 'z'), (2, 'y'), (3, 'x')]);
 /// ```
 pub const SORT_BY_KEY: OperatorConstraints = OperatorConstraints {
     name: "sort_by_key",

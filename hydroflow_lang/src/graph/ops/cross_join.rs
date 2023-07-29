@@ -14,18 +14,11 @@ use super::{
 /// ```hydroflow
 /// source_iter(vec!["happy", "sad"]) -> [0]my_join;
 /// source_iter(vec!["dog", "cat"]) -> [1]my_join;
-/// my_join = cross_join() -> assert([("happy", "dog"), ("sad", "dog"), ("happy", "cat"), ("sad", "cat")]);
+/// my_join = cross_join() -> assert_eq([("happy", "dog"), ("sad", "dog"), ("happy", "cat"), ("sad", "cat")]);
 /// ```
 ///
-/// `cross_join` can also be provided with one or two generic lifetime persistence arguments
-/// in the same was as [`join`](#join), see [`join`'s documentation](#join) for more info.
-///
-/// `cross_join` also accepts one type argument that controls how the join state is built up. This (currently) allows switching between a SetUnion and NonSetUnion implementation.
-/// For example:
-/// ```hydroflow,ignore
-/// join::<HalfSetJoinState>();
-/// join::<HalfMultisetJoinState>();
-/// ```
+/// `cross_join` can be provided with one or two generic lifetime persistence arguments
+/// in the same way as [`join`](#join), see [`join`'s documentation](#join) for more info.
 ///
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<&str>();
@@ -41,7 +34,8 @@ use super::{
 /// flow.run_tick();
 /// ```
 /// Prints only `"(hello, oakland)"` and `"(bye, oakland)"`. The `source_iter` is only included in
-/// the first tick, then forgotten.
+/// the first tick, then forgotten, so when `"san francisco"` arrives on input `[1]` in the second tick,
+/// there is nothing for it to match with from input `[0]`, and therefore it does appear in the output.
 pub const CROSS_JOIN: OperatorConstraints = OperatorConstraints {
     name: "cross_join",
     categories: &[OperatorCategory::MultiIn],

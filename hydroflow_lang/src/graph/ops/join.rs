@@ -16,19 +16,19 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// source_iter(vec![("hello", "world"), ("stay", "gold"), ("hello", "world")]) -> [0]my_join;
 /// source_iter(vec![("hello", "cleveland")]) -> [1]my_join;
 /// my_join = join()
-///     -> assert([("hello", ("world", "cleveland"))]);
+///     -> assert_eq([("hello", ("world", "cleveland"))]);
 /// ```
 ///
 /// `join` can also be provided with one or two generic lifetime persistence arguments, either
 /// `'tick` or `'static`, to specify how join data persists. With `'tick`, pairs will only be
 /// joined with corresponding pairs within the same tick. With `'static`, pairs will be remembered
 /// across ticks and will be joined with pairs arriving in later ticks. When not explicitly
-/// specified persistence defaults to `static.
+/// specified persistence defaults to `tick.
 ///
 /// When two persistence arguments are supplied the first maps to port `0` and the second maps to
 /// port `1`.
 /// When a single persistence argument is supplied, it is applied to both input ports.
-/// When no persistence arguments are applied it defaults to `'static` for both.
+/// When no persistence arguments are applied it defaults to `'tick` for both.
 ///
 /// The syntax is as follows:
 /// ```hydroflow,ignore
@@ -42,6 +42,10 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// join::<'tick, 'static>();
 /// // etc.
 /// ```
+///
+/// `join` is defined to treat its inputs as *sets*, meaning that it
+/// eliminates duplicated values in its inputs. If you do not want
+/// duplicates eliminated, use the [`join_multiset`](#join_multiset) operator.
 ///
 /// ### Examples
 ///
@@ -172,7 +176,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
         };
 
         let persistences = match persistence_args[..] {
-            [] => [Persistence::Static, Persistence::Static],
+            [] => [Persistence::Tick, Persistence::Tick],
             [a] => [a, a],
             [a, b] => [a, b],
             _ => unreachable!(),
