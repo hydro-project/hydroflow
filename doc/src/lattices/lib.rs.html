@@ -138,6 +138,7 @@
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 #![doc = <span class="macro">include_str!</span>(<span class="string">&quot;../README.md&quot;</span>)]
 
@@ -273,7 +274,8 @@
 
     <span class="doccomment">/// Atomize self: convert into an iter of atoms.
     ///
-    /// Must always return at least one value.
+    /// The returned iterator should be empty if and only if `self.is_bot()` is true.
+    /// All atoms in the returned iterator should have `self.is_bot()` be false.
     ///
     /// Returned values must merge to reform a value equal to the original `self`.
     </span><span class="kw">fn </span>atomize(<span class="self">self</span>) -&gt; <span class="self">Self</span>::AtomIter;

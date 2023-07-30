@@ -277,6 +277,19 @@
 <a href="#277" id="277">277</a>
 <a href="#278" id="278">278</a>
 <a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Helper test utils to test lattice implementation correctness.
 
 </span><span class="kw">use </span>std::fmt::Debug;
@@ -440,18 +453,31 @@
 }
 
 <span class="doccomment">/// Check that the atomized lattice points re-merge to form the same original lattice point, for each item in `items`.
-</span><span class="kw">pub fn </span>check_atomize_each&lt;T: Atomize + Merge&lt;T::Atom&gt; + PartialEq + Default + Clone + Debug&gt;(
+</span><span class="kw">pub fn </span>check_atomize_each&lt;
+    T: Atomize + Merge&lt;T::Atom&gt; + LatticeOrd + IsBot + Default + Clone + Debug,
+&gt;(
     items: <span class="kw-2">&amp;</span>[T],
-) {
+) <span class="kw">where
+    </span>T::Atom: Debug,
+{
     <span class="kw">for </span>item <span class="kw">in </span>items {
         <span class="kw">let </span><span class="kw-2">mut </span>reformed = T::default();
         <span class="kw">let </span><span class="kw-2">mut </span>atoms = item.clone().atomize().peekable();
-        <span class="macro">assert!</span>(
-            atoms.peek().is_some(),
-            <span class="string">&quot;`{:?}` atomize must return at least one value&quot;</span>,
-            item
+        <span class="macro">assert_eq!</span>(
+            atoms.peek().is_none(),
+            item.is_bot(),
+            <span class="string">&quot;`{:?}` atomize should return empty iterator ({}) if and only if item is bot ({}).&quot;</span>,
+            item,
+            atoms.peek().is_none(),
+            item.is_bot()
         );
         <span class="kw">for </span>atom <span class="kw">in </span>atoms {
+            <span class="macro">assert!</span>(
+                !atom.is_bot(),
+                <span class="string">&quot;`{:?}` atomize illegally returned a bottom atom `{:?}`.&quot;</span>,
+                item,
+                atom,
+            );
             reformed.merge(atom);
         }
         <span class="macro">assert_eq!</span>(item, <span class="kw-2">&amp;</span>reformed, <span class="string">&quot;`{:?}` atomize failed to reform&quot;</span>, item);
