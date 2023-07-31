@@ -74,10 +74,12 @@ pub const JOIN_FUSED_LHS: OperatorConstraints = OperatorConstraints {
 
         let persistences = parse_persistences(persistence_args);
 
-        let lhs_join_options = parse_argument(diagnostics, &arguments[0])?;
+        let lhs_join_options =
+            parse_argument(&arguments[0]).map_err(|err| diagnostics.push(err))?;
 
         let (lhs_joindata_ident, lhs_borrow_ident, lhs_prologue, lhs_borrow) =
-            make_joindata(wc, diagnostics, persistences[0], &lhs_join_options, "lhs")?;
+            make_joindata(wc, persistences[0], &lhs_join_options, "lhs")
+                .map_err(|err| diagnostics.push(err))?;
 
         let rhs_joindata_ident = wc.make_ident("rhs_joindata");
         let rhs_borrow_ident = wc.make_ident("rhs_joindata_borrow_ident");

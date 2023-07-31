@@ -5,8 +5,6 @@ mod multiset2;
 mod reduce;
 mod set;
 
-// pub use half_join_state_trait::HalfJoinState;
-// pub use fold::{HalfFoldJoinState, JoinOption};
 pub use fold::HalfJoinStateFold;
 pub use fold_from::HalfJoinStateFoldFrom;
 pub use multiset::HalfMultisetJoinState;

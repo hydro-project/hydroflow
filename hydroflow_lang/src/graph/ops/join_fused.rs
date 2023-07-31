@@ -130,14 +130,18 @@ pub const JOIN_FUSED: OperatorConstraints = OperatorConstraints {
 
         let persistences = parse_persistences(persistence_args);
 
-        let lhs_join_options = parse_argument(diagnostics, &arguments[0])?;
-        let rhs_join_options = parse_argument(diagnostics, &arguments[1])?;
+        let lhs_join_options =
+            parse_argument(&arguments[0]).map_err(|err| diagnostics.push(err))?;
+        let rhs_join_options =
+            parse_argument(&arguments[1]).map_err(|err| diagnostics.push(err))?;
 
         let (lhs_joindata_ident, lhs_borrow_ident, lhs_prologue, lhs_borrow) =
-            make_joindata(wc, diagnostics, persistences[0], &lhs_join_options, "lhs")?;
+            make_joindata(wc, persistences[0], &lhs_join_options, "lhs")
+                .map_err(|err| diagnostics.push(err))?;
 
         let (rhs_joindata_ident, rhs_borrow_ident, rhs_prologue, rhs_borrow) =
-            make_joindata(wc, diagnostics, persistences[1], &rhs_join_options, "rhs")?;
+            make_joindata(wc, persistences[1], &rhs_join_options, "rhs")
+                .map_err(|err| diagnostics.push(err))?;
 
         let write_prologue = quote_spanned! {op_span=>
             #lhs_prologue
@@ -211,92 +215,72 @@ pub const JOIN_FUSED: OperatorConstraints = OperatorConstraints {
     },
 };
 
-pub enum JoinOptions<'a> {
+pub(crate) enum JoinOptions<'a> {
     FoldFrom(&'a Expr, &'a Expr),
     Fold(&'a Expr, &'a Expr),
     Reduce(&'a Expr),
 }
 
-pub fn parse_argument<'a>(
-    diagnostics: &mut Vec<Diagnostic>,
-    arg: &'a Expr,
-) -> Result<JoinOptions<'a>, ()> {
-    let lhs = match arg {
-        Expr::Call(ExprCall {
-            attrs: _,
-            func,
-            paren_token: _,
-            args,
-        }) => {
-            let mut elems = args.iter();
-            let func_name = func.to_token_stream().to_string();
-
-            match func_name.as_str() {
-                "Fold" => match (elems.next(), elems.next()) {
-                    (Some(default), Some(fold)) => JoinOptions::Fold(default, fold),
-                    _ => {
-                        diagnostics.push(Diagnostic::spanned(
-                                args.span(),
-                                Level::Error,
-                                format!("Fold requires two arguments, first is the default function, second is the folding function: {func:?}"),
-                            ));
-                        return Err(());
-                    }
-                },
-                "FoldFrom" => match (elems.next(), elems.next()) {
-                    (Some(from), Some(fold)) => JoinOptions::FoldFrom(from, fold),
-                    _ => {
-                        diagnostics.push(Diagnostic::spanned(
-                                args.span(),
-                                Level::Error,
-                                format!("FoldFrom requires two arguments, first is the From function, second is the folding function: {func:?}"),
-                            ));
-                        return Err(());
-                    }
-                },
-                "Reduce" => match elems.next() {
-                    Some(reduce) => JoinOptions::Reduce(reduce),
-                    _ => {
-                        diagnostics.push(Diagnostic::spanned(
-                            args.span(),
-                            Level::Error,
-                            format!(
-                                "Reduce requires one argument, the reducing function: {func:?}"
-                            ),
-                        ));
-                        return Err(());
-                    }
-                },
-                _ => {
-                    diagnostics.push(Diagnostic::spanned(
-                        func.span(),
-                        Level::Error,
-                        format!("Unknown summarizing function: {func:?}"),
-                    ));
-                    return Err(());
-                }
-            }
-        }
-        _ => {
-            diagnostics.push(Diagnostic::spanned(
-                arg.span(),
-                Level::Error,
-                "argument must be a tuple",
-            ));
-            return Err(());
-        }
+pub(crate) fn parse_argument<'a>(arg: &'a Expr) -> Result<JoinOptions<'a>, Diagnostic> {
+    let Expr::Call(ExprCall {
+        attrs: _,
+        func,
+        paren_token: _,
+        args,
+    }) = arg else {
+        return Err(Diagnostic::spanned(
+            arg.span(),
+            Level::Error,
+            format!("Argument must be a function call: {arg:?}"),
+        ));
     };
 
-    Ok(lhs)
+    let mut elems = args.iter();
+    let func_name = func.to_token_stream().to_string();
+
+    match func_name.as_str() {
+        "Fold" => match (elems.next(), elems.next()) {
+            (Some(default), Some(fold)) => Ok(JoinOptions::Fold(default, fold)),
+            _ => {
+                Err(Diagnostic::spanned(
+                        args.span(),
+                        Level::Error,
+                        format!("Fold requires two arguments, first is the default function, second is the folding function: {func:?}"),
+                    ))
+            }
+        },
+        "FoldFrom" => match (elems.next(), elems.next()) {
+            (Some(from), Some(fold)) => Ok(JoinOptions::FoldFrom(from, fold)),
+            _ => {
+                Err(Diagnostic::spanned(
+                    args.span(),
+                    Level::Error,
+                    format!("FoldFrom requires two arguments, first is the From function, second is the folding function: {func:?}"),
+                ))
+            }
+        },
+        "Reduce" => match elems.next() {
+            Some(reduce) => Ok(JoinOptions::Reduce(reduce)),
+            _ => Err(Diagnostic::spanned(
+                args.span(),
+                Level::Error,
+                format!("Reduce requires one argument, the reducing function: {func:?}"),
+            )),
+        },
+        _ => Err(Diagnostic::spanned(
+            func.span(),
+            Level::Error,
+            format!("Unknown summarizing function: {func:?}"),
+        )),
+    }
 }
 
-pub fn make_joindata(
+pub(crate) fn make_joindata(
     wc: &WriteContextArgs,
-    diagnostics: &mut Vec<Diagnostic>,
     persistence: Persistence,
     join_options: &JoinOptions<'_>,
     side: &str,
-) -> Result<(Ident, Ident, TokenStream, TokenStream), ()> {
+) -> Result<(Ident, Ident, TokenStream, TokenStream), Diagnostic> {
     let joindata_ident = wc.make_ident(format!("joindata_{}", side));
     let borrow_ident = wc.make_ident(format!("joindata_{}_borrow", side));
 
@@ -341,22 +325,21 @@ pub fn make_joindata(
             },
         ),
         Persistence::Mutable => {
-            diagnostics.push(Diagnostic::spanned(
+            return Err(Diagnostic::spanned(
                 op_span,
                 Level::Error,
                 "An implementation of 'mutable does not exist",
             ));
-            return Err(());
         }
     };
     Ok((joindata_ident, borrow_ident, prologue, borrow))
 }
 
-pub fn parse_persistences(persistences: &[Persistence]) -> [Persistence; 2] {
+pub(crate) fn parse_persistences(persistences: &[Persistence]) -> [Persistence; 2] {
     match persistences {
         [] => [Persistence::Tick, Persistence::Tick],
         [a] => [*a, *a],
         [a, b] => [*a, *b],
-        _ => unreachable!(),
+        _ => panic!("Too many persistences: {persistences:?}"),
     }
 }

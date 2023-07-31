@@ -37,10 +37,10 @@ where
 
             match entry {
                 Occupied(mut e) => {
-                    fold(e.get_mut(), v);
+                    (fold)(e.get_mut(), v);
                 }
                 Vacant(e) => {
-                    e.insert(from(v));
+                    e.insert((from)(v));
                 }
             }
         }

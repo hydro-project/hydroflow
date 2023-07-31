@@ -14,7 +14,7 @@ pub fn test_lattice_join_reducing_behavior() {
         source_iter([(7, Max::new(5)), (7, Max::new(6))]) -> [1]my_join;
 
         my_join = lattice_join::<Min<usize>, Max<usize>>()
-            -> assert_eq([(7, (Min::new(5), Max::new(6)))]); // If Min::default is used, then this would likely produce (7, (0, 6)), which is incorrect.
+            -> assert_eq([(7, (Min::new(5), Max::new(6)))]);
     };
 
     df.run_available();

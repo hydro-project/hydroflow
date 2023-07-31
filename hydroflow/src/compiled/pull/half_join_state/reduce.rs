@@ -36,7 +36,7 @@ where
 
             match entry {
                 Occupied(mut e) => {
-                    reduce(e.get_mut(), v);
+                    (reduce)(e.get_mut(), v);
                 }
                 Vacant(e) => {
                     e.insert(v);
