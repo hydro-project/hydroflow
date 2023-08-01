@@ -1262,7 +1262,7 @@
             <span class="kw">let </span>inner_name = inner_expanded.name.clone();
             <span class="kw">let </span>row_type = inner_expanded.tuple_type;
 
-            <span class="kw">if let </span>IdentOrUnderscore::Ident(less_than) = less_than.deref() {
+            <span class="kw">if let </span>IdentOrUnderscore::Ident(less_than) = less_than {
                 <span class="kw">if </span>inner_expanded
                     .variable_mapping
                     .contains_key(<span class="kw-2">&amp;</span>less_than.name)
@@ -1271,7 +1271,7 @@
                 }
             }
 
-            <span class="kw">let </span>threshold_name = <span class="kw">if let </span>IdentOrUnderscore::Ident(threshold) = threshold.deref() {
+            <span class="kw">let </span>threshold_name = <span class="kw">if let </span>IdentOrUnderscore::Ident(threshold) = threshold {
                 threshold.name.clone()
             } <span class="kw">else </span>{
                 <span class="macro">panic!</span>(<span class="string">&quot;The threshold must be a variable&quot;</span>)
@@ -1299,7 +1299,7 @@
                 flattened_elements.push(<span class="macro">parse_quote!</span>(row.#syn_wildcard_idx.clone()));
             }
 
-            <span class="kw">if let </span>IdentOrUnderscore::Ident(less_than) = less_than.deref() {
+            <span class="kw">if let </span>IdentOrUnderscore::Ident(less_than) = less_than {
                 <span class="kw">if </span>less_than.name == threshold_name {
                     <span class="macro">panic!</span>(<span class="string">&quot;The threshold and less_than variables must be different&quot;</span>)
                 }
