@@ -250,7 +250,7 @@ pub fn cartesian_power<T, const N: usize>(
     impl<'a, T, const N: usize> Clone for CartesianPower<'a, T, N> {
         fn clone(&self) -> Self {
             Self {
-                items: self.items.clone(),
+                items: self.items,
                 iters: self.iters.clone(),
             }
         }
