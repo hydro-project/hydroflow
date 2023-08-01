@@ -12,11 +12,25 @@
 <a href="#12" id="12">12</a>
 <a href="#13" id="13">13</a>
 <a href="#14" id="14">14</a>
-</pre></div><pre class="rust"><code><span class="kw">mod </span>multiset;
+<a href="#15" id="15">15</a>
+<a href="#16" id="16">16</a>
+<a href="#17" id="17">17</a>
+<a href="#18" id="18">18</a>
+<a href="#19" id="19">19</a>
+<a href="#20" id="20">20</a>
+<a href="#21" id="21">21</a>
+</pre></div><pre class="rust"><code><span class="kw">mod </span>fold;
+<span class="kw">mod </span>fold_from;
+<span class="kw">mod </span>multiset;
+<span class="kw">mod </span>multiset2;
+<span class="kw">mod </span>reduce;
 <span class="kw">mod </span>set;
 
-<span class="comment">// pub use half_join_state_trait::HalfJoinState;
-</span><span class="kw">pub use </span>multiset::HalfMultisetJoinState;
+<span class="kw">pub use </span>fold::HalfJoinStateFold;
+<span class="kw">pub use </span>fold_from::HalfJoinStateFoldFrom;
+<span class="kw">pub use </span>multiset::HalfMultisetJoinState;
+<span class="kw">pub use </span>multiset2::HalfJoinStateMultiset;
+<span class="kw">pub use </span>reduce::HalfJoinStateReduce;
 <span class="kw">pub use </span>set::HalfSetJoinState;
 
 <span class="kw">pub type </span>SetJoinState&lt;Key, V1, V2&gt; = (HalfSetJoinState&lt;Key, V1, V2&gt;, HalfSetJoinState&lt;Key, V2, V1&gt;);
