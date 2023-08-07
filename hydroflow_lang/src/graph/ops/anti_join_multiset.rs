@@ -13,15 +13,19 @@ use crate::diagnostic::{Diagnostic, Level};
 ///
 /// For a given tick, computes the anti-join of the items in the input
 /// streams, returning items in the `pos` input --that do not have matching keys
-/// in the `neg` input.
+/// in the `neg` input. NOTE this uses multiset semantics on the positive side,
+/// so duplicated positive inputs will appear in the output either 0 times (if matched in `neg`)
+/// or as many times as they appear in the input (if not matched in `neg`)
 ///
 /// ```hydroflow
 /// source_iter(vec![("dog", 1), ("cat", 2), ("elephant", 3)]) -> [pos]diff;
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
 /// diff = anti_join() -> assert_eq([("elephant", 3)]);
 /// ```
-pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
-    name: "anti_join",
+
+// This implementation is largely redundant to ANTI_JOIN and should be DRY'ed
+pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
+    name: "anti_join_multiset",
     categories: &[OperatorCategory::MultiIn],
     hard_range_inn: &(2..=2),
     soft_range_inn: &(2..=2),
@@ -103,17 +107,12 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
             Ok((antijoindata_ident, borrow_ident, init, borrow))
         };
 
-        let (pos_antijoindata_ident, pos_borrow_ident, pos_init, pos_borrow) =
-                make_antijoindata(persistences[0], "pos")?;
         let (neg_antijoindata_ident, neg_borrow_ident, neg_init, neg_borrow) =
                 make_antijoindata(persistences[1], "neg")?;
 
         let write_prologue = quote_spanned! {op_span=>
             let #neg_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #neg_init
-            ));
-            let #pos_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
-                #pos_init
             ));
         };
 
@@ -122,7 +121,6 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
         let write_iterator = {
             quote_spanned! {op_span=>
                 let mut #neg_borrow_ident = #context.state_ref(#neg_antijoindata_ident).borrow_mut();
-                let mut #pos_borrow_ident = #context.state_ref(#pos_antijoindata_ident).borrow_mut();    
                 let #ident = {
                     /// Limit error propagation by bounding locally, erasing output iterator type.
                     #[inline(always)]
@@ -130,7 +128,6 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
                         input_neg: I1,
                         input_pos: I2,
                         neg_state: &'a mut #root::rustc_hash::FxHashSet<K>,
-                        pos_state: &'a mut #root::rustc_hash::FxHashSet<(K, V)>,
                     ) -> impl 'a + Iterator<Item = (K, V)>
                     where
                         K: Eq + ::std::hash::Hash + Clone,
@@ -140,8 +137,7 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
                     {
                         neg_state.extend(input_neg);
                         input_pos.filter_map(move |x| {
-                            if !neg_state.contains(&x.0) && !pos_state.contains(&x) {
-                                    pos_state.insert(x.clone());
+                            if !neg_state.contains(&x.0){
                                     Some(x)
                             }
                             else {
@@ -154,7 +150,6 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
                         #input_neg,
                         #input_pos,
                         #neg_borrow,
-                        #pos_borrow,
                     )
                 };
             }

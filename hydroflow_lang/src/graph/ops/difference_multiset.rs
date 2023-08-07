@@ -21,8 +21,8 @@ use crate::graph::{OperatorInstance, PortIndexValue};
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
 /// diff = difference() -> assert_eq(["elephant"]);
 /// ```
-pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
-    name: "difference",
+pub const DIFFERENCE_MULTISET: OperatorConstraints = OperatorConstraints {
+    name: "difference_multiset",
     categories: &[OperatorCategory::MultiIn],
     hard_range_inn: &(2..=2),
     soft_range_inn: &(2..=2),
@@ -65,7 +65,7 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
             write_prologue,
             write_iterator,
             write_iterator_after,
-        } = (super::anti_join::ANTI_JOIN.write_fn)(&wc, diagnostics)?;
+        } = (super::anti_join_multiset::ANTI_JOIN_MULTISET.write_fn)(&wc, diagnostics)?;
 
         let pos = &inputs[1];
         let write_iterator = quote_spanned! {op_span=>
