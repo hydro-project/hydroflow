@@ -810,6 +810,8 @@ impl HydroflowGraph {
 
                     {
                         // Determine pull and push halves of the `Pivot`.
+                        #[allow(unknown_lints)]
+                        #[allow(clippy::redundant_locals)] // https://github.com/rust-lang/rust-clippy/issues/11290
                         let pull_to_push_idx = pull_to_push_idx;
                         let pull_ident =
                             self.node_as_ident(subgraph_nodes[pull_to_push_idx - 1], false);
