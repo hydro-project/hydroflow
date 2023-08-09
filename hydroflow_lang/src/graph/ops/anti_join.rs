@@ -151,7 +151,7 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
                         let mut __borrow_ident = #context.state_ref(#tick_ident).borrow_mut();
 
                         if *__borrow_ident <= #context.current_tick() {
-                            *__borrow_ident = #context.current_tick();
+                            *__borrow_ident = #context.current_tick() + 1;
                             // new tick
                             true
                         } else {
