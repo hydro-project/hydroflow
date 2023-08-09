@@ -51,7 +51,7 @@ pub fn test_diff_static() {
     let (output_send, mut output_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow::hydroflow_syntax! {
-        diff = difference::<'tick, 'static>() -> for_each(|v| output_send.send(v).unwrap());
+        diff = difference::<'tick, 'static>() -> sort() -> for_each(|v| output_send.send(v).unwrap());
 
         poss = source_stream(pos_recv); //-> tee();
         poss -> [pos]diff;
@@ -134,7 +134,7 @@ pub fn test_diff_multiset_static() {
     let (output_send, mut output_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow::hydroflow_syntax! {
-        diff = difference_multiset::<'static>() -> for_each(|v| output_send.send(v).unwrap());
+        diff = difference_multiset::<'static>() -> sort() -> for_each(|v| output_send.send(v).unwrap());
 
         poss = source_stream(pos_recv); //-> tee();
         poss -> [pos]diff;
@@ -180,7 +180,7 @@ pub fn test_diff_multiset_tick_static() {
     let (output_send, mut output_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow::hydroflow_syntax! {
-        diff = difference_multiset::<'tick, 'static>() -> for_each(|v| output_send.send(v).unwrap());
+        diff = difference_multiset::<'tick, 'static>() -> sort() -> for_each(|v| output_send.send(v).unwrap());
 
         poss = source_stream(pos_recv); //-> tee();
         poss -> [pos]diff;
@@ -223,7 +223,7 @@ pub fn test_diff_multiset_static_tick() {
     let (output_send, mut output_recv) = hydroflow::util::unbounded_channel::<usize>();
 
     let mut df = hydroflow::hydroflow_syntax! {
-        diff = difference_multiset::<'static, 'tick>() -> for_each(|v| output_send.send(v).unwrap());
+        diff = difference_multiset::<'static, 'tick>() -> sort() -> for_each(|v| output_send.send(v).unwrap());
 
         poss = source_stream(pos_recv); //-> tee();
         poss -> [pos]diff;
