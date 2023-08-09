@@ -1306,7 +1306,7 @@ fn main() {
                                 .state_ref(sg_5v1_node_51v1_persisttick)
                                 .borrow_mut();
                             if *__borrow_ident <= context.current_tick() {
-                                *__borrow_ident = context.current_tick();
+                                *__borrow_ident = context.current_tick() + 1;
                                 true
                             } else {
                                 false
@@ -1707,7 +1707,7 @@ fn main() {
                                 .state_ref(sg_6v1_node_3v1_persisttick)
                                 .borrow_mut();
                             if *__borrow_ident <= context.current_tick() {
-                                *__borrow_ident = context.current_tick();
+                                *__borrow_ident = context.current_tick() + 1;
                                 true
                             } else {
                                 false
@@ -2341,7 +2341,7 @@ fn main() {
                                 .state_ref(sg_7v1_node_31v1_persisttick)
                                 .borrow_mut();
                             if *__borrow_ident <= context.current_tick() {
-                                *__borrow_ident = context.current_tick();
+                                *__borrow_ident = context.current_tick() + 1;
                                 true
                             } else {
                                 false
@@ -2788,7 +2788,7 @@ fn main() {
                                 .state_ref(sg_8v1_node_8v1_persisttick)
                                 .borrow_mut();
                             if *__borrow_ident <= context.current_tick() {
-                                *__borrow_ident = context.current_tick();
+                                *__borrow_ident = context.current_tick() + 1;
                                 true
                             } else {
                                 false

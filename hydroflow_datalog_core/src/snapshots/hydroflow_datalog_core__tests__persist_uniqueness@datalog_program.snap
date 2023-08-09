@@ -654,7 +654,7 @@ fn main() {
                                 .state_ref(sg_3v1_node_3v1_persisttick)
                                 .borrow_mut();
                             if *__borrow_ident <= context.current_tick() {
-                                *__borrow_ident = context.current_tick();
+                                *__borrow_ident = context.current_tick() + 1;
                                 true
                             } else {
                                 false

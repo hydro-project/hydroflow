@@ -762,7 +762,7 @@ fn main() {
                                 .state_ref(sg_1v1_node_21v1_persisttick)
                                 .borrow_mut();
                             if *__borrow_ident <= context.current_tick() {
-                                *__borrow_ident = context.current_tick();
+                                *__borrow_ident = context.current_tick() + 1;
                                 true
                             } else {
                                 false
