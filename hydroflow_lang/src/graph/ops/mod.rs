@@ -233,6 +233,7 @@ declare_ops![
     assert::ASSERT,
     assert_eq::ASSERT_EQ,
     cross_join::CROSS_JOIN,
+    cross_join_multiset::CROSS_JOIN_MULTISET,
     demux::DEMUX,
     dest_file::DEST_FILE,
     dest_sink::DEST_SINK,

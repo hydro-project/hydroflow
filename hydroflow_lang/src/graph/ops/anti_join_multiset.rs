@@ -3,10 +3,10 @@ use syn::parse_quote;
 
 use super::{
     DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1, Persistence,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::graph::{PortIndexValue, OperatorInstance, OpInstGenerics};
 use crate::diagnostic::{Diagnostic, Level};
+use crate::graph::{OpInstGenerics, OperatorInstance, PortIndexValue};
 
 /// > 2 input streams the first of type (K, T), the second of type K,
 /// > with output type (K, T)
@@ -59,15 +59,13 @@ pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
                        OperatorInstance {
                            generics:
                                OpInstGenerics {
-                                   persistence_args,
-                                   ..
+                                   persistence_args, ..
                                },
                            ..
                        },
                    ..
                },
                diagnostics| {
-
         let persistences = match persistence_args[..] {
             [] => [Persistence::Tick, Persistence::Tick],
             [a] => [a, a],
@@ -84,7 +82,7 @@ pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
                         #root::util::monotonic_map::MonotonicMap::<_, #root::rustc_hash::FxHashSet<_>>::default()
                     },
                     quote_spanned! {op_span=>
-                        &mut *#borrow_ident.get_mut_clear(#context.current_tick())
+                        (&mut *#borrow_ident).get_mut_clear(#context.current_tick())
                     },
                 ),
                 Persistence::Static => (
@@ -92,7 +90,7 @@ pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
                         #root::rustc_hash::FxHashSet::default()
                     },
                     quote_spanned! {op_span=>
-                        &mut *#borrow_ident
+                        (&mut *#borrow_ident)
                     },
                 ),
                 Persistence::Mutable => {
@@ -108,52 +106,91 @@ pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
         };
 
         let (neg_antijoindata_ident, neg_borrow_ident, neg_init, neg_borrow) =
-                make_antijoindata(persistences[1], "neg")?;
+            make_antijoindata(persistences[1], "neg")?;
+
+        // let vec_ident = wc.make_ident("persistvec");
+        let pos_antijoindata_ident = wc.make_ident("antijoindata_pos_ident");
+        let pos_borrow_ident = wc.make_ident("antijoindata_pos_borrow_ident");
+
+        let write_prologue_pos = match persistences[0] {
+            Persistence::Tick => quote_spanned! {op_span=>},
+            Persistence::Static => quote_spanned! {op_span=>
+                let #pos_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new((
+                    0_usize,
+                    ::std::vec::Vec::new()
+                )));
+            },
+            Persistence::Mutable => {
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    "An implementation of 'mutable does not exist",
+                ));
+                return Err(());
+            }
+        };
 
         let write_prologue = quote_spanned! {op_span=>
             let #neg_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #neg_init
             ));
+
+            #write_prologue_pos
         };
 
         let input_neg = &inputs[0]; // N before P
         let input_pos = &inputs[1];
-        let write_iterator = {
-            quote_spanned! {op_span=>
+        let write_iterator = match persistences[0] {
+            Persistence::Tick => quote_spanned! {op_span =>
                 let mut #neg_borrow_ident = #context.state_ref(#neg_antijoindata_ident).borrow_mut();
-                let #ident = {
-                    /// Limit error propagation by bounding locally, erasing output iterator type.
-                    #[inline(always)]
-                    fn check_inputs<'a, K, I1, V, I2>(
-                        input_neg: I1,
-                        input_pos: I2,
-                        neg_state: &'a mut #root::rustc_hash::FxHashSet<K>,
-                    ) -> impl 'a + Iterator<Item = (K, V)>
-                    where
-                        K: Eq + ::std::hash::Hash + Clone,
-                        V: Eq + ::std::hash::Hash + Clone,
-                        I1: 'a + Iterator<Item = K>,
-                        I2: 'a + Iterator<Item = (K, V)>,
-                    {
-                        neg_state.extend(input_neg);
-                        input_pos.filter_map(move |x| {
-                            if !neg_state.contains(&x.0){
-                                    Some(x)
-                            }
-                            else {
-                                None
-                            }
-                        })
-                    }
 
-                    check_inputs(
-                        #input_neg,
-                        #input_pos,
-                        #neg_borrow,
-                    )
+                #[allow(clippy::needless_borrow)]
+                #neg_borrow.extend(#input_neg);
+
+                let #ident = #input_pos.filter(|x| {
+                    #[allow(clippy::needless_borrow)]
+                    #[allow(clippy::unnecessary_mut_passed)]
+                    !#neg_borrow.contains(&x.0)
+                });
+            },
+            Persistence::Static => quote_spanned! {op_span =>
+                let mut #neg_borrow_ident = #context.state_ref(#neg_antijoindata_ident).borrow_mut();
+                let mut #pos_borrow_ident = #context.state_ref(#pos_antijoindata_ident).borrow_mut();
+
+                #[allow(clippy::needless_borrow)]
+                let #ident = {
+                    #[allow(clippy::clone_on_copy)]
+                    #[allow(suspicious_double_ref_op)]
+                    if #pos_borrow_ident.0 <= #context.current_tick() {
+                        // Start of new tick
+                        #neg_borrow.extend(#input_neg);
+
+                        #pos_borrow_ident.0 = 1 + #context.current_tick();
+                        #pos_borrow_ident.1.extend(#input_pos);
+                        #pos_borrow_ident.1.iter()
+                    } else {
+                        // Called second or later times on the same tick.
+                        let len = #pos_borrow_ident.1.len();
+                        #pos_borrow_ident.1.extend(#input_pos);
+                        #pos_borrow_ident.1[len..].iter()
+                    }
+                    .filter(|x| {
+                        #[allow(clippy::unnecessary_mut_passed)]
+                        !#neg_borrow.contains(&x.0)
+                    })
+                    .map(|(k, v)| (k.clone(), v.clone()))
                 };
-            }
+            },
+            Persistence::Mutable => quote_spanned! {op_span =>
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    "An implementation of 'mutable does not exist",
+                ));
+                return Err(());
+            },
         };
+
         Ok(OperatorWriteOutput {
             write_prologue,
             write_iterator,

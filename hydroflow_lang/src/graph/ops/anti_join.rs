@@ -3,17 +3,18 @@ use syn::parse_quote;
 
 use super::{
     DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1, Persistence,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::graph::{PortIndexValue, OperatorInstance, OpInstGenerics};
 use crate::diagnostic::{Diagnostic, Level};
+use crate::graph::{OpInstGenerics, OperatorInstance, PortIndexValue};
 
 /// > 2 input streams the first of type (K, T), the second of type K,
 /// > with output type (K, T)
 ///
 /// For a given tick, computes the anti-join of the items in the input
-/// streams, returning items in the `pos` input --that do not have matching keys
-/// in the `neg` input.
+/// streams, returning unique items in the `pos` input that do not have matching keys
+/// in the `neg` input. Note this is set semantics, so duplicate items in the `pos` input
+/// are output 0 or 1 times (if they do/do-not have a match in `neg` respectively.)
 ///
 /// ```hydroflow
 /// source_iter(vec![("dog", 1), ("cat", 2), ("elephant", 3)]) -> [pos]diff;
@@ -55,15 +56,13 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
                        OperatorInstance {
                            generics:
                                OpInstGenerics {
-                                   persistence_args,
-                                   ..
+                                   persistence_args, ..
                                },
                            ..
                        },
                    ..
                },
                diagnostics| {
-
         let persistences = match persistence_args[..] {
             [] => [Persistence::Tick, Persistence::Tick],
             [a] => [a, a],
@@ -104,9 +103,10 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
         };
 
         let (pos_antijoindata_ident, pos_borrow_ident, pos_init, pos_borrow) =
-                make_antijoindata(persistences[0], "pos")?;
+            make_antijoindata(persistences[0], "pos")?;
         let (neg_antijoindata_ident, neg_borrow_ident, neg_init, neg_borrow) =
-                make_antijoindata(persistences[1], "neg")?;
+            make_antijoindata(persistences[1], "neg")?;
+        let tick_ident = wc.make_ident("persisttick");
 
         let write_prologue = quote_spanned! {op_span=>
             let #neg_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
@@ -115,6 +115,9 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
             let #pos_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #pos_init
             ));
+            let #tick_ident = #hydroflow.add_state(std::cell::RefCell::new(
+                0_usize
+            ));
         };
 
         let input_neg = &inputs[0]; // N before P
@@ -122,7 +125,7 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
         let write_iterator = {
             quote_spanned! {op_span=>
                 let mut #neg_borrow_ident = #context.state_ref(#neg_antijoindata_ident).borrow_mut();
-                let mut #pos_borrow_ident = #context.state_ref(#pos_antijoindata_ident).borrow_mut();    
+                let mut #pos_borrow_ident = #context.state_ref(#pos_antijoindata_ident).borrow_mut();
                 let #ident = {
                     /// Limit error propagation by bounding locally, erasing output iterator type.
                     #[inline(always)]
@@ -131,6 +134,7 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
                         input_pos: I2,
                         neg_state: &'a mut #root::rustc_hash::FxHashSet<K>,
                         pos_state: &'a mut #root::rustc_hash::FxHashSet<(K, V)>,
+                        is_new_tick: bool,
                     ) -> impl 'a + Iterator<Item = (K, V)>
                     where
                         K: Eq + ::std::hash::Hash + Clone,
@@ -139,26 +143,34 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
                         I2: 'a + Iterator<Item = (K, V)>,
                     {
                         neg_state.extend(input_neg);
-                        input_pos.filter_map(move |x| {
-                            if !neg_state.contains(&x.0) && !pos_state.contains(&x) {
-                                    pos_state.insert(x.clone());
-                                    Some(x)
-                            }
-                            else {
-                                None
-                            }
-                        })
+
+                        #root::compiled::pull::AntiJoin::new_from_mut(input_pos, neg_state, pos_state, is_new_tick)
                     }
+
+                    let __is_new_tick = {
+                        let mut __borrow_ident = #context.state_ref(#tick_ident).borrow_mut();
+
+                        if *__borrow_ident <= #context.current_tick() {
+                            *__borrow_ident = #context.current_tick();
+                            // new tick
+                            true
+                        } else {
+                            // same tick.
+                            false
+                        }
+                    };
 
                     check_inputs(
                         #input_neg,
                         #input_pos,
                         #neg_borrow,
                         #pos_borrow,
+                        __is_new_tick,
                     )
                 };
             }
         };
+
         Ok(OperatorWriteOutput {
             write_prologue,
             write_iterator,

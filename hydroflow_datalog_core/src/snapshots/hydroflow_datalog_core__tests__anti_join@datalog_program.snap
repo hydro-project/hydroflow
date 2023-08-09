@@ -381,17 +381,26 @@ fn main() {
                         ),
                     ),
                 );
-            let sg_1v1_node_17v1_persisttick = df
-                .add_state(std::cell::RefCell::new(0usize));
-            let sg_1v1_node_21v1_diffdata_handle = df
+            let sg_1v1_node_21v1_antijoindata_neg = df
                 .add_state(
-                    ::std::cell::RefCell::new(
+                    std::cell::RefCell::new(
                         hydroflow::util::monotonic_map::MonotonicMap::<
                             _,
                             hydroflow::rustc_hash::FxHashSet<_>,
                         >::default(),
                     ),
                 );
+            let sg_1v1_node_21v1_antijoindata_pos = df
+                .add_state(
+                    std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::<
+                            _,
+                            hydroflow::rustc_hash::FxHashSet<_>,
+                        >::default(),
+                    ),
+                );
+            let sg_1v1_node_21v1_persisttick = df
+                .add_state(std::cell::RefCell::new(0_usize));
             let sg_1v1_node_11v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
@@ -583,9 +592,6 @@ fn main() {
                     let mut sg_1v1_node_17v1_joindata_rhs_borrow = context
                         .state_ref(sg_1v1_node_17v1_joindata_rhs)
                         .borrow_mut();
-                    let mut sg_1v1_node_17v1_persisttick_borrow = context
-                        .state_ref(sg_1v1_node_17v1_persisttick)
-                        .borrow_mut();
                     let op_17v1 = {
                         #[inline(always)]
                         fn check_inputs<'a, K, I1, V1, I2, V2>(
@@ -601,7 +607,6 @@ fn main() {
                                 V2,
                                 V1,
                             >,
-                            is_new_tick: bool,
                         ) -> impl 'a + Iterator<Item = (K, (V1, V2))>
                         where
                             K: Eq + std::hash::Hash + Clone,
@@ -610,34 +615,21 @@ fn main() {
                             I1: 'a + Iterator<Item = (K, V1)>,
                             I2: 'a + Iterator<Item = (K, V2)>,
                         {
-                            hydroflow::compiled::pull::symmetric_hash_join_into_iter(
+                            hydroflow::compiled::pull::SymmetricHashJoin::new_from_mut(
                                 lhs,
                                 rhs,
                                 lhs_state,
                                 rhs_state,
-                                is_new_tick,
                             )
                         }
-                        {
-                            let __is_new_tick = if *sg_1v1_node_17v1_persisttick_borrow
-                                < context.current_tick()
-                            {
-                                *sg_1v1_node_17v1_persisttick_borrow = context
-                                    .current_tick();
-                                true
-                            } else {
-                                false
-                            };
-                            check_inputs(
-                                op_19v1,
-                                op_20v1,
-                                &mut *sg_1v1_node_17v1_joindata_lhs_borrow
-                                    .get_mut_clear(context.current_tick()),
-                                &mut *sg_1v1_node_17v1_joindata_rhs_borrow
-                                    .get_mut_clear(context.current_tick()),
-                                __is_new_tick,
-                            )
-                        }
+                        check_inputs(
+                            op_19v1,
+                            op_20v1,
+                            &mut *sg_1v1_node_17v1_joindata_lhs_borrow
+                                .get_mut_clear(context.current_tick()),
+                            &mut *sg_1v1_node_17v1_joindata_rhs_borrow
+                                .get_mut_clear(context.current_tick()),
+                        )
                     };
                     let op_17v1 = {
                         #[allow(non_snake_case)]
@@ -735,34 +727,55 @@ fn main() {
                         }
                         op_23v1__map__loc_unknown_start_7_28_end_7_54(op_23v1)
                     };
-                    let mut sg_1v1_node_21v1_borrow = context
-                        .state_ref(sg_1v1_node_21v1_diffdata_handle)
+                    let mut sg_1v1_node_21v1_antijoindata_neg_borrow = context
+                        .state_ref(sg_1v1_node_21v1_antijoindata_neg)
+                        .borrow_mut();
+                    let mut sg_1v1_node_21v1_antijoindata_pos_borrow = context
+                        .state_ref(sg_1v1_node_21v1_antijoindata_pos)
                         .borrow_mut();
                     let op_21v1 = {
                         /// Limit error propagation by bounding locally, erasing output iterator type.
                         #[inline(always)]
                         fn check_inputs<'a, K, I1, V, I2>(
-                            input_pos: I1,
-                            input_neg: I2,
-                            borrow_state: &'a mut hydroflow::rustc_hash::FxHashSet<K>,
+                            input_neg: I1,
+                            input_pos: I2,
+                            neg_state: &'a mut hydroflow::rustc_hash::FxHashSet<K>,
+                            pos_state: &'a mut hydroflow::rustc_hash::FxHashSet<(K, V)>,
+                            is_new_tick: bool,
                         ) -> impl 'a + Iterator<Item = (K, V)>
                         where
                             K: Eq + ::std::hash::Hash + Clone,
-                            V: Eq + Clone,
-                            I1: 'a + Iterator<Item = (K, V)>,
-                            I2: 'a + Iterator<Item = K>,
+                            V: Eq + ::std::hash::Hash + Clone,
+                            I1: 'a + Iterator<Item = K>,
+                            I2: 'a + Iterator<Item = (K, V)>,
                         {
-                            borrow_state.extend(input_neg);
-                            input_pos.filter(move |x| !borrow_state.contains(&x.0))
+                            neg_state.extend(input_neg);
+                            hydroflow::compiled::pull::AntiJoin::new_from_mut(
+                                input_pos,
+                                neg_state,
+                                pos_state,
+                                is_new_tick,
+                            )
                         }
+                        let __is_new_tick = {
+                            let mut __borrow_ident = context
+                                .state_ref(sg_1v1_node_21v1_persisttick)
+                                .borrow_mut();
+                            if *__borrow_ident <= context.current_tick() {
+                                *__borrow_ident = context.current_tick();
+                                true
+                            } else {
+                                false
+                            }
+                        };
                         check_inputs(
-                            op_23v1,
                             hoff_12v3_recv,
-                            sg_1v1_node_21v1_borrow
-                                .get_mut_clear((
-                                    context.current_tick(),
-                                    context.current_stratum(),
-                                )),
+                            op_23v1,
+                            &mut *sg_1v1_node_21v1_antijoindata_neg_borrow
+                                .get_mut_clear(context.current_tick()),
+                            &mut *sg_1v1_node_21v1_antijoindata_pos_borrow
+                                .get_mut_clear(context.current_tick()),
+                            __is_new_tick,
                         )
                     };
                     let op_21v1 = {
