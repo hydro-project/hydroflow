@@ -1207,6 +1207,8 @@
 <a href="#1207" id="1207">1207</a>
 <a href="#1208" id="1208">1208</a>
 <a href="#1209" id="1209">1209</a>
+<a href="#1210" id="1210">1210</a>
+<a href="#1211" id="1211">1211</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -2019,6 +2021,8 @@
 
                     {
                         <span class="comment">// Determine pull and push halves of the `Pivot`.
+                        </span><span class="attr">#[allow(unknown_lints)]
+                        #[allow(clippy::redundant_locals)] </span><span class="comment">// https://github.com/rust-lang/rust-clippy/issues/11290
                         </span><span class="kw">let </span>pull_to_push_idx = pull_to_push_idx;
                         <span class="kw">let </span>pull_ident =
                             <span class="self">self</span>.node_as_ident(subgraph_nodes[pull_to_push_idx - <span class="number">1</span>], <span class="bool-val">false</span>);
