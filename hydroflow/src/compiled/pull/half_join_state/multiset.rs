@@ -1,5 +1,6 @@
 use std::collections::hash_map::Entry;
 use std::collections::VecDeque;
+use std::slice;
 
 use super::HalfJoinState;
 use crate::util::clear::Clear;
@@ -18,12 +19,14 @@ pub struct HalfMultisetJoinState<Key, ValBuild, ValProbe> {
     table: HashMap<Key, SmallVec<[ValBuild; 1]>>,
     /// Not-yet emitted matches.
     current_matches: VecDeque<(Key, ValProbe, ValBuild)>,
+    len: usize,
 }
 impl<Key, ValBuild, ValProbe> Default for HalfMultisetJoinState<Key, ValBuild, ValProbe> {
     fn default() -> Self {
         Self {
             table: HashMap::default(),
             current_matches: VecDeque::default(),
+            len: 0,
         }
     }
 }
@@ -31,6 +34,7 @@ impl<Key, ValBuild, ValProbe> Clear for HalfMultisetJoinState<Key, ValBuild, Val
     fn clear(&mut self) {
         self.table.clear();
         self.current_matches.clear();
+        self.len = 0;
     }
 }
 impl<Key, ValBuild, ValProbe> HalfJoinState<Key, ValBuild, ValProbe>
@@ -48,9 +52,11 @@ where
                 let vec = e.get_mut();
 
                 vec.push(v.clone());
+                self.len += 1;
             }
             Entry::Vacant(e) => {
                 e.insert(smallvec![v.clone()]);
+                self.len += 1;
             }
         };
 
@@ -70,7 +76,22 @@ where
         }
     }
 
+    fn full_probe(&self, k: &Key) -> slice::Iter<'_, ValBuild> {
+        let Some(sv) = self.table.get(k) else {
+            return [].iter();
+        };
+
+        sv.iter()
+    }
+
     fn pop_match(&mut self) -> Option<(Key, ValProbe, ValBuild)> {
         self.current_matches.pop_front()
+    }
+
+    fn len(&self) -> usize {
+        self.len
+    }
+    fn iter(&self) -> ::std::collections::hash_map::Iter<'_, Key, SmallVec<[ValBuild; 1]>> {
+        self.table.iter()
     }
 }
