@@ -16,6 +16,6 @@ pub type SetJoinState<Key, V1, V2> = (HalfSetJoinState<Key, V1, V2>, HalfSetJoin
 
 pub trait HalfJoinState<Key, ValBuild, ValProbe> {
     fn build(&mut self, k: Key, v: &ValBuild) -> bool;
-    fn probe(&mut self, k: &Key, v: &ValProbe);
+    fn probe(&mut self, k: &Key, v: &ValProbe) -> Option<(Key, ValProbe, ValBuild)>;
     fn pop_match(&mut self) -> Option<(Key, ValProbe, ValBuild)>;
 }
