@@ -1116,6 +1116,7 @@ fn test_wildcard_join_count() {
     assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result2_recv), &[(1,)]);
 }
 
+#[ignore] // This test depends on the ordering of specific tuples which is undefined.
 #[multiplatform_test]
 fn test_index() {
     let (ints_send, ints) = hydroflow::util::unbounded_channel::<(i64, i64)>();
@@ -1171,7 +1172,7 @@ fn test_index() {
     #[cfg(target_arch = "wasm32")]
     assert_eq!(
         collect_ready::<HashMultiSet<_>, _>(&mut result2_recv),
-        &[(2, 1, 0), (1, 2, 1)]
+        HashMultiSet::from_iter([(2, 1, 0), (1, 2, 1)])
     );
 
     assert_eq!(
