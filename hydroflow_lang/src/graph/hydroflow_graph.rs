@@ -13,7 +13,7 @@ use syn::spanned::Spanned;
 use super::graph_write::{Dot, GraphWrite, Mermaid};
 use super::ops::{find_op_op_constraints, OperatorWriteOutput, WriteContextArgs, OPERATORS};
 use super::{
-    get_operator_generics, node_color, Color, DiMulGraph, GraphEdgeId, GraphNodeId,
+    get_operator_generics, node_color, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphNodeId,
     GraphSubgraphId, Node, OperatorInstance, PortIndexValue, Varname, CONTEXT, HANDOFF_NODE_STR,
     HYDROFLOW,
 };
@@ -51,6 +51,9 @@ pub struct HydroflowGraph {
 
     /// What variable name each graph node belongs to (if any).
     node_varnames: SparseSecondaryMap<GraphNodeId, Varname>,
+
+    /// Stream properties.
+    flow_props: SecondaryMap<GraphEdgeId, FlowProps>,
 }
 impl HydroflowGraph {
     /// Create a new empty `HydroflowGraph`.
@@ -685,6 +688,11 @@ impl HydroflowGraph {
                                 .map(|&(_port, succ)| self.node_as_ident(succ, false))
                                 .collect();
 
+                            // Corresponds 1:1 to inputs.
+                            let flow_props = self.graph.predecessor_edges(node_id)
+                                .map(|edge_id| *self.flow_props.get(edge_id).expect("Flow prop should be for edge"))
+                                .collect::<Vec<_>>();
+
                             let is_pull = idx < pull_to_push_idx;
 
                             let context_args = WriteContextArgs {
@@ -708,6 +716,7 @@ impl HydroflowGraph {
                                 outputs: &*outputs,
                                 op_name,
                                 op_inst,
+                                flow_props: &*flow_props,
                             };
 
                             let write_result = (op_constraints.write_fn)(&context_args, diagnostics);

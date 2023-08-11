@@ -34,6 +34,7 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| Some(DelayType::Stratum),
+    flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    op_span,
                    ident,
