@@ -1,0 +1,88 @@
+---
+source: hydroflow/tests/surface_join.rs
+expression: df.meta_graph().unwrap().to_dot()
+---
+digraph {
+    subgraph "cluster n1v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_1v1\nstratum 0"
+        n3v1 [label="(n3v1) source_iter([(7, 1)])", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+    }
+    subgraph "cluster n2v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_2v1\nstratum 0"
+        n5v1 [label="(n5v1) source_iter([(7, 2)])", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+    }
+    subgraph "cluster n3v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_3v1\nstratum 0"
+        n6v1 [label="(n6v1) defer_tick()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+    }
+    subgraph "cluster n4v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_4v1\nstratum 0"
+        n1v1 [label="(n1v1) source_iter([(7, 1), (7, 2)])", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n2v1 [label="(n2v1) source_iter([(7, 0)])", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n4v1 [label="(n4v1) defer_tick()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n7v1 [label="(n7v1) defer_tick()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n8v1 [label="(n8v1) union()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n9v1 [label="(n9v1) join::<'tick, 'tick>()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n10v1 [label="(n10v1) for_each(|x| {\l    results_inner.borrow_mut().entry(context.current_tick()).or_default().push(x)\l})\l", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n1v1 -> n9v1 [label="0"]
+        n2v1 -> n8v1
+        n4v1 -> n8v1
+        n7v1 -> n8v1
+        n8v1 -> n9v1 [label="1"]
+        n9v1 -> n10v1
+        subgraph "cluster sg_4v1_var_my_join" {
+            label="var my_join"
+            n9v1
+            n10v1
+        }
+        subgraph "cluster sg_4v1_var_unioner" {
+            label="var unioner"
+            n8v1
+        }
+    }
+    subgraph "cluster n5v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_5v1\nstratum 1"
+        n14v1 [label="(n14v1) identity()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+    }
+    subgraph "cluster n6v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_6v1\nstratum 1"
+        n16v1 [label="(n16v1) identity()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+    }
+    subgraph "cluster n7v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_7v1\nstratum 1"
+        n18v1 [label="(n18v1) identity()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+    }
+    n3v1 -> n11v1
+    n5v1 -> n13v1
+    n6v1 -> n12v1
+    n11v1 [label="(n11v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
+    n11v1 -> n14v1
+    n12v1 [label="(n12v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
+    n12v1 -> n16v1
+    n13v1 [label="(n13v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
+    n13v1 -> n18v1
+    n14v1 -> n15v1
+    n15v1 [label="(n15v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
+    n15v1 -> n4v1
+    n16v1 -> n17v1
+    n17v1 [label="(n17v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
+    n17v1 -> n7v1
+    n18v1 -> n19v1
+    n19v1 [label="(n19v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
+    n19v1 -> n6v1
+}
+
