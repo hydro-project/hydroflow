@@ -78,8 +78,30 @@
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::hash_map::Entry;
 <span class="kw">use </span>std::collections::VecDeque;
+<span class="kw">use </span>std::slice;
 
 <span class="kw">use </span><span class="kw">super</span>::HalfJoinState;
 <span class="kw">use </span><span class="kw">crate</span>::util::clear::Clear;
@@ -98,12 +120,14 @@
     </span>table: HashMap&lt;Key, SmallVec&lt;[ValBuild; <span class="number">1</span>]&gt;&gt;,
     <span class="doccomment">/// Not-yet emitted matches.
     </span>current_matches: VecDeque&lt;(Key, ValProbe, ValBuild)&gt;,
+    len: usize,
 }
 <span class="kw">impl</span>&lt;Key, ValBuild, ValProbe&gt; Default <span class="kw">for </span>HalfMultisetJoinState&lt;Key, ValBuild, ValProbe&gt; {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             table: HashMap::default(),
             current_matches: VecDeque::default(),
+            len: <span class="number">0</span>,
         }
     }
 }
@@ -111,6 +135,7 @@
     <span class="kw">fn </span>clear(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.table.clear();
         <span class="self">self</span>.current_matches.clear();
+        <span class="self">self</span>.len = <span class="number">0</span>;
     }
 }
 <span class="kw">impl</span>&lt;Key, ValBuild, ValProbe&gt; HalfJoinState&lt;Key, ValBuild, ValProbe&gt;
@@ -128,9 +153,11 @@
                 <span class="kw">let </span>vec = e.get_mut();
 
                 vec.push(v.clone());
+                <span class="self">self</span>.len += <span class="number">1</span>;
             }
             Entry::Vacant(e) =&gt; {
                 e.insert(<span class="macro">smallvec!</span>[v.clone()]);
+                <span class="self">self</span>.len += <span class="number">1</span>;
             }
         };
 
@@ -154,8 +181,23 @@
         first
     }
 
+    <span class="kw">fn </span>full_probe(<span class="kw-2">&amp;</span><span class="self">self</span>, k: <span class="kw-2">&amp;</span>Key) -&gt; slice::Iter&lt;<span class="lifetime">&#39;_</span>, ValBuild&gt; {
+        <span class="kw">let </span><span class="prelude-val">Some</span>(sv) = <span class="self">self</span>.table.get(k) <span class="kw">else </span>{
+            <span class="kw">return </span>[].iter();
+        };
+
+        sv.iter()
+    }
+
     <span class="kw">fn </span>pop_match(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(Key, ValProbe, ValBuild)&gt; {
         <span class="self">self</span>.current_matches.pop_front()
+    }
+
+    <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.len
+    }
+    <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ::std::collections::hash_map::Iter&lt;<span class="lifetime">&#39;_</span>, Key, SmallVec&lt;[ValBuild; <span class="number">1</span>]&gt;&gt; {
+        <span class="self">self</span>.table.iter()
     }
 }
 </code></pre></div></section></main></body></html>
