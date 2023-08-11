@@ -12,7 +12,9 @@ use slotmap::Key;
 use syn::punctuated::Punctuated;
 use syn::{parse_quote_spanned, Token};
 
-use super::{GraphNodeId, GraphSubgraphId, Node, OpInstGenerics, OperatorInstance, PortIndexValue};
+use super::{
+    FlowProps, GraphNodeId, GraphSubgraphId, Node, OpInstGenerics, OperatorInstance, PortIndexValue,
+};
 use crate::diagnostic::Diagnostic;
 use crate::parse::{Operator, PortIndex};
 
@@ -98,6 +100,16 @@ pub struct OperatorConstraints {
 
     /// Determines if this input must be preceeded by a stratum barrier.
     pub input_delaytype_fn: fn(&PortIndexValue) -> Option<DelayType>,
+
+    /// Return the output flow types for the given input flow types.
+    ///
+    /// Due to cycles, it is possible that only some of the input flow props will be known when
+    /// this is called. In this case the unknown flow prop inputs will be `None`.
+    ///
+    /// If only one flow type is returned for an operator with multiple outputs, that flow type
+    /// will be used for all outputs. Besides that case, it is an error to return a number of flow
+    /// props which does not match the number of outputs.
+    pub flow_prop_fn: Option<fn(&[Option<FlowProps>]) -> Vec<FlowProps>>,
 
     /// The operator's codegen. Returns code that is emited is several different locations. See [`OperatorWriteOutput`].
     pub write_fn: WriteFn,
@@ -372,6 +384,9 @@ pub struct WriteContextArgs<'a> {
     pub op_name: &'static str,
     /// Operator instance arguments object.
     pub op_inst: &'a OperatorInstance,
+
+    /// Flow properties corresponding to each input.
+    pub flow_props: &'a [FlowProps],
 }
 impl WriteContextArgs<'_> {
     /// Generate a (almost certainly) unique identifier with the given suffix.
