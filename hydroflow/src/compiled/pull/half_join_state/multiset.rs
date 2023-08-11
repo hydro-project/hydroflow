@@ -60,7 +60,7 @@ where
     fn probe(&mut self, k: &Key, v: &ValProbe) -> Option<(Key, ValProbe, ValBuild)> {
         // TODO: We currently don't free/shrink the self.current_matches vecdeque to save time.
         // This mean it will grow to eventually become the largest number of matches in a single probe call.
-        // Maybe we should clear this memory at the beginning of every tick/periodically?'
+        // Maybe we should clear this memory at the beginning of every tick/periodically?
         let mut iter = self
             .table
             .get(k)?
