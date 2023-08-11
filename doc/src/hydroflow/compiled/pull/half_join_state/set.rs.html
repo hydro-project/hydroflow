@@ -79,6 +79,10 @@
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::hash_map::Entry;
 <span class="kw">use </span>std::collections::VecDeque;
 
@@ -143,17 +147,21 @@
         <span class="bool-val">false
     </span>}
 
-    <span class="kw">fn </span>probe(<span class="kw-2">&amp;mut </span><span class="self">self</span>, k: <span class="kw-2">&amp;</span>Key, v: <span class="kw-2">&amp;</span>ValProbe) {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(entry) = <span class="self">self</span>.table.get(k) {
-            <span class="comment">// TODO: We currently don&#39;t free/shrink the self.current_matches vecdeque to save time.
-            // This mean it will grow to eventually become the largest number of matches in a single probe call.
-            // Maybe we should clear this memory at the beginning of every tick/periodically?
-            </span><span class="self">self</span>.current_matches.extend(
-                entry
-                    .iter()
-                    .map(|valbuild| (k.clone(), v.clone(), valbuild.clone())),
-            );
-        }
+    <span class="kw">fn </span>probe(<span class="kw-2">&amp;mut </span><span class="self">self</span>, k: <span class="kw-2">&amp;</span>Key, v: <span class="kw-2">&amp;</span>ValProbe) -&gt; <span class="prelude-ty">Option</span>&lt;(Key, ValProbe, ValBuild)&gt; {
+        <span class="comment">// TODO: We currently don&#39;t free/shrink the self.current_matches vecdeque to save time.
+        // This mean it will grow to eventually become the largest number of matches in a single probe call.
+        // Maybe we should clear this memory at the beginning of every tick/periodically?
+        </span><span class="kw">let </span><span class="kw-2">mut </span>iter = <span class="self">self
+            </span>.table
+            .get(k)<span class="question-mark">?
+            </span>.iter()
+            .map(|valbuild| (k.clone(), v.clone(), valbuild.clone()));
+
+        <span class="kw">let </span>first = iter.next();
+
+        <span class="self">self</span>.current_matches.extend(iter);
+
+        first
     }
 
     <span class="kw">fn </span>pop_match(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(Key, ValProbe, ValBuild)&gt; {

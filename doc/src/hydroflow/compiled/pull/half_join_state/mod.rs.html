@@ -19,6 +19,13 @@
 <a href="#19" id="19">19</a>
 <a href="#20" id="20">20</a>
 <a href="#21" id="21">21</a>
+<a href="#22" id="22">22</a>
+<a href="#23" id="23">23</a>
+<a href="#24" id="24">24</a>
+<a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
 </pre></div><pre class="rust"><code><span class="kw">mod </span>fold;
 <span class="kw">mod </span>fold_from;
 <span class="kw">mod </span>multiset;
@@ -36,8 +43,15 @@
 <span class="kw">pub type </span>SetJoinState&lt;Key, V1, V2&gt; = (HalfSetJoinState&lt;Key, V1, V2&gt;, HalfSetJoinState&lt;Key, V2, V1&gt;);
 
 <span class="kw">pub trait </span>HalfJoinState&lt;Key, ValBuild, ValProbe&gt; {
-    <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>, k: Key, v: <span class="kw-2">&amp;</span>ValBuild) -&gt; bool;
-    <span class="kw">fn </span>probe(<span class="kw-2">&amp;mut </span><span class="self">self</span>, k: <span class="kw-2">&amp;</span>Key, v: <span class="kw-2">&amp;</span>ValProbe);
-    <span class="kw">fn </span>pop_match(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(Key, ValProbe, ValBuild)&gt;;
+    <span class="doccomment">/// Insert a key value pair into the join state, currently this is always inserting into a hash table
+    /// If the key-value pair exists then it is implementation defined what hapepns, usually either two copies are stored or only one copy is stored.
+    </span><span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>, k: Key, v: <span class="kw-2">&amp;</span>ValBuild) -&gt; bool;
+
+    <span class="doccomment">/// This function does the actual joining part of the join. It looks up a key in the local join state and creates matches
+    /// The first match is return directly to the caller, and any additional matches are stored internally to be retrieved later with `pop_match`
+    </span><span class="kw">fn </span>probe(<span class="kw-2">&amp;mut </span><span class="self">self</span>, k: <span class="kw-2">&amp;</span>Key, v: <span class="kw-2">&amp;</span>ValProbe) -&gt; <span class="prelude-ty">Option</span>&lt;(Key, ValProbe, ValBuild)&gt;;
+
+    <span class="doccomment">/// If there are any stored matches from previous calls to probe then this function will remove them one at a time and return it.
+    </span><span class="kw">fn </span>pop_match(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(Key, ValProbe, ValBuild)&gt;;
 }
 </code></pre></div></section></main></body></html>

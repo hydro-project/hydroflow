@@ -139,6 +139,10 @@
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
 <a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::HalfJoinState;
 
 <span class="kw">pub struct </span>SymmetricHashJoin&lt;<span class="lifetime">&#39;a</span>, Key, I1, V1, I2, V2, LhsState, RhsState&gt;
@@ -181,13 +185,17 @@
 
             <span class="kw">if let </span><span class="prelude-val">Some</span>((k, v1)) = <span class="self">self</span>.lhs.next() {
                 <span class="kw">if </span><span class="self">self</span>.lhs_state.build(k.clone(), <span class="kw-2">&amp;</span>v1) {
-                    <span class="self">self</span>.rhs_state.probe(<span class="kw-2">&amp;</span>k, <span class="kw-2">&amp;</span>v1);
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>((k, v1, v2)) = <span class="self">self</span>.rhs_state.probe(<span class="kw-2">&amp;</span>k, <span class="kw-2">&amp;</span>v1) {
+                        <span class="kw">return </span><span class="prelude-val">Some</span>((k, (v1, v2)));
+                    }
                 }
                 <span class="kw">continue</span>;
             }
             <span class="kw">if let </span><span class="prelude-val">Some</span>((k, v2)) = <span class="self">self</span>.rhs.next() {
                 <span class="kw">if </span><span class="self">self</span>.rhs_state.build(k.clone(), <span class="kw-2">&amp;</span>v2) {
-                    <span class="self">self</span>.lhs_state.probe(<span class="kw-2">&amp;</span>k, <span class="kw-2">&amp;</span>v2);
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>((k, v2, v1)) = <span class="self">self</span>.lhs_state.probe(<span class="kw-2">&amp;</span>k, <span class="kw-2">&amp;</span>v2) {
+                        <span class="kw">return </span><span class="prelude-val">Some</span>((k, (v1, v2)));
+                    }
                 }
                 <span class="kw">continue</span>;
             }
