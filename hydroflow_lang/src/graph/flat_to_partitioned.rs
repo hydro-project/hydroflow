@@ -8,6 +8,7 @@ use syn::parse_quote;
 
 use super::hydroflow_graph::HydroflowGraph;
 use super::ops::{find_node_op_constraints, DelayType};
+use super::propegate_flow_props::propegate_flow_props;
 use super::{graph_algorithms, node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node};
 use crate::diagnostic::{Diagnostic, Level};
 use crate::union_find::UnionFind;
@@ -441,6 +442,10 @@ pub fn partition_graph(flat_graph: HydroflowGraph) -> Result<HydroflowGraph, Dia
 
     // Ensure all external inputs are in stratum 0.
     separate_external_inputs(&mut partitioned_graph);
+
+    // Propgeate flow properties throughout the graph.
+    // TODO(mingwei): Should this be done at a flat graph stage instead?
+    propegate_flow_props(&mut partitioned_graph);
 
     Ok(partitioned_graph)
 }

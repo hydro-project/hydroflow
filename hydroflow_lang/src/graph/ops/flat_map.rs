@@ -39,6 +39,7 @@ pub const FLAT_MAP: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
+    flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,

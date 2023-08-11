@@ -108,6 +108,7 @@ pub const JOIN_FUSED: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| Some(DelayType::Stratum),
+    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    context,
                    op_span,
