@@ -144,7 +144,7 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
                     {
                         neg_state.extend(input_neg);
 
-                        #root::compiled::pull::AntiJoin::new_from_mut(input_pos, neg_state, pos_state, is_new_tick)
+                        #root::compiled::pull::anti_join_into_iter(input_pos, neg_state, pos_state, is_new_tick)
                     }
 
                     let __is_new_tick = {

@@ -1,5 +1,6 @@
 use hydroflow::datalog;
 use hydroflow::util::collect_ready;
+use hydroflow::util::multiset::HashMultiSet;
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
@@ -91,8 +92,8 @@ pub fn test_join_with_self() {
     flow.run_tick();
 
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(2, 1), (1, 2)]
+        collect_ready::<HashMultiSet<_>, _>(&mut out_recv),
+        HashMultiSet::from_iter([(2, 1), (1, 2)])
     );
 }
 
@@ -140,8 +141,8 @@ pub fn test_multi_use_intermediate() {
     flow.run_tick();
 
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(2, 1), (1, 2)]
+        collect_ready::<HashMultiSet<_>, _>(&mut out_recv),
+        HashMultiSet::from_iter([(2, 1), (1, 2)])
     );
 }
 
@@ -442,8 +443,8 @@ pub fn test_join_multiple_and_relation() {
     flow.run_tick();
 
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(1, 2, 3, 4), (1, 2, 4, 5)]
+        collect_ready::<HashMultiSet<_>, _>(&mut out_recv),
+        HashMultiSet::from_iter([(1, 2, 3, 4), (1, 2, 4, 5)])
     );
 }
 
@@ -479,8 +480,8 @@ pub fn test_join_multiple_then_relation() {
     flow.run_tick();
 
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut out_recv),
-        &[(1, 2, 3, 4), (1, 2, 4, 5)]
+        collect_ready::<HashMultiSet<_>, _>(&mut out_recv),
+        HashMultiSet::from_iter([(1, 2, 3, 4), (1, 2, 4, 5)])
     );
 }
 
@@ -1156,72 +1157,75 @@ fn test_index() {
     flow.run_tick();
 
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut result_recv),
-        &[(1, 1, 0), (1, 2, 1), (2, 1, 2)]
+        collect_ready::<HashMultiSet<_>, _>(&mut result_recv),
+        HashMultiSet::from_iter([(1, 1, 0), (1, 2, 1), (2, 1, 2)]),
     );
 
     // hashing / ordering differences?
     #[cfg(not(target_arch = "wasm32"))]
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut result2_recv),
-        &[(1, 2, 0), (2, 1, 1)]
+        collect_ready::<HashMultiSet<_>, _>(&mut result2_recv),
+        HashMultiSet::from_iter([(1, 2, 0), (2, 1, 1)])
     );
 
     #[cfg(target_arch = "wasm32")]
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut result2_recv),
+        collect_ready::<HashMultiSet<_>, _>(&mut result2_recv),
         &[(2, 1, 0), (1, 2, 1)]
     );
 
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut result3_recv),
-        &[(1, 1, 0), (1, 2, 1), (2, 1, 2)]
+        collect_ready::<HashMultiSet<_>, _>(&mut result3_recv),
+        HashMultiSet::from_iter([(1, 1, 0), (1, 2, 1), (2, 1, 2)])
     );
 
     #[cfg(not(target_arch = "wasm32"))]
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut result4_recv),
-        &[(1, 2, 0), (2, 1, 1)]
+        collect_ready::<HashMultiSet<_>, _>(&mut result4_recv),
+        HashMultiSet::from_iter([(1, 2, 0), (2, 1, 1)])
     );
     #[cfg(target_arch = "wasm32")]
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut result4_recv),
-        &[(2, 1, 0), (1, 2, 1)]
+        collect_ready::<HashMultiSet<_>, _>(&mut result4_recv),
+        HashMultiSet::from_iter([(2, 1, 0), (1, 2, 1)])
     );
 
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut result5_recv),
-        &[(1, 1, 0), (1, 2, 1), (2, 1, 2)]
+        collect_ready::<HashMultiSet<_>, _>(&mut result5_recv),
+        HashMultiSet::from_iter([(1, 1, 0), (1, 2, 1), (2, 1, 2)])
     );
 
     ints_send.send((3, 1)).unwrap();
 
     flow.run_tick();
 
-    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result_recv), &[(3, 1, 0)]);
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut result2_recv),
-        &[(3, 1, 0)]
+        collect_ready::<HashMultiSet<_>, _>(&mut result_recv),
+        HashMultiSet::from_iter([(3, 1, 0)])
+    );
+    assert_eq!(
+        collect_ready::<HashMultiSet<_>, _>(&mut result2_recv),
+        HashMultiSet::from_iter([(3, 1, 0)])
     );
 
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut result3_recv),
-        &[(1, 1, 0), (1, 2, 1), (2, 1, 2), (3, 1, 3)]
+        collect_ready::<HashMultiSet<_>, _>(&mut result3_recv),
+        HashMultiSet::from_iter([(1, 1, 0), (1, 2, 1), (2, 1, 2), (3, 1, 3)])
     );
 
     #[cfg(not(target_arch = "wasm32"))]
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut result4_recv),
-        &[(1, 2, 0), (2, 1, 1), (3, 1, 2)]
+        collect_ready::<HashMultiSet<_>, _>(&mut result4_recv),
+        HashMultiSet::from_iter([(1, 2, 0), (2, 1, 1), (3, 1, 2)])
     );
     #[cfg(target_arch = "wasm32")]
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut result4_recv),
-        &[(2, 1, 0), (3, 1, 1), (1, 2, 2)]
+        collect_ready::<HashMultiSet<_>, _>(&mut result4_recv),
+        HashMultiSet::from_iter([(2, 1, 0), (3, 1, 1), (1, 2, 2)])
     );
 
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut result5_recv),
-        &[(1, 1, 0), (1, 2, 1), (2, 1, 2), (3, 1, 3)]
+        collect_ready::<HashMultiSet<_>, _>(&mut result5_recv),
+        HashMultiSet::from_iter([(1, 1, 0), (1, 2, 1), (2, 1, 2), (3, 1, 3)])
     );
 }

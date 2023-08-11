@@ -1061,7 +1061,7 @@ fn main() {
                             I2: 'a + Iterator<Item = (K, V)>,
                         {
                             neg_state.extend(input_neg);
-                            hydroflow::compiled::pull::AntiJoin::new_from_mut(
+                            hydroflow::compiled::pull::anti_join_into_iter(
                                 input_pos,
                                 neg_state,
                                 pos_state,
@@ -1961,7 +1961,7 @@ fn main() {
                             I2: 'a + Iterator<Item = (K, V)>,
                         {
                             neg_state.extend(input_neg);
-                            hydroflow::compiled::pull::AntiJoin::new_from_mut(
+                            hydroflow::compiled::pull::anti_join_into_iter(
                                 input_pos,
                                 neg_state,
                                 pos_state,

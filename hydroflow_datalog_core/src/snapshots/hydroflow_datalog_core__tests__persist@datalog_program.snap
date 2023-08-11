@@ -721,10 +721,10 @@ fn main() {
                         }
                         {
                             let __is_new_tick = if *sg_4v1_node_41v1_persisttick_borrow
-                                < context.current_tick()
+                                <= context.current_tick()
                             {
                                 *sg_4v1_node_41v1_persisttick_borrow = context
-                                    .current_tick();
+                                    .current_tick() + 1;
                                 true
                             } else {
                                 false
@@ -909,10 +909,10 @@ fn main() {
                         }
                         {
                             let __is_new_tick = if *sg_4v1_node_45v1_persisttick_borrow
-                                < context.current_tick()
+                                <= context.current_tick()
                             {
                                 *sg_4v1_node_45v1_persisttick_borrow = context
-                                    .current_tick();
+                                    .current_tick() + 1;
                                 true
                             } else {
                                 false
@@ -1294,7 +1294,7 @@ fn main() {
                             I2: 'a + Iterator<Item = (K, V)>,
                         {
                             neg_state.extend(input_neg);
-                            hydroflow::compiled::pull::AntiJoin::new_from_mut(
+                            hydroflow::compiled::pull::anti_join_into_iter(
                                 input_pos,
                                 neg_state,
                                 pos_state,
@@ -1695,7 +1695,7 @@ fn main() {
                             I2: 'a + Iterator<Item = (K, V)>,
                         {
                             neg_state.extend(input_neg);
-                            hydroflow::compiled::pull::AntiJoin::new_from_mut(
+                            hydroflow::compiled::pull::anti_join_into_iter(
                                 input_pos,
                                 neg_state,
                                 pos_state,
@@ -2329,7 +2329,7 @@ fn main() {
                             I2: 'a + Iterator<Item = (K, V)>,
                         {
                             neg_state.extend(input_neg);
-                            hydroflow::compiled::pull::AntiJoin::new_from_mut(
+                            hydroflow::compiled::pull::anti_join_into_iter(
                                 input_pos,
                                 neg_state,
                                 pos_state,
@@ -2776,7 +2776,7 @@ fn main() {
                             I2: 'a + Iterator<Item = (K, V)>,
                         {
                             neg_state.extend(input_neg);
-                            hydroflow::compiled::pull::AntiJoin::new_from_mut(
+                            hydroflow::compiled::pull::anti_join_into_iter(
                                 input_pos,
                                 neg_state,
                                 pos_state,

@@ -631,10 +631,10 @@ fn main() {
                         }
                         {
                             let __is_new_tick = if *sg_1v1_node_17v1_persisttick_borrow
-                                < context.current_tick()
+                                <= context.current_tick()
                             {
                                 *sg_1v1_node_17v1_persisttick_borrow = context
-                                    .current_tick();
+                                    .current_tick() + 1;
                                 true
                             } else {
                                 false
@@ -769,7 +769,7 @@ fn main() {
                             I2: 'a + Iterator<Item = (K, V)>,
                         {
                             neg_state.extend(input_neg);
-                            hydroflow::compiled::pull::AntiJoin::new_from_mut(
+                            hydroflow::compiled::pull::anti_join_into_iter(
                                 input_pos,
                                 neg_state,
                                 pos_state,

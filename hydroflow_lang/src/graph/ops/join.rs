@@ -226,8 +226,8 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                 }
 
                 {
-                    let __is_new_tick = if *#tick_borrow_ident < #context.current_tick() {
-                        *#tick_borrow_ident = #context.current_tick();
+                    let __is_new_tick = if *#tick_borrow_ident <= #context.current_tick() {
+                        *#tick_borrow_ident = #context.current_tick() + 1;
                         true
                     } else {
                         false

@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::collect_ready;
+use hydroflow::util::multiset::HashMultiSet;
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
 use multiplatform_test::multiplatform_test;
 
@@ -285,8 +286,10 @@ pub fn test_defer_tick() {
     flow.run_tick();
 
     flow.run_available();
-    let out: Vec<_> = collect_ready(&mut out_recv);
-    assert_eq!(&[1, 2, 3, 4, 5, 6], &*out);
+    assert_eq!(
+        HashMultiSet::from_iter([1, 2, 3, 4, 5, 6]),
+        collect_ready(&mut out_recv)
+    );
 }
 
 #[multiplatform_test]

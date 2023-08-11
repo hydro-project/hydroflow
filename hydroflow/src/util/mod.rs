@@ -3,6 +3,7 @@
 
 pub mod clear;
 pub mod monotonic_map;
+pub mod multiset;
 pub mod sparse_vec;
 pub mod unsync;
 

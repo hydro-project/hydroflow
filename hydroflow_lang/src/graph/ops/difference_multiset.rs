@@ -20,9 +20,9 @@ use crate::graph::{OperatorInstance, PortIndexValue};
 /// that has no match in `neg` is sent to the output.
 ///
 /// ```hydroflow
-/// source_iter(vec!["dog", "cat", "elephant"]) -> [pos]diff;
-/// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
-/// diff = difference() -> assert_eq(["elephant"]);
+/// source_iter(vec!["cat", "cat", "elephant", "elephant"]) -> [pos]diff;
+/// source_iter(vec!["cat", "gorilla"]) -> [neg]diff;
+/// diff = difference_multiset() -> assert_eq(["elephant", "elephant"]);
 /// ```
 pub const DIFFERENCE_MULTISET: OperatorConstraints = OperatorConstraints {
     name: "difference_multiset",
