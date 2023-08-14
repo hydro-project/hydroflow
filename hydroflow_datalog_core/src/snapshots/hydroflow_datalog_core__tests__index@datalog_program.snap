@@ -900,12 +900,21 @@ fn main() {
                         >::default(),
                     ),
                 );
-            let sg_5v1_node_23v1_diffdata_handle = df
+            let sg_5v1_node_23v1_antijoindata_neg = df
                 .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::rustc_hash::FxHashSet::default(),
+                    std::cell::RefCell::new(hydroflow::rustc_hash::FxHashSet::default()),
+                );
+            let sg_5v1_node_23v1_antijoindata_pos = df
+                .add_state(
+                    std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::<
+                            _,
+                            hydroflow::rustc_hash::FxHashSet<_>,
+                        >::default(),
                     ),
                 );
+            let sg_5v1_node_23v1_persisttick = df
+                .add_state(std::cell::RefCell::new(0_usize));
             let sg_5v1_node_11v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
@@ -1028,12 +1037,58 @@ fn main() {
                         }
                         op_22v1__unique__loc_unknown_start_15_21_end_15_35(op_22v1)
                     };
-                    let mut sg_5v1_node_23v1_negset = context
-                        .state_ref(sg_5v1_node_23v1_diffdata_handle)
+                    let op_22v1 = op_22v1.map(|k| (k, ()));
+                    let mut sg_5v1_node_23v1_antijoindata_neg_borrow = context
+                        .state_ref(sg_5v1_node_23v1_antijoindata_neg)
                         .borrow_mut();
-                    sg_5v1_node_23v1_negset.extend(hoff_9v3_recv);
-                    let op_23v1 = op_22v1
-                        .filter(move |x| !sg_5v1_node_23v1_negset.contains(x));
+                    let mut sg_5v1_node_23v1_antijoindata_pos_borrow = context
+                        .state_ref(sg_5v1_node_23v1_antijoindata_pos)
+                        .borrow_mut();
+                    let op_23v1 = {
+                        /// Limit error propagation by bounding locally, erasing output iterator type.
+                        #[inline(always)]
+                        fn check_inputs<'a, K, I1, V, I2>(
+                            input_neg: I1,
+                            input_pos: I2,
+                            neg_state: &'a mut hydroflow::rustc_hash::FxHashSet<K>,
+                            pos_state: &'a mut hydroflow::rustc_hash::FxHashSet<(K, V)>,
+                            is_new_tick: bool,
+                        ) -> impl 'a + Iterator<Item = (K, V)>
+                        where
+                            K: Eq + ::std::hash::Hash + Clone,
+                            V: Eq + ::std::hash::Hash + Clone,
+                            I1: 'a + Iterator<Item = K>,
+                            I2: 'a + Iterator<Item = (K, V)>,
+                        {
+                            neg_state.extend(input_neg);
+                            hydroflow::compiled::pull::anti_join_into_iter(
+                                input_pos,
+                                neg_state,
+                                pos_state,
+                                is_new_tick,
+                            )
+                        }
+                        let __is_new_tick = {
+                            let mut __borrow_ident = context
+                                .state_ref(sg_5v1_node_23v1_persisttick)
+                                .borrow_mut();
+                            if *__borrow_ident <= context.current_tick() {
+                                *__borrow_ident = context.current_tick() + 1;
+                                true
+                            } else {
+                                false
+                            }
+                        };
+                        check_inputs(
+                            hoff_9v3_recv,
+                            op_22v1,
+                            &mut *sg_5v1_node_23v1_antijoindata_neg_borrow,
+                            &mut *sg_5v1_node_23v1_antijoindata_pos_borrow
+                                .get_mut_clear(context.current_tick()),
+                            __is_new_tick,
+                        )
+                    };
+                    let op_23v1 = op_23v1.map(|(k, ())| k);
                     let op_23v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]
@@ -1725,12 +1780,21 @@ fn main() {
                         >::default(),
                     ),
                 );
-            let sg_7v1_node_18v1_diffdata_handle = df
+            let sg_7v1_node_18v1_antijoindata_neg = df
                 .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::rustc_hash::FxHashSet::default(),
+                    std::cell::RefCell::new(hydroflow::rustc_hash::FxHashSet::default()),
+                );
+            let sg_7v1_node_18v1_antijoindata_pos = df
+                .add_state(
+                    std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::<
+                            _,
+                            hydroflow::rustc_hash::FxHashSet<_>,
+                        >::default(),
                     ),
                 );
+            let sg_7v1_node_18v1_persisttick = df
+                .add_state(std::cell::RefCell::new(0_usize));
             let sg_7v1_node_31v1_persistdata = df
                 .add_state(::std::cell::RefCell::new((0_usize, ::std::vec::Vec::new())));
             df.add_subgraph_stratified(
@@ -1873,12 +1937,58 @@ fn main() {
                         }
                         op_17v1__unique__loc_unknown_start_9_21_end_9_28(op_17v1)
                     };
-                    let mut sg_7v1_node_18v1_negset = context
-                        .state_ref(sg_7v1_node_18v1_diffdata_handle)
+                    let op_17v1 = op_17v1.map(|k| (k, ()));
+                    let mut sg_7v1_node_18v1_antijoindata_neg_borrow = context
+                        .state_ref(sg_7v1_node_18v1_antijoindata_neg)
                         .borrow_mut();
-                    sg_7v1_node_18v1_negset.extend(hoff_15v3_recv);
-                    let op_18v1 = op_17v1
-                        .filter(move |x| !sg_7v1_node_18v1_negset.contains(x));
+                    let mut sg_7v1_node_18v1_antijoindata_pos_borrow = context
+                        .state_ref(sg_7v1_node_18v1_antijoindata_pos)
+                        .borrow_mut();
+                    let op_18v1 = {
+                        /// Limit error propagation by bounding locally, erasing output iterator type.
+                        #[inline(always)]
+                        fn check_inputs<'a, K, I1, V, I2>(
+                            input_neg: I1,
+                            input_pos: I2,
+                            neg_state: &'a mut hydroflow::rustc_hash::FxHashSet<K>,
+                            pos_state: &'a mut hydroflow::rustc_hash::FxHashSet<(K, V)>,
+                            is_new_tick: bool,
+                        ) -> impl 'a + Iterator<Item = (K, V)>
+                        where
+                            K: Eq + ::std::hash::Hash + Clone,
+                            V: Eq + ::std::hash::Hash + Clone,
+                            I1: 'a + Iterator<Item = K>,
+                            I2: 'a + Iterator<Item = (K, V)>,
+                        {
+                            neg_state.extend(input_neg);
+                            hydroflow::compiled::pull::anti_join_into_iter(
+                                input_pos,
+                                neg_state,
+                                pos_state,
+                                is_new_tick,
+                            )
+                        }
+                        let __is_new_tick = {
+                            let mut __borrow_ident = context
+                                .state_ref(sg_7v1_node_18v1_persisttick)
+                                .borrow_mut();
+                            if *__borrow_ident <= context.current_tick() {
+                                *__borrow_ident = context.current_tick() + 1;
+                                true
+                            } else {
+                                false
+                            }
+                        };
+                        check_inputs(
+                            hoff_15v3_recv,
+                            op_17v1,
+                            &mut *sg_7v1_node_18v1_antijoindata_neg_borrow,
+                            &mut *sg_7v1_node_18v1_antijoindata_pos_borrow
+                                .get_mut_clear(context.current_tick()),
+                            __is_new_tick,
+                        )
+                    };
+                    let op_18v1 = op_18v1.map(|(k, ())| k);
                     let op_18v1 = {
                         #[allow(non_snake_case)]
                         #[inline(always)]

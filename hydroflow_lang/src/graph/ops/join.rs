@@ -130,9 +130,6 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
         // TODO: This is really bad.
         // This will break if the user aliases HalfSetJoinState to something else. Temporary hacky solution.
         // Note that cross_join() depends on the implementation here as well.
-        // Need to decide on what to do about multisetjoin.
-        // Should it be a separate operator (multisetjoin() and multisetcrossjoin())?
-        // Should the default be multiset join? And setjoin requires the use of lattice_join() with SetUnion lattice?
         let additional_trait_bounds = if join_type.to_string().contains("HalfSetJoinState") {
             quote_spanned!(op_span=>
                 + ::std::cmp::Eq
@@ -229,8 +226,8 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                 }
 
                 {
-                    let __is_new_tick = if *#tick_borrow_ident < #context.current_tick() {
-                        *#tick_borrow_ident = #context.current_tick();
+                    let __is_new_tick = if *#tick_borrow_ident <= #context.current_tick() {
+                        *#tick_borrow_ident = #context.current_tick() + 1;
                         true
                     } else {
                         false

@@ -338,10 +338,10 @@ fn main() {
                         }
                         {
                             let __is_new_tick = if *sg_2v1_node_9v1_persisttick_borrow
-                                < context.current_tick()
+                                <= context.current_tick()
                             {
-                                *sg_2v1_node_9v1_persisttick_borrow = context
-                                    .current_tick();
+                                *sg_2v1_node_9v1_persisttick_borrow = context.current_tick()
+                                    + 1;
                                 true
                             } else {
                                 false

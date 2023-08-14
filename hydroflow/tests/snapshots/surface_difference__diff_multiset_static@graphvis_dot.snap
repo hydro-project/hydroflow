@@ -7,7 +7,7 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_1v1\nstratum 1"
-        n1v1 [label="(n1v1) difference::<'tick, 'static>()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n1v1 [label="(n1v1) difference_multiset::<'static>()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         subgraph "cluster sg_1v1_var_diff" {
             label="var diff"
             n1v1

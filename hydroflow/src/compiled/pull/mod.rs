@@ -9,3 +9,6 @@ pub use symmetric_hash_join::*;
 
 mod half_join_state;
 pub use half_join_state::*;
+
+mod anti_join;
+pub use anti_join::*;

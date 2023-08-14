@@ -16,16 +16,16 @@ use crate::graph::{OperatorInstance, PortIndexValue};
 /// `difference` can be provided with one or two generic lifetime persistence arguments
 /// in the same way as [`join`](#join), see [`join`'s documentation](#join) for more info.
 ///
-/// Note set semantics here: duplicate items in the `pos` input
-/// are output 0 or 1 times (if they do/do-not have a match in `neg` respectively.)
+/// Note multiset semantics here: each (possibly duplicated) item in the `pos` input
+/// that has no match in `neg` is sent to the output.
 ///
 /// ```hydroflow
-/// source_iter(vec!["dog", "cat", "elephant"]) -> [pos]diff;
-/// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
-/// diff = difference() -> assert_eq(["elephant"]);
+/// source_iter(vec!["cat", "cat", "elephant", "elephant"]) -> [pos]diff;
+/// source_iter(vec!["cat", "gorilla"]) -> [neg]diff;
+/// diff = difference_multiset() -> assert_eq(["elephant", "elephant"]);
 /// ```
-pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
-    name: "difference",
+pub const DIFFERENCE_MULTISET: OperatorConstraints = OperatorConstraints {
+    name: "difference_multiset",
     categories: &[OperatorCategory::MultiIn],
     hard_range_inn: &(2..=2),
     soft_range_inn: &(2..=2),
@@ -60,7 +60,7 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
             write_prologue,
             write_iterator,
             write_iterator_after,
-        } = (super::anti_join::ANTI_JOIN.write_fn)(wc, diagnostics)?;
+        } = (super::anti_join_multiset::ANTI_JOIN_MULTISET.write_fn)(wc, diagnostics)?;
 
         let pos = &inputs[1];
         let write_iterator = quote_spanned! {op_span=>
