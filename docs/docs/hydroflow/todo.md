@@ -56,21 +56,23 @@ sidebar_position: 8
     - cargo generate for templating
     - Hydroflow program specs embedded in Rust
     - Tokio Channels and how to use them in Hydroflow
-        - Network sources and sinks (source_stream)
-        - Built-in serde (source_stream_serde, dest_sink_serde)
+        - Network sources and sinks (`source_stream`)
+        - Built-in serde (`source_stream_serde`, `dest_sink_serde`)
     - Hydroflow syntax: operators, ->, variables, indexing multi-input/output operators
     - running Hydroflow via `run_available` and `run_async`
     - Recursion via cyclic dataflow
     - Fixpoints and Strata
-    - Template structure: clap, message types
-    - source_stdin
+    - Template structure: `clap`, message types
+    - `source_stdin`
     - Messages and `demux`
     - broadcast pattern
-    - gated buffer pattern
-    - bootstrapping pipelines
+    - the `persist` operator to store and replay dataflow
+    - the `defer_signal` operator to gate a dataflow
+    - bootstrapping pipelines: `initialize`
 
 - Operators covered
     - cross_join
+    - defer_signal
     - demux
     - dest_sink_serde
     - difference
@@ -79,12 +81,15 @@ sidebar_position: 8
     - flatten
     - flat_map
     - for_each
+    - initialize
     - join
     - map
+    - persist
     - union
     - source_iter
     - source_stdin
     - source_stream
     - source_stream_serde
     - tee
+    - union
     - unique
