@@ -479,6 +479,9 @@
 <a href="#479" id="479">479</a>
 <a href="#480" id="480">480</a>
 <a href="#481" id="481">481</a>
+<a href="#482" id="482">482</a>
+<a href="#483" id="483">483</a>
+<a href="#484" id="484">484</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::{Debug, Display};
 <span class="kw">use </span>std::ops::{Bound, RangeBounds};
@@ -710,14 +713,17 @@
 }
 <span class="macro">declare_ops!</span>[
     anti_join::ANTI_JOIN,
+    anti_join_multiset::ANTI_JOIN_MULTISET,
     assert::ASSERT,
     assert_eq::ASSERT_EQ,
     cross_join::CROSS_JOIN,
+    cross_join_multiset::CROSS_JOIN_MULTISET,
     demux::DEMUX,
     dest_file::DEST_FILE,
     dest_sink::DEST_SINK,
     dest_sink_serde::DEST_SINK_SERDE,
     difference::DIFFERENCE,
+    difference_multiset::DIFFERENCE_MULTISET,
     enumerate::ENUMERATE,
     filter::FILTER,
     filter_map::FILTER_MAP,

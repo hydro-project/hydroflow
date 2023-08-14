@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/ops/anti_join.rs`."><title>anti_join.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-a23c9d150ad85d8b.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.72.0-nightly (330727467 2023-06-29)" data-channel="nightly" data-search-js="search-91b58767224854cb.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ><script src="../../../../static.files/storage-59fd9b8ccb335783.js"></script><script defer src="../../../../static.files/source-script-106908c7a7964ba4.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../hydroflow_lang/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/ops/anti_join_multiset.rs`."><title>anti_join_multiset.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-a23c9d150ad85d8b.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.72.0-nightly (330727467 2023-06-29)" data-channel="nightly" data-search-js="search-91b58767224854cb.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ><script src="../../../../static.files/storage-59fd9b8ccb335783.js"></script><script defer src="../../../../static.files/source-script-106908c7a7964ba4.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../hydroflow_lang/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -178,6 +178,26 @@
 <a href="#178" id="178">178</a>
 <a href="#179" id="179">179</a>
 <a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
@@ -192,17 +212,20 @@
 /// &gt; with output type (K, T)
 ///
 /// For a given tick, computes the anti-join of the items in the input
-/// streams, returning unique items in the `pos` input that do not have matching keys
-/// in the `neg` input. Note this is set semantics, so duplicate items in the `pos` input
-/// are output 0 or 1 times (if they do/do-not have a match in `neg` respectively.)
+/// streams, returning items in the `pos` input --that do not have matching keys
+/// in the `neg` input. NOTE this uses multiset semantics on the positive side,
+/// so duplicated positive inputs will appear in the output either 0 times (if matched in `neg`)
+/// or as many times as they appear in the input (if not matched in `neg`)
 ///
 /// ```hydroflow
-/// source_iter(vec![(&quot;dog&quot;, 1), (&quot;cat&quot;, 2), (&quot;elephant&quot;, 3)]) -&gt; [pos]diff;
+/// source_iter(vec![(&quot;cat&quot;, 2), (&quot;cat&quot;, 2), (&quot;elephant&quot;, 3), (&quot;elephant&quot;, 3)]) -&gt; [pos]diff;
 /// source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;gorilla&quot;]) -&gt; [neg]diff;
-/// diff = anti_join() -&gt; assert_eq([(&quot;elephant&quot;, 3)]);
+/// diff = anti_join_multiset() -&gt; assert_eq([(&quot;elephant&quot;, 3), (&quot;elephant&quot;, 3)]);
 /// ```
-</span><span class="kw">pub const </span>ANTI_JOIN: OperatorConstraints = OperatorConstraints {
-    name: <span class="string">&quot;anti_join&quot;</span>,
+
+</span><span class="comment">// This implementation is largely redundant to ANTI_JOIN and should be DRY&#39;ed
+</span><span class="kw">pub const </span>ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
+    name: <span class="string">&quot;anti_join_multiset&quot;</span>,
     categories: <span class="kw-2">&amp;</span>[OperatorCategory::MultiIn],
     hard_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
     soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
@@ -259,7 +282,7 @@
                         #root::util::monotonic_map::MonotonicMap::&lt;<span class="kw">_</span>, #root::rustc_hash::FxHashSet&lt;<span class="kw">_</span>&gt;&gt;::default()
                     },
                     <span class="macro">quote_spanned! </span>{op_span=&gt;
-                        <span class="kw-2">&amp;mut *</span>#borrow_ident.get_mut_clear(#context.current_tick())
+                        (<span class="kw-2">&amp;mut *</span>#borrow_ident).get_mut_clear(#context.current_tick())
                     },
                 ),
                 Persistence::Static =&gt; (
@@ -267,7 +290,7 @@
                         #root::rustc_hash::FxHashSet::default()
                     },
                     <span class="macro">quote_spanned! </span>{op_span=&gt;
-                        <span class="kw-2">&amp;mut *</span>#borrow_ident
+                        (<span class="kw-2">&amp;mut *</span>#borrow_ident)
                     },
                 ),
                 Persistence::Mutable =&gt; {
@@ -282,73 +305,90 @@
             <span class="prelude-val">Ok</span>((antijoindata_ident, borrow_ident, init, borrow))
         };
 
-        <span class="kw">let </span>(pos_antijoindata_ident, pos_borrow_ident, pos_init, pos_borrow) =
-            make_antijoindata(persistences[<span class="number">0</span>], <span class="string">&quot;pos&quot;</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>(neg_antijoindata_ident, neg_borrow_ident, neg_init, neg_borrow) =
             make_antijoindata(persistences[<span class="number">1</span>], <span class="string">&quot;neg&quot;</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>tick_ident = wc.make_ident(<span class="string">&quot;persisttick&quot;</span>);
+
+        <span class="comment">// let vec_ident = wc.make_ident(&quot;persistvec&quot;);
+        </span><span class="kw">let </span>pos_antijoindata_ident = wc.make_ident(<span class="string">&quot;antijoindata_pos_ident&quot;</span>);
+        <span class="kw">let </span>pos_borrow_ident = wc.make_ident(<span class="string">&quot;antijoindata_pos_borrow_ident&quot;</span>);
+
+        <span class="kw">let </span>write_prologue_pos = <span class="kw">match </span>persistences[<span class="number">0</span>] {
+            Persistence::Tick =&gt; <span class="macro">quote_spanned! </span>{op_span=&gt;},
+            Persistence::Static =&gt; <span class="macro">quote_spanned! </span>{op_span=&gt;
+                <span class="kw">let </span>#pos_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new((
+                    <span class="number">0_usize</span>,
+                    ::std::vec::Vec::new()
+                )));
+            },
+            Persistence::Mutable =&gt; {
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    <span class="string">&quot;An implementation of &#39;mutable does not exist&quot;</span>,
+                ));
+                <span class="kw">return </span><span class="prelude-val">Err</span>(());
+            }
+        };
 
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span>#neg_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #neg_init
             ));
-            <span class="kw">let </span>#pos_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
-                #pos_init
-            ));
-            <span class="kw">let </span>#tick_ident = #hydroflow.add_state(std::cell::RefCell::new(
-                <span class="number">0_usize
-            </span>));
+
+            #write_prologue_pos
         };
 
         <span class="kw">let </span>input_neg = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>]; <span class="comment">// N before P
         </span><span class="kw">let </span>input_pos = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
-        <span class="kw">let </span>write_iterator = {
-            <span class="macro">quote_spanned! </span>{op_span=&gt;
+        <span class="kw">let </span>write_iterator = <span class="kw">match </span>persistences[<span class="number">0</span>] {
+            Persistence::Tick =&gt; <span class="macro">quote_spanned! </span>{op_span =&gt;
+                <span class="kw">let </span><span class="kw-2">mut </span>#neg_borrow_ident = #context.state_ref(#neg_antijoindata_ident).borrow_mut();
+
+                <span class="attr">#[allow(clippy::needless_borrow)]
+                </span>#neg_borrow.extend(#input_neg);
+
+                <span class="kw">let </span>#ident = #input_pos.filter(|x| {
+                    <span class="attr">#[allow(clippy::needless_borrow)]
+                    #[allow(clippy::unnecessary_mut_passed)]
+                    </span>!#neg_borrow.contains(<span class="kw-2">&amp;</span>x.<span class="number">0</span>)
+                });
+            },
+            Persistence::Static =&gt; <span class="macro">quote_spanned! </span>{op_span =&gt;
                 <span class="kw">let </span><span class="kw-2">mut </span>#neg_borrow_ident = #context.state_ref(#neg_antijoindata_ident).borrow_mut();
                 <span class="kw">let </span><span class="kw-2">mut </span>#pos_borrow_ident = #context.state_ref(#pos_antijoindata_ident).borrow_mut();
-                <span class="kw">let </span>#ident = {
-                    <span class="doccomment">/// Limit error propagation by bounding locally, erasing output iterator type.
-                    </span><span class="attr">#[inline(always)]
-                    </span><span class="kw">fn </span>check_inputs&lt;<span class="lifetime">&#39;a</span>, K, I1, V, I2&gt;(
-                        input_neg: I1,
-                        input_pos: I2,
-                        neg_state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>#root::rustc_hash::FxHashSet&lt;K&gt;,
-                        pos_state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>#root::rustc_hash::FxHashSet&lt;(K, V)&gt;,
-                        is_new_tick: bool,
-                    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (K, V)&gt;
-                    <span class="kw">where
-                        </span>K: Eq + ::std::hash::Hash + Clone,
-                        V: Eq + ::std::hash::Hash + Clone,
-                        I1: <span class="lifetime">&#39;a </span>+ Iterator&lt;Item = K&gt;,
-                        I2: <span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (K, V)&gt;,
-                    {
-                        neg_state.extend(input_neg);
 
-                        #root::compiled::pull::anti_join_into_iter(input_pos, neg_state, pos_state, is_new_tick)
+                <span class="attr">#[allow(clippy::needless_borrow)]
+                </span><span class="kw">let </span>#ident = {
+                    <span class="attr">#[allow(clippy::clone_on_copy)]
+                    #[allow(suspicious_double_ref_op)]
+                    </span><span class="kw">if </span>#pos_borrow_ident.<span class="number">0 </span>&lt;= #context.current_tick() {
+                        <span class="comment">// Start of new tick
+                        </span>#neg_borrow.extend(#input_neg);
+
+                        #pos_borrow_ident.<span class="number">0 </span>= <span class="number">1 </span>+ #context.current_tick();
+                        #pos_borrow_ident.<span class="number">1</span>.extend(#input_pos);
+                        #pos_borrow_ident.<span class="number">1</span>.iter()
+                    } <span class="kw">else </span>{
+                        <span class="comment">// Called second or later times on the same tick.
+                        </span><span class="kw">let </span>len = #pos_borrow_ident.<span class="number">1</span>.len();
+                        #pos_borrow_ident.<span class="number">1</span>.extend(#input_pos);
+                        #pos_borrow_ident.<span class="number">1</span>[len..].iter()
                     }
-
-                    <span class="kw">let </span>__is_new_tick = {
-                        <span class="kw">let </span><span class="kw-2">mut </span>__borrow_ident = #context.state_ref(#tick_ident).borrow_mut();
-
-                        <span class="kw">if </span><span class="kw-2">*</span>__borrow_ident &lt;= #context.current_tick() {
-                            <span class="kw-2">*</span>__borrow_ident = #context.current_tick() + <span class="number">1</span>;
-                            <span class="comment">// new tick
-                            </span><span class="bool-val">true
-                        </span>} <span class="kw">else </span>{
-                            <span class="comment">// same tick.
-                            </span><span class="bool-val">false
-                        </span>}
-                    };
-
-                    check_inputs(
-                        #input_neg,
-                        #input_pos,
-                        #neg_borrow,
-                        #pos_borrow,
-                        __is_new_tick,
-                    )
+                    .filter(|x| {
+                        <span class="attr">#[allow(clippy::unnecessary_mut_passed)]
+                        </span>!#neg_borrow.contains(<span class="kw-2">&amp;</span>x.<span class="number">0</span>)
+                    })
+                    .map(|(k, v)| (k.clone(), v.clone()))
                 };
-            }
+            },
+            Persistence::Mutable =&gt; <span class="macro">quote_spanned! </span>{op_span =&gt;
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    <span class="string">&quot;An implementation of &#39;mutable does not exist&quot;</span>,
+                ));
+                <span class="kw">return </span><span class="prelude-val">Err</span>(());
+            },
         };
 
         <span class="prelude-val">Ok</span>(OperatorWriteOutput {
