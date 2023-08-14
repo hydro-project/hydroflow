@@ -3,8 +3,10 @@ use std::cmp::Ordering;
 use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// A totally ordered max lattice. Merging returns the larger value.
+///
+/// Note that the [`Default::default()`] value for numeric type is `MIN`, not zero.
 #[repr(transparent)]
-#[derive(Copy, Clone, Debug, Default, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Max<T>(T);
 impl<T> Max<T> {
@@ -60,8 +62,10 @@ impl<T> LatticeOrd<Self> for Max<T> where Self: PartialOrd<Self> {}
 ///
 /// This means the lattice order is the reverse of what you might naturally expect: 0 is greater
 /// than 1.
+///
+/// Note that the [`Default::default()`] value for numeric type is `MAX`, not zero.
 #[repr(transparent)]
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Min<T>(T);
 impl<T> Min<T> {
@@ -130,8 +134,7 @@ where
     }
 }
 
-// IsTop, IsBot impls
-
+// IsTop, IsBot, Default impls
 impl IsTop for Max<()> {
     fn is_top(&self) -> bool {
         true
@@ -163,6 +166,11 @@ impl IsBot for Max<bool> {
         !self.0
     }
 }
+impl Default for Max<bool> {
+    fn default() -> Self {
+        Self(false)
+    }
+}
 impl IsTop for Min<bool> {
     fn is_top(&self) -> bool {
         !self.0
@@ -171,6 +179,11 @@ impl IsTop for Min<bool> {
 impl IsBot for Min<bool> {
     fn is_bot(&self) -> bool {
         self.0
+    }
+}
+impl Default for Min<bool> {
+    fn default() -> Self {
+        Self(true)
     }
 }
 
@@ -184,6 +197,11 @@ impl IsBot for Max<char> {
         '\x00' == self.0
     }
 }
+impl Default for Max<char> {
+    fn default() -> Self {
+        Self('\x00')
+    }
+}
 impl IsTop for Min<char> {
     fn is_top(&self) -> bool {
         '\x00' == self.0
@@ -192,6 +210,11 @@ impl IsTop for Min<char> {
 impl IsBot for Min<char> {
     fn is_bot(&self) -> bool {
         char::MAX == self.0
+    }
+}
+impl Default for Min<char> {
+    fn default() -> Self {
+        Self(char::MAX)
     }
 }
 
@@ -211,6 +234,12 @@ macro_rules! impls_numeric {
                 }
             }
 
+            impl Default for Max<$x> {
+                fn default() -> Self {
+                    Self(<$x>::MIN)
+                }
+            }
+
             impl IsTop for Min<$x> {
                 fn is_top(&self) -> bool {
                     <$x>::MIN == self.0
@@ -219,6 +248,11 @@ macro_rules! impls_numeric {
             impl IsBot for Min<$x> {
                 fn is_bot(&self) -> bool {
                     <$x>::MAX == self.0
+                }
+            }
+            impl Default for Min<$x> {
+                fn default() -> Self {
+                    Self(<$x>::MAX)
                 }
             }
         )*
@@ -258,7 +292,31 @@ mod test {
     }
 
     #[test]
-    fn consistency_max() {
+    fn consistency_max_bool() {
+        let items = &[Max::new(false), Max::new(true)];
+        check_all(items);
+    }
+
+    #[test]
+    fn consistency_min_bool() {
+        let items = &[Min::new(false), Min::new(true)];
+        check_all(items);
+    }
+
+    #[test]
+    fn consistency_max_char() {
+        let items: Vec<_> = "\x00\u{10FFFF}✨🤦‍♀️踊るx".chars().map(Max::new).collect();
+        check_all(&items);
+    }
+
+    #[test]
+    fn consistency_min_char() {
+        let items: Vec<_> = "\x00\u{10FFFF}✨🤦‍♀️踊るx".chars().map(Min::new).collect();
+        check_all(&items);
+    }
+
+    #[test]
+    fn consistency_max_i32() {
         let items = &[
             Max::new(0),
             Max::new(1),
@@ -269,7 +327,7 @@ mod test {
     }
 
     #[test]
-    fn consistency_min() {
+    fn consistency_min_i32() {
         let items = &[
             Min::new(0),
             Min::new(1),
