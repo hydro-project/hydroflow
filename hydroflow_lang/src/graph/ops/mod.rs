@@ -229,14 +229,17 @@ macro_rules! declare_ops {
 }
 declare_ops![
     anti_join::ANTI_JOIN,
+    anti_join_multiset::ANTI_JOIN_MULTISET,
     assert::ASSERT,
     assert_eq::ASSERT_EQ,
     cross_join::CROSS_JOIN,
+    cross_join_multiset::CROSS_JOIN_MULTISET,
     demux::DEMUX,
     dest_file::DEST_FILE,
     dest_sink::DEST_SINK,
     dest_sink_serde::DEST_SINK_SERDE,
     difference::DIFFERENCE,
+    difference_multiset::DIFFERENCE_MULTISET,
     enumerate::ENUMERATE,
     filter::FILTER,
     filter_map::FILTER_MAP,

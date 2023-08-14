@@ -12,17 +12,20 @@ use crate::graph::{OpInstGenerics, OperatorInstance, PortIndexValue};
 /// > with output type (K, T)
 ///
 /// For a given tick, computes the anti-join of the items in the input
-/// streams, returning unique items in the `pos` input that do not have matching keys
-/// in the `neg` input. Note this is set semantics, so duplicate items in the `pos` input
-/// are output 0 or 1 times (if they do/do-not have a match in `neg` respectively.)
+/// streams, returning items in the `pos` input --that do not have matching keys
+/// in the `neg` input. NOTE this uses multiset semantics on the positive side,
+/// so duplicated positive inputs will appear in the output either 0 times (if matched in `neg`)
+/// or as many times as they appear in the input (if not matched in `neg`)
 ///
 /// ```hydroflow
-/// source_iter(vec![("dog", 1), ("cat", 2), ("elephant", 3)]) -> [pos]diff;
+/// source_iter(vec![("cat", 2), ("cat", 2), ("elephant", 3), ("elephant", 3)]) -> [pos]diff;
 /// source_iter(vec!["dog", "cat", "gorilla"]) -> [neg]diff;
-/// diff = anti_join() -> assert_eq([("elephant", 3)]);
+/// diff = anti_join_multiset() -> assert_eq([("elephant", 3), ("elephant", 3)]);
 /// ```
-pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
-    name: "anti_join",
+
+// This implementation is largely redundant to ANTI_JOIN and should be DRY'ed
+pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
+    name: "anti_join_multiset",
     categories: &[OperatorCategory::MultiIn],
     hard_range_inn: &(2..=2),
     soft_range_inn: &(2..=2),
@@ -79,7 +82,7 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
                         #root::util::monotonic_map::MonotonicMap::<_, #root::rustc_hash::FxHashSet<_>>::default()
                     },
                     quote_spanned! {op_span=>
-                        &mut *#borrow_ident.get_mut_clear(#context.current_tick())
+                        (&mut *#borrow_ident).get_mut_clear(#context.current_tick())
                     },
                 ),
                 Persistence::Static => (
@@ -87,7 +90,7 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
                         #root::rustc_hash::FxHashSet::default()
                     },
                     quote_spanned! {op_span=>
-                        &mut *#borrow_ident
+                        (&mut *#borrow_ident)
                     },
                 ),
                 Persistence::Mutable => {
@@ -102,73 +105,90 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
             Ok((antijoindata_ident, borrow_ident, init, borrow))
         };
 
-        let (pos_antijoindata_ident, pos_borrow_ident, pos_init, pos_borrow) =
-            make_antijoindata(persistences[0], "pos")?;
         let (neg_antijoindata_ident, neg_borrow_ident, neg_init, neg_borrow) =
             make_antijoindata(persistences[1], "neg")?;
-        let tick_ident = wc.make_ident("persisttick");
+
+        // let vec_ident = wc.make_ident("persistvec");
+        let pos_antijoindata_ident = wc.make_ident("antijoindata_pos_ident");
+        let pos_borrow_ident = wc.make_ident("antijoindata_pos_borrow_ident");
+
+        let write_prologue_pos = match persistences[0] {
+            Persistence::Tick => quote_spanned! {op_span=>},
+            Persistence::Static => quote_spanned! {op_span=>
+                let #pos_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new((
+                    0_usize,
+                    ::std::vec::Vec::new()
+                )));
+            },
+            Persistence::Mutable => {
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    "An implementation of 'mutable does not exist",
+                ));
+                return Err(());
+            }
+        };
 
         let write_prologue = quote_spanned! {op_span=>
             let #neg_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #neg_init
             ));
-            let #pos_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
-                #pos_init
-            ));
-            let #tick_ident = #hydroflow.add_state(std::cell::RefCell::new(
-                0_usize
-            ));
+
+            #write_prologue_pos
         };
 
         let input_neg = &inputs[0]; // N before P
         let input_pos = &inputs[1];
-        let write_iterator = {
-            quote_spanned! {op_span=>
+        let write_iterator = match persistences[0] {
+            Persistence::Tick => quote_spanned! {op_span =>
+                let mut #neg_borrow_ident = #context.state_ref(#neg_antijoindata_ident).borrow_mut();
+
+                #[allow(clippy::needless_borrow)]
+                #neg_borrow.extend(#input_neg);
+
+                let #ident = #input_pos.filter(|x| {
+                    #[allow(clippy::needless_borrow)]
+                    #[allow(clippy::unnecessary_mut_passed)]
+                    !#neg_borrow.contains(&x.0)
+                });
+            },
+            Persistence::Static => quote_spanned! {op_span =>
                 let mut #neg_borrow_ident = #context.state_ref(#neg_antijoindata_ident).borrow_mut();
                 let mut #pos_borrow_ident = #context.state_ref(#pos_antijoindata_ident).borrow_mut();
+
+                #[allow(clippy::needless_borrow)]
                 let #ident = {
-                    /// Limit error propagation by bounding locally, erasing output iterator type.
-                    #[inline(always)]
-                    fn check_inputs<'a, K, I1, V, I2>(
-                        input_neg: I1,
-                        input_pos: I2,
-                        neg_state: &'a mut #root::rustc_hash::FxHashSet<K>,
-                        pos_state: &'a mut #root::rustc_hash::FxHashSet<(K, V)>,
-                        is_new_tick: bool,
-                    ) -> impl 'a + Iterator<Item = (K, V)>
-                    where
-                        K: Eq + ::std::hash::Hash + Clone,
-                        V: Eq + ::std::hash::Hash + Clone,
-                        I1: 'a + Iterator<Item = K>,
-                        I2: 'a + Iterator<Item = (K, V)>,
-                    {
-                        neg_state.extend(input_neg);
+                    #[allow(clippy::clone_on_copy)]
+                    #[allow(suspicious_double_ref_op)]
+                    if #pos_borrow_ident.0 <= #context.current_tick() {
+                        // Start of new tick
+                        #neg_borrow.extend(#input_neg);
 
-                        #root::compiled::pull::anti_join_into_iter(input_pos, neg_state, pos_state, is_new_tick)
+                        #pos_borrow_ident.0 = 1 + #context.current_tick();
+                        #pos_borrow_ident.1.extend(#input_pos);
+                        #pos_borrow_ident.1.iter()
+                    } else {
+                        // Called second or later times on the same tick.
+                        let len = #pos_borrow_ident.1.len();
+                        #pos_borrow_ident.1.extend(#input_pos);
+                        #pos_borrow_ident.1[len..].iter()
                     }
-
-                    let __is_new_tick = {
-                        let mut __borrow_ident = #context.state_ref(#tick_ident).borrow_mut();
-
-                        if *__borrow_ident <= #context.current_tick() {
-                            *__borrow_ident = #context.current_tick() + 1;
-                            // new tick
-                            true
-                        } else {
-                            // same tick.
-                            false
-                        }
-                    };
-
-                    check_inputs(
-                        #input_neg,
-                        #input_pos,
-                        #neg_borrow,
-                        #pos_borrow,
-                        __is_new_tick,
-                    )
+                    .filter(|x| {
+                        #[allow(clippy::unnecessary_mut_passed)]
+                        !#neg_borrow.contains(&x.0)
+                    })
+                    .map(|(k, v)| (k.clone(), v.clone()))
                 };
-            }
+            },
+            Persistence::Mutable => quote_spanned! {op_span =>
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    "An implementation of 'mutable does not exist",
+                ));
+                return Err(());
+            },
         };
 
         Ok(OperatorWriteOutput {

@@ -506,10 +506,10 @@ fn main() {
                         }
                         {
                             let __is_new_tick = if *sg_1v1_node_17v1_persisttick_borrow
-                                < context.current_tick()
+                                <= context.current_tick()
                             {
                                 *sg_1v1_node_17v1_persisttick_borrow = context
-                                    .current_tick();
+                                    .current_tick() + 1;
                                 true
                             } else {
                                 false
@@ -696,10 +696,10 @@ fn main() {
                         }
                         {
                             let __is_new_tick = if *sg_1v1_node_21v1_persisttick_borrow
-                                < context.current_tick()
+                                <= context.current_tick()
                             {
                                 *sg_1v1_node_21v1_persisttick_borrow = context
-                                    .current_tick();
+                                    .current_tick() + 1;
                                 true
                             } else {
                                 false
