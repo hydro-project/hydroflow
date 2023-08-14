@@ -130,9 +130,6 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
         // TODO: This is really bad.
         // This will break if the user aliases HalfSetJoinState to something else. Temporary hacky solution.
         // Note that cross_join() depends on the implementation here as well.
-        // Need to decide on what to do about multisetjoin.
-        // Should it be a separate operator (multisetjoin() and multisetcrossjoin())?
-        // Should the default be multiset join? And setjoin requires the use of lattice_join() with SetUnion lattice?
         let additional_trait_bounds = if join_type.to_string().contains("HalfSetJoinState") {
             quote_spanned!(op_span=>
                 + ::std::cmp::Eq
@@ -187,12 +184,18 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
         let (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow) =
             make_joindata(persistences[1], "rhs")?;
 
+        let tick_ident = wc.make_ident("persisttick");
+        let tick_borrow_ident = wc.make_ident("persisttick_borrow");
+
         let write_prologue = quote_spanned! {op_span=>
             let #lhs_joindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #lhs_init
             ));
             let #rhs_joindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #rhs_init
+            ));
+            let #tick_ident = #hydroflow.add_state(std::cell::RefCell::new(
+                0usize
             ));
         };
 
@@ -201,6 +204,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
         let write_iterator = quote_spanned! {op_span=>
             let mut #lhs_borrow_ident = #context.state_ref(#lhs_joindata_ident).borrow_mut();
             let mut #rhs_borrow_ident = #context.state_ref(#rhs_joindata_ident).borrow_mut();
+            let mut #tick_borrow_ident = #context.state_ref(#tick_ident).borrow_mut();
             let #ident = {
                 // Limit error propagation by bounding locally, erasing output iterator type.
                 #[inline(always)]
@@ -209,6 +213,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                     rhs: I2,
                     lhs_state: &'a mut #join_type<K, V1, V2>,
                     rhs_state: &'a mut #join_type<K, V2, V1>,
+                    is_new_tick: bool,
                 ) -> impl 'a + Iterator<Item = (K, (V1, V2))>
                 where
                     K: Eq + std::hash::Hash + Clone,
@@ -217,16 +222,36 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                     I1: 'a + Iterator<Item = (K, V1)>,
                     I2: 'a + Iterator<Item = (K, V2)>,
                 {
-                    #root::compiled::pull::SymmetricHashJoin::new_from_mut(lhs, rhs, lhs_state, rhs_state)
+                    #root::compiled::pull::symmetric_hash_join_into_iter(lhs, rhs, lhs_state, rhs_state, is_new_tick)
                 }
-                check_inputs(#lhs, #rhs, #lhs_borrow, #rhs_borrow)
+
+                {
+                    let __is_new_tick = if *#tick_borrow_ident <= #context.current_tick() {
+                        *#tick_borrow_ident = #context.current_tick() + 1;
+                        true
+                    } else {
+                        false
+                    };
+
+                    check_inputs(#lhs, #rhs, #lhs_borrow, #rhs_borrow, __is_new_tick)
+                }
             };
         };
+
+        let write_iterator_after =
+            if persistences[0] == Persistence::Static || persistences[1] == Persistence::Static {
+                quote_spanned! {op_span=>
+                    // TODO: Probably only need to schedule if #*_borrow.len() > 0?
+                    #context.schedule_subgraph(#context.current_subgraph(), false);
+                }
+            } else {
+                quote_spanned! {op_span=>}
+            };
 
         Ok(OperatorWriteOutput {
             write_prologue,
             write_iterator,
-            ..Default::default()
+            write_iterator_after,
         })
     },
 };

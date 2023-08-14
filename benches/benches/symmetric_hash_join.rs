@@ -1,7 +1,7 @@
 use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use hydroflow::compiled::pull::{SetJoinState, SymmetricHashJoin};
+use hydroflow::compiled::pull::{symmetric_hash_join_into_iter, HalfSetJoinState};
 use rand::distributions::Distribution;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -14,11 +14,14 @@ fn ops(c: &mut Criterion) {
         let rhs: Vec<_> = (0..3000).map(|v| (v + 50000, ())).collect();
 
         b.iter(|| {
-            let mut state = black_box(SetJoinState::default());
-            let join = SymmetricHashJoin::new(
+            let (mut lhs_state, mut rhs_state) =
+                black_box((HalfSetJoinState::default(), HalfSetJoinState::default()));
+            let join = symmetric_hash_join_into_iter(
                 black_box(lhs.iter().cloned()),
                 black_box(rhs.iter().cloned()),
-                &mut state,
+                &mut lhs_state,
+                &mut rhs_state,
+                false,
             );
 
             for v in join {
@@ -32,11 +35,14 @@ fn ops(c: &mut Criterion) {
         let rhs: Vec<_> = (0..3000).map(|v| (v, v + 50000)).collect();
 
         b.iter(|| {
-            let mut state = black_box(SetJoinState::default());
-            let join = SymmetricHashJoin::new(
+            let (mut lhs_state, mut rhs_state) =
+                black_box((HalfSetJoinState::default(), HalfSetJoinState::default()));
+            let join = symmetric_hash_join_into_iter(
                 black_box(lhs.iter().cloned()),
                 black_box(rhs.iter().cloned()),
-                &mut state,
+                &mut lhs_state,
+                &mut rhs_state,
+                false,
             );
 
             for v in join {
@@ -50,13 +56,15 @@ fn ops(c: &mut Criterion) {
         let rhs: Vec<_> = (0..3000).map(|v| (v, v)).collect();
 
         b.iter(|| {
-            let mut state = black_box(SetJoinState::default());
-            let join = SymmetricHashJoin::new(
+            let (mut lhs_state, mut rhs_state) =
+                black_box((HalfSetJoinState::default(), HalfSetJoinState::default()));
+            let join = symmetric_hash_join_into_iter(
                 black_box(lhs.iter().cloned()),
                 black_box(rhs.iter().cloned()),
-                &mut state,
+                &mut lhs_state,
+                &mut rhs_state,
+                false,
             );
-
             for v in join {
                 black_box(v);
             }
@@ -77,11 +85,14 @@ fn ops(c: &mut Criterion) {
                 .collect();
 
             b.iter(|| {
-                let mut state = black_box(SetJoinState::default());
-                let join = SymmetricHashJoin::new(
+                let (mut lhs_state, mut rhs_state) =
+                    black_box((HalfSetJoinState::default(), HalfSetJoinState::default()));
+                let join = symmetric_hash_join_into_iter(
                     black_box(lhs.iter().cloned()),
                     black_box(rhs.iter().cloned()),
-                    &mut state,
+                    &mut lhs_state,
+                    &mut rhs_state,
+                    false,
                 );
 
                 for v in join {
@@ -105,11 +116,14 @@ fn ops(c: &mut Criterion) {
                 .collect();
 
             b.iter(|| {
-                let mut state = black_box(SetJoinState::default());
-                let join = SymmetricHashJoin::new(
+                let (mut lhs_state, mut rhs_state) =
+                    black_box((HalfSetJoinState::default(), HalfSetJoinState::default()));
+                let join = symmetric_hash_join_into_iter(
                     black_box(lhs.iter().cloned()),
                     black_box(rhs.iter().cloned()),
-                    &mut state,
+                    &mut lhs_state,
+                    &mut rhs_state,
+                    false,
                 );
 
                 for v in join {

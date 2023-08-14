@@ -210,6 +210,8 @@ fn main() {
                         ),
                     ),
                 );
+            let sg_2v1_node_9v1_persisttick = df
+                .add_state(std::cell::RefCell::new(0usize));
             let sg_2v1_node_5v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
@@ -299,6 +301,9 @@ fn main() {
                     let mut sg_2v1_node_9v1_joindata_rhs_borrow = context
                         .state_ref(sg_2v1_node_9v1_joindata_rhs)
                         .borrow_mut();
+                    let mut sg_2v1_node_9v1_persisttick_borrow = context
+                        .state_ref(sg_2v1_node_9v1_persisttick)
+                        .borrow_mut();
                     let op_9v1 = {
                         #[inline(always)]
                         fn check_inputs<'a, K, I1, V1, I2, V2>(
@@ -314,6 +319,7 @@ fn main() {
                                 V2,
                                 V1,
                             >,
+                            is_new_tick: bool,
                         ) -> impl 'a + Iterator<Item = (K, (V1, V2))>
                         where
                             K: Eq + std::hash::Hash + Clone,
@@ -322,21 +328,34 @@ fn main() {
                             I1: 'a + Iterator<Item = (K, V1)>,
                             I2: 'a + Iterator<Item = (K, V2)>,
                         {
-                            hydroflow::compiled::pull::SymmetricHashJoin::new_from_mut(
+                            hydroflow::compiled::pull::symmetric_hash_join_into_iter(
                                 lhs,
                                 rhs,
                                 lhs_state,
                                 rhs_state,
+                                is_new_tick,
                             )
                         }
-                        check_inputs(
-                            op_11v1,
-                            op_12v1,
-                            &mut *sg_2v1_node_9v1_joindata_lhs_borrow
-                                .get_mut_clear(context.current_tick()),
-                            &mut *sg_2v1_node_9v1_joindata_rhs_borrow
-                                .get_mut_clear(context.current_tick()),
-                        )
+                        {
+                            let __is_new_tick = if *sg_2v1_node_9v1_persisttick_borrow
+                                <= context.current_tick()
+                            {
+                                *sg_2v1_node_9v1_persisttick_borrow = context.current_tick()
+                                    + 1;
+                                true
+                            } else {
+                                false
+                            };
+                            check_inputs(
+                                op_11v1,
+                                op_12v1,
+                                &mut *sg_2v1_node_9v1_joindata_lhs_borrow
+                                    .get_mut_clear(context.current_tick()),
+                                &mut *sg_2v1_node_9v1_joindata_rhs_borrow
+                                    .get_mut_clear(context.current_tick()),
+                                __is_new_tick,
+                            )
+                        }
                     };
                     let op_9v1 = {
                         #[allow(non_snake_case)]

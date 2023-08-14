@@ -10,7 +10,7 @@ use crate::graph::OperatorInstance;
 /// > 0 input streams, 1 output stream
 ///
 /// > Arguments: An [`AsRef`](https://doc.rust-lang.org/std/convert/trait.AsRef.html)`<`[`Path`](https://doc.rust-lang.org/nightly/std/path/struct.Path.html)`>`
-/// for a file to read as json.
+/// for a file to read.
 ///
 /// Reads the referenced file one line at a time. The line will NOT include the line ending.
 ///

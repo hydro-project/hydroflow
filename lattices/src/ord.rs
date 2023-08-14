@@ -233,7 +233,7 @@ mod test {
     use std::cmp::Ordering::*;
 
     use super::*;
-    use crate::test::{check_all, check_lattice_top};
+    use crate::test::check_all;
 
     #[test]
     fn ordering() {
@@ -266,7 +266,6 @@ mod test {
             Max::new(i32::MAX),
         ];
         check_all(items);
-        check_lattice_top(items);
     }
 
     #[test]
@@ -278,6 +277,5 @@ mod test {
             Min::new(i32::MAX),
         ];
         check_all(items);
-        check_lattice_top(items);
     }
 }

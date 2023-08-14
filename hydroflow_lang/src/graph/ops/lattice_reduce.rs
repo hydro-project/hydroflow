@@ -13,7 +13,7 @@ use crate::graph::ops::OperatorWriteOutput;
 /// > Generic parameters: A `Lattice` type, must implement [`Merge<Self>`](https://hydro-project.github.io/hydroflow/doc/lattices/trait.Merge.html)
 /// type.
 ///
-/// A specialized operator for merging lattices together into a accumulated value. Like [`reduce()`](#reduce)
+/// A specialized operator for merging lattices together into an accumulated value. Like [`reduce()`](#reduce)
 /// but specialized for lattice types. `lattice_reduce::<MyLattice>()` is equivalent to `reduce(hydroflow::lattices::Merge::merge_owned)`.
 ///
 /// `lattice_reduce` can also be provided with one generic lifetime persistence argument, either
@@ -22,7 +22,7 @@ use crate::graph::ops::OperatorWriteOutput;
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
 /// defaults to `'tick`.
 ///
-/// `lattice_reduce` is differentiated from `lattice_fold` in that `lattice_reduce` the accumulating type does not need to implement `Default`.
+/// `lattice_reduce` is differentiated from `lattice_fold` in that `lattice_reduce` does not require the accumulating type to implement `Default`.
 /// But it also means that the accumulating function inputs and the accumulating type must be the same.
 ///
 /// ```hydroflow

@@ -4,8 +4,8 @@ use std::cmp::Ordering::{self, *};
 use std::collections::{BTreeSet, HashSet};
 
 use crate::cc_traits::{Iter, Len, Set};
-use crate::collections::{ArraySet, SingletonSet};
-use crate::{IsBot, LatticeFrom, LatticeOrd, Merge};
+use crate::collections::{ArraySet, OptionSet, SingletonSet};
+use crate::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Set-union lattice.
 ///
@@ -123,6 +123,28 @@ where
     }
 }
 
+impl<Set> IsTop for SetUnion<Set> {
+    fn is_top(&self) -> bool {
+        false
+    }
+}
+
+impl<Set, Item> Atomize for SetUnion<Set>
+where
+    Set: Len + IntoIterator<Item = Item> + Extend<Item>,
+    Set::IntoIter: 'static,
+    Item: 'static,
+{
+    type Atom = SetUnionOptionSet<Item>;
+
+    // TODO: use impl trait.
+    type AtomIter = Box<dyn Iterator<Item = Self::Atom>>;
+
+    fn atomize(self) -> Self::AtomIter {
+        Box::new(self.0.into_iter().map(SetUnionOptionSet::new_from))
+    }
+}
+
 /// [`std::collections::HashSet`]-backed [`SetUnion`] lattice.
 pub type SetUnionHashSet<Item> = SetUnion<HashSet<Item>>;
 
@@ -139,13 +161,13 @@ pub type SetUnionArray<Item, const N: usize> = SetUnion<ArraySet<Item, N>>;
 pub type SetUnionSingletonSet<Item> = SetUnion<SingletonSet<Item>>;
 
 /// [`Option`]-backed [`SetUnion`] lattice.
-pub type SetUnionOption<Item> = SetUnion<Option<Item>>;
+pub type SetUnionOptionSet<Item> = SetUnion<OptionSet<Item>>;
 
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::collections::SingletonSet;
-    use crate::test::check_all;
+    use crate::test::{check_all, check_atomize_each};
 
     #[test]
     fn test_set_union() {
@@ -189,6 +211,17 @@ mod test {
             SetUnionHashSet::new_from([0]),
             SetUnionHashSet::new_from([1]),
             SetUnionHashSet::new_from([0, 1]),
+        ]);
+    }
+
+    #[test]
+    fn atomize() {
+        check_atomize_each(&[
+            SetUnionHashSet::new_from([]),
+            SetUnionHashSet::new_from([0]),
+            SetUnionHashSet::new_from([1]),
+            SetUnionHashSet::new_from([0, 1]),
+            SetUnionHashSet::new((0..10).collect()),
         ]);
     }
 }
