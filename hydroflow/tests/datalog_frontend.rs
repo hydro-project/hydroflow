@@ -1040,12 +1040,21 @@ fn test_persist() {
     flow.run_tick();
 
     assert_eq!(
-        &*collect_ready::<Vec<_>, _>(&mut result_recv),
-        &[(1, 2, 6), (1, 1, 6), (1, 3, 6)]
+        collect_ready::<HashMultiSet<_>, _>(&mut result_recv),
+        HashMultiSet::from_iter([(1, 2, 6), (1, 1, 6), (1, 3, 6)])
     );
-    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result2_recv), &[]);
-    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result3_recv), &[(1,)]);
-    assert_eq!(&*collect_ready::<Vec<_>, _>(&mut result4_recv), &[(1,)]);
+    assert_eq!(
+        collect_ready::<HashMultiSet<_>, _>(&mut result2_recv),
+        HashMultiSet::from_iter([])
+    );
+    assert_eq!(
+        collect_ready::<HashMultiSet<_>, _>(&mut result3_recv),
+        HashMultiSet::from_iter([(1,)])
+    );
+    assert_eq!(
+        collect_ready::<HashMultiSet<_>, _>(&mut result4_recv),
+        HashMultiSet::from_iter([(1,)])
+    );
 }
 
 #[multiplatform_test]
