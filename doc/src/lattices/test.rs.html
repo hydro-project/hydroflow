@@ -290,20 +290,27 @@
 <a href="#290" id="290">290</a>
 <a href="#291" id="291">291</a>
 <a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Helper test utils to test lattice implementation correctness.
 
 </span><span class="kw">use </span>std::fmt::Debug;
 
 <span class="kw">use crate</span>::{Atomize, IsBot, IsTop, Lattice, LatticeOrd, Merge, NaiveLatticeOrd};
 
-<span class="doccomment">/// Helper which calls [`check_lattice_ord`], [`check_partial_ord_properties`],
-/// [`check_lattice_properties`], and [`check_lattice_bot`].
-</span><span class="kw">pub fn </span>check_all&lt;T: Lattice + Clone + Eq + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
+<span class="doccomment">/// Helper which calls many other `check_*` functions in this module. See source code for which
+/// functions are called.
+</span><span class="kw">pub fn </span>check_all&lt;T: Lattice + Clone + Eq + Debug + Default&gt;(items: <span class="kw-2">&amp;</span>[T]) {
     check_lattice_ord(items);
     check_partial_ord_properties(items);
     check_lattice_properties(items);
-    check_lattice_bot(items);
-    check_lattice_top(items);
+    check_lattice_is_bot(items);
+    check_lattice_is_top(items);
+    check_lattice_default_is_bot::&lt;T&gt;();
 }
 
 <span class="doccomment">/// Check that the lattice&#39;s `PartialOrd` implementation agrees with the `NaiveLatticeOrd` partial
@@ -431,7 +438,7 @@
 }
 
 <span class="doccomment">/// Checks that the item which is bot is less than (or equal to) all other items.
-</span><span class="kw">pub fn </span>check_lattice_bot&lt;T: IsBot + LatticeOrd + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
+</span><span class="kw">pub fn </span>check_lattice_is_bot&lt;T: IsBot + LatticeOrd + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
     <span class="kw">let </span><span class="prelude-val">Some</span>(bot) = items.iter().find(|<span class="kw-2">&amp;</span>x| IsBot::is_bot(x)) <span class="kw">else </span>{
         <span class="kw">return</span>;
     };
@@ -442,7 +449,7 @@
 }
 
 <span class="doccomment">/// Checks that the item which is top is greater than (or equal to) all other items.
-</span><span class="kw">pub fn </span>check_lattice_top&lt;T: IsTop + LatticeOrd + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
+</span><span class="kw">pub fn </span>check_lattice_is_top&lt;T: IsTop + LatticeOrd + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
     <span class="kw">let </span><span class="prelude-val">Some</span>(top) = items.iter().find(|<span class="kw-2">&amp;</span>x| IsTop::is_top(x)) <span class="kw">else </span>{
         <span class="kw">return</span>;
     };
@@ -450,6 +457,11 @@
         <span class="macro">assert!</span>(x &lt;= top);
         <span class="macro">assert_eq!</span>(top == x, x.is_top(), <span class="string">&quot;{:?}&quot;</span>, x);
     }
+}
+
+<span class="doccomment">/// Asserts that [`IsBot`] is true for [`Default::default()`].
+</span><span class="kw">pub fn </span>check_lattice_default_is_bot&lt;T: IsBot + Default&gt;() {
+    <span class="macro">assert!</span>(T::is_bot(<span class="kw-2">&amp;</span>T::default()));
 }
 
 <span class="doccomment">/// Check that the atomized lattice points re-merge to form the same original lattice point, for each item in `items`.

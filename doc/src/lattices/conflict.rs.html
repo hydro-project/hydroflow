@@ -130,6 +130,13 @@
 <a href="#130" id="130">130</a>
 <a href="#131" id="131">131</a>
 <a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 
 <span class="kw">use crate</span>::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
@@ -144,7 +151,7 @@
 ///
 /// This can be used to wrap non-lattice (scalar) data into a lattice type.
 </span><span class="attr">#[repr(transparent)]
-#[derive(Copy, Clone, Debug, Default, Eq)]
+#[derive(Copy, Clone, Debug, Eq)]
 #[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>Conflict&lt;T&gt;(<span class="prelude-ty">Option</span>&lt;T&gt;);
 <span class="kw">impl</span>&lt;T&gt; Conflict&lt;T&gt; {
@@ -238,7 +245,10 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span><span class="kw">crate</span>::test::check_all;
+    <span class="kw">use </span><span class="kw">crate</span>::test::{
+        check_all, check_lattice_is_bot, check_lattice_is_top, check_lattice_ord,
+        check_lattice_properties, check_partial_ord_properties,
+    };
     <span class="kw">use </span><span class="kw">crate</span>::WithBot;
 
     <span class="attr">#[test]
@@ -248,7 +258,11 @@
             Conflict::new_from(<span class="string">&quot;bar&quot;</span>),
             Conflict::new(<span class="prelude-val">None</span>),
         ];
-        check_all(items);
+        check_lattice_ord(items);
+        check_partial_ord_properties(items);
+        check_lattice_properties(items);
+        check_lattice_is_bot(items);
+        check_lattice_is_top(items);
     }
 
     <span class="attr">#[test]

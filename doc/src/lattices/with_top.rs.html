@@ -362,7 +362,7 @@
 </span><span class="kw">mod </span>test {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::set_union::{SetUnionHashSet, SetUnionSingletonSet};
-    <span class="kw">use </span><span class="kw">crate</span>::test::{check_all, check_atomize_each, check_lattice_top};
+    <span class="kw">use </span><span class="kw">crate</span>::test::{check_all, check_atomize_each, check_lattice_is_top};
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_singly_nested_singleton_example() {
@@ -417,7 +417,7 @@
             WithTop::new_from(SetUnionHashSet::new_from([<span class="number">0</span>, <span class="number">1</span>])),
         ];
         check_all(items);
-        check_lattice_top(items);
+        check_lattice_is_top(items);
     }
 
     <span class="attr">#[test]

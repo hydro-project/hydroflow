@@ -64,10 +64,12 @@ order agrees with the <code>Merge</code>-derived <code>NaiveLatticeOrd</code> or
 type, e.g. between <a href="set_union/type.SetUnionBTreeSet.html" title="type lattices::set_union::SetUnionBTreeSet"><code>set_union::SetUnionBTreeSet</code></a> and <a href="set_union/type.SetUnionHashSet.html" title="type lattices::set_union::SetUnionHashSet"><code>set_union::SetUnionHashSet</code></a>. For compound
 lattice (lattices with nested lattice types), the <code>LatticeFrom</code> implementation should be recursive
 for those nested lattices.</p>
-<h4 id="isbot-and-istop"><a href="#isbot-and-istop"><code>IsBot</code> and <code>IsTop</code></a></h4>
+<h4 id="isbot-istop-and-default"><a href="#isbot-istop-and-default"><code>IsBot</code>, <code>IsTop</code>, and <code>Default</code></a></h4>
 <p>A bottom (⊥) is strictly less than all other values. A top (⊤) is strictly greater than all other
-values. <code>IsBot::is_bot</code> and <code>IsTop::is_top</code> determine if a lattice instance is top or
-bottom respectively.</p>
+values. <code>IsBot::is_bot</code> and <code>IsTop::is_top</code> determine if a lattice instance is top or bottom
+respectively.</p>
+<p>For lattice types, <code>Default::default()</code> must create a bottom value. <code>IsBot::is_bot(&amp;Default::default())</code>
+should always return true for all lattice types.</p>
 <h4 id="atomize"><a href="#atomize"><code>Atomize</code></a></h4>
 <p><a href="trait.Atomize.html#tymethod.atomize" title="method lattices::Atomize::atomize"><code>Atomize::atomize</code></a> converts a lattice point into a bunch of smaller lattice points. When these
 “atoms” are merged together they will form the original lattice point. See the docs for more
