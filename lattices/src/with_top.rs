@@ -145,7 +145,7 @@ where
 mod test {
     use super::*;
     use crate::set_union::{SetUnionHashSet, SetUnionSingletonSet};
-    use crate::test::{check_all, check_atomize_each, check_lattice_top};
+    use crate::test::{check_all, check_atomize_each, check_lattice_is_top};
 
     #[test]
     fn test_singly_nested_singleton_example() {
@@ -200,7 +200,7 @@ mod test {
             WithTop::new_from(SetUnionHashSet::new_from([0, 1])),
         ];
         check_all(items);
-        check_lattice_top(items);
+        check_lattice_is_top(items);
     }
 
     #[test]
