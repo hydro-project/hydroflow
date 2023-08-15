@@ -5,6 +5,77 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.0 (2023-08-15)
+
+### New Features
+
+ - <csr-id-b4b9644a19e8e7e7725c9c5b88e3a6b8c2be7364/> Add `use` statements to hydroflow syntax
+   And use in doc tests.
+
+### Bug Fixes
+
+ - <csr-id-d378e5eada3d2bae90f98c5a33b2d055940a8c7f/> unify antijoin and difference with set and multiset semantics
+   * fix: unify antijoin and difference with set and multiset semantics
+   
+   * fix: replay semantics for antijoin and difference now work
+   also added cross_join_multiset
+   
+   * fix: enforce sort for tests of anti_join and difference using assert_eq
+   
+   * fix: advance __borrow_ident beyond the current tick to prevent replay loops
+   
+   * fix: add modified snapshots
+   
+   * fix: temp
+   
+   * fix: spelling typo in comment
+   
+   * fix: make anti_join replay more efficient
+   
+   Also add multiset data structure, use it in some tests, make join()
+   replay logic more similar to anti_join's and presist's.
+   
+   * fix: ignore test that depends on order of antijoin
+   
+   * fix: really ignore test_index
+   
+   * fix: fix specific test ordering in wasm
+   
+   ---------
+ - <csr-id-cc959c762c3a0e036e672801c615028cbfb95168/> joins now replay correctly
+ - <csr-id-6c98bbc2bd3443fe6f77e0b8689b461edde1b316/> rename next_tick -> defer, batch -> defer_signal
+
+### Refactor
+
+ - <csr-id-6a2ad6b770c2ccf470548320d8753025b3a66c0a/> fix new clippy lints on latest nightly 1.73.0-nightly (db7ff98a7 2023-07-31)
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 5 commits contributed to the release over the course of 32 calendar days.
+ - 42 days passed between releases.
+ - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 4 unique issues were worked on: [#833](https://github.com/hydro-project/hydroflow/issues/833), [#845](https://github.com/hydro-project/hydroflow/issues/845), [#870](https://github.com/hydro-project/hydroflow/issues/870), [#872](https://github.com/hydro-project/hydroflow/issues/872)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#833](https://github.com/hydro-project/hydroflow/issues/833)**
+    - Rename next_tick -> defer, batch -> defer_signal ([`6c98bbc`](https://github.com/hydro-project/hydroflow/commit/6c98bbc2bd3443fe6f77e0b8689b461edde1b316))
+ * **[#845](https://github.com/hydro-project/hydroflow/issues/845)**
+    - Add `use` statements to hydroflow syntax ([`b4b9644`](https://github.com/hydro-project/hydroflow/commit/b4b9644a19e8e7e7725c9c5b88e3a6b8c2be7364))
+ * **[#870](https://github.com/hydro-project/hydroflow/issues/870)**
+    - Joins now replay correctly ([`cc959c7`](https://github.com/hydro-project/hydroflow/commit/cc959c762c3a0e036e672801c615028cbfb95168))
+ * **[#872](https://github.com/hydro-project/hydroflow/issues/872)**
+    - Unify antijoin and difference with set and multiset semantics ([`d378e5e`](https://github.com/hydro-project/hydroflow/commit/d378e5eada3d2bae90f98c5a33b2d055940a8c7f))
+ * **Uncategorized**
+    - Fix new clippy lints on latest nightly 1.73.0-nightly (db7ff98a7 2023-07-31) ([`6a2ad6b`](https://github.com/hydro-project/hydroflow/commit/6a2ad6b770c2ccf470548320d8753025b3a66c0a))
+</details>
+
 ## 0.3.0 (2023-07-04)
 
 ### New Features
@@ -22,7 +93,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release over the course of 13 calendar days.
+ - 3 commits contributed to the release over the course of 12 calendar days.
  - 33 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#780](https://github.com/hydro-project/hydroflow/issues/780), [#801](https://github.com/hydro-project/hydroflow/issues/801)
@@ -37,6 +108,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Allow stable build, refactors behind `nightly` feature flag ([`22abcaf`](https://github.com/hydro-project/hydroflow/commit/22abcaff806c7de6e4a7725656bbcf201e7d9259))
  * **[#801](https://github.com/hydro-project/hydroflow/issues/801)**
     - Update proc-macro2, use new span location API where possible ([`8d3494b`](https://github.com/hydro-project/hydroflow/commit/8d3494b5afee858114a602a3e23077bb6d24dd77))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.3.0, hydroflow_lang v0.3.0, hydroflow_datalog_core v0.3.0, hydroflow_datalog v0.3.0, hydroflow_macro v0.3.0, lattices v0.3.0, pusherator v0.0.2, hydroflow v0.3.0, hydro_cli v0.3.0, safety bump 5 crates ([`ec9633e`](https://github.com/hydro-project/hydroflow/commit/ec9633e2e393c2bf106223abeb0b680200fbdf84))
 </details>
 
 ## 0.2.0 (2023-05-31)
