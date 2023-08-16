@@ -1,3 +1,5 @@
+//! Pretty, human-readable printing of [`proc_macro2::Span`]s.
+
 /// Helper struct which displays the span as `path:row:col` for human reading/IDE linking.
 /// Example: `hydroflow\tests\surface_syntax.rs:42:18`.
 pub struct PrettySpan(pub proc_macro2::Span);

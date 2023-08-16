@@ -74,17 +74,23 @@ mod serde_syn {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
 struct Varname(#[serde(with = "serde_syn")] pub Ident);
 
+/// A node, corresponding to an operator or a handoff.
 #[derive(Clone, Serialize, Deserialize)]
 pub enum Node {
+    /// An operator.
     Operator(#[serde(with = "serde_syn")] Operator),
+    /// A handoff point, used between subgraphs (or within a subgraph to break a cycle).
     Handoff {
+        /// The span of the input into the handoff.
         #[serde(skip, default = "Span::call_site")]
         src_span: Span,
+        /// The span of the output out of the handoff.
         #[serde(skip, default = "Span::call_site")]
         dst_span: Span,
     },
 }
 impl Node {
+    /// Return the node as a human-readable string.
     pub fn to_pretty_string(&self) -> Cow<'static, str> {
         match self {
             Node::Operator(op) => op.to_pretty_string().into(),
@@ -92,6 +98,7 @@ impl Node {
         }
     }
 
+    /// Return the source code span of the node (for operators) or input/otput spans for handoffs.
     pub fn span(&self) -> Span {
         match self {
             Self::Operator(op) => op.span(),
@@ -110,6 +117,14 @@ impl std::fmt::Debug for Node {
     }
 }
 
+/// Meta-data relating to operators which may be useful throughout the compilation process.
+///
+/// This data can be generated from the graph, but it is useful to have it readily available
+/// pre-computed as many algorithms use the same info. Stuff like port names, arguments, and the
+/// [`OperatorConstraints`] for the operator.
+///
+/// Because it is derived from the graph itself, there can be "cache invalidation"-esque issues
+/// if this data is not kept in sync with the graph.
 #[derive(Clone, Debug)]
 pub struct OperatorInstance {
     /// Name of the operator (will match [`OperatorConstraints::name`]).
@@ -128,6 +143,7 @@ pub struct OperatorInstance {
     pub arguments: Punctuated<Expr, Token![,]>,
 }
 
+/// Operator generic arguments, split into specific categories.
 #[derive(Clone, Debug)]
 pub struct OpInstGenerics {
     /// Operator generic (type or lifetime) arguments.
@@ -138,6 +154,9 @@ pub struct OpInstGenerics {
     pub type_args: Vec<Type>,
 }
 
+/// Gets the generic arguments for the operator. This helper method is here due to the special
+/// handling of persistence lifetimes (`'static`, `'tick`, `'mutable`) which must come before
+/// other generic parameters.
 pub fn get_operator_generics(
     diagnostics: &mut Vec<Diagnostic>,
     operator: &Operator,
@@ -181,6 +200,7 @@ pub fn get_operator_generics(
     }
 }
 
+/// Push, Pull, Comp, or Hoff polarity.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Color {
     /// Pull (green)
@@ -217,11 +237,17 @@ pub fn node_color(is_handoff: bool, inn_degree: usize, out_degree: usize) -> Opt
 /// Helper struct for [`PortIndex`] which keeps span information for elided ports.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum PortIndexValue {
+    /// An integer value: `[0]`, `[1]`, etc. Can be negative although we don't use that (2023-08-16).
     Int(#[serde(with = "serde_syn")] IndexInt),
+    /// A name or path. `[pos]`, `[neg]`, etc. Can use `::` separators but we don't use that (2023-08-16).
     Path(#[serde(with = "serde_syn")] ExprPath),
+    /// Elided, unspecified port. We have this variant, rather than wrapping in `Option`, in order
+    /// to preserve the `Span` information.
     Elided(#[serde(skip)] Option<Span>),
 }
 impl PortIndexValue {
+    /// For a [`Ported`] value like `[port_in]name[port_out]`, get the `port_in` and `port_out` as
+    /// [`PortIndexValue`]s.
     pub fn from_ported<Inner>(ported: Ported<Inner>) -> (Self, Inner, Self)
     where
         Inner: Spanned,
@@ -239,6 +265,7 @@ impl PortIndexValue {
         (port_inn, inner, port_out)
     }
 
+    /// Returns `true` if `self` is not [`PortIndexValue::Elided`].
     pub fn is_specified(&self) -> bool {
         !matches!(self, Self::Elided(_))
     }
@@ -256,6 +283,7 @@ impl PortIndexValue {
         }
     }
 
+    /// Formats self as a human-readable string for error messages.
     pub fn as_error_message_string(&self) -> String {
         match self {
             PortIndexValue::Int(n) => format!("`{}`", n.value),
@@ -264,6 +292,7 @@ impl PortIndexValue {
         }
     }
 
+    /// Returns the span of this port value.
     pub fn span(&self) -> Span {
         match self {
             PortIndexValue::Int(x) => x.span(),
@@ -313,6 +342,8 @@ impl Ord for PortIndexValue {
     }
 }
 
+/// The main function of this module. Compiles a [`HfCode`] AST into a [`HydroflowGraph`] and
+/// source code, or [`Diagnostic`] errors.
 pub fn build_hfcode(
     hf_code: HfCode,
     root: &TokenStream,
