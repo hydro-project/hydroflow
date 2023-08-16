@@ -1,3 +1,5 @@
+//! Build a flat graph from [`HfStatement`]s.
+
 use std::borrow::Cow;
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
@@ -26,6 +28,7 @@ enum GraphDet {
     Undetermined(Ident),
 }
 
+/// Wraper around [`HydroflowGraph`] to build a flat graph from AST code.
 #[derive(Debug, Default)]
 pub struct FlatGraphBuilder {
     /// Spanned error/warning/etc diagnostics to emit.
@@ -49,6 +52,7 @@ impl FlatGraphBuilder {
         Default::default()
     }
 
+    /// Convert the Hydroflow code AST into a graph builder.
     pub fn from_hfcode(input: HfCode) -> Self {
         input.into()
     }
