@@ -1,3 +1,5 @@
+//! Subgraph partioning algorithm
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use proc_macro2::Span;
@@ -439,6 +441,9 @@ fn separate_external_inputs(partitioned_graph: &mut HydroflowGraph) {
     }
 }
 
+/// Main method for this module. Partions a flat [`HydroflowGraph`] into one with subgraphs.
+///
+/// Returns an error if a negative cycle exists in the graph. Negative cycles prevent partioning.
 pub fn partition_graph(flat_graph: HydroflowGraph) -> Result<HydroflowGraph, Diagnostic> {
     let mut partitioned_graph = flat_graph;
     let mut barrier_crossers = find_barrier_crossers(&partitioned_graph);

@@ -1,6 +1,14 @@
+//! General graph algorithm utility functions
+
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
 
+/// Topologically sorts a set of nodes. Returns a list where the order of `Id`s will agree with
+/// the order of any path through the graph.
+///
+/// This naturally requires a directed acyclic graph (DAG).
+///
+/// <https://en.wikipedia.org/wiki/Topological_sorting>
 pub fn topo_sort<Id, NodeIds, PredsFn, PredsIter>(
     node_ids: NodeIds,
     mut preds_fn: PredsFn,
@@ -40,6 +48,16 @@ where
     order
 }
 
+/// Finds the strongly connected components in the graph. A strongly connected component is a
+/// subset of nodes that are all reachable by each other.
+///
+/// <https://en.wikipedia.org/wiki/Strongly_connected_component>
+///
+/// Each component is represented by a specific member node. The returned `BTreeMap` maps each node
+/// ID to the node ID of its "representative." Nodes with the same "representative" node are in the
+/// same strongly connected component.
+///
+/// This function uses [Kosaraju's algorithm](https://en.wikipedia.org/wiki/Kosaraju%27s_algorithm).
 pub fn scc_kosaraju<Id, NodeIds, PredsFn, SuccsFn, PredsIter, SuccsIter>(
     nodes: NodeIds,
     mut preds_fn: PredsFn,
