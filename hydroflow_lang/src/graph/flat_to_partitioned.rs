@@ -290,28 +290,13 @@ fn find_subgraph_strata(
         }
     }
 
-    let scc = graph_algorithms::scc_kosaraju(
-        partitioned_graph.subgraph_ids(),
+    // Topological sort (of strongly connected components) is how we find the (nondecreasing)
+    // order of strata.
+    let topo_sort_order = graph_algorithms::topo_sort_scc(
+        || partitioned_graph.subgraph_ids(),
         |v| subgraph_preds.get(&v).into_iter().flatten().cloned(),
         |u| subgraph_succs.get(&u).into_iter().flatten().cloned(),
     );
-
-    // Topological sort is how we find the (nondecreasing) order of strata.
-    let topo_sort_order = {
-        // Condensed each SCC into a single node for toposort.
-        let mut condensed_preds: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
-            Default::default();
-        for (u, preds) in subgraph_preds.iter() {
-            condensed_preds
-                .entry(scc[u])
-                .or_default()
-                .extend(preds.iter().map(|v| scc[v]));
-        }
-
-        graph_algorithms::topo_sort(partitioned_graph.subgraph_ids(), |v| {
-            condensed_preds.get(&v).into_iter().flatten().cloned()
-        })
-    };
 
     // Each subgraph's stratum number is the same as it's predecessors. Unless there is a negative
     // edge, then we increment.
