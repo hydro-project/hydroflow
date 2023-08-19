@@ -69,9 +69,31 @@
 <a href="#69" id="69">69</a>
 <a href="#70" id="70">70</a>
 <a href="#71" id="71">71</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>slotmap::{Key, SecondaryMap};
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! Union-find data structure, see [`UnionFind`].
 
-<span class="attr">#[derive(Default, Clone)]
+</span><span class="kw">use </span>slotmap::{Key, SecondaryMap};
+
+<span class="doccomment">/// Union-find data structure.
+///
+/// Used to efficiently track sets of equivalent items.
+///
+/// &lt;https://en.wikipedia.org/wiki/Disjoint-set_data_structure&gt;
+</span><span class="attr">#[derive(Default, Clone)]
 </span><span class="kw">pub struct </span>UnionFind&lt;K&gt;
 <span class="kw">where
     </span>K: Key,
@@ -82,17 +104,20 @@
 <span class="kw">where
     </span>K: Key,
 {
-    <span class="attr">#[allow(dead_code)]
+    <span class="doccomment">/// Creates a new `UnionFind`, same as [`Default::default()`].
+    </span><span class="attr">#[allow(dead_code)]
     </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>::default()
     }
-    <span class="kw">pub fn </span>with_capacity(capacity: usize) -&gt; <span class="self">Self </span>{
+    <span class="doccomment">/// Creates a new `UnionFind` with the given key capacity pre-allocated.
+    </span><span class="kw">pub fn </span>with_capacity(capacity: usize) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             links: SecondaryMap::with_capacity(capacity),
         }
     }
 
-    <span class="kw">pub fn </span>union(<span class="kw-2">&amp;mut </span><span class="self">self</span>, a: K, b: K) {
+    <span class="doccomment">/// Combines two items `a` and `b` as equivalent, in the same set.
+    </span><span class="kw">pub fn </span>union(<span class="kw-2">&amp;mut </span><span class="self">self</span>, a: K, b: K) {
         <span class="kw">let </span>i = <span class="self">self</span>.find(a);
         <span class="kw">let </span>j = <span class="self">self</span>.find(b);
         <span class="kw">if </span>i == j {
@@ -100,7 +125,10 @@
         }
         <span class="self">self</span>.links[i] = j;
     }
-    <span class="kw">pub fn </span>find(<span class="kw-2">&amp;mut </span><span class="self">self</span>, k: K) -&gt; K {
+
+    <span class="doccomment">/// Finds the &quot;representative&quot; item for `k`. Each set of equivalent items is represented by one
+    /// of its member items.
+    </span><span class="kw">pub fn </span>find(<span class="kw-2">&amp;mut </span><span class="self">self</span>, k: K) -&gt; K {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(next) = <span class="self">self</span>.links.insert(k, k) {
             <span class="kw">if </span>k == next {
                 <span class="kw">return </span>k;
@@ -109,7 +137,9 @@
         }
         <span class="self">self</span>.links[k]
     }
-    <span class="kw">pub fn </span>same_set(<span class="kw-2">&amp;mut </span><span class="self">self</span>, a: K, b: K) -&gt; bool {
+
+    <span class="doccomment">/// Returns if `a` and `b` are equivalent, i.e. in the same set.
+    </span><span class="kw">pub fn </span>same_set(<span class="kw-2">&amp;mut </span><span class="self">self</span>, a: K, b: K) -&gt; bool {
         <span class="self">self</span>.find(a) == <span class="self">self</span>.find(b)
     }
 }

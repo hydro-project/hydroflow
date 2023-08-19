@@ -583,7 +583,13 @@
 <a href="#583" id="583">583</a>
 <a href="#584" id="584">584</a>
 <a href="#585" id="585">585</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! Build a flat graph from [`HfStatement`]s.
+
+</span><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::collections::btree_map::Entry;
 <span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 
@@ -611,7 +617,8 @@
     Undetermined(Ident),
 }
 
-<span class="attr">#[derive(Debug, Default)]
+<span class="doccomment">/// Wraper around [`HydroflowGraph`] to build a flat graph from AST code.
+</span><span class="attr">#[derive(Debug, Default)]
 </span><span class="kw">pub struct </span>FlatGraphBuilder {
     <span class="doccomment">/// Spanned error/warning/etc diagnostics to emit.
     </span>diagnostics: Vec&lt;Diagnostic&gt;,
@@ -634,7 +641,8 @@
         Default::default()
     }
 
-    <span class="kw">pub fn </span>from_hfcode(input: HfCode) -&gt; <span class="self">Self </span>{
+    <span class="doccomment">/// Convert the Hydroflow code AST into a graph builder.
+    </span><span class="kw">pub fn </span>from_hfcode(input: HfCode) -&gt; <span class="self">Self </span>{
         input.into()
     }
 

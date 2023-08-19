@@ -167,7 +167,35 @@
 <a href="#167" id="167">167</a>
 <a href="#168" id="168">168</a>
 <a href="#169" id="169">169</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! Compatibility for `proc_macro` diagnostics, which are missing from [`proc_macro2`].
+
+</span><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::hash::{Hash, Hasher};
 
 <span class="kw">use </span>proc_macro2::{Ident, Literal, Span, TokenStream};
@@ -176,7 +204,8 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::pretty_span::PrettySpan;
 
-<span class="attr">#[non_exhaustive]
+<span class="doccomment">/// Diagnostic reporting level.
+</span><span class="attr">#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Serialize, Deserialize)]
 </span><span class="kw">pub enum </span>Level {
     <span class="doccomment">/// An error.
@@ -197,24 +226,35 @@
     </span>Help,
 }
 <span class="kw">impl </span>Level {
-    <span class="kw">pub fn </span>is_error(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+    <span class="doccomment">/// If this level is [`Level::Error`].
+    </span><span class="kw">pub fn </span>is_error(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self </span>&lt;= <span class="kw-2">&amp;</span><span class="self">Self</span>::Error
     }
 }
 
-<span class="attr">#[derive(Debug, Clone, Serialize, Deserialize)]
+<span class="doccomment">/// Diagnostic. A warning or error (or lower [`Level`]) with a message and span. Shown by IDEs
+/// usually as a squiggly red or yellow underline.
+///
+/// Must call [`Diagnostic::emit`] or manually emit the output of [`Diagnostic::to_tokens`] for the
+/// diagnostic to show up.
+</span><span class="attr">#[derive(Debug, Clone, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>Diagnostic&lt;S = Span&gt; {
-    <span class="kw">pub </span>span: S,
-    <span class="kw">pub </span>level: Level,
-    <span class="kw">pub </span>message: String,
+    <span class="doccomment">/// Span (source code location).
+    </span><span class="kw">pub </span>span: S,
+    <span class="doccomment">/// Severity level.
+    </span><span class="kw">pub </span>level: Level,
+    <span class="doccomment">/// Human-readable message.
+    </span><span class="kw">pub </span>message: String,
 }
 <span class="kw">impl</span>&lt;S&gt; Diagnostic&lt;S&gt; {
-    <span class="kw">pub fn </span>is_error(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+    <span class="doccomment">/// If this diagnostic&#39;s level is [`Level::Error`].
+    </span><span class="kw">pub fn </span>is_error(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.level.is_error()
     }
 }
 <span class="kw">impl </span>Diagnostic {
-    <span class="kw">pub fn </span>spanned(span: Span, level: Level, message: <span class="kw">impl </span>Into&lt;String&gt;) -&gt; <span class="self">Self </span>{
+    <span class="doccomment">/// Create a new diagnostic from the given span, level, and message.
+    </span><span class="kw">pub fn </span>spanned(span: Span, level: Level, message: <span class="kw">impl </span>Into&lt;String&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>message = message.into();
         <span class="self">Self </span>{
             span,
@@ -223,7 +263,9 @@
         }
     }
 
-    <span class="kw">pub fn </span>emit(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+    <span class="doccomment">/// Emit the diagnostic. Only works from the `proc_macro` context. Does not work outside of
+    /// that e.g. in normal runtime execution or in tests.
+    </span><span class="kw">pub fn </span>emit(<span class="kw-2">&amp;</span><span class="self">self</span>) {
         <span class="attr">#[cfg(feature = <span class="string">&quot;diagnostics&quot;</span>)]
         </span>{
             <span class="kw">let </span>pm_diag = <span class="kw">match </span><span class="self">self</span>.level {
@@ -236,7 +278,9 @@
         }
     }
 
-    <span class="kw">pub fn </span>to_tokens(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; TokenStream {
+    <span class="doccomment">/// Used to emulate [`Diagnostic::emit`] by turning this diagnostic into a properly spanned [`TokenStream`]
+    /// that emits an error with this diagnostic&#39;s message.
+    </span><span class="kw">pub fn </span>to_tokens(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; TokenStream {
         <span class="kw">let </span>msg_lit: Literal = Literal::string(<span class="kw-2">&amp;</span><span class="self">self</span>.message);
         <span class="kw">let </span>unique_ident = {
             <span class="kw">let </span><span class="kw-2">mut </span>hasher = std::collections::hash_map::DefaultHasher::new();
@@ -269,7 +313,10 @@
         }
     }
 
-    <span class="kw">pub fn </span>to_serde(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Diagnostic&lt;SerdeSpan&gt; {
+    <span class="doccomment">/// Converts this into a serializable and deserializable Diagnostic. Span information is
+    /// converted into [`SerdeSpan`] which keeps the span info but cannot be plugged into or
+    /// emitted through the Rust compiler&#39;s diagnostic system.
+    </span><span class="kw">pub fn </span>to_serde(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Diagnostic&lt;SerdeSpan&gt; {
         <span class="kw">let </span><span class="self">Self </span>{
             span,
             level,
@@ -302,13 +349,18 @@
     }
 }
 
-<span class="attr">#[derive(Debug, Clone, Serialize, Deserialize)]
+<span class="doccomment">/// A serializable and deserializable version of [`Span`]. Cannot be plugged into the Rust
+/// compiler&#39;s diagnostic system.
+</span><span class="attr">#[derive(Debug, Clone, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>SerdeSpan {
-    <span class="comment">// https://github.com/serde-rs/serde/issues/1852#issuecomment-904840811
+    <span class="doccomment">/// The source file path.
+    </span><span class="comment">// https://github.com/serde-rs/serde/issues/1852#issuecomment-904840811
     </span><span class="attr">#[serde(borrow)]
     </span><span class="kw">pub </span>path: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;,
-    <span class="kw">pub </span>line: usize,
-    <span class="kw">pub </span>column: usize,
+    <span class="doccomment">/// Line number, one-indexed.
+    </span><span class="kw">pub </span>line: usize,
+    <span class="doccomment">/// Column number, one-indexed.
+    </span><span class="kw">pub </span>column: usize,
 }
 <span class="kw">impl </span>From&lt;Span&gt; <span class="kw">for </span>SerdeSpan {
     <span class="kw">fn </span>from(span: Span) -&gt; <span class="self">Self </span>{
