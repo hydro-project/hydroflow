@@ -386,7 +386,7 @@ pub struct WriteContextArgs<'a> {
     pub op_inst: &'a OperatorInstance,
 
     /// Flow properties corresponding to each input.
-    pub flow_props: &'a [FlowProps],
+    pub flow_props: &'a [Option<FlowProps>],
 }
 impl WriteContextArgs<'_> {
     /// Generate a (almost certainly) unique identifier with the given suffix.
