@@ -136,7 +136,7 @@ impl HydroflowGraph {
     /// Predecessor edges, iterator of `GraphEdgeId` of incoming edges.
     pub fn node_predecessor_edges(
         &self,
-        src: GraphNodeId,
+        dst: GraphNodeId,
     ) -> impl '_
            + Iterator<Item = GraphEdgeId>
            + DoubleEndedIterator
@@ -144,7 +144,7 @@ impl HydroflowGraph {
            + FusedIterator
            + Clone
            + Debug {
-        self.graph.predecessor_edges(src)
+        self.graph.predecessor_edges(dst)
     }
 
     /// Successor nodes, iterator of `GraphNodeId`.
@@ -164,7 +164,7 @@ impl HydroflowGraph {
     /// Predecessor edges, iterator of `GraphNodeId`.
     pub fn node_predecessor_nodes(
         &self,
-        src: GraphNodeId,
+        dst: GraphNodeId,
     ) -> impl '_
            + Iterator<Item = GraphNodeId>
            + DoubleEndedIterator
@@ -172,7 +172,7 @@ impl HydroflowGraph {
            + FusedIterator
            + Clone
            + Debug {
-        self.graph.predecessor_vertices(src)
+        self.graph.predecessor_vertices(dst)
     }
 
     /// Iterator of node IDs `GraphNodeId`.
@@ -501,6 +501,24 @@ impl HydroflowGraph {
         self.subgraph_stratum.values().copied().max()
     }
 }
+// Flow properties
+impl HydroflowGraph {
+    /// Gets the flow properties associated with the edge, if set.
+    pub fn edge_flow_props(&self, edge_id: GraphEdgeId) -> Option<FlowProps> {
+        self.flow_props.get(edge_id).copied()
+    }
+
+    /// Sets the flow properties associated with the given edge.
+    ///
+    /// Returns the old flow properties, if set.
+    pub fn set_edge_flow_props(
+        &mut self,
+        edge_id: GraphEdgeId,
+        flow_props: FlowProps,
+    ) -> Option<FlowProps> {
+        self.flow_props.insert(edge_id, flow_props)
+    }
+}
 // Display/output stuff.
 impl HydroflowGraph {
     /// Helper to generate a deterministic `Ident` for the given node.
@@ -690,7 +708,7 @@ impl HydroflowGraph {
 
                             // Corresponds 1:1 to inputs.
                             let flow_props = self.graph.predecessor_edges(node_id)
-                                .map(|edge_id| *self.flow_props.get(edge_id).expect("Flow prop should be for edge"))
+                                .map(|edge_id| self.flow_props.get(edge_id).copied())
                                 .collect::<Vec<_>>();
 
                             let is_pull = idx < pull_to_push_idx;
