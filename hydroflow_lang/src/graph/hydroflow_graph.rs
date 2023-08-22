@@ -21,7 +21,7 @@ use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::null_write_iterator_fn;
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
-/// A graph representing a hydroflow dataflow graph (with or without subgraph partitioning,
+/// A graph representing a Hydroflow dataflow graph (with or without subgraph partitioning,
 /// stratification, and handoff insertion). This is a "meta" graph used for generating Rust source
 /// code in macros from Hydroflow surface sytnax.
 ///

@@ -103,13 +103,18 @@ pub struct OperatorConstraints {
 
     /// Return the output flow types for the given input flow types.
     ///
+    /// The first argument is the input flow properties.
     /// Due to cycles, it is possible that only some of the input flow props will be known when
     /// this is called. In this case the unknown flow prop inputs will be `None`.
+    ///
+    /// The second argument is the [`OperatorInstance`] information for the current operator.
+    ///
+    /// The third argument is a new unique star value for [`FlowProps::star_ord`].
     ///
     /// If only one flow type is returned for an operator with multiple outputs, that flow type
     /// will be used for all outputs. Besides that case, it is an error to return a number of flow
     /// props which does not match the number of outputs.
-    pub flow_prop_fn: Option<fn(&[Option<FlowProps>]) -> Vec<FlowProps>>,
+    pub flow_prop_fn: Option<fn(&[Option<FlowProps>], &OperatorInstance, usize) -> Vec<FlowProps>>,
 
     /// The operator's codegen. Returns code that is emited is several different locations. See [`OperatorWriteOutput`].
     pub write_fn: WriteFn,
@@ -129,6 +134,7 @@ impl Debug for OperatorConstraints {
             .field("ports_inn", &self.ports_inn)
             .field("ports_out", &self.ports_out)
             // .field("input_delaytype_fn", &self.input_delaytype_fn)
+            // .field("flow_prop_fn", &self.flow_prop_fn)
             // .field("write_fn", &self.write_fn)
             .finish()
     }
@@ -321,6 +327,7 @@ declare_ops![
     source_file::SOURCE_FILE,
     source_interval::SOURCE_INTERVAL,
     source_iter::SOURCE_ITER,
+    source_iter_delta::SOURCE_ITER_DELTA,
     source_json::SOURCE_JSON,
     source_stdin::SOURCE_STDIN,
     source_stream::SOURCE_STREAM,
