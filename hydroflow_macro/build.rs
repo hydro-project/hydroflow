@@ -39,7 +39,14 @@ fn write_operator_docgen(op_name: &str, mut write: &mut impl Write) -> Result<()
 
 fn update_book() -> Result<()> {
     let mut ops: Vec<_> = OPERATORS.iter().collect();
-    ops.sort_by_key(|op| op.name);
+    // operators that have their name start with "_" are internal compiler operators, we should sort those after all the user-facing ops.
+    // but underscore by default sorts before all [A-z]
+    ops.sort_by(|a, b| {
+        a.name
+            .starts_with('_')
+            .cmp(&b.name.starts_with('_'))
+            .then_with(|| a.name.cmp(b.name))
+    });
 
     let mut write = book_file_writer(FILENAME)?;
     writeln!(write, "{}", PREFIX)?;
