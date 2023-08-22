@@ -12,10 +12,10 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// equijoin of the resulting key/value pairs in the input streams by their first (key) attribute. Like [`join`](#join), the result nests the 2nd input field (values) into a tuple in the 2nd output field.
 ///
 /// You must specify the the accumulating lattice types, they cannot be inferred. The first type argument corresponds to the `[0]` input of the join, and the second to the `[1]` input.
-/// Type arguments are specified in hydroflow using the rust turbofish syntax `::<>`, for example `lattice_join::<Min<_>, Max<_>>()`
+/// Type arguments are specified in hydroflow using the rust turbofish syntax `::<>`, for example `_lattice_join_fused_join::<Min<_>, Max<_>>()`
 /// The accumulating lattice type is not necessarily the same type as the input, see the below example involving SetUnion for such a case.
 ///
-/// Like [`join`](#join), `lattice_join` can also be provided with one or two generic lifetime persistence arguments, either
+/// Like [`join`](#join), `_lattice_join_fused_join` can also be provided with one or two generic lifetime persistence arguments, either
 /// `'tick` or `'static`, to specify how join data persists. With `'tick`, pairs will only be
 /// joined with corresponding pairs within the same tick. With `'static`, pairs will be remembered
 /// across ticks and will be joined with pairs arriving in later ticks. When not explicitly
@@ -29,14 +29,14 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 ///
 /// The syntax is as follows:
 /// ```hydroflow,ignore
-/// lattice_join::<MaxRepr<usize>, MaxRepr<usize>>(); // Or
-/// lattice_join::<'static, MaxRepr<usize>, MaxRepr<usize>>();
+/// _lattice_join_fused_join::<MaxRepr<usize>, MaxRepr<usize>>(); // Or
+/// _lattice_join_fused_join::<'static, MaxRepr<usize>, MaxRepr<usize>>();
 ///
-/// lattice_join::<'tick, MaxRepr<usize>, MaxRepr<usize>>();
+/// _lattice_join_fused_join::<'tick, MaxRepr<usize>, MaxRepr<usize>>();
 ///
-/// lattice_join::<'static, 'tick, MaxRepr<usize>, MaxRepr<usize>>();
+/// _lattice_join_fused_join::<'static, 'tick, MaxRepr<usize>, MaxRepr<usize>>();
 ///
-/// lattice_join::<'tick, 'static, MaxRepr<usize>, MaxRepr<usize>>();
+/// _lattice_join_fused_join::<'tick, 'static, MaxRepr<usize>, MaxRepr<usize>>();
 /// // etc.
 /// ```
 ///
@@ -49,7 +49,7 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// source_iter([("key", Min::new(1)), ("key", Min::new(2))]) -> [0]my_join;
 /// source_iter([("key", Max::new(1)), ("key", Max::new(2))]) -> [1]my_join;
 ///
-/// my_join = lattice_join::<'tick, Min<usize>, Max<usize>>()
+/// my_join = _lattice_join_fused_join::<'tick, Min<usize>, Max<usize>>()
 ///     -> assert_eq([("key", (Min::new(1), Max::new(2)))]);
 /// ```
 ///
@@ -60,12 +60,12 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// source_iter([("key", SetUnionSingletonSet::new_from(0)), ("key", SetUnionSingletonSet::new_from(1))]) -> [0]my_join;
 /// source_iter([("key", SetUnionHashSet::new_from([0])), ("key", SetUnionHashSet::new_from([1]))]) -> [1]my_join;
 ///
-/// my_join = lattice_join::<'tick, SetUnionHashSet<usize>, SetUnionHashSet<usize>>()
+/// my_join = _lattice_join_fused_join::<'tick, SetUnionHashSet<usize>, SetUnionHashSet<usize>>()
 ///     -> assert_eq([("key", (SetUnionHashSet::new_from([0, 1]), SetUnionHashSet::new_from([0, 1])))]);
 /// ```
-pub const LATTICE_JOIN: OperatorConstraints = OperatorConstraints {
-    name: "lattice_join",
-    categories: &[OperatorCategory::MultiIn],
+pub const _LATTICE_JOIN_FUSED_JOIN: OperatorConstraints = OperatorConstraints {
+    name: "_lattice_join_fused_join",
+    categories: &[OperatorCategory::CompilerFusionOperator],
     hard_range_inn: &(2..=2),
     soft_range_inn: &(2..=2),
     hard_range_out: RANGE_1,

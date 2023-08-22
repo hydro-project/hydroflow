@@ -287,9 +287,9 @@ declare_ops![
     join_multiset::JOIN_MULTISET,
     fold_keyed::FOLD_KEYED,
     reduce_keyed::REDUCE_KEYED,
-    lattice_batch::LATTICE_BATCH,
+    _lattice_fold_batch::_LATTICE_FOLD_BATCH,
     lattice_fold::LATTICE_FOLD,
-    lattice_join::LATTICE_JOIN,
+    _lattice_join_fused_join::_LATTICE_JOIN_FUSED_JOIN,
     lattice_reduce::LATTICE_REDUCE,
     map::MAP,
     union::UNION,
@@ -491,6 +491,7 @@ pub enum OperatorCategory {
     Source,
     Sink,
     Control,
+    CompilerFusionOperator,
 }
 impl OperatorCategory {
     /// Human-readible heading name, for docs.
@@ -508,6 +509,7 @@ impl OperatorCategory {
             OperatorCategory::Source => "Sources",
             OperatorCategory::Sink => "Sinks",
             OperatorCategory::Control => "Control Flow Operators",
+            OperatorCategory::CompilerFusionOperator => "Compiler Fusion Operators",
         }
     }
     /// Human description, for docs.
@@ -529,6 +531,9 @@ impl OperatorCategory {
                 "Operators which consume input elements (and produce no outputs)."
             }
             OperatorCategory::Control => "Operators which affect control flow/scheduling.",
+            OperatorCategory::CompilerFusionOperator => {
+                "Operators which are necessary to implement certain optimizations and rewrite rules"
+            }
         }
     }
 }
