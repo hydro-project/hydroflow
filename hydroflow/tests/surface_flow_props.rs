@@ -1,15 +1,20 @@
 use std::error::Error;
 
-use hydroflow::hydroflow_syntax;
 use hydroflow::lattices::set_union::SetUnionSingletonSet;
+use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
+use lattices::collections::SingletonSet;
+use lattices::set_union::SetUnion;
 
 #[test]
 pub fn test_basic() -> Result<(), Box<dyn Error>> {
     let mut hf = hydroflow_syntax! {
         source_iter_delta((0..10).map(SetUnionSingletonSet::new_from))
-            -> for_each(|x| println!("{:?}", x));
+            -> map(|SetUnion(SingletonSet(x))| SetUnion(SingletonSet(x + 5)))
+            -> for_each(|s| println!("{:?}", s));
     };
     hf.run_available();
+
+    assert_graphvis_snapshots!(hf);
 
     Ok(())
 }

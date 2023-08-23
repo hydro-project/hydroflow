@@ -1,12 +1,13 @@
 #![warn(missing_docs)]
 
+use std::borrow::Cow;
 use std::error::Error;
 
 use auto_impl::auto_impl;
 use slotmap::Key;
 
 use super::ops::DelayType;
-use super::{Color, GraphNodeId, GraphSubgraphId};
+use super::{Color, GraphNodeId, GraphSubgraphId, FlowProps, LatticeFlowType};
 
 /// Trait for writing textual representations of graphs, i.e. mermaid or dot graphs.
 #[auto_impl(&mut, Box)]
@@ -37,6 +38,7 @@ pub trait GraphWrite {
         src_id: GraphNodeId,
         dst_id: GraphNodeId,
         delay_type: Option<DelayType>,
+        flow_props: Option<FlowProps>,
         label: Option<&str>,
         in_subgraph: Option<GraphSubgraphId>,
     ) -> Result<(), Self::Err>;
@@ -166,6 +168,7 @@ where
         src_id: GraphNodeId,
         dst_id: GraphNodeId,
         delay_type: Option<DelayType>,
+        flow_props: Option<FlowProps>,
         label: Option<&str>,
         in_subgraph: Option<GraphSubgraphId>,
     ) -> Result<(), Self::Err> {
@@ -173,22 +176,23 @@ where
         let dest_str = format!("{:?}", dst_id.data());
         writeln!(
             self.write,
-            "{:t$}{src}{label}{delay}{dst}",
+            "{:t$}{src}{arrow_body}{arrow_head}{label}{dst}",
             "",
             src = src_str.trim(),
-            label = if let Some(label) = &label {
-                if Some(DelayType::Stratum) == delay_type {
-                    format!("=={}", label.trim())
-                } else {
-                    format!("--{}", label.trim())
-                }
-            } else {
-                "".to_string()
+            arrow_body = match flow_props.and_then(|flow_props| flow_props.lattice_flow_type) {
+                None => "--",
+                Some(LatticeFlowType::Delta) => "-.-",
+                Some(LatticeFlowType::Cumul) => "==",
             },
-            delay = if Some(DelayType::Stratum) == delay_type {
-                "===o"
+            arrow_head = match delay_type {
+                None => ">",
+                Some(DelayType::Stratum) => "x",
+                Some(DelayType::Tick) => "o",
+            },
+            label = if let Some(label) = &label {
+                Cow::Owned(format!("|{}|", label.trim()))
             } else {
-                "--->"
+                Cow::Borrowed("")
             },
             dst = dest_str.trim(),
             t = if in_subgraph.is_some() { 4 } else { 0 },
@@ -316,9 +320,11 @@ where
         src_id: GraphNodeId,
         dst_id: GraphNodeId,
         delay_type: Option<DelayType>,
+        _flow_props: Option<FlowProps>,
         label: Option<&str>,
         in_subgraph: Option<GraphSubgraphId>,
     ) -> Result<(), Self::Err> {
+        // TODO(mingwei): handle `flow_props`.
         let mut properties = Vec::new();
         if let Some(label) = label {
             properties.push(format!("label=\"{}\"", label));

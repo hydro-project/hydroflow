@@ -10,7 +10,7 @@ linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
     4v1[\"(4v1) <code>source_stream(pairs_recv)</code>"/]:::pullClass
     3v1[/"(3v1) <code>tee()</code>"\]:::pushClass
-    4v1--->3v1
+    4v1-->3v1
     subgraph sg_1v1_var_link_tee ["var <tt>link_tee</tt>"]
         3v1
     end
@@ -23,13 +23,13 @@ subgraph sg_2v1 ["sg_2v1 stratum 0"]
     2v1[/"(2v1) <code>tee()</code>"\]:::pushClass
     8v1[/"(8v1) <code>for_each(|(a, b)| println!(&quot;transitive closure: ({},{})&quot;, a, b))</code>"\]:::pushClass
     10v1["(10v1) <code>handoff</code>"]:::otherClass
-    10v1--->6v1
-    6v1--0--->5v1
-    5v1--->7v1
-    7v1--1--->1v1
-    1v1--->2v1
-    2v1--0--->10v1
-    2v1--1--->8v1
+    10v1-->6v1
+    6v1-->|0|5v1
+    5v1-->7v1
+    7v1-->|1|1v1
+    1v1-->2v1
+    2v1-->|0|10v1
+    2v1-->|1|8v1
     subgraph sg_2v1_var_edge_union_tee ["var <tt>edge_union_tee</tt>"]
         1v1
         2v1
@@ -38,10 +38,10 @@ subgraph sg_2v1 ["sg_2v1 stratum 0"]
         5v1
     end
 end
-3v1--0--->9v1
-3v1--1--->11v1
+3v1-->|0|9v1
+3v1-->|1|11v1
 9v1["(9v1) <code>handoff</code>"]:::otherClass
-9v1--0--->1v1
+9v1-->|0|1v1
 11v1["(11v1) <code>handoff</code>"]:::otherClass
-11v1--1--->5v1
+11v1-->|1|5v1
 
