@@ -432,10 +432,10 @@ impl WriteContextArgs<'_> {
         {
             None => quote_spanned!(span=> #func_arg),
             Some(LatticeFlowType::Cumul) => quote_spanned! {span=>
-                #root::util::monotonic_fn!(#func_arg)
+                #root::monotonic_fn!(#func_arg)
             },
             Some(LatticeFlowType::Delta) => quote_spanned! {span=>
-                #root::util::morphism!(#func_arg)
+                #root::morphism!(#func_arg)
             },
         }
     }
