@@ -20,6 +20,7 @@ mod di_mul_graph;
 mod eliminate_extra_unions_tees;
 mod flat_graph_builder;
 mod flat_to_partitioned;
+mod flow_props;
 mod graph_write;
 mod hydroflow_graph;
 
@@ -27,11 +28,12 @@ pub use di_mul_graph::DiMulGraph;
 pub use eliminate_extra_unions_tees::eliminate_extra_unions_tees;
 pub use flat_graph_builder::FlatGraphBuilder;
 pub use flat_to_partitioned::partition_graph;
+pub use flow_props::*;
 pub use hydroflow_graph::HydroflowGraph;
 
-pub mod propegate_flow_props;
 pub mod graph_algorithms;
 pub mod ops;
+pub mod propegate_flow_props;
 
 new_key_type! {
     /// ID to identify a node (operator or handoff) in [`HydroflowGraph`].
@@ -366,21 +368,4 @@ pub fn build_hfcode(
         }
     }
     (None, diagnostics)
-}
-
-/// Stream and lattice properties. Used to determine correctness for scaling transformations.
-#[derive(Clone, Copy, Default, Debug, Serialize, Deserialize)]
-pub struct FlowProps {
-    star_ord: usize, // TODO(mingwei): may have richer order info later
-    lattice_flow_type: Option<LatticeFlowType>,
-}
-
-/// Type of lattice flow.
-#[derive(Clone, Copy,Debug, Serialize, Deserialize)]
-enum LatticeFlowType {
-    /// Delta: Elements are (generally) disjoint, each new element represents incremental progress.
-    Delta,
-    /// Cumulative: Each element must be greater than or equal to the previous. Used for monotonic
-    /// functions such as thresholding.
-    Cumul,
 }

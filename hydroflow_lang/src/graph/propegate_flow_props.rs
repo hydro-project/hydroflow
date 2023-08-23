@@ -33,12 +33,12 @@ pub fn propegate_flow_props(graph: &mut HydroflowGraph) {
             let out_edges = graph.node_successor_edges(node_id).collect::<Vec<_>>();
             // TODO(mingwei): SORT EDGES DETERMINISTICALLY BY NAME (SOMEHOW?).
             for (i, edge_id) in out_edges.into_iter().enumerate() {
-                graph.set_edge_flow_props(
-                    edge_id,
-                    *flow_props_out
-                        .get(i)
-                        .unwrap_or_else(|| flow_props_out.get(0).unwrap()),
-                );
+                if let Some(flow_prop_out) = *flow_props_out
+                    .get(i)
+                    .unwrap_or_else(|| flow_props_out.get(0).unwrap())
+                {
+                    graph.set_edge_flow_props(edge_id, flow_prop_out);
+                }
             }
         }
     }
