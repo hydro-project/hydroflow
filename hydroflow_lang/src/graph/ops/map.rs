@@ -42,7 +42,7 @@ pub const MAP: OperatorConstraints = OperatorConstraints {
         // Preserve input flow properties.
         vec![flow_props_in[0]]
     }),
-    write_fn: |&WriteContextArgs {
+    write_fn: |wc @ &WriteContextArgs {
                    root,
                    op_span,
                    ident,
@@ -53,15 +53,16 @@ pub const MAP: OperatorConstraints = OperatorConstraints {
                    ..
                },
                _| {
+        let func = wc.wrap_check_func_arg(&arguments[0]);
         let write_iterator = if is_pull {
             let input = &inputs[0];
             quote_spanned! {op_span=>
-                let #ident = #input.map(#arguments);
+                let #ident = #input.map(#func);
             }
         } else {
             let output = &outputs[0];
             quote_spanned! {op_span=>
-                let #ident = #root::pusherator::map::Map::new(#arguments, #output);
+                let #ident = #root::pusherator::map::Map::new(#func, #output);
             }
         };
         Ok(OperatorWriteOutput {
