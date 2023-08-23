@@ -10,10 +10,11 @@ use quote::quote_spanned;
 use serde::{Deserialize, Serialize};
 use slotmap::Key;
 use syn::punctuated::Punctuated;
-use syn::{parse_quote_spanned, Token};
+use syn::{parse_quote_spanned, Expr, Token};
 
 use super::{
-    FlowProps, GraphNodeId, GraphSubgraphId, Node, OpInstGenerics, OperatorInstance, PortIndexValue,
+    FlowProps, GraphNodeId, GraphSubgraphId, LatticeFlowType, Node, OpInstGenerics,
+    OperatorInstance, PortIndexValue,
 };
 use crate::diagnostic::Diagnostic;
 use crate::parse::{Operator, PortIndex};
@@ -412,6 +413,31 @@ impl WriteContextArgs<'_> {
             ),
             self.op_span,
         )
+    }
+
+    /// Wraps the `func_arg` closure with a type checker macro corresponding to the first `flow_props` flow type.
+    ///
+    /// * `None` => No checking.
+    /// * `Some(Cumul) => Monotonic function.
+    /// * `Some(Delta) => Morphism.
+    pub fn wrap_check_func_arg(&self, func_arg: &Expr) -> TokenStream {
+        let root = self.root;
+        let span = self.op_span;
+        match self
+            .flow_props
+            .get(0)
+            .copied()
+            .flatten()
+            .and_then(|flow_props| flow_props.lattice_flow_type)
+        {
+            None => quote_spanned!(span=> #func_arg),
+            Some(LatticeFlowType::Cumul) => quote_spanned! {span=>
+                #root::util::monotonic_fn!(#func_arg)
+            },
+            Some(LatticeFlowType::Delta) => quote_spanned! {span=>
+                #root::util::morphism!(#func_arg)
+            },
+        }
     }
 }
 

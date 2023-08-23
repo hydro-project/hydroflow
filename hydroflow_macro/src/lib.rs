@@ -154,6 +154,20 @@ fn hydroflow_wrap(item: proc_macro::TokenStream, attribute: Attribute) -> proc_m
     input.into_token_stream().into()
 }
 
+/// Checks that the given closure is a morphism. For now does nothing.
+#[proc_macro]
+pub fn morphism(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    // TODO(mingwei): some sort of code analysis?
+    item
+}
+
+/// Checks that the given closure is a monotonic function. For now does nothing.
+#[proc_macro]
+pub fn monotonic_fn(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    // TODO(mingwei): some sort of code analysis?
+    item
+}
+
 #[proc_macro_attribute]
 pub fn hydroflow_test(
     _: proc_macro::TokenStream,
