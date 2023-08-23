@@ -532,6 +532,11 @@
 <a href="#532" id="532">532</a>
 <a href="#533" id="533">533</a>
 <a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
+<a href="#538" id="538">538</a>
+<a href="#539" id="539">539</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Hydroflow&#39;s operators
 
 </span><span class="kw">use </span>std::collections::HashMap;
@@ -821,9 +826,9 @@
     join_multiset::JOIN_MULTISET,
     fold_keyed::FOLD_KEYED,
     reduce_keyed::REDUCE_KEYED,
-    lattice_batch::LATTICE_BATCH,
+    _lattice_fold_batch::_LATTICE_FOLD_BATCH,
     lattice_fold::LATTICE_FOLD,
-    lattice_join::LATTICE_JOIN,
+    _lattice_join_fused_join::_LATTICE_JOIN_FUSED_JOIN,
     lattice_reduce::LATTICE_REDUCE,
     map::MAP,
     union::UNION,
@@ -1025,6 +1030,7 @@
     Source,
     Sink,
     Control,
+    CompilerFusionOperator,
 }
 <span class="kw">impl </span>OperatorCategory {
     <span class="doccomment">/// Human-readible heading name, for docs.
@@ -1042,6 +1048,7 @@
             OperatorCategory::Source =&gt; <span class="string">&quot;Sources&quot;</span>,
             OperatorCategory::Sink =&gt; <span class="string">&quot;Sinks&quot;</span>,
             OperatorCategory::Control =&gt; <span class="string">&quot;Control Flow Operators&quot;</span>,
+            OperatorCategory::CompilerFusionOperator =&gt; <span class="string">&quot;Compiler Fusion Operators&quot;</span>,
         }
     }
     <span class="doccomment">/// Human description, for docs.
@@ -1063,6 +1070,9 @@
                 <span class="string">&quot;Operators which consume input elements (and produce no outputs).&quot;
             </span>}
             OperatorCategory::Control =&gt; <span class="string">&quot;Operators which affect control flow/scheduling.&quot;</span>,
+            OperatorCategory::CompilerFusionOperator =&gt; {
+                <span class="string">&quot;Operators which are necessary to implement certain optimizations and rewrite rules&quot;
+            </span>}
         }
     }
 }
