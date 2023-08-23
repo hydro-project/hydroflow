@@ -7,6 +7,9 @@ pub mod multiset;
 pub mod sparse_vec;
 pub mod unsync;
 
+mod monotonic;
+pub use monotonic::*;
+
 mod udp;
 #[cfg(not(target_arch = "wasm32"))]
 pub use udp::*;
