@@ -1089,11 +1089,13 @@ impl HydroflowGraph {
                 let delay_type = self
                     .node_op_inst(dst_id)
                     .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
+                let flow_props = self.edge_flow_props(edge_id);
                 let label = helper_edge_label(src_port, dst_port);
                 graph_write.write_edge(
                     hoff_id,
                     dst_id,
                     delay_type,
+                    flow_props,
                     label.as_deref(),
                     Some(subgraph_id),
                 )?;
@@ -1107,11 +1109,13 @@ impl HydroflowGraph {
                         let delay_type = self.node_op_inst(dst_id).and_then(|op_inst| {
                             (op_inst.op_constraints.input_delaytype_fn)(dst_port)
                         });
+                        let flow_props = self.edge_flow_props(edge_id);
                         let label = helper_edge_label(src_port, dst_port);
                         graph_write.write_edge(
                             src_id,
                             dst_id,
                             delay_type,
+                            flow_props,
                             label.as_deref(),
                             Some(subgraph_id),
                         )?;
@@ -1147,23 +1151,25 @@ impl HydroflowGraph {
                         Color::Hoff,
                         None,
                     )?;
-
-                    // write out edge
-                    let (src_port, dst_port) = self.edge_ports(edge_id);
-                    let delay_type = self
-                        .node_op_inst(dst_id)
-                        .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-                    let label = helper_edge_label(src_port, dst_port);
-                    graph_write.write_edge(src_id, dst_id, delay_type, label.as_deref(), None)?;
-                } else if barrier_handoffs.contains(&dst_id) {
-                    // write out edge
-                    let (src_port, dst_port) = self.edge_ports(edge_id);
-                    let delay_type = self
-                        .node_op_inst(dst_id)
-                        .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-                    let label = helper_edge_label(src_port, dst_port);
-                    graph_write.write_edge(src_id, dst_id, delay_type, label.as_deref(), None)?;
+                } else if !barrier_handoffs.contains(&dst_id) {
+                    continue;
                 }
+
+                // write out edge
+                let (src_port, dst_port) = self.edge_ports(edge_id);
+                let delay_type = self
+                    .node_op_inst(dst_id)
+                    .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
+                let flow_props = self.edge_flow_props(edge_id);
+                let label = helper_edge_label(src_port, dst_port);
+                graph_write.write_edge(
+                    src_id,
+                    dst_id,
+                    delay_type,
+                    flow_props,
+                    label.as_deref(),
+                    None,
+                )?;
             }
         }
 
