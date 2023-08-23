@@ -38,7 +38,10 @@ pub const MAP: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
-    flow_prop_fn: None,
+    flow_prop_fn: Some(|flow_props_in, _op_inst, _star_ord| {
+        // Preserve input flow properties.
+        vec![flow_props_in[0]]
+    }),
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,
