@@ -114,7 +114,8 @@ pub struct OperatorConstraints {
     /// If only one flow type is returned for an operator with multiple outputs, that flow type
     /// will be used for all outputs. Besides that case, it is an error to return a number of flow
     /// props which does not match the number of outputs.
-    pub flow_prop_fn: Option<fn(&[Option<FlowProps>], &OperatorInstance, usize) -> Vec<FlowProps>>,
+    pub flow_prop_fn:
+        Option<fn(&[Option<FlowProps>], &OperatorInstance, usize) -> Vec<Option<FlowProps>>>,
 
     /// The operator's codegen. Returns code that is emited is several different locations. See [`OperatorWriteOutput`].
     pub write_fn: WriteFn,

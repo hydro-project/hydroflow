@@ -16,10 +16,10 @@ use crate::graph::{FlowProps, LatticeFlowType};
 pub const SOURCE_ITER_DELTA: OperatorConstraints = OperatorConstraints {
     name: "source_iter_delta",
     flow_prop_fn: Some(|_flow_props_in, _op_inst, star_ord| {
-        vec![FlowProps {
+        vec![Some(FlowProps {
             star_ord,
             lattice_flow_type: Some(LatticeFlowType::Delta),
-        }]
+        })]
     }),
     ..super::source_iter::SOURCE_ITER
 };
