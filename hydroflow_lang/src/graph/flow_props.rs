@@ -20,3 +20,20 @@ pub enum LatticeFlowType {
     /// functions such as thresholding.
     Cumul,
 }
+
+impl LatticeFlowType {
+    /// If it is always correct to downcast a stream flow type from `from` to `to`.
+    pub fn can_downcast(from: Option<LatticeFlowType>, to: Option<LatticeFlowType>) -> bool {
+        match (from, to) {
+            (None, None) => true,
+            (None, Some(Self::Delta)) => false,
+            (None, Some(Self::Cumul)) => false,
+            (Some(Self::Delta), None) => true,
+            (Some(Self::Delta), Some(Self::Delta)) => true,
+            (Some(Self::Delta), Some(Self::Cumul)) => false,
+            (Some(Self::Cumul), None) => true,
+            (Some(Self::Cumul), Some(Self::Delta)) => true,
+            (Some(Self::Cumul), Some(Self::Cumul)) => true,
+        }
+    }
+}

@@ -35,7 +35,10 @@ pub const TEE: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
-    flow_prop_fn: None,
+    flow_prop_fn: Some(|flow_props_in, op_inst, _star_ord| {
+        let out_degree = op_inst.output_ports.len();
+        vec![flow_props_in[0]; out_degree]
+    }),
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,
