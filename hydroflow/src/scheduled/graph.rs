@@ -9,6 +9,7 @@ use std::marker::PhantomData;
 
 use hydroflow_lang::diagnostic::{Diagnostic, SerdeSpan};
 use hydroflow_lang::graph::HydroflowGraph;
+use instant::Instant;
 use ref_cast::RefCast;
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 
@@ -54,6 +55,8 @@ impl Default for Hydroflow {
 
             current_stratum: 0,
             current_tick: 0,
+
+            current_tick_start: Instant::now(),
 
             subgraph_id: SubgraphId(0),
 
@@ -136,6 +139,8 @@ impl Hydroflow {
     /// Returns true if any work was done.
     #[tracing::instrument(level = "trace", skip(self), ret)]
     pub fn run_tick(&mut self) -> bool {
+        self.context.current_tick_start = Instant::now();
+
         let mut work_done = false;
         // While work is immediately available *on the current tick*.
         while self.next_stratum(true) {
@@ -146,12 +151,34 @@ impl Hydroflow {
         work_done
     }
 
+    /// Runs the dataflow until the next tick begins.
+    /// Returns true if any work was done.
+    /// Yields repeatedly to allow external events to happen.
+    pub async fn run_tick_async(&mut self) -> bool {
+        self.context.current_tick_start = Instant::now();
+
+        let mut work_done = false;
+        // While work is immediately available *on the current tick*.
+        while self.next_stratum(true) {
+            work_done = true;
+            // Do any work.
+            self.run_stratum();
+
+            // Yield between each stratum to receive more events.
+            // TODO(zzlk): really only need to yield at start of ticks though.
+            tokio::task::yield_now().await;
+        }
+        work_done
+    }
+
     /// Runs the dataflow until no more (externally-triggered) work is immediately available.
     /// Runs at least one tick of dataflow, even if no external events have been received.
     /// If the dataflow contains loops this method may run forever.
     /// Returns true if any work was done.
     #[tracing::instrument(level = "trace", skip(self), ret)]
     pub fn run_available(&mut self) -> bool {
+        self.context.current_tick_start = Instant::now();
+
         let mut work_done = false;
         // While work is immediately available.
         while self.next_stratum(false) {
@@ -169,6 +196,8 @@ impl Hydroflow {
     /// Yields repeatedly to allow external events to happen.
     #[tracing::instrument(level = "trace", skip(self), ret)]
     pub async fn run_available_async(&mut self) -> bool {
+        self.context.current_tick_start = Instant::now();
+
         let mut work_done = false;
         // While work is immediately available.
         while self.next_stratum(false) {
@@ -284,6 +313,7 @@ impl Hydroflow {
 
                 self.context.current_stratum = 0;
                 self.context.current_tick += 1;
+                self.context.current_tick_start = Instant::now();
                 self.events_received_tick = false;
 
                 if current_tick_only {
@@ -342,7 +372,7 @@ impl Hydroflow {
     pub async fn run_async(&mut self) -> Option<Never> {
         loop {
             // Run any work which is immediately available.
-            self.run_available_async().await;
+            self.run_tick_async().await;
             // When no work is available yield until more events occur.
             self.recv_events_async().await;
         }
