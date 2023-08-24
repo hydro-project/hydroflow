@@ -208,7 +208,7 @@ pub fn identity_write_iterator_fn(
             let #ident = {
                 fn check_output<Push: #root::pusherator::Pusherator<Item = Item>, Item>(push: Push) -> impl #root::pusherator::Pusherator<Item = Item> { push }
                 check_output::<_, #generic_type>(#output)
-            }
+            };
         }
     }
 }
@@ -282,6 +282,7 @@ declare_ops![
     anti_join_multiset::ANTI_JOIN_MULTISET,
     assert::ASSERT,
     assert_eq::ASSERT_EQ,
+    cast::CAST,
     cross_join::CROSS_JOIN,
     cross_join_multiset::CROSS_JOIN_MULTISET,
     demux::DEMUX,
