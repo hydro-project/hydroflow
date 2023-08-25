@@ -32,8 +32,8 @@ pub use pyo3;
 pub use tracing;
 pub use variadics::{self, var_args, var_expr, var_type};
 pub use {
-    bincode, bytes, futures, itertools, lattices, pusherator, rustc_hash, serde, serde_json, tokio,
-    tokio_stream, tokio_util,
+    bincode, bytes, futures, instant, itertools, lattices, pusherator, rustc_hash, serde,
+    serde_json, tokio, tokio_stream, tokio_util,
 };
 
 mod declarative_macro;
