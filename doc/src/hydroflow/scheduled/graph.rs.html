@@ -773,6 +773,36 @@
 <a href="#773" id="773">773</a>
 <a href="#774" id="774">774</a>
 <a href="#775" id="775">775</a>
+<a href="#776" id="776">776</a>
+<a href="#777" id="777">777</a>
+<a href="#778" id="778">778</a>
+<a href="#779" id="779">779</a>
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
+<a href="#789" id="789">789</a>
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for the [`Hydroflow`] struct and helper items.
 
 </span><span class="kw">use </span>std::any::Any;
@@ -784,6 +814,7 @@
 
 <span class="kw">use </span>hydroflow_lang::diagnostic::{Diagnostic, SerdeSpan};
 <span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
+<span class="kw">use </span>instant::Instant;
 <span class="kw">use </span>ref_cast::RefCast;
 <span class="kw">use </span>tokio::sync::mpsc::{<span class="self">self</span>, UnboundedReceiver};
 
@@ -829,6 +860,8 @@
 
             current_stratum: <span class="number">0</span>,
             current_tick: <span class="number">0</span>,
+
+            current_tick_start: Instant::now(),
 
             subgraph_id: SubgraphId(<span class="number">0</span>),
 
@@ -911,6 +944,8 @@
     /// Returns true if any work was done.
     </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), ret)]
     </span><span class="kw">pub fn </span>run_tick(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.context.current_tick_start = Instant::now();
+
         <span class="kw">let </span><span class="kw-2">mut </span>work_done = <span class="bool-val">false</span>;
         <span class="comment">// While work is immediately available *on the current tick*.
         </span><span class="kw">while </span><span class="self">self</span>.next_stratum(<span class="bool-val">true</span>) {
@@ -921,12 +956,34 @@
         work_done
     }
 
+    <span class="doccomment">/// Runs the dataflow until the next tick begins.
+    /// Returns true if any work was done.
+    /// Yields repeatedly to allow external events to happen.
+    </span><span class="kw">pub async fn </span>run_tick_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.context.current_tick_start = Instant::now();
+
+        <span class="kw">let </span><span class="kw-2">mut </span>work_done = <span class="bool-val">false</span>;
+        <span class="comment">// While work is immediately available *on the current tick*.
+        </span><span class="kw">while </span><span class="self">self</span>.next_stratum(<span class="bool-val">true</span>) {
+            work_done = <span class="bool-val">true</span>;
+            <span class="comment">// Do any work.
+            </span><span class="self">self</span>.run_stratum();
+
+            <span class="comment">// Yield between each stratum to receive more events.
+            // TODO(zzlk): really only need to yield at start of ticks though.
+            </span>tokio::task::yield_now().<span class="kw">await</span>;
+        }
+        work_done
+    }
+
     <span class="doccomment">/// Runs the dataflow until no more (externally-triggered) work is immediately available.
     /// Runs at least one tick of dataflow, even if no external events have been received.
     /// If the dataflow contains loops this method may run forever.
     /// Returns true if any work was done.
     </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), ret)]
     </span><span class="kw">pub fn </span>run_available(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.context.current_tick_start = Instant::now();
+
         <span class="kw">let </span><span class="kw-2">mut </span>work_done = <span class="bool-val">false</span>;
         <span class="comment">// While work is immediately available.
         </span><span class="kw">while </span><span class="self">self</span>.next_stratum(<span class="bool-val">false</span>) {
@@ -944,6 +1001,8 @@
     /// Yields repeatedly to allow external events to happen.
     </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), ret)]
     </span><span class="kw">pub async fn </span>run_available_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.context.current_tick_start = Instant::now();
+
         <span class="kw">let </span><span class="kw-2">mut </span>work_done = <span class="bool-val">false</span>;
         <span class="comment">// While work is immediately available.
         </span><span class="kw">while </span><span class="self">self</span>.next_stratum(<span class="bool-val">false</span>) {
@@ -1059,6 +1118,7 @@
 
                 <span class="self">self</span>.context.current_stratum = <span class="number">0</span>;
                 <span class="self">self</span>.context.current_tick += <span class="number">1</span>;
+                <span class="self">self</span>.context.current_tick_start = Instant::now();
                 <span class="self">self</span>.events_received_tick = <span class="bool-val">false</span>;
 
                 <span class="kw">if </span>current_tick_only {
@@ -1117,7 +1177,7 @@
     </span><span class="kw">pub async fn </span>run_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Never&gt; {
         <span class="kw">loop </span>{
             <span class="comment">// Run any work which is immediately available.
-            </span><span class="self">self</span>.run_available_async().<span class="kw">await</span>;
+            </span><span class="self">self</span>.run_tick_async().<span class="kw">await</span>;
             <span class="comment">// When no work is available yield until more events occur.
             </span><span class="self">self</span>.recv_events_async().<span class="kw">await</span>;
         }

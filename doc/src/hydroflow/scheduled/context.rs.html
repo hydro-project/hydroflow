@@ -161,12 +161,21 @@
 <a href="#161" id="161">161</a>
 <a href="#162" id="162">162</a>
 <a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for the user-facing [`Context`] object.
 
 </span><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>std::marker::PhantomData;
 
+<span class="kw">use </span>instant::Instant;
 <span class="kw">use </span>tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>tokio::task::JoinHandle;
 
@@ -191,6 +200,8 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) current_tick: usize,
     <span class="kw">pub</span>(<span class="kw">crate</span>) current_stratum: usize,
 
+    <span class="kw">pub</span>(<span class="kw">crate</span>) current_tick_start: Instant,
+
     <span class="doccomment">/// The SubgraphId of the currently running operator. When this context is
     /// not being forwarded to a running operator, this field is (mostly)
     /// meaningless.
@@ -203,6 +214,11 @@
     <span class="doccomment">/// Gets the current tick (local time) count.
     </span><span class="kw">pub fn </span>current_tick(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.current_tick
+    }
+
+    <span class="doccomment">/// Gets the timestamp of the beginning of the current tick.
+    </span><span class="kw">pub fn </span>current_tick_start(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Instant {
+        <span class="self">self</span>.current_tick_start
     }
 
     <span class="doccomment">/// Gets the current stratum nubmer.
