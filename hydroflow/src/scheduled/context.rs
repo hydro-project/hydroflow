@@ -4,7 +4,6 @@ use std::any::Any;
 use std::future::Future;
 use std::marker::PhantomData;
 
-use instant::Instant;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::task::JoinHandle;
 
@@ -29,8 +28,6 @@ pub struct Context {
     pub(crate) current_tick: usize,
     pub(crate) current_stratum: usize,
 
-    pub(crate) current_tick_start: Instant,
-
     /// The SubgraphId of the currently running operator. When this context is
     /// not being forwarded to a running operator, this field is (mostly)
     /// meaningless.
@@ -43,11 +40,6 @@ impl Context {
     /// Gets the current tick (local time) count.
     pub fn current_tick(&self) -> usize {
         self.current_tick
-    }
-
-    /// Gets the timestamp of the beginning of the current tick.
-    pub fn current_tick_start(&self) -> Instant {
-        self.current_tick_start
     }
 
     /// Gets the current stratum nubmer.
