@@ -707,7 +707,7 @@ impl HydroflowGraph {
                                 .collect();
 
                             // Corresponds 1:1 to inputs.
-                            let flow_props = self.graph.predecessor_edges(node_id)
+                            let flow_props_in = self.graph.predecessor_edges(node_id)
                                 .map(|edge_id| self.flow_props.get(edge_id).copied())
                                 .collect::<Vec<_>>();
 
@@ -734,7 +734,7 @@ impl HydroflowGraph {
                                 outputs: &*outputs,
                                 op_name,
                                 op_inst,
-                                flow_props: &*flow_props,
+                                flow_props_in: &*flow_props_in,
                             };
 
                             let write_result = (op_constraints.write_fn)(&context_args, diagnostics);

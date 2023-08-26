@@ -1,8 +1,8 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorInstance,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    FlowPropArgs, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 /// > 1 input stream, 1 output stream
@@ -38,9 +38,9 @@ pub const MAP: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
-    flow_prop_fn: Some(|flow_props_in, _op_inst, _star_ord| {
+    flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
         // Preserve input flow properties.
-        vec![flow_props_in[0]]
+        Ok(vec![flow_props_in[0]])
     }),
     write_fn: |wc @ &WriteContextArgs {
                    root,

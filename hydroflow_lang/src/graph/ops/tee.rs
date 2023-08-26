@@ -1,8 +1,8 @@
 use quote::{quote_spanned, ToTokens};
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
+    FlowPropArgs, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
 };
 
 /// > 1 input stream, *n* output streams
@@ -35,9 +35,8 @@ pub const TEE: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
-    flow_prop_fn: Some(|flow_props_in, op_inst, _star_ord| {
-        let out_degree = op_inst.output_ports.len();
-        vec![flow_props_in[0]; out_degree]
+    flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
+        Ok(vec![flow_props_in[0]])
     }),
     write_fn: |&WriteContextArgs {
                    root,

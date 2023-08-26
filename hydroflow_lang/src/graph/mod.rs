@@ -356,12 +356,23 @@ pub fn build_hfcode(
     eliminate_extra_unions_tees(&mut flat_graph);
     if !diagnostics.iter().any(Diagnostic::is_error) {
         match partition_graph(flat_graph) {
-            Ok(part_graph) => {
-                let code =
-                    part_graph.as_code(root, true, quote::quote! { #( #uses )* }, &mut diagnostics);
-                if !diagnostics.iter().any(Diagnostic::is_error) {
-                    // Success.
-                    return (Some((part_graph, code)), diagnostics);
+            Ok(mut partitioned_graph) => {
+                // Propgeate flow properties throughout the graph.
+                // TODO(mingwei): Should this be done at a flat graph stage instead?
+                if let Ok(()) = propegate_flow_props::propegate_flow_props(
+                    &mut partitioned_graph,
+                    &mut diagnostics,
+                ) {
+                    let code = partitioned_graph.as_code(
+                        root,
+                        true,
+                        quote::quote! { #( #uses )* },
+                        &mut diagnostics,
+                    );
+                    if !diagnostics.iter().any(Diagnostic::is_error) {
+                        // Success.
+                        return (Some((partitioned_graph, code)), diagnostics);
+                    }
                 }
             }
             Err(diagnostic) => diagnostics.push(diagnostic),
