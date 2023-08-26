@@ -104,23 +104,55 @@ pub struct OperatorConstraints {
 
     /// Return the output flow types for the given input flow types.
     ///
-    /// The first argument is the input flow properties.
-    /// Due to cycles, it is possible that only some of the input flow props will be known when
-    /// this is called. In this case the unknown flow prop inputs will be `None`.
+    /// The first [`FlowPropArgs`] argument provides the input flow types (if set) and other
+    /// arguments such as the operator span, operator name, etc.
     ///
-    /// The second argument is the [`OperatorInstance`] information for the current operator.
-    ///
-    /// The third argument is a new unique star value for [`FlowProps::star_ord`].
+    /// The second argument is a vec to push [`Diagnostic`]s into to emit them.
     ///
     /// If only one flow type is returned for an operator with multiple outputs, that flow type
     /// will be used for all outputs. Besides that case, it is an error to return a number of flow
     /// props which does not match the number of outputs.
-    pub flow_prop_fn:
-        Option<fn(&[Option<FlowProps>], &OperatorInstance, usize) -> Vec<Option<FlowProps>>>,
+    pub flow_prop_fn: Option<FlowPropFn>,
 
     /// The operator's codegen. Returns code that is emited is several different locations. See [`OperatorWriteOutput`].
     pub write_fn: WriteFn,
 }
+
+/// Type alias for [`OperatorConstraints::flow_prop_fn`]'s type.
+pub type FlowPropFn =
+    fn(FlowPropArgs<'_>, &mut Vec<Diagnostic>) -> Result<Vec<Option<FlowProps>>, ()>;
+
+/// Type alias for [`OperatorConstraints::write_fn`]'s type.
+pub type WriteFn =
+    fn(&WriteContextArgs<'_>, &mut Vec<Diagnostic>) -> Result<OperatorWriteOutput, ()>;
+
+/// Arguments provided to [`OperatorConstraints::flow_prop_fn`].
+pub struct FlowPropArgs<'a> {
+    /// The source span of this operator.
+    pub op_span: Span,
+
+    /// Operator name.
+    pub op_name: &'static str,
+    /// Operator instance arguments object.
+    pub op_inst: &'a OperatorInstance,
+
+    /// Flow properties corresponding to each input.
+    ///
+    /// Sometimes (due to cycles, and for now usually due to no-yet-updated operators) the input
+    /// flow props might not be set yet (`None`).
+    pub flow_props_in: &'a [Option<FlowProps>],
+
+    /// Internal: TODO(mingwei): new token value for output flows.
+    pub(crate) new_star_ord: usize,
+}
+impl FlowPropArgs<'_> {
+    /// Returns a new `star_ord` token, representing a new order/provenance.
+    /// TODO(mingwei): This shouldn't return the same value for multiple calls.
+    pub fn new_star_ord(&self) -> usize {
+        self.new_star_ord
+    }
+}
+
 impl Debug for OperatorConstraints {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("OperatorConstraints")
@@ -141,10 +173,6 @@ impl Debug for OperatorConstraints {
             .finish()
     }
 }
-
-/// Type alias for [`OperatorConstraints::write_fn`]'s type.
-pub type WriteFn =
-    fn(&WriteContextArgs<'_>, &mut Vec<Diagnostic>) -> Result<OperatorWriteOutput, ()>;
 
 /// The code generated and returned by a [`OperatorConstraints::write_fn`].
 #[derive(Default)]
@@ -396,7 +424,10 @@ pub struct WriteContextArgs<'a> {
     pub op_inst: &'a OperatorInstance,
 
     /// Flow properties corresponding to each input.
-    pub flow_props: &'a [Option<FlowProps>],
+    ///
+    /// Sometimes (due to cycles, and for now usually due to no-yet-updated operators) the input
+    /// flow props might not be set yet (`None`).
+    pub flow_props_in: &'a [Option<FlowProps>],
 }
 impl WriteContextArgs<'_> {
     /// Generate a (almost certainly) unique identifier with the given suffix.
@@ -425,7 +456,7 @@ impl WriteContextArgs<'_> {
         let root = self.root;
         let span = self.op_span;
         match self
-            .flow_props
+            .flow_props_in
             .get(0)
             .copied()
             .flatten()
