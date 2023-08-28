@@ -1,0 +1,23 @@
+---
+source: hydroflow/tests/surface_scheduling.rs
+expression: df.meta_graph().unwrap().to_mermaid()
+---
+%%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
+flowchart TD
+classDef pullClass fill:#8af,stroke:#000,text-align:left,white-space:pre
+classDef pushClass fill:#ff8,stroke:#000,text-align:left,white-space:pre
+linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
+subgraph sg_1v1 ["sg_1v1 stratum 0"]
+    1v1[\"(1v1) <code>source_iter([0])</code>"/]:::pullClass
+    2v1[\"(2v1) <code>persist()</code>"/]:::pullClass
+    1v1-->2v1
+end
+subgraph sg_2v1 ["sg_2v1 stratum 1"]
+    3v1[\"(3v1) <code>next_stratum()</code>"/]:::pullClass
+    4v1[/"(4v1) <code>for_each(|x| out_send.send(x).unwrap())</code>"\]:::pushClass
+    3v1-->4v1
+end
+2v1-->5v1
+5v1["(5v1) <code>handoff</code>"]:::otherClass
+5v1--x3v1
+

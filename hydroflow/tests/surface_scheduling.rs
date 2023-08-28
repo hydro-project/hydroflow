@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use hydroflow::{hydroflow_syntax, rassert_eq};
+use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax, rassert_eq};
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test(test, wasm, env_tracing)]
@@ -13,6 +13,7 @@ pub fn test_stratum_loop() {
         union_tee -> map(|n| n + 1) -> filter(|&n| n < 10) -> next_stratum() -> union_tee;
         union_tee -> for_each(|v| out_send.send(v).unwrap());
     };
+    assert_graphvis_snapshots!(df);
     df.run_available();
 
     assert_eq!(
@@ -32,6 +33,7 @@ pub fn test_tick_loop() {
         union_tee -> map(|n| n + 1) -> filter(|&n| n < 10) -> defer_tick() -> union_tee;
         union_tee -> for_each(|v| out_send.send(v).unwrap());
     };
+    assert_graphvis_snapshots!(df);
     df.run_available();
 
     assert_eq!(
@@ -52,6 +54,7 @@ async fn test_persist_stratum_run_available() -> Result<(), Box<dyn Error>> {
                 -> next_stratum()
                 -> for_each(|x| out_send.send(x).unwrap());
         };
+        assert_graphvis_snapshots!(df);
         df.run_available();
     });
     tokio::time::sleep(std::time::Duration::from_millis(200)).await;
@@ -79,6 +82,7 @@ async fn test_persist_stratum_run_async() -> Result<(), Box<dyn Error>> {
             -> next_stratum()
             -> for_each(|x| out_send.send(x).unwrap());
     };
+    assert_graphvis_snapshots!(df);
 
     tokio::time::timeout(std::time::Duration::from_millis(200), df.run_async())
         .await
