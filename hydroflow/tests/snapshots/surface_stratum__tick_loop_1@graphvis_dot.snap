@@ -42,6 +42,6 @@ digraph {
     n8v1 -> n9v1
     n9v1 -> n10v1
     n10v1 [label="(n10v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
-    n10v1 -> n4v1
+    n10v1 -> n4v1 [arrowhead=dot, color=red]
 }
 

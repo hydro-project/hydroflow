@@ -7,7 +7,7 @@ use auto_impl::auto_impl;
 use slotmap::Key;
 
 use super::ops::DelayType;
-use super::{Color, GraphNodeId, GraphSubgraphId, FlowProps, LatticeFlowType};
+use super::{Color, FlowProps, GraphNodeId, GraphSubgraphId, LatticeFlowType};
 
 /// Trait for writing textual representations of graphs, i.e. mermaid or dot graphs.
 #[auto_impl(&mut, Box)]
@@ -320,31 +320,49 @@ where
         src_id: GraphNodeId,
         dst_id: GraphNodeId,
         delay_type: Option<DelayType>,
-        _flow_props: Option<FlowProps>,
+        flow_props: Option<FlowProps>,
         label: Option<&str>,
         in_subgraph: Option<GraphSubgraphId>,
     ) -> Result<(), Self::Err> {
         // TODO(mingwei): handle `flow_props`.
-        let mut properties = Vec::new();
+        let mut properties = Vec::<Cow<'static, str>>::new();
         if let Some(label) = label {
-            properties.push(format!("label=\"{}\"", label));
+            properties.push(format!("label=\"{}\"", label).into());
         };
-        if Some(DelayType::Stratum) == delay_type {
-            properties.push("arrowhead=box, color=red".to_string());
+        match delay_type {
+            Some(DelayType::Stratum) => {
+                properties.push("arrowhead=box, color=red".into());
+            }
+            Some(DelayType::Tick) => {
+                properties.push("arrowhead=dot, color=red".into());
+            }
+            None => (),
         };
-        writeln!(
+        match flow_props.and_then(|flow_props| flow_props.lattice_flow_type) {
+            Some(LatticeFlowType::Delta) => {
+                properties.push("style=dashed".into());
+            }
+            Some(LatticeFlowType::Cumul) => {
+                properties.push("style=bold".into());
+            }
+            None => (),
+        }
+        write!(
             self.write,
-            "{:t$}n{:?} -> n{:?}{}",
+            "{:t$}n{:?} -> n{:?}",
             "",
             src_id.data(),
             dst_id.data(),
-            if !properties.is_empty() {
-                format!(" [{}]", properties.join(", "))
-            } else {
-                "".to_string()
-            },
             t = if in_subgraph.is_some() { 8 } else { 4 },
         )?;
+        if !properties.is_empty() {
+            write!(self.write, " [")?;
+            for prop in itertools::Itertools::intersperse(properties.into_iter(), ", ".into()) {
+                write!(self.write, "{}", prop)?;
+            }
+            write!(self.write, "]")?;
+        }
+        writeln!(self.write)?;
         Ok(())
     }
 
