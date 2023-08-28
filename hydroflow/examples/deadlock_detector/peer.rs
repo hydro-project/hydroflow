@@ -28,7 +28,20 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
 
         // set up channels
         outbound_chan = map(|(m,a)| (serialize_msg(m), a)) -> dest_sink(outbound);
-        inbound_chan = source_stream(inbound) -> map(deserialize_msg::<Message>);
+        inbound_chan = source_stream(inbound)
+            -> filter(|msg| {
+                // For some reason Windows generates connection reset errors on UDP sockets, even though UDP has no sessions.
+                // This code filters them out.
+                // `Os { code: 10054, kind: ConnectionReset, message: "An existing connection was forcibly closed by the remote host."`
+                // https://stackoverflow.com/questions/10332630/connection-reset-on-receiving-packet-in-udp-server
+                // TODO(mingwei): Clean this up, figure out how to configure windows UDP sockets correctly.
+                if let Err(tokio_util::codec::LinesCodecError::Io(io_err)) = msg {
+                    io_err.kind() != std::io::ErrorKind::ConnectionReset
+                } else {
+                    true
+                }
+            })
+            -> map(deserialize_msg::<Message>);
 
         // setup gossip channel to all peers. gen_bool chooses True with the odds passed in.
         gossip_join = cross_join::<'tick>()
