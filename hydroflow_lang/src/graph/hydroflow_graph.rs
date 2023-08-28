@@ -823,10 +823,9 @@ impl HydroflowGraph {
                             self.node_as_ident(node_id, false)
                         } else {
                             // Entire subgraph is pull (except for a single send/push handoff output).
-                            assert_eq!(
-                                1,
-                                send_ports.len(),
-                                "If entire subgraph is pull, should have only one handoff output. Do you have a loose `null()` or other degenerate pipeline somewhere?"
+                            assert!(
+                                1 == send_ports.len(),
+                                "Degenerate subgraph detected, is there a disconnected `null()` or other degenerate pipeline somewhere?"
                             );
                             send_ports[0].clone()
                         };
