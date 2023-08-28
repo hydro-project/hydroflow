@@ -86,12 +86,12 @@ digraph {
     n15v1 -> n20v1
     n16v1 -> n17v1
     n17v1 [label="(n17v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
-    n17v1 -> n5v1
+    n17v1 -> n5v1 [arrowhead=dot, color=red]
     n18v1 -> n19v1
     n19v1 [label="(n19v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
-    n19v1 -> n8v1
+    n19v1 -> n8v1 [arrowhead=dot, color=red]
     n20v1 -> n21v1
     n21v1 [label="(n21v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
-    n21v1 -> n7v1
+    n21v1 -> n7v1 [arrowhead=dot, color=red]
 }
 
