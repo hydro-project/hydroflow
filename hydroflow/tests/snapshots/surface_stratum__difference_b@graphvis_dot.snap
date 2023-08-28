@@ -39,7 +39,7 @@ digraph {
     n6v1 [label="(n6v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
     n6v1 -> n1v1 [label="neg", arrowhead=box, color=red]
     n7v1 [label="(n7v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
-    n7v1 -> n4v1
+    n7v1 -> n4v1 [arrowhead=dot, color=red]
     n8v1 [label="(n8v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
     n8v1 -> n1v1 [label="pos"]
 }

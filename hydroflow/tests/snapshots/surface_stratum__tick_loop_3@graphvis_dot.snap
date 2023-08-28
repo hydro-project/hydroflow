@@ -65,12 +65,12 @@ digraph {
     n11v1 -> n16v1
     n12v1 -> n13v1
     n13v1 [label="(n13v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
-    n13v1 -> n6v1
+    n13v1 -> n6v1 [arrowhead=dot, color=red]
     n14v1 -> n15v1
     n15v1 [label="(n15v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
-    n15v1 -> n5v1
+    n15v1 -> n5v1 [arrowhead=dot, color=red]
     n16v1 -> n17v1
     n17v1 [label="(n17v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
-    n17v1 -> n4v1
+    n17v1 -> n4v1 [arrowhead=dot, color=red]
 }
 
