@@ -343,6 +343,10 @@
 <a href="#343" id="343">343</a>
 <a href="#344" id="344">344</a>
 <a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 </span><span class="doccomment">//! Helper utilities for the Hydroflow surface syntax.
 
@@ -629,7 +633,11 @@
 
 <span class="kw">impl </span>Drop <span class="kw">for </span>DroppableChild {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="self">self</span>.<span class="number">0</span>.kill().unwrap();
+        <span class="attr">#[cfg(target_family = <span class="string">&quot;windows&quot;</span>)]
+        </span><span class="kw">let _ </span>= <span class="self">self</span>.<span class="number">0</span>.kill(); <span class="comment">// Windows throws `PermissionDenied` if the process has already exited.
+        </span><span class="attr">#[cfg(not(target_family = <span class="string">&quot;windows&quot;</span>))]
+        </span><span class="self">self</span>.<span class="number">0</span>.kill().unwrap();
+
         <span class="self">self</span>.<span class="number">0</span>.wait().unwrap();
     }
 }

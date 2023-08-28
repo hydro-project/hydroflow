@@ -1208,7 +1208,6 @@
 <a href="#1208" id="1208">1208</a>
 <a href="#1209" id="1209">1209</a>
 <a href="#1210" id="1210">1210</a>
-<a href="#1211" id="1211">1211</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -2034,10 +2033,9 @@
                             <span class="self">self</span>.node_as_ident(node_id, <span class="bool-val">false</span>)
                         } <span class="kw">else </span>{
                             <span class="comment">// Entire subgraph is pull (except for a single send/push handoff output).
-                            </span><span class="macro">assert_eq!</span>(
-                                <span class="number">1</span>,
-                                send_ports.len(),
-                                <span class="string">&quot;If entire subgraph is pull, should have only one handoff output. Do you have a loose `null()` or other degenerate pipeline somewhere?&quot;
+                            </span><span class="macro">assert!</span>(
+                                <span class="number">1 </span>== send_ports.len(),
+                                <span class="string">&quot;Degenerate subgraph detected, is there a disconnected `null()` or other degenerate pipeline somewhere?&quot;
                             </span>);
                             send_ports[<span class="number">0</span>].clone()
                         };
