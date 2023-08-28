@@ -1,0 +1,5 @@
+error: Cannot ilegally up-cast from `None` to `Some(Delta)`.
+ --> tests/compile-fail/surface_flow_props_upcast.rs:6:16
+  |
+6 |             -> cast(Some(Delta))
+  |                ^^^^^^^^^^^^^^^^^

@@ -15,7 +15,6 @@ pub fn test_basic() -> Result<(), Box<dyn Error>> {
         my_tee
             -> cast(None)
             -> map(|SetUnion(SingletonSet(x))| 10 * x)
-            -> cast(Some(Delta))
             -> for_each(|x| println!("seq {:?}", x));
 
         my_tee
