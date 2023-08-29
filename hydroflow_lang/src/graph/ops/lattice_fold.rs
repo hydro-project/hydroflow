@@ -3,7 +3,8 @@ use syn::spanned::Spanned;
 
 use super::{
     DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorCategory,
-    OperatorConstraints, OperatorInstance, WriteContextArgs, RANGE_1,
+    OperatorConstraints, OperatorInstance, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN,
+    RANGE_1,
 };
 
 /// > 1 input stream, 1 output stream
@@ -47,7 +48,7 @@ pub const LATTICE_FOLD: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| Some(DelayType::Stratum),
-    flow_prop_fn: None,
+    flow_prop_fn: Some(LATTICE_FOLD_REDUCE_FLOW_PROP_FN),
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    is_pull,
