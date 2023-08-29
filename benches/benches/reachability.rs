@@ -14,14 +14,14 @@ lazy_static::lazy_static! {
         let cursor = Cursor::new(include_bytes!("reachability_edges.txt"));
         let reader = BufReader::new(cursor);
 
-        let mut edges = HashMap::new();
+        let mut edges = HashMap::<_, Vec<_>>::new();
         for line in reader.lines() {
             let line = line.unwrap();
             let mut nums = line.split_whitespace();
             let a = nums.next().unwrap().parse().unwrap();
             let b = nums.next().unwrap().parse().unwrap();
             assert!(nums.next().is_none());
-            edges.entry(a).or_insert_with(Vec::new).push(b);
+            edges.entry(a).or_default().push(b);
         }
         edges
     };
