@@ -61,7 +61,7 @@ where
                                         }
                                     }
 
-                                    left_tab.entry(k).or_insert_with(Vec::new).push(v);
+                                    left_tab.entry(k).or_default().push(v);
                                 }
                             });
 
@@ -76,7 +76,7 @@ where
                                         }
                                     }
 
-                                    right_tab.entry(k).or_insert_with(Vec::new).push(v);
+                                    right_tab.entry(k).or_default().push(v);
                                 }
                             });
                         }
@@ -98,8 +98,8 @@ where
             b.iter(|| {
                 let iter_a = (0..NUM_INTS).map(|x| (x, L::new(x)));
                 let iter_b = (0..NUM_INTS).map(|x| (x, R::new(x)));
-                let mut items_a = HashMap::new();
-                let mut items_b = HashMap::new();
+                let mut items_a = HashMap::<_, Vec<_>>::new();
+                let mut items_b = HashMap::<_, Vec<_>>::new();
 
                 for (key, val_a) in iter_a {
                     if let Some(vals_b) = items_b.get(&key) {
@@ -107,7 +107,7 @@ where
                             black_box((key, val_a.clone(), val_b));
                         }
                     }
-                    items_a.entry(key).or_insert_with(Vec::new).push(val_a);
+                    items_a.entry(key).or_default().push(val_a);
                 }
                 for (key, val_b) in iter_b {
                     if let Some(vals_a) = items_a.get(&key) {
@@ -115,7 +115,7 @@ where
                             black_box((key, val_a, val_b.clone()));
                         }
                     }
-                    items_b.entry(key).or_insert_with(Vec::new).push(val_b);
+                    items_b.entry(key).or_default().push(val_b);
                 }
             });
         },

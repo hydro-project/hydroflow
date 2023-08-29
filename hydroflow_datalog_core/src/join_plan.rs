@@ -153,10 +153,10 @@ fn find_relation_local_constraints<'a>(
     let mut indices_grouped_by_var = BTreeMap::new();
     for (i, ident) in fields.enumerate() {
         if let IdentOrUnderscore::Ident(ident) = ident.deref() {
-            let entry = indices_grouped_by_var
+            let entry: &mut Vec<_> = indices_grouped_by_var
                 // TODO(shadaj): Can we avoid cloning here?
                 .entry(ident.name.clone())
-                .or_insert_with(Vec::new);
+                .or_default();
             entry.push(i);
         }
     }
