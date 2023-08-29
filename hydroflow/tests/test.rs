@@ -151,7 +151,7 @@ fn test_cycle() {
         (6, 7),
         (7, 8),
     ] {
-        edges.entry(from).or_insert_with(Vec::new).push(to);
+        edges.entry(from).or_default().push(to);
     }
 
     let mut df = Hydroflow::new();
