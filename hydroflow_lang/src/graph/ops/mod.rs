@@ -16,7 +16,7 @@ use super::{
     FlowProps, GraphNodeId, GraphSubgraphId, LatticeFlowType, Node, OpInstGenerics,
     OperatorInstance, PortIndexValue,
 };
-use crate::diagnostic::Diagnostic;
+use crate::diagnostic::{Diagnostic, Level};
 use crate::parse::{Operator, PortIndex};
 
 /// The delay (soft barrier) type, for each input to an operator if needed.
@@ -249,6 +249,32 @@ pub const IDENTITY_WRITE_FN: WriteFn = |write_context_args, _| {
         ..Default::default()
     })
 };
+
+/// [`OperatorConstraints::flow_prop_fn`] for `lattice_fold` and `lattice_reduce`.
+pub const LATTICE_FOLD_REDUCE_FLOW_PROP_FN: FlowPropFn =
+    |fp @ FlowPropArgs {
+         op_span, op_name, ..
+     },
+     diagnostics| {
+        let input_flow_type = fp.flow_props_in[0].and_then(|fp| fp.lattice_flow_type);
+        match input_flow_type {
+       Some(LatticeFlowType::Delta) => (),
+       Some(LatticeFlowType::Cumul) => diagnostics.push(Diagnostic::spanned(
+           op_span,
+           Level::Warning,
+           format!("`{}` input is already cumulative lattice flow, this operator is redundant.", op_name),
+       )),
+       None => diagnostics.push(Diagnostic::spanned(
+           op_span,
+           Level::Warning,
+           format!("`{}` expects lattice flow input, has sequential input. This may be an error in the future.", op_name),
+       )),
+   }
+        Ok(vec![Some(FlowProps {
+            star_ord: fp.new_star_ord(),
+            lattice_flow_type: Some(LatticeFlowType::Cumul),
+        })])
+    };
 
 /// Helper to write the `write_iterator` portion of [`OperatorConstraints::write_fn`] output for
 /// the null operator - an operator that ignores all inputs and produces no output.
