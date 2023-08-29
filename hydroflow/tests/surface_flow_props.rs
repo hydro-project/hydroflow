@@ -1,9 +1,8 @@
 use std::error::Error;
 
-use hydroflow::lattices::set_union::SetUnionSingletonSet;
+use hydroflow::lattices::collections::SingletonSet;
+use hydroflow::lattices::set_union::{SetUnion, SetUnionHashSet, SetUnionSingletonSet};
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
-use lattices::collections::SingletonSet;
-use lattices::set_union::SetUnion;
 
 #[test]
 pub fn test_basic() -> Result<(), Box<dyn Error>> {
@@ -19,6 +18,11 @@ pub fn test_basic() -> Result<(), Box<dyn Error>> {
 
         my_tee
             -> for_each(|s| println!("delta {:?}", s));
+
+        my_tee
+            -> map(|SetUnion(SingletonSet(x))| SetUnionHashSet::new_from([x]))
+            -> lattice_reduce::<'static, SetUnionHashSet<_>>()
+            -> for_each(|s| println!("cumul {:?}", s));
     };
     hf.run_available();
 
