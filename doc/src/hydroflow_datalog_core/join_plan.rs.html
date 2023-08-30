@@ -819,10 +819,10 @@
     <span class="kw">let </span><span class="kw-2">mut </span>indices_grouped_by_var = BTreeMap::new();
     <span class="kw">for </span>(i, ident) <span class="kw">in </span>fields.enumerate() {
         <span class="kw">if let </span>IdentOrUnderscore::Ident(ident) = ident.deref() {
-            <span class="kw">let </span>entry = indices_grouped_by_var
+            <span class="kw">let </span>entry: <span class="kw-2">&amp;mut </span>Vec&lt;<span class="kw">_</span>&gt; = indices_grouped_by_var
                 <span class="comment">// TODO(shadaj): Can we avoid cloning here?
                 </span>.entry(ident.name.clone())
-                .or_insert_with(Vec::new);
+                .or_default();
             entry.push(i);
         }
     }
