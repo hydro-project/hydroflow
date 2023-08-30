@@ -208,6 +208,7 @@ fn main() {
                             iter
                         }
                         for kv in check_input(hoff_9v3_recv) {
+                            #[allow(unknown_lints, clippy::unwrap_or_default)]
                             let entry = sg_2v1_node_17v1_hashtable
                                 .entry(kv.0)
                                 .or_insert_with(|| (None,));
