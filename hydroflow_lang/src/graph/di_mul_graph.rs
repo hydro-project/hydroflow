@@ -193,8 +193,7 @@ where
     /// Return an iterator over all edges in form `(E, (V, V))`.
     pub fn edges(
         &self,
-    ) -> impl '_ + Iterator<Item = (E, (V, V))> + ExactSizeIterator + FusedIterator + Clone + Debug
-    {
+    ) -> impl '_ + ExactSizeIterator<Item = (E, (V, V))> + FusedIterator + Clone + Debug {
         self.edges.iter().map(|(e, &(src, dst))| (e, (src, dst)))
     }
 
@@ -220,13 +219,8 @@ where
     pub fn successor_vertices(
         &self,
         v: V,
-    ) -> impl '_
-           + Iterator<Item = V>
-           + DoubleEndedIterator
-           + ExactSizeIterator
-           + FusedIterator
-           + Clone
-           + Debug {
+    ) -> impl '_ + DoubleEndedIterator<Item = V> + ExactSizeIterator + FusedIterator + Clone + Debug
+    {
         self.successor_edges(v).map(|edge_id| self.edges[edge_id].1)
     }
 
@@ -234,13 +228,8 @@ where
     pub fn predecessor_vertices(
         &self,
         v: V,
-    ) -> impl '_
-           + Iterator<Item = V>
-           + DoubleEndedIterator
-           + ExactSizeIterator
-           + FusedIterator
-           + Clone
-           + Debug {
+    ) -> impl '_ + DoubleEndedIterator<Item = V> + ExactSizeIterator + FusedIterator + Clone + Debug
+    {
         self.predecessor_edges(v)
             .map(|edge_id| self.edges[edge_id].0)
     }
@@ -249,13 +238,8 @@ where
     pub fn successors(
         &self,
         v: V,
-    ) -> impl '_
-           + Iterator<Item = (E, V)>
-           + DoubleEndedIterator
-           + ExactSizeIterator
-           + FusedIterator
-           + Clone
-           + Debug {
+    ) -> impl '_ + DoubleEndedIterator<Item = (E, V)> + ExactSizeIterator + FusedIterator + Clone + Debug
+    {
         self.successor_edges(v)
             .map(|edge_id| (edge_id, self.edges[edge_id].1))
     }
@@ -264,13 +248,8 @@ where
     pub fn predecessors(
         &self,
         v: V,
-    ) -> impl '_
-           + Iterator<Item = (E, V)>
-           + DoubleEndedIterator
-           + ExactSizeIterator
-           + FusedIterator
-           + Clone
-           + Debug {
+    ) -> impl '_ + DoubleEndedIterator<Item = (E, V)> + ExactSizeIterator + FusedIterator + Clone + Debug
+    {
         self.predecessor_edges(v)
             .map(|edge_id| (edge_id, self.edges[edge_id].0))
     }

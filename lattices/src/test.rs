@@ -203,7 +203,7 @@ pub fn check_atomize_each<
 /// product of `items` with itself `N` times.
 pub fn cartesian_power<T, const N: usize>(
     items: &[T],
-) -> impl Iterator<Item = [&T; N]> + ExactSizeIterator + Clone {
+) -> impl ExactSizeIterator<Item = [&T; N]> + Clone {
     struct CartesianPower<'a, T, const N: usize> {
         items: &'a [T],
         iters: [std::iter::Peekable<std::slice::Iter<'a, T>>; N],

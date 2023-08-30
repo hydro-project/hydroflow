@@ -96,8 +96,7 @@ impl HydroflowGraph {
         &self,
         src: GraphNodeId,
     ) -> impl '_
-           + Iterator<Item = (GraphEdgeId, GraphNodeId)>
-           + DoubleEndedIterator
+           + DoubleEndedIterator<Item = (GraphEdgeId, GraphNodeId)>
            + ExactSizeIterator
            + FusedIterator
            + Clone
@@ -110,8 +109,7 @@ impl HydroflowGraph {
         &self,
         dst: GraphNodeId,
     ) -> impl '_
-           + Iterator<Item = (GraphEdgeId, GraphNodeId)>
-           + DoubleEndedIterator
+           + DoubleEndedIterator<Item = (GraphEdgeId, GraphNodeId)>
            + ExactSizeIterator
            + FusedIterator
            + Clone
@@ -124,8 +122,7 @@ impl HydroflowGraph {
         &self,
         src: GraphNodeId,
     ) -> impl '_
-           + Iterator<Item = GraphEdgeId>
-           + DoubleEndedIterator
+           + DoubleEndedIterator<Item = GraphEdgeId>
            + ExactSizeIterator
            + FusedIterator
            + Clone
@@ -138,8 +135,7 @@ impl HydroflowGraph {
         &self,
         dst: GraphNodeId,
     ) -> impl '_
-           + Iterator<Item = GraphEdgeId>
-           + DoubleEndedIterator
+           + DoubleEndedIterator<Item = GraphEdgeId>
            + ExactSizeIterator
            + FusedIterator
            + Clone
@@ -152,8 +148,7 @@ impl HydroflowGraph {
         &self,
         src: GraphNodeId,
     ) -> impl '_
-           + Iterator<Item = GraphNodeId>
-           + DoubleEndedIterator
+           + DoubleEndedIterator<Item = GraphNodeId>
            + ExactSizeIterator
            + FusedIterator
            + Clone
@@ -166,8 +161,7 @@ impl HydroflowGraph {
         &self,
         dst: GraphNodeId,
     ) -> impl '_
-           + Iterator<Item = GraphNodeId>
-           + DoubleEndedIterator
+           + DoubleEndedIterator<Item = GraphNodeId>
            + ExactSizeIterator
            + FusedIterator
            + Clone
@@ -413,8 +407,7 @@ impl HydroflowGraph {
     pub fn edges(
         &self,
     ) -> impl '_
-           + Iterator<Item = (GraphEdgeId, (GraphNodeId, GraphNodeId))>
-           + ExactSizeIterator
+           + ExactSizeIterator<Item = (GraphEdgeId, (GraphNodeId, GraphNodeId))>
            + FusedIterator
            + Clone
            + Debug {
