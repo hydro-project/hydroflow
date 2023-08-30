@@ -183,6 +183,20 @@
 <a href="#183" id="183">183</a>
 <a href="#184" id="184">184</a>
 <a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
 </pre></div><pre class="rust"><code><span class="attr">#![cfg_attr(
     feature = <span class="string">&quot;diagnostics&quot;</span>,
     feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)
@@ -337,6 +351,20 @@
     input.attrs.push(attribute);
 
     input.into_token_stream().into()
+}
+
+<span class="doccomment">/// Checks that the given closure is a morphism. For now does nothing.
+</span><span class="attr">#[proc_macro]
+</span><span class="kw">pub fn </span>morphism(item: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
+    <span class="comment">// TODO(mingwei): some sort of code analysis?
+    </span>item
+}
+
+<span class="doccomment">/// Checks that the given closure is a monotonic function. For now does nothing.
+</span><span class="attr">#[proc_macro]
+</span><span class="kw">pub fn </span>monotonic_fn(item: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
+    <span class="comment">// TODO(mingwei): some sort of code analysis?
+    </span>item
 }
 
 <span class="attr">#[proc_macro_attribute]

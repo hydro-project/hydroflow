@@ -130,6 +130,7 @@
 <a href="#130" id="130">130</a>
 <a href="#131" id="131">131</a>
 <a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -185,6 +186,7 @@
         inconsistency_tainted: <span class="bool-val">false</span>,
     },
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
+    flow_prop_fn: <span class="prelude-val">None</span>,
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
                    root,
                    context,

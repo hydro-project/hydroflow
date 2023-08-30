@@ -102,6 +102,7 @@
 <a href="#102" id="102">102</a>
 <a href="#103" id="103">103</a>
 <a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>syn::parse_quote_spanned;
 
@@ -143,6 +144,7 @@
         inconsistency_tainted: <span class="bool-val">false</span>,
     },
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
+    flow_prop_fn: <span class="prelude-val">None</span>,
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
                    root,
                    op_span,

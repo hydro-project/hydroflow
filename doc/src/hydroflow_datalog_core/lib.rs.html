@@ -1180,12 +1180,18 @@
 <a href="#1180" id="1180">1180</a>
 <a href="#1181" id="1181">1181</a>
 <a href="#1182" id="1182">1182</a>
+<a href="#1183" id="1183">1183</a>
+<a href="#1184" id="1184">1184</a>
+<a href="#1185" id="1185">1185</a>
+<a href="#1186" id="1186">1186</a>
+<a href="#1187" id="1187">1187</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap, HashSet};
 <span class="kw">use </span>std::ops::Deref;
 
 <span class="kw">use </span>hydroflow_lang::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span>hydroflow_lang::graph::{
-    eliminate_extra_unions_tees, partition_graph, FlatGraphBuilder, HydroflowGraph,
+    eliminate_extra_unions_tees, partition_graph, propegate_flow_props, FlatGraphBuilder,
+    HydroflowGraph,
 };
 <span class="kw">use </span>hydroflow_lang::parse::{
     HfStatement, IndexInt, Indexing, Pipeline, PipelineLink, PipelineStatement, PortIndex,
@@ -1501,10 +1507,14 @@
 }
 
 <span class="kw">pub fn </span>hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -&gt; TokenStream {
-    <span class="kw">let </span>partitioned_graph =
+    <span class="kw">let </span><span class="kw-2">mut </span>partitioned_graph =
         partition_graph(flat_graph).expect(<span class="string">&quot;Failed to partition (cycle detected).&quot;</span>);
 
     <span class="kw">let </span><span class="kw-2">mut </span>diagnostics = Vec::new();
+    <span class="comment">// Propgeate flow properties throughout the graph.
+    // TODO(mingwei): Should this be done at a flat graph stage instead?
+    </span><span class="kw">let _ </span>= propegate_flow_props::propegate_flow_props(<span class="kw-2">&amp;mut </span>partitioned_graph, <span class="kw-2">&amp;mut </span>diagnostics);
+
     <span class="kw">let </span>code_tokens = partitioned_graph.as_code(<span class="kw-2">&amp;</span>root, <span class="bool-val">true</span>, <span class="macro">quote::quote!</span>(), <span class="kw-2">&amp;mut </span>diagnostics);
     <span class="macro">assert_eq!</span>(
         <span class="number">0</span>,

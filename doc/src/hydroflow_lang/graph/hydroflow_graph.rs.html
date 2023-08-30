@@ -1208,6 +1208,32 @@
 <a href="#1208" id="1208">1208</a>
 <a href="#1209" id="1209">1209</a>
 <a href="#1210" id="1210">1210</a>
+<a href="#1211" id="1211">1211</a>
+<a href="#1212" id="1212">1212</a>
+<a href="#1213" id="1213">1213</a>
+<a href="#1214" id="1214">1214</a>
+<a href="#1215" id="1215">1215</a>
+<a href="#1216" id="1216">1216</a>
+<a href="#1217" id="1217">1217</a>
+<a href="#1218" id="1218">1218</a>
+<a href="#1219" id="1219">1219</a>
+<a href="#1220" id="1220">1220</a>
+<a href="#1221" id="1221">1221</a>
+<a href="#1222" id="1222">1222</a>
+<a href="#1223" id="1223">1223</a>
+<a href="#1224" id="1224">1224</a>
+<a href="#1225" id="1225">1225</a>
+<a href="#1226" id="1226">1226</a>
+<a href="#1227" id="1227">1227</a>
+<a href="#1228" id="1228">1228</a>
+<a href="#1229" id="1229">1229</a>
+<a href="#1230" id="1230">1230</a>
+<a href="#1231" id="1231">1231</a>
+<a href="#1232" id="1232">1232</a>
+<a href="#1233" id="1233">1233</a>
+<a href="#1234" id="1234">1234</a>
+<a href="#1235" id="1235">1235</a>
+<a href="#1236" id="1236">1236</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -1223,7 +1249,7 @@
 <span class="kw">use </span><span class="kw">super</span>::graph_write::{Dot, GraphWrite, Mermaid};
 <span class="kw">use </span><span class="kw">super</span>::ops::{find_op_op_constraints, OperatorWriteOutput, WriteContextArgs, OPERATORS};
 <span class="kw">use super</span>::{
-    get_operator_generics, node_color, Color, DiMulGraph, GraphEdgeId, GraphNodeId,
+    get_operator_generics, node_color, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphNodeId,
     GraphSubgraphId, Node, OperatorInstance, PortIndexValue, Varname, CONTEXT, HANDOFF_NODE_STR,
     HYDROFLOW,
 };
@@ -1231,7 +1257,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::graph::ops::null_write_iterator_fn;
 <span class="kw">use </span><span class="kw">crate</span>::pretty_span::{PrettyRowCol, PrettySpan};
 
-<span class="doccomment">/// A graph representing a hydroflow dataflow graph (with or without subgraph partitioning,
+<span class="doccomment">/// A graph representing a Hydroflow dataflow graph (with or without subgraph partitioning,
 /// stratification, and handoff insertion). This is a &quot;meta&quot; graph used for generating Rust source
 /// code in macros from Hydroflow surface sytnax.
 ///
@@ -1261,6 +1287,9 @@
 
     <span class="doccomment">/// What variable name each graph node belongs to (if any).
     </span>node_varnames: SparseSecondaryMap&lt;GraphNodeId, Varname&gt;,
+
+    <span class="doccomment">/// Stream properties.
+    </span>flow_props: SecondaryMap&lt;GraphEdgeId, FlowProps&gt;,
 }
 <span class="kw">impl </span>HydroflowGraph {
     <span class="doccomment">/// Create a new empty `HydroflowGraph`.
@@ -1303,8 +1332,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         src: GraphNodeId,
     ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_
-           </span>+ Iterator&lt;Item = (GraphEdgeId, GraphNodeId)&gt;
-           + DoubleEndedIterator
+           </span>+ DoubleEndedIterator&lt;Item = (GraphEdgeId, GraphNodeId)&gt;
            + ExactSizeIterator
            + FusedIterator
            + Clone
@@ -1317,8 +1345,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         dst: GraphNodeId,
     ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_
-           </span>+ Iterator&lt;Item = (GraphEdgeId, GraphNodeId)&gt;
-           + DoubleEndedIterator
+           </span>+ DoubleEndedIterator&lt;Item = (GraphEdgeId, GraphNodeId)&gt;
            + ExactSizeIterator
            + FusedIterator
            + Clone
@@ -1331,8 +1358,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         src: GraphNodeId,
     ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_
-           </span>+ Iterator&lt;Item = GraphEdgeId&gt;
-           + DoubleEndedIterator
+           </span>+ DoubleEndedIterator&lt;Item = GraphEdgeId&gt;
            + ExactSizeIterator
            + FusedIterator
            + Clone
@@ -1343,15 +1369,14 @@
     <span class="doccomment">/// Predecessor edges, iterator of `GraphEdgeId` of incoming edges.
     </span><span class="kw">pub fn </span>node_predecessor_edges(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        src: GraphNodeId,
+        dst: GraphNodeId,
     ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_
-           </span>+ Iterator&lt;Item = GraphEdgeId&gt;
-           + DoubleEndedIterator
+           </span>+ DoubleEndedIterator&lt;Item = GraphEdgeId&gt;
            + ExactSizeIterator
            + FusedIterator
            + Clone
            + Debug {
-        <span class="self">self</span>.graph.predecessor_edges(src)
+        <span class="self">self</span>.graph.predecessor_edges(dst)
     }
 
     <span class="doccomment">/// Successor nodes, iterator of `GraphNodeId`.
@@ -1359,8 +1384,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         src: GraphNodeId,
     ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_
-           </span>+ Iterator&lt;Item = GraphNodeId&gt;
-           + DoubleEndedIterator
+           </span>+ DoubleEndedIterator&lt;Item = GraphNodeId&gt;
            + ExactSizeIterator
            + FusedIterator
            + Clone
@@ -1371,15 +1395,14 @@
     <span class="doccomment">/// Predecessor edges, iterator of `GraphNodeId`.
     </span><span class="kw">pub fn </span>node_predecessor_nodes(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        src: GraphNodeId,
+        dst: GraphNodeId,
     ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_
-           </span>+ Iterator&lt;Item = GraphNodeId&gt;
-           + DoubleEndedIterator
+           </span>+ DoubleEndedIterator&lt;Item = GraphNodeId&gt;
            + ExactSizeIterator
            + FusedIterator
            + Clone
            + Debug {
-        <span class="self">self</span>.graph.predecessor_vertices(src)
+        <span class="self">self</span>.graph.predecessor_vertices(dst)
     }
 
     <span class="doccomment">/// Iterator of node IDs `GraphNodeId`.
@@ -1620,8 +1643,7 @@
     </span><span class="kw">pub fn </span>edges(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
     ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_
-           </span>+ Iterator&lt;Item = (GraphEdgeId, (GraphNodeId, GraphNodeId))&gt;
-           + ExactSizeIterator
+           </span>+ ExactSizeIterator&lt;Item = (GraphEdgeId, (GraphNodeId, GraphNodeId))&gt;
            + FusedIterator
            + Clone
            + Debug {
@@ -1706,6 +1728,24 @@
     <span class="doccomment">/// Returns the the stratum number of the largest (latest) stratum (inclusive).
     </span><span class="kw">pub fn </span>max_stratum(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
         <span class="self">self</span>.subgraph_stratum.values().copied().max()
+    }
+}
+<span class="comment">// Flow properties
+</span><span class="kw">impl </span>HydroflowGraph {
+    <span class="doccomment">/// Gets the flow properties associated with the edge, if set.
+    </span><span class="kw">pub fn </span>edge_flow_props(<span class="kw-2">&amp;</span><span class="self">self</span>, edge_id: GraphEdgeId) -&gt; <span class="prelude-ty">Option</span>&lt;FlowProps&gt; {
+        <span class="self">self</span>.flow_props.get(edge_id).copied()
+    }
+
+    <span class="doccomment">/// Sets the flow properties associated with the given edge.
+    ///
+    /// Returns the old flow properties, if set.
+    </span><span class="kw">pub fn </span>set_edge_flow_props(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        edge_id: GraphEdgeId,
+        flow_props: FlowProps,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;FlowProps&gt; {
+        <span class="self">self</span>.flow_props.insert(edge_id, flow_props)
     }
 }
 <span class="comment">// Display/output stuff.
@@ -1895,6 +1935,11 @@
                                 .map(|<span class="kw-2">&amp;</span>(_port, succ)| <span class="self">self</span>.node_as_ident(succ, <span class="bool-val">false</span>))
                                 .collect();
 
+                            <span class="comment">// Corresponds 1:1 to inputs.
+                            </span><span class="kw">let </span>flow_props_in = <span class="self">self</span>.graph.predecessor_edges(node_id)
+                                .map(|edge_id| <span class="self">self</span>.flow_props.get(edge_id).copied())
+                                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+
                             <span class="kw">let </span>is_pull = idx &lt; pull_to_push_idx;
 
                             <span class="kw">let </span>context_args = WriteContextArgs {
@@ -1918,6 +1963,7 @@
                                 outputs: <span class="kw-2">&amp;*</span>outputs,
                                 op_name,
                                 op_inst,
+                                flow_props_in: <span class="kw-2">&amp;*</span>flow_props_in,
                             };
 
                             <span class="kw">let </span>write_result = (op_constraints.write_fn)(<span class="kw-2">&amp;</span>context_args, diagnostics);
@@ -2272,11 +2318,13 @@
                 <span class="kw">let </span>delay_type = <span class="self">self
                     </span>.node_op_inst(dst_id)
                     .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
+                <span class="kw">let </span>flow_props = <span class="self">self</span>.edge_flow_props(edge_id);
                 <span class="kw">let </span>label = helper_edge_label(src_port, dst_port);
                 graph_write.write_edge(
                     hoff_id,
                     dst_id,
                     delay_type,
+                    flow_props,
                     label.as_deref(),
                     <span class="prelude-val">Some</span>(subgraph_id),
                 )<span class="question-mark">?</span>;
@@ -2290,11 +2338,13 @@
                         <span class="kw">let </span>delay_type = <span class="self">self</span>.node_op_inst(dst_id).and_then(|op_inst| {
                             (op_inst.op_constraints.input_delaytype_fn)(dst_port)
                         });
+                        <span class="kw">let </span>flow_props = <span class="self">self</span>.edge_flow_props(edge_id);
                         <span class="kw">let </span>label = helper_edge_label(src_port, dst_port);
                         graph_write.write_edge(
                             src_id,
                             dst_id,
                             delay_type,
+                            flow_props,
                             label.as_deref(),
                             <span class="prelude-val">Some</span>(subgraph_id),
                         )<span class="question-mark">?</span>;
@@ -2330,23 +2380,25 @@
                         Color::Hoff,
                         <span class="prelude-val">None</span>,
                     )<span class="question-mark">?</span>;
-
-                    <span class="comment">// write out edge
-                    </span><span class="kw">let </span>(src_port, dst_port) = <span class="self">self</span>.edge_ports(edge_id);
-                    <span class="kw">let </span>delay_type = <span class="self">self
-                        </span>.node_op_inst(dst_id)
-                        .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-                    <span class="kw">let </span>label = helper_edge_label(src_port, dst_port);
-                    graph_write.write_edge(src_id, dst_id, delay_type, label.as_deref(), <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
-                } <span class="kw">else if </span>barrier_handoffs.contains(<span class="kw-2">&amp;</span>dst_id) {
-                    <span class="comment">// write out edge
-                    </span><span class="kw">let </span>(src_port, dst_port) = <span class="self">self</span>.edge_ports(edge_id);
-                    <span class="kw">let </span>delay_type = <span class="self">self
-                        </span>.node_op_inst(dst_id)
-                        .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-                    <span class="kw">let </span>label = helper_edge_label(src_port, dst_port);
-                    graph_write.write_edge(src_id, dst_id, delay_type, label.as_deref(), <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+                } <span class="kw">else if </span>!barrier_handoffs.contains(<span class="kw-2">&amp;</span>dst_id) {
+                    <span class="kw">continue</span>;
                 }
+
+                <span class="comment">// write out edge
+                </span><span class="kw">let </span>(src_port, dst_port) = <span class="self">self</span>.edge_ports(edge_id);
+                <span class="kw">let </span>delay_type = <span class="self">self
+                    </span>.node_op_inst(dst_id)
+                    .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
+                <span class="kw">let </span>flow_props = <span class="self">self</span>.edge_flow_props(edge_id);
+                <span class="kw">let </span>label = helper_edge_label(src_port, dst_port);
+                graph_write.write_edge(
+                    src_id,
+                    dst_id,
+                    delay_type,
+                    flow_props,
+                    label.as_deref(),
+                    <span class="prelude-val">None</span>,
+                )<span class="question-mark">?</span>;
             }
         }
 

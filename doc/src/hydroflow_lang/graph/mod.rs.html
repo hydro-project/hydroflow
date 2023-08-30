@@ -366,6 +366,20 @@
 <a href="#366" id="366">366</a>
 <a href="#367" id="367">367</a>
 <a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Graph representation stages for Hydroflow graphs.
 
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -388,6 +402,7 @@
 <span class="kw">mod </span>eliminate_extra_unions_tees;
 <span class="kw">mod </span>flat_graph_builder;
 <span class="kw">mod </span>flat_to_partitioned;
+<span class="kw">mod </span>flow_props;
 <span class="kw">mod </span>graph_write;
 <span class="kw">mod </span>hydroflow_graph;
 
@@ -395,10 +410,12 @@
 <span class="kw">pub use </span>eliminate_extra_unions_tees::eliminate_extra_unions_tees;
 <span class="kw">pub use </span>flat_graph_builder::FlatGraphBuilder;
 <span class="kw">pub use </span>flat_to_partitioned::partition_graph;
+<span class="kw">pub use </span>flow_props::<span class="kw-2">*</span>;
 <span class="kw">pub use </span>hydroflow_graph::HydroflowGraph;
 
 <span class="kw">pub mod </span>graph_algorithms;
 <span class="kw">pub mod </span>ops;
+<span class="kw">pub mod </span>propegate_flow_props;
 
 <span class="macro">new_key_type! </span>{
     <span class="doccomment">/// ID to identify a node (operator or handoff) in [`HydroflowGraph`].
@@ -721,12 +738,23 @@
     eliminate_extra_unions_tees(<span class="kw-2">&amp;mut </span>flat_graph);
     <span class="kw">if </span>!diagnostics.iter().any(Diagnostic::is_error) {
         <span class="kw">match </span>partition_graph(flat_graph) {
-            <span class="prelude-val">Ok</span>(part_graph) =&gt; {
-                <span class="kw">let </span>code =
-                    part_graph.as_code(root, <span class="bool-val">true</span>, <span class="macro">quote::quote! </span>{ #( #uses )* }, <span class="kw-2">&amp;mut </span>diagnostics);
-                <span class="kw">if </span>!diagnostics.iter().any(Diagnostic::is_error) {
-                    <span class="comment">// Success.
-                    </span><span class="kw">return </span>(<span class="prelude-val">Some</span>((part_graph, code)), diagnostics);
+            <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>partitioned_graph) =&gt; {
+                <span class="comment">// Propgeate flow properties throughout the graph.
+                // TODO(mingwei): Should this be done at a flat graph stage instead?
+                </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(()) = propegate_flow_props::propegate_flow_props(
+                    <span class="kw-2">&amp;mut </span>partitioned_graph,
+                    <span class="kw-2">&amp;mut </span>diagnostics,
+                ) {
+                    <span class="kw">let </span>code = partitioned_graph.as_code(
+                        root,
+                        <span class="bool-val">true</span>,
+                        <span class="macro">quote::quote! </span>{ #( #uses )* },
+                        <span class="kw-2">&amp;mut </span>diagnostics,
+                    );
+                    <span class="kw">if </span>!diagnostics.iter().any(Diagnostic::is_error) {
+                        <span class="comment">// Success.
+                        </span><span class="kw">return </span>(<span class="prelude-val">Some</span>((partitioned_graph, code)), diagnostics);
+                    }
                 }
             }
             <span class="prelude-val">Err</span>(diagnostic) =&gt; diagnostics.push(diagnostic),

@@ -109,6 +109,7 @@
 <a href="#109" id="109">109</a>
 <a href="#110" id="110">110</a>
 <a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use super</span>::{
@@ -193,6 +194,7 @@
         inconsistency_tainted: <span class="bool-val">false</span>,
     },
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
+    flow_prop_fn: <span class="prelude-val">None</span>,
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
                    root,
                    op_inst:

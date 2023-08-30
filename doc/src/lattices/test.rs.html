@@ -501,7 +501,7 @@
 /// product of `items` with itself `N` times.
 </span><span class="kw">pub fn </span>cartesian_power&lt;T, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[T],
-) -&gt; <span class="kw">impl </span>Iterator&lt;Item = [<span class="kw-2">&amp;</span>T; N]&gt; + ExactSizeIterator + Clone {
+) -&gt; <span class="kw">impl </span>ExactSizeIterator&lt;Item = [<span class="kw-2">&amp;</span>T; N]&gt; + Clone {
     <span class="kw">struct </span>CartesianPower&lt;<span class="lifetime">&#39;a</span>, T, <span class="kw">const </span>N: usize&gt; {
         items: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[T],
         iters: [std::iter::Peekable&lt;std::slice::Iter&lt;<span class="lifetime">&#39;a</span>, T&gt;&gt;; N],

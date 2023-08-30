@@ -347,6 +347,9 @@
 <a href="#347" id="347">347</a>
 <a href="#348" id="348">348</a>
 <a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 </span><span class="doccomment">//! Helper utilities for the Hydroflow surface syntax.
 
@@ -355,6 +358,9 @@
 <span class="kw">pub mod </span>multiset;
 <span class="kw">pub mod </span>sparse_vec;
 <span class="kw">pub mod </span>unsync;
+
+<span class="kw">mod </span>monotonic;
+<span class="kw">pub use </span>monotonic::<span class="kw-2">*</span>;
 
 <span class="kw">mod </span>udp;
 <span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]

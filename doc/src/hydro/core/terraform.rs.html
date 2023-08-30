@@ -353,6 +353,11 @@
 <a href="#353" id="353">353</a>
 <a href="#354" id="354">354</a>
 <a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::io::{BufRead, BufReader};
 <span class="attr">#[cfg(unix)]
@@ -453,6 +458,11 @@
 
 <span class="kw">impl </span>TerraformBatch {
     <span class="kw">pub async fn </span>provision(<span class="self">self</span>, pool: <span class="kw-2">&amp;mut </span>TerraformPool) -&gt; <span class="prelude-ty">Result</span>&lt;TerraformResult&gt; {
+        <span class="comment">// Hack to quiet false-positive `clippy::needless_pass_by_ref_mut` on latest nightlies.
+        // TODO(mingwei): Remove this when it is no longer needed (current date 2023-08-30).
+        // https://github.com/rust-lang/rust-clippy/issues/11380
+        </span><span class="kw">let </span>pool = std::convert::identity(pool);
+
         <span class="kw">if </span><span class="self">self</span>.terraform.required_providers.is_empty()
             &amp;&amp; <span class="self">self</span>.resource.is_empty()
             &amp;&amp; <span class="self">self</span>.data.is_empty()

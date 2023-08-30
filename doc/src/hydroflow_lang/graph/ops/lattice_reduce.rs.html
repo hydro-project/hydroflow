@@ -109,13 +109,16 @@
 <a href="#109" id="109">109</a>
 <a href="#110" id="110">110</a>
 <a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>syn::parse_quote_spanned;
 <span class="kw">use </span>syn::spanned::Spanned;
 
 <span class="kw">use super</span>::{
     DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorCategory,
-    OperatorConstraints, OperatorInstance, WriteContextArgs, RANGE_1,
+    OperatorConstraints, OperatorInstance, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN,
+    RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::graph::ops::OperatorWriteOutput;
 
@@ -161,6 +164,7 @@
         inconsistency_tainted: <span class="bool-val">false</span>,
     },
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
+    flow_prop_fn: <span class="prelude-val">Some</span>(LATTICE_FOLD_REDUCE_FLOW_PROP_FN),
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
                    root,
                    inputs,
