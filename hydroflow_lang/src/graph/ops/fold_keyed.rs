@@ -149,6 +149,8 @@ pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
                                 -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
 
                             for kv in check_input(#input) {
+                                // TODO(mingwei): remove `unknown_lints` when `clippy::unwrap_or_default` is stabilized.
+                                #[allow(unknown_lints, clippy::unwrap_or_default)]
                                 let entry = #hashtable_ident.entry(kv.0).or_insert_with(#initfn);
                                 #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
                             }
@@ -176,6 +178,8 @@ pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
                                 -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
 
                             for kv in check_input(#input) {
+                                // TODO(mingwei): remove `unknown_lints` when `clippy::unwrap_or_default` is stabilized.
+                                #[allow(unknown_lints, clippy::unwrap_or_default)]
                                 let entry = #hashtable_ident.entry(kv.0).or_insert_with(#initfn);
                                 #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
                             }
