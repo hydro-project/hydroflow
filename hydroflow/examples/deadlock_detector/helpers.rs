@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Display, Write};
 use std::net::SocketAddr;
 
 use regex::Regex;
@@ -40,6 +40,10 @@ pub fn format_cycle<T>(cycle: Vec<T>) -> String
 where
     T: Display,
 {
-    let sep_str: String = cycle.iter().map(|i: &T| format!("{} -> ", i)).collect();
-    format!("{}{}", sep_str, cycle[0])
+    let mut sep_str = cycle.iter().fold(String::new(), |mut s, i| {
+        write!(&mut s, "{} -> ", i).unwrap();
+        s
+    });
+    write!(&mut sep_str, "{}", cycle[0]).unwrap();
+    sep_str
 }
