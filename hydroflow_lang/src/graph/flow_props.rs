@@ -12,7 +12,7 @@ pub struct FlowProps {
 }
 
 /// Type of lattice flow.
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub enum LatticeFlowType {
     /// Delta: Elements are (generally) disjoint, each new element represents incremental progress.
     Delta,
@@ -24,16 +24,6 @@ pub enum LatticeFlowType {
 impl LatticeFlowType {
     /// If it is always correct to downcast a stream flow type from `from` to `to`.
     pub fn can_downcast(from: Option<LatticeFlowType>, to: Option<LatticeFlowType>) -> bool {
-        match (from, to) {
-            (None, None) => true,
-            (None, Some(Self::Delta)) => false,
-            (None, Some(Self::Cumul)) => false,
-            (Some(Self::Delta), None) => true,
-            (Some(Self::Delta), Some(Self::Delta)) => true,
-            (Some(Self::Delta), Some(Self::Cumul)) => false,
-            (Some(Self::Cumul), None) => true,
-            (Some(Self::Cumul), Some(Self::Delta)) => true,
-            (Some(Self::Cumul), Some(Self::Cumul)) => true,
-        }
+        from >= to
     }
 }
