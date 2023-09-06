@@ -1,6 +1,6 @@
 use hydroflow::lattices::collections::SingletonSet;
 use hydroflow::lattices::set_union::{SetUnion, SetUnionHashSet, SetUnionSingletonSet};
-use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
+use hydroflow::{assert_graphvis_snapshots, hydroflow_expect_warnings, hydroflow_syntax};
 
 #[test]
 pub fn test_basic() {
@@ -29,11 +29,14 @@ pub fn test_basic() {
 
 #[test]
 pub fn test_union_warning() {
-    let mut hf = hydroflow_syntax! {
-        source_iter_delta((0..10).map(SetUnionSingletonSet::new_from)) -> [0]my_union;
-        source_iter((0..10).map(SetUnionSingletonSet::new_from)) -> [1]my_union;
+    let mut hf = hydroflow_expect_warnings! {
+        {
+            source_iter_delta((0..10).map(SetUnionSingletonSet::new_from)) -> [0]my_union;
+            source_iter((0..10).map(SetUnionSingletonSet::new_from)) -> [1]my_union;
 
-        my_union = union() -> for_each(|s| println!("{:?}", s));
+            my_union = union() -> for_each(|s| println!("{:?}", s));
+        },
+        "Warning: Input to `union()` will be downcast to `None` to match other inputs.\n  --> $FILE:0:0"
     };
     hf.run_available();
 

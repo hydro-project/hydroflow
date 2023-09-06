@@ -44,6 +44,37 @@ macro_rules! assert_var_impl {
     };
 }
 
+/// Tests that the given warnings are emitted by the hydroflow macro invocation.
+///
+/// For example usage, see `hydroflow/tests/surface_warnings.rs`.
+#[macro_export]
+macro_rules! hydroflow_expect_warnings {
+    (
+        $hf:tt,
+        $( $msg:literal ),*
+        $( , )?
+    ) => {
+        {
+            let __file = std::file!();
+            let __line = std::line!() as usize;
+            let __hf = hydroflow::hydroflow_syntax_noemit! $hf;
+
+            let diagnostics = __hf.diagnostics().expect("Expected `diagnostics()` to be set.");
+            let expecteds = &[
+                $( $msg , )*
+            ];
+            assert_eq!(diagnostics.len(), expecteds.len(), "Wrong number of diagnostics.");
+            for (expected, diagnostic) in expecteds.iter().zip(diagnostics.iter()) {
+                let mut diagnostic = diagnostic.clone();
+                diagnostic.span.line = diagnostic.span.line.saturating_sub(__line);
+                assert_eq!(expected.to_string(), diagnostic.to_string().replace(__file, "$FILE"));
+            }
+
+            __hf
+        }
+    };
+}
+
 /// Test helper, emits and checks snapshots for the mermaid and dot graphs.
 #[doc(hidden)]
 #[macro_export]
