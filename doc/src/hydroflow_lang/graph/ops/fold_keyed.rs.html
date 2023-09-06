@@ -241,6 +241,7 @@
 <a href="#241" id="241">241</a>
 <a href="#242" id="242">242</a>
 <a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 
 <span class="kw">use super</span>::{
@@ -392,11 +393,10 @@
                                 -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = (A, B)&gt; { iter }
 
                             <span class="kw">for </span>kv <span class="kw">in </span>check_input(#input) {
-                                <span class="attr">#[allow(unknown_lints)] </span><span class="comment">// TODO(mingwei): Remove this.
-                                </span><span class="attr">#[allow(clippy::unwrap_or_default)]
+                                <span class="comment">// TODO(mingwei): remove `unknown_lints` when `clippy::unwrap_or_default` is stabilized.
+                                </span><span class="attr">#[allow(unknown_lints, clippy::unwrap_or_default)]
                                 </span><span class="kw">let </span>entry = #hashtable_ident.entry(kv.<span class="number">0</span>).or_insert_with(#initfn);
-                                <span class="attr">#[allow(clippy::redundant_closure_call)]
-                                </span>(#aggfn)(entry, kv.<span class="number">1</span>);
+                                <span class="attr">#[allow(clippy::redundant_closure_call)] </span>(#aggfn)(entry, kv.<span class="number">1</span>);
                             }
                         }
 
@@ -422,7 +422,9 @@
                                 -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = (A, B)&gt; { iter }
 
                             <span class="kw">for </span>kv <span class="kw">in </span>check_input(#input) {
-                                <span class="kw">let </span>entry = #hashtable_ident.entry(kv.<span class="number">0</span>).or_insert_with(#initfn);
+                                <span class="comment">// TODO(mingwei): remove `unknown_lints` when `clippy::unwrap_or_default` is stabilized.
+                                </span><span class="attr">#[allow(unknown_lints, clippy::unwrap_or_default)]
+                                </span><span class="kw">let </span>entry = #hashtable_ident.entry(kv.<span class="number">0</span>).or_insert_with(#initfn);
                                 <span class="attr">#[allow(clippy::redundant_closure_call)] </span>(#aggfn)(entry, kv.<span class="number">1</span>);
                             }
                         }
