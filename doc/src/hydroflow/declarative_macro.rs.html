@@ -94,6 +94,37 @@
 <a href="#94" id="94">94</a>
 <a href="#95" id="95">95</a>
 <a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Hydroflow declarative macros.
 
 /// [`assert!`] but returns a [`Result&lt;(), String&gt;`] instead of panicking.
@@ -137,6 +168,37 @@
             </span><span class="kw">fn </span>assert_var_impl&lt;T: <span class="question-mark">?</span>Sized $(+ <span class="macro-nonterminal">$</span><span class="kw">trait</span>)+&gt;(<span class="macro-nonterminal">_x</span>: <span class="kw-2">&amp;</span>T) {}
             assert_var_impl(&amp; <span class="macro-nonterminal">$var</span>);
         };
+    };
+}
+
+<span class="doccomment">/// Tests that the given warnings are emitted by the hydroflow macro invocation.
+///
+/// For example usage, see `hydroflow/tests/surface_warnings.rs`.
+</span><span class="attr">#[macro_export]
+</span><span class="macro">macro_rules! </span>hydroflow_expect_warnings {
+    (
+        <span class="macro-nonterminal">$hf</span>:tt,
+        $( <span class="macro-nonterminal">$msg</span>:literal ),*
+        $( , )<span class="question-mark">?
+    </span>) =&gt; {
+        {
+            <span class="kw">let </span>__file = <span class="macro">std::file!</span>();
+            <span class="kw">let </span>__line = <span class="macro">std::line!</span>() <span class="kw">as </span>usize;
+            <span class="kw">let </span>__hf = <span class="macro">hydroflow::hydroflow_syntax_noemit! </span><span class="macro-nonterminal">$hf</span>;
+
+            <span class="kw">let </span>diagnostics = __hf.diagnostics().expect(<span class="string">&quot;Expected `diagnostics()` to be set.&quot;</span>);
+            <span class="kw">let </span>expecteds = <span class="kw-2">&amp;</span>[
+                $( <span class="macro-nonterminal">$msg </span>, )*
+            ];
+            <span class="macro">assert_eq!</span>(diagnostics.len(), expecteds.len(), <span class="string">&quot;Wrong number of diagnostics.&quot;</span>);
+            <span class="kw">for </span>(expected, diagnostic) <span class="kw">in </span>expecteds.iter().zip(diagnostics.iter()) {
+                <span class="kw">let </span><span class="kw-2">mut </span>diagnostic = diagnostic.clone();
+                diagnostic.span.line = diagnostic.span.line.saturating_sub(__line);
+                <span class="macro">assert_eq!</span>(expected.to_string(), diagnostic.to_string().replace(__file, <span class="string">&quot;$FILE&quot;</span>));
+            }
+
+            __hf
+        }
     };
 }
 
