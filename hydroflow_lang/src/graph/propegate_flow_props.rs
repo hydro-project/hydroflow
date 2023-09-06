@@ -73,6 +73,10 @@ pub fn propegate_flow_props(
                     graph.set_edge_flow_props(out_edge, flow_props);
                 }
             }
+            _ => {
+                // If a module boundary is encountered then something has gone wrong.
+                panic!();
+            }
         }
     }
     Ok(())

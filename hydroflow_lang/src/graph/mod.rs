@@ -24,6 +24,9 @@ mod flow_props;
 mod graph_write;
 mod hydroflow_graph;
 
+use std::fmt::Display;
+use std::path::PathBuf;
+
 pub use di_mul_graph::DiMulGraph;
 pub use eliminate_extra_unions_tees::eliminate_extra_unions_tees;
 pub use flat_graph_builder::FlatGraphBuilder;
@@ -52,6 +55,7 @@ const CONTEXT: &str = "context";
 const HYDROFLOW: &str = "df";
 
 const HANDOFF_NODE_STR: &str = "handoff";
+const MODULE_BOUNDARY_NODE_STR: &str = "module_boundary";
 
 mod serde_syn {
     use serde::{Deserialize, Deserializer, Serializer};
@@ -91,6 +95,18 @@ pub enum Node {
         #[serde(skip, default = "Span::call_site")]
         dst_span: Span,
     },
+
+    /// Module Boundary, used for importing modules. Only exists prior to partitioning.
+    ModuleBoundary {
+        /// If this module is an input or output boundary.
+        input: bool,
+
+        /// The span of the import!() expression that imported this module.
+        /// The value of this span when the ModuleBoundary node is still inside the module is Span::call_site()
+        /// TODO: This could one day reference into the module file itself?
+        #[serde(skip, default = "Span::call_site")]
+        import_expr: Span,
+    },
 }
 impl Node {
     /// Return the node as a human-readable string.
@@ -98,6 +114,7 @@ impl Node {
         match self {
             Node::Operator(op) => op.to_pretty_string().into(),
             Node::Handoff { .. } => HANDOFF_NODE_STR.into(),
+            Node::ModuleBoundary { .. } => MODULE_BOUNDARY_NODE_STR.into(),
         }
     }
 
@@ -106,6 +123,7 @@ impl Node {
         match self {
             Self::Operator(op) => op.span(),
             &Self::Handoff { src_span, dst_span } => src_span.join(dst_span).unwrap_or(src_span),
+            Self::ModuleBoundary { import_expr, .. } => *import_expr,
         }
     }
 }
@@ -116,6 +134,9 @@ impl std::fmt::Debug for Node {
                 write!(f, "Node::Operator({} span)", PrettySpan(operator.span()))
             }
             Self::Handoff { .. } => write!(f, "Node::Handoff"),
+            Self::ModuleBoundary { input, .. } => {
+                write!(f, "Node::ModuleBoundary{{input: {}}}", input)
+            }
         }
     }
 }
@@ -345,16 +366,32 @@ impl Ord for PortIndexValue {
     }
 }
 
+impl Display for PortIndexValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PortIndexValue::Int(x) => write!(f, "{}", x.to_token_stream().to_string()),
+            PortIndexValue::Path(x) => write!(f, "{}", x.to_token_stream().to_string()),
+            PortIndexValue::Elided(_) => write!(f, "[]"),
+        }
+    }
+}
+
 /// The main function of this module. Compiles a [`HfCode`] AST into a [`HydroflowGraph`] and
 /// source code, or [`Diagnostic`] errors.
 pub fn build_hfcode(
     hf_code: HfCode,
     root: &TokenStream,
+    macro_invocation_path: PathBuf,
 ) -> (Option<(HydroflowGraph, TokenStream)>, Vec<Diagnostic>) {
-    let flat_graph_builder = FlatGraphBuilder::from_hfcode(hf_code);
+    let flat_graph_builder = FlatGraphBuilder::from_hfcode(hf_code, macro_invocation_path);
     let (mut flat_graph, uses, mut diagnostics) = flat_graph_builder.build();
-    eliminate_extra_unions_tees(&mut flat_graph);
     if !diagnostics.iter().any(Diagnostic::is_error) {
+        if let Err(diagnostic) = flat_graph.merge_modules() {
+            diagnostics.push(diagnostic);
+            return (None, diagnostics);
+        }
+
+        eliminate_extra_unions_tees(&mut flat_graph);
         match partition_graph(flat_graph) {
             Ok(mut partitioned_graph) => {
                 // Propgeate flow properties throughout the graph.
