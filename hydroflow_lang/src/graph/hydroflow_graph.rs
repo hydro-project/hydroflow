@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::Debug;
 use std::iter::FusedIterator;
 
+use itertools::Itertools;
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::{format_ident, quote, quote_spanned, ToTokens};
 use serde::{Deserialize, Serialize};
@@ -19,6 +20,7 @@ use super::{
 };
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::null_write_iterator_fn;
+use crate::graph::MODULE_BOUNDARY_NODE_STR;
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
 /// A graph representing a Hydroflow dataflow graph (with or without subgraph partitioning,
@@ -74,6 +76,11 @@ impl HydroflowGraph {
     /// Note that no operator instances will be persent after deserialization.
     pub fn node_op_inst(&self, node_id: GraphNodeId) -> Option<&OperatorInstance> {
         self.operator_instances.get(node_id)
+    }
+
+    /// Get the debug variable name attached to a graph node.
+    pub fn node_varname(&self, node_id: GraphNodeId) -> Option<Ident> {
+        self.node_varnames.get(node_id).map(|x| x.0.clone())
     }
 
     /// Get subgraph for node.
@@ -383,6 +390,100 @@ impl HydroflowGraph {
         let (_, dst_port) = self.ports.remove(succ_edge_id).unwrap();
         self.ports.insert(new_edge_id, (src_port, dst_port));
     }
+
+    /// When modules are imported into a flat graph, they come with an input and output ModuleBoundary node.
+    /// The partitioner doesn't understand these nodes and will panic if it encounters them.
+    /// merge_modules removes them from the graph, stitching the input and ouput sides of the ModuleBondaries based on their ports
+    /// For example:
+    ///     source_iter([]) -> \[myport\]ModuleBoundary(input)\[my_port\] -> map(|x| x) -> ModuleBoundary(output) -> null();
+    /// in the above eaxmple, the \[myport\] port will be used to connect the source_iter with the map that is inside of the module.
+    /// The output module boundary has elided ports, this is also used to match up the input/output across the module boundary.
+    pub fn merge_modules(&mut self) -> Result<(), Diagnostic> {
+        let mut to_remove = Vec::new();
+
+        for (nid, node) in self.nodes() {
+            if matches!(node, Node::ModuleBoundary { .. }) {
+                to_remove.push(nid);
+            }
+        }
+
+        for nid in to_remove {
+            self.remove_module_boundary(nid)?;
+        }
+
+        Ok(())
+    }
+
+    /// see `merge_modules`
+    /// This function removes a singular module boundary from the graph and performs the necessary stitching to fix the graph aftward.
+    /// `merge_modules` calls this function for each module boundary in the graph.
+    fn remove_module_boundary(&mut self, nid: GraphNodeId) -> Result<(), Diagnostic> {
+        assert!(
+            self.node_subgraph.is_empty() && self.subgraph_nodes.is_empty(),
+            "Should not remove intermediate node after subgraph partitioning"
+        );
+
+        let mut predecessor_ports = BTreeMap::new();
+        let mut successor_ports = BTreeMap::new();
+
+        for eid in self.node_predecessor_edges(nid) {
+            let (predecessor_port, successor_port) = self.edge_ports(eid);
+            predecessor_ports.insert(successor_port.clone(), (eid, predecessor_port.clone()));
+        }
+
+        for eid in self.node_successor_edges(nid) {
+            let (predecessor_port, successor_port) = self.edge_ports(eid);
+            successor_ports.insert(predecessor_port.clone(), (eid, successor_port.clone()));
+        }
+
+        if predecessor_ports.keys().collect::<BTreeSet<_>>()
+            != successor_ports.keys().collect::<BTreeSet<_>>()
+        {
+            // get module boundary node
+            match self.node(nid) {
+                Node::ModuleBoundary { input, import_expr } => {
+                    if *input {
+                        return Err(Diagnostic {
+                            span: *import_expr,
+                            level: Level::Error,
+                            message: format!(
+                                "The ports into the module did not match. input: {:?}, expected: {:?}",
+                                predecessor_ports.keys().map(|x| x.to_string()).join(", "),
+                                successor_ports.keys().map(|x| x.to_string()).join(", ")
+                            ),
+                        });
+                    } else {
+                        return Err(Diagnostic {
+                            span: *import_expr,
+                            level: Level::Error,
+                            message: format!("The ports out of the module did not match. output: {:?}, expected: {:?}",
+                                successor_ports.keys().map(|x| x.to_string()).join(", "),
+                                predecessor_ports.keys().map(|x| x.to_string()).join(", "),
+                        )});
+                    }
+                }
+                _ => panic!(),
+            }
+        }
+
+        for (port, (predecessor_edge, predecessor_port)) in predecessor_ports {
+            let (successor_edge, successor_port) = successor_ports.remove(&port).unwrap();
+
+            let (src, _) = self.graph.remove_edge(predecessor_edge).unwrap();
+            let (_, dst) = self.graph.remove_edge(successor_edge).unwrap();
+
+            self.ports.remove(predecessor_edge);
+            self.ports.remove(successor_edge);
+
+            let eid = self.graph.insert_edge(src, dst);
+            self.ports.insert(eid, (predecessor_port, successor_port));
+        }
+
+        self.graph.remove_vertex(nid);
+        self.nodes.remove(nid);
+
+        Ok(())
+    }
 }
 // Edge methods.
 impl HydroflowGraph {
@@ -523,11 +624,13 @@ impl HydroflowGraph {
                 node_id.data(),
                 if is_pred { "recv" } else { "send" }
             ),
+            Node::ModuleBoundary { .. } => panic!(),
         };
         let span = match (is_pred, &self.nodes[node_id]) {
             (_, Node::Operator(operator)) => operator.span(),
             (true, &Node::Handoff { src_span, .. }) => src_span,
             (false, &Node::Handoff { dst_span, .. }) => dst_span,
+            (_, Node::ModuleBoundary { .. }) => panic!(),
         };
         Ident::new(&*name, span)
     }
@@ -584,6 +687,7 @@ impl HydroflowGraph {
             .filter_map(|(node_id, node)| match node {
                 Node::Operator(_) => None,
                 &Node::Handoff { src_span, dst_span } => Some((node_id, (src_span, dst_span))),
+                Node::ModuleBoundary { .. } => panic!(),
             })
             .map(|(node_id, (src_span, dst_span))| {
                 let ident_send = Ident::new(&*format!("hoff_{:?}_send", node_id.data()), dst_span);
@@ -1186,6 +1290,7 @@ impl HydroflowGraph {
                     writeln!(write, "{:?} = {};", key.data(), op.to_token_stream())?;
                 }
                 Node::Handoff { .. } => unimplemented!("HANDOFF IN FLAT GRAPH."),
+                Node::ModuleBoundary { .. } => panic!(),
             }
         }
         writeln!(write)?;
@@ -1224,6 +1329,14 @@ impl HydroflowGraph {
                 ),
                 Node::Handoff { .. } => {
                     writeln!(write, r#"    {:?}{{"{}"}}"#, key.data(), HANDOFF_NODE_STR)
+                }
+                Node::ModuleBoundary { .. } => {
+                    writeln!(
+                        write,
+                        r#"    {:?}{{"{}"}}"#,
+                        key.data(),
+                        MODULE_BOUNDARY_NODE_STR
+                    )
                 }
             }?;
         }
