@@ -266,17 +266,22 @@ pub fn gen_hydroflow_graph(
     }
 
     if !diagnostics.is_empty() {
-        Err(diagnostics)
-    } else {
-        let (mut flat_graph, _uses, mut diagnostics) = flat_graph_builder.build();
-        diagnostics.retain(Diagnostic::is_error);
-        if !diagnostics.is_empty() {
-            Err(diagnostics)
-        } else {
-            eliminate_extra_unions_tees(&mut flat_graph);
-            Ok(flat_graph)
-        }
+        return Err(diagnostics);
     }
+
+    let (mut flat_graph, _uses, mut diagnostics) = flat_graph_builder.build();
+    diagnostics.retain(Diagnostic::is_error);
+    if !diagnostics.is_empty() {
+        return Err(diagnostics);
+    }
+
+    if let Err(err) = flat_graph.merge_modules() {
+        diagnostics.push(err);
+        return Err(diagnostics);
+    }
+
+    eliminate_extra_unions_tees(&mut flat_graph);
+    Ok(flat_graph)
 }
 
 fn handle_errors(
