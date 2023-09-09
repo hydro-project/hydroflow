@@ -1,0 +1,18 @@
+[package]
+name = "hydroflow_plus_macro"
+publish = true
+version = "0.4.0"
+edition = "2021"
+license = "Apache-2.0"
+documentation = "https://docs.rs/hydroflow_plus_macro/"
+description = "Helper macros for the hydroflow_plus crate"
+
+[lib]
+proc-macro = true
+path = "src/lib.rs"
+
+[dependencies]
+quote = "1.0.0"
+syn = { version = "2.0.0", features = [ "parsing", "extra-traits", "visit" ] }
+proc-macro2 = "1.0.57"
+proc-macro-crate = "1.1.0"
