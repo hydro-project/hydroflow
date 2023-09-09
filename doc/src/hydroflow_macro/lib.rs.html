@@ -197,6 +197,18 @@
 <a href="#197" id="197">197</a>
 <a href="#198" id="198">198</a>
 <a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
 </pre></div><pre class="rust"><code><span class="attr">#![cfg_attr(
     feature = <span class="string">&quot;diagnostics&quot;</span>,
     feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)
@@ -258,9 +270,11 @@
     input: proc_macro::TokenStream,
     min_diagnostic_level: <span class="prelude-ty">Option</span>&lt;Level&gt;,
 ) -&gt; proc_macro::TokenStream {
+    <span class="kw">let </span>macro_invocation_path = proc_macro::Span::call_site().source_file().path();
+
     <span class="kw">let </span>input = <span class="macro">parse_macro_input!</span>(input <span class="kw">as </span>HfCode);
     <span class="kw">let </span>root = root();
-    <span class="kw">let </span>(graph_code_opt, diagnostics) = build_hfcode(input, <span class="kw-2">&amp;</span>root);
+    <span class="kw">let </span>(graph_code_opt, diagnostics) = build_hfcode(input, <span class="kw-2">&amp;</span>root, macro_invocation_path);
     <span class="kw">let </span>tokens = graph_code_opt
         .map(|(_graph, code)| code)
         .unwrap_or_else(|| <span class="macro">quote! </span>{ #root::scheduled::graph::Hydroflow::new() });
@@ -295,20 +309,30 @@
 /// Used for testing, users will want to use [`hydroflow_syntax!`] instead.
 </span><span class="attr">#[proc_macro]
 </span><span class="kw">pub fn </span>hydroflow_parser(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
+    <span class="kw">let </span>macro_invocation_path = proc_macro::Span::call_site().source_file().path();
+
     <span class="kw">let </span>input = <span class="macro">parse_macro_input!</span>(input <span class="kw">as </span>HfCode);
 
-    <span class="kw">let </span>flat_graph_builder = FlatGraphBuilder::from_hfcode(input);
-    <span class="kw">let </span>(flat_graph, _uses, diagnostics) = flat_graph_builder.build();
+    <span class="kw">let </span>flat_graph_builder = FlatGraphBuilder::from_hfcode(input, macro_invocation_path);
+    <span class="kw">let </span>(<span class="kw-2">mut </span>flat_graph, _uses, <span class="kw-2">mut </span>diagnostics) = flat_graph_builder.build();
+    <span class="kw">if </span>!diagnostics.iter().any(Diagnostic::is_error) {
+        <span class="kw">if let </span><span class="prelude-val">Err</span>(diagnostic) = flat_graph.merge_modules() {
+            diagnostics.push(diagnostic);
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>flat_mermaid = flat_graph.mermaid_string_flat();
+
+            <span class="kw">let </span>part_graph = partition_graph(flat_graph).unwrap();
+            <span class="kw">let </span>part_mermaid = part_graph.to_mermaid();
+
+            <span class="kw">let </span>lit0 = Literal::string(<span class="kw-2">&amp;*</span>flat_mermaid);
+            <span class="kw">let </span>lit1 = Literal::string(<span class="kw-2">&amp;*</span>part_mermaid);
+
+            <span class="kw">return </span><span class="macro">quote! </span>{ <span class="macro">println!</span>(<span class="string">&quot;{}\n\n{}\n&quot;</span>, #lit0, #lit1); }.into();
+        }
+    }
+
     diagnostics.iter().for_each(Diagnostic::emit);
-    <span class="kw">let </span>flat_mermaid = flat_graph.mermaid_string_flat();
-
-    <span class="kw">let </span>part_graph = partition_graph(flat_graph).unwrap();
-    <span class="kw">let </span>part_mermaid = part_graph.to_mermaid();
-
-    <span class="kw">let </span>lit0 = Literal::string(<span class="kw-2">&amp;*</span>flat_mermaid);
-    <span class="kw">let </span>lit1 = Literal::string(<span class="kw-2">&amp;*</span>part_mermaid);
-
-    <span class="macro">quote! </span>{ <span class="macro">println!</span>(<span class="string">&quot;{}\n\n{}\n&quot;</span>, #lit0, #lit1); }.into()
+    <span class="macro">quote! </span>{}.into()
 }
 
 <span class="attr">#[doc(hidden)]

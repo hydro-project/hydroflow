@@ -1185,6 +1185,11 @@
 <a href="#1185" id="1185">1185</a>
 <a href="#1186" id="1186">1186</a>
 <a href="#1187" id="1187">1187</a>
+<a href="#1188" id="1188">1188</a>
+<a href="#1189" id="1189">1189</a>
+<a href="#1190" id="1190">1190</a>
+<a href="#1191" id="1191">1191</a>
+<a href="#1192" id="1192">1192</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap, HashSet};
 <span class="kw">use </span>std::ops::Deref;
 
@@ -1453,17 +1458,22 @@
     }
 
     <span class="kw">if </span>!diagnostics.is_empty() {
-        <span class="prelude-val">Err</span>(diagnostics)
-    } <span class="kw">else </span>{
-        <span class="kw">let </span>(<span class="kw-2">mut </span>flat_graph, _uses, <span class="kw-2">mut </span>diagnostics) = flat_graph_builder.build();
-        diagnostics.retain(Diagnostic::is_error);
-        <span class="kw">if </span>!diagnostics.is_empty() {
-            <span class="prelude-val">Err</span>(diagnostics)
-        } <span class="kw">else </span>{
-            eliminate_extra_unions_tees(<span class="kw-2">&amp;mut </span>flat_graph);
-            <span class="prelude-val">Ok</span>(flat_graph)
-        }
+        <span class="kw">return </span><span class="prelude-val">Err</span>(diagnostics);
     }
+
+    <span class="kw">let </span>(<span class="kw-2">mut </span>flat_graph, _uses, <span class="kw-2">mut </span>diagnostics) = flat_graph_builder.build();
+    diagnostics.retain(Diagnostic::is_error);
+    <span class="kw">if </span>!diagnostics.is_empty() {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(diagnostics);
+    }
+
+    <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = flat_graph.merge_modules() {
+        diagnostics.push(err);
+        <span class="kw">return </span><span class="prelude-val">Err</span>(diagnostics);
+    }
+
+    eliminate_extra_unions_tees(<span class="kw-2">&amp;mut </span>flat_graph);
+    <span class="prelude-val">Ok</span>(flat_graph)
 }
 
 <span class="kw">fn </span>handle_errors(
