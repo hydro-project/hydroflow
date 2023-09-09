@@ -1291,7 +1291,7 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hydro_cli"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1340,7 +1340,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "bincode",
  "byteorder",
@@ -1359,6 +1359,7 @@ dependencies = [
  "hydroflow_lang",
  "hydroflow_macro",
  "insta",
+ "instant",
  "itertools",
  "lattices",
  "multiplatform_test",
@@ -1406,7 +1407,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "hydroflow_datalog_core",
  "proc-macro-crate",
@@ -1417,7 +1418,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog_core"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "hydroflow_lang",
  "insta",
@@ -1434,7 +1435,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_lang"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "auto_impl",
  "itertools",
@@ -1450,10 +1451,48 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_macro"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "hydroflow_lang",
  "itertools",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.14",
+]
+
+[[package]]
+name = "hydroflow_plus"
+version = "0.4.0"
+dependencies = [
+ "hydroflow",
+ "hydroflow_lang",
+ "hydroflow_plus_macro",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.14",
+]
+
+[[package]]
+name = "hydroflow_plus_example_flow"
+version = "0.0.0"
+dependencies = [
+ "hydroflow_plus",
+]
+
+[[package]]
+name = "hydroflow_plus_example_runtime"
+version = "0.0.0"
+dependencies = [
+ "hydroflow_plus",
+ "hydroflow_plus_example_flow",
+]
+
+[[package]]
+name = "hydroflow_plus_macro"
+version = "0.4.0"
+dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
@@ -1542,6 +1581,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a5bbe824c507c5da5956355e86a746d82e0e1464f65d862cc5e71da70e94b2c"
 dependencies = [
  "cfg-if 1.0.0",
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -1625,7 +1667,7 @@ dependencies = [
 
 [[package]]
 name = "lattices"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "cc-traits",
  "sealed",
@@ -2190,7 +2232,7 @@ dependencies = [
 
 [[package]]
 name = "pusherator"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "either",
  "variadics",

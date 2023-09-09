@@ -1,14 +1,37 @@
+mod fold;
+mod fold_from;
 mod multiset;
+mod multiset2;
+mod reduce;
 mod set;
 
-// pub use half_join_state_trait::HalfJoinState;
-pub use multiset::HalfMultisetJoinState;
-pub use set::HalfSetJoinState;
+use std::collections::hash_map::Iter;
+use std::slice;
 
-pub type SetJoinState<Key, V1, V2> = (HalfSetJoinState<Key, V1, V2>, HalfSetJoinState<Key, V2, V1>);
+pub use fold::HalfJoinStateFold;
+pub use fold_from::HalfJoinStateFoldFrom;
+pub use multiset2::HalfJoinStateMultiset;
+pub use reduce::HalfJoinStateReduce;
+pub use set::HalfSetJoinState;
+use smallvec::SmallVec;
+
+pub use self::multiset::HalfMultisetJoinState;
 
 pub trait HalfJoinState<Key, ValBuild, ValProbe> {
+    /// Insert a key value pair into the join state, currently this is always inserting into a hash table
+    /// If the key-value pair exists then it is implementation defined what happens, usually either two copies are stored or only one copy is stored.
     fn build(&mut self, k: Key, v: &ValBuild) -> bool;
-    fn probe(&mut self, k: &Key, v: &ValProbe);
+
+    /// This function does the actual joining part of the join. It looks up a key in the local join state and creates matches
+    /// The first match is return directly to the caller, and any additional matches are stored internally to be retrieved later with `pop_match`
+    fn probe(&mut self, k: &Key, v: &ValProbe) -> Option<(Key, ValProbe, ValBuild)>;
+
+    /// If there are any stored matches from previous calls to probe then this function will remove them one at a time and return it.
     fn pop_match(&mut self) -> Option<(Key, ValProbe, ValBuild)>;
+    fn len(&self) -> usize;
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+    fn iter(&self) -> Iter<'_, Key, SmallVec<[ValBuild; 1]>>;
+    fn full_probe(&self, k: &Key) -> slice::Iter<'_, ValBuild>;
 }

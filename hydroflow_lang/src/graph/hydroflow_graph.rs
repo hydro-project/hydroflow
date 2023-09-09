@@ -13,7 +13,7 @@ use syn::spanned::Spanned;
 use super::graph_write::{Dot, GraphWrite, Mermaid};
 use super::ops::{find_op_op_constraints, OperatorWriteOutput, WriteContextArgs, OPERATORS};
 use super::{
-    get_operator_generics, node_color, Color, DiMulGraph, GraphEdgeId, GraphNodeId,
+    get_operator_generics, node_color, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphNodeId,
     GraphSubgraphId, Node, OperatorInstance, PortIndexValue, Varname, CONTEXT, HANDOFF_NODE_STR,
     HYDROFLOW,
 };
@@ -21,7 +21,7 @@ use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::null_write_iterator_fn;
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 
-/// A graph representing a hydroflow dataflow graph (with or without subgraph partitioning,
+/// A graph representing a Hydroflow dataflow graph (with or without subgraph partitioning,
 /// stratification, and handoff insertion). This is a "meta" graph used for generating Rust source
 /// code in macros from Hydroflow surface sytnax.
 ///
@@ -51,6 +51,9 @@ pub struct HydroflowGraph {
 
     /// What variable name each graph node belongs to (if any).
     node_varnames: SparseSecondaryMap<GraphNodeId, Varname>,
+
+    /// Stream properties.
+    flow_props: SecondaryMap<GraphEdgeId, FlowProps>,
 }
 impl HydroflowGraph {
     /// Create a new empty `HydroflowGraph`.
@@ -93,8 +96,7 @@ impl HydroflowGraph {
         &self,
         src: GraphNodeId,
     ) -> impl '_
-           + Iterator<Item = (GraphEdgeId, GraphNodeId)>
-           + DoubleEndedIterator
+           + DoubleEndedIterator<Item = (GraphEdgeId, GraphNodeId)>
            + ExactSizeIterator
            + FusedIterator
            + Clone
@@ -107,8 +109,7 @@ impl HydroflowGraph {
         &self,
         dst: GraphNodeId,
     ) -> impl '_
-           + Iterator<Item = (GraphEdgeId, GraphNodeId)>
-           + DoubleEndedIterator
+           + DoubleEndedIterator<Item = (GraphEdgeId, GraphNodeId)>
            + ExactSizeIterator
            + FusedIterator
            + Clone
@@ -121,8 +122,7 @@ impl HydroflowGraph {
         &self,
         src: GraphNodeId,
     ) -> impl '_
-           + Iterator<Item = GraphEdgeId>
-           + DoubleEndedIterator
+           + DoubleEndedIterator<Item = GraphEdgeId>
            + ExactSizeIterator
            + FusedIterator
            + Clone
@@ -133,15 +133,14 @@ impl HydroflowGraph {
     /// Predecessor edges, iterator of `GraphEdgeId` of incoming edges.
     pub fn node_predecessor_edges(
         &self,
-        src: GraphNodeId,
+        dst: GraphNodeId,
     ) -> impl '_
-           + Iterator<Item = GraphEdgeId>
-           + DoubleEndedIterator
+           + DoubleEndedIterator<Item = GraphEdgeId>
            + ExactSizeIterator
            + FusedIterator
            + Clone
            + Debug {
-        self.graph.predecessor_edges(src)
+        self.graph.predecessor_edges(dst)
     }
 
     /// Successor nodes, iterator of `GraphNodeId`.
@@ -149,8 +148,7 @@ impl HydroflowGraph {
         &self,
         src: GraphNodeId,
     ) -> impl '_
-           + Iterator<Item = GraphNodeId>
-           + DoubleEndedIterator
+           + DoubleEndedIterator<Item = GraphNodeId>
            + ExactSizeIterator
            + FusedIterator
            + Clone
@@ -161,15 +159,14 @@ impl HydroflowGraph {
     /// Predecessor edges, iterator of `GraphNodeId`.
     pub fn node_predecessor_nodes(
         &self,
-        src: GraphNodeId,
+        dst: GraphNodeId,
     ) -> impl '_
-           + Iterator<Item = GraphNodeId>
-           + DoubleEndedIterator
+           + DoubleEndedIterator<Item = GraphNodeId>
            + ExactSizeIterator
            + FusedIterator
            + Clone
            + Debug {
-        self.graph.predecessor_vertices(src)
+        self.graph.predecessor_vertices(dst)
     }
 
     /// Iterator of node IDs `GraphNodeId`.
@@ -410,8 +407,7 @@ impl HydroflowGraph {
     pub fn edges(
         &self,
     ) -> impl '_
-           + Iterator<Item = (GraphEdgeId, (GraphNodeId, GraphNodeId))>
-           + ExactSizeIterator
+           + ExactSizeIterator<Item = (GraphEdgeId, (GraphNodeId, GraphNodeId))>
            + FusedIterator
            + Clone
            + Debug {
@@ -496,6 +492,24 @@ impl HydroflowGraph {
     /// Returns the the stratum number of the largest (latest) stratum (inclusive).
     pub fn max_stratum(&self) -> Option<usize> {
         self.subgraph_stratum.values().copied().max()
+    }
+}
+// Flow properties
+impl HydroflowGraph {
+    /// Gets the flow properties associated with the edge, if set.
+    pub fn edge_flow_props(&self, edge_id: GraphEdgeId) -> Option<FlowProps> {
+        self.flow_props.get(edge_id).copied()
+    }
+
+    /// Sets the flow properties associated with the given edge.
+    ///
+    /// Returns the old flow properties, if set.
+    pub fn set_edge_flow_props(
+        &mut self,
+        edge_id: GraphEdgeId,
+        flow_props: FlowProps,
+    ) -> Option<FlowProps> {
+        self.flow_props.insert(edge_id, flow_props)
     }
 }
 // Display/output stuff.
@@ -685,6 +699,11 @@ impl HydroflowGraph {
                                 .map(|&(_port, succ)| self.node_as_ident(succ, false))
                                 .collect();
 
+                            // Corresponds 1:1 to inputs.
+                            let flow_props_in = self.graph.predecessor_edges(node_id)
+                                .map(|edge_id| self.flow_props.get(edge_id).copied())
+                                .collect::<Vec<_>>();
+
                             let is_pull = idx < pull_to_push_idx;
 
                             let context_args = WriteContextArgs {
@@ -708,6 +727,7 @@ impl HydroflowGraph {
                                 outputs: &*outputs,
                                 op_name,
                                 op_inst,
+                                flow_props_in: &*flow_props_in,
                             };
 
                             let write_result = (op_constraints.write_fn)(&context_args, diagnostics);
@@ -810,6 +830,8 @@ impl HydroflowGraph {
 
                     {
                         // Determine pull and push halves of the `Pivot`.
+                        #[allow(unknown_lints)]
+                        #[allow(clippy::redundant_locals)] // https://github.com/rust-lang/rust-clippy/issues/11290
                         let pull_to_push_idx = pull_to_push_idx;
                         let pull_ident =
                             self.node_as_ident(subgraph_nodes[pull_to_push_idx - 1], false);
@@ -821,10 +843,9 @@ impl HydroflowGraph {
                             self.node_as_ident(node_id, false)
                         } else {
                             // Entire subgraph is pull (except for a single send/push handoff output).
-                            assert_eq!(
-                                1,
-                                send_ports.len(),
-                                "If entire subgraph is pull, should have only one handoff output. Do you have a loose `null()` or other degenerate pipeline somewhere?"
+                            assert!(
+                                1 == send_ports.len(),
+                                "Degenerate subgraph detected, is there a disconnected `null()` or other degenerate pipeline somewhere?"
                             );
                             send_ports[0].clone()
                         };
@@ -1061,11 +1082,13 @@ impl HydroflowGraph {
                 let delay_type = self
                     .node_op_inst(dst_id)
                     .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
+                let flow_props = self.edge_flow_props(edge_id);
                 let label = helper_edge_label(src_port, dst_port);
                 graph_write.write_edge(
                     hoff_id,
                     dst_id,
                     delay_type,
+                    flow_props,
                     label.as_deref(),
                     Some(subgraph_id),
                 )?;
@@ -1079,11 +1102,13 @@ impl HydroflowGraph {
                         let delay_type = self.node_op_inst(dst_id).and_then(|op_inst| {
                             (op_inst.op_constraints.input_delaytype_fn)(dst_port)
                         });
+                        let flow_props = self.edge_flow_props(edge_id);
                         let label = helper_edge_label(src_port, dst_port);
                         graph_write.write_edge(
                             src_id,
                             dst_id,
                             delay_type,
+                            flow_props,
                             label.as_deref(),
                             Some(subgraph_id),
                         )?;
@@ -1119,23 +1144,25 @@ impl HydroflowGraph {
                         Color::Hoff,
                         None,
                     )?;
-
-                    // write out edge
-                    let (src_port, dst_port) = self.edge_ports(edge_id);
-                    let delay_type = self
-                        .node_op_inst(dst_id)
-                        .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-                    let label = helper_edge_label(src_port, dst_port);
-                    graph_write.write_edge(src_id, dst_id, delay_type, label.as_deref(), None)?;
-                } else if barrier_handoffs.contains(&dst_id) {
-                    // write out edge
-                    let (src_port, dst_port) = self.edge_ports(edge_id);
-                    let delay_type = self
-                        .node_op_inst(dst_id)
-                        .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-                    let label = helper_edge_label(src_port, dst_port);
-                    graph_write.write_edge(src_id, dst_id, delay_type, label.as_deref(), None)?;
+                } else if !barrier_handoffs.contains(&dst_id) {
+                    continue;
                 }
+
+                // write out edge
+                let (src_port, dst_port) = self.edge_ports(edge_id);
+                let delay_type = self
+                    .node_op_inst(dst_id)
+                    .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
+                let flow_props = self.edge_flow_props(edge_id);
+                let label = helper_edge_label(src_port, dst_port);
+                graph_write.write_edge(
+                    src_id,
+                    dst_id,
+                    delay_type,
+                    flow_props,
+                    label.as_deref(),
+                    None,
+                )?;
             }
         }
 

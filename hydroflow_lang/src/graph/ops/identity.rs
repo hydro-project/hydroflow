@@ -41,5 +41,6 @@ pub const IDENTITY: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
+    flow_prop_fn: None,
     write_fn: IDENTITY_WRITE_FN,
 };

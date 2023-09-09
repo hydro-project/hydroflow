@@ -50,9 +50,9 @@ digraph {
     n9v1 -> n12v1
     n10v1 -> n11v1
     n11v1 [label="(n11v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
-    n11v1 -> n5v1
+    n11v1 -> n5v1 [arrowhead=dot, color=red]
     n12v1 -> n13v1
     n13v1 [label="(n13v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
-    n13v1 -> n4v1
+    n13v1 -> n4v1 [arrowhead=dot, color=red]
 }
 

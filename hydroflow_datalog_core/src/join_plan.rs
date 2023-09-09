@@ -153,10 +153,10 @@ fn find_relation_local_constraints<'a>(
     let mut indices_grouped_by_var = BTreeMap::new();
     for (i, ident) in fields.enumerate() {
         if let IdentOrUnderscore::Ident(ident) = ident.deref() {
-            let entry = indices_grouped_by_var
+            let entry: &mut Vec<_> = indices_grouped_by_var
                 // TODO(shadaj): Can we avoid cloning here?
                 .entry(ident.name.clone())
-                .or_insert_with(Vec::new);
+                .or_default();
             entry.push(i);
         }
     }
@@ -596,7 +596,7 @@ pub fn expand_join_plan(
             let inner_name = inner_expanded.name.clone();
             let row_type = inner_expanded.tuple_type;
 
-            if let IdentOrUnderscore::Ident(less_than) = less_than.deref() {
+            if let IdentOrUnderscore::Ident(less_than) = less_than {
                 if inner_expanded
                     .variable_mapping
                     .contains_key(&less_than.name)
@@ -605,7 +605,7 @@ pub fn expand_join_plan(
                 }
             }
 
-            let threshold_name = if let IdentOrUnderscore::Ident(threshold) = threshold.deref() {
+            let threshold_name = if let IdentOrUnderscore::Ident(threshold) = threshold {
                 threshold.name.clone()
             } else {
                 panic!("The threshold must be a variable")
@@ -633,7 +633,7 @@ pub fn expand_join_plan(
                 flattened_elements.push(parse_quote!(row.#syn_wildcard_idx.clone()));
             }
 
-            if let IdentOrUnderscore::Ident(less_than) = less_than.deref() {
+            if let IdentOrUnderscore::Ident(less_than) = less_than {
                 if less_than.name == threshold_name {
                     panic!("The threshold and less_than variables must be different")
                 }

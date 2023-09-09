@@ -13,7 +13,7 @@ import { getLines } from '../../../src/util';
 > * Multiple message types and the [`demux`](../syntax/surface_ops_gen.md#demux) operator.
 > * A broadcast pattern via the [`cross_join`](../syntax/surface_ops_gen.md#cross_join) operator.
 > * One-time bootstrapping pipelines
-> * A "gated buffer" pattern via `cross_join` with a single-object input.
+> * A "gated buffer" using [`defer_signal`](../syntax/surface_ops_gen.md#defer_signal) and [`persist`](../syntax/surface_ops_gen.md#persist) operators
 
 Our previous [echo server](./example_7_echo_server) example was admittedly simplistic.  In this example, we'll build something a bit more useful: a simple chat server. We will again have two roles: a `Client` and a `Server`. `Clients` will register their presence with the `Server`, which maintains a list of clients. Each `Client` sends messages to the `Server`, which will then broadcast those messages to all other clients.
 
@@ -143,7 +143,7 @@ end
 ### `client.rs`
 The chat client is not very different from the echo server client, with two new design patterns:
  1. a `initialize` operator that runs once to "bootstrap" action in the first tick
- 2. the use of `cross_join` as a "gated buffer" to postpone sending messages.
+ 2. the use of `defer_signal` and `persist` as a "gated buffer" to postpone sending messages.
 
 We also include a Rust helper routine `pretty_print_msg` for formatting output.
 
@@ -170,12 +170,12 @@ bottom of your `src/client.rs` file.
 It starts with the `initialize` operator that emits a single, opaque "unit" (`()`) value. This value is emitted when the client begins, which means
 this pipeline runs once, immediately on startup, and generates a single `ConnectRequest` message which is sent to the server.
 
-2. The second pipeline reads from `source_stdin` and sends messages to the server. It differs from our echo-server example in the use of a `cross_join`
-with `inbound_chan[acks]`. This cross-join is similar to that of the server: it forms pairs between all messages and all servers that send a `ConnectResponse` ack.
-In principle this means that the client is broadcasting each message to all servers.
-In practice, however, the client establishes at most one connection to a server. Hence over time, this pipeline starts with zero `ConnectResponse`s and is sending no messages;
-subsequently it receives a single `ConnectResponse` and starts sending messages. The `cross_join` is thus effectively a buffer for messages, and a "gate" on that buffer that opens
-when the client receives its sole `ConnectResponse`.
+2. The second pipeline reads from `source_stdin` and sends messages to the server. It differs from our echo-server example in the use of the [`defer_signal`](../syntax/surface_ops_gen.md#defer_signal) operator, which buffers up messages until a `ConnectResponse` is received. The flow assigned to the `lines`
+variable takes chat messages from stdin and passes them to the `[input]` channel of the  `defer_signal`. 
+The `defer_signal` operator buffers these messages until it gets an input on its `[signal]` channel. Then all `[input]` data buffered from previous ticks is passed along to the output, along with any data that streams in during the current tick. 
+In our chat example, we want messages to be sent to the server in *all subsequent ticks* after `ConnectResponse` is received! To enforce this, we need to send something on the `[signal]` channel of `defer_signal` every subsequent tick. We achieve this by interposing a `persist` between `inbound_chan[acks]` and `[signal]msg_send`. The [`persist`](../syntax/surface_ops_gen.md#persist) operator stores its input data in order across time, and replays its current contents
+each tick. In this case it is storing `ConnectResponse` messages, of which we expect only one. The
+`persist` op will replay this signal every tick after it is received, so the client will always send its messages to the server once connected.
 
 3. The final pipeline simply pretty-prints the messages received from the server.
 

@@ -156,7 +156,7 @@ mod test {
     use crate::ord::Max;
     use crate::set_union::SetUnionHashSet;
     use crate::test::{
-        check_lattice_bot, check_lattice_ord, check_lattice_properties, check_lattice_top,
+        check_lattice_is_bot, check_lattice_is_top, check_lattice_ord, check_lattice_properties,
         check_partial_ord_properties,
     };
     use crate::WithTop;
@@ -176,7 +176,7 @@ mod test {
 
         check_lattice_ord(&test_vec);
         check_partial_ord_properties(&test_vec);
-        check_lattice_bot(&test_vec);
+        check_lattice_is_bot(&test_vec);
         // DomPair is not actually a lattice.
         assert!(std::panic::catch_unwind(|| check_lattice_properties(&test_vec)).is_err());
     }
@@ -208,8 +208,8 @@ mod test {
 
         check_lattice_ord(&test_vec);
         check_partial_ord_properties(&test_vec);
-        check_lattice_bot(&test_vec);
-        check_lattice_top(&test_vec);
+        check_lattice_is_bot(&test_vec);
+        check_lattice_is_top(&test_vec);
         // DomPair is not actually a lattice.
         assert!(std::panic::catch_unwind(|| check_lattice_properties(&test_vec)).is_err());
     }

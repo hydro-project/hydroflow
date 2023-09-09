@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::collect_ready;
+use hydroflow::util::multiset::HashMultiSet;
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
 use multiplatform_test::multiplatform_test;
 
@@ -204,94 +205,63 @@ pub fn test_cross_join() {
 
     let mut df = hydroflow_syntax! {
         cj = cross_join() -> for_each(|v| out_send.send(v).unwrap());
-        source_iter([1, 2, 3]) -> [0]cj;
-        source_iter(["a", "b", "c"]) -> [1]cj;
+        source_iter([1, 2, 2, 3]) -> [0]cj;
+        source_iter(["a", "b", "c", "c"]) -> [1]cj;
     };
     df.run_available();
 
-    let out: HashSet<_> = collect_ready(&mut out_recv);
-    assert_eq!(3 * 3, out.len());
-    for n in [1, 2, 3] {
-        for c in ["a", "b", "c"] {
-            assert!(out.contains(&(n, c)));
-        }
-    }
+    let mut out: Vec<_> = collect_ready(&mut out_recv);
+    out.sort();
+    assert_eq!(
+        out,
+        [
+            (1, "a"),
+            (1, "b"),
+            (1, "c"),
+            (2, "a"),
+            (2, "b"),
+            (2, "c"),
+            (3, "a"),
+            (3, "b"),
+            (3, "c")
+        ]
+    );
 }
 
 #[multiplatform_test]
-pub fn test_lattice_join() {
-    use hydroflow::lattices::Max;
+pub fn test_cross_join_multiset() {
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, &str)>();
 
-    // 'static, 'tick.
-    {
-        let (out_tx, mut out_rx) =
-            hydroflow::util::unbounded_channel::<(usize, (Max<usize>, Max<usize>))>();
-        let (lhs_tx, lhs_rx) = hydroflow::util::unbounded_channel::<(usize, Max<usize>)>();
-        let (rhs_tx, rhs_rx) = hydroflow::util::unbounded_channel::<(usize, Max<usize>)>();
+    let mut df = hydroflow_syntax! {
+        cj = cross_join_multiset() -> for_each(|v| out_send.send(v).unwrap());
+        source_iter([1, 2, 2, 3]) -> [0]cj;
+        source_iter(["a", "b", "c", "c"]) -> [1]cj;
+    };
+    df.run_available();
 
-        let mut df = hydroflow_syntax! {
-            my_join = lattice_join::<'static, 'tick, Max<usize>, Max<usize>>();
-
-            source_stream(lhs_rx) -> [0]my_join;
-            source_stream(rhs_rx) -> [1]my_join;
-
-            my_join -> for_each(|v| out_tx.send(v).unwrap());
-        };
-
-        // Merges forward correctly, without going backward
-        lhs_tx.send((7, Max::new(3))).unwrap();
-        lhs_tx.send((7, Max::new(4))).unwrap();
-        rhs_tx.send((7, Max::new(6))).unwrap();
-        rhs_tx.send((7, Max::new(5))).unwrap();
-
-        df.run_tick();
-
-        let out: Vec<_> = collect_ready(&mut out_rx);
-        assert_eq!(out, vec![(7, (Max::new(4), Max::new(6)))]);
-
-        // Forgets rhs state
-        rhs_tx.send((7, Max::new(6))).unwrap();
-        rhs_tx.send((7, Max::new(5))).unwrap();
-
-        df.run_tick();
-
-        let out: Vec<_> = collect_ready(&mut out_rx);
-        assert_eq!(out, vec![(7, (Max::new(4), Max::new(6)))]);
-    }
-
-    // 'static, 'static.
-    {
-        let (out_tx, mut out_rx) =
-            hydroflow::util::unbounded_channel::<(usize, (Max<usize>, Max<usize>))>();
-        let (lhs_tx, lhs_rx) = hydroflow::util::unbounded_channel::<(usize, Max<usize>)>();
-        let (rhs_tx, rhs_rx) = hydroflow::util::unbounded_channel::<(usize, Max<usize>)>();
-
-        let mut df = hydroflow_syntax! {
-            my_join = lattice_join::<'static, 'static, Max<usize>, Max<usize>>();
-
-            source_stream(lhs_rx) -> [0]my_join;
-            source_stream(rhs_rx) -> [1]my_join;
-
-            my_join -> for_each(|v| out_tx.send(v).unwrap());
-        };
-
-        lhs_tx.send((7, Max::new(3))).unwrap();
-        lhs_tx.send((7, Max::new(4))).unwrap();
-        rhs_tx.send((7, Max::new(6))).unwrap();
-        rhs_tx.send((7, Max::new(5))).unwrap();
-
-        df.run_tick();
-        let out: Vec<_> = collect_ready(&mut out_rx);
-        assert_eq!(out, vec![(7, (Max::new(4), Max::new(6)))]);
-
-        // Doesn't produce unless a lattice has changed.
-        lhs_tx.send((7, Max::new(4))).unwrap();
-        rhs_tx.send((7, Max::new(5))).unwrap();
-
-        df.run_tick();
-        let out: Vec<_> = collect_ready(&mut out_rx);
-        assert_eq!(out, vec![]);
-    }
+    let mut out: Vec<_> = collect_ready(&mut out_recv);
+    out.sort();
+    assert_eq!(
+        out,
+        [
+            (1, "a"),
+            (1, "b"),
+            (1, "c"),
+            (1, "c"),
+            (2, "a"),
+            (2, "a"),
+            (2, "b"),
+            (2, "b"),
+            (2, "c"),
+            (2, "c"),
+            (2, "c"),
+            (2, "c"),
+            (3, "a"),
+            (3, "b"),
+            (3, "c"),
+            (3, "c"),
+        ]
+    );
 }
 
 #[multiplatform_test]
@@ -316,8 +286,10 @@ pub fn test_defer_tick() {
     flow.run_tick();
 
     flow.run_available();
-    let out: Vec<_> = collect_ready(&mut out_recv);
-    assert_eq!(&[1, 2, 3, 4, 5, 6], &*out);
+    assert_eq!(
+        HashMultiSet::from_iter([1, 2, 3, 4, 5, 6]),
+        collect_ready(&mut out_recv)
+    );
 }
 
 #[multiplatform_test]
@@ -326,12 +298,12 @@ pub fn test_anti_join() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let mut flow = hydroflow::hydroflow_syntax! {
         inp = source_stream(inp_recv) -> tee();
-        diff = anti_join() -> for_each(|x| out_send.send(x).unwrap());
+        diff = anti_join() -> sort() -> for_each(|x| out_send.send(x).unwrap());
         inp -> [pos]diff;
         inp -> defer_tick() -> map(|x: (usize, usize)| x.0) -> [neg]diff;
     };
 
-    for x in [(1, 2), (2, 3), (3, 4), (4, 5)] {
+    for x in [(1, 2), (1, 2), (2, 3), (3, 4), (4, 5)] {
         inp_send.send(x).unwrap();
     }
     flow.run_tick();
@@ -344,6 +316,159 @@ pub fn test_anti_join() {
     flow.run_available();
     let out: Vec<_> = collect_ready(&mut out_recv);
     assert_eq!(&[(1, 2), (2, 3), (3, 4), (4, 5), (5, 4), (6, 5)], &*out);
+}
+
+#[multiplatform_test]
+pub fn test_anti_join_static() {
+    let (pos_send, pos_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (neg_send, neg_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let mut flow = hydroflow::hydroflow_syntax! {
+        pos = source_stream(pos_recv);
+        neg = source_stream(neg_recv);
+        pos -> [pos]diff_static;
+        neg -> [neg]diff_static;
+        diff_static = anti_join::<'static>() -> sort() -> for_each(|x| out_send.send(x).unwrap());
+    };
+
+    for x in [(1, 2), (1, 2), (200, 3), (300, 4), (400, 5), (5, 6)] {
+        pos_send.send(x).unwrap();
+    }
+    for x in [200, 300] {
+        neg_send.send(x).unwrap();
+    }
+    flow.run_tick();
+    let out: Vec<_> = collect_ready(&mut out_recv);
+    assert_eq!(&[(1, 2), (5, 6), (400, 5)], &*out);
+
+    neg_send.send(400).unwrap();
+
+    flow.run_available();
+    let out: Vec<_> = collect_ready(&mut out_recv);
+    assert_eq!(&[(1, 2), (5, 6)], &*out);
+}
+
+#[multiplatform_test]
+pub fn test_anti_join_tick_static() {
+    let (pos_send, pos_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (neg_send, neg_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let mut flow = hydroflow::hydroflow_syntax! {
+        pos = source_stream(pos_recv);
+        neg = source_stream(neg_recv);
+        pos -> [pos]diff_static;
+        neg -> [neg]diff_static;
+        diff_static = anti_join::<'tick, 'static>() -> sort() -> for_each(|x| out_send.send(x).unwrap());
+    };
+
+    for x in [(1, 2), (1, 2), (200, 3), (300, 4), (400, 5), (5, 6)] {
+        pos_send.send(x).unwrap();
+    }
+    for x in [200, 300] {
+        neg_send.send(x).unwrap();
+    }
+    flow.run_tick();
+    let out: Vec<_> = collect_ready(&mut out_recv);
+    assert_eq!(&[(1, 2), (5, 6), (400, 5)], &*out);
+
+    for x in [(10, 10), (10, 10), (200, 5)] {
+        pos_send.send(x).unwrap();
+    }
+
+    flow.run_available();
+    let out: Vec<_> = collect_ready(&mut out_recv);
+    assert_eq!(&[(10, 10)], &*out);
+}
+
+#[multiplatform_test]
+pub fn test_anti_join_multiset_tick_static() {
+    let (pos_send, pos_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (neg_send, neg_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let mut flow = hydroflow::hydroflow_syntax! {
+        pos = source_stream(pos_recv);
+        neg = source_stream(neg_recv);
+        pos -> [pos]diff_static;
+        neg -> [neg]diff_static;
+        diff_static = anti_join_multiset::<'tick, 'static>() -> sort() -> for_each(|x| out_send.send(x).unwrap());
+    };
+
+    for x in [(1, 2), (1, 2), (200, 3), (300, 4), (400, 5), (5, 6)] {
+        pos_send.send(x).unwrap();
+    }
+    for x in [200, 300] {
+        neg_send.send(x).unwrap();
+    }
+    flow.run_tick();
+    let out: Vec<_> = collect_ready(&mut out_recv);
+    assert_eq!(&[(1, 2), (1, 2), (5, 6), (400, 5),], &*out);
+
+    for x in [(10, 10), (10, 10), (200, 5)] {
+        pos_send.send(x).unwrap();
+    }
+
+    flow.run_available();
+    let out: Vec<_> = collect_ready(&mut out_recv);
+    assert_eq!(&[(10, 10), (10, 10)], &*out);
+}
+
+#[multiplatform_test]
+pub fn test_anti_join_multiset_static() {
+    let (pos_send, pos_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (neg_send, neg_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let mut flow = hydroflow::hydroflow_syntax! {
+        pos = source_stream(pos_recv);
+        neg = source_stream(neg_recv);
+        pos -> [pos]diff_static;
+        neg -> [neg]diff_static;
+        diff_static = anti_join_multiset::<'static>() -> sort() -> for_each(|x| out_send.send(x).unwrap());
+    };
+
+    for x in [(1, 2), (1, 2), (200, 3), (300, 4), (400, 5), (5, 6)] {
+        pos_send.send(x).unwrap();
+    }
+    for x in [200, 300] {
+        neg_send.send(x).unwrap();
+    }
+    flow.run_tick();
+    let out: Vec<_> = collect_ready(&mut out_recv);
+    assert_eq!(&[(1, 2), (1, 2), (5, 6), (400, 5)], &*out);
+
+    neg_send.send(400).unwrap();
+
+    flow.run_available();
+    let out: Vec<_> = collect_ready(&mut out_recv);
+    assert_eq!(&[(1, 2), (1, 2), (5, 6)], &*out);
+}
+
+#[multiplatform_test]
+pub fn test_anti_join_multiset() {
+    let (inp_send, inp_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let mut flow = hydroflow::hydroflow_syntax! {
+        inp = source_stream(inp_recv) -> tee();
+        diff = anti_join_multiset() -> sort() -> for_each(|x| out_send.send(x).unwrap());
+        inp -> [pos]diff;
+        inp -> defer_tick() -> map(|x: (usize, usize)| x.0) -> [neg]diff;
+    };
+
+    for x in [(1, 2), (1, 2), (2, 3), (3, 4), (4, 5)] {
+        inp_send.send(x).unwrap();
+    }
+    flow.run_tick();
+
+    for x in [(3, 2), (4, 3), (5, 4), (6, 5)] {
+        inp_send.send(x).unwrap();
+    }
+    flow.run_tick();
+
+    flow.run_available();
+    let out: Vec<_> = collect_ready(&mut out_recv);
+    assert_eq!(
+        &[(1, 2), (1, 2), (2, 3), (3, 4), (4, 5), (5, 4), (6, 5)],
+        &*out
+    );
 }
 
 #[multiplatform_test]

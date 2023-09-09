@@ -3,8 +3,12 @@
 
 pub mod clear;
 pub mod monotonic_map;
+pub mod multiset;
 pub mod sparse_vec;
 pub mod unsync;
+
+mod monotonic;
+pub use monotonic::*;
 
 mod udp;
 #[cfg(not(target_arch = "wasm32"))]
@@ -283,7 +287,11 @@ pub struct DroppableChild(Child);
 
 impl Drop for DroppableChild {
     fn drop(&mut self) {
+        #[cfg(target_family = "windows")]
+        let _ = self.0.kill(); // Windows throws `PermissionDenied` if the process has already exited.
+        #[cfg(not(target_family = "windows"))]
         self.0.kill().unwrap();
+
         self.0.wait().unwrap();
     }
 }

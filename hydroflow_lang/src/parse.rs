@@ -1,4 +1,5 @@
 //! AST for surface syntax, modelled on [`syn`]'s ASTs.
+#![allow(missing_docs)]
 
 use std::hash::Hash;
 

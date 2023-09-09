@@ -85,6 +85,7 @@ pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| Some(DelayType::Stratum),
+    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    hydroflow,
                    context,
@@ -148,8 +149,11 @@ pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
                                 -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
 
                             for kv in check_input(#input) {
+                                #[allow(unknown_lints)] // TODO(mingwei): Remove this.
+                                #[allow(clippy::unwrap_or_default)]
                                 let entry = #hashtable_ident.entry(kv.0).or_insert_with(#initfn);
-                                #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
+                                #[allow(clippy::redundant_closure_call)]
+                                (#aggfn)(entry, kv.1);
                             }
                         }
 

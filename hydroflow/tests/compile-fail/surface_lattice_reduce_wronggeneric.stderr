@@ -1,3 +1,9 @@
+warning: `lattice_reduce` expects lattice flow input, has sequential input. This may be an error in the future.
+ --> tests/compile-fail/surface_lattice_reduce_wronggeneric.rs:6:16
+  |
+6 |             -> lattice_reduce::<'static, hydroflow::lattices::set_union::SetUnionHashSet<u32>>()
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 error[E0271]: expected `Drain<'_, {integer}>` to be an iterator that yields `SetUnion<HashSet<u32>>`, but it yields `{integer}`
  --> tests/compile-fail/surface_lattice_reduce_wronggeneric.rs:5:9
   |

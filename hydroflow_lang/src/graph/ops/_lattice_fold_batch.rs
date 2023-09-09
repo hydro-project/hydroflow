@@ -11,10 +11,10 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 ///
 /// Batches streaming input and releases it downstream when a signal is delivered. This allows for buffering data and delivering it later while also folding it into a single lattice data structure.
 /// This operator is similar to `defer_signal` in that it batches input and releases it when a signal is given. It is also similar to `lattice_fold` in that it folds the input into a single lattice.
-/// So, `lattice_batch` is a combination of both `defer_signal` and `lattice_fold`. This operator is useful when trying to combine a sequence of `defer_signal` and `lattice_fold` operators without unnecessary memory consumption.
+/// So, `_lattice_fold_batch` is a combination of both `defer_signal` and `lattice_fold`. This operator is useful when trying to combine a sequence of `defer_signal` and `lattice_fold` operators without unnecessary memory consumption.
 ///
-/// There are two inputs to `lattice_batch`, they are `input` and `signal`.
-/// `input` is the input data flow. Data that is delivered on this input is collected in order inside of the `lattice_batch` operator.
+/// There are two inputs to `_lattice_fold_batch`, they are `input` and `signal`.
+/// `input` is the input data flow. Data that is delivered on this input is collected in order inside of the `_lattice_fold_batch` operator.
 /// When anything is sent to `signal` the collected data is released downstream. The entire `signal` input is consumed each tick, so sending 5 things on `signal` will not release inputs on the next 5 consecutive ticks.
 ///
 /// ```hydroflow
@@ -28,12 +28,12 @@ use crate::graph::{OpInstGenerics, OperatorInstance};
 /// source_iter([()])
 ///     -> [signal]batcher;
 ///
-/// batcher = lattice_batch::<SetUnionHashSet<usize>>()
+/// batcher = _lattice_fold_batch::<SetUnionHashSet<usize>>()
 ///     -> assert_eq([SetUnionHashSet::new_from([1, 2, 3])]);
 /// ```
-pub const LATTICE_BATCH: OperatorConstraints = OperatorConstraints {
-    name: "lattice_batch",
-    categories: &[OperatorCategory::LatticeFold],
+pub const _LATTICE_FOLD_BATCH: OperatorConstraints = OperatorConstraints {
+    name: "_lattice_fold_batch",
+    categories: &[OperatorCategory::CompilerFusionOperator],
     persistence_args: RANGE_0,
     type_args: &(0..=1),
     hard_range_inn: &(2..=2),
@@ -50,6 +50,7 @@ pub const LATTICE_BATCH: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| Some(DelayType::Stratum),
+    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    context,
                    hydroflow,

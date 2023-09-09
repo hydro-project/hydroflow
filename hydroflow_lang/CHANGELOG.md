@@ -5,7 +5,122 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.0 (2023-08-15)
+
+### Chore
+
+ - <csr-id-d6db9cd22a3d63bcc65dafd5bc0ca663ecc553d7/> Allow `clippy::redundant_locals`, for latest nightlies
+ - <csr-id-949db02e9fa9878e1a7176c180d6f44c5cddf052/> fix lints for latest nightly
+ - <csr-id-f60053f70da3071c54de4a0eabb059a143aa2ccc/> fix lint, format errors for latest nightly version (without updated pinned)
+   For nightly version (d9c13cd45 2023-07-05)
+
+### New Features
+
+ - <csr-id-b4b9644a19e8e7e7725c9c5b88e3a6b8c2be7364/> Add `use` statements to hydroflow syntax
+   And use in doc tests.
+ - <csr-id-fe02f23649312bb64c5d0c8870edf578e516f397/> add `iter_batches_stream` util to break up iterator into per-tick batches
+   * Also tightens up a bit of `assert_eq`'s code
+ - <csr-id-8f306e2a36582e168417808099eedf8a9de3b419/> rename assert => assert_eq, add assert, change underlying implementation to work across ticks
+ - <csr-id-871002267e3c03da83729ecc2d028f3c7b5c18d2/> make batch take two inputs [input] and [signal]
+
+### Bug Fixes
+
+ - <csr-id-d378e5eada3d2bae90f98c5a33b2d055940a8c7f/> unify antijoin and difference with set and multiset semantics
+   * fix: unify antijoin and difference with set and multiset semantics
+   
+   * fix: replay semantics for antijoin and difference now work
+   also added cross_join_multiset
+   
+   * fix: enforce sort for tests of anti_join and difference using assert_eq
+   
+   * fix: advance __borrow_ident beyond the current tick to prevent replay loops
+   
+   * fix: add modified snapshots
+   
+   * fix: temp
+   
+   * fix: spelling typo in comment
+   
+   * fix: make anti_join replay more efficient
+   
+   Also add multiset data structure, use it in some tests, make join()
+   replay logic more similar to anti_join's and presist's.
+   
+   * fix: ignore test that depends on order of antijoin
+   
+   * fix: really ignore test_index
+   
+   * fix: fix specific test ordering in wasm
+   
+   ---------
+ - <csr-id-cc959c762c3a0e036e672801c615028cbfb95168/> joins now replay correctly
+ - <csr-id-ebba38230df134b04dd38c1df7c6de8712e3122e/> lattice_batch now takes [input] and [signal]
+ - <csr-id-a55fc74dc1ebbe26b49359a104beb48d7f6cd449/> make all operators 'tick by default
+ - <csr-id-6c98bbc2bd3443fe6f77e0b8689b461edde1b316/> rename next_tick -> defer, batch -> defer_signal
+ - <csr-id-2d53110336b2da5a16887c3d72101da72b2362bb/> `py_udf` operator feature gating
+
+### New Features (BREAKING)
+
+ - <csr-id-7a3b4c04779ea38bfa06c246882fa8dfb52bc8f1/> add fused joins, make lattice_join replay correctly
+   * feat!: add fused joins, make lattice_join replay correctly
+   
+   * address comments
+   
+   * fix clippy
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 16 commits contributed to the release over the course of 39 calendar days.
+ - 42 days passed between releases.
+ - 14 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 16 unique issues were worked on: [#820](https://github.com/hydro-project/hydroflow/issues/820), [#821](https://github.com/hydro-project/hydroflow/issues/821), [#822](https://github.com/hydro-project/hydroflow/issues/822), [#823](https://github.com/hydro-project/hydroflow/issues/823), [#833](https://github.com/hydro-project/hydroflow/issues/833), [#835](https://github.com/hydro-project/hydroflow/issues/835), [#840](https://github.com/hydro-project/hydroflow/issues/840), [#843](https://github.com/hydro-project/hydroflow/issues/843), [#844](https://github.com/hydro-project/hydroflow/issues/844), [#845](https://github.com/hydro-project/hydroflow/issues/845), [#851](https://github.com/hydro-project/hydroflow/issues/851), [#853](https://github.com/hydro-project/hydroflow/issues/853), [#861](https://github.com/hydro-project/hydroflow/issues/861), [#870](https://github.com/hydro-project/hydroflow/issues/870), [#872](https://github.com/hydro-project/hydroflow/issues/872), [#873](https://github.com/hydro-project/hydroflow/issues/873)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#820](https://github.com/hydro-project/hydroflow/issues/820)**
+    - Make batch take two inputs [input] and [signal] ([`8710022`](https://github.com/hydro-project/hydroflow/commit/871002267e3c03da83729ecc2d028f3c7b5c18d2))
+ * **[#821](https://github.com/hydro-project/hydroflow/issues/821)**
+    - `py_udf` operator feature gating ([`2d53110`](https://github.com/hydro-project/hydroflow/commit/2d53110336b2da5a16887c3d72101da72b2362bb))
+ * **[#822](https://github.com/hydro-project/hydroflow/issues/822)**
+    - Fix lint, format errors for latest nightly version (without updated pinned) ([`f60053f`](https://github.com/hydro-project/hydroflow/commit/f60053f70da3071c54de4a0eabb059a143aa2ccc))
+ * **[#823](https://github.com/hydro-project/hydroflow/issues/823)**
+    - Book/doc edits ([`4bdd556`](https://github.com/hydro-project/hydroflow/commit/4bdd5568fa0a6674f650f91a029fab302cbf14f4))
+ * **[#833](https://github.com/hydro-project/hydroflow/issues/833)**
+    - Rename next_tick -> defer, batch -> defer_signal ([`6c98bbc`](https://github.com/hydro-project/hydroflow/commit/6c98bbc2bd3443fe6f77e0b8689b461edde1b316))
+ * **[#835](https://github.com/hydro-project/hydroflow/issues/835)**
+    - Rename assert => assert_eq, add assert, change underlying implementation to work across ticks ([`8f306e2`](https://github.com/hydro-project/hydroflow/commit/8f306e2a36582e168417808099eedf8a9de3b419))
+ * **[#840](https://github.com/hydro-project/hydroflow/issues/840)**
+    - Make all operators 'tick by default ([`a55fc74`](https://github.com/hydro-project/hydroflow/commit/a55fc74dc1ebbe26b49359a104beb48d7f6cd449))
+ * **[#843](https://github.com/hydro-project/hydroflow/issues/843)**
+    - Add `iter_batches_stream` util to break up iterator into per-tick batches ([`fe02f23`](https://github.com/hydro-project/hydroflow/commit/fe02f23649312bb64c5d0c8870edf578e516f397))
+ * **[#844](https://github.com/hydro-project/hydroflow/issues/844)**
+    - Fix lints for latest nightly ([`949db02`](https://github.com/hydro-project/hydroflow/commit/949db02e9fa9878e1a7176c180d6f44c5cddf052))
+ * **[#845](https://github.com/hydro-project/hydroflow/issues/845)**
+    - Add `use` statements to hydroflow syntax ([`b4b9644`](https://github.com/hydro-project/hydroflow/commit/b4b9644a19e8e7e7725c9c5b88e3a6b8c2be7364))
+ * **[#851](https://github.com/hydro-project/hydroflow/issues/851)**
+    - Lattice_batch now takes [input] and [signal] ([`ebba382`](https://github.com/hydro-project/hydroflow/commit/ebba38230df134b04dd38c1df7c6de8712e3122e))
+ * **[#853](https://github.com/hydro-project/hydroflow/issues/853)**
+    - Book updates ([`2e57445`](https://github.com/hydro-project/hydroflow/commit/2e574457246ac5bd231745a8ad068558859698ef))
+ * **[#861](https://github.com/hydro-project/hydroflow/issues/861)**
+    - Add fused joins, make lattice_join replay correctly ([`7a3b4c0`](https://github.com/hydro-project/hydroflow/commit/7a3b4c04779ea38bfa06c246882fa8dfb52bc8f1))
+ * **[#870](https://github.com/hydro-project/hydroflow/issues/870)**
+    - Joins now replay correctly ([`cc959c7`](https://github.com/hydro-project/hydroflow/commit/cc959c762c3a0e036e672801c615028cbfb95168))
+ * **[#872](https://github.com/hydro-project/hydroflow/issues/872)**
+    - Unify antijoin and difference with set and multiset semantics ([`d378e5e`](https://github.com/hydro-project/hydroflow/commit/d378e5eada3d2bae90f98c5a33b2d055940a8c7f))
+ * **[#873](https://github.com/hydro-project/hydroflow/issues/873)**
+    - Allow `clippy::redundant_locals`, for latest nightlies ([`d6db9cd`](https://github.com/hydro-project/hydroflow/commit/d6db9cd22a3d63bcc65dafd5bc0ca663ecc553d7))
+</details>
+
 ## 0.3.0 (2023-07-04)
+
+<csr-id-70c88a51c4c83a4dc2fc67a0cd344786a4ff26f7/>
+<csr-id-4a727ecf1232e0f03f5300547282bfbe73342cfa/>
 
 ### Documentation
 
@@ -16,39 +131,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### New Features
 
+<csr-id-6323980e83bee27a8233a69a35734b5970336701/>
+<csr-id-010524615bb78288e339e03880c4dd3b432b6d7f/>
+<csr-id-d83b049e4d643617a2b15b3dbf1698aa79846aeb/>
+<csr-id-ea65349d241873f8460d7a8b024d64c63180246f/>
+<csr-id-22abcaff806c7de6e4a7725656bbcf201e7d9259/>
+
  - <csr-id-b435bbb1d64d60f1248fdcd636635b15954e7325/> fold and reduce take accumulated value by mutable reference
    * feat: fold and reduce take accumulated value by mutable reference
-   
-   * address comments
- - <csr-id-6323980e83bee27a8233a69a35734b5970336701/> add lattice_reduce and lattice_fold
-   * feat: add lattice_reduce and lattice_fold
-   
-   * address comments
-   
-   * simplify lattice fold a bit
-   
-   * address comments
- - <csr-id-010524615bb78288e339e03880c4dd3b432b6d7f/> add join_multiset()
-   * feat: add join_multiset()
-   
-   also remove documentation about HalfJoinMultiset, the way to access
-   that now is to use join_multiset()
-   
-   * address comments
-   
-   * fix assert
- - <csr-id-d83b049e4d643617a2b15b3dbf1698aa79846aeb/> add assert() operator
-   * feat: add assert() operator
-   
-   * update: change for_each -> assert, make doctest use run_avaialble()
-   
-   * don't run tests that panic in wasm
-   
-   * update comments
-   
-   * address comments
- - <csr-id-ea65349d241873f8460d7a8b024d64c63180246f/> emit `compile_error!` diagnostics for stable
- - <csr-id-22abcaff806c7de6e4a7725656bbcf201e7d9259/> allow stable build, refactors behind `nightly` feature flag
+* address comments
+* feat: add lattice_reduce and lattice_fold
+* address comments
+* simplify lattice fold a bit
+* address comments
+* feat: add join_multiset()
+* address comments
+* fix assert
+* feat: add assert() operator
+* update: change for_each -> assert, make doctest use run_avaialble()
+* don't run tests that panic in wasm
+* update comments
+* address comments
 
 ### Bug Fixes
 
@@ -78,7 +181,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 16 commits contributed to the release over the course of 32 calendar days.
+ - 17 commits contributed to the release over the course of 31 calendar days.
  - 33 days passed between releases.
  - 14 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 15 unique issues were worked on: [#741](https://github.com/hydro-project/hydroflow/issues/741), [#765](https://github.com/hydro-project/hydroflow/issues/765), [#773](https://github.com/hydro-project/hydroflow/issues/773), [#774](https://github.com/hydro-project/hydroflow/issues/774), [#775](https://github.com/hydro-project/hydroflow/issues/775), [#778](https://github.com/hydro-project/hydroflow/issues/778), [#780](https://github.com/hydro-project/hydroflow/issues/780), [#784](https://github.com/hydro-project/hydroflow/issues/784), [#789](https://github.com/hydro-project/hydroflow/issues/789), [#792](https://github.com/hydro-project/hydroflow/issues/792), [#799](https://github.com/hydro-project/hydroflow/issues/799), [#801](https://github.com/hydro-project/hydroflow/issues/801), [#803](https://github.com/hydro-project/hydroflow/issues/803), [#804](https://github.com/hydro-project/hydroflow/issues/804), [#809](https://github.com/hydro-project/hydroflow/issues/809)
@@ -120,7 +223,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Add join_multiset() ([`0105246`](https://github.com/hydro-project/hydroflow/commit/010524615bb78288e339e03880c4dd3b432b6d7f))
  * **[#809](https://github.com/hydro-project/hydroflow/issues/809)**
     - Fold and reduce take accumulated value by mutable reference ([`b435bbb`](https://github.com/hydro-project/hydroflow/commit/b435bbb1d64d60f1248fdcd636635b15954e7325))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.3.0, hydroflow_lang v0.3.0, hydroflow_datalog_core v0.3.0, hydroflow_datalog v0.3.0, hydroflow_macro v0.3.0, lattices v0.3.0, pusherator v0.0.2, hydroflow v0.3.0, hydro_cli v0.3.0, safety bump 5 crates ([`ec9633e`](https://github.com/hydro-project/hydroflow/commit/ec9633e2e393c2bf106223abeb0b680200fbdf84))
 </details>
+
+<csr-unknown>
+ add lattice_reduce and lattice_fold add join_multiset()also remove documentation about HalfJoinMultiset, the way to accessthat now is to use join_multiset() add assert() operator emit compile_error! diagnostics for stable allow stable build, refactors behind nightly feature flag<csr-unknown/>
 
 ## 0.2.0 (2023-05-31)
 

@@ -16,10 +16,10 @@ subgraph sg_2v1 ["sg_2v1 stratum 0"]
     1v1[\"(1v1) <code>union()</code>"/]:::pullClass
     2v1[/"(2v1) <code>tee()</code>"\]:::pushClass
     6v1[/"(6v1) <code>for_each(|x| output_inner.borrow_mut().push(x))</code>"\]:::pushClass
-    3v1--0--->1v1
-    5v1--1--->1v1
-    1v1--->2v1
-    2v1--1--->6v1
+    3v1-->|0|1v1
+    5v1-->|1|1v1
+    1v1-->2v1
+    2v1-->|1|6v1
     subgraph sg_2v1_var_a ["var <tt>a</tt>"]
         1v1
         2v1
@@ -28,13 +28,13 @@ end
 subgraph sg_3v1 ["sg_3v1 stratum 1"]
     9v1[\"(9v1) <code>identity()</code>"/]:::pullClass
 end
-2v1--0--->8v1
-4v1--->7v1
+2v1-->|0|8v1
+4v1-->7v1
 7v1["(7v1) <code>handoff</code>"]:::otherClass
-7v1--->5v1
+7v1-->5v1
 8v1["(8v1) <code>handoff</code>"]:::otherClass
-8v1--->9v1
-9v1--->10v1
+8v1-->9v1
+9v1-->10v1
 10v1["(10v1) <code>handoff</code>"]:::otherClass
-10v1--->4v1
+10v1--o4v1
 

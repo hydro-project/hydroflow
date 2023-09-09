@@ -226,7 +226,7 @@ pub fn run_server<RX>(
                     -> map(|(key, reg)| MapUnionSingletonMap::new_from((key, reg)))
                     -> [input]batcher;
 
-                batcher = lattice_batch::<MapUnionHashMap<_, _>>()
+                batcher = _lattice_fold_batch::<MapUnionHashMap<_, _>>()
                     -> map(|lattice| {
                         use bincode::Options;
                         let serialization_options = options();
@@ -244,7 +244,7 @@ pub fn run_server<RX>(
                     -> for_each(|(node_id, serialized_req)| transducer_to_peers_tx.try_send((serialized_req, node_id)).unwrap());
 
                 // join for lookups
-                lookup = lattice_join::<'static, 'tick, MyLastWriteWins<BUFFER_SIZE>, MySetUnion>();
+                lookup = _lattice_join_fused_join::<'static, 'tick, MyLastWriteWins<BUFFER_SIZE>, MySetUnion>();
 
                 client_input[store]
                     // -> inspect(|x| println!("{server_id}:{:5}: stores-into-lookup: {x:?}", context.current_tick()))

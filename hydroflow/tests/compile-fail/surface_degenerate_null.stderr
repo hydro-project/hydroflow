@@ -7,6 +7,4 @@ error: proc macro panicked
 7 | |     };
   | |_____^
   |
-  = help: message: assertion failed: `(left == right)`
-            left: `1`,
-           right: `0`: If entire subgraph is pull, should have only one handoff output. Do you have a loose `null()` or other degenerate pipeline somewhere?
+  = help: message: Degenerate subgraph detected, is there a disconnected `null()` or other degenerate pipeline somewhere?

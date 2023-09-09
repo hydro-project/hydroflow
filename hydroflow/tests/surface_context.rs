@@ -1,4 +1,9 @@
+use std::cell::Cell;
+use std::rc::Rc;
+
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
+use hydroflow_macro::hydroflow_test;
+use instant::{Duration, Instant};
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
@@ -23,4 +28,63 @@ pub fn test_context_mut() {
     };
     assert_graphvis_snapshots!(df);
     df.run_available();
+}
+
+#[multiplatform_test]
+pub fn test_context_current_tick_start() {
+    let mut df = hydroflow_syntax! {
+        source_iter([()])
+            -> map(|_| context.current_tick_start())
+            -> defer_tick()
+            -> assert(|t: &hydroflow::instant::Instant| t.elapsed().as_nanos() > 0)
+            -> for_each(|t: hydroflow::instant::Instant| println!("Time between ticks: {:?}", t.elapsed()));
+    };
+    assert_graphvis_snapshots!(df);
+    df.run_available();
+}
+
+#[multiplatform_test(hydroflow)]
+pub async fn test_context_current_tick_start_does_not_count_time_between_ticks_async() {
+    let time = Rc::new(Cell::new(None));
+
+    let mut df = {
+        let time = time.clone();
+        hydroflow_syntax! {
+            source_iter([()])
+                -> persist()
+                -> for_each(|_| time.set(Some(Instant::now() - context.current_tick_start())));
+        }
+    };
+    assert_graphvis_snapshots!(df);
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    df.run_tick();
+    assert!(time.take().unwrap() < Duration::from_millis(50));
+
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    df.run_tick();
+    assert!(time.take().unwrap() < Duration::from_millis(50));
+
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    df.run_available();
+    assert!(time.take().unwrap() < Duration::from_millis(50));
+
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    df.run_available_async().await;
+    assert!(time.take().unwrap() < Duration::from_millis(50));
+}
+
+#[hydroflow_test]
+pub async fn test_defered_tick_and_no_io_with_run_async() {
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+
+    let mut df = hydroflow_syntax! {
+        source_iter([()])
+            -> defer_tick()
+            -> for_each(|_| tx.send(()).unwrap());
+    };
+
+    tokio::select! {
+        _ = df.run_async() => {},
+        _ = rx.recv() => {},
+    }
 }
