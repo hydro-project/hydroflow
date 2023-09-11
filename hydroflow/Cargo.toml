@@ -1,7 +1,7 @@
 [package]
 name = "hydroflow"
 publish = true
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 license = "Apache-2.0"
 documentation = "https://docs.rs/hydroflow/"
@@ -31,12 +31,12 @@ byteorder = "1.4.3"
 bytes = "1.1.0"
 futures = "0.3"
 hydroflow_cli_integration = { optional = true, path = "../hydroflow_cli_integration", version = "^0.3.0" }
-hydroflow_datalog = { optional = true, path = "../hydroflow_datalog", version = "^0.3.0" }
-hydroflow_lang = { path = "../hydroflow_lang", version = "^0.3.0" }
-hydroflow_macro = { optional = true, path = "../hydroflow_macro", version = "^0.3.0" }
+hydroflow_datalog = { optional = true, path = "../hydroflow_datalog", version = "^0.4.0" }
+hydroflow_lang = { path = "../hydroflow_lang", version = "^0.4.0" }
+hydroflow_macro = { optional = true, path = "../hydroflow_macro", version = "^0.4.0" }
 itertools = "0.10"
-lattices = { path = "../lattices", version = "^0.3.0", features = [ "serde" ] }
-pusherator = { path = "../pusherator", version = "^0.0.2" }
+lattices = { path = "../lattices", version = "^0.4.0", features = [ "serde" ] }
+pusherator = { path = "../pusherator", version = "^0.0.3" }
 pyo3 = { optional = true, version = "0.18" }
 ref-cast = "1.0"
 regex = "1.8.4"
@@ -49,6 +49,7 @@ smallvec = "1.10.0"
 tokio-stream = { version = "0.1.10", features = [ "io-util", "sync" ] }
 tracing = "0.1"
 variadics = { path = "../variadics", version = "^0.0.2" }
+instant = { version = "0.1.12", features = ["wasm-bindgen"] } # Instant::now() is not supported on wasm, use this shim instead.
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1.16", features = [ "full" ] }

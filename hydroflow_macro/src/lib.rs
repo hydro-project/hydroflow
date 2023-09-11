@@ -59,9 +59,11 @@ fn hydroflow_syntax_internal(
     input: proc_macro::TokenStream,
     min_diagnostic_level: Option<Level>,
 ) -> proc_macro::TokenStream {
+    let macro_invocation_path = proc_macro::Span::call_site().source_file().path();
+
     let input = parse_macro_input!(input as HfCode);
     let root = root();
-    let (graph_code_opt, diagnostics) = build_hfcode(input, &root);
+    let (graph_code_opt, diagnostics) = build_hfcode(input, &root, macro_invocation_path);
     let tokens = graph_code_opt
         .map(|(_graph, code)| code)
         .unwrap_or_else(|| quote! { #root::scheduled::graph::Hydroflow::new() });
@@ -96,20 +98,30 @@ fn hydroflow_syntax_internal(
 /// Used for testing, users will want to use [`hydroflow_syntax!`] instead.
 #[proc_macro]
 pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let macro_invocation_path = proc_macro::Span::call_site().source_file().path();
+
     let input = parse_macro_input!(input as HfCode);
 
-    let flat_graph_builder = FlatGraphBuilder::from_hfcode(input);
-    let (flat_graph, _uses, diagnostics) = flat_graph_builder.build();
+    let flat_graph_builder = FlatGraphBuilder::from_hfcode(input, macro_invocation_path);
+    let (mut flat_graph, _uses, mut diagnostics) = flat_graph_builder.build();
+    if !diagnostics.iter().any(Diagnostic::is_error) {
+        if let Err(diagnostic) = flat_graph.merge_modules() {
+            diagnostics.push(diagnostic);
+        } else {
+            let flat_mermaid = flat_graph.mermaid_string_flat();
+
+            let part_graph = partition_graph(flat_graph).unwrap();
+            let part_mermaid = part_graph.to_mermaid();
+
+            let lit0 = Literal::string(&*flat_mermaid);
+            let lit1 = Literal::string(&*part_mermaid);
+
+            return quote! { println!("{}\n\n{}\n", #lit0, #lit1); }.into();
+        }
+    }
+
     diagnostics.iter().for_each(Diagnostic::emit);
-    let flat_mermaid = flat_graph.mermaid_string_flat();
-
-    let part_graph = partition_graph(flat_graph).unwrap();
-    let part_mermaid = part_graph.to_mermaid();
-
-    let lit0 = Literal::string(&*flat_mermaid);
-    let lit1 = Literal::string(&*part_mermaid);
-
-    quote! { println!("{}\n\n{}\n", #lit0, #lit1); }.into()
+    quote! {}.into()
 }
 
 #[doc(hidden)]
@@ -152,6 +164,20 @@ fn hydroflow_wrap(item: proc_macro::TokenStream, attribute: Attribute) -> proc_m
     input.attrs.push(attribute);
 
     input.into_token_stream().into()
+}
+
+/// Checks that the given closure is a morphism. For now does nothing.
+#[proc_macro]
+pub fn morphism(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    // TODO(mingwei): some sort of code analysis?
+    item
+}
+
+/// Checks that the given closure is a monotonic function. For now does nothing.
+#[proc_macro]
+pub fn monotonic_fn(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    // TODO(mingwei): some sort of code analysis?
+    item
 }
 
 #[proc_macro_attribute]

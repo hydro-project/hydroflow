@@ -16,15 +16,15 @@ end
 subgraph sg_3v1 ["sg_3v1 stratum 1"]
     1v1[\"(1v1) <code>defer_signal()</code>"/]:::pullClass
     4v1[/"(4v1) <code>for_each(|x| egress_tx.send(x).unwrap())</code>"\]:::pushClass
-    1v1--->4v1
+    1v1-->4v1
     subgraph sg_3v1_var_gate ["var <tt>gate</tt>"]
         1v1
     end
 end
-2v1--->5v1
-3v1--->6v1
+2v1-->5v1
+3v1-->6v1
 5v1["(5v1) <code>handoff</code>"]:::otherClass
-5v1==input===o1v1
+5v1--x|input|1v1
 6v1["(6v1) <code>handoff</code>"]:::otherClass
-6v1==signal===o1v1
+6v1--x|signal|1v1
 

@@ -15,13 +15,13 @@ subgraph sg_1v1 ["sg_1v1 stratum 0"]
     7v1[\"(7v1) <code>union()</code>"/]:::pullClass
     8v1[/"(8v1) <code>tee()</code>"\]:::pushClass
     15v1["(15v1) <code>handoff</code>"]:::otherClass
-    15v1--->4v1
-    1v1--base--->7v1
-    4v1--0--->5v1
-    5v1--->6v1
-    6v1--cycle--->7v1
-    7v1--->8v1
-    8v1--0--->15v1
+    15v1-->4v1
+    1v1-->|base|7v1
+    4v1-->|0|5v1
+    5v1-->6v1
+    6v1-->|cycle|7v1
+    7v1-->8v1
+    8v1-->|0|15v1
     subgraph sg_1v1_var_my_join ["var <tt>my_join</tt>"]
         5v1
         6v1
@@ -41,11 +41,11 @@ subgraph sg_2v1 ["sg_2v1 stratum 0"]
     10v1[/"(10v1) <code>tee()</code>"\]:::pushClass
     12v1[/"(12v1) <code>unique()</code>"\]:::pushClass
     13v1[/"(13v1) <code>for_each(|v| println!(&quot;Received vertex: {}&quot;, v))</code>"\]:::pushClass
-    2v1--->3v1
-    3v1--0--->9v1
-    9v1--->10v1
-    10v1--1--->12v1
-    12v1--->13v1
+    2v1-->3v1
+    3v1-->|0|9v1
+    9v1-->10v1
+    10v1-->|1|12v1
+    12v1-->13v1
     subgraph sg_2v1_var_all_vertices ["var <tt>all_vertices</tt>"]
         9v1
         10v1
@@ -58,20 +58,20 @@ end
 subgraph sg_3v1 ["sg_3v1 stratum 1"]
     11v1[\"(11v1) <code>difference()</code>"/]:::pullClass
     14v1[/"(14v1) <code>for_each(|v| println!(&quot;unreached_vertices vertex: {}&quot;, v))</code>"\]:::pushClass
-    11v1--->14v1
+    11v1-->14v1
     subgraph sg_3v1_var_unreached_vertices ["var <tt>unreached_vertices</tt>"]
         11v1
     end
 end
-3v1--1--->16v1
-8v1--1--->18v1
-10v1--0--->17v1
+3v1-->|1|16v1
+8v1-->|1|18v1
+10v1-->|0|17v1
 16v1["(16v1) <code>handoff</code>"]:::otherClass
-16v1--1--->5v1
+16v1-->|1|5v1
 17v1["(17v1) <code>handoff</code>"]:::otherClass
-17v1--pos--->11v1
+17v1-->|pos|11v1
 18v1["(18v1) <code>handoff</code>"]:::otherClass
-18v1==neg===o11v1
+18v1--x|neg|11v1
 
 Received vertex: 5
 Received vertex: 10

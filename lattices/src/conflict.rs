@@ -12,7 +12,7 @@ use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 ///
 /// This can be used to wrap non-lattice (scalar) data into a lattice type.
 #[repr(transparent)]
-#[derive(Copy, Clone, Debug, Default, Eq)]
+#[derive(Copy, Clone, Debug, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Conflict<T>(Option<T>);
 impl<T> Conflict<T> {
@@ -106,7 +106,10 @@ impl<T> IsTop for Conflict<T> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::test::check_all;
+    use crate::test::{
+        check_all, check_lattice_is_bot, check_lattice_is_top, check_lattice_ord,
+        check_lattice_properties, check_partial_ord_properties,
+    };
     use crate::WithBot;
 
     #[test]
@@ -116,7 +119,11 @@ mod test {
             Conflict::new_from("bar"),
             Conflict::new(None),
         ];
-        check_all(items);
+        check_lattice_ord(items);
+        check_partial_ord_properties(items);
+        check_lattice_properties(items);
+        check_lattice_is_bot(items);
+        check_lattice_is_top(items);
     }
 
     #[test]

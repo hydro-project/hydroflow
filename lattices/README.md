@@ -83,11 +83,14 @@ type, e.g. between [`set_union::SetUnionBTreeSet`] and [`set_union::SetUnionHash
 lattice (lattices with nested lattice types), the `LatticeFrom` implementation should be recursive
 for those nested lattices.
 
-### `IsBot` and `IsTop`
+### `IsBot`, `IsTop`, and `Default`
 
 A bottom (⊥) is strictly less than all other values. A top (⊤) is strictly greater than all other
-values. `IsBot::is_bot` and `IsTop::is_top` determine if a lattice instance is top or
-bottom respectively.
+values. `IsBot::is_bot` and `IsTop::is_top` determine if a lattice instance is top or bottom
+respectively.
+
+For lattice types, `Default::default()` must create a bottom value. `IsBot::is_bot(&Default::default())`
+should always return true for all lattice types.
 
 ### `Atomize`
 

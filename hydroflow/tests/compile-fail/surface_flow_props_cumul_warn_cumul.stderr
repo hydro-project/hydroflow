@@ -1,0 +1,25 @@
+error: `lattice_reduce` should have exactly 1 generic type arguments, actually has 0.
+ --> tests/compile-fail/surface_flow_props_cumul_warn_cumul.rs:9:33
+  |
+9 |             -> lattice_reduce::<'static>()
+  |                                 ^^^^^^^
+
+error: warning test
+  --> tests/compile-fail/surface_flow_props_cumul_warn_cumul.rs:14:5
+   |
+14 |     compile_error!("warning test");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `SetUnionHashSet`, `SetUnionSingletonSet`, `SetUnion`
+ --> tests/compile-fail/surface_flow_props_cumul_warn_cumul.rs:1:38
+  |
+1 | use hydroflow::lattices::set_union::{SetUnionHashSet, SetUnionSingletonSet, SetUnion};
+  |                                      ^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `hydroflow::lattices::collections::SingletonSet`
+ --> tests/compile-fail/surface_flow_props_cumul_warn_cumul.rs:2:5
+  |
+2 | use hydroflow::lattices::collections::SingletonSet;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

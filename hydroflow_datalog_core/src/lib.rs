@@ -3,7 +3,8 @@ use std::ops::Deref;
 
 use hydroflow_lang::diagnostic::{Diagnostic, Level};
 use hydroflow_lang::graph::{
-    eliminate_extra_unions_tees, partition_graph, FlatGraphBuilder, HydroflowGraph,
+    eliminate_extra_unions_tees, partition_graph, propegate_flow_props, FlatGraphBuilder,
+    HydroflowGraph,
 };
 use hydroflow_lang::parse::{
     HfStatement, IndexInt, Indexing, Pipeline, PipelineLink, PipelineStatement, PortIndex,
@@ -265,17 +266,22 @@ pub fn gen_hydroflow_graph(
     }
 
     if !diagnostics.is_empty() {
-        Err(diagnostics)
-    } else {
-        let (mut flat_graph, _uses, mut diagnostics) = flat_graph_builder.build();
-        diagnostics.retain(Diagnostic::is_error);
-        if !diagnostics.is_empty() {
-            Err(diagnostics)
-        } else {
-            eliminate_extra_unions_tees(&mut flat_graph);
-            Ok(flat_graph)
-        }
+        return Err(diagnostics);
     }
+
+    let (mut flat_graph, _uses, mut diagnostics) = flat_graph_builder.build();
+    diagnostics.retain(Diagnostic::is_error);
+    if !diagnostics.is_empty() {
+        return Err(diagnostics);
+    }
+
+    if let Err(err) = flat_graph.merge_modules() {
+        diagnostics.push(err);
+        return Err(diagnostics);
+    }
+
+    eliminate_extra_unions_tees(&mut flat_graph);
+    Ok(flat_graph)
 }
 
 fn handle_errors(
@@ -319,10 +325,14 @@ fn handle_errors(
 }
 
 pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -> TokenStream {
-    let partitioned_graph =
+    let mut partitioned_graph =
         partition_graph(flat_graph).expect("Failed to partition (cycle detected).");
 
     let mut diagnostics = Vec::new();
+    // Propgeate flow properties throughout the graph.
+    // TODO(mingwei): Should this be done at a flat graph stage instead?
+    let _ = propegate_flow_props::propegate_flow_props(&mut partitioned_graph, &mut diagnostics);
+
     let code_tokens = partitioned_graph.as_code(&root, true, quote::quote!(), &mut diagnostics);
     assert_eq!(
         0,

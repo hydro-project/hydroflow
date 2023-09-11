@@ -1,3 +1,5 @@
+//! Hydroflow's operators
+
 use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::ops::{Bound, RangeBounds};
@@ -8,31 +10,49 @@ use quote::quote_spanned;
 use serde::{Deserialize, Serialize};
 use slotmap::Key;
 use syn::punctuated::Punctuated;
-use syn::{parse_quote_spanned, Token};
+use syn::{parse_quote_spanned, Expr, Token};
 
-use super::{GraphNodeId, GraphSubgraphId, Node, OpInstGenerics, OperatorInstance, PortIndexValue};
-use crate::diagnostic::Diagnostic;
+use super::{
+    FlowProps, GraphNodeId, GraphSubgraphId, LatticeFlowType, Node, OpInstGenerics,
+    OperatorInstance, PortIndexValue,
+};
+use crate::diagnostic::{Diagnostic, Level};
 use crate::parse::{Operator, PortIndex};
 
+/// The delay (soft barrier) type, for each input to an operator if needed.
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
 pub enum DelayType {
+    /// Input should be collected over the preceeding stratum.
     Stratum,
+    /// Input should be collected over the previous tick.
     Tick,
 }
 
+/// Specification of the named (or unnamed) ports for an operator's inputs or outputs.
 pub enum PortListSpec {
+    /// Any number of unnamed (or optionally named) ports.
     Variadic,
+    /// A specific number of named ports.
     Fixed(Punctuated<PortIndex, Token![,]>),
 }
 
+/// Flow property preservation values.
+/// TODO(mingwei): deprecated?
 #[derive(Default, Debug, Eq, PartialEq, Clone, Copy)]
 pub enum FlowPropertyVal {
+    /// Property is always false.
     #[default]
     No,
+    /// Property is always true.
     Yes,
+    /// Property is preserved from input.
     Preserve,
+    /// Property preservation depends on the arguments supplied to the operator.
     DependsOnArgs,
 }
+
+/// Flow properties of each edge.
+/// TODO(mingwei): deprecated?
 #[derive(Default, Debug, Eq, PartialEq, Clone, Copy)]
 pub struct FlowProperties {
     /// Is the flow deterministic.
@@ -82,9 +102,57 @@ pub struct OperatorConstraints {
     /// Determines if this input must be preceeded by a stratum barrier.
     pub input_delaytype_fn: fn(&PortIndexValue) -> Option<DelayType>,
 
-    /// Emit code in multiple locations. See [`OperatorWriteOutput`].
+    /// Return the output flow types for the given input flow types.
+    ///
+    /// The first [`FlowPropArgs`] argument provides the input flow types (if set) and other
+    /// arguments such as the operator span, operator name, etc.
+    ///
+    /// The second argument is a vec to push [`Diagnostic`]s into to emit them.
+    ///
+    /// If only one flow type is returned for an operator with multiple outputs, that flow type
+    /// will be used for all outputs. Besides that case, it is an error to return a number of flow
+    /// props which does not match the number of outputs.
+    pub flow_prop_fn: Option<FlowPropFn>,
+
+    /// The operator's codegen. Returns code that is emited is several different locations. See [`OperatorWriteOutput`].
     pub write_fn: WriteFn,
 }
+
+/// Type alias for [`OperatorConstraints::flow_prop_fn`]'s type.
+pub type FlowPropFn =
+    fn(FlowPropArgs<'_>, &mut Vec<Diagnostic>) -> Result<Vec<Option<FlowProps>>, ()>;
+
+/// Type alias for [`OperatorConstraints::write_fn`]'s type.
+pub type WriteFn =
+    fn(&WriteContextArgs<'_>, &mut Vec<Diagnostic>) -> Result<OperatorWriteOutput, ()>;
+
+/// Arguments provided to [`OperatorConstraints::flow_prop_fn`].
+pub struct FlowPropArgs<'a> {
+    /// The source span of this operator.
+    pub op_span: Span,
+
+    /// Operator name.
+    pub op_name: &'static str,
+    /// Operator instance arguments object.
+    pub op_inst: &'a OperatorInstance,
+
+    /// Flow properties corresponding to each input.
+    ///
+    /// Sometimes (due to cycles, and for now usually due to no-yet-updated operators) the input
+    /// flow props might not be set yet (`None`).
+    pub flow_props_in: &'a [Option<FlowProps>],
+
+    /// Internal: TODO(mingwei): new token value for output flows.
+    pub(crate) new_star_ord: usize,
+}
+impl FlowPropArgs<'_> {
+    /// Returns a new `star_ord` token, representing a new order/provenance.
+    /// TODO(mingwei): This shouldn't return the same value for multiple calls.
+    pub fn new_star_ord(&self) -> usize {
+        self.new_star_ord
+    }
+}
+
 impl Debug for OperatorConstraints {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("OperatorConstraints")
@@ -100,14 +168,13 @@ impl Debug for OperatorConstraints {
             .field("ports_inn", &self.ports_inn)
             .field("ports_out", &self.ports_out)
             // .field("input_delaytype_fn", &self.input_delaytype_fn)
+            // .field("flow_prop_fn", &self.flow_prop_fn)
             // .field("write_fn", &self.write_fn)
             .finish()
     }
 }
 
-pub type WriteFn =
-    fn(&WriteContextArgs<'_>, &mut Vec<Diagnostic>) -> Result<OperatorWriteOutput, ()>;
-
+/// The code generated and returned by a [`OperatorConstraints::write_fn`].
 #[derive(Default)]
 #[non_exhaustive]
 pub struct OperatorWriteOutput {
@@ -125,10 +192,15 @@ pub struct OperatorWriteOutput {
     pub write_iterator_after: TokenStream,
 }
 
+/// Convenience range: zero or more (any number).
 pub const RANGE_ANY: &'static dyn RangeTrait<usize> = &(0..);
+/// Convenience range: exactly zero.
 pub const RANGE_0: &'static dyn RangeTrait<usize> = &(0..=0);
+/// Convenience range: exactly one.
 pub const RANGE_1: &'static dyn RangeTrait<usize> = &(1..=1);
 
+/// Helper to write the `write_iterator` portion of [`OperatorConstraints::write_fn`] output for
+/// unary identity operators.
 pub fn identity_write_iterator_fn(
     &WriteContextArgs {
         root,
@@ -164,11 +236,12 @@ pub fn identity_write_iterator_fn(
             let #ident = {
                 fn check_output<Push: #root::pusherator::Pusherator<Item = Item>, Item>(push: Push) -> impl #root::pusherator::Pusherator<Item = Item> { push }
                 check_output::<_, #generic_type>(#output)
-            }
+            };
         }
     }
 }
 
+/// [`OperatorConstraints::write_fn`] for unary identity operators.
 pub const IDENTITY_WRITE_FN: WriteFn = |write_context_args, _| {
     let write_iterator = identity_write_iterator_fn(write_context_args);
     Ok(OperatorWriteOutput {
@@ -177,6 +250,34 @@ pub const IDENTITY_WRITE_FN: WriteFn = |write_context_args, _| {
     })
 };
 
+/// [`OperatorConstraints::flow_prop_fn`] for `lattice_fold` and `lattice_reduce`.
+pub const LATTICE_FOLD_REDUCE_FLOW_PROP_FN: FlowPropFn =
+    |fp @ FlowPropArgs {
+         op_span, op_name, ..
+     },
+     diagnostics| {
+        let input_flow_type = fp.flow_props_in[0].and_then(|fp| fp.lattice_flow_type);
+        match input_flow_type {
+       Some(LatticeFlowType::Delta) => (),
+       Some(LatticeFlowType::Cumul) => diagnostics.push(Diagnostic::spanned(
+           op_span,
+           Level::Warning,
+           format!("`{}` input is already cumulative lattice flow, this operator is redundant.", op_name),
+       )),
+       None => diagnostics.push(Diagnostic::spanned(
+           op_span,
+           Level::Warning,
+           format!("`{}` expects lattice flow input, has sequential input. This may be an error in the future.", op_name),
+       )),
+   }
+        Ok(vec![Some(FlowProps {
+            star_ord: fp.new_star_ord(),
+            lattice_flow_type: Some(LatticeFlowType::Cumul),
+        })])
+    };
+
+/// Helper to write the `write_iterator` portion of [`OperatorConstraints::write_fn`] output for
+/// the null operator - an operator that ignores all inputs and produces no output.
 pub fn null_write_iterator_fn(
     &WriteContextArgs {
         root,
@@ -211,6 +312,8 @@ pub fn null_write_iterator_fn(
     }
 }
 
+/// [`OperatorConstraints::write_fn`] for the null operator - an operator that ignores all inputs
+/// and produces no output.
 pub const NULL_WRITE_FN: WriteFn = |write_context_args, _| {
     let write_iterator = null_write_iterator_fn(write_context_args);
     Ok(OperatorWriteOutput {
@@ -222,6 +325,7 @@ pub const NULL_WRITE_FN: WriteFn = |write_context_args, _| {
 macro_rules! declare_ops {
     ( $( $mod:ident :: $op:ident, )* ) => {
         $( pub(crate) mod $mod; )*
+        /// All Hydroflow operators.
         pub const OPERATORS: &[OperatorConstraints] = &[
             $( $mod :: $op, )*
         ];
@@ -232,6 +336,7 @@ declare_ops![
     anti_join_multiset::ANTI_JOIN_MULTISET,
     assert::ASSERT,
     assert_eq::ASSERT_EQ,
+    cast::CAST,
     cross_join::CROSS_JOIN,
     cross_join_multiset::CROSS_JOIN_MULTISET,
     demux::DEMUX,
@@ -257,9 +362,9 @@ declare_ops![
     join_multiset::JOIN_MULTISET,
     fold_keyed::FOLD_KEYED,
     reduce_keyed::REDUCE_KEYED,
-    lattice_batch::LATTICE_BATCH,
+    _lattice_fold_batch::_LATTICE_FOLD_BATCH,
     lattice_fold::LATTICE_FOLD,
-    lattice_join::LATTICE_JOIN,
+    _lattice_join_fused_join::_LATTICE_JOIN_FUSED_JOIN,
     lattice_reduce::LATTICE_REDUCE,
     map::MAP,
     union::UNION,
@@ -279,6 +384,7 @@ declare_ops![
     source_file::SOURCE_FILE,
     source_interval::SOURCE_INTERVAL,
     source_iter::SOURCE_ITER,
+    source_iter_delta::SOURCE_ITER_DELTA,
     source_json::SOURCE_JSON,
     source_stdin::SOURCE_STDIN,
     source_stream::SOURCE_STREAM,
@@ -290,11 +396,13 @@ declare_ops![
     zip_longest::ZIP_LONGEST,
 ];
 
+/// Get the operator lookup table, generating it if needed.
 pub fn operator_lookup() -> &'static HashMap<&'static str, &'static OperatorConstraints> {
     pub static OPERATOR_LOOKUP: OnceLock<HashMap<&'static str, &'static OperatorConstraints>> =
         OnceLock::new();
     OPERATOR_LOOKUP.get_or_init(|| OPERATORS.iter().map(|op| (op.name, op)).collect())
 }
+/// Find an operator by [`Node`].
 pub fn find_node_op_constraints(node: &Node) -> Option<&'static OperatorConstraints> {
     if let Node::Operator(operator) = node {
         find_op_op_constraints(operator)
@@ -302,11 +410,13 @@ pub fn find_node_op_constraints(node: &Node) -> Option<&'static OperatorConstrai
         None
     }
 }
+/// Find an operator by an AST [`Operator`].
 pub fn find_op_op_constraints(operator: &Operator) -> Option<&'static OperatorConstraints> {
     let name = &*operator.name_string();
     operator_lookup().get(name).copied()
 }
 
+/// Context arguments provided to [`OperatorConstraints::write_fn`].
 #[derive(Clone)]
 pub struct WriteContextArgs<'a> {
     /// `hydroflow` crate name for `use #root::something`.
@@ -338,8 +448,19 @@ pub struct WriteContextArgs<'a> {
     pub op_name: &'static str,
     /// Operator instance arguments object.
     pub op_inst: &'a OperatorInstance,
+
+    /// Flow properties corresponding to each input.
+    ///
+    /// Sometimes (due to cycles, and for now usually due to no-yet-updated operators) the input
+    /// flow props might not be set yet (`None`).
+    pub flow_props_in: &'a [Option<FlowProps>],
 }
 impl WriteContextArgs<'_> {
+    /// Generate a (almost certainly) unique identifier with the given suffix.
+    ///
+    /// Includes the subgraph and node IDs in the generated identifier.
+    ///
+    /// This will always return the same identifier for a given `suffix`.
     pub fn make_ident(&self, suffix: impl AsRef<str>) -> Ident {
         Ident::new(
             &*format!(
@@ -351,18 +472,48 @@ impl WriteContextArgs<'_> {
             self.op_span,
         )
     }
+
+    /// Wraps the `func_arg` closure with a type checker macro corresponding to the first `flow_props` flow type.
+    ///
+    /// * `None` => No checking.
+    /// * `Some(Cumul) => Monotonic function.
+    /// * `Some(Delta) => Morphism.
+    pub fn wrap_check_func_arg(&self, func_arg: &Expr) -> TokenStream {
+        let root = self.root;
+        let span = self.op_span;
+        match self
+            .flow_props_in
+            .get(0)
+            .copied()
+            .flatten()
+            .and_then(|flow_props| flow_props.lattice_flow_type)
+        {
+            None => quote_spanned!(span=> #func_arg),
+            Some(LatticeFlowType::Cumul) => quote_spanned! {span=>
+                #root::monotonic_fn!(#func_arg)
+            },
+            Some(LatticeFlowType::Delta) => quote_spanned! {span=>
+                #root::morphism!(#func_arg)
+            },
+        }
+    }
 }
 
+/// An object-safe version of [`RangeBounds`].
 pub trait RangeTrait<T>: Send + Sync + Debug
 where
     T: ?Sized,
 {
+    /// Start (lower) bound.
     fn start_bound(&self) -> Bound<&T>;
+    /// End (upper) bound.
     fn end_bound(&self) -> Bound<&T>;
+    /// Returns if `item` is contained in this range.
     fn contains(&self, item: &T) -> bool
     where
         T: PartialOrd<T>;
 
+    /// Turn this range into a human-readable string.
     fn human_string(&self) -> String
     where
         T: Display + PartialEq,
@@ -413,13 +564,18 @@ where
     }
 }
 
+/// Persistence lifetimes: `'tick`, `'static`, or `'mutable`.
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum Persistence {
+    /// Persistence for one tick at-a-time only.
     Tick,
+    /// Persistene across all ticks.
     Static,
+    /// Mutability.
     Mutable,
 }
 
+/// Helper which creates a error message string literal for when the Tokio runtime is not found.
 fn make_missing_runtime_msg(op_name: &str) -> Literal {
     Literal::string(&*format!("`{}()` must be used within a Tokio runtime. For example, use `#[hydroflow::main]` on your main method.", op_name))
 }
@@ -427,6 +583,7 @@ fn make_missing_runtime_msg(op_name: &str) -> Literal {
 /// Operator categories, for docs.
 ///
 /// See source of [`Self::description`] for description of variants.
+#[allow(missing_docs)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum OperatorCategory {
     Map,
@@ -441,6 +598,7 @@ pub enum OperatorCategory {
     Source,
     Sink,
     Control,
+    CompilerFusionOperator,
 }
 impl OperatorCategory {
     /// Human-readible heading name, for docs.
@@ -458,6 +616,7 @@ impl OperatorCategory {
             OperatorCategory::Source => "Sources",
             OperatorCategory::Sink => "Sinks",
             OperatorCategory::Control => "Control Flow Operators",
+            OperatorCategory::CompilerFusionOperator => "Compiler Fusion Operators",
         }
     }
     /// Human description, for docs.
@@ -479,6 +638,9 @@ impl OperatorCategory {
                 "Operators which consume input elements (and produce no outputs)."
             }
             OperatorCategory::Control => "Operators which affect control flow/scheduling.",
+            OperatorCategory::CompilerFusionOperator => {
+                "Operators which are necessary to implement certain optimizations and rewrite rules"
+            }
         }
     }
 }

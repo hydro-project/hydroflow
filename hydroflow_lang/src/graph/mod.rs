@@ -20,17 +20,23 @@ mod di_mul_graph;
 mod eliminate_extra_unions_tees;
 mod flat_graph_builder;
 mod flat_to_partitioned;
+mod flow_props;
 mod graph_write;
 mod hydroflow_graph;
+
+use std::fmt::Display;
+use std::path::PathBuf;
 
 pub use di_mul_graph::DiMulGraph;
 pub use eliminate_extra_unions_tees::eliminate_extra_unions_tees;
 pub use flat_graph_builder::FlatGraphBuilder;
 pub use flat_to_partitioned::partition_graph;
+pub use flow_props::*;
 pub use hydroflow_graph::HydroflowGraph;
 
 pub mod graph_algorithms;
 pub mod ops;
+pub mod propegate_flow_props;
 
 new_key_type! {
     /// ID to identify a node (operator or handoff) in [`HydroflowGraph`].
@@ -49,6 +55,7 @@ const CONTEXT: &str = "context";
 const HYDROFLOW: &str = "df";
 
 const HANDOFF_NODE_STR: &str = "handoff";
+const MODULE_BOUNDARY_NODE_STR: &str = "module_boundary";
 
 mod serde_syn {
     use serde::{Deserialize, Deserializer, Serializer};
@@ -74,28 +81,49 @@ mod serde_syn {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
 struct Varname(#[serde(with = "serde_syn")] pub Ident);
 
+/// A node, corresponding to an operator or a handoff.
 #[derive(Clone, Serialize, Deserialize)]
 pub enum Node {
+    /// An operator.
     Operator(#[serde(with = "serde_syn")] Operator),
+    /// A handoff point, used between subgraphs (or within a subgraph to break a cycle).
     Handoff {
+        /// The span of the input into the handoff.
         #[serde(skip, default = "Span::call_site")]
         src_span: Span,
+        /// The span of the output out of the handoff.
         #[serde(skip, default = "Span::call_site")]
         dst_span: Span,
     },
+
+    /// Module Boundary, used for importing modules. Only exists prior to partitioning.
+    ModuleBoundary {
+        /// If this module is an input or output boundary.
+        input: bool,
+
+        /// The span of the import!() expression that imported this module.
+        /// The value of this span when the ModuleBoundary node is still inside the module is Span::call_site()
+        /// TODO: This could one day reference into the module file itself?
+        #[serde(skip, default = "Span::call_site")]
+        import_expr: Span,
+    },
 }
 impl Node {
+    /// Return the node as a human-readable string.
     pub fn to_pretty_string(&self) -> Cow<'static, str> {
         match self {
             Node::Operator(op) => op.to_pretty_string().into(),
             Node::Handoff { .. } => HANDOFF_NODE_STR.into(),
+            Node::ModuleBoundary { .. } => MODULE_BOUNDARY_NODE_STR.into(),
         }
     }
 
+    /// Return the source code span of the node (for operators) or input/otput spans for handoffs.
     pub fn span(&self) -> Span {
         match self {
             Self::Operator(op) => op.span(),
             &Self::Handoff { src_span, dst_span } => src_span.join(dst_span).unwrap_or(src_span),
+            Self::ModuleBoundary { import_expr, .. } => *import_expr,
         }
     }
 }
@@ -106,10 +134,21 @@ impl std::fmt::Debug for Node {
                 write!(f, "Node::Operator({} span)", PrettySpan(operator.span()))
             }
             Self::Handoff { .. } => write!(f, "Node::Handoff"),
+            Self::ModuleBoundary { input, .. } => {
+                write!(f, "Node::ModuleBoundary{{input: {}}}", input)
+            }
         }
     }
 }
 
+/// Meta-data relating to operators which may be useful throughout the compilation process.
+///
+/// This data can be generated from the graph, but it is useful to have it readily available
+/// pre-computed as many algorithms use the same info. Stuff like port names, arguments, and the
+/// [`OperatorConstraints`] for the operator.
+///
+/// Because it is derived from the graph itself, there can be "cache invalidation"-esque issues
+/// if this data is not kept in sync with the graph.
 #[derive(Clone, Debug)]
 pub struct OperatorInstance {
     /// Name of the operator (will match [`OperatorConstraints::name`]).
@@ -128,6 +167,7 @@ pub struct OperatorInstance {
     pub arguments: Punctuated<Expr, Token![,]>,
 }
 
+/// Operator generic arguments, split into specific categories.
 #[derive(Clone, Debug)]
 pub struct OpInstGenerics {
     /// Operator generic (type or lifetime) arguments.
@@ -138,6 +178,9 @@ pub struct OpInstGenerics {
     pub type_args: Vec<Type>,
 }
 
+/// Gets the generic arguments for the operator. This helper method is here due to the special
+/// handling of persistence lifetimes (`'static`, `'tick`, `'mutable`) which must come before
+/// other generic parameters.
 pub fn get_operator_generics(
     diagnostics: &mut Vec<Diagnostic>,
     operator: &Operator,
@@ -181,6 +224,7 @@ pub fn get_operator_generics(
     }
 }
 
+/// Push, Pull, Comp, or Hoff polarity.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Color {
     /// Pull (green)
@@ -217,11 +261,17 @@ pub fn node_color(is_handoff: bool, inn_degree: usize, out_degree: usize) -> Opt
 /// Helper struct for [`PortIndex`] which keeps span information for elided ports.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum PortIndexValue {
+    /// An integer value: `[0]`, `[1]`, etc. Can be negative although we don't use that (2023-08-16).
     Int(#[serde(with = "serde_syn")] IndexInt),
+    /// A name or path. `[pos]`, `[neg]`, etc. Can use `::` separators but we don't use that (2023-08-16).
     Path(#[serde(with = "serde_syn")] ExprPath),
+    /// Elided, unspecified port. We have this variant, rather than wrapping in `Option`, in order
+    /// to preserve the `Span` information.
     Elided(#[serde(skip)] Option<Span>),
 }
 impl PortIndexValue {
+    /// For a [`Ported`] value like `[port_in]name[port_out]`, get the `port_in` and `port_out` as
+    /// [`PortIndexValue`]s.
     pub fn from_ported<Inner>(ported: Ported<Inner>) -> (Self, Inner, Self)
     where
         Inner: Spanned,
@@ -239,6 +289,7 @@ impl PortIndexValue {
         (port_inn, inner, port_out)
     }
 
+    /// Returns `true` if `self` is not [`PortIndexValue::Elided`].
     pub fn is_specified(&self) -> bool {
         !matches!(self, Self::Elided(_))
     }
@@ -256,6 +307,7 @@ impl PortIndexValue {
         }
     }
 
+    /// Formats self as a human-readable string for error messages.
     pub fn as_error_message_string(&self) -> String {
         match self {
             PortIndexValue::Int(n) => format!("`{}`", n.value),
@@ -264,6 +316,7 @@ impl PortIndexValue {
         }
     }
 
+    /// Returns the span of this port value.
     pub fn span(&self) -> Span {
         match self {
             PortIndexValue::Int(x) => x.span(),
@@ -313,21 +366,50 @@ impl Ord for PortIndexValue {
     }
 }
 
+impl Display for PortIndexValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PortIndexValue::Int(x) => write!(f, "{}", x.to_token_stream().to_string()),
+            PortIndexValue::Path(x) => write!(f, "{}", x.to_token_stream().to_string()),
+            PortIndexValue::Elided(_) => write!(f, "[]"),
+        }
+    }
+}
+
+/// The main function of this module. Compiles a [`HfCode`] AST into a [`HydroflowGraph`] and
+/// source code, or [`Diagnostic`] errors.
 pub fn build_hfcode(
     hf_code: HfCode,
     root: &TokenStream,
+    macro_invocation_path: PathBuf,
 ) -> (Option<(HydroflowGraph, TokenStream)>, Vec<Diagnostic>) {
-    let flat_graph_builder = FlatGraphBuilder::from_hfcode(hf_code);
+    let flat_graph_builder = FlatGraphBuilder::from_hfcode(hf_code, macro_invocation_path);
     let (mut flat_graph, uses, mut diagnostics) = flat_graph_builder.build();
-    eliminate_extra_unions_tees(&mut flat_graph);
     if !diagnostics.iter().any(Diagnostic::is_error) {
+        if let Err(diagnostic) = flat_graph.merge_modules() {
+            diagnostics.push(diagnostic);
+            return (None, diagnostics);
+        }
+
+        eliminate_extra_unions_tees(&mut flat_graph);
         match partition_graph(flat_graph) {
-            Ok(part_graph) => {
-                let code =
-                    part_graph.as_code(root, true, quote::quote! { #( #uses )* }, &mut diagnostics);
-                if !diagnostics.iter().any(Diagnostic::is_error) {
-                    // Success.
-                    return (Some((part_graph, code)), diagnostics);
+            Ok(mut partitioned_graph) => {
+                // Propgeate flow properties throughout the graph.
+                // TODO(mingwei): Should this be done at a flat graph stage instead?
+                if let Ok(()) = propegate_flow_props::propegate_flow_props(
+                    &mut partitioned_graph,
+                    &mut diagnostics,
+                ) {
+                    let code = partitioned_graph.as_code(
+                        root,
+                        true,
+                        quote::quote! { #( #uses )* },
+                        &mut diagnostics,
+                    );
+                    if !diagnostics.iter().any(Diagnostic::is_error) {
+                        // Success.
+                        return (Some((partitioned_graph, code)), diagnostics);
+                    }
                 }
             }
             Err(diagnostic) => diagnostics.push(diagnostic),

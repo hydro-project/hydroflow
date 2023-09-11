@@ -48,6 +48,7 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
         }
         _else => None,
     },
+    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    op_span,
                    ident,
