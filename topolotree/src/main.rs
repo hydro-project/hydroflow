@@ -35,36 +35,18 @@ where <S as futures::Sink<(u32, hydroflow::bytes::Bytes)>>::Error: Debug{
             -> inspect(|(src, payload)| println!("received from: {src}: payload: {payload:?}"))
             -> input;
 
-        //
-        // Test simulation, eventually this should come from the python script.
-        //
-        // source_iter([(1, 15)])
-        //     -> filter(|(src, _)| *src == current_id)
-        //     -> input;
-
-        // source_iter([(2, 45)])
-        //     -> filter(|(src, _)| *src == current_id)
-        //     -> input;
-
         input 
             -> map(|(src, payload)| (src, (payload, context.current_tick())))
             -> inspect(|x| eprintln!("input: {:?}", x))
             -> all_neighbor_data;
         
-        last_neighbor_data -> inspect(|x| eprintln!("{:?}", x)) -> all_neighbor_data;
-        
-        // Stream of (src, (payload, tick))
-        // First element compared to all of the other elements per src
-        all_neighbor_data = union()
-            -> reduce_keyed(|acc:&mut (Payload, usize), val:(Payload, usize)| {
+        all_neighbor_data = reduce_keyed(|acc:&mut (Payload, usize), val:(Payload, usize)| {
                 if val.0.timestamp > acc.0.timestamp {
                     *acc = val;
                 }
-            }) 
-            -> tee();
-
-        last_neighbor_data = all_neighbor_data -> defer_tick();
-
+            })
+            -> persist();
+        
         // Cross Join
         neighbors = source_iter(neighbors) -> persist();
         all_neighbor_data -> [0]aggregated_data;
@@ -73,14 +55,7 @@ where <S as futures::Sink<(u32, hydroflow::bytes::Bytes)>>::Error: Debug{
         // (dest, Payload) where Payload has timestamp and accumulated data as specified by merge function
         aggregated_data = cross_join_multiset()
             -> filter(|((src, (payload, tick)), dst)| src != dst)
-            -> map(|((src, (payload, tick)), dst)| (dst, (src, (payload, tick))))
-            -> fold_keyed(|| Payload{timestamp:0, data:0}, |acc: &mut Payload, (src, (payload, tick)): (u32, (Payload, usize))| {
-                merge(&mut acc.data, payload.data);
-                if tick > acc.timestamp {
-                    acc.timestamp = tick;
-                }
-            })
-            -> filter(|(dst, payload)| payload.timestamp == context.current_tick());
+            -> map(|((src, (payload, tick)), dst)| (dst, payload));
         
         
         aggregated_data 
@@ -149,5 +124,5 @@ async fn simple_test() {
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
 
-    assert_eq!(receive_all_output().await, &[]);
+    assert_eq!(receive_all_output().await, &[(2, Payload {timestamp:1, data:2})]);
 }
