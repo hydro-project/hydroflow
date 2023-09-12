@@ -1,19 +1,13 @@
 error: `demux(..)` closure argument `c` missing corresponding output port.
- --> tests/compile-fail/surface_demux_port_missing.rs:6:71
+ --> tests/compile-fail/surface_demux_port_missing.rs:5:71
   |
-6 |         my_demux = source_iter(0..10) -> demux(|item, var_args!(a, b, c)| {
+5 |         my_demux = source_iter(0..10) -> demux(|item, var_args!(a, b, c)| {
   |                                                                       ^
 
-warning: unused import: `hydroflow::pusherator::Pusherator`
- --> tests/compile-fail/surface_demux_port_missing.rs:1:5
+warning: unused import: `var_args`
+ --> tests/compile-fail/surface_demux_port_missing.rs:1:35
   |
-1 | use hydroflow::pusherator::Pusherator;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | use hydroflow::{hydroflow_syntax, var_args};
+  |                                   ^^^^^^^^
   |
   = note: `#[warn(unused_imports)]` on by default
-
-warning: unused import: `var_args`
- --> tests/compile-fail/surface_demux_port_missing.rs:2:35
-  |
-2 | use hydroflow::{hydroflow_syntax, var_args};
-  |                                   ^^^^^^^^

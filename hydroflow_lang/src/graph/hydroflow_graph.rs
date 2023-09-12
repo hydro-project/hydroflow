@@ -839,7 +839,14 @@ impl HydroflowGraph {
                                 write_prologue,
                                 write_iterator,
                                 write_iterator_after,
-                            } = write_result.unwrap_or_else(|()| OperatorWriteOutput { write_iterator: null_write_iterator_fn(&context_args), ..Default::default() });
+                            } = write_result.unwrap_or_else(|()| {
+                                assert!(
+                                    diagnostics.iter().any(Diagnostic::is_error),
+                                    "Operator `{}` returned `Err` but emitted no diagnostics, this is a Hydroflow bug.",
+                                    op_name,
+                                );
+                                OperatorWriteOutput { write_iterator: null_write_iterator_fn(&context_args), ..Default::default() }
+                            });
 
                             op_prologue_code.push(write_prologue);
                             subgraph_op_iter_code.push(write_iterator);

@@ -373,6 +373,7 @@ declare_ops![
     defer_signal::DEFER_SIGNAL,
     defer_tick::DEFER_TICK,
     null::NULL,
+    partition::PARTITION,
     persist::PERSIST,
     persist_mut::PERSIST_MUT,
     persist_mut_keyed::PERSIST_MUT_KEYED,
