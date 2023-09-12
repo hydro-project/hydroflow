@@ -1,0 +1,13 @@
+error: Argument must be a two-argument closure expression
+ --> tests/compile-fail/surface_demux_badarg.rs:5:48
+  |
+5 |         my_demux = source_iter(0..10) -> demux(std::mem::drop);
+  |                                                ^^^^^^^^^^^^^^
+
+warning: unused import: `var_args`
+ --> tests/compile-fail/surface_demux_badarg.rs:1:35
+  |
+1 | use hydroflow::{hydroflow_syntax, var_args};
+  |                                   ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
