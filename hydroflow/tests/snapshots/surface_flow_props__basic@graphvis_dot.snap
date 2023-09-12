@@ -33,7 +33,7 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_2v1\nstratum 1"
-        n9v1 [label="(n9v1) lattice_reduce::<'static, SetUnionHashSet<_>>()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n9v1 [label="(n9v1) lattice_reduce()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
         n10v1 [label="(n10v1) for_each(|s| println!(\"cumul {:?}\", s))", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
         n9v1 -> n10v1 [style=bold]
     }

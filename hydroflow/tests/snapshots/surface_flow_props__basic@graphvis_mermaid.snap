@@ -30,7 +30,7 @@ subgraph sg_1v1 ["sg_1v1 stratum 0"]
     end
 end
 subgraph sg_2v1 ["sg_2v1 stratum 1"]
-    9v1[\"(9v1) <code>lattice_reduce::&lt;'static, SetUnionHashSet&lt;_&gt;&gt;()</code>"/]:::pullClass
+    9v1[\"(9v1) <code>lattice_reduce()</code>"/]:::pullClass
     10v1[/"(10v1) <code>for_each(|s| println!(&quot;cumul {:?}&quot;, s))</code>"\]:::pushClass
     9v1==>10v1
 end

@@ -1,5 +1,0 @@
-error: `lattice_fold` should have exactly 1 generic type arguments, actually has 0.
- --> tests/compile-fail/surface_lattice_fold_nogeneric.rs:6:31
-  |
-6 |             -> lattice_fold::<'static>()
-  |                               ^^^^^^^
