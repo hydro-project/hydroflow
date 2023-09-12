@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use proc_macro2::{Ident, TokenTree};
-use quote::{quote, quote_spanned, ToTokens};
+use quote::{quote_spanned, ToTokens};
 use syn::spanned::Spanned;
 use syn::{Expr, Pat};
 
@@ -121,7 +121,7 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
                     ));
                     return None;
                 };
-                let port_ident = syn::parse2::<Ident>(quote! { #port_expr })
+                let port_ident = syn::parse2::<Ident>(quote_spanned! {op_span=> #port_expr })
                     .map_err(|err| diagnostics.push(err.into()))
                     .ok()?;
 
