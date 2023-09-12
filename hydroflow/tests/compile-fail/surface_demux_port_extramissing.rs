@@ -1,4 +1,3 @@
-use hydroflow::pusherator::Pusherator;
 use hydroflow::{hydroflow_syntax, var_args};
 
 fn main() {
