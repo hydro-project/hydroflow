@@ -102,33 +102,19 @@
 <a href="#102" id="102">102</a>
 <a href="#103" id="103">103</a>
 <a href="#104" id="104">104</a>
-<a href="#105" id="105">105</a>
-<a href="#106" id="106">106</a>
-<a href="#107" id="107">107</a>
-<a href="#108" id="108">108</a>
-<a href="#109" id="109">109</a>
-<a href="#110" id="110">110</a>
-<a href="#111" id="111">111</a>
-<a href="#112" id="112">112</a>
-<a href="#113" id="113">113</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>syn::parse_quote_spanned;
-<span class="kw">use </span>syn::spanned::Spanned;
 
 <span class="kw">use super</span>::{
-    DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorCategory,
-    OperatorConstraints, OperatorInstance, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN,
-    RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorInstance, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::graph::ops::OperatorWriteOutput;
 
 <span class="doccomment">/// &gt; 1 input stream, 1 output stream
 ///
-/// &gt; Generic parameters: A `Lattice` type, must implement [`Merge&lt;Self&gt;`](https://hydro-project.github.io/hydroflow/doc/lattices/trait.Merge.html)
-/// type.
-///
 /// A specialized operator for merging lattices together into an accumulated value. Like [`reduce()`](#reduce)
-/// but specialized for lattice types. `lattice_reduce::&lt;MyLattice&gt;()` is equivalent to `reduce(hydroflow::lattices::Merge::merge_owned)`.
+/// but specialized for lattice types. `lattice_reduce()` is equivalent to `reduce(hydroflow::lattices::Merge::merge)`.
 ///
 /// `lattice_reduce` can also be provided with one generic lifetime persistence argument, either
 /// `&#39;tick` or `&#39;static`, to specify how data persists. With `&#39;tick`, values will only be collected
@@ -136,14 +122,16 @@
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
 /// defaults to `&#39;tick`.
 ///
-/// `lattice_reduce` is differentiated from `lattice_fold` in that `lattice_reduce` does not require the accumulating type to implement `Default`.
+/// `lattice_reduce` is differentiated from `lattice_fold` in that `lattice_reduce` does not require the accumulating type to have a sensible default value.
 /// But it also means that the accumulating function inputs and the accumulating type must be the same.
 ///
 /// ```hydroflow
-/// source_iter([1,2,3,4,5])
-///     -&gt; map(hydroflow::lattices::Max::new)
-///     -&gt; lattice_reduce::&lt;&#39;static, hydroflow::lattices::Max&lt;usize&gt;&gt;()
-///     -&gt; assert_eq([hydroflow::lattices::Max::new(5)]);
+/// use hydroflow::lattices::Max;
+///
+/// source_iter([1, 2, 3, 4, 5])
+///     -&gt; map(Max::new)
+///     -&gt; lattice_reduce()
+///     -&gt; assert_eq([Max::new(5)]);
 /// ```
 </span><span class="kw">pub const </span>LATTICE_REDUCE: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;lattice_reduce&quot;</span>,
@@ -154,7 +142,7 @@
     soft_range_out: RANGE_1,
     num_args: <span class="number">0</span>,
     persistence_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
-    type_args: RANGE_1,
+    type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
@@ -168,25 +156,16 @@
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
                    root,
                    inputs,
+                   op_span,
                    is_pull,
-                   op_inst:
-                       op_inst @ OperatorInstance {
-                           generics: OpInstGenerics { type_args, .. },
-                           ..
-                       },
+                   op_inst: op_inst @ OperatorInstance { .. },
                    ..
                },
                diagnostics| {
         <span class="macro">assert!</span>(is_pull);
 
-        <span class="macro">assert_eq!</span>(<span class="number">1</span>, inputs.len());
-        <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
-
-        <span class="macro">assert_eq!</span>(<span class="number">1</span>, type_args.len());
-        <span class="kw">let </span>lat_type = <span class="kw-2">&amp;</span>type_args[<span class="number">0</span>];
-
-        <span class="kw">let </span>arguments = <span class="macro">parse_quote_spanned! </span>{lat_type.span()=&gt; <span class="comment">// Uses `lat_type.span()`!
-            </span>#root::lattices::Merge::&lt;#lat_type&gt;::merge
+        <span class="kw">let </span>arguments = <span class="macro">parse_quote_spanned! </span>{op_span=&gt;
+            #root::lattices::Merge::&lt;<span class="kw">_</span>&gt;::merge
         };
         <span class="kw">let </span>wc = WriteContextArgs {
             op_inst: <span class="kw-2">&amp;</span>OperatorInstance {
@@ -201,10 +180,13 @@
             write_iterator,
             write_iterator_after,
         } = (<span class="kw">super</span>::reduce::REDUCE.write_fn)(<span class="kw-2">&amp;</span>wc, diagnostics)<span class="question-mark">?</span>;
-        <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{lat_type.span()=&gt; <span class="comment">// Uses `lat_type.span()`!
-            </span><span class="kw">let </span>#input = {
-                <span class="doccomment">/// Improve errors with `#lat_type` trait bound.
-                </span><span class="attr">#[inline(always)]
+
+        <span class="macro">assert_eq!</span>(<span class="number">1</span>, inputs.len());
+        <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
+
+        <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
+            <span class="kw">let </span>#input = {
+                <span class="attr">#[inline(always)]
                 </span><span class="kw">fn </span>check_inputs&lt;Lat&gt;(
                     input: <span class="kw">impl </span>::std::iter::Iterator&lt;Item = Lat&gt;
                 ) -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = Lat&gt;
@@ -213,7 +195,7 @@
                 {
                     input
                 }
-                check_inputs::&lt;#lat_type&gt;(#input)
+                check_inputs::&lt;<span class="kw">_</span>&gt;(#input)
             };
             #write_iterator
         };

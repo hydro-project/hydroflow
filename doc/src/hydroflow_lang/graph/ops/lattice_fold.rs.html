@@ -76,25 +76,17 @@
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
-<a href="#79" id="79">79</a>
-<a href="#80" id="80">80</a>
-<a href="#81" id="81">81</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>syn::parse_quote_spanned;
-<span class="kw">use </span>syn::spanned::Spanned;
 
 <span class="kw">use super</span>::{
-    DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorCategory,
-    OperatorConstraints, OperatorInstance, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN,
-    RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorInstance, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
 };
 
 <span class="doccomment">/// &gt; 1 input stream, 1 output stream
 ///
-/// &gt; Generic parameters: A `Lattice` type, must implement [`Merge&lt;Self&gt;`](https://hydro-project.github.io/hydroflow/doc/lattices/trait.Merge.html)
-/// type.
-///
 /// A specialized operator for merging lattices together into a accumulated value. Like [`fold()`](#fold)
-/// but specialized for lattice types. `lattice_fold::&lt;MyLattice&gt;()` is equivalent to `fold(MyLattice::default(), hydroflow::lattices::Merge::merge_owned)`.
+/// but specialized for lattice types. `lattice_fold::&lt;MyLattice&gt;()` is equivalent to `fold(MyLattice::default(), hydroflow::lattices::Merge::merge)`.
 ///
 /// `lattice_fold` can also be provided with one generic lifetime persistence argument, either
 /// `&#39;tick` or `&#39;static`, to specify how data persists. With `&#39;tick`, values will only be collected
@@ -103,12 +95,15 @@
 /// defaults to `&#39;tick`.
 ///
 /// `lattice_fold` is differentiated from `lattice_reduce` in that `lattice_fold` can accumulate into a different type from its input.
-/// But it also means that the accumulating type must implement `Default`
+/// But it also means that the accumulating type must have a sensible default value
 ///
 /// ```hydroflow
-/// source_iter([hydroflow::lattices::set_union::SetUnionSingletonSet::new_from(7)])
-///     -&gt; lattice_fold::&lt;&#39;static, hydroflow::lattices::set_union::SetUnionHashSet&lt;usize&gt;&gt;()
-///     -&gt; assert_eq([hydroflow::lattices::set_union::SetUnionHashSet::new_from([7])]);
+/// use hydroflow::lattices::set_union::SetUnionSingletonSet;
+/// use hydroflow::lattices::set_union::SetUnionHashSet;
+///
+/// source_iter([SetUnionSingletonSet::new_from(7)])
+///     -&gt; lattice_fold(SetUnionHashSet::&lt;usize&gt;::default())
+///     -&gt; assert_eq([SetUnionHashSet::new_from([7])]);
 /// ```
 </span><span class="kw">pub const </span>LATTICE_FOLD: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;lattice_fold&quot;</span>,
@@ -117,9 +112,9 @@
     soft_range_inn: RANGE_1,
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
-    num_args: <span class="number">0</span>,
+    num_args: <span class="number">1</span>,
     persistence_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
-    type_args: RANGE_1,
+    type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
@@ -133,20 +128,17 @@
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
                    root,
                    is_pull,
-                   op_inst:
-                       op_inst @ OperatorInstance {
-                           generics: OpInstGenerics { type_args, .. },
-                           ..
-                       },
+                   op_span,
+                   op_inst: op_inst @ OperatorInstance { arguments, .. },
                    ..
                },
                diagnostics| {
         <span class="macro">assert!</span>(is_pull);
 
-        <span class="kw">let </span>lat_type = <span class="kw-2">&amp;</span>type_args[<span class="number">0</span>];
+        <span class="kw">let </span>first_arg = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
 
-        <span class="kw">let </span>arguments = <span class="macro">parse_quote_spanned! </span>{lat_type.span()=&gt; <span class="comment">// Uses `lat_type.span()`!
-            </span>&lt;#lat_type <span class="kw">as </span>::std::default::Default&gt;::default(), #root::lattices::Merge::merge
+        <span class="kw">let </span>arguments = <span class="macro">parse_quote_spanned! </span>{op_span=&gt;
+            #first_arg, #root::lattices::Merge::merge
         };
 
         <span class="kw">let </span>wc = WriteContextArgs {
@@ -157,7 +149,9 @@
             ..wc.clone()
         };
 
-        (<span class="kw">super</span>::fold::FOLD.write_fn)(<span class="kw-2">&amp;</span>wc, diagnostics)
+        <span class="comment">// Can&#39;t do better type checking here because we need heavy type inference
+        // to support different accumulator and input types.
+        </span>(<span class="kw">super</span>::fold::FOLD.write_fn)(<span class="kw-2">&amp;</span>wc, diagnostics)
     },
 };
 </code></pre></div></section></main></body></html>
