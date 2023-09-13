@@ -19,7 +19,7 @@ pub fn test_basic() {
 
         my_tee
             -> map(|SetUnion(SingletonSet(x))| SetUnionHashSet::new_from([x]))
-            -> lattice_reduce::<'static, SetUnionHashSet<_>>()
+            -> lattice_reduce()
             -> for_each(|s| println!("cumul {:?}", s));
     };
     hf.run_available();
