@@ -185,18 +185,12 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
         let (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow) =
             make_joindata(persistences[1], "rhs")?;
 
-        let tick_ident = wc.make_ident("persisttick");
-        let tick_borrow_ident = wc.make_ident("persisttick_borrow");
-
         let write_prologue = quote_spanned! {op_span=>
             let #lhs_joindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #lhs_init
             ));
             let #rhs_joindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #rhs_init
-            ));
-            let #tick_ident = #hydroflow.add_state(std::cell::RefCell::new(
-                0usize
             ));
         };
 
@@ -205,7 +199,6 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
         let write_iterator = quote_spanned! {op_span=>
             let mut #lhs_borrow_ident = #context.state_ref(#lhs_joindata_ident).borrow_mut();
             let mut #rhs_borrow_ident = #context.state_ref(#rhs_joindata_ident).borrow_mut();
-            let mut #tick_borrow_ident = #context.state_ref(#tick_ident).borrow_mut();
             let #ident = {
                 // Limit error propagation by bounding locally, erasing output iterator type.
                 #[inline(always)]
@@ -226,16 +219,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                     #root::compiled::pull::symmetric_hash_join_into_iter(lhs, rhs, lhs_state, rhs_state, is_new_tick)
                 }
 
-                {
-                    let __is_new_tick = if *#tick_borrow_ident <= #context.current_tick() {
-                        *#tick_borrow_ident = #context.current_tick() + 1;
-                        true
-                    } else {
-                        false
-                    };
-
-                    check_inputs(#lhs, #rhs, #lhs_borrow, #rhs_borrow, __is_new_tick)
-                }
+                check_inputs(#lhs, #rhs, #lhs_borrow, #rhs_borrow, #context.is_first_run_this_tick())
             };
         };
 

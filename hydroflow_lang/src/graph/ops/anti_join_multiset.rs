@@ -116,10 +116,9 @@ pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
         let write_prologue_pos = match persistences[0] {
             Persistence::Tick => quote_spanned! {op_span=>},
             Persistence::Static => quote_spanned! {op_span=>
-                let #pos_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new((
-                    0_usize,
+                let #pos_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
                     ::std::vec::Vec::new()
-                )));
+                ));
             },
             Persistence::Mutable => {
                 diagnostics.push(Diagnostic::spanned(
@@ -162,18 +161,17 @@ pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
                 let #ident = {
                     #[allow(clippy::clone_on_copy)]
                     #[allow(suspicious_double_ref_op)]
-                    if #pos_borrow_ident.0 <= #context.current_tick() {
+                    if context.is_first_run_this_tick() {
                         // Start of new tick
                         #neg_borrow.extend(#input_neg);
 
-                        #pos_borrow_ident.0 = 1 + #context.current_tick();
-                        #pos_borrow_ident.1.extend(#input_pos);
-                        #pos_borrow_ident.1.iter()
+                        #pos_borrow_ident.extend(#input_pos);
+                        #pos_borrow_ident.iter()
                     } else {
                         // Called second or later times on the same tick.
-                        let len = #pos_borrow_ident.1.len();
-                        #pos_borrow_ident.1.extend(#input_pos);
-                        #pos_borrow_ident.1[len..].iter()
+                        let len = #pos_borrow_ident.len();
+                        #pos_borrow_ident.extend(#input_pos);
+                        #pos_borrow_ident[len..].iter()
                     }
                     .filter(|x| {
                         #[allow(clippy::unnecessary_mut_passed)]

@@ -49,28 +49,23 @@ pub const PERSIST_MUT: OperatorConstraints = OperatorConstraints {
 
         let persistdata_ident = wc.make_ident("persistdata");
         let vec_ident = wc.make_ident("persistvec");
-        let tick_ident = wc.make_ident("persisttick");
         let write_prologue = quote_spanned! {op_span=>
-            let #persistdata_ident = #hydroflow.add_state(::std::cell::RefCell::new((
-                0_usize, // tick
+            let #persistdata_ident = #hydroflow.add_state(::std::cell::RefCell::new(
                 #root::util::sparse_vec::SparseVec::default(),
-            )));
+            ));
         };
 
         let write_iterator = {
             let input = &inputs[0];
             quote_spanned! {op_span=>
                 let mut #vec_ident = #context.state_ref(#persistdata_ident).borrow_mut();
-                let (ref mut #tick_ident, ref mut #vec_ident) = &mut *#vec_ident;
                 let #ident = {
                     #[inline(always)]
                     fn check_iter<T: ::std::hash::Hash + ::std::cmp::Eq>(iter: impl Iterator<Item = #root::util::Persistence::<T>>) -> impl Iterator<Item = #root::util::Persistence::<T>> {
                         iter
                     }
 
-                    if *#tick_ident <= #context.current_tick() {
-                        *#tick_ident = 1 + #context.current_tick();
-
+                    if context.is_first_run_this_tick() {
                         for item in check_iter(#input) {
                             match item {
                                 #root::util::Persistence::Persist(v) => #vec_ident.push(v),
