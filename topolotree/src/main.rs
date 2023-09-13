@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::io;
 
-use futures::{Sink, Stream};
+use futures::{Sink, Stream, stream, StreamExt};
 use hydroflow::bytes::{Bytes, BytesMut};
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
@@ -11,7 +11,7 @@ use hydroflow::util::cli::{
 use hydroflow::util::{collect_ready, collect_ready_async};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Copy)]
 struct Payload {
     timestamp: usize,
     data: usize,
@@ -43,12 +43,13 @@ where
             -> inspect(|x| eprintln!("input: {:?}", x))
             -> all_neighbor_data;
 
-        all_neighbor_data = reduce_keyed(|acc:&mut (Payload, usize), val:(Payload, usize)| {
+        all_neighbor_data = reduce_keyed::<'static>(|acc:&mut (Payload, usize), val:(Payload, usize)| {
                 if val.0.timestamp > acc.0.timestamp {
                     *acc = val;
                 }
             })
-            -> persist();
+            -> inspect(|(src, payload)| println!("data from stream: {src}: payload: {payload:?}"));
+            // -> persist();
 
         // Cross Join
         neighbors = source_iter(neighbors) -> persist();
@@ -89,29 +90,40 @@ async fn main() {
         .await
         .into_sink();
 
+    let increment_requests = ports
+        .port("increment_requests")
+        .connect::<ConnectedDirect>()
+        .await
+        .into_source();
+
+    let query_responses = ports
+        .port("query_responses")
+        .connect::<ConnectedDirect>()
+        .await
+        .into_sink();
+
     hydroflow::util::cli::launch_flow(run_topolotree(neighbors, input_recv, output_send)).await;
 }
 
 #[hydroflow::test]
 async fn simple_test() {
     // let args: Vec<String> = std::env::args().skip(1).collect();
-    let neighbors: Vec<u32> = vec![1, 2]; // args.into_iter().map(|x| x.parse().unwrap()).collect();
+    let neighbors: Vec<u32> = vec![1, 2, 3]; // args.into_iter().map(|x| x.parse().unwrap()).collect();
                                           // let current_id = neighbors[0];
 
-    let (input_send, input_recv) =
-        hydroflow::util::unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    // let (input_send, input_recv) =
+    //     hydroflow::util::unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
     let (output_send, mut output_recv) = futures::channel::mpsc::unbounded::<(u32, Bytes)>();
 
-    let mut flow: Hydroflow = run_topolotree(neighbors, input_recv, output_send);
 
-    let simulate_input = |(id, payload): (u32, Payload)| {
-        input_send.send(Ok((
-            id,
-            BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()),
-        )))
-    };
+    let input1 = (1, Payload {timestamp:1, data:2});
+    let input2 = (1, Payload {timestamp:1, data:3});
+    let payload_vec = vec![input1, input2];
+    let payload_stream = stream::iter(payload_vec).map(|(i, payload)| Ok((i, BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()))));
 
-    let mut receive_all_output = || async move {
+    let mut flow: Hydroflow = run_topolotree(neighbors, payload_stream, output_send);
+
+    let receive_all_output = || async move {
         let collected = collect_ready_async::<Vec<_>, _>(&mut output_recv).await;
         collected
             .iter()
@@ -119,26 +131,14 @@ async fn simple_test() {
             .collect::<Vec<_>>()
     };
 
-    simulate_input((
-        1,
-        Payload {
-            timestamp: 1,
-            data: 2,
-        },
-    ))
-    .unwrap();
-
     flow.run_tick();
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
+    let output1: (u32, Payload) = (2, Payload {timestamp:1, data:2});
+    let output2: (u32, Payload) = (3, Payload {timestamp:1, data:2});
+
     assert_eq!(
         receive_all_output().await,
-        &[(
-            2,
-            Payload {
-                timestamp: 1,
-                data: 2
-            }
-        )]
+        &[output1, output2]
     );
 }
