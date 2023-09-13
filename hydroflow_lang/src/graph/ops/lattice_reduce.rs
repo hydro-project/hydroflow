@@ -1,21 +1,16 @@
 use quote::quote_spanned;
 use syn::parse_quote_spanned;
-use syn::spanned::Spanned;
 
 use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorCategory,
-    OperatorConstraints, OperatorInstance, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN,
-    RANGE_1,
+    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorInstance, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
 };
 use crate::graph::ops::OperatorWriteOutput;
 
 /// > 1 input stream, 1 output stream
 ///
-/// > Generic parameters: A `Lattice` type, must implement [`Merge<Self>`](https://hydro-project.github.io/hydroflow/doc/lattices/trait.Merge.html)
-/// type.
-///
 /// A specialized operator for merging lattices together into an accumulated value. Like [`reduce()`](#reduce)
-/// but specialized for lattice types. `lattice_reduce::<MyLattice>()` is equivalent to `reduce(hydroflow::lattices::Merge::merge_owned)`.
+/// but specialized for lattice types. `lattice_reduce()` is equivalent to `reduce(hydroflow::lattices::Merge::merge)`.
 ///
 /// `lattice_reduce` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
@@ -23,14 +18,16 @@ use crate::graph::ops::OperatorWriteOutput;
 /// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
 /// defaults to `'tick`.
 ///
-/// `lattice_reduce` is differentiated from `lattice_fold` in that `lattice_reduce` does not require the accumulating type to implement `Default`.
+/// `lattice_reduce` is differentiated from `lattice_fold` in that `lattice_reduce` does not require the accumulating type to have a sensible default value.
 /// But it also means that the accumulating function inputs and the accumulating type must be the same.
 ///
 /// ```hydroflow
-/// source_iter([1,2,3,4,5])
-///     -> map(hydroflow::lattices::Max::new)
-///     -> lattice_reduce::<'static, hydroflow::lattices::Max<usize>>()
-///     -> assert_eq([hydroflow::lattices::Max::new(5)]);
+/// use hydroflow::lattices::Max;
+///
+/// source_iter([1, 2, 3, 4, 5])
+///     -> map(Max::new)
+///     -> lattice_reduce()
+///     -> assert_eq([Max::new(5)]);
 /// ```
 pub const LATTICE_REDUCE: OperatorConstraints = OperatorConstraints {
     name: "lattice_reduce",
@@ -41,7 +38,7 @@ pub const LATTICE_REDUCE: OperatorConstraints = OperatorConstraints {
     soft_range_out: RANGE_1,
     num_args: 0,
     persistence_args: &(0..=1),
-    type_args: RANGE_1,
+    type_args: RANGE_0,
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
@@ -55,25 +52,16 @@ pub const LATTICE_REDUCE: OperatorConstraints = OperatorConstraints {
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    inputs,
+                   op_span,
                    is_pull,
-                   op_inst:
-                       op_inst @ OperatorInstance {
-                           generics: OpInstGenerics { type_args, .. },
-                           ..
-                       },
+                   op_inst: op_inst @ OperatorInstance { .. },
                    ..
                },
                diagnostics| {
         assert!(is_pull);
 
-        assert_eq!(1, inputs.len());
-        let input = &inputs[0];
-
-        assert_eq!(1, type_args.len());
-        let lat_type = &type_args[0];
-
-        let arguments = parse_quote_spanned! {lat_type.span()=> // Uses `lat_type.span()`!
-            #root::lattices::Merge::<#lat_type>::merge
+        let arguments = parse_quote_spanned! {op_span=>
+            #root::lattices::Merge::<_>::merge
         };
         let wc = WriteContextArgs {
             op_inst: &OperatorInstance {
@@ -88,9 +76,12 @@ pub const LATTICE_REDUCE: OperatorConstraints = OperatorConstraints {
             write_iterator,
             write_iterator_after,
         } = (super::reduce::REDUCE.write_fn)(&wc, diagnostics)?;
-        let write_iterator = quote_spanned! {lat_type.span()=> // Uses `lat_type.span()`!
+
+        assert_eq!(1, inputs.len());
+        let input = &inputs[0];
+
+        let write_iterator = quote_spanned! {op_span=>
             let #input = {
-                /// Improve errors with `#lat_type` trait bound.
                 #[inline(always)]
                 fn check_inputs<Lat>(
                     input: impl ::std::iter::Iterator<Item = Lat>
@@ -100,7 +91,7 @@ pub const LATTICE_REDUCE: OperatorConstraints = OperatorConstraints {
                 {
                     input
                 }
-                check_inputs::<#lat_type>(#input)
+                check_inputs::<_>(#input)
             };
             #write_iterator
         };
