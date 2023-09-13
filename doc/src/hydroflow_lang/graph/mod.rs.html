@@ -788,8 +788,8 @@
 <span class="kw">impl </span>Display <span class="kw">for </span>PortIndexValue {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
         <span class="kw">match </span><span class="self">self </span>{
-            PortIndexValue::Int(x) =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, x.to_token_stream().to_string()),
-            PortIndexValue::Path(x) =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, x.to_token_stream().to_string()),
+            PortIndexValue::Int(x) =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, x.to_token_stream()),
+            PortIndexValue::Path(x) =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, x.to_token_stream()),
             PortIndexValue::Elided(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;[]&quot;</span>),
         }
     }

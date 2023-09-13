@@ -749,9 +749,6 @@
 <a href="#749" id="749">749</a>
 <a href="#750" id="750">750</a>
 <a href="#751" id="751">751</a>
-<a href="#752" id="752">752</a>
-<a href="#753" id="753">753</a>
-<a href="#754" id="754">754</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Build a flat graph from [`HfStatement`]s.
 
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -1053,10 +1050,7 @@
                             input: <span class="kw-2">*</span>input,
                             import_expr: parent_span,
                         },
-                        <span class="prelude-val">Some</span>(Ident::new(
-                            <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;module_{}&quot;</span>, input.to_string()),
-                            parent_span,
-                        )),
+                        <span class="prelude-val">Some</span>(Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;module_{}&quot;</span>, input), parent_span)),
                     );
                     node_mapping.insert(nid, new_id);
 
