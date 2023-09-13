@@ -11,10 +11,14 @@ use hydroflow::util::cli::{
 use hydroflow::util::{collect_ready, collect_ready_async};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Copy)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 struct Payload {
     timestamp: usize,
     data: usize,
+}
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+struct OperationPayload {
+    change: usize
 }
 
 fn run_topolotree<S: Sink<(u32, Bytes)> + Unpin + 'static>(
@@ -106,22 +110,29 @@ async fn main() {
 }
 
 #[hydroflow::test]
-async fn simple_test() {
+async fn simple_payload__test() {
     // let args: Vec<String> = std::env::args().skip(1).collect();
     let neighbors: Vec<u32> = vec![1, 2, 3]; // args.into_iter().map(|x| x.parse().unwrap()).collect();
                                           // let current_id = neighbors[0];
 
-    // let (input_send, input_recv) =
-    //     hydroflow::util::unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (input_send, input_recv) =
+        hydroflow::util::unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
     let (output_send, mut output_recv) = futures::channel::mpsc::unbounded::<(u32, Bytes)>();
 
 
     let input1 = (1, Payload {timestamp:1, data:2});
-    let input2 = (1, Payload {timestamp:1, data:3});
-    let payload_vec = vec![input1, input2];
-    let payload_stream = stream::iter(payload_vec).map(|(i, payload)| Ok((i, BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()))));
+    // let input2 = (1, Payload {timestamp:1, data:3});
+    // let payload_vec = vec![input1, input2];
+    // let payload_stream = stream::iter(payload_vec).map(|(i, payload)| Ok((i, BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()))));
 
-    let mut flow: Hydroflow = run_topolotree(neighbors, payload_stream, output_send);
+    let simulate_input = |(id, payload): (u32, Payload)| {
+        input_send.send(Ok((
+            id,
+            BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()),
+        )))
+    };
+
+    let mut flow: Hydroflow = run_topolotree(neighbors, input_recv, output_send);
 
     let receive_all_output = || async move {
         let collected = collect_ready_async::<Vec<_>, _>(&mut output_recv).await;
@@ -130,6 +141,8 @@ async fn simple_test() {
             .map(|(id, bytes)| (*id, serde_json::from_slice::<Payload>(&bytes[..]).unwrap()))
             .collect::<Vec<_>>()
     };
+
+    simulate_input(input1).unwrap();
 
     flow.run_tick();
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
