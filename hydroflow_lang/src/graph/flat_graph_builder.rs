@@ -299,10 +299,7 @@ impl FlatGraphBuilder {
                             input: *input,
                             import_expr: parent_span,
                         },
-                        Some(Ident::new(
-                            &format!("module_{}", input.to_string()),
-                            parent_span,
-                        )),
+                        Some(Ident::new(&format!("module_{}", input), parent_span)),
                     );
                     node_mapping.insert(nid, new_id);
 
