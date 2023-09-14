@@ -828,8 +828,6 @@ fn main() {
                         ),
                     ),
                 );
-            let sg_5v1_node_17v1_persisttick = df
-                .add_state(std::cell::RefCell::new(0usize));
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(5v1)",
                 0,
@@ -919,9 +917,6 @@ fn main() {
                     let mut sg_5v1_node_17v1_joindata_rhs_borrow = context
                         .state_ref(sg_5v1_node_17v1_joindata_rhs)
                         .borrow_mut();
-                    let mut sg_5v1_node_17v1_persisttick_borrow = context
-                        .state_ref(sg_5v1_node_17v1_persisttick)
-                        .borrow_mut();
                     let op_17v1 = {
                         #[inline(always)]
                         fn check_inputs<'a, K, I1, V1, I2, V2>(
@@ -954,26 +949,15 @@ fn main() {
                                 is_new_tick,
                             )
                         }
-                        {
-                            let __is_new_tick = if *sg_5v1_node_17v1_persisttick_borrow
-                                <= context.current_tick()
-                            {
-                                *sg_5v1_node_17v1_persisttick_borrow = context
-                                    .current_tick() + 1;
-                                true
-                            } else {
-                                false
-                            };
-                            check_inputs(
-                                op_19v1,
-                                op_20v1,
-                                &mut *sg_5v1_node_17v1_joindata_lhs_borrow
-                                    .get_mut_clear(context.current_tick()),
-                                &mut *sg_5v1_node_17v1_joindata_rhs_borrow
-                                    .get_mut_clear(context.current_tick()),
-                                __is_new_tick,
-                            )
-                        }
+                        check_inputs(
+                            op_19v1,
+                            op_20v1,
+                            &mut *sg_5v1_node_17v1_joindata_lhs_borrow
+                                .get_mut_clear(context.current_tick()),
+                            &mut *sg_5v1_node_17v1_joindata_rhs_borrow
+                                .get_mut_clear(context.current_tick()),
+                            context.is_first_run_this_tick(),
+                        )
                     };
                     let op_17v1 = {
                         #[allow(non_snake_case)]
@@ -1098,8 +1082,6 @@ fn main() {
                         ),
                     ),
                 );
-            let sg_6v1_node_24v1_persisttick = df
-                .add_state(std::cell::RefCell::new(0usize));
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(6v1)",
                 0,
@@ -1189,9 +1171,6 @@ fn main() {
                     let mut sg_6v1_node_24v1_joindata_rhs_borrow = context
                         .state_ref(sg_6v1_node_24v1_joindata_rhs)
                         .borrow_mut();
-                    let mut sg_6v1_node_24v1_persisttick_borrow = context
-                        .state_ref(sg_6v1_node_24v1_persisttick)
-                        .borrow_mut();
                     let op_24v1 = {
                         #[inline(always)]
                         fn check_inputs<'a, K, I1, V1, I2, V2>(
@@ -1224,26 +1203,15 @@ fn main() {
                                 is_new_tick,
                             )
                         }
-                        {
-                            let __is_new_tick = if *sg_6v1_node_24v1_persisttick_borrow
-                                <= context.current_tick()
-                            {
-                                *sg_6v1_node_24v1_persisttick_borrow = context
-                                    .current_tick() + 1;
-                                true
-                            } else {
-                                false
-                            };
-                            check_inputs(
-                                op_26v1,
-                                op_27v1,
-                                &mut *sg_6v1_node_24v1_joindata_lhs_borrow
-                                    .get_mut_clear(context.current_tick()),
-                                &mut *sg_6v1_node_24v1_joindata_rhs_borrow
-                                    .get_mut_clear(context.current_tick()),
-                                __is_new_tick,
-                            )
-                        }
+                        check_inputs(
+                            op_26v1,
+                            op_27v1,
+                            &mut *sg_6v1_node_24v1_joindata_lhs_borrow
+                                .get_mut_clear(context.current_tick()),
+                            &mut *sg_6v1_node_24v1_joindata_rhs_borrow
+                                .get_mut_clear(context.current_tick()),
+                            context.is_first_run_this_tick(),
+                        )
                     };
                     let op_24v1 = {
                         #[allow(non_snake_case)]

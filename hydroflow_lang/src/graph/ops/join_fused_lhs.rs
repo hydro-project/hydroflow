@@ -88,10 +88,9 @@ pub const JOIN_FUSED_LHS: OperatorConstraints = OperatorConstraints {
         let write_prologue_rhs = match persistences[1] {
             Persistence::Tick => quote_spanned! {op_span=>},
             Persistence::Static => quote_spanned! {op_span=>
-                let #rhs_joindata_ident = #hydroflow.add_state(std::cell::RefCell::new((
-                    0_usize,
+                let #rhs_joindata_ident = #hydroflow.add_state(::std::cell::RefCell::new(
                     ::std::vec::Vec::new()
-                )));
+                ));
             },
             Persistence::Mutable => {
                 diagnostics.push(Diagnostic::spanned(
@@ -143,14 +142,13 @@ pub const JOIN_FUSED_LHS: OperatorConstraints = OperatorConstraints {
 
                     #[allow(clippy::clone_on_copy)]
                     #[allow(suspicious_double_ref_op)]
-                    if #rhs_borrow_ident.0 <= #context.current_tick() {
-                        #rhs_borrow_ident.0 = 1 + #context.current_tick();
-                        #rhs_borrow_ident.1.extend(#rhs);
-                        #rhs_borrow_ident.1.iter()
+                    if #context.is_first_run_this_tick() {
+                        #rhs_borrow_ident.extend(#rhs);
+                        #rhs_borrow_ident.iter()
                     } else {
-                        let len = #rhs_borrow_ident.1.len();
-                        #rhs_borrow_ident.1.extend(#rhs);
-                        #rhs_borrow_ident.1[len..].iter()
+                        let len = #rhs_borrow_ident.len();
+                        #rhs_borrow_ident.extend(#rhs);
+                        #rhs_borrow_ident[len..].iter()
                     }
                     .filter_map(|(k, v2)| #lhs_borrow.table.get(k).map(|v1| (k.clone(), (v1.clone(), v2.clone()))))
                 };

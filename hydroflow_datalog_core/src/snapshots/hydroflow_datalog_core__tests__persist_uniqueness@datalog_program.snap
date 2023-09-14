@@ -433,8 +433,6 @@ fn main() {
                         >::default(),
                     ),
                 );
-            let sg_3v1_node_3v1_persisttick = df
-                .add_state(std::cell::RefCell::new(0_usize));
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(3v1)",
                 1,
@@ -650,24 +648,13 @@ fn main() {
                                 is_new_tick,
                             )
                         }
-                        let __is_new_tick = {
-                            let mut __borrow_ident = context
-                                .state_ref(sg_3v1_node_3v1_persisttick)
-                                .borrow_mut();
-                            if *__borrow_ident <= context.current_tick() {
-                                *__borrow_ident = context.current_tick() + 1;
-                                true
-                            } else {
-                                false
-                            }
-                        };
                         check_inputs(
                             hoff_11v3_recv,
                             op_2v1,
                             &mut *sg_3v1_node_3v1_antijoindata_neg_borrow,
                             &mut *sg_3v1_node_3v1_antijoindata_pos_borrow
                                 .get_mut_clear(context.current_tick()),
-                            __is_new_tick,
+                            context.is_first_run_this_tick(),
                         )
                     };
                     let op_3v1 = op_3v1.map(|(k, ())| k);

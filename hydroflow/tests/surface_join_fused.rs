@@ -172,6 +172,7 @@ pub fn static_static_lhs_streaming_rhs_blocking() {
             -> [0]my_join;
 
         my_join = join_fused_rhs::<'static, 'static>(Fold(SetUnionHashSet::default, Merge::merge))
+            -> inspect(|x| println!("{}, {x:?}", context.current_tick()))
             -> for_each(|x| results_inner.borrow_mut().entry(context.current_tick()).or_default().push(x));
     };
     assert_graphvis_snapshots!(df);
