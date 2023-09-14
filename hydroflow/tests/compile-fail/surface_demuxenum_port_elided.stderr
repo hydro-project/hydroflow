@@ -1,0 +1,13 @@
+error: Output port from `demux_enum(..)` must be specified and must be a valid identifier.
+  --> tests/compile-fail/surface_demuxenum_port_elided.rs:22:9
+   |
+22 |         my_demux -> for_each(std::mem::drop);
+   |         ^^^^^^^^
+
+warning: unused import: `var_args`
+ --> tests/compile-fail/surface_demuxenum_port_elided.rs:2:35
+  |
+2 | use hydroflow::{hydroflow_syntax, var_args};
+  |                                   ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
