@@ -57,6 +57,7 @@ impl Default for Hydroflow {
             current_tick: 0,
 
             current_tick_start: Instant::now(),
+            subgraph_last_tick_run_in: None,
 
             subgraph_id: SubgraphId(0),
 
@@ -190,6 +191,8 @@ impl Hydroflow {
     /// Returns true if any work was done.
     #[tracing::instrument(level = "trace", skip(self), fields(tick = self.context.current_tick, stratum = self.context.current_stratum), ret)]
     pub fn run_stratum(&mut self) -> bool {
+        let current_tick = self.context.current_tick;
+
         let mut work_done = false;
 
         while let Some(sg_id) = self.stratum_queues[self.context.current_stratum].pop_front() {
@@ -201,7 +204,9 @@ impl Hydroflow {
                 tracing::trace!(sg_id = sg_id.0, "Running subgraph.");
 
                 self.context.subgraph_id = sg_id;
+                self.context.subgraph_last_tick_run_in = sg_data.last_tick_run_in;
                 sg_data.subgraph.run(&mut self.context, &mut self.handoffs);
+                sg_data.last_tick_run_in = Some(current_tick);
             }
 
             for &handoff_id in self.subgraphs[sg_id.0].succs.iter() {
@@ -752,6 +757,9 @@ pub(super) struct SubgraphData {
     /// `Self::succs`, as all `SubgraphData` are owned by the same vec
     /// `Hydroflow::subgraphs`.
     is_scheduled: Cell<bool>,
+
+    /// Keep track of the last tick that this subgraph was run in
+    last_tick_run_in: Option<usize>,
 }
 impl SubgraphData {
     pub fn new(
@@ -769,6 +777,7 @@ impl SubgraphData {
             preds,
             succs,
             is_scheduled: Cell::new(is_scheduled),
+            last_tick_run_in: None,
         }
     }
 }

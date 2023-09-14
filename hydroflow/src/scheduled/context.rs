@@ -30,6 +30,7 @@ pub struct Context {
     pub(crate) current_stratum: usize,
 
     pub(crate) current_tick_start: Instant,
+    pub(crate) subgraph_last_tick_run_in: Option<usize>,
 
     /// The SubgraphId of the currently running operator. When this context is
     /// not being forwarded to a running operator, this field is (mostly)
@@ -48,6 +49,14 @@ impl Context {
     /// Gets the timestamp of the beginning of the current tick.
     pub fn current_tick_start(&self) -> Instant {
         self.current_tick_start
+    }
+
+    /// Gets whether this is the first time this subgraph is being scheduled for this tick
+    pub fn is_first_run_this_tick(&self) -> bool {
+        self.subgraph_last_tick_run_in
+            .map_or(true, |tick_last_run_in| {
+                self.current_tick > tick_last_run_in
+            })
     }
 
     /// Gets the current stratum nubmer.

@@ -65,23 +65,19 @@ pub const MULTISET_DELTA: OperatorConstraints = OperatorConstraints {
         let input = &inputs[0];
         let output = &outputs[0];
 
-        let tick_data = wc.make_ident("tick_data");
         let prev_data = wc.make_ident("prev_data");
         let curr_data = wc.make_ident("curr_data");
 
         let write_prologue = quote_spanned! {op_span=>
-            let #tick_data = #hydroflow.add_state(::std::cell::Cell::new(0_usize));
             let #prev_data = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashMap::default()));
             let #curr_data = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashMap::default()));
         };
 
         let filter_fn = quote_spanned! {op_span=>
             |item| {
-                let tick = #context.state_ref(#tick_data);
                 let mut prev_map = #context.state_ref(#prev_data).borrow_mut();
                 let mut curr_map = #context.state_ref(#curr_data).borrow_mut();
-                if tick.get() < #context.current_tick() {
-                    tick.set(#context.current_tick());
+                if context.is_first_run_this_tick() {
                     ::std::mem::swap(::std::ops::DerefMut::deref_mut(&mut prev_map), ::std::ops::DerefMut::deref_mut(&mut curr_map));
                     curr_map.clear();
                 }

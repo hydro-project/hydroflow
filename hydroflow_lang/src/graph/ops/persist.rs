@@ -68,22 +68,18 @@ pub const PERSIST: OperatorConstraints = OperatorConstraints {
                _| {
         let persistdata_ident = wc.make_ident("persistdata");
         let vec_ident = wc.make_ident("persistvec");
-        let tick_ident = wc.make_ident("persisttick");
         let write_prologue = quote_spanned! {op_span=>
-            let #persistdata_ident = #hydroflow.add_state(::std::cell::RefCell::new((
-                0_usize, // tick
+            let #persistdata_ident = #hydroflow.add_state(::std::cell::RefCell::new(
                 ::std::vec::Vec::new(),
-            )));
+            ));
         };
 
         let write_iterator = if is_pull {
             let input = &inputs[0];
             quote_spanned! {op_span=>
                 let mut #vec_ident = #context.state_ref(#persistdata_ident).borrow_mut();
-                let (ref mut #tick_ident, ref mut #vec_ident) = &mut *#vec_ident;
                 let #ident = {
-                    if *#tick_ident <= #context.current_tick() {
-                        *#tick_ident = 1 + #context.current_tick();
+                    if context.is_first_run_this_tick() {
                         #vec_ident.extend(#input);
                         #vec_ident.iter().cloned()
                     } else {
@@ -97,15 +93,13 @@ pub const PERSIST: OperatorConstraints = OperatorConstraints {
             let output = &outputs[0];
             quote_spanned! {op_span=>
                 let mut #vec_ident = #context.state_ref(#persistdata_ident).borrow_mut();
-                let (ref mut #tick_ident, ref mut #vec_ident) = &mut *#vec_ident;
                 let #ident = {
-                    fn constrain_types<'ctx, Push, Item>(curr_tick: usize, tick: &'ctx mut usize, vec: &'ctx mut Vec<Item>, mut output: Push) -> impl 'ctx + #root::pusherator::Pusherator<Item = Item>
+                    fn constrain_types<'ctx, Push, Item>(vec: &'ctx mut Vec<Item>, mut output: Push, is_new_tick: bool) -> impl 'ctx + #root::pusherator::Pusherator<Item = Item>
                     where
                         Push: 'ctx + #root::pusherator::Pusherator<Item = Item>,
                         Item: ::std::clone::Clone,
                     {
-                        if *tick <= curr_tick {
-                            *tick = 1 + curr_tick;
+                        if is_new_tick {
                             vec.iter().cloned().for_each(|item| {
                                 #root::pusherator::Pusherator::give(&mut output, item);
                             });
@@ -115,7 +109,7 @@ pub const PERSIST: OperatorConstraints = OperatorConstraints {
                             vec.last().unwrap().clone()
                         }, output)
                     }
-                    constrain_types(#context.current_tick(), #tick_ident, #vec_ident, #output)
+                    constrain_types(&mut *#vec_ident, #output, context.is_first_run_this_tick())
                 };
             }
         };
