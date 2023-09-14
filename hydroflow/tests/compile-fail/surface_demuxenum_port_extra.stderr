@@ -1,0 +1,36 @@
+error[E0277]: the trait bound `Shape: DemuxEnum<(impl Pusherator<Item = _>, (impl Pusherator<Item = _>, (impl Pusherator<Item = _>, (impl Pusherator<Item = _>, ()))))>` is not satisfied
+  --> tests/compile-fail/surface_demuxenum_port_extra.rs:13:20
+   |
+13 |           my_demux = source_iter([
+   |  ____________________^
+14 | |             Shape::Rectangle { w: 10.0, h: 8.0 },
+15 | |             Shape::Square(9.0),
+16 | |             Shape::Circle { r: 5.0 },
+17 | |         ]) -> demux_enum();
+   | |__________________________^ the trait `DemuxEnum<(impl Pusherator<Item = _>, (impl Pusherator<Item = _>, (impl Pusherator<Item = _>, (impl Pusherator<Item = _>, ()))))>` is not implemented for `Shape`
+   |
+   = help: the trait `DemuxEnum<(__PusheratorCircle, (__PusheratorRectangle, (__PusheratorSquare, ())))>` is implemented for `Shape`
+
+error[E0277]: the trait bound `Shape: DemuxEnum<(impl Pusherator<Item = _>, (impl Pusherator<Item = _>, (impl Pusherator<Item = _>, (impl Pusherator<Item = _>, ()))))>` is not satisfied
+  --> tests/compile-fail/surface_demuxenum_port_extra.rs:17:15
+   |
+17 |         ]) -> demux_enum();
+   |               ^^^^^^^^^^^^ the trait `DemuxEnum<(impl Pusherator<Item = _>, (impl Pusherator<Item = _>, (impl Pusherator<Item = _>, (impl Pusherator<Item = _>, ()))))>` is not implemented for `Shape`
+   |
+   = help: the trait `DemuxEnum<(__PusheratorCircle, (__PusheratorRectangle, (__PusheratorSquare, ())))>` is implemented for `Shape`
+
+error[E0277]: the trait bound `Shape: DemuxEnum<(impl Pusherator<Item = _>, (impl Pusherator<Item = _>, (impl Pusherator<Item = _>, (impl Pusherator<Item = _>, ()))))>` is not satisfied
+  --> tests/compile-fail/surface_demuxenum_port_extra.rs:12:18
+   |
+12 |       let mut df = hydroflow_syntax! {
+   |  __________________^
+13 | |         my_demux = source_iter([
+14 | |             Shape::Rectangle { w: 10.0, h: 8.0 },
+15 | |             Shape::Square(9.0),
+...  |
+21 | |         my_demux[Ellipse] -> for_each(std::mem::drop);
+22 | |     };
+   | |_____^ the trait `DemuxEnum<(impl Pusherator<Item = _>, (impl Pusherator<Item = _>, (impl Pusherator<Item = _>, (impl Pusherator<Item = _>, ()))))>` is not implemented for `Shape`
+   |
+   = help: the trait `DemuxEnum<(__PusheratorCircle, (__PusheratorRectangle, (__PusheratorSquare, ())))>` is implemented for `Shape`
+   = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)

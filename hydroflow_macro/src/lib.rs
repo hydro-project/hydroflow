@@ -8,8 +8,11 @@ use hydroflow_lang::diagnostic::{Diagnostic, Level};
 use hydroflow_lang::graph::{build_hfcode, partition_graph, FlatGraphBuilder};
 use hydroflow_lang::parse::HfCode;
 use proc_macro2::{Ident, Literal, Span};
-use quote::quote;
-use syn::{parse_macro_input, parse_quote, Attribute, LitStr};
+use quote::{format_ident, quote};
+use syn::{
+    parse_macro_input, parse_quote, Attribute, GenericParam, ItemEnum, LitStr, Variant,
+    WherePredicate,
+};
 
 /// Create a Hydroflow instance using Hydroflow's custom "surface syntax."
 ///
@@ -208,4 +211,123 @@ pub fn hydroflow_main(
             #[#root::tokio::main(flavor = "current_thread")]
         ),
     )
+}
+
+#[proc_macro_derive(DemuxEnum)]
+pub fn derive_answer_fn(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let root = root();
+
+    let ItemEnum {
+        ident,
+        generics,
+        variants,
+        ..
+    } = parse_macro_input!(item as ItemEnum);
+
+    // Sort variants alphabetically.
+    let mut variants_sorted = variants.into_iter().collect::<Vec<_>>();
+    variants_sorted.sort_by(|a, b| a.ident.cmp(&b.ident));
+
+    let variant_pusherator_generics = variants_sorted
+        .iter()
+        .map(|variant| format_ident!("__Pusherator{}", variant.ident))
+        .collect::<Vec<_>>();
+    let variant_pusherator_localvars = variants_sorted
+        .iter()
+        .map(|variant| {
+            format_ident!(
+                "__pusherator_{}",
+                variant.ident.to_string().to_lowercase(),
+                span = variant.ident.span()
+            )
+        })
+        .collect::<Vec<_>>();
+    let variant_output_types = variants_sorted
+        .iter()
+        .map(|variant| match &variant.fields {
+            syn::Fields::Named(fields) => {
+                let field_types = fields.named.iter().map(|field| &field.ty);
+                parse_quote! {
+                    ( #( #field_types, )* )
+                }
+            }
+            syn::Fields::Unnamed(fields) => {
+                if 1 == fields.unnamed.len() {
+                    fields.unnamed.first().unwrap().ty.clone()
+                } else {
+                    let field_types = fields.unnamed.iter().map(|field| &field.ty);
+                    parse_quote! {
+                        ( #( #field_types, )* )
+                    }
+                }
+            }
+            syn::Fields::Unit => parse_quote!(()),
+        })
+        .collect::<Vec<_>>();
+
+    let mut full_generics = generics.clone();
+    full_generics.params.extend(
+        variant_pusherator_generics
+            .iter()
+            .map::<GenericParam, _>(|ident| parse_quote!(#ident)),
+    );
+    full_generics.make_where_clause().predicates.extend(
+        variant_pusherator_generics
+            .iter()
+            .zip(variant_output_types.iter())
+            .map::<WherePredicate, _>(|(pusherator_generic, output_type)| {
+                parse_quote! {
+                    #pusherator_generic: #root::pusherator::Pusherator<Item = #output_type>
+                }
+            }),
+    );
+
+    let (_impl_generics, ty_generics, _where_clause) = generics.split_for_impl();
+    let (impl_generics, _ty_generics, where_clause) = full_generics.split_for_impl();
+
+    let variant_pats = variants_sorted
+        .iter()
+        .zip(variant_pusherator_localvars.iter())
+        .map(|(variant, pushvar)| {
+            let Variant { ident, fields, .. } = variant;
+            let idents = fields
+                .iter()
+                .enumerate()
+                .map(|(i, field)| {
+                    field
+                        .ident
+                        .clone()
+                        .unwrap_or_else(|| format_ident!("_{}", i))
+                })
+                .collect::<Vec<_>>();
+            let (fields_pat, push_item) = match fields {
+                syn::Fields::Named(_) => {
+                    (quote!( { #( #idents, )* } ), quote!( ( #( #idents, )* ) ))
+                }
+                syn::Fields::Unnamed(_) => {
+                    (quote!( ( #( #idents ),* ) ), quote!( ( #( #idents ),* ) ))
+                }
+                syn::Fields::Unit => (quote!(), quote!(())),
+            };
+            quote! {
+                Self::#ident #fields_pat => #pushvar.give(#push_item)
+            }
+        });
+
+    quote! {
+        impl #impl_generics #root::util::demux_enum::DemuxEnum<#root::variadics::var_type!( #( #variant_pusherator_generics, )* )>
+            for #ident #ty_generics #where_clause
+        {
+            fn demux_enum(
+                self,
+                #root::variadics::var_args!( #( #variant_pusherator_localvars, )* ):
+                    &mut #root::variadics::var_type!( #( #variant_pusherator_generics, )* )
+            ) {
+                match self {
+                    #( #variant_pats, )*
+                }
+            }
+        }
+    }
+    .into()
 }
