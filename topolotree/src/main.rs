@@ -128,32 +128,28 @@ async fn main() {
     hydroflow::util::cli::launch_flow(run_topolotree(neighbors, input_recv, operations_send, output_send)).await;
 }
 
+
+
+
 #[hydroflow::test]
 async fn simple_payload__test() {
     // let args: Vec<String> = std::env::args().skip(1).collect();
     let neighbors: Vec<u32> = vec![1, 2, 3]; // args.into_iter().map(|x| x.parse().unwrap()).collect();
                                           // let current_id = neighbors[0];
-
     let (input_send, input_recv) =
         hydroflow::util::unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
     let (output_send, mut output_recv) = futures::channel::mpsc::unbounded::<(u32, Bytes)>();
-
-
     let input1 = (1, Payload {timestamp:1, data:2});
     // let input2 = (1, Payload {timestamp:1, data:3});
     // let payload_vec = vec![input1, input2];
     // let payload_stream = stream::iter(payload_vec).map(|(i, payload)| Ok((i, BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()))));
-
-    // Send (id, Payload) over network to neighbors
     let simulate_input = |(id, payload): (u32, Payload)| {
         input_send.send(Ok((
             id,
             BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()),
         )))
     };
-
-    let mut flow: Hydroflow = run_topolotree(neighbors, input_recv, operations_send, output_send);
-
+    let mut flow: Hydroflow = run_topolotree(neighbors, input_recv, output_send);
     let receive_all_output = || async move {
         let collected = collect_ready_async::<Vec<_>, _>(&mut output_recv).await;
         collected
@@ -161,17 +157,134 @@ async fn simple_payload__test() {
             .map(|(id, bytes)| (*id, serde_json::from_slice::<Payload>(&bytes[..]).unwrap()))
             .collect::<Vec<_>>()
     };
-
     simulate_input(input1).unwrap();
-
     flow.run_tick();
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
     let output1: (u32, Payload) = (2, Payload {timestamp:1, data:2});
     let output2: (u32, Payload) = (3, Payload {timestamp:1, data:2});
-
     assert_eq!(
         receive_all_output().await,
         &[output1, output2]
     );
 }
+
+
+
+#[hydroflow::test]
+async fn idempotence_test() {
+    let neighbors: Vec<u32> = vec![1, 2, 3];
+    let (input_send, input_recv) =
+        hydroflow::util::unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (output_send, mut output_recv) = futures::channel::mpsc::unbounded::<(u32, Bytes)>();
+    let input1 = (1, Payload {timestamp:4, data:2});
+    let input2 = (1, Payload {timestamp:4, data:2});
+    let simulate_input = |(id, payload): (u32, Payload)| {
+        input_send.send(Ok((
+            id,
+            BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()),
+        )))
+    };
+    simulate_input(input1).unwrap();
+    simulate_input(input2).unwrap();
+    let mut flow: Hydroflow = run_topolotree(neighbors, input_recv, output_send);
+    let receive_all_output = || async move {
+        let collected = collect_ready_async::<Vec<_>, _>(&mut output_recv).await;
+        collected
+            .iter()
+            .map(|(id, bytes)| (*id, serde_json::from_slice::<Payload>(&bytes[..]).unwrap()))
+            .collect::<Vec<_>>()
+    };
+    flow.run_tick();
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    let output1: (u32, Payload) = (2, Payload {timestamp:1, data:2});
+    let output2: (u32, Payload) = (3, Payload {timestamp:1, data:2});
+    assert_eq!(
+        receive_all_output().await,
+        &[output1, output2]
+    );
+}
+#[hydroflow::test]
+async fn backwards_in_time_test() {
+    let neighbors: Vec<u32> = vec![1, 2, 3];
+    let (input_send, input_recv) =
+        hydroflow::util::unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (output_send, mut output_recv) = futures::channel::mpsc::unbounded::<(u32, Bytes)>();
+    let input1 = (1, Payload {timestamp:5, data:7});
+    let input2 = (1, Payload {timestamp:4, data:2});
+    let simulate_input = |(id, payload): (u32, Payload)| {
+        input_send.send(Ok((
+            id,
+            BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()),
+        )))
+    };
+    simulate_input(input1).unwrap();
+    simulate_input(input2).unwrap();
+    let mut flow: Hydroflow = run_topolotree(neighbors, input_recv, output_send);
+    let receive_all_output = || async move {
+        let collected = collect_ready_async::<Vec<_>, _>(&mut output_recv).await;
+        collected
+            .iter()
+            .map(|(id, bytes)| (*id, serde_json::from_slice::<Payload>(&bytes[..]).unwrap()))
+            .collect::<Vec<_>>()
+    };
+    flow.run_tick();
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    let output1: (u32, Payload) = (2, Payload {timestamp:1, data:7});
+    let output2: (u32, Payload) = (3, Payload {timestamp:1, data:7});
+    assert_eq!(
+        receive_all_output().await,
+        &[output1, output2]
+    );
+}
+#[hydroflow::test]
+async fn multiple_input_sources_test() {
+    let neighbors: Vec<u32> = vec![1, 2, 3];
+    let (input_send, input_recv) =
+        hydroflow::util::unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (output_send, mut output_recv) = futures::channel::mpsc::unbounded::<(u32, Bytes)>();
+    let input1 = (1, Payload {timestamp:5, data:7});
+    let input2 = (2, Payload {timestamp:4, data:2});
+    let simulate_input = |(id, payload): (u32, Payload)| {
+        input_send.send(Ok((
+            id,
+            BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()),
+        )))
+    };
+    simulate_input(input1).unwrap();
+    simulate_input(input2).unwrap();
+    let mut flow: Hydroflow = run_topolotree(neighbors, input_recv, output_send);
+    let receive_all_output = || async move {
+        let collected = collect_ready_async::<Vec<_>, _>(&mut output_recv).await;
+        collected
+            .iter()
+            .map(|(id, bytes)| (*id, serde_json::from_slice::<Payload>(&bytes[..]).unwrap()))
+            .collect::<HashSet<_>>()
+    };
+    flow.run_tick();
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    let output1: (u32, Payload) = (1, Payload {timestamp:2, data:2});
+    let output2: (u32, Payload) = (2, Payload {timestamp:2, data:7});
+    let output3: (u32, Payload) = (3, Payload {timestamp:2, data:9});
+    assert_eq!(
+        receive_all_output().await,
+        HashSet::from([output1, output2, output3])
+    );
+}
+// idempotence test (issue two requests with the same timestamp and see that they don't change anything.)
+//     let input1 = (1, Payload {timestamp:4, data:2});
+//     let input2 = (1, Payload {timestamp:4, data:2});
+//     let output1: (u32, Payload) = (2, Payload {timestamp:1, data:2});
+//     let output2: (u32, Payload) = (3, Payload {timestamp:1, data:2});
+//
+// backward in time test (issue two requests, the second one with an earlier timestamp than the first. )
+//     let input1 = (1, Payload {timestamp:5, data:7});
+//     let input2 = (1, Payload {timestamp:4, data:2});
+//     let output1: (u32, Payload) = (2, Payload {timestamp:1, data:7});
+//     let output2: (u32, Payload) = (3, Payload {timestamp:1, data:7});
+//
+// updates from multiple sources test
+//     let input1 = (1, Payload {timestamp:5, data:7});
+//     let input2 = (2, Payload {timestamp:4, data:2});
+//     let output1: (u32, Payload) = (1, Payload {timestamp:2, data:2});
+//     let output2: (u32, Payload) = (2, Payload {timestamp:2, data:7});
+//     let output3: (u32, Payload) = (3, Payload {timestamp:2, data:9});
