@@ -162,23 +162,6 @@
 <a href="#162" id="162">162</a>
 <a href="#163" id="163">163</a>
 <a href="#164" id="164">164</a>
-<a href="#165" id="165">165</a>
-<a href="#166" id="166">166</a>
-<a href="#167" id="167">167</a>
-<a href="#168" id="168">168</a>
-<a href="#169" id="169">169</a>
-<a href="#170" id="170">170</a>
-<a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a>
-<a href="#173" id="173">173</a>
-<a href="#174" id="174">174</a>
-<a href="#175" id="175">175</a>
-<a href="#176" id="176">176</a>
-<a href="#177" id="177">177</a>
-<a href="#178" id="178">178</a>
-<a href="#179" id="179">179</a>
-<a href="#180" id="180">180</a>
-<a href="#181" id="181">181</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
@@ -288,7 +271,6 @@
             make_antijoindata(persistences[<span class="number">0</span>], <span class="string">&quot;pos&quot;</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>(neg_antijoindata_ident, neg_borrow_ident, neg_init, neg_borrow) =
             make_antijoindata(persistences[<span class="number">1</span>], <span class="string">&quot;neg&quot;</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>tick_ident = wc.make_ident(<span class="string">&quot;persisttick&quot;</span>);
 
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span>#neg_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
@@ -297,9 +279,6 @@
             <span class="kw">let </span>#pos_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #pos_init
             ));
-            <span class="kw">let </span>#tick_ident = #hydroflow.add_state(std::cell::RefCell::new(
-                <span class="number">0_usize
-            </span>));
         };
 
         <span class="kw">let </span>input_neg = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>]; <span class="comment">// N before P
@@ -329,25 +308,12 @@
                         #root::compiled::pull::anti_join_into_iter(input_pos, neg_state, pos_state, is_new_tick)
                     }
 
-                    <span class="kw">let </span>__is_new_tick = {
-                        <span class="kw">let </span><span class="kw-2">mut </span>__borrow_ident = #context.state_ref(#tick_ident).borrow_mut();
-
-                        <span class="kw">if </span><span class="kw-2">*</span>__borrow_ident &lt;= #context.current_tick() {
-                            <span class="kw-2">*</span>__borrow_ident = #context.current_tick() + <span class="number">1</span>;
-                            <span class="comment">// new tick
-                            </span><span class="bool-val">true
-                        </span>} <span class="kw">else </span>{
-                            <span class="comment">// same tick.
-                            </span><span class="bool-val">false
-                        </span>}
-                    };
-
                     check_inputs(
                         #input_neg,
                         #input_pos,
                         #neg_borrow,
                         #pos_borrow,
-                        __is_new_tick,
+                        context.is_first_run_this_tick(),
                     )
                 };
             }

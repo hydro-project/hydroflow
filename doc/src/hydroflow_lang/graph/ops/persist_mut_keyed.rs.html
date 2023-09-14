@@ -100,11 +100,6 @@
 <a href="#100" id="100">100</a>
 <a href="#101" id="101">101</a>
 <a href="#102" id="102">102</a>
-<a href="#103" id="103">103</a>
-<a href="#104" id="104">104</a>
-<a href="#105" id="105">105</a>
-<a href="#106" id="106">106</a>
-<a href="#107" id="107">107</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -156,28 +151,23 @@
 
         <span class="kw">let </span>persistdata_ident = wc.make_ident(<span class="string">&quot;persistdata&quot;</span>);
         <span class="kw">let </span>vec_ident = wc.make_ident(<span class="string">&quot;persistvec&quot;</span>);
-        <span class="kw">let </span>tick_ident = wc.make_ident(<span class="string">&quot;persisttick&quot;</span>);
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
-            <span class="kw">let </span>#persistdata_ident = #hydroflow.add_state(::std::cell::RefCell::new((
-                <span class="number">0_usize</span>, <span class="comment">// tick
-                </span>#root::rustc_hash::FxHashMap::&lt;<span class="kw">_</span>, #root::util::sparse_vec::SparseVec&lt;<span class="kw">_</span>&gt;&gt;::default()
-            )));
+            <span class="kw">let </span>#persistdata_ident = #hydroflow.add_state(::std::cell::RefCell::new(
+                #root::rustc_hash::FxHashMap::&lt;<span class="kw">_</span>, #root::util::sparse_vec::SparseVec&lt;<span class="kw">_</span>&gt;&gt;::default()
+            ));
         };
 
         <span class="kw">let </span>write_iterator = {
             <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
             <span class="macro">quote_spanned! </span>{op_span=&gt;
                 <span class="kw">let </span><span class="kw-2">mut </span>#vec_ident = #context.state_ref(#persistdata_ident).borrow_mut();
-                <span class="kw">let </span>(<span class="kw-2">ref mut </span>#tick_ident, <span class="kw-2">ref mut </span>#vec_ident) = <span class="kw-2">&amp;mut *</span>#vec_ident;
                 <span class="kw">let </span>#ident = {
                     <span class="attr">#[inline(always)]
                     </span><span class="kw">fn </span>check_iter&lt;K, V&gt;(iter: <span class="kw">impl </span>Iterator&lt;Item = #root::util::PersistenceKeyed::&lt;K, V&gt;&gt;) -&gt; <span class="kw">impl </span>Iterator&lt;Item = #root::util::PersistenceKeyed::&lt;K, V&gt;&gt; {
                         iter
                     }
 
-                    <span class="kw">if </span><span class="kw-2">*</span>#tick_ident &lt;= #context.current_tick() {
-                        <span class="kw-2">*</span>#tick_ident = <span class="number">1 </span>+ #context.current_tick();
-
+                    <span class="kw">if </span>context.is_first_run_this_tick() {
                         <span class="kw">for </span>item <span class="kw">in </span>check_iter(#input) {
                             <span class="kw">match </span>item {
                                 #root::util::PersistenceKeyed::Persist(k, v) =&gt; {

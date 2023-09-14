@@ -169,6 +169,15 @@
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
 <a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for the user-facing [`Context`] object.
 
 </span><span class="kw">use </span>std::any::Any;
@@ -201,6 +210,7 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) current_stratum: usize,
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) current_tick_start: Instant,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) subgraph_last_tick_run_in: <span class="prelude-ty">Option</span>&lt;usize&gt;,
 
     <span class="doccomment">/// The SubgraphId of the currently running operator. When this context is
     /// not being forwarded to a running operator, this field is (mostly)
@@ -219,6 +229,14 @@
     <span class="doccomment">/// Gets the timestamp of the beginning of the current tick.
     </span><span class="kw">pub fn </span>current_tick_start(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Instant {
         <span class="self">self</span>.current_tick_start
+    }
+
+    <span class="doccomment">/// Gets whether this is the first time this subgraph is being scheduled for this tick
+    </span><span class="kw">pub fn </span>is_first_run_this_tick(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.subgraph_last_tick_run_in
+            .map_or(<span class="bool-val">true</span>, |tick_last_run_in| {
+                <span class="self">self</span>.current_tick &gt; tick_last_run_in
+            })
     }
 
     <span class="doccomment">/// Gets the current stratum nubmer.

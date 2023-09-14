@@ -240,22 +240,6 @@
 <a href="#240" id="240">240</a>
 <a href="#241" id="241">241</a>
 <a href="#242" id="242">242</a>
-<a href="#243" id="243">243</a>
-<a href="#244" id="244">244</a>
-<a href="#245" id="245">245</a>
-<a href="#246" id="246">246</a>
-<a href="#247" id="247">247</a>
-<a href="#248" id="248">248</a>
-<a href="#249" id="249">249</a>
-<a href="#250" id="250">250</a>
-<a href="#251" id="251">251</a>
-<a href="#252" id="252">252</a>
-<a href="#253" id="253">253</a>
-<a href="#254" id="254">254</a>
-<a href="#255" id="255">255</a>
-<a href="#256" id="256">256</a>
-<a href="#257" id="257">257</a>
-<a href="#258" id="258">258</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
@@ -443,9 +427,6 @@
         <span class="kw">let </span>(rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow) =
             make_joindata(persistences[<span class="number">1</span>], <span class="string">&quot;rhs&quot;</span>)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>tick_ident = wc.make_ident(<span class="string">&quot;persisttick&quot;</span>);
-        <span class="kw">let </span>tick_borrow_ident = wc.make_ident(<span class="string">&quot;persisttick_borrow&quot;</span>);
-
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span>#lhs_joindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #lhs_init
@@ -453,9 +434,6 @@
             <span class="kw">let </span>#rhs_joindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #rhs_init
             ));
-            <span class="kw">let </span>#tick_ident = #hydroflow.add_state(std::cell::RefCell::new(
-                <span class="number">0usize
-            </span>));
         };
 
         <span class="kw">let </span>lhs = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
@@ -463,7 +441,6 @@
         <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span><span class="kw-2">mut </span>#lhs_borrow_ident = #context.state_ref(#lhs_joindata_ident).borrow_mut();
             <span class="kw">let </span><span class="kw-2">mut </span>#rhs_borrow_ident = #context.state_ref(#rhs_joindata_ident).borrow_mut();
-            <span class="kw">let </span><span class="kw-2">mut </span>#tick_borrow_ident = #context.state_ref(#tick_ident).borrow_mut();
             <span class="kw">let </span>#ident = {
                 <span class="comment">// Limit error propagation by bounding locally, erasing output iterator type.
                 </span><span class="attr">#[inline(always)]
@@ -484,16 +461,7 @@
                     #root::compiled::pull::symmetric_hash_join_into_iter(lhs, rhs, lhs_state, rhs_state, is_new_tick)
                 }
 
-                {
-                    <span class="kw">let </span>__is_new_tick = <span class="kw">if </span><span class="kw-2">*</span>#tick_borrow_ident &lt;= #context.current_tick() {
-                        <span class="kw-2">*</span>#tick_borrow_ident = #context.current_tick() + <span class="number">1</span>;
-                        <span class="bool-val">true
-                    </span>} <span class="kw">else </span>{
-                        <span class="bool-val">false
-                    </span>};
-
-                    check_inputs(#lhs, #rhs, #lhs_borrow, #rhs_borrow, __is_new_tick)
-                }
+                check_inputs(#lhs, #rhs, #lhs_borrow, #rhs_borrow, #context.is_first_run_this_tick())
             };
         };
 

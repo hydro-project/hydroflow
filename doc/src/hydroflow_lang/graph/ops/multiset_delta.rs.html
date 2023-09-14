@@ -113,10 +113,6 @@
 <a href="#113" id="113">113</a>
 <a href="#114" id="114">114</a>
 <a href="#115" id="115">115</a>
-<a href="#116" id="116">116</a>
-<a href="#117" id="117">117</a>
-<a href="#118" id="118">118</a>
-<a href="#119" id="119">119</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -184,23 +180,19 @@
         <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
         <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
 
-        <span class="kw">let </span>tick_data = wc.make_ident(<span class="string">&quot;tick_data&quot;</span>);
         <span class="kw">let </span>prev_data = wc.make_ident(<span class="string">&quot;prev_data&quot;</span>);
         <span class="kw">let </span>curr_data = wc.make_ident(<span class="string">&quot;curr_data&quot;</span>);
 
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
-            <span class="kw">let </span>#tick_data = #hydroflow.add_state(::std::cell::Cell::new(<span class="number">0_usize</span>));
             <span class="kw">let </span>#prev_data = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashMap::default()));
             <span class="kw">let </span>#curr_data = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashMap::default()));
         };
 
         <span class="kw">let </span>filter_fn = <span class="macro">quote_spanned! </span>{op_span=&gt;
             |item| {
-                <span class="kw">let </span>tick = #context.state_ref(#tick_data);
                 <span class="kw">let </span><span class="kw-2">mut </span>prev_map = #context.state_ref(#prev_data).borrow_mut();
                 <span class="kw">let </span><span class="kw-2">mut </span>curr_map = #context.state_ref(#curr_data).borrow_mut();
-                <span class="kw">if </span>tick.get() &lt; #context.current_tick() {
-                    tick.set(#context.current_tick());
+                <span class="kw">if </span>context.is_first_run_this_tick() {
                     ::std::mem::swap(::std::ops::DerefMut::deref_mut(<span class="kw-2">&amp;mut </span>prev_map), ::std::ops::DerefMut::deref_mut(<span class="kw-2">&amp;mut </span>curr_map));
                     curr_map.clear();
                 }

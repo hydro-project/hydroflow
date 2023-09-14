@@ -777,6 +777,15 @@
 <a href="#777" id="777">777</a>
 <a href="#778" id="778">778</a>
 <a href="#779" id="779">779</a>
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for the [`Hydroflow`] struct and helper items.
 
 </span><span class="kw">use </span>std::any::Any;
@@ -836,6 +845,7 @@
             current_tick: <span class="number">0</span>,
 
             current_tick_start: Instant::now(),
+            subgraph_last_tick_run_in: <span class="prelude-val">None</span>,
 
             subgraph_id: SubgraphId(<span class="number">0</span>),
 
@@ -969,6 +979,8 @@
     /// Returns true if any work was done.
     </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), fields(tick = <span class="self">self</span>.context.current_tick, stratum = <span class="self">self</span>.context.current_stratum), ret)]
     </span><span class="kw">pub fn </span>run_stratum(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">let </span>current_tick = <span class="self">self</span>.context.current_tick;
+
         <span class="kw">let </span><span class="kw-2">mut </span>work_done = <span class="bool-val">false</span>;
 
         <span class="kw">while let </span><span class="prelude-val">Some</span>(sg_id) = <span class="self">self</span>.stratum_queues[<span class="self">self</span>.context.current_stratum].pop_front() {
@@ -980,7 +992,9 @@
                 <span class="macro">tracing::trace!</span>(sg_id = sg_id.<span class="number">0</span>, <span class="string">&quot;Running subgraph.&quot;</span>);
 
                 <span class="self">self</span>.context.subgraph_id = sg_id;
+                <span class="self">self</span>.context.subgraph_last_tick_run_in = sg_data.last_tick_run_in;
                 sg_data.subgraph.run(<span class="kw-2">&amp;mut </span><span class="self">self</span>.context, <span class="kw-2">&amp;mut </span><span class="self">self</span>.handoffs);
+                sg_data.last_tick_run_in = <span class="prelude-val">Some</span>(current_tick);
             }
 
             <span class="kw">for </span><span class="kw-2">&amp;</span>handoff_id <span class="kw">in </span><span class="self">self</span>.subgraphs[sg_id.<span class="number">0</span>].succs.iter() {
@@ -1531,6 +1545,9 @@
     /// `Self::succs`, as all `SubgraphData` are owned by the same vec
     /// `Hydroflow::subgraphs`.
     </span>is_scheduled: Cell&lt;bool&gt;,
+
+    <span class="doccomment">/// Keep track of the last tick that this subgraph was run in
+    </span>last_tick_run_in: <span class="prelude-ty">Option</span>&lt;usize&gt;,
 }
 <span class="kw">impl </span>SubgraphData {
     <span class="kw">pub fn </span>new(
@@ -1548,6 +1565,7 @@
             preds,
             succs,
             is_scheduled: Cell::new(is_scheduled),
+            last_tick_run_in: <span class="prelude-val">None</span>,
         }
     }
 }
