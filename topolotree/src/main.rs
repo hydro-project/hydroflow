@@ -24,6 +24,7 @@ struct OperationPayload {
 fn run_topolotree<S: Sink<(u32, Bytes)> + Unpin + 'static>(
     neighbors: Vec<u32>,
     input_recv: impl Stream<Item = Result<(u32, BytesMut), io::Error>> + Unpin + 'static,
+    local_update_recv: impl Stream<Item = Result<BytesMut, io::Error>> + Unpin + 'static,
     output_send: S,
 ) -> Hydroflow
 where
@@ -42,6 +43,13 @@ where
             -> inspect(|(src, payload)| println!("received from: {src}: payload: {payload:?}"))
             -> input;
 
+        source_stream(local_update_recv)
+            -> map(Result::unwrap)
+            -> map(|changePayload: BytesMut| (serde_json::from_slice::<OperationPayload>(&changePayload[..]).unwrap()))
+            -> inspect(|changePayload| println!("change: {changePayload:?}"))
+            // -> tee();
+            -> operations_input;
+
         input
             -> map(|(src, payload)| (src, (payload, context.current_tick())))
             -> inspect(|x| eprintln!("input: {:?}", x))
@@ -55,9 +63,13 @@ where
             -> inspect(|(src, payload)| println!("data from stream: {src}: payload: {payload:?}"));
             // -> persist();
 
+        all_neighbor_data -> neighbors_and_myself;
+        operations_input -> fold::<'static>(0, |agg: &mut i64, op: i64| *agg += op) -> map(|total| (my_id, total)) -> neighbors_and_myself;
+        neighbors_and_myself = union();
+
         // Cross Join
         neighbors = source_iter(neighbors) -> persist();
-        all_neighbor_data -> [0]aggregated_data;
+        neighbors_and_myself -> [0]aggregated_data;
         neighbors -> [1]aggregated_data;
 
         // (dest, Payload) where Payload has timestamp and accumulated data as specified by merge function
@@ -94,6 +106,13 @@ async fn main() {
         .await
         .into_sink();
 
+    let operations_send = ports
+        .port("input")
+        // connect to the port with a single recipient
+        .connect::<ConnectedTagged<ConnectedDirect>>()
+        .await
+        .into_source();
+
     let increment_requests = ports
         .port("increment_requests")
         .connect::<ConnectedDirect>()
@@ -106,7 +125,7 @@ async fn main() {
         .await
         .into_sink();
 
-    hydroflow::util::cli::launch_flow(run_topolotree(neighbors, input_recv, output_send)).await;
+    hydroflow::util::cli::launch_flow(run_topolotree(neighbors, input_recv, operations_send, output_send)).await;
 }
 
 #[hydroflow::test]
@@ -125,6 +144,7 @@ async fn simple_payload__test() {
     // let payload_vec = vec![input1, input2];
     // let payload_stream = stream::iter(payload_vec).map(|(i, payload)| Ok((i, BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()))));
 
+    // Send (id, Payload) over network to neighbors
     let simulate_input = |(id, payload): (u32, Payload)| {
         input_send.send(Ok((
             id,
@@ -132,7 +152,7 @@ async fn simple_payload__test() {
         )))
     };
 
-    let mut flow: Hydroflow = run_topolotree(neighbors, input_recv, output_send);
+    let mut flow: Hydroflow = run_topolotree(neighbors, input_recv, operations_send, output_send);
 
     let receive_all_output = || async move {
         let collected = collect_ready_async::<Vec<_>, _>(&mut output_recv).await;
