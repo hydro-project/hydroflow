@@ -1462,6 +1462,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "hydroflow_plus"
+version = "0.4.0"
+dependencies = [
+ "hydroflow",
+ "hydroflow_lang",
+ "hydroflow_plus_macro",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.14",
+]
+
+[[package]]
+name = "hydroflow_plus_example_flow"
+version = "0.0.0"
+dependencies = [
+ "hydroflow_plus",
+]
+
+[[package]]
+name = "hydroflow_plus_example_runtime"
+version = "0.0.0"
+dependencies = [
+ "hydroflow_plus",
+ "hydroflow_plus_example_flow",
+ "serde",
+]
+
+[[package]]
+name = "hydroflow_plus_macro"
+version = "0.4.0"
+dependencies = [
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.14",
+]
+
+[[package]]
 name = "iana-time-zone"
 version = "0.1.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
