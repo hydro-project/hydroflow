@@ -2,7 +2,6 @@
 mod tests;
 
 use std::cell::RefCell;
-use std::fmt::Debug;
 use std::io;
 use std::rc::Rc;
 
@@ -13,29 +12,7 @@ use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::cli::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged,
 };
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash)]
-pub struct Payload<T: Debug> {
-    timestamp: isize,
-    data: T,
-}
-
-impl<T: PartialEq + Debug> PartialEq for Payload<T> {
-    fn eq(&self, other: &Self) -> bool {
-        if self.timestamp == other.timestamp {
-            assert_eq!(self.data, other.data);
-            true
-        } else {
-            false
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct OperationPayload {
-    change: i64,
-}
+use topolotree_datatypes::{OperationPayload, Payload};
 
 fn run_topolotree(
     neighbors: Vec<u32>,
