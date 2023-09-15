@@ -1,26 +1,19 @@
-mod util;
+#[cfg(test)]
+mod tests;
 
 use std::cell::RefCell;
-use std::collections::HashSet;
 use std::fmt::Debug;
 use std::io;
 use std::rc::Rc;
 
-use futures::{Sink, SinkExt, Stream};
+use futures::{SinkExt, Stream};
 use hydroflow::bytes::{Bytes, BytesMut};
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow::util::cli::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged,
 };
-use hydroflow::util::multiset::HashMultiSet;
-use hydroflow::util::{collect_ready_async, unbounded_channel};
 use serde::{Deserialize, Serialize};
-use tokio::sync::mpsc::error::SendError;
-use tokio::sync::mpsc::UnboundedSender;
-
-use crate::util::{read_all, simulate_input, simulate_operation};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash)]
 pub struct Payload<T: Debug> {
@@ -99,7 +92,6 @@ fn run_topolotree(
         // message comes in from 2
         // (2+3+SelfState) -> 1, (1+2+SelfState) -> 3
 
-
         from_neighbors // 2 comes out here
             -> map(|(src, _payload)| src)
             -> [0]all_other_neighbors_except_for_who_it_came_from; // 2 goes into this crossjoin
@@ -132,8 +124,6 @@ fn run_topolotree(
             // (1, (2, 3))), (2, (2, 3))),
             -> [1]all_neighbor_data;
 
-
-
         all_neighbor_data = join()
             -> map(|(aggregate_from_this_guy, (payload, (original_src, target_neighbor)))| {
                 ((target_neighbor, original_src), (aggregate_from_this_guy, payload))
@@ -157,8 +147,6 @@ fn run_topolotree(
                 let serialized = BytesMut::from(serde_json::to_string(&output).unwrap().as_str()).freeze();
                 output_send.send((target_neighbor, serialized)).unwrap();
             });
-
-
 
         // src
         //     -> map(|(from, _data)| from)
@@ -264,148 +252,3 @@ async fn main() {
     ))
     .await;
 }
-
-#[hydroflow::test]
-async fn simple_payload_test() {
-    let neighbors: Vec<u32> = vec![1, 2, 3];
-
-    let (_operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
-    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
-    let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
-
-    #[rustfmt::skip]
-    simulate_input(&mut input_send, (1, Payload { timestamp: 1, data: 2 })).unwrap();
-
-    let mut flow = run_topolotree(neighbors, input_recv, operations_rx, output_send);
-
-    flow.run_tick();
-
-    #[rustfmt::skip]
-    assert_eq!(read_all(&mut output_recv).await, HashMultiSet::from_iter([
-        (2, Payload { timestamp: 1, data: 2 }),
-        (3, Payload { timestamp: 1, data: 2 }),
-    ]));
-}
-
-#[hydroflow::test]
-async fn idempotence_test() {
-    let neighbors: Vec<u32> = vec![1, 2, 3];
-    let (_operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
-
-    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
-    let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
-
-    #[rustfmt::skip]
-    {
-        simulate_input(&mut input_send, (1, Payload { timestamp: 4, data: 2 })).unwrap();
-        simulate_input(&mut input_send, (1, Payload { timestamp: 4, data: 2 })).unwrap();
-    };
-
-    let mut flow = run_topolotree(neighbors, input_recv, operations_rx, output_send);
-
-    flow.run_tick();
-
-    #[rustfmt::skip]
-    assert_eq!(read_all(&mut output_recv).await, HashMultiSet::from_iter([
-        (2, Payload { timestamp: 1, data: 2 }),
-        (3, Payload { timestamp: 1, data: 2 }),
-    ]));
-}
-
-#[hydroflow::test]
-async fn backwards_in_time_test() {
-    let neighbors: Vec<u32> = vec![1, 2, 3];
-
-    let (_operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
-    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
-    let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
-
-    #[rustfmt::skip]
-    {
-        simulate_input(&mut input_send, (1, Payload { timestamp: 5, data: 7 })).unwrap();
-        simulate_input(&mut input_send, (1, Payload { timestamp: 4, data: 2 })).unwrap();
-    };
-
-    let mut flow = run_topolotree(neighbors, input_recv, operations_rx, output_send);
-
-    flow.run_tick();
-
-    #[rustfmt::skip]
-    assert_eq!(read_all(&mut output_recv).await, HashMultiSet::from_iter([
-        (2, Payload { timestamp: 1, data: 7 }),
-        (3, Payload { timestamp: 1, data: 7 }),
-    ]));
-}
-
-#[hydroflow::test]
-async fn multiple_input_sources_test() {
-    let neighbors: Vec<u32> = vec![1, 2, 3];
-    let (_operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
-
-    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
-    let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
-
-    #[rustfmt::skip]
-    {
-        simulate_input(&mut input_send, (1, Payload { timestamp: 5, data: 7 })).unwrap();
-        simulate_input(&mut input_send, (2, Payload { timestamp: 4, data: 2 })).unwrap();
-    };
-
-    let mut flow = run_topolotree(neighbors, input_recv, operations_rx, output_send);
-
-    flow.run_tick();
-
-    #[rustfmt::skip]
-    assert_eq!(read_all(&mut output_recv).await, HashMultiSet::from_iter([
-        (1, Payload { timestamp: 2, data: 2 }),
-        (2, Payload { timestamp: 2, data: 7 }),
-        (3, Payload { timestamp: 2, data: 9 }),
-        (3, Payload { timestamp: 2, data: 9 }),
-    ]));
-}
-
-#[hydroflow::test]
-async fn simple_operation_test() {
-    let neighbors: Vec<u32> = vec![1, 2, 3];
-
-    let (mut operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
-    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
-    let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
-
-    #[rustfmt::skip]
-    {
-        simulate_input(&mut input_send, (1, Payload { timestamp: 1, data: 2 })).unwrap();
-        simulate_operation(&mut operations_tx, OperationPayload { change: 5 }).unwrap();
-        simulate_operation(&mut operations_tx, OperationPayload { change: 7 }).unwrap();
-
-    };
-
-    let mut flow = run_topolotree(neighbors, input_recv, operations_rx, output_send);
-
-    flow.run_tick();
-
-    #[rustfmt::skip]
-    assert_eq!(read_all(&mut output_recv).await, HashMultiSet::from_iter([
-        (2, Payload { timestamp: 3, data: 14 }),
-        (3, Payload { timestamp: 3, data: 14 }),
-    ]));
-}
-
-// idempotence test (issue two requests with the same timestamp and see that they don't change anything.)
-//     let input1 = (1, Payload {timestamp:4, data:2});
-//     let input2 = (1, Payload {timestamp:4, data:2});
-//     let output1: (u32, Payload) = (2, Payload {timestamp:1, data:2});
-//     let output2: (u32, Payload) = (3, Payload {timestamp:1, data:2});
-//
-// backward in time test (issue two requests, the second one with an earlier timestamp than the first. )
-//     let input1 = (1, Payload {timestamp:5, data:7});
-//     let input2 = (1, Payload {timestamp:4, data:2});
-//     let output1: (u32, Payload) = (2, Payload {timestamp:1, data:7});
-//     let output2: (u32, Payload) = (3, Payload {timestamp:1, data:7});
-//
-// updates from multiple sources test
-//     let input1 = (1, Payload {timestamp:5, data:7});
-//     let input2 = (2, Payload {timestamp:4, data:2});
-//     let output1: (u32, Payload) = (1, Payload {timestamp:2, data:2});
-//     let output2: (u32, Payload) = (2, Payload {timestamp:2, data:7});
-//     let output3: (u32, Payload) = (3, Payload {timestamp:2, data:9});
