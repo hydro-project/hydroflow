@@ -1,3 +1,5 @@
+mod util;
+
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -14,28 +16,15 @@ use hydroflow::util::cli::{
 use hydroflow::util::multiset::HashMultiSet;
 use hydroflow::util::{collect_ready_async, unbounded_channel};
 use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc::error::SendError;
+use tokio::sync::mpsc::UnboundedSender;
+
+use crate::util::simulate_input;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, Hash)]
-struct Payload<T: Debug> {
+pub struct Payload<T: Debug> {
     timestamp: isize,
     data: T,
-}
-
-impl<T: Debug> Payload<T> {
-    pub fn merge_from(&mut self, other: Payload<T>) -> bool {
-        if other.timestamp > self.timestamp {
-            self.data = other.data;
-            self.timestamp = other.timestamp;
-            true
-        } else {
-            false
-        }
-    }
-
-    pub fn update(&mut self, updater: impl Fn(&T) -> T) {
-        self.data = updater(&self.data);
-        self.timestamp += 1;
-    }
 }
 
 impl<T: PartialEq + Debug> PartialEq for Payload<T> {
@@ -64,6 +53,9 @@ fn run_topolotree(
         *x += y;
     }
 
+    // Timestamp stuff is a bit complicated, there is a proper data-flowy way to do it
+    // but it would require at least one more join and one more cross join just specifically for the local timestamps
+    // Until we need it to be proper then we can take a shortcut and use rc refcell
     let self_timestamp = Rc::new(RefCell::new(0));
 
     let self_timestamp1 = Rc::clone(&self_timestamp);
@@ -243,13 +235,13 @@ async fn main() {
         .await
         .into_source();
 
-    let increment_requests = ports
+    let _increment_requests = ports
         .port("increment_requests")
         .connect::<ConnectedDirect>()
         .await
         .into_source();
 
-    let query_responses = ports
+    let _query_responses = ports
         .port("query_responses")
         .connect::<ConnectedDirect>()
         .await
@@ -274,29 +266,15 @@ async fn main() {
 
 #[hydroflow::test]
 async fn simple_payload_test() {
-    // let args: Vec<String> = std::env::args().skip(1).collect();
-    let neighbors: Vec<u32> = vec![1, 2, 3]; // args.into_iter().map(|x| x.parse().unwrap()).collect();
-                                             // let current_id = neighbors[0];
+    let neighbors: Vec<u32> = vec![1, 2, 3];
 
-    let (operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
-    let (input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (_operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
+    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
     let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
-    let input1 = (
-        1,
-        Payload {
-            timestamp: 1,
-            data: 2,
-        },
-    );
-    // let input2 = (1, Payload {timestamp:1, data:3});
-    // let payload_vec = vec![input1, input2];
-    // let payload_stream = stream::iter(payload_vec).map(|(i, payload)| Ok((i, BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()))));
-    let simulate_input = |(id, payload): (u32, Payload<i64>)| {
-        input_send.send(Ok((
-            id,
-            BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()),
-        )))
-    };
+
+    #[rustfmt::skip]
+    simulate_input(&mut input_send, (1, Payload { timestamp: 1, data: 2 })).unwrap();
+
     let mut flow: Hydroflow = run_topolotree(neighbors, input_recv, operations_rx, output_send);
     let receive_all_output = || async move {
         let collected = collect_ready_async::<Vec<_>, _>(&mut output_recv).await;
@@ -310,7 +288,6 @@ async fn simple_payload_test() {
             })
             .collect::<Vec<_>>()
     };
-    simulate_input(input1).unwrap();
     flow.run_tick();
     let output1: (u32, Payload<i64>) = (
         2,
@@ -332,32 +309,17 @@ async fn simple_payload_test() {
 #[hydroflow::test]
 async fn idempotence_test() {
     let neighbors: Vec<u32> = vec![1, 2, 3];
-    let (operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
+    let (_operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
 
-    let (input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
     let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
-    let input1 = (
-        1,
-        Payload {
-            timestamp: 4,
-            data: 2,
-        },
-    );
-    let input2 = (
-        1,
-        Payload {
-            timestamp: 4,
-            data: 2,
-        },
-    );
-    let simulate_input = |(id, payload): (u32, Payload<i64>)| {
-        input_send.send(Ok((
-            id,
-            BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()),
-        )))
+
+    #[rustfmt::skip]
+    {
+        simulate_input(&mut input_send, (1, Payload { timestamp: 4, data: 2 })).unwrap();
+        simulate_input(&mut input_send, (1, Payload { timestamp: 4, data: 2 })).unwrap();
     };
-    simulate_input(input1).unwrap();
-    simulate_input(input2).unwrap();
+
     let mut flow: Hydroflow = run_topolotree(neighbors, input_recv, operations_rx, output_send);
     let receive_all_output = || async move {
         let collected = collect_ready_async::<Vec<_>, _>(&mut output_recv).await;
@@ -393,31 +355,16 @@ async fn idempotence_test() {
 async fn backwards_in_time_test() {
     let neighbors: Vec<u32> = vec![1, 2, 3];
 
-    let (operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
-    let (input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (_operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
+    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
     let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
-    let input1 = (
-        1,
-        Payload {
-            timestamp: 5,
-            data: 7,
-        },
-    );
-    let input2 = (
-        1,
-        Payload {
-            timestamp: 4,
-            data: 2,
-        },
-    );
-    let simulate_input = |(id, payload): (u32, Payload<i64>)| {
-        input_send.send(Ok((
-            id,
-            BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()),
-        )))
+
+    #[rustfmt::skip]
+    {
+        simulate_input(&mut input_send, (1, Payload { timestamp: 5, data: 7 })).unwrap();
+        simulate_input(&mut input_send, (1, Payload { timestamp: 4, data: 2 })).unwrap();
     };
-    simulate_input(input1).unwrap();
-    simulate_input(input2).unwrap();
+
     let mut flow: Hydroflow = run_topolotree(neighbors, input_recv, operations_rx, output_send);
     let receive_all_output = || async move {
         let collected = collect_ready_async::<Vec<_>, _>(&mut output_recv).await;
@@ -452,32 +399,17 @@ async fn backwards_in_time_test() {
 #[hydroflow::test]
 async fn multiple_input_sources_test() {
     let neighbors: Vec<u32> = vec![1, 2, 3];
-    let (operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
+    let (_operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
 
-    let (input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
     let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
-    let input1 = (
-        1,
-        Payload {
-            timestamp: 5,
-            data: 7,
-        },
-    );
-    let input2 = (
-        2,
-        Payload {
-            timestamp: 4,
-            data: 2,
-        },
-    );
-    let simulate_input = |(id, payload): (u32, Payload<i64>)| {
-        input_send.send(Ok((
-            id,
-            BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()),
-        )))
+
+    #[rustfmt::skip]
+    {
+        simulate_input(&mut input_send, (1, Payload { timestamp: 5, data: 7 })).unwrap();
+        simulate_input(&mut input_send, (2, Payload { timestamp: 4, data: 2 })).unwrap();
     };
-    simulate_input(input1).unwrap();
-    simulate_input(input2).unwrap();
+
     let mut flow: Hydroflow = run_topolotree(neighbors, input_recv, operations_rx, output_send);
     let receive_all_output = || async move {
         let collected = collect_ready_async::<Vec<_>, _>(&mut output_recv).await;
@@ -517,27 +449,18 @@ async fn multiple_input_sources_test() {
         receive_all_output().await,
         HashMultiSet::from_iter([output1, output2, output3.clone(), output3])
     );
-
-    // {(1, Payload { timestamp: 70, data: 2 }), (2, Payload { timestamp: 70, data: 7 }), (3, Payload { timestamp: 70, data: 18 })}
-    // {(2, Payload { timestamp: 2, data: 7 }), (1, Payload { timestamp: 2, data: 2 }), (3, Payload { timestamp: 2, data: 9 })}
 }
 
 #[hydroflow::test]
 async fn simple_operation_test() {
-    // let args: Vec<String> = std::env::args().skip(1).collect();
-    let neighbors: Vec<u32> = vec![1, 2, 3]; // args.into_iter().map(|x| x.parse().unwrap()).collect();
-                                             // let current_id = neighbors[0];
+    let neighbors: Vec<u32> = vec![1, 2, 3];
 
     let (operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
-    let (input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
     let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
-    let input1 = (
-        1,
-        Payload {
-            timestamp: 1,
-            data: 2,
-        },
-    );
+
+    #[rustfmt::skip]
+    simulate_input(&mut input_send, (1, Payload { timestamp: 1, data: 2 })).unwrap();
 
     operations_tx
         .send(Ok(BytesMut::from(
@@ -555,12 +478,6 @@ async fn simple_operation_test() {
         )))
         .unwrap();
 
-    let simulate_input = |(id, payload): (u32, Payload<i64>)| {
-        input_send.send(Ok((
-            id,
-            BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()),
-        )))
-    };
     let mut flow: Hydroflow = run_topolotree(neighbors, input_recv, operations_rx, output_send);
     let receive_all_output = || async move {
         let collected = collect_ready_async::<Vec<_>, _>(&mut output_recv).await;
@@ -574,7 +491,6 @@ async fn simple_operation_test() {
             })
             .collect::<Vec<_>>()
     };
-    simulate_input(input1).unwrap();
     flow.run_tick();
 
     #[rustfmt::skip]
