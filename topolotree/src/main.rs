@@ -29,6 +29,7 @@ fn run_topolotree(
     input_recv: impl Stream<Item = Result<(u32, BytesMut), io::Error>> + Unpin + 'static,
     increment_requests: impl Stream<Item = Result<BytesMut, io::Error>> + Unpin + 'static,
     output_send: tokio::sync::mpsc::UnboundedSender<(u32, Bytes)>,
+    query_send: tokio::sync::mpsc::UnboundedSender<Bytes>,
 ) -> Hydroflow {
     fn merge(x: &mut i64, y: i64) {
         *x += y;
@@ -57,7 +58,8 @@ fn run_topolotree(
                 }
             })
             -> inspect(|(src, data)| println!("data from stream: {src}: data: {data:?}"))
-            -> [0]all_neighbor_data;
+            -> map(|(src, payload)| (Some(src), payload.data))
+            -> from_neighbors_or_local;
 
         local_value = source_stream(increment_requests)
             -> map(Result::unwrap)
@@ -66,7 +68,13 @@ fn run_topolotree(
             -> inspect(|_| {
                 *self_timestamp2.borrow_mut() += 1;
             })
-            -> fold::<'static>(0, |agg: &mut i64, op: OperationPayload| *agg += op.change);
+            -> map(|change_payload: OperationPayload| change_payload.change)
+            -> reduce::<'static>(|agg: &mut i64, change: i64| *agg += change);
+
+        local_value -> map(|data| (None, data)) -> from_neighbors_or_local;
+
+        from_neighbors_or_local = union();
+        from_neighbors_or_local -> [0]all_neighbor_data;
 
         neighbors = source_iter(neighbors)
             -> map(NodeID)
@@ -76,25 +84,19 @@ fn run_topolotree(
 
         all_neighbor_data = cross_join_multiset()
             -> filter(|((aggregate_from_this_guy, _), target_neighbor)| {
-                aggregate_from_this_guy != target_neighbor
+                aggregate_from_this_guy.iter().all(|source| source != target_neighbor)
             })
             -> map(|((_, payload), target_neighbor)| {
                 (target_neighbor, payload)
             })
-            -> fold_keyed(|| 0, |acc: &mut i64, payload: Payload<i64>| {
-                merge(acc, payload.data);
+            -> fold_keyed(|| 0, |acc: &mut i64, data: i64| {
+                merge(acc, data);
             })
             -> inspect(|(target_neighbor, data)| println!("data from neighbors: {target_neighbor:?}: data: {data:?}"))
-            -> [0]add_local_value;
-
-        local_value
-            -> [1]add_local_value;
-
-        add_local_value = cross_join_multiset()
-            -> map(|((target_neighbor, data), local_value)| {
+            -> map(|(target_neighbor, data)| {
                 (target_neighbor, Payload {
                     timestamp: *self_timestamp3.borrow(),
-                    data: data + local_value
+                    data
                 })
             })
             -> for_each(|(target_neighbor, output): (NodeID, Payload<i64>)| {
@@ -113,14 +115,14 @@ async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
 
     let input_recv = ports
-        .port("input")
+        .port("from_peer")
         // connect to the port with a single recipient
         .connect::<ConnectedTagged<ConnectedDirect>>()
         .await
         .into_source();
 
     let mut output_send = ports
-        .port("output")
+        .port("to_peer")
         .connect::<ConnectedDemux<ConnectedDirect>>()
         .await
         .into_sink();
@@ -132,7 +134,7 @@ async fn main() {
         .await
         .into_source();
 
-    let query_responses = ports
+    let mut query_responses = ports
         .port("query_responses")
         .connect::<ConnectedDirect>()
         .await
@@ -146,11 +148,19 @@ async fn main() {
         }
     });
 
+    let (query_tx, mut query_rx) = tokio::sync::mpsc::unbounded_channel();
+    tokio::task::spawn_local(async move {
+        while let Some(msg) = query_rx.recv().await {
+            query_responses.send(msg).await.unwrap();
+        }
+    });
+
     hydroflow::util::cli::launch_flow(run_topolotree(
         neighbors,
         input_recv,
         operations_send,
         chan_tx,
+        query_tx
     ))
     .await;
 }
