@@ -1,7 +1,6 @@
 import asyncio
 from codecs import decode
 from typing import Optional
-from venv import create
 import hydro
 import json
 from pathlib import Path
@@ -22,69 +21,71 @@ class Tree:
         return Tree(
             transform(self.node),
             self.left.map(transform) if self.left is not None else None,
-            self.right.map(transform) if self.right is not None else None
+            self.right.map(transform) if self.right is not None else None,
         )
 
     def flatten_with_path(self, cur_path=""):
-        return [(self.node, cur_path)] + \
-            (self.left.flatten_with_path(cur_path + "L") if self.left is not None else []) + \
-            (self.right.flatten_with_path(cur_path + "R") if self.right is not None else [])
+        return (
+            [(self.node, cur_path)]
+            + (
+                self.left.flatten_with_path(cur_path + "L")
+                if self.left is not None
+                else []
+            )
+            + (
+                self.right.flatten_with_path(cur_path + "R")
+                if self.right is not None
+                else []
+            )
+        )
 
     async def map_async(self, transform):
         return Tree(
             await transform(self.node),
             (await self.left.map_async(transform)) if self.left is not None else None,
-            (await self.right.map_async(transform)) if self.right is not None else None
+            (await self.right.map_async(transform)) if self.right is not None else None,
         )
+
 
 def create_tree(depth, deployment, create_machine) -> Optional[Tree]:
     if depth == 0:
         return None
     else:
-        self_service = deployment.HydroflowCrate(
-            src=str(Path(__file__).parent.absolute()),
-            example="topolotree",
-            on=create_machine()
-        )
-
         left = create_tree(depth - 1, deployment, create_machine)
         right = create_tree(depth - 1, deployment, create_machine)
 
-        if left is not None:
-            self_service.ports.to_left.send_to(left.node.ports.from_parent)
-            left.node.ports.to_parent.send_to(self_service.ports.from_left)
-        else:
-            self_service.ports.to_left.send_to(hydro.null())
-            hydro.null().send_to(self_service.ports.from_left)
-
-        if right is not None:
-            self_service.ports.to_right.send_to(right.node.ports.from_parent)
-            right.node.ports.to_parent.send_to(self_service.ports.from_right)
-        else:
-            self_service.ports.to_right.send_to(hydro.null())
-            hydro.null().send_to(self_service.ports.from_right)
-
-        return Tree(
-            self_service,
-            left,
-            right
+        self_service = deployment.HydroflowCrate(
+            src=str(Path(__file__).parent.absolute()),
+            example="topolotree",
+            on=create_machine(),
         )
+
+        return Tree(self_service, left, right)
+
 
 async def run_experiment(
     deployment: hydro.Deployment,
+    profile,
     machine_pool,
-    experiment_id, summaries_file, tree_arg, depth_arg, clients_arg, is_gcp, gcp_vpc):
-    assert tree_arg == "pn" or tree_arg == "pn_delta" or tree_arg == "once"
+    experiment_id,
+    summaries_file,
+    tree_arg,
+    depth_arg,
+    clients_arg,
+    is_gcp,
+    gcp_vpc,
+):
     tree_depth = int(depth_arg)
-    is_tree = tree_arg == "once"
+    is_tree = tree_arg == "topolo"  # or "pn"
 
-    num_replicas = 2 ** tree_depth - 1
+    num_replicas = 2**tree_depth - 1
 
     num_clients = int(clients_arg)
 
     localhost_machine = deployment.Localhost()
 
     currently_deployed = []
+
     def create_machine():
         if len(machine_pool) > 0:
             print("Using machine from pool")
@@ -98,7 +99,7 @@ async def run_experiment(
                     machine_type="n2-standard-4",
                     image="debian-cloud/debian-11",
                     region="us-west1-a",
-                    network=gcp_vpc
+                    network=gcp_vpc,
                 )
             else:
                 out = localhost_machine
@@ -114,22 +115,27 @@ async def run_experiment(
     else:
         cluster = [
             deployment.HydroflowCrate(
-                src=str(Path(__file__).parent.absolute()),
+                src=str(
+                    (Path(__file__).parent.parent / "hydro_cli_examples").absolute()
+                ),
+                profile=profile,
                 example="pn_counter" if tree_arg == "pn" else "pn_counter_delta",
                 args=[json.dumps([i]), json.dumps([num_replicas])],
-                on=create_machine()
+                on=create_machine(),
             )
             for i in range(num_replicas)
         ]
 
         for i in range(num_replicas):
-            cluster[i].ports.to_peer.send_to(hydro.demux(
-                {
-                    j: cluster[j].ports.from_peer.merge()
-                    for j in range(num_replicas)
-                    if i != j
-                }
-            ))
+            cluster[i].ports.to_peer.send_to(
+                hydro.demux(
+                    {
+                        j: cluster[j].ports.from_peer.merge()
+                        for j in range(num_replicas)
+                        if i != j
+                    }
+                )
+            )
 
         all_nodes = cluster
 
@@ -146,7 +152,7 @@ async def run_experiment(
     else:
         source = cluster[0]
         dest = cluster[-1]
-        
+
     for node in all_nodes:
         if node is not dest:
             node.ports.query_responses.send_to(hydro.null())
@@ -154,13 +160,16 @@ async def run_experiment(
             hydro.null().send_to(node.ports.increment_requests)
 
     latency_measurer = deployment.HydroflowCrate(
-        src=str(Path(__file__).parent.absolute()),
+        src=str((Path(__file__).parent.parent / "hydro_cli_examples").absolute()),
+        profile=profile,
         example="topolotree_latency_measure",
         args=[json.dumps([num_clients])],
-        on=create_machine()
+        on=create_machine(),
     )
 
-    latency_measurer.ports.increment_start_node.send_to(source.ports.increment_requests.merge())
+    latency_measurer.ports.increment_start_node.send_to(
+        source.ports.increment_requests.merge()
+    )
     dest.ports.query_responses.send_to(latency_measurer.ports.end_node_query)
 
     await deployment.deploy()
@@ -176,10 +185,7 @@ async def run_experiment(
     latency_stdout = await latency_measurer.stdout()
 
     memories_streams_with_index = [
-        stream.map(
-            await node.stdout(),
-            lambda x,i=i: (i, x)
-        )
+        stream.map(await node.stdout(), lambda x, i=i: (i, x))
         for i, node in enumerate(all_nodes)
     ]
 
@@ -205,7 +211,7 @@ async def run_experiment(
                     throughput_raw.append([count, period])
                     throughput.append(count / period)
                 elif line_split[0] == "latency":
-                    number = int(line_split[1]) # microseconds
+                    number = int(line_split[1])  # microseconds
                     latency.append(number)
         except asyncio.CancelledError:
             return
@@ -236,7 +242,7 @@ async def run_experiment(
         print("percentile 50 = ", np.percentile(v, 50))
         print("percentile 25 = ", np.percentile(v, 25))
         print("percentile 1 = ", np.percentile(v, 1))
-        
+
         summaries_file.write("\n")
         summaries_file.write(tree_arg + ",")
         summaries_file.write(str(tree_depth) + ",")
@@ -259,52 +265,115 @@ async def run_experiment(
     print("throughput:")
     summarize(throughput, "throughput")
 
-    init_memory = [
-        memory[0]
-        for memory in memory_per_node
-    ]
+    init_memory = [memory[0] for memory in memory_per_node]
     print("init memory:")
     summarize(init_memory, "init_memory")
 
-    final_memory = [
-        memory[-1]
-        for memory in memory_per_node
-    ]
+    final_memory = [memory[-1] for memory in memory_per_node]
     print("final memory:")
     summarize(final_memory, "final_memory")
 
-    pd.DataFrame(latency).to_csv("latency_" + tree_arg + "_tree_depth_" + str(tree_depth) + "_num_clients_" + str(num_clients) + "_" + experiment_id+".csv", index=False, header=["latency"])
-    pd.DataFrame(throughput_raw).to_csv("throughput_" + tree_arg + "_tree_depth_" + str(tree_depth) + "_num_clients_" + str(num_clients) + "_" + experiment_id+".csv", index=False, header=["count", "period"])
-    pd.DataFrame(init_memory).to_csv("init_memory_" + tree_arg + "_tree_depth_" + str(tree_depth) + "_num_clients_" + str(num_clients) + "_" + experiment_id+".csv", index=False, header=["memory"])
-    pd.DataFrame(final_memory).to_csv("final_memory_" + tree_arg + "_tree_depth_" + str(tree_depth) + "_num_clients_" + str(num_clients) + "_" + experiment_id+".csv", index=False, header=["memory"])
+    pd.DataFrame(latency).to_csv(
+        "latency_"
+        + tree_arg
+        + "_tree_depth_"
+        + str(tree_depth)
+        + "_num_clients_"
+        + str(num_clients)
+        + "_"
+        + experiment_id
+        + ".csv",
+        index=False,
+        header=["latency"],
+    )
+    pd.DataFrame(throughput_raw).to_csv(
+        "throughput_"
+        + tree_arg
+        + "_tree_depth_"
+        + str(tree_depth)
+        + "_num_clients_"
+        + str(num_clients)
+        + "_"
+        + experiment_id
+        + ".csv",
+        index=False,
+        header=["count", "period"],
+    )
+    pd.DataFrame(init_memory).to_csv(
+        "init_memory_"
+        + tree_arg
+        + "_tree_depth_"
+        + str(tree_depth)
+        + "_num_clients_"
+        + str(num_clients)
+        + "_"
+        + experiment_id
+        + ".csv",
+        index=False,
+        header=["memory"],
+    )
+    pd.DataFrame(final_memory).to_csv(
+        "final_memory_"
+        + tree_arg
+        + "_tree_depth_"
+        + str(tree_depth)
+        + "_num_clients_"
+        + str(num_clients)
+        + "_"
+        + experiment_id
+        + ".csv",
+        index=False,
+        header=["memory"],
+    )
 
     for machine in currently_deployed:
         machine_pool.append(machine)
 
-# hydro deploy ../hydro_cli_examples/toplotree_latency.hydro.py -- local/gcp DEPTH_OF_TREE
+
+# hydro deploy toplotree_latency.hydro.py -- local/gcp topolo/pn/pn_counter_delta DEPTH_OF_TREE NUM_CLIENTS
 async def main(args):
     # the current timestamp
     import datetime
+
     experiment_id = str(datetime.datetime.now())
 
     summaries_file = open(f"summaries_{experiment_id}.csv", "w")
-    summaries_file.write("protocol,tree_depth,num_clients,kind,mean,std,min,max,percentile_99,percentile_75,percentile_50,percentile_25,percentile_1")
+    summaries_file.write(
+        "protocol,tree_depth,num_clients,kind,mean,std,min,max,percentile_99,percentile_75,percentile_50,percentile_25,percentile_1"
+    )
 
     deployment = hydro.Deployment()
     pool = []
 
-    network = hydro.GCPNetwork(
-        project="hydro-chrisdouglas",
-    ) if args[0] == "gcp" else None
+    network = (
+        hydro.GCPNetwork(
+            project="hydro-chrisdouglas",
+        )
+        if args[0] == "gcp"
+        else None
+    )
 
     for depth_arg in args[2].split(","):
         for tree_arg in args[1].split(","):
             for num_clients_arg in args[3].split(","):
-                await run_experiment(deployment, pool, experiment_id, summaries_file, tree_arg, depth_arg, num_clients_arg, args[0] == "gcp", network)
-            
+                await run_experiment(
+                    deployment,
+                    "dev" if args[0] == "local" else None,
+                    pool,
+                    experiment_id,
+                    summaries_file,
+                    tree_arg,
+                    depth_arg,
+                    num_clients_arg,
+                    args[0] == "gcp",
+                    network,
+                )
+
     summaries_file.close()
+
 
 if __name__ == "__main__":
     import sys
     import hydro.async_wrapper
+
     hydro.async_wrapper.run(main, sys.argv[1:])

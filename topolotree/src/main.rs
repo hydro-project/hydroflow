@@ -124,52 +124,6 @@ fn run_topolotree(
                 let serialized = BytesMut::from(serde_json::to_string(&output).unwrap().as_str()).freeze();
                 output_send.send((target_neighbor, serialized)).unwrap();
             });
-
-        // src
-        //     -> map(|(from, _data)| from)
-        //     -> enumerate()
-        //     -> [0]cj1;
-
-        // source_iter(NEIGHBORS)
-        //     -> persist()
-        //     -> [1]cj1;
-
-        // cj1 = cross_join::<HalfMultisetJoinState>()
-        //     -> filter(|((_req_id, from), to)| to != from)
-        //     -> map(|((req_id, _from), to)| (to, req_id))
-        //     -> [0]cj2;
-
-        // source_iter(NEIGHBORS)
-        //     -> persist()
-        //     -> [1]cj2;
-
-        // cj2 = cross_join::<HalfMultisetJoinState>()
-        //     -> filter(|((to, _req_id), node_id)| node_id != to)
-        //     -> map(|((to, req_id), node_id)| (node_id, (req_id, to)))
-        //     -> [0]j;
-
-
-
-        // all_neighbor_data -> neighbors_and_myself;
-        // operations_input -> fold::<'static>(0, |agg: &mut i64, op: i64| *agg += op) -> map(|total| (my_id, total)) -> neighbors_and_myself;
-        // neighbors_and_myself = union();
-
-        // // Cross Join
-        // neighbors = source_iter(neighbors) -> persist();
-        // neighbors_and_myself -> [0]aggregated_data;
-        // neighbors -> [1]aggregated_data;
-
-        // // (dest, Payload) where Payload has timestamp and accumulated data as specified by merge function
-        // aggregated_data = cross_join_multiset()
-        //     -> filter(|((src, (payload, tick)), dst)| src != dst)
-        //     -> map(|((src, (payload, tick)), dst)| (dst, payload));
-
-        // aggregated_data
-        //     -> map(|(dst, payload)| (dst, BytesMut::from(serde_json::to_string(&payload).unwrap().as_str()).freeze()))
-        //     -> for_each(|x| {
-        //         output_send.send(x).unwrap();
-        //     });
-
     }
 }
 
@@ -195,19 +149,13 @@ async fn main() {
         .into_sink();
 
     let operations_send = ports
-        .port("input")
+        .port("operations")
         // connect to the port with a single recipient
         .connect::<ConnectedDirect>()
         .await
         .into_source();
 
-    let _increment_requests = ports
-        .port("increment_requests")
-        .connect::<ConnectedDirect>()
-        .await
-        .into_source();
-
-    let _query_responses = ports
+    let query_responses = ports
         .port("query_responses")
         .connect::<ConnectedDirect>()
         .await
