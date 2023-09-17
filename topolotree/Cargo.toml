@@ -23,7 +23,6 @@ path = "src/latency_measure.rs"
 [dependencies]
 hydroflow = { path = "../hydroflow", features = [ "cli_integration" ] }
 hydroflow_datalog = { path = "../hydroflow_datalog" }
-topolotree_datatypes = { path = "../topolotree_datatypes" }
 
 tokio = { version = "1.16", features = [ "full" ] }
 serde = { version = "1", features = ["rc"] }

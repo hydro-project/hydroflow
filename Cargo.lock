@@ -3166,14 +3166,6 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-tungstenite",
- "topolotree_datatypes",
-]
-
-[[package]]
-name = "topolotree_datatypes"
-version = "0.0.0"
-dependencies = [
- "serde",
 ]
 
 [[package]]

@@ -1,8 +1,0 @@
-[package]
-name = "topolotree_datatypes"
-publish = false
-version = "0.0.0"
-edition = "2021"
-
-[dependencies]
-serde = { version = "1", features = ["rc"] }

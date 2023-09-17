@@ -5,16 +5,12 @@ use std::time::Instant;
 
 use futures::{SinkExt, StreamExt};
 use hydroflow::bytes::Bytes;
-use hydroflow::serde::{Deserialize, Serialize};
 use hydroflow::tokio;
 use hydroflow::util::cli::{ConnectedDirect, ConnectedSink, ConnectedSource};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-struct IncrementRequest {
-    tweet_id: u64,
-    likes: i32,
-}
+mod protocol;
+use protocol::*;
 
 #[tokio::main]
 async fn main() {
@@ -78,9 +74,9 @@ async fn main() {
                 let increment = rand::random::<bool>();
                 let start = Instant::now();
                 inc_sender
-                    .send(serialize_to_bytes(IncrementRequest {
-                        tweet_id: id,
-                        likes: if increment { 1 } else { -1 },
+                    .send(serialize_to_bytes(OperationPayload {
+                        key: id,
+                        change: if increment { 1 } else { -1 },
                     }))
                     .unwrap();
 

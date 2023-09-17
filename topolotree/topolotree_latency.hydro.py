@@ -89,15 +89,23 @@ async def run_experiment(
                 Path(__file__).parent.absolute()
             ),
             profile=profile,
+            bin="topolotree",
+            args=[str(neighbor) for neighbor in neighbors[i]],
+            on=create_machine(),
+        ) if is_tree else deployment.HydroflowCrate(
+            src=str(
+                Path(__file__).parent.absolute()
+            ),
+            profile=profile,
             bin="pn" if tree_arg == "pn" else "pn_delta",
-            args=[json.dumps(neighbors[i])] if is_tree else [json.dumps([i]), json.dumps([num_replicas])],
+            args=[json.dumps([i]), json.dumps([num_replicas])],
             on=create_machine(),
         )
         for i in range(num_replicas)
     ]
 
     for i in range(num_replicas):
-        cluster[i].ports.to_peer.send_to(
+        cluster[i].ports.to_peer.tagged(i).send_to(
             hydro.demux(
                 {
                     j: cluster[j].ports.from_peer.merge()
@@ -110,8 +118,8 @@ async def run_experiment(
 
     if is_tree:
         leaves = get_leaves_in_binary_tree(list(range(num_replicas)))
-        source = cluster[leaves[0]].node
-        dest = cluster[leaves[-1]].node
+        source = cluster[leaves[0]]
+        dest = cluster[leaves[-1]]
     else:
         source = cluster[0]
         dest = cluster[-1]

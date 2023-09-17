@@ -2,7 +2,8 @@
 mod tests;
 
 use std::cell::RefCell;
-use std::fmt::Display;
+use std::collections::HashMap;
+use std::fmt::{Display, Debug};
 use std::io;
 use std::rc::Rc;
 
@@ -13,14 +14,17 @@ use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::cli::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged,
 };
-use topolotree_datatypes::{OperationPayload, Payload};
+
+mod protocol;
+use hydroflow::util::{serialize_to_bytes, deserialize_from_bytes};
+use protocol::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct NodeID(pub u32);
 
 impl Display for NodeID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
+        Display::fmt(&self.0, f)
     }
 }
 
@@ -38,42 +42,48 @@ fn run_topolotree(
     // Timestamp stuff is a bit complicated, there is a proper data-flowy way to do it
     // but it would require at least one more join and one more cross join just specifically for the local timestamps
     // Until we need it to be proper then we can take a shortcut and use rc refcell
-    let self_timestamp = Rc::new(RefCell::new(0));
+    let self_timestamp = Rc::new(RefCell::new(HashMap::<u64, isize>::new()));
 
     let self_timestamp1 = Rc::clone(&self_timestamp);
     let self_timestamp2 = Rc::clone(&self_timestamp);
     let self_timestamp3 = Rc::clone(&self_timestamp);
 
+    // we use current tick to keep track of which *keys* have been modified
+
     hydroflow_syntax! {
         from_neighbors = source_stream(input_recv)
             -> map(Result::unwrap)
-            -> map(|(src, payload)| (NodeID(src), serde_json::from_slice(&payload[..]).unwrap()))
-            -> inspect(|(src, payload): &(NodeID, Payload<i64>)| println!("received from: {src}: payload: {payload:?}"));
+            -> map(|(src, x)| (NodeID(src), deserialize_from_bytes::<Payload<i64>>(&x).unwrap()))
+            -> inspect(|(src, payload): &(NodeID, Payload<i64>)| eprintln!("received from: {src}: payload: {payload:?}"));
 
         from_neighbors
-            -> fold_keyed::<'static>(|| Payload { timestamp: -1, data: Default::default() }, |acc: &mut Payload<i64>, val: Payload<i64>| {
-                if val.timestamp > acc.timestamp {
-                    *acc = val;
-                    *self_timestamp1.borrow_mut() += 1;
+            -> map(|(src, payload)| ((payload.key, src), (payload.key, payload.contents)))
+            -> fold_keyed::<'static>(|| (Timestamped { timestamp: -1, data: Default::default() }, 0), |acc: &mut (Timestamped<i64>, usize), (key, val): (u64, Timestamped<i64>)| {
+                if val.timestamp > acc.0.timestamp {
+                    acc.0 = val;
+                    *self_timestamp1.borrow_mut().entry(key).or_insert(0) += 1;
+                    acc.1 = context.current_tick();
                 }
             })
-            -> inspect(|(src, data)| println!("data from stream: {src}: data: {data:?}"))
-            -> map(|(src, payload)| (Some(src), payload.data))
+            -> inspect(|(src, data)| eprintln!("data from stream+key: {src:?}: data: {data:?}"))
+            -> map(|((key, src), (payload, change_tick))| ((key, Some(src)), (payload.data, change_tick)))
             -> from_neighbors_or_local;
 
         local_value = source_stream(increment_requests)
-            -> map(Result::unwrap)
-            -> map(|change_payload: BytesMut| (serde_json::from_slice(&change_payload[..]).unwrap()))
-            -> inspect(|change_payload: &OperationPayload| println!("change: {change_payload:?}"))
-            -> inspect(|_| {
-                *self_timestamp2.borrow_mut() += 1;
+            -> map(|x| deserialize_from_bytes::<OperationPayload>(&x.unwrap()).unwrap())
+            -> inspect(|change_payload: &OperationPayload| eprintln!("change: {change_payload:?}"))
+            -> inspect(|change| {
+                *self_timestamp2.borrow_mut().entry(change.key).or_insert(0) += 1;
             })
-            -> map(|change_payload: OperationPayload| change_payload.change)
-            -> reduce::<'static>(|agg: &mut i64, change: i64| *agg += change);
+            -> map(|change_payload: OperationPayload| (change_payload.key, (change_payload.change, context.current_tick())))
+            -> reduce_keyed::<'static>(|agg: &mut (i64, usize), change: (i64, usize)| {
+                agg.0 += change.0;
+                agg.1 = std::cmp::max(agg.1, change.1);
+            });
 
-        local_value -> map(|data| (None, data)) -> from_neighbors_or_local;
+        local_value -> map(|(key, data)| ((key, None), data)) -> from_neighbors_or_local;
 
-        from_neighbors_or_local = union();
+        from_neighbors_or_local = union() -> tee();
         from_neighbors_or_local -> [0]all_neighbor_data;
 
         neighbors = source_iter(neighbors)
@@ -82,25 +92,34 @@ fn run_topolotree(
 
         neighbors -> [1]all_neighbor_data;
 
+        // query_result = from_neighbors_or_local
+        //     -> map(|((key, _), data)| (key, data))
+        //     -> fold_keyed(|| 0, |acc: &mut i64, data: i64| {
+        //         merge(acc, data);
+        //     });
+
         all_neighbor_data = cross_join_multiset()
-            -> filter(|((aggregate_from_this_guy, _), target_neighbor)| {
+            -> filter(|(((_, aggregate_from_this_guy), _), target_neighbor)| {
                 aggregate_from_this_guy.iter().all(|source| source != target_neighbor)
             })
-            -> map(|((_, payload), target_neighbor)| {
-                (target_neighbor, payload)
+            -> map(|(((key, _), payload), target_neighbor)| {
+                ((key, target_neighbor), payload)
             })
-            -> fold_keyed(|| 0, |acc: &mut i64, data: i64| {
-                merge(acc, data);
+            -> reduce_keyed(|acc: &mut (i64, usize), (data, change_tick): (i64, usize)| {
+                merge(&mut acc.0, data);
+                acc.1 = std::cmp::max(acc.1, change_tick);
             })
-            -> inspect(|(target_neighbor, data)| println!("data from neighbors: {target_neighbor:?}: data: {data:?}"))
-            -> map(|(target_neighbor, data)| {
-                (target_neighbor, Payload {
-                    timestamp: *self_timestamp3.borrow(),
-                    data
-                })
-            })
+            -> filter(|(_, (_, change_tick))| *change_tick == context.current_tick())
+            -> inspect(|((key, target_neighbor), data)| eprintln!("data from key: {key:?}, neighbors: {target_neighbor:?}: data: {data:?}"))
+            -> map(|((key, target_neighbor), (data, _))| (target_neighbor, Payload {
+                key,
+                contents: Timestamped {
+                    timestamp: self_timestamp3.borrow().get(&key).copied().unwrap_or(0),
+                    data,
+                }
+            }))
             -> for_each(|(target_neighbor, output): (NodeID, Payload<i64>)| {
-                let serialized = BytesMut::from(serde_json::to_string(&output).unwrap().as_str()).freeze();
+                let serialized = serialize_to_bytes(output);
                 output_send.send((target_neighbor.0, serialized)).unwrap();
             });
     }
@@ -110,7 +129,6 @@ fn run_topolotree(
 async fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let neighbors: Vec<u32> = args.into_iter().map(|x| x.parse().unwrap()).collect();
-    // let current_id = neighbors[0];
 
     let mut ports = hydroflow::util::cli::init().await;
 
