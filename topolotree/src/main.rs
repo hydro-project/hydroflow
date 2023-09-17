@@ -2,6 +2,7 @@
 mod tests;
 
 use std::cell::RefCell;
+use std::fmt::Display;
 use std::io;
 use std::rc::Rc;
 
@@ -14,10 +15,19 @@ use hydroflow::util::cli::{
 };
 use topolotree_datatypes::{OperationPayload, Payload};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct NodeID(pub u32);
+
+impl Display for NodeID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
 fn run_topolotree(
     neighbors: Vec<u32>,
     input_recv: impl Stream<Item = Result<(u32, BytesMut), io::Error>> + Unpin + 'static,
-    local_update_recv: impl Stream<Item = Result<BytesMut, io::Error>> + Unpin + 'static,
+    increment_requests: impl Stream<Item = Result<BytesMut, io::Error>> + Unpin + 'static,
     output_send: tokio::sync::mpsc::UnboundedSender<(u32, Bytes)>,
 ) -> Hydroflow {
     fn merge(x: &mut i64, y: i64) {
@@ -36,9 +46,8 @@ fn run_topolotree(
     hydroflow_syntax! {
         from_neighbors = source_stream(input_recv)
             -> map(Result::unwrap)
-            -> map(|(src, payload)| (src, serde_json::from_slice(&payload[..]).unwrap()))
-            -> inspect(|(src, payload): &(u32, Payload<i64>)| println!("received from: {src}: payload: {payload:?}"))
-            -> tee();
+            -> map(|(src, payload)| (NodeID(src), serde_json::from_slice(&payload[..]).unwrap()))
+            -> inspect(|(src, payload): &(NodeID, Payload<i64>)| println!("received from: {src}: payload: {payload:?}"));
 
         from_neighbors
             -> persist()
@@ -51,7 +60,7 @@ fn run_topolotree(
             -> inspect(|(src, data)| println!("data from stream: {src}: data: {data:?}"))
             -> [0]all_neighbor_data;
 
-        local_value = source_stream(local_update_recv)
+        local_value = source_stream(increment_requests)
             -> map(Result::unwrap)
             -> map(|change_payload: BytesMut| (serde_json::from_slice(&change_payload[..]).unwrap()))
             -> inspect(|change_payload: &OperationPayload| println!("change: {change_payload:?}"))
@@ -62,67 +71,37 @@ fn run_topolotree(
             -> fold(0, |agg: &mut i64, op: OperationPayload| *agg += op.change);
 
         neighbors = source_iter(neighbors)
-            -> persist()
-            -> tee();
+            -> map(NodeID)
+            -> persist();
 
-        // [1, 2, 3] + SelfState
-        // message comes in from 2
-        // (2+3+SelfState) -> 1, (1+2+SelfState) -> 3
+        neighbors -> [1]all_neighbor_data;
 
-        from_neighbors // 2 comes out here
-            -> map(|(src, _payload)| src)
-            -> [0]all_other_neighbors_except_for_who_it_came_from; // 2 goes into this crossjoin
-
-        neighbors
-            -> [1]all_other_neighbors_except_for_who_it_came_from;
-
-        // (2, 1), (2, 2), (2, 3)
-        all_other_neighbors_except_for_who_it_came_from = cross_join_multiset()
-            -> filter(|(src, neighbor)| {
-                src != neighbor
+        all_neighbor_data = cross_join_multiset()
+            -> filter(|((aggregate_from_this_guy, _), target_neighbor)| {
+                aggregate_from_this_guy != target_neighbor
             })
-            -> [0]who_to_aggregate_from_by_target; // (2, 1), (2, 3)
-
-        neighbors
-            -> [1]who_to_aggregate_from_by_target;
-
-        // ((2, 1), 1)), ((2, 1), 2)), ((2, 1), 3)),
-        // ((2, 3), 1)), ((2, 3), 2)), ((2, 3), 3)),
-        who_to_aggregate_from_by_target = cross_join_multiset()
-            -> filter(|((_original_src, target_neighbor), aggregate_from_this_guy)| {
-                target_neighbor != aggregate_from_this_guy
+            -> map(|((_, payload), target_neighbor)| {
+                (target_neighbor, payload)
             })
-            // ((2, 1), 2)), ((2, 1), 3)),
-            // ((2, 3), 1)), ((2, 3), 2)),
-            -> map(|((original_src, target_neighbor), aggregate_from_this_guy)| {
-                (aggregate_from_this_guy, (original_src, target_neighbor))
-            })
-            // (2, (2, 1))), (3, (2, 1))),
-            // (1, (2, 3))), (2, (2, 3))),
-            -> [1]all_neighbor_data;
-
-        all_neighbor_data = join()
-            -> map(|(aggregate_from_this_guy, (payload, (original_src, target_neighbor)))| {
-                ((target_neighbor, original_src), (aggregate_from_this_guy, payload))
-            })
-            -> fold_keyed(|| 0, |acc: &mut i64, (_aggregate_from_this_guy, payload): (u32, Payload<i64>)| {
+            -> fold_keyed(|| 0, |acc: &mut i64, payload: Payload<i64>| {
                 merge(acc, payload.data);
             })
+            -> inspect(|(target_neighbor, data)| println!("data from neighbors: {target_neighbor:?}: data: {data:?}"))
             -> [0]add_local_value;
 
         local_value
             -> [1]add_local_value;
 
         add_local_value = cross_join_multiset()
-            -> map(|(((target_neighbor, _original_src), data), local_value)| {
+            -> map(|((target_neighbor, data), local_value)| {
                 (target_neighbor, Payload {
                     timestamp: *self_timestamp3.borrow(),
                     data: data + local_value
                 })
             })
-            -> for_each(|(target_neighbor, output)| {
+            -> for_each(|(target_neighbor, output): (NodeID, Payload<i64>)| {
                 let serialized = BytesMut::from(serde_json::to_string(&output).unwrap().as_str()).freeze();
-                output_send.send((target_neighbor, serialized)).unwrap();
+                output_send.send((target_neighbor.0, serialized)).unwrap();
             });
     }
 }
@@ -149,7 +128,7 @@ async fn main() {
         .into_sink();
 
     let operations_send = ports
-        .port("operations")
+        .port("increment_requests")
         // connect to the port with a single recipient
         .connect::<ConnectedDirect>()
         .await

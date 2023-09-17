@@ -12,3 +12,9 @@ pub struct Payload<T: Debug> {
 pub struct OperationPayload {
     pub change: i64,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct IncrementRequest {
+    tweet_id: u64,
+    likes: i32,
+}

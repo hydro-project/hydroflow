@@ -140,7 +140,6 @@ async fn multiple_input_sources_test() {
         (1, Payload { timestamp: 2, data: 2 }),
         (2, Payload { timestamp: 2, data: 7 }),
         (3, Payload { timestamp: 2, data: 9 }),
-        (3, Payload { timestamp: 2, data: 9 }),
     ]));
 }
 
@@ -168,6 +167,45 @@ async fn simple_operation_test() {
     assert_eq!(read_all(&mut output_recv).await, HashMultiSet::from_iter([
         (2, Payload { timestamp: 3, data: 14 }),
         (3, Payload { timestamp: 3, data: 14 }),
+    ]));
+}
+
+#[hydroflow::test]
+async fn operations_across_ticks() {
+    let neighbors: Vec<u32> = vec![1, 2, 3];
+
+    let (mut operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
+    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
+
+    let mut flow = run_topolotree(neighbors, input_recv, operations_rx, output_send);
+
+    #[rustfmt::skip]
+    {
+        simulate_input(&mut input_send, (1, Payload { timestamp: 1, data: 2 })).unwrap();
+        simulate_operation(&mut operations_tx, OperationPayload { change: 5 }).unwrap();
+        simulate_operation(&mut operations_tx, OperationPayload { change: 7 }).unwrap();
+    };
+
+    flow.run_tick();
+
+    #[rustfmt::skip]
+    assert_eq!(read_all(&mut output_recv).await, HashMultiSet::from_iter([
+        (2, Payload { timestamp: 3, data: 14 }),
+        (3, Payload { timestamp: 3, data: 14 }),
+    ]));
+
+    #[rustfmt::skip]
+    {
+        simulate_operation(&mut operations_tx, OperationPayload { change: 1 }).unwrap();
+    };
+
+    flow.run_tick();
+
+    #[rustfmt::skip]
+    assert_eq!(read_all(&mut output_recv).await, HashMultiSet::from_iter([
+        (2, Payload { timestamp: 5, data: 15 }),
+        (3, Payload { timestamp: 5, data: 15 }),
     ]));
 }
 

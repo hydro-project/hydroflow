@@ -1,6 +1,6 @@
 import asyncio
 from codecs import decode
-from typing import Optional
+from typing import List, Optional
 import hydro
 import json
 from pathlib import Path
@@ -11,56 +11,31 @@ import numpy as np
 import uuid
 
 
-class Tree:
-    def __init__(self, node, left, right):
-        self.node = node
-        self.left = left
-        self.right = right
+# given a list of IDs for each node in a binary tree,
+# organize the nodes into a binary tree and compute the neighbors
+# of each node
+def get_neighbors_in_binary_tree(flat: List[int]) -> List[List[int]]:
+    tree = []
+    for i in range(len(flat)):
+        tree.append([])
+        if i > 0:
+            # add the parent
+            tree[i].append((i - 1) // 2)
+        if 2 * i + 1 < len(flat):
+            # add the left child
+            tree[i].append(2 * i + 1)
+        if 2 * i + 2 < len(flat):
+            # add the right child
+            tree[i].append(2 * i + 2)
+    return tree
 
-    def map(self, transform):
-        return Tree(
-            transform(self.node),
-            self.left.map(transform) if self.left is not None else None,
-            self.right.map(transform) if self.right is not None else None,
-        )
-
-    def flatten_with_path(self, cur_path=""):
-        return (
-            [(self.node, cur_path)]
-            + (
-                self.left.flatten_with_path(cur_path + "L")
-                if self.left is not None
-                else []
-            )
-            + (
-                self.right.flatten_with_path(cur_path + "R")
-                if self.right is not None
-                else []
-            )
-        )
-
-    async def map_async(self, transform):
-        return Tree(
-            await transform(self.node),
-            (await self.left.map_async(transform)) if self.left is not None else None,
-            (await self.right.map_async(transform)) if self.right is not None else None,
-        )
-
-
-def create_tree(depth, deployment, create_machine) -> Optional[Tree]:
-    if depth == 0:
-        return None
-    else:
-        left = create_tree(depth - 1, deployment, create_machine)
-        right = create_tree(depth - 1, deployment, create_machine)
-
-        self_service = deployment.HydroflowCrate(
-            src=str(Path(__file__).parent.absolute()),
-            example="topolotree",
-            on=create_machine(),
-        )
-
-        return Tree(self_service, left, right)
+def get_leaves_in_binary_tree(flat: List[int]) -> List[int]:
+    tree = get_neighbors_in_binary_tree(flat)
+    leaves = []
+    for i in range(len(tree)):
+        if len(tree[i]) == 1:
+            leaves.append(i)
+    return leaves
 
 
 async def run_experiment(
@@ -107,48 +82,36 @@ async def run_experiment(
             return out
 
     all_nodes = []
-    if is_tree:
-        tree = create_tree(tree_depth, deployment, create_machine)
-        tree.node.ports.to_parent.send_to(hydro.null())
-        hydro.null().send_to(tree.node.ports.from_parent)
-        all_nodes = [tup[0] for tup in tree.flatten_with_path()]
-    else:
-        cluster = [
-            deployment.HydroflowCrate(
-                src=str(
-                    (Path(__file__).parent.parent / "hydro_cli_examples").absolute()
-                ),
-                profile=profile,
-                example="pn_counter" if tree_arg == "pn" else "pn_counter_delta",
-                args=[json.dumps([i]), json.dumps([num_replicas])],
-                on=create_machine(),
-            )
-            for i in range(num_replicas)
-        ]
+    neighbors = get_neighbors_in_binary_tree(list(range(num_replicas)))
+    cluster = [
+        deployment.HydroflowCrate(
+            src=str(
+                (Path(__file__).parent.parent / "hydro_cli_examples").absolute()
+            ),
+            profile=profile,
+            example="pn_counter" if tree_arg == "pn" else "pn_counter_delta",
+            args=[json.dumps(neighbors[i])] if is_tree else [json.dumps([i]), json.dumps([num_replicas])],
+            on=create_machine(),
+        )
+        for i in range(num_replicas)
+    ]
 
-        for i in range(num_replicas):
-            cluster[i].ports.to_peer.send_to(
-                hydro.demux(
-                    {
-                        j: cluster[j].ports.from_peer.merge()
-                        for j in range(num_replicas)
-                        if i != j
-                    }
-                )
+    for i in range(num_replicas):
+        cluster[i].ports.to_peer.send_to(
+            hydro.demux(
+                {
+                    j: cluster[j].ports.from_peer.merge()
+                    for j in range(num_replicas)
+                }
             )
+        )
 
-        all_nodes = cluster
+    all_nodes = cluster
 
     if is_tree:
-        source = tree
-        while source.left is not None:
-            source = source.left
-        source = source.node
-
-        dest = tree
-        while dest.right is not None:
-            dest = dest.right
-        dest = dest.node
+        leaves = get_leaves_in_binary_tree(list(range(num_replicas)))
+        source = cluster[leaves[0]].node
+        dest = cluster[leaves[-1]].node
     else:
         source = cluster[0]
         dest = cluster[-1]
@@ -330,7 +293,7 @@ async def run_experiment(
         machine_pool.append(machine)
 
 
-# hydro deploy toplotree_latency.hydro.py -- local/gcp topolo/pn/pn_counter_delta DEPTH_OF_TREE NUM_CLIENTS
+# hydro deploy toplotree_latency.hydro.py -- local/gcp once/pn/pn_counter_delta DEPTH_OF_TREE NUM_CLIENTS
 async def main(args):
     # the current timestamp
     import datetime
