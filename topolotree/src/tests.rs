@@ -7,7 +7,7 @@ use hydroflow::util::{collect_ready_async, unbounded_channel, deserialize_from_b
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::protocol::Timestamped;
+use crate::protocol::{Timestamped, QueryResponse};
 use crate::{run_topolotree, OperationPayload, Payload};
 
 pub fn simulate_input(
@@ -42,6 +42,18 @@ pub async fn read_all(
         .collect::<HashMultiSet<_>>()
 }
 
+pub async fn read_all_query(
+    mut output_recv: &mut UnboundedReceiverStream<Bytes>,
+) -> HashMultiSet<QueryResponse> {
+    let collected = collect_ready_async::<Vec<_>, _>(&mut output_recv).await;
+    collected
+        .iter()
+        .map(|bytes| {
+            deserialize_from_bytes::<QueryResponse>(&bytes[..]).unwrap()
+        })
+        .collect::<HashMultiSet<_>>()
+}
+
 #[hydroflow::test]
 async fn simple_payload_test() {
     let neighbors: Vec<u32> = vec![1, 2, 3];
@@ -62,6 +74,11 @@ async fn simple_payload_test() {
     assert_eq!(read_all(&mut output_recv).await, HashMultiSet::from_iter([
         (2, Payload { key: 123, contents: Timestamped { timestamp: 1, data: 2 } }),
         (3, Payload { key: 123, contents: Timestamped { timestamp: 1, data: 2 } }),
+    ]));
+
+    #[rustfmt::skip]
+    assert_eq!(read_all_query(&mut query_recv).await, HashMultiSet::from_iter([
+        QueryResponse { key: 123, value: 2 }
     ]));
 }
 
@@ -89,6 +106,11 @@ async fn idempotence_test() {
         (2, Payload { key: 123, contents: Timestamped { timestamp: 1, data: 2 } }),
         (3, Payload { key: 123, contents: Timestamped { timestamp: 1, data: 2 } }),
     ]));
+
+    #[rustfmt::skip]
+    assert_eq!(read_all_query(&mut query_recv).await, HashMultiSet::from_iter([
+        QueryResponse { key: 123, value: 2 }
+    ]));
 }
 
 #[hydroflow::test]
@@ -114,6 +136,11 @@ async fn backwards_in_time_test() {
     assert_eq!(read_all(&mut output_recv).await, HashMultiSet::from_iter([
         (2, Payload { key: 123, contents: Timestamped { timestamp: 1, data: 7 } }),
         (3, Payload { key: 123, contents: Timestamped { timestamp: 1, data: 7 } }),
+    ]));
+
+    #[rustfmt::skip]
+    assert_eq!(read_all_query(&mut query_recv).await, HashMultiSet::from_iter([
+        QueryResponse { key: 123, value: 7 }
     ]));
 }
 
@@ -141,6 +168,11 @@ async fn multiple_input_sources_test() {
         (1, Payload { key: 123, contents: Timestamped { timestamp: 2, data: 2 } }),
         (2, Payload { key: 123, contents: Timestamped { timestamp: 2, data: 7 } }),
         (3, Payload { key: 123, contents: Timestamped { timestamp: 2, data: 9 } }),
+    ]));
+
+    #[rustfmt::skip]
+    assert_eq!(read_all_query(&mut query_recv).await, HashMultiSet::from_iter([
+        QueryResponse { key: 123, value: 9 }
     ]));
 }
 
@@ -172,6 +204,11 @@ async fn operations_across_ticks() {
     ]));
 
     #[rustfmt::skip]
+    assert_eq!(read_all_query(&mut query_recv).await, HashMultiSet::from_iter([
+        QueryResponse { key: 123, value: 14 }
+    ]));
+
+    #[rustfmt::skip]
     {
         simulate_operation(&mut operations_tx, OperationPayload { key: 123, change: 1 }).unwrap();
     };
@@ -183,6 +220,11 @@ async fn operations_across_ticks() {
         (1, Payload { key: 123, contents: Timestamped { timestamp: 4, data: 13 } }),
         (2, Payload { key: 123, contents: Timestamped { timestamp: 4, data: 15 } }),
         (3, Payload { key: 123, contents: Timestamped { timestamp: 4, data: 15 } }),
+    ]));
+
+    #[rustfmt::skip]
+    assert_eq!(read_all_query(&mut query_recv).await, HashMultiSet::from_iter([
+        QueryResponse { key: 123, value: 15 }
     ]));
 }
 
@@ -217,6 +259,12 @@ async fn operations_multiple_keys() {
     ]));
 
     #[rustfmt::skip]
+    assert_eq!(read_all_query(&mut query_recv).await, HashMultiSet::from_iter([
+        QueryResponse { key: 123, value: 5 },
+        QueryResponse { key: 456, value: 7 }
+    ]));
+
+    #[rustfmt::skip]
     {
         simulate_operation(&mut operations_tx, OperationPayload { key: 123, change: 1 }).unwrap();
     };
@@ -231,6 +279,11 @@ async fn operations_multiple_keys() {
     ]));
 
     #[rustfmt::skip]
+    assert_eq!(read_all_query(&mut query_recv).await, HashMultiSet::from_iter([
+        QueryResponse { key: 123, value: 6 }
+    ]));
+
+    #[rustfmt::skip]
     {
         simulate_operation(&mut operations_tx, OperationPayload { key: 456, change: 2 }).unwrap();
     };
@@ -242,6 +295,11 @@ async fn operations_multiple_keys() {
         (1, Payload { key: 456, contents: Timestamped { timestamp: 2, data: 9 } }),
         (2, Payload { key: 456, contents: Timestamped { timestamp: 2, data: 9 } }),
         (3, Payload { key: 456, contents: Timestamped { timestamp: 2, data: 9 } })
+    ]));
+
+    #[rustfmt::skip]
+    assert_eq!(read_all_query(&mut query_recv).await, HashMultiSet::from_iter([
+        QueryResponse { key: 456, value: 9 }
     ]));
 }
 
@@ -274,6 +332,12 @@ async fn gossip_multiple_keys() {
     ]));
 
     #[rustfmt::skip]
+    assert_eq!(read_all_query(&mut query_recv).await, HashMultiSet::from_iter([
+        QueryResponse { key: 123, value: 5 },
+        QueryResponse { key: 456, value: 7 },
+    ]));
+
+    #[rustfmt::skip]
     {
         simulate_input(&mut input_send, (2, Payload { key: 123, contents: Timestamped { timestamp: 0, data: 5 } })).unwrap();
         simulate_input(&mut input_send, (3, Payload { key: 456, contents: Timestamped { timestamp: 0, data: 7 } })).unwrap();
@@ -288,6 +352,12 @@ async fn gossip_multiple_keys() {
 
         (1, Payload { key: 456, contents: Timestamped { timestamp: 2, data: 14 } }),
         (2, Payload { key: 456, contents: Timestamped { timestamp: 2, data: 7 } }),
+    ]));
+
+    #[rustfmt::skip]
+    assert_eq!(read_all_query(&mut query_recv).await, HashMultiSet::from_iter([
+        QueryResponse { key: 123, value: 10 },
+        QueryResponse { key: 456, value: 14 },
     ]));
 }
 

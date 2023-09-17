@@ -53,8 +53,7 @@ fn run_topolotree(
     hydroflow_syntax! {
         from_neighbors = source_stream(input_recv)
             -> map(Result::unwrap)
-            -> map(|(src, x)| (NodeID(src), deserialize_from_bytes::<Payload<i64>>(&x).unwrap()))
-            -> inspect(|(src, payload): &(NodeID, Payload<i64>)| eprintln!("received from: {src}: payload: {payload:?}"));
+            -> map(|(src, x)| (NodeID(src), deserialize_from_bytes::<Payload<i64>>(&x).unwrap()));
 
         from_neighbors
             -> map(|(src, payload)| ((payload.key, src), (payload.key, payload.contents)))
@@ -65,13 +64,11 @@ fn run_topolotree(
                     acc.1 = context.current_tick();
                 }
             })
-            -> inspect(|(src, data)| eprintln!("data from stream+key: {src:?}: data: {data:?}"))
             -> map(|((key, src), (payload, change_tick))| ((key, Some(src)), (payload.data, change_tick)))
             -> from_neighbors_or_local;
 
         local_value = source_stream(increment_requests)
             -> map(|x| deserialize_from_bytes::<OperationPayload>(&x.unwrap()).unwrap())
-            -> inspect(|change_payload: &OperationPayload| eprintln!("change: {change_payload:?}"))
             -> inspect(|change| {
                 *self_timestamp2.borrow_mut().entry(change.key).or_insert(0) += 1;
             })
@@ -92,14 +89,25 @@ fn run_topolotree(
 
         neighbors -> [1]all_neighbor_data;
 
-        // query_result = from_neighbors_or_local
-        //     -> map(|((key, _), data)| (key, data))
-        //     -> fold_keyed(|| 0, |acc: &mut i64, data: i64| {
-        //         merge(acc, data);
-        //     });
+        query_result = from_neighbors_or_local
+            -> map(|((key, _), payload): ((u64, _), (i64, usize))| {
+                (key, payload)
+            })
+            -> reduce_keyed(|acc: &mut (i64, usize), (data, change_tick): (i64, usize)| {
+                merge(&mut acc.0, data);
+                acc.1 = std::cmp::max(acc.1, change_tick);
+            })
+            -> filter(|(_, (_, change_tick))| *change_tick == context.current_tick())
+            -> for_each(|(key, (data, _))| {
+                let serialized = serialize_to_bytes(QueryResponse {
+                    key,
+                    value: data
+                });
+                query_send.send(serialized).unwrap();
+            });
 
         all_neighbor_data = cross_join_multiset()
-            -> filter(|(((_, aggregate_from_this_guy), _), target_neighbor)| {
+            -> filter(|(((_, aggregate_from_this_guy), _), target_neighbor): &(((u64, Option<NodeID>), (i64, usize)), NodeID)| {
                 aggregate_from_this_guy.iter().all(|source| source != target_neighbor)
             })
             -> map(|(((key, _), payload), target_neighbor)| {
@@ -110,7 +118,6 @@ fn run_topolotree(
                 acc.1 = std::cmp::max(acc.1, change_tick);
             })
             -> filter(|(_, (_, change_tick))| *change_tick == context.current_tick())
-            -> inspect(|((key, target_neighbor), data)| eprintln!("data from key: {key:?}, neighbors: {target_neighbor:?}: data: {data:?}"))
             -> map(|((key, target_neighbor), (data, _))| (target_neighbor, Payload {
                 key,
                 contents: Timestamped {
@@ -173,12 +180,33 @@ async fn main() {
         }
     });
 
-    hydroflow::util::cli::launch_flow(run_topolotree(
+    let flow = run_topolotree(
         neighbors,
         input_recv,
         operations_send,
         chan_tx,
         query_tx
-    ))
-    .await;
+    );
+
+    let f1 = async move {
+        #[cfg(target_os = "linux")]
+        loop {
+            let x = procinfo::pid::stat_self().unwrap();
+            let bytes = x.rss * 1024 * 4;
+            println!("memory,{}", bytes);
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        }
+    };
+
+    // initial memory
+    #[cfg(target_os = "linux")]
+    {
+        let x = procinfo::pid::stat_self().unwrap();
+        let bytes = x.rss * 1024 * 4;
+        println!("memory,{}", bytes);
+    }
+
+    let f1_handle = tokio::spawn(f1);
+    hydroflow::util::cli::launch_flow(flow).await;
+    f1_handle.abort();
 }

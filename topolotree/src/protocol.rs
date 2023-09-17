@@ -19,3 +19,9 @@ pub struct OperationPayload {
     pub key: u64,
     pub change: i64,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct QueryResponse {
+    pub key: u64,
+    pub value: i64
+}

@@ -4,7 +4,7 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use hydroflow::serde::{Deserialize, Serialize};
-use hydroflow::util::cli::{ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource};
+use hydroflow::util::cli::{ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 use hydroflow::{hydroflow_syntax, tokio};
 
@@ -48,7 +48,7 @@ async fn main() {
 
     let from_peer = ports
         .port("from_peer")
-        .connect::<ConnectedDirect>()
+        .connect::<ConnectedTagged<ConnectedDirect>>()
         .await
         .into_source();
 
@@ -113,7 +113,7 @@ async fn main() {
             -> tee();
 
         source_stream(from_peer)
-            -> map(|x| deserialize_from_bytes::<GossipOrIncrement>(&x.unwrap()).unwrap())
+            -> map(|x| deserialize_from_bytes::<GossipOrIncrement>(&x.unwrap().1).unwrap())
             -> next_state;
 
         source_stream(increment_requests)
@@ -141,10 +141,13 @@ async fn main() {
                 a.into_iter().map(|(k, _, rc_array)| {
                     let rc_borrowed = rc_array.as_ref().borrow();
                     let (pos, neg) = rc_borrowed.deref();
-                    (k, pos.iter().sum::<u64>() as i64 - neg.iter().sum::<u64>() as i64)
+                    QueryResponse {
+                        key: k,
+                        value: pos.iter().sum::<u64>() as i64 - neg.iter().sum::<u64>() as i64
+                    }
                 }).collect::<Vec<_>>()
             })
-            -> map(serialize_to_bytes::<(u64, i64)>)
+            -> map(serialize_to_bytes::<QueryResponse>)
             -> dest_sink(query_responses);
     };
 

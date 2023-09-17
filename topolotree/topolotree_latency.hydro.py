@@ -40,6 +40,7 @@ def get_leaves_in_binary_tree(flat: List[int]) -> List[int]:
 
 async def run_experiment(
     deployment: hydro.Deployment,
+    localhost_machine: hydro.LocalhostHost,
     profile,
     machine_pool,
     experiment_id,
@@ -57,13 +58,12 @@ async def run_experiment(
 
     num_clients = int(clients_arg)
 
-    localhost_machine = deployment.Localhost()
+    print(f"Launching benchmark with protocol {tree_arg}, {num_replicas} replicas, and {num_clients} clients")
 
     currently_deployed = []
 
     def create_machine():
         if len(machine_pool) > 0:
-            print("Using machine from pool")
             ret = machine_pool.pop()
             currently_deployed.append(ret)
             return ret
@@ -145,7 +145,7 @@ async def run_experiment(
 
     await deployment.deploy()
 
-    print("deployed!")
+    print("Deployed!")
 
     latency = []
     memory_per_node = [[] for _ in range(num_replicas)]
@@ -190,7 +190,7 @@ async def run_experiment(
     latency_plotter_task = asyncio.create_task(latency_plotter())
 
     await deployment.start()
-    print("started!")
+    print("Started! Please wait 30 seconds to collect data.")
 
     await asyncio.sleep(30)
 
@@ -314,6 +314,7 @@ async def main(args):
     )
 
     deployment = hydro.Deployment()
+    localhost = deployment.Localhost()
     pool = []
 
     network = (
@@ -329,6 +330,7 @@ async def main(args):
             for num_clients_arg in args[3].split(","):
                 await run_experiment(
                     deployment,
+                    localhost,
                     "dev" if args[0] == "local" else None,
                     pool,
                     experiment_id,
