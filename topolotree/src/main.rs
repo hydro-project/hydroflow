@@ -50,8 +50,7 @@ fn run_topolotree(
             -> inspect(|(src, payload): &(NodeID, Payload<i64>)| println!("received from: {src}: payload: {payload:?}"));
 
         from_neighbors
-            -> persist()
-            -> fold_keyed(|| Payload { timestamp: -1, data: Default::default() }, |acc: &mut Payload<i64>, val: Payload<i64>| {
+            -> fold_keyed::<'static>(|| Payload { timestamp: -1, data: Default::default() }, |acc: &mut Payload<i64>, val: Payload<i64>| {
                 if val.timestamp > acc.timestamp {
                     *acc = val;
                     *self_timestamp1.borrow_mut() += 1;
@@ -67,8 +66,7 @@ fn run_topolotree(
             -> inspect(|_| {
                 *self_timestamp2.borrow_mut() += 1;
             })
-            -> persist()
-            -> fold(0, |agg: &mut i64, op: OperationPayload| *agg += op.change);
+            -> fold::<'static>(0, |agg: &mut i64, op: OperationPayload| *agg += op.change);
 
         neighbors = source_iter(neighbors)
             -> map(NodeID)

@@ -204,8 +204,8 @@ async fn operations_across_ticks() {
 
     #[rustfmt::skip]
     assert_eq!(read_all(&mut output_recv).await, HashMultiSet::from_iter([
-        (2, Payload { timestamp: 5, data: 15 }),
-        (3, Payload { timestamp: 5, data: 15 }),
+        (2, Payload { timestamp: 4, data: 15 }),
+        (3, Payload { timestamp: 4, data: 15 }),
     ]));
 }
 
