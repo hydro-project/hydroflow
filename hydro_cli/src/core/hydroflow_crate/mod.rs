@@ -24,6 +24,7 @@ pub struct HydroflowCrate {
     id: usize,
     src: PathBuf,
     on: Arc<RwLock<dyn Host>>,
+    bin: Option<String>,
     example: Option<String>,
     profile: Option<String>,
     features: Option<Vec<String>>,
@@ -55,6 +56,7 @@ impl HydroflowCrate {
         id: usize,
         src: PathBuf,
         on: Arc<RwLock<dyn Host>>,
+        bin: Option<String>,
         example: Option<String>,
         profile: Option<String>,
         features: Option<Vec<String>>,
@@ -65,6 +67,7 @@ impl HydroflowCrate {
         Self {
             id,
             src,
+            bin,
             on,
             example,
             profile,
@@ -162,6 +165,7 @@ impl HydroflowCrate {
 
     fn build(&mut self) -> JoinHandle<Result<BuiltCrate>> {
         let src_cloned = self.src.canonicalize().unwrap();
+        let bin_cloned = self.bin.clone();
         let example_cloned = self.example.clone();
         let features_cloned = self.features.clone();
         let host = self.on.clone();
@@ -170,6 +174,7 @@ impl HydroflowCrate {
 
         tokio::task::spawn(build_crate(
             src_cloned,
+            bin_cloned,
             example_cloned,
             profile_cloned,
             target_type,

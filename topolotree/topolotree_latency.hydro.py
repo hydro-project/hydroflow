@@ -86,10 +86,10 @@ async def run_experiment(
     cluster = [
         deployment.HydroflowCrate(
             src=str(
-                (Path(__file__).parent.parent / "hydro_cli_examples").absolute()
+                Path(__file__).parent.absolute()
             ),
             profile=profile,
-            example="pn_counter" if tree_arg == "pn" else "pn_counter_delta",
+            bin="pn" if tree_arg == "pn" else "pn_delta",
             args=[json.dumps(neighbors[i])] if is_tree else [json.dumps([i]), json.dumps([num_replicas])],
             on=create_machine(),
         )
@@ -123,9 +123,9 @@ async def run_experiment(
             hydro.null().send_to(node.ports.increment_requests)
 
     latency_measurer = deployment.HydroflowCrate(
-        src=str((Path(__file__).parent.parent / "hydro_cli_examples").absolute()),
+        src=str(Path(__file__).parent.absolute()),
         profile=profile,
-        example="topolotree_latency_measure",
+        bin="latency_measure",
         args=[json.dumps([num_clients])],
         on=create_machine(),
     )

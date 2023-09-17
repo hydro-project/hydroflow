@@ -4,6 +4,22 @@ publish = false
 version = "0.0.0"
 edition = "2021"
 
+[[bin]]
+name = "topolotree"
+path = "src/main.rs"
+
+[[bin]]
+name = "pn"
+path = "src/pn.rs"
+
+[[bin]]
+name = "pn_delta"
+path = "src/pn_delta.rs"
+
+[[bin]]
+name = "latency_measure"
+path = "src/latency_measure.rs"
+
 [dependencies]
 hydroflow = { path = "../hydroflow", features = [ "cli_integration" ] }
 hydroflow_datalog = { path = "../hydroflow_datalog" }
