@@ -71,7 +71,7 @@ async def run_experiment(
             if is_gcp:
                 out = deployment.GCPComputeEngineHost(
                     project="hydro-chrisdouglas",
-                    machine_type="n2-standard-4",
+                    machine_type="n2-standard-2",
                     image="debian-cloud/debian-11",
                     region="us-west1-a",
                     network=gcp_vpc,

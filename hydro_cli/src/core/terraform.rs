@@ -46,6 +46,7 @@ impl TerraformPool {
 
         let spawned_child = apply_command
             .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn()
             .context("Failed to spawn `terraform`. Is it installed?")?;
 
@@ -114,7 +115,7 @@ impl TerraformBatch {
             });
         }
 
-        ProgressTracker::with_group("terraform", || async {
+        ProgressTracker::with_group("terraform", None, || async {
             let dothydro_folder = std::env::current_dir().unwrap().join(".hydro");
             std::fs::create_dir_all(&dothydro_folder).unwrap();
             let deployment_folder = tempfile::tempdir_in(dothydro_folder).unwrap();
@@ -140,9 +141,11 @@ impl TerraformBatch {
 
             let (apply_id, apply) = pool.create_apply(deployment_folder)?;
 
-            let output = ProgressTracker::with_group("apply", || async {
-                apply.write().await.output().await
-            })
+            let output = ProgressTracker::with_group(
+                "apply",
+                Some(self.resource.values().map(|r| r.len()).sum()),
+                || async { apply.write().await.output().await },
+            )
             .await;
             pool.drop_apply(apply_id);
             output
@@ -226,13 +229,22 @@ impl TerraformApply {
     async fn output(&mut self) -> Result<TerraformResult> {
         let (_, child) = self.child.as_ref().unwrap().clone();
         let mut stdout = child.write().unwrap().stdout.take().unwrap();
+        let stderr = child.write().unwrap().stderr.take().unwrap();
 
         let status = tokio::task::spawn_blocking(move || {
             // it is okay for this thread to keep running even if the future is cancelled
             child.write().unwrap().wait().unwrap()
         });
 
-        display_apply_outputs(&mut stdout).await;
+        let display_apply = display_apply_outputs(&mut stdout);
+        let stderr_loop = tokio::task::spawn_blocking(move || {
+            let mut lines = BufReader::new(stderr).lines();
+            while let Some(Ok(line)) = lines.next() {
+                ProgressTracker::println(&format!("[terraform] {}", line));
+            }
+        });
+
+        let _ = futures::join!(display_apply, stderr_loop);
 
         let status = status.await;
 

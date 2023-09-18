@@ -17,7 +17,7 @@ pub struct Deployment {
 
 impl Deployment {
     pub async fn deploy(&mut self) -> Result<()> {
-        progress::ProgressTracker::with_group("deploy", || async {
+        progress::ProgressTracker::with_group("deploy", None, || async {
             let mut resource_batch = super::ResourceBatch::new();
             let active_services = self
                 .services
@@ -41,7 +41,7 @@ impl Deployment {
             }
 
             let result = Arc::new(
-                progress::ProgressTracker::with_group("provision", || async {
+                progress::ProgressTracker::with_group("provision", None, || async {
                     resource_batch
                         .provision(&mut self.resource_pool, self.last_resource_result.clone())
                         .await
@@ -50,7 +50,7 @@ impl Deployment {
             );
             self.last_resource_result = Some(result.clone());
 
-            progress::ProgressTracker::with_group("provision", || {
+            progress::ProgressTracker::with_group("provision", None, || {
                 let hosts_provisioned =
                     self.hosts
                         .iter_mut()
@@ -61,7 +61,7 @@ impl Deployment {
             })
             .await;
 
-            progress::ProgressTracker::with_group("deploy", || {
+            progress::ProgressTracker::with_group("deploy", None, || {
                 let services_future =
                     self.services
                         .iter_mut()
@@ -79,7 +79,7 @@ impl Deployment {
             })
             .await;
 
-            progress::ProgressTracker::with_group("ready", || {
+            progress::ProgressTracker::with_group("ready", None, || {
                 let all_services_ready =
                     self.services
                         .iter()
@@ -97,7 +97,7 @@ impl Deployment {
         .await
     }
 
-    pub async fn start(&mut self) {
+    pub async fn start(&mut self) -> Result<()> {
         let active_services = self
             .services
             .iter()
@@ -110,10 +110,12 @@ impl Deployment {
             self.services
                 .iter()
                 .map(|service: &Weak<RwLock<dyn Service>>| async {
-                    service.upgrade().unwrap().write().await.start().await;
+                    service.upgrade().unwrap().write().await.start().await?;
+                    Ok(()) as Result<()>
                 });
 
-        futures::future::join_all(all_services_start).await;
+        futures::future::try_join_all(all_services_start).await?;
+        Ok(())
     }
 
     pub fn add_host<T: Host + 'static, F: FnOnce(usize) -> T>(
