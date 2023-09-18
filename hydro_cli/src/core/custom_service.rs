@@ -65,7 +65,9 @@ impl Service for CustomService {
         Ok(())
     }
 
-    async fn start(&mut self) {}
+    async fn start(&mut self) -> Result<()> {
+        Ok(())
+    }
 
     async fn stop(&mut self) -> Result<()> {
         Ok(())

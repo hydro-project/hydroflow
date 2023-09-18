@@ -4,7 +4,7 @@ use anyhow::Result;
 use futures::Future;
 
 pub async fn async_retry<T, F: Future<Output = Result<T>>>(
-    thunk: impl Fn() -> F,
+    mut thunk: impl FnMut() -> F,
     count: usize,
     delay: Duration,
 ) -> Result<T> {
