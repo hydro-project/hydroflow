@@ -10,7 +10,7 @@ linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
 subgraph sg_1v1 ["sg_1v1 stratum 1"]
     1v1[\"(1v1) <code>difference()</code>"/]:::pullClass
     2v1[/"(2v1) <code>for_each(|x| println!(&quot;diff: {:?}&quot;, x))</code>"\]:::pushClass
-    1v1--->2v1
+    1v1-->2v1
     subgraph sg_1v1_var_diff ["var <tt>diff</tt>"]
         1v1
         2v1
@@ -20,8 +20,8 @@ subgraph sg_2v1 ["sg_2v1 stratum 0"]
     4v1[\"(4v1) <code>source_stream(neg_recv)</code>"/]:::pullClass
     5v1[/"(5v1) <code>tee()</code>"\]:::pushClass
     6v1[/"(6v1) <code>for_each(|x| println!(&quot;neg: {:?}&quot;, x))</code>"\]:::pushClass
-    4v1--->5v1
-    5v1--->6v1
+    4v1-->5v1
+    5v1-->6v1
     subgraph sg_2v1_var_negs ["var <tt>negs</tt>"]
         4v1
         5v1
@@ -33,10 +33,10 @@ subgraph sg_3v1 ["sg_3v1 stratum 0"]
         3v1
     end
 end
-3v1--->8v1
-5v1--->7v1
+3v1-->8v1
+5v1-->7v1
 7v1["(7v1) <code>handoff</code>"]:::otherClass
-7v1==neg===o1v1
+7v1--x|neg|1v1
 8v1["(8v1) <code>handoff</code>"]:::otherClass
-8v1--pos--->1v1
+8v1-->|pos|1v1
 

@@ -14,7 +14,7 @@ use crate::graph::OperatorInstance;
 ///
 /// ```hydroflow
 /// initialize()
-///     -> assert([()]);
+///     -> assert_eq([()]);
 /// ```
 pub const INITIALIZE: OperatorConstraints = OperatorConstraints {
     name: "initialize",
@@ -35,6 +35,7 @@ pub const INITIALIZE: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
+    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs { op_span, .. }, diagnostics| {
         let wc = WriteContextArgs {
             op_inst: &OperatorInstance {

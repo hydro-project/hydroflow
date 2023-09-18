@@ -61,6 +61,12 @@ Replace the contents of `src/main.rs` with the following:
 
 <CodeBlock language="rust" showLineNumbers>{exampleCode2}</CodeBlock>
 
+Here the `filter_map` operator takes a map closure that returns a Rust [`Option`](https://doc.rust-lang.org/std/option/enum.Option.html).
+If the value is `Some(...)`, it is passed to the output; if it is `None` it is filtered.
+
+The `flat_map` operator takes a map closure that generates a collection type (in this case a `Vec`)
+which is flattened.
+
 Results:
 
 <CodeBlock language="console">{extractOutput(exampleOutput2)}</CodeBlock>

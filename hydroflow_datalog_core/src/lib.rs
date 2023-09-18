@@ -3,12 +3,15 @@ use std::ops::Deref;
 
 use hydroflow_lang::diagnostic::{Diagnostic, Level};
 use hydroflow_lang::graph::{
-    eliminate_extra_unions_tees, partition_graph, FlatGraphBuilder, HydroflowGraph,
+    eliminate_extra_unions_tees, partition_graph, propegate_flow_props, FlatGraphBuilder,
+    HydroflowGraph,
 };
-use hydroflow_lang::parse::{IndexInt, Indexing, Pipeline, PipelineLink};
+use hydroflow_lang::parse::{
+    HfStatement, IndexInt, Indexing, Pipeline, PipelineLink, PipelineStatement, PortIndex,
+};
 use proc_macro2::{Span, TokenStream};
 use rust_sitter::errors::{ParseError, ParseErrorReason};
-use syn::{parse_quote, parse_quote_spanned};
+use syn::{parse_quote, parse_quote_spanned, Token};
 
 mod grammar;
 mod join_plan;
@@ -143,18 +146,18 @@ pub fn gen_hydroflow_graph(
             if persists.contains(&target_ident.value.name) {
                 // read outputs the *new* values for this tick
                 flat_graph_builder
-                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #insert_name = union() -> unique::<'tick>()));
+                    .add_statement(parse_quote_spanned!{get_span(target_ident.span)=> #insert_name = union() -> unique::<'tick>(); });
                 flat_graph_builder
-                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #read_name = difference::<'tick, 'static>() -> tee()));
+                    .add_statement(parse_quote_spanned!{get_span(target_ident.span)=> #read_name = difference::<'tick, 'static>() -> tee(); });
                 flat_graph_builder
-                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #insert_name -> [pos] #read_name));
+                    .add_statement(parse_quote_spanned!{get_span(target_ident.span)=> #insert_name -> [pos] #read_name; });
                 flat_graph_builder
-                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #read_name -> next_tick() -> [neg] #read_name));
+                    .add_statement(parse_quote_spanned!{get_span(target_ident.span)=> #read_name -> defer_tick() -> [neg] #read_name; });
             } else {
                 flat_graph_builder
-                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #insert_name = union() -> unique::<'tick>()));
+                    .add_statement(parse_quote_spanned!{get_span(target_ident.span)=> #insert_name = union() -> unique::<'tick>(); });
                 flat_graph_builder
-                    .add_statement(parse_quote_spanned!(get_span(target_ident.span)=> #read_name = #insert_name -> tee()));
+                    .add_statement(parse_quote_spanned!{get_span(target_ident.span)=> #read_name = #insert_name -> tee(); });
             }
         }
     }
@@ -173,7 +176,7 @@ pub fn gen_hydroflow_graph(
         let input_pipeline: Pipeline = parse_pipeline(&hf_code.code, &get_span)?;
 
         flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
-            #input_pipeline -> [#my_union_index_lit] #name
+            #input_pipeline -> [#my_union_index_lit] #name;
         });
     }
 
@@ -196,7 +199,7 @@ pub fn gen_hydroflow_graph(
         };
 
         flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
-            #target_ident [#my_tee_index_lit] -> #output_pipeline
+            #target_ident [#my_tee_index_lit] -> #output_pipeline;
         });
     }
 
@@ -219,11 +222,11 @@ pub fn gen_hydroflow_graph(
         let recv_pipeline: Pipeline = parse_pipeline(&recv_hf.code, &get_span)?;
 
         flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
-            #async_send_pipeline = union() -> unique::<'tick>() -> #send_pipeline
+            #async_send_pipeline = union() -> unique::<'tick>() -> #send_pipeline;
         });
 
         flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
-            #recv_pipeline -> [#recv_union_index_lit] #target_ident
+            #recv_pipeline -> [#recv_union_index_lit] #target_ident;
         });
     }
 
@@ -241,7 +244,7 @@ pub fn gen_hydroflow_graph(
         let static_expression: syn::Expr = parse_static(&hf_code.code, &get_span)?;
 
         flat_graph_builder.add_statement(parse_quote_spanned! {get_span(target.span)=>
-            source_iter(#static_expression) -> persist() -> [#my_union_index_lit] #name
+            source_iter(#static_expression) -> persist() -> [#my_union_index_lit] #name;
         });
     }
 
@@ -263,17 +266,22 @@ pub fn gen_hydroflow_graph(
     }
 
     if !diagnostics.is_empty() {
-        Err(diagnostics)
-    } else {
-        let (mut flat_graph, mut diagnostics) = flat_graph_builder.build();
-        diagnostics.retain(Diagnostic::is_error);
-        if !diagnostics.is_empty() {
-            Err(diagnostics)
-        } else {
-            eliminate_extra_unions_tees(&mut flat_graph);
-            Ok(flat_graph)
-        }
+        return Err(diagnostics);
     }
+
+    let (mut flat_graph, _uses, mut diagnostics) = flat_graph_builder.build();
+    diagnostics.retain(Diagnostic::is_error);
+    if !diagnostics.is_empty() {
+        return Err(diagnostics);
+    }
+
+    if let Err(err) = flat_graph.merge_modules() {
+        diagnostics.push(err);
+        return Err(diagnostics);
+    }
+
+    eliminate_extra_unions_tees(&mut flat_graph);
+    Ok(flat_graph)
 }
 
 fn handle_errors(
@@ -317,11 +325,15 @@ fn handle_errors(
 }
 
 pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -> TokenStream {
-    let partitioned_graph =
+    let mut partitioned_graph =
         partition_graph(flat_graph).expect("Failed to partition (cycle detected).");
 
     let mut diagnostics = Vec::new();
-    let code_tokens = partitioned_graph.as_code(&root, true, &mut diagnostics);
+    // Propgeate flow properties throughout the graph.
+    // TODO(mingwei): Should this be done at a flat graph stage instead?
+    let _ = propegate_flow_props::propegate_flow_props(&mut partitioned_graph, &mut diagnostics);
+
+    let code_tokens = partitioned_graph.as_code(&root, true, quote::quote!(), &mut diagnostics);
     assert_eq!(
         0,
         diagnostics.len(),
@@ -385,7 +397,7 @@ fn generate_rule(
                 panic!("Rule must be async to send data to other nodes")
             }
 
-            parse_quote_spanned!(get_span(rule.rule_type.span)=> #after_join -> next_tick() -> [#my_union_index_lit] #target_ident)
+            parse_quote_spanned!(get_span(rule.rule_type.span)=> #after_join -> defer_tick() -> [#my_union_index_lit] #target_ident)
         }
         RuleType::Async(_) => {
             if rule.target.at_node.is_none() {
@@ -423,18 +435,19 @@ fn generate_rule(
     // directly outputting a transformation of a single relation on the RHS.
     let out_indexing = out_expanded.tee_idx.map(|i| Indexing {
         bracket_token: syn::token::Bracket::default(),
-        index: hydroflow_lang::parse::PortIndex::Int(IndexInt {
+        index: PortIndex::Int(IndexInt {
             value: i,
             span: Span::call_site(),
         }),
     });
-    flat_graph_builder.add_statement(hydroflow_lang::parse::HfStatement::Pipeline(
-        Pipeline::Link(PipelineLink {
+    flat_graph_builder.add_statement(HfStatement::Pipeline(PipelineStatement {
+        pipeline: Pipeline::Link(PipelineLink {
             lhs: Box::new(parse_quote!(#out_name #out_indexing)), // out_name[idx]
             arrow: parse_quote!(->),
             rhs: Box::new(after_join_and_send),
         }),
-    ));
+        semi_token: Token![;](Span::call_site()),
+    }));
 }
 
 fn compute_join_plan<'a>(sources: &'a [Atom], persisted_rules: &HashSet<String>) -> JoinPlan<'a> {

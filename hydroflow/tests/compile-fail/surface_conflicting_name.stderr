@@ -2,7 +2,7 @@ error: Name assignment to `a` conflicts with existing assignment: $DIR/tests/com
  --> tests/compile-fail/surface_conflicting_name.rs:6:9
   |
 6 |         a = null() -> null();
-  |         ^^^^^^^^^^^^^^^^^^^^
+  |         ^^^^^^^^^^^^^^^^^^^^^
 
 error: Existing assignment to `a` conflicts with later assignment: $DIR/tests/compile-fail/surface_conflicting_name.rs:6:9 (2/2)
  --> tests/compile-fail/surface_conflicting_name.rs:5:9

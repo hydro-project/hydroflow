@@ -1,3 +1,5 @@
+//! Compatibility for `proc_macro` diagnostics, which are missing from [`proc_macro2`].
+
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 
@@ -7,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::pretty_span::PrettySpan;
 
+/// Diagnostic reporting level.
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Level {
@@ -28,23 +31,34 @@ pub enum Level {
     Help,
 }
 impl Level {
+    /// If this level is [`Level::Error`].
     pub fn is_error(&self) -> bool {
         self <= &Self::Error
     }
 }
 
+/// Diagnostic. A warning or error (or lower [`Level`]) with a message and span. Shown by IDEs
+/// usually as a squiggly red or yellow underline.
+///
+/// Must call [`Diagnostic::emit`] or manually emit the output of [`Diagnostic::to_tokens`] for the
+/// diagnostic to show up.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Diagnostic<S = Span> {
+    /// Span (source code location).
     pub span: S,
+    /// Severity level.
     pub level: Level,
+    /// Human-readable message.
     pub message: String,
 }
 impl<S> Diagnostic<S> {
+    /// If this diagnostic's level is [`Level::Error`].
     pub fn is_error(&self) -> bool {
         self.level.is_error()
     }
 }
 impl Diagnostic {
+    /// Create a new diagnostic from the given span, level, and message.
     pub fn spanned(span: Span, level: Level, message: impl Into<String>) -> Self {
         let message = message.into();
         Self {
@@ -54,6 +68,8 @@ impl Diagnostic {
         }
     }
 
+    /// Emit the diagnostic. Only works from the `proc_macro` context. Does not work outside of
+    /// that e.g. in normal runtime execution or in tests.
     pub fn emit(&self) {
         #[cfg(feature = "diagnostics")]
         {
@@ -67,6 +83,8 @@ impl Diagnostic {
         }
     }
 
+    /// Used to emulate [`Diagnostic::emit`] by turning this diagnostic into a properly spanned [`TokenStream`]
+    /// that emits an error with this diagnostic's message.
     pub fn to_tokens(&self) -> TokenStream {
         let msg_lit: Literal = Literal::string(&self.message);
         let unique_ident = {
@@ -100,6 +118,9 @@ impl Diagnostic {
         }
     }
 
+    /// Converts this into a serializable and deserializable Diagnostic. Span information is
+    /// converted into [`SerdeSpan`] which keeps the span info but cannot be plugged into or
+    /// emitted through the Rust compiler's diagnostic system.
     pub fn to_serde(&self) -> Diagnostic<SerdeSpan> {
         let Self {
             span,
@@ -133,12 +154,17 @@ impl std::fmt::Display for Diagnostic<SerdeSpan> {
     }
 }
 
+/// A serializable and deserializable version of [`Span`]. Cannot be plugged into the Rust
+/// compiler's diagnostic system.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SerdeSpan {
+    /// The source file path.
     // https://github.com/serde-rs/serde/issues/1852#issuecomment-904840811
     #[serde(borrow)]
     pub path: Cow<'static, str>,
+    /// Line number, one-indexed.
     pub line: usize,
+    /// Column number, one-indexed.
     pub column: usize,
 }
 impl From<Span> for SerdeSpan {

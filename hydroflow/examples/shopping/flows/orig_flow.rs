@@ -25,9 +25,9 @@ pub(crate) async fn orig_flow(
         // the original flow
         source_iter(shopping) -> [0]lookup_class;
         source_iter(client_class) -> [1]lookup_class;
-        lookup_class = join()
+        lookup_class = join::<'static>()
           -> map(|(client, (li, class))| ((client, class), li))
-          -> fold_keyed(Vec::new, Vec::push)
+          -> fold_keyed::<'static>(Vec::new, Vec::push)
           -> map(|m| (m, out_addr)) -> dest_sink_serde(out);
     }
 }

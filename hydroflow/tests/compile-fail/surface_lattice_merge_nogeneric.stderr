@@ -1,5 +1,0 @@
-error: `lattice_merge` should have exactly 1 generic type arguments, actually has 0.
- --> tests/compile-fail/surface_lattice_merge_nogeneric.rs:6:32
-  |
-6 |             -> lattice_merge::<'static>()
-  |                                ^^^^^^^

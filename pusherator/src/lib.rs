@@ -14,6 +14,7 @@ pub mod flatten;
 pub mod for_each;
 pub mod inspect;
 pub mod map;
+pub mod null;
 pub mod partition;
 pub mod pivot;
 pub mod switch;
@@ -235,7 +236,7 @@ mod tests {
         let mut right = Vec::new();
 
         let pivot = Pivot::new(
-            a.into_iter().chain(b.into_iter()),
+            a.into_iter().chain(b),
             Partition::new(
                 |x| x % 2 == 0,
                 ForEach::new(|x| left.push(x)),

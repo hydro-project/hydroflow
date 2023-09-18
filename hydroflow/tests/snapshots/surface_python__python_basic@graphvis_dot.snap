@@ -1,0 +1,21 @@
+---
+source: hydroflow/tests/surface_python.rs
+expression: hf.meta_graph().unwrap().to_dot()
+---
+digraph {
+    subgraph "cluster n1v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_1v1\nstratum 0"
+        n1v1 [label="(n1v1) source_iter(0..10)", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n2v1 [label="(n2v1) map(|x| (x,))", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n3v1 [label="(n3v1) py_udf(\l    r#\"\ldef fib(n):\lif n < 2:\l    return n\lelse:\l    return fib(n - 2) + fib(n - 1)\l        \"#,\l    \"fib\",\l)\l", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n4v1 [label="(n4v1) map(|x: PyResult<Py<PyAny>>| Python::with_gil(|py| {\l    usize::extract(x.unwrap().as_ref(py)).unwrap()\l}))\l", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n5v1 [label="(n5v1) assert_eq([0, 1, 1, 2, 3, 5, 8, 13, 21, 34])", fontname=Monaco, shape=house, style = filled, color = "#ffff00"]
+        n1v1 -> n2v1
+        n2v1 -> n3v1
+        n3v1 -> n4v1
+        n4v1 -> n5v1
+    }
+}
+

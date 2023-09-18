@@ -1,12 +1,14 @@
 use std::cmp::Ordering;
 
-use crate::{LatticeFrom, LatticeOrd, Merge};
+use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// A totally ordered max lattice. Merging returns the larger value.
+///
+/// Note that the [`Default::default()`] value for numeric type is `MIN`, not zero.
 #[repr(transparent)]
-#[derive(Copy, Clone, Debug, Default, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Max<T>(pub T);
+pub struct Max<T>(T);
 impl<T> Max<T> {
     /// Create a new `Max` lattice instance from a `T`.
     pub fn new(val: T) -> Self {
@@ -16,6 +18,21 @@ impl<T> Max<T> {
     /// Create a new `Max` lattice instance from an `Into<T>` value.
     pub fn from(val: impl Into<T>) -> Self {
         Self::new(val.into())
+    }
+
+    /// Reveal the inner value as a shared reference.
+    pub fn as_reveal_ref(&self) -> &T {
+        &self.0
+    }
+
+    /// Reveal the inner value as an exclusive reference.
+    pub fn as_reveal_mut(&mut self) -> &mut T {
+        &mut self.0
+    }
+
+    /// Gets the inner by value, consuming self.
+    pub fn into_reveal(self) -> T {
+        self.0
     }
 }
 
@@ -45,10 +62,12 @@ impl<T> LatticeOrd<Self> for Max<T> where Self: PartialOrd<Self> {}
 ///
 /// This means the lattice order is the reverse of what you might naturally expect: 0 is greater
 /// than 1.
+///
+/// Note that the [`Default::default()`] value for numeric type is `MAX`, not zero.
 #[repr(transparent)]
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Min<T>(pub T);
+pub struct Min<T>(T);
 impl<T> Min<T> {
     /// Create a new `Min` lattice instance from a `T`.
     pub fn new(val: T) -> Self {
@@ -58,6 +77,21 @@ impl<T> Min<T> {
     /// Create a new `Min` lattice instance from an `Into<T>` value.
     pub fn new_from(val: impl Into<T>) -> Self {
         Self::new(val.into())
+    }
+
+    /// Reveal the inner value as a shared reference.
+    pub fn as_reveal_ref(&self) -> &T {
+        &self.0
+    }
+
+    /// Reveal the inner value as an exclusive reference.
+    pub fn as_reveal_mut(&mut self) -> &mut T {
+        &mut self.0
+    }
+
+    /// Gets the inner by value, consuming self.
+    pub fn into_reveal(self) -> T {
+        self.0
     }
 }
 
@@ -100,12 +134,140 @@ where
     }
 }
 
+// IsTop, IsBot, Default impls
+impl IsTop for Max<()> {
+    fn is_top(&self) -> bool {
+        true
+    }
+}
+impl IsBot for Max<()> {
+    fn is_bot(&self) -> bool {
+        true
+    }
+}
+impl IsTop for Min<()> {
+    fn is_top(&self) -> bool {
+        true
+    }
+}
+impl IsBot for Min<()> {
+    fn is_bot(&self) -> bool {
+        true
+    }
+}
+
+impl IsTop for Max<bool> {
+    fn is_top(&self) -> bool {
+        self.0
+    }
+}
+impl IsBot for Max<bool> {
+    fn is_bot(&self) -> bool {
+        !self.0
+    }
+}
+impl Default for Max<bool> {
+    fn default() -> Self {
+        Self(false)
+    }
+}
+impl IsTop for Min<bool> {
+    fn is_top(&self) -> bool {
+        !self.0
+    }
+}
+impl IsBot for Min<bool> {
+    fn is_bot(&self) -> bool {
+        self.0
+    }
+}
+impl Default for Min<bool> {
+    fn default() -> Self {
+        Self(true)
+    }
+}
+
+impl IsTop for Max<char> {
+    fn is_top(&self) -> bool {
+        char::MAX == self.0
+    }
+}
+impl IsBot for Max<char> {
+    fn is_bot(&self) -> bool {
+        '\x00' == self.0
+    }
+}
+impl Default for Max<char> {
+    fn default() -> Self {
+        Self('\x00')
+    }
+}
+impl IsTop for Min<char> {
+    fn is_top(&self) -> bool {
+        '\x00' == self.0
+    }
+}
+impl IsBot for Min<char> {
+    fn is_bot(&self) -> bool {
+        char::MAX == self.0
+    }
+}
+impl Default for Min<char> {
+    fn default() -> Self {
+        Self(char::MAX)
+    }
+}
+
+macro_rules! impls_numeric {
+    (
+        $( $x:ty ),*
+    ) => {
+        $(
+            impl IsTop for Max<$x> {
+                fn is_top(&self) -> bool {
+                    <$x>::MAX == self.0
+                }
+            }
+            impl IsBot for Max<$x> {
+                fn is_bot(&self) -> bool {
+                    <$x>::MIN == self.0
+                }
+            }
+
+            impl Default for Max<$x> {
+                fn default() -> Self {
+                    Self(<$x>::MIN)
+                }
+            }
+
+            impl IsTop for Min<$x> {
+                fn is_top(&self) -> bool {
+                    <$x>::MIN == self.0
+                }
+            }
+            impl IsBot for Min<$x> {
+                fn is_bot(&self) -> bool {
+                    <$x>::MAX == self.0
+                }
+            }
+            impl Default for Min<$x> {
+                fn default() -> Self {
+                    Self(<$x>::MAX)
+                }
+            }
+        )*
+    };
+}
+impls_numeric! {
+    isize, i8, i16, i32, i64, i128, usize, u8, u16, u32, u64, u128
+}
+
 #[cfg(test)]
 mod test {
     use std::cmp::Ordering::*;
 
     use super::*;
-    use crate::test::{check_lattice_ord, check_lattice_properties, check_partial_ord_properties};
+    use crate::test::check_all;
 
     #[test]
     fn ordering() {
@@ -130,15 +292,48 @@ mod test {
     }
 
     #[test]
-    fn consistency() {
-        let items_max = &[Max::new(0), Max::new(1)];
-        check_lattice_ord(items_max);
-        check_partial_ord_properties(items_max);
-        check_lattice_properties(items_max);
+    fn consistency_max_bool() {
+        let items = &[Max::new(false), Max::new(true)];
+        check_all(items);
+    }
 
-        let items_min = &[Min::new(0), Min::new(1)];
-        check_lattice_ord(items_min);
-        check_partial_ord_properties(items_min);
-        check_lattice_properties(items_min);
+    #[test]
+    fn consistency_min_bool() {
+        let items = &[Min::new(false), Min::new(true)];
+        check_all(items);
+    }
+
+    #[test]
+    fn consistency_max_char() {
+        let items: Vec<_> = "\x00\u{10FFFF}✨🤦‍♀️踊るx".chars().map(Max::new).collect();
+        check_all(&items);
+    }
+
+    #[test]
+    fn consistency_min_char() {
+        let items: Vec<_> = "\x00\u{10FFFF}✨🤦‍♀️踊るx".chars().map(Min::new).collect();
+        check_all(&items);
+    }
+
+    #[test]
+    fn consistency_max_i32() {
+        let items = &[
+            Max::new(0),
+            Max::new(1),
+            Max::new(i32::MIN),
+            Max::new(i32::MAX),
+        ];
+        check_all(items);
+    }
+
+    #[test]
+    fn consistency_min_i32() {
+        let items = &[
+            Min::new(0),
+            Min::new(1),
+            Min::new(i32::MIN),
+            Min::new(i32::MAX),
+        ];
+        check_all(items);
     }
 }

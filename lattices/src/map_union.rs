@@ -4,11 +4,11 @@ use std::cmp::Ordering::{self, *};
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
 
-use cc_traits::Len;
+use cc_traits::{Iter, Len};
 
 use crate::cc_traits::{GetMut, Keyed, Map, MapIter, SimpleKeyedRef};
-use crate::collections::{ArrayMap, SingletonMap, VecMap};
-use crate::{IsBot, LatticeFrom, LatticeOrd, Merge};
+use crate::collections::{ArrayMap, OptionMap, SingletonMap, VecMap};
+use crate::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Map-union compound lattice.
 ///
@@ -17,7 +17,7 @@ use crate::{IsBot, LatticeFrom, LatticeOrd, Merge};
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct MapUnion<Map>(pub Map);
+pub struct MapUnion<Map>(Map);
 impl<Map> MapUnion<Map> {
     /// Create a new `MapUnion` from a `Map`.
     pub fn new(val: Map) -> Self {
@@ -28,6 +28,21 @@ impl<Map> MapUnion<Map> {
     pub fn new_from(val: impl Into<Map>) -> Self {
         Self::new(val.into())
     }
+
+    /// Reveal the inner value as a shared reference.
+    pub fn as_reveal_ref(&self) -> &Map {
+        &self.0
+    }
+
+    /// Reveal the inner value as an exclusive reference.
+    pub fn as_reveal_mut(&mut self) -> &mut Map {
+        &mut self.0
+    }
+
+    /// Gets the inner by value, consuming self.
+    pub fn into_reveal(self) -> Map {
+        self.0
+    }
 }
 
 impl<MapSelf, MapOther, K, ValSelf, ValOther> Merge<MapUnion<MapOther>> for MapUnion<MapSelf>
@@ -37,6 +52,7 @@ where
         + for<'a> GetMut<&'a K, Item = ValSelf>,
     MapOther: IntoIterator<Item = (K, ValOther)>,
     ValSelf: Merge<ValOther> + LatticeFrom<ValOther>,
+    ValOther: IsBot,
 {
     fn merge(&mut self, other: MapUnion<MapOther>) -> bool {
         let mut changed = false;
@@ -47,6 +63,7 @@ where
         let iter: Vec<_> = other
             .0
             .into_iter()
+            .filter(|(_k_other, val_other)| !val_other.is_bot())
             .filter_map(|(k_other, val_other)| {
                 match self.0.get_mut(&k_other) {
                     // Key collision, merge into `self`.
@@ -88,22 +105,23 @@ impl<MapSelf, MapOther, K, ValSelf, ValOther> PartialOrd<MapUnion<MapOther>> for
 where
     MapSelf: Map<K, ValSelf, Key = K, Item = ValSelf> + MapIter + SimpleKeyedRef,
     MapOther: Map<K, ValOther, Key = K, Item = ValOther> + MapIter + SimpleKeyedRef,
-    ValSelf: PartialOrd<ValOther>,
+    ValSelf: PartialOrd<ValOther> + IsBot,
+    ValOther: IsBot,
 {
     fn partial_cmp(&self, other: &MapUnion<MapOther>) -> Option<Ordering> {
         let mut self_any_greater = false;
         let mut other_any_greater = false;
-        for k in self
+        let self_keys = self
             .0
             .iter()
-            .map(|(k, _v)| <MapSelf as SimpleKeyedRef>::into_ref(k))
-            .chain(
-                other
-                    .0
-                    .iter()
-                    .map(|(k, _v)| <MapOther as SimpleKeyedRef>::into_ref(k)),
-            )
-        {
+            .filter(|(_k, v)| !v.is_bot())
+            .map(|(k, _v)| <MapSelf as SimpleKeyedRef>::into_ref(k));
+        let other_keys = other
+            .0
+            .iter()
+            .filter(|(_k, v)| !v.is_bot())
+            .map(|(k, _v)| <MapOther as SimpleKeyedRef>::into_ref(k));
+        for k in self_keys.chain(other_keys) {
             match (self.0.get(k), other.0.get(k)) {
                 (Some(self_value), Some(other_value)) => {
                     match self_value.partial_cmp(&*other_value) {
@@ -149,24 +167,21 @@ impl<MapSelf, MapOther, K, ValSelf, ValOther> PartialEq<MapUnion<MapOther>> for 
 where
     MapSelf: Map<K, ValSelf, Key = K, Item = ValSelf> + MapIter + SimpleKeyedRef,
     MapOther: Map<K, ValOther, Key = K, Item = ValOther> + MapIter + SimpleKeyedRef,
-    ValSelf: PartialEq<ValOther>,
+    ValSelf: PartialEq<ValOther> + IsBot,
+    ValOther: IsBot,
 {
     fn eq(&self, other: &MapUnion<MapOther>) -> bool {
-        if self.0.len() != other.0.len() {
-            return false;
-        }
-
-        for k in self
+        let self_keys = self
             .0
             .iter()
-            .map(|(k, _v)| <MapSelf as SimpleKeyedRef>::into_ref(k))
-            .chain(
-                other
-                    .0
-                    .iter()
-                    .map(|(k, _v)| <MapOther as SimpleKeyedRef>::into_ref(k)),
-            )
-        {
+            .filter(|(_k, v)| !v.is_bot())
+            .map(|(k, _v)| <MapSelf as SimpleKeyedRef>::into_ref(k));
+        let other_keys = other
+            .0
+            .iter()
+            .filter(|(_k, v)| !v.is_bot())
+            .map(|(k, _v)| <MapOther as SimpleKeyedRef>::into_ref(k));
+        for k in self_keys.chain(other_keys) {
             match (self.0.get(k), other.0.get(k)) {
                 (Some(self_value), Some(other_value)) => {
                     if *self_value != *other_value {
@@ -183,19 +198,45 @@ where
         true
     }
 }
-impl<MapSelf> Eq for MapUnion<MapSelf>
-where
-    Self: PartialEq,
-    MapSelf: Eq,
-{
-}
+impl<MapSelf> Eq for MapUnion<MapSelf> where Self: PartialEq {}
 
 impl<Map> IsBot for MapUnion<Map>
 where
-    Map: Len,
+    Map: Iter,
+    Map::Item: IsBot,
 {
     fn is_bot(&self) -> bool {
-        self.0.is_empty()
+        self.0.iter().all(|v| v.is_bot())
+    }
+}
+
+impl<Map> IsTop for MapUnion<Map> {
+    fn is_top(&self) -> bool {
+        false
+    }
+}
+
+impl<Map, K, Val> Atomize for MapUnion<Map>
+where
+    Map: 'static
+        + Len
+        + IntoIterator<Item = (K, Val)>
+        + Keyed<Key = K, Item = Val>
+        + Extend<(K, Val)>
+        + for<'a> GetMut<&'a K, Item = Val>,
+    K: 'static + Clone,
+    Val: 'static + Atomize + LatticeFrom<<Val as Atomize>::Atom>,
+{
+    type Atom = MapUnionOptionMap<K, Val::Atom>;
+
+    // TODO: use impl trait.
+    type AtomIter = Box<dyn Iterator<Item = Self::Atom>>;
+
+    fn atomize(self) -> Self::AtomIter {
+        Box::new(self.0.into_iter().flat_map(|(k, val)| {
+            val.atomize()
+                .map(move |v| MapUnionOptionMap::new_from((k.clone(), v)))
+        }))
     }
 }
 
@@ -215,7 +256,7 @@ pub type MapUnionArrayMap<K, Val, const N: usize> = MapUnion<ArrayMap<K, Val, N>
 pub type MapUnionSingletonMap<K, Val> = MapUnion<SingletonMap<K, Val>>;
 
 /// [`Option`]-backed [`MapUnion`] lattice.
-pub type MapUnionOption<K, Val> = MapUnion<Option<(K, Val)>>;
+pub type MapUnionOptionMap<K, Val> = MapUnion<OptionMap<K, Val>>;
 
 #[cfg(test)]
 mod test {
@@ -224,7 +265,7 @@ mod test {
     use super::*;
     use crate::collections::{SingletonMap, SingletonSet};
     use crate::set_union::{SetUnionHashSet, SetUnionSingletonSet};
-    use crate::test::{cartesian_power, check_all};
+    use crate::test::{cartesian_power, check_all, check_atomize_each};
 
     #[test]
     fn test_map_union() {
@@ -240,7 +281,7 @@ mod test {
     }
 
     #[test]
-    fn consistency() {
+    fn consistency_atomize() {
         let mut test_vec = Vec::new();
 
         // Size 0.
@@ -263,5 +304,24 @@ mod test {
         }
 
         check_all(&test_vec);
+        check_atomize_each(&test_vec);
+    }
+
+    /// Check that a key with a value of bottom is the same as an empty map, etc.
+    #[test]
+    fn test_collapes_bot() {
+        let map_empty = <MapUnionHashMap<&str, SetUnionHashSet<u64>>>::default();
+        let map_a_bot = <MapUnionSingletonMap<&str, SetUnionHashSet<u64>>>::new(SingletonMap(
+            "a",
+            Default::default(),
+        ));
+        let map_b_bot = <MapUnionSingletonMap<&str, SetUnionHashSet<u64>>>::new(SingletonMap(
+            "b",
+            Default::default(),
+        ));
+
+        assert_eq!(map_empty, map_a_bot);
+        assert_eq!(map_empty, map_b_bot);
+        assert_eq!(map_a_bot, map_b_bot);
     }
 }

@@ -1,6 +1,7 @@
 //! Build script to generate operator book docs.
 
 use std::env::VarError;
+use std::fmt::Write as _FmtWrite;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Result, Write};
 use std::path::{Path, PathBuf};
@@ -38,7 +39,14 @@ fn write_operator_docgen(op_name: &str, mut write: &mut impl Write) -> Result<()
 
 fn update_book() -> Result<()> {
     let mut ops: Vec<_> = OPERATORS.iter().collect();
-    ops.sort_by_key(|op| op.name);
+    // operators that have their name start with "_" are internal compiler operators, we should sort those after all the user-facing ops.
+    // but underscore by default sorts before all [A-z]
+    ops.sort_by(|a, b| {
+        a.name
+            .starts_with('_')
+            .cmp(&b.name.starts_with('_'))
+            .then_with(|| a.name.cmp(b.name))
+    });
 
     let mut write = book_file_writer(FILENAME)?;
     writeln!(write, "{}", PREFIX)?;
@@ -104,8 +112,10 @@ fn update_book() -> Result<()> {
             op.name,
             ('A'..)
                 .take(op.num_args)
-                .map(|c| format!("{}, ", c))
-                .collect::<String>()
+                .fold(String::new(), |mut s, c| {
+                    write!(&mut s, "{}, ", c).unwrap();
+                    s
+                })
                 .strip_suffix(", ")
                 .unwrap_or(""),
             if op.soft_range_out.contains(&0) {
@@ -130,7 +140,7 @@ fn update_book() -> Result<()> {
                 "> Input port names: {}  ",
                 port_names
                     .into_iter()
-                    .map(|idx| {
+                    .fold(String::new(), |mut s, idx| {
                         let port_ix = idx.clone().into();
                         let flow_str = if (op.input_delaytype_fn)(&port_ix).is_some() {
                             blocking = true;
@@ -138,9 +148,9 @@ fn update_book() -> Result<()> {
                         } else {
                             "streaming"
                         };
-                        format!("`{}` ({}), ", idx.into_token_stream(), flow_str)
+                        write!(&mut s, "`{}` ({}), ", idx.into_token_stream(), flow_str).unwrap();
+                        s
                     })
-                    .collect::<String>()
                     .strip_suffix(", ")
                     .unwrap_or("&lt;EMPTY&gt;")
             )),
@@ -155,8 +165,10 @@ fn update_book() -> Result<()> {
                     "> Output port names: {}  ",
                     port_names
                         .into_iter()
-                        .map(|idx| format!("`{}`, ", idx.into_token_stream()))
-                        .collect::<String>()
+                        .fold(String::new(), |mut s, idx| {
+                            write!(&mut s, "`{}`, ", idx.into_token_stream()).unwrap();
+                            s
+                        })
                         .strip_suffix(", ")
                         .unwrap_or("&lt;EMPTY&gt;")
                 ),

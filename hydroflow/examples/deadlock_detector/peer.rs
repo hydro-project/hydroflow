@@ -28,13 +28,26 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
 
         // set up channels
         outbound_chan = map(|(m,a)| (serialize_msg(m), a)) -> dest_sink(outbound);
-        inbound_chan = source_stream(inbound) -> map(deserialize_msg::<Message>);
+        inbound_chan = source_stream(inbound)
+            -> filter(|msg| {
+                // For some reason Windows generates connection reset errors on UDP sockets, even though UDP has no sessions.
+                // This code filters them out.
+                // `Os { code: 10054, kind: ConnectionReset, message: "An existing connection was forcibly closed by the remote host."`
+                // https://stackoverflow.com/questions/10332630/connection-reset-on-receiving-packet-in-udp-server
+                // TODO(mingwei): Clean this up, figure out how to configure windows UDP sockets correctly.
+                if let Err(tokio_util::codec::LinesCodecError::Io(io_err)) = msg {
+                    io_err.kind() != std::io::ErrorKind::ConnectionReset
+                } else {
+                    true
+                }
+            })
+            -> map(deserialize_msg::<Message>);
 
         // setup gossip channel to all peers. gen_bool chooses True with the odds passed in.
-        gossip_join = cross_join()
+        gossip_join = cross_join::<'tick>()
             -> filter(|_| gen_bool(0.8)) -> outbound_chan;
-        gossip = map(identity) -> [0]gossip_join;
-        peers[1] -> [1]gossip_join;
+        gossip = map(identity) -> persist() -> [0]gossip_join;
+        peers[1] -> persist() -> [1]gossip_join;
         peers[2] -> for_each(|s| println!("Peer: {:?}", s));
 
         // prompt for input
@@ -46,15 +59,14 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
 
         // persist an edges set
         edges = union() -> tee();
-        edges[0] -> next_tick() -> [1]edges;
+        edges[0] -> defer_tick() -> [1]edges;
 
         // add new edges locally
         new_edges -> [0]edges;
 
         // gossip all edges
-        edges[1] -> fold::<'static>(Message::new(), |mut m, edge| {
+        edges[1] -> fold::<'static>(Message::new(), |m: &mut Message, edge| {
             m.edges.insert(edge);
-            m
         }) -> gossip;
 
 
@@ -68,7 +80,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
 
         // Rule 2: form new_paths from the join of acyclic paths and edges
         // new_paths(from, to, path.append(to)) :- paths(from, mid, path), edges(mid, to), paths.cycle() == false
-        new_paths = join() -> map(|(_mid, ((from, mut path), to))| {
+        new_paths = join::<'static>() -> map(|(_mid, ((from, mut path), to))| {
             path.push(to);
             (from, to, path)
          }) -> tee();
@@ -80,7 +92,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
         // stdio(from, to, path) :- new_paths(from, to, path)
         new_paths[0]
             -> filter_map(|(from, to, path): (u32, u32, SimplePath<u32>)| if from == to {Some(path.canonical())} else {None})
-            -> unique()
+            -> unique::<'static>()
             -> for_each(|path: Vec<u32>| {
                     println!("path found: {}", format_cycle(path));
                });

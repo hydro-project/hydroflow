@@ -31,9 +31,9 @@ pub(crate) async fn bp_flow(
         // BP, two customer classes
         source_iter(shopping_bp) -> [0]lookup_class;
         source_iter(client_class) -> [1]lookup_class;
-        lookup_class = join()
+        lookup_class = join::<'static>()
           -> map(|(client, (li, class))| ((client, class), li))
-          -> fold_keyed(BP_BOT, bp_merge)
+          -> fold_keyed::<'static>(BP_BOT, bp_merge)
           -> map(|m| (m, out_addr)) -> dest_sink_serde(out);
     }
 }

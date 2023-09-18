@@ -38,7 +38,7 @@ impl<T: Clone + Eq + Hash> SparseVec<T> {
     }
 
     /// Iterate through all items in the vector in order. Deleted items will not appear in the iteration.
-    pub fn iter(&self) -> impl Iterator<Item = &T> + FusedIterator + DoubleEndedIterator + Clone {
+    pub fn iter(&self) -> impl DoubleEndedIterator<Item = &T> + FusedIterator + Clone {
         self.items.iter().filter_map(|x| x.as_ref())
     }
 }
