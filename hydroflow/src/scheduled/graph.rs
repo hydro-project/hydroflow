@@ -24,8 +24,8 @@ use super::{HandoffId, SubgraphId};
 use crate::Never;
 
 /// A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
-pub struct Hydroflow {
-    pub(super) subgraphs: Vec<SubgraphData>,
+pub struct Hydroflow<'a> {
+    pub(super) subgraphs: Vec<SubgraphData<'a>>,
     pub(super) context: Context,
     handoffs: Vec<HandoffData>,
 
@@ -44,7 +44,7 @@ pub struct Hydroflow {
     /// See [`Self::diagnostics()`].
     diagnostics: Option<Vec<Diagnostic<SerdeSpan>>>,
 }
-impl Default for Hydroflow {
+impl<'a> Default for Hydroflow<'a> {
     fn default() -> Self {
         let stratum_queues = vec![Default::default()]; // Always initialize stratum #0.
         let (event_queue_send, event_queue_recv) = mpsc::unbounded_channel();
@@ -77,7 +77,7 @@ impl Default for Hydroflow {
         }
     }
 }
-impl Hydroflow {
+impl<'a> Hydroflow<'a> {
     /// Create a new empty Hydroflow graph.
     pub fn new() -> Self {
         Default::default()
@@ -502,7 +502,7 @@ impl Hydroflow {
         Name: Into<Cow<'static, str>>,
         R: 'static + PortList<RECV>,
         W: 'static + PortList<SEND>,
-        F: 'static + for<'ctx> FnMut(&'ctx mut Context, R::Ctx<'ctx>, W::Ctx<'ctx>),
+        F: 'a + for<'ctx> FnMut(&'ctx mut Context, R::Ctx<'ctx>, W::Ctx<'ctx>),
     {
         let sg_id = SubgraphId(self.subgraphs.len());
 
@@ -670,7 +670,7 @@ impl Hydroflow {
     }
 }
 
-impl Hydroflow {
+impl<'a> Hydroflow<'a> {
     /// Alias for [`Context::spawn_task`].
     pub fn spawn_task<Fut>(&mut self, future: Fut)
     where
@@ -690,7 +690,7 @@ impl Hydroflow {
     }
 }
 
-impl Drop for Hydroflow {
+impl<'a> Drop for Hydroflow<'a> {
     fn drop(&mut self) {
         self.abort_tasks();
     }
@@ -735,14 +735,14 @@ impl HandoffData {
 ///
 /// Used internally by the [Hydroflow] struct to represent the dataflow graph
 /// structure and scheduled state.
-pub(super) struct SubgraphData {
+pub(super) struct SubgraphData<'a> {
     /// A friendly name for diagnostics.
     #[allow(dead_code)] // TODO(mingwei): remove attr once used.
     pub(super) name: Cow<'static, str>,
     /// This subgraph's stratum number.
     pub(super) stratum: usize,
     /// The actual execution code of the subgraph.
-    subgraph: Box<dyn Subgraph>,
+    subgraph: Box<dyn Subgraph + 'a>,
     #[allow(dead_code)]
     preds: Vec<HandoffId>,
     succs: Vec<HandoffId>,
@@ -753,11 +753,11 @@ pub(super) struct SubgraphData {
     /// `Hydroflow::subgraphs`.
     is_scheduled: Cell<bool>,
 }
-impl SubgraphData {
+impl<'a> SubgraphData<'a> {
     pub fn new(
         name: Cow<'static, str>,
         stratum: usize,
-        subgraph: impl 'static + Subgraph,
+        subgraph: impl Subgraph + 'a,
         preds: Vec<HandoffId>,
         succs: Vec<HandoffId>,
         is_scheduled: bool,
