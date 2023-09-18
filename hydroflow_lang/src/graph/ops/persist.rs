@@ -12,13 +12,13 @@ use super::{
 /// // on every tick.
 /// source_iter(["hello"])
 ///     -> persist()
-///     -> assert(["hello"]);
+///     -> assert_eq(["hello"]);
 /// ```
 ///
-/// `persist()` can be used to introduce statefulness into stateless pipelines. For example this
-/// join only stores data for single `'tick`. The `persist()` operator introduces statefulness
+/// `persist()` can be used to introduce statefulness into stateless pipelines. In the example below, the
+/// join only stores data for single tick. The `persist()` operator introduces statefulness
 /// across ticks. This can be useful for optimization transformations within the hydroflow
-/// compiler.
+/// compiler. Equivalently, we could specify that the join has `static` persistence (`my_join = join::<'static>()`).
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
 /// let mut flow = hydroflow::hydroflow_syntax! {
@@ -53,6 +53,7 @@ pub const PERSIST: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
+    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    context,

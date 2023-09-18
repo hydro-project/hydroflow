@@ -34,12 +34,12 @@ pub(crate) async fn client_state_flow(
     // The second transducer listens on reqs_in and runs the lookup join.
     hydroflow_syntax! {
         source_iter(shopping_ssiv)
-          -> fold_keyed(SSIV_BOT, ssiv_merge)
+          -> fold_keyed::<'static>(SSIV_BOT, ssiv_merge)
           -> map(|pair| (pair, remote_addr)) -> dest_sink_serde(carts_out);
         source_stream_serde(carts_in) -> map(Result::unwrap) -> map(|((client, cart), _a): ((usize, SealedSetOfIndexedValues<Request>), _)| (client, cart))
           -> [0]lookup_class;
         source_iter(client_class) -> [1]lookup_class;
-        lookup_class = join()
+        lookup_class = join::<'static>()
           -> map(|(client, (li, class))| ((client, class), li))
           -> map(|m| (m, out_addr)) -> dest_sink_serde(out);
     }

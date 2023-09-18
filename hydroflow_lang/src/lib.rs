@@ -1,3 +1,6 @@
+//! Hydroflow surface syntax
+
+#![warn(missing_docs)]
 #![cfg_attr(
     feature = "diagnostics",
     feature(proc_macro_diagnostic, proc_macro_span)

@@ -9,7 +9,7 @@ use hydroflow::util::{UdpSink, UdpStream};
 use crate::protocol::EchoMsg;
 
 pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream) {
-    let bot: Max<usize> = Max(0);
+    let bot: Max<usize> = Max::new(0);
     println!("Server live!");
 
     let mut flow: Hydroflow = hydroflow_syntax! {
@@ -24,11 +24,10 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream) {
         inbound_chan[merge] -> map(|(msg, _addr): (EchoMsg, SocketAddr)| msg.lamport_clock) -> mergevc;
         mergevc = fold::<'static>(
             bot,
-            |mut old: Max<usize>, lamport_clock: Max<usize>| {
-                let bump = Max(old.0 + 1);
+            |old: &mut Max<usize>, lamport_clock: Max<usize>| {
+                let bump = Max::new(old.into_reveal() + 1);
                 old.merge(bump);
                 old.merge(lamport_clock);
-                old
             }
         );
 

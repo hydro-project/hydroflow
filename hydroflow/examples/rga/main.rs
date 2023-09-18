@@ -37,8 +37,6 @@ struct Opts {
     implementation: Option<Implementation>,
     #[clap(value_enum, long, short)]
     graph: Option<GraphType>,
-    #[clap(value_enum, long, short)]
-    output: String,
 }
 
 #[hydroflow::main]
@@ -91,7 +89,7 @@ pub async fn main() {
 
     let mut output = String::new();
     write_to_dot(&mut rga_recv, &mut list_recv, &mut output).await;
-    std::fs::write(opts.output, output).expect("write to output file failed");
+    println!("{}", output);
 }
 
 async fn keystroke(
@@ -167,3 +165,124 @@ fn format_dot_node(n: Token) -> String {
         n.ts, n.value, n.ts
     )
 }
+
+#[test]
+fn test() {
+    use hydroflow::util::{run_cargo_example, wait_for_process_output};
+
+    fn escape_regex(input: &str) -> String {
+        input
+            .replace("[", "\\[")
+            .replace("]", "\\]")
+            .replace("{", "\\{")
+            .replace("}", "\\}")
+    }
+
+    {
+        let (_child, _, mut stdout) = run_cargo_example("rga", "--impl adjacency");
+
+        let mut output = String::new();
+        for line in EXPECTED_OUTPUT.split("\n") {
+            wait_for_process_output(&mut output, &mut stdout, &escape_regex(line));
+        }
+    }
+
+    {
+        let (_child, _, mut stdout) = run_cargo_example("rga", "--impl datalog");
+
+        let mut output = String::new();
+        for line in EXPECTED_OUTPUT.split("\n") {
+            wait_for_process_output(&mut output, &mut stdout, &escape_regex(line));
+        }
+    }
+
+    {
+        let (_child, _, mut stdout) = run_cargo_example("rga", "--impl minimal");
+
+        let mut output = String::new();
+        for line in EXPECTED_OUTPUT_MINIMAL.split("\n") {
+            wait_for_process_output(&mut output, &mut stdout, &escape_regex(line));
+        }
+    }
+
+    // TODO: This implementation appears to be broken.
+    // {
+    //     let (_, _, mut stdout) = spawn("rga", "--impl datalog-agg");
+
+    //     let mut output = String::new();
+    //     for line in EXPECTED_OUTPUT_MINIMAL.split("\n") {
+    //         wait_for_output(&mut output, &mut stdout, &escape_regex(line));
+    //     }
+    // }
+}
+
+// Output can be re-ordered, so this will be tested line by line
+#[cfg(test)]
+const EXPECTED_OUTPUT: &str = r#"digraph G {
+rankdir = TB
+ts0_0 [label=<root<SUB><FONT COLOR="red" POINT-SIZE="8">ts0_0</FONT></SUB>>]
+ts4_0 -> ts5_0 [color=gray, constraint=true]
+ts5_0 [label=<e<SUB><FONT COLOR="red" POINT-SIZE="8">ts5_0</FONT></SUB>>]
+ts9_0 -> ts10_0 [color=gray, constraint=true]
+ts10_0 [label=<l<SUB><FONT COLOR="red" POINT-SIZE="8">ts10_0</FONT></SUB>>]
+ts6_1 -> ts7_1 [color=gray, constraint=true]
+ts7_1 [label=<r<SUB><FONT COLOR="red" POINT-SIZE="8">ts7_1</FONT></SUB>>]
+ts0_0 -> ts1_0 [color=gray, constraint=true]
+ts1_0 [label=<a<SUB><FONT COLOR="red" POINT-SIZE="8">ts1_0</FONT></SUB>>]
+ts0_0 -> ts8_0 [color=gray, constraint=true]
+ts8_0 [label=<C<SUB><FONT COLOR="red" POINT-SIZE="8">ts8_0</FONT></SUB>>]
+ts1_0 -> ts2_0 [color=gray, constraint=true]
+ts2_0 [label=<b<SUB><FONT COLOR="red" POINT-SIZE="8">ts2_0</FONT></SUB>>]
+ts8_0 -> ts9_0 [color=gray, constraint=true]
+ts9_0 [label=<o<SUB><FONT COLOR="red" POINT-SIZE="8">ts9_0</FONT></SUB>>]
+ts2_0 -> ts3_0 [color=gray, constraint=true]
+ts3_0 [label=<a<SUB><FONT COLOR="red" POINT-SIZE="8">ts3_0</FONT></SUB>>]
+ts10_0 -> ts11_0 [color=gray, constraint=true]
+ts11_0 [label=<l<SUB><FONT COLOR="red" POINT-SIZE="8">ts11_0</FONT></SUB>>]
+ts2_0 -> ts6_1 [color=gray, constraint=true]
+ts6_1 [label=<o<SUB><FONT COLOR="red" POINT-SIZE="8">ts6_1</FONT></SUB>>]
+ts3_0 -> ts4_0 [color=gray, constraint=true]
+ts4_0 [label=<t<SUB><FONT COLOR="red" POINT-SIZE="8">ts4_0</FONT></SUB>>]
+ts0_0 -> ts8_0 [style=dashed, color=blue, constraint=false]
+ts9_0 -> ts10_0 [style=dashed, color=blue, constraint=false]
+ts6_1 -> ts7_1 [style=dashed, color=blue, constraint=false]
+ts11_0 -> ts1_0 [style=dashed, color=blue, constraint=false]
+ts7_1 -> ts3_0 [style=dashed, color=blue, constraint=false]
+ts2_0 -> ts6_1 [style=dashed, color=blue, constraint=false]
+ts4_0 -> ts5_0 [style=dashed, color=blue, constraint=false]
+ts10_0 -> ts11_0 [style=dashed, color=blue, constraint=false]
+ts3_0 -> ts4_0 [style=dashed, color=blue, constraint=false]
+ts8_0 -> ts9_0 [style=dashed, color=blue, constraint=false]
+ts1_0 -> ts2_0 [style=dashed, color=blue, constraint=false]
+label=<<FONT COLOR="blue">Collaborate</FONT>>
+}"#;
+
+// Output can be re-ordered, so this will be tested line by line
+#[cfg(test)]
+const EXPECTED_OUTPUT_MINIMAL: &str = r#"digraph G {
+rankdir = TB
+ts0_0 [label=<root<SUB><FONT COLOR="red" POINT-SIZE="8">ts0_0</FONT></SUB>>]
+ts3_0 -> ts4_0 [color=gray, constraint=true]
+ts4_0 [label=<t<SUB><FONT COLOR="red" POINT-SIZE="8">ts4_0</FONT></SUB>>]
+ts0_0 -> ts8_0 [color=gray, constraint=true]
+ts8_0 [label=<C<SUB><FONT COLOR="red" POINT-SIZE="8">ts8_0</FONT></SUB>>]
+ts2_0 -> ts3_0 [color=gray, constraint=true]
+ts3_0 [label=<a<SUB><FONT COLOR="red" POINT-SIZE="8">ts3_0</FONT></SUB>>]
+ts6_1 -> ts7_1 [color=gray, constraint=true]
+ts7_1 [label=<r<SUB><FONT COLOR="red" POINT-SIZE="8">ts7_1</FONT></SUB>>]
+ts0_0 -> ts1_0 [color=gray, constraint=true]
+ts1_0 [label=<a<SUB><FONT COLOR="red" POINT-SIZE="8">ts1_0</FONT></SUB>>]
+ts10_0 -> ts11_0 [color=gray, constraint=true]
+ts11_0 [label=<l<SUB><FONT COLOR="red" POINT-SIZE="8">ts11_0</FONT></SUB>>]
+ts8_0 -> ts9_0 [color=gray, constraint=true]
+ts9_0 [label=<o<SUB><FONT COLOR="red" POINT-SIZE="8">ts9_0</FONT></SUB>>]
+ts2_0 -> ts6_1 [color=gray, constraint=true]
+ts6_1 [label=<o<SUB><FONT COLOR="red" POINT-SIZE="8">ts6_1</FONT></SUB>>]
+ts9_0 -> ts10_0 [color=gray, constraint=true]
+ts10_0 [label=<l<SUB><FONT COLOR="red" POINT-SIZE="8">ts10_0</FONT></SUB>>]
+ts1_0 -> ts2_0 [color=gray, constraint=true]
+ts2_0 [label=<b<SUB><FONT COLOR="red" POINT-SIZE="8">ts2_0</FONT></SUB>>]
+ts4_0 -> ts5_0 [color=gray, constraint=true]
+ts5_0 [label=<e<SUB><FONT COLOR="red" POINT-SIZE="8">ts5_0</FONT></SUB>>]
+label=<<FONT COLOR="blue">Unknown</FONT>>
+}"#;

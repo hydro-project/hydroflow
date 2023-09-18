@@ -1,8 +1,8 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorInstance,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    FlowPropArgs, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 /// > 1 input stream, 1 output stream
@@ -17,7 +17,7 @@ use super::{
 ///
 /// ```hydroflow
 /// source_iter(vec!["hello", "world"]) -> map(|x| x.to_uppercase())
-///     -> assert(["HELLO", "WORLD"]);
+///     -> assert_eq(["HELLO", "WORLD"]);
 /// ```
 pub const MAP: OperatorConstraints = OperatorConstraints {
     name: "map",
@@ -38,7 +38,11 @@ pub const MAP: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
-    write_fn: |&WriteContextArgs {
+    flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
+        // Preserve input flow properties.
+        Ok(vec![flow_props_in[0]])
+    }),
+    write_fn: |wc @ &WriteContextArgs {
                    root,
                    op_span,
                    ident,
@@ -49,15 +53,16 @@ pub const MAP: OperatorConstraints = OperatorConstraints {
                    ..
                },
                _| {
+        let func = wc.wrap_check_func_arg(&arguments[0]);
         let write_iterator = if is_pull {
             let input = &inputs[0];
             quote_spanned! {op_span=>
-                let #ident = #input.map(#arguments);
+                let #ident = #input.map(#func);
             }
         } else {
             let output = &outputs[0];
             quote_spanned! {op_span=>
-                let #ident = #root::pusherator::map::Map::new(#arguments, #output);
+                let #ident = #root::pusherator::map::Map::new(#func, #output);
             }
         };
         Ok(OperatorWriteOutput {

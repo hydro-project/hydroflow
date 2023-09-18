@@ -31,9 +31,9 @@ pub(crate) async fn ssiv_flow(
     hydroflow_syntax! {
         source_iter(shopping_ssiv) -> [0]lookup_class;
         source_iter(client_class) -> [1]lookup_class;
-        lookup_class = join()
+        lookup_class = join::<'static>()
           -> map(|(client, (li, class))| ((client, class), li))
-          -> fold_keyed(SSIV_BOT, ssiv_merge)
+          -> fold_keyed::<'static>(SSIV_BOT, ssiv_merge)
           -> map(|m| (m, out_addr)) -> dest_sink_serde(out);
     }
 }

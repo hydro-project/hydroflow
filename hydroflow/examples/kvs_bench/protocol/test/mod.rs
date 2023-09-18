@@ -23,7 +23,7 @@ fn test_gossip() {
         let reg = MyLastWriteWins::new(Max::new(49), WithBot::new_from(Point::new(buffer)));
         let mut map = MapUnionHashMap::default();
 
-        map.0.insert(7, reg);
+        map.as_reveal_mut().insert(7, reg);
 
         KvsRequest::Gossip { map }
     };
@@ -71,7 +71,7 @@ fn test_json() {
         let reg = MyLastWriteWins::new(Max::new(49), WithBot::new_from(Point::new(buffer)));
         let mut map = MapUnionHashMap::default();
 
-        map.0.insert(7, reg);
+        map.as_reveal_mut().insert(7, reg);
 
         KvsRequest::Gossip { map }
     };
@@ -83,16 +83,10 @@ fn test_json() {
         serde::ser::Serialize::serialize(&req, &mut serializer).unwrap();
 
         println!("serialized: {}", std::str::from_utf8(&serialized).unwrap());
-        println!(
-            "serialized: {}",
-            serde_json::to_string(&MapUnionHashMap::new_from([(
-                7,
-                MyLastWriteWins::new(
-                    Max::new(49),
-                    WithBot::new_from(Point::new(BufferPool::get_from_buffer_pool(&buffer_pool)))
-                )
-            )]))
-            .unwrap()
+
+        assert_eq!(
+            std::str::from_utf8(&serialized).unwrap(),
+            serde_json::to_string(&req).unwrap()
         );
 
         let mut deserializer =
@@ -120,7 +114,7 @@ fn test_bincode() {
         let reg = MyLastWriteWins::new(Max::new(49), WithBot::new_from(Point::new(buffer)));
         let mut map = MapUnionHashMap::default();
 
-        map.0.insert(7, reg);
+        map.as_reveal_mut().insert(7, reg);
 
         KvsRequest::Gossip { map }
     };

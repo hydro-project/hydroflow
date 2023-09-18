@@ -162,9 +162,13 @@ where
     /// Returns `None` if `vertex` is not in the graph or does not have the right degree in/out.
     pub fn remove_intermediate_vertex(&mut self, vertex: V) -> Option<(E, (E, E))> {
         let preds = self.preds.remove(vertex)?;
-        let &[pred_edge] = &*preds else { return None; };
+        let &[pred_edge] = &*preds else {
+            return None;
+        };
         let succs = self.succs.remove(vertex).unwrap();
-        let &[succ_edge] = &*succs else { return None; };
+        let &[succ_edge] = &*succs else {
+            return None;
+        };
 
         let (src, _v) = self.edges.remove(pred_edge).unwrap();
         let (_v, dst) = self.edges.remove(succ_edge).unwrap();
@@ -174,6 +178,27 @@ where
 
         let new_edge = self.insert_edge(src, dst);
         Some((new_edge, (pred_edge, succ_edge)))
+    }
+
+    /// Remove an edge from the graph. If the edgeId is found then the edge is removed from the graph and returned.
+    /// If the edgeId was not found in the graph then nothing is returned and nothing is done.
+    pub fn remove_edge(&mut self, e: E) -> Option<(V, V)> {
+        let Some((src, dst)) = self.edges.remove(e) else {
+            return None;
+        };
+
+        self.succs[src].retain(|x| *x != e);
+        self.preds[dst].retain(|x| *x != e);
+
+        Some((src, dst))
+    }
+
+    /// Remove a vertex from the graph, it must have no edges to or from it when doing this.
+    pub fn remove_vertex(&mut self, v: V) {
+        assert!(self.preds[v].is_empty() && self.succs[v].is_empty());
+
+        self.preds.remove(v);
+        self.succs.remove(v);
     }
 
     /// Get the source and destination vertex IDs for the given edge ID.
@@ -189,8 +214,7 @@ where
     /// Return an iterator over all edges in form `(E, (V, V))`.
     pub fn edges(
         &self,
-    ) -> impl '_ + Iterator<Item = (E, (V, V))> + ExactSizeIterator + FusedIterator + Clone + Debug
-    {
+    ) -> impl '_ + ExactSizeIterator<Item = (E, (V, V))> + FusedIterator + Clone + Debug {
         self.edges.iter().map(|(e, &(src, dst))| (e, (src, dst)))
     }
 
@@ -216,13 +240,8 @@ where
     pub fn successor_vertices(
         &self,
         v: V,
-    ) -> impl '_
-           + Iterator<Item = V>
-           + DoubleEndedIterator
-           + ExactSizeIterator
-           + FusedIterator
-           + Clone
-           + Debug {
+    ) -> impl '_ + DoubleEndedIterator<Item = V> + ExactSizeIterator + FusedIterator + Clone + Debug
+    {
         self.successor_edges(v).map(|edge_id| self.edges[edge_id].1)
     }
 
@@ -230,13 +249,8 @@ where
     pub fn predecessor_vertices(
         &self,
         v: V,
-    ) -> impl '_
-           + Iterator<Item = V>
-           + DoubleEndedIterator
-           + ExactSizeIterator
-           + FusedIterator
-           + Clone
-           + Debug {
+    ) -> impl '_ + DoubleEndedIterator<Item = V> + ExactSizeIterator + FusedIterator + Clone + Debug
+    {
         self.predecessor_edges(v)
             .map(|edge_id| self.edges[edge_id].0)
     }
@@ -245,13 +259,8 @@ where
     pub fn successors(
         &self,
         v: V,
-    ) -> impl '_
-           + Iterator<Item = (E, V)>
-           + DoubleEndedIterator
-           + ExactSizeIterator
-           + FusedIterator
-           + Clone
-           + Debug {
+    ) -> impl '_ + DoubleEndedIterator<Item = (E, V)> + ExactSizeIterator + FusedIterator + Clone + Debug
+    {
         self.successor_edges(v)
             .map(|edge_id| (edge_id, self.edges[edge_id].1))
     }
@@ -260,13 +269,8 @@ where
     pub fn predecessors(
         &self,
         v: V,
-    ) -> impl '_
-           + Iterator<Item = (E, V)>
-           + DoubleEndedIterator
-           + ExactSizeIterator
-           + FusedIterator
-           + Clone
-           + Debug {
+    ) -> impl '_ + DoubleEndedIterator<Item = (E, V)> + ExactSizeIterator + FusedIterator + Clone + Debug
+    {
         self.predecessor_edges(v)
             .map(|edge_id| (edge_id, self.edges[edge_id].0))
     }

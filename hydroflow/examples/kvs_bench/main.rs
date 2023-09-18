@@ -166,3 +166,13 @@ fn main() {
         }
     }
 }
+
+#[test]
+fn test() {
+    use hydroflow::util::{run_cargo_example, wait_for_process_output};
+
+    let (_server, _, mut server_stdout) = run_cargo_example("kvs_bench", "bench --threads 2");
+
+    let mut server_output = String::new();
+    wait_for_process_output(&mut server_output, &mut server_stdout, r#"[0-9]+\.[0-9]+"#);
+}

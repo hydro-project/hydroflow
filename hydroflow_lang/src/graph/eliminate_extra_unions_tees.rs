@@ -20,7 +20,8 @@ fn find_unary_ops<'a>(
         })
 }
 
-/// Removes missing unions and tees. Must be applied BEFORE subgraph partitioning.
+/// Removes missing unions and tees. Must be applied BEFORE subgraph partitioning, i.e. on a flat
+/// graph.
 pub fn eliminate_extra_unions_tees(graph: &mut HydroflowGraph) {
     let extra_ops = find_unary_ops(graph, UNION.name)
         .chain(find_unary_ops(graph, TEE.name))

@@ -11,7 +11,7 @@ use crate::{GraphType, Opts};
 pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts) {
     // server_addr is required for client
     let server_addr = opts.server_addr.expect("Client requires a server address");
-    let bot: Max<usize> = Max(0);
+    let bot: Max<usize> = Max::new(0);
 
     println!("Client live!");
 
@@ -29,11 +29,10 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
         inbound_chan[merge] -> map(|(msg, _sender): (EchoMsg, SocketAddr)| msg.lamport_clock) -> [net]mergevc;
         mergevc = union() -> fold::<'static>(
             bot,
-            |mut old: Max<usize>, lamport_clock: Max<usize>| {
-                    let bump = Max(old.0 + 1);
+            |old: &mut Max<usize>, lamport_clock: Max<usize>| {
+                    let bump = Max::new(old.into_reveal() + 1);
                     old.merge(bump);
                     old.merge(lamport_clock);
-                    old
             }
         );
 

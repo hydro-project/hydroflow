@@ -12,13 +12,14 @@ use crate::graph::OpInstGenerics;
 /// For each item passed in, enumerate it with its index: `(0, x_0)`, `(1, x_1)`, etc.
 ///
 /// `enumerate` can also be provided with one generic lifetime persistence argument, either
-/// `'tick` or `'static`, to specify if indexing resets. If `'tick` is specified, indexing will
-/// restart at zero at the start of each tick. Otherwise `'static` (the default) will never reset
+/// `'tick` or `'static`, to specify if indexing resets. If `'tick` (the default) is specified, indexing will
+/// restart at zero at the start of each tick. Otherwise `'static` will never reset
 /// and count monotonically upwards.
 ///
 /// ```hydroflow
-/// source_iter(vec!["hello", "world"]) -> enumerate()
-///     -> assert([(0, "hello"), (1, "world")]);
+/// source_iter(vec!["hello", "world"])
+///     -> enumerate()
+///     -> assert_eq([(0, "hello"), (1, "world")]);
 /// ```
 pub const ENUMERATE: OperatorConstraints = OperatorConstraints {
     name: "enumerate",
@@ -40,6 +41,7 @@ pub const ENUMERATE: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: true,
     },
     input_delaytype_fn: |_| None,
+    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    op_span,
@@ -61,7 +63,7 @@ pub const ENUMERATE: OperatorConstraints = OperatorConstraints {
                },
                diagnostics| {
         let persistence = match persistence_args[..] {
-            [] => Persistence::Static,
+            [] => Persistence::Tick,
             [a] => a,
             _ => unreachable!(),
         };

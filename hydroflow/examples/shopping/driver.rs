@@ -123,6 +123,13 @@ pub(crate) async fn run_driver(opts: Opts) {
                 });
             });
 
+            // The above thread spawn sets up some sockets, but we do not wait for it to do so.
+            // So there is a race condition where, while the thread is still spawning, we can proceed and send messages to a socket that is not bound.
+            // This means that the spawned thread would be waiting for a message that it has already missed and which won't get re-sent.
+            // There's a timeout at the bottom of this function that was presumably added to fix the issue of this test hanging.
+            // This sleep makes it much more likely that the thread has set up everything needed by the tiem we finish this sleep.
+            std::thread::sleep(std::time::Duration::from_secs(1));
+
             // Run client proxy in this thread
             match opt {
                 5 => {
@@ -153,7 +160,7 @@ pub(crate) async fn run_driver(opts: Opts) {
             let addr1 = ipv4_resolve("localhost:23430").unwrap();
             let addr2 = ipv4_resolve("localhost:23431").unwrap();
             let addr3 = ipv4_resolve("localhost:23432").unwrap();
-            let server_addrs = vec![addr1, addr2, addr3];
+            let server_addrs = [addr1, addr2, addr3];
 
             // define the server addresses for gossip
             let gossip_addr1 = ipv4_resolve("localhost:23440").unwrap();
@@ -200,6 +207,14 @@ pub(crate) async fn run_driver(opts: Opts) {
                     });
                 });
             }
+
+            // The above thread spawn sets up some sockets, but we do not wait for it to do so.
+            // So there is a race condition where, while the thread is still spawning, we can proceed and send messages to a socket that is not bound.
+            // This means that the spawned thread would be waiting for a message that it has already missed and which won't get re-sent.
+            // There's a timeout at the bottom of this function that was presumably added to fix the issue of this test hanging.
+            // This sleep makes it much more likely that the thread has set up everything needed by the tiem we finish this sleep.
+            std::thread::sleep(std::time::Duration::from_secs(1));
+
             // Run client proxy in this thread
             rep_server_flow(
                 shopping_ssiv,

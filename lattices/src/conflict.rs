@@ -1,6 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use crate::{IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// A `Conflict` lattice, stores a single instance of `T` and goes to a "conflict" state (`None`)
 /// if inequal `T` instances are merged together.
@@ -12,9 +12,9 @@ use crate::{IsTop, LatticeFrom, LatticeOrd, Merge};
 ///
 /// This can be used to wrap non-lattice (scalar) data into a lattice type.
 #[repr(transparent)]
-#[derive(Copy, Clone, Debug, Default, Eq)]
+#[derive(Copy, Clone, Debug, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Conflict<T>(pub Option<T>);
+pub struct Conflict<T>(Option<T>);
 impl<T> Conflict<T> {
     /// Create a new `Conflict` lattice instance from a value.
     pub fn new(val: Option<T>) -> Self {
@@ -24,6 +24,21 @@ impl<T> Conflict<T> {
     /// Create a new `Conflict` lattice instance from a value using `Into`.
     pub fn new_from(val: impl Into<Option<T>>) -> Self {
         Self::new(val.into())
+    }
+
+    /// Reveal the inner value as a shared reference.
+    pub fn as_reveal_ref(&self) -> Option<&T> {
+        self.0.as_ref()
+    }
+
+    /// Reveal the inner value as an exclusive reference.
+    pub fn as_reveal_mut(&mut self) -> Option<&mut T> {
+        self.0.as_mut()
+    }
+
+    /// Gets the inner by value, consuming self.
+    pub fn into_reveal(self) -> Option<T> {
+        self.0
     }
 }
 
@@ -76,6 +91,12 @@ where
     }
 }
 
+impl<T> IsBot for Conflict<T> {
+    fn is_bot(&self) -> bool {
+        false
+    }
+}
+
 impl<T> IsTop for Conflict<T> {
     fn is_top(&self) -> bool {
         self.0.is_none()
@@ -86,8 +107,8 @@ impl<T> IsTop for Conflict<T> {
 mod test {
     use super::*;
     use crate::test::{
-        check_all, check_lattice_ord, check_lattice_properties, check_lattice_top,
-        check_partial_ord_properties,
+        check_all, check_lattice_is_bot, check_lattice_is_top, check_lattice_ord,
+        check_lattice_properties, check_partial_ord_properties,
     };
     use crate::WithBot;
 
@@ -101,8 +122,8 @@ mod test {
         check_lattice_ord(items);
         check_partial_ord_properties(items);
         check_lattice_properties(items);
-        // check_lattice_bot(items);
-        check_lattice_top(items);
+        check_lattice_is_bot(items);
+        check_lattice_is_top(items);
     }
 
     #[test]
@@ -114,6 +135,5 @@ mod test {
             WithBot::new(None),
         ];
         check_all(items);
-        check_lattice_top(items);
     }
 }
