@@ -369,8 +369,8 @@ impl Ord for PortIndexValue {
 impl Display for PortIndexValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            PortIndexValue::Int(x) => write!(f, "{}", x.to_token_stream().to_string()),
-            PortIndexValue::Path(x) => write!(f, "{}", x.to_token_stream().to_string()),
+            PortIndexValue::Int(x) => write!(f, "{}", x.to_token_stream()),
+            PortIndexValue::Path(x) => write!(f, "{}", x.to_token_stream()),
             PortIndexValue::Elided(_) => write!(f, "[]"),
         }
     }

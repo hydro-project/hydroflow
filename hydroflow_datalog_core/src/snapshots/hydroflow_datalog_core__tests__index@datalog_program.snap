@@ -914,8 +914,6 @@ fn main() {
                         >::default(),
                     ),
                 );
-            let sg_5v1_node_23v1_persisttick = df
-                .add_state(std::cell::RefCell::new(0_usize));
             let sg_5v1_node_11v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
@@ -926,7 +924,7 @@ fn main() {
                     ),
                 );
             let sg_5v1_node_45v1_persistdata = df
-                .add_state(::std::cell::RefCell::new((0_usize, ::std::vec::Vec::new())));
+                .add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
             let sg_5v1_node_43v1_counterdata = df
                 .add_state(::std::cell::RefCell::new(0..));
             df.add_subgraph_stratified(
@@ -1069,24 +1067,13 @@ fn main() {
                                 is_new_tick,
                             )
                         }
-                        let __is_new_tick = {
-                            let mut __borrow_ident = context
-                                .state_ref(sg_5v1_node_23v1_persisttick)
-                                .borrow_mut();
-                            if *__borrow_ident <= context.current_tick() {
-                                *__borrow_ident = context.current_tick() + 1;
-                                true
-                            } else {
-                                false
-                            }
-                        };
                         check_inputs(
                             hoff_9v3_recv,
                             op_22v1,
                             &mut *sg_5v1_node_23v1_antijoindata_neg_borrow,
                             &mut *sg_5v1_node_23v1_antijoindata_pos_borrow
                                 .get_mut_clear(context.current_tick()),
-                            __is_new_tick,
+                            context.is_first_run_this_tick(),
                         )
                     };
                     let op_23v1 = op_23v1.map(|(k, ())| k);
@@ -1270,23 +1257,17 @@ fn main() {
                     let mut sg_5v1_node_45v1_persistvec = context
                         .state_ref(sg_5v1_node_45v1_persistdata)
                         .borrow_mut();
-                    let (
-                        ref mut sg_5v1_node_45v1_persisttick,
-                        ref mut sg_5v1_node_45v1_persistvec,
-                    ) = &mut *sg_5v1_node_45v1_persistvec;
                     let op_45v1 = {
                         fn constrain_types<'ctx, Push, Item>(
-                            curr_tick: usize,
-                            tick: &'ctx mut usize,
                             vec: &'ctx mut Vec<Item>,
                             mut output: Push,
+                            is_new_tick: bool,
                         ) -> impl 'ctx + hydroflow::pusherator::Pusherator<Item = Item>
                         where
                             Push: 'ctx + hydroflow::pusherator::Pusherator<Item = Item>,
                             Item: ::std::clone::Clone,
                         {
-                            if *tick <= curr_tick {
-                                *tick = 1 + curr_tick;
+                            if is_new_tick {
                                 vec.iter()
                                     .cloned()
                                     .for_each(|item| {
@@ -1302,10 +1283,9 @@ fn main() {
                             )
                         }
                         constrain_types(
-                            context.current_tick(),
-                            sg_5v1_node_45v1_persisttick,
-                            sg_5v1_node_45v1_persistvec,
+                            &mut *sg_5v1_node_45v1_persistvec,
                             op_11v1,
+                            context.is_first_run_this_tick(),
                         )
                     };
                     let op_45v1 = {
@@ -1795,10 +1775,8 @@ fn main() {
                         >::default(),
                     ),
                 );
-            let sg_7v1_node_18v1_persisttick = df
-                .add_state(std::cell::RefCell::new(0_usize));
             let sg_7v1_node_31v1_persistdata = df
-                .add_state(::std::cell::RefCell::new((0_usize, ::std::vec::Vec::new())));
+                .add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(7v1)",
                 1,
@@ -1970,24 +1948,13 @@ fn main() {
                                 is_new_tick,
                             )
                         }
-                        let __is_new_tick = {
-                            let mut __borrow_ident = context
-                                .state_ref(sg_7v1_node_18v1_persisttick)
-                                .borrow_mut();
-                            if *__borrow_ident <= context.current_tick() {
-                                *__borrow_ident = context.current_tick() + 1;
-                                true
-                            } else {
-                                false
-                            }
-                        };
                         check_inputs(
                             hoff_15v3_recv,
                             op_17v1,
                             &mut *sg_7v1_node_18v1_antijoindata_neg_borrow,
                             &mut *sg_7v1_node_18v1_antijoindata_pos_borrow
                                 .get_mut_clear(context.current_tick()),
-                            __is_new_tick,
+                            context.is_first_run_this_tick(),
                         )
                     };
                     let op_18v1 = op_18v1.map(|(k, ())| k);
@@ -2057,23 +2024,17 @@ fn main() {
                     let mut sg_7v1_node_31v1_persistvec = context
                         .state_ref(sg_7v1_node_31v1_persistdata)
                         .borrow_mut();
-                    let (
-                        ref mut sg_7v1_node_31v1_persisttick,
-                        ref mut sg_7v1_node_31v1_persistvec,
-                    ) = &mut *sg_7v1_node_31v1_persistvec;
                     let op_31v1 = {
                         fn constrain_types<'ctx, Push, Item>(
-                            curr_tick: usize,
-                            tick: &'ctx mut usize,
                             vec: &'ctx mut Vec<Item>,
                             mut output: Push,
+                            is_new_tick: bool,
                         ) -> impl 'ctx + hydroflow::pusherator::Pusherator<Item = Item>
                         where
                             Push: 'ctx + hydroflow::pusherator::Pusherator<Item = Item>,
                             Item: ::std::clone::Clone,
                         {
-                            if *tick <= curr_tick {
-                                *tick = 1 + curr_tick;
+                            if is_new_tick {
                                 vec.iter()
                                     .cloned()
                                     .for_each(|item| {
@@ -2089,10 +2050,9 @@ fn main() {
                             )
                         }
                         constrain_types(
-                            context.current_tick(),
-                            sg_7v1_node_31v1_persisttick,
-                            sg_7v1_node_31v1_persistvec,
+                            &mut *sg_7v1_node_31v1_persistvec,
                             op_32v1,
+                            context.is_first_run_this_tick(),
                         )
                     };
                     let op_31v1 = {

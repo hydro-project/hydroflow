@@ -107,7 +107,6 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
             make_antijoindata(persistences[0], "pos")?;
         let (neg_antijoindata_ident, neg_borrow_ident, neg_init, neg_borrow) =
             make_antijoindata(persistences[1], "neg")?;
-        let tick_ident = wc.make_ident("persisttick");
 
         let write_prologue = quote_spanned! {op_span=>
             let #neg_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
@@ -115,9 +114,6 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
             ));
             let #pos_antijoindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
                 #pos_init
-            ));
-            let #tick_ident = #hydroflow.add_state(std::cell::RefCell::new(
-                0_usize
             ));
         };
 
@@ -148,25 +144,12 @@ pub const ANTI_JOIN: OperatorConstraints = OperatorConstraints {
                         #root::compiled::pull::anti_join_into_iter(input_pos, neg_state, pos_state, is_new_tick)
                     }
 
-                    let __is_new_tick = {
-                        let mut __borrow_ident = #context.state_ref(#tick_ident).borrow_mut();
-
-                        if *__borrow_ident <= #context.current_tick() {
-                            *__borrow_ident = #context.current_tick() + 1;
-                            // new tick
-                            true
-                        } else {
-                            // same tick.
-                            false
-                        }
-                    };
-
                     check_inputs(
                         #input_neg,
                         #input_pos,
                         #neg_borrow,
                         #pos_borrow,
-                        __is_new_tick,
+                        context.is_first_run_this_tick(),
                     )
                 };
             }
