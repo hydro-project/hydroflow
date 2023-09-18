@@ -15,12 +15,12 @@ subgraph sg_1v1 ["sg_1v1 stratum 0"]
     5v1[\"(5v1) <code>flat_map(|(src, (_, dst))| [src, dst])</code>"/]:::pullClass
     6v1[\"(6v1) <code>unique()</code>"/]:::pullClass
     7v1[/"(7v1) <code>for_each(|n| println!(&quot;Reached: {}&quot;, n))</code>"\]:::pushClass
-    1v1--->3v1
-    2v1--1--->4v1
-    3v1--0--->4v1
-    4v1--->5v1
-    5v1--->6v1
-    6v1--->7v1
+    1v1-->3v1
+    2v1-->|1|4v1
+    3v1-->|0|4v1
+    4v1-->5v1
+    5v1-->6v1
+    6v1-->7v1
     subgraph sg_1v1_var_my_join ["var <tt>my_join</tt>"]
         4v1
         5v1

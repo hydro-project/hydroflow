@@ -1,3 +1,5 @@
+//! Subgraph partioning algorithm
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use proc_macro2::Span;
@@ -26,7 +28,7 @@ fn find_barrier_crossers(
 }
 
 fn find_subgraph_unionfind(
-    partitioned_graph: &mut HydroflowGraph,
+    partitioned_graph: &HydroflowGraph,
     barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
 ) -> (UnionFind<GraphNodeId>, BTreeSet<GraphEdgeId>) {
     // Modality (color) of nodes, push or pull.
@@ -99,7 +101,7 @@ fn find_subgraph_unionfind(
 /// after handoffs have already been inserted to partition subgraphs.
 /// This list of nodes in each subgraph are returned in topological sort order.
 fn make_subgraph_collect(
-    partitioned_graph: &mut HydroflowGraph,
+    partitioned_graph: &HydroflowGraph,
     mut subgraph_unionfind: UnionFind<GraphNodeId>,
 ) -> SecondaryMap<GraphNodeId, Vec<GraphNodeId>> {
     // We want the nodes of each subgraph to be listed in topo-sort order.
@@ -248,7 +250,7 @@ fn find_subgraph_strata(
     barrier_crossers: &SecondaryMap<GraphEdgeId, DelayType>,
 ) -> Result<(), Diagnostic> {
     // Determine subgraphs's stratum number.
-    // Find SCCs ignoring `next_tick()` (`DelayType::Tick`) edges, then do TopoSort on the
+    // Find SCCs ignoring `defer_tick()` (`DelayType::Tick`) edges, then do TopoSort on the
     // resulting DAG.
     // Cycles thru cross-stratum negative edges (both `DelayType::Tick` and `DelayType::Stratum`)
     // are an error.
@@ -259,7 +261,7 @@ fn find_subgraph_strata(
     let mut subgraph_preds: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
     let mut subgraph_succs: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> = Default::default();
 
-    // Negative (next stratum) connections between subgraphs. (Ignore `next_tick()` connections).
+    // Negative (next stratum) connections between subgraphs. (Ignore `defer_tick()` connections).
     let mut subgraph_negative_connections: BTreeSet<(GraphSubgraphId, GraphSubgraphId)> =
         Default::default();
 
@@ -288,28 +290,13 @@ fn find_subgraph_strata(
         }
     }
 
-    let scc = graph_algorithms::scc_kosaraju(
-        partitioned_graph.subgraph_ids(),
+    // Topological sort (of strongly connected components) is how we find the (nondecreasing)
+    // order of strata.
+    let topo_sort_order = graph_algorithms::topo_sort_scc(
+        || partitioned_graph.subgraph_ids(),
         |v| subgraph_preds.get(&v).into_iter().flatten().cloned(),
         |u| subgraph_succs.get(&u).into_iter().flatten().cloned(),
     );
-
-    // Topological sort is how we find the (nondecreasing) order of strata.
-    let topo_sort_order = {
-        // Condensed each SCC into a single node for toposort.
-        let mut condensed_preds: BTreeMap<GraphSubgraphId, Vec<GraphSubgraphId>> =
-            Default::default();
-        for (u, preds) in subgraph_preds.iter() {
-            condensed_preds
-                .entry(scc[u])
-                .or_default()
-                .extend(preds.iter().map(|v| scc[v]));
-        }
-
-        graph_algorithms::topo_sort(partitioned_graph.subgraph_ids(), |v| {
-            condensed_preds.get(&v).into_iter().flatten().cloned()
-        })
-    };
 
     // Each subgraph's stratum number is the same as it's predecessors. Unless there is a negative
     // edge, then we increment.
@@ -332,8 +319,8 @@ fn find_subgraph_strata(
         partitioned_graph.set_subgraph_stratum(sg_id, stratum);
     }
 
-    // Re-introduce the `next_tick()` edges, ensuring they actually go to the next tick.
-    let extra_stratum = partitioned_graph.max_stratum().unwrap_or(0) + 1; // Used for `next_tick()` delayer subgraphs.
+    // Re-introduce the `defer_tick()` edges, ensuring they actually go to the next tick.
+    let extra_stratum = partitioned_graph.max_stratum().unwrap_or(0) + 1; // Used for `defer_tick()` delayer subgraphs.
     for (edge_id, &delay_type) in barrier_crossers.iter() {
         let (hoff, dst) = partitioned_graph.edge(edge_id);
         let (_hoff_port, dst_port) = partitioned_graph.edge_ports(edge_id);
@@ -385,7 +372,7 @@ fn find_subgraph_strata(
                 // Any negative edges which go onto the same or previous stratum are bad.
                 // Indicates an unbroken negative cycle.
                 if dst_stratum <= src_stratum {
-                    return Err(Diagnostic::spanned(dst_port.span(), Level::Error, "Negative edge creates a negative cycle which must be broken with a `next_tick()` operator."));
+                    return Err(Diagnostic::spanned(dst_port.span(), Level::Error, "Negative edge creates a negative cycle which must be broken with a `defer_tick()` operator."));
                 }
             }
         }
@@ -439,6 +426,9 @@ fn separate_external_inputs(partitioned_graph: &mut HydroflowGraph) {
     }
 }
 
+/// Main method for this module. Partions a flat [`HydroflowGraph`] into one with subgraphs.
+///
+/// Returns an error if a negative cycle exists in the graph. Negative cycles prevent partioning.
 pub fn partition_graph(flat_graph: HydroflowGraph) -> Result<HydroflowGraph, Diagnostic> {
     let mut partitioned_graph = flat_graph;
     let mut barrier_crossers = find_barrier_crossers(&partitioned_graph);

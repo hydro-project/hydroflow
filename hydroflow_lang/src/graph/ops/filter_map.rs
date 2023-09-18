@@ -14,7 +14,7 @@ use super::{
 /// ```hydroflow
 /// source_iter(vec!["1", "hello", "world", "2"])
 ///     -> filter_map(|s| s.parse::<usize>().ok())
-///     -> assert([1, 2]);
+///     -> assert_eq([1, 2]);
 /// ```
 pub const FILTER_MAP: OperatorConstraints = OperatorConstraints {
     name: "filter_map",
@@ -35,6 +35,7 @@ pub const FILTER_MAP: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
+    flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,

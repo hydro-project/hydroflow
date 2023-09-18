@@ -1,8 +1,8 @@
 use quote::{quote_spanned, ToTokens};
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
+    FlowPropArgs, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
 };
 
 /// > 1 input stream, *n* output streams
@@ -12,9 +12,9 @@ use super::{
 ///
 /// ```hydroflow
 /// my_tee = source_iter(vec!["Hello", "World"]) -> tee();
-/// my_tee -> map(|x: &str| x.to_uppercase()) -> assert(["HELLO", "WORLD"]);
-/// my_tee -> map(|x: &str| x.to_lowercase()) -> assert(["hello", "world"]);
-/// my_tee -> assert(["Hello", "World"]);
+/// my_tee -> map(|x: &str| x.to_uppercase()) -> assert_eq(["HELLO", "WORLD"]);
+/// my_tee -> map(|x: &str| x.to_lowercase()) -> assert_eq(["hello", "world"]);
+/// my_tee -> assert_eq(["Hello", "World"]);
 /// ```
 pub const TEE: OperatorConstraints = OperatorConstraints {
     name: "tee",
@@ -35,6 +35,9 @@ pub const TEE: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
+    flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
+        Ok(vec![flow_props_in[0]])
+    }),
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,

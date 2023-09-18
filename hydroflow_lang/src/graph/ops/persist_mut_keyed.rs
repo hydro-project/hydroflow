@@ -12,7 +12,7 @@ use super::{
 /// ```hydroflow
 /// source_iter([hydroflow::util::PersistenceKeyed::Persist(0, 1), hydroflow::util::PersistenceKeyed::Persist(1, 1), hydroflow::util::PersistenceKeyed::Delete(1)])
 ///     -> persist_mut_keyed()
-///     -> assert([(0, 1)]);
+///     -> assert_eq([(0, 1)]);
 /// ```
 pub const PERSIST_MUT_KEYED: OperatorConstraints = OperatorConstraints {
     name: "persist_mut_keyed",
@@ -33,6 +33,7 @@ pub const PERSIST_MUT_KEYED: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| Some(DelayType::Stratum),
+    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    context,

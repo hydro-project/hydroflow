@@ -69,6 +69,7 @@ pub struct ResourceResult {
 #[async_trait]
 pub trait LaunchedBinary: Send + Sync {
     async fn stdin(&self) -> Sender<String>;
+    async fn cli_stdout(&self) -> Receiver<String>;
     async fn stdout(&self) -> Receiver<String>;
     async fn stderr(&self) -> Receiver<String>;
 
@@ -186,7 +187,7 @@ pub trait Service: Send + Sync {
     async fn ready(&mut self) -> Result<()>;
 
     /// Starts the service by having it connect to other services and start computations.
-    async fn start(&mut self);
+    async fn start(&mut self) -> Result<()>;
 
     /// Stops the service by having it disconnect from other services and stop computations.
     async fn stop(&mut self) -> Result<()>;

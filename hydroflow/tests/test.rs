@@ -151,7 +151,7 @@ fn test_cycle() {
         (6, 7),
         (7, 8),
     ] {
-        edges.entry(from).or_insert_with(Vec::new).push(to);
+        edges.entry(from).or_default().push(to);
     }
 
     let mut df = Hydroflow::new();
@@ -181,7 +181,7 @@ fn test_cycle() {
         union_rhs,
         union_out,
         |_ctx, recv1, recv2, send| {
-            for v in (recv1.take_inner().into_iter()).chain(recv2.take_inner().into_iter()) {
+            for v in (recv1.take_inner().into_iter()).chain(recv2.take_inner()) {
                 send.give(Some(v));
             }
         },

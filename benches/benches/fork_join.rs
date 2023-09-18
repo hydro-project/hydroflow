@@ -54,11 +54,7 @@ fn benchmark_hydroflow(c: &mut Criterion) {
                     send1,
                     send2,
                     |_ctx, recv1, recv2, send1, send2| {
-                        for v in recv1
-                            .take_inner()
-                            .into_iter()
-                            .chain(recv2.take_inner().into_iter())
-                        {
+                        for v in recv1.take_inner().into_iter().chain(recv2.take_inner()) {
                             if v % 2 == 0 {
                                 send1.give(Some(v));
                             } else {

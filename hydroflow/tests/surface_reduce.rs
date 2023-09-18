@@ -8,7 +8,7 @@ pub fn test_reduce_tick() {
 
     let mut df = hydroflow::hydroflow_syntax! {
         source_stream(items_recv)
-            -> reduce::<'tick>(|acc: u32, next: u32| acc + next)
+            -> reduce::<'tick>(|acc: &mut u32, next: u32| *acc += next)
             -> for_each(|v| result_send.send(v).unwrap());
     };
     assert_graphvis_snapshots!(df);
@@ -42,7 +42,7 @@ pub fn test_reduce_static() {
 
     let mut df = hydroflow::hydroflow_syntax! {
         source_stream(items_recv)
-            -> reduce::<'static>(|acc: u32, next: u32| acc + next)
+            -> reduce::<'static>(|acc: &mut u32, next: u32| *acc += next)
             -> for_each(|v| result_send.send(v).unwrap());
     };
     assert_graphvis_snapshots!(df);
@@ -75,7 +75,7 @@ pub fn test_reduce_sum() {
 
     let mut df = hydroflow_syntax! {
         source_stream(items_recv)
-            -> reduce(|a, b| a + b)
+            -> reduce(|a: &mut _, b| *a += b)
             -> for_each(|v| print!("{:?}", v));
     };
     assert_graphvis_snapshots!(df);
@@ -120,7 +120,7 @@ pub fn test_reduce() {
         source_stream(pairs_recv) -> [1]my_join_tee;
 
         my_join_tee[0] -> [1]reached_vertices;
-        my_join_tee[1] -> reduce(|a, b| a + b) -> for_each(|sum| println!("{}", sum));
+        my_join_tee[1] -> reduce(|a: &mut _, b| *a += b) -> for_each(|sum| println!("{}", sum));
     };
     assert_graphvis_snapshots!(df);
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));

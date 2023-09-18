@@ -16,7 +16,7 @@ use super::{
 ///
 /// ```hydroflow
 /// source_iter(vec!["hello", "world"]) -> filter(|x| x.starts_with('w'))
-///     -> assert(["world"]);
+///     -> assert_eq(["world"]);
 /// ```
 pub const FILTER: OperatorConstraints = OperatorConstraints {
     name: "filter",
@@ -37,6 +37,7 @@ pub const FILTER: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
+    flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,

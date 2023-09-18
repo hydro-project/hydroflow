@@ -2,17 +2,17 @@
 
 use std::fmt::Debug;
 
-use crate::{IsBot, IsTop, LatticeOrd, Merge, NaiveLatticeOrd};
+use crate::{Atomize, IsBot, IsTop, Lattice, LatticeOrd, Merge, NaiveLatticeOrd};
 
-/// Helper which calls [`check_lattice_ord`], [`check_partial_ord_properties`],
-/// [`check_lattice_properties`], and [`check_lattice_bot`].
-pub fn check_all<T: LatticeOrd + NaiveLatticeOrd + Merge<T> + IsBot + Clone + Eq + Debug>(
-    items: &[T],
-) {
+/// Helper which calls many other `check_*` functions in this module. See source code for which
+/// functions are called.
+pub fn check_all<T: Lattice + Clone + Eq + Debug + Default>(items: &[T]) {
     check_lattice_ord(items);
     check_partial_ord_properties(items);
     check_lattice_properties(items);
-    check_lattice_bot(items);
+    check_lattice_is_bot(items);
+    check_lattice_is_top(items);
+    check_lattice_default_is_bot::<T>();
 }
 
 /// Check that the lattice's `PartialOrd` implementation agrees with the `NaiveLatticeOrd` partial
@@ -140,24 +140,61 @@ pub fn check_lattice_properties<T: Merge<T> + Clone + Eq + Debug>(items: &[T]) {
 }
 
 /// Checks that the item which is bot is less than (or equal to) all other items.
-pub fn check_lattice_bot<T: IsBot + LatticeOrd>(items: &[T]) {
-    let bot = items
-        .iter()
-        .find(|&x| IsBot::is_bot(x))
-        .expect("Expected `items` to contain bottom.");
+pub fn check_lattice_is_bot<T: IsBot + LatticeOrd + Debug>(items: &[T]) {
+    let Some(bot) = items.iter().find(|&x| IsBot::is_bot(x)) else {
+        return;
+    };
     for x in items {
         assert!(bot <= x);
+        assert_eq!(bot == x, x.is_bot(), "{:?}", x);
     }
 }
 
 /// Checks that the item which is top is greater than (or equal to) all other items.
-pub fn check_lattice_top<T: IsTop + LatticeOrd>(items: &[T]) {
-    let top = items
-        .iter()
-        .find(|&x| IsTop::is_top(x))
-        .expect("Expected `items` to contain top.");
+pub fn check_lattice_is_top<T: IsTop + LatticeOrd + Debug>(items: &[T]) {
+    let Some(top) = items.iter().find(|&x| IsTop::is_top(x)) else {
+        return;
+    };
     for x in items {
         assert!(x <= top);
+        assert_eq!(top == x, x.is_top(), "{:?}", x);
+    }
+}
+
+/// Asserts that [`IsBot`] is true for [`Default::default()`].
+pub fn check_lattice_default_is_bot<T: IsBot + Default>() {
+    assert!(T::is_bot(&T::default()));
+}
+
+/// Check that the atomized lattice points re-merge to form the same original lattice point, for each item in `items`.
+pub fn check_atomize_each<
+    T: Atomize + Merge<T::Atom> + LatticeOrd + IsBot + Default + Clone + Debug,
+>(
+    items: &[T],
+) where
+    T::Atom: Debug,
+{
+    for item in items {
+        let mut reformed = T::default();
+        let mut atoms = item.clone().atomize().peekable();
+        assert_eq!(
+            atoms.peek().is_none(),
+            item.is_bot(),
+            "`{:?}` atomize should return empty iterator ({}) if and only if item is bot ({}).",
+            item,
+            atoms.peek().is_none(),
+            item.is_bot()
+        );
+        for atom in atoms {
+            assert!(
+                !atom.is_bot(),
+                "`{:?}` atomize illegally returned a bottom atom `{:?}`.",
+                item,
+                atom,
+            );
+            reformed.merge(atom);
+        }
+        assert_eq!(item, &reformed, "`{:?}` atomize failed to reform", item);
     }
 }
 
@@ -166,7 +203,7 @@ pub fn check_lattice_top<T: IsTop + LatticeOrd>(items: &[T]) {
 /// product of `items` with itself `N` times.
 pub fn cartesian_power<T, const N: usize>(
     items: &[T],
-) -> impl Iterator<Item = [&T; N]> + ExactSizeIterator + Clone {
+) -> impl ExactSizeIterator<Item = [&T; N]> + Clone {
     struct CartesianPower<'a, T, const N: usize> {
         items: &'a [T],
         iters: [std::iter::Peekable<std::slice::Iter<'a, T>>; N],
@@ -219,7 +256,7 @@ pub fn cartesian_power<T, const N: usize>(
     impl<'a, T, const N: usize> Clone for CartesianPower<'a, T, N> {
         fn clone(&self) -> Self {
             Self {
-                items: self.items.clone(),
+                items: self.items,
                 iters: self.iters.clone(),
             }
         }

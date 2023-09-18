@@ -1,4 +1,4 @@
-error: unexpected end of input, expected parentheses or identifier
+error: unexpected end of input, expected one of: parentheses, identifier, `mod`
  --> tests/compile-fail/surface_syntax_eol_indexing.rs:4:18
   |
 4 |       let mut df = hydroflow_syntax! {

@@ -56,3 +56,42 @@ async fn main() {
         }
     }
 }
+
+#[test]
+fn test() {
+    use std::io::Write;
+
+    use hydroflow::util::{run_cargo_example, wait_for_process_output};
+
+    let (_server, _, mut server_output) = run_cargo_example(
+        "echo_serde_json",
+        "--role server --server-addr 127.0.0.1:2049",
+    );
+
+    let (_client, mut client_input, mut client_output) = run_cargo_example(
+        "echo_serde_json",
+        "--role client --server-addr 127.0.0.1:2049",
+    );
+
+    let mut server_output_so_far = String::new();
+    let mut client_output_so_far = String::new();
+
+    wait_for_process_output(
+        &mut server_output_so_far,
+        &mut server_output,
+        "Server live!\n",
+    );
+    wait_for_process_output(
+        &mut client_output_so_far,
+        &mut client_output,
+        "Client live!\n",
+    );
+
+    client_input.write_all(b"Hello\n").unwrap();
+
+    wait_for_process_output(
+        &mut client_output_so_far,
+        &mut client_output,
+        "EchoMsg \\{ payload: \"Hello\", ts: .* \\}",
+    );
+}

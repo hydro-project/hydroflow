@@ -3,10 +3,10 @@
 use std::borrow::Borrow;
 use std::hash::Hash;
 
-use crate::cc_traits::{
-    covariant_item_mut, covariant_item_ref, covariant_key_ref, Collection, CollectionMut,
-    CollectionRef, Get, GetKeyValue, GetKeyValueMut, GetMut, Iter, IterMut, Keyed, KeyedRef, Len,
-    MapIter, MapIterMut,
+use cc_traits::{
+    covariant_item_mut, covariant_item_ref, covariant_key_ref, simple_keyed_ref, Collection,
+    CollectionMut, CollectionRef, Get, GetKeyValue, GetKeyValueMut, GetMut, Iter, IterMut, Keyed,
+    KeyedRef, Len, MapIter, MapIterMut, SimpleKeyedRef,
 };
 
 /// A [`Vec`]-wrapper representing a naively-implemented set.
@@ -198,6 +198,9 @@ where
             .find(|(k, _v)| key == K::borrow(k))
     }
 }
+impl<K, V> SimpleKeyedRef for VecMap<K, V> {
+    simple_keyed_ref!();
+}
 impl<K, V> MapIter for VecMap<K, V> {
     type Iter<'a> = std::iter::Zip<std::slice::Iter<'a, K>, std::slice::Iter<'a, V>>
 	where
@@ -386,9 +389,9 @@ impl<K, V> Iter for SingletonMap<K, V> {
         std::iter::once(&self.1)
     }
 }
-// impl<K, V> SimpleKeyedRef for SingletonMap<K, V> {
-//     simple_keyed_ref!();
-// }
+impl<K, V> SimpleKeyedRef for SingletonMap<K, V> {
+    simple_keyed_ref!();
+}
 impl<K, V> MapIter for SingletonMap<K, V> {
     type Iter<'a> = std::iter::Once<(&'a K, &'a V)>
 	where
@@ -405,6 +408,225 @@ impl<K, V> MapIterMut for SingletonMap<K, V> {
 
     fn iter_mut(&mut self) -> Self::IterMut<'_> {
         std::iter::once((&self.0, &mut self.1))
+    }
+}
+
+/// A wrapper around `Option`, representing either a singleton or empty set.
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct OptionSet<T>(pub Option<T>);
+impl<T> Default for OptionSet<T> {
+    fn default() -> Self {
+        Self(None)
+    }
+}
+impl<T> IntoIterator for OptionSet<T> {
+    type Item = T;
+    type IntoIter = std::option::IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+impl<T, U> From<U> for OptionSet<T>
+where
+    U: Into<Option<T>>,
+{
+    fn from(value: U) -> Self {
+        Self(value.into())
+    }
+}
+impl<T> Collection for OptionSet<T> {
+    type Item = T;
+}
+impl<T> Len for OptionSet<T> {
+    fn len(&self) -> usize {
+        self.0.is_some() as usize
+    }
+}
+impl<T> CollectionRef for OptionSet<T> {
+    type ItemRef<'a> = &'a Self::Item
+    where
+        Self: 'a;
+
+    covariant_item_ref!();
+}
+impl<'a, Q, T> Get<&'a Q> for OptionSet<T>
+where
+    T: Borrow<Q>,
+    Q: Eq + ?Sized,
+{
+    fn get(&self, key: &'a Q) -> Option<Self::ItemRef<'_>> {
+        self.0.as_ref().filter(|inner| key == (**inner).borrow())
+    }
+}
+impl<T> CollectionMut for OptionSet<T> {
+    type ItemMut<'a> = &'a mut T
+    where
+        Self: 'a;
+
+    covariant_item_mut!();
+}
+impl<'a, Q, T> GetMut<&'a Q> for OptionSet<T>
+where
+    T: Borrow<Q>,
+    Q: Eq + ?Sized,
+{
+    fn get_mut(&mut self, key: &'a Q) -> Option<Self::ItemMut<'_>> {
+        self.0.as_mut().filter(|inner| key == (**inner).borrow())
+    }
+}
+impl<T> Iter for OptionSet<T> {
+    type Iter<'a> = std::option::Iter<'a, T>
+	where
+		Self: 'a;
+
+    fn iter(&self) -> Self::Iter<'_> {
+        self.0.iter()
+    }
+}
+impl<T> IterMut for OptionSet<T> {
+    type IterMut<'a> = std::option::IterMut<'a, T>
+    where
+        Self: 'a;
+
+    fn iter_mut(&mut self) -> Self::IterMut<'_> {
+        self.0.iter_mut()
+    }
+}
+
+/// A key-value entry wrapper around `Option<(K, V)>` representing a singleton or empty map.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct OptionMap<K, V>(pub Option<(K, V)>);
+impl<K, V> Default for OptionMap<K, V> {
+    fn default() -> Self {
+        Self(None)
+    }
+}
+impl<K, V> IntoIterator for OptionMap<K, V> {
+    type Item = (K, V);
+    type IntoIter = std::option::IntoIter<(K, V)>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+impl<K, V, U> From<U> for OptionMap<K, V>
+where
+    U: Into<Option<(K, V)>>,
+{
+    fn from(kv: U) -> Self {
+        Self(kv.into())
+    }
+}
+impl<K, V> Collection for OptionMap<K, V> {
+    type Item = V;
+}
+impl<K, V> Len for OptionMap<K, V> {
+    fn len(&self) -> usize {
+        self.0.is_some() as usize
+    }
+}
+impl<K, V> CollectionRef for OptionMap<K, V> {
+    type ItemRef<'a> = &'a Self::Item
+    where
+        Self: 'a;
+
+    covariant_item_ref!();
+}
+impl<'a, Q, K, V> Get<&'a Q> for OptionMap<K, V>
+where
+    K: Borrow<Q>,
+    Q: Eq + ?Sized,
+{
+    fn get(&self, key: &'a Q) -> Option<Self::ItemRef<'_>> {
+        self.0
+            .as_ref()
+            .filter(|(k, _v)| key == k.borrow())
+            .map(|(_k, v)| v)
+    }
+}
+impl<K, V> CollectionMut for OptionMap<K, V> {
+    type ItemMut<'a> = &'a mut Self::Item
+    where
+        Self: 'a;
+
+    covariant_item_mut!();
+}
+impl<'a, Q, K, V> GetMut<&'a Q> for OptionMap<K, V>
+where
+    K: Borrow<Q>,
+    Q: Eq + ?Sized,
+{
+    fn get_mut(&mut self, key: &'a Q) -> Option<Self::ItemMut<'_>> {
+        self.0
+            .as_mut()
+            .filter(|(k, _v)| key == k.borrow())
+            .map(|(_k, v)| v)
+    }
+}
+impl<K, V> Keyed for OptionMap<K, V> {
+    type Key = K;
+}
+impl<K, V> KeyedRef for OptionMap<K, V> {
+    type KeyRef<'a> = &'a Self::Key
+	where
+		Self: 'a;
+
+    covariant_key_ref!();
+}
+impl<'a, Q, K, V> GetKeyValue<&'a Q> for OptionMap<K, V>
+where
+    K: Borrow<Q>,
+    Q: Eq + ?Sized,
+{
+    fn get_key_value(&self, key: &'a Q) -> Option<(Self::KeyRef<'_>, Self::ItemRef<'_>)> {
+        self.0
+            .as_ref()
+            .filter(|(k, _v)| key == k.borrow())
+            .map(|(k, v)| (k, v))
+    }
+}
+impl<'a, Q, K, V> GetKeyValueMut<&'a Q> for OptionMap<K, V>
+where
+    K: Borrow<Q>,
+    Q: Eq + ?Sized,
+{
+    fn get_key_value_mut(&mut self, key: &'a Q) -> Option<(Self::KeyRef<'_>, Self::ItemMut<'_>)> {
+        self.0
+            .as_mut()
+            .filter(|(k, _v)| key == k.borrow())
+            .map(|(k, v)| (&*k, v))
+    }
+}
+impl<K, V> Iter for OptionMap<K, V> {
+    type Iter<'a> = std::option::IntoIter<&'a V>
+	where
+		Self: 'a;
+
+    fn iter(&self) -> Self::Iter<'_> {
+        self.0.as_ref().map(|(_k, v)| v).into_iter()
+    }
+}
+impl<K, V> SimpleKeyedRef for OptionMap<K, V> {
+    simple_keyed_ref!();
+}
+impl<K, V> MapIter for OptionMap<K, V> {
+    type Iter<'a> = std::option::IntoIter<(&'a K, &'a V)>
+	where
+		Self: 'a;
+
+    fn iter(&self) -> Self::Iter<'_> {
+        self.0.as_ref().map(|(k, v)| (k, v)).into_iter()
+    }
+}
+impl<K, V> MapIterMut for OptionMap<K, V> {
+    type IterMut<'a> = std::option::IntoIter<(&'a K, &'a mut V)>
+	where
+		Self: 'a;
+
+    fn iter_mut(&mut self) -> Self::IterMut<'_> {
+        self.0.as_mut().map(|(k, v)| (&*k, v)).into_iter()
     }
 }
 
@@ -599,6 +821,9 @@ impl<K, V, const N: usize> Iter for ArrayMap<K, V, N> {
     fn iter(&self) -> Self::Iter<'_> {
         self.vals.iter()
     }
+}
+impl<K, V, const N: usize> SimpleKeyedRef for ArrayMap<K, V, N> {
+    simple_keyed_ref!();
 }
 impl<K, V, const N: usize> MapIter for ArrayMap<K, V, N> {
     type Iter<'a> = std::iter::Zip<std::slice::Iter<'a, K>, std::slice::Iter<'a, V>>

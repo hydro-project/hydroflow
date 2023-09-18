@@ -9,6 +9,7 @@ use std::marker::PhantomData;
 
 use hydroflow_lang::diagnostic::{Diagnostic, SerdeSpan};
 use hydroflow_lang::graph::HydroflowGraph;
+use instant::Instant;
 use ref_cast::RefCast;
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 
@@ -54,6 +55,8 @@ impl Default for Hydroflow {
 
             current_stratum: 0,
             current_tick: 0,
+
+            current_tick_start: Instant::now(),
 
             subgraph_id: SubgraphId(0),
 
@@ -244,6 +247,7 @@ impl Hydroflow {
             // Starting the tick, reset this to `false`.
             tracing::trace!("Starting tick, setting `can_start_tick = false`.");
             self.can_start_tick = false;
+            self.context.current_tick_start = Instant::now();
 
             // Ensure external events are received before running the tick.
             if !self.events_received_tick {

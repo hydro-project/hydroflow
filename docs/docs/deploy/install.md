@@ -64,5 +64,5 @@ To check that Hydro Deploy is installed correctly, you can run the following com
 ```console
 #shell-command-next-line
 hydro --version
-hydro_cli 0.0.0
+Hydro Deploy 0.1.0
 ```

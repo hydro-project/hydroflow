@@ -5,7 +5,187 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.0 (2023-08-15)
+
+### Chore
+
+ - <csr-id-f60053f70da3071c54de4a0eabb059a143aa2ccc/> fix lint, format errors for latest nightly version (without updated pinned)
+   For nightly version (d9c13cd45 2023-07-05)
+
+### Documentation
+
+ - <csr-id-a8b0d2d10eef3e45669f77a1f2460cd31a95d15b/> Improve `Atomize` docs
+
+### New Features
+
+ - <csr-id-7282457e383407eabbeb1f931c130edb095c33ca/> formalize `Default::default()` as returning bottom for lattice types
+   Not a breaking change since changed names were introduced only since last release
+ - <csr-id-b2406994a703f028724cc30065fec60f7f8a7247/> Implement `SimpleKeyedRef` for map types
+ - <csr-id-8ec75c6d8998b7d7e5a0ae24ee53b0cdb6932683/> Add atomize trait, impls, tests
+
+### Refactor
+
+ - <csr-id-6a2ad6b770c2ccf470548320d8753025b3a66c0a/> fix new clippy lints on latest nightly 1.73.0-nightly (db7ff98a7 2023-07-31)
+ - <csr-id-262166e7cecf8ffb5a2c7bc989e8cf66c4524a68/> Change `Atomize` to require returning empty iff lattice is bottom
+   Previously was the opposite, `Atomize` always had to return non-empty.
+   
+   Not breaking since `Atomize` has not yet been published.
+
+### New Features (BREAKING)
+
+ - <csr-id-7b752f743cbedc632b127dddf3f9a84e839eb47a/> Add bottom (+top) collapsing, implement `IsBot`/`IsTop` for all lattice types
+   * `WithBot(Some(BOTTOM))` and `WithBot(None)` are now considered to both be bottom, equal. Also, `MapUnion({})` and `MapUnion({key: BOTTOM})` are considered to both be bottom, equal.
+   * `WithTop(Some(TOP))` and `WithTop(None)` are now considered to both be top, equal.
+   * `check_lattice_bot/top` now check that `is_bot` and `is_top` must be consistent among all equal elements
+
+### Refactor (BREAKING)
+
+ - <csr-id-7b0485b20939ec86ed8e74ecc9c75ac1b5d01072/> Rename `Seq` -> `VecUnion`
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 9 commits contributed to the release over the course of 39 calendar days.
+ - 42 days passed between releases.
+ - 9 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 8 unique issues were worked on: [#822](https://github.com/hydro-project/hydroflow/issues/822), [#849](https://github.com/hydro-project/hydroflow/issues/849), [#854](https://github.com/hydro-project/hydroflow/issues/854), [#860](https://github.com/hydro-project/hydroflow/issues/860), [#865](https://github.com/hydro-project/hydroflow/issues/865), [#866](https://github.com/hydro-project/hydroflow/issues/866), [#867](https://github.com/hydro-project/hydroflow/issues/867), [#879](https://github.com/hydro-project/hydroflow/issues/879)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#822](https://github.com/hydro-project/hydroflow/issues/822)**
+    - Fix lint, format errors for latest nightly version (without updated pinned) ([`f60053f`](https://github.com/hydro-project/hydroflow/commit/f60053f70da3071c54de4a0eabb059a143aa2ccc))
+ * **[#849](https://github.com/hydro-project/hydroflow/issues/849)**
+    - Rename `Seq` -> `VecUnion` ([`7b0485b`](https://github.com/hydro-project/hydroflow/commit/7b0485b20939ec86ed8e74ecc9c75ac1b5d01072))
+ * **[#854](https://github.com/hydro-project/hydroflow/issues/854)**
+    - Add atomize trait, impls, tests ([`8ec75c6`](https://github.com/hydro-project/hydroflow/commit/8ec75c6d8998b7d7e5a0ae24ee53b0cdb6932683))
+ * **[#860](https://github.com/hydro-project/hydroflow/issues/860)**
+    - Improve `Atomize` docs ([`a8b0d2d`](https://github.com/hydro-project/hydroflow/commit/a8b0d2d10eef3e45669f77a1f2460cd31a95d15b))
+ * **[#865](https://github.com/hydro-project/hydroflow/issues/865)**
+    - Add bottom (+top) collapsing, implement `IsBot`/`IsTop` for all lattice types ([`7b752f7`](https://github.com/hydro-project/hydroflow/commit/7b752f743cbedc632b127dddf3f9a84e839eb47a))
+ * **[#866](https://github.com/hydro-project/hydroflow/issues/866)**
+    - Implement `SimpleKeyedRef` for map types ([`b240699`](https://github.com/hydro-project/hydroflow/commit/b2406994a703f028724cc30065fec60f7f8a7247))
+ * **[#867](https://github.com/hydro-project/hydroflow/issues/867)**
+    - Change `Atomize` to require returning empty iff lattice is bottom ([`262166e`](https://github.com/hydro-project/hydroflow/commit/262166e7cecf8ffb5a2c7bc989e8cf66c4524a68))
+ * **[#879](https://github.com/hydro-project/hydroflow/issues/879)**
+    - Formalize `Default::default()` as returning bottom for lattice types ([`7282457`](https://github.com/hydro-project/hydroflow/commit/7282457e383407eabbeb1f931c130edb095c33ca))
+ * **Uncategorized**
+    - Fix new clippy lints on latest nightly 1.73.0-nightly (db7ff98a7 2023-07-31) ([`6a2ad6b`](https://github.com/hydro-project/hydroflow/commit/6a2ad6b770c2ccf470548320d8753025b3a66c0a))
+</details>
+
+## 0.3.0 (2023-07-04)
+
+<csr-id-0cbbaeaec5e192e2539771bb247926271c2dc4a3/>
+<csr-id-70c88a51c4c83a4dc2fc67a0cd344786a4ff26f7/>
+<csr-id-4a727ecf1232e0f03f5300547282bfbe73342cfa/>
+<csr-id-5c7e4d3aea1dfb61d51bcb0291740281824e3090/>
+<csr-id-1bdadb82b25941d11f3fa24eaac35109927c852f/>
+
+### Documentation
+
+ - <csr-id-ac4fd827ccede0ad53dfc59079cdb7df5928e491/> List `WithTop` in README 4/4
+
+### New Features
+
+ - <csr-id-016abeea3ecd390a976dd8dbec371b08fe744655/> make unit `()` a point lattice
+ - <csr-id-dc99c021640a47b704905d087eadcbc477f033f0/> impl `IsTop`, `IsBot` for `Min`, `Max` over numeric types
+ - <csr-id-f5e0d19e8531c250bc4492b61b9731c947916daf/> Add `Conflict<T>` lattice
+ - <csr-id-fc4dcbdfa703d79a0c183a2eb3f5dbb42260b67a/> add top lattice, opposite of bottom
+ - <csr-id-153cbabd462d776eae395e371470abb4662642cd/> Add `Seq` lattice.
+
+### Bug Fixes
+
+ - <csr-id-9bb5528d99e83fdae5aeca9456802379131c2f90/> removed unused nightly features `impl_trait_in_assoc_type`, `type_alias_impl_trait`
+ - <csr-id-3c4eb16833160f8813b812487a1297c023400138/> fix ConvertFrom for bottom to actually convert the type
+   * fix: fix type inference with doubly-nested bottom types
+* fix: address comments
+
+### Refactor
+
+ - <csr-id-0cbbaeaec5e192e2539771bb247926271c2dc4a3/> Rename `bottom.rs` -> `with_bot.rs`, `top.rs` -> `with_top.rs` 1/4
+
+### Style
+
+ - <csr-id-70c88a51c4c83a4dc2fc67a0cd344786a4ff26f7/> `warn` missing docs (instead of `deny`) to allow code before docs
+
+### New Features (BREAKING)
+
+<csr-id-deb26af6bcd547f91bf339367387d36e5e59565a/>
+
+ - <csr-id-931d93887c238025596cb22226e16d43e16a7425/> Add `reveal` methods, make fields private
+ - <csr-id-7aec1ac884e01a560770dfab7e0ba64d520415f6/> Add `Provenance` generic param token to `Point`.
+   - Use `()` provenance for `kvs_bench` example.
+
+### Bug Fixes (BREAKING)
+
+ - <csr-id-5cfd2a0f48f11f6185070cab932f50b630e1f800/> Remove `Default` impl for `WithTop` 3/4
+   Is confusing, probably not what users want.
+
+### Refactor (BREAKING)
+
+ - <csr-id-4a727ecf1232e0f03f5300547282bfbe73342cfa/> Rename `ConvertFrom::from` -> `LatticeFrom::lattice_from`
+ - <csr-id-5c7e4d3aea1dfb61d51bcb0291740281824e3090/> Rename `Bottom` -> `WithBot`, `Top` -> `WithTop`, constructors now take `Option`s 2/4
+ - <csr-id-1bdadb82b25941d11f3fa24eaac35109927c852f/> Rename `Immut` -> `Point` lattice.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 18 commits contributed to the release over the course of 31 calendar days.
+ - 33 days passed between releases.
+ - 17 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 12 unique issues were worked on: [#742](https://github.com/hydro-project/hydroflow/issues/742), [#744](https://github.com/hydro-project/hydroflow/issues/744), [#761](https://github.com/hydro-project/hydroflow/issues/761), [#763](https://github.com/hydro-project/hydroflow/issues/763), [#765](https://github.com/hydro-project/hydroflow/issues/765), [#766](https://github.com/hydro-project/hydroflow/issues/766), [#767](https://github.com/hydro-project/hydroflow/issues/767), [#772](https://github.com/hydro-project/hydroflow/issues/772), [#773](https://github.com/hydro-project/hydroflow/issues/773), [#780](https://github.com/hydro-project/hydroflow/issues/780), [#789](https://github.com/hydro-project/hydroflow/issues/789), [#793](https://github.com/hydro-project/hydroflow/issues/793)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#742](https://github.com/hydro-project/hydroflow/issues/742)**
+    - Fix ConvertFrom for bottom to actually convert the type ([`3c4eb16`](https://github.com/hydro-project/hydroflow/commit/3c4eb16833160f8813b812487a1297c023400138))
+ * **[#744](https://github.com/hydro-project/hydroflow/issues/744)**
+    - Add top lattice, opposite of bottom ([`fc4dcbd`](https://github.com/hydro-project/hydroflow/commit/fc4dcbdfa703d79a0c183a2eb3f5dbb42260b67a))
+ * **[#761](https://github.com/hydro-project/hydroflow/issues/761)**
+    - Rename `Immut` -> `Point` lattice. ([`1bdadb8`](https://github.com/hydro-project/hydroflow/commit/1bdadb82b25941d11f3fa24eaac35109927c852f))
+ * **[#763](https://github.com/hydro-project/hydroflow/issues/763)**
+    - List `WithTop` in README 4/4 ([`ac4fd82`](https://github.com/hydro-project/hydroflow/commit/ac4fd827ccede0ad53dfc59079cdb7df5928e491))
+    - Remove `Default` impl for `WithTop` 3/4 ([`5cfd2a0`](https://github.com/hydro-project/hydroflow/commit/5cfd2a0f48f11f6185070cab932f50b630e1f800))
+    - Rename `Bottom` -> `WithBot`, `Top` -> `WithTop`, constructors now take `Option`s 2/4 ([`5c7e4d3`](https://github.com/hydro-project/hydroflow/commit/5c7e4d3aea1dfb61d51bcb0291740281824e3090))
+    - Rename `bottom.rs` -> `with_bot.rs`, `top.rs` -> `with_top.rs` 1/4 ([`0cbbaea`](https://github.com/hydro-project/hydroflow/commit/0cbbaeaec5e192e2539771bb247926271c2dc4a3))
+ * **[#765](https://github.com/hydro-project/hydroflow/issues/765)**
+    - Rename `ConvertFrom::from` -> `LatticeFrom::lattice_from` ([`4a727ec`](https://github.com/hydro-project/hydroflow/commit/4a727ecf1232e0f03f5300547282bfbe73342cfa))
+ * **[#766](https://github.com/hydro-project/hydroflow/issues/766)**
+    - Add `IsBot::is_bot` and `IsTop::is_top` traits ([`deb26af`](https://github.com/hydro-project/hydroflow/commit/deb26af6bcd547f91bf339367387d36e5e59565a))
+ * **[#767](https://github.com/hydro-project/hydroflow/issues/767)**
+    - Add `Conflict<T>` lattice ([`f5e0d19`](https://github.com/hydro-project/hydroflow/commit/f5e0d19e8531c250bc4492b61b9731c947916daf))
+ * **[#772](https://github.com/hydro-project/hydroflow/issues/772)**
+    - Add `Provenance` generic param token to `Point`. ([`7aec1ac`](https://github.com/hydro-project/hydroflow/commit/7aec1ac884e01a560770dfab7e0ba64d520415f6))
+ * **[#773](https://github.com/hydro-project/hydroflow/issues/773)**
+    - `warn` missing docs (instead of `deny`) to allow code before docs ([`70c88a5`](https://github.com/hydro-project/hydroflow/commit/70c88a51c4c83a4dc2fc67a0cd344786a4ff26f7))
+ * **[#780](https://github.com/hydro-project/hydroflow/issues/780)**
+    - Removed unused nightly features `impl_trait_in_assoc_type`, `type_alias_impl_trait` ([`9bb5528`](https://github.com/hydro-project/hydroflow/commit/9bb5528d99e83fdae5aeca9456802379131c2f90))
+ * **[#789](https://github.com/hydro-project/hydroflow/issues/789)**
+    - Add `reveal` methods, make fields private ([`931d938`](https://github.com/hydro-project/hydroflow/commit/931d93887c238025596cb22226e16d43e16a7425))
+ * **[#793](https://github.com/hydro-project/hydroflow/issues/793)**
+    - Make unit `()` a point lattice ([`016abee`](https://github.com/hydro-project/hydroflow/commit/016abeea3ecd390a976dd8dbec371b08fe744655))
+    - Impl `IsTop`, `IsBot` for `Min`, `Max` over numeric types ([`dc99c02`](https://github.com/hydro-project/hydroflow/commit/dc99c021640a47b704905d087eadcbc477f033f0))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.3.0, hydroflow_lang v0.3.0, hydroflow_datalog_core v0.3.0, hydroflow_datalog v0.3.0, hydroflow_macro v0.3.0, lattices v0.3.0, pusherator v0.0.2, hydroflow v0.3.0, hydro_cli v0.3.0, safety bump 5 crates ([`ec9633e`](https://github.com/hydro-project/hydroflow/commit/ec9633e2e393c2bf106223abeb0b680200fbdf84))
+    - Add `Seq` lattice. ([`153cbab`](https://github.com/hydro-project/hydroflow/commit/153cbabd462d776eae395e371470abb4662642cd))
+</details>
+
+<csr-unknown>
+ Add IsBot::is_bot and IsTop::is_top traitsAlso adds test::check_lattice_bot (inlcluded in test::check_all) and test::check_lattice_top (NOT in check_all)<csr-unknown/>
+
 ## 0.2.0 (2023-05-31)
+
+<csr-id-fd896fbe925fbd8ef1d16be7206ac20ba585081a/>
+<csr-id-10b308532245db8f4480ce53b67aea050ae1918d/>
 
 ### Chore
 
@@ -19,8 +199,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release.
- - 2 days passed between releases.
+ - 3 commits contributed to the release.
+ - 1 day passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -31,6 +211,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release hydroflow_lang v0.2.0, hydroflow_datalog_core v0.2.0, hydroflow_datalog v0.2.0, hydroflow_macro v0.2.0, lattices v0.2.0, hydroflow v0.2.0, hydro_cli v0.2.0 ([`ca464c3`](https://github.com/hydro-project/hydroflow/commit/ca464c32322a7ad39eb53e1794777c849aa548a0))
     - Manually bump versions for v0.2.0 release ([`fd896fb`](https://github.com/hydro-project/hydroflow/commit/fd896fbe925fbd8ef1d16be7206ac20ba585081a))
     - Rename `Fake` -> `Immut` ([`10b3085`](https://github.com/hydro-project/hydroflow/commit/10b308532245db8f4480ce53b67aea050ae1918d))
 </details>

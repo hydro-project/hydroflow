@@ -15,7 +15,7 @@ impl<'a, const SIZE: usize> Serialize for PointWrapper<'a, SIZE> {
     where
         S: Serializer,
     {
-        serializer.serialize_newtype_struct("Point", &self.0)
+        serializer.serialize_newtype_struct("Point", &self.0.val)
     }
 }
 

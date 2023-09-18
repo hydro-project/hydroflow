@@ -1,45 +1,23 @@
+// TODO(mingwei): fix line numbers in tests
+// https://github.com/hydro-project/hydroflow/issues/729
+// https://github.com/rust-lang/rust/pull/111571
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use hydroflow::hydroflow_expect_warnings;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::collect_ready;
-
-macro_rules! test_warnings {
-    (
-        $hf:tt,
-        $( $msg:literal ),*
-        $( , )?
-    ) => {
-        {
-            let __file = std::file!();
-            let __line = std::line!() as usize;
-            let __hf = hydroflow::hydroflow_syntax_noemit! $hf;
-
-            let diagnostics = __hf.diagnostics().expect("Expected `diagnostics()` to be set.");
-            let expecteds = &[
-                $( $msg , )*
-            ];
-            assert_eq!(diagnostics.len(), expecteds.len(), "Wrong number of diagnostics.");
-            for (expected, diagnostic) in expecteds.iter().zip(diagnostics.iter()) {
-                let mut diagnostic = diagnostic.clone();
-                diagnostic.span.line -= __line;
-                assert_eq!(expected.to_string(), diagnostic.to_string().replace(__file, "$FILE"));
-            }
-
-            __hf
-        }
-    };
-}
 
 #[test]
 fn test_degenerate_union() {
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = test_warnings! {
+    let mut df = hydroflow_expect_warnings! {
         {
             source_iter([1, 2, 3]) -> union() -> for_each(|x| result_send.send(x).unwrap());
         },
-        "Warning: `union` should have at least 2 input(s), actually has 1.\n  --> $FILE:2:39",
+        "Warning: `union` should have at least 2 input(s), actually has 1.\n  --> $FILE:0:0",
     };
     df.run_available();
 
@@ -48,11 +26,11 @@ fn test_degenerate_union() {
 
 #[test]
 fn test_empty_union() {
-    let mut df = test_warnings! {
+    let mut df = hydroflow_expect_warnings! {
         {
             union() -> for_each(|x: usize| println!("{}", x));
         },
-        "Warning: `union` should have at least 2 input(s), actually has 0.\n  --> $FILE:2:13",
+        "Warning: `union` should have at least 2 input(s), actually has 0.\n  --> $FILE:0:0",
     };
     df.run_available();
 }
@@ -61,11 +39,11 @@ fn test_empty_union() {
 fn test_degenerate_tee() {
     let (result_send, mut result_recv) = hydroflow::util::unbounded_channel::<usize>();
 
-    let mut df = test_warnings! {
+    let mut df = hydroflow_expect_warnings! {
         {
             source_iter([1, 2, 3]) -> tee() -> for_each(|x| result_send.send(x).unwrap());
         },
-        "Warning: `tee` should have at least 2 output(s), actually has 1.\n  --> $FILE:2:39"
+        "Warning: `tee` should have at least 2 output(s), actually has 1.\n  --> $FILE:0:0"
     };
     df.run_available();
 
@@ -77,11 +55,11 @@ fn test_empty_tee() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = Rc::clone(&output);
 
-    let mut df = test_warnings! {
+    let mut df = hydroflow_expect_warnings! {
         {
             source_iter([1, 2, 3]) -> inspect(|&x| output_inner.borrow_mut().push(x)) -> tee();
         },
-        "Warning: `tee` should have at least 2 output(s), actually has 0.\n  --> $FILE:2:90",
+        "Warning: `tee` should have at least 2 output(s), actually has 0.\n  --> $FILE:0:0",
     };
     df.run_available();
 
@@ -92,7 +70,7 @@ fn test_empty_tee() {
 // But in a different edge order.
 #[test]
 pub fn test_warped_diamond() {
-    let mut df = test_warnings! {
+    let mut df = hydroflow_expect_warnings! {
         {
             // active nodes
             nodes = union();
@@ -108,14 +86,14 @@ pub fn test_warped_diamond() {
             nodes -> [0]init;
             new_node[1] -> map(|n| (n, 'b')) -> [1]init;
         },
-        "Warning: `union` should have at least 2 input(s), actually has 1.\n  --> $FILE:3:21",
+        "Warning: `union` should have at least 2 input(s), actually has 1.\n  --> $FILE:0:0",
     };
     df.run_available();
 }
 
 #[test]
 pub fn test_warped_diamond_2() {
-    let mut hf: Hydroflow = test_warnings! {
+    let mut hf: Hydroflow = hydroflow_expect_warnings! {
         {
             // active nodes
             nodes = union();
@@ -133,8 +111,8 @@ pub fn test_warped_diamond_2() {
 
             ntwk = source_iter([4, 5, 6]) -> tee();
         },
-        "Warning: `union` should have at least 2 input(s), actually has 1.\n  --> $FILE:3:21",
-        "Warning: `tee` should have at least 2 output(s), actually has 0.\n  --> $FILE:16:46",
+        "Warning: `union` should have at least 2 input(s), actually has 1.\n  --> $FILE:0:0",
+        "Warning: `tee` should have at least 2 output(s), actually has 0.\n  --> $FILE:0:0",
     };
     hf.run_available();
 }

@@ -6,20 +6,27 @@ import exampleCode from '!!raw-loader!../../../../hydroflow/examples/example_syn
 
 # Data Sources and Sinks in Rust
 Any useful flow requires us to define sources of data, either generated computationally or received from
-and outside environment via I/O.
+an outside environment via I/O.
 
-## `source_iter`
-A flow can receive data from a Rust collection object via the `source_iter` operator, which takes the
+## One-time Iterator Sources
+A flow can receive data from a Rust collection object via the [`source_iter()`](./surface_ops_gen.md#source_iter) operator, which takes the
 iterable collection as an argument and passes the items down the flow.
 For example, here we iterate through a vector of `usize` items and push them down the flow:
 ```rust,ignore
     source_iter(vec![0, 1]) -> ...
 ```
-The Hello, World example above uses this construct.
+The Hello, World example above uses this construct. 
 
-## `source_stream`
+The [`source_file()`](./surface_ops_gen.md#source_file) and [`source_json()`](./surface_ops_gen.md#source_json) operators are similar, but read from a specified file.
+
+All of these operators output the contents of their collection only once, during the first tick.
+To output every tick, consider feeding results into a [`persist()`](./surface_ops_gen.md#persist) 
+operator.
+
+## Streaming Sources
 More commonly, a flow should handle external data coming in asynchronously from a [_Tokio_ runtime](https://tokio.rs/tokio/tutorial).
-One way to do this is with _channels_ that allow Rust code to send data into the Hydroflow inputs.
+
+One way to do this is with _channels_ that allow Rust code to send data into Hydroflow via the [`source_stream()`](./surface_ops_gen.md#source_stream) operator.
 The code below creates a channel for data of (Rust) type `(usize, usize)`:
 ```rust,ignore
     let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
@@ -30,7 +37,7 @@ it explicitly as follows:
 ```rust,ignore
     input_send.send((0, 1)).unwrap()
 ```
-And in our Hydroflow syntax we can receive the data from the channel using the `source_stream` syntax and
+And in our Hydroflow syntax we can receive the data from the channel using the [`source_stream()`](./surface_ops_gen.md#source_stream) operator and
 pass it along a flow:
 ```rust,ignore
     source_stream(input_recv) -> ...
@@ -41,4 +48,19 @@ in from outside the flow:
 
 <CodeBlock language="rust" showLineNumbers>{exampleCode}</CodeBlock>
 
-TODO: add the remaining sources.
+Sometimes we want to trigger activity based on timing, not data. To achieve this, we can use the [`source_interval()`](./surface_ops_gen.md#source_interval) operator, which takes a `Duration` `d` as an argument, and outputs a Tokio time Instant after every `d` units of time pass.
+
+## Destinations
+As duals to our data source operators, we also have data destination operators. The dest operators you'll likely use 
+most often are [`dest_sink()`](./surface_ops_gen.md#dest_sink) and [`dest_file()`](./surface_ops_gen.md#dest_file). They are fairly
+straightforward, so the best source for further information is the documentation you can find by following the links on the operator names above.
+
+## SerDe: Network Serialization and Deserialization
+One of the mechanical annoyances of networked systems is the need to convert data to wire format ("serialization") and convert it back from wire format to data ("deserialization"),
+also known as "SerDe". 
+This can be done with `map` functions, but we provide a convenience source/sink pair that does serde and networking for you. 
+The source side, [`source_serde()`](./surface_ops_gen.md#source_serde) generates tuples of the type `(T, SocketAddr)`, 
+where the first field is a deserialized item of type `T`, and the second field is the address of the sender of the item.
+The dest side, [`source_serde()`](./surface_ops_gen.md#source_serde), takes in tuples of type `(T, SocketAddr)`,
+where the first field is an item of type `T` to be serialized, and the second field is a destination address.
+

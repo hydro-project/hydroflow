@@ -1,6 +1,7 @@
 mod utils;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::task::{Context, Poll};
 use std::thread_local;
 
@@ -107,7 +108,8 @@ pub struct HydroflowOutput {
 pub fn compile_hydroflow(program: String) -> JsValue {
     let out = match syn::parse_str(&program) {
         Ok(input) => {
-            let (graph_code_opt, diagnostics) = build_hfcode(input, &quote!(hydroflow));
+            let (graph_code_opt, diagnostics) =
+                build_hfcode(input, &quote!(hydroflow), PathBuf::default());
             let output = graph_code_opt.map(|(graph, code)| {
                 let mermaid = graph.to_mermaid();
                 let file = syn::parse_quote! {
@@ -149,7 +151,12 @@ pub fn compile_datalog(program: String) -> JsValue {
                 let mut diagnostics = Vec::new();
                 let output = match partition_graph(flat_graph) {
                     Ok(part_graph) => {
-                        let out = part_graph.as_code(&quote!(hydroflow), true, &mut diagnostics);
+                        let out = part_graph.as_code(
+                            &quote!(hydroflow),
+                            true,
+                            quote!(),
+                            &mut diagnostics,
+                        );
                         let file: syn::File = syn::parse_quote! {
                             fn main() {
                                 #out

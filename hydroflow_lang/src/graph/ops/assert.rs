@@ -1,26 +1,20 @@
-use quote::quote_spanned;
+use syn::parse_quote_spanned;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
 use crate::graph::OperatorInstance;
 
 /// > 1 input stream, 1 optional output stream
-/// > Arguments: A Vector, Slice, or Array containing objects that will be compared to the input stream.
+/// > Arguments: a predicate function that will be applied to each item in the stream
 ///
-/// The input stream will be collected into a vector and then compared with the input argument. If there is a difference then the program will panic.
-///
-/// assert() is mainly useful for testing and documenting the behavior of hydroflow code inline.
-///
-/// assert() will pass through the items to its output channel unchanged and in-order.
-///
-/// assert() will perform the assertion on each tick, so it cannot be used to easily assert the contents of a stream across ticks.
+/// If the predicate returns false for any input item then the operator will panic at runtime.
 ///
 /// ```hydroflow
 /// source_iter([1, 2, 3])
-///     -> assert([1, 2, 3])
-///     -> for_each(|x| println!("{x}"));
+///     -> assert(|x| *x > 0)
+///     -> assert_eq([1, 2, 3]);
 /// ```
 pub const ASSERT: OperatorConstraints = OperatorConstraints {
     name: "assert",
@@ -41,82 +35,31 @@ pub const ASSERT: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
+    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
-                   context,
-                   hydroflow,
-                   root,
-                   op_span,
-                   ident,
-                   inputs,
-                   outputs,
-                   is_pull,
-                   op_inst: OperatorInstance { arguments, .. },
-                   ..
+                   op_span, op_inst, ..
                },
-               _| {
-        let vec = &arguments[0];
+               diagnostics| {
+        let args = &op_inst.arguments[0];
 
-        let assert_data_ident = wc.make_ident("assert_data");
-
-        let (write_prologue, write_iterator, write_iterator_after) = if is_pull {
-            let input = &inputs[0];
-
-            (
-                Default::default(),
-                quote_spanned! {op_span=>
-                    let #assert_data_ident = #input.collect::<::std::vec::Vec<_>>();
-
-                    assert_eq!(#assert_data_ident, #vec, "lhs = dataflow input, rhs = expected value (provided as argument to assert())");
-
-                    let #ident = #assert_data_ident.into_iter();
-                },
-                Default::default(),
-            )
-        } else {
-            (
-                quote_spanned! {op_span=>
-                    let #assert_data_ident = #hydroflow.add_state(
-                        ::std::cell::Cell::new(::std::vec::Vec::default())
-                    );
-                },
-                {
-                    match outputs {
-                        [] => {
-                            quote_spanned! {op_span=>
-                                let #ident = #root::pusherator::for_each::ForEach::new(|v| {
-                                    let mut accum = #context.state_ref(#assert_data_ident).take();
-                                    accum.push(v);
-                                    #context.state_ref(#assert_data_ident).set(accum);
-                                });
-                            }
-                        }
-                        [output] => {
-                            quote_spanned! {op_span=>
-                                let #ident = #root::pusherator::inspect::Inspect::new(|v| {
-                                    let mut accum = #context.state_ref(#assert_data_ident).take();
-                                    accum.push(v.clone());
-                                    #context.state_ref(#assert_data_ident).set(accum);
-                                }, #output);
-                            }
-                        }
-                        // This should be a diagnostic but since output streams is limited by the declaration above to 0..=1 then this can never happen, so an assert is appropriate.
-                        _ => panic!(),
-                    }
-                },
-                quote_spanned! {op_span=>
-                    let accum = #context.state_ref(#assert_data_ident).take();
-
-                    assert_eq!(accum, #vec, "lhs = dataflow input, rhs = expected value (provided as argument to assert())");
-
-                    #context.state_ref(#assert_data_ident).set(accum);
-                },
-            )
+        let arguments = parse_quote_spanned! {op_span=>
+            |x| {
+                // This is to help constrain the types so that type inference works nicely.
+                fn __constrain_types<T>(f: impl Fn(&T) -> bool, x: &T) -> bool {
+                    (f)(x)
+                }
+                assert!(__constrain_types(#args, x));
+            }
         };
 
-        Ok(OperatorWriteOutput {
-            write_prologue,
-            write_iterator,
-            write_iterator_after,
-        })
+        let wc = WriteContextArgs {
+            op_inst: &OperatorInstance {
+                arguments,
+                ..op_inst.clone()
+            },
+            ..wc.clone()
+        };
+
+        (super::inspect::INSPECT.write_fn)(&wc, diagnostics)
     },
 };

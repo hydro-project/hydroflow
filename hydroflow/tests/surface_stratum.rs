@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use hydroflow::scheduled::graph::Hydroflow;
+use hydroflow::util::multiset::HashMultiSet;
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
 use multiplatform_test::multiplatform_test;
 use tokio::sync::mpsc::error::SendError;
@@ -19,19 +20,19 @@ use tokio::sync::mpsc::error::SendError;
 /// Basic difference test, test difference between two one-off iterators.
 #[multiplatform_test]
 pub fn test_difference_a() {
-    let output = <Rc<RefCell<Vec<usize>>>>::default();
+    let output = <Rc<RefCell<HashMultiSet<usize>>>>::default();
     let output_inner = Rc::clone(&output);
 
     let mut df: Hydroflow = hydroflow_syntax! {
         a = difference();
         source_iter([1, 2, 3, 4]) -> [pos]a;
         source_iter([1, 3, 5, 7]) -> [neg]a;
-        a -> for_each(|x| output_inner.borrow_mut().push(x));
+        a -> for_each(|x| output_inner.borrow_mut().insert(x));
     };
     assert_graphvis_snapshots!(df);
     df.run_available();
 
-    assert_eq!(&[2, 4], &*output.take());
+    assert_eq!(HashMultiSet::from_iter([2, 4]), output.take());
 }
 
 /// More complex different test.
@@ -40,15 +41,15 @@ pub fn test_difference_a() {
 pub fn test_difference_b() -> Result<(), SendError<&'static str>> {
     let (inp_send, inp_recv) = hydroflow::util::unbounded_channel::<&'static str>();
 
-    let output = <Rc<RefCell<Vec<&'static str>>>>::default();
+    let output = <Rc<RefCell<HashMultiSet<&'static str>>>>::default();
     let output_inner = Rc::clone(&output);
 
     let mut df: Hydroflow = hydroflow_syntax! {
         a = difference();
         source_stream(inp_recv) -> [pos]a;
         b = a -> tee();
-        b[0] -> next_tick() -> [neg]a;
-        b[1] -> for_each(|x| output_inner.borrow_mut().push(x));
+        b[0] -> defer_tick() -> [neg]a;
+        b[1] -> for_each(|x| output_inner.borrow_mut().insert(x));
     };
     assert_graphvis_snapshots!(df);
 
@@ -56,19 +57,19 @@ pub fn test_difference_b() -> Result<(), SendError<&'static str>> {
     inp_send.send("02")?;
     inp_send.send("03")?;
     df.run_tick();
-    assert_eq!(&["01", "02", "03"], &*output.take());
+    assert_eq!(HashMultiSet::from_iter(["01", "02", "03"]), output.take());
 
     inp_send.send("02")?;
     inp_send.send("11")?;
     inp_send.send("12")?;
     df.run_tick();
-    assert_eq!(&["11", "12"], &*output.take());
+    assert_eq!(HashMultiSet::from_iter(["11", "12"]), output.take());
 
     inp_send.send("02")?;
     inp_send.send("11")?;
     inp_send.send("12")?;
     df.run_tick();
-    assert_eq!(&["02"], &*output.take());
+    assert_eq!(HashMultiSet::from_iter(["02"]), output.take());
 
     Ok(())
 }
@@ -78,12 +79,12 @@ pub fn test_tick_loop_1() {
     let output = <Rc<RefCell<Vec<usize>>>>::default();
     let output_inner = Rc::clone(&output);
 
-    // Without `next_tick()` this would be "unsafe" although legal.
+    // Without `defer_tick()` this would be "unsafe" although legal.
     // E.g. it would spin forever in a single infinite tick/tick.
     let mut df: Hydroflow = hydroflow_syntax! {
         a = union() -> tee();
         source_iter([1, 3]) -> [0]a;
-        a[0] -> next_tick() -> map(|x| 2 * x) -> [1]a;
+        a[0] -> defer_tick() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
     assert_graphvis_snapshots!(df);
@@ -109,7 +110,7 @@ pub fn test_tick_loop_2() {
     let mut df: Hydroflow = hydroflow_syntax! {
         a = union() -> tee();
         source_iter([1, 3]) -> [0]a;
-        a[0] -> next_tick() -> next_tick() -> map(|x| 2 * x) -> [1]a;
+        a[0] -> defer_tick() -> defer_tick() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
     assert_graphvis_snapshots!(df);
@@ -138,7 +139,7 @@ pub fn test_tick_loop_3() {
     let mut df: Hydroflow = hydroflow_syntax! {
         a = union() -> tee();
         source_iter([1, 3]) -> [0]a;
-        a[0] -> next_tick() -> next_tick() -> next_tick() -> map(|x| 2 * x) -> [1]a;
+        a[0] -> defer_tick() -> defer_tick() -> defer_tick() -> map(|x| 2 * x) -> [1]a;
         a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
     };
     assert_graphvis_snapshots!(df);

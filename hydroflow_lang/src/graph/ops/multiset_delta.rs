@@ -20,7 +20,7 @@ use super::{
 /// input_send.send(4).unwrap();
 /// input_send.send(3).unwrap();
 /// flow.run_tick();
-/// // 3, 4, 3
+/// // 3, 4,
 ///
 /// input_send.send(3).unwrap();
 /// input_send.send(5).unwrap();
@@ -49,6 +49,7 @@ pub const MULTISET_DELTA: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
+    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    op_span,

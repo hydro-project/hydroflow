@@ -114,10 +114,6 @@ pub fn run_server<RX>(
                 }
             });
 
-            let batch_interval_ticker = tokio_stream::wrappers::IntervalStream::new(tokio::time::interval(
-                Duration::from_millis(100),
-            ));
-
             let mut rng = rand::rngs::SmallRng::from_entropy();
             let dist = rand_distr::Zipf::new(1_000_000, dist).unwrap();
 
@@ -198,7 +194,7 @@ pub fn run_server<RX>(
                                 )));
                             },
                             KvsRequest::Gossip {map} => {
-                                for (key, reg) in map.0 {
+                                for (key, reg) in map.into_reveal() {
                                     store.give((key, reg));
                                 }
                             },
@@ -222,10 +218,15 @@ pub fn run_server<RX>(
                 peers = cross_join::<'static, 'tick, HalfMultisetJoinState>();
                 source_iter(topology.lookup) -> [0]peers;
 
+                ticker = source_interval(Duration::from_millis(100))
+                    -> [signal]batcher;
+
                 // broadcast out locally generated changes to other nodes.
                 client_input[broadcast]
                     -> map(|(key, reg)| MapUnionSingletonMap::new_from((key, reg)))
-                    -> lattice_batch::<MapUnionHashMap<_, _>>(batch_interval_ticker)
+                    -> [input]batcher;
+
+                batcher = _lattice_fold_batch::<MapUnionHashMap<_, _>>()
                     -> map(|lattice| {
                         use bincode::Options;
                         let serialization_options = options();
@@ -243,7 +244,7 @@ pub fn run_server<RX>(
                     -> for_each(|(node_id, serialized_req)| transducer_to_peers_tx.try_send((serialized_req, node_id)).unwrap());
 
                 // join for lookups
-                lookup = lattice_join::<'static, 'tick, MyLastWriteWins<BUFFER_SIZE>, MySetUnion>();
+                lookup = _lattice_join_fused_join::<'static, 'tick, MyLastWriteWins<BUFFER_SIZE>, MySetUnion>();
 
                 client_input[store]
                     // -> inspect(|x| println!("{server_id}:{:5}: stores-into-lookup: {x:?}", context.current_tick()))

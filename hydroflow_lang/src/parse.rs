@@ -1,4 +1,5 @@
 //! AST for surface syntax, modelled on [`syn`]'s ASTs.
+#![allow(missing_docs)]
 
 use std::hash::Hash;
 
@@ -8,44 +9,50 @@ use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::token::{Bracket, Paren};
 use syn::{
-    bracketed, parenthesized, AngleBracketedGenericArguments, Expr, ExprPath, GenericArgument,
-    Ident, LitInt, Path, PathArguments, PathSegment, Token,
+    bracketed, parenthesized, AngleBracketedGenericArguments, Error, Expr, ExprPath,
+    GenericArgument, Ident, ItemUse, LitInt, LitStr, Path, PathArguments, PathSegment, Token,
 };
 
 pub struct HfCode {
-    pub statements: Punctuated<HfStatement, Token![;]>,
+    pub statements: Vec<HfStatement>,
 }
 impl Parse for HfCode {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let statements = Punctuated::parse_terminated(input)?;
-        if !statements.empty_or_trailing() {
-            return Err(input.parse::<Token![;]>().unwrap_err());
+        let mut statements = Vec::new();
+        while !input.is_empty() {
+            statements.push(input.parse()?);
         }
         Ok(HfCode { statements })
     }
 }
 impl ToTokens for HfCode {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.statements.to_tokens(tokens)
+        for statement in self.statements.iter() {
+            statement.to_tokens(tokens);
+        }
     }
 }
 
 pub enum HfStatement {
+    Use(ItemUse),
     Named(NamedHfStatement),
-    Pipeline(Pipeline),
+    Pipeline(PipelineStatement),
 }
 impl Parse for HfStatement {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        if input.peek2(Token![=]) {
+        if input.peek(Token![use]) {
+            Ok(Self::Use(ItemUse::parse(input)?))
+        } else if input.peek2(Token![=]) {
             Ok(Self::Named(NamedHfStatement::parse(input)?))
         } else {
-            Ok(Self::Pipeline(Pipeline::parse(input)?))
+            Ok(Self::Pipeline(PipelineStatement::parse(input)?))
         }
     }
 }
 impl ToTokens for HfStatement {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
+            HfStatement::Use(x) => x.to_tokens(tokens),
             HfStatement::Named(x) => x.to_tokens(tokens),
             HfStatement::Pipeline(x) => x.to_tokens(tokens),
         }
@@ -56,16 +63,19 @@ pub struct NamedHfStatement {
     pub name: Ident,
     pub equals: Token![=],
     pub pipeline: Pipeline,
+    pub semi_token: Token![;],
 }
 impl Parse for NamedHfStatement {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let name = input.parse()?;
         let equals = input.parse()?;
         let pipeline = input.parse()?;
+        let semi_token = input.parse()?;
         Ok(Self {
             name,
             equals,
             pipeline,
+            semi_token,
         })
     }
 }
@@ -74,14 +84,39 @@ impl ToTokens for NamedHfStatement {
         self.name.to_tokens(tokens);
         self.equals.to_tokens(tokens);
         self.pipeline.to_tokens(tokens);
+        self.semi_token.to_tokens(tokens);
     }
 }
 
+pub struct PipelineStatement {
+    pub pipeline: Pipeline,
+    pub semi_token: Token![;],
+}
+impl Parse for PipelineStatement {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let pipeline = input.parse()?;
+        let semi_token = input.parse()?;
+        Ok(Self {
+            pipeline,
+            semi_token,
+        })
+    }
+}
+impl ToTokens for PipelineStatement {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.pipeline.to_tokens(tokens);
+        self.semi_token.to_tokens(tokens);
+    }
+}
+
+#[derive(Debug)]
 pub enum Pipeline {
     Paren(Ported<PipelineParen>),
     Name(Ported<Ident>),
     Link(PipelineLink),
     Operator(Operator),
+    ModuleBoundary(Ported<Token![mod]>),
+    Import(Import),
 }
 impl Pipeline {
     fn parse_one(input: ParseStream) -> syn::Result<Self> {
@@ -99,19 +134,37 @@ impl Pipeline {
             else if lookahead2.peek(Ident) {
                 Ok(Self::Name(Ported::parse_rest(Some(inn_idx), input)?))
             }
+            // Indexed module boundary
+            else if lookahead2.peek(Token![mod]) {
+                Ok(Self::ModuleBoundary(Ported::parse_rest(
+                    Some(inn_idx),
+                    input,
+                )?))
+            }
             // Emit lookahead expected tokens errors.
             else {
                 Err(lookahead2.error())
             }
-        }
-        // Ident
-        else if lookahead1.peek(Ident) {
+        // module input/output
+        } else if lookahead1.peek(Token![mod]) {
+            Ok(Self::ModuleBoundary(input.parse()?))
+        // Ident or macro-style expression
+        } else if lookahead1.peek(Ident) {
+            let speculative = input.fork();
+            let ident: Ident = speculative.parse()?;
+            let lookahead2 = speculative.lookahead1();
+
             // If has paren or generic next, it's an operator
-            if input.peek2(Paren) || input.peek2(Token![<]) || input.peek2(Token![::]) {
+            if lookahead2.peek(Paren) || lookahead2.peek(Token![<]) || lookahead2.peek(Token![::]) {
                 Ok(Self::Operator(input.parse()?))
-            }
+            // macro-style expression "x!.."
+            } else if lookahead2.peek(Token![!]) {
+                match ident.to_string().as_str() {
+                    "import" => Ok(Self::Import(input.parse()?)),
+                    _ => Err(Error::new(ident.span(), r#"Expected "import""#)),
+                }
             // Otherwise it's a name
-            else {
+            } else {
                 Ok(Self::Name(input.parse()?))
             }
         }
@@ -145,10 +198,45 @@ impl ToTokens for Pipeline {
             Pipeline::Link(x) => x.to_tokens(tokens),
             Pipeline::Name(x) => x.to_tokens(tokens),
             Pipeline::Operator(x) => x.to_tokens(tokens),
+            Pipeline::ModuleBoundary(x) => x.to_tokens(tokens),
+            Pipeline::Import(x) => x.to_tokens(tokens),
         }
     }
 }
 
+#[derive(Debug)]
+pub struct Import {
+    pub import: Ident,
+    pub bang: Token![!],
+    pub paren_token: Paren,
+    pub filename: LitStr,
+}
+impl Parse for Import {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let import = input.parse()?;
+        let bang = input.parse()?;
+        let content;
+        let paren_token = parenthesized!(content in input);
+        let filename: LitStr = content.parse()?;
+
+        Ok(Self {
+            import,
+            bang,
+            paren_token,
+            filename,
+        })
+    }
+}
+impl ToTokens for Import {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.import.to_tokens(tokens);
+        self.bang.to_tokens(tokens);
+        self.paren_token
+            .surround(tokens, |tokens| self.filename.to_tokens(tokens));
+    }
+}
+
+#[derive(Debug)]
 pub struct Ported<Inner> {
     pub inn: Option<Indexing>,
     pub inner: Inner,
@@ -186,6 +274,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub struct PipelineParen {
     pub paren_token: Paren,
     pub pipeline: Box<Pipeline>,
@@ -209,6 +298,7 @@ impl ToTokens for PipelineParen {
     }
 }
 
+#[derive(Debug)]
 pub struct PipelineLink {
     pub lhs: Box<Pipeline>,
     pub arrow: Token![->],
@@ -231,6 +321,7 @@ impl ToTokens for PipelineLink {
     }
 }
 
+#[derive(Debug)]
 pub struct Indexing {
     pub bracket_token: Bracket,
     pub index: PortIndex,
@@ -284,7 +375,7 @@ impl ToTokens for PortIndex {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Operator {
     pub path: Path,
     pub paren_token: Paren,
@@ -406,17 +497,17 @@ impl Hash for IndexInt {
         self.value.hash(state);
     }
 }
-impl PartialOrd for IndexInt {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.value.partial_cmp(&other.value)
-    }
-}
 impl PartialEq for IndexInt {
     fn eq(&self, other: &Self) -> bool {
         self.value == other.value
     }
 }
 impl Eq for IndexInt {}
+impl PartialOrd for IndexInt {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
 impl Ord for IndexInt {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.value.cmp(&other.value)

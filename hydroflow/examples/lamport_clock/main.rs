@@ -57,3 +57,48 @@ async fn main() {
         }
     }
 }
+
+#[test]
+fn test() {
+    use std::io::Write;
+
+    use hydroflow::util::{run_cargo_example, wait_for_process_output};
+
+    let (_server, _, mut server_stdout) =
+        run_cargo_example("lamport_clock", "--role server --addr 127.0.0.1:11052");
+
+    let (_client1, mut client1_stdin, mut client1_stdout) = run_cargo_example(
+        "lamport_clock",
+        "--role client --server-addr 127.0.0.1:11052",
+    );
+
+    let (_client2, mut client2_stdin, mut client2_stdout) = run_cargo_example(
+        "lamport_clock",
+        "--role client --server-addr 127.0.0.1:11052",
+    );
+
+    let mut server_output = String::new();
+    wait_for_process_output(&mut server_output, &mut server_stdout, "Server live!");
+
+    let mut client1_output = String::new();
+    wait_for_process_output(&mut client1_output, &mut client1_stdout, "Client live!");
+
+    let mut client2_output = String::new();
+    wait_for_process_output(&mut client2_output, &mut client2_stdout, "Client live!");
+
+    client1_stdin.write_all(b"Hello1\n").unwrap();
+
+    wait_for_process_output(
+        &mut client1_output,
+        &mut client1_stdout,
+        r#"UTC: Got EchoMsg \{ payload: "Hello1", lamport_clock: Max\(1\) \} from 127.0.0.1:11052"#,
+    );
+
+    client2_stdin.write_all(b"Hello2\n").unwrap();
+
+    wait_for_process_output(
+        &mut client2_output,
+        &mut client2_stdout,
+        r#"UTC: Got EchoMsg \{ payload: "Hello2", lamport_clock: Max\(2\) \} from 127.0.0.1:11052"#,
+    );
+}
