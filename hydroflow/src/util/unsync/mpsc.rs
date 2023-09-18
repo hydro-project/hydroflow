@@ -151,8 +151,8 @@ impl<T> Receiver<T> {
     }
 
     /// Poll for a value.
-    // NOTE: takes `&mut` to prevent multiple concurrent receives.
-    pub fn poll_recv(&mut self, ctx: &mut Context<'_>) -> Poll<Option<T>> {
+    /// NOTE: takes `&mut self` to prevent multiple concurrent receives.
+    pub fn poll_recv(&mut self, ctx: &Context<'_>) -> Poll<Option<T>> {
         let mut shared = self.strong.borrow_mut();
         if let Some(value) = shared.buffer.pop_front() {
             shared.wake_sender();

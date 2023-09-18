@@ -10,7 +10,7 @@ use super::{
 /// > Arguments: [`Stream`](https://docs.rs/futures/latest/futures/stream/trait.Stream.html)
 ///
 /// Given a [`Stream`](https://docs.rs/futures/latest/futures/stream/trait.Stream.html)
-/// of (serialized payload, addr) pairs, deserializes the payload and emits each of the
+/// of `(serialized payload, addr)` pairs, deserializes the payload and emits each of the
 /// elements it receives downstream.
 ///
 /// ```rustbook
@@ -43,6 +43,7 @@ pub const SOURCE_STREAM_SERDE: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
+    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    context,

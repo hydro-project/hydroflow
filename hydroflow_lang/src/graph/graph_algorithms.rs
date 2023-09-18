@@ -1,6 +1,48 @@
+//! General graph algorithm utility functions
+
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
 
+/// Computers the topological sort of the nodes of a possibly cyclic graph by ordering strongly
+/// connected components together.
+pub fn topo_sort_scc<Id, NodesFn, NodeIds, PredsFn, SuccsFn, PredsIter, SuccsIter>(
+    mut nodes_fn: NodesFn,
+    mut preds_fn: PredsFn,
+    succs_fn: SuccsFn,
+) -> Vec<Id>
+where
+    Id: Copy + Eq + Ord,
+    NodesFn: FnMut() -> NodeIds,
+    NodeIds: IntoIterator<Item = Id>,
+    PredsFn: FnMut(Id) -> PredsIter,
+    SuccsFn: FnMut(Id) -> SuccsIter,
+    PredsIter: IntoIterator<Item = Id>,
+    SuccsIter: IntoIterator<Item = Id>,
+{
+    let scc = scc_kosaraju((nodes_fn)(), &mut preds_fn, succs_fn);
+    let topo_sort_order = {
+        // Condensed each SCC into a single node for toposort.
+        let mut condensed_preds: BTreeMap<Id, Vec<Id>> = Default::default();
+        for u in (nodes_fn)() {
+            condensed_preds
+                .entry(scc[&u])
+                .or_default()
+                .extend((preds_fn)(u).into_iter().map(|v| scc[&v]));
+        }
+
+        topo_sort((nodes_fn)(), |v| {
+            condensed_preds.get(&v).into_iter().flatten().cloned()
+        })
+    };
+    topo_sort_order
+}
+
+/// Topologically sorts a set of nodes. Returns a list where the order of `Id`s will agree with
+/// the order of any path through the graph.
+///
+/// This naturally requires a directed acyclic graph (DAG).
+///
+/// <https://en.wikipedia.org/wiki/Topological_sorting>
 pub fn topo_sort<Id, NodeIds, PredsFn, PredsIter>(
     node_ids: NodeIds,
     mut preds_fn: PredsFn,
@@ -40,6 +82,16 @@ where
     order
 }
 
+/// Finds the strongly connected components in the graph. A strongly connected component is a
+/// subset of nodes that are all reachable by each other.
+///
+/// <https://en.wikipedia.org/wiki/Strongly_connected_component>
+///
+/// Each component is represented by a specific member node. The returned `BTreeMap` maps each node
+/// ID to the node ID of its "representative." Nodes with the same "representative" node are in the
+/// same strongly connected component.
+///
+/// This function uses [Kosaraju's algorithm](https://en.wikipedia.org/wiki/Kosaraju%27s_algorithm).
 pub fn scc_kosaraju<Id, NodeIds, PredsFn, SuccsFn, PredsIter, SuccsIter>(
     nodes: NodeIds,
     mut preds_fn: PredsFn,

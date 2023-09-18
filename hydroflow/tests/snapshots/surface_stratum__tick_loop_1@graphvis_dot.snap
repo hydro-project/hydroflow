@@ -7,7 +7,7 @@ digraph {
         fillcolor="#dddddd"
         style=filled
         label = "sg_1v1\nstratum 0"
-        n4v1 [label="(n4v1) next_tick()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
+        n4v1 [label="(n4v1) defer_tick()", fontname=Monaco, shape=invhouse, style = filled, color = "#0022ff", fontcolor = "#ffffff"]
     }
     subgraph "cluster n2v1" {
         fillcolor="#dddddd"
@@ -42,6 +42,6 @@ digraph {
     n8v1 -> n9v1
     n9v1 -> n10v1
     n10v1 [label="(n10v1) handoff", fontname=Monaco, shape=parallelogram, style = filled, color = "#ddddff"]
-    n10v1 -> n4v1
+    n10v1 -> n4v1 [arrowhead=dot, color=red]
 }
 

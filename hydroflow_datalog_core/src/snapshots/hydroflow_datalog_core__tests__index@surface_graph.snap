@@ -11,11 +11,11 @@ expression: flat_graph_ref.surface_syntax_string()
 17v1 = unique :: < 'tick > ();
 18v1 = difference :: < 'tick , 'static > ();
 19v1 = tee ();
-20v1 = next_tick ();
+20v1 = defer_tick ();
 22v1 = unique :: < 'tick > ();
 23v1 = difference :: < 'tick , 'static > ();
 24v1 = tee ();
-25v1 = next_tick ();
+25v1 = defer_tick ();
 26v1 = source_stream (ints);
 27v1 = for_each (| v | result . send (v) . unwrap ());
 28v1 = for_each (| v | result2 . send (v) . unwrap ());

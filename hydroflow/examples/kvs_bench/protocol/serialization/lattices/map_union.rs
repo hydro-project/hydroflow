@@ -22,7 +22,7 @@ impl<'a, const SIZE: usize> Serialize for MapUnionHashMapWrapper<'a, SIZE> {
     {
         use serde::ser::SerializeMap;
 
-        let inner_map = &self.0 .0;
+        let inner_map = self.0.as_reveal_ref();
 
         let mut map_serializer = serializer.serialize_map(Some(inner_map.len()))?;
 
@@ -64,7 +64,7 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for MapUnionHashMapDeserialize
                     let k: Option<u64> = map.next_key()?;
 
                     if let Some(k) = k {
-                        inner_map.0.insert(
+                        inner_map.as_reveal_mut().insert(
                             k,
                             map.next_value_seed(MyLastWriteWinsDeserializer {
                                 collector: self.collector.clone(),

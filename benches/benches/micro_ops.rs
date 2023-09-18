@@ -188,7 +188,7 @@ fn ops(c: &mut Criterion) {
                 #[allow(clippy::unnecessary_fold)]
                 {
                     hydroflow_syntax! {
-                        source_iter(black_box(input0)) -> fold::<'tick>(0, |accum, elem| { accum + elem }) -> for_each(|x| { black_box(x); });
+                        source_iter(black_box(input0)) -> fold::<'tick>(0, |accum: &mut _, elem| { *accum += elem }) -> for_each(|x| { black_box(x); });
                     }
                 }
             },
@@ -275,25 +275,25 @@ fn ops(c: &mut Criterion) {
         let mut df = hydroflow_syntax! {
             source_iter(black_box(DATA)) -> persist()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
                 -> for_each(|x| { black_box(x); });
         };
@@ -308,25 +308,25 @@ fn ops(c: &mut Criterion) {
 
         let mut df = hydroflow_syntax! {
             source_iter(black_box(DATA)) -> persist()
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
-                -> next_tick()
+                -> defer_tick()
                 -> map(black_box)
                 -> for_each(|x| { black_box(x); });
         };

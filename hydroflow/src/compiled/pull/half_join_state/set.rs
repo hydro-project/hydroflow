@@ -1,5 +1,6 @@
 use std::collections::hash_map::Entry;
 use std::collections::VecDeque;
+use std::slice;
 
 use super::HalfJoinState;
 use crate::util::clear::Clear;
@@ -19,12 +20,14 @@ pub struct HalfSetJoinState<Key, ValBuild, ValProbe> {
     table: HashMap<Key, SmallVec<[ValBuild; 1]>>,
     /// Not-yet emitted matches.
     current_matches: VecDeque<(Key, ValProbe, ValBuild)>,
+    len: usize,
 }
 impl<Key, ValBuild, ValProbe> Default for HalfSetJoinState<Key, ValBuild, ValProbe> {
     fn default() -> Self {
         Self {
             table: HashMap::default(),
             current_matches: VecDeque::default(),
+            len: 0,
         }
     }
 }
@@ -32,6 +35,7 @@ impl<Key, ValBuild, ValProbe> Clear for HalfSetJoinState<Key, ValBuild, ValProbe
     fn clear(&mut self) {
         self.table.clear();
         self.current_matches.clear();
+        self.len = 0;
     }
 }
 impl<Key, ValBuild, ValProbe> HalfJoinState<Key, ValBuild, ValProbe>
@@ -50,11 +54,13 @@ where
 
                 if !vec.contains(v) {
                     vec.push(v.clone());
+                    self.len += 1;
                     return true;
                 }
             }
             Entry::Vacant(e) => {
                 e.insert(smallvec![v.clone()]);
+                self.len += 1;
                 return true;
             }
         };
@@ -62,20 +68,40 @@ where
         false
     }
 
-    fn probe(&mut self, k: &Key, v: &ValProbe) {
-        if let Some(entry) = self.table.get(k) {
-            // TODO: We currently don't free/shrink the self.current_matches vecdeque to save time.
-            // This mean it will grow to eventually become the largest number of matches in a single probe call.
-            // Maybe we should clear this memory at the beginning of every tick/periodically?
-            self.current_matches.extend(
-                entry
-                    .iter()
-                    .map(|valbuild| (k.clone(), v.clone(), valbuild.clone())),
-            );
-        }
+    fn probe(&mut self, k: &Key, v: &ValProbe) -> Option<(Key, ValProbe, ValBuild)> {
+        // TODO: We currently don't free/shrink the self.current_matches vecdeque to save time.
+        // This mean it will grow to eventually become the largest number of matches in a single probe call.
+        // Maybe we should clear this memory at the beginning of every tick/periodically?
+        let mut iter = self
+            .table
+            .get(k)?
+            .iter()
+            .map(|valbuild| (k.clone(), v.clone(), valbuild.clone()));
+
+        let first = iter.next();
+
+        self.current_matches.extend(iter);
+
+        first
+    }
+
+    fn full_probe(&self, k: &Key) -> slice::Iter<'_, ValBuild> {
+        let Some(sv) = self.table.get(k) else {
+            return [].iter();
+        };
+
+        sv.iter()
     }
 
     fn pop_match(&mut self) -> Option<(Key, ValProbe, ValBuild)> {
         self.current_matches.pop_front()
+    }
+
+    fn len(&self) -> usize {
+        self.len
+    }
+
+    fn iter(&self) -> ::std::collections::hash_map::Iter<'_, Key, SmallVec<[ValBuild; 1]>> {
+        self.table.iter()
     }
 }

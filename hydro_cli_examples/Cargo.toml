@@ -32,18 +32,6 @@ name = "dedalus_2pc_coordinator"
 name = "dedalus_2pc_participant"
 
 [[example]]
-name = "topolotree"
-
-[[example]]
-name = "topolotree_latency_measure"
-
-[[example]]
-name = "pn_counter"
-
-[[example]]
-name = "pn_counter_delta"
-
-[[example]]
 name = "ws_chat_server"
 
 [dev-dependencies]

@@ -18,7 +18,7 @@ use crate::pretty_span::PrettySpan;
 /// > second argument is a variadic [`var_args!` tuple list](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.var_args.html)
 /// > where each item name is an output port.
 ///
-/// Takes the input stream and allows the user to determine what elemnt(s) to
+/// Takes the input stream and allows the user to determine which items to
 /// deliver to any number of output streams.
 ///
 /// > Note: Downstream operators may need explicit type annotations.
@@ -61,6 +61,7 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
+    flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,
@@ -201,7 +202,7 @@ fn extract_closure_idents(arg2: &Pat) -> HashMap<Ident, usize> {
         match tt {
             TokenTree::Group(group) => {
                 let a = stack.len();
-                stack.extend(group.stream().into_iter());
+                stack.extend(group.stream());
                 let b = stack.len();
                 stack[a..b].reverse();
             }

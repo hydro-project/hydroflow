@@ -36,9 +36,9 @@ checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
 name = "aho-corasick"
-version = "0.7.20"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc936419f96fa211c1b9166887b38e5e40b19958e5b895be7c1f93adec7071ac"
+checksum = "43f6cb1bf222025340178f382c426f13757b2960e89779dfcb319c32542a5a41"
 dependencies = [
  "memchr",
 ]
@@ -1291,7 +1291,7 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hydro_cli"
-version = "0.2.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1340,7 +1340,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow"
-version = "0.2.0"
+version = "0.4.0"
 dependencies = [
  "bincode",
  "byteorder",
@@ -1359,10 +1359,12 @@ dependencies = [
  "hydroflow_lang",
  "hydroflow_macro",
  "insta",
+ "instant",
  "itertools",
  "lattices",
  "multiplatform_test",
  "pusherator",
+ "pyo3",
  "rand 0.8.5",
  "rand_distr",
  "ref-cast",
@@ -1389,7 +1391,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_cli_integration"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-recursion",
  "async-trait",
@@ -1405,7 +1407,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog"
-version = "0.2.0"
+version = "0.4.0"
 dependencies = [
  "hydroflow_datalog_core",
  "proc-macro-crate",
@@ -1416,7 +1418,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog_core"
-version = "0.2.0"
+version = "0.4.0"
 dependencies = [
  "hydroflow_lang",
  "insta",
@@ -1433,7 +1435,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_lang"
-version = "0.2.0"
+version = "0.4.0"
 dependencies = [
  "auto_impl",
  "itertools",
@@ -1449,7 +1451,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_macro"
-version = "0.2.0"
+version = "0.4.0"
 dependencies = [
  "hydroflow_lang",
  "itertools",
@@ -1505,11 +1507,12 @@ dependencies = [
 
 [[package]]
 name = "indicatif"
-version = "0.17.3"
+version = "0.17.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cef509aa9bc73864d6756f0d34d35504af3cf0844373afe9b8669a5b8005a729"
+checksum = "0b297dc40733f23a0e52728a58fa9489a5b7638a324932de16b41adc3ef80730"
 dependencies = [
  "console",
+ "instant",
  "number_prefix",
  "portable-atomic",
  "unicode-width",
@@ -1541,6 +1544,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a5bbe824c507c5da5956355e86a746d82e0e1464f65d862cc5e71da70e94b2c"
 dependencies = [
  "cfg-if 1.0.0",
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -1624,7 +1630,7 @@ dependencies = [
 
 [[package]]
 name = "lattices"
-version = "0.2.0"
+version = "0.4.0"
 dependencies = [
  "cc-traits",
  "sealed",
@@ -2112,9 +2118,9 @@ dependencies = [
 
 [[package]]
 name = "portable-atomic"
-version = "0.3.19"
+version = "1.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26f6a7b87c2e435a3241addceeeff740ff8b7e76b74c13bf9acb17fa454ea00b"
+checksum = "31114a898e107c51bb1609ffaf55a0e011cf6a4d7f1170d0015a165082c0338b"
 
 [[package]]
 name = "ppv-lite86"
@@ -2168,9 +2174,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.56"
+version = "1.0.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b63bdb0cd06f1f4dedf69b254734f9b45af66e4a031e42a7480257d9898b435"
+checksum = "7b368fba921b0dce7e60f5e04ec15e565b3303972b42bcfde1d0713b881959eb"
 dependencies = [
  "unicode-ident",
 ]
@@ -2189,7 +2195,7 @@ dependencies = [
 
 [[package]]
 name = "pusherator"
-version = "0.0.1"
+version = "0.0.3"
 dependencies = [
  "either",
  "variadics",
@@ -2459,13 +2465,13 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.7.3"
+version = "1.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b1f693b24f6ac912f4893ef08244d70b6067480d2f1a46e950c9691e6749d1d"
+checksum = "d0ab3ca65655bb1e41f2a8c8cd662eb4fb035e67c3f78da1d61dffe89d07300f"
 dependencies = [
  "aho-corasick",
  "memchr",
- "regex-syntax",
+ "regex-syntax 0.7.2",
 ]
 
 [[package]]
@@ -2474,7 +2480,7 @@ version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c230d73fb8d8c1b9c0b3135c5142a8acee3a0558fb8db5cf1cb65f8d7862132"
 dependencies = [
- "regex-syntax",
+ "regex-syntax 0.6.29",
 ]
 
 [[package]]
@@ -2482,6 +2488,12 @@ name = "regex-syntax"
 version = "0.6.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
+
+[[package]]
+name = "regex-syntax"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "436b050e76ed2903236f032a59761c1eb99e1b0aead2c257922771dab1fc8c78"
 
 [[package]]
 name = "relalg"
@@ -3142,6 +3154,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "topolotree"
+version = "0.0.0"
+dependencies = [
+ "dashmap",
+ "futures",
+ "hydroflow",
+ "hydroflow_datalog",
+ "procinfo",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-tungstenite",
+]
+
+[[package]]
 name = "tracing"
 version = "0.1.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3242,7 +3270,7 @@ dependencies = [
  "lazy_static",
  "log",
  "regex",
- "regex-syntax",
+ "regex-syntax 0.6.29",
  "rustc-hash",
  "semver 1.0.17",
  "serde",

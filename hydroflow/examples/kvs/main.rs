@@ -60,3 +60,48 @@ async fn main() {
         }
     }
 }
+
+#[test]
+fn test() {
+    use std::io::Write;
+
+    use hydroflow::util::{run_cargo_example, wait_for_process_output};
+
+    let (_server, _, mut server_stdout) =
+        run_cargo_example("kvs", "--role server --addr 127.0.0.1:2051");
+
+    let (_client, mut client_stdin, mut client_stdout) = run_cargo_example(
+        "kvs",
+        "--role client --addr 127.0.0.1:2052 --server-addr 127.0.0.1:2051",
+    );
+
+    let mut server_output = String::new();
+    wait_for_process_output(&mut server_output, &mut server_stdout, "Server live!");
+
+    let mut client_output = String::new();
+    wait_for_process_output(&mut client_output, &mut client_stdout, "Client live!");
+
+    client_stdin.write_all(b"PUT a,7\n").unwrap();
+
+    wait_for_process_output(
+        &mut client_output,
+        &mut client_stdout,
+        r#"Got a Response: Response \{ key: "a", value: "7" \}"#,
+    );
+
+    let (_client2, mut client2_stdin, mut client2_stdout) = run_cargo_example(
+        "kvs",
+        "--role client --addr 127.0.0.1:2053 --server-addr 127.0.0.1:2051",
+    );
+
+    let mut client2_output = String::new();
+    wait_for_process_output(&mut client2_output, &mut client2_stdout, "Client live!");
+
+    client2_stdin.write_all(b"GET a\n").unwrap();
+
+    wait_for_process_output(
+        &mut client2_output,
+        &mut client2_stdout,
+        r#"Got a Response: Response \{ key: "a", value: "7" \}"#,
+    );
+}

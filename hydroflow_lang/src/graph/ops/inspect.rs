@@ -16,8 +16,8 @@ use super::{
 ///
 /// ```hydroflow
 /// source_iter([1, 2, 3, 4])
-///     -> inspect(|&x| println!("{}", x))
-///     -> assert([1, 2, 3, 4]);
+///     -> inspect(|x| println!("{}", x))
+///     -> assert_eq([1, 2, 3, 4]);
 /// ```
 pub const INSPECT: OperatorConstraints = OperatorConstraints {
     name: "inspect",
@@ -38,6 +38,7 @@ pub const INSPECT: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
+    flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,
@@ -53,6 +54,10 @@ pub const INSPECT: OperatorConstraints = OperatorConstraints {
             let input = &inputs[0];
             quote_spanned! {op_span=>
                 let #ident = #input.inspect(#arguments);
+            }
+        } else if outputs.is_empty() {
+            quote_spanned! {op_span=>
+                let #ident = #root::pusherator::inspect::Inspect::new(#arguments, #root::pusherator::null::Null::new());
             }
         } else {
             let output = &outputs[0];

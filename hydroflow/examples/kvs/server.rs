@@ -42,7 +42,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Opt
             -> [0]outbound_chan;
 
         // join PUTs and GETs by key
-        lookup = join()->tee();
+        lookup = join::<'static>()->tee();
         parsed_puts[1] -> map(|(key, value, _)| (key, value)) -> [0]lookup;
         parsed_gets -> [1]lookup;
         lookup[0] -> for_each(|t| println!("Found a match: {:?}", t));

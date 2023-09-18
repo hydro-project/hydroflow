@@ -10,14 +10,14 @@ linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
     1v1[\"<div style=text-align:center>(1v1)</div> <code>source_iter([<br>    SubordResponse {<br>        xid: &quot;123&quot;,<br>        mtype: 33,<br>    },<br>    SubordResponse {<br>        xid: &quot;123&quot;,<br>        mtype: 52,<br>    },<br>    SubordResponse {<br>        xid: &quot;123&quot;,<br>        mtype: 72,<br>    },<br>    SubordResponse {<br>        xid: &quot;123&quot;,<br>        mtype: 83,<br>    },<br>    SubordResponse {<br>        xid: &quot;123&quot;,<br>        mtype: 78,<br>    },<br>])</code>"/]:::pullClass
     2v1[\"(2v1) <code>map(|m: SubordResponse| (m.xid, 1))</code>"/]:::pullClass
-    1v1--->2v1
+    1v1-->2v1
 end
 subgraph sg_2v1 ["sg_2v1 stratum 1"]
     3v1[\"(3v1) <code>fold_keyed::&lt;'static&gt;(|| 0, |old: &amp;mut u32, val: u32| *old += val)</code>"/]:::pullClass
     4v1[/"(4v1) <code>for_each(|(k, v)| println!(&quot;{}: {}&quot;, k, v))</code>"\]:::pushClass
-    3v1--->4v1
+    3v1-->4v1
 end
-2v1--->5v1
+2v1-->5v1
 5v1["(5v1) <code>handoff</code>"]:::otherClass
-5v1===o3v1
+5v1--x3v1
 

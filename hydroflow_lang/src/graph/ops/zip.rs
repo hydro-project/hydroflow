@@ -16,7 +16,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// ```hydroflow
 /// source_iter(0..3) -> [0]my_zip;
 /// source_iter(0..5) -> [1]my_zip;
-/// my_zip = zip() -> assert([(0, 0), (1, 1), (2, 2)]);
+/// my_zip = zip() -> assert_eq([(0, 0), (1, 1), (2, 2)]);
 /// ```
 pub const ZIP: OperatorConstraints = OperatorConstraints {
     name: "zip",
@@ -38,6 +38,7 @@ pub const ZIP: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
+    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    context,

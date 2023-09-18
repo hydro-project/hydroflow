@@ -26,12 +26,14 @@ pub mod props;
 pub mod scheduled;
 pub mod util;
 
+#[cfg(feature = "python")]
+pub use pyo3;
 #[cfg(feature = "tracing")]
 pub use tracing;
 pub use variadics::{self, var_args, var_expr, var_type};
 pub use {
-    bincode, bytes, futures, itertools, lattices, pusherator, rustc_hash, serde, serde_json, tokio,
-    tokio_stream, tokio_util,
+    bincode, bytes, futures, instant, itertools, lattices, pusherator, rustc_hash, serde,
+    serde_json, tokio, tokio_stream, tokio_util,
 };
 
 mod declarative_macro;
@@ -41,7 +43,7 @@ pub use hydroflow_datalog::*;
 #[cfg(feature = "hydroflow_macro")]
 pub use hydroflow_macro::{
     hydroflow_main as main, hydroflow_parser, hydroflow_syntax, hydroflow_syntax_noemit,
-    hydroflow_test as test,
+    hydroflow_test as test, monotonic_fn, morphism,
 };
 
 #[cfg(not(nightly))]

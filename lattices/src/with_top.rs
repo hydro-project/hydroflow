@@ -1,6 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Wraps a lattice in [`Option`], treating [`None`] as a new top element which compares as greater
 /// than to all other values.
@@ -20,6 +20,31 @@ impl<Inner> WithTop<Inner> {
     /// Create a new `WithTop` lattice instance from a value using `Into`.
     pub fn new_from(val: impl Into<Option<Inner>>) -> Self {
         Self::new(val.into())
+    }
+
+    /// Reveal the inner value as a shared reference.
+    pub fn as_reveal_ref(&self) -> Option<&Inner> {
+        self.0.as_ref()
+    }
+
+    /// Reveal the inner value as an exclusive reference.
+    pub fn as_reveal_mut(&mut self) -> Option<&mut Inner> {
+        self.0.as_mut()
+    }
+
+    /// Gets the inner by value, consuming self.
+    pub fn into_reveal(self) -> Option<Inner> {
+        self.0
+    }
+}
+
+// Use inner's default rather than `None` (which is top, not bot).
+impl<Inner> Default for WithTop<Inner>
+where
+    Inner: Default,
+{
+    fn default() -> Self {
+        Self(Some(Inner::default()))
     }
 }
 
@@ -90,9 +115,29 @@ where
     }
 }
 
-impl<Inner> IsTop for WithTop<Inner> {
+impl<Inner> IsTop for WithTop<Inner>
+where
+    Inner: IsTop,
+{
     fn is_top(&self) -> bool {
-        self.0.is_none()
+        self.0.as_ref().map_or(true, IsTop::is_top)
+    }
+}
+
+impl<Inner> Atomize for WithTop<Inner>
+where
+    Inner: Atomize + LatticeFrom<<Inner as Atomize>::Atom>,
+{
+    type Atom = WithTop<Inner::Atom>;
+
+    // TODO: use impl trait.
+    type AtomIter = Box<dyn Iterator<Item = Self::Atom>>;
+
+    fn atomize(self) -> Self::AtomIter {
+        match self.0 {
+            Some(inner) => Box::new(inner.atomize().map(WithTop::new_from)),
+            None => Box::new(std::iter::once(WithTop::new(None))),
+        }
     }
 }
 
@@ -100,7 +145,7 @@ impl<Inner> IsTop for WithTop<Inner> {
 mod test {
     use super::*;
     use crate::set_union::{SetUnionHashSet, SetUnionSingletonSet};
-    use crate::test::{check_all, check_lattice_top};
+    use crate::test::{check_all, check_atomize_each, check_lattice_is_top};
 
     #[test]
     fn test_singly_nested_singleton_example() {
@@ -155,6 +200,18 @@ mod test {
             WithTop::new_from(SetUnionHashSet::new_from([0, 1])),
         ];
         check_all(items);
-        check_lattice_top(items);
+        check_lattice_is_top(items);
+    }
+
+    #[test]
+    fn atomize() {
+        check_atomize_each(&[
+            WithTop::new(None),
+            WithTop::new_from(SetUnionHashSet::new_from([])),
+            WithTop::new_from(SetUnionHashSet::new_from([0])),
+            WithTop::new_from(SetUnionHashSet::new_from([1])),
+            WithTop::new_from(SetUnionHashSet::new_from([0, 1])),
+            WithTop::new_from(SetUnionHashSet::new((0..10).collect())),
+        ]);
     }
 }

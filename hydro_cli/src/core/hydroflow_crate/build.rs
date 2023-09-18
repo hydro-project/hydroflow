@@ -16,6 +16,7 @@ type CacheKey = (
     PathBuf,
     Option<String>,
     Option<String>,
+    Option<String>,
     HostTargetType,
     Option<Vec<String>>,
 );
@@ -27,6 +28,7 @@ static BUILDS: Lazy<Mutex<HashMap<CacheKey, Arc<OnceCell<BuiltCrate>>>>> =
 
 pub async fn build_crate(
     src: PathBuf,
+    bin: Option<String>,
     example: Option<String>,
     profile: Option<String>,
     target_type: HostTargetType,
@@ -34,6 +36,7 @@ pub async fn build_crate(
 ) -> Result<BuiltCrate> {
     let key = (
         src.clone(),
+        bin.clone(),
         example.clone(),
         profile.clone(),
         target_type,
@@ -55,6 +58,10 @@ pub async fn build_crate(
                         "--profile".to_string(),
                         profile.unwrap_or("release".to_string()),
                     ]);
+
+                    if let Some(bin) = bin.as_ref() {
+                        command.args(["--bin", bin]);
+                    }
 
                     if let Some(example) = example.as_ref() {
                         command.args(["--example", example]);
