@@ -1,9 +1,5 @@
-use std::collections::HashMap;
-
-use proc_macro2::{Ident, TokenTree};
+use proc_macro2::Ident;
 use quote::{quote, quote_spanned, ToTokens};
-use syn::spanned::Spanned;
-use syn::{Expr, Pat};
 
 use super::{
     FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
@@ -11,7 +7,6 @@ use super::{
 };
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::{OpInstGenerics, OperatorInstance, PortIndexValue};
-use crate::pretty_span::PrettySpan;
 
 // TODO(mingwei): Preprocess rustdoc links in mdbook or in the `operator_docgen` macro.
 /// > Arguments: A Rust closure, the first argument is a received item and the
@@ -72,7 +67,6 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
                    op_inst:
                        OperatorInstance {
                            output_ports,
-                           arguments,
                            generics: OpInstGenerics { type_args, .. },
                            ..
                        },
@@ -116,9 +110,18 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
 
         let write_iterator = quote_spanned! {op_span=>
             let #ident = {
-                #[allow(unused_imports)] use #root::pusherator::Pusherator;
-                #root::pusherator::demux::Demux::new(
-                    <#enum_type as #root::util::demux_enum::DemuxEnum::<_>>::demux_enum,
+                fn __typeguard_variants_fn<__EnumType, __Outputs>(__outputs: __Outputs)
+                    -> impl #root::pusherator::Pusherator<Item = __EnumType>
+                where
+                    __Outputs: #root::pusherator::demux::PusheratorList,
+                    __EnumType: #root::util::demux_enum::DemuxEnum::<__Outputs>,
+                {
+                    #root::pusherator::demux::Demux::new(
+                        <__EnumType as #root::util::demux_enum::DemuxEnum::<_>>::demux_enum,
+                        __outputs,
+                    )
+                }
+                __typeguard_variants_fn::<#enum_type, _>(
                     #root::var_expr!( #( #sorted_outputs ),* ),
                 )
             };
