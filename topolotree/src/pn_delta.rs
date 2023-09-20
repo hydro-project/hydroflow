@@ -1,26 +1,25 @@
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::ops::Deref;
 use std::rc::Rc;
 
 use hydroflow::serde::{Deserialize, Serialize};
-use hydroflow::util::cli::{ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource};
+use hydroflow::util::cli::{
+    ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged,
+};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 use hydroflow::{hydroflow_syntax, tokio};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-struct IncrementRequest {
-    tweet_id: u64,
-    likes: i32,
-}
-
-type NextStateType = (u64, Rc<RefCell<(Vec<u32>, Vec<u32>)>>);
+mod protocol;
+use protocol::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 enum GossipOrIncrement {
-    Gossip(Vec<NextStateType>),
-    Increment(u64, i32),
+    Gossip(Vec<(u64, (usize, u64, u64))>),
+    Increment(u64, i64),
 }
+
+type NextStateType = (u64, bool, Rc<RefCell<(Vec<u64>, Vec<u64>)>>);
 
 #[hydroflow::main]
 async fn main() {
@@ -51,7 +50,7 @@ async fn main() {
 
     let from_peer = ports
         .port("from_peer")
-        .connect::<ConnectedDirect>()
+        .connect::<ConnectedTagged<ConnectedDirect>>()
         .await
         .into_source();
 
@@ -67,31 +66,28 @@ async fn main() {
 
     let df = hydroflow_syntax! {
         next_state = union()
-            -> fold::<'static>((HashMap::<u64, Rc<RefCell<(Vec<u32>, Vec<u32>)>>>::new(), HashSet::new(), 0), |(cur_state, modified_tweets, last_tick): &mut (HashMap<_, _>, HashSet<_>, _), goi| {
+            -> fold::<'static>((HashMap::<u64, Rc<RefCell<(Vec<u64>, Vec<u64>)>>>::new(), HashMap::new(), 0), |(cur_state, modified_tweets, last_tick): &mut (HashMap<_, _>, HashMap<_, _>, _), goi| {
                 if context.current_tick() != *last_tick {
                     modified_tweets.clear();
                 }
 
                 match goi {
                     GossipOrIncrement::Gossip(gossip) => {
-                        for (counter_id, gossip_rc) in gossip.iter() {
-                            let gossip_borrowed = gossip_rc.as_ref().borrow();
-                            let (pos, neg) = gossip_borrowed.deref();
+                        for (counter_id, (gossip_i, gossip_pos, gossip_neg)) in gossip.iter() {
+                            let gossip_i = *gossip_i;
                             let cur_value = cur_state.entry(*counter_id).or_insert(Rc::new(RefCell::new((
                                 vec![0; num_replicas], vec![0; num_replicas]
                             ))));
                             let mut cur_value = cur_value.as_ref().borrow_mut();
 
-                            for i in 0..num_replicas {
-                                if pos[i] > cur_value.0[i] {
-                                    cur_value.0[i] = pos[i];
-                                    modified_tweets.insert(*counter_id);
-                                }
+                            if *gossip_pos > cur_value.0[gossip_i] {
+                                cur_value.0[gossip_i] = *gossip_pos;
+                                modified_tweets.entry(*counter_id).or_insert(false);
+                            }
 
-                                if neg[i] > cur_value.1[i] {
-                                    cur_value.1[i] = neg[i];
-                                    modified_tweets.insert(*counter_id);
-                                }
+                            if *gossip_neg > cur_value.1[gossip_i] {
+                                cur_value.1[gossip_i] = *gossip_neg;
+                                modified_tweets.entry(*counter_id).or_insert(false);
                             }
                         }
                     }
@@ -102,12 +98,12 @@ async fn main() {
                         let mut cur_value = cur_value.as_ref().borrow_mut();
 
                         if delta > 0 {
-                            cur_value.0[my_id] += delta as u32;
+                            cur_value.0[my_id] += delta as u64;
                         } else {
-                            cur_value.1[my_id] += (-delta) as u32;
+                            cur_value.1[my_id] += (-delta) as u64;
                         }
 
-                        modified_tweets.insert(counter_id);
+                        *modified_tweets.entry(counter_id).or_insert(false) |= true;
                     }
                 }
 
@@ -115,16 +111,16 @@ async fn main() {
             })
             -> filter(|(_, _, tick)| *tick == context.current_tick())
             -> filter(|(_, modified_tweets, _)| !modified_tweets.is_empty())
-            -> map(|(state, modified_tweets, _)| modified_tweets.iter().map(|t| (*t, state.get(t).unwrap().clone())).collect::<Vec<_>>())
+            -> map(|(state, modified_tweets, _)| modified_tweets.iter().map(|(t, is_local)| (*t, *is_local, state.get(t).unwrap().clone())).collect::<Vec<_>>())
             -> tee();
 
         source_stream(from_peer)
-            -> map(|x| deserialize_from_bytes::<GossipOrIncrement>(&x.unwrap()).unwrap())
+            -> map(|x| deserialize_from_bytes::<GossipOrIncrement>(&x.unwrap().1).unwrap())
             -> next_state;
 
         source_stream(increment_requests)
-            -> map(|x| deserialize_from_bytes::<IncrementRequest>(&x.unwrap()).unwrap())
-            -> map(|t| GossipOrIncrement::Increment(t.tweet_id, t.likes))
+            -> map(|x| deserialize_from_bytes::<OperationPayload>(&x.unwrap()).unwrap())
+            -> map(|t| GossipOrIncrement::Increment(t.key, t.change))
             -> next_state;
 
         all_peers = source_iter(0..num_replicas)
@@ -133,20 +129,27 @@ async fn main() {
         all_peers -> [0] broadcaster;
         next_state -> [1] broadcaster;
         broadcaster = cross_join::<'static, 'tick>()
-            -> map(|(peer, state)| {
-                (peer as u32, serialize_to_bytes(GossipOrIncrement::Gossip(state)))
+            -> map(|(peer, state): (_, Vec<NextStateType>)| {
+                (peer as u32, state.iter().filter(|t| t.1).map(|(k, _, v)| (*k, (my_id, v.as_ref().borrow().0[my_id], v.as_ref().borrow().1[my_id]))).collect())
+            })
+            -> filter(|(_, gossip): &(_, Vec<_>)| !gossip.is_empty())
+            -> map(|(peer, gossip): (_, _)| {
+                (peer, serialize_to_bytes(GossipOrIncrement::Gossip(gossip)))
             })
             -> dest_sink(to_peer);
 
         next_state
             -> flat_map(|a: Vec<NextStateType>| {
-                a.into_iter().map(|(k, rc_array)| {
+                a.into_iter().map(|(k, _, rc_array)| {
                     let rc_borrowed = rc_array.as_ref().borrow();
                     let (pos, neg) = rc_borrowed.deref();
-                    (k, pos.iter().sum::<u32>() as i32 - neg.iter().sum::<u32>() as i32)
+                    QueryResponse {
+                        key: k,
+                        value: pos.iter().sum::<u64>() as i64 - neg.iter().sum::<u64>() as i64
+                    }
                 }).collect::<Vec<_>>()
             })
-            -> map(serialize_to_bytes::<(u64, i32)>)
+            -> map(serialize_to_bytes::<QueryResponse>)
             -> dest_sink(query_responses);
     };
 
