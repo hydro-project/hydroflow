@@ -8,7 +8,6 @@ use super::{
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::{OpInstGenerics, OperatorInstance, PortIndexValue};
 
-// TODO(mingwei): Preprocess rustdoc links in mdbook or in the `operator_docgen` macro.
 /// > Arguments: A Rust closure, the first argument is a received item and the
 /// > second argument is a variadic [`var_args!` tuple list](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.var_args.html)
 /// > where each item name is an output port.
@@ -16,7 +15,8 @@ use crate::graph::{OpInstGenerics, OperatorInstance, PortIndexValue};
 /// Takes the input stream and allows the user to determine which items to
 /// deliver to any number of output streams.
 ///
-/// > Note: Downstream operators may need explicit type annotations.
+/// > Note: Downstream operators may need explicit type annotations. If the downstream types are
+/// > causing weird errors double-check that the enum variants and port names match.
 ///
 /// > Note: The [`Pusherator`](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html)
 /// > trait is automatically imported to enable the [`.give(...)` method](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give).
@@ -46,7 +46,7 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
     soft_range_out: &(2..),
     num_args: 0,
     persistence_args: RANGE_0,
-    type_args: &(0..1),
+    type_args: RANGE_1,
     is_external_input: false,
     ports_inn: None,
     ports_out: Some(|| PortListSpec::Variadic),
@@ -75,10 +75,7 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
                diagnostics| {
         assert!(!is_pull);
 
-        let enum_type = type_args
-            .get(0)
-            .map(ToTokens::to_token_stream)
-            .unwrap_or(quote_spanned!(op_span=> _));
+        let enum_type = &type_args[0];
 
         // Port idents supplied via port connections in the surface syntax.
         let port_idents: Vec<_> = output_ports
@@ -108,26 +105,27 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
 
         let sorted_outputs = sort_permute.iter().map(|&i| &outputs[i]);
 
+        let write_prologue = quote_spanned! {op_span=>
+            // The entire purpose of this closure and match statement is to generate readable error messages:
+            // "missing match arm: `Variant(_)` not covered."
+            // Or "no variant named `Variant` found for enum `Shape`"
+            let _ = |__val: #enum_type| match __val {
+                #(
+                    #enum_type::#port_idents { .. } => (),
+                )*
+            };
+        };
         let write_iterator = quote_spanned! {op_span=>
             let #ident = {
-                fn __typeguard_variants_fn<__EnumType, __Outputs>(__outputs: __Outputs)
-                    -> impl #root::pusherator::Pusherator<Item = __EnumType>
-                where
-                    __Outputs: #root::pusherator::demux::PusheratorList,
-                    __EnumType: #root::util::demux_enum::DemuxEnum::<__Outputs>,
-                {
-                    #root::pusherator::demux::Demux::new(
-                        <__EnumType as #root::util::demux_enum::DemuxEnum::<_>>::demux_enum,
-                        __outputs,
-                    )
-                }
-                __typeguard_variants_fn::<#enum_type, _>(
+                #root::pusherator::demux::Demux::new(
+                    <#enum_type as #root::util::demux_enum::DemuxEnum::<_>>::demux_enum,
                     #root::var_expr!( #( #sorted_outputs ),* ),
                 )
             };
         };
 
         Ok(OperatorWriteOutput {
+            write_prologue,
             write_iterator,
             ..Default::default()
         })

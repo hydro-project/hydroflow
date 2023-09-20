@@ -282,7 +282,7 @@ pub fn derive_answer_fn(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
             }),
     );
 
-    let (_impl_generics, ty_generics, _where_clause) = generics.split_for_impl();
+    let (impl_generics_item, ty_generics, where_clause_item) = generics.split_for_impl();
     let (impl_generics, _ty_generics, where_clause) = full_generics.split_for_impl();
 
     let variant_pats = variants_sorted
@@ -327,6 +327,10 @@ pub fn derive_answer_fn(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
                     #( #variant_pats, )*
                 }
             }
+        }
+
+        impl #impl_generics_item #root::util::demux_enum::DemuxEnumItems for #ident #ty_generics #where_clause_item {
+            type Items = #root::variadics::var_type!( #( #variant_output_types, )* );
         }
     }
     .into()
