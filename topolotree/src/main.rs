@@ -33,7 +33,7 @@ impl Display for NodeID {
 type PostNeighborJoin = (((u64, Option<NodeID>), (i64, usize)), NodeID);
 
 fn run_topolotree(
-    neighbors: Vec<u32>,
+    init_neighbors: Vec<u32>,
     input_recv: impl Stream<Item = Result<(u32, BytesMut), io::Error>> + Unpin + 'static,
     increment_requests: impl Stream<Item = Result<BytesMut, io::Error>> + Unpin + 'static,
     output_send: tokio::sync::mpsc::UnboundedSender<(u32, Bytes)>,
@@ -58,17 +58,19 @@ fn run_topolotree(
         parsed_input = source_stream(input_recv)
             -> map(Result::unwrap)
             -> map(|(src, x)| (NodeID(src), deserialize_from_bytes::<TopolotreeMessage>(&x).unwrap()))
-            -> demux(|(src, msg), var_args!(payload, ping, pong)| {
+            -> demux(|(src, msg), var_args!(payload, ping, pong, neighbor_of_neighbor)| {
                 match msg {
                     TopolotreeMessage::Payload(p) => payload.give((src, p)),
                     TopolotreeMessage::Ping() => ping.give((src, ())),
                     TopolotreeMessage::Pong() => pong.give((src, ())),
+                    TopolotreeMessage::NeighborOfNeighbor(its_neighbor) => neighbor_of_neighbor.give((src, NodeID(its_neighbor)))
                 }
             });
 
         from_neighbors = parsed_input[payload];
         pings = parsed_input[ping] -> tee();
         pongs = parsed_input[pong] -> tee();
+        neighbor_of_neighbor = parsed_input[neighbor_of_neighbor] -> tee();
 
         pings -> map(|(src, _)| (src, TopolotreeMessage::Pong())) -> output;
 
@@ -79,19 +81,29 @@ fn run_topolotree(
             -> map(|(src, _)| (src, TopolotreeMessage::Ping()))
             -> output;
 
-        pongs -> dead_neighbors;
-        pings -> dead_neighbors;
-        new_neighbors -> map(|neighbor| (neighbor, ())) -> dead_neighbors; // fake pong
-        dead_neighbors = union() -> fold_keyed::<'static>(Instant::now, |acc: &mut Instant, _| {
+        pongs -> dead_maybe_neighbors;
+        pings -> dead_maybe_neighbors;
+        new_neighbors -> map(|neighbor| (neighbor, ())) -> dead_maybe_neighbors; // fake pong
+        dead_maybe_neighbors = union() -> fold_keyed::<'static>(Instant::now, |acc: &mut Instant, _| {
                 *acc = Instant::now();
             })
             -> filter_map(|(node_id, acc)| {
-                if acc.elapsed().as_secs() > 5 {
+                if acc.elapsed().as_secs() >= 5 {
                     Some(node_id)
                 } else {
                     None
                 }
-            }) -> tee();
+            })
+            -> map(|n| (n, ()))
+            -> [0]dead_neighbors;
+
+        neighbors -> map(|n| (n, ())) -> [1]dead_neighbors;
+        dead_neighbors = join()
+            -> map(|(n, _)| n)
+            -> tee();
+
+        // TODO(shadaj): only remove if we are not the new local leader
+        dead_neighbors -> removed_neighbors;
 
         from_neighbors
             -> map(|(src, payload): (NodeID, Payload<i64>)| ((payload.key, src), (payload.key, payload.contents)))
@@ -102,7 +114,12 @@ fn run_topolotree(
                     acc.1 = context.current_tick();
                 }
             })
-            -> map(|((key, src), (payload, change_tick))| ((key, Some(src)), (payload.data, change_tick)))
+            -> map(|((key, src), (payload, change_tick))| (src, ((key, Some(src)), (payload.data, change_tick))))
+            -> [1]from_actual_neighbors;
+
+        neighbors -> map(|n| (n, ())) -> [0]from_actual_neighbors;
+        from_actual_neighbors = join()
+            -> map(|(n, (_, payload))| payload)
             -> from_neighbors_or_local;
 
         local_value = source_stream(increment_requests)
@@ -121,15 +138,23 @@ fn run_topolotree(
         from_neighbors_or_local = union() -> tee();
         from_neighbors_or_local -> [0]all_neighbor_data;
 
-        new_neighbors = source_iter(neighbors)
+        new_neighbors = source_iter(init_neighbors)
             -> map(NodeID)
             -> tee();
 
-        new_neighbors
-            -> persist()
-            -> [pos]neighbors;
-        dead_neighbors -> [neg]neighbors;
-        neighbors = difference()
+        new_neighbors -> map(|n| (n, true)) -> neighbors;
+        removed_neighbors = map(|n| (n, false)) -> neighbors;
+        neighbors = union()
+            -> map(|(neighbor, add)| (neighbor, !add))
+            -> sort_by_key(|(_, remove)| remove) // process adds first
+            -> fold::<'static>(vec![], |acc: &mut Vec<NodeID>, (neighbor, remove): (NodeID, bool)| {
+                if remove {
+                    acc.retain(|x| *x != neighbor);
+                } else {
+                    acc.push(neighbor);
+                }
+            })
+            -> flatten()
             -> tee();
 
         neighbors -> [1]all_neighbor_data;

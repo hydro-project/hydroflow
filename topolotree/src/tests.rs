@@ -468,3 +468,98 @@ async fn ping_pongs() {
         (1, TopolotreeMessage::Ping())
     ]));
 }
+
+#[hydroflow::test(start_paused = true)]
+async fn no_gossip_if_dead() {
+    let neighbors: Vec<u32> = vec![1, 2, 3];
+
+    let (mut _operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
+    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
+    let (query_send, mut _query_recv) = unbounded_channel::<Bytes>();
+
+    let mut flow = run_topolotree(
+        neighbors,
+        input_recv,
+        operations_rx,
+        output_send,
+        query_send,
+    );
+
+    #[rustfmt::skip]
+    {
+        simulate_input(&mut input_send, (1, TopolotreeMessage::Payload(Payload { key: 123, contents: Timestamped { timestamp: 0, data: 5 } }))).unwrap();
+        simulate_input(&mut input_send, (2, TopolotreeMessage::Payload(Payload { key: 123, contents: Timestamped { timestamp: 0, data: 5 } }))).unwrap();
+    };
+
+    flow.run_tick();
+
+    #[rustfmt::skip]
+    assert_eq!(read_all(&mut output_recv).await, HashMultiSet::from_iter([
+        (1, TopolotreeMessage::Ping()),
+        (2, TopolotreeMessage::Ping()),
+        (3, TopolotreeMessage::Ping()),
+        (1, TopolotreeMessage::Payload(Payload { key: 123, contents: Timestamped { timestamp: 2, data: 5 } })),
+        (2, TopolotreeMessage::Payload(Payload { key: 123, contents: Timestamped { timestamp: 2, data: 5 } })),
+        (3, TopolotreeMessage::Payload(Payload { key: 123, contents: Timestamped { timestamp: 2, data: 10 } })),
+    ]));
+
+    tokio::time::advance(Duration::from_millis(500)).await;
+
+    #[rustfmt::skip]
+    {
+        simulate_input(&mut input_send, (1, TopolotreeMessage::Pong())).unwrap();
+        simulate_input(&mut input_send, (2, TopolotreeMessage::Pong())).unwrap();
+        simulate_input(&mut input_send, (3, TopolotreeMessage::Pong())).unwrap();
+    };
+
+    flow.run_tick();
+
+    tokio::time::advance(Duration::from_millis(500)).await;
+
+    #[rustfmt::skip]
+    {
+        simulate_input(&mut input_send, (1, TopolotreeMessage::Payload(Payload { key: 123, contents: Timestamped { timestamp: 2, data: 6 } }))).unwrap();
+        simulate_input(&mut input_send, (2, TopolotreeMessage::Payload(Payload { key: 123, contents: Timestamped { timestamp: 2, data: 6 } }))).unwrap();
+    };
+
+    flow.run_tick();
+
+    #[rustfmt::skip]
+    assert_eq!(read_all(&mut output_recv).await, HashMultiSet::from_iter([
+        (1, TopolotreeMessage::Ping()),
+        (2, TopolotreeMessage::Ping()),
+        (3, TopolotreeMessage::Ping()),
+        (1, TopolotreeMessage::Payload(Payload { key: 123, contents: Timestamped { timestamp: 4, data: 6 } })),
+        (2, TopolotreeMessage::Payload(Payload { key: 123, contents: Timestamped { timestamp: 4, data: 6 } })),
+        (3, TopolotreeMessage::Payload(Payload { key: 123, contents: Timestamped { timestamp: 4, data: 12 } })),
+    ]));
+
+    tokio::time::advance(Duration::from_secs(5)).await;
+
+    #[rustfmt::skip]
+    {
+        simulate_input(&mut input_send, (1, TopolotreeMessage::Pong())).unwrap();
+        simulate_input(&mut input_send, (3, TopolotreeMessage::Pong())).unwrap();
+        simulate_input(&mut input_send, (1, TopolotreeMessage::Payload(Payload { key: 123, contents: Timestamped { timestamp: 3, data: 7 } }))).unwrap();
+    };
+
+    flow.run_tick();
+
+    // at this point, node 2 should be marked as dead
+
+    #[rustfmt::skip]
+    assert_eq!(read_all(&mut output_recv).await, HashMultiSet::from_iter([
+        (1, TopolotreeMessage::Ping()),
+        (1, TopolotreeMessage::Ping()),
+        (1, TopolotreeMessage::Ping()),
+        (1, TopolotreeMessage::Ping()),
+        (1, TopolotreeMessage::Ping()),
+        (3, TopolotreeMessage::Ping()),
+        (3, TopolotreeMessage::Ping()),
+        (3, TopolotreeMessage::Ping()),
+        (3, TopolotreeMessage::Ping()),
+        (3, TopolotreeMessage::Ping()),
+        (3, TopolotreeMessage::Payload(Payload { key: 123, contents: Timestamped { timestamp: 5, data: 7 } })),
+    ]));
+}
