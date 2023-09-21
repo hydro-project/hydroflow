@@ -1347,6 +1347,13 @@
 <a href="#1347" id="1347">1347</a>
 <a href="#1348" id="1348">1348</a>
 <a href="#1349" id="1349">1349</a>
+<a href="#1350" id="1350">1350</a>
+<a href="#1351" id="1351">1351</a>
+<a href="#1352" id="1352">1352</a>
+<a href="#1353" id="1353">1353</a>
+<a href="#1354" id="1354">1354</a>
+<a href="#1355" id="1355">1355</a>
+<a href="#1356" id="1356">1356</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -2188,7 +2195,14 @@
                                 write_prologue,
                                 write_iterator,
                                 write_iterator_after,
-                            } = write_result.unwrap_or_else(|()| OperatorWriteOutput { write_iterator: null_write_iterator_fn(<span class="kw-2">&amp;</span>context_args), ..Default::default() });
+                            } = write_result.unwrap_or_else(|()| {
+                                <span class="macro">assert!</span>(
+                                    diagnostics.iter().any(Diagnostic::is_error),
+                                    <span class="string">&quot;Operator `{}` returned `Err` but emitted no diagnostics, this is a Hydroflow bug.&quot;</span>,
+                                    op_name,
+                                );
+                                OperatorWriteOutput { write_iterator: null_write_iterator_fn(<span class="kw-2">&amp;</span>context_args), ..Default::default() }
+                            });
 
                             op_prologue_code.push(write_prologue);
                             subgraph_op_iter_code.push(write_iterator);

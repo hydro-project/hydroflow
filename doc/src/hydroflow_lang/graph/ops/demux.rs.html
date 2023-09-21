@@ -215,10 +215,11 @@
 <a href="#215" id="215">215</a>
 <a href="#216" id="216">216</a>
 <a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 
 <span class="kw">use </span>proc_macro2::{Ident, TokenTree};
-<span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
+<span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::spanned::Spanned;
 <span class="kw">use </span>syn::{Expr, Pat};
 
@@ -246,18 +247,18 @@
 /// &gt; Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
 ///
 /// ```hydroflow
-/// my_demux = source_iter(1..=100) -&gt; demux(|v, var_args!(fzbz, fizz, buzz, vals)|
+/// my_demux = source_iter(1..=100) -&gt; demux(|v, var_args!(fzbz, fizz, buzz, rest)|
 ///     match (v % 3, v % 5) {
 ///         (0, 0) =&gt; fzbz.give(v),
 ///         (0, _) =&gt; fizz.give(v),
 ///         (_, 0) =&gt; buzz.give(v),
-///         (_, _) =&gt; vals.give(v),
+///         (_, _) =&gt; rest.give(v),
 ///     }
 /// );
 /// my_demux[fzbz] -&gt; for_each(|v| println!(&quot;{}: fizzbuzz&quot;, v));
 /// my_demux[fizz] -&gt; for_each(|v| println!(&quot;{}: fizz&quot;, v));
 /// my_demux[buzz] -&gt; for_each(|v| println!(&quot;{}: buzz&quot;, v));
-/// my_demux[vals] -&gt; for_each(|v| println!(&quot;{}&quot;, v));
+/// my_demux[rest] -&gt; for_each(|v| println!(&quot;{}&quot;, v));
 /// ```
 </span><span class="kw">pub const </span>DEMUX: OperatorConstraints = OperatorConstraints {
     name: <span class="string">&quot;demux&quot;</span>,
@@ -299,19 +300,20 @@
         <span class="kw">let </span>func = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
         <span class="kw">let </span>Expr::Closure(func) = func <span class="kw">else </span>{
             diagnostics.push(Diagnostic::spanned(
-                op_span,
+                func.span(),
                 Level::Error,
-                <span class="string">&quot;Second argument must be a two-argument closure expression&quot;</span>),
+                <span class="string">&quot;Argument must be a two-argument closure expression&quot;</span>),
             );
             <span class="kw">return </span><span class="prelude-val">Err</span>(());
         };
         <span class="kw">if </span><span class="number">2 </span>!= func.inputs.len() {
             diagnostics.push(Diagnostic::spanned(
-                op_span,
+                func.span(),
                 Level::Error,
                 <span class="kw-2">&amp;*</span><span class="macro">format!</span>(
-                    <span class="string">&quot;Closure provided as second argument to `{}` must have a second \
-                    input argument listing ports, `var_args!(port_a, port_b, ...)`.&quot;</span>,
+                    <span class="string">&quot;Closure provided to `{}(..)` must have two arguments: \
+                    the first argument is the item, and the second argument lists ports. \
+                    E.g. the second argument could be `var_args!(port_a, port_b, ..)`.&quot;</span>,
                     op_name
                 ),
             ));
@@ -337,7 +339,7 @@
                     ));
                     <span class="kw">return </span><span class="prelude-val">None</span>;
                 };
-                <span class="kw">let </span>port_ident = syn::parse2::&lt;Ident&gt;(<span class="macro">quote! </span>{ #port_expr })
+                <span class="kw">let </span>port_ident = syn::parse2::&lt;Ident&gt;(<span class="macro">quote_spanned! </span>{op_span=&gt; #port_expr })
                     .map_err(|err| diagnostics.push(err.into()))
                     .ok()<span class="question-mark">?</span>;
 
