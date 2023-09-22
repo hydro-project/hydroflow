@@ -1,5 +1,6 @@
 use proc_macro2::Ident;
-use quote::{quote, quote_spanned, ToTokens};
+use quote::{quote, quote_spanned};
+use syn::spanned::Spanned;
 
 use super::{
     FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
@@ -8,34 +9,32 @@ use super::{
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::{OpInstGenerics, OperatorInstance, PortIndexValue};
 
-/// > Arguments: A Rust closure, the first argument is a received item and the
-/// > second argument is a variadic [`var_args!` tuple list](https://hydro-project.github.io/hydroflow/doc/hydroflow/macro.var_args.html)
-/// > where each item name is an output port.
+/// > Generic Argument: A enum type which has `#[derive(DemuxEnum)]`. Must match the items in the input stream.
 ///
-/// Takes the input stream and allows the user to determine which items to
-/// deliver to any number of output streams.
+/// Takes an input stream of enum instances and splits them into their variants.
 ///
-/// > Note: Downstream operators may need explicit type annotations. If the downstream types are
-/// > causing weird errors double-check that the enum variants and port names match.
+/// ```rustdoc
+/// #[derive(DemuxEnum)]
+/// enum Shape {
+///     Square(f64),
+///     Rectangle { w: f64, h: f64 },
+///     Circle { r: f64 },
+/// }
 ///
-/// > Note: The [`Pusherator`](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html)
-/// > trait is automatically imported to enable the [`.give(...)` method](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give).
+/// let mut df = hydroflow_syntax! {
+///     my_demux = source_iter([
+///         Shape::Square(9.0),
+///         Shape::Rectangle { w: 10.0, h: 8.0 },
+///         Shape::Circle { r: 5.0 },
+///     ]) -> demux_enum::<Shape>();
 ///
-/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+///     my_demux[Square] -> map(|s| s * s) -> out;
+///     my_demux[Circle] -> map(|(r,)| std::f64::consts::PI * r * r) -> out;
+///     my_demux[Rectangle] -> map(|(w, h)| w * h) -> out;
 ///
-/// ```hydroflow
-/// my_demux = source_iter(1..=100) -> demux(|v, var_args!(fzbz, fizz, buzz, vals)|
-///     match (v % 3, v % 5) {
-///         (0, 0) => fzbz.give(v),
-///         (0, _) => fizz.give(v),
-///         (_, 0) => buzz.give(v),
-///         (_, _) => vals.give(v),
-///     }
-/// );
-/// my_demux[fzbz] -> for_each(|v| println!("{}: fizzbuzz", v));
-/// my_demux[fizz] -> for_each(|v| println!("{}: fizz", v));
-/// my_demux[buzz] -> for_each(|v| println!("{}: buzz", v));
-/// my_demux[vals] -> for_each(|v| println!("{}", v));
+///     out = union() -> for_each(|area| println!("Area: {}", area));
+/// };
+/// df.run_available();
 /// ```
 pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
     name: "demux_enum",
@@ -99,27 +98,48 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
                 Some(port_ident)
             })
             .collect();
+        let port_variant_check_match_arms = port_idents.iter().map(|port_ident| {
+            quote_spanned! {port_ident.span()=>
+                Enum::#port_ident { .. } => ()
+            }
+        });
 
         let mut sort_permute: Vec<_> = (0..port_idents.len()).collect();
         sort_permute.sort_by_key(|&i| &port_idents[i]);
 
         let sorted_outputs = sort_permute.iter().map(|&i| &outputs[i]);
 
-        let write_prologue = quote_spanned! {op_span=>
-            // The entire purpose of this closure and match statement is to generate readable error messages:
-            // "missing match arm: `Variant(_)` not covered."
-            // Or "no variant named `Variant` found for enum `Shape`"
-            let _ = |__val: #enum_type| match __val {
-                #(
-                    #enum_type::#port_idents { .. } => (),
-                )*
+        // The entire purpose of this closure and match statement is to generate readable error messages:
+        // "missing match arm: `Variant(_)` not covered."
+        // Or "no variant named `Variant` found for enum `Shape`"
+        // Note this uses the `enum_type`'s span.
+        let write_prologue = quote_spanned! {enum_type.span()=>
+            let _ = |__val: #enum_type| {
+                fn check_impl_demux_enum<T: ?Sized + #root::util::demux_enum::DemuxEnumItems>(_: &T) {}
+                check_impl_demux_enum(&__val);
+                type Enum = #enum_type;
+                match __val {
+                    #(
+                        #port_variant_check_match_arms,
+                    )*
+                };
             };
         };
         let write_iterator = quote_spanned! {op_span=>
             let #ident = {
-                #root::pusherator::demux::Demux::new(
-                    <#enum_type as #root::util::demux_enum::DemuxEnum::<_>>::demux_enum,
-                    #root::var_expr!( #( #sorted_outputs ),* ),
+                fn __typeguard_demux_enum_fn<__EnumType, __Outputs>(__outputs: __Outputs)
+                    -> impl #root::pusherator::Pusherator<Item = __EnumType>
+                where
+                    __Outputs: #root::util::demux_enum::PusheratorListForItems<<__EnumType as #root::util::demux_enum::DemuxEnumItems>::Items>,
+                    __EnumType: #root::util::demux_enum::DemuxEnum::<__Outputs>,
+                {
+                    #root::pusherator::demux::Demux::new(
+                        <__EnumType as #root::util::demux_enum::DemuxEnum::<__Outputs>>::demux_enum,
+                        __outputs,
+                    )
+                }
+                __typeguard_demux_enum_fn::<#enum_type, _>(
+                    #root::var_expr!( #( #sorted_outputs ),* )
                 )
             };
         };
