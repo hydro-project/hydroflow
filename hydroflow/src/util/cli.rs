@@ -23,6 +23,8 @@ pub async fn launch_flow(mut flow: Hydroflow) {
 
 pub struct HydroCLI {
     ports: HashMap<String, ServerOrBound>,
+    pub node_names: HashMap<usize, String>,
+    pub node_id: usize,
 }
 
 impl HydroCLI {
@@ -52,11 +54,12 @@ pub async fn init() -> HydroCLI {
 
     let mut start_buf = String::new();
     std::io::stdin().read_line(&mut start_buf).unwrap();
-    let connection_defns = if start_buf.starts_with("start: ") {
-        serde_json::from_str::<HashMap<String, ServerPort>>(
-            start_buf.trim_start_matches("start: ").trim(),
-        )
-        .unwrap()
+    let (connection_defns, node_id, node_names): (
+        HashMap<String, ServerPort>,
+        usize,
+        HashMap<usize, String>,
+    ) = if start_buf.starts_with("start: ") {
+        serde_json::from_str(start_buf.trim_start_matches("start: ").trim()).unwrap()
     } else {
         panic!("expected start");
     };
@@ -72,5 +75,7 @@ pub async fn init() -> HydroCLI {
 
     HydroCLI {
         ports: all_connected,
+        node_names,
+        node_id,
     }
 }

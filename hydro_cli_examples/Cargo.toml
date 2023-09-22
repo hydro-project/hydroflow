@@ -46,6 +46,12 @@ name = "pn_counter_delta"
 [[example]]
 name = "ws_chat_server"
 
+[[example]]
+name = "maelstrom_unique_id"
+
+[[example]]
+name = "maelstrom_broadcast"
+
 [dev-dependencies]
 hydroflow = { path = "../hydroflow", features = [ "cli_integration" ] }
 hydroflow_datalog = { path = "../hydroflow_datalog" }

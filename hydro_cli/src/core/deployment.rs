@@ -1,6 +1,8 @@
+use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 
 use anyhow::Result;
+use futures::future::join_all;
 use tokio::sync::RwLock;
 
 use super::{progress, Host, ResourcePool, ResourceResult, Service};
@@ -106,14 +108,30 @@ impl Deployment {
             .collect::<Vec<_>>();
         self.services = active_services;
 
+        let node_names: HashMap<usize, String> =
+            join_all(self.services.iter().map(|service| async {
+                let service = service.upgrade().unwrap();
+                let service = service.read().await;
+                (service.id(), service.name())
+            }))
+            .await
+            .into_iter()
+            .collect();
+
         let all_services_start =
             self.services
                 .iter()
                 .map(|service: &Weak<RwLock<dyn Service>>| async {
-                    service.upgrade().unwrap().write().await.start().await;
+                    service
+                        .upgrade()
+                        .unwrap()
+                        .write()
+                        .await
+                        .start(&node_names)
+                        .await;
                 });
 
-        futures::future::join_all(all_services_start).await;
+        join_all(all_services_start).await;
     }
 
     pub fn add_host<T: Host + 'static, F: FnOnce(usize) -> T>(

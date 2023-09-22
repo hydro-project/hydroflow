@@ -1339,6 +1339,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "hydro_cli_maelstrom"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "bytes",
+ "futures",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+]
+
+[[package]]
 name = "hydroflow"
 version = "0.5.0"
 dependencies = [
