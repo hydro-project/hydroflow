@@ -90,7 +90,7 @@ async def run_experiment(
             ),
             profile=profile,
             bin="topolotree",
-            args=[str(neighbor) for neighbor in neighbors[i]],
+            args=([str(i)] + [str(neighbor) for neighbor in neighbors[i]]),
             on=create_machine(),
         ) if is_tree else deployment.HydroflowCrate(
             src=str(
