@@ -363,7 +363,7 @@ impl HydroflowSink for HydroflowPortConfig {
                     merge.push(bind_type);
                     merge.len() - 1
                 } else {
-                    panic!()
+                    panic!("Expected a merge connection definition")
                 };
 
                 ServerConfig::MergeSelect(Box::new(base_config), merge_index)

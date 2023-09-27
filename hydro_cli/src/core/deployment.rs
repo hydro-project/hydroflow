@@ -106,15 +106,17 @@ impl Deployment {
             .collect::<Vec<_>>();
         self.services = active_services;
 
-        let all_services_start =
-            self.services
-                .iter()
-                .map(|service: &Weak<RwLock<dyn Service>>| async {
-                    service.upgrade().unwrap().write().await.start().await?;
-                    Ok(()) as Result<()>
-                });
+        progress::ProgressTracker::with_group("start", None, || {
+            let all_services_start =
+                self.services
+                    .iter()
+                    .map(|service: &Weak<RwLock<dyn Service>>| async {
+                        service.upgrade().unwrap().write().await.start().await?;
+                        Ok(()) as Result<()>
+                    });
 
-        futures::future::try_join_all(all_services_start).await?;
+            futures::future::try_join_all(all_services_start)
+        }).await?;
         Ok(())
     }
 
