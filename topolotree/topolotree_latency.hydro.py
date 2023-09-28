@@ -61,7 +61,7 @@ async def run_experiment(
 
     num_partitions = int(partitions_arg)
 
-    print(f"Launching benchmark with protocol {tree_arg}, {num_replicas} replicas, and {num_clients} clients")
+    print(f"Launching benchmark with protocol {tree_arg}, {num_replicas} replicas, and {num_clients} clients on {num_partitions} partitions")
 
     currently_deployed = []
 
@@ -137,7 +137,7 @@ async def run_experiment(
         src=str(Path(__file__).parent.absolute()),
         profile=profile,
         bin="latency_measure",
-        args=[str(num_clients), str(i), str(1024)],
+        args=[str(num_clients), str(i), str((2 ** 10) // num_partitions)],
         on=create_machine(),
     ) for i in range(num_partitions)]
 
@@ -191,23 +191,29 @@ async def run_experiment(
                     elif line_split[0] == "latency":
                         number = int(line_split[1])  # microseconds
                         latency_per_driver[driver_idx].append(number)
+                    elif line_split[0] == "end":
+                        break
         except asyncio.CancelledError:
             return
 
     latency_plotter_task = asyncio.create_task(latency_plotter())
 
     await deployment.start()
-    print("Started! Please wait 15 seconds to collect data.")
+    print("Started! Please wait 60 seconds to collect data.")
 
-    await asyncio.sleep(15)
+    await asyncio.sleep(60)
+
+    print("Stopping all drivers")
+    ignore_stderrs = await asyncio.gather(*[node.stderr() for node in all_nodes])
+
+    await asyncio.gather(*[node.stop() for node in drivers])
+
+    print("Collecting latency logs")
+    await latency_plotter_task
 
     memory_plotter_task.cancel()
     await memory_plotter_task
 
-    latency_plotter_task.cancel()
-    await latency_plotter_task
-
-    await asyncio.gather(*[node.stop() for node in drivers])
     await asyncio.gather(*[node.stop() for node in all_nodes])
 
     def summarize(v, kind):
@@ -225,6 +231,7 @@ async def run_experiment(
         summaries_file.write(tree_arg + ",")
         summaries_file.write(str(tree_depth) + ",")
         summaries_file.write(str(num_clients) + ",")
+        summaries_file.write(str(num_partitions) + ",")
         summaries_file.write(kind + ",")
         summaries_file.write(str(np.mean(v)) + ",")
         summaries_file.write(str(np.std(v)) + ",")
@@ -248,8 +255,9 @@ async def run_experiment(
     print("latency:")
     summarize(all_latencies, "latency")
 
-    print("throughput per driver:")
-    summarize(all_throughputs, "throughput_per_driver")
+    print("total throughput:")
+    print(throughput_per_driver)
+    summarize([v * num_partitions for v in all_throughputs], "total_throughput")
 
     memory_delta = [memory[-1] - memory[0] for memory in memory_per_node]
     print("memory delta:")
@@ -262,6 +270,8 @@ async def run_experiment(
         + str(tree_depth)
         + "_num_clients_"
         + str(num_clients)
+        + "_num_partitions_"
+        + str(num_partitions)
         + "_"
         + experiment_id
         + ".csv",
@@ -275,6 +285,8 @@ async def run_experiment(
         + str(tree_depth)
         + "_num_clients_"
         + str(num_clients)
+        + "_num_partitions_"
+        + str(num_partitions)
         + "_"
         + experiment_id
         + ".csv",
@@ -288,6 +300,8 @@ async def run_experiment(
         + str(tree_depth)
         + "_num_clients_"
         + str(num_clients)
+        + "_num_partitions_"
+        + str(num_partitions)
         + "_"
         + experiment_id
         + ".csv",
@@ -308,7 +322,7 @@ async def main(args):
 
     summaries_file = open(f"summaries_{experiment_id}.csv", "w")
     summaries_file.write(
-        "protocol,tree_depth,num_clients,kind,mean,std,min,max,percentile_99,percentile_75,percentile_50,percentile_25,percentile_1"
+        "protocol,tree_depth,num_clients,num_partitions,kind,mean,std,min,max,percentile_99,percentile_75,percentile_50,percentile_25,percentile_1"
     )
 
     deployment = hydro.Deployment()
