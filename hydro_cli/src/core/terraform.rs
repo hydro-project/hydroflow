@@ -37,7 +37,8 @@ impl TerraformPool {
             .current_dir(deployment_folder.path())
             .arg("apply")
             .arg("-auto-approve")
-            .arg("-no-color");
+            .arg("-no-color")
+            .arg("-parallelism=128");
 
         #[cfg(unix)]
         {
@@ -288,6 +289,7 @@ fn destroy_deployment(deployment_folder: &TempDir) {
         .arg("destroy")
         .arg("-auto-approve")
         .arg("-no-color")
+        .arg("-parallelism=128")
         .stdout(Stdio::piped());
 
     #[cfg(unix)]
