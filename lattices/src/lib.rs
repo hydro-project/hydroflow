@@ -15,6 +15,7 @@ mod pair;
 mod point;
 pub mod set_union;
 pub mod test;
+pub mod union_find;
 mod unit;
 mod vec_union;
 mod with_bot;
