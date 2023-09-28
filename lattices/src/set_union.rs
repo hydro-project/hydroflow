@@ -135,13 +135,13 @@ where
     Set::IntoIter: 'static,
     Item: 'static,
 {
-    type Atom = SetUnionOptionSet<Item>;
+    type Atom = SetUnionSingletonSet<Item>;
 
-    // TODO: use impl trait.
+    // TODO: use impl trait, then remove 'static.
     type AtomIter = Box<dyn Iterator<Item = Self::Atom>>;
 
     fn atomize(self) -> Self::AtomIter {
-        Box::new(self.0.into_iter().map(SetUnionOptionSet::new_from))
+        Box::new(self.0.into_iter().map(SetUnionSingletonSet::new_from))
     }
 }
 

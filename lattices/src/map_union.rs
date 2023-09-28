@@ -4,7 +4,7 @@ use std::cmp::Ordering::{self, *};
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
 
-use cc_traits::{Iter, Len};
+use cc_traits::Iter;
 
 use crate::cc_traits::{GetMut, Keyed, Map, MapIter, SimpleKeyedRef};
 use crate::collections::{ArrayMap, OptionMap, SingletonMap, VecMap};
@@ -219,7 +219,6 @@ impl<Map> IsTop for MapUnion<Map> {
 impl<Map, K, Val> Atomize for MapUnion<Map>
 where
     Map: 'static
-        + Len
         + IntoIterator<Item = (K, Val)>
         + Keyed<Key = K, Item = Val>
         + Extend<(K, Val)>
@@ -227,15 +226,15 @@ where
     K: 'static + Clone,
     Val: 'static + Atomize + LatticeFrom<<Val as Atomize>::Atom>,
 {
-    type Atom = MapUnionOptionMap<K, Val::Atom>;
+    type Atom = MapUnionSingletonMap<K, Val::Atom>;
 
-    // TODO: use impl trait.
+    // TODO: use impl trait, then remove 'static.
     type AtomIter = Box<dyn Iterator<Item = Self::Atom>>;
 
     fn atomize(self) -> Self::AtomIter {
         Box::new(self.0.into_iter().flat_map(|(k, val)| {
             val.atomize()
-                .map(move |v| MapUnionOptionMap::new_from((k.clone(), v)))
+                .map(move |v| MapUnionSingletonMap::new_from((k.clone(), v)))
         }))
     }
 }
