@@ -1,6 +1,7 @@
 use std::sync::{Arc, Weak};
 
 use anyhow::Result;
+use futures::{StreamExt, TryStreamExt};
 use tokio::sync::RwLock;
 
 use super::{progress, Host, ResourcePool, ResourceResult, Service};
@@ -62,22 +63,25 @@ impl Deployment {
             .await;
 
             progress::ProgressTracker::with_group("deploy", None, || {
-                let services_future =
-                    self.services
-                        .iter_mut()
-                        .map(|service: &mut Weak<RwLock<dyn Service>>| async {
-                            service
-                                .upgrade()
-                                .unwrap()
-                                .write()
-                                .await
-                                .deploy(&result)
-                                .await;
-                        });
+                let services_future = self
+                    .services
+                    .iter_mut()
+                    .map(|service: &mut Weak<RwLock<dyn Service>>| async {
+                        service
+                            .upgrade()
+                            .unwrap()
+                            .write()
+                            .await
+                            .deploy(&result)
+                            .await
+                    })
+                    .collect::<Vec<_>>();
 
-                futures::future::join_all(services_future)
+                futures::stream::iter(services_future)
+                    .buffer_unordered(8)
+                    .try_fold((), |_, _| async { Ok(()) })
             })
-            .await;
+            .await?;
 
             progress::ProgressTracker::with_group("ready", None, || {
                 let all_services_ready =
@@ -116,7 +120,8 @@ impl Deployment {
                     });
 
             futures::future::try_join_all(all_services_start)
-        }).await?;
+        })
+        .await?;
         Ok(())
     }
 
