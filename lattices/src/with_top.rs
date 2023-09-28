@@ -130,7 +130,7 @@ where
 {
     type Atom = WithTop<Inner::Atom>;
 
-    // TODO: use impl trait.
+    // TODO: use impl trait, then remove 'static.
     type AtomIter = Box<dyn Iterator<Item = Self::Atom>>;
 
     fn atomize(self) -> Self::AtomIter {
