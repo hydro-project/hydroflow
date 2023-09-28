@@ -35,7 +35,7 @@ pub fn check_partial_ord_properties<T: PartialOrd + Eq + Debug>(items: &[T]) {
     // Eq:
     // reflexive: a == a;
     for a in items {
-        assert!(a == a, "`{:?}`", a);
+        assert!(a == a, "Reflexivity: `{:?}` should equal itself.", a);
     }
     // symmetric: a == b implies b == a; and
     for [a, b] in cartesian_power(items) {
