@@ -28,8 +28,9 @@ async fn main() {
         .await
         .into_source();
 
-    let num_clients: Vec<usize> = serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
-    let num_clients = num_clients[0];
+    let num_clients: u64 = std::env::args().nth(1).unwrap().parse().unwrap();
+    let partition_n: u64 = std::env::args().nth(2).unwrap().parse().unwrap();
+    let keys_per_partition: u64 = std::env::args().nth(3).unwrap().parse().unwrap();
 
     let atomic_counter = Arc::new(AtomicU64::new(0));
     let atomic_borrow = atomic_counter.clone();
@@ -71,10 +72,15 @@ async fn main() {
             #[cfg(debug_assertions)]
             let mut count_tracker = HashMap::new();
 
+            let mut next_base: u64 = 0;
+
             loop {
-                let id = ((rand::random::<u64>() % 1024) / (num_clients as u64))
-                    * (num_clients as u64)
-                    + (i as u64);
+                let id = ((((next_base % keys_per_partition)
+                    + (partition_n * keys_per_partition))
+                    / (num_clients))
+                    * num_clients)
+                    + i;
+                next_base += 1;
                 let increment = rand::random::<bool>();
                 let change = if increment { 1 } else { -1 };
                 let start = Instant::now();
@@ -102,7 +108,12 @@ async fn main() {
             let updated =
                 deserialize_from_bytes::<QueryResponse>(end_node.next().await.unwrap().unwrap())
                     .unwrap();
-            if queues[(updated.key % (num_clients as u64)) as usize]
+
+            if updated.key / keys_per_partition != partition_n {
+                continue;
+            }
+
+            if queues[(updated.key % num_clients) as usize]
                 .send(updated.value)
                 .is_err()
             {
