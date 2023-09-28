@@ -29,6 +29,7 @@ Take a look at the [`lattice` rustdocs](https://hydro-project.github.io/hydroflo
 * [`Min<T>`] and [`Max<T>`] - totally-orderd lattices.
 * [`set_union::SetUnion<T>`] - set-union lattice of scalar values.
 * [`map_union::MapUnion<K, Lat>`] - scalar keys with nested lattice values.
+* [`union_find::UnionFind<K>`] - union partitions of a set of scalar values.
 * [`VecUnion<Lat>`] - growing `Vec` of nested lattices, like `MapUnion<<usize, Lat>>` but without missing entries.
 * [`WithBot<Lat>`] - wraps a lattice in `Option` with `None` as the new bottom value.
 * [`WithTop<Lat>`] - wraps a lattice in `Option` with `None` as the new _top_ value.
