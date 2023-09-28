@@ -252,14 +252,22 @@ async fn main() {
 
     tokio::task::spawn_local(async move {
         while let Some(msg) = chan_rx.recv().await {
-            output_send.send(msg).await.unwrap();
+            output_send.feed(msg).await.unwrap();
+            while let Ok(msg) = chan_rx.try_recv() {
+                output_send.feed(msg).await.unwrap();
+            }
+            output_send.flush().await.unwrap();
         }
     });
 
     let (query_tx, mut query_rx) = tokio::sync::mpsc::unbounded_channel();
     tokio::task::spawn_local(async move {
         while let Some(msg) = query_rx.recv().await {
-            query_responses.send(msg).await.unwrap();
+            query_responses.feed(msg).await.unwrap();
+            while let Ok(msg) = query_rx.try_recv() {
+                query_responses.feed(msg).await.unwrap();
+            }
+            query_responses.flush().await.unwrap();
         }
     });
 
