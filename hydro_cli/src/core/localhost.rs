@@ -161,6 +161,10 @@ impl LaunchedHost for LaunchedLocalhost {
         }
     }
 
+    async fn copy_binary(&self, _binary: Arc<(String, Vec<u8>, PathBuf)>) -> Result<()> {
+        Ok(())
+    }
+
     async fn launch_binary(
         &self,
         id: String,

@@ -93,7 +93,7 @@ async fn main() {
                 {
                     let count = count_tracker.entry(id).or_insert(0);
                     *count += change;
-                    assert!(*count == received);
+                    assert_eq!(*count, received);
                 }
 
                 latency_sender.send(start.elapsed().as_micros()).unwrap();
@@ -113,7 +113,7 @@ async fn main() {
                 continue;
             }
 
-            if queues[(updated.key % num_clients) as usize]
+            if queues[((updated.key % keys_per_partition) % num_clients) as usize]
                 .send(updated.value)
                 .is_err()
             {

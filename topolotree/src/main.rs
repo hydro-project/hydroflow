@@ -2,7 +2,7 @@
 mod tests;
 
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::io;
 use std::rc::Rc;
@@ -32,9 +32,11 @@ impl Display for NodeID {
 
 type PostNeighborJoin = (((u64, Option<NodeID>), (i64, usize)), NodeID);
 
+type ContributionAgg =
+    Rc<RefCell<HashMap<u64, HashMap<Option<NodeID>, (Timestamped<i64>, usize)>>>>;
+
 fn run_topolotree(
-    self_id: u32,
-    init_neighbors: Vec<u32>,
+    neighbors: Vec<u32>,
     input_recv: impl Stream<Item = Result<(u32, BytesMut), io::Error>> + Unpin + 'static,
     increment_requests: impl Stream<Item = Result<BytesMut, io::Error>> + Unpin + 'static,
     output_send: tokio::sync::mpsc::UnboundedSender<(u32, Bytes)>,
@@ -59,133 +61,108 @@ fn run_topolotree(
         parsed_input = source_stream(input_recv)
             -> map(Result::unwrap)
             -> map(|(src, x)| (NodeID(src), deserialize_from_bytes::<TopolotreeMessage>(&x).unwrap()))
-            -> demux(|(src, msg), var_args!(payload, ping, pong, neighbor_of_neighbor)| {
+            -> demux(|(src, msg), var_args!(payload, ping, pong)| {
                 match msg {
                     TopolotreeMessage::Payload(p) => payload.give((src, p)),
                     TopolotreeMessage::Ping() => ping.give((src, ())),
                     TopolotreeMessage::Pong() => pong.give((src, ())),
-                    TopolotreeMessage::NeighborOfNeighbor(its_neighbor, add) => neighbor_of_neighbor.give((src, (NodeID(its_neighbor), add)))
                 }
             });
 
-        from_neighbors = parsed_input[payload];
+        from_neighbors = parsed_input[payload] -> tee();
         pings = parsed_input[ping] -> tee();
         pongs = parsed_input[pong] -> tee();
-        neighbor_of_neighbor_ops = parsed_input[neighbor_of_neighbor] -> tee();
-
-        neighbor_of_neighbor =
-            neighbor_of_neighbor_ops
-            -> map(|(src, (neighbor, add))| (src, (neighbor, add)))
-            -> fold_keyed::<'static>(HashSet::new, |acc: &mut HashSet<NodeID>, (neighbor, add)| {
-                if add {
-                    acc.insert(neighbor);
-                } else {
-                    acc.remove(&neighbor);
-                }
-            })
-            -> flat_map(|(src, acc)| acc.into_iter().map(move |neighbor| (src, neighbor)))
-            -> tee();
 
         pings -> map(|(src, _)| (src, TopolotreeMessage::Pong())) -> output;
 
         // generate a ping every second
         neighbors -> [0]ping_generator;
         source_interval(Duration::from_secs(1)) -> [1]ping_generator;
-        ping_generator = cross_join()
+        ping_generator = cross_join_multiset()
             -> map(|(src, _)| (src, TopolotreeMessage::Ping()))
             -> output;
 
-        pongs -> dead_maybe_neighbors;
-        pings -> dead_maybe_neighbors;
-        new_neighbors -> map(|neighbor| (neighbor, ())) -> dead_maybe_neighbors; // fake pong
-        dead_maybe_neighbors = union() -> fold_keyed::<'static>(Instant::now, |acc: &mut Instant, _| {
+        pongs -> dead_neighbors;
+        pings -> dead_neighbors;
+        new_neighbors -> map(|neighbor| (neighbor, ())) -> dead_neighbors; // fake pong
+        dead_neighbors = union() -> fold_keyed::<'static>(Instant::now, |acc: &mut Instant, _| {
                 *acc = Instant::now();
             })
             -> filter_map(|(node_id, acc)| {
-                if acc.elapsed().as_secs() >= 5 {
+                if acc.elapsed().as_secs() > 5 {
                     Some(node_id)
                 } else {
                     None
                 }
-            })
-            -> map(|n| (n, ()))
-            -> [0]dead_neighbors;
-
-        neighbors -> map(|n| (n, ())) -> [1]dead_neighbors;
-        dead_neighbors = join()
-            -> map(|(n, _)| n)
-            -> tee();
-
-        // TODO(shadaj): only remove when we get an ack from the new leader
-        dead_neighbors -> removed_neighbors;
-
-        dead_neighbors -> map(|n| (n, ())) -> [0]min_neighbor_of_dead_neighbor;
-        neighbor_of_neighbor -> [1]min_neighbor_of_dead_neighbor;
-        min_neighbor_of_dead_neighbor = join()
-            -> map(|(dead, ((), neighbor))| (dead, neighbor))
-            -> filter(|(_, neighbor)| neighbor.0 != self_id)
-            -> reduce_keyed(|acc: &mut NodeID, n: NodeID| {
-                if n.0 < acc.0 {
-                    *acc = n;
-                }
-            })
-            -> tee();
+            }) -> tee();
 
         from_neighbors
-            -> map(|(src, payload): (NodeID, Payload<i64>)| ((payload.key, src), (payload.key, payload.contents)))
-            -> fold_keyed::<'static>(|| (Timestamped { timestamp: -1, data: Default::default() }, 0), |acc: &mut (Timestamped<i64>, usize), (key, val): (u64, Timestamped<i64>)| {
-                if val.timestamp > acc.0.timestamp {
-                    acc.0 = val;
+            -> map(|(_, payload): (NodeID, Payload<i64>)| payload.key)
+            -> touched_keys;
+
+        operations
+            -> map(|op| op.key)
+            -> touched_keys;
+
+        touched_keys = union() -> unique() -> [0]from_neighbors_unfiltered;
+
+        from_neighbors
+            -> map(|(src, payload): (NodeID, Payload<i64>)| (src, (payload.key, payload.contents)))
+            -> fold::<'static>(Rc::new(RefCell::new(HashMap::new())), |acc: &mut ContributionAgg, (source, (key, val)): (NodeID, (u64, Timestamped<i64>))| {
+                let mut acc = acc.borrow_mut();
+                let key_entry = acc.entry(key).or_insert_with(HashMap::new);
+                let src_entry = key_entry.entry(Some(source)).or_insert((Timestamped { timestamp: -1, data: 0 }, 0));
+                if val.timestamp > src_entry.0.timestamp {
+                    src_entry.0 = val;
                     *self_timestamp1.borrow_mut().entry(key).or_insert(0) += 1;
-                    acc.1 = context.current_tick();
+                    src_entry.1 = context.current_tick();
                 }
             })
-            -> map(|((key, src), (payload, change_tick))| (src, ((key, Some(src)), (payload.data, change_tick))))
-            -> [1]from_actual_neighbors;
+            -> from_neighbors_to_filter;
 
-        neighbors -> map(|n| (n, ())) -> [0]from_actual_neighbors;
-        from_actual_neighbors = join()
-            -> map(|(_, (_, payload))| payload)
-            -> from_neighbors_or_local;
+        from_neighbors_to_filter = union() -> [1]from_neighbors_unfiltered;
+        from_neighbors_unfiltered =
+            cross_join() ->
+            flat_map(|(key, hashmap)| {
+                let hashmap = hashmap.borrow();
+                hashmap.get(&key).iter().flat_map(|v| v.iter()).map(|t| ((key, *t.0), (t.1.0.data, t.1.1))).collect::<Vec<_>>().into_iter()
+            }) ->
+            from_neighbors_or_local;
 
-        local_value = source_stream(increment_requests)
+        operations = source_stream(increment_requests)
             -> map(|x| deserialize_from_bytes::<OperationPayload>(&x.unwrap()).unwrap())
+            -> tee();
+        local_values = operations
             -> inspect(|change| {
                 *self_timestamp2.borrow_mut().entry(change.key).or_insert(0) += 1;
             })
             -> map(|change_payload: OperationPayload| (change_payload.key, (change_payload.change, context.current_tick())))
-            -> reduce_keyed::<'static>(|agg: &mut (i64, usize), change: (i64, usize)| {
-                agg.0 += change.0;
-                agg.1 = std::cmp::max(agg.1, change.1);
+            -> fold::<'static>(Rc::new(RefCell::new(HashMap::new())), |agg: &mut ContributionAgg, change: (u64, (i64, usize))| {
+                let mut agg = agg.borrow_mut();
+                let agg_key = agg.entry(change.0).or_insert_with(HashMap::new);
+                let agg_key = agg_key.entry(None).or_insert((Timestamped { timestamp: 0, data: 0 }, 0));
+
+                agg_key.0.data += change.1.0;
+                agg_key.1 = change.1.1;
             });
 
-        local_value -> map(|(key, data)| ((key, None), data)) -> from_neighbors_or_local;
+        local_values -> from_neighbors_to_filter;
 
-        from_neighbors_or_local = union() -> tee();
+        from_neighbors_or_local = tee();
         from_neighbors_or_local -> [0]all_neighbor_data;
 
-        new_neighbors = source_iter(init_neighbors)
+        new_neighbors = source_iter(neighbors)
             -> map(NodeID)
             -> tee();
 
-        new_neighbors -> map(|n| (n, true)) -> neighbors;
-        removed_neighbors = map(|n| (n, false)) -> neighbors;
-        neighbors = union()
-            -> map(|(neighbor, add)| (neighbor, !add))
-            -> sort_by_key(|(_, remove)| remove) // process adds first
-            -> fold::<'static>(vec![], |acc: &mut Vec<NodeID>, (neighbor, remove): (NodeID, bool)| {
-                if remove {
-                    acc.retain(|x| *x != neighbor);
-                } else {
-                    acc.push(neighbor);
-                }
-            })
-            -> flatten()
+        new_neighbors
+            -> persist()
+            -> [pos]neighbors;
+        dead_neighbors -> [neg]neighbors;
+        neighbors = difference()
             -> tee();
 
         neighbors -> [1]all_neighbor_data;
-
-        // broadcast_neighbors = cross_join() TODO
 
         query_result = from_neighbors_or_local
             -> map(|((key, _), payload): ((u64, _), (i64, usize))| {
@@ -236,7 +213,7 @@ fn run_topolotree(
 #[hydroflow::main]
 async fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let self_id: u32 = args[0].parse().unwrap();
+    let _self_id: u32 = args[0].parse().unwrap();
     let neighbors: Vec<u32> = args
         .into_iter()
         .skip(1)
@@ -286,14 +263,7 @@ async fn main() {
         }
     });
 
-    let flow = run_topolotree(
-        self_id,
-        neighbors,
-        input_recv,
-        operations_send,
-        chan_tx,
-        query_tx,
-    );
+    let flow = run_topolotree(neighbors, input_recv, operations_send, chan_tx, query_tx);
 
     let f1 = async move {
         #[cfg(target_os = "linux")]
