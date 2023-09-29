@@ -175,13 +175,13 @@
 ///
 /// source_iter(0..10)
 ///     -&gt; map(|x| (x,))
-///     -&gt; py_udf(r#&quot;
+///     -&gt; py_udf(&quot;
 /// def fib(n):
 ///     if n &lt; 2:
 ///         return n
 ///     else:
 ///         return fib(n - 2) + fib(n - 1)
-/// &quot;#, &quot;fib&quot;)
+/// &quot;, &quot;fib&quot;)
 ///     -&gt; map(|x: PyResult&lt;Py&lt;PyAny&gt;&gt;| Python::with_gil(|py| {
 ///         usize::extract(x.unwrap().as_ref(py)).unwrap()
 ///     }))
@@ -192,10 +192,10 @@
 /// use pyo3::prelude::*;
 ///
 /// source_iter([(5,1)])
-///     -&gt; py_udf(r#&quot;
+///     -&gt; py_udf(&quot;
 /// def add(a, b):
 ///     return a + b
-/// &quot;#, &quot;add&quot;)
+/// &quot;, &quot;add&quot;)
 ///     -&gt; map(|x: PyResult&lt;Py&lt;PyAny&gt;&gt;| Python::with_gil(|py| {
 ///         usize::extract(x.unwrap().as_ref(py)).unwrap()
 ///     }))
