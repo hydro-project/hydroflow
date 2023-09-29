@@ -24,13 +24,13 @@ use super::{
 ///
 /// source_iter(0..10)
 ///     -> map(|x| (x,))
-///     -> py_udf(r#"
+///     -> py_udf("
 /// def fib(n):
 ///     if n < 2:
 ///         return n
 ///     else:
 ///         return fib(n - 2) + fib(n - 1)
-/// "#, "fib")
+/// ", "fib")
 ///     -> map(|x: PyResult<Py<PyAny>>| Python::with_gil(|py| {
 ///         usize::extract(x.unwrap().as_ref(py)).unwrap()
 ///     }))
@@ -41,10 +41,10 @@ use super::{
 /// use pyo3::prelude::*;
 ///
 /// source_iter([(5,1)])
-///     -> py_udf(r#"
+///     -> py_udf("
 /// def add(a, b):
 ///     return a + b
-/// "#, "add")
+/// ", "add")
 ///     -> map(|x: PyResult<Py<PyAny>>| Python::with_gil(|py| {
 ///         usize::extract(x.unwrap().as_ref(py)).unwrap()
 ///     }))

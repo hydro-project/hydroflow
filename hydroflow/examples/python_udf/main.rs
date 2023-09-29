@@ -13,10 +13,11 @@ async fn main() {
         )
         // Map to tuples
         -> map(|x| (x, 1))
-        -> py_udf(r#"
+        -> py_udf("
 def add(a, b):
-    return a + 1
-            "#, "add")
+    return a + 1",
+            "add"
+        )
         -> map(|x: PyResult<Py<PyAny>>| -> i32 {Python::with_gil(|py| {
             x.unwrap().extract(py).unwrap()
         })})
