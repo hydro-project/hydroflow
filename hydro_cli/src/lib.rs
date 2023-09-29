@@ -782,7 +782,7 @@ pub fn _core(py: Python<'_>, module: &PyModule) -> PyResult<()> {
         .set(
             PyModule::from_code(
                 py,
-                r#"
+                "
 import asyncio
 async def coroutine_to_safely_cancellable(c, cancel_token):
     try:
@@ -791,7 +791,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         cancel_token.safe_cancel()
         await c
         raise asyncio.CancelledError()
-"#,
+",
                 "converters",
                 "converters",
             )?
