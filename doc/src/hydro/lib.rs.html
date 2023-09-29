@@ -1616,7 +1616,7 @@
         .set(
             PyModule::from_code(
                 py,
-                <span class="string">r#&quot;
+                <span class="string">&quot;
 import asyncio
 async def coroutine_to_safely_cancellable(c, cancel_token):
     try:
@@ -1625,7 +1625,7 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         cancel_token.safe_cancel()
         await c
         raise asyncio.CancelledError()
-&quot;#</span>,
+&quot;</span>,
                 <span class="string">&quot;converters&quot;</span>,
                 <span class="string">&quot;converters&quot;</span>,
             )<span class="question-mark">?
