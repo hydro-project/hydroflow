@@ -51,14 +51,15 @@ impl Service for CustomService {
         }
     }
 
-    async fn deploy(&mut self, resource_result: &Arc<ResourceResult>) {
+    async fn deploy(&mut self, resource_result: &Arc<ResourceResult>) -> Result<()> {
         if self.launched_host.is_some() {
-            return;
+            return Ok(());
         }
 
         let mut host_write = self.on.write().await;
         let launched = host_write.provision(resource_result);
         self.launched_host = Some(launched.await);
+        Ok(())
     }
 
     async fn ready(&mut self) -> Result<()> {
