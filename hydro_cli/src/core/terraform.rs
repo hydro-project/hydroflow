@@ -37,7 +37,8 @@ impl TerraformPool {
             .current_dir(deployment_folder.path())
             .arg("apply")
             .arg("-auto-approve")
-            .arg("-no-color");
+            .arg("-no-color")
+            .arg("-parallelism=128");
 
         #[cfg(unix)]
         {
@@ -276,7 +277,7 @@ impl TerraformApply {
     }
 }
 
-fn destroy_deployment(deployment_folder: &TempDir) {
+fn destroy_deployment(deployment_folder: TempDir) {
     println!(
         "Destroying terraform deployment at {}",
         deployment_folder.path().display()
@@ -288,6 +289,7 @@ fn destroy_deployment(deployment_folder: &TempDir) {
         .arg("destroy")
         .arg("-auto-approve")
         .arg("-no-color")
+        .arg("-parallelism=128")
         .stdout(Stdio::piped());
 
     #[cfg(unix)]
@@ -306,6 +308,8 @@ fn destroy_deployment(deployment_folder: &TempDir) {
         .expect("Failed to destroy terraform deployment")
         .success()
     {
+        // prevent the folder from being deleted
+        let _ = deployment_folder.into_path();
         eprintln!("WARNING: failed to destroy terraform deployment");
     }
 }
@@ -329,7 +333,7 @@ impl Drop for TerraformApply {
             }
         }
 
-        if let Some(deployment_folder) = &self.deployment_folder {
+        if let Some(deployment_folder) = self.deployment_folder.take() {
             destroy_deployment(deployment_folder);
         }
     }
@@ -360,7 +364,7 @@ pub struct TerraformResult {
 
 impl Drop for TerraformResult {
     fn drop(&mut self) {
-        if let Some(deployment_folder) = &self.deployment_folder {
+        if let Some(deployment_folder) = self.deployment_folder.take() {
             destroy_deployment(deployment_folder);
         }
     }
