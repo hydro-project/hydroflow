@@ -15,7 +15,7 @@ diagnostics = []
 auto_impl = "1.0.1"
 itertools = "0.10" # TODO(mingwei): remove when `iter_intersperse` is stabilized.
 prettyplease = { version = "0.2.0", features = [ "verbatim" ] }
-proc-macro2 = { version = "1.0.57", features = ["span-locations"] }
+proc-macro2 = { version = "1.0.63", features = ["span-locations"] }
 quote = "1.0.0"
 regex = "1.7.0"
 serde = "1.0.1"
