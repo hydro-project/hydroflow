@@ -2,7 +2,7 @@ use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
 
-use crate::protocol::Message;
+use crate::protocol::{Message, MessageWithAddr};
 use crate::{GraphType, Opts};
 
 pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts) {
@@ -13,21 +13,16 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
         outbound_chan = union() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound)
             -> map(Result::unwrap)
-            -> demux(|(msg, addr), var_args!(clients, msgs, errs)|
-                    match msg {
-                        Message::ConnectRequest => clients.give(addr),
-                        Message::ChatMsg {..} => msgs.give(msg),
-                        _ => errs.give(msg),
-                    }
-               );
-        clients = inbound_chan[clients] -> tee();
-        inbound_chan[errs] -> for_each(|m| println!("Received unexpected message type: {:?}", m));
+            -> map(|(msg, addr)| MessageWithAddr::from_message(msg, addr))
+            -> demux_enum::<MessageWithAddr>();
+        clients = inbound_chan[ConnectRequest] -> map(|(addr,)| addr) -> tee();
+        inbound_chan[ConnectResponse] -> for_each(|(addr,)| println!("Received unexpected `ConnectResponse` as server from addr {}.", addr));
 
         // Pipeline 1: Acknowledge client connections
         clients[0] -> map(|addr| (Message::ConnectResponse, addr)) -> [0]outbound_chan;
 
         // Pipeline 2: Broadcast messages to all clients
-        inbound_chan[msgs] -> [0]broadcast;
+        inbound_chan[ChatMsg] -> map(|(_addr, nickname, message, ts)| Message::ChatMsg { nickname, message, ts }) -> [0]broadcast;
         clients[1] -> [1]broadcast;
         broadcast = cross_join::<'static>() -> [1]outbound_chan;
     };
