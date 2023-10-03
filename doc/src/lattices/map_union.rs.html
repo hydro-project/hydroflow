@@ -324,14 +324,13 @@
 <a href="#324" id="324">324</a>
 <a href="#325" id="325">325</a>
 <a href="#326" id="326">326</a>
-<a href="#327" id="327">327</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module containing the [`MapUnion`] lattice and aliases for different datastructures.
 
 </span><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::fmt::Debug;
 
-<span class="kw">use </span>cc_traits::{Iter, Len};
+<span class="kw">use </span>cc_traits::Iter;
 
 <span class="kw">use </span><span class="kw">crate</span>::cc_traits::{GetMut, Keyed, Map, MapIter, SimpleKeyedRef};
 <span class="kw">use </span><span class="kw">crate</span>::collections::{ArrayMap, OptionMap, SingletonMap, VecMap};
@@ -546,23 +545,22 @@
 <span class="kw">impl</span>&lt;Map, K, Val&gt; Atomize <span class="kw">for </span>MapUnion&lt;Map&gt;
 <span class="kw">where
     </span>Map: <span class="lifetime">&#39;static
-        </span>+ Len
-        + IntoIterator&lt;Item = (K, Val)&gt;
+        </span>+ IntoIterator&lt;Item = (K, Val)&gt;
         + Keyed&lt;Key = K, Item = Val&gt;
         + Extend&lt;(K, Val)&gt;
         + <span class="kw">for</span>&lt;<span class="lifetime">&#39;a</span>&gt; GetMut&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>K, Item = Val&gt;,
     K: <span class="lifetime">&#39;static </span>+ Clone,
     Val: <span class="lifetime">&#39;static </span>+ Atomize + LatticeFrom&lt;&lt;Val <span class="kw">as </span>Atomize&gt;::Atom&gt;,
 {
-    <span class="kw">type </span>Atom = MapUnionOptionMap&lt;K, Val::Atom&gt;;
+    <span class="kw">type </span>Atom = MapUnionSingletonMap&lt;K, Val::Atom&gt;;
 
-    <span class="comment">// TODO: use impl trait.
+    <span class="comment">// TODO: use impl trait, then remove &#39;static.
     </span><span class="kw">type </span>AtomIter = Box&lt;<span class="kw">dyn </span>Iterator&lt;Item = <span class="self">Self</span>::Atom&gt;&gt;;
 
     <span class="kw">fn </span>atomize(<span class="self">self</span>) -&gt; <span class="self">Self</span>::AtomIter {
         Box::new(<span class="self">self</span>.<span class="number">0</span>.into_iter().flat_map(|(k, val)| {
             val.atomize()
-                .map(<span class="kw">move </span>|v| MapUnionOptionMap::new_from((k.clone(), v)))
+                .map(<span class="kw">move </span>|v| MapUnionSingletonMap::new_from((k.clone(), v)))
         }))
     }
 }

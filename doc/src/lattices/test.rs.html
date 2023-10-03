@@ -333,7 +333,7 @@
     <span class="comment">// Eq:
     // reflexive: a == a;
     </span><span class="kw">for </span>a <span class="kw">in </span>items {
-        <span class="macro">assert!</span>(a == a, <span class="string">&quot;`{:?}`&quot;</span>, a);
+        <span class="macro">assert!</span>(a == a, <span class="string">&quot;Reflexivity: `{:?}` should equal itself.&quot;</span>, a);
     }
     <span class="comment">// symmetric: a == b implies b == a; and
     </span><span class="kw">for </span>[a, b] <span class="kw">in </span>cartesian_power(items) {

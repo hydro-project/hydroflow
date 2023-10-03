@@ -864,6 +864,14 @@
 <a href="#864" id="864">864</a>
 <a href="#865" id="865">865</a>
 <a href="#866" id="866">866</a>
+<a href="#867" id="867">867</a>
+<a href="#868" id="868">868</a>
+<a href="#869" id="869">869</a>
+<a href="#870" id="870">870</a>
+<a href="#871" id="871">871</a>
+<a href="#872" id="872">872</a>
+<a href="#873" id="873">873</a>
+<a href="#874" id="874">874</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Simple singleton or array collection with [`cc_traits`](crate::cc_traits) implementations.
 
 </span><span class="kw">use </span>std::borrow::Borrow;
@@ -878,6 +886,7 @@
 <span class="doccomment">/// A [`Vec`]-wrapper representing a naively-implemented set.
 </span><span class="attr">#[repr(transparent)]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>VecSet&lt;T&gt;(<span class="kw">pub </span>Vec&lt;T&gt;);
 <span class="kw">impl</span>&lt;T&gt; IntoIterator <span class="kw">for </span>VecSet&lt;T&gt; {
     <span class="kw">type </span>Item = T;
@@ -957,6 +966,7 @@
 
 <span class="doccomment">/// A [`Vec`]-wrapper representing a naively implemented map.
 </span><span class="attr">#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>VecMap&lt;K, V&gt; {
     <span class="doccomment">/// Keys, should be the same length as and correspond 1:1 to `vals`.
     </span><span class="kw">pub </span>keys: Vec&lt;K&gt;,
@@ -1089,6 +1099,7 @@
 <span class="doccomment">/// A wrapper around an item, representing a singleton set.
 </span><span class="attr">#[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>SingletonSet&lt;T&gt;(<span class="kw">pub </span>T);
 <span class="kw">impl</span>&lt;T&gt; IntoIterator <span class="kw">for </span>SingletonSet&lt;T&gt; {
     <span class="kw">type </span>Item = T;
@@ -1164,6 +1175,7 @@
 
 <span class="doccomment">/// A key-value entry wrapper representing a singleton map.
 </span><span class="attr">#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>SingletonMap&lt;K, V&gt;(<span class="kw">pub </span>K, <span class="kw">pub </span>V);
 <span class="kw">impl</span>&lt;K, V&gt; IntoIterator <span class="kw">for </span>SingletonMap&lt;K, V&gt; {
     <span class="kw">type </span>Item = (K, V);
@@ -1280,6 +1292,7 @@
 <span class="doccomment">/// A wrapper around `Option`, representing either a singleton or empty set.
 </span><span class="attr">#[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>OptionSet&lt;T&gt;(<span class="kw">pub </span><span class="prelude-ty">Option</span>&lt;T&gt;);
 <span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span>OptionSet&lt;T&gt; {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
@@ -1363,6 +1376,7 @@
 
 <span class="doccomment">/// A key-value entry wrapper around `Option&lt;(K, V)&gt;` representing a singleton or empty map.
 </span><span class="attr">#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>OptionMap&lt;K, V&gt;(<span class="kw">pub </span><span class="prelude-ty">Option</span>&lt;(K, V)&gt;);
 <span class="kw">impl</span>&lt;K, V&gt; Default <span class="kw">for </span>OptionMap&lt;K, V&gt; {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
@@ -1499,6 +1513,7 @@
 <span class="doccomment">/// An array wrapper representing a fixed-size set (modulo duplicate items).
 </span><span class="attr">#[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+</span><span class="comment">// TODO(mingwei): #[cfg_attr(feature = &quot;serde&quot;, derive(serde::Serialize, serde::Deserialize))] // https://stackoverflow.com/a/76695397/2398020
 </span><span class="kw">pub struct </span>ArraySet&lt;T, <span class="kw">const </span>N: usize&gt;(<span class="kw">pub </span>[T; N]);
 <span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; IntoIterator <span class="kw">for </span>ArraySet&lt;T, N&gt; {
     <span class="kw">type </span>Item = T;
@@ -1571,6 +1586,7 @@
 
 <span class="doccomment">/// An array wrapper representing a fixed-size map.
 </span><span class="attr">#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+</span><span class="comment">// TODO(mingwei): #[cfg_attr(feature = &quot;serde&quot;, derive(serde::Serialize, serde::Deserialize))] // https://stackoverflow.com/a/76695397/2398020
 </span><span class="kw">pub struct </span>ArrayMap&lt;K, V, <span class="kw">const </span>N: usize&gt; {
     <span class="doccomment">/// Keys, corresponding 1:1 with `vals`.
     </span><span class="kw">pub </span>keys: [K; N],
