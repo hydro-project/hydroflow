@@ -86,7 +86,7 @@ fn test() {
     wait_for_process_output(
         &mut client_output,
         &mut client_stdout,
-        r#"Got a Response: Response \{ key: "a", value: "7" \}"#,
+        r#"Got a Response: KvsResponse \{ key: "a", value: "7" \}"#,
     );
 
     let (_client2, mut client2_stdin, mut client2_stdout) = run_cargo_example(
@@ -102,6 +102,6 @@ fn test() {
     wait_for_process_output(
         &mut client2_output,
         &mut client2_stdout,
-        r#"Got a Response: Response \{ key: "a", value: "7" \}"#,
+        r#"Got a Response: KvsResponse \{ key: "a", value: "7" \}"#,
     );
 }
