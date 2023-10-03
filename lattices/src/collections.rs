@@ -12,6 +12,7 @@ use cc_traits::{
 /// A [`Vec`]-wrapper representing a naively-implemented set.
 #[repr(transparent)]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct VecSet<T>(pub Vec<T>);
 impl<T> IntoIterator for VecSet<T> {
     type Item = T;
@@ -91,6 +92,7 @@ impl<T> IterMut for VecSet<T> {
 
 /// A [`Vec`]-wrapper representing a naively implemented map.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct VecMap<K, V> {
     /// Keys, should be the same length as and correspond 1:1 to `vals`.
     pub keys: Vec<K>,
@@ -223,6 +225,7 @@ impl<K, V> MapIterMut for VecMap<K, V> {
 /// A wrapper around an item, representing a singleton set.
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SingletonSet<T>(pub T);
 impl<T> IntoIterator for SingletonSet<T> {
     type Item = T;
@@ -298,6 +301,7 @@ impl<T> IterMut for SingletonSet<T> {
 
 /// A key-value entry wrapper representing a singleton map.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SingletonMap<K, V>(pub K, pub V);
 impl<K, V> IntoIterator for SingletonMap<K, V> {
     type Item = (K, V);
@@ -414,6 +418,7 @@ impl<K, V> MapIterMut for SingletonMap<K, V> {
 /// A wrapper around `Option`, representing either a singleton or empty set.
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct OptionSet<T>(pub Option<T>);
 impl<T> Default for OptionSet<T> {
     fn default() -> Self {
@@ -497,6 +502,7 @@ impl<T> IterMut for OptionSet<T> {
 
 /// A key-value entry wrapper around `Option<(K, V)>` representing a singleton or empty map.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct OptionMap<K, V>(pub Option<(K, V)>);
 impl<K, V> Default for OptionMap<K, V> {
     fn default() -> Self {
@@ -633,6 +639,7 @@ impl<K, V> MapIterMut for OptionMap<K, V> {
 /// An array wrapper representing a fixed-size set (modulo duplicate items).
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+// TODO(mingwei): #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // https://stackoverflow.com/a/76695397/2398020
 pub struct ArraySet<T, const N: usize>(pub [T; N]);
 impl<T, const N: usize> IntoIterator for ArraySet<T, N> {
     type Item = T;
@@ -705,6 +712,7 @@ impl<T, const N: usize> Iter for ArraySet<T, N> {
 
 /// An array wrapper representing a fixed-size map.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+// TODO(mingwei): #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] // https://stackoverflow.com/a/76695397/2398020
 pub struct ArrayMap<K, V, const N: usize> {
     /// Keys, corresponding 1:1 with `vals`.
     pub keys: [K; N],
