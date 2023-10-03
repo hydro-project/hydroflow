@@ -16,7 +16,7 @@ pub(crate) async fn push_group_flow(
     shopping_ssiv: impl Iterator<Item = (usize, SealedSetOfIndexedValues<Request>)> + 'static,
     out_addr: SocketAddr,
     out: SplitSink<UdpFramed<LengthDelimitedCodec>, (Bytes, SocketAddr)>,
-) -> Hydroflow {
+) -> Hydroflow<'static> {
     let client_class = client_class_iter();
 
     // First define some shorthand for the merge and bot of this lattice
