@@ -6,7 +6,7 @@ pub use hydroflow_cli_integration::*;
 
 use crate::scheduled::graph::Hydroflow;
 
-pub async fn launch_flow(mut flow: Hydroflow) {
+pub async fn launch_flow(mut flow: Hydroflow<'_>) {
     let stop = tokio::sync::oneshot::channel();
     tokio::task::spawn_blocking(|| {
         let mut line = String::new();
