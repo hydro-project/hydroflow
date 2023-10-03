@@ -14,7 +14,7 @@ To run the example, open 2 terminals.
 
 In one terminal run the server like so:
 ```
-    cargo run -p hydroflow --example kvs -- --role "server" --addr localhost:12346
+cargo run -p hydroflow --example kvs -- --role "server" --addr localhost:12346
 ```
 
 In another terminal run a client:

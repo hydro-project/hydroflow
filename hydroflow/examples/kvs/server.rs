@@ -2,7 +2,7 @@ use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
 
-use crate::protocol::KVSMessage;
+use crate::protocol::{KvsMessageWithAddr, KvsResponse};
 use crate::GraphType;
 
 pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Option<GraphType>) {
@@ -13,42 +13,25 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Opt
         outbound_chan = union() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound)
             -> map(Result::unwrap)
-            -> demux(|(m, a), var_args!(puts, gets, errs)| match m {
-                    KVSMessage::Put {..} => puts.give((m, a)),
-                    KVSMessage::Get {..} => gets.give((m, a)),
-                    _ => errs.give((m, a)),
-            });
-        puts = inbound_chan[puts] -> tee();
-        gets = inbound_chan[gets] -> tee();
-        inbound_chan[errs] -> for_each(|(m, a)| println!("Received unexpected message type {:?} from {:?}", m, a));
+            -> map(|(msg, addr)| KvsMessageWithAddr::from_message(msg, addr))
+            -> demux_enum::<KvsMessageWithAddr>();
+        puts = inbound_chan[Put] -> tee();
+        gets = inbound_chan[Get] -> tee();
 
-        puts[0] -> for_each(|(m, a)| println!("Got a Put {:?} from {:?}", m, a));
-        gets[0] -> for_each(|(m, a)| println!("Got a Get {:?} from {:?}", m, a));
-
-        parsed_puts = puts[1] -> filter_map(|(m, a)| {
-            match m {
-                KVSMessage::Put{key, value} => Some((key, value, a)),
-                _ => None }
-            }) -> tee();
-        parsed_gets = gets[1] -> filter_map(|(m, a)| {
-            match m {
-                KVSMessage::Get{key} => Some((key, a)),
-                _ => None }
-            });
+        puts -> for_each(|(key, value, addr)| println!("Got a Put {:?}->{:?} from {:?}", key, value, addr));
+        gets -> for_each(|(key, addr)| println!("Got a Get {:?} from {:?}", key, addr));
 
         // ack puts
-        parsed_puts[0] -> map(| (key, value, client) |
-                                (KVSMessage::Response{key, value}, client))
-            -> [0]outbound_chan;
+        puts -> map(|(key, value, client_addr)| (KvsResponse { key, value }, client_addr)) -> [0]outbound_chan;
 
         // join PUTs and GETs by key
-        lookup = join::<'static>()->tee();
-        parsed_puts[1] -> map(|(key, value, _)| (key, value)) -> [0]lookup;
-        parsed_gets -> [1]lookup;
+        puts -> map(|(key, value, _addr)| (key, value)) -> [0]lookup;
+        gets -> [1]lookup;
+        lookup = join::<'static>() -> tee();
         lookup[0] -> for_each(|t| println!("Found a match: {:?}", t));
 
         // send lookup responses back to the client address from the GET
-        lookup[1] -> map(|(key, (value, client))| (KVSMessage::Response{key, value}, client)) -> [1]outbound_chan;
+        lookup[1] -> map(|(key, (value, client_addr))| (KvsResponse { key, value }, client_addr)) -> [1]outbound_chan;
     };
 
     if let Some(graph) = graph {

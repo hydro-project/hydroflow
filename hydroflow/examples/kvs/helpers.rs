@@ -1,8 +1,8 @@
 use regex::Regex;
 
-use crate::protocol::KVSMessage;
+use crate::protocol::KvsMessage;
 
-pub fn parse_command(line: String) -> Option<KVSMessage> {
+pub fn parse_command(line: String) -> Option<KvsMessage> {
     let re = Regex::new(r"([A-z]+)\s+(.+)").unwrap();
     let caps = re.captures(line.as_str())?;
 
@@ -12,12 +12,12 @@ pub fn parse_command(line: String) -> Option<KVSMessage> {
     match cmdstr {
         "PUT" => {
             let kv = args.split_once(',')?;
-            Some(KVSMessage::Put {
+            Some(KvsMessage::Put {
                 key: kv.0.trim().to_string(),
                 value: kv.1.trim().to_string(),
             })
         }
-        "GET" => Some(KVSMessage::Get {
+        "GET" => Some(KvsMessage::Get {
             key: args.trim().to_string(),
         }),
         _ => None,
