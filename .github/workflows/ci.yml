@@ -125,13 +125,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --no-fail-fast --all-targets --features python
+          args: --profile cidev --no-fail-fast --all-targets --features python
 
       - name: Run cargo doc tests
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --no-fail-fast --doc --features python
+          args: --profile cidev --no-fail-fast --doc --features python
 
   test-wasm:
     name: Test Suite (WebAssembly)
