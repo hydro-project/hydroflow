@@ -369,6 +369,7 @@ declare_ops![
     lattice_reduce::LATTICE_REDUCE,
     map::MAP,
     union::UNION,
+    _upcast::_UPCAST,
     multiset_delta::MULTISET_DELTA,
     next_stratum::NEXT_STRATUM,
     defer_signal::DEFER_SIGNAL,
