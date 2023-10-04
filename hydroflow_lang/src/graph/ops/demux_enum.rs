@@ -3,8 +3,8 @@ use quote::{quote, quote_spanned};
 use syn::spanned::Spanned;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
+    FlowPropArgs, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::{OpInstGenerics, OperatorInstance, PortIndexValue};
@@ -55,7 +55,10 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
-    flow_prop_fn: None,
+    flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
+        // Preserve input flow properties.
+        Ok(vec![flow_props_in[0]])
+    }),
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,
