@@ -55,6 +55,7 @@
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -95,7 +96,7 @@
     },
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
     flow_prop_fn: <span class="prelude-val">None</span>,
-    write_fn: |<span class="kw-2">&amp;</span>WriteContextArgs {
+    write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
                    root,
                    op_span,
                    ident,
@@ -103,8 +104,9 @@
                    ..
                },
                <span class="kw">_</span>| {
+        <span class="kw">let </span>func = wc.wrap_check_func_arg(<span class="kw-2">&amp;</span>arguments[<span class="number">0</span>]);
         <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
-            <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::new(#arguments);
+            <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::new(#func);
         };
         <span class="prelude-val">Ok</span>(OperatorWriteOutput {
             write_iterator,

@@ -1354,6 +1354,7 @@
 <a href="#1354" id="1354">1354</a>
 <a href="#1355" id="1355">1355</a>
 <a href="#1356" id="1356">1356</a>
+<a href="#1357" id="1357">1357</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -1410,7 +1411,8 @@
     <span class="doccomment">/// What variable name each graph node belongs to (if any).
     </span>node_varnames: SparseSecondaryMap&lt;GraphNodeId, Varname&gt;,
 
-    <span class="doccomment">/// Stream properties.
+    <span class="comment">// TODO(mingwei): #[serde(skip)] this and recompute as needed, to reduce codegen.
+    </span><span class="doccomment">/// Stream properties.
     </span>flow_props: SecondaryMap&lt;GraphEdgeId, FlowProps&gt;,
 }
 <span class="kw">impl </span>HydroflowGraph {

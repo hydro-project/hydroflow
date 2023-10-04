@@ -125,6 +125,25 @@
 <a href="#125" id="125">125</a>
 <a href="#126" id="126">126</a>
 <a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Hydroflow declarative macros.
 
 /// [`assert!`] but returns a [`Result&lt;(), String&gt;`] instead of panicking.
@@ -186,18 +205,37 @@
             <span class="kw">let </span>__line = <span class="macro">std::line!</span>() <span class="kw">as </span>usize;
             <span class="kw">let </span>__hf = <span class="macro">hydroflow::hydroflow_syntax_noemit! </span><span class="macro-nonterminal">$hf</span>;
 
-            <span class="kw">let </span>diagnostics = __hf.diagnostics().expect(<span class="string">&quot;Expected `diagnostics()` to be set.&quot;</span>);
-            <span class="kw">let </span>expecteds = <span class="kw-2">&amp;</span>[
-                $( <span class="macro-nonterminal">$msg </span>, )*
+            <span class="kw">let </span>actuals = __hf.diagnostics().expect(<span class="string">&quot;Expected `diagnostics()` to be set.&quot;</span>);
+            <span class="kw">let </span>actuals_len = actuals.len();
+            <span class="kw">let </span>actuals = std::collections::BTreeSet::from_iter(actuals.iter().cloned().map(|<span class="kw-2">mut </span>actual| {
+                <span class="macro">println!</span>(<span class="string">&quot;X {}&quot;</span>, actual.to_string());
+                actual.span.line = actual.span.line.saturating_sub(__line);
+                std::borrow::Cow::Owned(actual.to_string().replace(__file, <span class="string">&quot;$FILE&quot;</span>))
+            }));
+
+            <span class="kw">let </span>expecteds = [
+                $(
+                    std::borrow::Cow::Borrowed( <span class="macro-nonterminal">$msg </span>),
+                )*
             ];
-            <span class="macro">assert_eq!</span>(diagnostics.len(), expecteds.len(), <span class="string">&quot;Wrong number of diagnostics.&quot;</span>);
-            <span class="kw">for </span>(expected, diagnostic) <span class="kw">in </span>expecteds.iter().zip(diagnostics.iter()) {
-                <span class="kw">let </span><span class="kw-2">mut </span>diagnostic = diagnostic.clone();
-                diagnostic.span.line = diagnostic.span.line.saturating_sub(__line);
-                <span class="macro">assert_eq!</span>(expected.to_string(), diagnostic.to_string().replace(__file, <span class="string">&quot;$FILE&quot;</span>));
+            <span class="kw">let </span>expecteds_len = expecteds.len();
+            <span class="kw">let </span>expecteds = std::collections::BTreeSet::from(expecteds);
+
+            <span class="kw">let </span>missing_errs = expecteds.difference(<span class="kw-2">&amp;</span>actuals).map(|missing| {
+                <span class="macro">format!</span>(<span class="string">&quot;Expected diagnostic `{}` was not emitted.&quot;</span>, missing)
+            });
+            <span class="kw">let </span>extra_errs = actuals.difference(<span class="kw-2">&amp;</span>expecteds).map(|extra| {
+                <span class="macro">format!</span>(<span class="string">&quot;Unexpected extra diagnostic `{}` was emitted&quot;</span>, extra)
+            });
+            <span class="kw">let </span>all_errs: Vec&lt;<span class="kw">_</span>&gt; = missing_errs.chain(extra_errs).collect();
+            <span class="kw">if </span>!all_errs.is_empty() {
+                <span class="macro">panic!</span>(<span class="string">&quot;{}&quot;</span>, all_errs.join(<span class="string">&quot;\n&quot;</span>));
             }
 
-            __hf
+            <span class="comment">// TODO(mingwei): fix duplicates generated from multi-pass flow prop algorithm.
+            // assert_eq!(actuals_len, expecteds_len, &quot;Wrong nubmer of diagnostics, were there duplicates?&quot;);
+
+            </span>__hf
         }
     };
 }

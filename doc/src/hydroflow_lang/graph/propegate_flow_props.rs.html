@@ -81,9 +81,34 @@
 <a href="#81" id="81">81</a>
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for determining flow properties. See [`propegate_flow_props`].
 
-</span><span class="kw">use super</span>::{GraphNodeId, HydroflowGraph, Node};
+</span><span class="kw">use </span><span class="kw">super</span>::ops::_upcast::_UPCAST;
+<span class="kw">use super</span>::{GraphNodeId, HydroflowGraph, Node};
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::Diagnostic;
 <span class="kw">use </span><span class="kw">crate</span>::graph::graph_algorithms;
 <span class="kw">use </span><span class="kw">crate</span>::graph::ops::FlowPropArgs;
@@ -95,71 +120,94 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), GraphNodeId&gt; {
     <span class="comment">// Topological sort on strongly connected components.
     // TODO(mingwei): order is broken within SCCs/cycles: https://github.com/hydro-project/hydroflow/issues/895
-    </span><span class="kw">let </span>node_order = graph_algorithms::topo_sort_scc(
+    </span><span class="kw">let </span><span class="kw-2">mut </span>node_order = graph_algorithms::topo_sort_scc(
         || graph.node_ids(),
         |dst| graph.node_predecessor_nodes(dst),
         |src| graph.node_successor_nodes(src),
     );
+    <span class="comment">// Only retain nodes that have a `flow_prop_fn` or are handoffs.
+    </span>node_order.retain(|<span class="kw-2">&amp;</span>node_id| <span class="kw">match </span>graph.node(node_id) {
+        Node::Operator(<span class="kw">_</span>) =&gt; graph
+            .node_op_inst(node_id)
+            .and_then(|op_inst| op_inst.op_constraints.flow_prop_fn)
+            .is_some(),
+        Node::Handoff { .. } =&gt; <span class="bool-val">true</span>,
+        Node::ModuleBoundary { .. } =&gt; <span class="macro">panic!</span>(),
+    });
+    <span class="comment">// Put upcast nodes first.
+    </span>node_order.sort_by_key(|<span class="kw-2">&amp;</span>node_id| {
+        graph
+            .node_op_inst(node_id)
+            .map_or(<span class="bool-val">true</span>, |op_inst| op_inst.op_constraints.name != _UPCAST.name)
+    });
+
     <span class="comment">// Propegate flow props in order.
-    </span><span class="kw">for </span>(idx_star_ord, node_id) <span class="kw">in </span>node_order.into_iter().enumerate() {
-        <span class="kw">match </span>graph.node(node_id) {
-            Node::Operator(<span class="kw">_</span>) =&gt; {
-                <span class="kw">let </span>op_inst = graph
-                    .node_op_inst(node_id)
-                    .expect(<span class="string">&quot;Operator instance info must be set when calling `propegate_flow_props`. (This is a Hydroflow bug).&quot;</span>);
+    </span><span class="kw">loop </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>changed = <span class="bool-val">false</span>;
+        <span class="kw">for </span>(idx_star_ord, <span class="kw-2">&amp;</span>node_id) <span class="kw">in </span>node_order.iter().enumerate() {
+            <span class="kw">match </span>graph.node(node_id) {
+                Node::Operator(<span class="kw">_</span>) =&gt; {
+                    <span class="kw">let </span>op_inst = graph.node_op_inst(node_id)
+                        .expect(<span class="string">&quot;Operator instance info must be set when calling `propegate_flow_props`. (This is a Hydroflow bug).&quot;</span>);
 
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(flow_prop_fn) = op_inst.op_constraints.flow_prop_fn {
-                    <span class="comment">// Collect the flow props on input edges. Input operators will naturally have no inputs.
-                    </span><span class="kw">let </span>flow_props_in = graph
-                        .node_predecessor_edges(node_id)
-                        .map(|edge_id| graph.edge_flow_props(edge_id))
-                        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(flow_prop_fn) = op_inst.op_constraints.flow_prop_fn {
+                        <span class="comment">// Collect the flow props on input edges. Input operators will naturally have no inputs.
+                        </span><span class="kw">let </span>flow_props_in = graph
+                            .node_predecessor_edges(node_id)
+                            .map(|edge_id| graph.edge_flow_props(edge_id))
+                            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-                    <span class="comment">// Build the `FlowPropArgs` argument
-                    </span><span class="kw">let </span>flow_prop_args = FlowPropArgs {
-                        op_span: graph.node(node_id).span(),
-                        op_name: op_inst.op_constraints.name,
-                        op_inst,
-                        flow_props_in: <span class="kw-2">&amp;</span>flow_props_in,
-                        new_star_ord: idx_star_ord,
-                    };
+                        <span class="comment">// Build the `FlowPropArgs` argument
+                        </span><span class="kw">let </span>flow_prop_args = FlowPropArgs {
+                            op_span: graph.node(node_id).span(),
+                            op_name: op_inst.op_constraints.name,
+                            op_inst,
+                            flow_props_in: <span class="kw-2">&amp;</span>flow_props_in,
+                            new_star_ord: idx_star_ord,
+                        };
 
-                    <span class="comment">// Call the `flow_prop_fn`.
-                    // TODO(mingwei): don&#39;t exit early here?
-                    </span><span class="kw">let </span>flow_props_out =
-                        (flow_prop_fn)(flow_prop_args, diagnostics).map_err(|()| node_id)<span class="question-mark">?</span>;
-                    <span class="macro">assert!</span>(
-                        <span class="number">1 </span>== flow_props_out.len()
-                            || graph.node_degree_out(node_id) == flow_props_out.len()
-                    );
+                        <span class="comment">// Call the `flow_prop_fn`.
+                        // TODO(mingwei): don&#39;t exit early here?
+                        </span><span class="kw">let </span>flow_props_out =
+                            (flow_prop_fn)(flow_prop_args, diagnostics).map_err(|()| node_id)<span class="question-mark">?</span>;
+                        <span class="macro">assert!</span>(
+                            <span class="number">1 </span>== flow_props_out.len()
+                                || graph.node_degree_out(node_id) == flow_props_out.len()
+                        );
 
-                    <span class="comment">// Assign output flow props.
-                    </span><span class="kw">let </span>out_edges = graph.node_successor_edges(node_id).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-                    <span class="comment">// In/out edges are in the same order as the in/out port names (in `op_inst`).
-                    </span><span class="kw">for </span>(i, edge_id) <span class="kw">in </span>out_edges.into_iter().enumerate() {
-                        <span class="kw">if let </span><span class="prelude-val">Some</span>(flow_prop_out) = <span class="kw-2">*</span>flow_props_out
-                            .get(i)
-                            .unwrap_or_else(|| flow_props_out.get(<span class="number">0</span>).unwrap())
-                        {
-                            graph.set_edge_flow_props(edge_id, flow_prop_out);
+                        <span class="comment">// Assign output flow props.
+                        </span><span class="kw">let </span>out_edges = graph.node_successor_edges(node_id).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                        <span class="comment">// In/out edges are in the same order as the in/out port names (in `op_inst`).
+                        </span><span class="kw">for </span>(i, edge_id) <span class="kw">in </span>out_edges.into_iter().enumerate() {
+                            <span class="kw">if let </span><span class="prelude-val">Some</span>(flow_prop_out) = <span class="kw-2">*</span>flow_props_out
+                                .get(i)
+                                .unwrap_or_else(|| flow_props_out.get(<span class="number">0</span>).unwrap())
+                            {
+                                <span class="kw">let </span>flow_prop_old =
+                                    graph.set_edge_flow_props(edge_id, flow_prop_out);
+                                changed |= flow_prop_old.map_or(<span class="bool-val">true</span>, |old| old != flow_prop_out);
+                            }
                         }
                     }
                 }
-            }
-            Node::Handoff { .. } =&gt; {
-                <span class="comment">// Handoffs just copy over their one input [`FlowProps`] to their one output.
-                </span><span class="macro">assert_eq!</span>(<span class="number">1</span>, graph.node_degree_in(node_id));
-                <span class="macro">assert_eq!</span>(<span class="number">1</span>, graph.node_degree_out(node_id));
-                <span class="kw">let </span>in_edge = graph.node_predecessor_edges(node_id).next().unwrap();
-                <span class="kw">let </span>out_edge = graph.node_successor_edges(node_id).next().unwrap();
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(flow_props) = graph.edge_flow_props(in_edge) {
-                    graph.set_edge_flow_props(out_edge, flow_props);
+                Node::Handoff { .. } =&gt; {
+                    <span class="comment">// Handoffs just copy over their one input [`FlowProps`] to their one output.
+                    </span><span class="macro">assert_eq!</span>(<span class="number">1</span>, graph.node_degree_in(node_id));
+                    <span class="macro">assert_eq!</span>(<span class="number">1</span>, graph.node_degree_out(node_id));
+                    <span class="kw">let </span>in_edge = graph.node_predecessor_edges(node_id).next().unwrap();
+                    <span class="kw">let </span>out_edge = graph.node_successor_edges(node_id).next().unwrap();
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(flow_props) = graph.edge_flow_props(in_edge) {
+                        graph.set_edge_flow_props(out_edge, flow_props);
+                    }
+                }
+                <span class="kw">_ </span>=&gt; {
+                    <span class="comment">// If a module boundary is encountered then something has gone wrong.
+                    </span><span class="macro">panic!</span>();
                 }
             }
-            <span class="kw">_ </span>=&gt; {
-                <span class="comment">// If a module boundary is encountered then something has gone wrong.
-                </span><span class="macro">panic!</span>();
-            }
+        }
+        <span class="kw">if </span>!changed {
+            <span class="kw">break</span>;
         }
     }
     <span class="prelude-val">Ok</span>(())

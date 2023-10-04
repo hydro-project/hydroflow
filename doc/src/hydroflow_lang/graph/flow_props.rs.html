@@ -27,10 +27,14 @@
 <a href="#27" id="27">27</a>
 <a href="#28" id="28">28</a>
 <a href="#29" id="29">29</a>
+<a href="#30" id="30">30</a>
+<a href="#31" id="31">31</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
 
 <span class="doccomment">/// Stream and lattice properties. Used to determine correctness for scaling transformations.
-</span><span class="attr">#[derive(Clone, Copy, Default, Debug, Serialize, Deserialize)]
+</span><span class="attr">#[derive(
+    Clone, Copy, Default, Debug, Serialize, Deserialize, PartialEq, PartialOrd, Eq, Ord, Hash,
+)]
 </span><span class="kw">pub struct </span>FlowProps {
     <span class="doccomment">/// An abstract token representing the &quot;order&quot; and provenance of a flow.
     ///
