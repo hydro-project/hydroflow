@@ -2,7 +2,7 @@ use quote::quote_spanned;
 
 use super::{
     FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorInstance,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1, FlowPropArgs,
 };
 
 /// Filter outputs a subsequence of the items it receives at its input, according to a
@@ -37,7 +37,10 @@ pub const FILTER: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
-    flow_prop_fn: None,
+    flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
+        // Preserve input flow properties.
+        Ok(vec![flow_props_in[0]])
+    }),
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,
