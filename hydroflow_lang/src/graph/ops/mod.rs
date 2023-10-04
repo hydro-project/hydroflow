@@ -258,18 +258,18 @@ pub const LATTICE_FOLD_REDUCE_FLOW_PROP_FN: FlowPropFn =
      diagnostics| {
         let input_flow_type = fp.flow_props_in[0].and_then(|fp| fp.lattice_flow_type);
         match input_flow_type {
-       Some(LatticeFlowType::Delta) => (),
-       Some(LatticeFlowType::Cumul) => diagnostics.push(Diagnostic::spanned(
-           op_span,
-           Level::Warning,
-           format!("`{}` input is already cumulative lattice flow, this operator is redundant.", op_name),
-       )),
-       None => diagnostics.push(Diagnostic::spanned(
-           op_span,
-           Level::Warning,
-           format!("`{}` expects lattice flow input, has sequential input. This may be an error in the future.", op_name),
-       )),
-   }
+            Some(LatticeFlowType::Delta) => (),
+            Some(LatticeFlowType::Cumul) => diagnostics.push(Diagnostic::spanned(
+                op_span,
+                Level::Warning,
+                format!("`{}` input is already cumulative lattice flow, this operator is redundant.", op_name),
+            )),
+            None => diagnostics.push(Diagnostic::spanned(
+                op_span,
+                Level::Warning,
+                format!("`{}` expects lattice flow input, has sequential input. This may be an error in the future.", op_name),
+            )),
+        }
         Ok(vec![Some(FlowProps {
             star_ord: fp.new_star_ord(),
             lattice_flow_type: Some(LatticeFlowType::Cumul),

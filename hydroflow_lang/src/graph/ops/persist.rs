@@ -1,9 +1,11 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    FlowPropArgs, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
+use crate::diagnostic::{Diagnostic, Level};
+use crate::graph::{FlowProps, LatticeFlowType};
 
 /// Stores each item as it passes through, and replays all item every tick.
 ///
@@ -53,7 +55,31 @@ pub const PERSIST: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
-    flow_prop_fn: None,
+    flow_prop_fn: Some(
+        |fp @ FlowPropArgs {
+             op_span, op_name, ..
+         },
+         diagnostics| {
+            let input_flow_type = fp.flow_props_in[0].and_then(|fp| fp.lattice_flow_type);
+            let lattice_flow_type = match input_flow_type {
+                Some(LatticeFlowType::Delta) => Some(LatticeFlowType::Cumul),
+                Some(LatticeFlowType::Cumul) => {
+                    diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Warning,
+                    format!("`{}` input is already cumulative lattice flow, this operator is redundant.", op_name),
+                ));
+                    Some(LatticeFlowType::Cumul)
+                }
+                // Non-lattice peresist.
+                None => None,
+            };
+            Ok(vec![Some(FlowProps {
+                star_ord: fp.new_star_ord(),
+                lattice_flow_type,
+            })])
+        },
+    ),
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    context,
