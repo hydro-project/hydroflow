@@ -18,7 +18,7 @@ pub(crate) async fn server_state_flow(
     out: SplitSink<UdpFramed<LengthDelimitedCodec>, (Bytes, SocketAddr)>,
     local_addr: SocketAddr,
     remote_addr: SocketAddr,
-) -> Hydroflow {
+) -> Hydroflow<'static> {
     let client_class = client_class_iter();
 
     // First define some shorthand for the merge and bot of this lattice
