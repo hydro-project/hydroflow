@@ -38,7 +38,7 @@ pub const FOR_EACH: OperatorConstraints = OperatorConstraints {
     },
     input_delaytype_fn: |_| None,
     flow_prop_fn: None,
-    write_fn: |&WriteContextArgs {
+    write_fn: |wc @ &WriteContextArgs {
                    root,
                    op_span,
                    ident,
@@ -46,8 +46,9 @@ pub const FOR_EACH: OperatorConstraints = OperatorConstraints {
                    ..
                },
                _| {
+        let func = wc.wrap_check_func_arg(&arguments[0]);
         let write_iterator = quote_spanned! {op_span=>
-            let #ident = #root::pusherator::for_each::ForEach::new(#arguments);
+            let #ident = #root::pusherator::for_each::ForEach::new(#func);
         };
         Ok(OperatorWriteOutput {
             write_iterator,

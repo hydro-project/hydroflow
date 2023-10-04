@@ -2,11 +2,11 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    Persistence, WriteContextArgs, RANGE_1,
+    FlowPropArgs, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{OpInstGenerics, OperatorInstance};
+use crate::graph::{FlowProps, LatticeFlowType, OpInstGenerics, OperatorInstance};
 
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
 ///
@@ -99,7 +99,40 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
         inconsistency_tainted: false,
     },
     input_delaytype_fn: |_| None,
-    flow_prop_fn: None,
+    flow_prop_fn: Some(
+        |ref fp @ FlowPropArgs {
+             op_inst:
+                 OperatorInstance {
+                     generics:
+                         OpInstGenerics {
+                             persistence_args, ..
+                         },
+                     ..
+                 },
+             flow_props_in,
+             ..
+         },
+         _diagnostics| {
+            let lattice_flow_type = flow_props_in
+                .iter()
+                .map(|flow_props| flow_props.and_then(|fp| fp.lattice_flow_type))
+                .reduce(std::cmp::min)
+                .flatten();
+            let lattice_flow_type = lattice_flow_type.map(|flow_type| {
+                // Upgrade 'static to Cumul.
+                match persistence_args[..] {
+                    [Persistence::Static, Persistence::Static] => LatticeFlowType::Cumul,
+                    [Persistence::Static] => LatticeFlowType::Cumul,
+                    _ => flow_type,
+                }
+                // TODO(mingwei): diagnostics warning for mismatch between 'static vs 'tick and flow props.
+            });
+            Ok(vec![Some(FlowProps {
+                star_ord: fp.new_star_ord(),
+                lattice_flow_type,
+            })])
+        },
+    ),
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    context,
@@ -177,7 +210,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
             [] => [Persistence::Tick, Persistence::Tick],
             [a] => [a, a],
             [a, b] => [a, b],
-            _ => unreachable!(),
+            _ => panic!(),
         };
 
         let (lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow) =
