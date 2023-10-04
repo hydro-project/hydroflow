@@ -1462,6 +1462,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "hydroflow_plus"
+version = "0.4.0"
+dependencies = [
+ "hydroflow",
+ "hydroflow_lang",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "stagefright",
+ "syn 2.0.14",
+]
+
+[[package]]
+name = "hydroflow_plus_example_flow"
+version = "0.0.0"
+dependencies = [
+ "hydroflow_plus",
+ "regex",
+ "stagefright",
+]
+
+[[package]]
+name = "hydroflow_plus_example_runtime"
+version = "0.0.0"
+dependencies = [
+ "hydroflow_plus",
+ "hydroflow_plus_example_flow",
+ "regex",
+]
+
+[[package]]
 name = "iana-time-zone"
 version = "0.1.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2811,6 +2842,28 @@ dependencies = [
  "libc",
  "libssh2-sys",
  "parking_lot 0.11.2",
+]
+
+[[package]]
+name = "stagefright"
+version = "0.4.0"
+dependencies = [
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "stagefright_macro",
+ "syn 2.0.14",
+]
+
+[[package]]
+name = "stagefright_macro"
+version = "0.4.0"
+dependencies = [
+ "lazy_static",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.14",
 ]
 
 [[package]]
