@@ -9,29 +9,30 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Opt
     println!("Server live!");
 
     let mut df: Hydroflow = hydroflow_syntax! {
-        // NW channels
-        outbound_chan = union() -> dest_sink_serde(outbound);
-        inbound_chan = source_stream_serde(inbound)
+        // network channels
+        network_send = union() -> dest_sink_serde(outbound);
+        network_recv = source_stream_serde(inbound)
+            -> _upcast(Some(Delta))
             -> map(Result::unwrap)
+            -> inspect(|(msg, addr)| println!("Message received {:?} from {:?}", msg, addr))
             -> map(|(msg, addr)| KvsMessageWithAddr::from_message(msg, addr))
             -> demux_enum::<KvsMessageWithAddr>();
-        puts = inbound_chan[Put] -> tee();
-        gets = inbound_chan[Get] -> tee();
-
-        puts -> for_each(|(key, value, addr)| println!("Got a Put {:?}->{:?} from {:?}", key, value, addr));
-        gets -> for_each(|(key, addr)| println!("Got a Get {:?} from {:?}", key, addr));
+        puts = network_recv[Put] -> tee();
+        gets = network_recv[Get];
 
         // ack puts
-        puts -> map(|(key, value, client_addr)| (KvsResponse { key, value }, client_addr)) -> [0]outbound_chan;
+        puts -> map(|(key, value, client_addr)| (KvsResponse { key, value }, client_addr)) -> [0]network_send;
 
         // join PUTs and GETs by key
         puts -> map(|(key, value, _addr)| (key, value)) -> [0]lookup;
         gets -> [1]lookup;
-        lookup = join::<'static>() -> tee();
-        lookup[0] -> for_each(|t| println!("Found a match: {:?}", t));
+        lookup = join::<'static, 'tick>();
 
-        // send lookup responses back to the client address from the GET
-        lookup[1] -> map(|(key, (value, client_addr))| (KvsResponse { key, value }, client_addr)) -> [1]outbound_chan;
+        // network_send lookup responses back to the client address from the GET
+        lookup[1]
+            -> inspect(|tup| println!("Found a match: {:?}", tup))
+            -> map(|(key, (value, client_addr))| (KvsResponse { key, value }, client_addr))
+            -> [1]network_send;
     };
 
     if let Some(graph) = graph {
@@ -40,10 +41,10 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Opt
             .expect("No graph found, maybe failed to parse.");
         match graph {
             GraphType::Mermaid => {
-                println!("{}", serde_graph.to_mermaid());
+                serde_graph.open_mermaid().unwrap();
             }
             GraphType::Dot => {
-                println!("{}", serde_graph.to_dot())
+                serde_graph.open_dot().unwrap();
             }
             GraphType::Json => {
                 unimplemented!();

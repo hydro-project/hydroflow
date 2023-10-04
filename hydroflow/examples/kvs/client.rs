@@ -36,14 +36,13 @@ pub(crate) async fn run_client(
             .expect("No graph found, maybe failed to parse.");
         match graph {
             GraphType::Mermaid => {
-                println!("{}", serde_graph.to_mermaid());
+                serde_graph.open_mermaid().unwrap();
             }
             GraphType::Dot => {
-                println!("{}", serde_graph.to_dot())
+                serde_graph.open_dot().unwrap();
             }
             GraphType::Json => {
                 unimplemented!();
-                // println!("{}", serde_graph.to_json())
             }
         }
     }
