@@ -1,4 +1,4 @@
-Simple single-node key-value store example based on a join of PUTs and GETs. 
+Simple single-node key-value store example based on a join of PUTs and GETs.
 Current semantics are purely monotone:
  - PUTs are appended: we remember them all forever
  - GETs are also remembered forever, akin to SUBSCRIBE: once a client issues a GET for key k they will receive a response on the current values of key k (if non-empty) and every future PUT for key k.
@@ -6,7 +6,7 @@ Current semantics are purely monotone:
 
  Clients accept commands on stdin. Command syntax is as follows:
  - `PUT <key>, <value>`
- - `GET <key>'
+ - `GET <key>`
  Commands are case-insensitive. All keys and values are treated as `String`s.
 
 
