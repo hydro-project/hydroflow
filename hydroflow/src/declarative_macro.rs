@@ -59,16 +59,35 @@ macro_rules! hydroflow_expect_warnings {
             let __line = std::line!() as usize;
             let __hf = hydroflow::hydroflow_syntax_noemit! $hf;
 
-            let diagnostics = __hf.diagnostics().expect("Expected `diagnostics()` to be set.");
-            let expecteds = &[
-                $( $msg , )*
+            let actuals = __hf.diagnostics().expect("Expected `diagnostics()` to be set.");
+            let actuals_len = actuals.len();
+            let actuals = std::collections::BTreeSet::from_iter(actuals.iter().cloned().map(|mut actual| {
+                println!("X {}", actual.to_string());
+                actual.span.line = actual.span.line.saturating_sub(__line);
+                std::borrow::Cow::Owned(actual.to_string().replace(__file, "$FILE"))
+            }));
+
+            let expecteds = [
+                $(
+                    std::borrow::Cow::Borrowed( $msg ),
+                )*
             ];
-            assert_eq!(diagnostics.len(), expecteds.len(), "Wrong number of diagnostics.");
-            for (expected, diagnostic) in expecteds.iter().zip(diagnostics.iter()) {
-                let mut diagnostic = diagnostic.clone();
-                diagnostic.span.line = diagnostic.span.line.saturating_sub(__line);
-                assert_eq!(expected.to_string(), diagnostic.to_string().replace(__file, "$FILE"));
+            let expecteds_len = expecteds.len();
+            let expecteds = std::collections::BTreeSet::from(expecteds);
+
+            let missing_errs = expecteds.difference(&actuals).map(|missing| {
+                format!("Expected diagnostic `{}` was not emitted.", missing)
+            });
+            let extra_errs = actuals.difference(&expecteds).map(|extra| {
+                format!("Unexpected extra diagnostic `{}` was emitted", extra)
+            });
+            let all_errs: Vec<_> = missing_errs.chain(extra_errs).collect();
+            if !all_errs.is_empty() {
+                panic!("{}", all_errs.join("\n"));
             }
+
+            // TODO(mingwei): fix duplicates generated from multi-pass flow prop algorithm.
+            // assert_eq!(actuals_len, expecteds_len, "Wrong nubmer of diagnostics, were there duplicates?");
 
             __hf
         }

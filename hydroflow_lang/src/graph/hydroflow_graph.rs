@@ -54,6 +54,7 @@ pub struct HydroflowGraph {
     /// What variable name each graph node belongs to (if any).
     node_varnames: SparseSecondaryMap<GraphNodeId, Varname>,
 
+    // TODO(mingwei): #[serde(skip)] this and recompute as needed, to reduce codegen.
     /// Stream properties.
     flow_props: SecondaryMap<GraphEdgeId, FlowProps>,
 }
