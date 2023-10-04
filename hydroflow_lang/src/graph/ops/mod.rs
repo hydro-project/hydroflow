@@ -276,6 +276,42 @@ pub const LATTICE_FOLD_REDUCE_FLOW_PROP_FN: FlowPropFn =
         })])
     };
 
+// TODO(mingwei):
+/// [`OperatorConstraints::flow_prop_fn`] for `join` and `cross_join`.
+pub const JOIN_CROSS_JOIN_FLOW_PROP_FN: FlowPropFn =
+    |ref fp @ FlowPropArgs {
+         op_inst:
+             OperatorInstance {
+                 generics:
+                     OpInstGenerics {
+                         persistence_args, ..
+                     },
+                 ..
+             },
+         flow_props_in,
+         ..
+     },
+     _diagnostics| {
+        let lattice_flow_type = flow_props_in
+            .iter()
+            .map(|flow_props| flow_props.and_then(|fp| fp.lattice_flow_type))
+            .reduce(std::cmp::min)
+            .flatten();
+        let lattice_flow_type = lattice_flow_type.map(|flow_type| {
+            // Upgrade 'static to Cumul.
+            match persistence_args[..] {
+                [Persistence::Static, Persistence::Static] => LatticeFlowType::Cumul,
+                [Persistence::Static] => LatticeFlowType::Cumul,
+                _ => flow_type,
+            }
+            // TODO(mingwei): diagnostics warning for mismatch between 'static vs 'tick and flow props.
+        });
+        Ok(vec![Some(FlowProps {
+            star_ord: fp.new_star_ord(),
+            lattice_flow_type,
+        })])
+    };
+
 /// Helper to write the `write_iterator` portion of [`OperatorConstraints::write_fn`] output for
 /// the null operator - an operator that ignores all inputs and produces no output.
 pub fn null_write_iterator_fn(
