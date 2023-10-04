@@ -24,9 +24,9 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Opt
         puts -> map(|(key, value, client_addr)| (KvsResponse { key, value }, client_addr)) -> [0]network_send;
 
         // join PUTs and GETs by key
-        puts -> map(|(key, value, _addr)| (key, value)) -> [0]lookup;
+        puts -> map(|(key, value, _addr)| (key, value)) -> persist() -> [0]lookup;
         gets -> [1]lookup;
-        lookup = join::<'static, 'tick>();
+        lookup = join::<'tick>();
 
         // network_send lookup responses back to the client address from the GET
         lookup[1]
@@ -48,7 +48,6 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Opt
             }
             GraphType::Json => {
                 unimplemented!();
-                // println!("{}", serde_graph.to_json())
             }
         }
     }

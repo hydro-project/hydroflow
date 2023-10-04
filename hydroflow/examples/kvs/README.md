@@ -1,14 +1,17 @@
 Simple single-node key-value store example based on a join of PUTs and GETs.
-Current semantics are purely monotone:
+
+Current semantics are:
  - PUTs are appended: we remember them all forever
- - GETs are also remembered forever, akin to SUBSCRIBE: once a client issues a GET for key k they will receive a response on the current values of key k (if non-empty) and every future PUT for key k.
- - GETs for empty keys get no acknowledgement, but will receive responses when a subsequent PUT arrives for that key
+ - GETs are only remembered for the current tick, which may not be monotone depending on how they
+   are consumed.
+ - GETs for empty keys get no acknowledgement.
 
  Clients accept commands on stdin. Command syntax is as follows:
  - `PUT <key>, <value>`
  - `GET <key>`
  Commands are case-insensitive. All keys and values are treated as `String`s.
 
+## Running the example
 
 To run the example, open 2 terminals.
 

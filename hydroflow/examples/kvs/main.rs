@@ -28,7 +28,7 @@ struct Opts {
     #[clap(value_enum, long)]
     role: Role,
     #[clap(long, value_parser = ipv4_resolve)]
-    addr: Option<SocketAddr>,
+    addr: SocketAddr,
     #[clap(long, value_parser = ipv4_resolve)]
     server_addr: Option<SocketAddr>,
     #[clap(value_enum, long)]
@@ -38,7 +38,7 @@ struct Opts {
 #[hydroflow::main]
 async fn main() {
     let opts = Opts::parse();
-    let addr = opts.addr.unwrap();
+    let addr = opts.addr;
 
     match opts.role {
         Role::Client => {
@@ -49,14 +49,14 @@ async fn main() {
                 outbound,
                 inbound,
                 opts.server_addr.unwrap(),
-                opts.graph.clone(),
+                opts.graph,
             )
             .await;
         }
         Role::Server => {
             let (outbound, inbound, _) = bind_udp_bytes(addr).await;
-            println!("Listening on {:?}", opts.addr.unwrap());
-            run_server(outbound, inbound, opts.graph.clone()).await;
+            println!("Listening on {:?}", addr);
+            run_server(outbound, inbound, opts.graph).await;
         }
     }
 }
