@@ -8,7 +8,7 @@ documentation = "https://docs.rs/hydroflow/"
 description = "Hydro's low-level dataflow runtime and IR"
 
 [features]
-default = [ "macros" , "nightly" ]
+default = [ "macros" , "nightly", "debugging" ]
 
 nightly = [ "hydroflow_macro", "hydroflow_macro/diagnostics" ]
 macros = [ "hydroflow_macro", "hydroflow_datalog" ]
@@ -16,6 +16,7 @@ hydroflow_macro = [ "dep:hydroflow_macro" ]
 hydroflow_datalog = [ "dep:hydroflow_datalog" ]
 cli_integration = [ "dep:hydroflow_cli_integration" ]
 python = [ "dep:pyo3" ]
+debugging = [ "hydroflow_lang/debugging" ]
 
 [[example]]
 name = "kvs_bench"

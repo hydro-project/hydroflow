@@ -23,6 +23,7 @@ mod flat_to_partitioned;
 mod flow_props;
 mod graph_write;
 mod hydroflow_graph;
+mod hydroflow_graph_debugging;
 
 use std::fmt::Display;
 use std::path::PathBuf;
