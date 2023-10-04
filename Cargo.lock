@@ -871,9 +871,9 @@ dependencies = [
 
 [[package]]
 name = "data-encoding"
-version = "2.3.3"
+version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23d8666cb01533c39dde32bcbab8e227b4ed6679b2c925eba05feabea39508fb"
+checksum = "c2e66c9d817f1720209181c316d28635c050fa304f9c79e47a520882661b7308"
 
 [[package]]
 name = "datadriven"
@@ -1438,6 +1438,7 @@ name = "hydroflow_lang"
 version = "0.4.0"
 dependencies = [
  "auto_impl",
+ "data-encoding",
  "itertools",
  "prettyplease",
  "proc-macro2",
@@ -1447,6 +1448,7 @@ dependencies = [
  "serde_json",
  "slotmap",
  "syn 2.0.14",
+ "webbrowser",
 ]
 
 [[package]]
@@ -3591,9 +3593,9 @@ dependencies = [
 
 [[package]]
 name = "webbrowser"
-version = "0.8.10"
+version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd222aa310eb7532e3fd427a5d7db7e44bc0b0cf1c1e21139c345325511a85b6"
+checksum = "b2c79b77f525a2d670cb40619d7d9c673d09e0666f72c591ebd7861f84a87e57"
 dependencies = [
  "core-foundation",
  "home",
