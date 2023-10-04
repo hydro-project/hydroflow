@@ -1,0 +1,8 @@
+[package]
+name = "hydroflow_plus_kvs_types"
+publish = false
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+serde = "1"
