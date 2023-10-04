@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 /// Stream and lattice properties. Used to determine correctness for scaling transformations.
-#[derive(Clone, Copy, Default, Debug, Serialize, Deserialize)]
+#[derive(
+    Clone, Copy, Default, Debug, Serialize, Deserialize, PartialEq, PartialOrd, Eq, Ord, Hash,
+)]
 pub struct FlowProps {
     /// An abstract token representing the "order" and provenance of a flow.
     ///
