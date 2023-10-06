@@ -1,0 +1,24 @@
+[package]
+name = "hydroflow_plus"
+publish = true
+version = "0.4.0"
+edition = "2021"
+license = "Apache-2.0"
+documentation = "https://docs.rs/hydroflow_plus/"
+description = "Functional programming API for hydroflow"
+
+[lib]
+path = "src/lib.rs"
+
+[features]
+default = []
+diagnostics = [ "hydroflow_lang/diagnostics" ]
+
+[dependencies]
+quote = "1.0.0"
+syn = { version = "2.0.0", features = [ "parsing", "extra-traits" ] }
+proc-macro2 = "1.0.57"
+proc-macro-crate = "1.1.0"
+hydroflow = { path = "../hydroflow", version = "^0.4.0" }
+hydroflow_lang = { path = "../hydroflow_lang", version = "^0.4.0" }
+stagefright = { path = "../stagefright", version = "^0.4.0" }

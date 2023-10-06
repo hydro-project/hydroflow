@@ -197,13 +197,13 @@ pub fn compile_datalog(program: String) -> JsValue {
     serde_wasm_bindgen::to_value(&out).unwrap()
 }
 
-struct HydroflowInstance<In, Out> {
-    hydroflow: Hydroflow,
+struct HydroflowInstance<'a, In, Out> {
+    hydroflow: Hydroflow<'a>,
     input: tokio::sync::mpsc::UnboundedSender<In>,
     output: tokio::sync::mpsc::UnboundedReceiver<Out>,
 }
 
-type DatalogBooleanDemoInstance = HydroflowInstance<(i32,), (i32,)>;
+type DatalogBooleanDemoInstance = HydroflowInstance<'static, (i32,), (i32,)>;
 
 thread_local! {
     static DATALOG_BOOLEAN_DEMO_INSTANCES: RefCell<HashMap<String, DatalogBooleanDemoInstance>> =

@@ -1,0 +1,22 @@
+[package]
+name = "hydroflow_plus_kvs"
+publish = false
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+path = "../hydroflow_plus_kvs_flow/src/lib.rs"
+
+[features]
+default = ["final"]
+final = []
+
+[dependencies]
+hydroflow_plus = { path = "../hydroflow_plus", version = "^0.4.0" }
+stagefright = { path = "../stagefright", version = "^0.4.0" }
+regex = "1"
+serde = "1"
+hydroflow_plus_kvs_macro = { path = "../hydroflow_plus_kvs_macro" }
+
+[build-dependencies]
+stagefright_tool = { path = "../stagefright_tool", version = "^0.4.0" }
