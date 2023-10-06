@@ -276,7 +276,6 @@ pub const LATTICE_FOLD_REDUCE_FLOW_PROP_FN: FlowPropFn =
         })])
     };
 
-// TODO(mingwei):
 /// [`OperatorConstraints::flow_prop_fn`] for `join` and `cross_join`.
 pub const JOIN_CROSS_JOIN_FLOW_PROP_FN: FlowPropFn =
     |ref fp @ FlowPropArgs {

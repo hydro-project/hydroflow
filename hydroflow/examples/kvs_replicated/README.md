@@ -18,7 +18,7 @@ We will need four (or more) terminals:
 
 First, start a server:
 ```
-cargo run -p hydroflow --example kvs_replicated -- --role "server" --addr localhost:12346
+cargo run -p hydroflow --example kvs_replicated -- --role server --addr localhost:12346
 ```
 
 In another terminal connect a client to the first server:
@@ -28,7 +28,7 @@ cargo run -p hydroflow --example kvs_replicated -- --role client --addr localhos
 
 Then, run a second server to connect to to the first server:
 ```
-cargo run -p hydroflow --example kvs_replicated -- --role "server" --addr localhost:12347 --server-addr localhost:12346
+cargo run -p hydroflow --example kvs_replicated -- --role server --addr localhost:12347 --server-addr localhost:12346
 ```
 
 And finally we can run a second client to connect to the second server:

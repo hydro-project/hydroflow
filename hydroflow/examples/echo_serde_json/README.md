@@ -9,7 +9,7 @@ To run the example, open 2 terminals.
 
 In one terminal run the server like so:
 ```
-cargo run -p hydroflow --example echo_serde_json -- --role "server" --server-addr localhost:12347
+cargo run -p hydroflow --example echo_serde_json -- --role server --server-addr localhost:12347
 ```
 
 In another terminal run a client:
