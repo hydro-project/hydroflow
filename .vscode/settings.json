@@ -8,5 +8,8 @@
                 "INSTA_FORCE_PASS": "1"
             }
         }
-    ]
+    ],
+    "files.watcherExclude": {
+        "**/target": true
+    }
 }
