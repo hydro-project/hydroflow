@@ -1,0 +1,11 @@
+[package]
+name = "hydroflow_plus_kvs_runtime"
+publish = false
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+hydroflow_plus = { path = "../hydroflow_plus", version = "^0.4.0" }
+regex = "1"
+serde = "1"
+hydroflow_plus_kvs = { path = "../hydroflow_plus_kvs" }
