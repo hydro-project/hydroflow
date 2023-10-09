@@ -249,6 +249,28 @@ source_iter([cumu] --LF<L>--> deltify() --DLF<*1, L>--> dest_stream() ....
 -> source_stream() --DLF<*2, L>--> merge() --DLF<*3, L>--> map(f) -> for_each(|x| println!("{:?}", x))
 ```
 
+# Graph display notes
+
+* monotone delta - green thin
+* monotone cumul - green thick
+* non-monotone - red
+
+1 * a = a
+a + a = a + a
+1 * a + 1 * a = a + a
+(1 + 1) * a = a + a
+2 * a =  a + a
+
+
+idempotent
+a = a + a
+
+a = 2 * a
+
+different semiring for each f
+2. a *f (y + dy) == a *f y + a *f dy
+
+
 # Postponement stack:
 * `AtomLatticeFlow`, should it exist?
 * `Debottom`, bottomless lattices

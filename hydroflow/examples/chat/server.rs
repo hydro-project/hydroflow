@@ -3,12 +3,12 @@ use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
 
 use crate::protocol::{Message, MessageWithAddr};
-use crate::{GraphType, Opts};
+use crate::Opts;
 
 pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts) {
     println!("Server live!");
 
-    let mut df: Hydroflow = hydroflow_syntax! {
+    let mut hf: Hydroflow = hydroflow_syntax! {
         // Define shared inbound and outbound channels
         outbound_chan = union() -> dest_sink_serde(outbound);
         inbound_chan = source_stream_serde(inbound)
@@ -28,22 +28,11 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
     };
 
     if let Some(graph) = opts.graph {
-        let serde_graph = df
+        let serde_graph = hf
             .meta_graph()
             .expect("No graph found, maybe failed to parse.");
-        match graph {
-            GraphType::Mermaid => {
-                println!("{}", serde_graph.to_mermaid());
-            }
-            GraphType::Dot => {
-                println!("{}", serde_graph.to_dot())
-            }
-            GraphType::Json => {
-                unimplemented!();
-                // println!("{}", serde_graph.to_json())
-            }
-        }
+        serde_graph.open_graph(graph, opts.write_config).unwrap();
     }
 
-    df.run_async().await.unwrap();
+    hf.run_async().await.unwrap();
 }

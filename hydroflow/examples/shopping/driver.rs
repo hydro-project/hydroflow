@@ -13,7 +13,7 @@ use crate::flows::server_state_flow::server_state_flow;
 use crate::flows::ssiv_flow::ssiv_flow;
 use crate::test_data::{client100_vec, client1_vec, client2_vec};
 use crate::wrappers::{bp_wrap, ssiv_wrap, tuple_wrap};
-use crate::{GraphType, Opts};
+use crate::Opts;
 
 // spawn a listener to get the output of a flow and print it on the console
 async fn spawn_listener(
@@ -235,17 +235,7 @@ pub(crate) async fn run_driver(opts: Opts) {
         let serde_graph = hf
             .meta_graph()
             .expect("No graph found, maybe failed to parse.");
-        match graph {
-            GraphType::Mermaid => {
-                println!("{}", serde_graph.to_mermaid());
-            }
-            GraphType::Dot => {
-                println!("{}", serde_graph.to_dot())
-            }
-            GraphType::Json => {
-                unimplemented!();
-            }
-        }
+        serde_graph.open_graph(graph, opts.write_config).unwrap();
     }
 
     // Run the client for 1 second; should be long enough to get all the results

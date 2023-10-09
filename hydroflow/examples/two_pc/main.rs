@@ -5,6 +5,7 @@ use clap::{Parser, ValueEnum};
 use coordinator::run_coordinator;
 use hydroflow::tokio;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
+use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 use serde::Deserialize;
 use subordinate::run_subordinate;
 
@@ -21,13 +22,6 @@ enum Role {
     Subordinate,
 }
 
-#[derive(Clone, ValueEnum, Debug)]
-enum GraphType {
-    Mermaid,
-    Dot,
-    Json,
-}
-
 #[derive(Parser, Debug)]
 struct Opts {
     #[clap(long)]
@@ -36,8 +30,15 @@ struct Opts {
     role: Role,
     #[clap(long, value_parser = ipv4_resolve)]
     addr: SocketAddr,
-    #[clap(value_enum, long)]
-    graph: Option<GraphType>,
+    #[clap(long)]
+    graph: Option<WriteGraphType>,
+    #[clap(flatten)]
+    write_config: Option<WriteConfig>,
+}
+impl Opts {
+    pub fn path(&self) -> &Path {
+        Path::new(&self.path)
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -49,17 +50,16 @@ struct Addresses {
 #[hydroflow::main]
 async fn main() {
     let opts = Opts::parse();
-    let path = Path::new(&opts.path);
     let addr = opts.addr;
 
     match opts.role {
         Role::Coordinator => {
             let (outbound, inbound, _) = bind_udp_bytes(addr).await;
-            run_coordinator(outbound, inbound, path, opts.graph.clone()).await;
+            run_coordinator(outbound, inbound, opts).await;
         }
         Role::Subordinate => {
             let (outbound, inbound, _) = bind_udp_bytes(addr).await;
-            run_subordinate(outbound, inbound, path, opts.graph.clone()).await;
+            run_subordinate(outbound, inbound, opts).await;
         }
     }
 }

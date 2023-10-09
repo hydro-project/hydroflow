@@ -9,7 +9,7 @@ use tokio_stream::wrappers::LinesStream;
 
 use crate::helpers::{deserialize_msg, format_cycle, gen_bool, parse_edge, serialize_msg};
 use crate::protocol::{Message, SimplePath};
-use crate::{GraphType, Opts};
+use crate::Opts;
 
 pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
     // setup message send/recv ports
@@ -20,7 +20,7 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
     let reader = tokio::io::BufReader::new(tokio::io::stdin());
     let stdin_lines = LinesStream::new(reader.lines());
 
-    let mut df: Hydroflow = hydroflow_syntax! {
+    let mut hf: Hydroflow = hydroflow_syntax! {
         // fetch peers from file, convert ip:port to a SocketAddr, and tee
         peers = source_iter(peer_list)
             -> map(|s| s.parse::<SocketAddr>().unwrap())
@@ -102,28 +102,11 @@ pub(crate) async fn run_detector(opts: Opts, peer_list: Vec<String>) {
     };
 
     if let Some(graph) = opts.graph {
-        match graph {
-            GraphType::Mermaid => {
-                println!(
-                    "{}",
-                    df.meta_graph()
-                        .expect("No graph found, maybe failed to parse.")
-                        .to_mermaid()
-                )
-            }
-            GraphType::Dot => {
-                println!(
-                    "{}",
-                    df.meta_graph()
-                        .expect("No graph found, maybe failed to parse.")
-                        .to_dot()
-                )
-            }
-            GraphType::Json => {
-                unimplemented!();
-            }
-        }
+        let serde_graph = hf
+            .meta_graph()
+            .expect("No graph found, maybe failed to parse.");
+        serde_graph.open_graph(graph, opts.write_config).unwrap();
     }
 
-    df.run_async().await.unwrap();
+    hf.run_async().await.unwrap();
 }

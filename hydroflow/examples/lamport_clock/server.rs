@@ -7,8 +7,9 @@ use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
 
 use crate::protocol::EchoMsg;
+use crate::Opts;
 
-pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream) {
+pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts) {
     let bot: Max<usize> = Max::new(0);
     println!("Server live!");
 
@@ -39,6 +40,13 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream) {
         stamped_output = cross_join::<'tick, 'tick>() -> map(|((payload, addr), the_clock): ((String, SocketAddr), Max<usize>)| (EchoMsg { payload, lamport_clock: the_clock }, addr))
             -> dest_sink_serde(outbound);
     };
+
+    if let Some(graph) = opts.graph {
+        let serde_graph = flow
+            .meta_graph()
+            .expect("No graph found, maybe failed to parse.");
+        serde_graph.open_graph(graph, opts.write_config).unwrap();
+    }
 
     // run the server
     flow.run_async().await;
