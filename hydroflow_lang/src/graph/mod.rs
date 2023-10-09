@@ -119,6 +119,15 @@ impl Node {
         }
     }
 
+    /// Return the name of the node as a string, excluding parenthesis and op source code.
+    pub fn to_name_string(&self) -> Cow<'static, str> {
+        match self {
+            Node::Operator(op) => op.name_string().into(),
+            Node::Handoff { .. } => HANDOFF_NODE_STR.into(),
+            Node::ModuleBoundary { .. } => MODULE_BOUNDARY_NODE_STR.into(),
+        }
+    }
+
     /// Return the source code span of the node (for operators) or input/otput spans for handoffs.
     pub fn span(&self) -> Span {
         match self {

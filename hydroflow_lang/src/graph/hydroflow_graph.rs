@@ -1177,8 +1177,16 @@ impl HydroflowGraph {
         for (node_id, node) in self.nodes() {
             graph_write.write_node(
                 node_id,
-                &*node.to_pretty_string(),
-                node_color_map.get(node_id).copied().unwrap_or(Color::Comp),
+                &*if write_config.op_short_text {
+                    node.to_name_string()
+                } else {
+                    node.to_pretty_string()
+                },
+                if write_config.no_pull_push {
+                    None
+                } else {
+                    node_color_map.get(node_id).copied()
+                },
             )?;
         }
 
@@ -1316,6 +1324,13 @@ pub struct WriteConfig {
     /// Variable names will not be rendered if set.
     #[cfg_attr(feature = "debugging", arg(long))]
     pub no_varnames: bool,
+    /// Will not render pull/push shapes if set.
+    #[cfg_attr(feature = "debugging", arg(long))]
+    pub no_pull_push: bool,
+
+    /// Op text will only be their name instead of the whole source.
+    #[cfg_attr(feature = "debugging", arg(long))]
+    pub op_short_text: bool,
 }
 
 /// Enum for choosing between mermaid and dot graph writing.
