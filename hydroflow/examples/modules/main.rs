@@ -22,7 +22,10 @@ pub fn main() {
         }
     };
 
-    println!("{}", df.meta_graph().unwrap().to_mermaid());
+    println!(
+        "{}",
+        df.meta_graph().unwrap().to_mermaid(&Default::default())
+    );
 
     df.run_available();
 

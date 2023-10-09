@@ -5,6 +5,7 @@ use clap::{Parser, ValueEnum};
 use datalog::rga_datalog;
 use datalog_agg::rga_datalog_agg;
 use hydroflow::util::collect_ready_async;
+use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 use minimal::rga_minimal;
 use protocol::{Timestamp, Token};
 use tokio::sync::mpsc::UnboundedSender;
@@ -24,19 +25,14 @@ enum Implementation {
     Minimal,
 }
 
-#[derive(Clone, ValueEnum, Debug)]
-enum GraphType {
-    Mermaid,
-    Dot,
-    Json,
-}
-
 #[derive(Parser, Debug)]
 struct Opts {
     #[clap(value_enum, long = "impl", short)]
     implementation: Option<Implementation>,
-    #[clap(value_enum, long, short)]
-    graph: Option<GraphType>,
+    #[clap(long)]
+    graph: Option<WriteGraphType>,
+    #[clap(flatten)]
+    write_config: Option<WriteConfig>,
 }
 
 #[hydroflow::main]
@@ -47,7 +43,7 @@ pub async fn main() {
     let (list_send, mut list_recv) = hydroflow::util::unbounded_channel::<(Timestamp, Timestamp)>();
     let opts = Opts::parse();
 
-    let mut df = match opts.implementation {
+    let mut hf = match opts.implementation {
         Some(Implementation::Datalog) => rga_datalog(input_recv, rga_send, list_send),
         Some(Implementation::Adjacency) => rga_adjacency(input_recv, rga_send, list_send),
         Some(Implementation::Minimal) => rga_minimal(input_recv, rga_send, list_send),
@@ -56,20 +52,10 @@ pub async fn main() {
     };
 
     if let Some(graph) = opts.graph {
-        let serde_graph = df
+        let serde_graph = hf
             .meta_graph()
             .expect("No graph found, maybe failed to parse.");
-        match graph {
-            GraphType::Mermaid => {
-                println!("{}", serde_graph.to_mermaid());
-            }
-            GraphType::Dot => {
-                println!("{}", serde_graph.to_dot())
-            }
-            GraphType::Json => {
-                unimplemented!();
-            }
-        }
+        serde_graph.open_graph(graph, opts.write_config).unwrap();
     }
 
     keystroke((1, 0, 'a'), (0, 0), &input_send).await;
@@ -85,7 +71,7 @@ pub async fn main() {
     keystroke((10, 0, 'l'), (9, 0), &input_send).await;
     keystroke((11, 0, 'l'), (10, 0), &input_send).await;
 
-    df.run_tick();
+    hf.run_tick();
 
     let mut output = String::new();
     write_to_dot(&mut rga_recv, &mut list_recv, &mut output).await;

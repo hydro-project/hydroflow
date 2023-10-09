@@ -36,7 +36,7 @@ pub fn main() {
         "{}",
         flow.meta_graph()
             .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
+            .to_mermaid(&Default::default())
     );
 
     pairs_send.send((5, 10)).unwrap();

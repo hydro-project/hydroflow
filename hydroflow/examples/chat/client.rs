@@ -4,7 +4,7 @@ use hydroflow::hydroflow_syntax;
 use hydroflow::util::{UdpSink, UdpStream};
 
 use crate::protocol::Message;
-use crate::{GraphType, Opts};
+use crate::Opts;
 
 fn pretty_print_msg(nickname: String, message: String, ts: DateTime<Utc>) {
     println!(
@@ -56,17 +56,7 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
         let serde_graph = hf
             .meta_graph()
             .expect("No graph found, maybe failed to parse.");
-        match graph {
-            GraphType::Mermaid => {
-                println!("{}", serde_graph.to_mermaid());
-            }
-            GraphType::Dot => {
-                println!("{}", serde_graph.to_dot())
-            }
-            GraphType::Json => {
-                unimplemented!();
-            }
-        }
+        serde_graph.open_graph(graph, opts.write_config).unwrap();
     }
 
     hf.run_async().await.unwrap();

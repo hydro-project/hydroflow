@@ -18,21 +18,15 @@ pub trait GraphWrite {
     /// Begin the graph. First method called.
     fn write_prologue(&mut self) -> Result<(), Self::Err>;
 
-    /// Begin writing a subgraph.
-    fn write_subgraph_start(
-        &mut self,
-        sg_id: GraphSubgraphId,
-        stratum: usize,
-    ) -> Result<(), Self::Err>;
-    /// Write a node, possibly within a subgraph.
+    /// Write a node, with styling.
     fn write_node(
         &mut self,
         node_id: GraphNodeId,
-        node: &str, //&Node,
+        node: &str,
         node_color: Color,
-        in_subgraph: Option<GraphSubgraphId>,
     ) -> Result<(), Self::Err>;
-    /// Write an edge, possibly within a subgraph.
+
+    /// Write an edge, with styling.
     fn write_edge(
         &mut self,
         src_id: GraphNodeId,
@@ -40,14 +34,21 @@ pub trait GraphWrite {
         delay_type: Option<DelayType>,
         flow_props: Option<FlowProps>,
         label: Option<&str>,
-        in_subgraph: Option<GraphSubgraphId>,
     ) -> Result<(), Self::Err>;
-    /// Write the nodes associated with a single variable name, within a subgraph.
-    fn write_subgraph_varname(
+
+    /// Begin writing a subgraph.
+    fn write_subgraph_start(
         &mut self,
         sg_id: GraphSubgraphId,
+        stratum: usize,
+        subgraph_nodes: impl Iterator<Item = GraphNodeId>,
+    ) -> Result<(), Self::Err>;
+    /// Write the nodes associated with a single variable name, within a subgraph.
+    fn write_varname(
+        &mut self,
         varname: &str,
         varname_nodes: impl Iterator<Item = GraphNodeId>,
+        sg_id: Option<GraphSubgraphId>,
     ) -> Result<(), Self::Err>;
     /// End writing a subgraph.
     fn write_subgraph_end(&mut self) -> Result<(), Self::Err>;
@@ -58,10 +59,16 @@ pub trait GraphWrite {
 
 pub struct Mermaid<W> {
     write: W,
+    // How many links have been written, for styling
+    // https://mermaid.js.org/syntax/flowchart.html#styling-links
+    link_count: usize,
 }
 impl<W> Mermaid<W> {
     pub fn new(write: W) -> Self {
-        Self { write }
+        Self {
+            write,
+            link_count: 0,
+        }
     }
 }
 impl<W> GraphWrite for Mermaid<W>
@@ -78,42 +85,26 @@ where
         writeln!(self.write, "flowchart TD")?;
         writeln!(
             self.write,
-            "classDef pullClass fill:#8af,stroke:#000,text-align:left,white-space:pre"
+            "classDef pullClass fill:#8af,stroke:#000,text-align:left,white-space:pre",
         )?;
         writeln!(
             self.write,
-            "classDef pushClass fill:#ff8,stroke:#000,text-align:left,white-space:pre"
+            "classDef pushClass fill:#ff8,stroke:#000,text-align:left,white-space:pre",
+        )?;
+        writeln!(
+            self.write,
+            "classDef otherClass fill:#fdc,stroke:#000,text-align:left,white-space:pre",
         )?;
 
-        writeln!(
-            self.write,
-            "linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;"
-        )?;
-        Ok(())
-    }
-
-    fn write_subgraph_start(
-        &mut self,
-        sg_id: GraphSubgraphId,
-        stratum: usize,
-    ) -> Result<(), Self::Err> {
-        writeln!(
-            self.write,
-            "{:t$}subgraph sg_{sg:?} [\"sg_{sg:?} stratum {:?}\"]",
-            "",
-            stratum,
-            sg = sg_id.data(),
-            t = 0,
-        )?;
+        writeln!(self.write, "linkStyle default stroke:#aaa")?;
         Ok(())
     }
 
     fn write_node(
         &mut self,
         node_id: GraphNodeId,
-        node: &str, //&Node,
+        node: &str,
         node_color: Color,
-        in_subgraph: Option<GraphSubgraphId>,
     ) -> Result<(), Self::Err> {
         let class_str = match node_color {
             Color::Push => "pushClass",
@@ -121,10 +112,9 @@ where
             _ => "otherClass",
         };
         let label = format!(
-            r#"{:t$}{id:?}{lbracket}"{id_label} <code>{code}</code>"{rbracket}:::{class}"#,
-            "",
-            id = node_id.data(),
-            id_label = if node.contains('\n') {
+            r#"{node_id:?}{lbracket}"{node_label} <code>{code}</code>"{rbracket}:::{class}"#,
+            node_id = node_id.data(),
+            node_label = if node.contains('\n') {
                 format!("<div style=text-align:center>({:?})</div>", node_id.data())
             } else {
                 format!("({:?})", node_id.data())
@@ -157,7 +147,6 @@ where
                 Color::Pull => r"/]",
                 _ => "]",
             },
-            t = if in_subgraph.is_some() { 4 } else { 0 },
         );
         writeln!(self.write, "{}", label)?;
         Ok(())
@@ -170,16 +159,15 @@ where
         delay_type: Option<DelayType>,
         flow_props: Option<FlowProps>,
         label: Option<&str>,
-        in_subgraph: Option<GraphSubgraphId>,
     ) -> Result<(), Self::Err> {
         let src_str = format!("{:?}", src_id.data());
         let dest_str = format!("{:?}", dst_id.data());
-        writeln!(
+        let lattice_flow_type = flow_props.and_then(|flow_props| flow_props.lattice_flow_type);
+        write!(
             self.write,
-            "{:t$}{src}{arrow_body}{arrow_head}{label}{dst}",
-            "",
+            "{src}{arrow_body}{arrow_head}{label}{dst}",
             src = src_str.trim(),
-            arrow_body = match flow_props.and_then(|flow_props| flow_props.lattice_flow_type) {
+            arrow_body = match lattice_flow_type {
                 None => "--",
                 Some(LatticeFlowType::Delta) => "-.-",
                 Some(LatticeFlowType::Cumul) => "==",
@@ -195,34 +183,74 @@ where
                 Cow::Borrowed("")
             },
             dst = dest_str.trim(),
-            t = if in_subgraph.is_some() { 4 } else { 0 },
         )?;
+        if delay_type.is_some() || lattice_flow_type.is_some() {
+            write!(
+                self.write,
+                "; linkStyle {} stroke:{}",
+                self.link_count,
+                match (delay_type, lattice_flow_type) {
+                    (None, None) => unreachable!(),
+                    (Some(_), _) => "red",
+                    (None, Some(_)) => "#060",
+                }
+            )?;
+        }
+        writeln!(self.write)?;
+        self.link_count += 1;
         Ok(())
     }
 
-    fn write_subgraph_varname(
+    fn write_subgraph_start(
         &mut self,
         sg_id: GraphSubgraphId,
-        varname: &str,
-        varname_nodes: impl Iterator<Item = GraphNodeId>,
+        stratum: usize,
+        subgraph_nodes: impl Iterator<Item = GraphNodeId>,
     ) -> Result<(), Self::Err> {
         writeln!(
             self.write,
-            "{:t$}subgraph sg_{sg:?}_var_{var} [\"var <tt>{var}</tt>\"]",
-            "",
+            "subgraph sg_{sg:?} [\"sg_{sg:?} stratum {:?}\"]",
+            stratum,
             sg = sg_id.data(),
-            var = varname,
-            t = 4,
         )?;
-        for local_named_node in varname_nodes {
-            writeln!(self.write, "{:t$}{:?}", "", local_named_node.data(), t = 8)?;
+        for node_id in subgraph_nodes {
+            writeln!(self.write, "    {node_id:?}", node_id = node_id.data())?;
         }
-        writeln!(self.write, "{:t$}end", "", t = 4)?;
+        Ok(())
+    }
+
+    fn write_varname(
+        &mut self,
+        varname: &str,
+        varname_nodes: impl Iterator<Item = GraphNodeId>,
+        sg_id: Option<GraphSubgraphId>,
+    ) -> Result<(), Self::Err> {
+        let pad = if let Some(sg_id) = sg_id {
+            writeln!(
+                self.write,
+                "    subgraph sg_{sg:?}_var_{var} [\"var <tt>{var}</tt>\"]",
+                sg = sg_id.data(),
+                var = varname,
+            )?;
+            "    "
+        } else {
+            writeln!(
+                self.write,
+                "subgraph var_{0} [\"var <tt>{0}</tt>\"]",
+                varname,
+            )?;
+            writeln!(self.write, "style var_{} fill:transparent", varname)?;
+            ""
+        };
+        for local_named_node in varname_nodes {
+            writeln!(self.write, "    {}{:?}", pad, local_named_node.data())?;
+        }
+        writeln!(self.write, "{}end", pad)?;
         Ok(())
     }
 
     fn write_subgraph_end(&mut self) -> Result<(), Self::Err> {
-        writeln!(self.write, "{:t$}end", "", t = 0)?;
+        writeln!(self.write, "end")?;
         Ok(())
     }
 
@@ -248,40 +276,17 @@ where
 
     fn write_prologue(&mut self) -> Result<(), Self::Err> {
         writeln!(self.write, "digraph {{")?;
-        Ok(())
-    }
-
-    fn write_subgraph_start(
-        &mut self,
-        sg_id: GraphSubgraphId,
-        stratum: usize,
-    ) -> Result<(), Self::Err> {
-        writeln!(
-            self.write,
-            "{:t$}subgraph \"cluster n{:?}\" {{",
-            "",
-            sg_id.data(),
-            t = 4,
-        )?;
-        writeln!(self.write, "{:t$}fillcolor=\"#dddddd\"", "", t = 8)?;
-        writeln!(self.write, "{:t$}style=filled", "", t = 8)?;
-        writeln!(
-            self.write,
-            "{:t$}label = \"sg_{:?}\\nstratum {}\"",
-            "",
-            sg_id.data(),
-            stratum,
-            t = 8,
-        )?;
+        const FONTS: &str = "\"Monaco,Menlo,Consolas,&quot;Droid Sans Mono&quot;,Inconsolata,&quot;Courier New&quot;,monospace\"";
+        writeln!(self.write, "    node [fontname={}, style=filled];", FONTS)?;
+        writeln!(self.write, "    edge [fontname={}];", FONTS)?;
         Ok(())
     }
 
     fn write_node(
         &mut self,
         node_id: GraphNodeId,
-        node: &str, //&Node,
+        node: &str,
         node_color: Color,
-        in_subgraph: Option<GraphSubgraphId>,
     ) -> Result<(), Self::Err> {
         let nm = node.replace('"', "\\\"").replace('\n', "\\l");
         let label = format!("n{:?}", node_id.data());
@@ -292,25 +297,21 @@ where
             Color::Comp => "circle",
         };
         let color_str = match node_color {
-            Color::Push => "style = filled, color = \"#ffff00\"",
-            Color::Pull => "style = filled, color = \"#0022ff\", fontcolor = \"#ffffff\"",
-            Color::Hoff => "style = filled, color = \"#ddddff\"",
-            Color::Comp => "style = filled, color = white",
+            Color::Push => "\"#ffff88\"",
+            Color::Pull => "\"#88aaff\"",
+            Color::Hoff => "\"#ddddff\"",
+            Color::Comp => "white",
         };
         write!(
             self.write,
-            "{:t$}{} [label=\"({}) {}{}\"",
-            "",
+            "    {} [label=\"({}) {}{}\"",
             label,
             label,
             nm,
             // if contains linebreak left-justify by appending another "\\l"
             if nm.contains("\\l") { "\\l" } else { "" },
-            t = if in_subgraph.is_some() { 8 } else { 4 },
         )?;
-        write!(self.write, ", fontname=Monaco")?;
-        write!(self.write, ", shape={}", shape_str)?;
-        write!(self.write, ", {}", color_str)?;
+        write!(self.write, ", shape={}, fillcolor={}", shape_str, color_str)?;
         writeln!(self.write, "]")?;
         Ok(())
     }
@@ -322,38 +323,30 @@ where
         delay_type: Option<DelayType>,
         flow_props: Option<FlowProps>,
         label: Option<&str>,
-        in_subgraph: Option<GraphSubgraphId>,
     ) -> Result<(), Self::Err> {
-        // TODO(mingwei): handle `flow_props`.
+        let lattice_flow_type = flow_props.and_then(|flow_props| flow_props.lattice_flow_type);
         let mut properties = Vec::<Cow<'static, str>>::new();
         if let Some(label) = label {
             properties.push(format!("label=\"{}\"", label).into());
         };
-        match delay_type {
-            Some(DelayType::Stratum) => {
-                properties.push("arrowhead=box, color=red".into());
-            }
-            Some(DelayType::Tick) => {
-                properties.push("arrowhead=dot, color=red".into());
-            }
-            None => (),
-        };
-        match flow_props.and_then(|flow_props| flow_props.lattice_flow_type) {
-            Some(LatticeFlowType::Delta) => {
-                properties.push("style=dashed".into());
-            }
-            Some(LatticeFlowType::Cumul) => {
-                properties.push("style=bold".into());
-            }
-            None => (),
+        // Color
+        if delay_type.is_some() {
+            properties.push("color=red".into());
+        } else if lattice_flow_type.is_some() {
+            properties.push("color=darkgreen".into());
         }
+        // Bold or dashed
+        match lattice_flow_type {
+            None => {}
+            Some(LatticeFlowType::Delta) => properties.push("style=dashed".into()),
+            Some(LatticeFlowType::Cumul) => properties.push("style=bold".into()),
+        }
+
         write!(
             self.write,
-            "{:t$}n{:?} -> n{:?}",
-            "",
+            "    n{:?} -> n{:?}",
             src_id.data(),
             dst_id.data(),
-            t = if in_subgraph.is_some() { 8 } else { 4 },
         )?;
         if !properties.is_empty() {
             write!(self.write, " [")?;
@@ -366,43 +359,69 @@ where
         Ok(())
     }
 
-    fn write_subgraph_varname(
+    fn write_subgraph_start(
         &mut self,
         sg_id: GraphSubgraphId,
-        varname: &str,
-        varname_nodes: impl Iterator<Item = GraphNodeId>,
+        stratum: usize,
+        subgraph_nodes: impl Iterator<Item = GraphNodeId>,
     ) -> Result<(), Self::Err> {
         writeln!(
             self.write,
-            "{:t$}subgraph \"cluster sg_{sg:?}_var_{var}\" {{",
-            "",
-            sg = sg_id.data(),
-            var = varname,
-            t = 8,
+            "    subgraph \"cluster n{:?}\" {{",
+            sg_id.data(),
         )?;
+        writeln!(self.write, "        fillcolor=\"#dddddd\"")?;
+        writeln!(self.write, "        style=filled")?;
         writeln!(
             self.write,
-            "{:t$}label=\"var {var}\"",
-            "",
-            var = varname,
-            t = 12,
+            "        label = \"sg_{:?}\\nstratum {}\"",
+            sg_id.data(),
+            stratum,
         )?;
-        for local_named_node in varname_nodes {
+        for node_id in subgraph_nodes {
+            writeln!(self.write, "        n{:?}", node_id.data(),)?;
+        }
+        Ok(())
+    }
+
+    fn write_varname(
+        &mut self,
+        varname: &str,
+        varname_nodes: impl Iterator<Item = GraphNodeId>,
+        sg_id: Option<GraphSubgraphId>,
+    ) -> Result<(), Self::Err> {
+        let pad = if let Some(sg_id) = sg_id {
             writeln!(
                 self.write,
-                "{:t$}n{:?}",
-                "",
-                local_named_node.data(),
-                t = 12
+                "        subgraph \"cluster_sg_{sg:?}_var_{var}\" {{",
+                sg = sg_id.data(),
+                var = varname,
             )?;
+            "    "
+        } else {
+            writeln!(
+                self.write,
+                "    subgraph \"cluster_var_{var}\" {{",
+                var = varname,
+            )?;
+            ""
+        };
+        writeln!(
+            self.write,
+            "        {}label=\"var {var}\"",
+            pad,
+            var = varname
+        )?;
+        for local_named_node in varname_nodes {
+            writeln!(self.write, "        {}n{:?}", pad, local_named_node.data())?;
         }
-        writeln!(self.write, "{:t$}}}", "", t = 8)?;
+        writeln!(self.write, "    {}}}", pad)?;
         Ok(())
     }
 
     fn write_subgraph_end(&mut self) -> Result<(), Self::Err> {
         // subgraph footer
-        writeln!(self.write, "{:t$}}}", "", t = 4)?;
+        writeln!(self.write, "    }}")?;
         Ok(())
     }
 

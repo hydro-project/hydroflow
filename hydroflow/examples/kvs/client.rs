@@ -5,13 +5,13 @@ use hydroflow::util::{UdpSink, UdpStream};
 
 use crate::helpers::parse_command;
 use crate::protocol::KvsResponse;
-use crate::GraphType;
+use crate::Opts;
 
 pub(crate) async fn run_client(
     outbound: UdpSink,
     inbound: UdpStream,
     server_addr: SocketAddr,
-    graph: Option<GraphType>,
+    opts: Opts,
 ) {
     println!("Client live!");
 
@@ -30,21 +30,12 @@ pub(crate) async fn run_client(
         inbound_chan -> for_each(|(response, _addr): (KvsResponse, _)| println!("Got a Response: {:?}", response));
     };
 
-    if let Some(graph) = graph {
+    if let Some(graph) = opts.graph {
         let serde_graph = hf
             .meta_graph()
             .expect("No graph found, maybe failed to parse.");
-        match graph {
-            GraphType::Mermaid => {
-                serde_graph.open_mermaid().unwrap();
-            }
-            GraphType::Dot => {
-                serde_graph.open_dot().unwrap();
-            }
-            GraphType::Json => {
-                unimplemented!();
-            }
-        }
+        serde_graph.open_graph(graph, opts.write_config).unwrap();
     }
+
     hf.run_async().await.unwrap();
 }

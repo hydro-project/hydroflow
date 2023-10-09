@@ -2,6 +2,7 @@ use std::net::SocketAddr;
 
 use clap::{Parser, ValueEnum};
 use client::run_client;
+use hydroflow::lang::graph::{WriteConfig, WriteGraphType};
 use hydroflow::tokio;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use server::run_server;
@@ -16,12 +17,6 @@ enum Role {
     Client,
     Server,
 }
-#[derive(Clone, ValueEnum, Debug)]
-enum GraphType {
-    Mermaid,
-    Dot,
-    Json,
-}
 
 #[derive(Parser, Debug)]
 struct Opts {
@@ -31,8 +26,10 @@ struct Opts {
     addr: SocketAddr,
     #[clap(long, value_parser = ipv4_resolve)]
     server_addr: Option<SocketAddr>,
-    #[clap(value_enum, long)]
-    graph: Option<GraphType>,
+    #[clap(long)]
+    graph: Option<WriteGraphType>,
+    #[clap(flatten)]
+    write_config: Option<WriteConfig>,
 }
 
 #[hydroflow::main]
@@ -45,12 +42,12 @@ async fn main() {
             let (outbound, inbound, _) = bind_udp_bytes(addr).await;
             println!("Client is bound to {:?}", addr);
             println!("Attempting to connect to server at {:?}", opts.server_addr);
-            run_client(outbound, inbound, opts.server_addr.unwrap(), opts.graph).await;
+            run_client(outbound, inbound, opts).await;
         }
         Role::Server => {
             let (outbound, inbound, _) = bind_udp_bytes(addr).await;
             println!("Listening on {:?}", addr);
-            run_server(outbound, inbound, opts.graph, opts.server_addr).await;
+            run_server(outbound, inbound, opts).await;
         }
     }
 }

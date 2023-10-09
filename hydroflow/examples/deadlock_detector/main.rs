@@ -4,7 +4,8 @@ use std::io::BufReader;
 use std::path::Path;
 
 /// This is a remedial distributed deadlock (cycle) detector
-use clap::{Parser, ValueEnum};
+use clap::Parser;
+use hydroflow::lang::graph::{WriteConfig, WriteGraphType};
 use hydroflow::tokio;
 use peer::run_detector;
 use serde::Deserialize;
@@ -12,13 +13,6 @@ use serde::Deserialize;
 mod helpers;
 mod peer;
 mod protocol;
-
-#[derive(Clone, ValueEnum, Debug)]
-enum GraphType {
-    Mermaid,
-    Dot,
-    Json,
-}
 
 #[derive(Parser, Debug)]
 struct Opts {
@@ -28,8 +22,10 @@ struct Opts {
     port: u16,
     #[clap(long)]
     addr: String,
-    #[clap(value_enum, long)]
-    graph: Option<GraphType>,
+    #[clap(long)]
+    graph: Option<WriteGraphType>,
+    #[clap(flatten)]
+    write_config: Option<WriteConfig>,
 }
 
 #[derive(Deserialize, Debug)]

@@ -1,6 +1,6 @@
 #![warn(missing_docs)]
 
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Debug;
 use std::iter::FusedIterator;
 
@@ -1079,34 +1079,46 @@ impl HydroflowGraph {
     }
 
     /// Writes this graph as mermaid into a string.
-    pub fn to_mermaid(&self) -> String {
+    pub fn to_mermaid(&self, write_config: &WriteConfig) -> String {
         let mut output = String::new();
-        self.write_mermaid(&mut output).unwrap();
+        self.write_mermaid(&mut output, write_config).unwrap();
         output
     }
 
     /// Writes this graph as mermaid into the given `Write`.
-    pub fn write_mermaid(&self, output: impl std::fmt::Write) -> std::fmt::Result {
+    pub fn write_mermaid(
+        &self,
+        output: impl std::fmt::Write,
+        write_config: &WriteConfig,
+    ) -> std::fmt::Result {
         let mut graph_write = Mermaid::new(output);
-        self.write_graph(&mut graph_write)
+        self.write_graph(&mut graph_write, write_config)
     }
 
     /// Writes this graph as DOT (graphviz) into a string.
-    pub fn to_dot(&self) -> String {
+    pub fn to_dot(&self, write_config: &WriteConfig) -> String {
         let mut output = String::new();
         let mut graph_write = Dot::new(&mut output);
-        self.write_graph(&mut graph_write).unwrap();
+        self.write_graph(&mut graph_write, write_config).unwrap();
         output
     }
 
     /// Writes this graph as DOT (graphviz) into the given `Write`.
-    pub fn write_dot(&self, output: impl std::fmt::Write) -> std::fmt::Result {
+    pub fn write_dot(
+        &self,
+        output: impl std::fmt::Write,
+        write_config: &WriteConfig,
+    ) -> std::fmt::Result {
         let mut graph_write = Dot::new(output);
-        self.write_graph(&mut graph_write)
+        self.write_graph(&mut graph_write, write_config)
     }
 
     /// Write out this `HydroflowGraph` using the given `GraphWrite`. E.g. `Mermaid` or `Dot.
-    pub fn write_graph<W>(&self, mut graph_write: W) -> Result<(), W::Err>
+    pub fn write_graph<W>(
+        &self,
+        mut graph_write: W,
+        write_config: &WriteConfig,
+    ) -> Result<(), W::Err>
     where
         W: GraphWrite,
     {
@@ -1133,151 +1145,89 @@ impl HydroflowGraph {
             label
         }
 
-        let subgraph_handoffs = self.helper_collect_subgraph_handoffs();
+        // Make node color map one time.
         let node_color_map = self.node_color_map();
-        let mut sg_varname_nodes =
-            SparseSecondaryMap::<GraphSubgraphId, BTreeMap<Varname, BTreeSet<GraphNodeId>>>::new();
-        for (node_id, varname) in self.node_varnames.iter() {
-            let Some(sg_id) = self.node_subgraph(node_id) else {
-                continue;
-            };
-            let varname_map = sg_varname_nodes.entry(sg_id).unwrap().or_default();
-            varname_map
-                .entry(varname.clone())
-                .or_default()
-                .insert(node_id);
-        }
-        let barrier_handoffs: HashSet<_> = self
-            .node_ids()
-            .filter(|&node_id| matches!(self.node(node_id), Node::Handoff { .. }))
-            .filter(|&hoff_id| {
-                assert_eq!(1, self.node_degree_in(hoff_id));
-                assert_eq!(1, self.node_degree_out(hoff_id));
-                let src_id = self.node_predecessor_nodes(hoff_id).next().unwrap();
-                let dst_id = self.node_successor_nodes(hoff_id).next().unwrap();
-                // Only include handoffs between different subgraphs.
-                self.node_subgraph(src_id) != self.node_subgraph(dst_id)
-            })
-            .collect();
 
+        // Collect varnames.
+        let mut sg_varname_nodes =
+            <SparseSecondaryMap<GraphSubgraphId, BTreeMap<Varname, BTreeSet<GraphNodeId>>>>::new();
+        let mut varname_nodes = <BTreeMap<Varname, BTreeSet<GraphNodeId>>>::new();
+        if !write_config.no_varnames {
+            for (node_id, varname) in self.node_varnames.iter() {
+                // Only collect if needed.
+                let varname_map = if !write_config.no_subgraphs {
+                    let Some(sg_id) = self.node_subgraph(node_id) else {
+                        continue;
+                    };
+                    sg_varname_nodes.entry(sg_id).unwrap().or_default()
+                } else {
+                    &mut varname_nodes
+                };
+                varname_map
+                    .entry(varname.clone())
+                    .or_default()
+                    .insert(node_id);
+            }
+        }
+
+        // Write prologue.
         graph_write.write_prologue()?;
 
-        for (subgraph_id, subgraph_node_ids) in self.subgraph_nodes.iter() {
-            let stratum = self.subgraph_stratum.get(subgraph_id);
-            graph_write.write_subgraph_start(subgraph_id, *stratum.unwrap())?;
+        // Write nodes.
+        for (node_id, node) in self.nodes() {
+            graph_write.write_node(
+                node_id,
+                &*node.to_pretty_string(),
+                node_color_map.get(node_id).copied().unwrap_or(Color::Comp),
+            )?;
+        }
 
-            // write out nodes
-            for &node_id in subgraph_node_ids.iter() {
-                graph_write.write_node(
-                    node_id,
-                    &*self.nodes.get(node_id).unwrap().to_pretty_string(),
-                    node_color_map.get(node_id).copied().unwrap_or(Color::Comp),
-                    Some(subgraph_id),
-                )?;
-            }
-            // write out internal handoffs
-            let internal_handoffs = {
-                let (recvs, sends) = &subgraph_handoffs[subgraph_id];
-                recvs.iter().filter(move |recv| sends.contains(recv))
-            };
-            for &hoff_id in internal_handoffs {
-                graph_write.write_node(
-                    hoff_id,
-                    &*self.nodes.get(hoff_id).unwrap().to_pretty_string(),
-                    Color::Hoff,
-                    Some(subgraph_id),
-                )?;
-                // write out internal handoff edges. should only be one.
-                assert_eq!(1, self.node_degree_out(hoff_id));
-                let (edge_id, dst_id) = self.node_successors(hoff_id).next().unwrap();
-                let (src_port, dst_port) = self.edge_ports(edge_id);
-                let delay_type = self
-                    .node_op_inst(dst_id)
-                    .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-                let flow_props = self.edge_flow_props(edge_id);
-                let label = helper_edge_label(src_port, dst_port);
-                graph_write.write_edge(
-                    hoff_id,
-                    dst_id,
-                    delay_type,
-                    flow_props,
-                    label.as_deref(),
-                    Some(subgraph_id),
-                )?;
-            }
+        // Write edges.
+        for (edge_id, (src_id, dst_id)) in self.edges() {
+            let (src_port, dst_port) = self.edge_ports(edge_id);
+            let delay_type = self
+                .node_op_inst(dst_id)
+                .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
+            let flow_props = self.edge_flow_props(edge_id);
+            let label = helper_edge_label(src_port, dst_port);
+            graph_write.write_edge(src_id, dst_id, delay_type, flow_props, label.as_deref())?;
+        }
 
-            // write out edges. Includes edges leaving the subgraph.
-            for &src_id in subgraph_node_ids.iter() {
-                for (edge_id, dst_id) in self.node_successors(src_id) {
-                    if !barrier_handoffs.contains(&dst_id) {
-                        let (src_port, dst_port) = self.edge_ports(edge_id);
-                        let delay_type = self.node_op_inst(dst_id).and_then(|op_inst| {
-                            (op_inst.op_constraints.input_delaytype_fn)(dst_port)
-                        });
-                        let flow_props = self.edge_flow_props(edge_id);
-                        let label = helper_edge_label(src_port, dst_port);
-                        graph_write.write_edge(
-                            src_id,
-                            dst_id,
-                            delay_type,
-                            flow_props,
-                            label.as_deref(),
+        // Write subgraphs.
+        if !write_config.no_subgraphs {
+            for (subgraph_id, subgraph_node_ids) in self.subgraph_nodes.iter() {
+                let stratum = self.subgraph_stratum.get(subgraph_id);
+                graph_write.write_subgraph_start(
+                    subgraph_id,
+                    *stratum.unwrap(),
+                    subgraph_node_ids.iter().copied(),
+                )?;
+                // Write out any variable names within the subgraph.
+                if !write_config.no_varnames {
+                    for (varname, varname_node_ids) in
+                        sg_varname_nodes.remove(subgraph_id).into_iter().flatten()
+                    {
+                        assert!(!varname_node_ids.is_empty());
+                        graph_write.write_varname(
+                            &*varname.0.to_string(),
+                            varname_node_ids.into_iter(),
                             Some(subgraph_id),
                         )?;
                     }
                 }
+                graph_write.write_subgraph_end()?;
             }
-
-            // write out any variable names
-            for (varname, varname_node_ids) in
-                sg_varname_nodes.get(subgraph_id).into_iter().flatten()
-            {
-                assert!(!varname_node_ids.is_empty());
-                graph_write.write_subgraph_varname(
-                    subgraph_id,
+        } else if !write_config.no_varnames {
+            for (varname, varname_node_ids) in varname_nodes.into_iter() {
+                graph_write.write_varname(
                     &*varname.0.to_string(),
-                    varname_node_ids.iter().cloned(),
-                )?;
-            }
-
-            graph_write.write_subgraph_end()?;
-        }
-
-        // Write out external handoffs (handoffs between different subgraphs).
-        // This is set up in an awkward way in order to preserve the old write order.
-        // write out handoffs outside the clusters and adjacent edges
-        for (src_id, src_node) in self.nodes() {
-            for (edge_id, dst_id) in self.node_successors(src_id) {
-                if barrier_handoffs.contains(&src_id) {
-                    // write out handoff
-                    graph_write.write_node(
-                        src_id,
-                        &*src_node.to_pretty_string(),
-                        Color::Hoff,
-                        None,
-                    )?;
-                } else if !barrier_handoffs.contains(&dst_id) {
-                    continue;
-                }
-
-                // write out edge
-                let (src_port, dst_port) = self.edge_ports(edge_id);
-                let delay_type = self
-                    .node_op_inst(dst_id)
-                    .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-                let flow_props = self.edge_flow_props(edge_id);
-                let label = helper_edge_label(src_port, dst_port);
-                graph_write.write_edge(
-                    src_id,
-                    dst_id,
-                    delay_type,
-                    flow_props,
-                    label.as_deref(),
+                    varname_node_ids.into_iter(),
                     None,
                 )?;
             }
         }
 
+        // Write epilogue.
         graph_write.write_epilogue()?;
 
         Ok(())
@@ -1354,4 +1304,26 @@ impl HydroflowGraph {
         }
         Ok(())
     }
+}
+
+/// Configuration for writing graphs.
+#[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = "debugging", derive(clap::Args))]
+pub struct WriteConfig {
+    /// Subgraphs will not be rendered if set.
+    #[cfg_attr(feature = "debugging", arg(long))]
+    pub no_subgraphs: bool,
+    /// Variable names will not be rendered if set.
+    #[cfg_attr(feature = "debugging", arg(long))]
+    pub no_varnames: bool,
+}
+
+/// Enum for choosing between mermaid and dot graph writing.
+#[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "debugging", derive(clap::Parser, clap::ValueEnum))]
+pub enum WriteGraphType {
+    /// Mermaid graphs.
+    Mermaid,
+    /// Dot (Graphviz) graphs.
+    Dot,
 }

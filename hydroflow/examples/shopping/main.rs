@@ -3,6 +3,7 @@
 use clap::{Parser, ValueEnum};
 use driver::run_driver;
 use hydroflow::tokio;
+use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 
 mod driver;
 mod flows;
@@ -16,19 +17,15 @@ enum Role {
     Client,
     Server,
 }
-#[derive(Clone, ValueEnum, Debug)]
-enum GraphType {
-    Mermaid,
-    Dot,
-    Json,
-}
 
 #[derive(Parser, Debug)]
 struct Opts {
-    #[clap(value_enum, long)]
-    graph: Option<GraphType>,
     #[clap(long)]
     opt: usize,
+    #[clap(long)]
+    graph: Option<WriteGraphType>,
+    #[clap(flatten)]
+    write_config: Option<WriteConfig>,
 }
 
 #[hydroflow::main]
