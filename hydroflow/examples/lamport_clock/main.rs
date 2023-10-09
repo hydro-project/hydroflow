@@ -4,6 +4,7 @@ use clap::{Parser, ValueEnum};
 use client::run_client;
 use hydroflow::tokio;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
+use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 use server::run_server;
 
 mod client;
@@ -16,13 +17,6 @@ enum Role {
     Server,
 }
 
-#[derive(Parser, Debug, Clone, ValueEnum)]
-enum GraphType {
-    Mermaid,
-    Dot,
-    Json,
-}
-
 #[derive(Parser, Debug)]
 struct Opts {
     #[clap(value_enum, long)]
@@ -31,8 +25,10 @@ struct Opts {
     addr: Option<SocketAddr>,
     #[clap(long, value_parser = ipv4_resolve)]
     server_addr: Option<SocketAddr>,
-    #[clap(value_enum, long)]
-    graph: Option<GraphType>,
+    #[clap(long)]
+    graph: Option<WriteGraphType>,
+    #[clap(flatten)]
+    write_config: Option<WriteConfig>,
 }
 
 #[hydroflow::main]
@@ -50,7 +46,7 @@ async fn main() {
 
     match opts.role {
         Role::Server => {
-            run_server(outbound, inbound).await;
+            run_server(outbound, inbound, opts).await;
         }
         Role::Client => {
             run_client(outbound, inbound, opts).await;

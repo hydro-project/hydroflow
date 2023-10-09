@@ -22,7 +22,7 @@ pub fn main() {
         "{}",
         flow.meta_graph()
             .expect("No graph found, maybe failed to parse.")
-            .to_mermaid()
+            .to_mermaid(&Default::default())
     );
     edges_send.send((0, 1)).unwrap();
     edges_send.send((2, 4)).unwrap();

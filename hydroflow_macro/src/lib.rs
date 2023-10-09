@@ -114,7 +114,7 @@ pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStre
             let flat_mermaid = flat_graph.mermaid_string_flat();
 
             let part_graph = partition_graph(flat_graph).unwrap();
-            let part_mermaid = part_graph.to_mermaid();
+            let part_mermaid = part_graph.to_mermaid(&Default::default());
 
             let lit0 = Literal::string(&*flat_mermaid);
             let lit1 = Literal::string(&*part_mermaid);

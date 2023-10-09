@@ -277,7 +277,7 @@ pub fn run_server<RX>(
                     .meta_graph()
                     .expect("No graph found, maybe failed to parse.");
 
-                println!("{}", serde_graph.to_mermaid());
+                println!("{}", serde_graph.to_mermaid(&Default::default()));
             }
 
             let hydroflow_task = df.run_async();

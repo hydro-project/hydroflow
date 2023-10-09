@@ -103,10 +103,10 @@ macro_rules! assert_graphvis_snapshots {
             #[cfg(not(target_arch = "wasm32"))]
             {
                 insta::with_settings!({snapshot_suffix => "graphvis_mermaid"}, {
-                    insta::assert_snapshot!($df.meta_graph().unwrap().to_mermaid());
+                    insta::assert_snapshot!($df.meta_graph().unwrap().to_mermaid(&Default::default()));
                 });
                 insta::with_settings!({snapshot_suffix => "graphvis_dot"}, {
-                    insta::assert_snapshot!($df.meta_graph().unwrap().to_dot());
+                    insta::assert_snapshot!($df.meta_graph().unwrap().to_dot(&Default::default()));
                 });
             }
         }

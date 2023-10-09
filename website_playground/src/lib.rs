@@ -111,7 +111,7 @@ pub fn compile_hydroflow(program: String) -> JsValue {
             let (graph_code_opt, diagnostics) =
                 build_hfcode(input, &quote!(hydroflow), PathBuf::default());
             let output = graph_code_opt.map(|(graph, code)| {
-                let mermaid = graph.to_mermaid();
+                let mermaid = graph.to_mermaid(&Default::default());
                 let file = syn::parse_quote! {
                     fn main() {
                         let mut df = #code;
@@ -165,7 +165,7 @@ pub fn compile_datalog(program: String) -> JsValue {
 
                         Some(HydroflowOutput {
                             compiled: prettyplease::unparse(&file),
-                            mermaid: part_graph.to_mermaid(),
+                            mermaid: part_graph.to_mermaid(&Default::default()),
                         })
                     }
                     Err(diagnostic) => {

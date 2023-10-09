@@ -3,12 +3,12 @@ use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{UdpSink, UdpStream};
 
 use crate::protocol::{KvsMessageWithAddr, KvsResponse};
-use crate::GraphType;
+use crate::Opts;
 
-pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Option<GraphType>) {
+pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts) {
     println!("Server live!");
 
-    let mut df: Hydroflow = hydroflow_syntax! {
+    let mut hf: Hydroflow = hydroflow_syntax! {
         // network channels
         network_send = union() -> dest_sink_serde(outbound);
         network_recv = source_stream_serde(inbound)
@@ -35,23 +35,12 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, graph: Opt
             -> [1]network_send;
     };
 
-    if let Some(graph) = graph {
-        let serde_graph = df
+    if let Some(graph) = opts.graph {
+        let serde_graph = hf
             .meta_graph()
             .expect("No graph found, maybe failed to parse.");
-        match graph {
-            GraphType::Mermaid => {
-                serde_graph.open_mermaid().unwrap();
-            }
-            GraphType::Dot => {
-                serde_graph.open_dot().unwrap();
-            }
-            GraphType::Json => {
-                unimplemented!();
-                // println!("{}", serde_graph.to_json())
-            }
-        }
+        serde_graph.open_graph(graph, opts.write_config).unwrap();
     }
 
-    df.run_async().await.unwrap();
+    hf.run_async().await.unwrap();
 }
