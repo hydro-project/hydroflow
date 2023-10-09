@@ -23,7 +23,7 @@ pub trait GraphWrite {
         &mut self,
         node_id: GraphNodeId,
         node: &str,
-        node_color: Color,
+        node_color: Option<Color>,
     ) -> Result<(), Self::Err>;
 
     /// Write an edge, with styling.
@@ -104,11 +104,11 @@ where
         &mut self,
         node_id: GraphNodeId,
         node: &str,
-        node_color: Color,
+        node_color: Option<Color>,
     ) -> Result<(), Self::Err> {
         let class_str = match node_color {
-            Color::Push => "pushClass",
-            Color::Pull => "pullClass",
+            Some(Color::Push) => "pushClass",
+            Some(Color::Pull) => "pullClass",
             _ => "otherClass",
         };
         let label = format!(
@@ -121,8 +121,8 @@ where
             },
             class = class_str,
             lbracket = match node_color {
-                Color::Push => r"[/",
-                Color::Pull => r"[\",
+                Some(Color::Push) => r"[/",
+                Some(Color::Pull) => r"[\",
                 _ => "[",
             },
             code = node
@@ -143,8 +143,8 @@ where
                 .replace("far:fa", "far:<wbr>fa")
                 .replace("fas:fa", "fas:<wbr>fa"),
             rbracket = match node_color {
-                Color::Push => r"\]",
-                Color::Pull => r"/]",
+                Some(Color::Push) => r"\]",
+                Some(Color::Pull) => r"/]",
                 _ => "]",
             },
         );
@@ -286,21 +286,23 @@ where
         &mut self,
         node_id: GraphNodeId,
         node: &str,
-        node_color: Color,
+        node_color: Option<Color>,
     ) -> Result<(), Self::Err> {
         let nm = node.replace('"', "\\\"").replace('\n', "\\l");
         let label = format!("n{:?}", node_id.data());
         let shape_str = match node_color {
-            Color::Push => "house",
-            Color::Pull => "invhouse",
-            Color::Hoff => "parallelogram",
-            Color::Comp => "circle",
+            Some(Color::Push) => "house",
+            Some(Color::Pull) => "invhouse",
+            Some(Color::Hoff) => "parallelogram",
+            Some(Color::Comp) => "circle",
+            None => "rectangle",
         };
         let color_str = match node_color {
-            Color::Push => "\"#ffff88\"",
-            Color::Pull => "\"#88aaff\"",
-            Color::Hoff => "\"#ddddff\"",
-            Color::Comp => "white",
+            Some(Color::Push) => "\"#ffff88\"",
+            Some(Color::Pull) => "\"#88aaff\"",
+            Some(Color::Hoff) => "\"#ddddff\"",
+            Some(Color::Comp) => "white",
+            None => "\"#ddddff\"",
         };
         write!(
             self.write,
