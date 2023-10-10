@@ -1174,7 +1174,12 @@ impl HydroflowGraph {
         graph_write.write_prologue()?;
 
         // Write nodes.
+        let mut skipped_handoffs = BTreeSet::new();
         for (node_id, node) in self.nodes() {
+            if write_config.no_handoffs && matches!(node, Node::Handoff { .. }) {
+                skipped_handoffs.insert(node_id);
+                continue;
+            }
             graph_write.write_node(
                 node_id,
                 &*if write_config.op_short_text {
@@ -1191,7 +1196,19 @@ impl HydroflowGraph {
         }
 
         // Write edges.
-        for (edge_id, (src_id, dst_id)) in self.edges() {
+        for (edge_id, (mut src_id, dst_id)) in self.edges() {
+            {
+                // Handling for if `write_config.no_handoffs` true.
+                if skipped_handoffs.contains(&dst_id) {
+                    continue;
+                }
+                if skipped_handoffs.contains(&src_id) {
+                    let mut handoff_preds = self.node_predecessor_nodes(src_id);
+                    assert_eq!(1, handoff_preds.len());
+                    src_id = handoff_preds.next().unwrap();
+                }
+            }
+
             let (src_port, dst_port) = self.edge_ports(edge_id);
             let delay_type = self
                 .node_op_inst(dst_id)
@@ -1327,6 +1344,9 @@ pub struct WriteConfig {
     /// Will not render pull/push shapes if set.
     #[cfg_attr(feature = "debugging", arg(long))]
     pub no_pull_push: bool,
+    /// Will not render handoffs if set.
+    #[cfg_attr(feature = "debugging", arg(long))]
+    pub no_handoffs: bool,
 
     /// Op text will only be their name instead of the whole source.
     #[cfg_attr(feature = "debugging", arg(long))]
