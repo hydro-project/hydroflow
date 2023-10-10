@@ -8,6 +8,7 @@ use bytes::{BufMut, Bytes, BytesMut};
 use futures::Stream;
 use hydroflow::compiled::pull::HalfMultisetJoinState;
 use hydroflow::hydroflow_syntax;
+use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 use lattices::map_union::{MapUnionHashMap, MapUnionSingletonMap};
 use lattices::set_union::SetUnionSingletonSet;
 use lattices::{Max, Point, WithBot};
@@ -28,7 +29,8 @@ pub fn run_server<RX>(
     topology: Topology<RX>,
     dist: f64,
     throughput: Arc<AtomicUsize>,
-    print_mermaid: bool,
+    write_graph: Option<WriteGraphType>,
+    write_config: Option<WriteConfig>,
 ) where
     RX: Stream<Item = (usize, Bytes)> + StreamExt + Unpin + Send + 'static,
 {
@@ -272,12 +274,11 @@ pub fn run_server<RX>(
 
             };
 
-            if print_mermaid {
-                let serde_graph = df
+            if let Some(graph) = write_graph {
+                let meta_graph = df
                     .meta_graph()
                     .expect("No graph found, maybe failed to parse.");
-
-                println!("{}", serde_graph.to_mermaid(&Default::default()));
+                meta_graph.open_graph(graph, write_config).unwrap();
             }
 
             let hydroflow_task = df.run_async();

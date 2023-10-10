@@ -12,6 +12,7 @@ use std::time::{Duration, Instant};
 use bytes::Bytes;
 use clap::{command, Parser, Subcommand};
 use futures::Stream;
+use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 use tokio::sync::mpsc::UnboundedSender;
 use tokio_stream::StreamExt;
 
@@ -42,8 +43,10 @@ enum Commands {
         #[clap(long, default_value_t = false)]
         report: bool,
 
-        #[clap(long, default_value_t = false)]
-        print_mermaid: bool,
+        #[clap(long)]
+        graph: Option<WriteGraphType>,
+        #[clap(flatten)]
+        write_config: Option<WriteConfig>,
     },
 }
 
@@ -77,7 +80,8 @@ fn main() {
             warmup,
             duration,
             report,
-            mut print_mermaid,
+            mut graph,
+            mut write_config,
         } => {
             let mut throughputs = Vec::new();
             let mut nodes: HashMap<NodeId, Topology<_>> = HashMap::default();
@@ -118,10 +122,10 @@ fn main() {
                     topology,
                     dist,
                     throughputs[node_id].clone(),
-                    print_mermaid,
+                    // Only want one node to print the graph since it is the same for all of them.
+                    graph.take(),
+                    write_config.take(),
                 );
-
-                print_mermaid = false; // Only want one node to print the mermaid since it is the same for all of them.
             }
 
             let get_reset_throughputs = || {
