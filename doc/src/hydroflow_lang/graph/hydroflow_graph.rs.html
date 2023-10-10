@@ -1362,6 +1362,19 @@
 <a href="#1362" id="1362">1362</a>
 <a href="#1363" id="1363">1363</a>
 <a href="#1364" id="1364">1364</a>
+<a href="#1365" id="1365">1365</a>
+<a href="#1366" id="1366">1366</a>
+<a href="#1367" id="1367">1367</a>
+<a href="#1368" id="1368">1368</a>
+<a href="#1369" id="1369">1369</a>
+<a href="#1370" id="1370">1370</a>
+<a href="#1371" id="1371">1371</a>
+<a href="#1372" id="1372">1372</a>
+<a href="#1373" id="1373">1373</a>
+<a href="#1374" id="1374">1374</a>
+<a href="#1375" id="1375">1375</a>
+<a href="#1376" id="1376">1376</a>
+<a href="#1377" id="1377">1377</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -2539,10 +2552,23 @@
 
         <span class="comment">// Write nodes.
         </span><span class="kw">let </span><span class="kw-2">mut </span>skipped_handoffs = BTreeSet::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>subgraph_handoffs = &lt;BTreeMap&lt;GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt;&gt;::new();
         <span class="kw">for </span>(node_id, node) <span class="kw">in </span><span class="self">self</span>.nodes() {
-            <span class="kw">if </span>write_config.no_handoffs &amp;&amp; <span class="macro">matches!</span>(node, Node::Handoff { .. }) {
-                skipped_handoffs.insert(node_id);
-                <span class="kw">continue</span>;
+            <span class="kw">if </span><span class="macro">matches!</span>(node, Node::Handoff { .. }) {
+                <span class="kw">if </span>write_config.no_handoffs {
+                    skipped_handoffs.insert(node_id);
+                    <span class="kw">continue</span>;
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>pred_node = <span class="self">self</span>.node_predecessor_nodes(node_id).next().unwrap();
+                    <span class="kw">let </span>pred_sg = <span class="self">self</span>.node_subgraph(pred_node);
+                    <span class="kw">let </span>succ_node = <span class="self">self</span>.node_successor_nodes(node_id).next().unwrap();
+                    <span class="kw">let </span>succ_sg = <span class="self">self</span>.node_subgraph(succ_node);
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>((pred_sg, succ_sg)) = pred_sg.zip(succ_sg) {
+                        <span class="kw">if </span>pred_sg == succ_sg {
+                            subgraph_handoffs.entry(pred_sg).or_default().push(node_id);
+                        }
+                    }
+                }
             }
             graph_write.write_node(
                 node_id,
@@ -2585,12 +2611,12 @@
         <span class="comment">// Write subgraphs.
         </span><span class="kw">if </span>!write_config.no_subgraphs {
             <span class="kw">for </span>(subgraph_id, subgraph_node_ids) <span class="kw">in </span><span class="self">self</span>.subgraph_nodes.iter() {
+                <span class="kw">let </span>handoff_node_ids = subgraph_handoffs.get(<span class="kw-2">&amp;</span>subgraph_id).into_iter().flatten();
+                <span class="kw">let </span>subgraph_node_ids = subgraph_node_ids.iter();
+                <span class="kw">let </span>all_node_ids = handoff_node_ids.chain(subgraph_node_ids).copied();
+
                 <span class="kw">let </span>stratum = <span class="self">self</span>.subgraph_stratum.get(subgraph_id);
-                graph_write.write_subgraph_start(
-                    subgraph_id,
-                    <span class="kw-2">*</span>stratum.unwrap(),
-                    subgraph_node_ids.iter().copied(),
-                )<span class="question-mark">?</span>;
+                graph_write.write_subgraph_start(subgraph_id, <span class="kw-2">*</span>stratum.unwrap(), all_node_ids)<span class="question-mark">?</span>;
                 <span class="comment">// Write out any variable names within the subgraph.
                 </span><span class="kw">if </span>!write_config.no_varnames {
                     <span class="kw">for </span>(varname, varname_node_ids) <span class="kw">in
