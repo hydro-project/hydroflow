@@ -37,6 +37,7 @@ linkStyle default stroke:#aaa
 13v1-->9v1
 14v1-->|1|10v1
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
+    13v1
     1v1
     2v1
     4v1
