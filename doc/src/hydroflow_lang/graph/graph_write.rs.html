@@ -411,6 +411,27 @@
 <a href="#411" id="411">411</a>
 <a href="#412" id="412">412</a>
 <a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -431,21 +452,15 @@
     <span class="doccomment">/// Begin the graph. First method called.
     </span><span class="kw">fn </span>write_prologue(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt;;
 
-    <span class="doccomment">/// Begin writing a subgraph.
-    </span><span class="kw">fn </span>write_subgraph_start(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        sg_id: GraphSubgraphId,
-        stratum: usize,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt;;
-    <span class="doccomment">/// Write a node, possibly within a subgraph.
+    <span class="doccomment">/// Write a node, with styling.
     </span><span class="kw">fn </span>write_node(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         node_id: GraphNodeId,
-        node: <span class="kw-2">&amp;</span>str, <span class="comment">//&amp;Node,
-        </span>node_color: Color,
-        in_subgraph: <span class="prelude-ty">Option</span>&lt;GraphSubgraphId&gt;,
+        node: <span class="kw-2">&amp;</span>str,
+        node_color: <span class="prelude-ty">Option</span>&lt;Color&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt;;
-    <span class="doccomment">/// Write an edge, possibly within a subgraph.
+
+    <span class="doccomment">/// Write an edge, with styling.
     </span><span class="kw">fn </span>write_edge(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         src_id: GraphNodeId,
@@ -453,14 +468,21 @@
         delay_type: <span class="prelude-ty">Option</span>&lt;DelayType&gt;,
         flow_props: <span class="prelude-ty">Option</span>&lt;FlowProps&gt;,
         label: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
-        in_subgraph: <span class="prelude-ty">Option</span>&lt;GraphSubgraphId&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt;;
-    <span class="doccomment">/// Write the nodes associated with a single variable name, within a subgraph.
-    </span><span class="kw">fn </span>write_subgraph_varname(
+
+    <span class="doccomment">/// Begin writing a subgraph.
+    </span><span class="kw">fn </span>write_subgraph_start(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         sg_id: GraphSubgraphId,
+        stratum: usize,
+        subgraph_nodes: <span class="kw">impl </span>Iterator&lt;Item = GraphNodeId&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt;;
+    <span class="doccomment">/// Write the nodes associated with a single variable name, within a subgraph.
+    </span><span class="kw">fn </span>write_varname(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         varname: <span class="kw-2">&amp;</span>str,
         varname_nodes: <span class="kw">impl </span>Iterator&lt;Item = GraphNodeId&gt;,
+        sg_id: <span class="prelude-ty">Option</span>&lt;GraphSubgraphId&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt;;
     <span class="doccomment">/// End writing a subgraph.
     </span><span class="kw">fn </span>write_subgraph_end(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt;;
@@ -471,10 +493,16 @@
 
 <span class="kw">pub struct </span>Mermaid&lt;W&gt; {
     write: W,
+    <span class="comment">// How many links have been written, for styling
+    // https://mermaid.js.org/syntax/flowchart.html#styling-links
+    </span>link_count: usize,
 }
 <span class="kw">impl</span>&lt;W&gt; Mermaid&lt;W&gt; {
     <span class="kw">pub fn </span>new(write: W) -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{ write }
+        <span class="self">Self </span>{
+            write,
+            link_count: <span class="number">0</span>,
+        }
     }
 }
 <span class="kw">impl</span>&lt;W&gt; GraphWrite <span class="kw">for </span>Mermaid&lt;W&gt;
@@ -491,61 +519,44 @@
         <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;flowchart TD&quot;</span>)<span class="question-mark">?</span>;
         <span class="macro">writeln!</span>(
             <span class="self">self</span>.write,
-            <span class="string">&quot;classDef pullClass fill:#8af,stroke:#000,text-align:left,white-space:pre&quot;
-        </span>)<span class="question-mark">?</span>;
-        <span class="macro">writeln!</span>(
-            <span class="self">self</span>.write,
-            <span class="string">&quot;classDef pushClass fill:#ff8,stroke:#000,text-align:left,white-space:pre&quot;
-        </span>)<span class="question-mark">?</span>;
-
-        <span class="macro">writeln!</span>(
-            <span class="self">self</span>.write,
-            <span class="string">&quot;linkStyle default stroke:#aaa,stroke-width:4px,color:red,font-size:1.5em;&quot;
-        </span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(())
-    }
-
-    <span class="kw">fn </span>write_subgraph_start(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        sg_id: GraphSubgraphId,
-        stratum: usize,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
-        <span class="macro">writeln!</span>(
-            <span class="self">self</span>.write,
-            <span class="string">&quot;{:t$}subgraph sg_{sg:?} [\&quot;sg_{sg:?} stratum {:?}\&quot;]&quot;</span>,
-            <span class="string">&quot;&quot;</span>,
-            stratum,
-            sg = sg_id.data(),
-            t = <span class="number">0</span>,
+            <span class="string">&quot;classDef pullClass fill:#8af,stroke:#000,text-align:left,white-space:pre&quot;</span>,
         )<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(
+            <span class="self">self</span>.write,
+            <span class="string">&quot;classDef pushClass fill:#ff8,stroke:#000,text-align:left,white-space:pre&quot;</span>,
+        )<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(
+            <span class="self">self</span>.write,
+            <span class="string">&quot;classDef otherClass fill:#fdc,stroke:#000,text-align:left,white-space:pre&quot;</span>,
+        )<span class="question-mark">?</span>;
+
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;linkStyle default stroke:#aaa&quot;</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">fn </span>write_node(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         node_id: GraphNodeId,
-        node: <span class="kw-2">&amp;</span>str, <span class="comment">//&amp;Node,
-        </span>node_color: Color,
-        in_subgraph: <span class="prelude-ty">Option</span>&lt;GraphSubgraphId&gt;,
+        node: <span class="kw-2">&amp;</span>str,
+        node_color: <span class="prelude-ty">Option</span>&lt;Color&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
         <span class="kw">let </span>class_str = <span class="kw">match </span>node_color {
-            Color::Push =&gt; <span class="string">&quot;pushClass&quot;</span>,
-            Color::Pull =&gt; <span class="string">&quot;pullClass&quot;</span>,
+            <span class="prelude-val">Some</span>(Color::Push) =&gt; <span class="string">&quot;pushClass&quot;</span>,
+            <span class="prelude-val">Some</span>(Color::Pull) =&gt; <span class="string">&quot;pullClass&quot;</span>,
             <span class="kw">_ </span>=&gt; <span class="string">&quot;otherClass&quot;</span>,
         };
         <span class="kw">let </span>label = <span class="macro">format!</span>(
-            <span class="string">r#&quot;{:t$}{id:?}{lbracket}&quot;{id_label} &lt;code&gt;{code}&lt;/code&gt;&quot;{rbracket}:::{class}&quot;#</span>,
-            <span class="string">&quot;&quot;</span>,
-            id = node_id.data(),
-            id_label = <span class="kw">if </span>node.contains(<span class="string">&#39;\n&#39;</span>) {
+            <span class="string">r#&quot;{node_id:?}{lbracket}&quot;{node_label} &lt;code&gt;{code}&lt;/code&gt;&quot;{rbracket}:::{class}&quot;#</span>,
+            node_id = node_id.data(),
+            node_label = <span class="kw">if </span>node.contains(<span class="string">&#39;\n&#39;</span>) {
                 <span class="macro">format!</span>(<span class="string">&quot;&lt;div style=text-align:center&gt;({:?})&lt;/div&gt;&quot;</span>, node_id.data())
             } <span class="kw">else </span>{
                 <span class="macro">format!</span>(<span class="string">&quot;({:?})&quot;</span>, node_id.data())
             },
             class = class_str,
             lbracket = <span class="kw">match </span>node_color {
-                Color::Push =&gt; <span class="string">r&quot;[/&quot;</span>,
-                Color::Pull =&gt; <span class="string">r&quot;[\&quot;</span>,
+                <span class="prelude-val">Some</span>(Color::Push) =&gt; <span class="string">r&quot;[/&quot;</span>,
+                <span class="prelude-val">Some</span>(Color::Pull) =&gt; <span class="string">r&quot;[\&quot;</span>,
                 <span class="kw">_ </span>=&gt; <span class="string">&quot;[&quot;</span>,
             },
             code = node
@@ -566,11 +577,10 @@
                 .replace(<span class="string">&quot;far:fa&quot;</span>, <span class="string">&quot;far:&lt;wbr&gt;fa&quot;</span>)
                 .replace(<span class="string">&quot;fas:fa&quot;</span>, <span class="string">&quot;fas:&lt;wbr&gt;fa&quot;</span>),
             rbracket = <span class="kw">match </span>node_color {
-                Color::Push =&gt; <span class="string">r&quot;\]&quot;</span>,
-                Color::Pull =&gt; <span class="string">r&quot;/]&quot;</span>,
+                <span class="prelude-val">Some</span>(Color::Push) =&gt; <span class="string">r&quot;\]&quot;</span>,
+                <span class="prelude-val">Some</span>(Color::Pull) =&gt; <span class="string">r&quot;/]&quot;</span>,
                 <span class="kw">_ </span>=&gt; <span class="string">&quot;]&quot;</span>,
             },
-            t = <span class="kw">if </span>in_subgraph.is_some() { <span class="number">4 </span>} <span class="kw">else </span>{ <span class="number">0 </span>},
         );
         <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;{}&quot;</span>, label)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
@@ -583,16 +593,15 @@
         delay_type: <span class="prelude-ty">Option</span>&lt;DelayType&gt;,
         flow_props: <span class="prelude-ty">Option</span>&lt;FlowProps&gt;,
         label: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
-        in_subgraph: <span class="prelude-ty">Option</span>&lt;GraphSubgraphId&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
         <span class="kw">let </span>src_str = <span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, src_id.data());
         <span class="kw">let </span>dest_str = <span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, dst_id.data());
-        <span class="macro">writeln!</span>(
+        <span class="kw">let </span>lattice_flow_type = flow_props.and_then(|flow_props| flow_props.lattice_flow_type);
+        <span class="macro">write!</span>(
             <span class="self">self</span>.write,
-            <span class="string">&quot;{:t$}{src}{arrow_body}{arrow_head}{label}{dst}&quot;</span>,
-            <span class="string">&quot;&quot;</span>,
+            <span class="string">&quot;{src}{arrow_body}{arrow_head}{label}{dst}&quot;</span>,
             src = src_str.trim(),
-            arrow_body = <span class="kw">match </span>flow_props.and_then(|flow_props| flow_props.lattice_flow_type) {
+            arrow_body = <span class="kw">match </span>lattice_flow_type {
                 <span class="prelude-val">None </span>=&gt; <span class="string">&quot;--&quot;</span>,
                 <span class="prelude-val">Some</span>(LatticeFlowType::Delta) =&gt; <span class="string">&quot;-.-&quot;</span>,
                 <span class="prelude-val">Some</span>(LatticeFlowType::Cumul) =&gt; <span class="string">&quot;==&quot;</span>,
@@ -608,34 +617,74 @@
                 Cow::Borrowed(<span class="string">&quot;&quot;</span>)
             },
             dst = dest_str.trim(),
-            t = <span class="kw">if </span>in_subgraph.is_some() { <span class="number">4 </span>} <span class="kw">else </span>{ <span class="number">0 </span>},
         )<span class="question-mark">?</span>;
+        <span class="kw">if </span>delay_type.is_some() || lattice_flow_type.is_some() {
+            <span class="macro">write!</span>(
+                <span class="self">self</span>.write,
+                <span class="string">&quot;; linkStyle {} stroke:{}&quot;</span>,
+                <span class="self">self</span>.link_count,
+                <span class="kw">match </span>(delay_type, lattice_flow_type) {
+                    (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; <span class="macro">unreachable!</span>(),
+                    (<span class="prelude-val">Some</span>(<span class="kw">_</span>), <span class="kw">_</span>) =&gt; <span class="string">&quot;red&quot;</span>,
+                    (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; <span class="string">&quot;#060&quot;</span>,
+                }
+            )<span class="question-mark">?</span>;
+        }
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write)<span class="question-mark">?</span>;
+        <span class="self">self</span>.link_count += <span class="number">1</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn </span>write_subgraph_varname(
+    <span class="kw">fn </span>write_subgraph_start(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         sg_id: GraphSubgraphId,
-        varname: <span class="kw-2">&amp;</span>str,
-        varname_nodes: <span class="kw">impl </span>Iterator&lt;Item = GraphNodeId&gt;,
+        stratum: usize,
+        subgraph_nodes: <span class="kw">impl </span>Iterator&lt;Item = GraphNodeId&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
         <span class="macro">writeln!</span>(
             <span class="self">self</span>.write,
-            <span class="string">&quot;{:t$}subgraph sg_{sg:?}_var_{var} [\&quot;var &lt;tt&gt;{var}&lt;/tt&gt;\&quot;]&quot;</span>,
-            <span class="string">&quot;&quot;</span>,
+            <span class="string">&quot;subgraph sg_{sg:?} [\&quot;sg_{sg:?} stratum {:?}\&quot;]&quot;</span>,
+            stratum,
             sg = sg_id.data(),
-            var = varname,
-            t = <span class="number">4</span>,
         )<span class="question-mark">?</span>;
-        <span class="kw">for </span>local_named_node <span class="kw">in </span>varname_nodes {
-            <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;{:t$}{:?}&quot;</span>, <span class="string">&quot;&quot;</span>, local_named_node.data(), t = <span class="number">8</span>)<span class="question-mark">?</span>;
+        <span class="kw">for </span>node_id <span class="kw">in </span>subgraph_nodes {
+            <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;    {node_id:?}&quot;</span>, node_id = node_id.data())<span class="question-mark">?</span>;
         }
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;{:t$}end&quot;</span>, <span class="string">&quot;&quot;</span>, t = <span class="number">4</span>)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="kw">fn </span>write_varname(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        varname: <span class="kw-2">&amp;</span>str,
+        varname_nodes: <span class="kw">impl </span>Iterator&lt;Item = GraphNodeId&gt;,
+        sg_id: <span class="prelude-ty">Option</span>&lt;GraphSubgraphId&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
+        <span class="kw">let </span>pad = <span class="kw">if let </span><span class="prelude-val">Some</span>(sg_id) = sg_id {
+            <span class="macro">writeln!</span>(
+                <span class="self">self</span>.write,
+                <span class="string">&quot;    subgraph sg_{sg:?}_var_{var} [\&quot;var &lt;tt&gt;{var}&lt;/tt&gt;\&quot;]&quot;</span>,
+                sg = sg_id.data(),
+                var = varname,
+            )<span class="question-mark">?</span>;
+            <span class="string">&quot;    &quot;
+        </span>} <span class="kw">else </span>{
+            <span class="macro">writeln!</span>(
+                <span class="self">self</span>.write,
+                <span class="string">&quot;subgraph var_{0} [\&quot;var &lt;tt&gt;{0}&lt;/tt&gt;\&quot;]&quot;</span>,
+                varname,
+            )<span class="question-mark">?</span>;
+            <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;style var_{} fill:transparent&quot;</span>, varname)<span class="question-mark">?</span>;
+            <span class="string">&quot;&quot;
+        </span>};
+        <span class="kw">for </span>local_named_node <span class="kw">in </span>varname_nodes {
+            <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;    {}{:?}&quot;</span>, pad, local_named_node.data())<span class="question-mark">?</span>;
+        }
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;{}end&quot;</span>, pad)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">fn </span>write_subgraph_end(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;{:t$}end&quot;</span>, <span class="string">&quot;&quot;</span>, t = <span class="number">0</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;end&quot;</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
@@ -661,69 +710,44 @@
 
     <span class="kw">fn </span>write_prologue(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
         <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;digraph {{&quot;</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(())
-    }
-
-    <span class="kw">fn </span>write_subgraph_start(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        sg_id: GraphSubgraphId,
-        stratum: usize,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
-        <span class="macro">writeln!</span>(
-            <span class="self">self</span>.write,
-            <span class="string">&quot;{:t$}subgraph \&quot;cluster n{:?}\&quot; {{&quot;</span>,
-            <span class="string">&quot;&quot;</span>,
-            sg_id.data(),
-            t = <span class="number">4</span>,
-        )<span class="question-mark">?</span>;
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;{:t$}fillcolor=\&quot;#dddddd\&quot;&quot;</span>, <span class="string">&quot;&quot;</span>, t = <span class="number">8</span>)<span class="question-mark">?</span>;
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;{:t$}style=filled&quot;</span>, <span class="string">&quot;&quot;</span>, t = <span class="number">8</span>)<span class="question-mark">?</span>;
-        <span class="macro">writeln!</span>(
-            <span class="self">self</span>.write,
-            <span class="string">&quot;{:t$}label = \&quot;sg_{:?}\\nstratum {}\&quot;&quot;</span>,
-            <span class="string">&quot;&quot;</span>,
-            sg_id.data(),
-            stratum,
-            t = <span class="number">8</span>,
-        )<span class="question-mark">?</span>;
+        <span class="kw">const </span>FONTS: <span class="kw-2">&amp;</span>str = <span class="string">&quot;\&quot;Monaco,Menlo,Consolas,&amp;quot;Droid Sans Mono&amp;quot;,Inconsolata,&amp;quot;Courier New&amp;quot;,monospace\&quot;&quot;</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;    node [fontname={}, style=filled];&quot;</span>, FONTS)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;    edge [fontname={}];&quot;</span>, FONTS)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">fn </span>write_node(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         node_id: GraphNodeId,
-        node: <span class="kw-2">&amp;</span>str, <span class="comment">//&amp;Node,
-        </span>node_color: Color,
-        in_subgraph: <span class="prelude-ty">Option</span>&lt;GraphSubgraphId&gt;,
+        node: <span class="kw-2">&amp;</span>str,
+        node_color: <span class="prelude-ty">Option</span>&lt;Color&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
         <span class="kw">let </span>nm = node.replace(<span class="string">&#39;&quot;&#39;</span>, <span class="string">&quot;\\\&quot;&quot;</span>).replace(<span class="string">&#39;\n&#39;</span>, <span class="string">&quot;\\l&quot;</span>);
         <span class="kw">let </span>label = <span class="macro">format!</span>(<span class="string">&quot;n{:?}&quot;</span>, node_id.data());
         <span class="kw">let </span>shape_str = <span class="kw">match </span>node_color {
-            Color::Push =&gt; <span class="string">&quot;house&quot;</span>,
-            Color::Pull =&gt; <span class="string">&quot;invhouse&quot;</span>,
-            Color::Hoff =&gt; <span class="string">&quot;parallelogram&quot;</span>,
-            Color::Comp =&gt; <span class="string">&quot;circle&quot;</span>,
+            <span class="prelude-val">Some</span>(Color::Push) =&gt; <span class="string">&quot;house&quot;</span>,
+            <span class="prelude-val">Some</span>(Color::Pull) =&gt; <span class="string">&quot;invhouse&quot;</span>,
+            <span class="prelude-val">Some</span>(Color::Hoff) =&gt; <span class="string">&quot;parallelogram&quot;</span>,
+            <span class="prelude-val">Some</span>(Color::Comp) =&gt; <span class="string">&quot;circle&quot;</span>,
+            <span class="prelude-val">None </span>=&gt; <span class="string">&quot;rectangle&quot;</span>,
         };
         <span class="kw">let </span>color_str = <span class="kw">match </span>node_color {
-            Color::Push =&gt; <span class="string">&quot;style = filled, color = \&quot;#ffff00\&quot;&quot;</span>,
-            Color::Pull =&gt; <span class="string">&quot;style = filled, color = \&quot;#0022ff\&quot;, fontcolor = \&quot;#ffffff\&quot;&quot;</span>,
-            Color::Hoff =&gt; <span class="string">&quot;style = filled, color = \&quot;#ddddff\&quot;&quot;</span>,
-            Color::Comp =&gt; <span class="string">&quot;style = filled, color = white&quot;</span>,
+            <span class="prelude-val">Some</span>(Color::Push) =&gt; <span class="string">&quot;\&quot;#ffff88\&quot;&quot;</span>,
+            <span class="prelude-val">Some</span>(Color::Pull) =&gt; <span class="string">&quot;\&quot;#88aaff\&quot;&quot;</span>,
+            <span class="prelude-val">Some</span>(Color::Hoff) =&gt; <span class="string">&quot;\&quot;#ddddff\&quot;&quot;</span>,
+            <span class="prelude-val">Some</span>(Color::Comp) =&gt; <span class="string">&quot;white&quot;</span>,
+            <span class="prelude-val">None </span>=&gt; <span class="string">&quot;\&quot;#ddddff\&quot;&quot;</span>,
         };
         <span class="macro">write!</span>(
             <span class="self">self</span>.write,
-            <span class="string">&quot;{:t$}{} [label=\&quot;({}) {}{}\&quot;&quot;</span>,
-            <span class="string">&quot;&quot;</span>,
+            <span class="string">&quot;    {} [label=\&quot;({}) {}{}\&quot;&quot;</span>,
             label,
             label,
             nm,
             <span class="comment">// if contains linebreak left-justify by appending another &quot;\\l&quot;
             </span><span class="kw">if </span>nm.contains(<span class="string">&quot;\\l&quot;</span>) { <span class="string">&quot;\\l&quot; </span>} <span class="kw">else </span>{ <span class="string">&quot;&quot; </span>},
-            t = <span class="kw">if </span>in_subgraph.is_some() { <span class="number">8 </span>} <span class="kw">else </span>{ <span class="number">4 </span>},
         )<span class="question-mark">?</span>;
-        <span class="macro">write!</span>(<span class="self">self</span>.write, <span class="string">&quot;, fontname=Monaco&quot;</span>)<span class="question-mark">?</span>;
-        <span class="macro">write!</span>(<span class="self">self</span>.write, <span class="string">&quot;, shape={}&quot;</span>, shape_str)<span class="question-mark">?</span>;
-        <span class="macro">write!</span>(<span class="self">self</span>.write, <span class="string">&quot;, {}&quot;</span>, color_str)<span class="question-mark">?</span>;
+        <span class="macro">write!</span>(<span class="self">self</span>.write, <span class="string">&quot;, shape={}, fillcolor={}&quot;</span>, shape_str, color_str)<span class="question-mark">?</span>;
         <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;]&quot;</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
@@ -735,38 +759,30 @@
         delay_type: <span class="prelude-ty">Option</span>&lt;DelayType&gt;,
         flow_props: <span class="prelude-ty">Option</span>&lt;FlowProps&gt;,
         label: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
-        in_subgraph: <span class="prelude-ty">Option</span>&lt;GraphSubgraphId&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
-        <span class="comment">// TODO(mingwei): handle `flow_props`.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>properties = Vec::&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;::new();
+        <span class="kw">let </span>lattice_flow_type = flow_props.and_then(|flow_props| flow_props.lattice_flow_type);
+        <span class="kw">let </span><span class="kw-2">mut </span>properties = Vec::&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;::new();
         <span class="kw">if let </span><span class="prelude-val">Some</span>(label) = label {
             properties.push(<span class="macro">format!</span>(<span class="string">&quot;label=\&quot;{}\&quot;&quot;</span>, label).into());
         };
-        <span class="kw">match </span>delay_type {
-            <span class="prelude-val">Some</span>(DelayType::Stratum) =&gt; {
-                properties.push(<span class="string">&quot;arrowhead=box, color=red&quot;</span>.into());
-            }
-            <span class="prelude-val">Some</span>(DelayType::Tick) =&gt; {
-                properties.push(<span class="string">&quot;arrowhead=dot, color=red&quot;</span>.into());
-            }
-            <span class="prelude-val">None </span>=&gt; (),
-        };
-        <span class="kw">match </span>flow_props.and_then(|flow_props| flow_props.lattice_flow_type) {
-            <span class="prelude-val">Some</span>(LatticeFlowType::Delta) =&gt; {
-                properties.push(<span class="string">&quot;style=dashed&quot;</span>.into());
-            }
-            <span class="prelude-val">Some</span>(LatticeFlowType::Cumul) =&gt; {
-                properties.push(<span class="string">&quot;style=bold&quot;</span>.into());
-            }
-            <span class="prelude-val">None </span>=&gt; (),
+        <span class="comment">// Color
+        </span><span class="kw">if </span>delay_type.is_some() {
+            properties.push(<span class="string">&quot;color=red&quot;</span>.into());
+        } <span class="kw">else if </span>lattice_flow_type.is_some() {
+            properties.push(<span class="string">&quot;color=darkgreen&quot;</span>.into());
         }
+        <span class="comment">// Bold or dashed
+        </span><span class="kw">match </span>lattice_flow_type {
+            <span class="prelude-val">None </span>=&gt; {}
+            <span class="prelude-val">Some</span>(LatticeFlowType::Delta) =&gt; properties.push(<span class="string">&quot;style=dashed&quot;</span>.into()),
+            <span class="prelude-val">Some</span>(LatticeFlowType::Cumul) =&gt; properties.push(<span class="string">&quot;style=bold&quot;</span>.into()),
+        }
+
         <span class="macro">write!</span>(
             <span class="self">self</span>.write,
-            <span class="string">&quot;{:t$}n{:?} -&gt; n{:?}&quot;</span>,
-            <span class="string">&quot;&quot;</span>,
+            <span class="string">&quot;    n{:?} -&gt; n{:?}&quot;</span>,
             src_id.data(),
             dst_id.data(),
-            t = <span class="kw">if </span>in_subgraph.is_some() { <span class="number">8 </span>} <span class="kw">else </span>{ <span class="number">4 </span>},
         )<span class="question-mark">?</span>;
         <span class="kw">if </span>!properties.is_empty() {
             <span class="macro">write!</span>(<span class="self">self</span>.write, <span class="string">&quot; [&quot;</span>)<span class="question-mark">?</span>;
@@ -779,43 +795,69 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn </span>write_subgraph_varname(
+    <span class="kw">fn </span>write_subgraph_start(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         sg_id: GraphSubgraphId,
-        varname: <span class="kw-2">&amp;</span>str,
-        varname_nodes: <span class="kw">impl </span>Iterator&lt;Item = GraphNodeId&gt;,
+        stratum: usize,
+        subgraph_nodes: <span class="kw">impl </span>Iterator&lt;Item = GraphNodeId&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
         <span class="macro">writeln!</span>(
             <span class="self">self</span>.write,
-            <span class="string">&quot;{:t$}subgraph \&quot;cluster sg_{sg:?}_var_{var}\&quot; {{&quot;</span>,
-            <span class="string">&quot;&quot;</span>,
-            sg = sg_id.data(),
-            var = varname,
-            t = <span class="number">8</span>,
+            <span class="string">&quot;    subgraph \&quot;cluster n{:?}\&quot; {{&quot;</span>,
+            sg_id.data(),
         )<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;        fillcolor=\&quot;#dddddd\&quot;&quot;</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;        style=filled&quot;</span>)<span class="question-mark">?</span>;
         <span class="macro">writeln!</span>(
             <span class="self">self</span>.write,
-            <span class="string">&quot;{:t$}label=\&quot;var {var}\&quot;&quot;</span>,
-            <span class="string">&quot;&quot;</span>,
-            var = varname,
-            t = <span class="number">12</span>,
+            <span class="string">&quot;        label = \&quot;sg_{:?}\\nstratum {}\&quot;&quot;</span>,
+            sg_id.data(),
+            stratum,
         )<span class="question-mark">?</span>;
-        <span class="kw">for </span>local_named_node <span class="kw">in </span>varname_nodes {
+        <span class="kw">for </span>node_id <span class="kw">in </span>subgraph_nodes {
+            <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;        n{:?}&quot;</span>, node_id.data(),)<span class="question-mark">?</span>;
+        }
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="kw">fn </span>write_varname(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        varname: <span class="kw-2">&amp;</span>str,
+        varname_nodes: <span class="kw">impl </span>Iterator&lt;Item = GraphNodeId&gt;,
+        sg_id: <span class="prelude-ty">Option</span>&lt;GraphSubgraphId&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
+        <span class="kw">let </span>pad = <span class="kw">if let </span><span class="prelude-val">Some</span>(sg_id) = sg_id {
             <span class="macro">writeln!</span>(
                 <span class="self">self</span>.write,
-                <span class="string">&quot;{:t$}n{:?}&quot;</span>,
-                <span class="string">&quot;&quot;</span>,
-                local_named_node.data(),
-                t = <span class="number">12
-            </span>)<span class="question-mark">?</span>;
+                <span class="string">&quot;        subgraph \&quot;cluster_sg_{sg:?}_var_{var}\&quot; {{&quot;</span>,
+                sg = sg_id.data(),
+                var = varname,
+            )<span class="question-mark">?</span>;
+            <span class="string">&quot;    &quot;
+        </span>} <span class="kw">else </span>{
+            <span class="macro">writeln!</span>(
+                <span class="self">self</span>.write,
+                <span class="string">&quot;    subgraph \&quot;cluster_var_{var}\&quot; {{&quot;</span>,
+                var = varname,
+            )<span class="question-mark">?</span>;
+            <span class="string">&quot;&quot;
+        </span>};
+        <span class="macro">writeln!</span>(
+            <span class="self">self</span>.write,
+            <span class="string">&quot;        {}label=\&quot;var {var}\&quot;&quot;</span>,
+            pad,
+            var = varname
+        )<span class="question-mark">?</span>;
+        <span class="kw">for </span>local_named_node <span class="kw">in </span>varname_nodes {
+            <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;        {}n{:?}&quot;</span>, pad, local_named_node.data())<span class="question-mark">?</span>;
         }
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, t = <span class="number">8</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;    {}}}&quot;</span>, pad)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">fn </span>write_subgraph_end(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
         <span class="comment">// subgraph footer
-        </span><span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;{:t$}}}&quot;</span>, <span class="string">&quot;&quot;</span>, t = <span class="number">4</span>)<span class="question-mark">?</span>;
+        </span><span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;    }}&quot;</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 

@@ -1355,9 +1355,16 @@
 <a href="#1355" id="1355">1355</a>
 <a href="#1356" id="1356">1356</a>
 <a href="#1357" id="1357">1357</a>
+<a href="#1358" id="1358">1358</a>
+<a href="#1359" id="1359">1359</a>
+<a href="#1360" id="1360">1360</a>
+<a href="#1361" id="1361">1361</a>
+<a href="#1362" id="1362">1362</a>
+<a href="#1363" id="1363">1363</a>
+<a href="#1364" id="1364">1364</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
-</span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, HashSet};
+</span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 <span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::iter::FusedIterator;
 
@@ -2436,34 +2443,46 @@
     }
 
     <span class="doccomment">/// Writes this graph as mermaid into a string.
-    </span><span class="kw">pub fn </span>to_mermaid(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+    </span><span class="kw">pub fn </span>to_mermaid(<span class="kw-2">&amp;</span><span class="self">self</span>, write_config: <span class="kw-2">&amp;</span>WriteConfig) -&gt; String {
         <span class="kw">let </span><span class="kw-2">mut </span>output = String::new();
-        <span class="self">self</span>.write_mermaid(<span class="kw-2">&amp;mut </span>output).unwrap();
+        <span class="self">self</span>.write_mermaid(<span class="kw-2">&amp;mut </span>output, write_config).unwrap();
         output
     }
 
     <span class="doccomment">/// Writes this graph as mermaid into the given `Write`.
-    </span><span class="kw">pub fn </span>write_mermaid(<span class="kw-2">&amp;</span><span class="self">self</span>, output: <span class="kw">impl </span>std::fmt::Write) -&gt; std::fmt::Result {
+    </span><span class="kw">pub fn </span>write_mermaid(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        output: <span class="kw">impl </span>std::fmt::Write,
+        write_config: <span class="kw-2">&amp;</span>WriteConfig,
+    ) -&gt; std::fmt::Result {
         <span class="kw">let </span><span class="kw-2">mut </span>graph_write = Mermaid::new(output);
-        <span class="self">self</span>.write_graph(<span class="kw-2">&amp;mut </span>graph_write)
+        <span class="self">self</span>.write_graph(<span class="kw-2">&amp;mut </span>graph_write, write_config)
     }
 
     <span class="doccomment">/// Writes this graph as DOT (graphviz) into a string.
-    </span><span class="kw">pub fn </span>to_dot(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+    </span><span class="kw">pub fn </span>to_dot(<span class="kw-2">&amp;</span><span class="self">self</span>, write_config: <span class="kw-2">&amp;</span>WriteConfig) -&gt; String {
         <span class="kw">let </span><span class="kw-2">mut </span>output = String::new();
         <span class="kw">let </span><span class="kw-2">mut </span>graph_write = Dot::new(<span class="kw-2">&amp;mut </span>output);
-        <span class="self">self</span>.write_graph(<span class="kw-2">&amp;mut </span>graph_write).unwrap();
+        <span class="self">self</span>.write_graph(<span class="kw-2">&amp;mut </span>graph_write, write_config).unwrap();
         output
     }
 
     <span class="doccomment">/// Writes this graph as DOT (graphviz) into the given `Write`.
-    </span><span class="kw">pub fn </span>write_dot(<span class="kw-2">&amp;</span><span class="self">self</span>, output: <span class="kw">impl </span>std::fmt::Write) -&gt; std::fmt::Result {
+    </span><span class="kw">pub fn </span>write_dot(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        output: <span class="kw">impl </span>std::fmt::Write,
+        write_config: <span class="kw-2">&amp;</span>WriteConfig,
+    ) -&gt; std::fmt::Result {
         <span class="kw">let </span><span class="kw-2">mut </span>graph_write = Dot::new(output);
-        <span class="self">self</span>.write_graph(<span class="kw-2">&amp;mut </span>graph_write)
+        <span class="self">self</span>.write_graph(<span class="kw-2">&amp;mut </span>graph_write, write_config)
     }
 
     <span class="doccomment">/// Write out this `HydroflowGraph` using the given `GraphWrite`. E.g. `Mermaid` or `Dot.
-    </span><span class="kw">pub fn </span>write_graph&lt;W&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="kw-2">mut </span>graph_write: W) -&gt; <span class="prelude-ty">Result</span>&lt;(), W::Err&gt;
+    </span><span class="kw">pub fn </span>write_graph&lt;W&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="kw-2">mut </span>graph_write: W,
+        write_config: <span class="kw-2">&amp;</span>WriteConfig,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), W::Err&gt;
     <span class="kw">where
         </span>W: GraphWrite,
     {
@@ -2490,152 +2509,115 @@
             label
         }
 
-        <span class="kw">let </span>subgraph_handoffs = <span class="self">self</span>.helper_collect_subgraph_handoffs();
-        <span class="kw">let </span>node_color_map = <span class="self">self</span>.node_color_map();
-        <span class="kw">let </span><span class="kw-2">mut </span>sg_varname_nodes =
-            SparseSecondaryMap::&lt;GraphSubgraphId, BTreeMap&lt;Varname, BTreeSet&lt;GraphNodeId&gt;&gt;&gt;::new();
-        <span class="kw">for </span>(node_id, varname) <span class="kw">in </span><span class="self">self</span>.node_varnames.iter() {
-            <span class="kw">let </span><span class="prelude-val">Some</span>(sg_id) = <span class="self">self</span>.node_subgraph(node_id) <span class="kw">else </span>{
-                <span class="kw">continue</span>;
-            };
-            <span class="kw">let </span>varname_map = sg_varname_nodes.entry(sg_id).unwrap().or_default();
-            varname_map
-                .entry(varname.clone())
-                .or_default()
-                .insert(node_id);
+        <span class="comment">// Make node color map one time.
+        </span><span class="kw">let </span>node_color_map = <span class="self">self</span>.node_color_map();
+
+        <span class="comment">// Collect varnames.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>sg_varname_nodes =
+            &lt;SparseSecondaryMap&lt;GraphSubgraphId, BTreeMap&lt;Varname, BTreeSet&lt;GraphNodeId&gt;&gt;&gt;&gt;::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>varname_nodes = &lt;BTreeMap&lt;Varname, BTreeSet&lt;GraphNodeId&gt;&gt;&gt;::new();
+        <span class="kw">if </span>!write_config.no_varnames {
+            <span class="kw">for </span>(node_id, varname) <span class="kw">in </span><span class="self">self</span>.node_varnames.iter() {
+                <span class="comment">// Only collect if needed.
+                </span><span class="kw">let </span>varname_map = <span class="kw">if </span>!write_config.no_subgraphs {
+                    <span class="kw">let </span><span class="prelude-val">Some</span>(sg_id) = <span class="self">self</span>.node_subgraph(node_id) <span class="kw">else </span>{
+                        <span class="kw">continue</span>;
+                    };
+                    sg_varname_nodes.entry(sg_id).unwrap().or_default()
+                } <span class="kw">else </span>{
+                    <span class="kw-2">&amp;mut </span>varname_nodes
+                };
+                varname_map
+                    .entry(varname.clone())
+                    .or_default()
+                    .insert(node_id);
+            }
         }
-        <span class="kw">let </span>barrier_handoffs: HashSet&lt;<span class="kw">_</span>&gt; = <span class="self">self
-            </span>.node_ids()
-            .filter(|<span class="kw-2">&amp;</span>node_id| <span class="macro">matches!</span>(<span class="self">self</span>.node(node_id), Node::Handoff { .. }))
-            .filter(|<span class="kw-2">&amp;</span>hoff_id| {
-                <span class="macro">assert_eq!</span>(<span class="number">1</span>, <span class="self">self</span>.node_degree_in(hoff_id));
-                <span class="macro">assert_eq!</span>(<span class="number">1</span>, <span class="self">self</span>.node_degree_out(hoff_id));
-                <span class="kw">let </span>src_id = <span class="self">self</span>.node_predecessor_nodes(hoff_id).next().unwrap();
-                <span class="kw">let </span>dst_id = <span class="self">self</span>.node_successor_nodes(hoff_id).next().unwrap();
-                <span class="comment">// Only include handoffs between different subgraphs.
-                </span><span class="self">self</span>.node_subgraph(src_id) != <span class="self">self</span>.node_subgraph(dst_id)
-            })
-            .collect();
 
-        graph_write.write_prologue()<span class="question-mark">?</span>;
+        <span class="comment">// Write prologue.
+        </span>graph_write.write_prologue()<span class="question-mark">?</span>;
 
-        <span class="kw">for </span>(subgraph_id, subgraph_node_ids) <span class="kw">in </span><span class="self">self</span>.subgraph_nodes.iter() {
-            <span class="kw">let </span>stratum = <span class="self">self</span>.subgraph_stratum.get(subgraph_id);
-            graph_write.write_subgraph_start(subgraph_id, <span class="kw-2">*</span>stratum.unwrap())<span class="question-mark">?</span>;
-
-            <span class="comment">// write out nodes
-            </span><span class="kw">for </span><span class="kw-2">&amp;</span>node_id <span class="kw">in </span>subgraph_node_ids.iter() {
-                graph_write.write_node(
-                    node_id,
-                    <span class="kw-2">&amp;*</span><span class="self">self</span>.nodes.get(node_id).unwrap().to_pretty_string(),
-                    node_color_map.get(node_id).copied().unwrap_or(Color::Comp),
-                    <span class="prelude-val">Some</span>(subgraph_id),
-                )<span class="question-mark">?</span>;
+        <span class="comment">// Write nodes.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>skipped_handoffs = BTreeSet::new();
+        <span class="kw">for </span>(node_id, node) <span class="kw">in </span><span class="self">self</span>.nodes() {
+            <span class="kw">if </span>write_config.no_handoffs &amp;&amp; <span class="macro">matches!</span>(node, Node::Handoff { .. }) {
+                skipped_handoffs.insert(node_id);
+                <span class="kw">continue</span>;
             }
-            <span class="comment">// write out internal handoffs
-            </span><span class="kw">let </span>internal_handoffs = {
-                <span class="kw">let </span>(recvs, sends) = <span class="kw-2">&amp;</span>subgraph_handoffs[subgraph_id];
-                recvs.iter().filter(<span class="kw">move </span>|recv| sends.contains(recv))
-            };
-            <span class="kw">for </span><span class="kw-2">&amp;</span>hoff_id <span class="kw">in </span>internal_handoffs {
-                graph_write.write_node(
-                    hoff_id,
-                    <span class="kw-2">&amp;*</span><span class="self">self</span>.nodes.get(hoff_id).unwrap().to_pretty_string(),
-                    Color::Hoff,
-                    <span class="prelude-val">Some</span>(subgraph_id),
-                )<span class="question-mark">?</span>;
-                <span class="comment">// write out internal handoff edges. should only be one.
-                </span><span class="macro">assert_eq!</span>(<span class="number">1</span>, <span class="self">self</span>.node_degree_out(hoff_id));
-                <span class="kw">let </span>(edge_id, dst_id) = <span class="self">self</span>.node_successors(hoff_id).next().unwrap();
-                <span class="kw">let </span>(src_port, dst_port) = <span class="self">self</span>.edge_ports(edge_id);
-                <span class="kw">let </span>delay_type = <span class="self">self
-                    </span>.node_op_inst(dst_id)
-                    .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-                <span class="kw">let </span>flow_props = <span class="self">self</span>.edge_flow_props(edge_id);
-                <span class="kw">let </span>label = helper_edge_label(src_port, dst_port);
-                graph_write.write_edge(
-                    hoff_id,
-                    dst_id,
-                    delay_type,
-                    flow_props,
-                    label.as_deref(),
-                    <span class="prelude-val">Some</span>(subgraph_id),
-                )<span class="question-mark">?</span>;
+            graph_write.write_node(
+                node_id,
+                <span class="kw-2">&amp;*</span><span class="kw">if </span>write_config.op_short_text {
+                    node.to_name_string()
+                } <span class="kw">else </span>{
+                    node.to_pretty_string()
+                },
+                <span class="kw">if </span>write_config.no_pull_push {
+                    <span class="prelude-val">None
+                </span>} <span class="kw">else </span>{
+                    node_color_map.get(node_id).copied()
+                },
+            )<span class="question-mark">?</span>;
+        }
+
+        <span class="comment">// Write edges.
+        </span><span class="kw">for </span>(edge_id, (<span class="kw-2">mut </span>src_id, dst_id)) <span class="kw">in </span><span class="self">self</span>.edges() {
+            {
+                <span class="comment">// Handling for if `write_config.no_handoffs` true.
+                </span><span class="kw">if </span>skipped_handoffs.contains(<span class="kw-2">&amp;</span>dst_id) {
+                    <span class="kw">continue</span>;
+                }
+                <span class="kw">if </span>skipped_handoffs.contains(<span class="kw-2">&amp;</span>src_id) {
+                    <span class="kw">let </span><span class="kw-2">mut </span>handoff_preds = <span class="self">self</span>.node_predecessor_nodes(src_id);
+                    <span class="macro">assert_eq!</span>(<span class="number">1</span>, handoff_preds.len());
+                    src_id = handoff_preds.next().unwrap();
+                }
             }
 
-            <span class="comment">// write out edges. Includes edges leaving the subgraph.
-            </span><span class="kw">for </span><span class="kw-2">&amp;</span>src_id <span class="kw">in </span>subgraph_node_ids.iter() {
-                <span class="kw">for </span>(edge_id, dst_id) <span class="kw">in </span><span class="self">self</span>.node_successors(src_id) {
-                    <span class="kw">if </span>!barrier_handoffs.contains(<span class="kw-2">&amp;</span>dst_id) {
-                        <span class="kw">let </span>(src_port, dst_port) = <span class="self">self</span>.edge_ports(edge_id);
-                        <span class="kw">let </span>delay_type = <span class="self">self</span>.node_op_inst(dst_id).and_then(|op_inst| {
-                            (op_inst.op_constraints.input_delaytype_fn)(dst_port)
-                        });
-                        <span class="kw">let </span>flow_props = <span class="self">self</span>.edge_flow_props(edge_id);
-                        <span class="kw">let </span>label = helper_edge_label(src_port, dst_port);
-                        graph_write.write_edge(
-                            src_id,
-                            dst_id,
-                            delay_type,
-                            flow_props,
-                            label.as_deref(),
+            <span class="kw">let </span>(src_port, dst_port) = <span class="self">self</span>.edge_ports(edge_id);
+            <span class="kw">let </span>delay_type = <span class="self">self
+                </span>.node_op_inst(dst_id)
+                .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
+            <span class="kw">let </span>flow_props = <span class="self">self</span>.edge_flow_props(edge_id);
+            <span class="kw">let </span>label = helper_edge_label(src_port, dst_port);
+            graph_write.write_edge(src_id, dst_id, delay_type, flow_props, label.as_deref())<span class="question-mark">?</span>;
+        }
+
+        <span class="comment">// Write subgraphs.
+        </span><span class="kw">if </span>!write_config.no_subgraphs {
+            <span class="kw">for </span>(subgraph_id, subgraph_node_ids) <span class="kw">in </span><span class="self">self</span>.subgraph_nodes.iter() {
+                <span class="kw">let </span>stratum = <span class="self">self</span>.subgraph_stratum.get(subgraph_id);
+                graph_write.write_subgraph_start(
+                    subgraph_id,
+                    <span class="kw-2">*</span>stratum.unwrap(),
+                    subgraph_node_ids.iter().copied(),
+                )<span class="question-mark">?</span>;
+                <span class="comment">// Write out any variable names within the subgraph.
+                </span><span class="kw">if </span>!write_config.no_varnames {
+                    <span class="kw">for </span>(varname, varname_node_ids) <span class="kw">in
+                        </span>sg_varname_nodes.remove(subgraph_id).into_iter().flatten()
+                    {
+                        <span class="macro">assert!</span>(!varname_node_ids.is_empty());
+                        graph_write.write_varname(
+                            <span class="kw-2">&amp;*</span>varname.<span class="number">0</span>.to_string(),
+                            varname_node_ids.into_iter(),
                             <span class="prelude-val">Some</span>(subgraph_id),
                         )<span class="question-mark">?</span>;
                     }
                 }
+                graph_write.write_subgraph_end()<span class="question-mark">?</span>;
             }
-
-            <span class="comment">// write out any variable names
-            </span><span class="kw">for </span>(varname, varname_node_ids) <span class="kw">in
-                </span>sg_varname_nodes.get(subgraph_id).into_iter().flatten()
-            {
-                <span class="macro">assert!</span>(!varname_node_ids.is_empty());
-                graph_write.write_subgraph_varname(
-                    subgraph_id,
+        } <span class="kw">else if </span>!write_config.no_varnames {
+            <span class="kw">for </span>(varname, varname_node_ids) <span class="kw">in </span>varname_nodes.into_iter() {
+                graph_write.write_varname(
                     <span class="kw-2">&amp;*</span>varname.<span class="number">0</span>.to_string(),
-                    varname_node_ids.iter().cloned(),
-                )<span class="question-mark">?</span>;
-            }
-
-            graph_write.write_subgraph_end()<span class="question-mark">?</span>;
-        }
-
-        <span class="comment">// Write out external handoffs (handoffs between different subgraphs).
-        // This is set up in an awkward way in order to preserve the old write order.
-        // write out handoffs outside the clusters and adjacent edges
-        </span><span class="kw">for </span>(src_id, src_node) <span class="kw">in </span><span class="self">self</span>.nodes() {
-            <span class="kw">for </span>(edge_id, dst_id) <span class="kw">in </span><span class="self">self</span>.node_successors(src_id) {
-                <span class="kw">if </span>barrier_handoffs.contains(<span class="kw-2">&amp;</span>src_id) {
-                    <span class="comment">// write out handoff
-                    </span>graph_write.write_node(
-                        src_id,
-                        <span class="kw-2">&amp;*</span>src_node.to_pretty_string(),
-                        Color::Hoff,
-                        <span class="prelude-val">None</span>,
-                    )<span class="question-mark">?</span>;
-                } <span class="kw">else if </span>!barrier_handoffs.contains(<span class="kw-2">&amp;</span>dst_id) {
-                    <span class="kw">continue</span>;
-                }
-
-                <span class="comment">// write out edge
-                </span><span class="kw">let </span>(src_port, dst_port) = <span class="self">self</span>.edge_ports(edge_id);
-                <span class="kw">let </span>delay_type = <span class="self">self
-                    </span>.node_op_inst(dst_id)
-                    .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-                <span class="kw">let </span>flow_props = <span class="self">self</span>.edge_flow_props(edge_id);
-                <span class="kw">let </span>label = helper_edge_label(src_port, dst_port);
-                graph_write.write_edge(
-                    src_id,
-                    dst_id,
-                    delay_type,
-                    flow_props,
-                    label.as_deref(),
+                    varname_node_ids.into_iter(),
                     <span class="prelude-val">None</span>,
                 )<span class="question-mark">?</span>;
             }
         }
 
-        graph_write.write_epilogue()<span class="question-mark">?</span>;
+        <span class="comment">// Write epilogue.
+        </span>graph_write.write_epilogue()<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(())
     }
@@ -2711,5 +2693,37 @@
         }
         <span class="prelude-val">Ok</span>(())
     }
+}
+
+<span class="doccomment">/// Configuration for writing graphs.
+</span><span class="attr">#[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = <span class="string">&quot;debugging&quot;</span>, derive(clap::Args))]
+</span><span class="kw">pub struct </span>WriteConfig {
+    <span class="doccomment">/// Subgraphs will not be rendered if set.
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">&quot;debugging&quot;</span>, arg(long))]
+    </span><span class="kw">pub </span>no_subgraphs: bool,
+    <span class="doccomment">/// Variable names will not be rendered if set.
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">&quot;debugging&quot;</span>, arg(long))]
+    </span><span class="kw">pub </span>no_varnames: bool,
+    <span class="doccomment">/// Will not render pull/push shapes if set.
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">&quot;debugging&quot;</span>, arg(long))]
+    </span><span class="kw">pub </span>no_pull_push: bool,
+    <span class="doccomment">/// Will not render handoffs if set.
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">&quot;debugging&quot;</span>, arg(long))]
+    </span><span class="kw">pub </span>no_handoffs: bool,
+
+    <span class="doccomment">/// Op text will only be their name instead of the whole source.
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">&quot;debugging&quot;</span>, arg(long))]
+    </span><span class="kw">pub </span>op_short_text: bool,
+}
+
+<span class="doccomment">/// Enum for choosing between mermaid and dot graph writing.
+</span><span class="attr">#[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = <span class="string">&quot;debugging&quot;</span>, derive(clap::Parser, clap::ValueEnum))]
+</span><span class="kw">pub enum </span>WriteGraphType {
+    <span class="doccomment">/// Mermaid graphs.
+    </span>Mermaid,
+    <span class="doccomment">/// Dot (Graphviz) graphs.
+    </span>Dot,
 }
 </code></pre></div></section></main></body></html>

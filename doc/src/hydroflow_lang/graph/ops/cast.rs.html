@@ -66,7 +66,20 @@
 <a href="#66" id="66">66</a>
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>quote::ToTokens;
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::Span;
+<span class="kw">use </span>quote::ToTokens;
+<span class="kw">use </span>syn::Expr;
 
 <span class="kw">use super</span>::{FlowPropArgs, OperatorCategory, OperatorConstraints};
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
@@ -89,24 +102,8 @@
             <span class="macro">assert_eq!</span>(<span class="number">1</span>, op_inst.input_ports.len());
             <span class="macro">assert_eq!</span>(<span class="number">1</span>, op_inst.output_ports.len());
 
-            <span class="kw">let </span>out_flow_type = <span class="kw">match </span><span class="kw-2">&amp;*</span>op_inst.arguments[<span class="number">0</span>].to_token_stream().to_string() {
-                <span class="string">&quot;Some(LatticeFlowType::Delta)&quot; </span>| <span class="string">&quot;Some(Delta)&quot; </span>=&gt; <span class="prelude-val">Some</span>(LatticeFlowType::Delta),
-                <span class="string">&quot;Some(LatticeFlowType::Cumul)&quot; </span>| <span class="string">&quot;Some(Cumul)&quot; </span>=&gt; <span class="prelude-val">Some</span>(LatticeFlowType::Cumul),
-                <span class="string">&quot;None&quot; </span>=&gt; <span class="prelude-val">None</span>,
-                unexpected =&gt; {
-                    diagnostics.push(Diagnostic::spanned(
-                        op_span,
-                        Level::Error,
-                        <span class="macro">format!</span>(
-                            <span class="string">&quot;Unknown value `{}`, expected one of: `{:?}`, `{:?}`, or `None`.&quot;</span>,
-                            unexpected,
-                            <span class="prelude-val">Some</span>(LatticeFlowType::Delta),
-                            <span class="prelude-val">Some</span>(LatticeFlowType::Cumul),
-                        ),
-                    ));
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(());
-                }
-            };
+            <span class="kw">let </span>out_flow_type = parse_flow_type(<span class="kw-2">&amp;</span>op_inst.arguments[<span class="number">0</span>], op_span)
+                .map_err(|diagnostic| diagnostics.push(diagnostic))<span class="question-mark">?</span>;
             <span class="kw">let </span><span class="prelude-val">Some</span>(in_props) = flow_props_in[<span class="number">0</span>] <span class="kw">else </span>{
                 diagnostics.push(Diagnostic::spanned(
                     op_span,
@@ -134,4 +131,29 @@
     ),
     ..<span class="kw">super</span>::identity::IDENTITY
 };
+
+<span class="doccomment">/// Parse the flow type from an argument.
+</span><span class="kw">pub fn </span>parse_flow_type(arg: <span class="kw-2">&amp;</span>Expr, op_span: Span) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;LatticeFlowType&gt;, Diagnostic&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>flow_type_str = arg.to_token_stream().to_string();
+    flow_type_str.retain(|c| !c.is_whitespace());
+    <span class="kw">let </span>out_flow_type = <span class="kw">match </span><span class="kw-2">&amp;*</span>flow_type_str {
+        <span class="string">&quot;Some(LatticeFlowType::Delta)&quot; </span>| <span class="string">&quot;Some(Delta)&quot; </span>=&gt; <span class="prelude-val">Some</span>(LatticeFlowType::Delta),
+        <span class="string">&quot;Some(LatticeFlowType::Cumul)&quot; </span>| <span class="string">&quot;Some(Cumul)&quot; </span>=&gt; <span class="prelude-val">Some</span>(LatticeFlowType::Cumul),
+        <span class="string">&quot;None&quot; </span>=&gt; <span class="prelude-val">None</span>,
+        unexpected =&gt; {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic::spanned(
+                op_span,
+                Level::Error,
+                <span class="macro">format!</span>(
+                    <span class="string">&quot;Unknown value `{}`, expected one of: `{:?}`, `{:?}`, or `{:?}`.&quot;</span>,
+                    unexpected,
+                    <span class="prelude-val">Some</span>(LatticeFlowType::Delta),
+                    <span class="prelude-val">Some</span>(LatticeFlowType::Cumul),
+                    &lt;<span class="prelude-ty">Option</span>&lt;LatticeFlowType&gt;&gt;::None,
+                ),
+            ));
+        }
+    };
+    <span class="prelude-val">Ok</span>(out_flow_type)
+}
 </code></pre></div></section></main></body></html>
