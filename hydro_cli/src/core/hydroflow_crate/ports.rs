@@ -268,7 +268,7 @@ impl HydroflowSource for HydroflowPortConfig {
         let mut from_write = from.try_write().unwrap();
 
         // TODO(shadaj): if already in this map, we want to broadcast
-        assert!(!from_write.port_to_server.contains_key(&self.port));
+        assert!(!from_write.port_to_server.contains_key(&self.port), "The port configuration is incorrect, for example, are you using a ConnectedDirect instead of a ConnectedDemux?");
         from_write.port_to_server.insert(self.port.clone(), config);
     }
 
