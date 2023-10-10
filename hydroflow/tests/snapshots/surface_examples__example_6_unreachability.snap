@@ -46,6 +46,7 @@ linkStyle default stroke:#aaa
 17v1-->|pos|11v1
 18v1--x|neg|11v1; linkStyle 18 stroke:red
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
+    15v1
     1v1
     4v1
     5v1

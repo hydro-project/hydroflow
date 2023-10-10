@@ -1175,10 +1175,23 @@ impl HydroflowGraph {
 
         // Write nodes.
         let mut skipped_handoffs = BTreeSet::new();
+        let mut subgraph_handoffs = <BTreeMap<GraphSubgraphId, Vec<GraphNodeId>>>::new();
         for (node_id, node) in self.nodes() {
-            if write_config.no_handoffs && matches!(node, Node::Handoff { .. }) {
-                skipped_handoffs.insert(node_id);
-                continue;
+            if matches!(node, Node::Handoff { .. }) {
+                if write_config.no_handoffs {
+                    skipped_handoffs.insert(node_id);
+                    continue;
+                } else {
+                    let pred_node = self.node_predecessor_nodes(node_id).next().unwrap();
+                    let pred_sg = self.node_subgraph(pred_node);
+                    let succ_node = self.node_successor_nodes(node_id).next().unwrap();
+                    let succ_sg = self.node_subgraph(succ_node);
+                    if let Some((pred_sg, succ_sg)) = pred_sg.zip(succ_sg) {
+                        if pred_sg == succ_sg {
+                            subgraph_handoffs.entry(pred_sg).or_default().push(node_id);
+                        }
+                    }
+                }
             }
             graph_write.write_node(
                 node_id,
@@ -1221,12 +1234,12 @@ impl HydroflowGraph {
         // Write subgraphs.
         if !write_config.no_subgraphs {
             for (subgraph_id, subgraph_node_ids) in self.subgraph_nodes.iter() {
+                let handoff_node_ids = subgraph_handoffs.get(&subgraph_id).into_iter().flatten();
+                let subgraph_node_ids = subgraph_node_ids.iter();
+                let all_node_ids = handoff_node_ids.chain(subgraph_node_ids).copied();
+
                 let stratum = self.subgraph_stratum.get(subgraph_id);
-                graph_write.write_subgraph_start(
-                    subgraph_id,
-                    *stratum.unwrap(),
-                    subgraph_node_ids.iter().copied(),
-                )?;
+                graph_write.write_subgraph_start(subgraph_id, *stratum.unwrap(), all_node_ids)?;
                 // Write out any variable names within the subgraph.
                 if !write_config.no_varnames {
                     for (varname, varname_node_ids) in

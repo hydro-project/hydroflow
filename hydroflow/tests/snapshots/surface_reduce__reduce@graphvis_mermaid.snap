@@ -31,6 +31,7 @@ linkStyle default stroke:#aaa
 10v1-->|1|1v1
 11v1--x8v1; linkStyle 10 stroke:red
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
+    10v1
     3v1
     1v1
     2v1
