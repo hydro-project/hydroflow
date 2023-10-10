@@ -826,7 +826,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>from_write = from.try_write().unwrap();
 
         <span class="comment">// TODO(shadaj): if already in this map, we want to broadcast
-        </span><span class="macro">assert!</span>(!from_write.port_to_server.contains_key(<span class="kw-2">&amp;</span><span class="self">self</span>.port));
+        </span><span class="macro">assert!</span>(!from_write.port_to_server.contains_key(<span class="kw-2">&amp;</span><span class="self">self</span>.port), <span class="string">&quot;The port configuration is incorrect, for example, are you using a ConnectedDirect instead of a ConnectedDemux?&quot;</span>);
         from_write.port_to_server.insert(<span class="self">self</span>.port.clone(), config);
     }
 
