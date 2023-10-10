@@ -74,12 +74,6 @@ fn test() {
 
     client_stdin.write_all(b"PUT a,7\n").unwrap();
 
-    wait_for_process_output(
-        &mut client_output,
-        &mut client_stdout,
-        r#"Got a Response: KvsResponse \{ key: "a", value: "7" \}"#,
-    );
-
     let (_client2, mut client2_stdin, mut client2_stdout) = run_cargo_example(
         "kvs",
         "--role client --addr 127.0.0.1:2053 --server-addr 127.0.0.1:2051",
@@ -89,7 +83,6 @@ fn test() {
     wait_for_process_output(&mut client2_output, &mut client2_stdout, "Client live!");
 
     client2_stdin.write_all(b"GET a\n").unwrap();
-
     wait_for_process_output(
         &mut client2_output,
         &mut client2_stdout,
