@@ -5,7 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.0 (2023-10-11)
+
+### Chore
+
+ - <csr-id-2b95a6d08c993760adaf79b945fdd0fbbdc8ecf2/> Add `clippy::needless_pass_by_ref_mut` false-positive workaround
+
+### Bug Fixes
+
+ - <csr-id-5d77694b6a3603381ae4217eb7aba8e00ee8d1e5/> better error message when using wrong port types
+ - <csr-id-a927dc6afbe3178815b7c7c58ed2838d42d80334/> clippy warning on multiline string in hydro_cli, py_udf
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 3 commits contributed to the release over the course of 40 calendar days.
+ - 56 days passed between releases.
+ - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#931](https://github.com/hydro-project/hydroflow/issues/931)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#931](https://github.com/hydro-project/hydroflow/issues/931)**
+    - Better error message when using wrong port types ([`5d77694`](https://github.com/hydro-project/hydroflow/commit/5d77694b6a3603381ae4217eb7aba8e00ee8d1e5))
+ * **Uncategorized**
+    - Clippy warning on multiline string in hydro_cli, py_udf ([`a927dc6`](https://github.com/hydro-project/hydroflow/commit/a927dc6afbe3178815b7c7c58ed2838d42d80334))
+    - Add `clippy::needless_pass_by_ref_mut` false-positive workaround ([`2b95a6d`](https://github.com/hydro-project/hydroflow/commit/2b95a6d08c993760adaf79b945fdd0fbbdc8ecf2))
+</details>
+
 ## 0.4.0 (2023-08-15)
+
+<csr-id-949db02e9fa9878e1a7176c180d6f44c5cddf052/>
 
 ### Chore
 
@@ -15,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 1 commit contributed to the release over the course of 27 calendar days.
+ - 2 commits contributed to the release over the course of 27 calendar days.
  - 42 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#844](https://github.com/hydro-project/hydroflow/issues/844)
@@ -28,6 +63,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  * **[#844](https://github.com/hydro-project/hydroflow/issues/844)**
     - Fix lints for latest nightly ([`949db02`](https://github.com/hydro-project/hydroflow/commit/949db02e9fa9878e1a7176c180d6f44c5cddf052))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.4.0, hydroflow_datalog_core v0.4.0, hydroflow_datalog v0.4.0, hydroflow_macro v0.4.0, lattices v0.4.0, pusherator v0.0.3, hydroflow v0.4.0, hydro_cli v0.4.0, safety bump 4 crates ([`cb313f0`](https://github.com/hydro-project/hydroflow/commit/cb313f0635214460a8308d05cbef4bf7f4bfaa15))
 </details>
 
 ## 0.3.0 (2023-07-04)

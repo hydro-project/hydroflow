@@ -5,7 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.0 (2023-10-11)
+
+### Chore
+
+ - <csr-id-e788989737fbd501173bc99c6f9f5f5ba514ec9c/> Fix `clippy::implied_bounds_in_impls` from latest nightlies
+
+### Documentation
+
+ - <csr-id-6b82126347e2ae3c11cc10fea4f3fbcb463734e6/> fix lattice math link
+
+### New Features
+
+ - <csr-id-488d6dd448e10e2bf217693dd2a29973488c838a/> Add serde derives to collections
+ - <csr-id-35c2606f2df16a428a5c163d5582923ecd5998c4/> Add `UnionFind` lattice
+
+### Bug Fixes (BREAKING)
+
+ - <csr-id-18e9cfaa8b1415d72d67a69d7b0fecc997b5670a/> fix some types and semantics for atomization
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 5 commits contributed to the release over the course of 40 calendar days.
+ - 56 days passed between releases.
+ - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 2 unique issues were worked on: [#915](https://github.com/hydro-project/hydroflow/issues/915), [#922](https://github.com/hydro-project/hydroflow/issues/922)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#915](https://github.com/hydro-project/hydroflow/issues/915)**
+    - Add `UnionFind` lattice ([`35c2606`](https://github.com/hydro-project/hydroflow/commit/35c2606f2df16a428a5c163d5582923ecd5998c4))
+    - Fix some types and semantics for atomization ([`18e9cfa`](https://github.com/hydro-project/hydroflow/commit/18e9cfaa8b1415d72d67a69d7b0fecc997b5670a))
+ * **[#922](https://github.com/hydro-project/hydroflow/issues/922)**
+    - Add serde derives to collections ([`488d6dd`](https://github.com/hydro-project/hydroflow/commit/488d6dd448e10e2bf217693dd2a29973488c838a))
+ * **Uncategorized**
+    - Fix lattice math link ([`6b82126`](https://github.com/hydro-project/hydroflow/commit/6b82126347e2ae3c11cc10fea4f3fbcb463734e6))
+    - Fix `clippy::implied_bounds_in_impls` from latest nightlies ([`e788989`](https://github.com/hydro-project/hydroflow/commit/e788989737fbd501173bc99c6f9f5f5ba514ec9c))
+</details>
+
 ## 0.4.0 (2023-08-15)
+
+<csr-id-f60053f70da3071c54de4a0eabb059a143aa2ccc/>
+<csr-id-6a2ad6b770c2ccf470548320d8753025b3a66c0a/>
+<csr-id-262166e7cecf8ffb5a2c7bc989e8cf66c4524a68/>
+<csr-id-7b0485b20939ec86ed8e74ecc9c75ac1b5d01072/>
 
 ### Chore
 
@@ -35,8 +84,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-7b752f743cbedc632b127dddf3f9a84e839eb47a/> Add bottom (+top) collapsing, implement `IsBot`/`IsTop` for all lattice types
    * `WithBot(Some(BOTTOM))` and `WithBot(None)` are now considered to both be bottom, equal. Also, `MapUnion({})` and `MapUnion({key: BOTTOM})` are considered to both be bottom, equal.
-   * `WithTop(Some(TOP))` and `WithTop(None)` are now considered to both be top, equal.
-   * `check_lattice_bot/top` now check that `is_bot` and `is_top` must be consistent among all equal elements
+* `WithTop(Some(TOP))` and `WithTop(None)` are now considered to both be top, equal.
+* `check_lattice_bot/top` now check that `is_bot` and `is_top` must be consistent among all equal elements
 
 ### Refactor (BREAKING)
 
@@ -46,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 9 commits contributed to the release over the course of 39 calendar days.
+ - 10 commits contributed to the release over the course of 39 calendar days.
  - 42 days passed between releases.
  - 9 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 8 unique issues were worked on: [#822](https://github.com/hydro-project/hydroflow/issues/822), [#849](https://github.com/hydro-project/hydroflow/issues/849), [#854](https://github.com/hydro-project/hydroflow/issues/854), [#860](https://github.com/hydro-project/hydroflow/issues/860), [#865](https://github.com/hydro-project/hydroflow/issues/865), [#866](https://github.com/hydro-project/hydroflow/issues/866), [#867](https://github.com/hydro-project/hydroflow/issues/867), [#879](https://github.com/hydro-project/hydroflow/issues/879)
@@ -74,6 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#879](https://github.com/hydro-project/hydroflow/issues/879)**
     - Formalize `Default::default()` as returning bottom for lattice types ([`7282457`](https://github.com/hydro-project/hydroflow/commit/7282457e383407eabbeb1f931c130edb095c33ca))
  * **Uncategorized**
+    - Release hydroflow_lang v0.4.0, hydroflow_datalog_core v0.4.0, hydroflow_datalog v0.4.0, hydroflow_macro v0.4.0, lattices v0.4.0, pusherator v0.0.3, hydroflow v0.4.0, hydro_cli v0.4.0, safety bump 4 crates ([`cb313f0`](https://github.com/hydro-project/hydroflow/commit/cb313f0635214460a8308d05cbef4bf7f4bfaa15))
     - Fix new clippy lints on latest nightly 1.73.0-nightly (db7ff98a7 2023-07-31) ([`6a2ad6b`](https://github.com/hydro-project/hydroflow/commit/6a2ad6b770c2ccf470548320d8753025b3a66c0a))
 </details>
 
@@ -178,9 +228,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Release hydroflow_cli_integration v0.3.0, hydroflow_lang v0.3.0, hydroflow_datalog_core v0.3.0, hydroflow_datalog v0.3.0, hydroflow_macro v0.3.0, lattices v0.3.0, pusherator v0.0.2, hydroflow v0.3.0, hydro_cli v0.3.0, safety bump 5 crates ([`ec9633e`](https://github.com/hydro-project/hydroflow/commit/ec9633e2e393c2bf106223abeb0b680200fbdf84))
     - Add `Seq` lattice. ([`153cbab`](https://github.com/hydro-project/hydroflow/commit/153cbabd462d776eae395e371470abb4662642cd))
 </details>
-
-<csr-unknown>
- Add IsBot::is_bot and IsTop::is_top traitsAlso adds test::check_lattice_bot (inlcluded in test::check_all) and test::check_lattice_top (NOT in check_all)<csr-unknown/>
 
 ## 0.2.0 (2023-05-31)
 

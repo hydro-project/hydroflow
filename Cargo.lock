@@ -1291,7 +1291,7 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hydro_cli"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1340,7 +1340,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "bincode",
  "byteorder",
@@ -1407,7 +1407,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "hydroflow_datalog_core",
  "proc-macro-crate",
@@ -1418,7 +1418,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog_core"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "hydroflow_lang",
  "insta",
@@ -1435,7 +1435,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_lang"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "auto_impl",
  "clap 4.2.1",
@@ -1454,7 +1454,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_macro"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "hydroflow_lang",
  "itertools",
@@ -1632,7 +1632,7 @@ dependencies = [
 
 [[package]]
 name = "lattices"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "cc-traits",
  "sealed",

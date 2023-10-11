@@ -5,7 +5,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.0 (2023-10-11)
+
+### Chore
+
+ - <csr-id-f19eccc79d6d7c88de7ba1ef6a0abf1caaef377f/> bump proc-macro2 min version to 1.0.63
+ - <csr-id-1fb753ea85511ade1a834ec2536f56358ade9858/> ignore `clippy::unwrap_or_default` in `fold_keyed` codegen
+ - <csr-id-7c7eea7fddda7ea9526c5af4191520e821c979dc/> Replace `or_insert_with(Vec::new)` with `or_default()`
+   Clippy lint `unwrap_or_default` complaining on latest nightly
+
+### New Features
+
+ - <csr-id-21140f09156e1dad195162854955522f138ae781/> update snapshot tests for previous two commits
+ - <csr-id-d254e2deb883f9633f8b325a595fb7c61bad42d7/> add context.is_first_time_subgraph_is_scheduled to simplify replaying operators
+ - <csr-id-f013c3ca15f2cc9413fcfb92898f71d5fc00073a/> add import!() expression
+ - <csr-id-1bdbf73b630e4f2eff009b00b0e66d71be53bb4a/> Implement `flow_prop_fn` for `union()`
+ - <csr-id-fd89cb46c5983d277e16bb7b19f7d3ca83dd60cc/> Make `propegate_flow_props` fallible, cleanup `flow_prop_fn` definition.
+ - <csr-id-7714403e130969b96c8f405444d4daf451450fdf/> Add `monotonic_fn` and `morphism` macros, update snapshots for flow props.
+
+### Test
+
+ - <csr-id-9144dd96b915e1b807ef14f40d963cdbd47e9078/> update snapshots
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 10 commits contributed to the release over the course of 42 calendar days.
+ - 56 days passed between releases.
+ - 10 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 7 unique issues were worked on: [#882](https://github.com/hydro-project/hydroflow/issues/882), [#893](https://github.com/hydro-project/hydroflow/issues/893), [#896](https://github.com/hydro-project/hydroflow/issues/896), [#898](https://github.com/hydro-project/hydroflow/issues/898), [#906](https://github.com/hydro-project/hydroflow/issues/906), [#924](https://github.com/hydro-project/hydroflow/issues/924), [#926](https://github.com/hydro-project/hydroflow/issues/926)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#882](https://github.com/hydro-project/hydroflow/issues/882)**
+    - Make `propegate_flow_props` fallible, cleanup `flow_prop_fn` definition. ([`fd89cb4`](https://github.com/hydro-project/hydroflow/commit/fd89cb46c5983d277e16bb7b19f7d3ca83dd60cc))
+    - Add `monotonic_fn` and `morphism` macros, update snapshots for flow props. ([`7714403`](https://github.com/hydro-project/hydroflow/commit/7714403e130969b96c8f405444d4daf451450fdf))
+ * **[#893](https://github.com/hydro-project/hydroflow/issues/893)**
+    - Replace `or_insert_with(Vec::new)` with `or_default()` ([`7c7eea7`](https://github.com/hydro-project/hydroflow/commit/7c7eea7fddda7ea9526c5af4191520e821c979dc))
+ * **[#896](https://github.com/hydro-project/hydroflow/issues/896)**
+    - Ignore `clippy::unwrap_or_default` in `fold_keyed` codegen ([`1fb753e`](https://github.com/hydro-project/hydroflow/commit/1fb753ea85511ade1a834ec2536f56358ade9858))
+ * **[#898](https://github.com/hydro-project/hydroflow/issues/898)**
+    - Add import!() expression ([`f013c3c`](https://github.com/hydro-project/hydroflow/commit/f013c3ca15f2cc9413fcfb92898f71d5fc00073a))
+ * **[#906](https://github.com/hydro-project/hydroflow/issues/906)**
+    - Add context.is_first_time_subgraph_is_scheduled to simplify replaying operators ([`d254e2d`](https://github.com/hydro-project/hydroflow/commit/d254e2deb883f9633f8b325a595fb7c61bad42d7))
+ * **[#924](https://github.com/hydro-project/hydroflow/issues/924)**
+    - Update snapshot tests for previous two commits ([`21140f0`](https://github.com/hydro-project/hydroflow/commit/21140f09156e1dad195162854955522f138ae781))
+ * **[#926](https://github.com/hydro-project/hydroflow/issues/926)**
+    - Update snapshots ([`9144dd9`](https://github.com/hydro-project/hydroflow/commit/9144dd96b915e1b807ef14f40d963cdbd47e9078))
+ * **Uncategorized**
+    - Bump proc-macro2 min version to 1.0.63 ([`f19eccc`](https://github.com/hydro-project/hydroflow/commit/f19eccc79d6d7c88de7ba1ef6a0abf1caaef377f))
+    - Implement `flow_prop_fn` for `union()` ([`1bdbf73`](https://github.com/hydro-project/hydroflow/commit/1bdbf73b630e4f2eff009b00b0e66d71be53bb4a))
+</details>
+
 ## 0.4.0 (2023-08-15)
+
+<csr-id-6a2ad6b770c2ccf470548320d8753025b3a66c0a/>
 
 ### New Features
 
@@ -14,36 +73,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Bug Fixes
 
+<csr-id-cc959c762c3a0e036e672801c615028cbfb95168/>
+<csr-id-6c98bbc2bd3443fe6f77e0b8689b461edde1b316/>
+
  - <csr-id-d378e5eada3d2bae90f98c5a33b2d055940a8c7f/> unify antijoin and difference with set and multiset semantics
    * fix: unify antijoin and difference with set and multiset semantics
-   
-   * fix: replay semantics for antijoin and difference now work
+* fix: replay semantics for antijoin and difference now work
    also added cross_join_multiset
-   
-   * fix: enforce sort for tests of anti_join and difference using assert_eq
-   
-   * fix: advance __borrow_ident beyond the current tick to prevent replay loops
-   
-   * fix: add modified snapshots
-   
-   * fix: temp
-   
-   * fix: spelling typo in comment
-   
-   * fix: make anti_join replay more efficient
-   
-   Also add multiset data structure, use it in some tests, make join()
-   replay logic more similar to anti_join's and presist's.
-   
-   * fix: ignore test that depends on order of antijoin
-   
-   * fix: really ignore test_index
-   
-   * fix: fix specific test ordering in wasm
-   
-   ---------
- - <csr-id-cc959c762c3a0e036e672801c615028cbfb95168/> joins now replay correctly
- - <csr-id-6c98bbc2bd3443fe6f77e0b8689b461edde1b316/> rename next_tick -> defer, batch -> defer_signal
+* fix: enforce sort for tests of anti_join and difference using assert_eq
+* fix: advance __borrow_ident beyond the current tick to prevent replay loops
+* fix: add modified snapshots
+* fix: temp
+* fix: spelling typo in comment
+* fix: make anti_join replay more efficient
+* fix: ignore test that depends on order of antijoin
+* fix: really ignore test_index
+* fix: fix specific test ordering in wasm
 
 ### Refactor
 
@@ -53,7 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release over the course of 32 calendar days.
+ - 6 commits contributed to the release over the course of 32 calendar days.
  - 42 days passed between releases.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#833](https://github.com/hydro-project/hydroflow/issues/833), [#845](https://github.com/hydro-project/hydroflow/issues/845), [#870](https://github.com/hydro-project/hydroflow/issues/870), [#872](https://github.com/hydro-project/hydroflow/issues/872)
@@ -73,8 +118,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#872](https://github.com/hydro-project/hydroflow/issues/872)**
     - Unify antijoin and difference with set and multiset semantics ([`d378e5e`](https://github.com/hydro-project/hydroflow/commit/d378e5eada3d2bae90f98c5a33b2d055940a8c7f))
  * **Uncategorized**
+    - Release hydroflow_lang v0.4.0, hydroflow_datalog_core v0.4.0, hydroflow_datalog v0.4.0, hydroflow_macro v0.4.0, lattices v0.4.0, pusherator v0.0.3, hydroflow v0.4.0, hydro_cli v0.4.0, safety bump 4 crates ([`cb313f0`](https://github.com/hydro-project/hydroflow/commit/cb313f0635214460a8308d05cbef4bf7f4bfaa15))
     - Fix new clippy lints on latest nightly 1.73.0-nightly (db7ff98a7 2023-07-31) ([`6a2ad6b`](https://github.com/hydro-project/hydroflow/commit/6a2ad6b770c2ccf470548320d8753025b3a66c0a))
 </details>
+
+<csr-unknown>
+Also add multiset data structure, use it in some tests, make join()replay logic more similar to anti_join’s and presist’s. joins now replay correctly rename next_tick -> defer, batch -> defer_signal<csr-unknown/>
 
 ## 0.3.0 (2023-07-04)
 
