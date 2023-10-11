@@ -4,6 +4,8 @@
 )]
 #![allow(clippy::explicit_auto_deref)]
 
+use std::path::PathBuf;
+
 use hydroflow_lang::diagnostic::{Diagnostic, Level};
 use hydroflow_lang::graph::{build_hfcode, partition_graph, FlatGraphBuilder};
 use hydroflow_lang::parse::HfCode;
@@ -58,11 +60,28 @@ fn root() -> proc_macro2::TokenStream {
     }
 }
 
+// May panic
+fn macro_invocation_path() -> PathBuf {
+    #[cfg(feature = "diagnostics")]
+    {
+        proc_macro::Span::call_site().source_file().path()
+    }
+    #[cfg(not(feature = "diagnostics"))]
+    {
+        std::env::current_dir().unwrap_or_else(|_| {
+            PathBuf::from(
+                std::env::var("CARGO_MANIFEST_DIR")
+                    .expect("Failed to determine fallback env var CARGO_MANIFEST_DIR."),
+            )
+        })
+    }
+}
+
 fn hydroflow_syntax_internal(
     input: proc_macro::TokenStream,
     min_diagnostic_level: Option<Level>,
 ) -> proc_macro::TokenStream {
-    let macro_invocation_path = proc_macro::Span::call_site().source_file().path();
+    let macro_invocation_path = macro_invocation_path();
 
     let input = parse_macro_input!(input as HfCode);
     let root = root();
@@ -101,7 +120,7 @@ fn hydroflow_syntax_internal(
 /// Used for testing, users will want to use [`hydroflow_syntax!`] instead.
 #[proc_macro]
 pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let macro_invocation_path = proc_macro::Span::call_site().source_file().path();
+    let macro_invocation_path = macro_invocation_path();
 
     let input = parse_macro_input!(input as HfCode);
 
