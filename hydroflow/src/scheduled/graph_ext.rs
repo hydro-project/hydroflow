@@ -1,4 +1,4 @@
-//! Helper extensions for [`Hydroflow`](super::graph::Hydroflow).
+//! Helper extensions for [`Hydroflow`].
 #![allow(missing_docs)]
 
 use core::task;

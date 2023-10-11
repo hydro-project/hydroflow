@@ -27,8 +27,10 @@ pub use socket::*;
 #[cfg(feature = "cli_integration")]
 pub mod cli;
 
+use std::io::Read;
 use std::net::SocketAddr;
 use std::num::NonZeroUsize;
+use std::process::{Child, ChildStdin, ChildStdout, Stdio};
 use std::task::{Context, Poll};
 
 use bincode;
@@ -229,36 +231,6 @@ where
     slice.sort_unstable_by(|a, b| f(a).cmp(f(b)))
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    pub fn test_collect_ready() {
-        let (send, mut recv) = unbounded_channel::<usize>();
-        for x in 0..1000 {
-            send.send(x).unwrap();
-        }
-        assert_eq!(1000, collect_ready::<Vec<_>, _>(&mut recv).len());
-    }
-
-    #[crate::test]
-    pub async fn test_collect_ready_async() {
-        // Tokio unbounded channel returns items in 128 item long chunks, so we have to be careful that everything gets returned.
-        let (send, mut recv) = unbounded_channel::<usize>();
-        for x in 0..1000 {
-            send.send(x).unwrap();
-        }
-        assert_eq!(
-            1000,
-            collect_ready_async::<Vec<_>, _>(&mut recv).await.len()
-        );
-    }
-}
-
-use std::io::Read;
-use std::process::{Child, ChildStdin, ChildStdout, Stdio};
-
 /// When a child process is spawned often you want to wait until the child process is ready before moving on.
 /// One way to do that synchronization is by waiting for the child process to output something and match regex against that output.
 /// For example, you could wait until the child process outputs "Client live!" which would indicate that it is ready to receive input now on stdin.
@@ -350,4 +322,31 @@ where
             Poll::Ready(iter.next())
         }
     })
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    pub fn test_collect_ready() {
+        let (send, mut recv) = unbounded_channel::<usize>();
+        for x in 0..1000 {
+            send.send(x).unwrap();
+        }
+        assert_eq!(1000, collect_ready::<Vec<_>, _>(&mut recv).len());
+    }
+
+    #[crate::test]
+    pub async fn test_collect_ready_async() {
+        // Tokio unbounded channel returns items in 128 item long chunks, so we have to be careful that everything gets returned.
+        let (send, mut recv) = unbounded_channel::<usize>();
+        for x in 0..1000 {
+            send.send(x).unwrap();
+        }
+        assert_eq!(
+            1000,
+            collect_ready_async::<Vec<_>, _>(&mut recv).await.len()
+        );
+    }
 }
