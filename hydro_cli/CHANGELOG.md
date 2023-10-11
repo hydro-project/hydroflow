@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.5.0 (2023-10-11)
 
+<csr-id-2b95a6d08c993760adaf79b945fdd0fbbdc8ecf2/>
+
 ### Chore
 
  - <csr-id-2b95a6d08c993760adaf79b945fdd0fbbdc8ecf2/> Add `clippy::needless_pass_by_ref_mut` false-positive workaround
@@ -20,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release over the course of 40 calendar days.
+ - 4 commits contributed to the release over the course of 41 calendar days.
  - 56 days passed between releases.
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#931](https://github.com/hydro-project/hydroflow/issues/931)
@@ -34,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#931](https://github.com/hydro-project/hydroflow/issues/931)**
     - Better error message when using wrong port types ([`5d77694`](https://github.com/hydro-project/hydroflow/commit/5d77694b6a3603381ae4217eb7aba8e00ee8d1e5))
  * **Uncategorized**
+    - Release hydroflow_lang v0.5.0, hydroflow_datalog_core v0.5.0, hydroflow_datalog v0.5.0, hydroflow_macro v0.5.0, lattices v0.5.0, hydroflow v0.5.0, hydro_cli v0.5.0, safety bump 4 crates ([`2e2d8b3`](https://github.com/hydro-project/hydroflow/commit/2e2d8b386fb086c8276a2853d2a1f96ad4d7c221))
     - Clippy warning on multiline string in hydro_cli, py_udf ([`a927dc6`](https://github.com/hydro-project/hydroflow/commit/a927dc6afbe3178815b7c7c58ed2838d42d80334))
     - Add `clippy::needless_pass_by_ref_mut` false-positive workaround ([`2b95a6d`](https://github.com/hydro-project/hydroflow/commit/2b95a6d08c993760adaf79b945fdd0fbbdc8ecf2))
 </details>

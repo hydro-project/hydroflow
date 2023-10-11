@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.5.0 (2023-10-11)
 
+<csr-id-e788989737fbd501173bc99c6f9f5f5ba514ec9c/>
+
 ### Chore
 
  - <csr-id-e788989737fbd501173bc99c6f9f5f5ba514ec9c/> Fix `clippy::implied_bounds_in_impls` from latest nightlies
@@ -28,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release over the course of 40 calendar days.
+ - 6 commits contributed to the release over the course of 41 calendar days.
  - 56 days passed between releases.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#915](https://github.com/hydro-project/hydroflow/issues/915), [#922](https://github.com/hydro-project/hydroflow/issues/922)
@@ -45,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#922](https://github.com/hydro-project/hydroflow/issues/922)**
     - Add serde derives to collections ([`488d6dd`](https://github.com/hydro-project/hydroflow/commit/488d6dd448e10e2bf217693dd2a29973488c838a))
  * **Uncategorized**
+    - Release hydroflow_lang v0.5.0, hydroflow_datalog_core v0.5.0, hydroflow_datalog v0.5.0, hydroflow_macro v0.5.0, lattices v0.5.0, hydroflow v0.5.0, hydro_cli v0.5.0, safety bump 4 crates ([`2e2d8b3`](https://github.com/hydro-project/hydroflow/commit/2e2d8b386fb086c8276a2853d2a1f96ad4d7c221))
     - Fix lattice math link ([`6b82126`](https://github.com/hydro-project/hydroflow/commit/6b82126347e2ae3c11cc10fea4f3fbcb463734e6))
     - Fix `clippy::implied_bounds_in_impls` from latest nightlies ([`e788989`](https://github.com/hydro-project/hydroflow/commit/e788989737fbd501173bc99c6f9f5f5ba514ec9c))
 </details>
