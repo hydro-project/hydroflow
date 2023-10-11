@@ -149,7 +149,7 @@ dependencies = [
  "polling",
  "rustix",
  "slab",
- "socket2",
+ "socket2 0.4.9",
  "waker-fn",
 ]
 
@@ -907,9 +907,9 @@ dependencies = [
 
 [[package]]
 name = "digest"
-version = "0.10.6"
+version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8168378f4e5023e7218c89c891c0fd8ecdb5e5e4f18cb78f38cf245dd021e76f"
+checksum = "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292"
 dependencies = [
  "block-buffer",
  "crypto-common",
@@ -1243,6 +1243,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fed44880c466736ef9a5c5b5facefb5ed0785676d0c02d612db14e54f0d84286"
 
 [[package]]
+name = "hex"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+
+[[package]]
 name = "home"
 version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1465,6 +1471,63 @@ dependencies = [
 ]
 
 [[package]]
+name = "hydroflow_plus"
+version = "0.5.0"
+dependencies = [
+ "hydroflow",
+ "hydroflow_lang",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "stageleft",
+ "syn 2.0.14",
+]
+
+[[package]]
+name = "hydroflow_plus_kvs"
+version = "0.0.0"
+dependencies = [
+ "hydroflow_plus",
+ "hydroflow_plus_kvs_macro",
+ "regex",
+ "serde",
+ "stageleft",
+ "stageleft_tool",
+]
+
+[[package]]
+name = "hydroflow_plus_kvs_flow"
+version = "0.0.0"
+dependencies = [
+ "hydroflow_plus",
+ "regex",
+ "serde",
+ "stageleft",
+]
+
+[[package]]
+name = "hydroflow_plus_kvs_macro"
+version = "0.0.0"
+dependencies = [
+ "hydroflow_plus",
+ "hydroflow_plus_kvs_flow",
+ "regex",
+ "serde",
+ "stageleft",
+ "stageleft_tool",
+]
+
+[[package]]
+name = "hydroflow_plus_kvs_runtime"
+version = "0.0.0"
+dependencies = [
+ "hydroflow_plus",
+ "hydroflow_plus_kvs",
+ "regex",
+ "serde",
+]
+
+[[package]]
 name = "iana-time-zone"
 version = "0.1.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1647,9 +1710,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.141"
+version = "0.2.149"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3304a64d199bb964be99741b7a14d26972741915b3649639149b2479bb46f4b5"
+checksum = "a08173bc88b7955d1b3145aa561539096c421ac8debde8cbc3612ec635fee29b"
 
 [[package]]
 name = "libloading"
@@ -2058,9 +2121,9 @@ dependencies = [
 
 [[package]]
 name = "pin-project-lite"
-version = "0.2.9"
+version = "0.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0a7ae3ac2f1173085d398531c705756c94a4c56843785df85a60c1a0afac116"
+checksum = "8afb450f006bf6385ca15ef45d71d2288452bc3683ce2e2cacc0d18e4be60b58"
 
 [[package]]
 name = "pin-utils"
@@ -2553,7 +2616,7 @@ dependencies = [
  "serde",
  "serde_json",
  "syn 1.0.109",
- "syn-inline-mod",
+ "syn-inline-mod 0.5.0",
  "tempfile",
  "tree-sitter",
  "tree-sitter-cli",
@@ -2724,6 +2787,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha2"
+version = "0.10.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "793db75ad2bcafc3ffa7c68b215fee268f537982cd901d132f89c6343f3a3dc8"
+dependencies = [
+ "cfg-if 1.0.0",
+ "cpufeatures",
+ "digest",
+]
+
+[[package]]
+name = "sha256"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7895c8ae88588ccead14ff438b939b0c569cd619116f14b4d13fdff7b8333386"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "hex",
+ "sha2",
+ "tokio",
+]
+
+[[package]]
 name = "sharded-slab"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2805,6 +2892,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "socket2"
+version = "0.5.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4031e820eb552adee9295814c0ced9e5cf38ddf1e8b7d566d6de8e2538ea989e"
+dependencies = [
+ "libc",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
 name = "ssh2"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2814,6 +2911,42 @@ dependencies = [
  "libc",
  "libssh2-sys",
  "parking_lot 0.11.2",
+]
+
+[[package]]
+name = "stageleft"
+version = "0.5.0"
+dependencies = [
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "stageleft_macro",
+ "syn 2.0.14",
+]
+
+[[package]]
+name = "stageleft_macro"
+version = "0.5.0"
+dependencies = [
+ "lazy_static",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "sha256",
+ "syn 2.0.14",
+]
+
+[[package]]
+name = "stageleft_tool"
+version = "0.5.0"
+dependencies = [
+ "lazy_static",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "sha256",
+ "syn 2.0.14",
+ "syn-inline-mod 0.6.0",
 ]
 
 [[package]]
@@ -2864,6 +2997,16 @@ checksum = "b670f535364c67358ecffb60b9f2579f9b45d3c71e8cca6d45d22ee0fadaa7eb"
 dependencies = [
  "proc-macro2",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "syn-inline-mod"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2fa6dca1fdb7b2ed46dd534a326725419d4fb10f23d8c85a8b2860e5eb25d0f9"
+dependencies = [
+ "proc-macro2",
+ "syn 2.0.14",
 ]
 
 [[package]]
@@ -3062,11 +3205,11 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.27.0"
+version = "1.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0de47a4eecbe11f498978a9b29d792f0d2692d1dd003650c24c76510e3bc001"
+checksum = "17ed6077ed6cd6c74735e21f37eb16dc3935f96878b1fe961074089cc80893f9"
 dependencies = [
- "autocfg",
+ "backtrace",
  "bytes",
  "libc",
  "mio",
@@ -3074,16 +3217,16 @@ dependencies = [
  "parking_lot 0.12.1",
  "pin-project-lite",
  "signal-hook-registry",
- "socket2",
+ "socket2 0.5.4",
  "tokio-macros",
- "windows-sys 0.45.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
 name = "tokio-macros"
-version = "2.0.0"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61a573bdc87985e9d6ddeed1b3d864e8a302c847e40d647746df2f1de209d1ce"
+checksum = "630bdcf245f78637c13ec01ffae6187cca34625e8c63150d424b59e55af2675e"
 dependencies = [
  "proc-macro2",
  "quote",
