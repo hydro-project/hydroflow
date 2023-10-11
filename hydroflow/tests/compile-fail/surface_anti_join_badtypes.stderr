@@ -1,4 +1,4 @@
-error[E0271]: type mismatch resolving `<ForEach<[closure@surface_anti_join_badtypes.rs:4:18], {integer}> as Pusherator>::Item == &str`
+error[E0271]: type mismatch resolving `<ForEach<{closure@surface_anti_join_badtypes.rs:4:18}, {integer}> as Pusherator>::Item == &str`
  --> tests/compile-fail/surface_anti_join_badtypes.rs:5:13
   |
 5 |           j = anti_join() -> for_each(std::mem::drop);
