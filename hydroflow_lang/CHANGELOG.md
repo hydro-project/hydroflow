@@ -5,7 +5,163 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.0 (2023-10-11)
+
+### Chore
+
+ - <csr-id-594375803750056ac03b27e160a67bbd4ed9b71a/> cleanup cli quotes, loose TODO comment
+ - <csr-id-f19eccc79d6d7c88de7ba1ef6a0abf1caaef377f/> bump proc-macro2 min version to 1.0.63
+ - <csr-id-1fb753ea85511ade1a834ec2536f56358ade9858/> ignore `clippy::unwrap_or_default` in `fold_keyed` codegen
+ - <csr-id-e788989737fbd501173bc99c6f9f5f5ba514ec9c/> Fix `clippy::implied_bounds_in_impls` from latest nightlies
+
+### Documentation
+
+ - <csr-id-a6f3c646c7204509eec40e7e3b259886e15fec75/> add docs for the hydroflow surface syntax compilation process
+
+### New Features
+
+ - <csr-id-13fab158818b3e75dccd2a3dfbead7f79801dd32/> Add `--no-handoffs` option to graphwrite args
+ - <csr-id-6dbbf35b6e5ae7f0225ac05c85598d4962ec66d8/> Add `--op-short-text` and `--no-pull-push` graphwrite args
+ - <csr-id-d38ec080ba195acf52997d4a0f7296e43270ad8b/> add kvs with replication example
+   have both kvs_replicated and kvs, separate examples
+   
+   add `flow_props_fn`s to `cross_join` (same as `join`), and `filter`
+ - <csr-id-21140f09156e1dad195162854955522f138ae781/> update snapshot tests for previous two commits
+ - <csr-id-9686ae8e7d26bb9cf6879a52d2324aa655588ec8/> update propegate_flow_props fn to reach fixed-point
+ - <csr-id-cff7e48d611e4eb8e7e020bb3def5cf22744567a/> Add `flow_prop_fn`s to many operators
+   * `_upcast` (new)
+   * `demux_enum`
+   * `for_each`
+   * `inspect`
+   * `join`
+ - <csr-id-e7ea6d804ae162c0d7ecbd6e4cbc1084766ce506/> open mermaid/dot graph in browser
+   * `HydroflowGraph::open_mermaid()` opens https://mermaid.live/
+   * `HydroflowGraph::open_dot()` opens https://dreampuf.github.io/GraphvizOnline/
+   
+   Behind a new `hydroflow/debugging`/`hydroflow_lang/debugging` feature
+   gate.
+ - <csr-id-9646ca06e61af8c827e2d2fb9826ce62b70b6799/> Update documentation and improve error messages for `demux_enum` operator
+ - <csr-id-02fddd2c0d99956d89f36395b283b198046b8766/> add type guard to `demux_enum` codegen
+ - <csr-id-b3d114827256f2b82a3c357f3419c6853a97f5c0/> initial technically working version of `demux_enum` with very bad error messages
+   Technically does not check port names at all, just depends on their order.
+ - <csr-id-fc2543359ba11c0947fdc26f5360b2ac43a5a0c4/> Implement `partition` operator
+   Supports both named ports and numeric indices.
+ - <csr-id-d254e2deb883f9633f8b325a595fb7c61bad42d7/> add context.is_first_time_subgraph_is_scheduled to simplify replaying operators
+ - <csr-id-1ce5f01cde288930cb1281468966dfb66d2e3e53/> make lattice_fold and lattice_reduce consistent with fold/reduce
+ - <csr-id-f013c3ca15f2cc9413fcfb92898f71d5fc00073a/> add import!() expression
+ - <csr-id-1bdbf73b630e4f2eff009b00b0e66d71be53bb4a/> Implement `flow_prop_fn` for `union()`
+ - <csr-id-63c435c32d170dcb6f1ee2a8da74b528d68e8e50/> Add `Cumul` `flow_prop_fn`s for `lattice_fold()` and `lattice_reduce()`
+ - <csr-id-9baf80ccc38c4e41c8a1a2ae048036cec2b723c6/> Update dot/graphviz rendering of delta/cumul and `defer_tick` edges
+ - <csr-id-fd89cb46c5983d277e16bb7b19f7d3ca83dd60cc/> Make `propegate_flow_props` fallible, cleanup `flow_prop_fn` definition.
+ - <csr-id-38346cf01aec0afa2b491095043aa31587613e24/> add `cast` operator
+ - <csr-id-9ab7cf8199ddfa8a6a83b7e5f5bc5e6dc05a3110/> Update mermaid rendering of hydroflow graph to show flow properties
+ - <csr-id-7714403e130969b96c8f405444d4daf451450fdf/> Add `monotonic_fn` and `morphism` macros, update snapshots for flow props.
+ - <csr-id-008b980a70561aa45c24d9a00d0908121d2a5ac6/> Move structs into separate `flow_props` module, make `flow_prop_fn` return `Option`s, impl for `map`
+ - <csr-id-fd5cdb583cb5b63dca790825d70836ea547d3d81/> Add `source_iter_delta` op for testing, basic flow props test, cleanups.
+ - <csr-id-b2ca4b723c4a78020202d6eb06969a8c85ff5c01/> Implement basic flow prop traversal (untested)
+ - <csr-id-686c2752e5c82a7f61a7a2aa4e6f6db52741e509/> Setup structure for tracking flow properties
+
+### Bug Fixes
+
+ - <csr-id-2edf77961ca0218265b35f179c2d86c810795266/> restore in-subgraph rendering of self-handoffs
+ - <csr-id-f67b9f0f9414977c24eace1e95ce840094be67a4/> fix handling of whitespace in `cast` expressions
+ - <csr-id-a927dc6afbe3178815b7c7c58ed2838d42d80334/> clippy warning on multiline string in hydro_cli, py_udf
+ - <csr-id-5a7e1b157362b0d655a28d6f3e5cd139ab8799f3/> fix demux error messages and add tests
+ - <csr-id-51a200a444a42f21e6557f3b20d822aea8ccc670/> clippy redundant `to_string()` in `print!` lints
+ - <csr-id-159a262ba056ec6ffad5590c4f3e57422022901e/> Clean up degenerate subgraph error message for consistency
+   Makes the pinned and latest nightly version have the same stderr output
+   for consistent testing.
+ - <csr-id-5ac9ddebedf615f87684d1092382ba64826c1c1c/> separate internal compiler operators in docs name/category/sort order
+
+### Refactor
+
+ - <csr-id-cb90ae184151ab9085ecb6d58f11d668619af9df/> cleanup kvs example more
+   Add `persist` `flow_prop_fn`
+ - <csr-id-1126266e69c2c4364bc8de558f11859e5bad1c69/> `demux_enum` requires enum type name, add better error handling
+ - <csr-id-2e61c62cd866e37793a161b2f517296b93e8078d/> combine `topo_sort` and `scc_kosaraju` into `topo_sort_scc`
+
+### New Features (BREAKING)
+
+ - <csr-id-9ed0ce02128a0eeaf0b603efcbe896427e47ef62/> Simplify graph printing code, add delta/cumul green edges, allow hiding of vars/subgraphs
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 41 commits contributed to the release over the course of 53 calendar days.
+ - 56 days passed between releases.
+ - 41 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 14 unique issues were worked on: [#882](https://github.com/hydro-project/hydroflow/issues/882), [#883](https://github.com/hydro-project/hydroflow/issues/883), [#884](https://github.com/hydro-project/hydroflow/issues/884), [#892](https://github.com/hydro-project/hydroflow/issues/892), [#896](https://github.com/hydro-project/hydroflow/issues/896), [#898](https://github.com/hydro-project/hydroflow/issues/898), [#902](https://github.com/hydro-project/hydroflow/issues/902), [#906](https://github.com/hydro-project/hydroflow/issues/906), [#923](https://github.com/hydro-project/hydroflow/issues/923), [#924](https://github.com/hydro-project/hydroflow/issues/924), [#926](https://github.com/hydro-project/hydroflow/issues/926), [#932](https://github.com/hydro-project/hydroflow/issues/932), [#933](https://github.com/hydro-project/hydroflow/issues/933), [#935](https://github.com/hydro-project/hydroflow/issues/935)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#882](https://github.com/hydro-project/hydroflow/issues/882)**
+    - Add `Cumul` `flow_prop_fn`s for `lattice_fold()` and `lattice_reduce()` ([`63c435c`](https://github.com/hydro-project/hydroflow/commit/63c435c32d170dcb6f1ee2a8da74b528d68e8e50))
+    - Update dot/graphviz rendering of delta/cumul and `defer_tick` edges ([`9baf80c`](https://github.com/hydro-project/hydroflow/commit/9baf80ccc38c4e41c8a1a2ae048036cec2b723c6))
+    - Make `propegate_flow_props` fallible, cleanup `flow_prop_fn` definition. ([`fd89cb4`](https://github.com/hydro-project/hydroflow/commit/fd89cb46c5983d277e16bb7b19f7d3ca83dd60cc))
+    - Add `cast` operator ([`38346cf`](https://github.com/hydro-project/hydroflow/commit/38346cf01aec0afa2b491095043aa31587613e24))
+    - Update mermaid rendering of hydroflow graph to show flow properties ([`9ab7cf8`](https://github.com/hydro-project/hydroflow/commit/9ab7cf8199ddfa8a6a83b7e5f5bc5e6dc05a3110))
+    - Add `monotonic_fn` and `morphism` macros, update snapshots for flow props. ([`7714403`](https://github.com/hydro-project/hydroflow/commit/7714403e130969b96c8f405444d4daf451450fdf))
+    - Move structs into separate `flow_props` module, make `flow_prop_fn` return `Option`s, impl for `map` ([`008b980`](https://github.com/hydro-project/hydroflow/commit/008b980a70561aa45c24d9a00d0908121d2a5ac6))
+    - Add `source_iter_delta` op for testing, basic flow props test, cleanups. ([`fd5cdb5`](https://github.com/hydro-project/hydroflow/commit/fd5cdb583cb5b63dca790825d70836ea547d3d81))
+    - Implement basic flow prop traversal (untested) ([`b2ca4b7`](https://github.com/hydro-project/hydroflow/commit/b2ca4b723c4a78020202d6eb06969a8c85ff5c01))
+    - Setup structure for tracking flow properties ([`686c275`](https://github.com/hydro-project/hydroflow/commit/686c2752e5c82a7f61a7a2aa4e6f6db52741e509))
+ * **[#883](https://github.com/hydro-project/hydroflow/issues/883)**
+    - Combine `topo_sort` and `scc_kosaraju` into `topo_sort_scc` ([`2e61c62`](https://github.com/hydro-project/hydroflow/commit/2e61c62cd866e37793a161b2f517296b93e8078d))
+    - Add docs for the hydroflow surface syntax compilation process ([`a6f3c64`](https://github.com/hydro-project/hydroflow/commit/a6f3c646c7204509eec40e7e3b259886e15fec75))
+ * **[#884](https://github.com/hydro-project/hydroflow/issues/884)**
+    - Separate internal compiler operators in docs name/category/sort order ([`5ac9dde`](https://github.com/hydro-project/hydroflow/commit/5ac9ddebedf615f87684d1092382ba64826c1c1c))
+ * **[#892](https://github.com/hydro-project/hydroflow/issues/892)**
+    - Clean up degenerate subgraph error message for consistency ([`159a262`](https://github.com/hydro-project/hydroflow/commit/159a262ba056ec6ffad5590c4f3e57422022901e))
+ * **[#896](https://github.com/hydro-project/hydroflow/issues/896)**
+    - Ignore `clippy::unwrap_or_default` in `fold_keyed` codegen ([`1fb753e`](https://github.com/hydro-project/hydroflow/commit/1fb753ea85511ade1a834ec2536f56358ade9858))
+ * **[#898](https://github.com/hydro-project/hydroflow/issues/898)**
+    - Add import!() expression ([`f013c3c`](https://github.com/hydro-project/hydroflow/commit/f013c3ca15f2cc9413fcfb92898f71d5fc00073a))
+ * **[#902](https://github.com/hydro-project/hydroflow/issues/902)**
+    - Make lattice_fold and lattice_reduce consistent with fold/reduce ([`1ce5f01`](https://github.com/hydro-project/hydroflow/commit/1ce5f01cde288930cb1281468966dfb66d2e3e53))
+ * **[#906](https://github.com/hydro-project/hydroflow/issues/906)**
+    - Add context.is_first_time_subgraph_is_scheduled to simplify replaying operators ([`d254e2d`](https://github.com/hydro-project/hydroflow/commit/d254e2deb883f9633f8b325a595fb7c61bad42d7))
+ * **[#923](https://github.com/hydro-project/hydroflow/issues/923)**
+    - Open mermaid/dot graph in browser ([`e7ea6d8`](https://github.com/hydro-project/hydroflow/commit/e7ea6d804ae162c0d7ecbd6e4cbc1084766ce506))
+ * **[#924](https://github.com/hydro-project/hydroflow/issues/924)**
+    - Update snapshot tests for previous two commits ([`21140f0`](https://github.com/hydro-project/hydroflow/commit/21140f09156e1dad195162854955522f138ae781))
+    - Update propegate_flow_props fn to reach fixed-point ([`9686ae8`](https://github.com/hydro-project/hydroflow/commit/9686ae8e7d26bb9cf6879a52d2324aa655588ec8))
+    - Add `flow_prop_fn`s to many operators ([`cff7e48`](https://github.com/hydro-project/hydroflow/commit/cff7e48d611e4eb8e7e020bb3def5cf22744567a))
+ * **[#926](https://github.com/hydro-project/hydroflow/issues/926)**
+    - Cleanup cli quotes, loose TODO comment ([`5943758`](https://github.com/hydro-project/hydroflow/commit/594375803750056ac03b27e160a67bbd4ed9b71a))
+    - Add kvs with replication example ([`d38ec08`](https://github.com/hydro-project/hydroflow/commit/d38ec080ba195acf52997d4a0f7296e43270ad8b))
+    - Cleanup kvs example more ([`cb90ae1`](https://github.com/hydro-project/hydroflow/commit/cb90ae184151ab9085ecb6d58f11d668619af9df))
+ * **[#932](https://github.com/hydro-project/hydroflow/issues/932)**
+    - Add `--no-handoffs` option to graphwrite args ([`13fab15`](https://github.com/hydro-project/hydroflow/commit/13fab158818b3e75dccd2a3dfbead7f79801dd32))
+    - Add `--op-short-text` and `--no-pull-push` graphwrite args ([`6dbbf35`](https://github.com/hydro-project/hydroflow/commit/6dbbf35b6e5ae7f0225ac05c85598d4962ec66d8))
+    - Simplify graph printing code, add delta/cumul green edges, allow hiding of vars/subgraphs ([`9ed0ce0`](https://github.com/hydro-project/hydroflow/commit/9ed0ce02128a0eeaf0b603efcbe896427e47ef62))
+ * **[#933](https://github.com/hydro-project/hydroflow/issues/933)**
+    - Fix handling of whitespace in `cast` expressions ([`f67b9f0`](https://github.com/hydro-project/hydroflow/commit/f67b9f0f9414977c24eace1e95ce840094be67a4))
+ * **[#935](https://github.com/hydro-project/hydroflow/issues/935)**
+    - Restore in-subgraph rendering of self-handoffs ([`2edf779`](https://github.com/hydro-project/hydroflow/commit/2edf77961ca0218265b35f179c2d86c810795266))
+ * **Uncategorized**
+    - Bump proc-macro2 min version to 1.0.63 ([`f19eccc`](https://github.com/hydro-project/hydroflow/commit/f19eccc79d6d7c88de7ba1ef6a0abf1caaef377f))
+    - Clippy warning on multiline string in hydro_cli, py_udf ([`a927dc6`](https://github.com/hydro-project/hydroflow/commit/a927dc6afbe3178815b7c7c58ed2838d42d80334))
+    - Update documentation and improve error messages for `demux_enum` operator ([`9646ca0`](https://github.com/hydro-project/hydroflow/commit/9646ca06e61af8c827e2d2fb9826ce62b70b6799))
+    - `demux_enum` requires enum type name, add better error handling ([`1126266`](https://github.com/hydro-project/hydroflow/commit/1126266e69c2c4364bc8de558f11859e5bad1c69))
+    - Add type guard to `demux_enum` codegen ([`02fddd2`](https://github.com/hydro-project/hydroflow/commit/02fddd2c0d99956d89f36395b283b198046b8766))
+    - Initial technically working version of `demux_enum` with very bad error messages ([`b3d1148`](https://github.com/hydro-project/hydroflow/commit/b3d114827256f2b82a3c357f3419c6853a97f5c0))
+    - Implement `partition` operator ([`fc25433`](https://github.com/hydro-project/hydroflow/commit/fc2543359ba11c0947fdc26f5360b2ac43a5a0c4))
+    - Fix demux error messages and add tests ([`5a7e1b1`](https://github.com/hydro-project/hydroflow/commit/5a7e1b157362b0d655a28d6f3e5cd139ab8799f3))
+    - Clippy redundant `to_string()` in `print!` lints ([`51a200a`](https://github.com/hydro-project/hydroflow/commit/51a200a444a42f21e6557f3b20d822aea8ccc670))
+    - Implement `flow_prop_fn` for `union()` ([`1bdbf73`](https://github.com/hydro-project/hydroflow/commit/1bdbf73b630e4f2eff009b00b0e66d71be53bb4a))
+    - Fix `clippy::implied_bounds_in_impls` from latest nightlies ([`e788989`](https://github.com/hydro-project/hydroflow/commit/e788989737fbd501173bc99c6f9f5f5ba514ec9c))
+</details>
+
 ## 0.4.0 (2023-08-15)
+
+<csr-id-d6db9cd22a3d63bcc65dafd5bc0ca663ecc553d7/>
+<csr-id-949db02e9fa9878e1a7176c180d6f44c5cddf052/>
+<csr-id-f60053f70da3071c54de4a0eabb059a143aa2ccc/>
 
 ### Chore
 
@@ -16,63 +172,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### New Features
 
+<csr-id-8f306e2a36582e168417808099eedf8a9de3b419/>
+<csr-id-871002267e3c03da83729ecc2d028f3c7b5c18d2/>
+
  - <csr-id-b4b9644a19e8e7e7725c9c5b88e3a6b8c2be7364/> Add `use` statements to hydroflow syntax
    And use in doc tests.
  - <csr-id-fe02f23649312bb64c5d0c8870edf578e516f397/> add `iter_batches_stream` util to break up iterator into per-tick batches
    * Also tightens up a bit of `assert_eq`'s code
- - <csr-id-8f306e2a36582e168417808099eedf8a9de3b419/> rename assert => assert_eq, add assert, change underlying implementation to work across ticks
- - <csr-id-871002267e3c03da83729ecc2d028f3c7b5c18d2/> make batch take two inputs [input] and [signal]
 
 ### Bug Fixes
 
+<csr-id-cc959c762c3a0e036e672801c615028cbfb95168/>
+<csr-id-ebba38230df134b04dd38c1df7c6de8712e3122e/>
+<csr-id-a55fc74dc1ebbe26b49359a104beb48d7f6cd449/>
+<csr-id-6c98bbc2bd3443fe6f77e0b8689b461edde1b316/>
+<csr-id-2d53110336b2da5a16887c3d72101da72b2362bb/>
+
  - <csr-id-d378e5eada3d2bae90f98c5a33b2d055940a8c7f/> unify antijoin and difference with set and multiset semantics
    * fix: unify antijoin and difference with set and multiset semantics
-   
-   * fix: replay semantics for antijoin and difference now work
+* fix: replay semantics for antijoin and difference now work
    also added cross_join_multiset
-   
-   * fix: enforce sort for tests of anti_join and difference using assert_eq
-   
-   * fix: advance __borrow_ident beyond the current tick to prevent replay loops
-   
-   * fix: add modified snapshots
-   
-   * fix: temp
-   
-   * fix: spelling typo in comment
-   
-   * fix: make anti_join replay more efficient
-   
-   Also add multiset data structure, use it in some tests, make join()
-   replay logic more similar to anti_join's and presist's.
-   
-   * fix: ignore test that depends on order of antijoin
-   
-   * fix: really ignore test_index
-   
-   * fix: fix specific test ordering in wasm
-   
-   ---------
- - <csr-id-cc959c762c3a0e036e672801c615028cbfb95168/> joins now replay correctly
- - <csr-id-ebba38230df134b04dd38c1df7c6de8712e3122e/> lattice_batch now takes [input] and [signal]
- - <csr-id-a55fc74dc1ebbe26b49359a104beb48d7f6cd449/> make all operators 'tick by default
- - <csr-id-6c98bbc2bd3443fe6f77e0b8689b461edde1b316/> rename next_tick -> defer, batch -> defer_signal
- - <csr-id-2d53110336b2da5a16887c3d72101da72b2362bb/> `py_udf` operator feature gating
+* fix: enforce sort for tests of anti_join and difference using assert_eq
+* fix: advance __borrow_ident beyond the current tick to prevent replay loops
+* fix: add modified snapshots
+* fix: temp
+* fix: spelling typo in comment
+* fix: make anti_join replay more efficient
+* fix: ignore test that depends on order of antijoin
+* fix: really ignore test_index
+* fix: fix specific test ordering in wasm
 
 ### New Features (BREAKING)
 
  - <csr-id-7a3b4c04779ea38bfa06c246882fa8dfb52bc8f1/> add fused joins, make lattice_join replay correctly
    * feat!: add fused joins, make lattice_join replay correctly
-   
-   * address comments
-   
-   * fix clippy
+* address comments
+* fix clippy
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 16 commits contributed to the release over the course of 39 calendar days.
+ - 17 commits contributed to the release over the course of 39 calendar days.
  - 42 days passed between releases.
  - 14 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 16 unique issues were worked on: [#820](https://github.com/hydro-project/hydroflow/issues/820), [#821](https://github.com/hydro-project/hydroflow/issues/821), [#822](https://github.com/hydro-project/hydroflow/issues/822), [#823](https://github.com/hydro-project/hydroflow/issues/823), [#833](https://github.com/hydro-project/hydroflow/issues/833), [#835](https://github.com/hydro-project/hydroflow/issues/835), [#840](https://github.com/hydro-project/hydroflow/issues/840), [#843](https://github.com/hydro-project/hydroflow/issues/843), [#844](https://github.com/hydro-project/hydroflow/issues/844), [#845](https://github.com/hydro-project/hydroflow/issues/845), [#851](https://github.com/hydro-project/hydroflow/issues/851), [#853](https://github.com/hydro-project/hydroflow/issues/853), [#861](https://github.com/hydro-project/hydroflow/issues/861), [#870](https://github.com/hydro-project/hydroflow/issues/870), [#872](https://github.com/hydro-project/hydroflow/issues/872), [#873](https://github.com/hydro-project/hydroflow/issues/873)
@@ -115,7 +256,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Unify antijoin and difference with set and multiset semantics ([`d378e5e`](https://github.com/hydro-project/hydroflow/commit/d378e5eada3d2bae90f98c5a33b2d055940a8c7f))
  * **[#873](https://github.com/hydro-project/hydroflow/issues/873)**
     - Allow `clippy::redundant_locals`, for latest nightlies ([`d6db9cd`](https://github.com/hydro-project/hydroflow/commit/d6db9cd22a3d63bcc65dafd5bc0ca663ecc553d7))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.4.0, hydroflow_datalog_core v0.4.0, hydroflow_datalog v0.4.0, hydroflow_macro v0.4.0, lattices v0.4.0, pusherator v0.0.3, hydroflow v0.4.0, hydro_cli v0.4.0, safety bump 4 crates ([`cb313f0`](https://github.com/hydro-project/hydroflow/commit/cb313f0635214460a8308d05cbef4bf7f4bfaa15))
 </details>
+
+<csr-unknown>
+ rename assert => assert_eq, add assert, change underlying implementation to work across ticks make batch take two inputs [input] and [signal]Also add multiset data structure, use it in some tests, make join()replay logic more similar to anti_join’s and presist’s. joins now replay correctly lattice_batch now takes [input] and [signal] make all operators ’tick by default rename next_tick -> defer, batch -> defer_signal py_udf operator feature gating<csr-unknown/>
 
 ## 0.3.0 (2023-07-04)
 
@@ -226,9 +372,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **Uncategorized**
     - Release hydroflow_cli_integration v0.3.0, hydroflow_lang v0.3.0, hydroflow_datalog_core v0.3.0, hydroflow_datalog v0.3.0, hydroflow_macro v0.3.0, lattices v0.3.0, pusherator v0.0.2, hydroflow v0.3.0, hydro_cli v0.3.0, safety bump 5 crates ([`ec9633e`](https://github.com/hydro-project/hydroflow/commit/ec9633e2e393c2bf106223abeb0b680200fbdf84))
 </details>
-
-<csr-unknown>
- add lattice_reduce and lattice_fold add join_multiset()also remove documentation about HalfJoinMultiset, the way to accessthat now is to use join_multiset() add assert() operator emit compile_error! diagnostics for stable allow stable build, refactors behind nightly feature flag<csr-unknown/>
 
 ## 0.2.0 (2023-05-31)
 

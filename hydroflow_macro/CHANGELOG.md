@@ -5,6 +5,64 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.0 (2023-10-11)
+
+### Chore
+
+ - <csr-id-f19eccc79d6d7c88de7ba1ef6a0abf1caaef377f/> bump proc-macro2 min version to 1.0.63
+ - <csr-id-2eac8ce42545cb543892b28267fb2f7089a92cdb/> refactor collect-String into fold for `clippy::clippy::format_collect` lint
+   using `.map(|| format!()).collect()` results in a heap `String` allocation for each item in the iterator, the fold only does one. Doesn't really matter for this case, just appeasing the lint
+
+### New Features
+
+ - <csr-id-b3d114827256f2b82a3c357f3419c6853a97f5c0/> initial technically working version of `demux_enum` with very bad error messages
+   Technically does not check port names at all, just depends on their order.
+ - <csr-id-f013c3ca15f2cc9413fcfb92898f71d5fc00073a/> add import!() expression
+ - <csr-id-7714403e130969b96c8f405444d4daf451450fdf/> Add `monotonic_fn` and `morphism` macros, update snapshots for flow props.
+
+### Bug Fixes
+
+ - <csr-id-5ac9ddebedf615f87684d1092382ba64826c1c1c/> separate internal compiler operators in docs name/category/sort order
+
+### Refactor
+
+ - <csr-id-1126266e69c2c4364bc8de558f11859e5bad1c69/> `demux_enum` requires enum type name, add better error handling
+
+### New Features (BREAKING)
+
+ - <csr-id-9ed0ce02128a0eeaf0b603efcbe896427e47ef62/> Simplify graph printing code, add delta/cumul green edges, allow hiding of vars/subgraphs
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 8 commits contributed to the release over the course of 55 calendar days.
+ - 56 days passed between releases.
+ - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 5 unique issues were worked on: [#881](https://github.com/hydro-project/hydroflow/issues/881), [#882](https://github.com/hydro-project/hydroflow/issues/882), [#884](https://github.com/hydro-project/hydroflow/issues/884), [#898](https://github.com/hydro-project/hydroflow/issues/898), [#932](https://github.com/hydro-project/hydroflow/issues/932)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#881](https://github.com/hydro-project/hydroflow/issues/881)**
+    - Refactor collect-String into fold for `clippy::clippy::format_collect` lint ([`2eac8ce`](https://github.com/hydro-project/hydroflow/commit/2eac8ce42545cb543892b28267fb2f7089a92cdb))
+ * **[#882](https://github.com/hydro-project/hydroflow/issues/882)**
+    - Add `monotonic_fn` and `morphism` macros, update snapshots for flow props. ([`7714403`](https://github.com/hydro-project/hydroflow/commit/7714403e130969b96c8f405444d4daf451450fdf))
+ * **[#884](https://github.com/hydro-project/hydroflow/issues/884)**
+    - Separate internal compiler operators in docs name/category/sort order ([`5ac9dde`](https://github.com/hydro-project/hydroflow/commit/5ac9ddebedf615f87684d1092382ba64826c1c1c))
+ * **[#898](https://github.com/hydro-project/hydroflow/issues/898)**
+    - Add import!() expression ([`f013c3c`](https://github.com/hydro-project/hydroflow/commit/f013c3ca15f2cc9413fcfb92898f71d5fc00073a))
+ * **[#932](https://github.com/hydro-project/hydroflow/issues/932)**
+    - Simplify graph printing code, add delta/cumul green edges, allow hiding of vars/subgraphs ([`9ed0ce0`](https://github.com/hydro-project/hydroflow/commit/9ed0ce02128a0eeaf0b603efcbe896427e47ef62))
+ * **Uncategorized**
+    - Bump proc-macro2 min version to 1.0.63 ([`f19eccc`](https://github.com/hydro-project/hydroflow/commit/f19eccc79d6d7c88de7ba1ef6a0abf1caaef377f))
+    - `demux_enum` requires enum type name, add better error handling ([`1126266`](https://github.com/hydro-project/hydroflow/commit/1126266e69c2c4364bc8de558f11859e5bad1c69))
+    - Initial technically working version of `demux_enum` with very bad error messages ([`b3d1148`](https://github.com/hydro-project/hydroflow/commit/b3d114827256f2b82a3c357f3419c6853a97f5c0))
+</details>
+
 ## 0.4.0 (2023-08-15)
 
 ### New Features
@@ -16,7 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 1 commit contributed to the release over the course of 26 calendar days.
+ - 2 commits contributed to the release over the course of 26 calendar days.
  - 42 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#845](https://github.com/hydro-project/hydroflow/issues/845)
@@ -29,6 +87,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  * **[#845](https://github.com/hydro-project/hydroflow/issues/845)**
     - Add `use` statements to hydroflow syntax ([`b4b9644`](https://github.com/hydro-project/hydroflow/commit/b4b9644a19e8e7e7725c9c5b88e3a6b8c2be7364))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.4.0, hydroflow_datalog_core v0.4.0, hydroflow_datalog v0.4.0, hydroflow_macro v0.4.0, lattices v0.4.0, pusherator v0.0.3, hydroflow v0.4.0, hydro_cli v0.4.0, safety bump 4 crates ([`cb313f0`](https://github.com/hydro-project/hydroflow/commit/cb313f0635214460a8308d05cbef4bf7f4bfaa15))
 </details>
 
 ## 0.3.0 (2023-07-04)
