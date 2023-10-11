@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.5.0 (2023-10-11)
 
+<csr-id-f19eccc79d6d7c88de7ba1ef6a0abf1caaef377f/>
+<csr-id-2eac8ce42545cb543892b28267fb2f7089a92cdb/>
+<csr-id-1126266e69c2c4364bc8de558f11859e5bad1c69/>
+
 ### Chore
 
  - <csr-id-f19eccc79d6d7c88de7ba1ef6a0abf1caaef377f/> bump proc-macro2 min version to 1.0.63
@@ -23,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Bug Fixes
 
  - <csr-id-5ac9ddebedf615f87684d1092382ba64826c1c1c/> separate internal compiler operators in docs name/category/sort order
+ - <csr-id-80d985f2870b80771c23eed9e2d9d2589d17088e/> properly feature gate `macro_invocation_path` `source_file()` #937
 
 ### Refactor
 
@@ -36,10 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 8 commits contributed to the release over the course of 55 calendar days.
+ - 10 commits contributed to the release over the course of 55 calendar days.
  - 56 days passed between releases.
- - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 5 unique issues were worked on: [#881](https://github.com/hydro-project/hydroflow/issues/881), [#882](https://github.com/hydro-project/hydroflow/issues/882), [#884](https://github.com/hydro-project/hydroflow/issues/884), [#898](https://github.com/hydro-project/hydroflow/issues/898), [#932](https://github.com/hydro-project/hydroflow/issues/932)
+ - 9 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 6 unique issues were worked on: [#881](https://github.com/hydro-project/hydroflow/issues/881), [#882](https://github.com/hydro-project/hydroflow/issues/882), [#884](https://github.com/hydro-project/hydroflow/issues/884), [#898](https://github.com/hydro-project/hydroflow/issues/898), [#932](https://github.com/hydro-project/hydroflow/issues/932), [#938](https://github.com/hydro-project/hydroflow/issues/938)
 
 ### Commit Details
 
@@ -57,7 +62,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Add import!() expression ([`f013c3c`](https://github.com/hydro-project/hydroflow/commit/f013c3ca15f2cc9413fcfb92898f71d5fc00073a))
  * **[#932](https://github.com/hydro-project/hydroflow/issues/932)**
     - Simplify graph printing code, add delta/cumul green edges, allow hiding of vars/subgraphs ([`9ed0ce0`](https://github.com/hydro-project/hydroflow/commit/9ed0ce02128a0eeaf0b603efcbe896427e47ef62))
+ * **[#938](https://github.com/hydro-project/hydroflow/issues/938)**
+    - Properly feature gate `macro_invocation_path` `source_file()` #937 ([`80d985f`](https://github.com/hydro-project/hydroflow/commit/80d985f2870b80771c23eed9e2d9d2589d17088e))
  * **Uncategorized**
+    - Release hydroflow_lang v0.5.0, hydroflow_datalog_core v0.5.0, hydroflow_datalog v0.5.0, hydroflow_macro v0.5.0, lattices v0.5.0, hydroflow v0.5.0, hydro_cli v0.5.0, safety bump 4 crates ([`2e2d8b3`](https://github.com/hydro-project/hydroflow/commit/2e2d8b386fb086c8276a2853d2a1f96ad4d7c221))
     - Bump proc-macro2 min version to 1.0.63 ([`f19eccc`](https://github.com/hydro-project/hydroflow/commit/f19eccc79d6d7c88de7ba1ef6a0abf1caaef377f))
     - `demux_enum` requires enum type name, add better error handling ([`1126266`](https://github.com/hydro-project/hydroflow/commit/1126266e69c2c4364bc8de558f11859e5bad1c69))
     - Initial technically working version of `demux_enum` with very bad error messages ([`b3d1148`](https://github.com/hydro-project/hydroflow/commit/b3d114827256f2b82a3c357f3419c6853a97f5c0))

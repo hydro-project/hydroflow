@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.5.0 (2023-10-11)
 
+<csr-id-cc15bab782830ac2af23b3ad3139986c8e186303/>
+<csr-id-594375803750056ac03b27e160a67bbd4ed9b71a/>
+<csr-id-58bf7ba59cf806ac3cc89af11af91fa38d1c1f95/>
+<csr-id-e788989737fbd501173bc99c6f9f5f5ba514ec9c/>
+<csr-id-7c7eea7fddda7ea9526c5af4191520e821c979dc/>
+<csr-id-e519fb1518615463eab08935a42a10be2fe180fc/>
+<csr-id-cb90ae184151ab9085ecb6d58f11d668619af9df/>
+<csr-id-db9f270e2bdaff8cb4429c13c15ad9ca7bbff61b/>
+<csr-id-b0c43c75954741edffe7e4e12909697e75ab1d26/>
+<csr-id-3c8dbd709fa5a1c1a458d2aa5e2be9ecd8fc4b49/>
+<csr-id-1126266e69c2c4364bc8de558f11859e5bad1c69/>
+<csr-id-96e2f4c08fdf3e76cd7648954c6a35c3ea3b6dc4/>
+<csr-id-95ed7a5298f1003dabfe97e8b2da8eed2915fbb8/>
+
 ### Chore
 
  - <csr-id-cc15bab782830ac2af23b3ad3139986c8e186303/> update snapshots for previous commit
@@ -18,6 +32,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### New Features
 
+<csr-id-9646ca06e61af8c827e2d2fb9826ce62b70b6799/>
+<csr-id-b3d114827256f2b82a3c357f3419c6853a97f5c0/>
+<csr-id-fc2543359ba11c0947fdc26f5360b2ac43a5a0c4/>
+<csr-id-d254e2deb883f9633f8b325a595fb7c61bad42d7/>
+<csr-id-1ce5f01cde288930cb1281468966dfb66d2e3e53/>
+<csr-id-f013c3ca15f2cc9413fcfb92898f71d5fc00073a/>
+<csr-id-d03ffe70c050f35ff6c760dcdfe13fbf48345b69/>
+<csr-id-1bdbf73b630e4f2eff009b00b0e66d71be53bb4a/>
+<csr-id-63c435c32d170dcb6f1ee2a8da74b528d68e8e50/>
+<csr-id-9baf80ccc38c4e41c8a1a2ae048036cec2b723c6/>
+<csr-id-fd89cb46c5983d277e16bb7b19f7d3ca83dd60cc/>
+<csr-id-38346cf01aec0afa2b491095043aa31587613e24/>
+<csr-id-9ab7cf8199ddfa8a6a83b7e5f5bc5e6dc05a3110/>
+<csr-id-7714403e130969b96c8f405444d4daf451450fdf/>
+<csr-id-fd5cdb583cb5b63dca790825d70836ea547d3d81/>
+
  - <csr-id-d38ec080ba195acf52997d4a0f7296e43270ad8b/> add kvs with replication example
    have both kvs_replicated and kvs, separate examples
    
@@ -25,27 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-21140f09156e1dad195162854955522f138ae781/> update snapshot tests for previous two commits
  - <csr-id-e7ea6d804ae162c0d7ecbd6e4cbc1084766ce506/> open mermaid/dot graph in browser
    * `HydroflowGraph::open_mermaid()` opens https://mermaid.live/
-   * `HydroflowGraph::open_dot()` opens https://dreampuf.github.io/GraphvizOnline/
-   
-   Behind a new `hydroflow/debugging`/`hydroflow_lang/debugging` feature
-   gate.
- - <csr-id-9646ca06e61af8c827e2d2fb9826ce62b70b6799/> Update documentation and improve error messages for `demux_enum` operator
- - <csr-id-b3d114827256f2b82a3c357f3419c6853a97f5c0/> initial technically working version of `demux_enum` with very bad error messages
-   Technically does not check port names at all, just depends on their order.
- - <csr-id-fc2543359ba11c0947fdc26f5360b2ac43a5a0c4/> Implement `partition` operator
-   Supports both named ports and numeric indices.
- - <csr-id-d254e2deb883f9633f8b325a595fb7c61bad42d7/> add context.is_first_time_subgraph_is_scheduled to simplify replaying operators
- - <csr-id-1ce5f01cde288930cb1281468966dfb66d2e3e53/> make lattice_fold and lattice_reduce consistent with fold/reduce
- - <csr-id-f013c3ca15f2cc9413fcfb92898f71d5fc00073a/> add import!() expression
- - <csr-id-d03ffe70c050f35ff6c760dcdfe13fbf48345b69/> Move `hydroflow_expect_warnings` into library, use in `tests/surface_flow_props.rs`
- - <csr-id-1bdbf73b630e4f2eff009b00b0e66d71be53bb4a/> Implement `flow_prop_fn` for `union()`
- - <csr-id-63c435c32d170dcb6f1ee2a8da74b528d68e8e50/> Add `Cumul` `flow_prop_fn`s for `lattice_fold()` and `lattice_reduce()`
- - <csr-id-9baf80ccc38c4e41c8a1a2ae048036cec2b723c6/> Update dot/graphviz rendering of delta/cumul and `defer_tick` edges
- - <csr-id-fd89cb46c5983d277e16bb7b19f7d3ca83dd60cc/> Make `propegate_flow_props` fallible, cleanup `flow_prop_fn` definition.
- - <csr-id-38346cf01aec0afa2b491095043aa31587613e24/> add `cast` operator
- - <csr-id-9ab7cf8199ddfa8a6a83b7e5f5bc5e6dc05a3110/> Update mermaid rendering of hydroflow graph to show flow properties
- - <csr-id-7714403e130969b96c8f405444d4daf451450fdf/> Add `monotonic_fn` and `morphism` macros, update snapshots for flow props.
- - <csr-id-fd5cdb583cb5b63dca790825d70836ea547d3d81/> Add `source_iter_delta` op for testing, basic flow props test, cleanups.
+* `HydroflowGraph::open_dot()` opens https://dreampuf.github.io/GraphvizOnline/
 
 ### Bug Fixes
 
@@ -87,7 +97,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 44 commits contributed to the release over the course of 48 calendar days.
+ - 45 commits contributed to the release over the course of 49 calendar days.
  - 56 days passed between releases.
  - 43 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 19 unique issues were worked on: [#882](https://github.com/hydro-project/hydroflow/issues/882), [#884](https://github.com/hydro-project/hydroflow/issues/884), [#885](https://github.com/hydro-project/hydroflow/issues/885), [#886](https://github.com/hydro-project/hydroflow/issues/886), [#887](https://github.com/hydro-project/hydroflow/issues/887), [#892](https://github.com/hydro-project/hydroflow/issues/892), [#893](https://github.com/hydro-project/hydroflow/issues/893), [#896](https://github.com/hydro-project/hydroflow/issues/896), [#897](https://github.com/hydro-project/hydroflow/issues/897), [#898](https://github.com/hydro-project/hydroflow/issues/898), [#902](https://github.com/hydro-project/hydroflow/issues/902), [#906](https://github.com/hydro-project/hydroflow/issues/906), [#918](https://github.com/hydro-project/hydroflow/issues/918), [#919](https://github.com/hydro-project/hydroflow/issues/919), [#923](https://github.com/hydro-project/hydroflow/issues/923), [#924](https://github.com/hydro-project/hydroflow/issues/924), [#926](https://github.com/hydro-project/hydroflow/issues/926), [#932](https://github.com/hydro-project/hydroflow/issues/932), [#935](https://github.com/hydro-project/hydroflow/issues/935)
@@ -153,6 +163,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Restore in-subgraph rendering of self-handoffs ([`2edf779`](https://github.com/hydro-project/hydroflow/commit/2edf77961ca0218265b35f179c2d86c810795266))
     - Kvs_bench graphwrite ([`e519fb1`](https://github.com/hydro-project/hydroflow/commit/e519fb1518615463eab08935a42a10be2fe180fc))
  * **Uncategorized**
+    - Release hydroflow_lang v0.5.0, hydroflow_datalog_core v0.5.0, hydroflow_datalog v0.5.0, hydroflow_macro v0.5.0, lattices v0.5.0, hydroflow v0.5.0, hydro_cli v0.5.0, safety bump 4 crates ([`2e2d8b3`](https://github.com/hydro-project/hydroflow/commit/2e2d8b386fb086c8276a2853d2a1f96ad4d7c221))
     - Clippy warning on multiline string in hydro_cli, py_udf ([`a927dc6`](https://github.com/hydro-project/hydroflow/commit/a927dc6afbe3178815b7c7c58ed2838d42d80334))
     - Update documentation and improve error messages for `demux_enum` operator ([`9646ca0`](https://github.com/hydro-project/hydroflow/commit/9646ca06e61af8c827e2d2fb9826ce62b70b6799))
     - `demux_enum` requires enum type name, add better error handling ([`1126266`](https://github.com/hydro-project/hydroflow/commit/1126266e69c2c4364bc8de558f11859e5bad1c69))
@@ -164,6 +175,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Make deadlock detector filter out spruious UDP `ConnectionReset`s on Windows ([`e8b027b`](https://github.com/hydro-project/hydroflow/commit/e8b027b67b35820f5710df2239da029b0f7fdc77))
     - Ignore PermissionDenied on already-closed socket on Windows ([`d9a1350`](https://github.com/hydro-project/hydroflow/commit/d9a13509c9e82837b65c4547503293d8146d1f7e))
 </details>
+
+<csr-unknown>
+Behind a new hydroflow/debugging/hydroflow_lang/debugging featuregate. Update documentation and improve error messages for demux_enum operator initial technically working version of demux_enum with very bad error messagesTechnically does not check port names at all, just depends on their order. Implement partition operatorSupports both named ports and numeric indices. add context.is_first_time_subgraph_is_scheduled to simplify replaying operators make lattice_fold and lattice_reduce consistent with fold/reduce add import!() expression Move hydroflow_expect_warnings into library, use in tests/surface_flow_props.rs Implement flow_prop_fn for union() Add Cumul flow_prop_fns for lattice_fold() and lattice_reduce() Update dot/graphviz rendering of delta/cumul and defer_tick edges Make propegate_flow_props fallible, cleanup flow_prop_fn definition. add cast operator Update mermaid rendering of hydroflow graph to show flow properties Add monotonic_fn and morphism macros, update snapshots for flow props. Add source_iter_delta op for testing, basic flow props test, cleanups.<csr-unknown/>
 
 ## 0.4.0 (2023-08-15)
 
@@ -302,9 +316,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **Uncategorized**
     - Release hydroflow_lang v0.4.0, hydroflow_datalog_core v0.4.0, hydroflow_datalog v0.4.0, hydroflow_macro v0.4.0, lattices v0.4.0, pusherator v0.0.3, hydroflow v0.4.0, hydro_cli v0.4.0, safety bump 4 crates ([`cb313f0`](https://github.com/hydro-project/hydroflow/commit/cb313f0635214460a8308d05cbef4bf7f4bfaa15))
 </details>
-
-<csr-unknown>
- rename assert => assert_eq, add assert, change underlying implementation to work across ticks make batch take two inputs [input] and [signal]Also add multiset data structure, use it in some tests, make join()replay logic more similar to anti_join’s and presist’s. joins now replay correctly livelock in deadlock detector #810 lattice_batch now takes [input] and [signal] make all operators ’tick by default stop two_pc example test from hanging sometimes rename next_tick -> defer, batch -> defer_signal remove python from default features, add it to ci py_udf operator feature gating<csr-unknown/>
 
 ## 0.3.0 (2023-07-04)
 
