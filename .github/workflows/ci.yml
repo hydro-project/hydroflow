@@ -58,6 +58,12 @@ jobs:
           command: check
           args: --all-targets --features python
 
+      - name: Run cargo check (no default features)
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --all-targets --no-default-features
+
   check-wasm:
     name: Check WebAssembly
     if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
