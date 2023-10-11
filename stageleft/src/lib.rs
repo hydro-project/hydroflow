@@ -1,0 +1,146 @@
+use std::marker::PhantomData;
+
+use proc_macro2::{Span, TokenStream};
+use quote::quote;
+
+pub mod internal {
+    pub use proc_macro2::TokenStream;
+    pub use quote::quote;
+    pub use {proc_macro2, syn};
+}
+
+pub use stageleft_macro::{entry, q, quse_fn};
+
+pub mod runtime_support;
+use runtime_support::{FreeVariable, CURRENT_FINAL_CRATE};
+
+pub trait QuotedContext {
+    fn create() -> Self;
+}
+
+pub trait Quoted<T>: Sized {
+    fn splice(self) -> TokenStream;
+}
+
+type FreeVariables = Vec<(String, (Option<TokenStream>, Option<TokenStream>))>;
+
+pub trait IntoQuotedOnce<'a, T>:
+    FnOnce(&mut String, &mut String, &mut FreeVariables, bool) -> T + 'a
+where
+    Self: Sized,
+{
+}
+
+impl<'a, T, F: FnOnce(&mut String, &mut String, &mut FreeVariables, bool) -> T + 'a>
+    IntoQuotedOnce<'a, T> for F
+{
+}
+
+impl<'a, T, F: FnOnce(&mut String, &mut String, &mut FreeVariables, bool) -> T + 'a> Quoted<T>
+    for F
+{
+    fn splice(self) -> TokenStream {
+        let mut module_path = String::new();
+        let mut expr_str = String::new();
+        let mut free_variables = Vec::new();
+        // this is an uninit value so we can't drop it
+        std::mem::forget(self(
+            &mut module_path,
+            &mut expr_str,
+            &mut free_variables,
+            false,
+        ));
+
+        let instantiated_free_variables = free_variables.iter().flat_map(|(ident, value)| {
+            let ident = syn::Ident::new(ident, Span::call_site());
+            value.0.iter().map(|prelude| quote!(#prelude)).chain(
+                value
+                    .1
+                    .iter()
+                    .map(move |value| quote!(let #ident = #value;)),
+            )
+        });
+
+        let final_crate_name = CURRENT_FINAL_CRATE.with(|f| *f.borrow()).unwrap();
+        let final_crate = proc_macro_crate::crate_name(final_crate_name)
+            .unwrap_or_else(|_| panic!("{final_crate_name} should be present in `Cargo.toml`"));
+        let final_crate_root = match final_crate {
+            proc_macro_crate::FoundCrate::Itself => syn::parse_str(final_crate_name).unwrap(),
+            proc_macro_crate::FoundCrate::Name(name) => {
+                let ident = syn::Ident::new(&name, Span::call_site());
+                quote! { #ident }
+            }
+        };
+
+        let module_path: syn::Path = syn::parse_str(&module_path).unwrap();
+        let mut module_path = module_path
+            .segments
+            .iter()
+            .skip(1)
+            .cloned()
+            .collect::<Vec<_>>();
+        module_path.insert(
+            0,
+            syn::PathSegment {
+                ident: syn::Ident::new("__flow", Span::call_site()),
+                arguments: syn::PathArguments::None,
+            },
+        );
+        let module_path = syn::Path {
+            leading_colon: None,
+            segments: syn::punctuated::Punctuated::from_iter(module_path.into_iter()),
+        };
+
+        let expr: syn::Expr = syn::parse_str(&expr_str).unwrap();
+        quote!({
+            use ::#final_crate_root::#module_path::*;
+            #(#instantiated_free_variables)*
+            #expr
+        })
+    }
+}
+
+pub trait IntoQuotedMut<'a, T>:
+    FnMut(&mut String, &mut String, &mut FreeVariables, bool) -> T + 'a
+where
+    Self: Sized,
+{
+}
+
+impl<'a, T, F: FnMut(&mut String, &mut String, &mut FreeVariables, bool) -> T + 'a>
+    IntoQuotedMut<'a, T> for F
+{
+}
+
+pub struct RuntimeData<T> {
+    ident: &'static str,
+    _phantom: PhantomData<T>,
+}
+
+impl<T: Copy> Copy for RuntimeData<T> {}
+
+impl<T: Clone> Clone for RuntimeData<T> {
+    fn clone(&self) -> Self {
+        // TODO(shadaj): mark this as cloned so we clone it in the splice
+        RuntimeData {
+            ident: self.ident.clone(),
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<T> RuntimeData<T> {
+    pub fn new(ident: &'static str) -> RuntimeData<T> {
+        RuntimeData {
+            ident,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<T> FreeVariable<T> for RuntimeData<T> {
+    fn to_tokens(&self) -> (Option<TokenStream>, Option<TokenStream>) {
+        let ident = syn::Ident::new(self.ident, Span::call_site());
+        (None, Some(quote!(#ident)))
+    }
+}
