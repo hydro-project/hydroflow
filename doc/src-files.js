@@ -1,4 +1,4 @@
-var sourcesIndex = JSON.parse('{\
+var srcIndex = JSON.parse('{\
 "hydro":["",[["core",[["hydroflow_crate",[],["build.rs","mod.rs","ports.rs"]]],["custom_service.rs","deployment.rs","gcp.rs","localhost.rs","mod.rs","progress.rs","ssh.rs","terraform.rs","util.rs"]]],["cli.rs","lib.rs"]],\
 "hydroflow":["",[["compiled",[["pull",[["half_join_state",[],["fold.rs","fold_from.rs","mod.rs","multiset.rs","multiset2.rs","reduce.rs","set.rs"]]],["anti_join.rs","cross_join.rs","mod.rs","symmetric_hash_join.rs"]]],["mod.rs"]],["props",[],["mod.rs","wrap.rs"]],["scheduled",[["handoff",[],["handoff_list.rs","mod.rs","tee.rs","vector.rs"]],["net",[],["mod.rs","network_vertex.rs"]]],["context.rs","graph.rs","graph_ext.rs","input.rs","mod.rs","port.rs","query.rs","reactor.rs","state.rs","subgraph.rs"]],["util",[["unsync",[],["mod.rs","mpsc.rs"]]],["clear.rs","demux_enum.rs","mod.rs","monotonic.rs","monotonic_map.rs","multiset.rs","socket.rs","sparse_vec.rs","tcp.rs","udp.rs"]]],["declarative_macro.rs","lib.rs"]],\
 "hydroflow_cli_integration":["",[],["lib.rs"]],\
@@ -13,4 +13,4 @@ var sourcesIndex = JSON.parse('{\
 "variadics":["",[],["lib.rs"]],\
 "website_playground":["",[],["lib.rs","utils.rs"]]\
 }');
-createSourceSidebar();
+createSrcSidebar();
