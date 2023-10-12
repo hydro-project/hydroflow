@@ -107,6 +107,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        target_selection:
+          - "--lib --bins"
+          - "--examples"
+          - "--tests"
+          - "--benches"
+          - "--doc"
         rust_release: [pinned-nightly, latest-nightly]
         exclude:
           # For non-pull requests, event_name != 'pull_request' will be true,
@@ -127,17 +133,11 @@ jobs:
           toolchain: nightly
           override: ${{ matrix.rust_release == 'latest-nightly' }}
 
-      - name: Run cargo test all targets (which does not include doctests)
+      - name: Run cargo test on target_selection
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --profile cidev --no-fail-fast --all-targets --features python
-
-      - name: Run cargo doc tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --profile cidev --no-fail-fast --doc --features python
+          args: --profile cidev --no-fail-fast --features python ${{ matrix.target_selection }}
 
   test-wasm:
     name: Test Suite (WebAssembly)
