@@ -1,14 +1,6 @@
 [workspace]
 
 members = [
-    # When adding a new crate which is published, you need to:
-    # 1. Commit an (empty) file `my_crate/CHANGELOG.md`.
-    # 2. Ensure `publish = true` and other required fields (`license`, `description`, `documentation`,
-    #    etc.), are set in `my_crate/Cargo.toml`
-    #    https://doc.rust-lang.org/cargo/reference/publishing.html#before-publishing-a-new-crate
-    # 3. Ensure any `path` dependencies to/from `my_crate` also include `version = "^0.1.0"`
-    #    (substitute correct version).
-    # Then just run the release workflow as normal.
     "benches",
     "hydro_cli",
     "hydro_cli_examples",
