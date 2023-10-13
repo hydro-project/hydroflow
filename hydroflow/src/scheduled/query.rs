@@ -15,16 +15,16 @@ use crate::scheduled::handoff::VecHandoff;
 const QUERY_EDGE_NAME: Cow<'static, str> = Cow::Borrowed("query handoff");
 
 #[derive(Default)]
-pub struct Query {
-    df: Rc<RefCell<Hydroflow>>,
+pub struct Query<'a> {
+    df: Rc<RefCell<Hydroflow<'a>>>,
 }
 
-impl Query {
+impl<'a> Query<'a> {
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn source<F, T>(&mut self, f: F) -> Operator<T>
+    pub fn source<F, T>(&mut self, f: F) -> Operator<'a, T>
     where
         T: 'static,
         F: 'static + FnMut(&Context, &SendCtx<VecHandoff<T>>),
@@ -40,7 +40,7 @@ impl Query {
         }
     }
 
-    pub fn concat<T>(&mut self, ops: Vec<Operator<T>>) -> Operator<T>
+    pub fn concat<T>(&mut self, ops: Vec<Operator<T>>) -> Operator<'a, T>
     where
         T: 'static,
     {
@@ -69,19 +69,19 @@ impl Query {
     }
 }
 
-pub struct Operator<T>
+pub struct Operator<'a, T>
 where
     T: 'static,
 {
-    df: Rc<RefCell<Hydroflow>>,
+    df: Rc<RefCell<Hydroflow<'a>>>,
     recv_port: RecvPort<VecHandoff<T>>,
 }
 
-impl<T> Operator<T>
+impl<'a, T> Operator<'a, T>
 where
     T: 'static,
 {
-    pub fn map<U, F>(self, mut f: F) -> Operator<U>
+    pub fn map<U, F>(self, mut f: F) -> Operator<'a, U>
     where
         F: 'static + Fn(T) -> U,
         U: 'static,
@@ -101,7 +101,7 @@ where
     }
 
     #[must_use]
-    pub fn filter<F>(self, mut f: F) -> Operator<T>
+    pub fn filter<F>(self, mut f: F) -> Operator<'a, T>
     where
         F: 'static + Fn(&T) -> bool,
     {
@@ -125,7 +125,7 @@ where
     }
 
     #[must_use]
-    pub fn concat(self, other: Operator<T>) -> Operator<T> {
+    pub fn concat(self, other: Operator<'a, T>) -> Operator<'a, T> {
         // TODO(justin): this is very slow.
 
         let mut df = self.df.borrow_mut();
@@ -163,8 +163,8 @@ where
     }
 }
 
-impl<T: Clone> Operator<T> {
-    pub fn tee(self, n: usize) -> Vec<Operator<T>>
+impl<'a, T: Clone> Operator<'a, T> {
+    pub fn tee(self, n: usize) -> Vec<Operator<'a, T>>
     where
         T: 'static,
     {

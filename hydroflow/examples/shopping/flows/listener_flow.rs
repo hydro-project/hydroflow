@@ -11,7 +11,7 @@ pub(crate) async fn listener_flow(
     tuple_input: UdpStream,
     bp_input: UdpStream,
     ssiv_input: UdpStream,
-) -> Hydroflow {
+) -> Hydroflow<'static> {
     // Simply print what we receive.
     hydroflow_syntax! {
         source_stream_serde(tuple_input)
