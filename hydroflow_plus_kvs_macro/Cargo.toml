@@ -1,0 +1,18 @@
+[package]
+name = "hydroflow_plus_kvs_macro"
+publish = false
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+path = "src/lib.rs"
+
+[dependencies]
+hydroflow_plus = { path = "../hydroflow_plus", version = "^0.5.0" }
+stageleft = { path = "../stageleft", version = "^0.5.0" }
+regex = "1"
+serde = "1"
+
+[build-dependencies]
+stageleft_tool = { path = "../stageleft_tool", version = "^0.5.0" }
