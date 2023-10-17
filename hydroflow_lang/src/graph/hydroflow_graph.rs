@@ -57,6 +57,11 @@ pub struct HydroflowGraph {
     // TODO(mingwei): #[serde(skip)] this and recompute as needed, to reduce codegen.
     /// Stream properties.
     flow_props: SecondaryMap<GraphEdgeId, FlowProps>,
+
+    /// If this subgraph is 'lazy' then when it sends data to a lower stratum it does not cause a new tick to start
+    /// This is to support lazy defers
+    /// If the value does not exist for a given subgraph id then the subgraph is not lazy.
+    subgraph_laziness: SecondaryMap<GraphSubgraphId, bool>,
 }
 impl HydroflowGraph {
     /// Create a new empty `HydroflowGraph`.
@@ -559,12 +564,14 @@ impl HydroflowGraph {
                 return Err((node_id, old_sg_id));
             }
         }
-        Ok(self.subgraph_nodes.insert_with_key(|sg_id| {
+        let subgraph_id = self.subgraph_nodes.insert_with_key(|sg_id| {
             for &node_id in node_ids.iter() {
                 self.node_subgraph.insert(node_id, sg_id);
             }
             node_ids
-        }))
+        });
+
+        Ok(subgraph_id)
     }
 
     /// Removes a node from its subgraph. Returns true if the node was in a subgraph.
@@ -577,7 +584,7 @@ impl HydroflowGraph {
         }
     }
 
-    /// Gets the stratum nubmer of the subgraph.
+    /// Gets the stratum number of the subgraph.
     pub fn subgraph_stratum(&self, sg_id: GraphSubgraphId) -> Option<usize> {
         self.subgraph_stratum.get(sg_id).copied()
     }
@@ -589,6 +596,16 @@ impl HydroflowGraph {
         stratum: usize,
     ) -> Option<usize> {
         self.subgraph_stratum.insert(sg_id, stratum)
+    }
+
+    /// Gets whether the subgraph is lazy or not
+    fn subgraph_laziness(&self, sg_id: GraphSubgraphId) -> bool {
+        self.subgraph_laziness.get(sg_id).copied().unwrap_or(false)
+    }
+
+    /// Set subgraph's laziness, returning the old value.
+    pub fn set_subgraph_laziness(&mut self, sg_id: GraphSubgraphId, lazy: bool) -> bool {
+        self.subgraph_laziness.insert(sg_id, lazy).unwrap_or(false)
     }
 
     /// Returns the the stratum number of the largest (latest) stratum (inclusive).
@@ -981,6 +998,7 @@ impl HydroflowGraph {
                 let stratum = Literal::usize_unsuffixed(
                     self.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(0),
                 );
+                let laziness = self.subgraph_laziness(subgraph_id);
                 quote! {
                     #( #op_prologue_code )*
 
@@ -989,6 +1007,7 @@ impl HydroflowGraph {
                         #stratum,
                         var_expr!( #( #recv_ports ),* ),
                         var_expr!( #( #send_ports ),* ),
+                        #laziness,
                         move |#context, var_args!( #( #recv_ports ),* ), var_args!( #( #send_ports ),* )| {
                             #( #recv_port_code )*
                             #( #send_port_code )*

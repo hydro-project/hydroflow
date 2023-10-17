@@ -26,6 +26,8 @@ pub enum DelayType {
     Stratum,
     /// Input should be collected over the previous tick.
     Tick,
+    /// Input should be collected over the previous tick but also not cause a new tick to occur.
+    TickLazy,
 }
 
 /// Specification of the named (or unnamed) ports for an operator's inputs or outputs.
@@ -379,6 +381,7 @@ declare_ops![
     next_stratum::NEXT_STRATUM,
     defer_signal::DEFER_SIGNAL,
     defer_tick::DEFER_TICK,
+    defer_tick_lazy::DEFER_TICK_LAZY,
     null::NULL,
     partition::PARTITION,
     persist::PERSIST,

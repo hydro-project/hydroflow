@@ -271,7 +271,7 @@ fn find_subgraph_strata(
             let (succ_edge, succ) = partitioned_graph.node_successors(node_id).next().unwrap();
 
             // Ignore tick edges.
-            if Some(&DelayType::Tick) == barrier_crossers.get(succ_edge) {
+            if let Some(&DelayType::Tick | &DelayType::TickLazy) = barrier_crossers.get(succ_edge) {
                 continue;
             }
 
@@ -336,7 +336,7 @@ fn find_subgraph_strata(
         let src_stratum = partitioned_graph.subgraph_stratum(src_sg);
         let dst_stratum = partitioned_graph.subgraph_stratum(dst_sg);
         match delay_type {
-            DelayType::Tick => {
+            DelayType::Tick | DelayType::TickLazy => {
                 // If tick edge goes foreward in stratum, need to buffer.
                 // (TODO(mingwei): could use a different kind of handoff.)
                 if src_stratum <= dst_stratum {
@@ -364,8 +364,15 @@ fn find_subgraph_strata(
                     let new_subgraph_id = partitioned_graph
                         .insert_subgraph(vec![new_node_id])
                         .unwrap();
+
                     // Assign stratum.
                     partitioned_graph.set_subgraph_stratum(new_subgraph_id, extra_stratum);
+
+                    // Assign laziness.
+                    partitioned_graph.set_subgraph_laziness(
+                        new_subgraph_id,
+                        matches!(delay_type, DelayType::TickLazy),
+                    );
                 }
             }
             DelayType::Stratum => {
