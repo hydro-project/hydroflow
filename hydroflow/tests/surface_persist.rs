@@ -13,7 +13,7 @@ pub fn test_persist_basic() {
         source_iter([1])
             -> persist()
             -> persist()
-            -> fold(0, |a: &mut _, b| *a += b)
+            -> fold(|| 0, |a: &mut _, b| *a += b)
             -> for_each(|x| result_send.send(x).unwrap());
     };
     assert_graphvis_snapshots!(hf);
@@ -39,7 +39,7 @@ pub fn test_persist_pull() {
         m0 = union() -> persist() -> m1;
         null() -> m1;
         m1 = union()
-            -> fold(0, |a: &mut _, b| *a += b)
+            -> fold(|| 0, |a: &mut _, b| *a += b)
             -> for_each(|x| result_send.send(x).unwrap());
     };
     assert_graphvis_snapshots!(hf);
@@ -63,7 +63,7 @@ pub fn test_persist_push() {
         t0 -> null();
         t1 = t0 -> persist() -> tee();
         t1 -> null();
-        t1 -> fold(0, |a: &mut _, b| *a += b) -> for_each(|x| result_send.send(x).unwrap());
+        t1 -> fold(|| 0, |a: &mut _, b| *a += b) -> for_each(|x| result_send.send(x).unwrap());
     };
     assert_graphvis_snapshots!(hf);
 
@@ -100,7 +100,7 @@ pub fn test_persist_replay_join() {
     let mut hf = hydroflow_syntax! {
         source_stream(persist_input)
             -> persist()
-            -> fold::<'tick>(0, |a: &mut _, b| *a += b)
+            -> fold::<'tick>(|| 0, |a: &mut _, b| *a += b)
             -> next_stratum()
             -> [0]product_node;
 

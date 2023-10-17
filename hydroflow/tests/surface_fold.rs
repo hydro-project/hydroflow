@@ -11,7 +11,7 @@ pub fn test_fold_tick() {
 
     let mut df = hydroflow::hydroflow_syntax! {
         source_stream(items_recv)
-            -> fold::<'tick>(Vec::new(), |old: &mut Vec<u32>, mut x: Vec<u32>| { old.append(&mut x); })
+            -> fold::<'tick>(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| { old.append(&mut x); })
             -> for_each(|v| result_send.send(v).unwrap());
     };
     assert_graphvis_snapshots!(df);
@@ -48,7 +48,7 @@ pub fn test_fold_static() {
 
     let mut df = hydroflow::hydroflow_syntax! {
         source_stream(items_recv)
-            -> fold::<'static>(Vec::new(), |old: &mut Vec<u32>, mut x: Vec<u32>| { old.append(&mut x); })
+            -> fold::<'static>(Vec::new, |old: &mut Vec<u32>, mut x: Vec<u32>| { old.append(&mut x); })
             -> for_each(|v| result_send.send(v).unwrap());
     };
     assert_graphvis_snapshots!(df);
@@ -84,7 +84,7 @@ pub fn test_fold_flatten() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(u8, u8)>();
     let mut df_pull = hydroflow_syntax! {
         source_iter([(1,1), (1,2), (2,3), (2,4)])
-            -> fold::<'tick>(HashMap::<u8, u8>::new(), |ht: &mut HashMap<u8, u8>, t: (u8,u8)| {
+            -> fold::<'tick>(HashMap::<u8, u8>::new, |ht: &mut HashMap<u8, u8>, t: (u8,u8)| {
                     let e = ht.entry(t.0).or_insert(0);
                     *e += t.1;
                 })
@@ -105,7 +105,7 @@ pub fn test_fold_flatten() {
     let (out_send, mut out_recv) = hydroflow::util::unbounded_channel::<(u8, u8)>();
     let mut df_push = hydroflow_syntax! {
         datagen = source_iter([(1,2), (1,2), (2,4), (2,4)]) -> tee();
-        datagen[0] -> fold::<'tick>(HashMap::<u8, u8>::new(), |ht: &mut HashMap<u8, u8>, t:(u8,u8)| {
+        datagen[0] -> fold::<'tick>(HashMap::<u8, u8>::new, |ht: &mut HashMap<u8, u8>, t:(u8,u8)| {
                 let e = ht.entry(t.0).or_insert(0);
                 *e += t.1;
             })
@@ -132,7 +132,7 @@ pub fn test_fold_sort() {
 
     let mut df = hydroflow_syntax! {
         source_stream(items_recv)
-            -> fold::<'tick>(Vec::new(), Vec::push)
+            -> fold::<'tick>(Vec::new, Vec::push)
             -> flat_map(|mut vec| { vec.sort(); vec })
             -> for_each(|v| print!("{:?}, ", v));
     };

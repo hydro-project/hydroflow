@@ -28,7 +28,7 @@ pub(crate) async fn run_client(outbound: UdpSink, inbound: UdpStream, opts: Opts
         // given the inbound packet, bump the Lamport clock and merge this in
         inbound_chan[merge] -> map(|(msg, _sender): (EchoMsg, SocketAddr)| msg.lamport_clock) -> [net]mergevc;
         mergevc = union() -> fold::<'static>(
-            bot,
+            || bot,
             |old: &mut Max<usize>, lamport_clock: Max<usize>| {
                     let bump = Max::new(old.into_reveal() + 1);
                     old.merge(bump);

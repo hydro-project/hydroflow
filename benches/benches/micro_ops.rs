@@ -188,7 +188,7 @@ fn ops(c: &mut Criterion) {
                 #[allow(clippy::unnecessary_fold)]
                 {
                     hydroflow_syntax! {
-                        source_iter(black_box(input0)) -> fold::<'tick>(0, |accum: &mut _, elem| { *accum += elem }) -> for_each(|x| { black_box(x); });
+                        source_iter(black_box(input0)) -> fold::<'tick>(|| 0, |accum: &mut _, elem| { *accum += elem }) -> for_each(|x| { black_box(x); });
                     }
                 }
             },

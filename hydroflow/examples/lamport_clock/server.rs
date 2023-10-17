@@ -24,7 +24,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
         // merge in the msg vc to the local vc
         inbound_chan[merge] -> map(|(msg, _addr): (EchoMsg, SocketAddr)| msg.lamport_clock) -> mergevc;
         mergevc = fold::<'static>(
-            bot,
+            || bot,
             |old: &mut Max<usize>, lamport_clock: Max<usize>| {
                 let bump = Max::new(old.into_reveal() + 1);
                 old.merge(bump);

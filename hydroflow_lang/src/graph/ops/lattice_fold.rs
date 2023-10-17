@@ -1,14 +1,14 @@
 use syn::parse_quote_spanned;
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints,
-    OperatorInstance, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
+    DelayType, OperatorCategory, OperatorConstraints, OperatorInstance, WriteContextArgs,
+    LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
 };
 
 /// > 1 input stream, 1 output stream
 ///
 /// A specialized operator for merging lattices together into a accumulated value. Like [`fold()`](#fold)
-/// but specialized for lattice types. `lattice_fold::<MyLattice>()` is equivalent to `fold(MyLattice::default(), hydroflow::lattices::Merge::merge)`.
+/// but specialized for lattice types. `lattice_fold(MyLattice::default)` is equivalent to `fold(MyLattice::default, hydroflow::lattices::Merge::merge)`.
 ///
 /// `lattice_fold` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
@@ -24,7 +24,7 @@ use super::{
 /// use hydroflow::lattices::set_union::SetUnionHashSet;
 ///
 /// source_iter([SetUnionSingletonSet::new_from(7)])
-///     -> lattice_fold(SetUnionHashSet::<usize>::default())
+///     -> lattice_fold(SetUnionHashSet::<usize>::default)
 ///     -> assert_eq([SetUnionHashSet::new_from([7])]);
 /// ```
 pub const LATTICE_FOLD: OperatorConstraints = OperatorConstraints {
