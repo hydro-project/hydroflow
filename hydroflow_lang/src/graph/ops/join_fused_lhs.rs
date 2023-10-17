@@ -3,7 +3,7 @@ use syn::parse_quote;
 use syn::spanned::Spanned;
 
 use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    DelayType, OperatorCategory, OperatorConstraints,
     OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
@@ -38,11 +38,6 @@ pub const JOIN_FUSED_LHS: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Preserve,
-        monotonic: FlowPropertyVal::Preserve,
-        inconsistency_tainted: false,
-    },
     input_delaytype_fn: |idx| match idx {
         PortIndexValue::Int(path) if "0" == path.to_token_stream().to_string() => {
             Some(DelayType::Stratum)

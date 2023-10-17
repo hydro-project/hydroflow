@@ -1,5 +1,5 @@
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, NULL_WRITE_FN, RANGE_0,
+    OperatorCategory, OperatorConstraints, NULL_WRITE_FN, RANGE_0,
 };
 
 /// > unbounded number of input streams of any type, unbounded number of output streams of any type.
@@ -29,11 +29,6 @@ pub const NULL: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Yes,
-        monotonic: FlowPropertyVal::Yes,
-        inconsistency_tainted: false,
-    },
     input_delaytype_fn: |_| None,
     flow_prop_fn: None,
     write_fn: NULL_WRITE_FN,

@@ -2,7 +2,7 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    DelayType, OperatorCategory, OperatorConstraints,
     OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::graph::PortIndexValue;
@@ -23,11 +23,6 @@ pub const JOIN_FUSED_RHS: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Preserve,
-        monotonic: FlowPropertyVal::Preserve,
-        inconsistency_tainted: false,
-    },
     input_delaytype_fn: |idx| match idx {
         PortIndexValue::Int(path) if "1" == path.to_token_stream().to_string() => {
             Some(DelayType::Stratum)
