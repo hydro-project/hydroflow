@@ -1156,7 +1156,7 @@ impl HydroflowGraph {
                 _ => None,
             };
             let label = match (src_label, dst_label) {
-                (Some(l1), Some(l2)) => Some(format!("{} ~ {}", l1, l2)),
+                (Some(l1), Some(l2)) => Some(format!("{}\n{}", l1, l2)),
                 (Some(l1), None) => Some(l1),
                 (None, Some(l2)) => Some(l2),
                 (None, None) => None,
@@ -1228,25 +1228,26 @@ impl HydroflowGraph {
         }
 
         // Write edges.
-        for (edge_id, (mut src_id, dst_id)) in self.edges() {
-            {
-                // Handling for if `write_config.no_handoffs` true.
-                if skipped_handoffs.contains(&dst_id) {
-                    continue;
-                }
-                if skipped_handoffs.contains(&src_id) {
-                    let mut handoff_preds = self.node_predecessor_nodes(src_id);
-                    assert_eq!(1, handoff_preds.len());
-                    src_id = handoff_preds.next().unwrap();
-                }
+        for (edge_id, (src_id, mut dst_id)) in self.edges() {
+            // Handling for if `write_config.no_handoffs` true.
+            if skipped_handoffs.contains(&src_id) {
+                continue;
             }
 
-            let (src_port, dst_port) = self.edge_ports(edge_id);
+            let (src_port, mut dst_port) = self.edge_ports(edge_id);
+            if skipped_handoffs.contains(&dst_id) {
+                let mut handoff_succs = self.node_successors(dst_id);
+                assert_eq!(1, handoff_succs.len());
+                let (succ_edge, succ_node) = handoff_succs.next().unwrap();
+                dst_id = succ_node;
+                dst_port = self.edge_ports(succ_edge).1;
+            }
+
+            let flow_props = self.edge_flow_props(edge_id); // Should be the same both before & after handoffs.
+            let label = helper_edge_label(src_port, dst_port);
             let delay_type = self
                 .node_op_inst(dst_id)
                 .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-            let flow_props = self.edge_flow_props(edge_id);
-            let label = helper_edge_label(src_port, dst_port);
             graph_write.write_edge(src_id, dst_id, delay_type, flow_props, label.as_deref())?;
         }
 
