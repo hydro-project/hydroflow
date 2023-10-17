@@ -3,7 +3,7 @@ use quote::{quote, quote_spanned};
 use syn::spanned::Spanned;
 
 use super::{
-    FlowPropArgs, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    FlowPropArgs, OperatorCategory, OperatorConstraints,
     OperatorWriteOutput, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
@@ -49,11 +49,6 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: Some(|| PortListSpec::Variadic),
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Preserve,
-        monotonic: FlowPropertyVal::Preserve,
-        inconsistency_tainted: false,
-    },
     input_delaytype_fn: |_| None,
     flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
         // Preserve input flow properties.

@@ -6,7 +6,7 @@ use syn::spanned::Spanned;
 use syn::{Expr, Pat};
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
@@ -55,11 +55,6 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: Some(|| PortListSpec::Variadic),
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Preserve,
-        monotonic: FlowPropertyVal::Preserve,
-        inconsistency_tainted: false,
-    },
     input_delaytype_fn: |_| None,
     flow_prop_fn: None,
     write_fn: |&WriteContextArgs {

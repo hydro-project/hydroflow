@@ -1,7 +1,7 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorCategory, OperatorConstraints, OperatorInstance,
     OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1, FlowPropArgs,
 };
 
@@ -31,11 +31,6 @@ pub const FILTER: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Preserve,
-        monotonic: FlowPropertyVal::Preserve,
-        inconsistency_tainted: false,
-    },
     input_delaytype_fn: |_| None,
     flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
         // Preserve input flow properties.

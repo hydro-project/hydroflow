@@ -1,7 +1,7 @@
 use syn::parse_quote_spanned;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, WriteContextArgs,
+    OperatorCategory, OperatorConstraints, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
 use crate::graph::OperatorInstance;
@@ -29,11 +29,6 @@ pub const ASSERT: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::DependsOnArgs,
-        monotonic: FlowPropertyVal::DependsOnArgs,
-        inconsistency_tainted: false,
-    },
     input_delaytype_fn: |_| None,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {

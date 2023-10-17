@@ -1,7 +1,7 @@
 use quote::{quote_spanned, ToTokens};
 
 use super::{
-    FlowPropArgs, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    FlowPropArgs, OperatorCategory, OperatorConstraints,
     OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
 };
 
@@ -29,11 +29,6 @@ pub const TEE: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Preserve,
-        monotonic: FlowPropertyVal::Preserve,
-        inconsistency_tainted: false,
-    },
     input_delaytype_fn: |_| None,
     flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
         Ok(vec![flow_props_in[0]])
