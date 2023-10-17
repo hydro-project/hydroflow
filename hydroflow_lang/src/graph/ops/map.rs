@@ -1,7 +1,7 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowPropArgs, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    FlowPropArgs, OperatorCategory, OperatorConstraints,
     OperatorInstance, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
 
@@ -32,11 +32,6 @@ pub const MAP: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::DependsOnArgs,
-        monotonic: FlowPropertyVal::DependsOnArgs,
-        inconsistency_tainted: false,
-    },
     input_delaytype_fn: |_| None,
     flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
         // Preserve input flow properties.
