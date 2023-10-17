@@ -226,3 +226,35 @@ pub fn test_subgraph_stratum_consolidation() {
     df.run_available();
     assert!(output.take().is_empty());
 }
+
+#[multiplatform_test]
+pub fn test_defer_lazy() {
+    let output = <Rc<RefCell<Vec<usize>>>>::default();
+    let output_inner = Rc::clone(&output);
+
+    // Without `defer()` this would spin forever with run_available().
+    let mut df: Hydroflow = hydroflow_syntax! {
+        a = union() -> tee();
+        source_iter([1, 3]) -> [0]a;
+        a[0] -> defer_tick_lazy() -> map(|x| 2 * x) -> [1]a;
+        a[1] -> for_each(|x| output_inner.borrow_mut().push(x));
+    };
+    println!(
+        "{}",
+        df.meta_graph().unwrap().to_mermaid(&Default::default())
+    );
+
+    assert_graphvis_snapshots!(df);
+
+    df.run_available();
+    assert_eq!(&[1, 3], &*output.take());
+
+    df.run_available();
+    assert_eq!(&[2, 6], &*output.take());
+
+    df.run_available();
+    assert_eq!(&[4, 12], &*output.take());
+
+    df.run_available();
+    assert_eq!(&[8, 24], &*output.take());
+}

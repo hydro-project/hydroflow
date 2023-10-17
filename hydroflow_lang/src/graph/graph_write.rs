@@ -175,7 +175,7 @@ where
             arrow_head = match delay_type {
                 None => ">",
                 Some(DelayType::Stratum) => "x",
-                Some(DelayType::Tick) => "o",
+                Some(DelayType::Tick | DelayType::TickLazy) => "o",
             },
             label = if let Some(label) = &label {
                 Cow::Owned(format!("|{}|", label.trim()))
