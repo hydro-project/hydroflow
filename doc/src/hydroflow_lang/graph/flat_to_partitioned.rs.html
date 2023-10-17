@@ -444,6 +444,13 @@
 <a href="#444" id="444">444</a>
 <a href="#445" id="445">445</a>
 <a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
+<a href="#448" id="448">448</a>
+<a href="#449" id="449">449</a>
+<a href="#450" id="450">450</a>
+<a href="#451" id="451">451</a>
+<a href="#452" id="452">452</a>
+<a href="#453" id="453">453</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Subgraph partioning algorithm
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -717,7 +724,7 @@
             <span class="kw">let </span>(succ_edge, succ) = partitioned_graph.node_successors(node_id).next().unwrap();
 
             <span class="comment">// Ignore tick edges.
-            </span><span class="kw">if </span><span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>DelayType::Tick) == barrier_crossers.get(succ_edge) {
+            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>DelayType::Tick | <span class="kw-2">&amp;</span>DelayType::TickLazy) = barrier_crossers.get(succ_edge) {
                 <span class="kw">continue</span>;
             }
 
@@ -782,7 +789,7 @@
         <span class="kw">let </span>src_stratum = partitioned_graph.subgraph_stratum(src_sg);
         <span class="kw">let </span>dst_stratum = partitioned_graph.subgraph_stratum(dst_sg);
         <span class="kw">match </span>delay_type {
-            DelayType::Tick =&gt; {
+            DelayType::Tick | DelayType::TickLazy =&gt; {
                 <span class="comment">// If tick edge goes foreward in stratum, need to buffer.
                 // (TODO(mingwei): could use a different kind of handoff.)
                 </span><span class="kw">if </span>src_stratum &lt;= dst_stratum {
@@ -810,8 +817,15 @@
                     </span><span class="kw">let </span>new_subgraph_id = partitioned_graph
                         .insert_subgraph(<span class="macro">vec!</span>[new_node_id])
                         .unwrap();
+
                     <span class="comment">// Assign stratum.
                     </span>partitioned_graph.set_subgraph_stratum(new_subgraph_id, extra_stratum);
+
+                    <span class="comment">// Assign laziness.
+                    </span>partitioned_graph.set_subgraph_laziness(
+                        new_subgraph_id,
+                        <span class="macro">matches!</span>(delay_type, DelayType::TickLazy),
+                    );
                 }
             }
             DelayType::Stratum =&gt; {

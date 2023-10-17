@@ -77,15 +77,10 @@
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
-<a href="#80" id="80">80</a>
-<a href="#81" id="81">81</a>
-<a href="#82" id="82">82</a>
-<a href="#83" id="83">83</a>
-<a href="#84" id="84">84</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     WriteContextArgs, RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::graph::OperatorInstance;
@@ -122,11 +117,6 @@
     is_external_input: <span class="bool-val">true</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::DependsOnArgs,
-        monotonic: FlowPropertyVal::DependsOnArgs,
-        inconsistency_tainted: <span class="bool-val">false</span>,
-    },
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
     flow_prop_fn: <span class="prelude-val">None</span>,
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {

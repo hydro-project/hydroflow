@@ -1375,6 +1375,26 @@
 <a href="#1375" id="1375">1375</a>
 <a href="#1376" id="1376">1376</a>
 <a href="#1377" id="1377">1377</a>
+<a href="#1378" id="1378">1378</a>
+<a href="#1379" id="1379">1379</a>
+<a href="#1380" id="1380">1380</a>
+<a href="#1381" id="1381">1381</a>
+<a href="#1382" id="1382">1382</a>
+<a href="#1383" id="1383">1383</a>
+<a href="#1384" id="1384">1384</a>
+<a href="#1385" id="1385">1385</a>
+<a href="#1386" id="1386">1386</a>
+<a href="#1387" id="1387">1387</a>
+<a href="#1388" id="1388">1388</a>
+<a href="#1389" id="1389">1389</a>
+<a href="#1390" id="1390">1390</a>
+<a href="#1391" id="1391">1391</a>
+<a href="#1392" id="1392">1392</a>
+<a href="#1393" id="1393">1393</a>
+<a href="#1394" id="1394">1394</a>
+<a href="#1395" id="1395">1395</a>
+<a href="#1396" id="1396">1396</a>
+<a href="#1397" id="1397">1397</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -1434,6 +1454,11 @@
     <span class="comment">// TODO(mingwei): #[serde(skip)] this and recompute as needed, to reduce codegen.
     </span><span class="doccomment">/// Stream properties.
     </span>flow_props: SecondaryMap&lt;GraphEdgeId, FlowProps&gt;,
+
+    <span class="doccomment">/// If this subgraph is &#39;lazy&#39; then when it sends data to a lower stratum it does not cause a new tick to start
+    /// This is to support lazy defers
+    /// If the value does not exist for a given subgraph id then the subgraph is not lazy.
+    </span>subgraph_laziness: SecondaryMap&lt;GraphSubgraphId, bool&gt;,
 }
 <span class="kw">impl </span>HydroflowGraph {
     <span class="doccomment">/// Create a new empty `HydroflowGraph`.
@@ -1936,12 +1961,14 @@
                 <span class="kw">return </span><span class="prelude-val">Err</span>((node_id, old_sg_id));
             }
         }
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.subgraph_nodes.insert_with_key(|sg_id| {
+        <span class="kw">let </span>subgraph_id = <span class="self">self</span>.subgraph_nodes.insert_with_key(|sg_id| {
             <span class="kw">for </span><span class="kw-2">&amp;</span>node_id <span class="kw">in </span>node_ids.iter() {
                 <span class="self">self</span>.node_subgraph.insert(node_id, sg_id);
             }
             node_ids
-        }))
+        });
+
+        <span class="prelude-val">Ok</span>(subgraph_id)
     }
 
     <span class="doccomment">/// Removes a node from its subgraph. Returns true if the node was in a subgraph.
@@ -1954,7 +1981,7 @@
         </span>}
     }
 
-    <span class="doccomment">/// Gets the stratum nubmer of the subgraph.
+    <span class="doccomment">/// Gets the stratum number of the subgraph.
     </span><span class="kw">pub fn </span>subgraph_stratum(<span class="kw-2">&amp;</span><span class="self">self</span>, sg_id: GraphSubgraphId) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
         <span class="self">self</span>.subgraph_stratum.get(sg_id).copied()
     }
@@ -1966,6 +1993,16 @@
         stratum: usize,
     ) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
         <span class="self">self</span>.subgraph_stratum.insert(sg_id, stratum)
+    }
+
+    <span class="doccomment">/// Gets whether the subgraph is lazy or not
+    </span><span class="kw">fn </span>subgraph_laziness(<span class="kw-2">&amp;</span><span class="self">self</span>, sg_id: GraphSubgraphId) -&gt; bool {
+        <span class="self">self</span>.subgraph_laziness.get(sg_id).copied().unwrap_or(<span class="bool-val">false</span>)
+    }
+
+    <span class="doccomment">/// Set subgraph&#39;s laziness, returning the old value.
+    </span><span class="kw">pub fn </span>set_subgraph_laziness(<span class="kw-2">&amp;mut </span><span class="self">self</span>, sg_id: GraphSubgraphId, lazy: bool) -&gt; bool {
+        <span class="self">self</span>.subgraph_laziness.insert(sg_id, lazy).unwrap_or(<span class="bool-val">false</span>)
     }
 
     <span class="doccomment">/// Returns the the stratum number of the largest (latest) stratum (inclusive).
@@ -2358,6 +2395,7 @@
                 <span class="kw">let </span>stratum = Literal::usize_unsuffixed(
                     <span class="self">self</span>.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(<span class="number">0</span>),
                 );
+                <span class="kw">let </span>laziness = <span class="self">self</span>.subgraph_laziness(subgraph_id);
                 <span class="macro">quote! </span>{
                     #( #op_prologue_code )*
 
@@ -2366,6 +2404,7 @@
                         #stratum,
                         <span class="macro">var_expr!</span>( #( #recv_ports ),* ),
                         <span class="macro">var_expr!</span>( #( #send_ports ),* ),
+                        #laziness,
                         <span class="kw">move </span>|#context, <span class="macro">var_args!</span>( #( #recv_ports ),* ), <span class="macro">var_args!</span>( #( #send_ports ),* )| {
                             #( #recv_port_code )*
                             #( #send_port_code )*
@@ -2514,7 +2553,7 @@
                 <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
             };
             <span class="kw">let </span>label = <span class="kw">match </span>(src_label, dst_label) {
-                (<span class="prelude-val">Some</span>(l1), <span class="prelude-val">Some</span>(l2)) =&gt; <span class="prelude-val">Some</span>(<span class="macro">format!</span>(<span class="string">&quot;{} ~ {}&quot;</span>, l1, l2)),
+                (<span class="prelude-val">Some</span>(l1), <span class="prelude-val">Some</span>(l2)) =&gt; <span class="prelude-val">Some</span>(<span class="macro">format!</span>(<span class="string">&quot;{}\n{}&quot;</span>, l1, l2)),
                 (<span class="prelude-val">Some</span>(l1), <span class="prelude-val">None</span>) =&gt; <span class="prelude-val">Some</span>(l1),
                 (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(l2)) =&gt; <span class="prelude-val">Some</span>(l2),
                 (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; <span class="prelude-val">None</span>,
@@ -2586,25 +2625,26 @@
         }
 
         <span class="comment">// Write edges.
-        </span><span class="kw">for </span>(edge_id, (<span class="kw-2">mut </span>src_id, dst_id)) <span class="kw">in </span><span class="self">self</span>.edges() {
-            {
-                <span class="comment">// Handling for if `write_config.no_handoffs` true.
-                </span><span class="kw">if </span>skipped_handoffs.contains(<span class="kw-2">&amp;</span>dst_id) {
-                    <span class="kw">continue</span>;
-                }
-                <span class="kw">if </span>skipped_handoffs.contains(<span class="kw-2">&amp;</span>src_id) {
-                    <span class="kw">let </span><span class="kw-2">mut </span>handoff_preds = <span class="self">self</span>.node_predecessor_nodes(src_id);
-                    <span class="macro">assert_eq!</span>(<span class="number">1</span>, handoff_preds.len());
-                    src_id = handoff_preds.next().unwrap();
-                }
+        </span><span class="kw">for </span>(edge_id, (src_id, <span class="kw-2">mut </span>dst_id)) <span class="kw">in </span><span class="self">self</span>.edges() {
+            <span class="comment">// Handling for if `write_config.no_handoffs` true.
+            </span><span class="kw">if </span>skipped_handoffs.contains(<span class="kw-2">&amp;</span>src_id) {
+                <span class="kw">continue</span>;
             }
 
-            <span class="kw">let </span>(src_port, dst_port) = <span class="self">self</span>.edge_ports(edge_id);
+            <span class="kw">let </span>(src_port, <span class="kw-2">mut </span>dst_port) = <span class="self">self</span>.edge_ports(edge_id);
+            <span class="kw">if </span>skipped_handoffs.contains(<span class="kw-2">&amp;</span>dst_id) {
+                <span class="kw">let </span><span class="kw-2">mut </span>handoff_succs = <span class="self">self</span>.node_successors(dst_id);
+                <span class="macro">assert_eq!</span>(<span class="number">1</span>, handoff_succs.len());
+                <span class="kw">let </span>(succ_edge, succ_node) = handoff_succs.next().unwrap();
+                dst_id = succ_node;
+                dst_port = <span class="self">self</span>.edge_ports(succ_edge).<span class="number">1</span>;
+            }
+
+            <span class="kw">let </span>flow_props = <span class="self">self</span>.edge_flow_props(edge_id); <span class="comment">// Should be the same both before &amp; after handoffs.
+            </span><span class="kw">let </span>label = helper_edge_label(src_port, dst_port);
             <span class="kw">let </span>delay_type = <span class="self">self
                 </span>.node_op_inst(dst_id)
                 .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-            <span class="kw">let </span>flow_props = <span class="self">self</span>.edge_flow_props(edge_id);
-            <span class="kw">let </span>label = helper_edge_label(src_port, dst_port);
             graph_write.write_edge(src_id, dst_id, delay_type, flow_props, label.as_deref())<span class="question-mark">?</span>;
         }
 

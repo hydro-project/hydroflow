@@ -175,17 +175,12 @@
 <a href="#175" id="175">175</a>
 <a href="#176" id="176">176</a>
 <a href="#177" id="177">177</a>
-<a href="#178" id="178">178</a>
-<a href="#179" id="179">179</a>
-<a href="#180" id="180">180</a>
-<a href="#181" id="181">181</a>
-<a href="#182" id="182">182</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 <span class="kw">use </span>syn::spanned::Spanned;
 
 <span class="kw">use super</span>::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    DelayType, OperatorCategory, OperatorConstraints,
     OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
@@ -220,11 +215,6 @@
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">Some</span>(|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote! </span>{ <span class="number">0</span>, <span class="number">1 </span>})),
     ports_out: <span class="prelude-val">None</span>,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Preserve,
-        monotonic: FlowPropertyVal::Preserve,
-        inconsistency_tainted: <span class="bool-val">false</span>,
-    },
     input_delaytype_fn: |idx| <span class="kw">match </span>idx {
         PortIndexValue::Int(path) <span class="kw">if </span><span class="string">&quot;0&quot; </span>== path.to_token_stream().to_string() =&gt; {
             <span class="prelude-val">Some</span>(DelayType::Stratum)

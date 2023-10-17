@@ -399,11 +399,6 @@
 <a href="#399" id="399">399</a>
 <a href="#400" id="400">400</a>
 <a href="#401" id="401">401</a>
-<a href="#402" id="402">402</a>
-<a href="#403" id="403">403</a>
-<a href="#404" id="404">404</a>
-<a href="#405" id="405">405</a>
-<a href="#406" id="406">406</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::BTreeSet;
 
 <span class="kw">use </span>proc_macro2::Span;
@@ -413,7 +408,7 @@
 <span class="kw">use </span>syn::{parse_quote_spanned, Expr, Ident, LitInt, LitStr, Pat, PatType};
 
 <span class="kw">use super</span>::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, PortListSpec,
+    OperatorCategory, OperatorConstraints, PortListSpec,
     WriteContextArgs, RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
@@ -474,11 +469,6 @@
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">Some</span>(|| PortListSpec::Variadic),
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Preserve,
-        monotonic: FlowPropertyVal::Preserve,
-        inconsistency_tainted: <span class="bool-val">false</span>,
-    },
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
     flow_prop_fn: <span class="prelude-val">None</span>,
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {

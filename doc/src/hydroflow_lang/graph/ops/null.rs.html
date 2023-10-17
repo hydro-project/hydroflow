@@ -33,13 +33,8 @@
 <a href="#33" id="33">33</a>
 <a href="#34" id="34">34</a>
 <a href="#35" id="35">35</a>
-<a href="#36" id="36">36</a>
-<a href="#37" id="37">37</a>
-<a href="#38" id="38">38</a>
-<a href="#39" id="39">39</a>
-<a href="#40" id="40">40</a>
 </pre></div><pre class="rust"><code><span class="kw">use super</span>::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, NULL_WRITE_FN, RANGE_0,
+    OperatorCategory, OperatorConstraints, NULL_WRITE_FN, RANGE_0,
 };
 
 <span class="doccomment">/// &gt; unbounded number of input streams of any type, unbounded number of output streams of any type.
@@ -69,11 +64,6 @@
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Yes,
-        monotonic: FlowPropertyVal::Yes,
-        inconsistency_tainted: <span class="bool-val">false</span>,
-    },
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
     flow_prop_fn: <span class="prelude-val">None</span>,
     write_fn: NULL_WRITE_FN,

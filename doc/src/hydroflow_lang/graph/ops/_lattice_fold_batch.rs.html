@@ -105,16 +105,11 @@
 <a href="#105" id="105">105</a>
 <a href="#106" id="106">106</a>
 <a href="#107" id="107">107</a>
-<a href="#108" id="108">108</a>
-<a href="#109" id="109">109</a>
-<a href="#110" id="110">110</a>
-<a href="#111" id="111">111</a>
-<a href="#112" id="112">112</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use super</span>::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    DelayType, OperatorCategory, OperatorConstraints,
     OperatorWriteOutput, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance};
@@ -156,11 +151,6 @@
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">Some</span>(|| PortListSpec::Fixed(<span class="macro">parse_quote! </span>{ input, signal })),
     ports_out: <span class="prelude-val">None</span>,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Preserve,
-        monotonic: FlowPropertyVal::No,
-        inconsistency_tainted: <span class="bool-val">false</span>,
-    },
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
     flow_prop_fn: <span class="prelude-val">None</span>,
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {

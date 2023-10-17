@@ -62,16 +62,11 @@
 <a href="#62" id="62">62</a>
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
-<a href="#65" id="65">65</a>
-<a href="#66" id="66">66</a>
-<a href="#67" id="67">67</a>
-<a href="#68" id="68">68</a>
-<a href="#69" id="69">69</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use super</span>::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, WriteContextArgs,
+    OperatorCategory, OperatorConstraints, WriteContextArgs,
     RANGE_1,
 };
 
@@ -107,11 +102,6 @@
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">Some</span>(|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote! </span>{ <span class="number">0</span>, <span class="number">1 </span>})),
     ports_out: <span class="prelude-val">None</span>,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Preserve,
-        monotonic: FlowPropertyVal::Preserve,
-        inconsistency_tainted: <span class="bool-val">false</span>,
-    },
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
     flow_prop_fn: <span class="prelude-val">None</span>,
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {

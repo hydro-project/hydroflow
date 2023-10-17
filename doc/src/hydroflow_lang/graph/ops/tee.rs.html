@@ -68,15 +68,10 @@
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
 <a href="#70" id="70">70</a>
-<a href="#71" id="71">71</a>
-<a href="#72" id="72">72</a>
-<a href="#73" id="73">73</a>
-<a href="#74" id="74">74</a>
-<a href="#75" id="75">75</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 
 <span class="kw">use super</span>::{
-    FlowPropArgs, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    FlowPropArgs, OperatorCategory, OperatorConstraints,
     OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
 };
 
@@ -104,11 +99,6 @@
     is_external_input: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Preserve,
-        monotonic: FlowPropertyVal::Preserve,
-        inconsistency_tainted: <span class="bool-val">false</span>,
-    },
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
     flow_prop_fn: <span class="prelude-val">Some</span>(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
         <span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[flow_props_in[<span class="number">0</span>]])

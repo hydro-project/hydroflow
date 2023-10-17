@@ -786,6 +786,16 @@
 <a href="#786" id="786">786</a>
 <a href="#787" id="787">787</a>
 <a href="#788" id="788">788</a>
+<a href="#789" id="789">789</a>
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for the [`Hydroflow`] struct and helper items.
 
 </span><span class="kw">use </span>std::any::Any;
@@ -997,13 +1007,15 @@
                 sg_data.last_tick_run_in = <span class="prelude-val">Some</span>(current_tick);
             }
 
-            <span class="kw">for </span><span class="kw-2">&amp;</span>handoff_id <span class="kw">in </span><span class="self">self</span>.subgraphs[sg_id.<span class="number">0</span>].succs.iter() {
+            <span class="kw">let </span>sg_data = <span class="kw-2">&amp;</span><span class="self">self</span>.subgraphs[sg_id.<span class="number">0</span>];
+
+            <span class="kw">for </span><span class="kw-2">&amp;</span>handoff_id <span class="kw">in </span>sg_data.succs.iter() {
                 <span class="kw">let </span>handoff = <span class="kw-2">&amp;</span><span class="self">self</span>.handoffs[handoff_id.<span class="number">0</span>];
                 <span class="kw">if </span>!handoff.handoff.is_bottom() {
                     <span class="kw">for </span><span class="kw-2">&amp;</span>succ_id <span class="kw">in </span>handoff.succs.iter() {
                         <span class="kw">let </span>succ_sg_data = <span class="kw-2">&amp;</span><span class="self">self</span>.subgraphs[succ_id.<span class="number">0</span>];
                         <span class="comment">// If we have sent data to the next tick, then we can start the next tick.
-                        </span><span class="kw">if </span>succ_sg_data.stratum &lt; <span class="self">self</span>.context.current_stratum {
+                        </span><span class="kw">if </span>succ_sg_data.stratum &lt; <span class="self">self</span>.context.current_stratum &amp;&amp; !sg_data.is_lazy {
                             <span class="self">self</span>.can_start_tick = <span class="bool-val">true</span>;
                         }
                         <span class="comment">// Add subgraph to stratum queue if it is not already scheduled.
@@ -1277,7 +1289,7 @@
         W: <span class="lifetime">&#39;static </span>+ PortList&lt;SEND&gt;,
         F: <span class="lifetime">&#39;static </span>+ <span class="kw">for</span>&lt;<span class="lifetime">&#39;ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span><span class="kw-2">mut </span>Context, R::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;, W::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;),
     {
-        <span class="self">self</span>.add_subgraph_stratified(name, <span class="number">0</span>, recv_ports, send_ports, subgraph)
+        <span class="self">self</span>.add_subgraph_stratified(name, <span class="number">0</span>, recv_ports, send_ports, <span class="bool-val">false</span>, subgraph)
     }
 
     <span class="doccomment">/// Adds a new compiled subgraph with the specified inputs, outputs, and stratum number.
@@ -1289,6 +1301,7 @@
         stratum: usize,
         recv_ports: R,
         send_ports: W,
+        laziness: bool,
         <span class="kw-2">mut </span>subgraph: F,
     ) -&gt; SubgraphId
     <span class="kw">where
@@ -1315,6 +1328,7 @@
             subgraph_preds,
             subgraph_succs,
             <span class="bool-val">true</span>,
+            laziness,
         ));
         <span class="self">self</span>.init_stratum(stratum);
         <span class="self">self</span>.stratum_queues[stratum].push_back(sg_id);
@@ -1406,6 +1420,7 @@
             subgraph_preds,
             subgraph_succs,
             <span class="bool-val">true</span>,
+            <span class="bool-val">false</span>,
         ));
         <span class="self">self</span>.init_stratum(stratum);
         <span class="self">self</span>.stratum_queues[stratum].push_back(sg_id);
@@ -1548,6 +1563,9 @@
 
     <span class="doccomment">/// Keep track of the last tick that this subgraph was run in
     </span>last_tick_run_in: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+
+    <span class="doccomment">/// If this subgraph is marked as lazy, then sending data back to a lower stratum does not trigger a new tick to be run.
+    </span>is_lazy: bool,
 }
 <span class="kw">impl </span>SubgraphData {
     <span class="kw">pub fn </span>new(
@@ -1557,6 +1575,7 @@
         preds: Vec&lt;HandoffId&gt;,
         succs: Vec&lt;HandoffId&gt;,
         is_scheduled: bool,
+        laziness: bool,
     ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             name,
@@ -1566,6 +1585,7 @@
             succs,
             is_scheduled: Cell::new(is_scheduled),
             last_tick_run_in: <span class="prelude-val">None</span>,
+            is_lazy: laziness,
         }
     }
 }
