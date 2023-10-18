@@ -732,7 +732,7 @@ impl HydroflowGraph {
         let subgraphs = subgraphs_without_preds
             .iter()
             .chain(subgraphs_with_preds.iter())
-            .map(|&(subgraph_id, subgraph_nodes)| {
+            .filter_map(|&(subgraph_id, subgraph_nodes)| {
                 let (recv_hoffs, send_hoffs) = &subgraph_handoffs[subgraph_id];
                 let recv_ports: Vec<Ident> = recv_hoffs
                     .iter()
@@ -970,13 +970,16 @@ impl HydroflowGraph {
                             subgraph_nodes.get(pull_to_push_idx)
                         {
                             self.node_as_ident(node_id, false)
-                        } else {
-                            // Entire subgraph is pull (except for a single send/push handoff output).
-                            assert!(
-                                1 == send_ports.len(),
-                                "Degenerate subgraph detected, is there a disconnected `null()` or other degenerate pipeline somewhere?"
-                            );
+                        } else if 1 == send_ports.len() {
+                            // Entire subgraph is pull, except for a single send/push handoff output.
                             send_ports[0].clone()
+                        } else {
+                            diagnostics.push(Diagnostic::spanned(
+                                pull_ident.span(),
+                                Level::Error,
+                                "Degenerate subgraph detected, is there a disconnected `null()` or other degenerate pipeline somewhere?",
+                            ));
+                            return None;
                         };
 
                         // Pivot span is combination of pull and push spans (or if not possible, just take the push).
@@ -999,7 +1002,7 @@ impl HydroflowGraph {
                     self.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(0),
                 );
                 let laziness = self.subgraph_laziness(subgraph_id);
-                quote! {
+                Some(quote! {
                     #( #op_prologue_code )*
 
                     #hf.add_subgraph_stratified(
@@ -1015,7 +1018,7 @@ impl HydroflowGraph {
                             #( #subgraph_op_iter_after_code )*
                         },
                     );
-                }
+                })
             });
 
         // These two are quoted separately here because iterators are lazily evaluated, so this
