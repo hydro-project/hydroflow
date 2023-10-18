@@ -1,10 +1,5 @@
-error: proc macro panicked
- --> tests/compile-fail/surface_null.rs:4:18
+error: Degenerate subgraph detected, is there a disconnected `null()` or other degenerate pipeline somewhere?
+ --> tests/compile-fail/surface_null.rs:5:9
   |
-4 |       let mut df = hydroflow_syntax! {
-  |  __________________^
-5 | |         null();
-6 | |     };
-  | |_____^
-  |
-  = help: message: Degenerate subgraph detected, is there a disconnected `null()` or other degenerate pipeline somewhere?
+5 |         null();
+  |         ^^^^^^
