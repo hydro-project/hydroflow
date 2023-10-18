@@ -1395,6 +1395,9 @@
 <a href="#1395" id="1395">1395</a>
 <a href="#1396" id="1396">1396</a>
 <a href="#1397" id="1397">1397</a>
+<a href="#1398" id="1398">1398</a>
+<a href="#1399" id="1399">1399</a>
+<a href="#1400" id="1400">1400</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -2129,7 +2132,7 @@
         <span class="kw">let </span>subgraphs = subgraphs_without_preds
             .iter()
             .chain(subgraphs_with_preds.iter())
-            .map(|<span class="kw-2">&amp;</span>(subgraph_id, subgraph_nodes)| {
+            .filter_map(|<span class="kw-2">&amp;</span>(subgraph_id, subgraph_nodes)| {
                 <span class="kw">let </span>(recv_hoffs, send_hoffs) = <span class="kw-2">&amp;</span>subgraph_handoffs[subgraph_id];
                 <span class="kw">let </span>recv_ports: Vec&lt;Ident&gt; = recv_hoffs
                     .iter()
@@ -2367,13 +2370,16 @@
                             subgraph_nodes.get(pull_to_push_idx)
                         {
                             <span class="self">self</span>.node_as_ident(node_id, <span class="bool-val">false</span>)
+                        } <span class="kw">else if </span><span class="number">1 </span>== send_ports.len() {
+                            <span class="comment">// Entire subgraph is pull, except for a single send/push handoff output.
+                            </span>send_ports[<span class="number">0</span>].clone()
                         } <span class="kw">else </span>{
-                            <span class="comment">// Entire subgraph is pull (except for a single send/push handoff output).
-                            </span><span class="macro">assert!</span>(
-                                <span class="number">1 </span>== send_ports.len(),
-                                <span class="string">&quot;Degenerate subgraph detected, is there a disconnected `null()` or other degenerate pipeline somewhere?&quot;
-                            </span>);
-                            send_ports[<span class="number">0</span>].clone()
+                            diagnostics.push(Diagnostic::spanned(
+                                pull_ident.span(),
+                                Level::Error,
+                                <span class="string">&quot;Degenerate subgraph detected, is there a disconnected `null()` or other degenerate pipeline somewhere?&quot;</span>,
+                            ));
+                            <span class="kw">return </span><span class="prelude-val">None</span>;
                         };
 
                         <span class="comment">// Pivot span is combination of pull and push spans (or if not possible, just take the push).
@@ -2396,7 +2402,7 @@
                     <span class="self">self</span>.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(<span class="number">0</span>),
                 );
                 <span class="kw">let </span>laziness = <span class="self">self</span>.subgraph_laziness(subgraph_id);
-                <span class="macro">quote! </span>{
+                <span class="prelude-val">Some</span>(<span class="macro">quote! </span>{
                     #( #op_prologue_code )*
 
                     #hf.add_subgraph_stratified(
@@ -2412,7 +2418,7 @@
                             #( #subgraph_op_iter_after_code )*
                         },
                     );
-                }
+                })
             });
 
         <span class="comment">// These two are quoted separately here because iterators are lazily evaluated, so this
