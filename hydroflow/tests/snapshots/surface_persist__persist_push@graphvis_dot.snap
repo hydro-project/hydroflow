@@ -12,7 +12,7 @@ digraph {
     n5v1 [label="(n5v1) persist()", shape=house, fillcolor="#ffff88"]
     n6v1 [label="(n6v1) tee()", shape=house, fillcolor="#ffff88"]
     n7v1 [label="(n7v1) null()", shape=house, fillcolor="#ffff88"]
-    n8v1 [label="(n8v1) fold(0, |a: &mut _, b| *a += b)", shape=invhouse, fillcolor="#88aaff"]
+    n8v1 [label="(n8v1) fold(|| 0, |a: &mut _, b| *a += b)", shape=invhouse, fillcolor="#88aaff"]
     n9v1 [label="(n9v1) for_each(|x| result_send.send(x).unwrap())", shape=house, fillcolor="#ffff88"]
     n10v1 [label="(n10v1) handoff", shape=parallelogram, fillcolor="#ddddff"]
     n2v1 -> n3v1

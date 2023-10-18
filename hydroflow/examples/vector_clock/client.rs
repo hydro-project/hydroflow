@@ -32,7 +32,7 @@ pub(crate) async fn run_client(
 
         // given the inbound packet, bump the local clock and merge this in
         inbound_chan[merge] -> map(|(msg, _sender): (EchoMsg, SocketAddr)| msg.vc) -> [net]mergevc;
-        mergevc = union() -> fold::<'static> (VecClock::default(), |old: &mut VecClock, vc| {
+        mergevc = union() -> fold::<'static> (VecClock::default, |old: &mut VecClock, vc| {
                     let my_addr = format!("{:?}", addr);
                     let bump = MapUnionSingletonMap::new_from((my_addr.clone(), Max::new(old.as_reveal_mut().entry(my_addr).or_insert(Max::new(0)).into_reveal() + 1)));
                     old.merge(bump);
