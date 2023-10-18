@@ -142,19 +142,22 @@
 <a href="#142" id="142">142</a>
 <a href="#143" id="143">143</a>
 <a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
-    DelayType, OpInstGenerics, OperatorCategory,
-    OperatorConstraints, OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs,
-    RANGE_0, RANGE_1,
+    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 
 <span class="doccomment">/// &gt; 1 input stream, 1 output stream
 ///
-/// &gt; Arguments: an initial value, and a closure which itself takes two arguments:
-/// an &#39;accumulator&#39;, and an element.
+/// &gt; Arguments: two arguments, both closures. The first closure is used to create the initial value for the accumulator, and the second is used to combine new values with the existing accumulator.
+/// The second closure takes two two arguments: an &#39;accumulator&#39;, and an element.
 ///
 /// Akin to Rust&#39;s built-in fold operator, except that it takes the accumulator by `&amp;mut` instead of by value. Folds every element into an accumulator by applying a closure,
 /// returning the final result.
@@ -170,7 +173,7 @@
 /// ```hydroflow
 /// // should print `Reassembled vector [1,2,3,4,5]`
 /// source_iter([1,2,3,4,5])
-///     -&gt; fold::&lt;&#39;tick&gt;(Vec::new(), |accum: &amp;mut Vec&lt;_&gt;, elem| {
+///     -&gt; fold::&lt;&#39;tick&gt;(Vec::new, |accum: &amp;mut Vec&lt;_&gt;, elem| {
 ///         accum.push(elem);
 ///     })
 ///     -&gt; assert_eq([vec![1, 2, 3, 4, 5]]);
@@ -220,18 +223,20 @@
         <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
         <span class="kw">let </span>init = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
         <span class="kw">let </span>func = <span class="kw-2">&amp;</span>arguments[<span class="number">1</span>];
+        <span class="kw">let </span>initializer_func_ident = wc.make_ident(<span class="string">&quot;initializer_func&quot;</span>);
         <span class="kw">let </span>folddata_ident = wc.make_ident(<span class="string">&quot;folddata&quot;</span>);
         <span class="kw">let </span>accumulator_ident = wc.make_ident(<span class="string">&quot;accumulator&quot;</span>);
         <span class="kw">let </span>iterator_item_ident = wc.make_ident(<span class="string">&quot;iterator_item&quot;</span>);
 
         <span class="kw">let </span>(write_prologue, write_iterator, write_iterator_after) = <span class="kw">match </span>persistence {
-            <span class="comment">// TODO(mingwei): Issues if initial value is not copy.
-            // TODO(mingwei): Might introduce the initial value multiple times on scheduling.
-            </span>Persistence::Tick =&gt; (
-                Default::default(),
+            Persistence::Tick =&gt; (
+                <span class="macro">quote_spanned! </span>{op_span=&gt;
+                    <span class="kw">let </span>#initializer_func_ident = #init;
+                },
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
                     <span class="kw">let </span>#ident = {
-                        <span class="kw">let </span><span class="kw-2">mut </span>#accumulator_ident = #init;
+                        <span class="attr">#[allow(clippy::redundant_closure_call)]
+                        </span><span class="kw">let </span><span class="kw-2">mut </span>#accumulator_ident = (#initializer_func_ident)();
 
                         <span class="kw">for </span>#iterator_item_ident <span class="kw">in </span>#input {
                             <span class="attr">#[allow(clippy::redundant_closure_call)]
@@ -245,8 +250,11 @@
             ),
             Persistence::Static =&gt; (
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
-                    <span class="kw">let </span>#folddata_ident = #hydroflow.add_state(
-                        ::std::cell::Cell::new(::std::option::Option::Some(#init))
+                    <span class="kw">let </span>#initializer_func_ident = #init;
+
+                    <span class="attr">#[allow(clippy::redundant_closure_call)]
+                    </span><span class="kw">let </span>#folddata_ident = #hydroflow.add_state(
+                        ::std::cell::Cell::new(::std::option::Option::Some((#initializer_func_ident)()))
                     );
                 },
                 <span class="macro">quote_spanned! </span>{op_span=&gt;
