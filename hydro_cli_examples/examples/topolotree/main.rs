@@ -117,7 +117,7 @@ async fn main() {
         from_parent = source_stream(from_parent)
             -> map(|x| deserialize_from_bytes::<Vec<(u64, TimestampedValue<i32>)>>(x.unwrap()).unwrap())
             -> fold::<'static>(
-                (HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
+                || (HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
                 |(prev, modified_tweets, prev_tick): &mut (HashMap<_, TimestampedValue<i32>>, HashSet<_>, _), req: Vec<(u64, TimestampedValue<i32>)>| {
                     if *prev_tick != context.current_tick() {
                         modified_tweets.clear();
@@ -146,7 +146,7 @@ async fn main() {
         from_left = source_stream(from_left)
             -> map(|x| deserialize_from_bytes::<Vec<(u64, TimestampedValue<i32>)>>(x.unwrap()).unwrap())
             -> fold::<'static>(
-                (HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
+                || (HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
                 |(prev, modified_tweets, prev_tick): &mut (HashMap<_, TimestampedValue<i32>>, HashSet<_>, _), req: Vec<(u64, TimestampedValue<i32>)>| {
                     if *prev_tick != context.current_tick() {
                         modified_tweets.clear();
@@ -175,7 +175,7 @@ async fn main() {
         from_right = source_stream(from_right)
             -> map(|x| deserialize_from_bytes::<Vec<(u64, TimestampedValue<i32>)>>(x.unwrap()).unwrap())
             -> fold::<'static>(
-                (HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
+                || (HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
                 |(prev, modified_tweets, prev_tick): &mut (HashMap<_, TimestampedValue<i32>>, HashSet<_>, _), req: Vec<(u64, TimestampedValue<i32>)>| {
                     if *prev_tick != context.current_tick() {
                         modified_tweets.clear();
@@ -205,7 +205,7 @@ async fn main() {
             -> map(|x| deserialize_from_bytes::<IncrementRequest>(&x.unwrap()).unwrap())
             -> map(|x| (x.tweet_id, x.likes))
             -> fold::<'static>(
-                (HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
+                || (HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
                 |(prev, modified_tweets, prev_tick): &mut (HashMap<_, TimestampedValue<i32>>, HashSet<_>, usize), req: UpdateType| {
                     if *prev_tick != context.current_tick() {
                         modified_tweets.clear();
@@ -228,7 +228,7 @@ async fn main() {
 
         to_right
             -> fold::<'static>(
-                (vec![HashMap::<u64, TimestampedValue<i32>>::new(); 3], HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
+                || (vec![HashMap::<u64, TimestampedValue<i32>>::new(); 3], HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
                 |(each_source, acc_source, modified_tweets, prev_tick): &mut (Vec<HashMap<u64, TimestampedValue<i32>>>, HashMap<_, TimestampedValue<i32>>, HashSet<_>, usize), (source_i, (key, v)): (usize, _)| {
                     if *prev_tick != context.current_tick() {
                         modified_tweets.clear();
@@ -257,7 +257,7 @@ async fn main() {
 
         to_left
             -> fold::<'static>(
-                (vec![HashMap::<u64, TimestampedValue<i32>>::new(); 3], HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
+                || (vec![HashMap::<u64, TimestampedValue<i32>>::new(); 3], HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
                 |(each_source, acc_source, modified_tweets, prev_tick): &mut (Vec<HashMap<u64, TimestampedValue<i32>>>, HashMap<_, TimestampedValue<i32>>, HashSet<_>, usize), (source_i, (key, v)): (usize, _)| {
                     if *prev_tick != context.current_tick() {
                         modified_tweets.clear();
@@ -286,7 +286,7 @@ async fn main() {
 
         to_parent
             -> fold::<'static>(
-                (vec![HashMap::<u64, TimestampedValue<i32>>::new(); 3], HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
+                || (vec![HashMap::<u64, TimestampedValue<i32>>::new(); 3], HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
                 |(each_source, acc_source, modified_tweets, prev_tick): &mut (Vec<HashMap<u64, TimestampedValue<i32>>>, HashMap<_, TimestampedValue<i32>>, HashSet<_>, usize), (source_i, (key, v)): (usize, _)| {
                     if *prev_tick != context.current_tick() {
                         modified_tweets.clear();
@@ -316,7 +316,7 @@ async fn main() {
 
         to_query
             -> fold::<'static>(
-                (vec![HashMap::<u64, TimestampedValue<i32>>::new(); 4], HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
+                || (vec![HashMap::<u64, TimestampedValue<i32>>::new(); 4], HashMap::<u64, TimestampedValue<i32>>::new(), HashSet::new(), 0),
                 |(each_source, acc_source, modified_tweets, prev_tick): &mut (Vec<HashMap<u64, TimestampedValue<i32>>>, HashMap<_, TimestampedValue<i32>>, HashSet<_>, usize), (source_i, (key, v)): (usize, _)| {
                     if *prev_tick != context.current_tick() {
                         modified_tweets.clear();
