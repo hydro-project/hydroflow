@@ -9,7 +9,7 @@ pub(crate) fn rga_minimal(
     input_recv: UnboundedReceiverStream<(Token, Timestamp)>,
     rga_send: UnboundedSender<(Token, Timestamp)>,
     _list_send: UnboundedSender<(Timestamp, Timestamp)>,
-) -> Hydroflow {
+) -> Hydroflow<'static> {
     hydroflow_syntax! {
         insertAfter = source_stream(input_recv);
 
