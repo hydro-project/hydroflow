@@ -1,0 +1,10 @@
+[package]
+name = "hydroflow_plus_kvs_server"
+publish = false
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+hydroflow_plus = { path = "../hydroflow_plus", version = "^0.5.0" }
+hydroflow_plus_kvs = { path = "../hydroflow_plus_kvs" }
+regex = "1"
