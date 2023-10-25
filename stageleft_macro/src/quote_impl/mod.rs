@@ -1,0 +1,112 @@
+use proc_macro2::{Span, TokenStream};
+use quote::{quote, ToTokens};
+use syn::visit::Visit;
+
+use self::free_variable::FreeVariableVisitor;
+
+mod free_variable;
+
+pub fn q_impl(root: TokenStream, expr: syn::Expr) -> TokenStream {
+    let mut visitor = FreeVariableVisitor::default();
+    visitor.visit_expr(&expr);
+
+    let cloned_free_variables = visitor.free_variables.iter().map(|i| {
+        let mut i_without_span = i.clone();
+        i_without_span.set_span(Span::call_site());
+        quote!(
+            #[allow(non_upper_case_globals, non_snake_case)]
+            let #i_without_span = #i_without_span;
+        )
+    });
+
+    let unitialized_free_variables = visitor.free_variables.iter().map(|i| {
+        let mut i_without_span = i.clone();
+        i_without_span.set_span(Span::call_site());
+        let ident_str = i.to_string();
+        quote!(
+            #[allow(unused, non_upper_case_globals, non_snake_case)]
+            let #i = {
+                let _out = ::#root::runtime_support::FreeVariable::uninitialized(&#i_without_span);
+                _vec_to_set.push((#ident_str.to_string(), ::#root::runtime_support::FreeVariable::to_tokens(#i_without_span)));
+                _out
+            };
+        )
+    });
+
+    let uninit_forgets = visitor.free_variables.iter().map(|i| {
+        let mut i_without_span = i.clone();
+        i_without_span.set_span(Span::call_site());
+        quote!(
+            #[allow(unused, non_upper_case_globals, non_snake_case)]
+            ::std::mem::forget(#i_without_span);
+        )
+    });
+
+    // necessary to ensure proper hover in Rust Analyzer
+    let expr_without_spans: syn::Expr =
+        syn::parse_str(&expr.clone().into_token_stream().to_string()).unwrap();
+
+    quote!({
+        #(#cloned_free_variables;)*
+        move |set_mod: &mut String, set_crate_name: &mut &'static str, set_tokens: &mut #root::internal::TokenStream, _vec_to_set: &mut #root::internal::CaptureVec, run: bool| {
+            #(#unitialized_free_variables;)*
+
+            *set_mod = module_path!().to_string();
+            *set_crate_name = env!("STAGELEFT_FINAL_CRATE_NAME");
+            *set_tokens = #root::internal::quote! {
+                #expr_without_spans
+            };
+
+            if !run {
+                #(#uninit_forgets;)*
+                unsafe {
+                    return ::std::mem::MaybeUninit::uninit().assume_init();
+                }
+            }
+
+            #[allow(unreachable_code)]
+            {
+                #expr
+            }
+        }
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use quote::quote;
+    use syn::parse_quote;
+
+    use super::q_impl;
+
+    macro_rules! test_quote {
+        ($program:expr) => {
+            let quoted_tokens = q_impl(quote!(stageleft), parse_quote!($program));
+            let wrapped: syn::File = parse_quote! {
+                fn main() {
+                    #quoted_tokens
+                }
+            };
+
+            insta::with_settings!({snapshot_suffix => "macro_tokens"}, {
+                insta::assert_display_snapshot!(
+                    prettyplease::unparse(&wrapped)
+                );
+            });
+        };
+    }
+
+    #[test]
+    fn test_simple() {
+        test_quote! {
+            1 + 2
+        }
+    }
+
+    #[test]
+    fn test_capture_local() {
+        test_quote! {
+            x + 2
+        }
+    }
+}

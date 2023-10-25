@@ -1,0 +1,19 @@
+[package]
+name = "stageleft_test_macro"
+publish = false
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+path = "src/lib.rs"
+
+[features]
+default = ["macro"]
+macro = []
+
+[dependencies]
+stageleft = { path = "../stageleft", version = "^0.5.0" }
+
+[build-dependencies]
+stageleft_tool = { path = "../stageleft_tool", version = "^0.5.0" }
