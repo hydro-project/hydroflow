@@ -108,7 +108,7 @@ pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
 
         let generic_type_args = [
             type_args
-                .get(0)
+                .first()
                 .map(ToTokens::to_token_stream)
                 .unwrap_or(quote_spanned!(op_span=> _)),
             type_args
