@@ -16,7 +16,7 @@ pub(crate) async fn bp_flow(
     shopping_bp: impl Iterator<Item = (usize, BoundedPrefix<Request>)> + 'static,
     out_addr: SocketAddr,
     out: SplitSink<UdpFramed<LengthDelimitedCodec>, (Bytes, SocketAddr)>,
-) -> Hydroflow {
+) -> Hydroflow<'static> {
     let client_class = client_class_iter();
 
     // First define some shorthand for the merge and bot of this lattice
