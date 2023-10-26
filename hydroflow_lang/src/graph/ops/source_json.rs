@@ -49,7 +49,7 @@ pub const SOURCE_JSON: OperatorConstraints = OperatorConstraints {
                    ..
                },
                _| {
-        let generic_type = type_args.get(0).map(|ty| quote_spanned!(op_span=> : #ty));
+        let generic_type = type_args.first().map(|ty| quote_spanned!(op_span=> : #ty));
 
         let ident_jsonread = wc.make_ident("jsonread");
         let write_prologue = quote_spanned! {op_span=>
