@@ -2,7 +2,7 @@ use quote::quote_spanned;
 use syn::parse_quote;
 
 use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorCategory,
+    DelayType, OpInstGenerics, OperatorCategory,
     OperatorConstraints, OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
@@ -36,12 +36,6 @@ pub const ZIP_LONGEST: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
-    properties: FlowProperties {
-        // TODO(mingwei): review these.
-        deterministic: FlowPropertyVal::Preserve,
-        monotonic: FlowPropertyVal::Preserve,
-        inconsistency_tainted: false,
-    },
     input_delaytype_fn: |_| Some(DelayType::Stratum),
     flow_prop_fn: None,
     write_fn: |&WriteContextArgs {

@@ -209,13 +209,15 @@ impl<'a> Hydroflow<'a> {
                 sg_data.last_tick_run_in = Some(current_tick);
             }
 
-            for &handoff_id in self.subgraphs[sg_id.0].succs.iter() {
+            let sg_data = &self.subgraphs[sg_id.0];
+
+            for &handoff_id in sg_data.succs.iter() {
                 let handoff = &self.handoffs[handoff_id.0];
                 if !handoff.handoff.is_bottom() {
                     for &succ_id in handoff.succs.iter() {
                         let succ_sg_data = &self.subgraphs[succ_id.0];
                         // If we have sent data to the next tick, then we can start the next tick.
-                        if succ_sg_data.stratum < self.context.current_stratum {
+                        if succ_sg_data.stratum < self.context.current_stratum && !sg_data.is_lazy {
                             self.can_start_tick = true;
                         }
                         // Add subgraph to stratum queue if it is not already scheduled.
@@ -489,7 +491,7 @@ impl<'a> Hydroflow<'a> {
         W: 'static + PortList<SEND>,
         F: 'static + for<'ctx> FnMut(&'ctx mut Context, R::Ctx<'ctx>, W::Ctx<'ctx>),
     {
-        self.add_subgraph_stratified(name, 0, recv_ports, send_ports, subgraph)
+        self.add_subgraph_stratified(name, 0, recv_ports, send_ports, false, subgraph)
     }
 
     /// Adds a new compiled subgraph with the specified inputs, outputs, and stratum number.
@@ -501,6 +503,7 @@ impl<'a> Hydroflow<'a> {
         stratum: usize,
         recv_ports: R,
         send_ports: W,
+        laziness: bool,
         mut subgraph: F,
     ) -> SubgraphId
     where
@@ -527,6 +530,7 @@ impl<'a> Hydroflow<'a> {
             subgraph_preds,
             subgraph_succs,
             true,
+            laziness,
         ));
         self.init_stratum(stratum);
         self.stratum_queues[stratum].push_back(sg_id);
@@ -618,6 +622,7 @@ impl<'a> Hydroflow<'a> {
             subgraph_preds,
             subgraph_succs,
             true,
+            false,
         ));
         self.init_stratum(stratum);
         self.stratum_queues[stratum].push_back(sg_id);
@@ -760,6 +765,9 @@ pub(super) struct SubgraphData<'a> {
 
     /// Keep track of the last tick that this subgraph was run in
     last_tick_run_in: Option<usize>,
+
+    /// If this subgraph is marked as lazy, then sending data back to a lower stratum does not trigger a new tick to be run.
+    is_lazy: bool,
 }
 impl<'a> SubgraphData<'a> {
     pub fn new(
@@ -769,6 +777,7 @@ impl<'a> SubgraphData<'a> {
         preds: Vec<HandoffId>,
         succs: Vec<HandoffId>,
         is_scheduled: bool,
+        laziness: bool,
     ) -> Self {
         Self {
             name,
@@ -778,6 +787,7 @@ impl<'a> SubgraphData<'a> {
             succs,
             is_scheduled: Cell::new(is_scheduled),
             last_tick_run_in: None,
+            is_lazy: laziness,
         }
     }
 }

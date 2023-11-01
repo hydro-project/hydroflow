@@ -1,16 +1,15 @@
 use quote::quote_spanned;
 
 use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OpInstGenerics, OperatorCategory,
-    OperatorConstraints, OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs,
-    RANGE_0, RANGE_1,
+    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
 
 /// > 1 input stream, 1 output stream
 ///
-/// > Arguments: an initial value, and a closure which itself takes two arguments:
-/// an 'accumulator', and an element.
+/// > Arguments: two arguments, both closures. The first closure is used to create the initial value for the accumulator, and the second is used to combine new values with the existing accumulator.
+/// The second closure takes two two arguments: an 'accumulator', and an element.
 ///
 /// Akin to Rust's built-in fold operator, except that it takes the accumulator by `&mut` instead of by value. Folds every element into an accumulator by applying a closure,
 /// returning the final result.
@@ -26,7 +25,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// ```hydroflow
 /// // should print `Reassembled vector [1,2,3,4,5]`
 /// source_iter([1,2,3,4,5])
-///     -> fold::<'tick>(Vec::new(), |accum: &mut Vec<_>, elem| {
+///     -> fold::<'tick>(Vec::new, |accum: &mut Vec<_>, elem| {
 ///         accum.push(elem);
 ///     })
 ///     -> assert_eq([vec![1, 2, 3, 4, 5]]);
@@ -44,11 +43,6 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::DependsOnArgs,
-        monotonic: FlowPropertyVal::DependsOnArgs,
-        inconsistency_tainted: false,
-    },
     input_delaytype_fn: |_| Some(DelayType::Stratum),
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
@@ -81,18 +75,20 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
         let input = &inputs[0];
         let init = &arguments[0];
         let func = &arguments[1];
+        let initializer_func_ident = wc.make_ident("initializer_func");
         let folddata_ident = wc.make_ident("folddata");
         let accumulator_ident = wc.make_ident("accumulator");
         let iterator_item_ident = wc.make_ident("iterator_item");
 
         let (write_prologue, write_iterator, write_iterator_after) = match persistence {
-            // TODO(mingwei): Issues if initial value is not copy.
-            // TODO(mingwei): Might introduce the initial value multiple times on scheduling.
             Persistence::Tick => (
-                Default::default(),
+                quote_spanned! {op_span=>
+                    let #initializer_func_ident = #init;
+                },
                 quote_spanned! {op_span=>
                     let #ident = {
-                        let mut #accumulator_ident = #init;
+                        #[allow(clippy::redundant_closure_call)]
+                        let mut #accumulator_ident = (#initializer_func_ident)();
 
                         for #iterator_item_ident in #input {
                             #[allow(clippy::redundant_closure_call)]
@@ -106,8 +102,11 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
             ),
             Persistence::Static => (
                 quote_spanned! {op_span=>
+                    let #initializer_func_ident = #init;
+
+                    #[allow(clippy::redundant_closure_call)]
                     let #folddata_ident = #hydroflow.add_state(
-                        ::std::cell::Cell::new(::std::option::Option::Some(#init))
+                        ::std::cell::Cell::new(::std::option::Option::Some((#initializer_func_ident)()))
                     );
                 },
                 quote_spanned! {op_span=>

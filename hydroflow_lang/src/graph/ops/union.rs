@@ -1,7 +1,7 @@
 use quote::{quote_spanned, ToTokens};
 
 use super::{
-    FlowPropArgs, FlowProperties, FlowPropertyVal, FlowProps, OperatorCategory,
+    FlowPropArgs, FlowProps, OperatorCategory,
     OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
 };
 use crate::diagnostic::{Diagnostic, Level};
@@ -34,11 +34,6 @@ pub const UNION: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Preserve,
-        monotonic: FlowPropertyVal::Preserve,
-        inconsistency_tainted: false,
-    },
     input_delaytype_fn: |_| None,
     flow_prop_fn: Some(
         |fp @ FlowPropArgs {

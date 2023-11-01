@@ -57,6 +57,11 @@ pub struct HydroflowGraph {
     // TODO(mingwei): #[serde(skip)] this and recompute as needed, to reduce codegen.
     /// Stream properties.
     flow_props: SecondaryMap<GraphEdgeId, FlowProps>,
+
+    /// If this subgraph is 'lazy' then when it sends data to a lower stratum it does not cause a new tick to start
+    /// This is to support lazy defers
+    /// If the value does not exist for a given subgraph id then the subgraph is not lazy.
+    subgraph_laziness: SecondaryMap<GraphSubgraphId, bool>,
 }
 impl HydroflowGraph {
     /// Create a new empty `HydroflowGraph`.
@@ -559,12 +564,14 @@ impl HydroflowGraph {
                 return Err((node_id, old_sg_id));
             }
         }
-        Ok(self.subgraph_nodes.insert_with_key(|sg_id| {
+        let subgraph_id = self.subgraph_nodes.insert_with_key(|sg_id| {
             for &node_id in node_ids.iter() {
                 self.node_subgraph.insert(node_id, sg_id);
             }
             node_ids
-        }))
+        });
+
+        Ok(subgraph_id)
     }
 
     /// Removes a node from its subgraph. Returns true if the node was in a subgraph.
@@ -577,7 +584,7 @@ impl HydroflowGraph {
         }
     }
 
-    /// Gets the stratum nubmer of the subgraph.
+    /// Gets the stratum number of the subgraph.
     pub fn subgraph_stratum(&self, sg_id: GraphSubgraphId) -> Option<usize> {
         self.subgraph_stratum.get(sg_id).copied()
     }
@@ -589,6 +596,16 @@ impl HydroflowGraph {
         stratum: usize,
     ) -> Option<usize> {
         self.subgraph_stratum.insert(sg_id, stratum)
+    }
+
+    /// Gets whether the subgraph is lazy or not
+    fn subgraph_laziness(&self, sg_id: GraphSubgraphId) -> bool {
+        self.subgraph_laziness.get(sg_id).copied().unwrap_or(false)
+    }
+
+    /// Set subgraph's laziness, returning the old value.
+    pub fn set_subgraph_laziness(&mut self, sg_id: GraphSubgraphId, lazy: bool) -> bool {
+        self.subgraph_laziness.insert(sg_id, lazy).unwrap_or(false)
     }
 
     /// Returns the the stratum number of the largest (latest) stratum (inclusive).
@@ -715,7 +732,7 @@ impl HydroflowGraph {
         let subgraphs = subgraphs_without_preds
             .iter()
             .chain(subgraphs_with_preds.iter())
-            .map(|&(subgraph_id, subgraph_nodes)| {
+            .filter_map(|&(subgraph_id, subgraph_nodes)| {
                 let (recv_hoffs, send_hoffs) = &subgraph_handoffs[subgraph_id];
                 let recv_ports: Vec<Ident> = recv_hoffs
                     .iter()
@@ -953,13 +970,16 @@ impl HydroflowGraph {
                             subgraph_nodes.get(pull_to_push_idx)
                         {
                             self.node_as_ident(node_id, false)
-                        } else {
-                            // Entire subgraph is pull (except for a single send/push handoff output).
-                            assert!(
-                                1 == send_ports.len(),
-                                "Degenerate subgraph detected, is there a disconnected `null()` or other degenerate pipeline somewhere?"
-                            );
+                        } else if 1 == send_ports.len() {
+                            // Entire subgraph is pull, except for a single send/push handoff output.
                             send_ports[0].clone()
+                        } else {
+                            diagnostics.push(Diagnostic::spanned(
+                                pull_ident.span(),
+                                Level::Error,
+                                "Degenerate subgraph detected, is there a disconnected `null()` or other degenerate pipeline somewhere?",
+                            ));
+                            return None;
                         };
 
                         // Pivot span is combination of pull and push spans (or if not possible, just take the push).
@@ -981,7 +1001,8 @@ impl HydroflowGraph {
                 let stratum = Literal::usize_unsuffixed(
                     self.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(0),
                 );
-                quote! {
+                let laziness = self.subgraph_laziness(subgraph_id);
+                Some(quote! {
                     #( #op_prologue_code )*
 
                     #hf.add_subgraph_stratified(
@@ -989,6 +1010,7 @@ impl HydroflowGraph {
                         #stratum,
                         var_expr!( #( #recv_ports ),* ),
                         var_expr!( #( #send_ports ),* ),
+                        #laziness,
                         move |#context, var_args!( #( #recv_ports ),* ), var_args!( #( #send_ports ),* )| {
                             #( #recv_port_code )*
                             #( #send_port_code )*
@@ -996,7 +1018,7 @@ impl HydroflowGraph {
                             #( #subgraph_op_iter_after_code )*
                         },
                     );
-                }
+                })
             });
 
         // These two are quoted separately here because iterators are lazily evaluated, so this
@@ -1137,7 +1159,7 @@ impl HydroflowGraph {
                 _ => None,
             };
             let label = match (src_label, dst_label) {
-                (Some(l1), Some(l2)) => Some(format!("{} ~ {}", l1, l2)),
+                (Some(l1), Some(l2)) => Some(format!("{}\n{}", l1, l2)),
                 (Some(l1), None) => Some(l1),
                 (None, Some(l2)) => Some(l2),
                 (None, None) => None,
@@ -1209,25 +1231,26 @@ impl HydroflowGraph {
         }
 
         // Write edges.
-        for (edge_id, (mut src_id, dst_id)) in self.edges() {
-            {
-                // Handling for if `write_config.no_handoffs` true.
-                if skipped_handoffs.contains(&dst_id) {
-                    continue;
-                }
-                if skipped_handoffs.contains(&src_id) {
-                    let mut handoff_preds = self.node_predecessor_nodes(src_id);
-                    assert_eq!(1, handoff_preds.len());
-                    src_id = handoff_preds.next().unwrap();
-                }
+        for (edge_id, (src_id, mut dst_id)) in self.edges() {
+            // Handling for if `write_config.no_handoffs` true.
+            if skipped_handoffs.contains(&src_id) {
+                continue;
             }
 
-            let (src_port, dst_port) = self.edge_ports(edge_id);
+            let (src_port, mut dst_port) = self.edge_ports(edge_id);
+            if skipped_handoffs.contains(&dst_id) {
+                let mut handoff_succs = self.node_successors(dst_id);
+                assert_eq!(1, handoff_succs.len());
+                let (succ_edge, succ_node) = handoff_succs.next().unwrap();
+                dst_id = succ_node;
+                dst_port = self.edge_ports(succ_edge).1;
+            }
+
+            let flow_props = self.edge_flow_props(edge_id); // Should be the same both before & after handoffs.
+            let label = helper_edge_label(src_port, dst_port);
             let delay_type = self
                 .node_op_inst(dst_id)
                 .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-            let flow_props = self.edge_flow_props(edge_id);
-            let label = helper_edge_label(src_port, dst_port);
             graph_write.write_edge(src_id, dst_id, delay_type, flow_props, label.as_deref())?;
         }
 

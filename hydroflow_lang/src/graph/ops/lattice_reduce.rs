@@ -2,7 +2,7 @@ use quote::quote_spanned;
 use syn::parse_quote_spanned;
 
 use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    DelayType, OperatorCategory, OperatorConstraints,
     OperatorInstance, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
 };
 use crate::graph::ops::OperatorWriteOutput;
@@ -42,11 +42,6 @@ pub const LATTICE_REDUCE: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Preserve,
-        monotonic: FlowPropertyVal::Yes,
-        inconsistency_tainted: false,
-    },
     input_delaytype_fn: |_| Some(DelayType::Stratum),
     flow_prop_fn: Some(LATTICE_FOLD_REDUCE_FLOW_PROP_FN),
     write_fn: |wc @ &WriteContextArgs {

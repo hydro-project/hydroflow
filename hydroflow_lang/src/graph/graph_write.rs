@@ -57,6 +57,27 @@ pub trait GraphWrite {
     fn write_epilogue(&mut self) -> Result<(), Self::Err>;
 }
 
+/// Escapes a string for use in a mermaid graph label.
+pub fn escape_mermaid(string: &str) -> String {
+    string
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        // Mermaid entity codes
+        // https://mermaid.js.org/syntax/flowchart.html#entity-codes-to-escape-characters
+        .replace('#', "&num;")
+        // Not really needed, newline literals seem to work
+        .replace('\n', "<br>")
+        // Mermaid font awesome fa
+        // https://github.com/mermaid-js/mermaid/blob/e4d2118d4bfa023628a020b7ab1f8c491e6dc523/packages/mermaid/src/diagrams/flowchart/flowRenderer-v2.js#L62
+        .replace("fa:fa", "fa:<wbr>fa")
+        .replace("fab:fa", "fab:<wbr>fa")
+        .replace("fal:fa", "fal:<wbr>fa")
+        .replace("far:fa", "far:<wbr>fa")
+        .replace("fas:fa", "fas:<wbr>fa")
+}
+
 pub struct Mermaid<W> {
     write: W,
     // How many links have been written, for styling
@@ -125,23 +146,7 @@ where
                 Some(Color::Pull) => r"[\",
                 _ => "[",
             },
-            code = node
-                .replace('&', "&amp;")
-                .replace('<', "&lt;")
-                .replace('>', "&gt;")
-                .replace('"', "&quot;")
-                // Mermaid entity codes
-                // https://mermaid.js.org/syntax/flowchart.html#entity-codes-to-escape-characters
-                .replace('#', "&num;")
-                // Not really needed, newline literals seem to work
-                .replace('\n', "<br>")
-                // Mermaid font awesome fa
-                // https://github.com/mermaid-js/mermaid/blob/e4d2118d4bfa023628a020b7ab1f8c491e6dc523/packages/mermaid/src/diagrams/flowchart/flowRenderer-v2.js#L62
-                .replace("fa:fa", "fa:<wbr>fa")
-                .replace("fab:fa", "fab:<wbr>fa")
-                .replace("fal:fa", "fal:<wbr>fa")
-                .replace("far:fa", "far:<wbr>fa")
-                .replace("fas:fa", "fas:<wbr>fa"),
+            code = escape_mermaid(node),
             rbracket = match node_color {
                 Some(Color::Push) => r"\]",
                 Some(Color::Pull) => r"/]",
@@ -175,10 +180,10 @@ where
             arrow_head = match delay_type {
                 None => ">",
                 Some(DelayType::Stratum) => "x",
-                Some(DelayType::Tick) => "o",
+                Some(DelayType::Tick | DelayType::TickLazy) => "o",
             },
             label = if let Some(label) = &label {
-                Cow::Owned(format!("|{}|", label.trim()))
+                Cow::Owned(format!("|{}|", escape_mermaid(label.trim())))
             } else {
                 Cow::Borrowed("")
             },
@@ -260,6 +265,16 @@ where
     }
 }
 
+/// Escapes a string for use in a DOT graph label.
+///
+/// Newline can be:
+/// * "\\n" for newline.
+/// * "\\l" for left-aligned newline.
+/// * "\\r" for right-aligned newline.
+pub fn escape_dot(string: &str, newline: &str) -> String {
+    string.replace('"', "\\\"").replace('\n', newline)
+}
+
 pub struct Dot<W> {
     write: W,
 }
@@ -288,7 +303,7 @@ where
         node: &str,
         node_color: Option<Color>,
     ) -> Result<(), Self::Err> {
-        let nm = node.replace('"', "\\\"").replace('\n', "\\l");
+        let nm = escape_dot(node, "\\l");
         let label = format!("n{:?}", node_id.data());
         let shape_str = match node_color {
             Some(Color::Push) => "house",
@@ -329,7 +344,7 @@ where
         let lattice_flow_type = flow_props.and_then(|flow_props| flow_props.lattice_flow_type);
         let mut properties = Vec::<Cow<'static, str>>::new();
         if let Some(label) = label {
-            properties.push(format!("label=\"{}\"", label).into());
+            properties.push(format!("label=\"{}\"", escape_dot(label, "\\n")).into());
         };
         // Color
         if delay_type.is_some() {

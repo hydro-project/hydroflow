@@ -2,7 +2,7 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    DelayType, FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints,
+    DelayType, OperatorCategory, OperatorConstraints,
     OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::graph::{OperatorInstance, PortIndexValue};
@@ -37,11 +37,6 @@ pub const DIFFERENCE_MULTISET: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { pos, neg })),
     ports_out: None,
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Preserve,
-        monotonic: FlowPropertyVal::No,
-        inconsistency_tainted: false,
-    },
     input_delaytype_fn: |idx| match idx {
         PortIndexValue::Path(path) if "neg" == path.to_token_stream().to_string() => {
             Some(DelayType::Stratum)

@@ -7,7 +7,7 @@ use syn::token::Colon;
 use syn::{parse_quote_spanned, Expr, Ident, LitInt, LitStr, Pat, PatType};
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, PortListSpec,
+    OperatorCategory, OperatorConstraints, PortListSpec,
     WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
@@ -68,11 +68,6 @@ pub const PARTITION: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: Some(|| PortListSpec::Variadic),
-    properties: FlowProperties {
-        deterministic: FlowPropertyVal::Preserve,
-        monotonic: FlowPropertyVal::Preserve,
-        inconsistency_tainted: false,
-    },
     input_delaytype_fn: |_| None,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {

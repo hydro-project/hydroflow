@@ -26,6 +26,8 @@ pub enum DelayType {
     Stratum,
     /// Input should be collected over the previous tick.
     Tick,
+    /// Input should be collected over the previous tick but also not cause a new tick to occur.
+    TickLazy,
 }
 
 /// Specification of the named (or unnamed) ports for an operator's inputs or outputs.
@@ -34,33 +36,6 @@ pub enum PortListSpec {
     Variadic,
     /// A specific number of named ports.
     Fixed(Punctuated<PortIndex, Token![,]>),
-}
-
-/// Flow property preservation values.
-/// TODO(mingwei): deprecated?
-#[derive(Default, Debug, Eq, PartialEq, Clone, Copy)]
-pub enum FlowPropertyVal {
-    /// Property is always false.
-    #[default]
-    No,
-    /// Property is always true.
-    Yes,
-    /// Property is preserved from input.
-    Preserve,
-    /// Property preservation depends on the arguments supplied to the operator.
-    DependsOnArgs,
-}
-
-/// Flow properties of each edge.
-/// TODO(mingwei): deprecated?
-#[derive(Default, Debug, Eq, PartialEq, Clone, Copy)]
-pub struct FlowProperties {
-    /// Is the flow deterministic.
-    pub deterministic: FlowPropertyVal,
-    /// Is the flow monotonic.
-    pub monotonic: FlowPropertyVal,
-    /// Has inconsistency been introduced.
-    pub inconsistency_tainted: bool,
 }
 
 /// An instance of this struct represents a single hydroflow operator.
@@ -95,9 +70,6 @@ pub struct OperatorConstraints {
     pub ports_inn: Option<fn() -> PortListSpec>,
     /// What named or numbered output ports to expect?
     pub ports_out: Option<fn() -> PortListSpec>,
-
-    /// Monotonicity preservation properties, for analysis.
-    pub properties: FlowProperties,
 
     /// Determines if this input must be preceeded by a stratum barrier.
     pub input_delaytype_fn: fn(&PortIndexValue) -> Option<DelayType>,
@@ -409,6 +381,7 @@ declare_ops![
     next_stratum::NEXT_STRATUM,
     defer_signal::DEFER_SIGNAL,
     defer_tick::DEFER_TICK,
+    defer_tick_lazy::DEFER_TICK_LAZY,
     null::NULL,
     partition::PARTITION,
     persist::PERSIST,

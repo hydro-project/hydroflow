@@ -1,7 +1,7 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowProperties, FlowPropertyVal, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorCategory, OperatorConstraints, OperatorInstance,
     OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
@@ -34,12 +34,6 @@ pub const ENUMERATE: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: None,
     ports_out: None,
-    properties: FlowProperties {
-        // TODO(mingwei)
-        deterministic: FlowPropertyVal::No,
-        monotonic: FlowPropertyVal::No,
-        inconsistency_tainted: true,
-    },
     input_delaytype_fn: |_| None,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
