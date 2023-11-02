@@ -47,7 +47,7 @@ pub struct FlatGraphBuilder {
     uses: Vec<ItemUse>,
 
     /// In order to make import!() statements relative to the current file, we need to know where the file is that is building the flat graph.
-    macro_invocation_path: PathBuf,
+    invocating_file_path: PathBuf,
 
     /// If the flat graph is being loaded as a module, then two initial ModuleBoundary nodes are inserted into the graph. One
     /// for the input into the module and one for the output out of the module.
@@ -63,7 +63,7 @@ impl FlatGraphBuilder {
     /// Convert the Hydroflow code AST into a graph builder.
     pub fn from_hfcode(input: HfCode, macro_invocation_path: PathBuf) -> Self {
         let mut builder = Self {
-            macro_invocation_path,
+            invocating_file_path: macro_invocation_path,
             ..Default::default()
         };
         builder.process_statements(input.statements);
@@ -72,8 +72,9 @@ impl FlatGraphBuilder {
     }
 
     /// Convert the Hydroflow code AST into a graph builder.
-    pub fn from_hfmodule(input: HfCode) -> Self {
+    pub fn from_hfmodule(input: HfCode, root_path: PathBuf) -> Self {
         let mut builder = Self::default();
+        builder.invocating_file_path = root_path; // imports inside of modules should be relative to the importing file.
         builder.module_boundary_nodes = Some((
             builder.flat_graph.insert_node(
                 Node::ModuleBoundary {
@@ -227,11 +228,13 @@ impl FlatGraphBuilder {
             Pipeline::Import(import) => {
                 // TODO: https://github.com/rust-lang/rfcs/pull/3200
                 // this would be way better...
-                let mut dir = self.macro_invocation_path.clone();
-                dir.pop();
+                let file_path = {
+                    let mut dir = self.invocating_file_path.clone();
+                    dir.pop();
+                    dir.join(import.filename.value())
+                };
 
-                let file_contents = match std::fs::read_to_string(dir.join(import.filename.value()))
-                {
+                let file_contents = match std::fs::read_to_string(&file_path) {
                     Ok(contents) => contents,
                     Err(err) => {
                         self.diagnostics.push(Diagnostic::spanned(
@@ -263,7 +266,8 @@ impl FlatGraphBuilder {
                     }
                 };
 
-                let flat_graph_builder = crate::graph::FlatGraphBuilder::from_hfmodule(statements);
+                let flat_graph_builder =
+                    crate::graph::FlatGraphBuilder::from_hfmodule(statements, file_path);
                 let (flat_graph, _uses, diagnostics) = flat_graph_builder.build();
                 diagnostics
                     .iter()
@@ -303,10 +307,16 @@ impl FlatGraphBuilder {
                     );
                     node_mapping.insert(nid, new_id);
 
-                    if *input {
-                        ends.inn =
-                            Some((PortIndexValue::Elided(None), GraphDet::Determined(new_id)));
-                    } else {
+                    // in the case of nested imports, this module boundary might not be the module boundary into or out of the top-most module
+                    // So we have to be careful to only target those two boundaries.
+                    // There should be no inputs to it, if it is an input boundary, if it is the top-most one.
+                    // and there should be no outputs from it, if it is an output boundary, if it is the top-most one.
+                    if *input && other.node_predecessor_nodes(nid).count() == 0 {
+                        if other.node_predecessor_nodes(nid).count() == 0 {
+                            ends.inn =
+                                Some((PortIndexValue::Elided(None), GraphDet::Determined(new_id)));
+                        }
+                    } else if !(*input) && other.node_successor_nodes(nid).count() == 0 {
                         ends.out =
                             Some((PortIndexValue::Elided(None), GraphDet::Determined(new_id)));
                     }
