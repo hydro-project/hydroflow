@@ -65,7 +65,7 @@ pub const _LATTICE_FOLD_BATCH: OperatorConstraints = OperatorConstraints {
         assert!(is_pull);
 
         let lattice_type = type_args
-            .get(0)
+            .first()
             .map(ToTokens::to_token_stream)
             .unwrap_or(quote_spanned!(op_span=> _));
 
