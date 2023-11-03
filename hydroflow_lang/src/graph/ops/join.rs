@@ -117,7 +117,7 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                diagnostics| {
         let join_type =
             type_args
-                .get(0)
+                .first()
                 .map(ToTokens::to_token_stream)
                 .unwrap_or(quote_spanned!(op_span=>
                     #root::compiled::pull::HalfSetJoinState

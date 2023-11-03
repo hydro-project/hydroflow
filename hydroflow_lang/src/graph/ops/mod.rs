@@ -190,7 +190,7 @@ pub fn identity_write_iterator_fn(
     }: &WriteContextArgs,
 ) -> TokenStream {
     let generic_type = type_args
-        .get(0)
+        .first()
         .map(quote::ToTokens::to_token_stream)
         .unwrap_or(quote_spanned!(op_span=> _));
 
@@ -302,7 +302,7 @@ pub fn null_write_iterator_fn(
     }: &WriteContextArgs,
 ) -> TokenStream {
     let default_type = parse_quote_spanned! {op_span=> _};
-    let iter_type = type_args.get(0).unwrap_or(&default_type);
+    let iter_type = type_args.first().unwrap_or(&default_type);
     if is_pull {
         quote_spanned! {op_span=>
             #(
@@ -494,7 +494,7 @@ impl WriteContextArgs<'_> {
         let span = self.op_span;
         match self
             .flow_props_in
-            .get(0)
+            .first()
             .copied()
             .flatten()
             .and_then(|flow_props| flow_props.lattice_flow_type)
