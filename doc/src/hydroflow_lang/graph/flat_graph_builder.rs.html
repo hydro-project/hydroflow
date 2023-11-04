@@ -749,6 +749,16 @@
 <a href="#749" id="749">749</a>
 <a href="#750" id="750">750</a>
 <a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Build a flat graph from [`HfStatement`]s.
 
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -798,7 +808,7 @@
     </span>uses: Vec&lt;ItemUse&gt;,
 
     <span class="doccomment">/// In order to make import!() statements relative to the current file, we need to know where the file is that is building the flat graph.
-    </span>macro_invocation_path: PathBuf,
+    </span>invocating_file_path: PathBuf,
 
     <span class="doccomment">/// If the flat graph is being loaded as a module, then two initial ModuleBoundary nodes are inserted into the graph. One
     /// for the input into the module and one for the output out of the module.
@@ -814,7 +824,7 @@
     <span class="doccomment">/// Convert the Hydroflow code AST into a graph builder.
     </span><span class="kw">pub fn </span>from_hfcode(input: HfCode, macro_invocation_path: PathBuf) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>builder = <span class="self">Self </span>{
-            macro_invocation_path,
+            invocating_file_path: macro_invocation_path,
             ..Default::default()
         };
         builder.process_statements(input.statements);
@@ -823,9 +833,10 @@
     }
 
     <span class="doccomment">/// Convert the Hydroflow code AST into a graph builder.
-    </span><span class="kw">pub fn </span>from_hfmodule(input: HfCode) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>from_hfmodule(input: HfCode, root_path: PathBuf) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>builder = <span class="self">Self</span>::default();
-        builder.module_boundary_nodes = <span class="prelude-val">Some</span>((
+        builder.invocating_file_path = root_path; <span class="comment">// imports inside of modules should be relative to the importing file.
+        </span>builder.module_boundary_nodes = <span class="prelude-val">Some</span>((
             builder.flat_graph.insert_node(
                 Node::ModuleBoundary {
                     input: <span class="bool-val">true</span>,
@@ -978,11 +989,13 @@
             Pipeline::Import(import) =&gt; {
                 <span class="comment">// TODO: https://github.com/rust-lang/rfcs/pull/3200
                 // this would be way better...
-                </span><span class="kw">let </span><span class="kw-2">mut </span>dir = <span class="self">self</span>.macro_invocation_path.clone();
-                dir.pop();
+                </span><span class="kw">let </span>file_path = {
+                    <span class="kw">let </span><span class="kw-2">mut </span>dir = <span class="self">self</span>.invocating_file_path.clone();
+                    dir.pop();
+                    dir.join(import.filename.value())
+                };
 
-                <span class="kw">let </span>file_contents = <span class="kw">match </span>std::fs::read_to_string(dir.join(import.filename.value()))
-                {
+                <span class="kw">let </span>file_contents = <span class="kw">match </span>std::fs::read_to_string(<span class="kw-2">&amp;</span>file_path) {
                     <span class="prelude-val">Ok</span>(contents) =&gt; contents,
                     <span class="prelude-val">Err</span>(err) =&gt; {
                         <span class="self">self</span>.diagnostics.push(Diagnostic::spanned(
@@ -1014,7 +1027,8 @@
                     }
                 };
 
-                <span class="kw">let </span>flat_graph_builder = <span class="kw">crate</span>::graph::FlatGraphBuilder::from_hfmodule(statements);
+                <span class="kw">let </span>flat_graph_builder =
+                    <span class="kw">crate</span>::graph::FlatGraphBuilder::from_hfmodule(statements, file_path);
                 <span class="kw">let </span>(flat_graph, _uses, diagnostics) = flat_graph_builder.build();
                 diagnostics
                     .iter()
@@ -1054,10 +1068,16 @@
                     );
                     node_mapping.insert(nid, new_id);
 
-                    <span class="kw">if </span><span class="kw-2">*</span>input {
-                        ends.inn =
-                            <span class="prelude-val">Some</span>((PortIndexValue::Elided(<span class="prelude-val">None</span>), GraphDet::Determined(new_id)));
-                    } <span class="kw">else </span>{
+                    <span class="comment">// in the case of nested imports, this module boundary might not be the module boundary into or out of the top-most module
+                    // So we have to be careful to only target those two boundaries.
+                    // There should be no inputs to it, if it is an input boundary, if it is the top-most one.
+                    // and there should be no outputs from it, if it is an output boundary, if it is the top-most one.
+                    </span><span class="kw">if </span><span class="kw-2">*</span>input &amp;&amp; other.node_predecessor_nodes(nid).count() == <span class="number">0 </span>{
+                        <span class="kw">if </span>other.node_predecessor_nodes(nid).count() == <span class="number">0 </span>{
+                            ends.inn =
+                                <span class="prelude-val">Some</span>((PortIndexValue::Elided(<span class="prelude-val">None</span>), GraphDet::Determined(new_id)));
+                        }
+                    } <span class="kw">else if </span>!(<span class="kw-2">*</span>input) &amp;&amp; other.node_successor_nodes(nid).count() == <span class="number">0 </span>{
                         ends.out =
                             <span class="prelude-val">Some</span>((PortIndexValue::Elided(<span class="prelude-val">None</span>), GraphDet::Determined(new_id)));
                     }
