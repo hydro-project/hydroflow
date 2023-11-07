@@ -89,7 +89,7 @@ fn deploy(config: PathBuf, args: Vec<String>) -> anyhow::Result<()> {
                         .value(py)
                         .getattr("args")?
                         .extract::<Vec<AnyhowWrapper>>()?;
-                    let wrapper = args.get(0).unwrap();
+                    let wrapper = args.first().unwrap();
                     let underlying = &wrapper.underlying;
                     let mut underlying = underlying.blocking_write();
                     Err(underlying.take().unwrap()).context(traceback)
