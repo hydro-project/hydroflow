@@ -36,8 +36,8 @@ pub use {
     rustc_hash, serde, serde_json, tokio, tokio_stream, tokio_util,
 };
 
+/// `#[macro_use]` automagically brings the declarative macro export to the crate-level.
 mod declarative_macro;
-pub use declarative_macro::*;
 #[cfg(feature = "hydroflow_datalog")]
 pub use hydroflow_datalog::*;
 #[cfg(feature = "hydroflow_macro")]

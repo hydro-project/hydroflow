@@ -18,6 +18,7 @@ pub fn main() {
     // An edge in the input data = a pair of `usize` vertex IDs.
     let (edges_send, edges_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
+    #[allow(clippy::map_identity)]
     let mut df = hydroflow_syntax! {
         edges = source_stream(edges_recv) -> tee();
 
@@ -30,7 +31,7 @@ pub fn main() {
         // wire the inputs to the joins
         edges[0] -> map(|(y,z)| (z,y)) -> [0]edge_pairs;
         edges[1] -> [1]edge_pairs;
-        edge_pairs -> map(|((z,x), y)| ((z, x), y)) -> [0]triangle;
+        edge_pairs -> map(|((z, x), y)| ((z, x), y)) -> [0]triangle;
         edges[2] -> map(|(z,x)| ((z,x), ())) -> [1]triangle;
 
         // post-process: sort fields of each tuple by node ID
