@@ -74,7 +74,7 @@ pub fn propegate_flow_props(
                         for (i, edge_id) in out_edges.into_iter().enumerate() {
                             if let Some(flow_prop_out) = *flow_props_out
                                 .get(i)
-                                .unwrap_or_else(|| flow_props_out.get(0).unwrap())
+                                .unwrap_or_else(|| flow_props_out.first().unwrap())
                             {
                                 let flow_prop_old =
                                     graph.set_edge_flow_props(edge_id, flow_prop_out);
