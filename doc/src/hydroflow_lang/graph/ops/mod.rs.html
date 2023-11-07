@@ -847,7 +847,7 @@
     }: <span class="kw-2">&amp;</span>WriteContextArgs,
 ) -&gt; TokenStream {
     <span class="kw">let </span>generic_type = type_args
-        .get(<span class="number">0</span>)
+        .first()
         .map(quote::ToTokens::to_token_stream)
         .unwrap_or(<span class="macro">quote_spanned!</span>(op_span=&gt; <span class="kw">_</span>));
 
@@ -959,7 +959,7 @@
     }: <span class="kw-2">&amp;</span>WriteContextArgs,
 ) -&gt; TokenStream {
     <span class="kw">let </span>default_type = <span class="macro">parse_quote_spanned! </span>{op_span=&gt; <span class="kw">_</span>};
-    <span class="kw">let </span>iter_type = type_args.get(<span class="number">0</span>).unwrap_or(<span class="kw-2">&amp;</span>default_type);
+    <span class="kw">let </span>iter_type = type_args.first().unwrap_or(<span class="kw-2">&amp;</span>default_type);
     <span class="kw">if </span>is_pull {
         <span class="macro">quote_spanned! </span>{op_span=&gt;
             #(
@@ -1151,7 +1151,7 @@
         <span class="kw">let </span>span = <span class="self">self</span>.op_span;
         <span class="kw">match </span><span class="self">self
             </span>.flow_props_in
-            .get(<span class="number">0</span>)
+            .first()
             .copied()
             .flatten()
             .and_then(|flow_props| flow_props.lattice_flow_type)

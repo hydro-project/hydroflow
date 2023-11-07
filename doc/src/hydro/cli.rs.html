@@ -227,7 +227,7 @@
                         .value(py)
                         .getattr(<span class="string">&quot;args&quot;</span>)<span class="question-mark">?
                         </span>.extract::&lt;Vec&lt;AnyhowWrapper&gt;&gt;()<span class="question-mark">?</span>;
-                    <span class="kw">let </span>wrapper = args.get(<span class="number">0</span>).unwrap();
+                    <span class="kw">let </span>wrapper = args.first().unwrap();
                     <span class="kw">let </span>underlying = <span class="kw-2">&amp;</span>wrapper.underlying;
                     <span class="kw">let </span><span class="kw-2">mut </span>underlying = underlying.blocking_write();
                     <span class="prelude-val">Err</span>(underlying.take().unwrap()).context(traceback)

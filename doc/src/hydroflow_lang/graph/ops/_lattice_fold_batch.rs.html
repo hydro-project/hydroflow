@@ -172,7 +172,7 @@
         <span class="macro">assert!</span>(is_pull);
 
         <span class="kw">let </span>lattice_type = type_args
-            .get(<span class="number">0</span>)
+            .first()
             .map(ToTokens::to_token_stream)
             .unwrap_or(<span class="macro">quote_spanned!</span>(op_span=&gt; <span class="kw">_</span>));
 

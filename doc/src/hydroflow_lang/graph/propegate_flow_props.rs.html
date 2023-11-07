@@ -181,7 +181,7 @@
                         </span><span class="kw">for </span>(i, edge_id) <span class="kw">in </span>out_edges.into_iter().enumerate() {
                             <span class="kw">if let </span><span class="prelude-val">Some</span>(flow_prop_out) = <span class="kw-2">*</span>flow_props_out
                                 .get(i)
-                                .unwrap_or_else(|| flow_props_out.get(<span class="number">0</span>).unwrap())
+                                .unwrap_or_else(|| flow_props_out.first().unwrap())
                             {
                                 <span class="kw">let </span>flow_prop_old =
                                     graph.set_edge_flow_props(edge_id, flow_prop_out);

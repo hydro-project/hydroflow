@@ -108,6 +108,15 @@
 <a href="#108" id="108">108</a>
 <a href="#109" id="109">109</a>
 <a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -178,14 +187,21 @@
             <span class="kw">let </span>#curr_data = #hydroflow.add_state(::std::cell::RefCell::new(#root::rustc_hash::FxHashMap::default()));
         };
 
+        <span class="kw">let </span>tick_swap = <span class="macro">quote_spanned! </span>{op_span=&gt;
+            {
+                <span class="kw">if </span>context.is_first_run_this_tick() {
+                    <span class="kw">let </span><span class="kw-2">mut </span>prev_map = #context.state_ref(#prev_data).borrow_mut();
+                    <span class="kw">let </span><span class="kw-2">mut </span>curr_map = #context.state_ref(#curr_data).borrow_mut();
+                    ::std::mem::swap(::std::ops::DerefMut::deref_mut(<span class="kw-2">&amp;mut </span>prev_map), ::std::ops::DerefMut::deref_mut(<span class="kw-2">&amp;mut </span>curr_map));
+                    curr_map.clear();
+                }
+            }
+        };
+
         <span class="kw">let </span>filter_fn = <span class="macro">quote_spanned! </span>{op_span=&gt;
             |item| {
                 <span class="kw">let </span><span class="kw-2">mut </span>prev_map = #context.state_ref(#prev_data).borrow_mut();
                 <span class="kw">let </span><span class="kw-2">mut </span>curr_map = #context.state_ref(#curr_data).borrow_mut();
-                <span class="kw">if </span>context.is_first_run_this_tick() {
-                    ::std::mem::swap(::std::ops::DerefMut::deref_mut(<span class="kw-2">&amp;mut </span>prev_map), ::std::ops::DerefMut::deref_mut(<span class="kw-2">&amp;mut </span>curr_map));
-                    curr_map.clear();
-                }
 
                 <span class="kw-2">*</span>curr_map.entry(<span class="attr">#[allow(clippy::clone_on_copy)] </span>item.clone()).or_insert(<span class="number">0_usize</span>) += <span class="number">1</span>;
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(old_count) = prev_map.get_mut(item) {
@@ -203,10 +219,12 @@
         };
         <span class="kw">let </span>write_iterator = <span class="kw">if </span>is_pull {
             <span class="macro">quote_spanned! </span>{op_span=&gt;
+                #tick_swap
                 <span class="kw">let </span>#ident = #input.filter(#filter_fn);
             }
         } <span class="kw">else </span>{
             <span class="macro">quote_spanned! </span>{op_span=&gt;
+                #tick_swap
                 <span class="kw">let </span>#ident = #root::pusherator::filter::Filter::new(#filter_fn, #output);
             }
         };

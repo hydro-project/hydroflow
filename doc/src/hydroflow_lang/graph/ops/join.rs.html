@@ -354,7 +354,7 @@
                diagnostics| {
         <span class="kw">let </span>join_type =
             type_args
-                .get(<span class="number">0</span>)
+                .first()
                 .map(ToTokens::to_token_stream)
                 .unwrap_or(<span class="macro">quote_spanned!</span>(op_span=&gt;
                     #root::compiled::pull::HalfSetJoinState
