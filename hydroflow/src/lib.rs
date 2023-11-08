@@ -37,7 +37,6 @@ pub use {
 };
 
 mod declarative_macro;
-pub use declarative_macro::*;
 #[cfg(feature = "hydroflow_datalog")]
 pub use hydroflow_datalog::*;
 #[cfg(feature = "hydroflow_macro")]
