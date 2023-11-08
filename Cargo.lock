@@ -3156,6 +3156,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "topolotree"
+version = "0.0.0"
+dependencies = [
+ "dashmap",
+ "futures",
+ "hydroflow",
+ "hydroflow_datalog",
+ "procinfo",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-tungstenite",
+]
+
+[[package]]
 name = "tracing"
 version = "0.1.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"

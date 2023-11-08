@@ -1,0 +1,22 @@
+[package]
+name = "topolotree"
+publish = false
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+hydroflow = { path = "../hydroflow", features = [ "cli_integration" ] }
+hydroflow_datalog = { path = "../hydroflow_datalog" }
+
+tokio = { version = "1.16", features = [ "full" ] }
+serde = { version = "1", features = ["rc"] }
+serde_json = "1"
+rand = "0.8.5"
+dashmap = "5.4.0"
+
+futures = "0.3.28"
+
+tokio-tungstenite = "0.19.0"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+procinfo = "0.4.2"
