@@ -96,7 +96,7 @@ impl Message {
     }
 }
 
-impl Hydroflow {
+impl<'a> Hydroflow<'a> {
     fn register_read_tcp_stream(&mut self, reader: OwnedReadHalf) -> RecvPort<VecHandoff<Message>> {
         let reader = FramedRead::new(reader, LengthDelimitedCodec::new());
         let (send_port, recv_port) = self.make_edge("tcp ingress handoff");
