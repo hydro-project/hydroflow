@@ -1,4 +1,4 @@
-use hydroflow::{hydroflow_syntax, var_args};
+use hydroflow::hydroflow_syntax;
 
 #[hydroflow::main]
 async fn main() {

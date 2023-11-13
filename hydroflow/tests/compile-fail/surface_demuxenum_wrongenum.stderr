@@ -9,11 +9,3 @@ error: Output connection conflicts with above ($DIR/tests/compile-fail/surface_d
    |
 21 |         my_demux[Square] -> for_each(std::mem::drop);
    |                  ^^^^^^
-
-warning: unused import: `var_args`
- --> tests/compile-fail/surface_demuxenum_wrongenum.rs:2:35
-  |
-2 | use hydroflow::{hydroflow_syntax, var_args};
-  |                                   ^^^^^^^^
-  |
-  = note: `#[warn(unused_imports)]` on by default
