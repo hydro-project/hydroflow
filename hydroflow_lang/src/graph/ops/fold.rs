@@ -90,9 +90,14 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
                         #[allow(clippy::redundant_closure_call)]
                         let mut #accumulator_ident = (#initializer_func_ident)();
 
+                        #[inline(always)]
+                        fn check_comb_type<A, T, O, F: Fn(&mut A, T) -> O>(f: F, _a: &A) -> F {
+                            f
+                        }
+
                         for #iterator_item_ident in #input {
                             #[allow(clippy::redundant_closure_call)]
-                            (#func)(&mut #accumulator_ident, #iterator_item_ident);
+                            (check_comb_type(#func, &#accumulator_ident))(&mut #accumulator_ident, #iterator_item_ident);
                         }
 
                         ::std::iter::once(#accumulator_ident)
@@ -113,9 +118,14 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
                     let #ident = {
                         let mut #accumulator_ident = #context.state_ref(#folddata_ident).take().expect("FOLD DATA MISSING");
 
+                        #[inline(always)]
+                        fn check_comb_type<A, T, O, F: Fn(&mut A, T) -> O>(f: F, _a: &A) -> F {
+                            f
+                        }
+
                         for #iterator_item_ident in #input {
                             #[allow(clippy::redundant_closure_call)]
-                            (#func)(&mut #accumulator_ident, #iterator_item_ident);
+                            (check_comb_type(#func, &#accumulator_ident))(&mut #accumulator_ident, #iterator_item_ident);
                         }
 
                         #context.state_ref(#folddata_ident).set(

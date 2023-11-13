@@ -14,7 +14,7 @@ pub(crate) async fn orig_flow(
     shopping: impl Iterator<Item = (usize, LineItem)> + 'static,
     out_addr: SocketAddr,
     out: SplitSink<UdpFramed<LengthDelimitedCodec>, (Bytes, SocketAddr)>,
-) -> Hydroflow {
+) -> Hydroflow<'static> {
     let client_class = client_class_iter();
 
     // This is the straightforward single-transducer sequential case.
