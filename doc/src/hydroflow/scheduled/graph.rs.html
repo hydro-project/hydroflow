@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow/src/scheduled/graph.rs`."><title>graph.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-deb46770fd761b69.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (fcab24817 2023-10-13)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow/src/scheduled/graph.rs`."><title>graph.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -822,8 +822,8 @@
 <span class="kw">use </span><span class="kw">crate</span>::Never;
 
 <span class="doccomment">/// A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
-</span><span class="kw">pub struct </span>Hydroflow {
-    <span class="kw">pub</span>(<span class="kw">super</span>) subgraphs: Vec&lt;SubgraphData&gt;,
+</span><span class="kw">pub struct </span>Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">pub</span>(<span class="kw">super</span>) subgraphs: Vec&lt;SubgraphData&lt;<span class="lifetime">&#39;a</span>&gt;&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) context: Context,
     handoffs: Vec&lt;HandoffData&gt;,
 
@@ -842,7 +842,7 @@
     <span class="doccomment">/// See [`Self::diagnostics()`].
     </span>diagnostics: <span class="prelude-ty">Option</span>&lt;Vec&lt;Diagnostic&lt;SerdeSpan&gt;&gt;&gt;,
 }
-<span class="kw">impl </span>Default <span class="kw">for </span>Hydroflow {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Default <span class="kw">for </span>Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>stratum_queues = <span class="macro">vec!</span>[Default::default()]; <span class="comment">// Always initialize stratum #0.
         </span><span class="kw">let </span>(event_queue_send, event_queue_recv) = mpsc::unbounded_channel();
@@ -876,7 +876,7 @@
         }
     }
 }
-<span class="kw">impl </span>Hydroflow {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="doccomment">/// Create a new empty Hydroflow graph.
     </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         Default::default()
@@ -1308,7 +1308,7 @@
         </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
         R: <span class="lifetime">&#39;static </span>+ PortList&lt;RECV&gt;,
         W: <span class="lifetime">&#39;static </span>+ PortList&lt;SEND&gt;,
-        F: <span class="lifetime">&#39;static </span>+ <span class="kw">for</span>&lt;<span class="lifetime">&#39;ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span><span class="kw-2">mut </span>Context, R::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;, W::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;),
+        F: <span class="lifetime">&#39;a </span>+ <span class="kw">for</span>&lt;<span class="lifetime">&#39;ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span><span class="kw-2">mut </span>Context, R::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;, W::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;),
     {
         <span class="kw">let </span>sg_id = SubgraphId(<span class="self">self</span>.subgraphs.len());
 
@@ -1478,7 +1478,7 @@
     }
 }
 
-<span class="kw">impl </span>Hydroflow {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="doccomment">/// Alias for [`Context::spawn_task`].
     </span><span class="kw">pub fn </span>spawn_task&lt;Fut&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, future: Fut)
     <span class="kw">where
@@ -1498,7 +1498,7 @@
     }
 }
 
-<span class="kw">impl </span>Drop <span class="kw">for </span>Hydroflow {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Drop <span class="kw">for </span>Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.abort_tasks();
     }
@@ -1543,14 +1543,14 @@
 ///
 /// Used internally by the [Hydroflow] struct to represent the dataflow graph
 /// structure and scheduled state.
-</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>SubgraphData {
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>SubgraphData&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="doccomment">/// A friendly name for diagnostics.
     </span><span class="attr">#[allow(dead_code)] </span><span class="comment">// TODO(mingwei): remove attr once used.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) name: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;,
     <span class="doccomment">/// This subgraph&#39;s stratum number.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) stratum: usize,
     <span class="doccomment">/// The actual execution code of the subgraph.
-    </span>subgraph: Box&lt;<span class="kw">dyn </span>Subgraph&gt;,
+    </span>subgraph: Box&lt;<span class="kw">dyn </span>Subgraph + <span class="lifetime">&#39;a</span>&gt;,
     <span class="attr">#[allow(dead_code)]
     </span>preds: Vec&lt;HandoffId&gt;,
     succs: Vec&lt;HandoffId&gt;,
@@ -1567,11 +1567,11 @@
     <span class="doccomment">/// If this subgraph is marked as lazy, then sending data back to a lower stratum does not trigger a new tick to be run.
     </span>is_lazy: bool,
 }
-<span class="kw">impl </span>SubgraphData {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; SubgraphData&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="kw">pub fn </span>new(
         name: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;,
         stratum: usize,
-        subgraph: <span class="kw">impl </span><span class="lifetime">&#39;static </span>+ Subgraph,
+        subgraph: <span class="kw">impl </span>Subgraph + <span class="lifetime">&#39;a</span>,
         preds: Vec&lt;HandoffId&gt;,
         succs: Vec&lt;HandoffId&gt;,
         is_scheduled: bool,

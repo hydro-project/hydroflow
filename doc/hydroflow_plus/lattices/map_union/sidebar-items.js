@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["MapUnion"],"type":["MapUnionArrayMap","MapUnionBTreeMap","MapUnionHashMap","MapUnionOptionMap","MapUnionSingletonMap","MapUnionVec"]};
