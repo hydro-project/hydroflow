@@ -997,7 +997,7 @@ impl HydroflowGraph {
                     }
                 };
 
-                let hoff_name = Literal::string(&*format!("Subgraph {:?}", subgraph_id));
+                let sg_name = Literal::string(&*format!("Subgraph {:?}", subgraph_id));
                 let stratum = Literal::usize_unsuffixed(
                     self.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(0),
                 );
@@ -1006,7 +1006,7 @@ impl HydroflowGraph {
                     #( #op_prologue_code )*
 
                     #hf.add_subgraph_stratified(
-                        #hoff_name,
+                        #sg_name,
                         #stratum,
                         var_expr!( #( #recv_ports ),* ),
                         var_expr!( #( #send_ports ),* ),
