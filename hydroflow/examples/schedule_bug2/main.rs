@@ -1,7 +1,8 @@
 use hydroflow::hydroflow_syntax;
 use multiplatform_test::multiplatform_test;
 
-pub fn main() {
+#[hydroflow::main]
+pub async fn main() {
     {
         let subscriber = tracing_subscriber::FmtSubscriber::builder()
             .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
@@ -11,21 +12,10 @@ pub fn main() {
     }
 
     let mut df = hydroflow_syntax! {
-        // 3v1
-        source_iter([1]) -> items;
-        items = union();
-
-        double = items
-            // -> persist()
-            -> fold::<'static>(|| 0, |accum, x| *accum += x)
-            // -> defer_tick_lazy()
+        source_iter([1])
+            -> persist()
             -> inspect(|x| println!("{} {}: {}", context.current_tick(), context.current_stratum(), x))
-            -> filter(|_| false)
-            -> tee();
-
-        double -> null();
-
-        double -> items;
+            -> null();
     };
     df.meta_graph()
         .unwrap()
