@@ -38,10 +38,12 @@ pub(crate) async fn run_coordinator(outbound: UdpSink, inbound: UdpStream, opts:
         outbound_chan[1] -> for_each(|(m, a)| println!("Sending {:?} to {:?}", m, a));
 
         // setup broadcast channel to all subords
-        broadcast_join = cross_join::<'static>() -> outbound_chan;
+        broadcast_join = cross_join::<'tick, 'static>() -> [pos]filtered;
         broadcast = union() -> [0]broadcast_join;
         subords[1] -> [1]broadcast_join;
         subords[2] -> for_each(|s| println!("Subordinate: {:?}", s));
+        filtered = anti_join::<'static, 'tick>() -> outbound_chan;
+
 
         // Phase 1 initiate:
         // Given a transaction commit request from stdio, broadcast a Prepare to subordinates
@@ -58,22 +60,30 @@ pub(crate) async fn run_coordinator(outbound: UdpSink, inbound: UdpStream, opts:
             -> [1]broadcast;
 
         // count commit votes
-        commit_votes = msgs[commits]
+        commit_votes = msgs[commits] -> tee();
+        commit_vote_cnt = commit_votes
             -> map(|m: SubordResponse| (m.xid, 1))
             -> fold_keyed::<'static, u16, u32>(|| 0, |acc: &mut _, val| *acc += val);
 
         // count subordinates
         subord_total = subords[0] -> fold::<'tick>(|| 0, |a: &mut _, _b| *a += 1); // -> for_each(|n| println!("There are {} subordinates.", n));
 
-        // If commit_votes for this xid is the same as all_votes, send a P2 Commit message
+        // If new commit_votes have come in, then check if
+        // commit_votes for this xid is the same as all_votes. 
+        // if so, send a P2 Commit message
+        gate = cross_join::<'tick, 'tick>();
+        commit_votes -> [0]gate;
         committed = join() -> map(|(_c, (xid, ()))| xid);
-        commit_votes -> map(|(xid, c)| (c, xid)) -> [0]committed;
+        commit_vote_cnt -> [1]gate;
+        gate -> map(|(_, (xid, c))| (xid, c)) -> map(|(xid, c)| (c, xid)) -> [0]committed;
         subord_total -> map(|c| (c, ())) -> [1]committed;
         committed -> map(|xid| CoordMsg{xid, mtype: MsgType::Commit}) -> [2]broadcast;
 
         // Handle p2 acknowledgments by sending an End message
-        msgs[acks]  -> map(|m:SubordResponse| CoordMsg{xid: m.xid, mtype: MsgType::End,})
+        acks = msgs[acks] tee();
+        acks -> map(|m:SubordResponse| CoordMsg{xid: m.xid, mtype: MsgType::End,})
                     -> [3]broadcast;
+        acks -> map(|m:SubordResponse| )
 
         // Handler for ended acknowledgments not necessary; we just print them
     };
