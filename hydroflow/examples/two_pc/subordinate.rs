@@ -18,7 +18,7 @@ pub(crate) async fn run_subordinate(outbound: UdpSink, inbound: UdpStream, opts:
             -> map(|json: Addresses| json.coordinator)
             -> map(|s| s.parse::<SocketAddr>().unwrap())
             -> inspect(|coordinator| println!("Coordinator: {}", coordinator));
-        server_addr_join = cross_join::<'static>();
+        server_addr_join = cross_join::<'tick, 'static>();
         server_addr -> [1]server_addr_join;
 
         // set up channels
@@ -43,7 +43,7 @@ pub(crate) async fn run_subordinate(outbound: UdpSink, inbound: UdpStream, opts:
         // in this prototype we choose randomly whether to abort via decide()
         report_chan = msgs[prepares] -> map(|m: CoordMsg| SubordResponse {
             xid: m.xid,
-            mtype: if decide(67) { MsgType::Commit } else { MsgType::Abort }
+            mtype: if decide(80) { MsgType::Commit } else { MsgType::Abort }
         });
         report_chan -> [0]outbound_chan;
 
