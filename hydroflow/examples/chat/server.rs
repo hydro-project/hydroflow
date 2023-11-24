@@ -24,7 +24,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
         // Pipeline 2: Broadcast messages to all clients
         inbound_chan[ChatMsg] -> map(|(_addr, nickname, message, ts)| Message::ChatMsg { nickname, message, ts }) -> [0]broadcast;
         clients[1] -> [1]broadcast;
-        broadcast = cross_join::<'static>() -> [1]outbound_chan;
+        broadcast = cross_join::<'tick, 'static>() -> [1]outbound_chan;
     };
 
     if let Some(graph) = opts.graph {
