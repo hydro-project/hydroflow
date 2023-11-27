@@ -95,6 +95,10 @@ fn test() {
         "Client live!",
     );
 
+    // wait 100ms so we don't drop a packet
+    let hundo_millis = std::time::Duration::from_millis(100);
+    std::thread::sleep(hundo_millis);
+
     client1_input.write_all(b"Hello\n").unwrap();
 
     wait_for_process_output(
