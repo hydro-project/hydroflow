@@ -286,7 +286,7 @@ impl Service for HydroflowCrate {
         .await
     }
 
-    async fn start(&mut self) {
+    async fn start(&mut self, names: &HashMap<usize, String>) {
         if self.started {
             return;
         }
@@ -296,7 +296,9 @@ impl Service for HydroflowCrate {
             sink_ports.insert(port_name.clone(), outgoing.load_instantiated(&|p| p).await);
         }
 
-        let formatted_defns = serde_json::to_string(&sink_ports).unwrap();
+        let payload = (&sink_ports, self.id, names);
+
+        let formatted_start = serde_json::to_string(&payload).unwrap();
 
         self.launched_binary
             .as_mut()
@@ -305,7 +307,7 @@ impl Service for HydroflowCrate {
             .await
             .stdin()
             .await
-            .send(format!("start: {formatted_defns}\n"))
+            .send(format!("start: {formatted_start}\n"))
             .await
             .unwrap();
 
@@ -332,5 +334,15 @@ impl Service for HydroflowCrate {
             .await;
 
         Ok(())
+    }
+
+    fn name(&self) -> String {
+        self.display_id
+            .clone()
+            .unwrap_or_else(|| format!("service/{}", self.id))
+    }
+
+    fn id(&self) -> usize {
+        self.id
     }
 }

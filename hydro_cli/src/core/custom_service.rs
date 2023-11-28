@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::{Arc, Weak};
 
@@ -65,10 +66,18 @@ impl Service for CustomService {
         Ok(())
     }
 
-    async fn start(&mut self) {}
+    async fn start(&mut self, names: &HashMap<usize, String>) {}
 
     async fn stop(&mut self) -> Result<()> {
         Ok(())
+    }
+
+    fn name(&self) -> String {
+        self._id.to_string()
+    }
+
+    fn id(&self) -> usize {
+        self._id
     }
 }
 

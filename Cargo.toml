@@ -4,6 +4,7 @@ members = [
     "benches",
     "hydro_cli",
     "hydro_cli_examples",
+    "hydro_cli_maelstrom",
     "hydroflow",
     "hydroflow_cli_integration",
     "hydroflow_datalog",
