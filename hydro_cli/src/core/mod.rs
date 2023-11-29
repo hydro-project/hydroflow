@@ -90,6 +90,8 @@ pub trait LaunchedHost: Send + Sync {
     /// to listen to network connections (such as the IP address to bind to).
     fn server_config(&self, strategy: &ServerStrategy) -> ServerBindConfig;
 
+    async fn copy_binary(&self, binary: Arc<(String, Vec<u8>, PathBuf)>) -> Result<()>;
+
     async fn launch_binary(
         &self,
         id: String,
@@ -186,7 +188,7 @@ pub trait Service: Send + Sync {
     fn collect_resources(&mut self, resource_batch: &mut ResourceBatch);
 
     /// Connects to the acquired resources and prepares the service to be launched.
-    async fn deploy(&mut self, resource_result: &Arc<ResourceResult>);
+    async fn deploy(&mut self, resource_result: &Arc<ResourceResult>) -> Result<()>;
 
     /// Launches the service, which should start listening for incoming network
     /// connections. The service should not start computing at this point.

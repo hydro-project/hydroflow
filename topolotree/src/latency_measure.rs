@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use std::sync::atomic::AtomicU64;
+use std::io::Write;
+use std::sync::atomic::{AtomicBool, AtomicU64};
 use std::sync::{mpsc, Arc};
 use std::thread;
 use std::time::Instant;
@@ -34,10 +35,12 @@ async fn main() {
 
     let atomic_counter = Arc::new(AtomicU64::new(0));
     let atomic_borrow = atomic_counter.clone();
+    let atomic_keep_running = Arc::new(AtomicBool::new(true));
+    let atomic_keep_running_clone = atomic_keep_running.clone();
     let (latency_sender, latency_receiver) = mpsc::channel::<u128>();
-    thread::spawn(move || {
+    let printer_thread = thread::spawn(move || {
         let mut last_instant = Instant::now();
-        loop {
+        while atomic_keep_running_clone.load(std::sync::atomic::Ordering::Relaxed) {
             thread::sleep(std::time::Duration::from_millis(100));
             let now = Instant::now();
             let counter = atomic_borrow.swap(0, std::sync::atomic::Ordering::Relaxed);
@@ -48,6 +51,8 @@ async fn main() {
             while let Ok(latency) = latency_receiver.try_recv() {
                 println!("latency,{}", latency);
             }
+
+            std::io::stdout().flush().unwrap()
         }
     });
 
@@ -68,19 +73,17 @@ async fn main() {
         let inc_sender = inc_sender.clone();
         let latency_sender = latency_sender.clone();
         let atomic_counter = atomic_counter.clone();
+        let keep_running = atomic_keep_running.clone();
         tokio::spawn(async move {
             #[cfg(debug_assertions)]
             let mut count_tracker = HashMap::new();
 
             let mut next_base: u64 = 0;
 
-            loop {
-                let id = ((((next_base % keys_per_partition)
-                    + (partition_n * keys_per_partition))
-                    / (num_clients))
-                    * num_clients)
-                    + i;
-                next_base += 1;
+            while keep_running.load(std::sync::atomic::Ordering::Relaxed) {
+                let id = (partition_n * keys_per_partition)
+                    + ((((next_base % keys_per_partition) / num_clients) * num_clients) + i);
+                next_base = next_base.wrapping_add(1);
                 let increment = rand::random::<bool>();
                 let change = if increment { 1 } else { -1 };
                 let start = Instant::now();
@@ -93,10 +96,12 @@ async fn main() {
                 {
                     let count = count_tracker.entry(id).or_insert(0);
                     *count += change;
-                    assert!(*count == received);
+                    assert_eq!(*count, received);
                 }
 
-                latency_sender.send(start.elapsed().as_micros()).unwrap();
+                if next_base % 100 == 0 {
+                    latency_sender.send(start.elapsed().as_micros()).unwrap();
+                }
 
                 atomic_counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             }
@@ -113,7 +118,7 @@ async fn main() {
                 continue;
             }
 
-            if queues[(updated.key % num_clients) as usize]
+            if queues[((updated.key % keys_per_partition) % num_clients) as usize]
                 .send(updated.value)
                 .is_err()
             {
@@ -125,5 +130,11 @@ async fn main() {
     let mut line = String::new();
     std::io::stdin().read_line(&mut line).unwrap();
     assert!(line.starts_with("stop"));
+
+    atomic_keep_running.store(false, std::sync::atomic::Ordering::Relaxed);
+    printer_thread.join().unwrap();
+
+    println!("end");
+
     std::process::exit(0);
 }
