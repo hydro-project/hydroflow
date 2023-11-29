@@ -12,7 +12,6 @@ tokio::task_local! {
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum LeafStatus {
-    Queued,
     Started,
     Finished,
 }
@@ -20,7 +19,12 @@ pub enum LeafStatus {
 #[derive(Debug)]
 pub enum BarTree {
     Root(Vec<BarTree>),
-    Group(String, Arc<indicatif::ProgressBar>, Vec<BarTree>),
+    Group(
+        String,
+        Arc<indicatif::ProgressBar>,
+        Vec<BarTree>,
+        Option<usize>,
+    ),
     Leaf(String, Arc<indicatif::ProgressBar>, LeafStatus),
     Finished,
 }
@@ -29,26 +33,22 @@ impl BarTree {
     fn get_pb(&self) -> Option<&Arc<indicatif::ProgressBar>> {
         match self {
             BarTree::Root(_) => None,
-            BarTree::Group(_, pb, _) | BarTree::Leaf(_, pb, _) => Some(pb),
+            BarTree::Group(_, pb, _, _) | BarTree::Leaf(_, pb, _) => Some(pb),
             BarTree::Finished => None,
         }
     }
 
     fn status(&self) -> LeafStatus {
         match self {
-            BarTree::Root(children) | BarTree::Group(_, _, children) => {
-                if children
-                    .iter()
-                    .all(|child| child.status() == LeafStatus::Finished)
+            BarTree::Root(children) | BarTree::Group(_, _, children, _) => {
+                if !children.is_empty()
+                    && children
+                        .iter()
+                        .all(|child| child.status() == LeafStatus::Finished)
                 {
                     LeafStatus::Finished
-                } else if children
-                    .iter()
-                    .any(|child| child.status() == LeafStatus::Started)
-                {
-                    LeafStatus::Started
                 } else {
-                    LeafStatus::Queued
+                    LeafStatus::Started
                 }
             }
             BarTree::Leaf(_, _, status) => status.clone(),
@@ -63,7 +63,7 @@ impl BarTree {
                     child.refresh_prefix(cur_path);
                 }
             }
-            BarTree::Group(name, pb, children) => {
+            BarTree::Group(name, pb, children, anticipated_total) => {
                 let mut path_with_group = cur_path.to_vec();
                 path_with_group.push(name.clone());
 
@@ -75,18 +75,26 @@ impl BarTree {
                     .iter()
                     .filter(|child| child.status() == LeafStatus::Started)
                     .count();
-                let queued_count = children
-                    .iter()
-                    .filter(|child| child.status() == LeafStatus::Queued)
-                    .count();
+                let queued_count =
+                    anticipated_total.map(|total| total - finished_count - started_count);
 
-                pb.set_prefix(format!(
-                    "{} ({}/{}/{})",
-                    path_with_group.join(" / "),
-                    finished_count,
-                    started_count,
-                    queued_count
-                ));
+                match queued_count {
+                    Some(queued_count) => {
+                        pb.set_prefix(format!(
+                            "{} ({}/{}/{})",
+                            path_with_group.join(" / "),
+                            finished_count,
+                            started_count,
+                            queued_count
+                        ));
+                    }
+                    None => pb.set_prefix(format!(
+                        "{} ({}/{})",
+                        path_with_group.join(" / "),
+                        finished_count,
+                        started_count
+                    )),
+                }
                 for child in children {
                     child.refresh_prefix(&path_with_group);
                 }
@@ -106,7 +114,7 @@ impl BarTree {
         }
 
         match self {
-            BarTree::Root(children) | BarTree::Group(_, _, children) => {
+            BarTree::Root(children) | BarTree::Group(_, _, children, _) => {
                 children[path[0]].find_node(&path[1..])
             }
             _ => panic!(),
@@ -134,12 +142,13 @@ impl ProgressTracker {
         under_path: Vec<usize>,
         name: String,
         group: bool,
+        anticipated_total: Option<usize>,
         progress: bool,
     ) -> (usize, Arc<indicatif::ProgressBar>) {
         let surrounding = self.tree.find_node(&under_path);
         let (surrounding_children, surrounding_pb) = match surrounding {
             BarTree::Root(children) => (children, None),
-            BarTree::Group(_, pb, children) => (children, Some(pb)),
+            BarTree::Group(_, pb, children, _) => (children, Some(pb)),
             _ => panic!(),
         };
 
@@ -161,7 +170,7 @@ impl ProgressTracker {
 
         let pb = Arc::new(created_bar);
         if group {
-            surrounding_children.push(BarTree::Group(name, pb.clone(), vec![]));
+            surrounding_children.push(BarTree::Group(name, pb.clone(), vec![], anticipated_total));
         } else {
             surrounding_children.push(BarTree::Leaf(name, pb.clone(), LeafStatus::Started));
         }
@@ -189,7 +198,7 @@ impl ProgressTracker {
 
     pub fn end_task(&mut self, path: Vec<usize>) {
         match self.tree.find_node(&path[0..path.len() - 1]) {
-            BarTree::Root(children) | BarTree::Group(_, _, children) => {
+            BarTree::Root(children) | BarTree::Group(_, _, children, _) => {
                 let removed = children[*path.last().unwrap()].get_pb().unwrap().clone();
                 children[*path.last().unwrap()] = BarTree::Finished;
                 self.multi_progress.remove(&removed);
@@ -213,11 +222,15 @@ impl ProgressTracker {
             .get_or_init(|| Mutex::new(ProgressTracker::new()))
             .lock()
             .unwrap();
-        progress_bar.multi_progress.println(msg).unwrap();
+
+        if progress_bar.multi_progress.println(msg).is_err() {
+            println!("{}", msg);
+        }
     }
 
     pub fn with_group<'a, T, F: Future<Output = T>>(
         name: &str,
+        anticipated_total: Option<usize>,
         f: impl FnOnce() -> F + 'a,
     ) -> impl Future<Output = T> + 'a {
         let mut group = CURRENT_GROUP
@@ -229,7 +242,13 @@ impl ProgressTracker {
                 .get_or_init(|| Mutex::new(ProgressTracker::new()))
                 .lock()
                 .unwrap();
-            progress_bar.start_task(group.clone(), name.to_string(), true, false)
+            progress_bar.start_task(
+                group.clone(),
+                name.to_string(),
+                true,
+                anticipated_total,
+                false,
+            )
         };
 
         group.push(group_i);
@@ -255,7 +274,7 @@ impl ProgressTracker {
                 .get_or_init(|| Mutex::new(ProgressTracker::new()))
                 .lock()
                 .unwrap();
-            progress_bar.start_task(group.clone(), name, false, false)
+            progress_bar.start_task(group.clone(), name, false, None, false)
         };
 
         group.push(leaf_i);
@@ -284,7 +303,7 @@ impl ProgressTracker {
                 .get_or_init(|| Mutex::new(ProgressTracker::new()))
                 .lock()
                 .unwrap();
-            progress_bar.start_task(group.clone(), name, false, true)
+            progress_bar.start_task(group.clone(), name, false, None, true)
         };
 
         group.push(leaf_i);

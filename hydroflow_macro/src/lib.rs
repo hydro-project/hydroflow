@@ -204,15 +204,16 @@ pub fn monotonic_fn(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
 #[proc_macro_attribute]
 pub fn hydroflow_test(
-    _: proc_macro::TokenStream,
+    args: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
     let root = root();
+    let args_2: proc_macro2::TokenStream = args.into();
 
     hydroflow_wrap(
         item,
         parse_quote!(
-            #[#root::tokio::test(flavor = "current_thread")]
+            #[#root::tokio::test(flavor = "current_thread", #args_2)]
         ),
     )
 }

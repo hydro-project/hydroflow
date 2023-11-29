@@ -236,6 +236,7 @@ impl Deployment {
         py: Python<'_>,
         src: String,
         on: &Host,
+        bin: Option<String>,
         example: Option<String>,
         profile: Option<String>,
         features: Option<Vec<String>>,
@@ -248,6 +249,7 @@ impl Deployment {
                 id,
                 src.into(),
                 on.underlying.clone(),
+                bin,
                 example,
                 profile,
                 features,
@@ -286,7 +288,11 @@ impl Deployment {
         let underlying = self.underlying.clone();
         let py_none = py.None();
         interruptible_future_to_py(py, async move {
-            underlying.write().await.start().await;
+            underlying.write().await.start().await.map_err(|e| {
+                AnyhowError::new_err(AnyhowWrapper {
+                    underlying: Arc::new(RwLock::new(Some(e))),
+                })
+            })?;
             Ok(py_none)
         })
     }

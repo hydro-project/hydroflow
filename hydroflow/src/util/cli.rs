@@ -70,6 +70,8 @@ pub async fn init() -> HydroCLI {
         all_connected.insert(name, ServerOrBound::Bound(defn));
     }
 
+    println!("ack start");
+
     HydroCLI {
         ports: all_connected,
     }
