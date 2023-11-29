@@ -92,35 +92,44 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
             22,
         );
 
-        let res = ProgressTracker::leaf(
-            format!(
-                "connecting to host @ {}",
-                self.external_ip.as_ref().unwrap()
-            ),
-            async_retry(
-                &|| async {
-                    let mut config = SessionConfiguration::new();
-                    config.set_compress(true);
+        let mut attempt_count = 0;
 
-                    let mut session =
-                        AsyncSession::<TcpStream>::connect(target_addr, Some(config)).await?;
+        let res = async_retry(
+            || {
+                attempt_count += 1;
+                ProgressTracker::leaf(
+                    format!(
+                        "connecting to host @ {} (attempt: {})",
+                        self.external_ip.as_ref().unwrap(),
+                        attempt_count
+                    ),
+                    async {
+                        let mut config = SessionConfiguration::new();
+                        config.set_compress(true);
 
-                    session.handshake().await?;
+                        let mut session =
+                            AsyncSession::<TcpStream>::connect(target_addr, Some(config)).await?;
 
-                    session
-                        .userauth_pubkey_file(
-                            self.user.as_str(),
-                            None,
-                            self.ssh_key_path().as_path(),
-                            None,
-                        )
-                        .await?;
+                        tokio::time::timeout(Duration::from_secs(15), async move {
+                            session.handshake().await?;
 
-                    Ok(session)
-                },
-                10,
-                Duration::from_secs(1),
-            ),
+                            session
+                                .userauth_pubkey_file(
+                                    self.user.as_str(),
+                                    None,
+                                    self.ssh_key_path().as_path(),
+                                    None,
+                                )
+                                .await?;
+
+                            Ok(session)
+                        })
+                        .await?
+                    },
+                )
+            },
+            10,
+            Duration::from_secs(1),
         )
         .await?;
 

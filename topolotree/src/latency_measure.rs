@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::atomic::AtomicU64;
 use std::sync::{mpsc, Arc};
 use std::thread;
@@ -5,18 +6,14 @@ use std::time::Instant;
 
 use futures::{SinkExt, StreamExt};
 use hydroflow::bytes::Bytes;
-use hydroflow::serde::{Deserialize, Serialize};
 use hydroflow::tokio;
 use hydroflow::util::cli::{ConnectedDirect, ConnectedSink, ConnectedSource};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-struct IncrementRequest {
-    tweet_id: u64,
-    likes: i32,
-}
+mod protocol;
+use protocol::*;
 
-#[hydroflow::main]
+#[tokio::main]
 async fn main() {
     let mut ports = hydroflow::util::cli::init().await;
     let mut start_node = ports
@@ -64,27 +61,34 @@ async fn main() {
     let mut queues = vec![];
 
     for i in 0..num_clients {
-        let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel::<i32>();
+        let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel::<i64>();
         queues.push(sender);
 
         let inc_sender = inc_sender.clone();
         let latency_sender = latency_sender.clone();
         let atomic_counter = atomic_counter.clone();
         tokio::spawn(async move {
+            #[cfg(debug_assertions)]
+            let mut count_tracker = HashMap::new();
+
             loop {
                 let id = ((rand::random::<u64>() % 1024) / (num_clients as u64))
                     * (num_clients as u64)
                     + (i as u64);
                 let increment = rand::random::<bool>();
+                let change = if increment { 1 } else { -1 };
                 let start = Instant::now();
                 inc_sender
-                    .send(serialize_to_bytes(IncrementRequest {
-                        tweet_id: id,
-                        likes: if increment { 1 } else { -1 },
-                    }))
+                    .send(serialize_to_bytes(OperationPayload { key: id, change }))
                     .unwrap();
 
-                receiver.recv().await.unwrap();
+                let received = receiver.recv().await.unwrap();
+                #[cfg(debug_assertions)]
+                {
+                    let count = count_tracker.entry(id).or_insert(0);
+                    *count += change;
+                    assert!(*count == received);
+                }
 
                 latency_sender.send(start.elapsed().as_micros()).unwrap();
 
@@ -96,10 +100,10 @@ async fn main() {
     tokio::spawn(async move {
         loop {
             let updated =
-                deserialize_from_bytes::<(u64, i32)>(end_node.next().await.unwrap().unwrap())
+                deserialize_from_bytes::<QueryResponse>(end_node.next().await.unwrap().unwrap())
                     .unwrap();
-            if queues[(updated.0 % (num_clients as u64)) as usize]
-                .send(updated.1)
+            if queues[(updated.key % (num_clients as u64)) as usize]
+                .send(updated.value)
                 .is_err()
             {
                 break;

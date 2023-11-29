@@ -24,6 +24,7 @@ pub struct HydroflowCrate {
     id: usize,
     src: PathBuf,
     on: Arc<RwLock<dyn Host>>,
+    bin: Option<String>,
     example: Option<String>,
     profile: Option<String>,
     features: Option<Vec<String>>,
@@ -55,6 +56,7 @@ impl HydroflowCrate {
         id: usize,
         src: PathBuf,
         on: Arc<RwLock<dyn Host>>,
+        bin: Option<String>,
         example: Option<String>,
         profile: Option<String>,
         features: Option<Vec<String>>,
@@ -65,6 +67,7 @@ impl HydroflowCrate {
         Self {
             id,
             src,
+            bin,
             on,
             example,
             profile,
@@ -162,6 +165,7 @@ impl HydroflowCrate {
 
     fn build(&mut self) -> JoinHandle<Result<BuiltCrate>> {
         let src_cloned = self.src.canonicalize().unwrap();
+        let bin_cloned = self.bin.clone();
         let example_cloned = self.example.clone();
         let features_cloned = self.features.clone();
         let host = self.on.clone();
@@ -170,6 +174,7 @@ impl HydroflowCrate {
 
         tokio::task::spawn(build_crate(
             src_cloned,
+            bin_cloned,
             example_cloned,
             profile_cloned,
             target_type,
@@ -213,6 +218,7 @@ impl Service for HydroflowCrate {
                 .display_id
                 .clone()
                 .unwrap_or_else(|| format!("service/{}", self.id)),
+            None,
             || async {
                 let mut host_write = self.on.write().await;
                 let launched = host_write.provision(resource_result);
@@ -232,6 +238,7 @@ impl Service for HydroflowCrate {
                 .display_id
                 .clone()
                 .unwrap_or_else(|| format!("service/{}", self.id)),
+            None,
             || async {
                 let launched_host = self.launched_host.as_ref().unwrap();
 
@@ -256,7 +263,7 @@ impl Service for HydroflowCrate {
                 let formatted_bind_config = serde_json::to_string(&bind_config).unwrap();
 
                 // request stdout before sending config so we don't miss the "ready" response
-                let stdout_receiver = binary.write().await.stdout().await;
+                let stdout_receiver = binary.write().await.cli_stdout().await;
 
                 binary
                     .write()
@@ -286,9 +293,9 @@ impl Service for HydroflowCrate {
         .await
     }
 
-    async fn start(&mut self) {
+    async fn start(&mut self) -> Result<()> {
         if self.started {
-            return;
+            return Ok(());
         }
 
         let mut sink_ports = HashMap::new();
@@ -297,6 +304,15 @@ impl Service for HydroflowCrate {
         }
 
         let formatted_defns = serde_json::to_string(&sink_ports).unwrap();
+
+        let stdout_receiver = self
+            .launched_binary
+            .as_mut()
+            .unwrap()
+            .write()
+            .await
+            .cli_stdout()
+            .await;
 
         self.launched_binary
             .as_mut()
@@ -309,7 +325,17 @@ impl Service for HydroflowCrate {
             .await
             .unwrap();
 
+        let start_ack_line = ProgressTracker::leaf(
+            "waiting for ack start".to_string(),
+            tokio::time::timeout(Duration::from_secs(60), stdout_receiver.recv()),
+        )
+        .await??;
+        if !start_ack_line.starts_with("ack start") {
+            bail!("expected ack start");
+        }
+
         self.started = true;
+        Ok(())
     }
 
     async fn stop(&mut self) -> Result<()> {

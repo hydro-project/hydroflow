@@ -26,6 +26,7 @@ struct LaunchedSSHBinary {
     channel: AsyncChannel<TcpStream>,
     stdin_sender: Sender<String>,
     stdout_receivers: Arc<RwLock<Vec<Sender<String>>>>,
+    stdout_cli_receivers: Arc<RwLock<Vec<Sender<String>>>>,
     stderr_receivers: Arc<RwLock<Vec<Sender<String>>>>,
 }
 
@@ -33,6 +34,13 @@ struct LaunchedSSHBinary {
 impl LaunchedBinary for LaunchedSSHBinary {
     async fn stdin(&self) -> Sender<String> {
         self.stdin_sender.clone()
+    }
+
+    async fn cli_stdout(&self) -> Receiver<String> {
+        let mut receivers = self.stdout_cli_receivers.write().await;
+        let (sender, receiver) = async_channel::unbounded::<String>();
+        receivers.push(sender);
+        receiver
     }
 
     async fn stdout(&self) -> Receiver<String> {
@@ -207,15 +215,17 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         });
 
         let id_clone = id.clone();
-        let stdout_receivers =
+        let (stdout_cli_receivers, stdout_receivers) =
             create_broadcast(channel.stream(0), move |s| println!("[{id_clone}] {s}"));
-        let stderr_receivers = create_broadcast(channel.stderr(), move |s| eprintln!("[{id}] {s}"));
+        let (_, stderr_receivers) =
+            create_broadcast(channel.stderr(), move |s| eprintln!("[{id}] {s}"));
 
         Ok(Arc::new(RwLock::new(LaunchedSSHBinary {
             _resource_result: self.resource_result().clone(),
             session: Some(session),
             channel,
             stdin_sender,
+            stdout_cli_receivers,
             stdout_receivers,
             stderr_receivers,
         })))
@@ -243,7 +253,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
                 // if anyone wants to connect to this forwarded port
             }
 
-            println!("[hydro] closing forwarded port");
+            ProgressTracker::println("[hydro] closing forwarded port");
         });
 
         Ok(local_addr)

@@ -32,18 +32,6 @@ name = "dedalus_2pc_coordinator"
 name = "dedalus_2pc_participant"
 
 [[example]]
-name = "topolotree"
-
-[[example]]
-name = "topolotree_latency_measure"
-
-[[example]]
-name = "pn_counter"
-
-[[example]]
-name = "pn_counter_delta"
-
-[[example]]
 name = "ws_chat_server"
 
 [dev-dependencies]
@@ -57,8 +45,6 @@ rand = "0.8.5"
 dashmap = "5.4.0"
 
 futures = "0.3.28"
-
-tokio-tungstenite = "0.20.0"
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 procinfo = "0.4.2"

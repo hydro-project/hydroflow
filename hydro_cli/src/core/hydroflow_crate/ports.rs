@@ -544,7 +544,6 @@ impl ServerConfig {
 
             ServerConfig::TaggedUnwrap(underlying) => {
                 let loaded = underlying.load_instantiated(select).await;
-                dbg!(&loaded);
                 if let ServerPort::Tagged(underlying, _) = loaded {
                     *underlying
                 } else {
