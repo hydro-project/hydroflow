@@ -13,7 +13,6 @@ pub enum TopolotreeMessage {
     Payload(Payload<i64>),
     Ping(),
     Pong(),
-    NeighborOfNeighbor(u32, bool),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]

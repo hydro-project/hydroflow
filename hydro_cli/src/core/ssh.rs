@@ -104,12 +104,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         LaunchedSSHHost::server_config(self, bind_type)
     }
 
-    async fn launch_binary(
-        &self,
-        id: String,
-        binary: Arc<(String, Vec<u8>, PathBuf)>,
-        args: &[String],
-    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
+    async fn copy_binary(&self, binary: Arc<(String, Vec<u8>, PathBuf)>) -> Result<()> {
         let session = self.open_ssh_session().await?;
 
         let sftp = async_retry(
@@ -171,6 +166,22 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
             .await?;
         }
         drop(sftp);
+
+        Ok(())
+    }
+
+    async fn launch_binary(
+        &self,
+        id: String,
+        binary: Arc<(String, Vec<u8>, PathBuf)>,
+        args: &[String],
+    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
+        let session = self.open_ssh_session().await?;
+
+        let unique_name = &binary.0;
+
+        let user = self.ssh_user();
+        let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_name}"));
 
         let channel = ProgressTracker::leaf(
             format!("launching binary /home/{user}/hydro-{unique_name}"),

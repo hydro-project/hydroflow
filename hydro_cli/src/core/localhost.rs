@@ -126,6 +126,20 @@ pub fn create_broadcast<T: AsyncRead + Send + Unpin + 'static>(
                 break;
             }
         }
+
+        if let Some(cli_receivers) = weak_cli_receivers.upgrade() {
+            let cli_receivers = cli_receivers.write().await;
+            for r in cli_receivers.iter() {
+                r.close();
+            }
+        }
+
+        if let Some(receivers) = weak_receivers.upgrade() {
+            let receivers = receivers.write().await;
+            for r in receivers.iter() {
+                r.close();
+            }
+        }
     });
 
     (cli_receivers, receivers)
@@ -159,6 +173,10 @@ impl LaunchedHost for LaunchedLocalhost {
             }
             ServerStrategy::Null => ServerBindConfig::Null,
         }
+    }
+
+    async fn copy_binary(&self, _binary: Arc<(String, Vec<u8>, PathBuf)>) -> Result<()> {
+        Ok(())
     }
 
     async fn launch_binary(
