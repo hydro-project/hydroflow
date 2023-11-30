@@ -38,7 +38,8 @@ pub struct HydroflowCrate {
     /// Configuration for the ports that this service will listen on a port for.
     port_to_bind: HashMap<String, ServerStrategy>,
 
-    built_binary: Option<JoinHandle<Result<BuiltCrate>>>,
+    building_binary: Option<JoinHandle<Result<BuiltCrate>>>,
+    built_binary: Option<BuiltCrate>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
 
     /// A map of port names to config for how other services can connect to this one.
@@ -77,6 +78,7 @@ impl HydroflowCrate {
             external_ports,
             port_to_server: HashMap::new(),
             port_to_bind: HashMap::new(),
+            building_binary: None,
             built_binary: None,
             launched_host: None,
             server_defns: Arc::new(RwLock::new(HashMap::new())),
@@ -191,7 +193,7 @@ impl Service for HydroflowCrate {
         }
 
         let built = self.build();
-        self.built_binary = Some(built);
+        self.building_binary = Some(built);
 
         let mut host = self
             .on
@@ -208,9 +210,9 @@ impl Service for HydroflowCrate {
         }
     }
 
-    async fn deploy(&mut self, resource_result: &Arc<ResourceResult>) {
+    async fn deploy(&mut self, resource_result: &Arc<ResourceResult>) -> Result<()> {
         if self.launched_host.is_some() {
-            return;
+            return Ok(());
         }
 
         ProgressTracker::with_group(
@@ -221,11 +223,18 @@ impl Service for HydroflowCrate {
             None,
             || async {
                 let mut host_write = self.on.write().await;
-                let launched = host_write.provision(resource_result);
-                self.launched_host = Some(launched.await);
+                let launched = host_write.provision(resource_result).await;
+
+                let built = self.building_binary.take().unwrap().await??.clone();
+
+                launched.copy_binary(built.clone()).await?;
+
+                self.built_binary = Some(built);
+                self.launched_host = Some(launched);
+                Ok(())
             },
         )
-        .await;
+        .await
     }
 
     async fn ready(&mut self) -> Result<()> {
@@ -242,7 +251,7 @@ impl Service for HydroflowCrate {
             || async {
                 let launched_host = self.launched_host.as_ref().unwrap();
 
-                let built = self.built_binary.take().unwrap().await??.clone();
+                let built = self.built_binary.as_ref().unwrap().clone();
                 let args = self.args.as_ref().cloned().unwrap_or_default();
 
                 let binary = launched_host

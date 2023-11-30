@@ -107,10 +107,11 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
                         let mut config = SessionConfiguration::new();
                         config.set_compress(true);
 
-                        let mut session =
-                            AsyncSession::<TcpStream>::connect(target_addr, Some(config)).await?;
-
                         tokio::time::timeout(Duration::from_secs(15), async move {
+                            let mut session =
+                                AsyncSession::<TcpStream>::connect(target_addr, Some(config))
+                                    .await?;
+
                             session.handshake().await?;
 
                             session
