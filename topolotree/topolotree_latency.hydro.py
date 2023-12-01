@@ -48,6 +48,7 @@ async def run_experiment(
     tree_arg,
     depth_arg,
     clients_arg,
+    partitions_arg,
     is_gcp,
     gcp_vpc,
 ):
@@ -57,6 +58,8 @@ async def run_experiment(
     num_replicas = 2**tree_depth - 1
 
     num_clients = int(clients_arg)
+
+    num_partitions = int(partitions_arg)
 
     print(f"Launching benchmark with protocol {tree_arg}, {num_replicas} replicas, and {num_clients} clients")
 
@@ -90,7 +93,7 @@ async def run_experiment(
             ),
             profile=profile,
             bin="topolotree",
-            args=[str(neighbor) for neighbor in neighbors[i]],
+            args=([str(i)] + [str(neighbor) for neighbor in neighbors[i]]),
             on=create_machine(),
         ) if is_tree else deployment.HydroflowCrate(
             src=str(
@@ -118,42 +121,45 @@ async def run_experiment(
 
     if is_tree:
         leaves = get_leaves_in_binary_tree(list(range(num_replicas)))
-        source = cluster[leaves[0]]
-        dest = cluster[leaves[-1]]
+        sources = list(cluster[i] for i in leaves[: len(leaves) // 2])[:num_partitions]
+        dests = list(cluster[i] for i in leaves[len(leaves) // 2 :])[:num_partitions]
     else:
-        source = cluster[0]
-        dest = cluster[-1]
+        sources = list(cluster[i] for i in list(range(num_replicas))[: num_replicas // 2])[:num_partitions]
+        dests = list(cluster[i] for i in list(range(num_replicas))[num_replicas // 2 :])[:num_partitions]
 
     for node in all_nodes:
-        if node is not dest:
-            node.ports.query_responses.send_to(hydro.null())
-        if node is not source:
+        if node not in sources:
             hydro.null().send_to(node.ports.increment_requests)
+        if node not in dests:
+            node.ports.query_responses.send_to(hydro.null())
 
-    latency_measurer = deployment.HydroflowCrate(
+    drivers = [deployment.HydroflowCrate(
         src=str(Path(__file__).parent.absolute()),
         profile=profile,
         bin="latency_measure",
-        args=[json.dumps([num_clients])],
+        args=[str(num_clients), str(i), str(1024)],
         on=create_machine(),
-    )
+    ) for i in range(num_partitions)]
 
-    latency_measurer.ports.increment_start_node.send_to(
-        source.ports.increment_requests.merge()
-    )
-    dest.ports.query_responses.send_to(latency_measurer.ports.end_node_query)
+    for i in range(num_partitions):
+        drivers[i].ports.increment_start_node.send_to(
+            sources[i].ports.increment_requests
+        )
+        dests[i].ports.query_responses.send_to(drivers[i].ports.end_node_query)
 
     await deployment.deploy()
 
     print("Deployed!")
 
-    latency = []
+    latency_per_driver = [[] for _ in range(num_partitions)]
     memory_per_node = [[] for _ in range(num_replicas)]
-    throughput_raw = []
+    throughput_raw_per_driver = [[] for _ in range(num_partitions)]
+    throughput_per_driver = [[] for _ in range(num_partitions)]
 
-    throughput = []
-
-    latency_stdout = await latency_measurer.stdout()
+    latency_streams_with_index = [
+        stream.map(await node.stdout(), lambda x, i=i: (i, x))
+        for i, node in enumerate(drivers)
+    ]
 
     memories_streams_with_index = [
         stream.map(await node.stdout(), lambda x, i=i: (i, x))
@@ -174,34 +180,35 @@ async def run_experiment(
 
     async def latency_plotter():
         try:
-            async for line in latency_stdout:
-                line_split = line.split(",")
-                if line_split[0] == "throughput":
-                    count = int(line_split[1])
-                    period = float(line_split[2])
-                    throughput_raw.append([count, period])
-                    throughput.append(count / period)
-                elif line_split[0] == "latency":
-                    number = int(line_split[1])  # microseconds
-                    latency.append(number)
+            async with stream.merge(*latency_streams_with_index).stream() as merged:
+                async for (driver_idx, line) in merged:
+                    line_split = line.split(",")
+                    if line_split[0] == "throughput":
+                        count = int(line_split[1])
+                        period = float(line_split[2])
+                        throughput_raw_per_driver[driver_idx].append([count, period])
+                        throughput_per_driver[driver_idx].append(count / period)
+                    elif line_split[0] == "latency":
+                        number = int(line_split[1])  # microseconds
+                        latency_per_driver[driver_idx].append(number)
         except asyncio.CancelledError:
             return
 
     latency_plotter_task = asyncio.create_task(latency_plotter())
 
     await deployment.start()
-    print("Started! Please wait 30 seconds to collect data.")
+    print("Started! Please wait 15 seconds to collect data.")
 
-    await asyncio.sleep(30)
-
-    await latency_measurer.stop()
-    await asyncio.gather(*[node.stop() for node in all_nodes])
+    await asyncio.sleep(15)
 
     memory_plotter_task.cancel()
     await memory_plotter_task
 
     latency_plotter_task.cancel()
     await latency_plotter_task
+
+    await asyncio.gather(*[node.stop() for node in drivers])
+    await asyncio.gather(*[node.stop() for node in all_nodes])
 
     def summarize(v, kind):
         print("mean = ", np.mean(v))
@@ -230,21 +237,25 @@ async def run_experiment(
         summaries_file.write(str(np.percentile(v, 1)))
         summaries_file.flush()
 
+    all_latencies = []
+    all_throughputs = []
+    all_throughputs_raw = []
+    for i in range(num_partitions):
+        all_latencies += latency_per_driver[i]
+        all_throughputs += throughput_per_driver[i]
+        all_throughputs_raw += throughput_raw_per_driver[i]
+
     print("latency:")
-    summarize(latency, "latency")
+    summarize(all_latencies, "latency")
 
-    print("throughput:")
-    summarize(throughput, "throughput")
+    print("throughput per driver:")
+    summarize(all_throughputs, "throughput_per_driver")
 
-    init_memory = [memory[0] for memory in memory_per_node]
-    print("init memory:")
-    summarize(init_memory, "init_memory")
+    memory_delta = [memory[-1] - memory[0] for memory in memory_per_node]
+    print("memory delta:")
+    summarize(memory_delta, "memory_delta")
 
-    final_memory = [memory[-1] for memory in memory_per_node]
-    print("final memory:")
-    summarize(final_memory, "final_memory")
-
-    pd.DataFrame(latency).to_csv(
+    pd.DataFrame(all_latencies).to_csv(
         "latency_"
         + tree_arg
         + "_tree_depth_"
@@ -257,8 +268,8 @@ async def run_experiment(
         index=False,
         header=["latency"],
     )
-    pd.DataFrame(throughput_raw).to_csv(
-        "throughput_"
+    pd.DataFrame(all_throughputs_raw).to_csv(
+        "throughput_per_driver_"
         + tree_arg
         + "_tree_depth_"
         + str(tree_depth)
@@ -270,8 +281,8 @@ async def run_experiment(
         index=False,
         header=["count", "period"],
     )
-    pd.DataFrame(init_memory).to_csv(
-        "init_memory_"
+    pd.DataFrame(memory_delta).to_csv(
+        "memory_delta_"
         + tree_arg
         + "_tree_depth_"
         + str(tree_depth)
@@ -281,20 +292,7 @@ async def run_experiment(
         + experiment_id
         + ".csv",
         index=False,
-        header=["memory"],
-    )
-    pd.DataFrame(final_memory).to_csv(
-        "final_memory_"
-        + tree_arg
-        + "_tree_depth_"
-        + str(tree_depth)
-        + "_num_clients_"
-        + str(num_clients)
-        + "_"
-        + experiment_id
-        + ".csv",
-        index=False,
-        header=["memory"],
+        header=["memory_delta"],
     )
 
     for machine in currently_deployed:
@@ -328,19 +326,21 @@ async def main(args):
     for depth_arg in args[2].split(","):
         for tree_arg in args[1].split(","):
             for num_clients_arg in args[3].split(","):
-                await run_experiment(
-                    deployment,
-                    localhost,
-                    "dev" if args[0] == "local" else None,
-                    pool,
-                    experiment_id,
-                    summaries_file,
-                    tree_arg,
-                    depth_arg,
-                    num_clients_arg,
-                    args[0] == "gcp",
-                    network,
-                )
+                for num_partitions_arg in args[4].split(","):
+                    await run_experiment(
+                        deployment,
+                        localhost,
+                        "dev" if args[0] == "local" else None,
+                        pool,
+                        experiment_id,
+                        summaries_file,
+                        tree_arg,
+                        depth_arg,
+                        num_clients_arg,
+                        num_partitions_arg,
+                        args[0] == "gcp",
+                        network,
+                    )
 
     summaries_file.close()
 
