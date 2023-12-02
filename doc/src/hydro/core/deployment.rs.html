@@ -139,6 +139,8 @@
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
 <a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::{Arc, Weak};
 
 <span class="kw">use </span>anyhow::Result;
@@ -158,7 +160,7 @@
 
 <span class="kw">impl </span>Deployment {
     <span class="kw">pub async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        progress::ProgressTracker::with_group(<span class="string">&quot;deploy&quot;</span>, || <span class="kw">async </span>{
+        progress::ProgressTracker::with_group(<span class="string">&quot;deploy&quot;</span>, <span class="prelude-val">None</span>, || <span class="kw">async </span>{
             <span class="kw">let </span><span class="kw-2">mut </span>resource_batch = <span class="kw">super</span>::ResourceBatch::new();
             <span class="kw">let </span>active_services = <span class="self">self
                 </span>.services
@@ -182,7 +184,7 @@
             }
 
             <span class="kw">let </span>result = Arc::new(
-                progress::ProgressTracker::with_group(<span class="string">&quot;provision&quot;</span>, || <span class="kw">async </span>{
+                progress::ProgressTracker::with_group(<span class="string">&quot;provision&quot;</span>, <span class="prelude-val">None</span>, || <span class="kw">async </span>{
                     resource_batch
                         .provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>.resource_pool, <span class="self">self</span>.last_resource_result.clone())
                         .<span class="kw">await
@@ -191,7 +193,7 @@
             );
             <span class="self">self</span>.last_resource_result = <span class="prelude-val">Some</span>(result.clone());
 
-            progress::ProgressTracker::with_group(<span class="string">&quot;provision&quot;</span>, || {
+            progress::ProgressTracker::with_group(<span class="string">&quot;provision&quot;</span>, <span class="prelude-val">None</span>, || {
                 <span class="kw">let </span>hosts_provisioned =
                     <span class="self">self</span>.hosts
                         .iter_mut()
@@ -202,7 +204,7 @@
             })
             .<span class="kw">await</span>;
 
-            progress::ProgressTracker::with_group(<span class="string">&quot;deploy&quot;</span>, || {
+            progress::ProgressTracker::with_group(<span class="string">&quot;deploy&quot;</span>, <span class="prelude-val">None</span>, || {
                 <span class="kw">let </span>services_future =
                     <span class="self">self</span>.services
                         .iter_mut()
@@ -220,7 +222,7 @@
             })
             .<span class="kw">await</span>;
 
-            progress::ProgressTracker::with_group(<span class="string">&quot;ready&quot;</span>, || {
+            progress::ProgressTracker::with_group(<span class="string">&quot;ready&quot;</span>, <span class="prelude-val">None</span>, || {
                 <span class="kw">let </span>all_services_ready =
                     <span class="self">self</span>.services
                         .iter()
@@ -238,7 +240,7 @@
         .<span class="kw">await
     </span>}
 
-    <span class="kw">pub async fn </span>start(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+    <span class="kw">pub async fn </span>start(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>active_services = <span class="self">self
             </span>.services
             .iter()
@@ -251,10 +253,12 @@
             <span class="self">self</span>.services
                 .iter()
                 .map(|service: <span class="kw-2">&amp;</span>Weak&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;| <span class="kw">async </span>{
-                    service.upgrade().unwrap().write().<span class="kw">await</span>.start().<span class="kw">await</span>;
+                    service.upgrade().unwrap().write().<span class="kw">await</span>.start().<span class="kw">await</span><span class="question-mark">?</span>;
+                    <span class="prelude-val">Ok</span>(()) <span class="kw">as </span><span class="prelude-ty">Result</span>&lt;()&gt;
                 });
 
-        futures::future::join_all(all_services_start).<span class="kw">await</span>;
+        futures::future::try_join_all(all_services_start).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">pub fn </span>add_host&lt;T: Host + <span class="lifetime">&#39;static</span>, F: FnOnce(usize) -&gt; T&gt;(

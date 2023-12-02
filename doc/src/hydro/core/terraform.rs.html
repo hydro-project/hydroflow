@@ -358,6 +358,18 @@
 <a href="#358" id="358">358</a>
 <a href="#359" id="359">359</a>
 <a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::io::{BufRead, BufReader};
 <span class="attr">#[cfg(unix)]
@@ -406,6 +418,7 @@
 
         <span class="kw">let </span>spawned_child = apply_command
             .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn()
             .context(<span class="string">&quot;Failed to spawn `terraform`. Is it installed?&quot;</span>)<span class="question-mark">?</span>;
 
@@ -474,7 +487,7 @@
             });
         }
 
-        ProgressTracker::with_group(<span class="string">&quot;terraform&quot;</span>, || <span class="kw">async </span>{
+        ProgressTracker::with_group(<span class="string">&quot;terraform&quot;</span>, <span class="prelude-val">None</span>, || <span class="kw">async </span>{
             <span class="kw">let </span>dothydro_folder = std::env::current_dir().unwrap().join(<span class="string">&quot;.hydro&quot;</span>);
             std::fs::create_dir_all(<span class="kw-2">&amp;</span>dothydro_folder).unwrap();
             <span class="kw">let </span>deployment_folder = tempfile::tempdir_in(dothydro_folder).unwrap();
@@ -500,9 +513,11 @@
 
             <span class="kw">let </span>(apply_id, apply) = pool.create_apply(deployment_folder)<span class="question-mark">?</span>;
 
-            <span class="kw">let </span>output = ProgressTracker::with_group(<span class="string">&quot;apply&quot;</span>, || <span class="kw">async </span>{
-                apply.write().<span class="kw">await</span>.output().<span class="kw">await
-            </span>})
+            <span class="kw">let </span>output = ProgressTracker::with_group(
+                <span class="string">&quot;apply&quot;</span>,
+                <span class="prelude-val">Some</span>(<span class="self">self</span>.resource.values().map(|r| r.len()).sum()),
+                || <span class="kw">async </span>{ apply.write().<span class="kw">await</span>.output().<span class="kw">await </span>},
+            )
             .<span class="kw">await</span>;
             pool.drop_apply(apply_id);
             output
@@ -586,13 +601,22 @@
     <span class="kw">async fn </span>output(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;TerraformResult&gt; {
         <span class="kw">let </span>(<span class="kw">_</span>, child) = <span class="self">self</span>.child.as_ref().unwrap().clone();
         <span class="kw">let </span><span class="kw-2">mut </span>stdout = child.write().unwrap().stdout.take().unwrap();
+        <span class="kw">let </span>stderr = child.write().unwrap().stderr.take().unwrap();
 
         <span class="kw">let </span>status = tokio::task::spawn_blocking(<span class="kw">move </span>|| {
             <span class="comment">// it is okay for this thread to keep running even if the future is cancelled
             </span>child.write().unwrap().wait().unwrap()
         });
 
-        display_apply_outputs(<span class="kw-2">&amp;mut </span>stdout).<span class="kw">await</span>;
+        <span class="kw">let </span>display_apply = display_apply_outputs(<span class="kw-2">&amp;mut </span>stdout);
+        <span class="kw">let </span>stderr_loop = tokio::task::spawn_blocking(<span class="kw">move </span>|| {
+            <span class="kw">let </span><span class="kw-2">mut </span>lines = BufReader::new(stderr).lines();
+            <span class="kw">while let </span><span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(line)) = lines.next() {
+                ProgressTracker::println(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;[terraform] {}&quot;</span>, line));
+            }
+        });
+
+        <span class="kw">let _ </span>= <span class="macro">futures::join!</span>(display_apply, stderr_loop);
 
         <span class="kw">let </span>status = status.<span class="kw">await</span>;
 

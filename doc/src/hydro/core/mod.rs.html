@@ -191,6 +191,13 @@
 <a href="#191" id="191">191</a>
 <a href="#192" id="192">192</a>
 <a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::path::PathBuf;
@@ -262,6 +269,13 @@
 <span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>LaunchedBinary: Send + Sync {
     <span class="kw">async fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sender&lt;String&gt;;
+
+    <span class="doccomment">/// Provides a channel for the CLI to handshake with the binary,
+    /// with the guarantee that as long as the CLI is holding on
+    /// to a handle, none of the messages will also be broadcast
+    /// to the user-facing [`LaunchedBinary::stdout`] channel.
+    </span><span class="kw">async fn </span>cli_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt;;
+
     <span class="kw">async fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt;;
     <span class="kw">async fn </span>stderr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt;;
 
@@ -379,7 +393,7 @@
     </span><span class="kw">async fn </span>ready(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
 
     <span class="doccomment">/// Starts the service by having it connect to other services and start computations.
-    </span><span class="kw">async fn </span>start(<span class="kw-2">&amp;mut </span><span class="self">self</span>);
+    </span><span class="kw">async fn </span>start(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
 
     <span class="doccomment">/// Stops the service by having it disconnect from other services and stop computations.
     </span><span class="kw">async fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;

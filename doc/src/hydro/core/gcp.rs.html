@@ -606,6 +606,15 @@
 <a href="#606" id="606">606</a>
 <a href="#607" id="607">607</a>
 <a href="#608" id="608">608</a>
+<a href="#609" id="609">609</a>
+<a href="#610" id="610">610</a>
+<a href="#611" id="611">611</a>
+<a href="#612" id="612">612</a>
+<a href="#613" id="613">613</a>
+<a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
+<a href="#616" id="616">616</a>
+<a href="#617" id="617">617</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::path::PathBuf;
@@ -700,35 +709,44 @@
             <span class="number">22</span>,
         );
 
-        <span class="kw">let </span>res = ProgressTracker::leaf(
-            <span class="macro">format!</span>(
-                <span class="string">&quot;connecting to host @ {}&quot;</span>,
-                <span class="self">self</span>.external_ip.as_ref().unwrap()
-            ),
-            async_retry(
-                <span class="kw-2">&amp;</span>|| <span class="kw">async </span>{
-                    <span class="kw">let </span><span class="kw-2">mut </span>config = SessionConfiguration::new();
-                    config.set_compress(<span class="bool-val">true</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>attempt_count = <span class="number">0</span>;
 
-                    <span class="kw">let </span><span class="kw-2">mut </span>session =
-                        AsyncSession::&lt;TcpStream&gt;::connect(target_addr, <span class="prelude-val">Some</span>(config)).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>res = async_retry(
+            || {
+                attempt_count += <span class="number">1</span>;
+                ProgressTracker::leaf(
+                    <span class="macro">format!</span>(
+                        <span class="string">&quot;connecting to host @ {} (attempt: {})&quot;</span>,
+                        <span class="self">self</span>.external_ip.as_ref().unwrap(),
+                        attempt_count
+                    ),
+                    <span class="kw">async </span>{
+                        <span class="kw">let </span><span class="kw-2">mut </span>config = SessionConfiguration::new();
+                        config.set_compress(<span class="bool-val">true</span>);
 
-                    session.handshake().<span class="kw">await</span><span class="question-mark">?</span>;
+                        <span class="kw">let </span><span class="kw-2">mut </span>session =
+                            AsyncSession::&lt;TcpStream&gt;::connect(target_addr, <span class="prelude-val">Some</span>(config)).<span class="kw">await</span><span class="question-mark">?</span>;
 
-                    session
-                        .userauth_pubkey_file(
-                            <span class="self">self</span>.user.as_str(),
-                            <span class="prelude-val">None</span>,
-                            <span class="self">self</span>.ssh_key_path().as_path(),
-                            <span class="prelude-val">None</span>,
-                        )
-                        .<span class="kw">await</span><span class="question-mark">?</span>;
+                        tokio::time::timeout(Duration::from_secs(<span class="number">15</span>), <span class="kw">async move </span>{
+                            session.handshake().<span class="kw">await</span><span class="question-mark">?</span>;
 
-                    <span class="prelude-val">Ok</span>(session)
-                },
-                <span class="number">10</span>,
-                Duration::from_secs(<span class="number">1</span>),
-            ),
+                            session
+                                .userauth_pubkey_file(
+                                    <span class="self">self</span>.user.as_str(),
+                                    <span class="prelude-val">None</span>,
+                                    <span class="self">self</span>.ssh_key_path().as_path(),
+                                    <span class="prelude-val">None</span>,
+                                )
+                                .<span class="kw">await</span><span class="question-mark">?</span>;
+
+                            <span class="prelude-val">Ok</span>(session)
+                        })
+                        .<span class="kw">await</span><span class="question-mark">?
+                    </span>},
+                )
+            },
+            <span class="number">10</span>,
+            Duration::from_secs(<span class="number">1</span>),
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
 

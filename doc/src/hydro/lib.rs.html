@@ -832,6 +832,12 @@
 <a href="#832" id="832">832</a>
 <a href="#833" id="833">833</a>
 <a href="#834" id="834">834</a>
+<a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a>
+<a href="#837" id="837">837</a>
+<a href="#838" id="838">838</a>
+<a href="#839" id="839">839</a>
+<a href="#840" id="840">840</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::pin::Pin;
 <span class="kw">use </span>std::sync::Arc;
@@ -1070,6 +1076,7 @@
         py: Python&lt;<span class="lifetime">&#39;_</span>&gt;,
         src: String,
         on: <span class="kw-2">&amp;</span>Host,
+        bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
         example: <span class="prelude-ty">Option</span>&lt;String&gt;,
         profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
         features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
@@ -1082,6 +1089,7 @@
                 id,
                 src.into(),
                 on.underlying.clone(),
+                bin,
                 example,
                 profile,
                 features,
@@ -1120,7 +1128,11 @@
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         <span class="kw">let </span>py_none = py.<span class="prelude-val">None</span>();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
-            underlying.write().<span class="kw">await</span>.start().<span class="kw">await</span>;
+            underlying.write().<span class="kw">await</span>.start().<span class="kw">await</span>.map_err(|e| {
+                AnyhowError::new_err(AnyhowWrapper {
+                    underlying: Arc::new(RwLock::new(<span class="prelude-val">Some</span>(e))),
+                })
+            })<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(py_none)
         })
     }

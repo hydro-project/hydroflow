@@ -1,6 +1,6 @@
 var srcIndex = JSON.parse('{\
 "hydro":["",[["core",[["hydroflow_crate",[],["build.rs","mod.rs","ports.rs"]]],["custom_service.rs","deployment.rs","gcp.rs","localhost.rs","mod.rs","progress.rs","ssh.rs","terraform.rs","util.rs"]]],["cli.rs","lib.rs"]],\
-"hydroflow":["",[["compiled",[["pull",[["half_join_state",[],["fold.rs","fold_from.rs","mod.rs","multiset.rs","multiset2.rs","reduce.rs","set.rs"]]],["anti_join.rs","cross_join.rs","mod.rs","symmetric_hash_join.rs"]]],["mod.rs"]],["props",[],["mod.rs","wrap.rs"]],["scheduled",[["handoff",[],["handoff_list.rs","mod.rs","tee.rs","vector.rs"]],["net",[],["mod.rs","network_vertex.rs"]]],["context.rs","graph.rs","graph_ext.rs","input.rs","mod.rs","port.rs","query.rs","reactor.rs","state.rs","subgraph.rs"]],["util",[["unsync",[],["mod.rs","mpsc.rs"]]],["clear.rs","demux_enum.rs","mod.rs","monotonic.rs","monotonic_map.rs","multiset.rs","socket.rs","sparse_vec.rs","tcp.rs","udp.rs"]]],["declarative_macro.rs","lib.rs"]],\
+"hydroflow":["",[["compiled",[["pull",[["half_join_state",[],["fold.rs","fold_from.rs","mod.rs","multiset.rs","multiset2.rs","reduce.rs","set.rs"]]],["anti_join.rs","cross_join.rs","mod.rs","symmetric_hash_join.rs"]]],["mod.rs"]],["props",[],["mod.rs","wrap.rs"]],["scheduled",[["handoff",[],["handoff_list.rs","mod.rs","tee.rs","vector.rs"]],["net",[],["mod.rs","network_vertex.rs"]]],["context.rs","graph.rs","graph_ext.rs","input.rs","mod.rs","port.rs","query.rs","reactor.rs","state.rs","subgraph.rs"]],["util",[["unsync",[],["mod.rs","mpsc.rs"]]],["clear.rs","cli.rs","demux_enum.rs","mod.rs","monotonic.rs","monotonic_map.rs","multiset.rs","socket.rs","sparse_vec.rs","tcp.rs","udp.rs"]]],["declarative_macro.rs","lib.rs"]],\
 "hydroflow_cli_integration":["",[],["lib.rs"]],\
 "hydroflow_datalog":["",[],["lib.rs"]],\
 "hydroflow_datalog_core":["",[],["grammar.rs","join_plan.rs","lib.rs","util.rs"]],\
@@ -9,8 +9,11 @@ var srcIndex = JSON.parse('{\
 "hydroflow_plus":["",[],["builder.rs","lib.rs","stream.rs"]],\
 "hydroflow_plus_test":["",[],["lib.rs"]],\
 "hydroflow_plus_test_macro":["",[],["lib.rs"]],\
+"latency_measure":["",[],["latency_measure.rs","protocol.rs"]],\
 "lattices":["",[],["collections.rs","conflict.rs","dom_pair.rs","lib.rs","map_union.rs","ord.rs","pair.rs","point.rs","set_union.rs","test.rs","union_find.rs","unit.rs","vec_union.rs","with_bot.rs","with_top.rs"]],\
 "multiplatform_test":["",[],["lib.rs"]],\
+"pn":["",[],["pn.rs","protocol.rs"]],\
+"pn_delta":["",[],["pn_delta.rs","protocol.rs"]],\
 "pusherator":["",[],["demux.rs","filter.rs","filter_map.rs","flatten.rs","for_each.rs","inspect.rs","lib.rs","map.rs","null.rs","partition.rs","pivot.rs","switch.rs","tee.rs","unzip.rs"]],\
 "relalg":["",[],["codegen.rs","lib.rs","runtime.rs","sexp.rs"]],\
 "stageleft":["",[],["lib.rs","runtime_support.rs"]],\
@@ -18,6 +21,7 @@ var srcIndex = JSON.parse('{\
 "stageleft_test":["",[],["lib.rs","submodule.rs"]],\
 "stageleft_test_macro":["",[],["lib.rs"]],\
 "stageleft_tool":["",[],["lib.rs"]],\
+"topolotree":["",[],["main.rs","protocol.rs"]],\
 "variadics":["",[],["lib.rs"]],\
 "website_playground":["",[],["lib.rs","utils.rs"]]\
 }');

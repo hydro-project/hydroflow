@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["GossipOrIncrement"],"fn":["main"],"mod":["protocol"],"type":["NextStateType"]};

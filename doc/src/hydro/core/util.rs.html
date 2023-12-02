@@ -25,7 +25,7 @@
 <span class="kw">use </span>futures::Future;
 
 <span class="kw">pub async fn </span>async_retry&lt;T, F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;T&gt;&gt;&gt;(
-    thunk: <span class="kw">impl </span>Fn() -&gt; F,
+    <span class="kw-2">mut </span>thunk: <span class="kw">impl </span>FnMut() -&gt; F,
     count: usize,
     delay: Duration,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt; {

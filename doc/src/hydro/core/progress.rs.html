@@ -310,6 +310,25 @@
 <a href="#310" id="310">310</a>
 <a href="#311" id="311">311</a>
 <a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::{Arc, Mutex, OnceLock};
 <span class="kw">use </span>std::time::Duration;
 
@@ -324,7 +343,6 @@
 
 <span class="attr">#[derive(Clone, PartialEq, Eq, Debug)]
 </span><span class="kw">pub enum </span>LeafStatus {
-    Queued,
     Started,
     Finished,
 }
@@ -332,7 +350,12 @@
 <span class="attr">#[derive(Debug)]
 </span><span class="kw">pub enum </span>BarTree {
     Root(Vec&lt;BarTree&gt;),
-    Group(String, Arc&lt;indicatif::ProgressBar&gt;, Vec&lt;BarTree&gt;),
+    Group(
+        String,
+        Arc&lt;indicatif::ProgressBar&gt;,
+        Vec&lt;BarTree&gt;,
+        <span class="prelude-ty">Option</span>&lt;usize&gt;,
+    ),
     Leaf(String, Arc&lt;indicatif::ProgressBar&gt;, LeafStatus),
     Finished,
 }
@@ -341,26 +364,22 @@
     <span class="kw">fn </span>get_pb(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Arc&lt;indicatif::ProgressBar&gt;&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             BarTree::Root(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
-            BarTree::Group(<span class="kw">_</span>, pb, <span class="kw">_</span>) | BarTree::Leaf(<span class="kw">_</span>, pb, <span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(pb),
+            BarTree::Group(<span class="kw">_</span>, pb, <span class="kw">_</span>, <span class="kw">_</span>) | BarTree::Leaf(<span class="kw">_</span>, pb, <span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(pb),
             BarTree::Finished =&gt; <span class="prelude-val">None</span>,
         }
     }
 
     <span class="kw">fn </span>status(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; LeafStatus {
         <span class="kw">match </span><span class="self">self </span>{
-            BarTree::Root(children) | BarTree::Group(<span class="kw">_</span>, <span class="kw">_</span>, children) =&gt; {
-                <span class="kw">if </span>children
-                    .iter()
-                    .all(|child| child.status() == LeafStatus::Finished)
+            BarTree::Root(children) | BarTree::Group(<span class="kw">_</span>, <span class="kw">_</span>, children, <span class="kw">_</span>) =&gt; {
+                <span class="kw">if </span>!children.is_empty()
+                    &amp;&amp; children
+                        .iter()
+                        .all(|child| child.status() == LeafStatus::Finished)
                 {
                     LeafStatus::Finished
-                } <span class="kw">else if </span>children
-                    .iter()
-                    .any(|child| child.status() == LeafStatus::Started)
-                {
-                    LeafStatus::Started
                 } <span class="kw">else </span>{
-                    LeafStatus::Queued
+                    LeafStatus::Started
                 }
             }
             BarTree::Leaf(<span class="kw">_</span>, <span class="kw">_</span>, status) =&gt; status.clone(),
@@ -375,7 +394,7 @@
                     child.refresh_prefix(cur_path);
                 }
             }
-            BarTree::Group(name, pb, children) =&gt; {
+            BarTree::Group(name, pb, children, anticipated_total) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>path_with_group = cur_path.to_vec();
                 path_with_group.push(name.clone());
 
@@ -387,18 +406,26 @@
                     .iter()
                     .filter(|child| child.status() == LeafStatus::Started)
                     .count();
-                <span class="kw">let </span>queued_count = children
-                    .iter()
-                    .filter(|child| child.status() == LeafStatus::Queued)
-                    .count();
+                <span class="kw">let </span>queued_count =
+                    anticipated_total.map(|total| total - finished_count - started_count);
 
-                pb.set_prefix(<span class="macro">format!</span>(
-                    <span class="string">&quot;{} ({}/{}/{})&quot;</span>,
-                    path_with_group.join(<span class="string">&quot; / &quot;</span>),
-                    finished_count,
-                    started_count,
-                    queued_count
-                ));
+                <span class="kw">match </span>queued_count {
+                    <span class="prelude-val">Some</span>(queued_count) =&gt; {
+                        pb.set_prefix(<span class="macro">format!</span>(
+                            <span class="string">&quot;{} ({}/{}/{})&quot;</span>,
+                            path_with_group.join(<span class="string">&quot; / &quot;</span>),
+                            finished_count,
+                            started_count,
+                            queued_count
+                        ));
+                    }
+                    <span class="prelude-val">None </span>=&gt; pb.set_prefix(<span class="macro">format!</span>(
+                        <span class="string">&quot;{} ({}/{})&quot;</span>,
+                        path_with_group.join(<span class="string">&quot; / &quot;</span>),
+                        finished_count,
+                        started_count
+                    )),
+                }
                 <span class="kw">for </span>child <span class="kw">in </span>children {
                     child.refresh_prefix(<span class="kw-2">&amp;</span>path_with_group);
                 }
@@ -418,7 +445,7 @@
         }
 
         <span class="kw">match </span><span class="self">self </span>{
-            BarTree::Root(children) | BarTree::Group(<span class="kw">_</span>, <span class="kw">_</span>, children) =&gt; {
+            BarTree::Root(children) | BarTree::Group(<span class="kw">_</span>, <span class="kw">_</span>, children, <span class="kw">_</span>) =&gt; {
                 children[path[<span class="number">0</span>]].find_node(<span class="kw-2">&amp;</span>path[<span class="number">1</span>..])
             }
             <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(),
@@ -446,12 +473,13 @@
         under_path: Vec&lt;usize&gt;,
         name: String,
         group: bool,
+        anticipated_total: <span class="prelude-ty">Option</span>&lt;usize&gt;,
         progress: bool,
     ) -&gt; (usize, Arc&lt;indicatif::ProgressBar&gt;) {
         <span class="kw">let </span>surrounding = <span class="self">self</span>.tree.find_node(<span class="kw-2">&amp;</span>under_path);
         <span class="kw">let </span>(surrounding_children, surrounding_pb) = <span class="kw">match </span>surrounding {
             BarTree::Root(children) =&gt; (children, <span class="prelude-val">None</span>),
-            BarTree::Group(<span class="kw">_</span>, pb, children) =&gt; (children, <span class="prelude-val">Some</span>(pb)),
+            BarTree::Group(<span class="kw">_</span>, pb, children, <span class="kw">_</span>) =&gt; (children, <span class="prelude-val">Some</span>(pb)),
             <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(),
         };
 
@@ -473,7 +501,7 @@
 
         <span class="kw">let </span>pb = Arc::new(created_bar);
         <span class="kw">if </span>group {
-            surrounding_children.push(BarTree::Group(name, pb.clone(), <span class="macro">vec!</span>[]));
+            surrounding_children.push(BarTree::Group(name, pb.clone(), <span class="macro">vec!</span>[], anticipated_total));
         } <span class="kw">else </span>{
             surrounding_children.push(BarTree::Leaf(name, pb.clone(), LeafStatus::Started));
         }
@@ -501,7 +529,7 @@
 
     <span class="kw">pub fn </span>end_task(<span class="kw-2">&amp;mut </span><span class="self">self</span>, path: Vec&lt;usize&gt;) {
         <span class="kw">match </span><span class="self">self</span>.tree.find_node(<span class="kw-2">&amp;</span>path[<span class="number">0</span>..path.len() - <span class="number">1</span>]) {
-            BarTree::Root(children) | BarTree::Group(<span class="kw">_</span>, <span class="kw">_</span>, children) =&gt; {
+            BarTree::Root(children) | BarTree::Group(<span class="kw">_</span>, <span class="kw">_</span>, children, <span class="kw">_</span>) =&gt; {
                 <span class="kw">let </span>removed = children[<span class="kw-2">*</span>path.last().unwrap()].get_pb().unwrap().clone();
                 children[<span class="kw-2">*</span>path.last().unwrap()] = BarTree::Finished;
                 <span class="self">self</span>.multi_progress.remove(<span class="kw-2">&amp;</span>removed);
@@ -525,11 +553,15 @@
             .get_or_init(|| Mutex::new(ProgressTracker::new()))
             .lock()
             .unwrap();
-        progress_bar.multi_progress.println(msg).unwrap();
+
+        <span class="kw">if </span>progress_bar.multi_progress.println(msg).is_err() {
+            <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, msg);
+        }
     }
 
     <span class="kw">pub fn </span>with_group&lt;<span class="lifetime">&#39;a</span>, T, F: Future&lt;Output = T&gt;&gt;(
         name: <span class="kw-2">&amp;</span>str,
+        anticipated_total: <span class="prelude-ty">Option</span>&lt;usize&gt;,
         f: <span class="kw">impl </span>FnOnce() -&gt; F + <span class="lifetime">&#39;a</span>,
     ) -&gt; <span class="kw">impl </span>Future&lt;Output = T&gt; + <span class="lifetime">&#39;a </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>group = CURRENT_GROUP
@@ -541,7 +573,13 @@
                 .get_or_init(|| Mutex::new(ProgressTracker::new()))
                 .lock()
                 .unwrap();
-            progress_bar.start_task(group.clone(), name.to_string(), <span class="bool-val">true</span>, <span class="bool-val">false</span>)
+            progress_bar.start_task(
+                group.clone(),
+                name.to_string(),
+                <span class="bool-val">true</span>,
+                anticipated_total,
+                <span class="bool-val">false</span>,
+            )
         };
 
         group.push(group_i);
@@ -567,7 +605,7 @@
                 .get_or_init(|| Mutex::new(ProgressTracker::new()))
                 .lock()
                 .unwrap();
-            progress_bar.start_task(group.clone(), name, <span class="bool-val">false</span>, <span class="bool-val">false</span>)
+            progress_bar.start_task(group.clone(), name, <span class="bool-val">false</span>, <span class="prelude-val">None</span>, <span class="bool-val">false</span>)
         };
 
         group.push(leaf_i);
@@ -596,7 +634,7 @@
                 .get_or_init(|| Mutex::new(ProgressTracker::new()))
                 .lock()
                 .unwrap();
-            progress_bar.start_task(group.clone(), name, <span class="bool-val">false</span>, <span class="bool-val">true</span>)
+            progress_bar.start_task(group.clone(), name, <span class="bool-val">false</span>, <span class="prelude-val">None</span>, <span class="bool-val">true</span>)
         };
 
         group.push(leaf_i);

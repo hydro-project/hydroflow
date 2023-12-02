@@ -354,6 +354,7 @@
 <a href="#354" id="354">354</a>
 <a href="#355" id="355">355</a>
 <a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
 </pre></div><pre class="rust"><code><span class="attr">#![cfg_attr(
     feature = <span class="string">&quot;diagnostics&quot;</span>,
     feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)
@@ -560,15 +561,16 @@
 
 <span class="attr">#[proc_macro_attribute]
 </span><span class="kw">pub fn </span>hydroflow_test(
-    <span class="kw">_</span>: proc_macro::TokenStream,
+    args: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -&gt; proc_macro::TokenStream {
     <span class="kw">let </span>root = root();
+    <span class="kw">let </span>args_2: proc_macro2::TokenStream = args.into();
 
     hydroflow_wrap(
         item,
         <span class="macro">parse_quote!</span>(
-            <span class="attr">#[#root::tokio::test(flavor = <span class="string">&quot;current_thread&quot;</span>)]
+            <span class="attr">#[#root::tokio::test(flavor = <span class="string">&quot;current_thread&quot;</span>, #args_2)]
         </span>),
     )
 }

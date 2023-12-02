@@ -249,6 +249,16 @@
 <a href="#249" id="249">249</a>
 <a href="#250" id="250">250</a>
 <a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::path::PathBuf;
@@ -277,6 +287,7 @@
     channel: AsyncChannel&lt;TcpStream&gt;,
     stdin_sender: Sender&lt;String&gt;,
     stdout_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
+    stdout_cli_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
     stderr_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
 }
 
@@ -284,6 +295,13 @@
 </span><span class="kw">impl </span>LaunchedBinary <span class="kw">for </span>LaunchedSSHBinary {
     <span class="kw">async fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sender&lt;String&gt; {
         <span class="self">self</span>.stdin_sender.clone()
+    }
+
+    <span class="kw">async fn </span>cli_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_cli_receivers.write().<span class="kw">await</span>;
+        <span class="kw">let </span>(sender, receiver) = async_channel::unbounded::&lt;String&gt;();
+        receivers.push(sender);
+        receiver
     }
 
     <span class="kw">async fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
@@ -458,15 +476,17 @@
         });
 
         <span class="kw">let </span>id_clone = id.clone();
-        <span class="kw">let </span>stdout_receivers =
+        <span class="kw">let </span>(stdout_cli_receivers, stdout_receivers) =
             create_broadcast(channel.stream(<span class="number">0</span>), <span class="kw">move </span>|s| <span class="macro">println!</span>(<span class="string">&quot;[{id_clone}] {s}&quot;</span>));
-        <span class="kw">let </span>stderr_receivers = create_broadcast(channel.stderr(), <span class="kw">move </span>|s| <span class="macro">eprintln!</span>(<span class="string">&quot;[{id}] {s}&quot;</span>));
+        <span class="kw">let </span>(<span class="kw">_</span>, stderr_receivers) =
+            create_broadcast(channel.stderr(), <span class="kw">move </span>|s| <span class="macro">eprintln!</span>(<span class="string">&quot;[{id}] {s}&quot;</span>));
 
         <span class="prelude-val">Ok</span>(Arc::new(RwLock::new(LaunchedSSHBinary {
             _resource_result: <span class="self">self</span>.resource_result().clone(),
             session: <span class="prelude-val">Some</span>(session),
             channel,
             stdin_sender,
+            stdout_cli_receivers,
             stdout_receivers,
             stderr_receivers,
         })))
@@ -494,7 +514,7 @@
                 // if anyone wants to connect to this forwarded port
             </span>}
 
-            <span class="macro">println!</span>(<span class="string">&quot;[hydro] closing forwarded port&quot;</span>);
+            ProgressTracker::println(<span class="string">&quot;[hydro] closing forwarded port&quot;</span>);
         });
 
         <span class="prelude-val">Ok</span>(local_addr)

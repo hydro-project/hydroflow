@@ -275,6 +275,38 @@
 <a href="#275" id="275">275</a>
 <a href="#276" id="276">276</a>
 <a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="attr">#[cfg(unix)]
@@ -299,6 +331,7 @@
 <span class="kw">struct </span>LaunchedLocalhostBinary {
     child: RwLock&lt;async_process::Child&gt;,
     stdin_sender: Sender&lt;String&gt;,
+    stdout_cli_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
     stdout_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
     stderr_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
 }
@@ -307,6 +340,13 @@
 </span><span class="kw">impl </span>LaunchedBinary <span class="kw">for </span>LaunchedLocalhostBinary {
     <span class="kw">async fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sender&lt;String&gt; {
         <span class="self">self</span>.stdin_sender.clone()
+    }
+
+    <span class="kw">async fn </span>cli_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_cli_receivers.write().<span class="kw">await</span>;
+        <span class="kw">let </span>(sender, receiver) = async_channel::unbounded::&lt;String&gt;();
+        receivers.push(sender);
+        receiver
     }
 
     <span class="kw">async fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
@@ -346,17 +386,39 @@
 
 <span class="kw">struct </span>LaunchedLocalhost {}
 
+<span class="kw">type </span>CLIAndMain = (
+    Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
+    Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
+);
+
 <span class="kw">pub fn </span>create_broadcast&lt;T: AsyncRead + Send + Unpin + <span class="lifetime">&#39;static</span>&gt;(
     source: T,
     default: <span class="kw">impl </span>Fn(String) + Send + <span class="lifetime">&#39;static</span>,
-) -&gt; Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt; {
+) -&gt; CLIAndMain {
+    <span class="kw">let </span>cli_receivers = Arc::new(RwLock::new(Vec::&lt;Sender&lt;String&gt;&gt;::new()));
     <span class="kw">let </span>receivers = Arc::new(RwLock::new(Vec::&lt;Sender&lt;String&gt;&gt;::new()));
+
+    <span class="kw">let </span>weak_cli_receivers = Arc::downgrade(<span class="kw-2">&amp;</span>cli_receivers);
     <span class="kw">let </span>weak_receivers = Arc::downgrade(<span class="kw-2">&amp;</span>receivers);
 
     tokio::spawn(<span class="kw">async move </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>lines = BufReader::new(source).lines();
 
-        <span class="kw">while let </span><span class="prelude-val">Some</span>(Result::Ok(line)) = lines.next().<span class="kw">await </span>{
+        <span class="lifetime">&#39;line_loop</span>: <span class="kw">while let </span><span class="prelude-val">Some</span>(Result::Ok(line)) = lines.next().<span class="kw">await </span>{
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(cli_receivers) = weak_cli_receivers.upgrade() {
+                <span class="kw">let </span><span class="kw-2">mut </span>cli_receivers = cli_receivers.write().<span class="kw">await</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>successful_send = <span class="bool-val">false</span>;
+                <span class="kw">for </span>r <span class="kw">in </span>cli_receivers.iter() {
+                    successful_send |= r.send(line.clone()).<span class="kw">await</span>.is_ok();
+                }
+
+                cli_receivers.retain(|r| !r.is_closed());
+
+                <span class="kw">if </span>successful_send {
+                    <span class="kw">continue </span><span class="lifetime">&#39;line_loop</span>;
+                }
+            }
+
             <span class="kw">if let </span><span class="prelude-val">Some</span>(receivers) = weak_receivers.upgrade() {
                 <span class="kw">let </span><span class="kw-2">mut </span>receivers = receivers.write().<span class="kw">await</span>;
                 <span class="kw">let </span><span class="kw-2">mut </span>successful_send = <span class="bool-val">false</span>;
@@ -375,7 +437,7 @@
         }
     });
 
-    receivers
+    (cli_receivers, receivers)
 }
 
 <span class="attr">#[async_trait]
@@ -435,16 +497,18 @@
         });
 
         <span class="kw">let </span>id_clone = id.clone();
-        <span class="kw">let </span>stdout_receivers = create_broadcast(child.stdout.take().unwrap(), <span class="kw">move </span>|s| {
-            <span class="macro">println!</span>(<span class="string">&quot;[{id_clone}] {s}&quot;</span>)
-        });
-        <span class="kw">let </span>stderr_receivers = create_broadcast(child.stderr.take().unwrap(), <span class="kw">move </span>|s| {
+        <span class="kw">let </span>(stdout_cli_receivers, stdout_receivers) =
+            create_broadcast(child.stdout.take().unwrap(), <span class="kw">move </span>|s| {
+                <span class="macro">println!</span>(<span class="string">&quot;[{id_clone}] {s}&quot;</span>)
+            });
+        <span class="kw">let </span>(<span class="kw">_</span>, stderr_receivers) = create_broadcast(child.stderr.take().unwrap(), <span class="kw">move </span>|s| {
             <span class="macro">eprintln!</span>(<span class="string">&quot;[{id}] {s}&quot;</span>)
         });
 
         <span class="prelude-val">Ok</span>(Arc::new(RwLock::new(LaunchedLocalhostBinary {
             child: RwLock::new(child),
             stdin_sender,
+            stdout_cli_receivers,
             stdout_receivers,
             stderr_receivers,
         })))

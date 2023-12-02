@@ -132,6 +132,15 @@
 <a href="#132" id="132">132</a>
 <a href="#133" id="133">133</a>
 <a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::io::BufRead;
 <span class="kw">use </span>std::path::PathBuf;
@@ -146,13 +155,15 @@
 <span class="kw">use </span><span class="kw">crate</span>::core::progress::ProgressTracker;
 <span class="kw">use </span><span class="kw">crate</span>::core::HostTargetType;
 
-<span class="kw">type </span>CacheKey = (
-    PathBuf,
-    <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="prelude-ty">Option</span>&lt;String&gt;,
-    HostTargetType,
-    <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
-);
+<span class="attr">#[derive(PartialEq, Eq, Hash)]
+</span><span class="kw">struct </span>CacheKey {
+    src: PathBuf,
+    bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    example: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    target_type: HostTargetType,
+    features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
+}
 
 <span class="kw">pub type </span>BuiltCrate = Arc&lt;(String, Vec&lt;u8&gt;, PathBuf)&gt;;
 
@@ -161,18 +172,21 @@
 
 <span class="kw">pub async fn </span>build_crate(
     src: PathBuf,
+    bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
     example: <span class="prelude-ty">Option</span>&lt;String&gt;,
     profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
     target_type: HostTargetType,
     features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;BuiltCrate&gt; {
-    <span class="kw">let </span>key = (
-        src.clone(),
-        example.clone(),
-        profile.clone(),
+    <span class="kw">let </span>key = CacheKey {
+        src: src.clone(),
+        bin: bin.clone(),
+        example: example.clone(),
+        profile: profile.clone(),
         target_type,
-        features.clone(),
-    );
+        features: features.clone(),
+    };
+
     <span class="kw">let </span>unit_of_work = {
         <span class="kw">let </span><span class="kw-2">mut </span>builds = BUILDS.lock().unwrap();
         builds.entry(key).or_default().clone()
@@ -189,6 +203,10 @@
                         <span class="string">&quot;--profile&quot;</span>.to_string(),
                         profile.unwrap_or(<span class="string">&quot;release&quot;</span>.to_string()),
                     ]);
+
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(bin) = bin.as_ref() {
+                        command.args([<span class="string">&quot;--bin&quot;</span>, bin]);
+                    }
 
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(example) = example.as_ref() {
                         command.args([<span class="string">&quot;--example&quot;</span>, example]);
