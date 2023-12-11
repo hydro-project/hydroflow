@@ -3,12 +3,12 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::{bail, Result};
+use anyhow::{anyhow, bail, Result};
 use async_channel::Receiver;
 use async_trait::async_trait;
+use futures_core::Future;
 use hydroflow_cli_integration::ServerPort;
 use tokio::sync::RwLock;
-use tokio::task::JoinHandle;
 
 use self::ports::{HydroflowPortConfig, HydroflowSink, SourcePath};
 use super::progress::ProgressTracker;
@@ -38,7 +38,7 @@ pub struct HydroflowCrate {
     /// Configuration for the ports that this service will listen on a port for.
     port_to_bind: HashMap<String, ServerStrategy>,
 
-    built_binary: Option<JoinHandle<Result<BuiltCrate>>>,
+    built_binary: Arc<async_once_cell::OnceCell<Result<BuiltCrate, &'static str>>>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
 
     /// A map of port names to config for how other services can connect to this one.
@@ -77,7 +77,7 @@ impl HydroflowCrate {
             external_ports,
             port_to_server: HashMap::new(),
             port_to_bind: HashMap::new(),
-            built_binary: None,
+            built_binary: Arc::new(async_once_cell::OnceCell::new()),
             launched_host: None,
             server_defns: Arc::new(RwLock::new(HashMap::new())),
             launched_binary: None,
@@ -163,7 +163,7 @@ impl HydroflowCrate {
             .await
     }
 
-    fn build(&mut self) -> JoinHandle<Result<BuiltCrate>> {
+    fn build(&self) -> impl Future<Output = Result<BuiltCrate, &'static str>> {
         let src_cloned = self.src.canonicalize().unwrap();
         let bin_cloned = self.bin.clone();
         let example_cloned = self.example.clone();
@@ -171,15 +171,21 @@ impl HydroflowCrate {
         let host = self.on.clone();
         let profile_cloned = self.profile.clone();
         let target_type = host.try_read().unwrap().target_type();
+        let built_binary_cloned = self.built_binary.clone();
 
-        tokio::task::spawn(build_crate(
-            src_cloned,
-            bin_cloned,
-            example_cloned,
-            profile_cloned,
-            target_type,
-            features_cloned,
-        ))
+        async move {
+            built_binary_cloned
+                .get_or_init(build_crate(
+                    src_cloned,
+                    bin_cloned,
+                    example_cloned,
+                    profile_cloned,
+                    target_type,
+                    features_cloned,
+                ))
+                .await
+                .clone()
+        }
     }
 }
 
@@ -190,8 +196,7 @@ impl Service for HydroflowCrate {
             return;
         }
 
-        let built = self.build();
-        self.built_binary = Some(built);
+        tokio::task::spawn(self.build());
 
         let mut host = self
             .on
@@ -208,9 +213,9 @@ impl Service for HydroflowCrate {
         }
     }
 
-    async fn deploy(&mut self, resource_result: &Arc<ResourceResult>) {
+    async fn deploy(&mut self, resource_result: &Arc<ResourceResult>) -> Result<()> {
         if self.launched_host.is_some() {
-            return;
+            return Ok(());
         }
 
         ProgressTracker::with_group(
@@ -220,12 +225,18 @@ impl Service for HydroflowCrate {
                 .unwrap_or_else(|| format!("service/{}", self.id)),
             None,
             || async {
+                let built = self.build().await.clone().map_err(|e| anyhow!(e))?;
+
                 let mut host_write = self.on.write().await;
-                let launched = host_write.provision(resource_result);
-                self.launched_host = Some(launched.await);
+                let launched = host_write.provision(resource_result).await;
+
+                launched.copy_binary(built.clone()).await?;
+
+                self.launched_host = Some(launched);
+                Ok(())
             },
         )
-        .await;
+        .await
     }
 
     async fn ready(&mut self) -> Result<()> {
@@ -242,7 +253,7 @@ impl Service for HydroflowCrate {
             || async {
                 let launched_host = self.launched_host.as_ref().unwrap();
 
-                let built = self.built_binary.take().unwrap().await??.clone();
+                let built = self.build().await.clone().map_err(|e| anyhow!(e))?;
                 let args = self.args.as_ref().cloned().unwrap_or_default();
 
                 let binary = launched_host
