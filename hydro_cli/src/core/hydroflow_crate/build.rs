@@ -4,7 +4,6 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 
-use anyhow::{bail, Result};
 use nanoid::nanoid;
 use once_cell::sync::Lazy;
 use tokio::sync::OnceCell;
@@ -34,7 +33,7 @@ pub async fn build_crate(
     profile: Option<String>,
     target_type: HostTargetType,
     features: Option<Vec<String>>,
-) -> Result<BuiltCrate> {
+) -> Result<BuiltCrate, &'static str> {
     let key = CacheKey {
         src: src.clone(),
         bin: bin.clone(),
@@ -130,12 +129,13 @@ pub async fn build_crate(
                     }
 
                     if spawned.wait().unwrap().success() {
-                        bail!("cargo build succeeded but no binary was emitted")
+                        Err("cargo build succeeded but no binary was emitted")
                     } else {
-                        bail!("failed to build crate")
+                        Err("failed to build crate")
                     }
                 })
-                .await?
+                .await
+                .map_err(|_| "failed to spawn blocking task")?
             })
         })
         .await

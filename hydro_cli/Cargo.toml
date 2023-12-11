@@ -40,5 +40,6 @@ nix = "0.26.2"
 hydroflow_cli_integration = { path = "../hydroflow_cli_integration", version = "^0.3.0" }
 indicatif = "0.17.6"
 cargo_metadata = "0.15.4"
+async-once-cell = "0.5.3"
 
 [dev-dependencies]
