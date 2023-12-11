@@ -9,6 +9,7 @@ use crate::HfBuilder;
 
 pub struct HfStream<'a, T> {
     pub(crate) ident: syn::Ident,
+    pub(crate) node_id: usize,
     pub(crate) graph: &'a HfBuilder<'a>,
     pub(crate) _phantom: PhantomData<&'a mut &'a T>,
 }
@@ -27,16 +28,19 @@ impl<'a, T> HfStream<'a, T> {
         let f = f.splice();
 
         self.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(self.node_id)
+            .or_default()
             .add_statement(parse_quote! {
                 #ident = #self_ident -> map(#f) -> tee();
             });
 
         HfStream {
             ident,
+            node_id: self.node_id,
             graph: self.graph,
             _phantom: PhantomData,
         }
@@ -55,16 +59,19 @@ impl<'a, T> HfStream<'a, T> {
         let f = f.splice();
 
         self.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(self.node_id)
+            .or_default()
             .add_statement(parse_quote! {
                 #ident = #self_ident -> filter(#f) -> tee();
             });
 
         HfStream {
             ident,
+            node_id: self.node_id,
             graph: self.graph,
             _phantom: PhantomData,
         }
@@ -86,16 +93,19 @@ impl<'a, T> HfStream<'a, T> {
         let f = f.splice();
 
         self.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(self.node_id)
+            .or_default()
             .add_statement(parse_quote! {
                 #ident = #self_ident -> filter_map(#f) -> tee();
             });
 
         HfStream {
             ident,
+            node_id: self.node_id,
             graph: self.graph,
             _phantom: PhantomData,
         }
@@ -118,16 +128,19 @@ impl<'a, T> HfStream<'a, T> {
         let comb = comb.splice();
 
         self.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(self.node_id)
+            .or_default()
             .add_statement(parse_quote! {
                 #ident = #self_ident -> fold(#init, #comb) -> tee();
             });
 
         HfStream {
             ident,
+            node_id: self.node_id,
             graph: self.graph,
             _phantom: PhantomData,
         }
@@ -145,16 +158,19 @@ impl<'a, T> HfStream<'a, T> {
         let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
 
         self.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(self.node_id)
+            .or_default()
             .add_statement(parse_quote! {
                 #ident = #self_ident -> persist() -> tee();
             });
 
         HfStream {
             ident,
+            node_id: self.node_id,
             graph: self.graph,
             _phantom: PhantomData,
         }
@@ -172,16 +188,19 @@ impl<'a, T> HfStream<'a, T> {
         let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
 
         self.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(self.node_id)
+            .or_default()
             .add_statement(parse_quote! {
                 #ident = #self_ident -> multiset_delta() -> tee();
             });
 
         HfStream {
             ident,
+            node_id: self.node_id,
             graph: self.graph,
             _phantom: PhantomData,
         }
@@ -202,16 +221,19 @@ impl<'a, T> HfStream<'a, T> {
         let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
 
         self.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(self.node_id)
+            .or_default()
             .add_statement(parse_quote! {
                 #ident = #self_ident -> unique::<'tick>() -> tee();
             });
 
         HfStream {
             ident,
+            node_id: self.node_id,
             graph: self.graph,
             _phantom: PhantomData,
         }
@@ -229,35 +251,24 @@ impl<'a, T> HfStream<'a, T> {
         let other_ident = &other.ident;
         let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
 
-        self.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(parse_quote! {
-                #ident = cross_join::<'tick, 'tick>() -> tee();
-            });
+        let mut builders = self.graph.builders.borrow_mut();
+        let builder = builders.as_mut().unwrap().entry(self.node_id).or_default();
 
-        self.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(parse_quote! {
-                #self_ident -> [0]#ident;
-            });
+        builder.add_statement(parse_quote! {
+            #ident = cross_join::<'tick, 'tick>() -> tee();
+        });
 
-        self.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(parse_quote! {
-                #other_ident -> [1]#ident;
-            });
+        builder.add_statement(parse_quote! {
+            #self_ident -> [0]#ident;
+        });
+
+        builder.add_statement(parse_quote! {
+            #other_ident -> [1]#ident;
+        });
 
         HfStream {
             ident,
+            node_id: self.node_id,
             graph: self.graph,
             _phantom: PhantomData,
         }
@@ -275,35 +286,24 @@ impl<'a, T> HfStream<'a, T> {
         let other_ident = &other.ident;
         let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
 
-        self.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(parse_quote! {
-                #ident = union() -> tee();
-            });
+        let mut builders = self.graph.builders.borrow_mut();
+        let builder = builders.as_mut().unwrap().entry(self.node_id).or_default();
 
-        self.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(parse_quote! {
-                #self_ident -> [0]#ident;
-            });
+        builder.add_statement(parse_quote! {
+            #ident = union() -> tee();
+        });
 
-        self.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(parse_quote! {
-                #other_ident -> [1]#ident;
-            });
+        builder.add_statement(parse_quote! {
+            #self_ident -> [0]#ident;
+        });
+
+        builder.add_statement(parse_quote! {
+            #other_ident -> [1]#ident;
+        });
 
         HfStream {
             ident,
+            node_id: self.node_id,
             graph: self.graph,
             _phantom: PhantomData,
         }
@@ -322,10 +322,12 @@ impl<'a, T> HfStream<'a, T> {
         let f = f.splice();
 
         self.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(self.node_id)
+            .or_default()
             .add_statement(parse_quote! {
                 #ident = #self_ident -> for_each(#f);
             });
@@ -348,35 +350,24 @@ impl<'a, K, V1> HfStream<'a, (K, V1)> {
         let other_ident = &n.ident;
         let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
 
-        self.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(parse_quote! {
-                #ident = join::<'tick, 'tick>() -> tee();
-            });
+        let mut builders = self.graph.builders.borrow_mut();
+        let builder = builders.as_mut().unwrap().entry(self.node_id).or_default();
 
-        self.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(parse_quote! {
-                #self_ident -> [0]#ident;
-            });
+        builder.add_statement(parse_quote! {
+            #ident = join::<'tick, 'tick>() -> tee();
+        });
 
-        self.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(parse_quote! {
-                #other_ident -> [1]#ident;
-            });
+        builder.add_statement(parse_quote! {
+            #self_ident -> [0]#ident;
+        });
+
+        builder.add_statement(parse_quote! {
+            #other_ident -> [1]#ident;
+        });
 
         HfStream {
             ident,
+            node_id: self.node_id,
             graph: self.graph,
             _phantom: PhantomData,
         }
