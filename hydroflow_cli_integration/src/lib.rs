@@ -175,6 +175,12 @@ impl ServerOrBound {
         T::from_defn(self).await
     }
 
+    pub fn connect_local_blocking<T: Connected>(self) -> T {
+        let handle = tokio::runtime::Handle::current();
+        let _guard = handle.enter();
+        futures::executor::block_on(T::from_defn(self))
+    }
+
     pub async fn accept_tcp(&mut self) -> TcpStream {
         if let ServerOrBound::Bound(BoundConnection::TcpPort(handle, _)) = self {
             handle.recv().await.unwrap().unwrap()

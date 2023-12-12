@@ -3,7 +3,7 @@ use hydroflow::util::cli::{ConnectedDirect, ConnectedSource, ConnectedTagged};
 
 #[hydroflow::main]
 async fn main() {
-    let mut ports = hydroflow::util::cli::init().await;
+    let ports = hydroflow::util::cli::init().await;
     let echo_recv = ports
         .port("echo")
         .connect::<ConnectedTagged<ConnectedDirect>>()

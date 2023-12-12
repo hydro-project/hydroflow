@@ -3,6 +3,7 @@
 use std::any::Any;
 use std::future::Future;
 use std::marker::PhantomData;
+use std::pin::Pin;
 
 use instant::Instant;
 use tokio::sync::mpsc::UnboundedSender;
@@ -36,6 +37,8 @@ pub struct Context {
     /// not being forwarded to a running operator, this field is (mostly)
     /// meaningless.
     pub(crate) subgraph_id: SubgraphId,
+
+    pub(crate) tasks_to_spawn: Vec<Pin<Box<dyn Future<Output = ()> + 'static>>>,
 
     /// Join handles for spawned tasks.
     pub(crate) task_join_handles: Vec<JoinHandle<()>>,
@@ -156,12 +159,18 @@ impl Context {
     }
 
     /// Spawns an async task on the internal Tokio executor.
-    pub fn spawn_task<Fut>(&mut self, future: Fut)
+    pub fn request_task<Fut>(&mut self, future: Fut)
     where
         Fut: Future<Output = ()> + 'static,
     {
-        self.task_join_handles
-            .push(tokio::task::spawn_local(future));
+        self.tasks_to_spawn.push(Box::pin(future));
+    }
+
+    /// Launches all tasks requested with [`Self::request_task`].
+    pub fn spawn_tasks(&mut self) {
+        for task in self.tasks_to_spawn.drain(..) {
+            self.task_join_handles.push(tokio::task::spawn_local(task));
+        }
     }
 
     /// Aborts all tasks spawned with [`Self::spawn_task`].

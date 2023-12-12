@@ -1,6 +1,7 @@
 use std::hash::Hash;
 use std::marker::PhantomData;
 
+use hydroflow::futures::Sink;
 use proc_macro2::Span;
 use stageleft::{IntoQuotedMut, Quoted};
 use syn::parse_quote;
@@ -330,6 +331,22 @@ impl<'a, T> HfStream<'a, T> {
             .or_default()
             .add_statement(parse_quote! {
                 #ident = #self_ident -> for_each(#f);
+            });
+    }
+
+    pub fn dest_sink<S: Unpin + Sink<T> + 'a>(&self, sink: impl Quoted<'a, S>) {
+        let sink = sink.splice();
+        let self_ident = &self.ident;
+
+        self.graph
+            .builders
+            .borrow_mut()
+            .as_mut()
+            .unwrap()
+            .entry(self.node_id)
+            .or_default()
+            .add_statement(parse_quote! {
+                #self_ident -> dest_sink(#sink);
             });
     }
 }
