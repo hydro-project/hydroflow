@@ -32,8 +32,9 @@ impl<'a> Visit<'a> for GenMacroVistor {
 
         if is_entry {
             let cur_path = &self.current_mod;
-            let contents = i
-                .block
+            let mut i_cloned = i.clone();
+            i_cloned.attrs = vec![];
+            let contents = i_cloned
                 .to_token_stream()
                 .to_string()
                 .chars()

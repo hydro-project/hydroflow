@@ -29,7 +29,7 @@ Let's open up `src/main.rs` in the generated project and write a new `main` func
 ```rust
 #[hydroflow::main]
 async fn main() {
-    let mut ports = hydroflow::util::cli::init().await;
+    let ports = hydroflow::util::cli::init().await;
 }
 ```
 
@@ -72,7 +72,7 @@ use hydroflow::hydroflow_syntax;
 
 #[hydroflow::main]
 async fn main() {
-    let mut ports = hydroflow::util::cli::init().await;
+    let ports = hydroflow::util::cli::init().await;
 
     let input_recv = ports
         .port("input")
