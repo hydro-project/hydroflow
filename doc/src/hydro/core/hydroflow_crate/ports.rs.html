@@ -920,7 +920,7 @@
                     merge.push(bind_type);
                     merge.len() - <span class="number">1
                 </span>} <span class="kw">else </span>{
-                    <span class="macro">panic!</span>()
+                    <span class="macro">panic!</span>(<span class="string">&quot;Expected a merge connection definition&quot;</span>)
                 };
 
                 ServerConfig::MergeSelect(Box::new(base_config), merge_index)

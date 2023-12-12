@@ -370,6 +370,10 @@
 <a href="#370" id="370">370</a>
 <a href="#371" id="371">371</a>
 <a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::io::{BufRead, BufReader};
 <span class="attr">#[cfg(unix)]
@@ -409,7 +413,8 @@
             .current_dir(deployment_folder.path())
             .arg(<span class="string">&quot;apply&quot;</span>)
             .arg(<span class="string">&quot;-auto-approve&quot;</span>)
-            .arg(<span class="string">&quot;-no-color&quot;</span>);
+            .arg(<span class="string">&quot;-no-color&quot;</span>)
+            .arg(<span class="string">&quot;-parallelism=128&quot;</span>);
 
         <span class="attr">#[cfg(unix)]
         </span>{
@@ -648,7 +653,7 @@
     }
 }
 
-<span class="kw">fn </span>destroy_deployment(deployment_folder: <span class="kw-2">&amp;</span>TempDir) {
+<span class="kw">fn </span>destroy_deployment(deployment_folder: TempDir) {
     <span class="macro">println!</span>(
         <span class="string">&quot;Destroying terraform deployment at {}&quot;</span>,
         deployment_folder.path().display()
@@ -660,6 +665,7 @@
         .arg(<span class="string">&quot;destroy&quot;</span>)
         .arg(<span class="string">&quot;-auto-approve&quot;</span>)
         .arg(<span class="string">&quot;-no-color&quot;</span>)
+        .arg(<span class="string">&quot;-parallelism=128&quot;</span>)
         .stdout(Stdio::piped());
 
     <span class="attr">#[cfg(unix)]
@@ -678,6 +684,8 @@
         .expect(<span class="string">&quot;Failed to destroy terraform deployment&quot;</span>)
         .success()
     {
+        <span class="comment">// prevent the folder from being deleted
+        </span><span class="kw">let _ </span>= deployment_folder.into_path();
         <span class="macro">eprintln!</span>(<span class="string">&quot;WARNING: failed to destroy terraform deployment&quot;</span>);
     }
 }
@@ -701,7 +709,7 @@
             }
         }
 
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(deployment_folder) = <span class="kw-2">&amp;</span><span class="self">self</span>.deployment_folder {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(deployment_folder) = <span class="self">self</span>.deployment_folder.take() {
             destroy_deployment(deployment_folder);
         }
     }
@@ -732,7 +740,7 @@
 
 <span class="kw">impl </span>Drop <span class="kw">for </span>TerraformResult {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(deployment_folder) = <span class="kw-2">&amp;</span><span class="self">self</span>.deployment_folder {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(deployment_folder) = <span class="self">self</span>.deployment_folder.take() {
             destroy_deployment(deployment_folder);
         }
     }

@@ -141,9 +141,17 @@
 <a href="#141" id="141">141</a>
 <a href="#142" id="142">142</a>
 <a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::{Arc, Weak};
 
 <span class="kw">use </span>anyhow::Result;
+<span class="kw">use </span>futures::{StreamExt, TryStreamExt};
 <span class="kw">use </span>tokio::sync::RwLock;
 
 <span class="kw">use super</span>::{progress, Host, ResourcePool, ResourceResult, Service};
@@ -205,22 +213,25 @@
             .<span class="kw">await</span>;
 
             progress::ProgressTracker::with_group(<span class="string">&quot;deploy&quot;</span>, <span class="prelude-val">None</span>, || {
-                <span class="kw">let </span>services_future =
-                    <span class="self">self</span>.services
-                        .iter_mut()
-                        .map(|service: <span class="kw-2">&amp;mut </span>Weak&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;| <span class="kw">async </span>{
-                            service
-                                .upgrade()
-                                .unwrap()
-                                .write()
-                                .<span class="kw">await
-                                </span>.deploy(<span class="kw-2">&amp;</span>result)
-                                .<span class="kw">await</span>;
-                        });
+                <span class="kw">let </span>services_future = <span class="self">self
+                    </span>.services
+                    .iter_mut()
+                    .map(|service: <span class="kw-2">&amp;mut </span>Weak&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;| <span class="kw">async </span>{
+                        service
+                            .upgrade()
+                            .unwrap()
+                            .write()
+                            .<span class="kw">await
+                            </span>.deploy(<span class="kw-2">&amp;</span>result)
+                            .<span class="kw">await
+                    </span>})
+                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-                futures::future::join_all(services_future)
+                futures::stream::iter(services_future)
+                    .buffer_unordered(<span class="number">8</span>)
+                    .try_fold((), |<span class="kw">_</span>, <span class="kw">_</span>| <span class="kw">async </span>{ <span class="prelude-val">Ok</span>(()) })
             })
-            .<span class="kw">await</span>;
+            .<span class="kw">await</span><span class="question-mark">?</span>;
 
             progress::ProgressTracker::with_group(<span class="string">&quot;ready&quot;</span>, <span class="prelude-val">None</span>, || {
                 <span class="kw">let </span>all_services_ready =
@@ -249,15 +260,18 @@
             .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
         <span class="self">self</span>.services = active_services;
 
-        <span class="kw">let </span>all_services_start =
-            <span class="self">self</span>.services
-                .iter()
-                .map(|service: <span class="kw-2">&amp;</span>Weak&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;| <span class="kw">async </span>{
-                    service.upgrade().unwrap().write().<span class="kw">await</span>.start().<span class="kw">await</span><span class="question-mark">?</span>;
-                    <span class="prelude-val">Ok</span>(()) <span class="kw">as </span><span class="prelude-ty">Result</span>&lt;()&gt;
-                });
+        progress::ProgressTracker::with_group(<span class="string">&quot;start&quot;</span>, <span class="prelude-val">None</span>, || {
+            <span class="kw">let </span>all_services_start =
+                <span class="self">self</span>.services
+                    .iter()
+                    .map(|service: <span class="kw-2">&amp;</span>Weak&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;| <span class="kw">async </span>{
+                        service.upgrade().unwrap().write().<span class="kw">await</span>.start().<span class="kw">await</span><span class="question-mark">?</span>;
+                        <span class="prelude-val">Ok</span>(()) <span class="kw">as </span><span class="prelude-ty">Result</span>&lt;()&gt;
+                    });
 
-        futures::future::try_join_all(all_services_start).<span class="kw">await</span><span class="question-mark">?</span>;
+            futures::future::try_join_all(all_services_start)
+        })
+        .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 

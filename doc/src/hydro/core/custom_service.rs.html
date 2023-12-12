@@ -153,6 +153,7 @@
 <a href="#153" id="153">153</a>
 <a href="#154" id="154">154</a>
 <a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::ops::Deref;
 <span class="kw">use </span>std::sync::{Arc, Weak};
@@ -206,14 +207,15 @@
         }
     }
 
-    <span class="kw">async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) {
+    <span class="kw">async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">if </span><span class="self">self</span>.launched_host.is_some() {
-            <span class="kw">return</span>;
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
         <span class="kw">let </span><span class="kw-2">mut </span>host_write = <span class="self">self</span>.on.write().<span class="kw">await</span>;
         <span class="kw">let </span>launched = host_write.provision(resource_result);
         <span class="self">self</span>.launched_host = <span class="prelude-val">Some</span>(launched.<span class="kw">await</span>);
+        <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">async fn </span>ready(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {

@@ -360,17 +360,28 @@
 <a href="#360" id="360">360</a>
 <a href="#361" id="361">361</a>
 <a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use </span>anyhow::{bail, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>anyhow::{anyhow, bail, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>async_channel::Receiver;
 <span class="kw">use </span>async_trait::async_trait;
+<span class="kw">use </span>futures_core::Future;
 <span class="kw">use </span>hydroflow_cli_integration::ServerPort;
 <span class="kw">use </span>tokio::sync::RwLock;
-<span class="kw">use </span>tokio::task::JoinHandle;
 
 <span class="kw">use </span><span class="self">self</span>::ports::{HydroflowPortConfig, HydroflowSink, SourcePath};
 <span class="kw">use </span><span class="kw">super</span>::progress::ProgressTracker;
@@ -400,7 +411,7 @@
     <span class="doccomment">/// Configuration for the ports that this service will listen on a port for.
     </span>port_to_bind: HashMap&lt;String, ServerStrategy&gt;,
 
-    built_binary: <span class="prelude-ty">Option</span>&lt;JoinHandle&lt;<span class="prelude-ty">Result</span>&lt;BuiltCrate&gt;&gt;&gt;,
+    built_binary: Arc&lt;async_once_cell::OnceCell&lt;<span class="prelude-ty">Result</span>&lt;BuiltCrate, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str&gt;&gt;&gt;,
     launched_host: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt;,
 
     <span class="doccomment">/// A map of port names to config for how other services can connect to this one.
@@ -439,7 +450,7 @@
             external_ports,
             port_to_server: HashMap::new(),
             port_to_bind: HashMap::new(),
-            built_binary: <span class="prelude-val">None</span>,
+            built_binary: Arc::new(async_once_cell::OnceCell::new()),
             launched_host: <span class="prelude-val">None</span>,
             server_defns: Arc::new(RwLock::new(HashMap::new())),
             launched_binary: <span class="prelude-val">None</span>,
@@ -525,7 +536,7 @@
             .<span class="kw">await
     </span>}
 
-    <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; JoinHandle&lt;<span class="prelude-ty">Result</span>&lt;BuiltCrate&gt;&gt; {
+    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;BuiltCrate, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str&gt;&gt; {
         <span class="kw">let </span>src_cloned = <span class="self">self</span>.src.canonicalize().unwrap();
         <span class="kw">let </span>bin_cloned = <span class="self">self</span>.bin.clone();
         <span class="kw">let </span>example_cloned = <span class="self">self</span>.example.clone();
@@ -533,15 +544,21 @@
         <span class="kw">let </span>host = <span class="self">self</span>.on.clone();
         <span class="kw">let </span>profile_cloned = <span class="self">self</span>.profile.clone();
         <span class="kw">let </span>target_type = host.try_read().unwrap().target_type();
+        <span class="kw">let </span>built_binary_cloned = <span class="self">self</span>.built_binary.clone();
 
-        tokio::task::spawn(build_crate(
-            src_cloned,
-            bin_cloned,
-            example_cloned,
-            profile_cloned,
-            target_type,
-            features_cloned,
-        ))
+        <span class="kw">async move </span>{
+            built_binary_cloned
+                .get_or_init(build_crate(
+                    src_cloned,
+                    bin_cloned,
+                    example_cloned,
+                    profile_cloned,
+                    target_type,
+                    features_cloned,
+                ))
+                .<span class="kw">await
+                </span>.clone()
+        }
     }
 }
 
@@ -552,8 +569,7 @@
             <span class="kw">return</span>;
         }
 
-        <span class="kw">let </span>built = <span class="self">self</span>.build();
-        <span class="self">self</span>.built_binary = <span class="prelude-val">Some</span>(built);
+        tokio::task::spawn(<span class="self">self</span>.build());
 
         <span class="kw">let </span><span class="kw-2">mut </span>host = <span class="self">self
             </span>.on
@@ -570,9 +586,9 @@
         }
     }
 
-    <span class="kw">async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) {
+    <span class="kw">async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">if </span><span class="self">self</span>.launched_host.is_some() {
-            <span class="kw">return</span>;
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
         ProgressTracker::with_group(
@@ -582,13 +598,19 @@
                 .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">&quot;service/{}&quot;</span>, <span class="self">self</span>.id)),
             <span class="prelude-val">None</span>,
             || <span class="kw">async </span>{
+                <span class="kw">let </span>built = <span class="self">self</span>.build().<span class="kw">await</span>.clone().map_err(|e| <span class="macro">anyhow!</span>(e))<span class="question-mark">?</span>;
+
                 <span class="kw">let </span><span class="kw-2">mut </span>host_write = <span class="self">self</span>.on.write().<span class="kw">await</span>;
-                <span class="kw">let </span>launched = host_write.provision(resource_result);
-                <span class="self">self</span>.launched_host = <span class="prelude-val">Some</span>(launched.<span class="kw">await</span>);
+                <span class="kw">let </span>launched = host_write.provision(resource_result).<span class="kw">await</span>;
+
+                launched.copy_binary(built.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
+
+                <span class="self">self</span>.launched_host = <span class="prelude-val">Some</span>(launched);
+                <span class="prelude-val">Ok</span>(())
             },
         )
-        .<span class="kw">await</span>;
-    }
+        .<span class="kw">await
+    </span>}
 
     <span class="kw">async fn </span>ready(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">if </span><span class="self">self</span>.launched_binary.is_some() {
@@ -604,7 +626,7 @@
             || <span class="kw">async </span>{
                 <span class="kw">let </span>launched_host = <span class="self">self</span>.launched_host.as_ref().unwrap();
 
-                <span class="kw">let </span>built = <span class="self">self</span>.built_binary.take().unwrap().<span class="kw">await</span><span class="question-mark">??</span>.clone();
+                <span class="kw">let </span>built = <span class="self">self</span>.build().<span class="kw">await</span>.clone().map_err(|e| <span class="macro">anyhow!</span>(e))<span class="question-mark">?</span>;
                 <span class="kw">let </span>args = <span class="self">self</span>.args.as_ref().cloned().unwrap_or_default();
 
                 <span class="kw">let </span>binary = launched_host

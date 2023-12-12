@@ -116,8 +116,31 @@
 <a href="#116" id="116">116</a>
 <a href="#117" id="117">117</a>
 <a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
-<span class="kw">use </span>std::sync::atomic::AtomicU64;
+<span class="kw">use </span>std::io::Write;
+<span class="kw">use </span>std::sync::atomic::{AtomicBool, AtomicU64};
 <span class="kw">use </span>std::sync::{mpsc, Arc};
 <span class="kw">use </span>std::thread;
 <span class="kw">use </span>std::time::Instant;
@@ -146,15 +169,18 @@
         .<span class="kw">await
         </span>.into_source();
 
-    <span class="kw">let </span>num_clients: Vec&lt;usize&gt; = serde_json::from_str(<span class="kw-2">&amp;</span>std::env::args().nth(<span class="number">1</span>).unwrap()).unwrap();
-    <span class="kw">let </span>num_clients = num_clients[<span class="number">0</span>];
+    <span class="kw">let </span>num_clients: u64 = std::env::args().nth(<span class="number">1</span>).unwrap().parse().unwrap();
+    <span class="kw">let </span>partition_n: u64 = std::env::args().nth(<span class="number">2</span>).unwrap().parse().unwrap();
+    <span class="kw">let </span>keys_per_partition: u64 = std::env::args().nth(<span class="number">3</span>).unwrap().parse().unwrap();
 
     <span class="kw">let </span>atomic_counter = Arc::new(AtomicU64::new(<span class="number">0</span>));
     <span class="kw">let </span>atomic_borrow = atomic_counter.clone();
+    <span class="kw">let </span>atomic_keep_running = Arc::new(AtomicBool::new(<span class="bool-val">true</span>));
+    <span class="kw">let </span>atomic_keep_running_clone = atomic_keep_running.clone();
     <span class="kw">let </span>(latency_sender, latency_receiver) = mpsc::channel::&lt;u128&gt;();
-    thread::spawn(<span class="kw">move </span>|| {
+    <span class="kw">let </span>printer_thread = thread::spawn(<span class="kw">move </span>|| {
         <span class="kw">let </span><span class="kw-2">mut </span>last_instant = Instant::now();
-        <span class="kw">loop </span>{
+        <span class="kw">while </span>atomic_keep_running_clone.load(std::sync::atomic::Ordering::Relaxed) {
             thread::sleep(std::time::Duration::from_millis(<span class="number">100</span>));
             <span class="kw">let </span>now = Instant::now();
             <span class="kw">let </span>counter = atomic_borrow.swap(<span class="number">0</span>, std::sync::atomic::Ordering::Relaxed);
@@ -165,6 +191,8 @@
             <span class="kw">while let </span><span class="prelude-val">Ok</span>(latency) = latency_receiver.try_recv() {
                 <span class="macro">println!</span>(<span class="string">&quot;latency,{}&quot;</span>, latency);
             }
+
+            std::io::stdout().flush().unwrap()
         }
     });
 
@@ -185,14 +213,17 @@
         <span class="kw">let </span>inc_sender = inc_sender.clone();
         <span class="kw">let </span>latency_sender = latency_sender.clone();
         <span class="kw">let </span>atomic_counter = atomic_counter.clone();
+        <span class="kw">let </span>keep_running = atomic_keep_running.clone();
         tokio::spawn(<span class="kw">async move </span>{
             <span class="attr">#[cfg(debug_assertions)]
             </span><span class="kw">let </span><span class="kw-2">mut </span>count_tracker = HashMap::new();
 
-            <span class="kw">loop </span>{
-                <span class="kw">let </span>id = ((rand::random::&lt;u64&gt;() % <span class="number">1024</span>) / (num_clients <span class="kw">as </span>u64))
-                    * (num_clients <span class="kw">as </span>u64)
-                    + (i <span class="kw">as </span>u64);
+            <span class="kw">let </span><span class="kw-2">mut </span>next_base: u64 = <span class="number">0</span>;
+
+            <span class="kw">while </span>keep_running.load(std::sync::atomic::Ordering::Relaxed) {
+                <span class="kw">let </span>id = (partition_n * keys_per_partition)
+                    + ((((next_base % keys_per_partition) / num_clients) * num_clients) + i);
+                next_base = next_base.wrapping_add(<span class="number">1</span>);
                 <span class="kw">let </span>increment = rand::random::&lt;bool&gt;();
                 <span class="kw">let </span>change = <span class="kw">if </span>increment { <span class="number">1 </span>} <span class="kw">else </span>{ -<span class="number">1 </span>};
                 <span class="kw">let </span>start = Instant::now();
@@ -205,10 +236,12 @@
                 </span>{
                     <span class="kw">let </span>count = count_tracker.entry(id).or_insert(<span class="number">0</span>);
                     <span class="kw-2">*</span>count += change;
-                    <span class="macro">assert!</span>(<span class="kw-2">*</span>count == received);
+                    <span class="macro">assert_eq!</span>(<span class="kw-2">*</span>count, received);
                 }
 
-                latency_sender.send(start.elapsed().as_micros()).unwrap();
+                <span class="kw">if </span>next_base % <span class="number">100 </span>== <span class="number">0 </span>{
+                    latency_sender.send(start.elapsed().as_micros()).unwrap();
+                }
 
                 atomic_counter.fetch_add(<span class="number">1</span>, std::sync::atomic::Ordering::Relaxed);
             }
@@ -220,7 +253,12 @@
             <span class="kw">let </span>updated =
                 deserialize_from_bytes::&lt;QueryResponse&gt;(end_node.next().<span class="kw">await</span>.unwrap().unwrap())
                     .unwrap();
-            <span class="kw">if </span>queues[(updated.key % (num_clients <span class="kw">as </span>u64)) <span class="kw">as </span>usize]
+
+            <span class="kw">if </span>updated.key / keys_per_partition != partition_n {
+                <span class="kw">continue</span>;
+            }
+
+            <span class="kw">if </span>queues[((updated.key % keys_per_partition) % num_clients) <span class="kw">as </span>usize]
                 .send(updated.value)
                 .is_err()
             {
@@ -232,6 +270,12 @@
     <span class="kw">let </span><span class="kw-2">mut </span>line = String::new();
     std::io::stdin().read_line(<span class="kw-2">&amp;mut </span>line).unwrap();
     <span class="macro">assert!</span>(line.starts_with(<span class="string">&quot;stop&quot;</span>));
+
+    atomic_keep_running.store(<span class="bool-val">false</span>, std::sync::atomic::Ordering::Relaxed);
+    printer_thread.join().unwrap();
+
+    <span class="macro">println!</span>(<span class="string">&quot;end&quot;</span>);
+
     std::process::exit(<span class="number">0</span>);
 }
 </code></pre></div></section></main></body></html>

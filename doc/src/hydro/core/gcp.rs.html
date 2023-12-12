@@ -615,6 +615,7 @@
 <a href="#615" id="615">615</a>
 <a href="#616" id="616">616</a>
 <a href="#617" id="617">617</a>
+<a href="#618" id="618">618</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::path::PathBuf;
@@ -724,10 +725,11 @@
                         <span class="kw">let </span><span class="kw-2">mut </span>config = SessionConfiguration::new();
                         config.set_compress(<span class="bool-val">true</span>);
 
-                        <span class="kw">let </span><span class="kw-2">mut </span>session =
-                            AsyncSession::&lt;TcpStream&gt;::connect(target_addr, <span class="prelude-val">Some</span>(config)).<span class="kw">await</span><span class="question-mark">?</span>;
-
                         tokio::time::timeout(Duration::from_secs(<span class="number">15</span>), <span class="kw">async move </span>{
+                            <span class="kw">let </span><span class="kw-2">mut </span>session =
+                                AsyncSession::&lt;TcpStream&gt;::connect(target_addr, <span class="prelude-val">Some</span>(config))
+                                    .<span class="kw">await</span><span class="question-mark">?</span>;
+
                             session.handshake().<span class="kw">await</span><span class="question-mark">?</span>;
 
                             session

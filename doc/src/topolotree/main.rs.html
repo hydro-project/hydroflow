@@ -252,6 +252,45 @@
 <a href="#252" id="252">252</a>
 <a href="#253" id="253">253</a>
 <a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
 </pre></div><pre class="rust"><code><span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests;
 
@@ -285,6 +324,9 @@
 }
 
 <span class="kw">type </span>PostNeighborJoin = (((u64, <span class="prelude-ty">Option</span>&lt;NodeID&gt;), (i64, usize)), NodeID);
+
+<span class="kw">type </span>ContributionAgg =
+    Rc&lt;RefCell&lt;HashMap&lt;u64, HashMap&lt;<span class="prelude-ty">Option</span>&lt;NodeID&gt;, (Timestamped&lt;i64&gt;, usize)&gt;&gt;&gt;&gt;;
 
 <span class="kw">fn </span>run_topolotree(
     neighbors: Vec&lt;u32&gt;,
@@ -320,7 +362,7 @@
                 }
             });
 
-        from_neighbors = parsed_input[payload];
+        from_neighbors = parsed_input[payload] -&gt; tee();
         pings = parsed_input[ping] -&gt; tee();
         pongs = parsed_input[pong] -&gt; tee();
 
@@ -329,7 +371,7 @@
         <span class="comment">// generate a ping every second
         </span>neighbors -&gt; [<span class="number">0</span>]ping_generator;
         source_interval(Duration::from_secs(<span class="number">1</span>)) -&gt; [<span class="number">1</span>]ping_generator;
-        ping_generator = cross_join()
+        ping_generator = cross_join_multiset()
             -&gt; map(|(src, <span class="kw">_</span>)| (src, TopolotreeMessage::Ping()))
             -&gt; output;
 
@@ -348,31 +390,58 @@
             }) -&gt; tee();
 
         from_neighbors
-            -&gt; map(|(src, payload): (NodeID, Payload&lt;i64&gt;)| ((payload.key, src), (payload.key, payload.contents)))
-            -&gt; fold_keyed::&lt;<span class="lifetime">&#39;static</span>&gt;(|| (Timestamped { timestamp: -<span class="number">1</span>, data: Default::default() }, <span class="number">0</span>), |acc: <span class="kw-2">&amp;mut </span>(Timestamped&lt;i64&gt;, usize), (key, val): (u64, Timestamped&lt;i64&gt;)| {
-                <span class="kw">if </span>val.timestamp &gt; acc.<span class="number">0</span>.timestamp {
-                    acc.<span class="number">0 </span>= val;
+            -&gt; map(|(<span class="kw">_</span>, payload): (NodeID, Payload&lt;i64&gt;)| payload.key)
+            -&gt; touched_keys;
+
+        operations
+            -&gt; map(|op| op.key)
+            -&gt; touched_keys;
+
+        touched_keys = union() -&gt; unique() -&gt; [<span class="number">0</span>]from_neighbors_unfiltered;
+
+        from_neighbors
+            -&gt; map(|(src, payload): (NodeID, Payload&lt;i64&gt;)| (src, (payload.key, payload.contents)))
+            -&gt; fold::&lt;<span class="lifetime">&#39;static</span>&gt;(|| Rc::new(RefCell::new(HashMap::new())), |acc: <span class="kw-2">&amp;mut </span>ContributionAgg, (source, (key, val)): (NodeID, (u64, Timestamped&lt;i64&gt;))| {
+                <span class="kw">let </span><span class="kw-2">mut </span>acc = acc.borrow_mut();
+                <span class="kw">let </span>key_entry = acc.entry(key).or_default();
+                <span class="kw">let </span>src_entry = key_entry.entry(<span class="prelude-val">Some</span>(source)).or_insert((Timestamped { timestamp: -<span class="number">1</span>, data: <span class="number">0 </span>}, <span class="number">0</span>));
+                <span class="kw">if </span>val.timestamp &gt; src_entry.<span class="number">0</span>.timestamp {
+                    src_entry.<span class="number">0 </span>= val;
                     <span class="kw-2">*</span>self_timestamp1.borrow_mut().entry(key).or_insert(<span class="number">0</span>) += <span class="number">1</span>;
-                    acc.<span class="number">1 </span>= context.current_tick();
+                    src_entry.<span class="number">1 </span>= context.current_tick();
                 }
             })
-            -&gt; map(|((key, src), (payload, change_tick))| ((key, <span class="prelude-val">Some</span>(src)), (payload.data, change_tick)))
-            -&gt; from_neighbors_or_local;
+            -&gt; from_neighbors_to_filter;
 
-        local_value = source_stream(increment_requests)
+        from_neighbors_to_filter = union() -&gt; [<span class="number">1</span>]from_neighbors_unfiltered;
+        from_neighbors_unfiltered =
+            cross_join() -&gt;
+            flat_map(|(key, hashmap)| {
+                <span class="kw">let </span>hashmap = hashmap.borrow();
+                hashmap.get(<span class="kw-2">&amp;</span>key).iter().flat_map(|v| v.iter()).map(|t| ((key, <span class="kw-2">*</span>t.<span class="number">0</span>), (t.<span class="number">1.0</span>.data, t.<span class="number">1.1</span>))).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;().into_iter()
+            }) -&gt;
+            from_neighbors_or_local;
+
+        operations = source_stream(increment_requests)
             -&gt; map(|x| deserialize_from_bytes::&lt;OperationPayload&gt;(<span class="kw-2">&amp;</span>x.unwrap()).unwrap())
+            -&gt; tee();
+        local_values = operations
             -&gt; inspect(|change| {
                 <span class="kw-2">*</span>self_timestamp2.borrow_mut().entry(change.key).or_insert(<span class="number">0</span>) += <span class="number">1</span>;
             })
             -&gt; map(|change_payload: OperationPayload| (change_payload.key, (change_payload.change, context.current_tick())))
-            -&gt; reduce_keyed::&lt;<span class="lifetime">&#39;static</span>&gt;(|agg: <span class="kw-2">&amp;mut </span>(i64, usize), change: (i64, usize)| {
-                agg.<span class="number">0 </span>+= change.<span class="number">0</span>;
-                agg.<span class="number">1 </span>= std::cmp::max(agg.<span class="number">1</span>, change.<span class="number">1</span>);
+            -&gt; fold::&lt;<span class="lifetime">&#39;static</span>&gt;(|| Rc::new(RefCell::new(HashMap::new())), |agg: <span class="kw-2">&amp;mut </span>ContributionAgg, change: (u64, (i64, usize))| {
+                <span class="kw">let </span><span class="kw-2">mut </span>agg = agg.borrow_mut();
+                <span class="kw">let </span>agg_key = agg.entry(change.<span class="number">0</span>).or_default();
+                <span class="kw">let </span>agg_key = agg_key.entry(<span class="prelude-val">None</span>).or_insert((Timestamped { timestamp: <span class="number">0</span>, data: <span class="number">0 </span>}, <span class="number">0</span>));
+
+                agg_key.<span class="number">0</span>.data += change.<span class="number">1.0</span>;
+                agg_key.<span class="number">1 </span>= change.<span class="number">1.1</span>;
             });
 
-        local_value -&gt; map(|(key, data)| ((key, <span class="prelude-val">None</span>), data)) -&gt; from_neighbors_or_local;
+        local_values -&gt; from_neighbors_to_filter;
 
-        from_neighbors_or_local = union() -&gt; tee();
+        from_neighbors_or_local = tee();
         from_neighbors_or_local -&gt; [<span class="number">0</span>]all_neighbor_data;
 
         new_neighbors = source_iter(neighbors)
@@ -436,8 +505,9 @@
 
 <span class="attr">#[hydroflow::main]
 </span><span class="kw">async fn </span>main() {
-    <span class="kw">let </span>args: Vec&lt;String&gt; = std::env::args().skip(<span class="number">1</span>).collect();
-    <span class="kw">let </span>neighbors: Vec&lt;u32&gt; = args.into_iter().map(|x| x.parse().unwrap()).collect();
+    <span class="kw">let </span><span class="kw-2">mut </span>args = std::env::args().skip(<span class="number">1</span>);
+    <span class="kw">let </span>_self_id: u32 = args.next().unwrap().parse().unwrap();
+    <span class="kw">let </span>neighbors: Vec&lt;u32&gt; = args.map(|x| x.parse().unwrap()).collect();
 
     <span class="kw">let </span><span class="kw-2">mut </span>ports = hydroflow::util::cli::init().<span class="kw">await</span>;
 
@@ -471,14 +541,22 @@
 
     tokio::task::spawn_local(<span class="kw">async move </span>{
         <span class="kw">while let </span><span class="prelude-val">Some</span>(msg) = chan_rx.recv().<span class="kw">await </span>{
-            output_send.send(msg).<span class="kw">await</span>.unwrap();
+            output_send.feed(msg).<span class="kw">await</span>.unwrap();
+            <span class="kw">while let </span><span class="prelude-val">Ok</span>(msg) = chan_rx.try_recv() {
+                output_send.feed(msg).<span class="kw">await</span>.unwrap();
+            }
+            output_send.flush().<span class="kw">await</span>.unwrap();
         }
     });
 
     <span class="kw">let </span>(query_tx, <span class="kw-2">mut </span>query_rx) = tokio::sync::mpsc::unbounded_channel();
     tokio::task::spawn_local(<span class="kw">async move </span>{
         <span class="kw">while let </span><span class="prelude-val">Some</span>(msg) = query_rx.recv().<span class="kw">await </span>{
-            query_responses.send(msg).<span class="kw">await</span>.unwrap();
+            query_responses.feed(msg).<span class="kw">await</span>.unwrap();
+            <span class="kw">while let </span><span class="prelude-val">Ok</span>(msg) = query_rx.try_recv() {
+                query_responses.feed(msg).<span class="kw">await</span>.unwrap();
+            }
+            query_responses.flush().<span class="kw">await</span>.unwrap();
         }
     });
 

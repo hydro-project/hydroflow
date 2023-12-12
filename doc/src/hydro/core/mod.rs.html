@@ -198,6 +198,8 @@
 <a href="#198" id="198">198</a>
 <a href="#199" id="199">199</a>
 <a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::path::PathBuf;
@@ -289,6 +291,8 @@
     <span class="doccomment">/// Given a pre-selected network type, computes concrete information needed for a service
     /// to listen to network connections (such as the IP address to bind to).
     </span><span class="kw">fn </span>server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, strategy: <span class="kw-2">&amp;</span>ServerStrategy) -&gt; ServerBindConfig;
+
+    <span class="kw">async fn </span>copy_binary(<span class="kw-2">&amp;</span><span class="self">self</span>, binary: Arc&lt;(String, Vec&lt;u8&gt;, PathBuf)&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
 
     <span class="kw">async fn </span>launch_binary(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -386,7 +390,7 @@
     </span><span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch);
 
     <span class="doccomment">/// Connects to the acquired resources and prepares the service to be launched.
-    </span><span class="kw">async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;);
+    </span><span class="kw">async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
 
     <span class="doccomment">/// Launches the service, which should start listening for incoming network
     /// connections. The service should not start computing at this point.
