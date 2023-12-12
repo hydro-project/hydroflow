@@ -61,6 +61,7 @@ impl<'a> Default for Hydroflow<'a> {
 
             subgraph_id: SubgraphId(0),
 
+            tasks_to_spawn: Vec::new(),
             task_join_handles: Vec::new(),
         };
         Self {
@@ -351,6 +352,7 @@ impl<'a> Hydroflow<'a> {
     /// TODO(mingwei): Currently blockes forever, no notion of "completion."
     #[tracing::instrument(level = "trace", skip(self), ret)]
     pub async fn run_async(&mut self) -> Option<Never> {
+        self.context.spawn_tasks();
         loop {
             // Run any work which is immediately available.
             self.run_available_async().await;
@@ -681,12 +683,12 @@ impl<'a> Hydroflow<'a> {
 }
 
 impl<'a> Hydroflow<'a> {
-    /// Alias for [`Context::spawn_task`].
-    pub fn spawn_task<Fut>(&mut self, future: Fut)
+    /// Alias for [`Context::request_task`].
+    pub fn request_task<Fut>(&mut self, future: Fut)
     where
         Fut: Future<Output = ()> + 'static,
     {
-        self.context.spawn_task(future);
+        self.context.request_task(future);
     }
 
     /// Alias for [`Context::abort_tasks`].

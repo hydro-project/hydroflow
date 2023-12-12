@@ -227,6 +227,16 @@ jobs:
           cd hydro_cli
           source .venv/bin/activate
           cd python_tests
+          cd ../..
+          pip install -r requirements.txt
+          RUST_BACKTRACE=1 pytest *.py
+
+      - name: Run Hydroflow+ Python tests
+        run: |
+          ulimit -c unlimited
+          cd hydro_cli
+          source .venv/bin/activate
+          cd ../hydroflow_plus_test/python_tests
           pip install -r requirements.txt
           RUST_BACKTRACE=1 pytest *.py
 

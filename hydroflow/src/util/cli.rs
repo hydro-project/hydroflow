@@ -1,5 +1,6 @@
 #![allow(missing_docs)] // TODO(mingwei)
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 pub use hydroflow_cli_integration::*;
@@ -15,19 +16,28 @@ pub async fn launch_flow(mut flow: Hydroflow<'_>) {
         stop.0.send(()).unwrap();
     });
 
+    let local_set = tokio::task::LocalSet::new();
+    let flow = local_set.run_until(async move {
+        flow.run_async().await;
+    });
+
     tokio::select! {
         _ = stop.1 => {},
-        _ = flow.run_async() => {}
+        _ = flow => {}
     }
 }
 
 pub struct HydroCLI {
-    ports: HashMap<String, ServerOrBound>,
+    ports: RefCell<HashMap<String, ServerOrBound>>,
 }
 
 impl HydroCLI {
-    pub fn port(&mut self, name: &str) -> ServerOrBound {
-        self.ports.remove(name).unwrap()
+    pub fn port(&self, name: &str) -> ServerOrBound {
+        self.ports
+            .try_borrow_mut()
+            .unwrap()
+            .remove(name)
+            .unwrap_or_else(|| panic!("port {} not found", name))
     }
 }
 
@@ -73,6 +83,6 @@ pub async fn init() -> HydroCLI {
     println!("ack start");
 
     HydroCLI {
-        ports: all_connected,
+        ports: RefCell::new(all_connected),
     }
 }
