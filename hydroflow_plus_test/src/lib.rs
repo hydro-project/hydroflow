@@ -7,6 +7,8 @@ use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::HfBuilder;
 use stageleft::{q, Quoted, RuntimeData};
 
+pub mod networked;
+
 #[stageleft::entry(UnboundedReceiverStream<u32>)]
 pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
     graph: &'a HfBuilder<'a>,

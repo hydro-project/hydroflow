@@ -139,7 +139,7 @@ pub const DEST_SINK: OperatorConstraints = OperatorConstraints {
                     }
                 }
                 #hydroflow
-                    .spawn_task(sink_feed_flush(#recv_ident, #sink_arg));
+                    .request_task(sink_feed_flush(#recv_ident, #sink_arg));
             }
         };
 
