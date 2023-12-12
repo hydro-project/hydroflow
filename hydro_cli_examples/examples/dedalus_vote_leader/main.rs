@@ -4,7 +4,7 @@ use hydroflow_datalog::datalog;
 
 #[hydroflow::main]
 async fn main() {
-    let mut ports = hydroflow::util::cli::init().await;
+    let ports = hydroflow::util::cli::init().await;
     let to_replica_port = ports
         .port("to_replica")
         .connect::<ConnectedDemux<ConnectedDirect>>()
