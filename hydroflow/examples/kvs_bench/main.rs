@@ -1,5 +1,3 @@
-#![feature(core_intrinsics)]
-
 mod buffer_pool;
 mod protocol;
 mod server;
