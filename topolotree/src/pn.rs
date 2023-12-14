@@ -23,7 +23,7 @@ enum GossipOrIncrement {
 
 #[hydroflow::main]
 async fn main() {
-    let mut ports = hydroflow::util::cli::init().await;
+    let ports = hydroflow::util::cli::init().await;
 
     let my_id: Vec<usize> = serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
     let my_id = my_id[0];

@@ -296,7 +296,6 @@ pub fn entry(
     };
 
     let input_contents = input
-        .block
         .to_token_stream()
         .to_string()
         .chars()

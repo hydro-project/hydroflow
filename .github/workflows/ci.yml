@@ -216,11 +216,6 @@ jobs:
           pip install maturin
           maturin develop
 
-      - name: Configure core dumps
-        run: |
-          mkdir cli-core-dumps
-          echo "$PWD/cli-core-dumps/corefile-%e-%p-%t" | sudo tee /proc/sys/kernel/core_pattern
-
       - name: Run Python tests
         run: |
           ulimit -c unlimited
@@ -229,24 +224,16 @@ jobs:
           cd python_tests
           pip install -r requirements.txt
           RUST_BACKTRACE=1 pytest *.py
+          cd ../..
 
-      - name: Print backtraces
-        if: ${{ failure() }}
+      - name: Run Hydroflow+ Python tests
         run: |
-          cd cli-core-dumps
-          sudo apt-get install gdb
-          for file in $(ls); do
-            echo "Backtrace for $file"
-            rust-gdb -ex "thread apply all bt" -batch $PWD/../.venv/bin/python $file
-          done
-          cd ..
-
-      - name: Upload core dumps
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@master
-        with:
-          name: cli-core-dumps
-          path: ./cli-core-dumps/*
+          ulimit -c unlimited
+          cd hydro_cli
+          source .venv/bin/activate
+          cd ../hydroflow_plus_test/python_tests
+          pip install -r requirements.txt
+          RUST_BACKTRACE=1 pytest *.py
 
   lints:
     name: Lints
