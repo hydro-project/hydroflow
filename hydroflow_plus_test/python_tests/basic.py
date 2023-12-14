@@ -33,7 +33,7 @@ async def test_networked_basic():
     sender_port = sender.client_port()
     sender_port.send_to(program_zero.ports.node_zero_input)
 
-    program_zero.ports.node_zero_output.send_to(program_one.ports.node_one_input)
+    program_zero.ports.zero_to_one.send_to(program_one.ports.zero_to_one)
 
     await deployment.deploy()
 
