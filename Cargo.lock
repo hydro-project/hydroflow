@@ -1494,6 +1494,7 @@ dependencies = [
 name = "hydroflow_plus_test"
 version = "0.0.0"
 dependencies = [
+ "hydroflow",
  "hydroflow_plus",
  "hydroflow_plus_test_macro",
  "insta",
@@ -1501,17 +1502,20 @@ dependencies = [
  "serde",
  "stageleft",
  "stageleft_tool",
+ "tokio",
 ]
 
 [[package]]
 name = "hydroflow_plus_test_macro"
 version = "0.0.0"
 dependencies = [
+ "hydroflow",
  "hydroflow_plus",
  "regex",
  "serde",
  "stageleft",
  "stageleft_tool",
+ "tokio",
 ]
 
 [[package]]
