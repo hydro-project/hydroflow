@@ -11,7 +11,7 @@ use super::{
 /// A `Sink` is a thing into which values can be sent, asynchronously. For example, sending items
 /// into a bounded channel.
 ///
-/// Note this operator must be used within a Tokio runtime.
+/// Note this operator must be used within a Tokio runtime, and the Hydroflow program must be launched with `run_async`.
 ///
 /// ```rustbook
 /// # #[hydroflow::main]
