@@ -33,7 +33,7 @@ async def test_networked_basic():
     sender_port = sender.client_port()
     sender_port.send_to(program_zero.ports.node_zero_input)
 
-    program_zero.ports.zero_to_one.send_to(program_one.ports.zero_to_one)
+    program_zero.ports.port_0.send_to(program_one.ports.port_0)
 
     await deployment.deploy()
 
@@ -45,4 +45,6 @@ async def test_networked_basic():
 
     async for log in receiver_out:
         assert log == "node one received: \"hi!\""
-        break
+        return
+    
+    assert False
