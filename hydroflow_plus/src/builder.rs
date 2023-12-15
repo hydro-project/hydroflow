@@ -1,7 +1,9 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::io;
 use std::marker::PhantomData;
 
+use hydroflow::bytes::BytesMut;
 use hydroflow::futures::stream::Stream;
 use hydroflow_lang::graph::{
     eliminate_extra_unions_tees, partition_graph, propegate_flow_props, FlatGraphBuilder,
@@ -11,6 +13,7 @@ use quote::quote;
 use stageleft::{IntoQuotedOnce, Quoted, QuotedContext};
 use syn::parse_quote;
 
+use crate::node::HfNode;
 use crate::{HfBuilt, HfStream, RuntimeContext};
 
 pub struct HfBuilder<'a> {
@@ -100,11 +103,11 @@ impl<'a> HfBuilder<'a> {
         }
     }
 
-    pub fn source_stream<T, E: Stream<Item = T> + Unpin>(
+    pub fn source_stream<T, E: Stream<Item = T> + Unpin, N: HfNode<'a>>(
         &'a self,
-        node_id: usize,
+        node: N,
         e: impl Quoted<'a, E>,
-    ) -> HfStream<'a, T> {
+    ) -> HfStream<'a, T, N> {
         let next_id = {
             let mut next_id = self.next_id.borrow_mut();
             let id = *next_id;
@@ -119,7 +122,7 @@ impl<'a> HfBuilder<'a> {
             .borrow_mut()
             .as_mut()
             .unwrap()
-            .entry(node_id)
+            .entry(node.id())
             .or_default()
             .add_statement(parse_quote! {
                 #ident = source_stream(#e) -> tee();
@@ -127,17 +130,66 @@ impl<'a> HfBuilder<'a> {
 
         HfStream {
             ident,
-            node_id,
+            node,
             graph: self,
             _phantom: PhantomData,
         }
     }
 
-    pub fn source_iter<T, E: IntoIterator<Item = T>>(
+    pub fn source_port<N: HfNode<'a>>(
         &'a self,
-        node_id: usize,
+        node: N,
+        port: &str,
+    ) -> HfStream<'a, Result<BytesMut, io::Error>, N> {
+        let next_id = {
+            let mut next_id = self.next_id.borrow_mut();
+            let id = *next_id;
+            *next_id += 1;
+            id
+        };
+
+        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
+        let cli_splice = node.get_cli().splice();
+
+        let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
+            .expect("hydroflow_plus should be present in `Cargo.toml`");
+        let root = match hydroflow_crate {
+            proc_macro_crate::FoundCrate::Itself => quote! { hydroflow_plus },
+            proc_macro_crate::FoundCrate::Name(name) => {
+                let ident = syn::Ident::new(&name, Span::call_site());
+                quote! { #ident }
+            }
+        };
+
+        self.builders
+            .borrow_mut()
+            .as_mut()
+            .unwrap()
+            .entry(node.id())
+            .or_default()
+            .add_statement(parse_quote! {
+                #ident = source_stream({
+                    use #root::util::cli::ConnectedSource;
+                    #cli_splice
+                        .port(#port)
+                        .connect_local_blocking::<#root::util::cli::ConnectedDirect>()
+                        .into_source()
+                }) -> tee();
+            });
+
+        HfStream {
+            ident,
+            node,
+            graph: self,
+            _phantom: PhantomData,
+        }
+    }
+
+    pub fn source_iter<T, E: IntoIterator<Item = T>, N: HfNode<'a>>(
+        &'a self,
+        node: N,
         e: impl IntoQuotedOnce<'a, E>,
-    ) -> HfStream<'a, T> {
+    ) -> HfStream<'a, T, N> {
         let next_id = {
             let mut next_id = self.next_id.borrow_mut();
             let id = *next_id;
@@ -152,7 +204,7 @@ impl<'a> HfBuilder<'a> {
             .borrow_mut()
             .as_mut()
             .unwrap()
-            .entry(node_id)
+            .entry(node.id())
             .or_default()
             .add_statement(parse_quote! {
                 #ident = source_iter(#e) -> tee();
@@ -160,13 +212,13 @@ impl<'a> HfBuilder<'a> {
 
         HfStream {
             ident,
-            node_id,
+            node,
             graph: self,
             _phantom: PhantomData,
         }
     }
 
-    pub fn cycle<T>(&'a self, node_id: usize) -> (HfCycle<'a, T>, HfStream<'a, T>) {
+    pub fn cycle<T, N: HfNode<'a>>(&'a self, node: N) -> (HfCycle<'a, T, N>, HfStream<'a, T, N>) {
         let next_id = {
             let mut next_id = self.next_id.borrow_mut();
             let id = *next_id;
@@ -180,7 +232,7 @@ impl<'a> HfBuilder<'a> {
             .borrow_mut()
             .as_mut()
             .unwrap()
-            .entry(node_id)
+            .entry(node.id())
             .or_default()
             .add_statement(parse_quote! {
                 #ident = tee();
@@ -189,13 +241,13 @@ impl<'a> HfBuilder<'a> {
         (
             HfCycle {
                 ident: ident.clone(),
-                node_id,
+                node,
                 graph: self,
                 _phantom: PhantomData,
             },
             HfStream {
                 ident,
-                node_id,
+                node,
                 graph: self,
                 _phantom: PhantomData,
             },
@@ -203,15 +255,15 @@ impl<'a> HfBuilder<'a> {
     }
 }
 
-pub struct HfCycle<'a, T> {
+pub struct HfCycle<'a, T, N: HfNode<'a>> {
     ident: syn::Ident,
-    node_id: usize,
+    node: N,
     graph: &'a HfBuilder<'a>,
     _phantom: PhantomData<T>,
 }
 
-impl<'a, T> HfCycle<'a, T> {
-    pub fn complete(self, stream: &HfStream<'a, T>) {
+impl<'a, T, N: HfNode<'a>> HfCycle<'a, T, N> {
+    pub fn complete(self, stream: &HfStream<'a, T, N>) {
         let ident = self.ident;
         let stream_ident = stream.ident.clone();
 
@@ -220,7 +272,7 @@ impl<'a, T> HfCycle<'a, T> {
             .borrow_mut()
             .as_mut()
             .unwrap()
-            .entry(self.node_id)
+            .entry(self.node.id())
             .or_default()
             .add_statement(parse_quote! {
                 #stream_ident -> #ident;

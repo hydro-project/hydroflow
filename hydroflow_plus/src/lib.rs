@@ -11,6 +11,8 @@ use stageleft::Quoted;
 mod stream;
 pub use stream::HfStream;
 
+pub mod node;
+
 mod builder;
 pub use builder::HfBuilder;
 
