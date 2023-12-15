@@ -1491,11 +1491,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "hydroflow_plus_cli_integration"
+version = "0.5.0"
+dependencies = [
+ "hydro_cli",
+ "hydroflow_plus",
+ "stageleft",
+ "tokio",
+]
+
+[[package]]
 name = "hydroflow_plus_test"
 version = "0.0.0"
 dependencies = [
+ "hydro_cli",
  "hydroflow",
  "hydroflow_plus",
+ "hydroflow_plus_cli_integration",
  "hydroflow_plus_test_macro",
  "insta",
  "regex",
