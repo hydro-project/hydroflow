@@ -32,6 +32,10 @@ impl CustomService {
             launched_host: None,
         }
     }
+
+    pub fn create_port(&self, self_arc: &Arc<RwLock<Self>>) -> CustomClientPort {
+        CustomClientPort::new(Arc::downgrade(self_arc))
+    }
 }
 
 #[async_trait]
