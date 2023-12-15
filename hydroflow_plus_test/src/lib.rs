@@ -17,7 +17,7 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
     send_twice: bool,
     node_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let source = graph.source_stream(0, input_stream);
+    let source = graph.source_stream(&0, input_stream);
     let map1 = source.map(q!(|v| (v + 1, ())));
     let map2 = source.map(q!(|v| (v - 1, ())));
 
@@ -33,7 +33,7 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
         }));
     }
 
-    let source_node_id_1 = graph.source_iter(1, q!(0..5));
+    let source_node_id_1 = graph.source_iter(&1, q!(0..5));
     source_node_id_1.for_each(q!(|v| {
         output.send(v).unwrap();
     }));
@@ -49,8 +49,8 @@ pub fn chat_app<'a>(
     output: RuntimeData<&'a UnboundedSender<(u32, String)>>,
     replay_messages: bool,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let users = graph.source_stream(0, users_stream).persist();
-    let mut messages = graph.source_stream(0, messages);
+    let users = graph.source_stream(&(), users_stream).persist();
+    let mut messages = graph.source_stream(&(), messages);
     if replay_messages {
         messages = messages.persist();
     }
@@ -74,10 +74,10 @@ pub fn graph_reachability<'a>(
     edges: RuntimeData<UnboundedReceiverStream<(u32, u32)>>,
     reached_out: RuntimeData<&'a UnboundedSender<u32>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let roots = graph.source_stream(0, roots);
-    let edges = graph.source_stream(0, edges);
+    let roots = graph.source_stream(&(), roots);
+    let edges = graph.source_stream(&(), edges);
 
-    let (set_reached_cycle, reached_cycle) = graph.cycle(0);
+    let (set_reached_cycle, reached_cycle) = graph.cycle(&());
 
     let reached = roots.union(&reached_cycle);
     let reachable = reached
@@ -99,7 +99,7 @@ pub fn count_elems<'a, T: 'a>(
     input_stream: RuntimeData<UnboundedReceiverStream<T>>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let source = graph.source_stream(0, input_stream);
+    let source = graph.source_stream(&(), input_stream);
     let count = source.map(q!(|_| 1)).fold(q!(|| 0), q!(|a, b| *a += b));
 
     count.for_each(q!(|v| {
