@@ -184,14 +184,58 @@
 <a href="#184" id="184">184</a>
 <a href="#185" id="185">185</a>
 <a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
+<span class="kw">use </span>std::collections::BTreeMap;
 <span class="kw">use </span>std::marker::PhantomData;
 
 <span class="kw">use </span>hydroflow::futures::stream::Stream;
 <span class="kw">use </span>hydroflow_lang::graph::{
     eliminate_extra_unions_tees, partition_graph, propegate_flow_props, FlatGraphBuilder,
 };
-<span class="kw">use </span>proc_macro2::Span;
+<span class="kw">use </span>proc_macro2::{Span, TokenStream};
 <span class="kw">use </span>quote::quote;
 <span class="kw">use </span>stageleft::{IntoQuotedOnce, Quoted, QuotedContext};
 <span class="kw">use </span>syn::parse_quote;
@@ -200,7 +244,7 @@
 
 <span class="kw">pub struct </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) next_id: RefCell&lt;usize&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) builder: RefCell&lt;<span class="prelude-ty">Option</span>&lt;FlatGraphBuilder&gt;&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) builders: RefCell&lt;<span class="prelude-ty">Option</span>&lt;BTreeMap&lt;usize, FlatGraphBuilder&gt;&gt;&gt;,
     _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut &amp;</span><span class="lifetime">&#39;a </span>()&gt;,
 }
 
@@ -215,39 +259,66 @@
     </span><span class="kw">pub fn </span>new() -&gt; HfBuilder&lt;<span class="lifetime">&#39;a</span>&gt; {
         HfBuilder {
             next_id: RefCell::new(<span class="number">0</span>),
-            builder: RefCell::new(<span class="prelude-val">Some</span>(FlatGraphBuilder::new())),
+            builders: RefCell::new(<span class="prelude-val">Some</span>(Default::default())),
             _phantom: PhantomData,
         }
     }
 
-    <span class="kw">pub fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HfBuilt&lt;<span class="lifetime">&#39;a</span>&gt; {
-        <span class="kw">let </span>builder = <span class="self">self</span>.builder.borrow_mut().take().unwrap();
+    <span class="kw">pub fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, usize&gt;) -&gt; HfBuilt&lt;<span class="lifetime">&#39;a</span>&gt; {
+        <span class="kw">let </span>builders = <span class="self">self</span>.builders.borrow_mut().take().unwrap();
 
-        <span class="kw">let </span>(<span class="kw-2">mut </span>flat_graph, <span class="kw">_</span>, <span class="kw">_</span>) = builder.build();
-        eliminate_extra_unions_tees(<span class="kw-2">&amp;mut </span>flat_graph);
-        <span class="kw">let </span><span class="kw-2">mut </span>partitioned_graph =
-            partition_graph(flat_graph).expect(<span class="string">&quot;Failed to partition (cycle detected).&quot;</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>conditioned_tokens = <span class="prelude-val">None</span>;
+        <span class="kw">for </span>(node_id, builder) <span class="kw">in </span>builders {
+            <span class="kw">let </span>(<span class="kw-2">mut </span>flat_graph, <span class="kw">_</span>, <span class="kw">_</span>) = builder.build();
+            eliminate_extra_unions_tees(<span class="kw-2">&amp;mut </span>flat_graph);
+            <span class="kw">let </span><span class="kw-2">mut </span>partitioned_graph =
+                partition_graph(flat_graph).expect(<span class="string">&quot;Failed to partition (cycle detected).&quot;</span>);
 
-        <span class="kw">let </span>hydroflow_crate = proc_macro_crate::crate_name(<span class="string">&quot;hydroflow_plus&quot;</span>)
-            .expect(<span class="string">&quot;hydroflow_plus should be present in `Cargo.toml`&quot;</span>);
-        <span class="kw">let </span>root = <span class="kw">match </span>hydroflow_crate {
-            proc_macro_crate::FoundCrate::Itself =&gt; <span class="macro">quote! </span>{ hydroflow_plus },
-            proc_macro_crate::FoundCrate::Name(name) =&gt; {
-                <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span>name, Span::call_site());
-                <span class="macro">quote! </span>{ #ident }
+            <span class="kw">let </span>hydroflow_crate = proc_macro_crate::crate_name(<span class="string">&quot;hydroflow_plus&quot;</span>)
+                .expect(<span class="string">&quot;hydroflow_plus should be present in `Cargo.toml`&quot;</span>);
+            <span class="kw">let </span>root = <span class="kw">match </span>hydroflow_crate {
+                proc_macro_crate::FoundCrate::Itself =&gt; <span class="macro">quote! </span>{ hydroflow_plus },
+                proc_macro_crate::FoundCrate::Name(name) =&gt; {
+                    <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span>name, Span::call_site());
+                    <span class="macro">quote! </span>{ #ident }
+                }
+            };
+
+            <span class="kw">let </span><span class="kw-2">mut </span>diagnostics = Vec::new();
+            <span class="comment">// Propgeate flow properties throughout the graph.
+            // TODO(mingwei): Should this be done at a flat graph stage instead?
+            </span><span class="kw">let _ </span>= propegate_flow_props::propegate_flow_props(
+                <span class="kw-2">&amp;mut </span>partitioned_graph,
+                <span class="kw-2">&amp;mut </span>diagnostics,
+            );
+
+            <span class="kw">let </span>tokens = partitioned_graph.as_code(<span class="kw-2">&amp;</span>root, <span class="bool-val">true</span>, <span class="macro">quote::quote!</span>(), <span class="kw-2">&amp;mut </span>diagnostics);
+
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(conditioned_tokens) = conditioned_tokens.as_mut() {
+                <span class="kw-2">*</span>conditioned_tokens = <span class="macro">parse_quote! </span>{
+                    #conditioned_tokens <span class="kw">else if </span>__given_id == #node_id {
+                        #tokens
+                    }
+                };
+            } <span class="kw">else </span>{
+                conditioned_tokens = <span class="prelude-val">Some</span>(<span class="macro">parse_quote! </span>{
+                    <span class="kw">if </span>__given_id == #node_id {
+                        #tokens
+                    }
+                });
             }
-        };
+        }
 
-        <span class="kw">let </span><span class="kw-2">mut </span>diagnostics = Vec::new();
-        <span class="comment">// Propgeate flow properties throughout the graph.
-        // TODO(mingwei): Should this be done at a flat graph stage instead?
-        </span><span class="kw">let _ </span>=
-            propegate_flow_props::propegate_flow_props(<span class="kw-2">&amp;mut </span>partitioned_graph, <span class="kw-2">&amp;mut </span>diagnostics);
-
-        <span class="kw">let </span>tokens = partitioned_graph.as_code(<span class="kw-2">&amp;</span>root, <span class="bool-val">true</span>, <span class="macro">quote::quote!</span>(), <span class="kw-2">&amp;mut </span>diagnostics);
+        <span class="kw">let </span>id_spliced = id.splice();
+        <span class="kw">let </span>conditioned_tokens: TokenStream = conditioned_tokens.unwrap();
 
         HfBuilt {
-            tokens,
+            tokens: <span class="macro">parse_quote! </span>{
+                <span class="kw">let </span>__given_id = #id_spliced;
+                #conditioned_tokens <span class="kw">else </span>{
+                    <span class="macro">panic!</span>(<span class="string">&quot;Invalid node id: {}&quot;</span>, __given_id);
+                }
+            },
             _phantom: PhantomData,
         }
     }
@@ -260,6 +331,7 @@
 
     <span class="kw">pub fn </span>source_stream&lt;T, E: Stream&lt;Item = T&gt; + Unpin&gt;(
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
+        node_id: usize,
         e: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, E&gt;,
     ) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, T&gt; {
         <span class="kw">let </span>next_id = {
@@ -272,16 +344,19 @@
         <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, next_id), Span::call_site());
         <span class="kw">let </span>e = e.splice();
 
-        <span class="self">self</span>.builder
+        <span class="self">self</span>.builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(node_id)
+            .or_default()
             .add_statement(<span class="macro">parse_quote! </span>{
                 #ident = source_stream(#e) -&gt; tee();
             });
 
         HfStream {
             ident,
+            node_id,
             graph: <span class="self">self</span>,
             _phantom: PhantomData,
         }
@@ -289,6 +364,7 @@
 
     <span class="kw">pub fn </span>source_iter&lt;T, E: IntoIterator&lt;Item = T&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
+        node_id: usize,
         e: <span class="kw">impl </span>IntoQuotedOnce&lt;<span class="lifetime">&#39;a</span>, E&gt;,
     ) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, T&gt; {
         <span class="kw">let </span>next_id = {
@@ -301,22 +377,25 @@
         <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, next_id), Span::call_site());
         <span class="kw">let </span>e = e.splice();
 
-        <span class="self">self</span>.builder
+        <span class="self">self</span>.builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(node_id)
+            .or_default()
             .add_statement(<span class="macro">parse_quote! </span>{
                 #ident = source_iter(#e) -&gt; tee();
             });
 
         HfStream {
             ident,
+            node_id,
             graph: <span class="self">self</span>,
             _phantom: PhantomData,
         }
     }
 
-    <span class="kw">pub fn </span>cycle&lt;T&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>) -&gt; (HfCycle&lt;<span class="lifetime">&#39;a</span>, T&gt;, HfStream&lt;<span class="lifetime">&#39;a</span>, T&gt;) {
+    <span class="kw">pub fn </span>cycle&lt;T&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, node_id: usize) -&gt; (HfCycle&lt;<span class="lifetime">&#39;a</span>, T&gt;, HfStream&lt;<span class="lifetime">&#39;a</span>, T&gt;) {
         <span class="kw">let </span>next_id = {
             <span class="kw">let </span><span class="kw-2">mut </span>next_id = <span class="self">self</span>.next_id.borrow_mut();
             <span class="kw">let </span>id = <span class="kw-2">*</span>next_id;
@@ -326,10 +405,12 @@
 
         <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, next_id), Span::call_site());
 
-        <span class="self">self</span>.builder
+        <span class="self">self</span>.builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(node_id)
+            .or_default()
             .add_statement(<span class="macro">parse_quote! </span>{
                 #ident = tee();
             });
@@ -337,11 +418,13 @@
         (
             HfCycle {
                 ident: ident.clone(),
+                node_id,
                 graph: <span class="self">self</span>,
                 _phantom: PhantomData,
             },
             HfStream {
                 ident,
+                node_id,
                 graph: <span class="self">self</span>,
                 _phantom: PhantomData,
             },
@@ -351,6 +434,7 @@
 
 <span class="kw">pub struct </span>HfCycle&lt;<span class="lifetime">&#39;a</span>, T&gt; {
     ident: syn::Ident,
+    node_id: usize,
     graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>&gt;,
     _phantom: PhantomData&lt;T&gt;,
 }
@@ -361,10 +445,12 @@
         <span class="kw">let </span>stream_ident = stream.ident.clone();
 
         <span class="self">self</span>.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(<span class="self">self</span>.node_id)
+            .or_default()
             .add_statement(<span class="macro">parse_quote! </span>{
                 #stream_ident -&gt; #ident;
             });

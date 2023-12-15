@@ -373,15 +373,6 @@
 <a href="#373" id="373">373</a>
 <a href="#374" id="374">374</a>
 <a href="#375" id="375">375</a>
-<a href="#376" id="376">376</a>
-<a href="#377" id="377">377</a>
-<a href="#378" id="378">378</a>
-<a href="#379" id="379">379</a>
-<a href="#380" id="380">380</a>
-<a href="#381" id="381">381</a>
-<a href="#382" id="382">382</a>
-<a href="#383" id="383">383</a>
-<a href="#384" id="384">384</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -393,6 +384,7 @@
 
 <span class="kw">pub struct </span>HfStream&lt;<span class="lifetime">&#39;a</span>, T&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) ident: syn::Ident,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) node_id: usize,
     <span class="kw">pub</span>(<span class="kw">crate</span>) graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut &amp;</span><span class="lifetime">&#39;a </span>T&gt;,
 }
@@ -411,16 +403,19 @@
         <span class="kw">let </span>f = f.splice();
 
         <span class="self">self</span>.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(<span class="self">self</span>.node_id)
+            .or_default()
             .add_statement(<span class="macro">parse_quote! </span>{
                 #ident = #self_ident -&gt; map(#f) -&gt; tee();
             });
 
         HfStream {
             ident,
+            node_id: <span class="self">self</span>.node_id,
             graph: <span class="self">self</span>.graph,
             _phantom: PhantomData,
         }
@@ -439,16 +434,19 @@
         <span class="kw">let </span>f = f.splice();
 
         <span class="self">self</span>.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(<span class="self">self</span>.node_id)
+            .or_default()
             .add_statement(<span class="macro">parse_quote! </span>{
                 #ident = #self_ident -&gt; filter(#f) -&gt; tee();
             });
 
         HfStream {
             ident,
+            node_id: <span class="self">self</span>.node_id,
             graph: <span class="self">self</span>.graph,
             _phantom: PhantomData,
         }
@@ -470,16 +468,19 @@
         <span class="kw">let </span>f = f.splice();
 
         <span class="self">self</span>.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(<span class="self">self</span>.node_id)
+            .or_default()
             .add_statement(<span class="macro">parse_quote! </span>{
                 #ident = #self_ident -&gt; filter_map(#f) -&gt; tee();
             });
 
         HfStream {
             ident,
+            node_id: <span class="self">self</span>.node_id,
             graph: <span class="self">self</span>.graph,
             _phantom: PhantomData,
         }
@@ -502,16 +503,19 @@
         <span class="kw">let </span>comb = comb.splice();
 
         <span class="self">self</span>.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(<span class="self">self</span>.node_id)
+            .or_default()
             .add_statement(<span class="macro">parse_quote! </span>{
                 #ident = #self_ident -&gt; fold(#init, #comb) -&gt; tee();
             });
 
         HfStream {
             ident,
+            node_id: <span class="self">self</span>.node_id,
             graph: <span class="self">self</span>.graph,
             _phantom: PhantomData,
         }
@@ -529,16 +533,19 @@
         <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, next_id), Span::call_site());
 
         <span class="self">self</span>.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(<span class="self">self</span>.node_id)
+            .or_default()
             .add_statement(<span class="macro">parse_quote! </span>{
                 #ident = #self_ident -&gt; persist() -&gt; tee();
             });
 
         HfStream {
             ident,
+            node_id: <span class="self">self</span>.node_id,
             graph: <span class="self">self</span>.graph,
             _phantom: PhantomData,
         }
@@ -556,16 +563,19 @@
         <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, next_id), Span::call_site());
 
         <span class="self">self</span>.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(<span class="self">self</span>.node_id)
+            .or_default()
             .add_statement(<span class="macro">parse_quote! </span>{
                 #ident = #self_ident -&gt; multiset_delta() -&gt; tee();
             });
 
         HfStream {
             ident,
+            node_id: <span class="self">self</span>.node_id,
             graph: <span class="self">self</span>.graph,
             _phantom: PhantomData,
         }
@@ -586,16 +596,19 @@
         <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, next_id), Span::call_site());
 
         <span class="self">self</span>.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(<span class="self">self</span>.node_id)
+            .or_default()
             .add_statement(<span class="macro">parse_quote! </span>{
                 #ident = #self_ident -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; tee();
             });
 
         HfStream {
             ident,
+            node_id: <span class="self">self</span>.node_id,
             graph: <span class="self">self</span>.graph,
             _phantom: PhantomData,
         }
@@ -613,35 +626,24 @@
         <span class="kw">let </span>other_ident = <span class="kw-2">&amp;</span>other.ident;
         <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, next_id), Span::call_site());
 
-        <span class="self">self</span>.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(<span class="macro">parse_quote! </span>{
-                #ident = cross_join::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;tick</span>&gt;() -&gt; tee();
-            });
+        <span class="kw">let </span><span class="kw-2">mut </span>builders = <span class="self">self</span>.graph.builders.borrow_mut();
+        <span class="kw">let </span>builder = builders.as_mut().unwrap().entry(<span class="self">self</span>.node_id).or_default();
 
-        <span class="self">self</span>.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(<span class="macro">parse_quote! </span>{
-                #self_ident -&gt; [<span class="number">0</span>]#ident;
-            });
+        builder.add_statement(<span class="macro">parse_quote! </span>{
+            #ident = cross_join::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;tick</span>&gt;() -&gt; tee();
+        });
 
-        <span class="self">self</span>.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(<span class="macro">parse_quote! </span>{
-                #other_ident -&gt; [<span class="number">1</span>]#ident;
-            });
+        builder.add_statement(<span class="macro">parse_quote! </span>{
+            #self_ident -&gt; [<span class="number">0</span>]#ident;
+        });
+
+        builder.add_statement(<span class="macro">parse_quote! </span>{
+            #other_ident -&gt; [<span class="number">1</span>]#ident;
+        });
 
         HfStream {
             ident,
+            node_id: <span class="self">self</span>.node_id,
             graph: <span class="self">self</span>.graph,
             _phantom: PhantomData,
         }
@@ -659,35 +661,24 @@
         <span class="kw">let </span>other_ident = <span class="kw-2">&amp;</span>other.ident;
         <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, next_id), Span::call_site());
 
-        <span class="self">self</span>.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(<span class="macro">parse_quote! </span>{
-                #ident = union() -&gt; tee();
-            });
+        <span class="kw">let </span><span class="kw-2">mut </span>builders = <span class="self">self</span>.graph.builders.borrow_mut();
+        <span class="kw">let </span>builder = builders.as_mut().unwrap().entry(<span class="self">self</span>.node_id).or_default();
 
-        <span class="self">self</span>.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(<span class="macro">parse_quote! </span>{
-                #self_ident -&gt; [<span class="number">0</span>]#ident;
-            });
+        builder.add_statement(<span class="macro">parse_quote! </span>{
+            #ident = union() -&gt; tee();
+        });
 
-        <span class="self">self</span>.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(<span class="macro">parse_quote! </span>{
-                #other_ident -&gt; [<span class="number">1</span>]#ident;
-            });
+        builder.add_statement(<span class="macro">parse_quote! </span>{
+            #self_ident -&gt; [<span class="number">0</span>]#ident;
+        });
+
+        builder.add_statement(<span class="macro">parse_quote! </span>{
+            #other_ident -&gt; [<span class="number">1</span>]#ident;
+        });
 
         HfStream {
             ident,
+            node_id: <span class="self">self</span>.node_id,
             graph: <span class="self">self</span>.graph,
             _phantom: PhantomData,
         }
@@ -706,10 +697,12 @@
         <span class="kw">let </span>f = f.splice();
 
         <span class="self">self</span>.graph
-            .builder
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
+            .entry(<span class="self">self</span>.node_id)
+            .or_default()
             .add_statement(<span class="macro">parse_quote! </span>{
                 #ident = #self_ident -&gt; for_each(#f);
             });
@@ -732,35 +725,24 @@
         <span class="kw">let </span>other_ident = <span class="kw-2">&amp;</span>n.ident;
         <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, next_id), Span::call_site());
 
-        <span class="self">self</span>.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(<span class="macro">parse_quote! </span>{
-                #ident = join::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;tick</span>&gt;() -&gt; tee();
-            });
+        <span class="kw">let </span><span class="kw-2">mut </span>builders = <span class="self">self</span>.graph.builders.borrow_mut();
+        <span class="kw">let </span>builder = builders.as_mut().unwrap().entry(<span class="self">self</span>.node_id).or_default();
 
-        <span class="self">self</span>.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(<span class="macro">parse_quote! </span>{
-                #self_ident -&gt; [<span class="number">0</span>]#ident;
-            });
+        builder.add_statement(<span class="macro">parse_quote! </span>{
+            #ident = join::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;tick</span>&gt;() -&gt; tee();
+        });
 
-        <span class="self">self</span>.graph
-            .builder
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .add_statement(<span class="macro">parse_quote! </span>{
-                #other_ident -&gt; [<span class="number">1</span>]#ident;
-            });
+        builder.add_statement(<span class="macro">parse_quote! </span>{
+            #self_ident -&gt; [<span class="number">0</span>]#ident;
+        });
+
+        builder.add_statement(<span class="macro">parse_quote! </span>{
+            #other_ident -&gt; [<span class="number">1</span>]#ident;
+        });
 
         HfStream {
             ident,
+            node_id: <span class="self">self</span>.node_id,
             graph: <span class="self">self</span>.graph,
             _phantom: PhantomData,
         }
