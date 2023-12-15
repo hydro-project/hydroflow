@@ -41,6 +41,12 @@ pub enum ServerPort {
     Null,
 }
 
+impl ServerPort {
+    pub fn instantiate(&self) -> ServerOrBound {
+        ServerOrBound::Server(self.into())
+    }
+}
+
 #[derive(Debug)]
 pub enum RealizedServerPort {
     UnixSocket(JoinHandle<io::Result<UnixStream>>),
