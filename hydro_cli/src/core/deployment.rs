@@ -1,10 +1,14 @@
+use std::path::PathBuf;
 use std::sync::{Arc, Weak};
 
 use anyhow::Result;
 use futures::{StreamExt, TryStreamExt};
 use tokio::sync::RwLock;
 
-use super::{progress, Host, ResourcePool, ResourceResult, Service};
+use super::{
+    progress, CustomService, Host, HydroflowCrate, LocalhostHost, ResourcePool, ResourceResult,
+    Service,
+};
 
 #[derive(Default)]
 pub struct Deployment {
@@ -17,6 +21,53 @@ pub struct Deployment {
 }
 
 impl Deployment {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    #[allow(non_snake_case)]
+    pub fn Localhost(&mut self) -> Arc<RwLock<LocalhostHost>> {
+        self.add_host(LocalhostHost::new)
+    }
+
+    #[allow(non_snake_case)]
+    pub fn CustomService(
+        &mut self,
+        on: Arc<RwLock<dyn Host>>,
+        external_ports: Vec<u16>,
+    ) -> Arc<RwLock<CustomService>> {
+        self.add_service(|id| CustomService::new(id, on, external_ports))
+    }
+
+    #[allow(non_snake_case, clippy::too_many_arguments)]
+    pub fn HydroflowCrate(
+        &mut self,
+        src: impl Into<PathBuf>,
+        on: Arc<RwLock<dyn Host>>,
+        bin: Option<String>,
+        example: Option<String>,
+        profile: Option<String>,
+        features: Option<Vec<String>>,
+        args: Option<Vec<String>>,
+        display_id: Option<String>,
+        external_ports: Vec<u16>,
+    ) -> Arc<RwLock<HydroflowCrate>> {
+        self.add_service(|id| {
+            crate::core::HydroflowCrate::new(
+                id,
+                src.into(),
+                on,
+                bin,
+                example,
+                profile,
+                features,
+                args,
+                display_id,
+                external_ports,
+            )
+        })
+    }
+
     pub async fn deploy(&mut self) -> Result<()> {
         progress::ProgressTracker::with_group("deploy", None, || async {
             let mut resource_batch = super::ResourceBatch::new();
