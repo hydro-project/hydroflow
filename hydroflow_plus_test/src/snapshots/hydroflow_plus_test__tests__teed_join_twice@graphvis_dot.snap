@@ -67,14 +67,6 @@ digraph {
             n9v1
             n10v1
         }
-        subgraph "cluster_sg_2v1_var_stream_5" {
-            label="var stream_5"
-            n11v1
-        }
-        subgraph "cluster_sg_2v1_var_stream_6" {
-            label="var stream_6"
-            n12v1
-        }
     }
 }
 

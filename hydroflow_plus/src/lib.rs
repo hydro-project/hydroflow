@@ -11,7 +11,12 @@ use stageleft::Quoted;
 mod stream;
 pub use stream::HfStream;
 
-mod builder;
+pub mod node;
+
+pub mod cycle;
+pub use cycle::HfCycle;
+
+pub mod builder;
 pub use builder::HfBuilder;
 
 #[derive(Clone)]
