@@ -76,9 +76,20 @@
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
 </pre></div><pre class="rust"><code><span class="attr">#![allow(missing_docs)] </span><span class="comment">// TODO(mingwei)
 
-</span><span class="kw">use </span>std::collections::HashMap;
+</span><span class="kw">use </span>std::cell::RefCell;
+<span class="kw">use </span>std::collections::HashMap;
 
 <span class="kw">pub use </span>hydroflow_cli_integration::<span class="kw-2">*</span>;
 
@@ -93,19 +104,28 @@
         stop.<span class="number">0</span>.send(()).unwrap();
     });
 
+    <span class="kw">let </span>local_set = tokio::task::LocalSet::new();
+    <span class="kw">let </span>flow = local_set.run_until(<span class="kw">async move </span>{
+        flow.run_async().<span class="kw">await</span>;
+    });
+
     <span class="macro">tokio::select! </span>{
         <span class="kw">_ </span>= stop.<span class="number">1 </span>=&gt; {},
-        <span class="kw">_ </span>= flow.run_async() =&gt; {}
+        <span class="kw">_ </span>= flow =&gt; {}
     }
 }
 
 <span class="kw">pub struct </span>HydroCLI {
-    ports: HashMap&lt;String, ServerOrBound&gt;,
+    ports: RefCell&lt;HashMap&lt;String, ServerOrBound&gt;&gt;,
 }
 
 <span class="kw">impl </span>HydroCLI {
-    <span class="kw">pub fn </span>port(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str) -&gt; ServerOrBound {
-        <span class="self">self</span>.ports.remove(name).unwrap()
+    <span class="kw">pub fn </span>port(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str) -&gt; ServerOrBound {
+        <span class="self">self</span>.ports
+            .try_borrow_mut()
+            .unwrap()
+            .remove(name)
+            .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">&quot;port {} not found&quot;</span>, name))
     }
 }
 
@@ -151,7 +171,7 @@
     <span class="macro">println!</span>(<span class="string">&quot;ack start&quot;</span>);
 
     HydroCLI {
-        ports: all_connected,
+        ports: RefCell::new(all_connected),
     }
 }
 </code></pre></div></section></main></body></html>

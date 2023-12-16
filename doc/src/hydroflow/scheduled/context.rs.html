@@ -178,11 +178,21 @@
 <a href="#178" id="178">178</a>
 <a href="#179" id="179">179</a>
 <a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for the user-facing [`Context`] object.
 
 </span><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>std::marker::PhantomData;
+<span class="kw">use </span>std::pin::Pin;
 
 <span class="kw">use </span>instant::Instant;
 <span class="kw">use </span>tokio::sync::mpsc::UnboundedSender;
@@ -216,6 +226,8 @@
     /// not being forwarded to a running operator, this field is (mostly)
     /// meaningless.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) subgraph_id: SubgraphId,
+
+    <span class="kw">pub</span>(<span class="kw">crate</span>) tasks_to_spawn: Vec&lt;Pin&lt;Box&lt;<span class="kw">dyn </span>Future&lt;Output = ()&gt; + <span class="lifetime">&#39;static</span>&gt;&gt;&gt;,
 
     <span class="doccomment">/// Join handles for spawned tasks.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) task_join_handles: Vec&lt;JoinHandle&lt;()&gt;&gt;,
@@ -335,23 +347,29 @@
             .expect(<span class="string">&quot;StateHandle wrong type T for casting.&quot;</span>)
     }
 
-    <span class="doccomment">/// Spawns an async task on the internal Tokio executor.
-    </span><span class="kw">pub fn </span>spawn_task&lt;Fut&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, future: Fut)
+    <span class="doccomment">/// Prepares an async task to be launched by [`Self::spawn_tasks`].
+    </span><span class="kw">pub fn </span>request_task&lt;Fut&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, future: Fut)
     <span class="kw">where
         </span>Fut: Future&lt;Output = ()&gt; + <span class="lifetime">&#39;static</span>,
     {
-        <span class="self">self</span>.task_join_handles
-            .push(tokio::task::spawn_local(future));
+        <span class="self">self</span>.tasks_to_spawn.push(Box::pin(future));
     }
 
-    <span class="doccomment">/// Aborts all tasks spawned with [`Self::spawn_task`].
+    <span class="doccomment">/// Launches all tasks requested with [`Self::request_task`] on the internal Tokio executor.
+    </span><span class="kw">pub fn </span>spawn_tasks(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">for </span>task <span class="kw">in </span><span class="self">self</span>.tasks_to_spawn.drain(..) {
+            <span class="self">self</span>.task_join_handles.push(tokio::task::spawn_local(task));
+        }
+    }
+
+    <span class="doccomment">/// Aborts all tasks spawned with [`Self::spawn_tasks`].
     </span><span class="kw">pub fn </span>abort_tasks(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">for </span>task <span class="kw">in </span><span class="self">self</span>.task_join_handles.drain(..) {
             task.abort();
         }
     }
 
-    <span class="doccomment">/// Waits for all tasks spawned with [`Self::spawn_task`] to complete.
+    <span class="doccomment">/// Waits for all tasks spawned with [`Self::spawn_tasks`] to complete.
     ///
     /// Will probably just hang.
     </span><span class="kw">pub async fn </span>join_tasks(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {

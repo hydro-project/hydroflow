@@ -190,7 +190,7 @@
 
 <span class="attr">#[hydroflow::main]
 </span><span class="kw">async fn </span>main() {
-    <span class="kw">let </span><span class="kw-2">mut </span>ports = hydroflow::util::cli::init().<span class="kw">await</span>;
+    <span class="kw">let </span>ports = hydroflow::util::cli::init().<span class="kw">await</span>;
 
     <span class="kw">let </span>my_id: Vec&lt;usize&gt; = serde_json::from_str(<span class="kw-2">&amp;</span>std::env::args().nth(<span class="number">1</span>).unwrap()).unwrap();
     <span class="kw">let </span>my_id = my_id[<span class="number">0</span>];

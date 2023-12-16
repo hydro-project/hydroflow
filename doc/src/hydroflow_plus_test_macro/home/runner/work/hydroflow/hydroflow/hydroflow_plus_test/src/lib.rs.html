@@ -297,6 +297,8 @@
 <a href="#297" id="297">297</a>
 <a href="#298" id="298">298</a>
 <a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
 </pre></div><pre class="rust"><code><span class="macro">stageleft::stageleft_crate!</span>(hydroflow_plus_test_macro);
 
 <span class="kw">use </span>hydroflow_plus::futures::stream::Stream;
@@ -305,6 +307,8 @@
 <span class="kw">use </span>hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 <span class="kw">use </span>hydroflow_plus::HfBuilder;
 <span class="kw">use </span>stageleft::{q, Quoted, RuntimeData};
+
+<span class="kw">pub mod </span>networked;
 
 <span class="attr">#[stageleft::entry(UnboundedReceiverStream&lt;u32&gt;)]
 </span><span class="kw">pub fn </span>teed_join&lt;<span class="lifetime">&#39;a</span>, S: Stream&lt;Item = u32&gt; + Unpin + <span class="lifetime">&#39;a</span>&gt;(

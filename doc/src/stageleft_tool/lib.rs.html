@@ -223,6 +223,7 @@
 <a href="#223" id="223">223</a>
 <a href="#224" id="224">224</a>
 <a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>std::{env, fs};
 
@@ -257,8 +258,9 @@
 
         <span class="kw">if </span>is_entry {
             <span class="kw">let </span>cur_path = <span class="kw-2">&amp;</span><span class="self">self</span>.current_mod;
-            <span class="kw">let </span>contents = i
-                .block
+            <span class="kw">let </span><span class="kw-2">mut </span>i_cloned = i.clone();
+            i_cloned.attrs = <span class="macro">vec!</span>[];
+            <span class="kw">let </span>contents = i_cloned
                 .to_token_stream()
                 .to_string()
                 .chars()
