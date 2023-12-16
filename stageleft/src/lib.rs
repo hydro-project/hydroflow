@@ -133,26 +133,37 @@ impl<
         };
 
         let module_path: syn::Path = syn::parse_str(&module_path).unwrap();
-        let module_path = module_path
+        let module_path_segments = module_path
             .segments
             .iter()
             .skip(1) // skip crate
             .cloned()
             .collect::<Vec<_>>();
-        let module_path = syn::Path {
-            leading_colon: None,
-            segments: syn::punctuated::Punctuated::from_iter(module_path),
+        let module_path = if module_path_segments.is_empty() {
+            None
+        } else {
+            Some(syn::Path {
+                leading_colon: None,
+                segments: syn::punctuated::Punctuated::from_iter(module_path_segments),
+            })
         };
 
-        let expr: syn::Expr = syn::parse(expr_tokens.into()).unwrap();
-        (
-            None,
-            Some(quote!({
+        let expr: syn::Expr = syn::parse2(expr_tokens).unwrap();
+        let with_env = if let Some(module_path) = module_path {
+            quote!({
                 use #final_crate_root::#module_path::*;
                 #(#instantiated_free_variables)*
                 #expr
-            })),
-        )
+            })
+        } else {
+            quote!({
+                use #final_crate_root::*;
+                #(#instantiated_free_variables)*
+                #expr
+            })
+        };
+
+        (None, Some(with_env))
     }
 }
 

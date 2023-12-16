@@ -8,9 +8,9 @@ documentation = "https://docs.rs/hydro_cli/"
 description = "Hydro Deploy Command Line Interface"
 
 [lib]
-name = "hydro"
+name = "hydro_cli"
 # "cdylib" is necessary to produce a shared library for Python to import from.
-crate-type = ["cdylib"]
+crate-type = ["lib", "cdylib"]
 
 [dependencies]
 tokio = { version = "1.16", features = [ "full" ] }
