@@ -1,9 +1,13 @@
 use std::hash::Hash;
+use std::io;
 use std::marker::PhantomData;
 
+use hydroflow::bytes::{Bytes, BytesMut};
 use hydroflow::futures::Sink;
+use hydroflow::util::cli::HydroCLI;
 use proc_macro2::Span;
-use stageleft::{IntoQuotedMut, Quoted};
+use quote::quote;
+use stageleft::{IntoQuotedMut, Quoted, RuntimeData};
 use syn::parse_quote;
 
 use crate::HfBuilder;
@@ -348,6 +352,79 @@ impl<'a, T> HfStream<'a, T> {
             .add_statement(parse_quote! {
                 #self_ident -> dest_sink(#sink);
             });
+    }
+}
+
+impl<'a> HfStream<'a, Bytes> {
+    pub fn send_to(
+        &self,
+        other: usize,
+        port_name: &str,
+        cli: RuntimeData<&'a HydroCLI>,
+    ) -> HfStream<'a, Result<BytesMut, io::Error>> {
+        let self_ident = &self.ident;
+
+        let cli_splice = cli.splice();
+
+        let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
+            .expect("hydroflow_plus should be present in `Cargo.toml`");
+        let root = match hydroflow_crate {
+            proc_macro_crate::FoundCrate::Itself => quote! { hydroflow_plus },
+            proc_macro_crate::FoundCrate::Name(name) => {
+                let ident = syn::Ident::new(&name, Span::call_site());
+                quote! { #ident }
+            }
+        };
+
+        self.graph
+            .builders
+            .borrow_mut()
+            .as_mut()
+            .unwrap()
+            .entry(self.node_id)
+            .or_default()
+            .add_statement(parse_quote! {
+                #self_ident -> dest_sink({
+                    use #root::util::cli::ConnectedSink;
+                    #cli_splice
+                        .port(#port_name)
+                        .connect_local_blocking::<#root::util::cli::ConnectedDirect>()
+                        .into_sink()
+                });
+            });
+
+        let recipient_next_id = {
+            let mut next_id = self.graph.next_id.borrow_mut();
+            let id = *next_id;
+            *next_id += 1;
+            id
+        };
+
+        let ident = syn::Ident::new(&format!("stream_{}", recipient_next_id), Span::call_site());
+
+        self.graph
+            .builders
+            .borrow_mut()
+            .as_mut()
+            .unwrap()
+            .entry(other)
+            .or_default()
+            .add_statement(parse_quote! {
+                #ident = source_stream({
+                    use #root::util::cli::ConnectedSource;
+                    #cli_splice
+                        .port(#port_name)
+                        .connect_local_blocking::<#root::util::cli::ConnectedDirect>()
+                        .into_source()
+                }) -> tee();
+            });
+
+        HfStream {
+            ident,
+            node_id: other,
+            graph: self.graph,
+            _phantom: PhantomData,
+        }
     }
 }
 
