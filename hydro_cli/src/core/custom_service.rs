@@ -4,7 +4,7 @@ use std::sync::{Arc, Weak};
 
 use anyhow::{bail, Result};
 use async_trait::async_trait;
-use hydroflow_cli_integration::ServerPort;
+use hydroflow_cli_integration::{ConnectedDirect, ServerPort};
 use tokio::sync::RwLock;
 
 use super::hydroflow_crate::ports::{
@@ -31,6 +31,10 @@ impl CustomService {
             external_ports,
             launched_host: None,
         }
+    }
+
+    pub fn declare_client(&self, self_arc: &Arc<RwLock<Self>>) -> CustomClientPort {
+        CustomClientPort::new(Arc::downgrade(self_arc))
     }
 }
 
@@ -93,6 +97,17 @@ impl CustomClientPort {
             .as_ref()
             .unwrap()
             .load_instantiated(&|p| p)
+            .await
+    }
+
+    pub async fn connect(&self) -> ConnectedDirect {
+        self.client_port
+            .as_ref()
+            .unwrap()
+            .load_instantiated(&|p| p)
+            .await
+            .instantiate()
+            .connect::<ConnectedDirect>()
             .await
     }
 }

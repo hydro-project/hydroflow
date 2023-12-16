@@ -144,7 +144,7 @@ impl<
             segments: syn::punctuated::Punctuated::from_iter(module_path),
         };
 
-        let expr: syn::Expr = syn::parse(expr_tokens.into()).unwrap();
+        let expr: syn::Expr = syn::parse2(expr_tokens).unwrap();
         (
             None,
             Some(quote!({
