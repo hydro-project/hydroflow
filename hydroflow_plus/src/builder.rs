@@ -1,7 +1,9 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::io;
 use std::marker::PhantomData;
 
+use hydroflow::bytes::BytesMut;
 use hydroflow::futures::stream::Stream;
 use hydroflow_lang::graph::{
     eliminate_extra_unions_tees, partition_graph, propegate_flow_props, FlatGraphBuilder,
@@ -11,28 +13,43 @@ use quote::quote;
 use stageleft::{IntoQuotedOnce, Quoted, QuotedContext};
 use syn::parse_quote;
 
+use crate::node::{HfDeploy, HfNode, HfNodeBuilder};
 use crate::{HfBuilt, HfStream, RuntimeContext};
 
-pub struct HfBuilder<'a> {
+pub struct HfBuilder<'a, D: HfDeploy<'a> + ?Sized> {
     pub(crate) next_id: RefCell<usize>,
     pub(crate) builders: RefCell<Option<BTreeMap<usize, FlatGraphBuilder>>>,
+    nodes: RefCell<Vec<D::Node>>,
+    next_node_id: RefCell<usize>,
     _phantom: PhantomData<&'a mut &'a ()>,
 }
 
-impl<'a> QuotedContext for HfBuilder<'a> {
+impl<'a, D: HfDeploy<'a>> QuotedContext for HfBuilder<'a, D> {
     fn create() -> Self {
         HfBuilder::new()
     }
 }
 
-impl<'a> HfBuilder<'a> {
+impl<'a, D: HfDeploy<'a>> HfBuilder<'a, D> {
     #[allow(clippy::new_without_default)]
-    pub fn new() -> HfBuilder<'a> {
+    pub fn new() -> HfBuilder<'a, D> {
         HfBuilder {
             next_id: RefCell::new(0),
             builders: RefCell::new(Some(Default::default())),
+            nodes: RefCell::new(Vec::new()),
+            next_node_id: RefCell::new(0),
             _phantom: PhantomData,
         }
+    }
+
+    pub fn node(&'a self, builder: &mut D::NodeBuilder) -> D::Node {
+        let mut next_node_id = self.next_node_id.borrow_mut();
+        let id = *next_node_id;
+        *next_node_id += 1;
+
+        let node = builder.build(id);
+        self.nodes.borrow_mut().push(node.clone());
+        node
     }
 
     pub fn build(&self, id: impl Quoted<'a, usize>) -> HfBuilt<'a> {
@@ -102,9 +119,9 @@ impl<'a> HfBuilder<'a> {
 
     pub fn source_stream<T, E: Stream<Item = T> + Unpin>(
         &'a self,
-        node_id: usize,
+        node: &D::Node,
         e: impl Quoted<'a, E>,
-    ) -> HfStream<'a, T> {
+    ) -> HfStream<'a, T, D, D::Node> {
         let next_id = {
             let mut next_id = self.next_id.borrow_mut();
             let id = *next_id;
@@ -119,7 +136,7 @@ impl<'a> HfBuilder<'a> {
             .borrow_mut()
             .as_mut()
             .unwrap()
-            .entry(node_id)
+            .entry(node.id())
             .or_default()
             .add_statement(parse_quote! {
                 #ident = source_stream(#e) -> tee();
@@ -127,17 +144,57 @@ impl<'a> HfBuilder<'a> {
 
         HfStream {
             ident,
-            node_id,
+            node: node.clone(),
             graph: self,
             _phantom: PhantomData,
         }
     }
 
+    #[allow(clippy::type_complexity)]
+    pub fn source_external(
+        &'a self,
+        node: &D::Node,
+    ) -> (
+        <D::Node as HfNode<'a>>::Port,
+        HfStream<'a, Result<BytesMut, io::Error>, D, D::Node>,
+    ) {
+        let next_id = {
+            let mut next_id = self.next_id.borrow_mut();
+            let id = *next_id;
+            *next_id += 1;
+            id
+        };
+
+        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
+        let port = node.next_port();
+        let source_pipeline = node.gen_source_statement(&port);
+
+        self.builders
+            .borrow_mut()
+            .as_mut()
+            .unwrap()
+            .entry(node.id())
+            .or_default()
+            .add_statement(parse_quote! {
+                #ident = #source_pipeline -> tee();
+            });
+
+        (
+            port,
+            HfStream {
+                ident,
+                node: node.clone(),
+                graph: self,
+                _phantom: PhantomData,
+            },
+        )
+    }
+
     pub fn source_iter<T, E: IntoIterator<Item = T>>(
         &'a self,
-        node_id: usize,
+        node: &D::Node,
         e: impl IntoQuotedOnce<'a, E>,
-    ) -> HfStream<'a, T> {
+    ) -> HfStream<'a, T, D, D::Node> {
         let next_id = {
             let mut next_id = self.next_id.borrow_mut();
             let id = *next_id;
@@ -152,7 +209,7 @@ impl<'a> HfBuilder<'a> {
             .borrow_mut()
             .as_mut()
             .unwrap()
-            .entry(node_id)
+            .entry(node.id())
             .or_default()
             .add_statement(parse_quote! {
                 #ident = source_iter(#e) -> tee();
@@ -160,13 +217,17 @@ impl<'a> HfBuilder<'a> {
 
         HfStream {
             ident,
-            node_id,
+            node: node.clone(),
             graph: self,
             _phantom: PhantomData,
         }
     }
 
-    pub fn cycle<T>(&'a self, node_id: usize) -> (HfCycle<'a, T>, HfStream<'a, T>) {
+    #[allow(clippy::type_complexity)]
+    pub fn cycle<T>(
+        &'a self,
+        node: &D::Node,
+    ) -> (HfCycle<'a, T, D, D::Node>, HfStream<'a, T, D, D::Node>) {
         let next_id = {
             let mut next_id = self.next_id.borrow_mut();
             let id = *next_id;
@@ -180,7 +241,7 @@ impl<'a> HfBuilder<'a> {
             .borrow_mut()
             .as_mut()
             .unwrap()
-            .entry(node_id)
+            .entry(node.id())
             .or_default()
             .add_statement(parse_quote! {
                 #ident = tee();
@@ -189,13 +250,13 @@ impl<'a> HfBuilder<'a> {
         (
             HfCycle {
                 ident: ident.clone(),
-                node_id,
+                node: node.clone(),
                 graph: self,
                 _phantom: PhantomData,
             },
             HfStream {
                 ident,
-                node_id,
+                node: node.clone(),
                 graph: self,
                 _phantom: PhantomData,
             },
@@ -203,15 +264,15 @@ impl<'a> HfBuilder<'a> {
     }
 }
 
-pub struct HfCycle<'a, T> {
+pub struct HfCycle<'a, T, D: HfDeploy<'a>, N: HfNode<'a>> {
     ident: syn::Ident,
-    node_id: usize,
-    graph: &'a HfBuilder<'a>,
+    node: N,
+    graph: &'a HfBuilder<'a, D>,
     _phantom: PhantomData<T>,
 }
 
-impl<'a, T> HfCycle<'a, T> {
-    pub fn complete(self, stream: &HfStream<'a, T>) {
+impl<'a, T, D: HfDeploy<'a>, N: HfNode<'a>> HfCycle<'a, T, D, N> {
+    pub fn complete(self, stream: &HfStream<'a, T, D, N>) {
         let ident = self.ident;
         let stream_ident = stream.ident.clone();
 
@@ -220,7 +281,7 @@ impl<'a, T> HfCycle<'a, T> {
             .borrow_mut()
             .as_mut()
             .unwrap()
-            .entry(self.node_id)
+            .entry(self.node.id())
             .or_default()
             .add_statement(parse_quote! {
                 #stream_ident -> #ident;
