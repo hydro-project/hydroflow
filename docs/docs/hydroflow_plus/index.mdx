@@ -1,0 +1,22 @@
+---
+sidebar_position: 1
+---
+
+# Introduction
+Hydroflow+ layers a high-level Rust API over the Hydroflow IR, making it possible to write dataflow programs that span multiple nodes with straightline, functional Rust code. Hydroflow+ is built on top of [Stageleft](./stageleft.mdx), which allows Hydroflow+ to emit regular Hydroflow programs that are compiled into efficient Rust binaries. It also integrates with [Hydro Deploy](../deploy/index.md) to make it easy to deploy and run Hydroflow+ programs on a cluster.
+
+The main logic of Hydroflow+ programs manipulates **streams**, which capture infinite ordered sequences of elements. Streams are transformed using classic functional operators such as `map`, `filter`, and `fold`, as well as relational operators such as `join`. To build **distributed** dataflow programs, Hydroflow+ also introduces the concept of **nodes**, which capture _where_ a stream is being processed.
+
+## Quickstart
+Hydroflow+ requires a particular workspace setup, as any crate that uses Hydroflow+ must have an supporting macro crate to drive the code generation. To get started, we recommend using the Hydroflow+ template.
+
+```bash
+$ cargo install cargo-generate
+$ cargo generate hydro-project/hydroflow-plus-template
+```
+
+Then, you can test the example dataflow:
+
+```bash
+$ cargo test
+```

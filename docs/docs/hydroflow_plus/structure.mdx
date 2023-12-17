@@ -1,0 +1,91 @@
+---
+sidebar_position: 2
+---
+
+# Structuring Hydroflow+ Programs
+Hydroflow+ programs require special structure to support code generation and distributed deployments. There are three main components of a Hydroflow+ program:
+- The **flow graph** describes the dataflow logic of the program.
+- The **runtime** wraps the dataflow in an executable Rust binary.
+- The **deployment** describes how to map the flow graph to instances of the runtime. This is only needed for distributed deployments.
+
+Let's look a minimal example of a Hydroflow+ program. We'll start with a simple flow graph that prints out the first 10 natural numbers. First, we'll define the **flow graph**.
+
+
+## The Flow Graph
+```rust
+use hydroflow_plus::*;
+use hydroflow_plus::node::*;
+use stageleft::*;
+
+pub fn first_ten<'a, D: HfDeploy<'a>>(
+    graph: &'a HfBuilder<'a, D>,
+    node_builder: &mut impl HfNodeBuilder<'a, D>
+) {}
+```
+
+The `graph` variable gives us access to the builder API for constructing the flow graph. The `node_builder` variable defines how to construct the nodes of the flow graph. For now, we will only use the builder once, to create a single node.
+
+```rust
+pub fn first_ten<'a, D: HfDeploy<'a>>(
+    graph: &'a HfBuilder<'a, D>,
+    node_builder: &mut impl HfNodeBuilder<'a, D>
+) {
+    let node = graph.node(node_builder);
+}
+```
+
+Now, we can build out the logic of the node. First, we instantiate a stream that emits the first 10 natural numbers.
+
+```rust
+let numbers = graph.source_iter(q!(0..10));
+```
+
+In Hydroflow+, whenever there are snippets of code that will be executed during runtime, we use the `q!` macro to mark them. This includes both static sources of data as well as closures that transform them. For example, to print out these numbers, we can use the `for_each` operator:
+
+```rust
+numbers.for_each(q!(|n| println!("{}", n)));
+```
+
+## The Runtime
+Next, we need to instantiate our flow graph into a runnable Rust binary. We do this by defining a Stageleft entrypoint for the graph, and then instantiating this inside a separate Rust binary.
+
+To define the entrypoint, we use the `#[stageleft::entry]` macro, which takes the graph being built and returns a generated Hydroflow program:
+
+```rust
+#[stageleft::entry]
+pub fn first_ten_runtime<'a>(
+    graph: &'a HfBuilder<'a, SingleGraph>
+) -> impl Quoted<'a, Hydroflow<'a>> {
+    let _ = first_ten(graph, &mut ());
+    graph.build(q!(0))
+}
+```
+
+Hydroflow+ graphs can span multiple nodes, each running different pieces of logic. When a Hydroflow+ graph is built into a runnable program, the graph is sliced into components for each of these nodes, and an integer ID is used to determine which subgraph should be executed. In our case, we only have a single node, so we pass a static `q!(0)` node ID to the `build` method.
+
+Stageleft entries are usable as macros from other programs. In our case, we will instantiate our entrypoint from the Rust binary for our dataflow. We can create a new file `src/bin/first_ten.rs` with the following contents:
+
+```rust
+#[tokio::main]
+async fn main() {
+    flow::first_ten_runtime!().run_async().await;
+}
+```
+
+We can now run this binary to see the output of our dataflow:
+
+```bash
+$ cargo run --bin first_ten
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+```
+
+In the next section, we will look at how to extend this program to run on multiple nodes.

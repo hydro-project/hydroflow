@@ -18,6 +18,8 @@ pub use stageleft_macro::{entry, q, quse_fn, runtime};
 pub mod runtime_support;
 use runtime_support::FreeVariable;
 
+use crate::runtime_support::get_final_crate_name;
+
 #[macro_export]
 macro_rules! stageleft_crate {
     ($macro_crate:ident) => {
@@ -122,37 +124,40 @@ impl<
             )
         });
 
-        let final_crate = proc_macro_crate::crate_name(crate_name)
-            .unwrap_or_else(|_| panic!("{crate_name} should be present in `Cargo.toml`"));
-        let final_crate_root = match final_crate {
-            proc_macro_crate::FoundCrate::Itself => quote!(crate),
-            proc_macro_crate::FoundCrate::Name(name) => {
-                let ident = syn::Ident::new(&name, Span::call_site());
-                quote! { #ident }
-            }
-        };
+        let final_crate_root = get_final_crate_name(crate_name);
 
         let module_path: syn::Path = syn::parse_str(&module_path).unwrap();
-        let module_path = module_path
+        let module_path_segments = module_path
             .segments
             .iter()
             .skip(1) // skip crate
             .cloned()
             .collect::<Vec<_>>();
-        let module_path = syn::Path {
-            leading_colon: None,
-            segments: syn::punctuated::Punctuated::from_iter(module_path),
+        let module_path = if module_path_segments.is_empty() {
+            None
+        } else {
+            Some(syn::Path {
+                leading_colon: None,
+                segments: syn::punctuated::Punctuated::from_iter(module_path_segments),
+            })
         };
 
-        let expr: syn::Expr = syn::parse(expr_tokens.into()).unwrap();
-        (
-            None,
-            Some(quote!({
+        let expr: syn::Expr = syn::parse2(expr_tokens).unwrap();
+        let with_env = if let Some(module_path) = module_path {
+            quote!({
                 use #final_crate_root::#module_path::*;
                 #(#instantiated_free_variables)*
                 #expr
-            })),
-        )
+            })
+        } else {
+            quote!({
+                use #final_crate_root::*;
+                #(#instantiated_free_variables)*
+                #expr
+            })
+        };
+
+        (None, Some(with_env))
     }
 }
 
