@@ -2,37 +2,57 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
-use hydroflow::futures::stream::Stream;
 use hydroflow_lang::graph::{
     eliminate_extra_unions_tees, partition_graph, propegate_flow_props, FlatGraphBuilder,
 };
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
-use stageleft::{IntoQuotedOnce, Quoted, QuotedContext};
+use stageleft::{Quoted, QuotedContext};
 use syn::parse_quote;
 
-use crate::{HfBuilt, HfStream, RuntimeContext};
+use crate::node::{HfDeploy, HfNodeBuilder};
+use crate::{HfBuilt, RuntimeContext};
 
-pub struct HfBuilder<'a> {
+pub type Builders = RefCell<Option<BTreeMap<usize, FlatGraphBuilder>>>;
+
+pub struct HfBuilder<'a, D: HfDeploy<'a> + ?Sized> {
     pub(crate) next_id: RefCell<usize>,
-    pub(crate) builders: RefCell<Option<BTreeMap<usize, FlatGraphBuilder>>>,
+    pub(crate) builders: Builders,
+    nodes: RefCell<Vec<D::Node>>,
+    next_node_id: RefCell<usize>,
     _phantom: PhantomData<&'a mut &'a ()>,
 }
 
-impl<'a> QuotedContext for HfBuilder<'a> {
+impl<'a, D: HfDeploy<'a>> QuotedContext for HfBuilder<'a, D> {
     fn create() -> Self {
         HfBuilder::new()
     }
 }
 
-impl<'a> HfBuilder<'a> {
+impl<'a, D: HfDeploy<'a>> HfBuilder<'a, D> {
     #[allow(clippy::new_without_default)]
-    pub fn new() -> HfBuilder<'a> {
+    pub fn new() -> HfBuilder<'a, D> {
         HfBuilder {
             next_id: RefCell::new(0),
             builders: RefCell::new(Some(Default::default())),
+            nodes: RefCell::new(Vec::new()),
+            next_node_id: RefCell::new(0),
             _phantom: PhantomData,
         }
+    }
+
+    pub fn builder_components(&self) -> (&RefCell<usize>, &Builders) {
+        (&self.next_id, &self.builders)
+    }
+
+    pub fn node(&'a self, builder: &mut impl HfNodeBuilder<'a, D>) -> D::Node {
+        let mut next_node_id = self.next_node_id.borrow_mut();
+        let id = *next_node_id;
+        *next_node_id += 1;
+
+        let node = builder.build(id, self);
+        self.nodes.borrow_mut().push(node.clone());
+        node
     }
 
     pub fn build(&self, id: impl Quoted<'a, usize>) -> HfBuilt<'a> {
@@ -98,132 +118,5 @@ impl<'a> HfBuilder<'a> {
         RuntimeContext {
             _phantom: PhantomData,
         }
-    }
-
-    pub fn source_stream<T, E: Stream<Item = T> + Unpin>(
-        &'a self,
-        node_id: usize,
-        e: impl Quoted<'a, E>,
-    ) -> HfStream<'a, T> {
-        let next_id = {
-            let mut next_id = self.next_id.borrow_mut();
-            let id = *next_id;
-            *next_id += 1;
-            id
-        };
-
-        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
-        let e = e.splice();
-
-        self.builders
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .entry(node_id)
-            .or_default()
-            .add_statement(parse_quote! {
-                #ident = source_stream(#e) -> tee();
-            });
-
-        HfStream {
-            ident,
-            node_id,
-            graph: self,
-            _phantom: PhantomData,
-        }
-    }
-
-    pub fn source_iter<T, E: IntoIterator<Item = T>>(
-        &'a self,
-        node_id: usize,
-        e: impl IntoQuotedOnce<'a, E>,
-    ) -> HfStream<'a, T> {
-        let next_id = {
-            let mut next_id = self.next_id.borrow_mut();
-            let id = *next_id;
-            *next_id += 1;
-            id
-        };
-
-        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
-        let e = e.splice();
-
-        self.builders
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .entry(node_id)
-            .or_default()
-            .add_statement(parse_quote! {
-                #ident = source_iter(#e) -> tee();
-            });
-
-        HfStream {
-            ident,
-            node_id,
-            graph: self,
-            _phantom: PhantomData,
-        }
-    }
-
-    pub fn cycle<T>(&'a self, node_id: usize) -> (HfCycle<'a, T>, HfStream<'a, T>) {
-        let next_id = {
-            let mut next_id = self.next_id.borrow_mut();
-            let id = *next_id;
-            *next_id += 1;
-            id
-        };
-
-        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
-
-        self.builders
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .entry(node_id)
-            .or_default()
-            .add_statement(parse_quote! {
-                #ident = tee();
-            });
-
-        (
-            HfCycle {
-                ident: ident.clone(),
-                node_id,
-                graph: self,
-                _phantom: PhantomData,
-            },
-            HfStream {
-                ident,
-                node_id,
-                graph: self,
-                _phantom: PhantomData,
-            },
-        )
-    }
-}
-
-pub struct HfCycle<'a, T> {
-    ident: syn::Ident,
-    node_id: usize,
-    graph: &'a HfBuilder<'a>,
-    _phantom: PhantomData<T>,
-}
-
-impl<'a, T> HfCycle<'a, T> {
-    pub fn complete(self, stream: &HfStream<'a, T>) {
-        let ident = self.ident;
-        let stream_ident = stream.ident.clone();
-
-        self.graph
-            .builders
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .entry(self.node_id)
-            .or_default()
-            .add_statement(parse_quote! {
-                #stream_ident -> #ident;
-            });
     }
 }

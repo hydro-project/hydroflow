@@ -4,6 +4,27 @@ use std::mem::MaybeUninit;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 
+pub fn get_final_crate_name(crate_name: &str) -> TokenStream {
+    let final_crate = proc_macro_crate::crate_name(crate_name)
+        .unwrap_or_else(|_| panic!("{crate_name} should be present in `Cargo.toml`"));
+
+    match final_crate {
+        proc_macro_crate::FoundCrate::Itself => {
+            if std::env::var("CARGO_BIN_NAME").is_ok() {
+                let underscored = crate_name.replace("-", "_");
+                let underscored_ident = syn::Ident::new(&underscored, Span::call_site());
+                quote! { #underscored_ident }
+            } else {
+                quote! { crate }
+            }
+        }
+        proc_macro_crate::FoundCrate::Name(name) => {
+            let ident = syn::Ident::new(&name, Span::call_site());
+            quote! { #ident }
+        }
+    }
+}
+
 pub trait ParseFromLiteral {
     fn parse_from_literal(literal: &syn::Expr) -> Self;
 }
@@ -93,15 +114,7 @@ pub fn create_import<T>(
 
 impl<T> FreeVariable<T> for Import<T> {
     fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>) {
-        let final_crate = proc_macro_crate::crate_name(self.crate_name)
-            .unwrap_or_else(|_| panic!("{} should be present in `Cargo.toml`", self.crate_name));
-        let final_crate_root = match final_crate {
-            proc_macro_crate::FoundCrate::Itself => quote!(crate),
-            proc_macro_crate::FoundCrate::Name(name) => {
-                let ident = syn::Ident::new(&name, Span::call_site());
-                quote! { #ident }
-            }
-        };
+        let final_crate_root = get_final_crate_name(self.crate_name);
 
         let module_path = syn::parse_str::<syn::Path>(self.module_path).unwrap();
         let parsed = syn::parse_str::<syn::Path>(self.path).unwrap();

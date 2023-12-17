@@ -11,6 +11,7 @@ members = [
     "hydroflow_lang",
     "hydroflow_macro",
     "hydroflow_plus",
+    "hydroflow_plus_cli_integration",
     "hydroflow_plus_test",
     "hydroflow_plus_test_macro",
     "lattices",

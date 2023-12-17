@@ -1491,15 +1491,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "hydroflow_plus_cli_integration"
+version = "0.5.0"
+dependencies = [
+ "async-channel",
+ "hydro_cli",
+ "hydroflow_plus",
+ "proc-macro-crate",
+ "stageleft",
+ "syn 2.0.14",
+ "tokio",
+]
+
+[[package]]
 name = "hydroflow_plus_test"
 version = "0.0.0"
 dependencies = [
+ "hydro_cli",
  "hydroflow",
  "hydroflow_plus",
+ "hydroflow_plus_cli_integration",
  "hydroflow_plus_test_macro",
  "insta",
- "regex",
- "serde",
  "stageleft",
  "stageleft_tool",
  "tokio",
@@ -1511,8 +1524,7 @@ version = "0.0.0"
 dependencies = [
  "hydroflow",
  "hydroflow_plus",
- "regex",
- "serde",
+ "hydroflow_plus_cli_integration",
  "stageleft",
  "stageleft_tool",
  "tokio",
@@ -1987,9 +1999,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.17.1"
+version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7e5500299e16ebb147ae15a00a942af264cf3688f47923b8fc2cd5858f23ad3"
+checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 
 [[package]]
 name = "oorandom"
