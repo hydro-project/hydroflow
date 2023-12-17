@@ -1,0 +1,46 @@
+---
+sidebar_position: 3
+---
+
+# Distributed Hydroflow+
+Continuing from our previous example, we will now look at how to extend our program to run on multiple nodes. Recall that our previous flow graph looked like this:
+
+```rust
+use hydroflow_plus::*;
+use hydroflow_plus::node::*;
+use stageleft::*;
+
+pub fn first_ten<'a, D: HfDeploy<'a>>(
+    graph: &'a HfBuilder<'a, D>,
+    node_builder: &mut impl HfNodeBuilder<'a, D>
+) {
+    let node = graph.node(node_builder);
+    let numbers = node.source_iter(q!(0..10));
+    numbers.for_each(q!(|n| println!("{}", n)));
+}
+```
+
+## The Flow Graph
+Let's extend this example to print the numbers on a separate node. First, we need to specify that our flow graph will involve the network. We do this by replacing the `HfDeploy<'a>` trait bound with `HfNetworkedDeploy<'a>`. Then, we can use the `node_builder` to create a second node:
+```rust
+use hydroflow_plus::*;
+use hydroflow_plus::node::*;
+use stageleft::*;
+
+pub fn first_ten_distributed<'a, D: HfNetworkedDeploy<'a>>(
+    graph: &'a HfBuilder<'a, D>,
+    node_builder: &mut impl HfNodeBuilder<'a, D>
+) {
+    let node = graph.node(node_builder);
+    let second_node = graph.node(node_builder);
+}
+```
+
+Now, we can distribute our dataflow by using the `send_bincode` operator to mark where the data should be sent using bincode serialization.
+
+```rust
+let numbers = node.source_iter(q!(0..10));
+numbers
+    .send_bincode(&second_node)
+    .for_each(q!(|n| println!("{}", n)));
+```

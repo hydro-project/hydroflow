@@ -14,13 +14,9 @@ digraph {
         label = "sg_1v1\nstratum 0"
         n1v1
         n3v1
-        subgraph "cluster_sg_1v1_var_stream_7" {
-            label="var stream_7"
+        subgraph "cluster_sg_1v1_var_stream_5" {
+            label="var stream_5"
             n1v1
-        }
-        subgraph "cluster_sg_1v1_var_stream_8" {
-            label="var stream_8"
-            n3v1
         }
     }
 }

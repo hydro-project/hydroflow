@@ -1,17 +1,26 @@
 use std::marker::PhantomData;
 
 use hydroflow::scheduled::context::Context;
-use hydroflow::scheduled::graph::Hydroflow;
+pub use hydroflow::scheduled::graph::Hydroflow;
 pub use hydroflow::*;
 use proc_macro2::TokenStream;
 use quote::quote;
 use stageleft::runtime_support::FreeVariable;
 use stageleft::Quoted;
 
+pub mod runtime_support {
+    pub use bincode;
+}
+
 mod stream;
 pub use stream::HfStream;
 
-mod builder;
+pub mod node;
+
+pub mod cycle;
+pub use cycle::HfCycle;
+
+pub mod builder;
 pub use builder::HfBuilder;
 
 #[derive(Clone)]
