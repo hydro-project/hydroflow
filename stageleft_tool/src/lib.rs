@@ -221,6 +221,6 @@ pub fn gen_final_helper(final_crate: &str) {
 #[macro_export]
 macro_rules! gen_final {
     () => {
-        $crate::gen_final_helper(env!("CARGO_CRATE_NAME"))
+        $crate::gen_final_helper(env!("CARGO_PKG_NAME"))
     };
 }

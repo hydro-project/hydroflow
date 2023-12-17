@@ -60,10 +60,6 @@ digraph {
             label="var stream_4"
             n9v1
         }
-        subgraph "cluster_sg_2v1_var_stream_5" {
-            label="var stream_5"
-            n11v1
-        }
     }
 }
 
