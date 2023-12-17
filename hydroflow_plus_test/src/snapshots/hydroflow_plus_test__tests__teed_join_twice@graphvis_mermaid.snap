@@ -59,11 +59,5 @@ subgraph sg_2v1 ["sg_2v1 stratum 0"]
         9v1
         10v1
     end
-    subgraph sg_2v1_var_stream_5 ["var <tt>stream_5</tt>"]
-        11v1
-    end
-    subgraph sg_2v1_var_stream_6 ["var <tt>stream_6</tt>"]
-        12v1
-    end
 end
 

@@ -1,4 +1,4 @@
-# Stageleft
+<h1 class="crate-title">Stageleft</h1>
 Stageleft brings the magic of staged programming to Rust, making it easy to write macros with type-safe logic and high-level APIs that can generate efficient code under the hood.
 
 ## Example
