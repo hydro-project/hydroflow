@@ -1,0 +1,22 @@
+[package]
+name = "flow_macro"
+publish = false
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+path = "src/lib.rs"
+
+[features]
+default = ["macro"]
+macro = []
+
+[dependencies]
+hydroflow_plus = { git = "https://github.com/hydro-project/hydroflow.git" }
+tokio = { version = "1.16", features = [ "full" ] }
+stageleft = { git = "https://github.com/hydro-project/hydroflow.git" }
+hydroflow_plus_cli_integration = { git = "https://github.com/hydro-project/hydroflow.git" }
+
+[build-dependencies]
+stageleft_tool = { git = "https://github.com/hydro-project/hydroflow.git" }
