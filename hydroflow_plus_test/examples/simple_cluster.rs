@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use hydro_cli::core::gcp::GCPNetwork;
 use hydro_cli::core::{Deployment, Host};
-use hydroflow_plus_cli_integration::CLIDeployNodeBuilder;
+use hydroflow_plus_cli_integration::{CLIDeployClusterBuilder, CLIDeployNodeBuilder};
 use tokio::sync::RwLock;
 
 type HostCreator = Box<dyn Fn(&mut Deployment) -> Arc<RwLock<dyn Host>>>;
@@ -39,21 +39,34 @@ async fn main() {
     };
 
     let builder = hydroflow_plus::HfBuilder::new();
-    hydroflow_plus_test::first_ten::first_ten_distributed(
+    hydroflow_plus_test::cluster::simple_cluster(
         &builder,
-        &mut CLIDeployNodeBuilder::new(|id| {
+        &mut CLIDeployClusterBuilder::new(|id| {
             let host = create_host(&mut deployment);
-            deployment.HydroflowCrate(
-                ".",
-                host,
-                Some("first_ten_distributed".into()),
-                None,
-                profile.clone(),
-                None,
-                Some(vec![id.to_string()]),
-                None,
-                vec![],
-            )
+            vec![
+                deployment.HydroflowCrate(
+                    ".",
+                    host.clone(),
+                    Some("simple_cluster".into()),
+                    None,
+                    profile.clone(),
+                    None,
+                    Some(vec![id.to_string()]),
+                    None,
+                    vec![],
+                ),
+                deployment.HydroflowCrate(
+                    ".",
+                    host,
+                    Some("simple_cluster".into()),
+                    None,
+                    profile.clone(),
+                    None,
+                    Some(vec![id.to_string()]),
+                    None,
+                    vec![],
+                ),
+            ]
         }),
     );
     builder.wire();

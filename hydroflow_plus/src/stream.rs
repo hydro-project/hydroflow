@@ -425,7 +425,7 @@ impl<'a, N: HfNode<'a>> HfStream<'a, Bytes, N> {
         let ident = syn::Ident::new(&format!("stream_{}", recipient_next_id), Span::call_site());
 
         let recipient_port_name = other.next_port();
-        let recipient_source = other.gen_source_statement(&recipient_port_name);
+        let recipient_source = N::gen_source_statement(other, &recipient_port_name);
 
         builders
             .entry(other.id())
@@ -491,7 +491,7 @@ impl<'a, T: Serialize + DeserializeOwned, N: HfNode<'a>> HfStream<'a, T, N> {
         let ident = syn::Ident::new(&format!("stream_{}", recipient_next_id), Span::call_site());
 
         let recipient_port_name = other.next_port();
-        let recipient_source = other.gen_source_statement(&recipient_port_name);
+        let recipient_source = N::gen_source_statement(other, &recipient_port_name);
 
         builders
             .entry(other.id())

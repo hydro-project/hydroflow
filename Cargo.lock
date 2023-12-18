@@ -1500,7 +1500,10 @@ dependencies = [
  "hydro_cli",
  "hydroflow_plus",
  "proc-macro-crate",
+ "serde",
+ "serde_json",
  "stageleft",
+ "stageleft_tool",
  "syn 2.0.14",
  "tokio",
 ]

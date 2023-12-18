@@ -25,6 +25,7 @@ async fn main() {
             )
         }),
     );
+    builder.wire();
 
     let port_to_zero = source_zero_port
         .create_sender(&mut deployment, &localhost)

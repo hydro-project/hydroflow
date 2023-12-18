@@ -8,6 +8,7 @@ use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::HfBuilder;
 use stageleft::{q, Quoted, RuntimeData};
 
+pub mod cluster;
 pub mod first_ten;
 pub mod networked;
 
