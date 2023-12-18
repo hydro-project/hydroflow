@@ -7,7 +7,7 @@ use anyhow::{anyhow, bail, Result};
 use async_channel::Receiver;
 use async_trait::async_trait;
 use futures_core::Future;
-use hydroflow_cli_integration::ServerPort;
+use hydroflow_cli_integration::{ServerBindConfig, ServerPort};
 use tokio::sync::RwLock;
 
 use self::ports::{HydroflowPortConfig, HydroflowSink, SourcePath};
@@ -32,6 +32,8 @@ pub struct HydroflowCrate {
     args: Option<Vec<String>>,
     display_id: Option<String>,
     external_ports: Vec<u16>,
+
+    meta: Option<String>,
 
     target_type: HostTargetType,
 
@@ -81,6 +83,7 @@ impl HydroflowCrate {
             display_id,
             target_type,
             external_ports,
+            meta: None,
             port_to_server: HashMap::new(),
             port_to_bind: HashMap::new(),
             built_binary: Arc::new(async_once_cell::OnceCell::new()),
@@ -89,6 +92,14 @@ impl HydroflowCrate {
             launched_binary: None,
             started: false,
         }
+    }
+
+    pub fn set_meta(&mut self, meta: String) {
+        if self.meta.is_some() {
+            panic!("meta already set");
+        }
+
+        self.meta = Some(meta);
     }
 
     pub fn get_port(
@@ -194,6 +205,8 @@ impl HydroflowCrate {
     }
 }
 
+type InitConfig = (HashMap<String, ServerBindConfig>, Option<String>);
+
 #[async_trait]
 impl Service for HydroflowCrate {
     fn collect_resources(&mut self, _resource_batch: &mut ResourceBatch) {
@@ -276,7 +289,8 @@ impl Service for HydroflowCrate {
                     bind_config.insert(port_name.clone(), launched_host.server_config(bind_type));
                 }
 
-                let formatted_bind_config = serde_json::to_string(&bind_config).unwrap();
+                let formatted_bind_config =
+                    serde_json::to_string::<InitConfig>(&(bind_config, self.meta.clone())).unwrap();
 
                 // request stdout before sending config so we don't miss the "ready" response
                 let stdout_receiver = binary.write().await.cli_stdout().await;
