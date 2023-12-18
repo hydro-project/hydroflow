@@ -159,10 +159,7 @@ impl Deployment {
 
     #[allow(non_snake_case)]
     fn Localhost(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let arc = self
-            .underlying
-            .blocking_write()
-            .add_host(crate::core::LocalhostHost::new);
+        let arc = self.underlying.blocking_write().Localhost();
 
         Ok(Py::new(
             py,
@@ -188,10 +185,10 @@ impl Deployment {
         let arc = self.underlying.blocking_write().add_host(|id| {
             crate::core::GCPComputeEngineHost::new(
                 id,
-                project,
-                machine_type,
-                image,
-                region,
+                &project,
+                &machine_type,
+                &image,
+                &region,
                 network.underlying,
                 user,
             )
@@ -214,9 +211,10 @@ impl Deployment {
         on: &Host,
         external_ports: Vec<u16>,
     ) -> PyResult<Py<PyAny>> {
-        let service = self.underlying.blocking_write().add_service(|id| {
-            crate::core::CustomService::new(id, on.underlying.clone(), external_ports)
-        });
+        let service = self
+            .underlying
+            .blocking_write()
+            .CustomService(on.underlying.clone(), external_ports);
 
         Ok(Py::new(
             py,
@@ -244,20 +242,17 @@ impl Deployment {
         display_id: Option<String>,
         external_ports: Option<Vec<u16>>,
     ) -> PyResult<Py<PyAny>> {
-        let service = self.underlying.blocking_write().add_service(|id| {
-            crate::core::HydroflowCrate::new(
-                id,
-                src.into(),
-                on.underlying.clone(),
-                bin,
-                example,
-                profile,
-                features,
-                args,
-                display_id,
-                external_ports.unwrap_or_default(),
-            )
-        });
+        let service = self.underlying.blocking_write().HydroflowCrate(
+            src,
+            on.underlying.clone(),
+            bin,
+            example,
+            profile,
+            features,
+            args,
+            display_id,
+            external_ports.unwrap_or_default(),
+        );
 
         Ok(Py::new(
             py,
@@ -338,7 +333,7 @@ impl GCPNetwork {
     fn new(project: String, existing: Option<String>) -> Self {
         GCPNetwork {
             underlying: Arc::new(RwLock::new(crate::core::gcp::GCPNetwork::new(
-                project, existing,
+                &project, existing,
             ))),
         }
     }
