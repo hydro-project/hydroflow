@@ -122,6 +122,11 @@ const config = {
               },
               {
                 type: 'docSidebar',
+                sidebarId: 'hydroflowPlusSidebar',
+                label: 'Hydroflow+',
+              },
+              {
+                type: 'docSidebar',
                 sidebarId: 'deploySidebar',
                 label: 'Hydro Deploy',
               }
@@ -159,6 +164,10 @@ const config = {
               {
                 label: 'Hydroflow',
                 to: '/docs/hydroflow/',
+              },
+              {
+                label: 'Hydroflow+',
+                to: '/docs/hydroflow_plus/',
               },
               {
                 label: 'Hydro Deploy',

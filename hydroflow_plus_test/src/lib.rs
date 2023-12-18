@@ -1,23 +1,28 @@
 stageleft::stageleft_crate!(hydroflow_plus_test_macro);
 
 use hydroflow_plus::futures::stream::Stream;
+use hydroflow_plus::node::{HfNode, MultiGraph, SingleGraph};
 use hydroflow_plus::scheduled::graph::Hydroflow;
 use hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::HfBuilder;
 use stageleft::{q, Quoted, RuntimeData};
 
+pub mod first_ten;
 pub mod networked;
 
 #[stageleft::entry(UnboundedReceiverStream<u32>)]
 pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
-    graph: &'a HfBuilder<'a>,
+    graph: &'a HfBuilder<'a, MultiGraph>,
     input_stream: RuntimeData<S>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
     send_twice: bool,
     node_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let source = graph.source_stream(0, input_stream);
+    let node_zero = graph.node(&mut ());
+    let node_one = graph.node(&mut ());
+
+    let source = node_zero.source_stream(input_stream);
     let map1 = source.map(q!(|v| (v + 1, ())));
     let map2 = source.map(q!(|v| (v - 1, ())));
 
@@ -33,7 +38,7 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
         }));
     }
 
-    let source_node_id_1 = graph.source_iter(1, q!(0..5));
+    let source_node_id_1 = node_one.source_iter(q!(0..5));
     source_node_id_1.for_each(q!(|v| {
         output.send(v).unwrap();
     }));
@@ -43,14 +48,16 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
 
 #[stageleft::entry]
 pub fn chat_app<'a>(
-    graph: &'a HfBuilder<'a>,
+    graph: &'a HfBuilder<'a, SingleGraph>,
     users_stream: RuntimeData<UnboundedReceiverStream<u32>>,
     messages: RuntimeData<UnboundedReceiverStream<String>>,
     output: RuntimeData<&'a UnboundedSender<(u32, String)>>,
     replay_messages: bool,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let users = graph.source_stream(0, users_stream).persist();
-    let mut messages = graph.source_stream(0, messages);
+    let node = graph.node(&mut ());
+
+    let users = node.source_stream(users_stream).persist();
+    let mut messages = node.source_stream(messages);
     if replay_messages {
         messages = messages.persist();
     }
@@ -69,15 +76,17 @@ pub fn chat_app<'a>(
 
 #[stageleft::entry]
 pub fn graph_reachability<'a>(
-    graph: &'a HfBuilder<'a>,
+    graph: &'a HfBuilder<'a, SingleGraph>,
     roots: RuntimeData<UnboundedReceiverStream<u32>>,
     edges: RuntimeData<UnboundedReceiverStream<(u32, u32)>>,
     reached_out: RuntimeData<&'a UnboundedSender<u32>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let roots = graph.source_stream(0, roots);
-    let edges = graph.source_stream(0, edges);
+    let node = graph.node(&mut ());
 
-    let (set_reached_cycle, reached_cycle) = graph.cycle(0);
+    let roots = node.source_stream(roots);
+    let edges = node.source_stream(edges);
+
+    let (set_reached_cycle, reached_cycle) = node.cycle();
 
     let reached = roots.union(&reached_cycle);
     let reachable = reached
@@ -95,11 +104,13 @@ pub fn graph_reachability<'a>(
 
 #[stageleft::entry(String)]
 pub fn count_elems<'a, T: 'a>(
-    graph: &'a HfBuilder<'a>,
+    graph: &'a HfBuilder<'a, SingleGraph>,
     input_stream: RuntimeData<UnboundedReceiverStream<T>>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let source = graph.source_stream(0, input_stream);
+    let node = graph.node(&mut ());
+
+    let source = node.source_stream(input_stream);
     let count = source.map(q!(|_| 1)).fold(q!(|| 0), q!(|a, b| *a += b));
 
     count.for_each(q!(|v| {
