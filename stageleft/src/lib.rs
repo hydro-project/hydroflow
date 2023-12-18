@@ -37,6 +37,17 @@ macro_rules! stageleft_crate {
 }
 
 #[macro_export]
+macro_rules! stageleft_no_entry_crate {
+    () => {
+        #[doc(hidden)]
+        #[allow(unused, ambiguous_glob_reexports)]
+        pub mod __staged {
+            include!(concat!(env!("OUT_DIR"), "/lib_pub.rs"));
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! stageleft_macro_crate {
     () => {
         include!(concat!(env!("OUT_DIR"), "/lib.rs"));
@@ -130,7 +141,8 @@ impl<
         let module_path_segments = module_path
             .segments
             .iter()
-            .skip(1) // skip crate
+            .skip(1)
+            .skip_while(|p| p.ident == "__staged") // skip crate
             .cloned()
             .collect::<Vec<_>>();
         let module_path = if module_path_segments.is_empty() {
@@ -145,13 +157,13 @@ impl<
         let expr: syn::Expr = syn::parse2(expr_tokens).unwrap();
         let with_env = if let Some(module_path) = module_path {
             quote!({
-                use #final_crate_root::#module_path::*;
+                use #final_crate_root::__staged::#module_path::*;
                 #(#instantiated_free_variables)*
                 #expr
             })
         } else {
             quote!({
-                use #final_crate_root::*;
+                use #final_crate_root::__staged::*;
                 #(#instantiated_free_variables)*
                 #expr
             })

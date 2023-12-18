@@ -35,12 +35,12 @@ pub fn first_ten_distributed<'a, D: HfNetworkedDeploy<'a>>(
 }
 
 use hydroflow::util::cli::HydroCLI;
-use hydroflow_plus_cli_integration::{CLIRuntime, CLIRuntimeNodeBuilder};
+use hydroflow_plus_cli_integration::{CLIRuntime, CLIRuntimeNodeBuilder, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn first_ten_distributed_runtime<'a>(
     graph: &'a HfBuilder<'a, CLIRuntime>,
-    cli: RuntimeData<&'a HydroCLI>,
+    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
     node_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = first_ten_distributed(graph, &mut CLIRuntimeNodeBuilder::new(cli));
@@ -77,6 +77,7 @@ mod tests {
                 )
             }),
         );
+        builder.wire();
 
         deployment.deploy().await.unwrap();
 

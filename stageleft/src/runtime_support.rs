@@ -75,11 +75,20 @@ pub trait FreeVariable<O> {
     }
 }
 
-impl FreeVariable<u32> for u32 {
-    fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>) {
-        (None, Some(quote!(#self)))
-    }
+macro_rules! impl_free_variable_from_literal_numeric {
+    ($($ty:ty),*) => {
+        $(
+            impl FreeVariable<$ty> for $ty {
+                fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>) {
+                    (None, Some(quote!(#self)))
+                }
+            }
+        )*
+    };
 }
+
+impl_free_variable_from_literal_numeric!(i8, i16, i32, i64, i128, isize);
+impl_free_variable_from_literal_numeric!(u8, u16, u32, u64, u128, usize);
 
 pub struct Import<T> {
     module_path: &'static str,
