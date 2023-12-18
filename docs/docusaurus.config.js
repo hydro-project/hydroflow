@@ -166,6 +166,10 @@ const config = {
                 to: '/docs/hydroflow/',
               },
               {
+                label: 'Hydroflow+',
+                to: '/docs/hydroflow_plus/',
+              },
+              {
                 label: 'Hydro Deploy',
                 to: '/docs/deploy/',
               }
