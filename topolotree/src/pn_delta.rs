@@ -23,7 +23,7 @@ type NextStateType = (u64, bool, Rc<RefCell<(Vec<u64>, Vec<u64>)>>);
 
 #[hydroflow::main]
 async fn main() {
-    let ports = hydroflow::util::cli::init().await;
+    let ports = hydroflow::util::cli::init::<()>().await;
 
     let my_id: Vec<usize> = serde_json::from_str(&std::env::args().nth(1).unwrap()).unwrap();
     let my_id = my_id[0];
