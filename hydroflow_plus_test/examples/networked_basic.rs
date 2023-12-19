@@ -1,5 +1,3 @@
-use hydroflow_plus_test::*;
-
 // cannot use hydroflow::main because connect_local_blocking causes a deadlock
 #[tokio::main]
 async fn main() {

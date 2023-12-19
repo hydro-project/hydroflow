@@ -331,15 +331,7 @@ pub fn entry(
             };
 
             let final_crate_name = env!("STAGELEFT_FINAL_CRATE_NAME");
-            let final_crate = #root::internal::proc_macro_crate::crate_name(final_crate_name)
-                .unwrap_or_else(|_| panic!("{final_crate_name} should be present in `Cargo.toml`"));
-            let final_crate_root = match final_crate {
-                #root::internal::proc_macro_crate::FoundCrate::Itself => ::#root::internal::quote! { crate },
-                #root::internal::proc_macro_crate::FoundCrate::Name(name) => {
-                    let ident = #root::internal::syn::Ident::new(&name, #root::internal::Span::call_site());
-                    ::#root::internal::quote! { #pound ident }
-                }
-            };
+            let final_crate_root = #root::runtime_support::get_final_crate_name(final_crate_name);
 
             let module_path: #root::internal::syn::Path = #root::internal::syn::parse_str(module_path!()).unwrap();
             let module_path = module_path.segments.iter().skip(1).cloned().collect::<Vec<_>>();
