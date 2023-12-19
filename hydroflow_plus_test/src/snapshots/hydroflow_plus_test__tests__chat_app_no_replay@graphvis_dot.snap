@@ -39,10 +39,6 @@ digraph {
             label="var stream_3"
             n7v1
         }
-        subgraph "cluster_sg_1v1_var_stream_4" {
-            label="var stream_4"
-            n9v1
-        }
     }
 }
 

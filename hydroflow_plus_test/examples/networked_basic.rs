@@ -1,10 +1,42 @@
-// cannot use hydroflow::main because connect_local_blocking causes a deadlock
+use hydro_cli::core::Deployment;
+use hydroflow::futures::SinkExt;
+use hydroflow::util::cli::ConnectedSink;
+use hydroflow_plus_cli_integration::CLIDeployNodeBuilder;
+
 #[tokio::main]
 async fn main() {
-    let node_id: usize = std::env::args().nth(1).unwrap().parse().unwrap();
-    let ports = hydroflow::util::cli::init().await;
+    let mut deployment = Deployment::new();
+    let localhost = deployment.Localhost();
 
-    let joined = hydroflow_plus_test::networked::networked_basic!(&ports, node_id);
+    let builder = hydroflow_plus::HfBuilder::new();
+    let (source_zero_port, _, _) = hydroflow_plus_test::networked::networked_basic(
+        &builder,
+        &mut CLIDeployNodeBuilder::new(|id| {
+            deployment.HydroflowCrate(
+                ".",
+                localhost.clone(),
+                Some("networked_basic".into()),
+                None,
+                Some("dev".into()),
+                None,
+                Some(vec![id.to_string()]),
+                None,
+                vec![],
+            )
+        }),
+    );
 
-    hydroflow::util::cli::launch_flow(joined).await;
+    let port_to_zero = source_zero_port
+        .create_sender(&mut deployment, &localhost)
+        .await;
+
+    deployment.deploy().await.unwrap();
+
+    let mut conn_to_zero = port_to_zero.connect().await.into_sink();
+
+    deployment.start().await.unwrap();
+
+    for line in std::io::stdin().lines() {
+        conn_to_zero.send(line.unwrap().into()).await.unwrap();
+    }
 }
