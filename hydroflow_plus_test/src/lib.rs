@@ -8,6 +8,7 @@ use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::HfBuilder;
 use stageleft::{q, Quoted, RuntimeData};
 
+pub mod cluster;
 pub mod first_ten;
 pub mod networked;
 
@@ -19,8 +20,8 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
     send_twice: bool,
     node_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let node_zero = graph.node(&mut ());
-    let node_one = graph.node(&mut ());
+    let node_zero = graph.node(&());
+    let node_one = graph.node(&());
 
     let source = node_zero.source_stream(input_stream);
     let map1 = source.map(q!(|v| (v + 1, ())));
@@ -54,7 +55,7 @@ pub fn chat_app<'a>(
     output: RuntimeData<&'a UnboundedSender<(u32, String)>>,
     replay_messages: bool,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let node = graph.node(&mut ());
+    let node = graph.node(&());
 
     let users = node.source_stream(users_stream).persist();
     let mut messages = node.source_stream(messages);
@@ -81,7 +82,7 @@ pub fn graph_reachability<'a>(
     edges: RuntimeData<UnboundedReceiverStream<(u32, u32)>>,
     reached_out: RuntimeData<&'a UnboundedSender<u32>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let node = graph.node(&mut ());
+    let node = graph.node(&());
 
     let roots = node.source_stream(roots);
     let edges = node.source_stream(edges);
@@ -108,7 +109,7 @@ pub fn count_elems<'a, T: 'a>(
     input_stream: RuntimeData<UnboundedReceiverStream<T>>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let node = graph.node(&mut ());
+    let node = graph.node(&());
 
     let source = node.source_stream(input_stream);
     let count = source.map(q!(|_| 1)).fold(q!(|| 0), q!(|a, b| *a += b));
