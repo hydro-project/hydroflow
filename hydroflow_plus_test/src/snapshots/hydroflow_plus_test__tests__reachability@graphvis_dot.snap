@@ -68,10 +68,6 @@ digraph {
             label="var stream_7"
             n14v1
         }
-        subgraph "cluster_sg_1v1_var_stream_8" {
-            label="var stream_8"
-            n16v1
-        }
     }
 }
 

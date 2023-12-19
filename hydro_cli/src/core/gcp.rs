@@ -146,9 +146,9 @@ pub struct GCPNetwork {
 }
 
 impl GCPNetwork {
-    pub fn new(project: String, existing_vpc: Option<String>) -> Self {
+    pub fn new(project: impl Into<String>, existing_vpc: Option<String>) -> Self {
         Self {
-            project,
+            project: project.into(),
             existing_vpc,
             id: nanoid!(8, &TERRAFORM_ALPHABET),
         }
@@ -277,19 +277,19 @@ pub struct GCPComputeEngineHost {
 impl GCPComputeEngineHost {
     pub fn new(
         id: usize,
-        project: String,
-        machine_type: String,
-        image: String,
-        region: String,
+        project: impl Into<String>,
+        machine_type: impl Into<String>,
+        image: impl Into<String>,
+        region: impl Into<String>,
         network: Arc<RwLock<GCPNetwork>>,
         user: Option<String>,
     ) -> Self {
         Self {
             id,
-            project,
-            machine_type,
-            image,
-            region,
+            project: project.into(),
+            machine_type: machine_type.into(),
+            image: image.into(),
+            region: region.into(),
             network,
             user,
             launched: None,
