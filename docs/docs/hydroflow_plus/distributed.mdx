@@ -12,7 +12,7 @@ use stageleft::*;
 
 pub fn first_ten<'a, D: HfDeploy<'a>>(
     graph: &'a HfBuilder<'a, D>,
-    node_builder: &mut impl HfNodeBuilder<'a, D>
+    node_builder: &impl HfNodeBuilder<'a, D>
 ) {
     let node = graph.node(node_builder);
     let numbers = node.source_iter(q!(0..10));
@@ -29,7 +29,7 @@ use stageleft::*;
 
 pub fn first_ten_distributed<'a, D: HfNetworkedDeploy<'a>>(
     graph: &'a HfBuilder<'a, D>,
-    node_builder: &mut impl HfNodeBuilder<'a, D>
+    node_builder: &impl HfNodeBuilder<'a, D>
 ) {
     let node = graph.node(node_builder);
     let second_node = graph.node(node_builder);
@@ -46,11 +46,11 @@ numbers
 ```
 
 ## The Runtime
-Now that our graph spans multiple nodes, our runtime entrypoint will involve multiple subgraphs. This means we can't get away with hardcoding node 0 as before. Instead, we must take the node ID as a runtime parameter (`node_id`) to select the appropriate graph. In addition, our dataflow involves the network, so we take a `HydroCLI` runtime parameter (`cli`) so that nodes can look up their network connections and instantiate the flow graph with access to it (via `CLIRuntimeNodeBuilder`).
+Now that our graph spans multiple nodes, our runtime entrypoint will involve multiple subgraphs. This means we can't get away with hardcoding node 0 as before. Instead, we must take the node ID as a runtime parameter (`node_id`) to select the appropriate graph. In addition, our dataflow involves the network, so we take a `HydroCLI` runtime parameter (`cli`) so that nodes can look up their network connections and instantiate the flow graph with access to it.
 
 ```rust
 use hydroflow::util::cli::HydroCLI;
-use hydroflow_plus_cli_integration::{CLIRuntime, CLIRuntimeNodeBuilder};
+use hydroflow_plus_cli_integration::CLIRuntime;
 
 #[stageleft::entry]
 pub fn first_ten_distributed_runtime<'a>(
@@ -58,7 +58,7 @@ pub fn first_ten_distributed_runtime<'a>(
     cli: RuntimeData<&'a HydroCLI>,
     node_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = first_ten_distributed(graph, &mut CLIRuntimeNodeBuilder::new(cli));
+    let _ = first_ten_distributed(graph, &cli);
     graph.build(node_id)
 }
 ```
@@ -92,7 +92,7 @@ async fn main() {
     let builder = hydroflow_plus::HfBuilder::new();
     hydroflow_plus_test::first_ten::first_ten_distributed(
         &builder,
-        &mut CLIDeployNodeBuilder::new(|id| {
+        &CLIDeployNodeBuilder::new(|id| {
             deployment.HydroflowCrate(
                 ".",
                 localhost.clone(),

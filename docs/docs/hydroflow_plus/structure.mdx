@@ -19,7 +19,7 @@ use stageleft::*;
 
 pub fn first_ten<'a, D: HfDeploy<'a>>(
     graph: &'a HfBuilder<'a, D>,
-    node_builder: &mut impl HfNodeBuilder<'a, D>
+    node_builder: &impl HfNodeBuilder<'a, D>
 ) {}
 ```
 
@@ -28,7 +28,7 @@ The `graph` variable gives us access to the builder API for constructing the flo
 ```rust
 pub fn first_ten<'a, D: HfDeploy<'a>>(
     graph: &'a HfBuilder<'a, D>,
-    node_builder: &mut impl HfNodeBuilder<'a, D>
+    node_builder: &impl HfNodeBuilder<'a, D>
 ) {
     let node = graph.node(node_builder);
 }
@@ -56,7 +56,7 @@ To define the entrypoint, we use the `#[stageleft::entry]` macro, which takes th
 pub fn first_ten_runtime<'a>(
     graph: &'a HfBuilder<'a, SingleGraph>
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    first_ten(graph, &mut ());
+    first_ten(graph, &());
     graph.build(q!(0))
 }
 ```

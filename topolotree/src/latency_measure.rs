@@ -16,7 +16,7 @@ use protocol::*;
 
 #[tokio::main]
 async fn main() {
-    let ports = hydroflow::util::cli::init().await;
+    let ports = hydroflow::util::cli::init::<()>().await;
     let mut start_node = ports
         .port("increment_start_node")
         .connect::<ConnectedDirect>()

@@ -4,7 +4,7 @@ async fn main() {
     let node_id: usize = std::env::args().nth(1).unwrap().parse().unwrap();
     let ports = hydroflow::util::cli::init().await;
 
-    let joined = hydroflow_plus_test::networked::networked_basic!(&ports, node_id);
+    let joined = hydroflow_plus_test::cluster::simple_cluster_runtime!(&ports, node_id);
 
     hydroflow::util::cli::launch_flow(joined).await;
 }
