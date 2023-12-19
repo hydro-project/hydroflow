@@ -14,11 +14,8 @@ linkStyle default stroke:#aaa
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
     1v1
     3v1
-    subgraph sg_1v1_var_stream_7 ["var <tt>stream_7</tt>"]
+    subgraph sg_1v1_var_stream_5 ["var <tt>stream_5</tt>"]
         1v1
-    end
-    subgraph sg_1v1_var_stream_8 ["var <tt>stream_8</tt>"]
-        3v1
     end
 end
 
