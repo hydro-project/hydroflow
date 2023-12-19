@@ -4,7 +4,7 @@ use hydroflow_datalog::datalog;
 
 #[hydroflow::main]
 async fn main() {
-    let ports = hydroflow::util::cli::init().await;
+    let ports = hydroflow::util::cli::init::<()>().await;
     let vote_to_participant_source = ports
         .port("vote_to_participant")
         .connect::<ConnectedDirect>()
