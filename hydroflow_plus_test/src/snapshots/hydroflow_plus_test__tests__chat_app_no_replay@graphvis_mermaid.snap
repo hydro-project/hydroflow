@@ -35,8 +35,5 @@ subgraph sg_1v1 ["sg_1v1 stratum 0"]
     subgraph sg_1v1_var_stream_3 ["var <tt>stream_3</tt>"]
         7v1
     end
-    subgraph sg_1v1_var_stream_4 ["var <tt>stream_4</tt>"]
-        9v1
-    end
 end
 
