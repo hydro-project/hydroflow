@@ -3,7 +3,7 @@ use hydroflow::util::cli::{ConnectedDirect, ConnectedSource};
 
 #[hydroflow::main]
 async fn main() {
-    let ports = hydroflow::util::cli::init().await;
+    let ports = hydroflow::util::cli::init::<()>().await;
     let echo_recv = ports
         .port("echo")
         .connect::<ConnectedDirect>()
