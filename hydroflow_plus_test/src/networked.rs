@@ -3,13 +3,13 @@ use hydroflow::util::cli::HydroCLI;
 use hydroflow_plus::node::{HfNetworkedDeploy, HfNode, HfNodeBuilder};
 use hydroflow_plus::scheduled::graph::Hydroflow;
 use hydroflow_plus::HfBuilder;
-use hydroflow_plus_cli_integration::{CLIRuntime, CLIRuntimeNodeBuilder};
+use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 use stageleft::{q, Quoted, RuntimeData};
 
 pub fn networked_basic<'a, D: HfNetworkedDeploy<'a>>(
     graph: &'a HfBuilder<'a, D>,
-    node_builder: &mut impl HfNodeBuilder<'a, D>,
-) -> (D::Port, D::Node, D::Node) {
+    node_builder: &impl HfNodeBuilder<'a, D>,
+) -> (D::NodePort, D::Node, D::Node) {
     let node_zero = graph.node(node_builder);
     let node_one = graph.node(node_builder);
 
@@ -31,10 +31,10 @@ pub fn networked_basic<'a, D: HfNetworkedDeploy<'a>>(
 #[stageleft::entry]
 pub fn networked_basic_runtime<'a>(
     graph: &'a HfBuilder<'a, CLIRuntime>,
-    cli: RuntimeData<&'a HydroCLI>,
+    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
     node_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = networked_basic(graph, &mut CLIRuntimeNodeBuilder::new(cli));
+    let _ = networked_basic(graph, &cli);
     graph.build(node_id)
 }
 
@@ -46,7 +46,7 @@ mod tests {
     use hydro_cli::core::Deployment;
     use hydroflow::futures::SinkExt;
     use hydroflow::util::cli::ConnectedSink;
-    use hydroflow_plus_cli_integration::CLIDeployNodeBuilder;
+    use hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, DeployCrateWrapper};
 
     #[tokio::test]
     async fn networked_basic() {
@@ -56,7 +56,7 @@ mod tests {
         let builder = hydroflow_plus::HfBuilder::new();
         let (source_zero_port, _, node_one) = super::networked_basic(
             &builder,
-            &mut CLIDeployNodeBuilder::new(|id| {
+            &CLIDeployNodeBuilder::new(|id| {
                 deployment.HydroflowCrate(
                     ".",
                     localhost.clone(),
@@ -70,6 +70,7 @@ mod tests {
                 )
             }),
         );
+        builder.wire();
 
         let port_to_zero = source_zero_port
             .create_sender(&mut deployment, &localhost)

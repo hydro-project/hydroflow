@@ -5,7 +5,8 @@ use std::marker::PhantomData;
 
 use hydroflow::bytes::{Bytes, BytesMut};
 use hydroflow::futures::Sink;
-use proc_macro2::Span;
+use hydroflow_lang::parse::Pipeline;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -13,7 +14,7 @@ use stageleft::{IntoQuotedMut, Quoted};
 use syn::parse_quote;
 
 use crate::builder::Builders;
-use crate::node::{HfNode, HfSendTo};
+use crate::node::{HfNode, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany, HfSendOneToOne};
 
 pub struct HfStream<'a, T, N: HfNode<'a>> {
     pub(crate) ident: syn::Ident,
@@ -44,6 +45,36 @@ impl<'a, T, N: HfNode<'a>> HfStream<'a, T, N> {
             .or_default()
             .add_statement(parse_quote! {
                 #ident = #self_ident -> map(#f) -> tee();
+            });
+
+        HfStream {
+            ident,
+            node: self.node.clone(),
+            next_id: self.next_id,
+            builders: self.builders,
+            _phantom: PhantomData,
+        }
+    }
+
+    pub fn enumerate(&self) -> HfStream<'a, (usize, T), N> {
+        let next_id = {
+            let mut next_id = self.next_id.borrow_mut();
+            let id = *next_id;
+            *next_id += 1;
+            id
+        };
+
+        let self_ident = &self.ident;
+        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
+
+        self.builders
+            .borrow_mut()
+            .as_mut()
+            .unwrap()
+            .entry(self.node.id())
+            .or_default()
+            .add_statement(parse_quote! {
+                #ident = #self_ident -> enumerate() -> tee();
             });
 
         HfStream {
@@ -392,128 +423,6 @@ impl<'a, T, N: HfNode<'a>> HfStream<'a, T, N> {
     }
 }
 
-impl<'a, N: HfNode<'a>> HfStream<'a, Bytes, N> {
-    pub fn send_bytes<N2: HfNode<'a>>(
-        &self,
-        other: &N2,
-    ) -> HfStream<'a, Result<BytesMut, io::Error>, N2>
-    where
-        N: HfSendTo<'a, N2>,
-    {
-        let self_ident = &self.ident;
-
-        let mut builders_borrowed = self.builders.borrow_mut();
-        let builders = builders_borrowed.as_mut().unwrap();
-
-        let source_name = self.node.next_port();
-        let self_sink = self.node.gen_sink_statement(&source_name);
-
-        builders
-            .entry(self.node.id())
-            .or_default()
-            .add_statement(parse_quote! {
-                #self_ident -> #self_sink;
-            });
-
-        let recipient_next_id = {
-            let mut next_id = self.next_id.borrow_mut();
-            let id = *next_id;
-            *next_id += 1;
-            id
-        };
-
-        let ident = syn::Ident::new(&format!("stream_{}", recipient_next_id), Span::call_site());
-
-        let recipient_port_name = other.next_port();
-        let recipient_source = other.gen_source_statement(&recipient_port_name);
-
-        builders
-            .entry(other.id())
-            .or_default()
-            .add_statement(parse_quote! {
-                #ident = #recipient_source -> tee();
-            });
-
-        self.node.send_to(other, &source_name, &recipient_port_name);
-
-        HfStream {
-            ident,
-            node: other.clone(),
-            next_id: self.next_id,
-            builders: self.builders,
-            _phantom: PhantomData,
-        }
-    }
-}
-
-impl<'a, T: Serialize + DeserializeOwned, N: HfNode<'a>> HfStream<'a, T, N> {
-    pub fn send_bincode<N2: HfNode<'a>>(&self, other: &N2) -> HfStream<'a, T, N2>
-    where
-        N: HfSendTo<'a, N2>,
-    {
-        let self_ident = &self.ident;
-
-        let mut builders_borrowed = self.builders.borrow_mut();
-        let builders = builders_borrowed.as_mut().unwrap();
-
-        let source_name = self.node.next_port();
-        let self_sink = self.node.gen_sink_statement(&source_name);
-
-        let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
-            .expect("hydroflow_plus should be present in `Cargo.toml`");
-        let root = match hydroflow_crate {
-            proc_macro_crate::FoundCrate::Itself => quote! { hydroflow_plus },
-            proc_macro_crate::FoundCrate::Name(name) => {
-                let ident = syn::Ident::new(&name, Span::call_site());
-                quote! { #ident }
-            }
-        };
-
-        // TODO(shadaj): this may fail when instantiated in an environment with different deps
-        let t_type: syn::Type = syn::parse_str(std::any::type_name::<T>()).unwrap();
-
-        builders
-            .entry(self.node.id())
-            .or_default()
-            .add_statement(parse_quote! {
-                #self_ident -> map(|data| {
-                    #root::runtime_support::bincode::serialize::<#t_type>(&data).unwrap().into()
-                }) -> #self_sink;
-            });
-
-        let recipient_next_id = {
-            let mut next_id = self.next_id.borrow_mut();
-            let id = *next_id;
-            *next_id += 1;
-            id
-        };
-
-        let ident = syn::Ident::new(&format!("stream_{}", recipient_next_id), Span::call_site());
-
-        let recipient_port_name = other.next_port();
-        let recipient_source = other.gen_source_statement(&recipient_port_name);
-
-        builders
-            .entry(other.id())
-            .or_default()
-            .add_statement(parse_quote! {
-                #ident = #recipient_source -> map(|b| {
-                    #root::runtime_support::bincode::deserialize::<#t_type>(&b.unwrap()).unwrap()
-                }) -> tee();
-            });
-
-        self.node.send_to(other, &source_name, &recipient_port_name);
-
-        HfStream {
-            ident,
-            node: other.clone(),
-            next_id: self.next_id,
-            builders: self.builders,
-            _phantom: PhantomData,
-        }
-    }
-}
-
 impl<'a, K, V1, N: HfNode<'a>> HfStream<'a, (K, V1), N> {
     pub fn join<V2>(&self, n: &HfStream<'a, (K, V2), N>) -> HfStream<'a, (K, (V1, V2)), N>
     where
@@ -552,6 +461,356 @@ impl<'a, K, V1, N: HfNode<'a>> HfStream<'a, (K, V1), N> {
         HfStream {
             ident,
             node: self.node.clone(),
+            next_id: self.next_id,
+            builders: self.builders,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+fn get_this_crate() -> TokenStream {
+    let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
+        .expect("hydroflow_plus should be present in `Cargo.toml`");
+    match hydroflow_crate {
+        proc_macro_crate::FoundCrate::Itself => quote! { hydroflow_plus },
+        proc_macro_crate::FoundCrate::Name(name) => {
+            let ident = syn::Ident::new(&name, Span::call_site());
+            quote! { #ident }
+        }
+    }
+}
+
+fn node_send_bytes<'a, T, N: HfNode<'a>>(me: &HfStream<'a, T, N>, sink: Pipeline) {
+    let self_ident = &me.ident;
+
+    let mut builders_borrowed = me.builders.borrow_mut();
+    let builders = builders_borrowed.as_mut().unwrap();
+
+    builders
+        .entry(me.node.id())
+        .or_default()
+        .add_statement(parse_quote! {
+            #self_ident -> #sink;
+        });
+}
+
+fn node_send_bincode<'a, T: Serialize, N: HfNode<'a>>(me: &HfStream<'a, T, N>, sink: Pipeline) {
+    let self_ident = &me.ident;
+
+    let mut builders_borrowed = me.builders.borrow_mut();
+    let builders = builders_borrowed.as_mut().unwrap();
+
+    let root = get_this_crate();
+
+    // This may fail when instantiated in an environment with different deps
+    let t_type: syn::Type = syn::parse_str(std::any::type_name::<T>()).unwrap();
+
+    builders
+        .entry(me.node.id())
+        .or_default()
+        .add_statement(parse_quote! {
+            #self_ident -> map(|data| {
+                #root::runtime_support::bincode::serialize::<#t_type>(&data).unwrap().into()
+            }) -> #sink;
+        });
+}
+
+fn cluster_demux_bincode<'a, T, N: HfNode<'a>>(me: &HfStream<'a, (u32, T), N>, sink: Pipeline) {
+    let self_ident = &me.ident;
+
+    let mut builders_borrowed = me.builders.borrow_mut();
+    let builders = builders_borrowed.as_mut().unwrap();
+
+    let root = get_this_crate();
+
+    // This may fail when instantiated in an environment with different deps
+    let t_type: syn::Type = syn::parse_str(std::any::type_name::<T>()).unwrap();
+
+    builders
+        .entry(me.node.id())
+        .or_default()
+        .add_statement(parse_quote! {
+            #self_ident -> map(|(id, data)| {
+                (id, #root::runtime_support::bincode::serialize::<#t_type>(&data).unwrap().into())
+            }) -> #sink;
+        });
+}
+
+fn node_recv_bytes<'a, T, N: HfNode<'a>, N2: HfNode<'a>>(
+    me: &HfStream<'a, T, N>,
+    other: &N2,
+    source: Pipeline,
+) -> syn::Ident {
+    let recipient_next_id = {
+        let mut next_id = me.next_id.borrow_mut();
+        let id = *next_id;
+        *next_id += 1;
+        id
+    };
+
+    let ident = syn::Ident::new(&format!("stream_{}", recipient_next_id), Span::call_site());
+
+    let mut builders_borrowed = me.builders.borrow_mut();
+    let builders = builders_borrowed.as_mut().unwrap();
+
+    builders
+        .entry(other.id())
+        .or_default()
+        .add_statement(parse_quote! {
+            #ident = #source -> tee();
+        });
+
+    ident
+}
+
+fn node_recv_bincode<'a, T1, T2: DeserializeOwned, N: HfNode<'a>, N2: HfNode<'a>>(
+    me: &HfStream<'a, T1, N>,
+    other: &N2,
+    source: Pipeline,
+    tagged: bool,
+) -> syn::Ident {
+    let recipient_next_id = {
+        let mut next_id = me.next_id.borrow_mut();
+        let id = *next_id;
+        *next_id += 1;
+        id
+    };
+
+    let ident = syn::Ident::new(&format!("stream_{}", recipient_next_id), Span::call_site());
+
+    let mut builders_borrowed = me.builders.borrow_mut();
+    let builders = builders_borrowed.as_mut().unwrap();
+
+    let root = get_this_crate();
+
+    // This may fail when instantiated in an environment with different deps
+    let t_type: syn::Type = syn::parse_str(std::any::type_name::<T2>()).unwrap();
+
+    builders.entry(other.id()).or_default().add_statement({
+        if tagged {
+            parse_quote! {
+                #ident = #source -> map(|res| {
+                    let (id, b) = res.unwrap();
+                    (id, #root::runtime_support::bincode::deserialize::<#t_type>(&b).unwrap())
+                }) -> tee();
+            }
+        } else {
+            parse_quote! {
+                #ident = #source -> map(|res| {
+                    #root::runtime_support::bincode::deserialize::<#t_type>(&res.unwrap()).unwrap()
+                }) -> tee();
+            }
+        }
+    });
+
+    ident
+}
+
+impl<'a, N: HfNode<'a>> HfStream<'a, Bytes, N> {
+    pub fn send_bytes<N2: HfNode<'a>>(
+        &self,
+        other: &N2,
+    ) -> HfStream<'a, Result<BytesMut, io::Error>, N2>
+    where
+        N: HfSendOneToOne<'a, N2>,
+    {
+        let send_port = self.node.next_port();
+        node_send_bytes(self, self.node.gen_sink_statement(&send_port));
+
+        let recv_port = other.next_port();
+        let ident = node_recv_bytes(self, other, N::gen_source_statement(other, &recv_port));
+
+        self.node.connect(other, &send_port, &recv_port);
+
+        HfStream {
+            ident,
+            node: other.clone(),
+            next_id: self.next_id,
+            builders: self.builders,
+            _phantom: PhantomData,
+        }
+    }
+
+    pub fn send_bytes_tagged<N2: HfNode<'a>>(
+        &self,
+        other: &N2,
+    ) -> HfStream<'a, Result<(u32, BytesMut), io::Error>, N2>
+    where
+        N: HfSendManyToOne<'a, N2>,
+    {
+        let send_port = self.node.next_port();
+        node_send_bytes(self, self.node.gen_sink_statement(&send_port));
+
+        let recv_port = other.next_port();
+        let ident = node_recv_bytes(self, other, N::gen_source_statement(other, &recv_port));
+
+        self.node.connect(other, &send_port, &recv_port);
+
+        HfStream {
+            ident,
+            node: other.clone(),
+            next_id: self.next_id,
+            builders: self.builders,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<'a, T: Serialize + DeserializeOwned, N: HfNode<'a>> HfStream<'a, T, N> {
+    pub fn send_bincode<N2: HfNode<'a>>(&self, other: &N2) -> HfStream<'a, T, N2>
+    where
+        N: HfSendOneToOne<'a, N2>,
+    {
+        let send_port = self.node.next_port();
+        node_send_bincode(self, self.node.gen_sink_statement(&send_port));
+
+        let recv_port = other.next_port();
+        let ident = node_recv_bincode::<_, T, _, _>(
+            self,
+            other,
+            N::gen_source_statement(other, &recv_port),
+            false,
+        );
+
+        self.node.connect(other, &send_port, &recv_port);
+
+        HfStream {
+            ident,
+            node: other.clone(),
+            next_id: self.next_id,
+            builders: self.builders,
+            _phantom: PhantomData,
+        }
+    }
+
+    pub fn send_bincode_tagged<N2: HfNode<'a>>(&self, other: &N2) -> HfStream<'a, (u32, T), N2>
+    where
+        N: HfSendManyToOne<'a, N2>,
+    {
+        let send_port = self.node.next_port();
+        node_send_bincode(self, self.node.gen_sink_statement(&send_port));
+
+        let recv_port = other.next_port();
+        let ident = node_recv_bincode::<_, T, _, _>(
+            self,
+            other,
+            N::gen_source_statement(other, &recv_port),
+            true,
+        );
+
+        self.node.connect(other, &send_port, &recv_port);
+
+        HfStream {
+            ident,
+            node: other.clone(),
+            next_id: self.next_id,
+            builders: self.builders,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<'a, N: HfNode<'a>> HfStream<'a, (u32, Bytes), N> {
+    pub fn demux_bytes<N2: HfNode<'a>>(
+        &self,
+        other: &N2,
+    ) -> HfStream<'a, Result<BytesMut, io::Error>, N2>
+    where
+        N: HfSendOneToMany<'a, N2>,
+    {
+        let send_port = self.node.next_port();
+        node_send_bytes(self, self.node.gen_sink_statement(&send_port));
+
+        let recv_port = other.next_port();
+        let ident = node_recv_bytes(self, other, N::gen_source_statement(other, &recv_port));
+
+        self.node.connect(other, &send_port, &recv_port);
+
+        HfStream {
+            ident,
+            node: other.clone(),
+            next_id: self.next_id,
+            builders: self.builders,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<'a, T: Serialize + DeserializeOwned, N: HfNode<'a>> HfStream<'a, (u32, T), N> {
+    pub fn demux_bincode<N2: HfNode<'a>>(&self, other: &N2) -> HfStream<'a, T, N2>
+    where
+        N: HfSendOneToMany<'a, N2>,
+    {
+        let send_port = self.node.next_port();
+        cluster_demux_bincode(self, self.node.gen_sink_statement(&send_port));
+
+        let recv_port = other.next_port();
+        let ident = node_recv_bincode::<_, T, _, _>(
+            self,
+            other,
+            N::gen_source_statement(other, &recv_port),
+            false,
+        );
+
+        self.node.connect(other, &send_port, &recv_port);
+
+        HfStream {
+            ident,
+            node: other.clone(),
+            next_id: self.next_id,
+            builders: self.builders,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<'a, N: HfNode<'a>> HfStream<'a, (u32, Bytes), N> {
+    pub fn demux_bytes_tagged<N2: HfNode<'a>>(
+        &self,
+        other: &N2,
+    ) -> HfStream<'a, Result<(u32, BytesMut), io::Error>, N2>
+    where
+        N: HfSendManyToMany<'a, N2>,
+    {
+        let send_port = self.node.next_port();
+        node_send_bytes(self, self.node.gen_sink_statement(&send_port));
+
+        let recv_port = other.next_port();
+        let ident = node_recv_bytes(self, other, N::gen_source_statement(other, &recv_port));
+
+        self.node.connect(other, &send_port, &recv_port);
+
+        HfStream {
+            ident,
+            node: other.clone(),
+            next_id: self.next_id,
+            builders: self.builders,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<'a, T: Serialize + DeserializeOwned, N: HfNode<'a>> HfStream<'a, (u32, T), N> {
+    pub fn demux_bincode_tagged<N2: HfNode<'a>>(&self, other: &N2) -> HfStream<'a, (u32, T), N2>
+    where
+        N: HfSendManyToMany<'a, N2>,
+    {
+        let send_port = self.node.next_port();
+        cluster_demux_bincode(self, self.node.gen_sink_statement(&send_port));
+
+        let recv_port = other.next_port();
+        let ident = node_recv_bincode::<_, T, _, _>(
+            self,
+            other,
+            N::gen_source_statement(other, &recv_port),
+            true,
+        );
+
+        self.node.connect(other, &send_port, &recv_port);
+
+        HfStream {
+            ident,
+            node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
             _phantom: PhantomData,

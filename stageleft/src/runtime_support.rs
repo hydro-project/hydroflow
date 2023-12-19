@@ -90,6 +90,12 @@ macro_rules! impl_free_variable_from_literal_numeric {
 impl_free_variable_from_literal_numeric!(i8, i16, i32, i64, i128, isize);
 impl_free_variable_from_literal_numeric!(u8, u16, u32, u64, u128, usize);
 
+impl FreeVariable<&str> for &str {
+    fn to_tokens(self) -> (Option<TokenStream>, Option<TokenStream>) {
+        (None, Some(quote!(#self)))
+    }
+}
+
 pub struct Import<T> {
     module_path: &'static str,
     crate_name: &'static str,
