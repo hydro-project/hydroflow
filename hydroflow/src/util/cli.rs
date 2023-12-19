@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 pub use hydroflow_cli_integration::*;
+use serde::de::DeserializeOwned;
 
 use crate::scheduled::graph::Hydroflow;
 
@@ -27,11 +28,12 @@ pub async fn launch_flow(mut flow: Hydroflow<'_>) {
     }
 }
 
-pub struct HydroCLI {
+pub struct HydroCLI<T> {
     ports: RefCell<HashMap<String, ServerOrBound>>,
+    pub meta: Option<T>,
 }
 
-impl HydroCLI {
+impl<T> HydroCLI<T> {
     pub fn port(&self, name: &str) -> ServerOrBound {
         self.ports
             .try_borrow_mut()
@@ -41,17 +43,19 @@ impl HydroCLI {
     }
 }
 
-pub async fn init() -> HydroCLI {
+type InitConfig = (HashMap<String, ServerBindConfig>, Option<String>);
+
+pub async fn init<T: DeserializeOwned>() -> HydroCLI<T> {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
     let trimmed = input.trim();
 
-    let bind_config = serde_json::from_str::<HashMap<String, ServerBindConfig>>(trimmed).unwrap();
+    let bind_config = serde_json::from_str::<InitConfig>(trimmed).unwrap();
 
     // config telling other services how to connect to me
     let mut bind_results: HashMap<String, ServerPort> = HashMap::new();
     let mut binds = HashMap::new();
-    for (name, config) in bind_config {
+    for (name, config) in bind_config.0 {
         let bound = config.bind().await;
         bind_results.insert(name.clone(), bound.sink_port());
         binds.insert(name.clone(), bound);
@@ -84,5 +88,6 @@ pub async fn init() -> HydroCLI {
 
     HydroCLI {
         ports: RefCell::new(all_connected),
+        meta: bind_config.1.map(|s| serde_json::from_str(&s).unwrap()),
     }
 }

@@ -11,7 +11,7 @@ async fn main() {
     let builder = hydroflow_plus::HfBuilder::new();
     let (source_zero_port, _, _) = hydroflow_plus_test::networked::networked_basic(
         &builder,
-        &mut CLIDeployNodeBuilder::new(|id| {
+        &CLIDeployNodeBuilder::new(|id| {
             deployment.HydroflowCrate(
                 ".",
                 localhost.clone(),
@@ -25,6 +25,7 @@ async fn main() {
             )
         }),
     );
+    builder.wire();
 
     let port_to_zero = source_zero_port
         .create_sender(&mut deployment, &localhost)
