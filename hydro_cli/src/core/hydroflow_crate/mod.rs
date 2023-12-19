@@ -13,7 +13,8 @@ use tokio::sync::RwLock;
 use self::ports::{HydroflowPortConfig, HydroflowSink, SourcePath};
 use super::progress::ProgressTracker;
 use super::{
-    Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
+    Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
+    ServerStrategy, Service,
 };
 
 mod build;
@@ -31,6 +32,8 @@ pub struct HydroflowCrate {
     args: Option<Vec<String>>,
     display_id: Option<String>,
     external_ports: Vec<u16>,
+
+    target_type: HostTargetType,
 
     /// Configuration for the ports this service will connect to as a client.
     port_to_server: HashMap<String, ports::ServerConfig>,
@@ -64,6 +67,8 @@ impl HydroflowCrate {
         display_id: Option<String>,
         external_ports: Vec<u16>,
     ) -> Self {
+        let target_type = on.try_read().unwrap().target_type();
+
         Self {
             id,
             src,
@@ -74,6 +79,7 @@ impl HydroflowCrate {
             features,
             args,
             display_id,
+            target_type,
             external_ports,
             port_to_server: HashMap::new(),
             port_to_bind: HashMap::new(),
@@ -168,9 +174,8 @@ impl HydroflowCrate {
         let bin_cloned = self.bin.clone();
         let example_cloned = self.example.clone();
         let features_cloned = self.features.clone();
-        let host = self.on.clone();
         let profile_cloned = self.profile.clone();
-        let target_type = host.try_read().unwrap().target_type();
+        let target_type = self.target_type;
         let built_binary_cloned = self.built_binary.clone();
 
         async move {
