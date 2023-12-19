@@ -201,6 +201,23 @@
 <a href="#201" id="201">201</a>
 <a href="#202" id="202">202</a>
 <a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::panic;
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -221,6 +238,8 @@
 <span class="kw">pub mod </span>runtime_support;
 <span class="kw">use </span>runtime_support::FreeVariable;
 
+<span class="kw">use </span><span class="kw">crate</span>::runtime_support::get_final_crate_name;
+
 <span class="attr">#[macro_export]
 </span><span class="macro">macro_rules! </span>stageleft_crate {
     (<span class="macro-nonterminal">$macro_crate</span>:ident) =&gt; {
@@ -230,7 +249,18 @@
 
         <span class="attr">#[cfg(not(feature = <span class="string">&quot;macro&quot;</span>))]
         #[doc(hidden)]
-        #[allow(unused)]
+        #[allow(unused, ambiguous_glob_reexports)]
+        </span><span class="kw">pub mod </span>__staged {
+            <span class="macro">include!</span>(<span class="macro">concat!</span>(<span class="macro">env!</span>(<span class="string">&quot;OUT_DIR&quot;</span>), <span class="string">&quot;/lib_pub.rs&quot;</span>));
+        }
+    };
+}
+
+<span class="attr">#[macro_export]
+</span><span class="macro">macro_rules! </span>stageleft_no_entry_crate {
+    () =&gt; {
+        <span class="attr">#[doc(hidden)]
+        #[allow(unused, ambiguous_glob_reexports)]
         </span><span class="kw">pub mod </span>__staged {
             <span class="macro">include!</span>(<span class="macro">concat!</span>(<span class="macro">env!</span>(<span class="string">&quot;OUT_DIR&quot;</span>), <span class="string">&quot;/lib_pub.rs&quot;</span>));
         }
@@ -325,37 +355,41 @@
             )
         });
 
-        <span class="kw">let </span>final_crate = proc_macro_crate::crate_name(crate_name)
-            .unwrap_or_else(|<span class="kw">_</span>| <span class="macro">panic!</span>(<span class="string">&quot;{crate_name} should be present in `Cargo.toml`&quot;</span>));
-        <span class="kw">let </span>final_crate_root = <span class="kw">match </span>final_crate {
-            proc_macro_crate::FoundCrate::Itself =&gt; <span class="macro">quote!</span>(<span class="kw">crate</span>),
-            proc_macro_crate::FoundCrate::Name(name) =&gt; {
-                <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span>name, Span::call_site());
-                <span class="macro">quote! </span>{ #ident }
-            }
-        };
+        <span class="kw">let </span>final_crate_root = get_final_crate_name(crate_name);
 
         <span class="kw">let </span>module_path: syn::Path = syn::parse_str(<span class="kw-2">&amp;</span>module_path).unwrap();
-        <span class="kw">let </span>module_path = module_path
+        <span class="kw">let </span>module_path_segments = module_path
             .segments
             .iter()
-            .skip(<span class="number">1</span>) <span class="comment">// skip crate
+            .skip(<span class="number">1</span>)
+            .skip_while(|p| p.ident == <span class="string">&quot;__staged&quot;</span>) <span class="comment">// skip crate
             </span>.cloned()
             .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-        <span class="kw">let </span>module_path = syn::Path {
-            leading_colon: <span class="prelude-val">None</span>,
-            segments: syn::punctuated::Punctuated::from_iter(module_path),
+        <span class="kw">let </span>module_path = <span class="kw">if </span>module_path_segments.is_empty() {
+            <span class="prelude-val">None
+        </span>} <span class="kw">else </span>{
+            <span class="prelude-val">Some</span>(syn::Path {
+                leading_colon: <span class="prelude-val">None</span>,
+                segments: syn::punctuated::Punctuated::from_iter(module_path_segments),
+            })
         };
 
-        <span class="kw">let </span>expr: syn::Expr = syn::parse(expr_tokens.into()).unwrap();
-        (
-            <span class="prelude-val">None</span>,
-            <span class="prelude-val">Some</span>(<span class="macro">quote!</span>({
-                <span class="kw">use </span>#final_crate_root::#module_path::<span class="kw-2">*</span>;
+        <span class="kw">let </span>expr: syn::Expr = syn::parse2(expr_tokens).unwrap();
+        <span class="kw">let </span>with_env = <span class="kw">if let </span><span class="prelude-val">Some</span>(module_path) = module_path {
+            <span class="macro">quote!</span>({
+                <span class="kw">use </span>#final_crate_root::__staged::#module_path::<span class="kw-2">*</span>;
                 #(#instantiated_free_variables)*
                 #expr
-            })),
-        )
+            })
+        } <span class="kw">else </span>{
+            <span class="macro">quote!</span>({
+                <span class="kw">use </span>#final_crate_root::__staged::<span class="kw-2">*</span>;
+                #(#instantiated_free_variables)*
+                #expr
+            })
+        };
+
+        (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(with_env))
     }
 }
 

@@ -299,26 +299,42 @@
 <a href="#299" id="299">299</a>
 <a href="#300" id="300">300</a>
 <a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
 </pre></div><pre class="rust"><code><span class="macro">stageleft::stageleft_crate!</span>(hydroflow_plus_test_macro);
 
 <span class="kw">use </span>hydroflow_plus::futures::stream::Stream;
+<span class="kw">use </span>hydroflow_plus::node::{HfNode, MultiGraph, SingleGraph};
 <span class="kw">use </span>hydroflow_plus::scheduled::graph::Hydroflow;
 <span class="kw">use </span>hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 <span class="kw">use </span>hydroflow_plus::HfBuilder;
 <span class="kw">use </span>stageleft::{q, Quoted, RuntimeData};
 
+<span class="kw">pub mod </span>first_ten;
 <span class="kw">pub mod </span>networked;
 
 <span class="attr">#[stageleft::entry(UnboundedReceiverStream&lt;u32&gt;)]
 </span><span class="kw">pub fn </span>teed_join&lt;<span class="lifetime">&#39;a</span>, S: Stream&lt;Item = u32&gt; + Unpin + <span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>&gt;,
+    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, MultiGraph&gt;,
     input_stream: RuntimeData&lt;S&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>UnboundedSender&lt;u32&gt;&gt;,
     send_twice: bool,
     node_id: RuntimeData&lt;usize&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let </span>source = graph.source_stream(<span class="number">0</span>, input_stream);
+    <span class="kw">let </span>node_zero = graph.node(<span class="kw-2">&amp;mut </span>());
+    <span class="kw">let </span>node_one = graph.node(<span class="kw-2">&amp;mut </span>());
+
+    <span class="kw">let </span>source = node_zero.source_stream(input_stream);
     <span class="kw">let </span>map1 = source.map(<span class="macro">q!</span>(|v| (v + <span class="number">1</span>, ())));
     <span class="kw">let </span>map2 = source.map(<span class="macro">q!</span>(|v| (v - <span class="number">1</span>, ())));
 
@@ -334,7 +350,7 @@
         }));
     }
 
-    <span class="kw">let </span>source_node_id_1 = graph.source_iter(<span class="number">1</span>, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>));
+    <span class="kw">let </span>source_node_id_1 = node_one.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>));
     source_node_id_1.for_each(<span class="macro">q!</span>(|v| {
         output.send(v).unwrap();
     }));
@@ -344,14 +360,16 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>chat_app&lt;<span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>&gt;,
+    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, SingleGraph&gt;,
     users_stream: RuntimeData&lt;UnboundedReceiverStream&lt;u32&gt;&gt;,
     messages: RuntimeData&lt;UnboundedReceiverStream&lt;String&gt;&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>UnboundedSender&lt;(u32, String)&gt;&gt;,
     replay_messages: bool,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let </span>users = graph.source_stream(<span class="number">0</span>, users_stream).persist();
-    <span class="kw">let </span><span class="kw-2">mut </span>messages = graph.source_stream(<span class="number">0</span>, messages);
+    <span class="kw">let </span>node = graph.node(<span class="kw-2">&amp;mut </span>());
+
+    <span class="kw">let </span>users = node.source_stream(users_stream).persist();
+    <span class="kw">let </span><span class="kw-2">mut </span>messages = node.source_stream(messages);
     <span class="kw">if </span>replay_messages {
         messages = messages.persist();
     }
@@ -370,15 +388,17 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>graph_reachability&lt;<span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>&gt;,
+    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, SingleGraph&gt;,
     roots: RuntimeData&lt;UnboundedReceiverStream&lt;u32&gt;&gt;,
     edges: RuntimeData&lt;UnboundedReceiverStream&lt;(u32, u32)&gt;&gt;,
     reached_out: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>UnboundedSender&lt;u32&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let </span>roots = graph.source_stream(<span class="number">0</span>, roots);
-    <span class="kw">let </span>edges = graph.source_stream(<span class="number">0</span>, edges);
+    <span class="kw">let </span>node = graph.node(<span class="kw-2">&amp;mut </span>());
 
-    <span class="kw">let </span>(set_reached_cycle, reached_cycle) = graph.cycle(<span class="number">0</span>);
+    <span class="kw">let </span>roots = node.source_stream(roots);
+    <span class="kw">let </span>edges = node.source_stream(edges);
+
+    <span class="kw">let </span>(set_reached_cycle, reached_cycle) = node.cycle();
 
     <span class="kw">let </span>reached = roots.union(<span class="kw-2">&amp;</span>reached_cycle);
     <span class="kw">let </span>reachable = reached
@@ -396,11 +416,13 @@
 
 <span class="attr">#[stageleft::entry(String)]
 </span><span class="kw">pub fn </span>count_elems&lt;<span class="lifetime">&#39;a</span>, T: <span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>&gt;,
+    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, SingleGraph&gt;,
     input_stream: RuntimeData&lt;UnboundedReceiverStream&lt;T&gt;&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>UnboundedSender&lt;u32&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let </span>source = graph.source_stream(<span class="number">0</span>, input_stream);
+    <span class="kw">let </span>node = graph.node(<span class="kw-2">&amp;mut </span>());
+
+    <span class="kw">let </span>source = node.source_stream(input_stream);
     <span class="kw">let </span>count = source.map(<span class="macro">q!</span>(|<span class="kw">_</span>| <span class="number">1</span>)).fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|a, b| <span class="kw-2">*</span>a += b));
 
     count.for_each(<span class="macro">q!</span>(|v| {

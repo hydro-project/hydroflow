@@ -112,11 +112,54 @@
 <a href="#112" id="112">112</a>
 <a href="#113" id="113">113</a>
 <a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::mem::MaybeUninit;
 
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
 <span class="kw">use </span>quote::quote;
+
+<span class="kw">pub fn </span>get_final_crate_name(crate_name: <span class="kw-2">&amp;</span>str) -&gt; TokenStream {
+    <span class="kw">let </span>final_crate = proc_macro_crate::crate_name(crate_name)
+        .unwrap_or_else(|<span class="kw">_</span>| <span class="macro">panic!</span>(<span class="string">&quot;{crate_name} should be present in `Cargo.toml`&quot;</span>));
+
+    <span class="kw">match </span>final_crate {
+        proc_macro_crate::FoundCrate::Itself =&gt; {
+            <span class="kw">if </span>std::env::var(<span class="string">&quot;CARGO_BIN_NAME&quot;</span>).is_ok() {
+                <span class="kw">let </span>underscored = crate_name.replace(<span class="string">&#39;-&#39;</span>, <span class="string">&quot;_&quot;</span>);
+                <span class="kw">let </span>underscored_ident = syn::Ident::new(<span class="kw-2">&amp;</span>underscored, Span::call_site());
+                <span class="macro">quote! </span>{ #underscored_ident }
+            } <span class="kw">else </span>{
+                <span class="macro">quote! </span>{ <span class="kw">crate </span>}
+            }
+        }
+        proc_macro_crate::FoundCrate::Name(name) =&gt; {
+            <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span>name, Span::call_site());
+            <span class="macro">quote! </span>{ #ident }
+        }
+    }
+}
 
 <span class="kw">pub trait </span>ParseFromLiteral {
     <span class="kw">fn </span>parse_from_literal(literal: <span class="kw-2">&amp;</span>syn::Expr) -&gt; <span class="self">Self</span>;
@@ -168,11 +211,20 @@
     }
 }
 
-<span class="kw">impl </span>FreeVariable&lt;u32&gt; <span class="kw">for </span>u32 {
-    <span class="kw">fn </span>to_tokens(<span class="self">self</span>) -&gt; (<span class="prelude-ty">Option</span>&lt;TokenStream&gt;, <span class="prelude-ty">Option</span>&lt;TokenStream&gt;) {
-        (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="macro">quote!</span>(#<span class="self">self</span>)))
-    }
+<span class="macro">macro_rules! </span>impl_free_variable_from_literal_numeric {
+    ($(<span class="macro-nonterminal">$ty</span>:ty),<span class="kw-2">*</span>) =&gt; {
+        $(
+            <span class="kw">impl </span>FreeVariable&lt;<span class="macro-nonterminal">$ty</span>&gt; <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{
+                <span class="kw">fn </span>to_tokens(<span class="self">self</span>) -&gt; (<span class="prelude-ty">Option</span>&lt;TokenStream&gt;, <span class="prelude-ty">Option</span>&lt;TokenStream&gt;) {
+                    (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="macro">quote!</span>(#<span class="self">self</span>)))
+                }
+            }
+        )*
+    };
 }
+
+<span class="macro">impl_free_variable_from_literal_numeric!</span>(i8, i16, i32, i64, i128, isize);
+<span class="macro">impl_free_variable_from_literal_numeric!</span>(u8, u16, u32, u64, u128, usize);
 
 <span class="kw">pub struct </span>Import&lt;T&gt; {
     module_path: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
@@ -207,15 +259,7 @@
 
 <span class="kw">impl</span>&lt;T&gt; FreeVariable&lt;T&gt; <span class="kw">for </span>Import&lt;T&gt; {
     <span class="kw">fn </span>to_tokens(<span class="self">self</span>) -&gt; (<span class="prelude-ty">Option</span>&lt;TokenStream&gt;, <span class="prelude-ty">Option</span>&lt;TokenStream&gt;) {
-        <span class="kw">let </span>final_crate = proc_macro_crate::crate_name(<span class="self">self</span>.crate_name)
-            .unwrap_or_else(|<span class="kw">_</span>| <span class="macro">panic!</span>(<span class="string">&quot;{} should be present in `Cargo.toml`&quot;</span>, <span class="self">self</span>.crate_name));
-        <span class="kw">let </span>final_crate_root = <span class="kw">match </span>final_crate {
-            proc_macro_crate::FoundCrate::Itself =&gt; <span class="macro">quote!</span>(<span class="kw">crate</span>),
-            proc_macro_crate::FoundCrate::Name(name) =&gt; {
-                <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span>name, Span::call_site());
-                <span class="macro">quote! </span>{ #ident }
-            }
-        };
+        <span class="kw">let </span>final_crate_root = get_final_crate_name(<span class="self">self</span>.crate_name);
 
         <span class="kw">let </span>module_path = syn::parse_str::&lt;syn::Path&gt;(<span class="self">self</span>.module_path).unwrap();
         <span class="kw">let </span>parsed = syn::parse_str::&lt;syn::Path&gt;(<span class="self">self</span>.path).unwrap();

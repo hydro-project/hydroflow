@@ -224,6 +224,19 @@
 <a href="#224" id="224">224</a>
 <a href="#225" id="225">225</a>
 <a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>std::{env, fs};
 
@@ -405,6 +418,17 @@
                     <span class="kw-2">*</span>i = <span class="macro">parse_quote!</span>(<span class="kw">pub use </span>#cur_path::#e_name;);
                     <span class="kw">return</span>;
                 }
+            } <span class="kw">else if let </span>syn::Item::Trait(e) = i {
+                <span class="kw">if </span><span class="macro">matches!</span>(e.vis, syn::Visibility::Public(<span class="kw">_</span>)) {
+                    <span class="kw">let </span>e_name = <span class="kw-2">&amp;</span>e.ident;
+                    <span class="kw-2">*</span>i = <span class="macro">parse_quote!</span>(<span class="kw">pub use </span>#cur_path::#e_name;);
+                    <span class="kw">return</span>;
+                }
+            } <span class="kw">else if let </span>syn::Item::Impl(e) = i {
+                <span class="kw-2">*</span>i = <span class="macro">parse_quote!</span>(
+                    <span class="attr">#[cfg(feature = <span class="string">&quot;macro&quot;</span>)]
+                    </span>#e
+                );
             }
         }
 
@@ -415,6 +439,8 @@
         i.items.retain(|i| <span class="kw">match </span>i {
             syn::Item::Macro(m) =&gt; {
                 m.mac.path.to_token_stream().to_string() != <span class="string">&quot;stageleft :: stageleft_crate&quot;
+                    </span>&amp;&amp; m.mac.path.to_token_stream().to_string()
+                        != <span class="string">&quot;stageleft :: stageleft_no_entry_crate&quot;
             </span>}
             <span class="kw">_ </span>=&gt; <span class="bool-val">true</span>,
         });
@@ -447,7 +473,7 @@
 <span class="attr">#[macro_export]
 </span><span class="macro">macro_rules! </span>gen_final {
     () =&gt; {
-        <span class="macro-nonterminal">$crate::gen_final_helper</span>(<span class="macro">env!</span>(<span class="string">&quot;CARGO_CRATE_NAME&quot;</span>))
+        <span class="macro-nonterminal">$crate::gen_final_helper</span>(<span class="macro">env!</span>(<span class="string">&quot;CARGO_PKG_NAME&quot;</span>))
     };
 }
 </code></pre></div></section></main></body></html>

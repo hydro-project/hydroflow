@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["create_import"],"struct":["Import"],"trait":["FreeVariable","ParseFromLiteral"]};
+window.SIDEBAR_ITEMS = {"fn":["create_import","get_final_crate_name"],"struct":["Import"],"trait":["FreeVariable","ParseFromLiteral"]};
