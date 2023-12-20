@@ -8,7 +8,8 @@ use hydro_deploy::custom_service::CustomClientPort;
 use hydro_deploy::hydroflow_crate::ports::{
     DemuxSink, HydroflowSink, HydroflowSource, TaggedSource,
 };
-use hydro_deploy::{Deployment, Host, HydroflowCrate};
+use hydro_deploy::hydroflow_crate::HydroflowCrateService;
+use hydro_deploy::{Deployment, Host};
 use hydroflow_plus::builder::Builders;
 use hydroflow_plus::node::{
     HfCluster, HfClusterBuilder, HfDeploy, HfNode, HfNodeBuilder, HfSendManyToMany,
@@ -31,7 +32,7 @@ impl<'a> HfDeploy<'a> for CLIDeploy {
 }
 
 pub trait DeployCrateWrapper {
-    fn underlying(&self) -> Arc<RwLock<HydroflowCrate>>;
+    fn underlying(&self) -> Arc<RwLock<HydroflowCrateService>>;
 
     #[allow(async_fn_in_trait)]
     async fn create_sender(
@@ -68,11 +69,11 @@ pub struct CLIDeployNode<'a> {
     id: usize,
     builder: &'a HfBuilder<'a, CLIDeploy>,
     next_port: Rc<RefCell<usize>>,
-    underlying: Arc<RwLock<HydroflowCrate>>,
+    underlying: Arc<RwLock<HydroflowCrateService>>,
 }
 
 impl<'a> DeployCrateWrapper for CLIDeployNode<'a> {
-    fn underlying(&self) -> Arc<RwLock<HydroflowCrate>> {
+    fn underlying(&self) -> Arc<RwLock<HydroflowCrateService>> {
         self.underlying.clone()
     }
 }
@@ -124,11 +125,11 @@ impl<'a> HfNode<'a> for CLIDeployNode<'a> {
 
 #[derive(Clone)]
 pub struct DeployClusterNode {
-    underlying: Arc<RwLock<HydroflowCrate>>,
+    underlying: Arc<RwLock<HydroflowCrateService>>,
 }
 
 impl DeployCrateWrapper for DeployClusterNode {
-    fn underlying(&self) -> Arc<RwLock<HydroflowCrate>> {
+    fn underlying(&self) -> Arc<RwLock<HydroflowCrateService>> {
         self.underlying.clone()
     }
 }
@@ -352,12 +353,12 @@ impl<'a> HfSendManyToMany<'a, CLIDeployCluster<'a>> for CLIDeployCluster<'a> {
     }
 }
 
-type CrateBuilder<'a> = dyn FnMut(usize) -> Arc<RwLock<HydroflowCrate>> + 'a;
+type CrateBuilder<'a> = dyn FnMut(usize) -> Arc<RwLock<HydroflowCrateService>> + 'a;
 
 pub struct CLIDeployNodeBuilder<'a>(RefCell<Box<CrateBuilder<'a>>>);
 
 impl<'a> CLIDeployNodeBuilder<'a> {
-    pub fn new<F: FnMut(usize) -> Arc<RwLock<HydroflowCrate>> + 'a>(f: F) -> Self {
+    pub fn new<F: FnMut(usize) -> Arc<RwLock<HydroflowCrateService>> + 'a>(f: F) -> Self {
         Self(RefCell::new(Box::new(f)))
     }
 }
@@ -373,12 +374,12 @@ impl<'a: 'b, 'b> HfNodeBuilder<'a, CLIDeploy> for CLIDeployNodeBuilder<'b> {
     }
 }
 
-type ClusterBuilder<'a> = dyn FnMut(usize) -> Vec<Arc<RwLock<HydroflowCrate>>> + 'a;
+type ClusterBuilder<'a> = dyn FnMut(usize) -> Vec<Arc<RwLock<HydroflowCrateService>>> + 'a;
 
 pub struct CLIDeployClusterBuilder<'a>(RefCell<Box<ClusterBuilder<'a>>>);
 
 impl<'a> CLIDeployClusterBuilder<'a> {
-    pub fn new<F: FnMut(usize) -> Vec<Arc<RwLock<HydroflowCrate>>> + 'a>(f: F) -> Self {
+    pub fn new<F: FnMut(usize) -> Vec<Arc<RwLock<HydroflowCrateService>>> + 'a>(f: F) -> Self {
         Self(RefCell::new(Box::new(f)))
     }
 }

@@ -52,7 +52,7 @@ pub fn first_ten_distributed_runtime<'a>(
 mod tests {
     use std::time::Duration;
 
-    use hydro_deploy::Deployment;
+    use hydro_deploy::{Deployment, HydroflowCrate};
     use hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, DeployCrateWrapper};
 
     #[tokio::test]
@@ -64,16 +64,11 @@ mod tests {
         let second_node = super::first_ten_distributed(
             &builder,
             &CLIDeployNodeBuilder::new(|id| {
-                deployment.HydroflowCrate(
-                    ".",
-                    localhost.clone(),
-                    Some("first_ten_distributed".into()),
-                    None,
-                    Some("dev".into()),
-                    None,
-                    Some(vec![id.to_string()]),
-                    None,
-                    vec![],
+                deployment.add_service(
+                    HydroflowCrate::new(".", localhost.clone())
+                        .bin("first_ten_distributed")
+                        .profile("dev")
+                        .args(vec![id.to_string()]),
                 )
             }),
         );

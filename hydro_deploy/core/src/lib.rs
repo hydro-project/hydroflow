@@ -200,3 +200,15 @@ pub trait Service: Send + Sync {
     /// Stops the service by having it disconnect from other services and stop computations.
     async fn stop(&mut self) -> Result<()>;
 }
+
+pub trait ServiceBuilder {
+    type Service: Service + 'static;
+    fn build(self, id: usize) -> Self::Service;
+}
+
+impl<S: Service + 'static, T: FnOnce(usize) -> S> ServiceBuilder for T {
+    type Service = S;
+    fn build(self, id: usize) -> Self::Service {
+        self(id)
+    }
+}
