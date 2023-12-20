@@ -567,7 +567,7 @@
 <span class="kw">use </span>hydroflow_cli_integration::ServerPort;
 <span class="kw">use </span>tokio::sync::RwLock;
 
-<span class="kw">use </span><span class="kw">super</span>::HydroflowCrate;
+<span class="kw">use </span><span class="kw">super</span>::HydroflowCrateService;
 <span class="kw">use crate</span>::{ClientStrategy, Host, HostStrategyGetter, LaunchedHost, ServerStrategy};
 
 <span class="kw">pub trait </span>HydroflowSource: Send + Sync {
@@ -771,7 +771,7 @@
 
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>HydroflowPortConfig {
-    <span class="kw">pub </span>service: Weak&lt;RwLock&lt;HydroflowCrate&gt;&gt;,
+    <span class="kw">pub </span>service: Weak&lt;RwLock&lt;HydroflowCrateService&gt;&gt;,
     <span class="kw">pub </span>service_host: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
     <span class="kw">pub </span>service_server_defns: Arc&lt;RwLock&lt;HashMap&lt;String, ServerPort&gt;&gt;&gt;,
     <span class="kw">pub </span>port: String,

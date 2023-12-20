@@ -200,6 +200,18 @@
 <a href="#200" id="200">200</a>
 <a href="#201" id="201">201</a>
 <a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::path::PathBuf;
@@ -401,5 +413,17 @@
 
     <span class="doccomment">/// Stops the service by having it disconnect from other services and stop computations.
     </span><span class="kw">async fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
+}
+
+<span class="kw">pub trait </span>ServiceBuilder {
+    <span class="kw">type </span>Service: Service + <span class="lifetime">&#39;static</span>;
+    <span class="kw">fn </span>build(<span class="self">self</span>, id: usize) -&gt; <span class="self">Self</span>::Service;
+}
+
+<span class="kw">impl</span>&lt;S: Service + <span class="lifetime">&#39;static</span>, T: FnOnce(usize) -&gt; S&gt; ServiceBuilder <span class="kw">for </span>T {
+    <span class="kw">type </span>Service = S;
+    <span class="kw">fn </span>build(<span class="self">self</span>, id: usize) -&gt; <span class="self">Self</span>::Service {
+        <span class="self">self</span>(id)
+    }
 }
 </code></pre></div></section></main></body></html>

@@ -833,6 +833,9 @@
 <a href="#833" id="833">833</a>
 <a href="#834" id="834">834</a>
 <a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a>
+<a href="#837" id="837">837</a>
+<a href="#838" id="838">838</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::pin::Pin;
 <span class="kw">use </span>std::sync::Arc;
@@ -1077,17 +1080,20 @@
         display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
         external_ports: <span class="prelude-ty">Option</span>&lt;Vec&lt;u16&gt;&gt;,
     ) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
-        <span class="kw">let </span>service = <span class="self">self</span>.underlying.blocking_write().HydroflowCrate(
-            src,
-            on.underlying.clone(),
-            bin,
-            example,
-            profile,
-            features,
-            args,
-            display_id,
-            external_ports.unwrap_or_default(),
-        );
+        <span class="kw">let </span>service = <span class="self">self</span>.underlying.blocking_write().add_service(|id| {
+            core::hydroflow_crate::HydroflowCrateService::new(
+                id,
+                src.into(),
+                on.underlying.clone(),
+                bin,
+                example,
+                profile,
+                features,
+                args,
+                display_id,
+                external_ports.unwrap_or_default(),
+            )
+        });
 
         <span class="prelude-val">Ok</span>(Py::new(
             py,
@@ -1321,7 +1327,7 @@
 
 <span class="attr">#[pyclass(extends=Service, subclass)]
 </span><span class="kw">struct </span>HydroflowCrate {
-    underlying: Arc&lt;RwLock&lt;<span class="kw">crate</span>::core::HydroflowCrate&gt;&gt;,
+    underlying: Arc&lt;RwLock&lt;core::hydroflow_crate::HydroflowCrateService&gt;&gt;,
 }
 
 <span class="attr">#[pymethods]
@@ -1365,7 +1371,7 @@
 <span class="attr">#[pyclass]
 #[derive(Clone)]
 </span><span class="kw">struct </span>HydroflowCratePorts {
-    underlying: Arc&lt;RwLock&lt;<span class="kw">crate</span>::core::HydroflowCrate&gt;&gt;,
+    underlying: Arc&lt;RwLock&lt;core::hydroflow_crate::HydroflowCrateService&gt;&gt;,
 }
 
 <span class="attr">#[pymethods]
