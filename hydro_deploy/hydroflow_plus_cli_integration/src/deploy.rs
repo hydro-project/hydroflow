@@ -4,11 +4,11 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use async_channel::Receiver;
-use hydro_cli::core::custom_service::CustomClientPort;
-use hydro_cli::core::hydroflow_crate::ports::{
+use hydro_deploy::custom_service::CustomClientPort;
+use hydro_deploy::hydroflow_crate::ports::{
     DemuxSink, HydroflowSink, HydroflowSource, TaggedSource,
 };
-use hydro_cli::core::{Deployment, Host, HydroflowCrate};
+use hydro_deploy::{Deployment, Host, HydroflowCrate};
 use hydroflow_plus::builder::Builders;
 use hydroflow_plus::node::{
     HfCluster, HfClusterBuilder, HfDeploy, HfNode, HfNodeBuilder, HfSendManyToMany,

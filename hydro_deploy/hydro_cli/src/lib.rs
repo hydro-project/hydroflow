@@ -20,7 +20,7 @@ use tokio::sync::RwLock;
 use crate::core::hydroflow_crate::ports::HydroflowSource;
 
 mod cli;
-pub mod core;
+use hydro_deploy as core;
 
 static TOKIO_RUNTIME: std::sync::RwLock<Option<tokio::runtime::Runtime>> =
     std::sync::RwLock::new(None);
