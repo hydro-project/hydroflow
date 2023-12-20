@@ -1,4 +1,4 @@
-//! Module for determining flow properties. See [`propegate_flow_props`].
+//! Module for determining flow properties. See [`propagate_flow_props`].
 
 use super::ops::_upcast::_UPCAST;
 use super::{GraphNodeId, HydroflowGraph, Node};
@@ -6,8 +6,8 @@ use crate::diagnostic::Diagnostic;
 use crate::graph::graph_algorithms;
 use crate::graph::ops::FlowPropArgs;
 
-/// Traverses the graph, propegating the flow properties from sources to sinks.
-pub fn propegate_flow_props(
+/// Traverses the graph, propagating the flow properties from sources to sinks.
+pub fn propagate_flow_props(
     graph: &mut HydroflowGraph,
     diagnostics: &mut Vec<Diagnostic>,
 ) -> Result<(), GraphNodeId> {
@@ -34,14 +34,14 @@ pub fn propegate_flow_props(
             .map_or(true, |op_inst| op_inst.op_constraints.name != _UPCAST.name)
     });
 
-    // Propegate flow props in order.
+    // Propagate flow props in order.
     loop {
         let mut changed = false;
         for (idx_star_ord, &node_id) in node_order.iter().enumerate() {
             match graph.node(node_id) {
                 Node::Operator(_) => {
                     let op_inst = graph.node_op_inst(node_id)
-                        .expect("Operator instance info must be set when calling `propegate_flow_props`. (This is a Hydroflow bug).");
+                        .expect("Operator instance info must be set when calling `propagate_flow_props`. (This is a Hydroflow bug).");
 
                     if let Some(flow_prop_fn) = op_inst.op_constraints.flow_prop_fn {
                         // Collect the flow props on input edges. Input operators will naturally have no inputs.

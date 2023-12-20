@@ -3,7 +3,7 @@ use std::ops::Deref;
 
 use hydroflow_lang::diagnostic::{Diagnostic, Level};
 use hydroflow_lang::graph::{
-    eliminate_extra_unions_tees, partition_graph, propegate_flow_props, FlatGraphBuilder,
+    eliminate_extra_unions_tees, partition_graph, propagate_flow_props, FlatGraphBuilder,
     HydroflowGraph,
 };
 use hydroflow_lang::parse::{
@@ -329,9 +329,9 @@ pub fn hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream)
         partition_graph(flat_graph).expect("Failed to partition (cycle detected).");
 
     let mut diagnostics = Vec::new();
-    // Propgeate flow properties throughout the graph.
+    // Propagate flow properties throughout the graph.
     // TODO(mingwei): Should this be done at a flat graph stage instead?
-    let _ = propegate_flow_props::propegate_flow_props(&mut partitioned_graph, &mut diagnostics);
+    let _ = propagate_flow_props::propagate_flow_props(&mut partitioned_graph, &mut diagnostics);
 
     let code_tokens = partitioned_graph.as_code(&root, true, quote::quote!(), &mut diagnostics);
     assert_eq!(

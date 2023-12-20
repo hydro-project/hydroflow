@@ -9,6 +9,7 @@ use stageleft::Quoted;
 use syn::parse_quote;
 
 use crate::builder::Builders;
+use crate::stream::{Async, Windowed};
 use crate::{HfBuilder, HfCycle, HfStream};
 
 mod graphs;
@@ -72,7 +73,7 @@ pub trait HfNode<'a>: Clone {
     fn source_stream<T, E: Stream<Item = T> + Unpin>(
         &self,
         e: impl Quoted<'a, E>,
-    ) -> HfStream<'a, T, Self> {
+    ) -> HfStream<'a, T, Async, Self> {
         let (next_id_cell, builders) = self.graph_builder();
 
         let next_id = {
@@ -104,7 +105,12 @@ pub trait HfNode<'a>: Clone {
         }
     }
 
-    fn source_external(&self) -> (Self::Port, HfStream<'a, Result<BytesMut, io::Error>, Self>)
+    fn source_external(
+        &self,
+    ) -> (
+        Self::Port,
+        HfStream<'a, Result<BytesMut, io::Error>, Async, Self>,
+    )
     where
         Self: HfSendOneToOne<'a, Self>,
     {
@@ -146,7 +152,7 @@ pub trait HfNode<'a>: Clone {
     fn source_iter<T, E: IntoIterator<Item = T>>(
         &self,
         e: impl Quoted<'a, E>,
-    ) -> HfStream<'a, T, Self> {
+    ) -> HfStream<'a, T, Windowed, Self> {
         let (next_id_cell, builders) = self.graph_builder();
 
         let next_id = {
@@ -178,7 +184,7 @@ pub trait HfNode<'a>: Clone {
         }
     }
 
-    fn cycle<T>(&self) -> (HfCycle<'a, T, Self>, HfStream<'a, T, Self>) {
+    fn cycle<T, W>(&self) -> (HfCycle<'a, T, W, Self>, HfStream<'a, T, W, Self>) {
         let (next_id_cell, builders) = self.graph_builder();
 
         let next_id = {

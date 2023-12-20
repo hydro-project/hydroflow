@@ -37,7 +37,7 @@ pub use hydroflow_graph::{HydroflowGraph, WriteConfig, WriteGraphType};
 
 pub mod graph_algorithms;
 pub mod ops;
-pub mod propegate_flow_props;
+pub mod propagate_flow_props;
 
 new_key_type! {
     /// ID to identify a node (operator or handoff) in [`HydroflowGraph`].
@@ -404,9 +404,9 @@ pub fn build_hfcode(
         eliminate_extra_unions_tees(&mut flat_graph);
         match partition_graph(flat_graph) {
             Ok(mut partitioned_graph) => {
-                // Propgeate flow properties throughout the graph.
+                // Propagate flow properties throughout the graph.
                 // TODO(mingwei): Should this be done at a flat graph stage instead?
-                if let Ok(()) = propegate_flow_props::propegate_flow_props(
+                if let Ok(()) = propagate_flow_props::propagate_flow_props(
                     &mut partitioned_graph,
                     &mut diagnostics,
                 ) {

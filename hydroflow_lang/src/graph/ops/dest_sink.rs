@@ -28,7 +28,7 @@ use super::{
 /// let mut flow = hydroflow::hydroflow_syntax! {
 ///     source_iter(0..10) -> dest_sink(send);
 /// };
-/// // Call `run_async()` to allow async events to propegate, run for one second.
+/// // Call `run_async()` to allow async events to propagate, run for one second.
 /// tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
 ///     .await
 ///     .expect_err("Expected time out");

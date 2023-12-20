@@ -6,15 +6,15 @@ use crate::builder::Builders;
 use crate::node::HfNode;
 use crate::HfStream;
 
-pub struct HfCycle<'a, T, N: HfNode<'a>> {
+pub struct HfCycle<'a, T, W, N: HfNode<'a>> {
     pub(crate) ident: syn::Ident,
     pub(crate) node: N,
     pub(crate) builders: &'a Builders,
-    pub(crate) _phantom: PhantomData<T>,
+    pub(crate) _phantom: PhantomData<(T, W)>,
 }
 
-impl<'a, T, N: HfNode<'a>> HfCycle<'a, T, N> {
-    pub fn complete(self, stream: &HfStream<'a, T, N>) {
+impl<'a, T, W, N: HfNode<'a>> HfCycle<'a, T, W, N> {
+    pub fn complete(self, stream: &HfStream<'a, T, W, N>) {
         let ident = self.ident;
         let stream_ident = stream.ident.clone();
 
