@@ -52,7 +52,7 @@ pub fn first_ten_distributed_runtime<'a>(
 mod tests {
     use std::time::Duration;
 
-    use hydro_cli::core::Deployment;
+    use hydro_deploy::Deployment;
     use hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, DeployCrateWrapper};
 
     #[tokio::test]
