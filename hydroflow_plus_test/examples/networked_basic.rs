@@ -1,4 +1,4 @@
-use hydro_deploy::Deployment;
+use hydro_deploy::{Deployment, HydroflowCrate};
 use hydroflow::futures::SinkExt;
 use hydroflow::util::cli::ConnectedSink;
 use hydroflow_plus_cli_integration::CLIDeployNodeBuilder;
@@ -12,16 +12,11 @@ async fn main() {
     let (source_zero_port, _, _) = hydroflow_plus_test::networked::networked_basic(
         &builder,
         &CLIDeployNodeBuilder::new(|id| {
-            deployment.HydroflowCrate(
-                ".",
-                localhost.clone(),
-                Some("networked_basic".into()),
-                None,
-                Some("dev".into()),
-                None,
-                Some(vec![id.to_string()]),
-                None,
-                vec![],
+            deployment.add_service(
+                HydroflowCrate::new(".", localhost.clone())
+                    .bin("networked_basic")
+                    .profile("dev")
+                    .args(vec![id.to_string()]),
             )
         }),
     );

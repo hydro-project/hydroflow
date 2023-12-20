@@ -106,7 +106,7 @@ mod tests {
     use std::cell::RefCell;
     use std::time::Duration;
 
-    use hydro_deploy::Deployment;
+    use hydro_deploy::{Deployment, HydroflowCrate};
     use hydroflow::lattices::cc_traits::Iter;
     use hydroflow_plus_cli_integration::{
         CLIDeployClusterBuilder, CLIDeployNodeBuilder, DeployCrateWrapper,
@@ -121,31 +121,21 @@ mod tests {
         let (node, cluster) = super::simple_cluster(
             &builder,
             &CLIDeployNodeBuilder::new(|id| {
-                deployment.borrow_mut().HydroflowCrate(
-                    ".",
-                    localhost.clone(),
-                    Some("simple_cluster".into()),
-                    None,
-                    Some("dev".into()),
-                    None,
-                    Some(vec![id.to_string()]),
-                    None,
-                    vec![],
+                deployment.borrow_mut().add_service(
+                    HydroflowCrate::new(".", localhost.clone())
+                        .bin("simple_cluster")
+                        .profile("dev")
+                        .args(vec![id.to_string()]),
                 )
             }),
             &CLIDeployClusterBuilder::new(|id| {
                 (0..2)
                     .map(|_| {
-                        deployment.borrow_mut().HydroflowCrate(
-                            ".",
-                            localhost.clone(),
-                            Some("simple_cluster".into()),
-                            None,
-                            Some("dev".into()),
-                            None,
-                            Some(vec![id.to_string()]),
-                            None,
-                            vec![],
+                        deployment.borrow_mut().add_service(
+                            HydroflowCrate::new(".", localhost.clone())
+                                .bin("simple_cluster")
+                                .profile("dev")
+                                .args(vec![id.to_string()]),
                         )
                     })
                     .collect()
@@ -205,16 +195,11 @@ mod tests {
             &CLIDeployClusterBuilder::new(|id| {
                 (0..2)
                     .map(|_| {
-                        deployment.borrow_mut().HydroflowCrate(
-                            ".",
-                            localhost.clone(),
-                            Some("many_to_many".into()),
-                            None,
-                            Some("dev".into()),
-                            None,
-                            Some(vec![id.to_string()]),
-                            None,
-                            vec![],
+                        deployment.borrow_mut().add_service(
+                            HydroflowCrate::new(".", localhost.clone())
+                                .bin("many_to_many")
+                                .profile("dev")
+                                .args(vec![id.to_string()]),
                         )
                     })
                     .collect()

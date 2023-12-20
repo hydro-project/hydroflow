@@ -16,12 +16,120 @@ use super::{
     Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
     ServerStrategy, Service,
 };
+use crate::ServiceBuilder;
 
 mod build;
 pub mod ports;
 use build::*;
 
+#[derive(PartialEq)]
+pub enum CrateTarget {
+    Default,
+    Bin(String),
+    Example(String),
+}
+
+/// Specifies a crate that uses `hydroflow_cli_integration` to be
+/// deployed as a service.
 pub struct HydroflowCrate {
+    src: PathBuf,
+    target: CrateTarget,
+    on: Arc<RwLock<dyn Host>>,
+    profile: Option<String>,
+    args: Vec<String>,
+    display_name: Option<String>,
+}
+
+impl HydroflowCrate {
+    /// Creates a new `HydroflowCrate` that will be deployed on the given host.
+    /// The `src` argument is the path to the crate's directory, and the `on`
+    /// argument is the host that the crate will be deployed on.
+    pub fn new(src: impl Into<PathBuf>, on: Arc<RwLock<dyn Host>>) -> Self {
+        Self {
+            src: src.into(),
+            target: CrateTarget::Default,
+            on,
+            profile: None,
+            args: vec![],
+            display_name: None,
+        }
+    }
+
+    /// Sets the target to be a binary with the given name,
+    /// equivalent to `cargo run --bin <name>`.
+    pub fn bin(mut self, bin: impl Into<String>) -> Self {
+        if self.target != CrateTarget::Default {
+            panic!("target already set");
+        }
+
+        self.target = CrateTarget::Bin(bin.into());
+        self
+    }
+
+    /// Sets the target to be an example with the given name,
+    /// equivalent to `cargo run --example <name>`.
+    pub fn example(mut self, example: impl Into<String>) -> Self {
+        if self.target != CrateTarget::Default {
+            panic!("target already set");
+        }
+
+        self.target = CrateTarget::Example(example.into());
+        self
+    }
+
+    /// Sets the profile to be used when building the crate.
+    /// Equivalent to `cargo run --profile <profile>`.
+    pub fn profile(mut self, profile: impl Into<String>) -> Self {
+        if self.profile.is_some() {
+            panic!("profile already set");
+        }
+
+        self.profile = Some(profile.into());
+        self
+    }
+
+    /// Sets the arguments to be passed to the binary when it is launched.
+    pub fn args(mut self, args: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        self.args.extend(args.into_iter().map(|s| s.into()));
+        self
+    }
+
+    /// Sets the display name for this service, which will be used in logging.
+    pub fn display_name(mut self, display_name: impl Into<String>) -> Self {
+        if self.display_name.is_some() {
+            panic!("display_name already set");
+        }
+
+        self.display_name = Some(display_name.into());
+        self
+    }
+}
+
+impl ServiceBuilder for HydroflowCrate {
+    type Service = HydroflowCrateService;
+    fn build(self, id: usize) -> Self::Service {
+        let (bin, example) = match self.target {
+            CrateTarget::Default => (None, None),
+            CrateTarget::Bin(bin) => (Some(bin), None),
+            CrateTarget::Example(example) => (None, Some(example)),
+        };
+
+        HydroflowCrateService::new(
+            id,
+            self.src,
+            self.on,
+            bin,
+            example,
+            self.profile,
+            None,
+            Some(self.args),
+            self.display_name,
+            vec![],
+        )
+    }
+}
+
+pub struct HydroflowCrateService {
     id: usize,
     src: PathBuf,
     on: Arc<RwLock<dyn Host>>,
@@ -55,7 +163,7 @@ pub struct HydroflowCrate {
     started: bool,
 }
 
-impl HydroflowCrate {
+impl HydroflowCrateService {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: usize,
@@ -105,7 +213,7 @@ impl HydroflowCrate {
     pub fn get_port(
         &self,
         name: String,
-        self_arc: &Arc<RwLock<HydroflowCrate>>,
+        self_arc: &Arc<RwLock<HydroflowCrateService>>,
     ) -> HydroflowPortConfig {
         HydroflowPortConfig {
             service: Arc::downgrade(self_arc),
@@ -118,7 +226,7 @@ impl HydroflowCrate {
 
     pub fn add_connection(
         &mut self,
-        self_arc: &Arc<RwLock<HydroflowCrate>>,
+        self_arc: &Arc<RwLock<HydroflowCrateService>>,
         my_port: String,
         sink: &mut dyn HydroflowSink,
     ) -> Result<()> {
@@ -206,7 +314,7 @@ impl HydroflowCrate {
 }
 
 #[async_trait]
-impl Service for HydroflowCrate {
+impl Service for HydroflowCrateService {
     fn collect_resources(&mut self, _resource_batch: &mut ResourceBatch) {
         if self.launched_host.is_some() {
             return;
