@@ -191,13 +191,42 @@
 <a href="#191" id="191">191</a>
 <a href="#192" id="192">192</a>
 <a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::io;
 <span class="kw">use </span>std::marker::PhantomData;
 
 <span class="kw">use </span>hydroflow::bytes::BytesMut;
 <span class="kw">use </span>hydroflow::futures::stream::Stream;
-<span class="kw">use </span>hydroflow_lang::parse::Pipeline;
 <span class="kw">use </span>proc_macro2::Span;
 <span class="kw">use </span>stageleft::Quoted;
 <span class="kw">use </span>syn::parse_quote;
@@ -208,36 +237,60 @@
 <span class="kw">mod </span>graphs;
 <span class="kw">pub use </span>graphs::<span class="kw-2">*</span>;
 
+<span class="kw">pub mod </span>network;
+<span class="kw">pub use </span>network::<span class="kw-2">*</span>;
+
 <span class="kw">pub trait </span>HfDeploy&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">type </span>Node: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;;
+    <span class="kw">type </span>Node: HfNode&lt;<span class="lifetime">&#39;a</span>, Meta = <span class="self">Self</span>::Meta&gt;;
+    <span class="kw">type </span>Cluster: HfNode&lt;<span class="lifetime">&#39;a</span>, Meta = <span class="self">Self</span>::Meta&gt; + HfCluster&lt;<span class="lifetime">&#39;a</span>&gt;;
+    <span class="kw">type </span>Meta;
+    <span class="kw">type </span>RuntimeID;
 }
 
-<span class="kw">pub trait </span>HfNetworkedDeploy&lt;<span class="lifetime">&#39;a</span>&gt;: HfDeploy&lt;<span class="lifetime">&#39;a</span>, Node = <span class="self">Self</span>::NetworkedNode&gt; {
-    <span class="kw">type </span>NetworkedNode: HfNode&lt;<span class="lifetime">&#39;a</span>, Port = <span class="self">Self</span>::Port&gt; + HfSendTo&lt;<span class="lifetime">&#39;a</span>, <span class="self">Self</span>::NetworkedNode&gt;;
-    <span class="kw">type </span>Port;
+<span class="kw">pub trait </span>HfNetworkedDeploy&lt;<span class="lifetime">&#39;a</span>&gt;:
+    HfDeploy&lt;<span class="lifetime">&#39;a</span>, Node = <span class="self">Self</span>::NetworkedNode, Cluster = <span class="self">Self</span>::NetworkedCluster&gt;
+{
+    <span class="kw">type </span>NetworkedNode: HfNode&lt;<span class="lifetime">&#39;a</span>, Port = <span class="self">Self</span>::NodePort&gt;
+        + HfSendOneToOne&lt;<span class="lifetime">&#39;a</span>, <span class="self">Self</span>::NetworkedNode&gt;
+        + HfSendOneToMany&lt;<span class="lifetime">&#39;a</span>, <span class="self">Self</span>::NetworkedCluster&gt;;
+    <span class="kw">type </span>NetworkedCluster: HfNode&lt;<span class="lifetime">&#39;a</span>, Port = <span class="self">Self</span>::ClusterPort&gt;
+        + HfSendManyToOne&lt;<span class="lifetime">&#39;a</span>, <span class="self">Self</span>::NetworkedNode&gt;
+        + HfSendManyToMany&lt;<span class="lifetime">&#39;a</span>, <span class="self">Self</span>::NetworkedCluster&gt;
+        + HfCluster&lt;<span class="lifetime">&#39;a</span>&gt;;
+    <span class="kw">type </span>NodePort;
+    <span class="kw">type </span>ClusterPort;
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: HfDeploy&lt;<span class="lifetime">&#39;a</span>, Node = N&gt;, N: HfSendTo&lt;<span class="lifetime">&#39;a</span>, N&gt;&gt; HfNetworkedDeploy&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>T {
+<span class="kw">impl</span>&lt;
+        <span class="lifetime">&#39;a</span>,
+        T: HfDeploy&lt;<span class="lifetime">&#39;a</span>, Node = N, Cluster = C&gt;,
+        N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt; + HfSendOneToOne&lt;<span class="lifetime">&#39;a</span>, N&gt; + HfSendOneToMany&lt;<span class="lifetime">&#39;a</span>, C&gt;,
+        C: HfNode&lt;<span class="lifetime">&#39;a</span>&gt; + HfSendManyToOne&lt;<span class="lifetime">&#39;a</span>, N&gt; + HfSendManyToMany&lt;<span class="lifetime">&#39;a</span>, C&gt; + HfCluster&lt;<span class="lifetime">&#39;a</span>&gt;,
+    &gt; HfNetworkedDeploy&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>T
+{
     <span class="kw">type </span>NetworkedNode = N;
-    <span class="kw">type </span>Port = N::Port;
+    <span class="kw">type </span>NetworkedCluster = C;
+    <span class="kw">type </span>NodePort = N::Port;
+    <span class="kw">type </span>ClusterPort = C::Port;
 }
 
 <span class="kw">pub trait </span>HfNodeBuilder&lt;<span class="lifetime">&#39;a</span>, D: HfDeploy&lt;<span class="lifetime">&#39;a</span>&gt; + <span class="question-mark">?</span>Sized&gt; {
-    <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: usize, builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;) -&gt; D::Node;
+    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, id: usize, builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;) -&gt; D::Node;
 }
 
-<span class="kw">pub trait </span>HfSendTo&lt;<span class="lifetime">&#39;a</span>, O: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;: HfNode&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>O, source_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port, recipient_port: <span class="kw-2">&amp;</span>O::Port);
+<span class="kw">pub trait </span>HfClusterBuilder&lt;<span class="lifetime">&#39;a</span>, D: HfDeploy&lt;<span class="lifetime">&#39;a</span>&gt; + <span class="question-mark">?</span>Sized&gt; {
+    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, id: usize, builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;) -&gt; D::Cluster;
 }
 
 <span class="kw">pub trait </span>HfNode&lt;<span class="lifetime">&#39;a</span>&gt;: Clone {
     <span class="kw">type </span>Port;
+    <span class="kw">type </span>Meta;
 
     <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize;
     <span class="kw">fn </span>graph_builder(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>RefCell&lt;usize&gt;, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Builders);
     <span class="kw">fn </span>next_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Port;
-    <span class="kw">fn </span>gen_source_statement(<span class="kw-2">&amp;</span><span class="self">self</span>, port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port) -&gt; Pipeline;
-    <span class="kw">fn </span>gen_sink_statement(<span class="kw-2">&amp;</span><span class="self">self</span>, port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port) -&gt; Pipeline;
+
+    <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>, meta: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Meta&gt;);
 
     <span class="kw">fn </span>source_stream&lt;T, E: Stream&lt;Item = T&gt; + Unpin&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -274,7 +327,10 @@
         }
     }
 
-    <span class="kw">fn </span>source_external(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="self">Self</span>::Port, HfStream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, <span class="self">Self</span>&gt;) {
+    <span class="kw">fn </span>source_external(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="self">Self</span>::Port, HfStream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, <span class="self">Self</span>&gt;)
+    <span class="kw">where
+        </span><span class="self">Self</span>: HfSendOneToOne&lt;<span class="lifetime">&#39;a</span>, <span class="self">Self</span>&gt;,
+    {
         <span class="kw">let </span>(next_id_cell, builders) = <span class="self">self</span>.graph_builder();
 
         <span class="kw">let </span>next_id = {
@@ -286,7 +342,7 @@
 
         <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, next_id), Span::call_site());
         <span class="kw">let </span>port = <span class="self">self</span>.next_port();
-        <span class="kw">let </span>source_pipeline = <span class="self">self</span>.gen_source_statement(<span class="kw-2">&amp;</span>port);
+        <span class="kw">let </span>source_pipeline = <span class="self">Self</span>::gen_source_statement(<span class="self">self</span>, <span class="kw-2">&amp;</span>port);
 
         builders
             .borrow_mut()
@@ -383,5 +439,9 @@
             },
         )
     }
+}
+
+<span class="kw">pub trait </span>HfCluster&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">fn </span>ids&lt;<span class="lifetime">&#39;b</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;b </span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Vec&lt;u32&gt;&gt; + Copy + <span class="lifetime">&#39;a</span>;
 }
 </code></pre></div></section></main></body></html>

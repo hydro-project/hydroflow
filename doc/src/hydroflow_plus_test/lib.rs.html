@@ -310,6 +310,7 @@
 <a href="#310" id="310">310</a>
 <a href="#311" id="311">311</a>
 <a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
 </pre></div><pre class="rust"><code><span class="macro">stageleft::stageleft_crate!</span>(hydroflow_plus_test_macro);
 
 <span class="kw">use </span>hydroflow_plus::futures::stream::Stream;
@@ -320,6 +321,7 @@
 <span class="kw">use </span>hydroflow_plus::HfBuilder;
 <span class="kw">use </span>stageleft::{q, Quoted, RuntimeData};
 
+<span class="kw">pub mod </span>cluster;
 <span class="kw">pub mod </span>first_ten;
 <span class="kw">pub mod </span>networked;
 
@@ -331,8 +333,8 @@
     send_twice: bool,
     node_id: RuntimeData&lt;usize&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let </span>node_zero = graph.node(<span class="kw-2">&amp;mut </span>());
-    <span class="kw">let </span>node_one = graph.node(<span class="kw-2">&amp;mut </span>());
+    <span class="kw">let </span>node_zero = graph.node(<span class="kw-2">&amp;</span>());
+    <span class="kw">let </span>node_one = graph.node(<span class="kw-2">&amp;</span>());
 
     <span class="kw">let </span>source = node_zero.source_stream(input_stream);
     <span class="kw">let </span>map1 = source.map(<span class="macro">q!</span>(|v| (v + <span class="number">1</span>, ())));
@@ -366,7 +368,7 @@
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>UnboundedSender&lt;(u32, String)&gt;&gt;,
     replay_messages: bool,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let </span>node = graph.node(<span class="kw-2">&amp;mut </span>());
+    <span class="kw">let </span>node = graph.node(<span class="kw-2">&amp;</span>());
 
     <span class="kw">let </span>users = node.source_stream(users_stream).persist();
     <span class="kw">let </span><span class="kw-2">mut </span>messages = node.source_stream(messages);
@@ -393,7 +395,7 @@
     edges: RuntimeData&lt;UnboundedReceiverStream&lt;(u32, u32)&gt;&gt;,
     reached_out: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>UnboundedSender&lt;u32&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let </span>node = graph.node(<span class="kw-2">&amp;mut </span>());
+    <span class="kw">let </span>node = graph.node(<span class="kw-2">&amp;</span>());
 
     <span class="kw">let </span>roots = node.source_stream(roots);
     <span class="kw">let </span>edges = node.source_stream(edges);
@@ -420,7 +422,7 @@
     input_stream: RuntimeData&lt;UnboundedReceiverStream&lt;T&gt;&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>UnboundedSender&lt;u32&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let </span>node = graph.node(<span class="kw-2">&amp;mut </span>());
+    <span class="kw">let </span>node = graph.node(<span class="kw-2">&amp;</span>());
 
     <span class="kw">let </span>source = node.source_stream(input_stream);
     <span class="kw">let </span>count = source.map(<span class="macro">q!</span>(|<span class="kw">_</span>| <span class="number">1</span>)).fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|a, b| <span class="kw-2">*</span>a += b));

@@ -95,6 +95,7 @@
 <a href="#95" id="95">95</a>
 <a href="#96" id="96">96</a>
 <a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::node::<span class="kw-2">*</span>;
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
@@ -118,7 +119,7 @@
 
 <span class="kw">pub fn </span>first_ten_distributed&lt;<span class="lifetime">&#39;a</span>, D: HfNetworkedDeploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
     graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    node_builder: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>HfNodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+    node_builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>HfNodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
 ) -&gt; D::Node {
     <span class="kw">let </span>node = graph.node(node_builder);
     <span class="kw">let </span>second_node = graph.node(node_builder);
@@ -132,15 +133,15 @@
 }
 
 <span class="kw">use </span>hydroflow::util::cli::HydroCLI;
-<span class="kw">use </span>hydroflow_plus_cli_integration::{CLIRuntime, CLIRuntimeNodeBuilder};
+<span class="kw">use </span>hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>first_ten_distributed_runtime&lt;<span class="lifetime">&#39;a</span>&gt;(
     graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
-    cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&gt;,
+    cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
     node_id: RuntimeData&lt;usize&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= first_ten_distributed(graph, <span class="kw-2">&amp;mut </span>CLIRuntimeNodeBuilder::new(cli));
+    <span class="kw">let _ </span>= first_ten_distributed(graph, <span class="kw-2">&amp;</span>cli);
     graph.build(node_id)
 }
 
@@ -150,7 +151,7 @@
     <span class="kw">use </span>std::time::Duration;
 
     <span class="kw">use </span>hydro_cli::core::Deployment;
-    <span class="kw">use </span>hydroflow_plus_cli_integration::CLIDeployNodeBuilder;
+    <span class="kw">use </span>hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, DeployCrateWrapper};
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>first_ten_distributed() {
@@ -160,7 +161,7 @@
         <span class="kw">let </span>builder = hydroflow_plus::HfBuilder::new();
         <span class="kw">let </span>second_node = <span class="kw">super</span>::first_ten_distributed(
             <span class="kw-2">&amp;</span>builder,
-            <span class="kw-2">&amp;mut </span>CLIDeployNodeBuilder::new(|id| {
+            <span class="kw-2">&amp;</span>CLIDeployNodeBuilder::new(|id| {
                 deployment.HydroflowCrate(
                     <span class="string">&quot;.&quot;</span>,
                     localhost.clone(),
@@ -174,6 +175,7 @@
                 )
             }),
         );
+        builder.wire();
 
         deployment.deploy().<span class="kw">await</span>.unwrap();
 

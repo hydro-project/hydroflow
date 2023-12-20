@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["many_to_many","many_to_many_runtime","map_reduce","map_reduce_runtime","simple_cluster","simple_cluster_runtime"],"macro":["many_to_many_runtime","map_reduce_runtime","simple_cluster_runtime"]};

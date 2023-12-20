@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["MultiGraph","MultiNode","SingleGraph","SingleNode"],"trait":["HfDeploy","HfNetworkedDeploy","HfNode","HfNodeBuilder","HfSendTo"]};
+window.SIDEBAR_ITEMS = {"mod":["network"],"struct":["MultiGraph","MultiNode","SingleGraph","SingleNode"],"trait":["HfCluster","HfClusterBuilder","HfDeploy","HfNetworkedDeploy","HfNode","HfNodeBuilder"]};

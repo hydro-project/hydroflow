@@ -93,18 +93,19 @@
 <a href="#93" id="93">93</a>
 <a href="#94" id="94">94</a>
 <a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow::bytes::BytesMut;
 <span class="kw">use </span>hydroflow::util::cli::HydroCLI;
 <span class="kw">use </span>hydroflow_plus::node::{HfNetworkedDeploy, HfNode, HfNodeBuilder};
 <span class="kw">use </span>hydroflow_plus::scheduled::graph::Hydroflow;
 <span class="kw">use </span>hydroflow_plus::HfBuilder;
-<span class="kw">use </span>hydroflow_plus_cli_integration::{CLIRuntime, CLIRuntimeNodeBuilder};
+<span class="kw">use </span>hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 <span class="kw">use </span>stageleft::{q, Quoted, RuntimeData};
 
 <span class="kw">pub fn </span>networked_basic&lt;<span class="lifetime">&#39;a</span>, D: HfNetworkedDeploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
     graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    node_builder: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>HfNodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-) -&gt; (D::Port, D::Node, D::Node) {
+    node_builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>HfNodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+) -&gt; (D::NodePort, D::Node, D::Node) {
     <span class="kw">let </span>node_zero = graph.node(node_builder);
     <span class="kw">let </span>node_one = graph.node(node_builder);
 
@@ -126,10 +127,10 @@
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>networked_basic_runtime&lt;<span class="lifetime">&#39;a</span>&gt;(
     graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
-    cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&gt;,
+    cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
     node_id: RuntimeData&lt;usize&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= networked_basic(graph, <span class="kw-2">&amp;mut </span>CLIRuntimeNodeBuilder::new(cli));
+    <span class="kw">let _ </span>= networked_basic(graph, <span class="kw-2">&amp;</span>cli);
     graph.build(node_id)
 }
 
@@ -141,7 +142,7 @@
     <span class="kw">use </span>hydro_cli::core::Deployment;
     <span class="kw">use </span>hydroflow::futures::SinkExt;
     <span class="kw">use </span>hydroflow::util::cli::ConnectedSink;
-    <span class="kw">use </span>hydroflow_plus_cli_integration::CLIDeployNodeBuilder;
+    <span class="kw">use </span>hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, DeployCrateWrapper};
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>networked_basic() {
@@ -151,7 +152,7 @@
         <span class="kw">let </span>builder = hydroflow_plus::HfBuilder::new();
         <span class="kw">let </span>(source_zero_port, <span class="kw">_</span>, node_one) = <span class="kw">super</span>::networked_basic(
             <span class="kw-2">&amp;</span>builder,
-            <span class="kw-2">&amp;mut </span>CLIDeployNodeBuilder::new(|id| {
+            <span class="kw-2">&amp;</span>CLIDeployNodeBuilder::new(|id| {
                 deployment.HydroflowCrate(
                     <span class="string">&quot;.&quot;</span>,
                     localhost.clone(),
@@ -165,6 +166,7 @@
                 )
             }),
         );
+        builder.wire();
 
         <span class="kw">let </span>port_to_zero = source_zero_port
             .create_sender(<span class="kw-2">&amp;mut </span>deployment, <span class="kw-2">&amp;</span>localhost)

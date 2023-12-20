@@ -509,7 +509,7 @@
     <span class="kw">let </span>_self_id: u32 = args.next().unwrap().parse().unwrap();
     <span class="kw">let </span>neighbors: Vec&lt;u32&gt; = args.map(|x| x.parse().unwrap()).collect();
 
-    <span class="kw">let </span>ports = hydroflow::util::cli::init().<span class="kw">await</span>;
+    <span class="kw">let </span>ports = hydroflow::util::cli::init::&lt;()&gt;().<span class="kw">await</span>;
 
     <span class="kw">let </span>input_recv = ports
         .port(<span class="string">&quot;from_peer&quot;</span>)

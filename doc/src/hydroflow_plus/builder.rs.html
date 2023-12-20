@@ -120,9 +120,54 @@
 <a href="#120" id="120">120</a>
 <a href="#121" id="121">121</a>
 <a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::BTreeMap;
 <span class="kw">use </span>std::marker::PhantomData;
+<span class="kw">use </span>std::ops::Deref;
 
 <span class="kw">use </span>hydroflow_lang::graph::{
     eliminate_extra_unions_tees, partition_graph, propegate_flow_props, FlatGraphBuilder,
@@ -132,7 +177,7 @@
 <span class="kw">use </span>stageleft::{Quoted, QuotedContext};
 <span class="kw">use </span>syn::parse_quote;
 
-<span class="kw">use </span><span class="kw">crate</span>::node::{HfDeploy, HfNodeBuilder};
+<span class="kw">use </span><span class="kw">crate</span>::node::{HfClusterBuilder, HfDeploy, HfNode, HfNodeBuilder};
 <span class="kw">use crate</span>::{HfBuilt, RuntimeContext};
 
 <span class="kw">pub type </span>Builders = RefCell&lt;<span class="prelude-ty">Option</span>&lt;BTreeMap&lt;usize, FlatGraphBuilder&gt;&gt;&gt;;
@@ -141,6 +186,8 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) next_id: RefCell&lt;usize&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) builders: Builders,
     nodes: RefCell&lt;Vec&lt;D::Node&gt;&gt;,
+    clusters: RefCell&lt;Vec&lt;D::Cluster&gt;&gt;,
+    <span class="kw">pub </span>meta: RefCell&lt;<span class="prelude-ty">Option</span>&lt;D::Meta&gt;&gt;,
     next_node_id: RefCell&lt;usize&gt;,
     _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut &amp;</span><span class="lifetime">&#39;a </span>()&gt;,
 }
@@ -158,6 +205,8 @@
             next_id: RefCell::new(<span class="number">0</span>),
             builders: RefCell::new(<span class="prelude-val">Some</span>(Default::default())),
             nodes: RefCell::new(Vec::new()),
+            clusters: RefCell::new(Vec::new()),
+            meta: RefCell::new(Default::default()),
             next_node_id: RefCell::new(<span class="number">0</span>),
             _phantom: PhantomData,
         }
@@ -167,7 +216,7 @@
         (<span class="kw-2">&amp;</span><span class="self">self</span>.next_id, <span class="kw-2">&amp;</span><span class="self">self</span>.builders)
     }
 
-    <span class="kw">pub fn </span>node(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, builder: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>HfNodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;) -&gt; D::Node {
+    <span class="kw">pub fn </span>node(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>HfNodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;) -&gt; D::Node {
         <span class="kw">let </span><span class="kw-2">mut </span>next_node_id = <span class="self">self</span>.next_node_id.borrow_mut();
         <span class="kw">let </span>id = <span class="kw-2">*</span>next_node_id;
         <span class="kw-2">*</span>next_node_id += <span class="number">1</span>;
@@ -177,7 +226,52 @@
         node
     }
 
+    <span class="kw">pub fn </span>cluster(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>HfClusterBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;) -&gt; D::Cluster {
+        <span class="kw">let </span><span class="kw-2">mut </span>next_node_id = <span class="self">self</span>.next_node_id.borrow_mut();
+        <span class="kw">let </span>id = <span class="kw-2">*</span>next_node_id;
+        <span class="kw-2">*</span>next_node_id += <span class="number">1</span>;
+
+        <span class="kw">let </span>cluster = builder.build(id, <span class="self">self</span>);
+        <span class="self">self</span>.clusters.borrow_mut().push(cluster.clone());
+        cluster
+    }
+
+    <span class="kw">pub fn </span>runtime_context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; RuntimeContext&lt;<span class="lifetime">&#39;a</span>&gt; {
+        RuntimeContext {
+            _phantom: PhantomData,
+        }
+    }
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, D: HfDeploy&lt;<span class="lifetime">&#39;a</span>, RuntimeID = ()&gt;&gt; HfBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt; {
+    <span class="kw">pub fn </span>wire(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="kw">let </span>meta_borrow = <span class="self">self</span>.meta.borrow();
+        <span class="kw">let </span>meta = meta_borrow.deref();
+        <span class="self">self</span>.nodes
+            .borrow_mut()
+            .iter_mut()
+            .for_each(|n| n.build(meta));
+        <span class="self">self</span>.clusters
+            .borrow_mut()
+            .iter_mut()
+            .for_each(|n| n.build(meta));
+    }
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, D: HfDeploy&lt;<span class="lifetime">&#39;a</span>, RuntimeID = usize&gt;&gt; HfBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt; {
     <span class="kw">pub fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, usize&gt;) -&gt; HfBuilt&lt;<span class="lifetime">&#39;a</span>&gt; {
+        <span class="kw">let </span>meta_borrow = <span class="self">self</span>.meta.borrow();
+        <span class="kw">let </span>meta = meta_borrow.deref();
+        <span class="self">self</span>.nodes
+            .borrow_mut()
+            .iter_mut()
+            .for_each(|n| n.build(meta));
+        <span class="self">self</span>.clusters
+            .borrow_mut()
+            .iter_mut()
+            .for_each(|n| n.build(meta));
+        drop(meta_borrow);
+
         <span class="kw">let </span>builders = <span class="self">self</span>.builders.borrow_mut().take().unwrap();
 
         <span class="kw">let </span><span class="kw-2">mut </span>conditioned_tokens = <span class="prelude-val">None</span>;
@@ -232,12 +326,6 @@
                     <span class="macro">panic!</span>(<span class="string">&quot;Invalid node id: {}&quot;</span>, __given_id);
                 }
             },
-            _phantom: PhantomData,
-        }
-    }
-
-    <span class="kw">pub fn </span>runtime_context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; RuntimeContext&lt;<span class="lifetime">&#39;a</span>&gt; {
-        RuntimeContext {
             _phantom: PhantomData,
         }
     }
