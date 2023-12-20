@@ -10,7 +10,7 @@ classDef otherClass fill:#fdc,stroke:#000,text-align:left,white-space:pre
 linkStyle default stroke:#aaa
 1v1[\"(1v1) <code>source_stream(input_stream)</code>"/]:::pullClass
 3v1[\"<div style=text-align:center>(3v1)</div> <code>map({<br>    use crate::__staged::*;<br>    |_| 1<br>})</code>"/]:::pullClass
-5v1[\"<div style=text-align:center>(5v1)</div> <code>fold(<br>    {<br>        use crate::__staged::*;<br>        || 0<br>    },<br>    {<br>        use crate::__staged::*;<br>        |a, b| *a += b<br>    },<br>)</code>"/]:::pullClass
+5v1[\"<div style=text-align:center>(5v1)</div> <code>fold::&lt;<br>    'tick,<br>&gt;(<br>    {<br>        use crate::__staged::*;<br>        || 0<br>    },<br>    {<br>        use crate::__staged::*;<br>        |a, b| *a += b<br>    },<br>)</code>"/]:::pullClass
 6v3["(6v3) <code>handoff</code>"]:::otherClass
 7v1[/"<div style=text-align:center>(7v1)</div> <code>for_each({<br>    use crate::__staged::*;<br>    let output = output;<br>    |v| {<br>        output.send(v).unwrap();<br>    }<br>})</code>"\]:::pushClass
 1v1-->3v1

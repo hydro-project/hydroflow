@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
+use std::ops::Deref;
 
 use hydroflow_lang::graph::{
     eliminate_extra_unions_tees, partition_graph, propegate_flow_props, FlatGraphBuilder,
@@ -10,7 +11,7 @@ use quote::quote;
 use stageleft::{Quoted, QuotedContext};
 use syn::parse_quote;
 
-use crate::node::{HfDeploy, HfNodeBuilder};
+use crate::node::{HfClusterBuilder, HfDeploy, HfNode, HfNodeBuilder};
 use crate::{HfBuilt, RuntimeContext};
 
 pub type Builders = RefCell<Option<BTreeMap<usize, FlatGraphBuilder>>>;
@@ -19,6 +20,8 @@ pub struct HfBuilder<'a, D: HfDeploy<'a> + ?Sized> {
     pub(crate) next_id: RefCell<usize>,
     pub(crate) builders: Builders,
     nodes: RefCell<Vec<D::Node>>,
+    clusters: RefCell<Vec<D::Cluster>>,
+    pub meta: RefCell<Option<D::Meta>>,
     next_node_id: RefCell<usize>,
     _phantom: PhantomData<&'a mut &'a ()>,
 }
@@ -36,6 +39,8 @@ impl<'a, D: HfDeploy<'a>> HfBuilder<'a, D> {
             next_id: RefCell::new(0),
             builders: RefCell::new(Some(Default::default())),
             nodes: RefCell::new(Vec::new()),
+            clusters: RefCell::new(Vec::new()),
+            meta: RefCell::new(Default::default()),
             next_node_id: RefCell::new(0),
             _phantom: PhantomData,
         }
@@ -45,7 +50,7 @@ impl<'a, D: HfDeploy<'a>> HfBuilder<'a, D> {
         (&self.next_id, &self.builders)
     }
 
-    pub fn node(&'a self, builder: &mut impl HfNodeBuilder<'a, D>) -> D::Node {
+    pub fn node(&'a self, builder: &impl HfNodeBuilder<'a, D>) -> D::Node {
         let mut next_node_id = self.next_node_id.borrow_mut();
         let id = *next_node_id;
         *next_node_id += 1;
@@ -55,7 +60,52 @@ impl<'a, D: HfDeploy<'a>> HfBuilder<'a, D> {
         node
     }
 
+    pub fn cluster(&'a self, builder: &impl HfClusterBuilder<'a, D>) -> D::Cluster {
+        let mut next_node_id = self.next_node_id.borrow_mut();
+        let id = *next_node_id;
+        *next_node_id += 1;
+
+        let cluster = builder.build(id, self);
+        self.clusters.borrow_mut().push(cluster.clone());
+        cluster
+    }
+
+    pub fn runtime_context(&self) -> RuntimeContext<'a> {
+        RuntimeContext {
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<'a, D: HfDeploy<'a, RuntimeID = ()>> HfBuilder<'a, D> {
+    pub fn wire(&self) {
+        let meta_borrow = self.meta.borrow();
+        let meta = meta_borrow.deref();
+        self.nodes
+            .borrow_mut()
+            .iter_mut()
+            .for_each(|n| n.build(meta));
+        self.clusters
+            .borrow_mut()
+            .iter_mut()
+            .for_each(|n| n.build(meta));
+    }
+}
+
+impl<'a, D: HfDeploy<'a, RuntimeID = usize>> HfBuilder<'a, D> {
     pub fn build(&self, id: impl Quoted<'a, usize>) -> HfBuilt<'a> {
+        let meta_borrow = self.meta.borrow();
+        let meta = meta_borrow.deref();
+        self.nodes
+            .borrow_mut()
+            .iter_mut()
+            .for_each(|n| n.build(meta));
+        self.clusters
+            .borrow_mut()
+            .iter_mut()
+            .for_each(|n| n.build(meta));
+        drop(meta_borrow);
+
         let builders = self.builders.borrow_mut().take().unwrap();
 
         let mut conditioned_tokens = None;
@@ -110,12 +160,6 @@ impl<'a, D: HfDeploy<'a>> HfBuilder<'a, D> {
                     panic!("Invalid node id: {}", __given_id);
                 }
             },
-            _phantom: PhantomData,
-        }
-    }
-
-    pub fn runtime_context(&self) -> RuntimeContext<'a> {
-        RuntimeContext {
             _phantom: PhantomData,
         }
     }

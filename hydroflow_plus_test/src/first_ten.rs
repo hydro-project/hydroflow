@@ -21,7 +21,7 @@ pub fn first_ten_runtime<'a>(
 
 pub fn first_ten_distributed<'a, D: HfNetworkedDeploy<'a>>(
     graph: &'a HfBuilder<'a, D>,
-    node_builder: &mut impl HfNodeBuilder<'a, D>,
+    node_builder: &impl HfNodeBuilder<'a, D>,
 ) -> D::Node {
     let node = graph.node(node_builder);
     let second_node = graph.node(node_builder);
@@ -35,15 +35,15 @@ pub fn first_ten_distributed<'a, D: HfNetworkedDeploy<'a>>(
 }
 
 use hydroflow::util::cli::HydroCLI;
-use hydroflow_plus_cli_integration::{CLIRuntime, CLIRuntimeNodeBuilder};
+use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn first_ten_distributed_runtime<'a>(
     graph: &'a HfBuilder<'a, CLIRuntime>,
-    cli: RuntimeData<&'a HydroCLI>,
+    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
     node_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = first_ten_distributed(graph, &mut CLIRuntimeNodeBuilder::new(cli));
+    let _ = first_ten_distributed(graph, &cli);
     graph.build(node_id)
 }
 
@@ -53,7 +53,7 @@ mod tests {
     use std::time::Duration;
 
     use hydro_cli::core::Deployment;
-    use hydroflow_plus_cli_integration::CLIDeployNodeBuilder;
+    use hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, DeployCrateWrapper};
 
     #[tokio::test]
     async fn first_ten_distributed() {
@@ -63,7 +63,7 @@ mod tests {
         let builder = hydroflow_plus::HfBuilder::new();
         let second_node = super::first_ten_distributed(
             &builder,
-            &mut CLIDeployNodeBuilder::new(|id| {
+            &CLIDeployNodeBuilder::new(|id| {
                 deployment.HydroflowCrate(
                     ".",
                     localhost.clone(),
@@ -77,6 +77,7 @@ mod tests {
                 )
             }),
         );
+        builder.wire();
 
         deployment.deploy().await.unwrap();
 
