@@ -10,7 +10,7 @@ use dyn_clone::DynClone;
 use hydroflow_cli_integration::ServerPort;
 use tokio::sync::RwLock;
 
-use super::HydroflowCrate;
+use super::HydroflowCrateService;
 use crate::{ClientStrategy, Host, HostStrategyGetter, LaunchedHost, ServerStrategy};
 
 pub trait HydroflowSource: Send + Sync {
@@ -214,7 +214,7 @@ impl HydroflowSink for DemuxSink {
 
 #[derive(Clone)]
 pub struct HydroflowPortConfig {
-    pub service: Weak<RwLock<HydroflowCrate>>,
+    pub service: Weak<RwLock<HydroflowCrateService>>,
     pub service_host: Arc<RwLock<dyn Host>>,
     pub service_server_defns: Arc<RwLock<HashMap<String, ServerPort>>>,
     pub port: String,

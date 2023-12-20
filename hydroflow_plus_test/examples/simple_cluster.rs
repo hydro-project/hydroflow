@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::sync::Arc;
 
 use hydro_deploy::gcp::GCPNetwork;
-use hydro_deploy::{Deployment, Host};
+use hydro_deploy::{Deployment, Host, HydroflowCrate};
 use hydroflow_plus_cli_integration::{CLIDeployClusterBuilder, CLIDeployNodeBuilder};
 use tokio::sync::RwLock;
 
@@ -14,7 +14,7 @@ async fn main() {
     let deployment = RefCell::new(Deployment::new());
     let host_arg = std::env::args().nth(1).unwrap_or_default();
 
-    let (create_host, profile): (HostCreator, Option<String>) = if host_arg == *"gcp" {
+    let (create_host, profile): (HostCreator, &'static str) = if host_arg == *"gcp" {
         let project = std::env::args().nth(2).unwrap();
         let network = Arc::new(RwLock::new(GCPNetwork::new(&project, None)));
 
@@ -29,13 +29,13 @@ async fn main() {
                     None,
                 )
             }),
-            None,
+            "release",
         )
     } else {
         let localhost = deployment.borrow_mut().Localhost();
         (
             Box::new(move |_| -> Arc<RwLock<dyn Host>> { localhost.clone() }),
-            Some("dev".to_string()),
+            "dev",
         )
     };
 
@@ -45,16 +45,11 @@ async fn main() {
         &CLIDeployNodeBuilder::new(|id| {
             let mut deployment = deployment.borrow_mut();
             let host = create_host(&mut deployment);
-            deployment.HydroflowCrate(
-                ".",
-                host.clone(),
-                Some("simple_cluster".into()),
-                None,
-                profile.clone(),
-                None,
-                Some(vec![id.to_string()]),
-                None,
-                vec![],
+            deployment.add_service(
+                HydroflowCrate::new(".", host)
+                    .bin("simple_cluster")
+                    .profile(profile)
+                    .args(vec![id.to_string()]),
             )
         }),
         &CLIDeployClusterBuilder::new(|id| {
@@ -62,16 +57,11 @@ async fn main() {
             (0..2)
                 .map(|_| {
                     let host = create_host(&mut deployment);
-                    deployment.HydroflowCrate(
-                        ".",
-                        host.clone(),
-                        Some("simple_cluster".into()),
-                        None,
-                        profile.clone(),
-                        None,
-                        Some(vec![id.to_string()]),
-                        None,
-                        vec![],
+                    deployment.add_service(
+                        HydroflowCrate::new(".", host)
+                            .bin("simple_cluster")
+                            .profile(profile)
+                            .args(vec![id.to_string()]),
                     )
                 })
                 .collect()

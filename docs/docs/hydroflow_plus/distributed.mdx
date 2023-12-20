@@ -81,7 +81,7 @@ async fn main() {
 Finally, we need to deploy our dataflow with the appropriate network topology. We achieve this by using [Hydro Deploy](../deploy/index.md). Hydroflow+ integrates with Hydro Deploy to automatically construct the topology based on the flow graph. We can create a new file `examples/first_ten_distributed.rs` with the following contents:
 
 ```rust
-use hydro_deploy::Deployment;
+use hydro_deploy::{Deployment, HydroflowCrate};
 use hydroflow_plus_cli_integration::CLIDeployNodeBuilder;
 
 #[tokio::main]
@@ -93,16 +93,11 @@ async fn main() {
     hydroflow_plus_test::first_ten::first_ten_distributed(
         &builder,
         &CLIDeployNodeBuilder::new(|id| {
-            deployment.HydroflowCrate(
-                ".",
-                localhost.clone(),
-                Some("first_ten_distributed".into()), // --bin
-                None,
-                Some("dev".into()), // --profile
-                None,
-                Some(vec![id.to_string()]), // command line arguments
-                None,
-                vec![],
+            deployment.add_service(
+                HydroflowCrate::new(".", localhost.clone())
+                    .bin("first_ten_distributed")
+                    .profile("dev")
+                    .args(vec![id.to_string()]),
             )
         }),
     );
