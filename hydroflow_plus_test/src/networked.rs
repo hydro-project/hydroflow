@@ -43,7 +43,7 @@ pub fn networked_basic_runtime<'a>(
 mod tests {
     use std::time::Duration;
 
-    use hydro_deploy::Deployment;
+    use hydro_deploy::{Deployment, HydroflowCrate};
     use hydroflow::futures::SinkExt;
     use hydroflow::util::cli::ConnectedSink;
     use hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, DeployCrateWrapper};
@@ -57,16 +57,11 @@ mod tests {
         let (source_zero_port, _, node_one) = super::networked_basic(
             &builder,
             &CLIDeployNodeBuilder::new(|id| {
-                deployment.HydroflowCrate(
-                    ".",
-                    localhost.clone(),
-                    Some("networked_basic".into()),
-                    None,
-                    Some("dev".into()),
-                    None,
-                    Some(vec![id.to_string()]),
-                    None,
-                    vec![],
+                deployment.add_service(
+                    HydroflowCrate::new(".", localhost.clone())
+                        .bin("networked_basic")
+                        .profile("dev")
+                        .args(vec![id.to_string()]),
                 )
             }),
         );
