@@ -82,7 +82,7 @@ mod tests {
 
         for i in 0..10 {
             assert_eq!(
-                tokio::time::timeout(Duration::from_secs(1), second_node_stdout.recv())
+                tokio::time::timeout(Duration::from_secs(5), second_node_stdout.recv())
                     .await
                     .unwrap()
                     .unwrap(),

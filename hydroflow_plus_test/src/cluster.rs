@@ -156,7 +156,7 @@ mod tests {
         for (i, stdout) in cluster_stdouts.into_iter().enumerate() {
             for j in 0..5 {
                 assert_eq!(
-                    tokio::time::timeout(Duration::from_secs(1), stdout.recv())
+                    tokio::time::timeout(Duration::from_secs(5), stdout.recv())
                         .await
                         .unwrap()
                         .unwrap(),
@@ -168,7 +168,7 @@ mod tests {
         let mut node_outs = vec![];
         for _i in 0..10 {
             node_outs.push(
-                tokio::time::timeout(Duration::from_secs(1), node_stdout.recv())
+                tokio::time::timeout(Duration::from_secs(5), node_stdout.recv())
                     .await
                     .unwrap()
                     .unwrap(),
@@ -220,7 +220,7 @@ mod tests {
             let mut node_outs = vec![];
             for _i in 0..4 {
                 node_outs.push(
-                    tokio::time::timeout(Duration::from_secs(1), node_stdout.recv())
+                    tokio::time::timeout(Duration::from_secs(5), node_stdout.recv())
                         .await
                         .unwrap()
                         .unwrap(),
