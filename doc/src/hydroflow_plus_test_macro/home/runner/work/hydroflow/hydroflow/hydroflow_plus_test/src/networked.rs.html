@@ -139,7 +139,7 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>std::time::Duration;
 
-    <span class="kw">use </span>hydro_cli::core::Deployment;
+    <span class="kw">use </span>hydro_deploy::Deployment;
     <span class="kw">use </span>hydroflow::futures::SinkExt;
     <span class="kw">use </span>hydroflow::util::cli::ConnectedSink;
     <span class="kw">use </span>hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, DeployCrateWrapper};
@@ -182,7 +182,7 @@
         conn_to_zero.send(<span class="string">&quot;hello world!&quot;</span>.into()).<span class="kw">await</span>.unwrap();
 
         <span class="macro">assert_eq!</span>(
-            tokio::time::timeout(Duration::from_secs(<span class="number">1</span>), node_one_stdout.recv())
+            tokio::time::timeout(Duration::from_secs(<span class="number">30</span>), node_one_stdout.recv())
                 .<span class="kw">await
                 </span>.unwrap()
                 .unwrap(),

@@ -150,7 +150,7 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>std::time::Duration;
 
-    <span class="kw">use </span>hydro_cli::core::Deployment;
+    <span class="kw">use </span>hydro_deploy::Deployment;
     <span class="kw">use </span>hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, DeployCrateWrapper};
 
     <span class="attr">#[tokio::test]
@@ -185,7 +185,7 @@
 
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">10 </span>{
             <span class="macro">assert_eq!</span>(
-                tokio::time::timeout(Duration::from_secs(<span class="number">1</span>), second_node_stdout.recv())
+                tokio::time::timeout(Duration::from_secs(<span class="number">30</span>), second_node_stdout.recv())
                     .<span class="kw">await
                     </span>.unwrap()
                     .unwrap(),

@@ -364,7 +364,7 @@
     <span class="kw">use </span>std::cell::RefCell;
     <span class="kw">use </span>std::time::Duration;
 
-    <span class="kw">use </span>hydro_cli::core::Deployment;
+    <span class="kw">use </span>hydro_deploy::Deployment;
     <span class="kw">use </span>hydroflow::lattices::cc_traits::Iter;
     <span class="kw">use </span>hydroflow_plus_cli_integration::{
         CLIDeployClusterBuilder, CLIDeployNodeBuilder, DeployCrateWrapper,
@@ -424,7 +424,7 @@
         <span class="kw">for </span>(i, stdout) <span class="kw">in </span>cluster_stdouts.into_iter().enumerate() {
             <span class="kw">for </span>j <span class="kw">in </span><span class="number">0</span>..<span class="number">5 </span>{
                 <span class="macro">assert_eq!</span>(
-                    tokio::time::timeout(Duration::from_secs(<span class="number">1</span>), stdout.recv())
+                    tokio::time::timeout(Duration::from_secs(<span class="number">30</span>), stdout.recv())
                         .<span class="kw">await
                         </span>.unwrap()
                         .unwrap(),
@@ -436,7 +436,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>node_outs = <span class="macro">vec!</span>[];
         <span class="kw">for </span>_i <span class="kw">in </span><span class="number">0</span>..<span class="number">10 </span>{
             node_outs.push(
-                tokio::time::timeout(Duration::from_secs(<span class="number">1</span>), node_stdout.recv())
+                tokio::time::timeout(Duration::from_secs(<span class="number">30</span>), node_stdout.recv())
                     .<span class="kw">await
                     </span>.unwrap()
                     .unwrap(),
@@ -493,7 +493,7 @@
             <span class="kw">let </span><span class="kw-2">mut </span>node_outs = <span class="macro">vec!</span>[];
             <span class="kw">for </span>_i <span class="kw">in </span><span class="number">0</span>..<span class="number">4 </span>{
                 node_outs.push(
-                    tokio::time::timeout(Duration::from_secs(<span class="number">1</span>), node_stdout.recv())
+                    tokio::time::timeout(Duration::from_secs(<span class="number">30</span>), node_stdout.recv())
                         .<span class="kw">await
                         </span>.unwrap()
                         .unwrap(),
