@@ -17,8 +17,8 @@ use tokio::sync::RwLock;
 
 use super::localhost::create_broadcast;
 use super::progress::ProgressTracker;
+use super::util::async_retry;
 use super::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
-use crate::core::util::async_retry;
 
 struct LaunchedSSHBinary {
     _resource_result: Arc<ResourceResult>,

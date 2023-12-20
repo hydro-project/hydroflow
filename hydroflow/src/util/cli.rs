@@ -43,8 +43,6 @@ impl<T> HydroCLI<T> {
     }
 }
 
-type InitConfig = (HashMap<String, ServerBindConfig>, Option<String>);
-
 pub async fn init<T: DeserializeOwned>() -> HydroCLI<T> {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
