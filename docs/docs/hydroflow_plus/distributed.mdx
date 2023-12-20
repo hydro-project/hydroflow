@@ -81,7 +81,7 @@ async fn main() {
 Finally, we need to deploy our dataflow with the appropriate network topology. We achieve this by using [Hydro Deploy](../deploy/index.md). Hydroflow+ integrates with Hydro Deploy to automatically construct the topology based on the flow graph. We can create a new file `examples/first_ten_distributed.rs` with the following contents:
 
 ```rust
-use hydro_cli::core::Deployment;
+use hydro_deploy::Deployment;
 use hydroflow_plus_cli_integration::CLIDeployNodeBuilder;
 
 #[tokio::main]
