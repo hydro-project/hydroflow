@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use hydro_cli::core::gcp::GCPNetwork;
-use hydro_cli::core::{Deployment, Host};
+use hydro_deploy::gcp::GCPNetwork;
+use hydro_deploy::{Deployment, Host};
 use hydroflow_plus_cli_integration::CLIDeployNodeBuilder;
 use tokio::sync::RwLock;
 
