@@ -210,7 +210,7 @@ jobs:
 
       - name: Build CLI
         run: |
-          cd hydro_cli
+          cd hydro_deploy/hydro_cli
           python -m venv .venv
           source .venv/bin/activate
           pip install maturin
@@ -219,7 +219,7 @@ jobs:
       - name: Run Python tests
         run: |
           ulimit -c unlimited
-          cd hydro_cli
+          cd hydro_deploy/hydro_cli
           source .venv/bin/activate
           cd python_tests
           pip install -r requirements.txt
