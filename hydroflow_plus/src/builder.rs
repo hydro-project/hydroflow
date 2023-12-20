@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 
 use hydroflow_lang::graph::{
-    eliminate_extra_unions_tees, partition_graph, propegate_flow_props, FlatGraphBuilder,
+    eliminate_extra_unions_tees, partition_graph, propagate_flow_props, FlatGraphBuilder,
 };
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
@@ -126,9 +126,9 @@ impl<'a, D: HfDeploy<'a, RuntimeID = usize>> HfBuilder<'a, D> {
             };
 
             let mut diagnostics = Vec::new();
-            // Propgeate flow properties throughout the graph.
+            // Propagate flow properties throughout the graph.
             // TODO(mingwei): Should this be done at a flat graph stage instead?
-            let _ = propegate_flow_props::propegate_flow_props(
+            let _ = propagate_flow_props::propagate_flow_props(
                 &mut partitioned_graph,
                 &mut diagnostics,
             );
