@@ -56,6 +56,7 @@ pub fn map_reduce<'a, D: HfNetworkedDeploy<'a>>(
 
     words_partitioned
         .demux_bincode(&cluster)
+        .batched()
         .fold(q!(|| 0), q!(|count, string: String| *count += string.len()))
         .inspect(q!(|count| println!("partition count: {}", count)))
         .send_bincode_tagged(&node)

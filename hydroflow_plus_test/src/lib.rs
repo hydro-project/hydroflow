@@ -58,10 +58,12 @@ pub fn chat_app<'a>(
     let node = graph.node(&());
 
     let users = node.source_stream(users_stream).persist();
-    let mut messages = node.source_stream(messages);
-    if replay_messages {
-        messages = messages.persist();
-    }
+    let messages = node.source_stream(messages);
+    let messages = if replay_messages {
+        messages.persist()
+    } else {
+        messages.batched()
+    };
 
     let mut joined = users.cross_product(&messages);
     if replay_messages {
@@ -96,7 +98,7 @@ pub fn graph_reachability<'a>(
         .map(q!(|(_from, (_, to))| to));
     set_reached_cycle.complete(&reachable);
 
-    reached.unique().for_each(q!(|v| {
+    reached.batched().unique().for_each(q!(|v| {
         reached_out.send(v).unwrap();
     }));
 
@@ -112,7 +114,10 @@ pub fn count_elems<'a, T: 'a>(
     let node = graph.node(&());
 
     let source = node.source_stream(input_stream);
-    let count = source.map(q!(|_| 1)).fold(q!(|| 0), q!(|a, b| *a += b));
+    let count = source
+        .map(q!(|_| 1))
+        .batched()
+        .fold(q!(|| 0), q!(|a, b| *a += b));
 
     count.for_each(q!(|v| {
         output.send(v).unwrap();
