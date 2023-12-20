@@ -106,7 +106,7 @@ mod tests {
     use std::cell::RefCell;
     use std::time::Duration;
 
-    use hydro_cli::core::Deployment;
+    use hydro_deploy::Deployment;
     use hydroflow::lattices::cc_traits::Iter;
     use hydroflow_plus_cli_integration::{
         CLIDeployClusterBuilder, CLIDeployNodeBuilder, DeployCrateWrapper,

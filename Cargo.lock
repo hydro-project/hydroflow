@@ -809,16 +809,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ctrlc"
-version = "3.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbcf33c2a618cbe41ee43ae6e9f2e48368cd9f9db2896f10167d8d762679f639"
-dependencies = [
- "nix",
- "windows-sys 0.45.0",
-]
-
-[[package]]
 name = "cxx"
 version = "1.0.94"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1307,32 +1297,16 @@ version = "0.5.0"
 dependencies = [
  "anyhow",
  "async-channel",
- "async-once-cell",
- "async-process",
- "async-recursion",
- "async-ssh2-lite",
- "async-trait",
  "bytes",
- "cargo_metadata",
  "clap 4.2.1",
- "ctrlc",
- "dyn-clone",
  "futures",
- "futures-core",
+ "hydro_deploy",
  "hydroflow_cli_integration",
- "indicatif",
- "nanoid",
- "nix",
  "once_cell",
  "pyo3",
  "pyo3-asyncio",
  "pythonize",
- "serde",
- "serde_json",
- "shell-escape",
- "tempfile",
  "tokio",
- "tokio-util",
 ]
 
 [[package]]
@@ -1349,6 +1323,35 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-tungstenite",
+]
+
+[[package]]
+name = "hydro_deploy"
+version = "0.5.0"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "async-once-cell",
+ "async-process",
+ "async-recursion",
+ "async-ssh2-lite",
+ "async-trait",
+ "bytes",
+ "cargo_metadata",
+ "dyn-clone",
+ "futures",
+ "futures-core",
+ "hydroflow_cli_integration",
+ "indicatif",
+ "nanoid",
+ "nix",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "shell-escape",
+ "tempfile",
+ "tokio",
+ "tokio-util",
 ]
 
 [[package]]
@@ -1497,7 +1500,7 @@ name = "hydroflow_plus_cli_integration"
 version = "0.5.0"
 dependencies = [
  "async-channel",
- "hydro_cli",
+ "hydro_deploy",
  "hydroflow_plus",
  "serde",
  "serde_json",
@@ -1512,7 +1515,7 @@ name = "hydroflow_plus_test"
 version = "0.0.0"
 dependencies = [
  "futures",
- "hydro_cli",
+ "hydro_deploy",
  "hydroflow",
  "hydroflow_plus",
  "hydroflow_plus_cli_integration",
