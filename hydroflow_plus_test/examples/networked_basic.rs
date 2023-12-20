@@ -1,4 +1,4 @@
-use hydro_cli::core::Deployment;
+use hydro_deploy::Deployment;
 use hydroflow::futures::SinkExt;
 use hydroflow::util::cli::ConnectedSink;
 use hydroflow_plus_cli_integration::CLIDeployNodeBuilder;
