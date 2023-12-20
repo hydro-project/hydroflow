@@ -42,7 +42,7 @@ impl Deployment {
         user: Option<String>,
     ) -> Arc<RwLock<GCPComputeEngineHost>> {
         self.add_host(|id| {
-            crate::core::GCPComputeEngineHost::new(
+            super::GCPComputeEngineHost::new(
                 id,
                 project,
                 machine_type,
@@ -77,7 +77,7 @@ impl Deployment {
         external_ports: Vec<u16>,
     ) -> Arc<RwLock<HydroflowCrate>> {
         self.add_service(|id| {
-            crate::core::HydroflowCrate::new(
+            super::HydroflowCrate::new(
                 id,
                 src.into(),
                 on,

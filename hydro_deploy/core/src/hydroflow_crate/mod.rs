@@ -7,7 +7,7 @@ use anyhow::{anyhow, bail, Result};
 use async_channel::Receiver;
 use async_trait::async_trait;
 use futures_core::Future;
-use hydroflow_cli_integration::{ServerBindConfig, ServerPort};
+use hydroflow_cli_integration::{InitConfig, ServerPort};
 use tokio::sync::RwLock;
 
 use self::ports::{HydroflowPortConfig, HydroflowSink, SourcePath};
@@ -204,8 +204,6 @@ impl HydroflowCrate {
         }
     }
 }
-
-type InitConfig = (HashMap<String, ServerBindConfig>, Option<String>);
 
 #[async_trait]
 impl Service for HydroflowCrate {
