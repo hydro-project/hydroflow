@@ -8,8 +8,8 @@ use nanoid::nanoid;
 use once_cell::sync::Lazy;
 use tokio::sync::OnceCell;
 
-use crate::core::progress::ProgressTracker;
-use crate::core::HostTargetType;
+use crate::progress::ProgressTracker;
+use crate::HostTargetType;
 
 #[derive(PartialEq, Eq, Hash)]
 struct CacheKey {
