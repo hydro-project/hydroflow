@@ -11,7 +11,7 @@ use hydroflow_cli_integration::ServerPort;
 use tokio::sync::RwLock;
 
 use super::HydroflowCrate;
-use crate::core::{ClientStrategy, Host, HostStrategyGetter, LaunchedHost, ServerStrategy};
+use crate::{ClientStrategy, Host, HostStrategyGetter, LaunchedHost, ServerStrategy};
 
 pub trait HydroflowSource: Send + Sync {
     fn source_path(&self) -> SourcePath;

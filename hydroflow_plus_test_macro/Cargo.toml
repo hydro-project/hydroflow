@@ -17,7 +17,7 @@ hydroflow = { path = "../hydroflow", version = "^0.5.0", features = [ "cli_integ
 hydroflow_plus = { path = "../hydroflow_plus", version = "^0.5.0" }
 tokio = { version = "1.16", features = [ "full" ] }
 stageleft = { path = "../stageleft", version = "^0.1.0" }
-hydroflow_plus_cli_integration = { path = "../hydroflow_plus_cli_integration", version = "^0.5.0" }
+hydroflow_plus_cli_integration = { path = "../hydro_deploy/hydroflow_plus_cli_integration", version = "^0.5.0" }
 
 [build-dependencies]
 stageleft_tool = { path = "../stageleft_tool", version = "^0.1.0" }
