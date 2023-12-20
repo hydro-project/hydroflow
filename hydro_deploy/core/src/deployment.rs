@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use std::sync::{Arc, Weak};
 
 use anyhow::Result;
@@ -7,9 +6,10 @@ use tokio::sync::RwLock;
 
 use super::gcp::GCPNetwork;
 use super::{
-    progress, CustomService, GCPComputeEngineHost, Host, HydroflowCrate, LocalhostHost,
-    ResourcePool, ResourceResult, Service,
+    progress, CustomService, GCPComputeEngineHost, Host, LocalhostHost, ResourcePool,
+    ResourceResult, Service,
 };
+use crate::ServiceBuilder;
 
 #[derive(Default)]
 pub struct Deployment {
@@ -61,35 +61,6 @@ impl Deployment {
         external_ports: Vec<u16>,
     ) -> Arc<RwLock<CustomService>> {
         self.add_service(|id| CustomService::new(id, on, external_ports))
-    }
-
-    #[allow(non_snake_case, clippy::too_many_arguments)]
-    pub fn HydroflowCrate(
-        &mut self,
-        src: impl Into<PathBuf>,
-        on: Arc<RwLock<dyn Host>>,
-        bin: Option<String>,
-        example: Option<String>,
-        profile: Option<String>,
-        features: Option<Vec<String>>,
-        args: Option<Vec<String>>,
-        display_id: Option<String>,
-        external_ports: Vec<u16>,
-    ) -> Arc<RwLock<HydroflowCrate>> {
-        self.add_service(|id| {
-            super::HydroflowCrate::new(
-                id,
-                src.into(),
-                on,
-                bin,
-                example,
-                profile,
-                features,
-                args,
-                display_id,
-                external_ports,
-            )
-        })
     }
 
     pub async fn deploy(&mut self) -> Result<()> {
@@ -211,11 +182,11 @@ impl Deployment {
         arc
     }
 
-    fn add_service<T: Service + 'static>(
+    pub fn add_service<T: Service + 'static>(
         &mut self,
-        service: impl FnOnce(usize) -> T,
+        service: impl ServiceBuilder<Service = T>,
     ) -> Arc<RwLock<T>> {
-        let arc = Arc::new(RwLock::new(service(self.next_service_id)));
+        let arc = Arc::new(RwLock::new(service.build(self.next_service_id)));
         self.next_service_id += 1;
 
         let dyn_arc: Arc<RwLock<dyn Service>> = arc.clone();
