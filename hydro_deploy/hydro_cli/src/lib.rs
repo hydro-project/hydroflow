@@ -242,17 +242,20 @@ impl Deployment {
         display_id: Option<String>,
         external_ports: Option<Vec<u16>>,
     ) -> PyResult<Py<PyAny>> {
-        let service = self.underlying.blocking_write().HydroflowCrate(
-            src,
-            on.underlying.clone(),
-            bin,
-            example,
-            profile,
-            features,
-            args,
-            display_id,
-            external_ports.unwrap_or_default(),
-        );
+        let service = self.underlying.blocking_write().add_service(|id| {
+            core::hydroflow_crate::HydroflowCrateService::new(
+                id,
+                src.into(),
+                on.underlying.clone(),
+                bin,
+                example,
+                profile,
+                features,
+                args,
+                display_id,
+                external_ports.unwrap_or_default(),
+            )
+        });
 
         Ok(Py::new(
             py,
@@ -486,7 +489,7 @@ impl CustomClientPort {
 
 #[pyclass(extends=Service, subclass)]
 struct HydroflowCrate {
-    underlying: Arc<RwLock<crate::core::HydroflowCrate>>,
+    underlying: Arc<RwLock<core::hydroflow_crate::HydroflowCrateService>>,
 }
 
 #[pymethods]
@@ -530,7 +533,7 @@ impl HydroflowCrate {
 #[pyclass]
 #[derive(Clone)]
 struct HydroflowCratePorts {
-    underlying: Arc<RwLock<crate::core::HydroflowCrate>>,
+    underlying: Arc<RwLock<core::hydroflow_crate::HydroflowCrateService>>,
 }
 
 #[pymethods]
