@@ -8,6 +8,7 @@ use async_channel::Receiver;
 use async_trait::async_trait;
 use futures_core::Future;
 use hydroflow_cli_integration::{InitConfig, ServerPort};
+use serde::Serialize;
 use tokio::sync::RwLock;
 
 use self::ports::{HydroflowPortConfig, HydroflowSink, SourcePath};
@@ -202,12 +203,12 @@ impl HydroflowCrateService {
         }
     }
 
-    pub fn update_meta(&mut self, meta: String) {
+    pub fn update_meta<T: Serialize>(&mut self, meta: T) {
         if self.launched_binary.is_some() {
             panic!("Cannot update meta after binary has been launched")
         }
 
-        self.meta = Some(meta);
+        self.meta = Some(serde_json::to_string(&meta).unwrap());
     }
 
     pub fn get_port(
