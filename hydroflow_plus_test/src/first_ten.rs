@@ -41,10 +41,9 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 pub fn first_ten_distributed_runtime<'a>(
     graph: &'a GraphBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-    subgraph_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = first_ten_distributed(graph, &cli);
-    graph.build(subgraph_id)
+    graph.build(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::runtime]
@@ -63,12 +62,11 @@ mod tests {
         let builder = hydroflow_plus::GraphBuilder::new();
         let second_node = super::first_ten_distributed(
             &builder,
-            &CLIDeployNodeBuilder::new(|id| {
+            &CLIDeployNodeBuilder::new(|| {
                 deployment.add_service(
                     HydroflowCrate::new(".", localhost.clone())
                         .bin("first_ten_distributed")
-                        .profile("dev")
-                        .args(vec![id.to_string()]),
+                        .profile("dev"),
                 )
             }),
         );

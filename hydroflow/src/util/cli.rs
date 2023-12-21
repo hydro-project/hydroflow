@@ -28,9 +28,9 @@ pub async fn launch_flow(mut flow: Hydroflow<'_>) {
     }
 }
 
-pub struct HydroCLI<T> {
+pub struct HydroCLI<T = ()> {
     ports: RefCell<HashMap<String, ServerOrBound>>,
-    pub meta: Option<T>,
+    pub meta: T,
 }
 
 impl<T> HydroCLI<T> {
@@ -86,6 +86,6 @@ pub async fn init<T: DeserializeOwned>() -> HydroCLI<T> {
 
     HydroCLI {
         ports: RefCell::new(all_connected),
-        meta: bind_config.1.map(|s| serde_json::from_str(&s).unwrap()),
+        meta: serde_json::from_str(&bind_config.1).unwrap(),
     }
 }

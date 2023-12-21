@@ -42,18 +42,17 @@ async fn main() {
     let builder = hydroflow_plus::GraphBuilder::new();
     hydroflow_plus_test::cluster::map_reduce(
         &builder,
-        &CLIDeployNodeBuilder::new(|id| {
+        &CLIDeployNodeBuilder::new(|| {
             let mut deployment = deployment.borrow_mut();
             let host = create_host(&mut deployment);
             deployment.add_service(
                 HydroflowCrate::new(".", host.clone())
                     .bin("map_reduce")
                     .profile(profile)
-                    .args(vec![id.to_string()])
                     .display_name("leader"),
             )
         }),
-        &CLIDeployClusterBuilder::new(|id| {
+        &CLIDeployClusterBuilder::new(|| {
             let mut deployment = deployment.borrow_mut();
             (0..2)
                 .map(|idx| {
@@ -62,7 +61,6 @@ async fn main() {
                         HydroflowCrate::new(".", host.clone())
                             .bin("map_reduce")
                             .profile(profile)
-                            .args(vec![id.to_string()])
                             .display_name(format!("cluster/{}", idx)),
                     )
                 })

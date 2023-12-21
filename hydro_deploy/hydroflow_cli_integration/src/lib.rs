@@ -21,7 +21,7 @@ use tokio::sync::mpsc::UnboundedReceiver;
 use tokio::task::JoinHandle;
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
 
-pub type InitConfig = (HashMap<String, ServerBindConfig>, Option<String>);
+pub type InitConfig = (HashMap<String, ServerBindConfig>, String);
 
 #[cfg(not(unix))]
 #[allow(dead_code)]
