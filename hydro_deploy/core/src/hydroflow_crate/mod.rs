@@ -141,7 +141,7 @@ pub struct HydroflowCrateService {
     display_id: Option<String>,
     external_ports: Vec<u16>,
 
-    meta: Option<String>,
+    meta: String,
 
     target_type: HostTargetType,
 
@@ -191,7 +191,7 @@ impl HydroflowCrateService {
             display_id,
             target_type,
             external_ports,
-            meta: None,
+            meta: "{}".to_string(),
             port_to_server: HashMap::new(),
             port_to_bind: HashMap::new(),
             built_binary: Arc::new(async_once_cell::OnceCell::new()),
@@ -207,7 +207,7 @@ impl HydroflowCrateService {
             panic!("Cannot update meta after binary has been launched")
         }
 
-        self.meta = Some(meta);
+        self.meta = meta;
     }
 
     pub fn get_port(

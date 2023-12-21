@@ -32,10 +32,9 @@ pub fn networked_basic<'a, D: Deploy<'a>>(
 pub fn networked_basic_runtime<'a>(
     graph: &'a GraphBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-    subgraph_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = networked_basic(graph, &cli);
-    graph.build(subgraph_id)
+    graph.build(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::runtime]
@@ -56,12 +55,11 @@ mod tests {
         let builder = hydroflow_plus::GraphBuilder::new();
         let (source_zero_port, _, node_one) = super::networked_basic(
             &builder,
-            &CLIDeployNodeBuilder::new(|id| {
+            &CLIDeployNodeBuilder::new(|| {
                 deployment.add_service(
                     HydroflowCrate::new(".", localhost.clone())
                         .bin("networked_basic")
-                        .profile("dev")
-                        .args(vec![id.to_string()]),
+                        .profile("dev"),
                 )
             }),
         );
