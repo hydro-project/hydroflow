@@ -5,6 +5,7 @@ ARG TARGETOS TARGETARCH
 
 RUN apt-get update && apt-get install -y git
 RUN apt-get update && apt-get install -y pkg-config
+RUN apt-get update && apt-get install -y libssl-dev
 
 RUN /bin/bash -c "if [ "${TARGETARCH}" == "arm64" ]; then apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu ; else apt-get install -y gcc-x86-64-linux-gnu g++-x86-64-linux-gnu ; fi"
 
