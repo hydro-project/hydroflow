@@ -8,7 +8,7 @@ async fn main() {
     let mut deployment = Deployment::new();
     let localhost = deployment.Localhost();
 
-    let builder = hydroflow_plus::HfBuilder::new();
+    let builder = hydroflow_plus::GraphBuilder::new();
     let (source_zero_port, _, _) = hydroflow_plus_test::networked::networked_basic(
         &builder,
         &CLIDeployNodeBuilder::new(|id| {
@@ -20,7 +20,6 @@ async fn main() {
             )
         }),
     );
-    builder.wire();
 
     let port_to_zero = source_zero_port
         .create_sender(&mut deployment, &localhost)

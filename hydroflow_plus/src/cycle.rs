@@ -4,7 +4,7 @@ use syn::parse_quote;
 
 use crate::builder::Builders;
 use crate::node::HfNode;
-use crate::HfStream;
+use crate::Stream;
 
 pub struct HfCycle<'a, T, W, N: HfNode<'a>> {
     pub(crate) ident: syn::Ident,
@@ -14,7 +14,7 @@ pub struct HfCycle<'a, T, W, N: HfNode<'a>> {
 }
 
 impl<'a, T, W, N: HfNode<'a>> HfCycle<'a, T, W, N> {
-    pub fn complete(self, stream: &HfStream<'a, T, W, N>) {
+    pub fn complete(self, stream: &Stream<'a, T, W, N>) {
         let ident = self.ident;
         let stream_ident = stream.ident.clone();
 
