@@ -28,9 +28,9 @@ pub async fn launch_flow(mut flow: Hydroflow<'_>) {
     }
 }
 
-pub struct HydroCLI<T> {
+pub struct HydroCLI<T = Option<()>> {
     ports: RefCell<HashMap<String, ServerOrBound>>,
-    pub meta: Option<T>,
+    pub meta: T,
 }
 
 impl<T> HydroCLI<T> {
@@ -43,7 +43,7 @@ impl<T> HydroCLI<T> {
     }
 }
 
-pub async fn init<T: DeserializeOwned>() -> HydroCLI<T> {
+pub async fn init<T: DeserializeOwned + Default>() -> HydroCLI<T> {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
     let trimmed = input.trim();
@@ -86,6 +86,9 @@ pub async fn init<T: DeserializeOwned>() -> HydroCLI<T> {
 
     HydroCLI {
         ports: RefCell::new(all_connected),
-        meta: bind_config.1.map(|s| serde_json::from_str(&s).unwrap()),
+        meta: bind_config
+            .1
+            .map(|b| serde_json::from_str(&b).unwrap())
+            .unwrap_or_default(),
     }
 }

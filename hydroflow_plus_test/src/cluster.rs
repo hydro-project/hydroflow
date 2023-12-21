@@ -75,30 +75,27 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 pub fn simple_cluster_runtime<'a>(
     graph: &'a GraphBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-    subgraph_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = simple_cluster(graph, &cli, &cli);
-    graph.build(subgraph_id)
+    graph.build(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::entry]
 pub fn many_to_many_runtime<'a>(
     graph: &'a GraphBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-    subgraph_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = many_to_many(graph, &cli);
-    graph.build(subgraph_id)
+    graph.build(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::entry]
 pub fn map_reduce_runtime<'a>(
     graph: &'a GraphBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-    subgraph_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = map_reduce(graph, &cli, &cli);
-    graph.build(subgraph_id)
+    graph.build(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::runtime]
@@ -121,22 +118,20 @@ mod tests {
         let builder = hydroflow_plus::GraphBuilder::new();
         let (node, cluster) = super::simple_cluster(
             &builder,
-            &CLIDeployNodeBuilder::new(|id| {
+            &CLIDeployNodeBuilder::new(|| {
                 deployment.borrow_mut().add_service(
                     HydroflowCrate::new(".", localhost.clone())
                         .bin("simple_cluster")
-                        .profile("dev")
-                        .args(vec![id.to_string()]),
+                        .profile("dev"),
                 )
             }),
-            &CLIDeployClusterBuilder::new(|id| {
+            &CLIDeployClusterBuilder::new(|| {
                 (0..2)
                     .map(|_| {
                         deployment.borrow_mut().add_service(
                             HydroflowCrate::new(".", localhost.clone())
                                 .bin("simple_cluster")
-                                .profile("dev")
-                                .args(vec![id.to_string()]),
+                                .profile("dev"),
                         )
                     })
                     .collect()
@@ -192,14 +187,13 @@ mod tests {
         let builder = hydroflow_plus::GraphBuilder::new();
         let cluster = super::many_to_many(
             &builder,
-            &CLIDeployClusterBuilder::new(|id| {
+            &CLIDeployClusterBuilder::new(|| {
                 (0..2)
                     .map(|_| {
                         deployment.borrow_mut().add_service(
                             HydroflowCrate::new(".", localhost.clone())
                                 .bin("many_to_many")
-                                .profile("dev")
-                                .args(vec![id.to_string()]),
+                                .profile("dev"),
                         )
                     })
                     .collect()

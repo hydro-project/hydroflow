@@ -11,12 +11,11 @@ async fn main() {
     let builder = hydroflow_plus::GraphBuilder::new();
     let (source_zero_port, _, _) = hydroflow_plus_test::networked::networked_basic(
         &builder,
-        &CLIDeployNodeBuilder::new(|id| {
+        &CLIDeployNodeBuilder::new(|| {
             deployment.add_service(
                 HydroflowCrate::new(".", localhost.clone())
                     .bin("networked_basic")
-                    .profile("dev")
-                    .args(vec![id.to_string()]),
+                    .profile("dev"),
             )
         }),
     );
