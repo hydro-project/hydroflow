@@ -50,12 +50,12 @@ Now that our graph spans multiple nodes, our runtime entrypoint will involve mul
 
 ```rust
 use hydroflow::util::cli::HydroCLI;
-use hydroflow_plus_cli_integration::CLIRuntime;
+use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn first_ten_distributed_runtime<'a>(
     graph: &'a HfBuilder<'a, CLIRuntime>,
-    cli: RuntimeData<&'a HydroCLI>,
+    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
     node_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = first_ten_distributed(graph, &cli);

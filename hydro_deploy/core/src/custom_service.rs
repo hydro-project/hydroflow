@@ -134,7 +134,6 @@ impl HydroflowSource for CustomClientPort {
     }
 }
 
-#[async_trait]
 impl HydroflowSink for CustomClientPort {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
