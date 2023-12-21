@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -12,10 +11,10 @@ use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{Deployment, Host};
 use hydroflow_plus::builder::Builders;
 use hydroflow_plus::node::{
-    HfCluster, HfClusterBuilder, HfDeploy, HfNode, HfNodeBuilder, HfSendManyToMany,
-    HfSendManyToOne, HfSendOneToMany, HfSendOneToOne,
+    ClusterBuilder, Deploy, HfCluster, HfNode, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany,
+    HfSendOneToOne, NodeBuilder,
 };
-use hydroflow_plus::HfBuilder;
+use hydroflow_plus::GraphBuilder;
 use stageleft::internal::syn::parse_quote;
 use stageleft::q;
 use tokio::sync::RwLock;
@@ -24,11 +23,13 @@ use super::HydroflowPlusMeta;
 
 pub struct CLIDeploy {}
 
-impl<'a> HfDeploy<'a> for CLIDeploy {
+impl<'a> Deploy<'a> for CLIDeploy {
     type Node = CLIDeployNode<'a>;
     type Cluster = CLIDeployCluster<'a>;
     type Meta = HydroflowPlusMeta;
     type RuntimeID = ();
+    type NodePort = CLIDeployPort<CLIDeployNode<'a>>;
+    type ClusterPort = CLIDeployPort<CLIDeployCluster<'a>>;
 }
 
 pub trait DeployCrateWrapper {
@@ -67,7 +68,7 @@ pub trait DeployCrateWrapper {
 #[derive(Clone)]
 pub struct CLIDeployNode<'a> {
     id: usize,
-    builder: &'a HfBuilder<'a, CLIDeploy>,
+    builder: &'a GraphBuilder<'a, CLIDeploy>,
     next_port: Rc<RefCell<usize>>,
     underlying: Arc<RwLock<HydroflowCrateService>>,
 }
@@ -115,11 +116,9 @@ impl<'a> HfNode<'a> for CLIDeployNode<'a> {
         }
     }
 
-    fn build(&mut self, meta: &Option<Self::Meta>) {
-        if let Some(meta) = meta {
-            let mut n = self.underlying.try_write().unwrap();
-            n.set_meta(serde_json::to_string(&meta).unwrap());
-        }
+    fn update_meta(&mut self, meta: &Self::Meta) {
+        let mut n = self.underlying.try_write().unwrap();
+        n.update_meta(serde_json::to_string(&meta).unwrap());
     }
 }
 
@@ -137,7 +136,7 @@ impl DeployCrateWrapper for DeployClusterNode {
 #[derive(Clone)]
 pub struct CLIDeployCluster<'a> {
     id: usize,
-    builder: &'a HfBuilder<'a, CLIDeploy>,
+    builder: &'a GraphBuilder<'a, CLIDeploy>,
     next_port: Rc<RefCell<usize>>,
     pub nodes: Vec<DeployClusterNode>,
 }
@@ -164,13 +163,12 @@ impl<'a> HfNode<'a> for CLIDeployCluster<'a> {
         }
     }
 
-    fn build(&mut self, meta: &Option<Self::Meta>) {
-        if let Some(meta) = meta {
-            self.nodes.iter().for_each(|n| {
-                let mut n = n.underlying.try_write().unwrap();
-                n.set_meta(serde_json::to_string(&meta).unwrap());
-            });
-        }
+    fn update_meta(&mut self, meta: &Self::Meta) {
+        let json_meta = serde_json::to_string(&meta).unwrap();
+        self.nodes.iter().for_each(|n| {
+            let mut n = n.underlying.try_write().unwrap();
+            n.update_meta(json_meta.clone());
+        });
     }
 }
 
@@ -363,8 +361,13 @@ impl<'a> CLIDeployNodeBuilder<'a> {
     }
 }
 
-impl<'a: 'b, 'b> HfNodeBuilder<'a, CLIDeploy> for CLIDeployNodeBuilder<'b> {
-    fn build(&self, id: usize, builder: &'a HfBuilder<'a, CLIDeploy>) -> CLIDeployNode<'a> {
+impl<'a: 'b, 'b> NodeBuilder<'a, CLIDeploy> for CLIDeployNodeBuilder<'b> {
+    fn build(
+        &self,
+        id: usize,
+        builder: &'a GraphBuilder<'a, CLIDeploy>,
+        _meta: &mut HydroflowPlusMeta,
+    ) -> CLIDeployNode<'a> {
         CLIDeployNode {
             id,
             builder,
@@ -374,9 +377,9 @@ impl<'a: 'b, 'b> HfNodeBuilder<'a, CLIDeploy> for CLIDeployNodeBuilder<'b> {
     }
 }
 
-type ClusterBuilder<'a> = dyn FnMut(usize) -> Vec<Arc<RwLock<HydroflowCrateService>>> + 'a;
+type ClusterBuilderFn<'a> = dyn FnMut(usize) -> Vec<Arc<RwLock<HydroflowCrateService>>> + 'a;
 
-pub struct CLIDeployClusterBuilder<'a>(RefCell<Box<ClusterBuilder<'a>>>);
+pub struct CLIDeployClusterBuilder<'a>(RefCell<Box<ClusterBuilderFn<'a>>>);
 
 impl<'a> CLIDeployClusterBuilder<'a> {
     pub fn new<F: FnMut(usize) -> Vec<Arc<RwLock<HydroflowCrateService>>> + 'a>(f: F) -> Self {
@@ -384,16 +387,15 @@ impl<'a> CLIDeployClusterBuilder<'a> {
     }
 }
 
-impl<'a: 'b, 'b> HfClusterBuilder<'a, CLIDeploy> for CLIDeployClusterBuilder<'b> {
-    fn build(&self, id: usize, builder: &'a HfBuilder<'a, CLIDeploy>) -> CLIDeployCluster<'a> {
+impl<'a: 'b, 'b> ClusterBuilder<'a, CLIDeploy> for CLIDeployClusterBuilder<'b> {
+    fn build(
+        &self,
+        id: usize,
+        builder: &'a GraphBuilder<'a, CLIDeploy>,
+        meta: &mut HydroflowPlusMeta,
+    ) -> CLIDeployCluster<'a> {
         let cluster_nodes = (self.0.borrow_mut())(id);
-        builder
-            .meta
-            .borrow_mut()
-            .get_or_insert(HydroflowPlusMeta {
-                clusters: HashMap::new(),
-            })
-            .clusters
+        meta.clusters
             .insert(id, (0..(cluster_nodes.len() as u32)).collect());
 
         CLIDeployCluster {

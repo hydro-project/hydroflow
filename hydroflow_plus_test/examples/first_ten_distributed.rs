@@ -38,7 +38,7 @@ async fn main() {
         )
     };
 
-    let builder = hydroflow_plus::HfBuilder::new();
+    let builder = hydroflow_plus::GraphBuilder::new();
     hydroflow_plus_test::first_ten::first_ten_distributed(
         &builder,
         &CLIDeployNodeBuilder::new(|id| {
@@ -51,7 +51,6 @@ async fn main() {
             )
         }),
     );
-    builder.wire();
 
     deployment.deploy().await.unwrap();
 

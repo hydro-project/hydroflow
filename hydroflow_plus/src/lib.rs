@@ -13,7 +13,7 @@ pub mod runtime_support {
 }
 
 mod stream;
-pub use stream::HfStream;
+pub use stream::Stream;
 
 pub mod node;
 
@@ -21,7 +21,7 @@ pub mod cycle;
 pub use cycle::HfCycle;
 
 pub mod builder;
-pub use builder::HfBuilder;
+pub use builder::GraphBuilder;
 
 #[derive(Clone)]
 pub struct RuntimeContext<'a> {

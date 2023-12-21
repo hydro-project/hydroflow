@@ -39,7 +39,7 @@ async fn main() {
         )
     };
 
-    let builder = hydroflow_plus::HfBuilder::new();
+    let builder = hydroflow_plus::GraphBuilder::new();
     hydroflow_plus_test::cluster::simple_cluster(
         &builder,
         &CLIDeployNodeBuilder::new(|id| {
@@ -67,7 +67,6 @@ async fn main() {
                 .collect()
         }),
     );
-    builder.wire();
 
     let mut deployment = deployment.into_inner();
 
