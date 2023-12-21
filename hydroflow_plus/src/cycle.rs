@@ -4,12 +4,12 @@ use syn::parse_quote;
 
 use crate::builder::Builders;
 use crate::node::HfNode;
-use crate::HfStream;
+use crate::Stream;
 
 /// Represents a fixpoint cycle in the graph that will be fulfilled
 /// by a stream that is not yet known.
 ///
-/// See [`HfStream`] for an explainer on the type parameters.
+/// See [`Stream`] for an explainer on the type parameters.
 pub struct HfCycle<'a, T, W, N: HfNode<'a>> {
     pub(crate) ident: syn::Ident,
     pub(crate) node: N,
@@ -18,7 +18,7 @@ pub struct HfCycle<'a, T, W, N: HfNode<'a>> {
 }
 
 impl<'a, T, W, N: HfNode<'a>> HfCycle<'a, T, W, N> {
-    pub fn complete(self, stream: &HfStream<'a, T, W, N>) {
+    pub fn complete(self, stream: &Stream<'a, T, W, N>) {
         let ident = self.ident;
         let stream_ident = stream.ident.clone();
 

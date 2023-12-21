@@ -10,9 +10,9 @@ use hydroflow_plus::*;
 use hydroflow_plus::node::*;
 use stageleft::*;
 
-pub fn first_ten<'a, D: HfDeploy<'a>>(
-    graph: &'a HfBuilder<'a, D>,
-    node_builder: &impl HfNodeBuilder<'a, D>
+pub fn first_ten<'a, D: LocalDeploy<'a>>(
+    graph: &'a GraphBuilder<'a, D>,
+    node_builder: &impl NodeBuilder<'a, D>
 ) {
     let node = graph.node(node_builder);
     let numbers = node.source_iter(q!(0..10));
@@ -21,15 +21,15 @@ pub fn first_ten<'a, D: HfDeploy<'a>>(
 ```
 
 ## The Flow Graph
-Let's extend this example to print the numbers on a separate node. First, we need to specify that our flow graph will involve the network. We do this by replacing the `HfDeploy<'a>` trait bound with `HfNetworkedDeploy<'a>`. Then, we can use the `node_builder` to create a second node:
+Let's extend this example to print the numbers on a separate node. First, we need to specify that our flow graph will involve the network. We do this by replacing the `LocalDeploy<'a>` trait bound with the general `Deploy<'a>`. Then, we can use the `node_builder` to create a second node:
 ```rust
 use hydroflow_plus::*;
 use hydroflow_plus::node::*;
 use stageleft::*;
 
-pub fn first_ten_distributed<'a, D: HfNetworkedDeploy<'a>>(
-    graph: &'a HfBuilder<'a, D>,
-    node_builder: &impl HfNodeBuilder<'a, D>
+pub fn first_ten_distributed<'a, D: Deploy<'a>>(
+    graph: &'a GraphBuilder<'a, D>,
+    node_builder: &impl NodeBuilder<'a, D>
 ) {
     let node = graph.node(node_builder);
     let second_node = graph.node(node_builder);
@@ -46,7 +46,7 @@ numbers
 ```
 
 ## The Runtime
-Now that our graph spans multiple nodes, our runtime entrypoint will involve multiple subgraphs. This means we can't get away with hardcoding node 0 as before. Instead, we must take the node ID as a runtime parameter (`node_id`) to select the appropriate graph. In addition, our dataflow involves the network, so we take a `HydroCLI` runtime parameter (`cli`) so that nodes can look up their network connections and instantiate the flow graph with access to it.
+Now that our graph spans multiple nodes, our runtime entrypoint will involve multiple subgraphs. This means we can't get away with `build_single`. Instead, we must take the subgraph ID as a runtime parameter (`subgraph_id`) to select the appropriate graph. In addition, our dataflow involves the network, so we take a `HydroCLI` runtime parameter (`cli`) so that nodes can look up their network connections and instantiate the flow graph with access to it.
 
 ```rust
 use hydroflow::util::cli::HydroCLI;
@@ -54,12 +54,12 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn first_ten_distributed_runtime<'a>(
-    graph: &'a HfBuilder<'a, CLIRuntime>,
+    graph: &'a GraphBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-    node_id: RuntimeData<usize>,
+    subgraph_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = first_ten_distributed(graph, &cli);
-    graph.build(node_id)
+    graph.build(subgraph_id)
 }
 ```
 
@@ -68,10 +68,10 @@ The corresponding binary in `src/bin/first_ten_distributed.rs` then instantiates
 ```rust
 #[tokio::main]
 async fn main() {
-    let node_id: usize = std::env::args().nth(1).unwrap().parse().unwrap();
+    let subgraph_id: usize = std::env::args().nth(1).unwrap().parse().unwrap();
     let ports = hydroflow::util::cli::init().await;
 
-    let joined = flow::first_ten_distributed_runtime!(&ports, node_id);
+    let joined = flow::first_ten_distributed_runtime!(&ports, subgraph_id);
 
     hydroflow::util::cli::launch_flow(joined).await;
 }
@@ -89,7 +89,7 @@ async fn main() {
     let mut deployment = Deployment::new();
     let localhost = deployment.Localhost();
 
-    let builder = hydroflow_plus::HfBuilder::new();
+    let builder = hydroflow_plus::GraphBuilder::new();
     hydroflow_plus_test::first_ten::first_ten_distributed(
         &builder,
         &CLIDeployNodeBuilder::new(|id| {
@@ -101,7 +101,6 @@ async fn main() {
             )
         }),
     );
-    builder.wire(); // sets up network connections
 
     deployment.deploy().await.unwrap();
 

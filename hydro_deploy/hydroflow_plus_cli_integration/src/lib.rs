@@ -12,7 +12,7 @@ mod deploy;
 pub use deploy::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct HydroflowPlusMeta {
     pub clusters: HashMap<usize, Vec<u32>>,
 }
