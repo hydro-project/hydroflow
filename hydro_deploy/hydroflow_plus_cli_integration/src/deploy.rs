@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -26,7 +27,7 @@ pub struct CLIDeploy {}
 impl<'a> Deploy<'a> for CLIDeploy {
     type Node = CLIDeployNode<'a>;
     type Cluster = CLIDeployCluster<'a>;
-    type Meta = HydroflowPlusMeta;
+    type Meta = HashMap<usize, Vec<u32>>;
     type RuntimeID = ();
     type NodePort = CLIDeployPort<CLIDeployNode<'a>>;
     type ClusterPort = CLIDeployPort<CLIDeployCluster<'a>>;
@@ -96,7 +97,7 @@ impl<'a> CLIDeployPort<CLIDeployNode<'a>> {
 
 impl<'a> HfNode<'a> for CLIDeployNode<'a> {
     type Port = CLIDeployPort<Self>;
-    type Meta = HydroflowPlusMeta;
+    type Meta = HashMap<usize, Vec<u32>>;
 
     fn id(&self) -> usize {
         self.id
@@ -118,7 +119,13 @@ impl<'a> HfNode<'a> for CLIDeployNode<'a> {
 
     fn update_meta(&mut self, meta: &Self::Meta) {
         let mut n = self.underlying.try_write().unwrap();
-        n.update_meta(serde_json::to_string(&meta).unwrap());
+        n.update_meta(
+            serde_json::to_string(&HydroflowPlusMeta {
+                clusters: meta.clone(),
+                subgraph_id: self.id,
+            })
+            .unwrap(),
+        );
     }
 }
 
@@ -143,7 +150,7 @@ pub struct CLIDeployCluster<'a> {
 
 impl<'a> HfNode<'a> for CLIDeployCluster<'a> {
     type Port = CLIDeployPort<Self>;
-    type Meta = HydroflowPlusMeta;
+    type Meta = HashMap<usize, Vec<u32>>;
 
     fn id(&self) -> usize {
         self.id
@@ -164,7 +171,12 @@ impl<'a> HfNode<'a> for CLIDeployCluster<'a> {
     }
 
     fn update_meta(&mut self, meta: &Self::Meta) {
-        let json_meta = serde_json::to_string(&meta).unwrap();
+        let json_meta = serde_json::to_string(&HydroflowPlusMeta {
+            clusters: meta.clone(),
+            subgraph_id: self.id,
+        })
+        .unwrap();
+
         self.nodes.iter().for_each(|n| {
             let mut n = n.underlying.try_write().unwrap();
             n.update_meta(json_meta.clone());
@@ -351,12 +363,12 @@ impl<'a> HfSendManyToMany<'a, CLIDeployCluster<'a>> for CLIDeployCluster<'a> {
     }
 }
 
-type CrateBuilder<'a> = dyn FnMut(usize) -> Arc<RwLock<HydroflowCrateService>> + 'a;
+type CrateBuilder<'a> = dyn FnMut() -> Arc<RwLock<HydroflowCrateService>> + 'a;
 
 pub struct CLIDeployNodeBuilder<'a>(RefCell<Box<CrateBuilder<'a>>>);
 
 impl<'a> CLIDeployNodeBuilder<'a> {
-    pub fn new<F: FnMut(usize) -> Arc<RwLock<HydroflowCrateService>> + 'a>(f: F) -> Self {
+    pub fn new<F: FnMut() -> Arc<RwLock<HydroflowCrateService>> + 'a>(f: F) -> Self {
         Self(RefCell::new(Box::new(f)))
     }
 }
@@ -366,23 +378,23 @@ impl<'a: 'b, 'b> NodeBuilder<'a, CLIDeploy> for CLIDeployNodeBuilder<'b> {
         &self,
         id: usize,
         builder: &'a GraphBuilder<'a, CLIDeploy>,
-        _meta: &mut HydroflowPlusMeta,
+        _meta: &mut HashMap<usize, Vec<u32>>,
     ) -> CLIDeployNode<'a> {
         CLIDeployNode {
             id,
             builder,
             next_port: Rc::new(RefCell::new(0)),
-            underlying: (self.0.borrow_mut())(id),
+            underlying: (self.0.borrow_mut())(),
         }
     }
 }
 
-type ClusterBuilderFn<'a> = dyn FnMut(usize) -> Vec<Arc<RwLock<HydroflowCrateService>>> + 'a;
+type ClusterBuilderFn<'a> = dyn FnMut() -> Vec<Arc<RwLock<HydroflowCrateService>>> + 'a;
 
 pub struct CLIDeployClusterBuilder<'a>(RefCell<Box<ClusterBuilderFn<'a>>>);
 
 impl<'a> CLIDeployClusterBuilder<'a> {
-    pub fn new<F: FnMut(usize) -> Vec<Arc<RwLock<HydroflowCrateService>>> + 'a>(f: F) -> Self {
+    pub fn new<F: FnMut() -> Vec<Arc<RwLock<HydroflowCrateService>>> + 'a>(f: F) -> Self {
         Self(RefCell::new(Box::new(f)))
     }
 }
@@ -392,11 +404,10 @@ impl<'a: 'b, 'b> ClusterBuilder<'a, CLIDeploy> for CLIDeployClusterBuilder<'b> {
         &self,
         id: usize,
         builder: &'a GraphBuilder<'a, CLIDeploy>,
-        meta: &mut HydroflowPlusMeta,
+        meta: &mut HashMap<usize, Vec<u32>>,
     ) -> CLIDeployCluster<'a> {
-        let cluster_nodes = (self.0.borrow_mut())(id);
-        meta.clusters
-            .insert(id, (0..(cluster_nodes.len() as u32)).collect());
+        let cluster_nodes = (self.0.borrow_mut())();
+        meta.insert(id, (0..(cluster_nodes.len() as u32)).collect());
 
         CLIDeployCluster {
             id,
