@@ -12,7 +12,7 @@ pub mod runtime_support {
     pub use bincode;
 }
 
-mod stream;
+pub mod stream;
 pub use stream::HfStream;
 
 pub mod node;
