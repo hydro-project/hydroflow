@@ -88,7 +88,7 @@ impl<'a> HfCluster<'a> for CLIRuntimeCluster<'a> {
     fn ids(&self) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
         let cli = self.cli;
         let self_id = self.id;
-        q!(cli.meta.as_ref().unwrap().clusters.get(&self_id).unwrap())
+        q!(cli.meta.clusters.get(&self_id).unwrap())
     }
 }
 

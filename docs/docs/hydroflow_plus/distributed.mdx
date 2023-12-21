@@ -56,10 +56,9 @@ use hydroflow_plus_cli_integration::CLIRuntime;
 pub fn first_ten_distributed_runtime<'a>(
     graph: &'a GraphBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI>,
-    subgraph_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = first_ten_distributed(graph, &cli);
-    graph.build(subgraph_id)
+    graph.build(q!(cli.meta.subgraph_id))
 }
 ```
 
@@ -68,12 +67,11 @@ The corresponding binary in `src/bin/first_ten_distributed.rs` then instantiates
 ```rust
 #[tokio::main]
 async fn main() {
-    let subgraph_id: usize = std::env::args().nth(1).unwrap().parse().unwrap();
     let ports = hydroflow::util::cli::init().await;
 
-    let joined = flow::first_ten_distributed_runtime!(&ports, subgraph_id);
-
-    hydroflow::util::cli::launch_flow(joined).await;
+    hydroflow::util::cli::launch_flow(
+        flow::first_ten_distributed_runtime!(&ports)
+    ).await;
 }
 ```
 
@@ -92,12 +90,11 @@ async fn main() {
     let builder = hydroflow_plus::GraphBuilder::new();
     hydroflow_plus_test::first_ten::first_ten_distributed(
         &builder,
-        &CLIDeployNodeBuilder::new(|id| {
+        &CLIDeployNodeBuilder::new(|| {
             deployment.add_service(
                 HydroflowCrate::new(".", localhost.clone())
                     .bin("first_ten_distributed")
-                    .profile("dev")
-                    .args(vec![id.to_string()]),
+                    .profile("dev"),
             )
         }),
     );
