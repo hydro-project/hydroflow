@@ -1,14 +1,14 @@
 use hydroflow::bytes::BytesMut;
 use hydroflow::util::cli::HydroCLI;
-use hydroflow_plus::node::{HfNetworkedDeploy, HfNode, HfNodeBuilder};
+use hydroflow_plus::node::{Deploy, HfNode, NodeBuilder};
 use hydroflow_plus::scheduled::graph::Hydroflow;
-use hydroflow_plus::HfBuilder;
+use hydroflow_plus::GraphBuilder;
 use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 use stageleft::{q, Quoted, RuntimeData};
 
-pub fn networked_basic<'a, D: HfNetworkedDeploy<'a>>(
-    graph: &'a HfBuilder<'a, D>,
-    node_builder: &impl HfNodeBuilder<'a, D>,
+pub fn networked_basic<'a, D: Deploy<'a>>(
+    graph: &'a GraphBuilder<'a, D>,
+    node_builder: &impl NodeBuilder<'a, D>,
 ) -> (D::NodePort, D::Node, D::Node) {
     let node_zero = graph.node(node_builder);
     let node_one = graph.node(node_builder);
@@ -30,12 +30,12 @@ pub fn networked_basic<'a, D: HfNetworkedDeploy<'a>>(
 
 #[stageleft::entry]
 pub fn networked_basic_runtime<'a>(
-    graph: &'a HfBuilder<'a, CLIRuntime>,
+    graph: &'a GraphBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-    node_id: RuntimeData<usize>,
+    subgraph_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = networked_basic(graph, &cli);
-    graph.build(node_id)
+    graph.build(subgraph_id)
 }
 
 #[stageleft::runtime]
@@ -53,7 +53,7 @@ mod tests {
         let mut deployment = Deployment::new();
         let localhost = deployment.Localhost();
 
-        let builder = hydroflow_plus::HfBuilder::new();
+        let builder = hydroflow_plus::GraphBuilder::new();
         let (source_zero_port, _, node_one) = super::networked_basic(
             &builder,
             &CLIDeployNodeBuilder::new(|id| {
@@ -65,7 +65,6 @@ mod tests {
                 )
             }),
         );
-        builder.wire();
 
         let port_to_zero = source_zero_port
             .create_sender(&mut deployment, &localhost)

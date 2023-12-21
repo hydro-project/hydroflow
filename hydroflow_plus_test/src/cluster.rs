@@ -2,10 +2,10 @@ use hydroflow_plus::node::*;
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn simple_cluster<'a, D: HfNetworkedDeploy<'a>>(
-    graph: &'a HfBuilder<'a, D>,
-    node_builder: &impl HfNodeBuilder<'a, D>,
-    cluster_builder: &impl HfClusterBuilder<'a, D>,
+pub fn simple_cluster<'a, D: Deploy<'a>>(
+    graph: &'a GraphBuilder<'a, D>,
+    node_builder: &impl NodeBuilder<'a, D>,
+    cluster_builder: &impl ClusterBuilder<'a, D>,
 ) -> (D::Node, D::Cluster) {
     let node = graph.node(node_builder);
     let cluster = graph.cluster(cluster_builder);
@@ -23,9 +23,9 @@ pub fn simple_cluster<'a, D: HfNetworkedDeploy<'a>>(
     (node, cluster)
 }
 
-pub fn many_to_many<'a, D: HfNetworkedDeploy<'a>>(
-    graph: &'a HfBuilder<'a, D>,
-    cluster_builder: &impl HfClusterBuilder<'a, D>,
+pub fn many_to_many<'a, D: Deploy<'a>>(
+    graph: &'a GraphBuilder<'a, D>,
+    cluster_builder: &impl ClusterBuilder<'a, D>,
 ) -> D::Cluster {
     let cluster = graph.cluster(cluster_builder);
     cluster
@@ -36,10 +36,10 @@ pub fn many_to_many<'a, D: HfNetworkedDeploy<'a>>(
     cluster
 }
 
-pub fn map_reduce<'a, D: HfNetworkedDeploy<'a>>(
-    graph: &'a HfBuilder<'a, D>,
-    node_builder: &impl HfNodeBuilder<'a, D>,
-    cluster_builder: &impl HfClusterBuilder<'a, D>,
+pub fn map_reduce<'a, D: Deploy<'a>>(
+    graph: &'a GraphBuilder<'a, D>,
+    node_builder: &impl NodeBuilder<'a, D>,
+    cluster_builder: &impl ClusterBuilder<'a, D>,
 ) -> (D::Node, D::Cluster) {
     let node = graph.node(node_builder);
     let cluster = graph.cluster(cluster_builder);
@@ -73,32 +73,32 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn simple_cluster_runtime<'a>(
-    graph: &'a HfBuilder<'a, CLIRuntime>,
+    graph: &'a GraphBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-    node_id: RuntimeData<usize>,
+    subgraph_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = simple_cluster(graph, &cli, &cli);
-    graph.build(node_id)
+    graph.build(subgraph_id)
 }
 
 #[stageleft::entry]
 pub fn many_to_many_runtime<'a>(
-    graph: &'a HfBuilder<'a, CLIRuntime>,
+    graph: &'a GraphBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-    node_id: RuntimeData<usize>,
+    subgraph_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = many_to_many(graph, &cli);
-    graph.build(node_id)
+    graph.build(subgraph_id)
 }
 
 #[stageleft::entry]
 pub fn map_reduce_runtime<'a>(
-    graph: &'a HfBuilder<'a, CLIRuntime>,
+    graph: &'a GraphBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-    node_id: RuntimeData<usize>,
+    subgraph_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = map_reduce(graph, &cli, &cli);
-    graph.build(node_id)
+    graph.build(subgraph_id)
 }
 
 #[stageleft::runtime]
@@ -118,7 +118,7 @@ mod tests {
         let deployment = RefCell::new(Deployment::new());
         let localhost = deployment.borrow_mut().Localhost();
 
-        let builder = hydroflow_plus::HfBuilder::new();
+        let builder = hydroflow_plus::GraphBuilder::new();
         let (node, cluster) = super::simple_cluster(
             &builder,
             &CLIDeployNodeBuilder::new(|id| {
@@ -142,7 +142,6 @@ mod tests {
                     .collect()
             }),
         );
-        builder.wire();
 
         let mut deployment = deployment.into_inner();
 
@@ -190,7 +189,7 @@ mod tests {
         let deployment = RefCell::new(Deployment::new());
         let localhost = deployment.borrow_mut().Localhost();
 
-        let builder = hydroflow_plus::HfBuilder::new();
+        let builder = hydroflow_plus::GraphBuilder::new();
         let cluster = super::many_to_many(
             &builder,
             &CLIDeployClusterBuilder::new(|id| {
@@ -206,7 +205,6 @@ mod tests {
                     .collect()
             }),
         );
-        builder.wire();
 
         let mut deployment = deployment.into_inner();
 

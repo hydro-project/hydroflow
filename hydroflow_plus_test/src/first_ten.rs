@@ -2,9 +2,9 @@ use hydroflow_plus::node::*;
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn first_ten<'a, D: HfDeploy<'a>>(
-    graph: &'a HfBuilder<'a, D>,
-    node_builder: &impl HfNodeBuilder<'a, D>,
+pub fn first_ten<'a, D: LocalDeploy<'a>>(
+    graph: &'a GraphBuilder<'a, D>,
+    node_builder: &impl NodeBuilder<'a, D>,
 ) {
     let node = graph.node(node_builder);
     let numbers = node.source_iter(q!(0..10));
@@ -13,15 +13,15 @@ pub fn first_ten<'a, D: HfDeploy<'a>>(
 
 #[stageleft::entry]
 pub fn first_ten_runtime<'a>(
-    graph: &'a HfBuilder<'a, SingleGraph>,
+    graph: &'a GraphBuilder<'a, SingleGraph>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     first_ten(graph, &());
     graph.build_single()
 }
 
-pub fn first_ten_distributed<'a, D: HfNetworkedDeploy<'a>>(
-    graph: &'a HfBuilder<'a, D>,
-    node_builder: &impl HfNodeBuilder<'a, D>,
+pub fn first_ten_distributed<'a, D: Deploy<'a>>(
+    graph: &'a GraphBuilder<'a, D>,
+    node_builder: &impl NodeBuilder<'a, D>,
 ) -> D::Node {
     let node = graph.node(node_builder);
     let second_node = graph.node(node_builder);
@@ -39,12 +39,12 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn first_ten_distributed_runtime<'a>(
-    graph: &'a HfBuilder<'a, CLIRuntime>,
+    graph: &'a GraphBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-    node_id: RuntimeData<usize>,
+    subgraph_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = first_ten_distributed(graph, &cli);
-    graph.build(node_id)
+    graph.build(subgraph_id)
 }
 
 #[stageleft::runtime]
@@ -60,7 +60,7 @@ mod tests {
         let mut deployment = Deployment::new();
         let localhost = deployment.Localhost();
 
-        let builder = hydroflow_plus::HfBuilder::new();
+        let builder = hydroflow_plus::GraphBuilder::new();
         let second_node = super::first_ten_distributed(
             &builder,
             &CLIDeployNodeBuilder::new(|id| {
@@ -72,7 +72,6 @@ mod tests {
                 )
             }),
         );
-        builder.wire();
 
         deployment.deploy().await.unwrap();
 

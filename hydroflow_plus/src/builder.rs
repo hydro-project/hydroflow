@@ -1,7 +1,6 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
-use std::ops::Deref;
 
 use hydroflow_lang::graph::{
     eliminate_extra_unions_tees, partition_graph, propagate_flow_props, FlatGraphBuilder,
@@ -11,31 +10,37 @@ use quote::quote;
 use stageleft::{Quoted, QuotedContext};
 use syn::parse_quote;
 
-use crate::node::{HfClusterBuilder, HfDeploy, HfNode, HfNodeBuilder};
+use crate::node::{ClusterBuilder, HfNode, LocalDeploy, NodeBuilder};
 use crate::{HfBuilt, RuntimeContext};
 
 pub type Builders = RefCell<Option<BTreeMap<usize, FlatGraphBuilder>>>;
 
-pub struct HfBuilder<'a, D: HfDeploy<'a> + ?Sized> {
+pub struct GraphBuilder<'a, D: LocalDeploy<'a> + ?Sized> {
     pub(crate) next_id: RefCell<usize>,
     pub(crate) builders: Builders,
     nodes: RefCell<Vec<D::Node>>,
     clusters: RefCell<Vec<D::Cluster>>,
-    pub meta: RefCell<Option<D::Meta>>,
+
+    /// Tracks metadata about concrete deployments in this graph, such
+    /// as the IDs of each node in a cluster. This is written to
+    /// by `NodeBuilder` and `ClusterBuilder` and is written to
+    /// each instantiated node and cluster via `HfNode::update_meta`.
+    meta: RefCell<D::Meta>,
+
     next_node_id: RefCell<usize>,
     _phantom: PhantomData<&'a mut &'a ()>,
 }
 
-impl<'a, D: HfDeploy<'a>> QuotedContext for HfBuilder<'a, D> {
+impl<'a, D: LocalDeploy<'a>> QuotedContext for GraphBuilder<'a, D> {
     fn create() -> Self {
-        HfBuilder::new()
+        GraphBuilder::new()
     }
 }
 
-impl<'a, D: HfDeploy<'a>> HfBuilder<'a, D> {
+impl<'a, D: LocalDeploy<'a>> GraphBuilder<'a, D> {
     #[allow(clippy::new_without_default)]
-    pub fn new() -> HfBuilder<'a, D> {
-        HfBuilder {
+    pub fn new() -> GraphBuilder<'a, D> {
+        GraphBuilder {
             next_id: RefCell::new(0),
             builders: RefCell::new(Some(Default::default())),
             nodes: RefCell::new(Vec::new()),
@@ -50,23 +55,29 @@ impl<'a, D: HfDeploy<'a>> HfBuilder<'a, D> {
         (&self.next_id, &self.builders)
     }
 
-    pub fn node(&'a self, builder: &impl HfNodeBuilder<'a, D>) -> D::Node {
+    pub fn node(&'a self, builder: &impl NodeBuilder<'a, D>) -> D::Node {
         let mut next_node_id = self.next_node_id.borrow_mut();
         let id = *next_node_id;
         *next_node_id += 1;
 
-        let node = builder.build(id, self);
+        let node = builder.build(id, self, &mut self.meta.borrow_mut());
         self.nodes.borrow_mut().push(node.clone());
+
+        self.update_metas();
+
         node
     }
 
-    pub fn cluster(&'a self, builder: &impl HfClusterBuilder<'a, D>) -> D::Cluster {
+    pub fn cluster(&'a self, builder: &impl ClusterBuilder<'a, D>) -> D::Cluster {
         let mut next_node_id = self.next_node_id.borrow_mut();
         let id = *next_node_id;
         *next_node_id += 1;
 
-        let cluster = builder.build(id, self);
+        let cluster = builder.build(id, self, &mut self.meta.borrow_mut());
         self.clusters.borrow_mut().push(cluster.clone());
+
+        self.update_metas();
+
         cluster
     }
 
@@ -75,37 +86,24 @@ impl<'a, D: HfDeploy<'a>> HfBuilder<'a, D> {
             _phantom: PhantomData,
         }
     }
-}
 
-impl<'a, D: HfDeploy<'a, RuntimeID = ()>> HfBuilder<'a, D> {
-    pub fn wire(&self) {
-        let meta_borrow = self.meta.borrow();
-        let meta = meta_borrow.deref();
+    fn update_metas(&self) {
         self.nodes
             .borrow_mut()
             .iter_mut()
-            .for_each(|n| n.build(meta));
+            .for_each(|n| n.update_meta(&self.meta.borrow()));
         self.clusters
             .borrow_mut()
             .iter_mut()
-            .for_each(|n| n.build(meta));
+            .for_each(|n| n.update_meta(&self.meta.borrow()));
     }
 }
 
-fn build_inner<'a, D: HfDeploy<'a>>(me: &HfBuilder<'a, D>, id: TokenStream) -> HfBuilt<'a> {
-    let meta_borrow = me.meta.borrow();
-    let meta = meta_borrow.deref();
-    me.nodes.borrow_mut().iter_mut().for_each(|n| n.build(meta));
-    me.clusters
-        .borrow_mut()
-        .iter_mut()
-        .for_each(|n| n.build(meta));
-    drop(meta_borrow);
-
+fn build_inner<'a, D: LocalDeploy<'a>>(me: &GraphBuilder<'a, D>, id: TokenStream) -> HfBuilt<'a> {
     let builders = me.builders.borrow_mut().take().unwrap();
 
     let mut conditioned_tokens = None;
-    for (node_id, builder) in builders {
+    for (subgraph_id, builder) in builders {
         let (mut flat_graph, _, _) = builder.build();
         eliminate_extra_unions_tees(&mut flat_graph);
         let mut partitioned_graph =
@@ -131,13 +129,13 @@ fn build_inner<'a, D: HfDeploy<'a>>(me: &HfBuilder<'a, D>, id: TokenStream) -> H
 
         if let Some(conditioned_tokens) = conditioned_tokens.as_mut() {
             *conditioned_tokens = parse_quote! {
-                #conditioned_tokens else if __given_id == #node_id {
+                #conditioned_tokens else if __given_id == #subgraph_id {
                     #tokens
                 }
             };
         } else {
             conditioned_tokens = Some(parse_quote! {
-                if __given_id == #node_id {
+                if __given_id == #subgraph_id {
                     #tokens
                 }
             });
@@ -157,13 +155,13 @@ fn build_inner<'a, D: HfDeploy<'a>>(me: &HfBuilder<'a, D>, id: TokenStream) -> H
     }
 }
 
-impl<'a, D: HfDeploy<'a, RuntimeID = usize>> HfBuilder<'a, D> {
+impl<'a, D: LocalDeploy<'a, RuntimeID = usize>> GraphBuilder<'a, D> {
     pub fn build(&self, id: impl Quoted<'a, usize>) -> HfBuilt<'a> {
         build_inner(self, id.splice())
     }
 }
 
-impl<'a, D: HfDeploy<'a, RuntimeID = ()>> HfBuilder<'a, D> {
+impl<'a, D: LocalDeploy<'a, RuntimeID = ()>> GraphBuilder<'a, D> {
     pub fn build_single(&self) -> HfBuilt<'a> {
         if self.builders.borrow().as_ref().unwrap().len() != 1 {
             panic!("Expected exactly one node in the graph.");
