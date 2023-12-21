@@ -74,7 +74,7 @@ pub fn chat_app<'a>(
         output.send(t).unwrap();
     }));
 
-    graph.build(q!(0))
+    graph.build_single()
 }
 
 #[stageleft::entry]
@@ -102,7 +102,7 @@ pub fn graph_reachability<'a>(
         reached_out.send(v).unwrap();
     }));
 
-    graph.build(q!(0))
+    graph.build_single()
 }
 
 #[stageleft::entry(String)]
@@ -123,7 +123,7 @@ pub fn count_elems<'a, T: 'a>(
         output.send(v).unwrap();
     }));
 
-    graph.build(q!(0))
+    graph.build_single()
 }
 
 #[stageleft::runtime]
