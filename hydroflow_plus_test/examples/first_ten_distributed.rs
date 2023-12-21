@@ -41,13 +41,12 @@ async fn main() {
     let builder = hydroflow_plus::GraphBuilder::new();
     hydroflow_plus_test::first_ten::first_ten_distributed(
         &builder,
-        &CLIDeployNodeBuilder::new(|id| {
+        &CLIDeployNodeBuilder::new(|| {
             let host = create_host(&mut deployment);
             deployment.add_service(
                 HydroflowCrate::new(".", host.clone())
                     .bin("first_ten_distributed")
-                    .profile(profile)
-                    .args(vec![id.to_string()]),
+                    .profile(profile),
             )
         }),
     );
