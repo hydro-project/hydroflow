@@ -4,6 +4,7 @@ name: examples-container-build
 on:
   push:
     branches: [main]
+  pull_request:
 
 jobs:
   pre_job:
