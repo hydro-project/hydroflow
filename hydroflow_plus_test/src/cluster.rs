@@ -102,7 +102,6 @@ pub fn map_reduce_runtime<'a>(
 #[cfg(test)]
 mod tests {
     use std::cell::RefCell;
-    use std::time::Duration;
 
     use hydro_deploy::{Deployment, HydroflowCrate};
     use hydroflow::lattices::cc_traits::Iter;
@@ -151,10 +150,7 @@ mod tests {
         for (i, stdout) in cluster_stdouts.into_iter().enumerate() {
             for j in 0..5 {
                 assert_eq!(
-                    tokio::time::timeout(Duration::from_secs(30), stdout.recv())
-                        .await
-                        .unwrap()
-                        .unwrap(),
+                    stdout.recv().await.unwrap(),
                     format!("cluster received: ({}, {})", i, j)
                 );
             }
@@ -162,12 +158,7 @@ mod tests {
 
         let mut node_outs = vec![];
         for _i in 0..10 {
-            node_outs.push(
-                tokio::time::timeout(Duration::from_secs(30), node_stdout.recv())
-                    .await
-                    .unwrap()
-                    .unwrap(),
-            );
+            node_outs.push(node_stdout.recv().await.unwrap());
         }
         node_outs.sort();
 
@@ -212,12 +203,7 @@ mod tests {
         for node_stdout in cluster_stdouts {
             let mut node_outs = vec![];
             for _i in 0..4 {
-                node_outs.push(
-                    tokio::time::timeout(Duration::from_secs(30), node_stdout.recv())
-                        .await
-                        .unwrap()
-                        .unwrap(),
-                );
+                node_outs.push(node_stdout.recv().await.unwrap());
             }
             node_outs.sort();
 

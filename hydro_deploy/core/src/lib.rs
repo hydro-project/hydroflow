@@ -70,11 +70,11 @@ pub struct ResourceResult {
 pub trait LaunchedBinary: Send + Sync {
     async fn stdin(&self) -> Sender<String>;
 
-    /// Provides a channel for the CLI to handshake with the binary,
+    /// Provides a oneshot channel for the CLI to handshake with the binary,
     /// with the guarantee that as long as the CLI is holding on
     /// to a handle, none of the messages will also be broadcast
     /// to the user-facing [`LaunchedBinary::stdout`] channel.
-    async fn cli_stdout(&self) -> Receiver<String>;
+    async fn cli_stdout(&self) -> tokio::sync::oneshot::Receiver<String>;
 
     async fn stdout(&self) -> Receiver<String>;
     async fn stderr(&self) -> Receiver<String>;
