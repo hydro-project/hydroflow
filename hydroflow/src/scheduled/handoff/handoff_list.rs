@@ -2,7 +2,7 @@
 
 use ref_cast::RefCast;
 use sealed::sealed;
-use variadics::Variadic;
+use variadics::{variadic_trait, Variadic};
 
 use super::Handoff;
 use crate::scheduled::graph::HandoffData;
@@ -140,24 +140,17 @@ where
     }
 }
 
-/// A variadic list of Handoff types, represented using a lisp-style tuple structure.
-///
-/// This trait is sealed and not meant to be implemented or used directly. Instead tuple lists (which already implement this trait) should be used, for example:
-/// ```ignore
-/// type MyHandoffList = (VecHandoff<usize>, (VecHandoff<String>, (TeeingHandoff<u32>, ())));
-/// ```
-/// The [`var_expr!`](variadics::var_expr) macro simplifies usage of this kind:
-/// ```ignore
-/// type MyHandoffList = var_expr!(VecHandoff<usize>, VecHandoff<String>, TeeingHandoff<u32>);
-/// ```
-#[sealed]
-pub trait HandoffList: Variadic {}
-#[sealed]
-impl<H, L> HandoffList for (H, L)
-where
-    H: 'static + Handoff,
-    L: HandoffList,
-{
+variadic_trait! {
+    /// A variadic list of Handoff types, represented using a lisp-style tuple structure.
+    ///
+    /// This trait is sealed and not meant to be implemented or used directly. Instead tuple lists (which already implement this trait) should be used, for example:
+    /// ```ignore
+    /// type MyHandoffList = (VecHandoff<usize>, (VecHandoff<String>, (TeeingHandoff<u32>, ())));
+    /// ```
+    /// The [`var_expr!`](crate::var) macro simplifies usage of this kind:
+    /// ```ignore
+    /// type MyHandoffList = var_expr!(VecHandoff<usize>, VecHandoff<String>, TeeingHandoff<u32>);
+    /// ```
+    #[sealed]
+    pub variadic<T> HandoffList where T: 'static + Handoff {}
 }
-#[sealed]
-impl HandoffList for () {}
