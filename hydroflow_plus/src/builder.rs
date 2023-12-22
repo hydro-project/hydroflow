@@ -92,75 +92,83 @@ impl<'a, D: HfDeploy<'a, RuntimeID = ()>> HfBuilder<'a, D> {
     }
 }
 
-impl<'a, D: HfDeploy<'a, RuntimeID = usize>> HfBuilder<'a, D> {
-    pub fn build(&self, id: impl Quoted<'a, usize>) -> HfBuilt<'a> {
-        let meta_borrow = self.meta.borrow();
-        let meta = meta_borrow.deref();
-        self.nodes
-            .borrow_mut()
-            .iter_mut()
-            .for_each(|n| n.build(meta));
-        self.clusters
-            .borrow_mut()
-            .iter_mut()
-            .for_each(|n| n.build(meta));
-        drop(meta_borrow);
+fn build_inner<'a, D: HfDeploy<'a>>(me: &HfBuilder<'a, D>, id: TokenStream) -> HfBuilt<'a> {
+    let meta_borrow = me.meta.borrow();
+    let meta = meta_borrow.deref();
+    me.nodes.borrow_mut().iter_mut().for_each(|n| n.build(meta));
+    me.clusters
+        .borrow_mut()
+        .iter_mut()
+        .for_each(|n| n.build(meta));
+    drop(meta_borrow);
 
-        let builders = self.builders.borrow_mut().take().unwrap();
+    let builders = me.builders.borrow_mut().take().unwrap();
 
-        let mut conditioned_tokens = None;
-        for (node_id, builder) in builders {
-            let (mut flat_graph, _, _) = builder.build();
-            eliminate_extra_unions_tees(&mut flat_graph);
-            let mut partitioned_graph =
-                partition_graph(flat_graph).expect("Failed to partition (cycle detected).");
+    let mut conditioned_tokens = None;
+    for (node_id, builder) in builders {
+        let (mut flat_graph, _, _) = builder.build();
+        eliminate_extra_unions_tees(&mut flat_graph);
+        let mut partitioned_graph =
+            partition_graph(flat_graph).expect("Failed to partition (cycle detected).");
 
-            let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
-                .expect("hydroflow_plus should be present in `Cargo.toml`");
-            let root = match hydroflow_crate {
-                proc_macro_crate::FoundCrate::Itself => quote! { hydroflow_plus },
-                proc_macro_crate::FoundCrate::Name(name) => {
-                    let ident = syn::Ident::new(&name, Span::call_site());
-                    quote! { #ident }
+        let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
+            .expect("hydroflow_plus should be present in `Cargo.toml`");
+        let root = match hydroflow_crate {
+            proc_macro_crate::FoundCrate::Itself => quote! { hydroflow_plus },
+            proc_macro_crate::FoundCrate::Name(name) => {
+                let ident = syn::Ident::new(&name, Span::call_site());
+                quote! { #ident }
+            }
+        };
+
+        let mut diagnostics = Vec::new();
+        // Propagate flow properties throughout the graph.
+        // TODO(mingwei): Should this be done at a flat graph stage instead?
+        let _ =
+            propagate_flow_props::propagate_flow_props(&mut partitioned_graph, &mut diagnostics);
+
+        let tokens = partitioned_graph.as_code(&root, true, quote::quote!(), &mut diagnostics);
+
+        if let Some(conditioned_tokens) = conditioned_tokens.as_mut() {
+            *conditioned_tokens = parse_quote! {
+                #conditioned_tokens else if __given_id == #node_id {
+                    #tokens
                 }
             };
-
-            let mut diagnostics = Vec::new();
-            // Propagate flow properties throughout the graph.
-            // TODO(mingwei): Should this be done at a flat graph stage instead?
-            let _ = propagate_flow_props::propagate_flow_props(
-                &mut partitioned_graph,
-                &mut diagnostics,
-            );
-
-            let tokens = partitioned_graph.as_code(&root, true, quote::quote!(), &mut diagnostics);
-
-            if let Some(conditioned_tokens) = conditioned_tokens.as_mut() {
-                *conditioned_tokens = parse_quote! {
-                    #conditioned_tokens else if __given_id == #node_id {
-                        #tokens
-                    }
-                };
-            } else {
-                conditioned_tokens = Some(parse_quote! {
-                    if __given_id == #node_id {
-                        #tokens
-                    }
-                });
-            }
-        }
-
-        let id_spliced = id.splice();
-        let conditioned_tokens: TokenStream = conditioned_tokens.unwrap();
-
-        HfBuilt {
-            tokens: parse_quote! {
-                let __given_id = #id_spliced;
-                #conditioned_tokens else {
-                    panic!("Invalid node id: {}", __given_id);
+        } else {
+            conditioned_tokens = Some(parse_quote! {
+                if __given_id == #node_id {
+                    #tokens
                 }
-            },
-            _phantom: PhantomData,
+            });
         }
+    }
+
+    let conditioned_tokens: TokenStream = conditioned_tokens.unwrap();
+
+    HfBuilt {
+        tokens: parse_quote! {
+            let __given_id = #id;
+            #conditioned_tokens else {
+                panic!("Invalid node id: {}", __given_id);
+            }
+        },
+        _phantom: PhantomData,
+    }
+}
+
+impl<'a, D: HfDeploy<'a, RuntimeID = usize>> HfBuilder<'a, D> {
+    pub fn build(&self, id: impl Quoted<'a, usize>) -> HfBuilt<'a> {
+        build_inner(self, id.splice())
+    }
+}
+
+impl<'a, D: HfDeploy<'a, RuntimeID = ()>> HfBuilder<'a, D> {
+    pub fn build_single(&self) -> HfBuilt<'a> {
+        if self.builders.borrow().as_ref().unwrap().len() != 1 {
+            panic!("Expected exactly one node in the graph.");
+        }
+
+        build_inner(self, quote!(0))
     }
 }
