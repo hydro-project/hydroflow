@@ -202,9 +202,9 @@ impl HydroflowCrateService {
         }
     }
 
-    pub fn set_meta(&mut self, meta: String) {
-        if self.meta.is_some() {
-            panic!("meta already set");
+    pub fn update_meta(&mut self, meta: String) {
+        if self.launched_binary.is_some() {
+            panic!("Cannot update meta after binary has been launched")
         }
 
         self.meta = Some(meta);

@@ -17,18 +17,18 @@ use hydroflow_plus::*;
 use hydroflow_plus::node::*;
 use stageleft::*;
 
-pub fn first_ten<'a, D: HfDeploy<'a>>(
-    graph: &'a HfBuilder<'a, D>,
-    node_builder: &impl HfNodeBuilder<'a, D>
+pub fn first_ten<'a, D: LocalDeploy<'a>>(
+    graph: &'a GraphBuilder<'a, D>,
+    node_builder: &impl NodeBuilder<'a, D>
 ) {}
 ```
 
 The `graph` variable gives us access to the builder API for constructing the flow graph. The `node_builder` variable defines how to construct the nodes of the flow graph. For now, we will only use the builder once, to create a single node.
 
 ```rust
-pub fn first_ten<'a, D: HfDeploy<'a>>(
-    graph: &'a HfBuilder<'a, D>,
-    node_builder: &impl HfNodeBuilder<'a, D>
+pub fn first_ten<'a, D: LocalDeploy<'a>>(
+    graph: &'a GraphBuilder<'a, D>,
+    node_builder: &impl NodeBuilder<'a, D>
 ) {
     let node = graph.node(node_builder);
 }
@@ -54,16 +54,14 @@ To define the entrypoint, we use the `#[stageleft::entry]` macro, which takes th
 ```rust
 #[stageleft::entry]
 pub fn first_ten_runtime<'a>(
-    graph: &'a HfBuilder<'a, SingleGraph>
+    graph: &'a GraphBuilder<'a, SingleGraph>
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     first_ten(graph, &());
-    graph.build(q!(0))
+    graph.build_single()
 }
 ```
 
-Hydroflow+ graphs can span multiple nodes, each running different pieces of logic. When a Hydroflow+ graph is built into a runnable program, the graph is sliced into components for each of these nodes, and an integer ID is used to determine which subgraph should be executed. In our case, we only have a single node, so we pass a static `q!(0)` node ID to the `build` method.
-
-Stageleft entries are usable as macros from other programs. In our case, we will instantiate our entrypoint from the Rust binary for our dataflow. We can create a new file `src/bin/first_ten.rs` with the following contents:
+Because we are using a `SingleGraph` deployment, we can use the `build_single` method to generate a runnable Hydroflow program. Stageleft entries are usable as macros from other programs. In our case, we will instantiate our entrypoint from the Rust binary for our dataflow. We can create a new file `src/bin/first_ten.rs` with the following contents:
 
 ```rust
 #[tokio::main]

@@ -2,28 +2,33 @@ use std::cell::RefCell;
 
 use stageleft::{Quoted, RuntimeData};
 
-use super::{HfCluster, HfDeploy, HfNode, HfNodeBuilder};
+use super::{HfCluster, HfNode, LocalDeploy, NodeBuilder};
 use crate::builder::Builders;
-use crate::HfBuilder;
+use crate::GraphBuilder;
 
 pub struct SingleGraph {}
 
-impl<'a> HfDeploy<'a> for SingleGraph {
+impl<'a> LocalDeploy<'a> for SingleGraph {
     type Node = SingleNode<'a>;
     type Cluster = SingleNode<'a>;
     type Meta = ();
     type RuntimeID = ();
 }
 
-impl<'a> HfNodeBuilder<'a, SingleGraph> for () {
-    fn build(&self, _id: usize, builder: &'a HfBuilder<'a, SingleGraph>) -> SingleNode<'a> {
+impl<'a> NodeBuilder<'a, SingleGraph> for () {
+    fn build(
+        &self,
+        _id: usize,
+        builder: &'a GraphBuilder<'a, SingleGraph>,
+        _meta: &mut (),
+    ) -> SingleNode<'a> {
         SingleNode { builder }
     }
 }
 
 #[derive(Clone)]
 pub struct SingleNode<'a> {
-    builder: &'a HfBuilder<'a, SingleGraph>,
+    builder: &'a GraphBuilder<'a, SingleGraph>,
 }
 
 impl<'a> HfNode<'a> for SingleNode<'a> {
@@ -42,7 +47,7 @@ impl<'a> HfNode<'a> for SingleNode<'a> {
         panic!();
     }
 
-    fn build(&mut self, _meta: &Option<Self::Meta>) {}
+    fn update_meta(&mut self, _meta: &Self::Meta) {}
 }
 
 impl<'a> HfCluster<'a> for SingleNode<'a> {
@@ -55,22 +60,27 @@ impl<'a> HfCluster<'a> for SingleNode<'a> {
 
 pub struct MultiGraph {}
 
-impl<'a> HfDeploy<'a> for MultiGraph {
+impl<'a> LocalDeploy<'a> for MultiGraph {
     type Node = MultiNode<'a>;
     type Cluster = MultiNode<'a>;
     type Meta = ();
     type RuntimeID = usize;
 }
 
-impl<'a> HfNodeBuilder<'a, MultiGraph> for () {
-    fn build(&self, id: usize, builder: &'a HfBuilder<'a, MultiGraph>) -> MultiNode<'a> {
+impl<'a> NodeBuilder<'a, MultiGraph> for () {
+    fn build(
+        &self,
+        id: usize,
+        builder: &'a GraphBuilder<'a, MultiGraph>,
+        _meta: &mut (),
+    ) -> MultiNode<'a> {
         MultiNode { builder, id }
     }
 }
 
 #[derive(Clone)]
 pub struct MultiNode<'a> {
-    builder: &'a HfBuilder<'a, MultiGraph>,
+    builder: &'a GraphBuilder<'a, MultiGraph>,
     id: usize,
 }
 
@@ -90,7 +100,7 @@ impl<'a> HfNode<'a> for MultiNode<'a> {
         panic!();
     }
 
-    fn build(&mut self, _meta: &Option<Self::Meta>) {}
+    fn update_meta(&mut self, _meta: &Self::Meta) {}
 }
 
 impl<'a> HfCluster<'a> for MultiNode<'a> {

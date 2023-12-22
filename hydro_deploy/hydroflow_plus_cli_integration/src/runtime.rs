@@ -3,13 +3,13 @@ use std::rc::Rc;
 
 use hydroflow_plus::lang::parse::Pipeline;
 use hydroflow_plus::node::{
-    HfCluster, HfClusterBuilder, HfDeploy, HfNode, HfNodeBuilder, HfSendManyToMany,
-    HfSendManyToOne, HfSendOneToMany, HfSendOneToOne,
+    ClusterBuilder, Deploy, HfCluster, HfNode, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany,
+    HfSendOneToOne, NodeBuilder,
 };
 use hydroflow_plus::util::cli::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged, HydroCLI,
 };
-use hydroflow_plus::HfBuilder;
+use hydroflow_plus::GraphBuilder;
 use stageleft::{q, Quoted, RuntimeData};
 use syn::parse_quote;
 
@@ -17,24 +17,26 @@ use super::HydroflowPlusMeta;
 
 pub struct CLIRuntime {}
 
-impl<'a> HfDeploy<'a> for CLIRuntime {
+impl<'a> Deploy<'a> for CLIRuntime {
     type Node = CLIRuntimeNode<'a>;
     type Cluster = CLIRuntimeCluster<'a>;
-    type Meta = String;
+    type Meta = ();
     type RuntimeID = usize;
+    type NodePort = String;
+    type ClusterPort = String;
 }
 
 #[derive(Clone)]
 pub struct CLIRuntimeNode<'a> {
     id: usize,
-    builder: &'a HfBuilder<'a, CLIRuntime>,
+    builder: &'a GraphBuilder<'a, CLIRuntime>,
     next_port: Rc<RefCell<usize>>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 }
 
 impl<'a> HfNode<'a> for CLIRuntimeNode<'a> {
     type Port = String;
-    type Meta = String;
+    type Meta = ();
 
     fn id(&self) -> usize {
         self.id
@@ -50,20 +52,20 @@ impl<'a> HfNode<'a> for CLIRuntimeNode<'a> {
         format!("port_{}", next_send_port)
     }
 
-    fn build(&mut self, _meta: &Option<Self::Meta>) {}
+    fn update_meta(&mut self, _meta: &Self::Meta) {}
 }
 
 #[derive(Clone)]
 pub struct CLIRuntimeCluster<'a> {
     id: usize,
-    builder: &'a HfBuilder<'a, CLIRuntime>,
+    builder: &'a GraphBuilder<'a, CLIRuntime>,
     next_port: Rc<RefCell<usize>>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 }
 
 impl<'a> HfNode<'a> for CLIRuntimeCluster<'a> {
     type Port = String;
-    type Meta = String;
+    type Meta = ();
 
     fn id(&self) -> usize {
         self.id
@@ -79,7 +81,7 @@ impl<'a> HfNode<'a> for CLIRuntimeCluster<'a> {
         format!("port_{}", next_send_port)
     }
 
-    fn build(&mut self, _meta: &Option<Self::Meta>) {}
+    fn update_meta(&mut self, _meta: &Self::Meta) {}
 }
 
 impl<'a> HfCluster<'a> for CLIRuntimeCluster<'a> {
@@ -224,8 +226,13 @@ impl<'a> HfSendManyToMany<'a, CLIRuntimeCluster<'a>> for CLIRuntimeCluster<'a> {
     }
 }
 
-impl<'cli> HfNodeBuilder<'cli, CLIRuntime> for RuntimeData<&'cli HydroCLI<HydroflowPlusMeta>> {
-    fn build(&self, id: usize, builder: &'cli HfBuilder<'cli, CLIRuntime>) -> CLIRuntimeNode<'cli> {
+impl<'cli> NodeBuilder<'cli, CLIRuntime> for RuntimeData<&'cli HydroCLI<HydroflowPlusMeta>> {
+    fn build(
+        &self,
+        id: usize,
+        builder: &'cli GraphBuilder<'cli, CLIRuntime>,
+        _meta: &mut (),
+    ) -> CLIRuntimeNode<'cli> {
         CLIRuntimeNode {
             id,
             builder,
@@ -235,11 +242,12 @@ impl<'cli> HfNodeBuilder<'cli, CLIRuntime> for RuntimeData<&'cli HydroCLI<Hydrof
     }
 }
 
-impl<'cli> HfClusterBuilder<'cli, CLIRuntime> for RuntimeData<&'cli HydroCLI<HydroflowPlusMeta>> {
+impl<'cli> ClusterBuilder<'cli, CLIRuntime> for RuntimeData<&'cli HydroCLI<HydroflowPlusMeta>> {
     fn build(
         &self,
         id: usize,
-        builder: &'cli HfBuilder<'cli, CLIRuntime>,
+        builder: &'cli GraphBuilder<'cli, CLIRuntime>,
+        _meta: &mut (),
     ) -> CLIRuntimeCluster<'cli> {
         CLIRuntimeCluster {
             id,
