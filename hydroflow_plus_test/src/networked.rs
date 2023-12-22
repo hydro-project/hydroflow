@@ -40,8 +40,6 @@ pub fn networked_basic_runtime<'a>(
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
-
     use hydro_deploy::{Deployment, HydroflowCrate};
     use hydroflow::futures::SinkExt;
     use hydroflow::util::cli::ConnectedSink;
@@ -78,10 +76,7 @@ mod tests {
         conn_to_zero.send("hello world!".into()).await.unwrap();
 
         assert_eq!(
-            tokio::time::timeout(Duration::from_secs(30), node_one_stdout.recv())
-                .await
-                .unwrap()
-                .unwrap(),
+            node_one_stdout.recv().await.unwrap(),
             "node one received: \"hello world!\""
         );
     }

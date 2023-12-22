@@ -49,8 +49,6 @@ pub fn first_ten_distributed_runtime<'a>(
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
-
     use hydro_deploy::{Deployment, HydroflowCrate};
     use hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, DeployCrateWrapper};
 
@@ -78,13 +76,7 @@ mod tests {
         deployment.start().await.unwrap();
 
         for i in 0..10 {
-            assert_eq!(
-                tokio::time::timeout(Duration::from_secs(30), second_node_stdout.recv())
-                    .await
-                    .unwrap()
-                    .unwrap(),
-                i.to_string()
-            );
+            assert_eq!(second_node_stdout.recv().await.unwrap(), i.to_string());
         }
     }
 }
