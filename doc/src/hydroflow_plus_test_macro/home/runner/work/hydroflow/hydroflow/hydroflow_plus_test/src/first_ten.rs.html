@@ -88,16 +88,13 @@
 <a href="#88" id="88">88</a>
 <a href="#89" id="89">89</a>
 <a href="#90" id="90">90</a>
-<a href="#91" id="91">91</a>
-<a href="#92" id="92">92</a>
-<a href="#93" id="93">93</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::node::<span class="kw-2">*</span>;
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
-<span class="kw">pub fn </span>first_ten&lt;<span class="lifetime">&#39;a</span>, D: HfDeploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    node_builder: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>HfNodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+<span class="kw">pub fn </span>first_ten&lt;<span class="lifetime">&#39;a</span>, D: LocalDeploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+    node_builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>NodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
 ) {
     <span class="kw">let </span>node = graph.node(node_builder);
     <span class="kw">let </span>numbers = node.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
@@ -106,15 +103,15 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>first_ten_runtime&lt;<span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, SingleGraph&gt;,
+    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, SingleGraph&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    first_ten(graph, <span class="kw-2">&amp;mut </span>());
-    graph.build(<span class="macro">q!</span>(<span class="number">0</span>))
+    first_ten(graph, <span class="kw-2">&amp;</span>());
+    graph.build_single()
 }
 
-<span class="kw">pub fn </span>first_ten_distributed&lt;<span class="lifetime">&#39;a</span>, D: HfNetworkedDeploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    node_builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>HfNodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+<span class="kw">pub fn </span>first_ten_distributed&lt;<span class="lifetime">&#39;a</span>, D: Deploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+    node_builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>NodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
 ) -&gt; D::Node {
     <span class="kw">let </span>node = graph.node(node_builder);
     <span class="kw">let </span>second_node = graph.node(node_builder);
@@ -132,12 +129,11 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>first_ten_distributed_runtime&lt;<span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
+    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
-    node_id: RuntimeData&lt;usize&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
     <span class="kw">let _ </span>= first_ten_distributed(graph, <span class="kw-2">&amp;</span>cli);
-    graph.build(node_id)
+    graph.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::runtime]
@@ -153,19 +149,17 @@
         <span class="kw">let </span><span class="kw-2">mut </span>deployment = Deployment::new();
         <span class="kw">let </span>localhost = deployment.Localhost();
 
-        <span class="kw">let </span>builder = hydroflow_plus::HfBuilder::new();
+        <span class="kw">let </span>builder = hydroflow_plus::GraphBuilder::new();
         <span class="kw">let </span>second_node = <span class="kw">super</span>::first_ten_distributed(
             <span class="kw-2">&amp;</span>builder,
-            <span class="kw-2">&amp;</span>CLIDeployNodeBuilder::new(|id| {
+            <span class="kw-2">&amp;</span>CLIDeployNodeBuilder::new(|| {
                 deployment.add_service(
                     HydroflowCrate::new(<span class="string">&quot;.&quot;</span>, localhost.clone())
                         .bin(<span class="string">&quot;first_ten_distributed&quot;</span>)
-                        .profile(<span class="string">&quot;dev&quot;</span>)
-                        .args(<span class="macro">vec!</span>[id.to_string()]),
+                        .profile(<span class="string">&quot;dev&quot;</span>),
                 )
             }),
         );
-        builder.wire();
 
         deployment.deploy().<span class="kw">await</span>.unwrap();
 

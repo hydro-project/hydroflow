@@ -29,23 +29,31 @@
 <a href="#29" id="29">29</a>
 <a href="#30" id="30">30</a>
 <a href="#31" id="31">31</a>
+<a href="#32" id="32">32</a>
+<a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 
 <span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use </span><span class="kw">crate</span>::builder::Builders;
 <span class="kw">use </span><span class="kw">crate</span>::node::HfNode;
-<span class="kw">use </span><span class="kw">crate</span>::HfStream;
+<span class="kw">use </span><span class="kw">crate</span>::Stream;
 
-<span class="kw">pub struct </span>HfCycle&lt;<span class="lifetime">&#39;a</span>, T, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+<span class="doccomment">/// Represents a fixpoint cycle in the graph that will be fulfilled
+/// by a stream that is not yet known.
+///
+/// See [`Stream`] for an explainer on the type parameters.
+</span><span class="kw">pub struct </span>HfCycle&lt;<span class="lifetime">&#39;a</span>, T, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) ident: syn::Ident,
     <span class="kw">pub</span>(<span class="kw">crate</span>) node: N,
     <span class="kw">pub</span>(<span class="kw">crate</span>) builders: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Builders,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;T&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;(T, W)&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; HfCycle&lt;<span class="lifetime">&#39;a</span>, T, N&gt; {
-    <span class="kw">pub fn </span>complete(<span class="self">self</span>, stream: <span class="kw-2">&amp;</span>HfStream&lt;<span class="lifetime">&#39;a</span>, T, N&gt;) {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; HfCycle&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
+    <span class="kw">pub fn </span>complete(<span class="self">self</span>, stream: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;) {
         <span class="kw">let </span>ident = <span class="self">self</span>.ident;
         <span class="kw">let </span>stream_ident = stream.ident.clone();
 

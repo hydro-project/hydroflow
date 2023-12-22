@@ -667,6 +667,65 @@
 <a href="#667" id="667">667</a>
 <a href="#668" id="668">668</a>
 <a href="#669" id="669">669</a>
+<a href="#670" id="670">670</a>
+<a href="#671" id="671">671</a>
+<a href="#672" id="672">672</a>
+<a href="#673" id="673">673</a>
+<a href="#674" id="674">674</a>
+<a href="#675" id="675">675</a>
+<a href="#676" id="676">676</a>
+<a href="#677" id="677">677</a>
+<a href="#678" id="678">678</a>
+<a href="#679" id="679">679</a>
+<a href="#680" id="680">680</a>
+<a href="#681" id="681">681</a>
+<a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a>
+<a href="#687" id="687">687</a>
+<a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a>
+<a href="#690" id="690">690</a>
+<a href="#691" id="691">691</a>
+<a href="#692" id="692">692</a>
+<a href="#693" id="693">693</a>
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::io;
@@ -687,16 +746,38 @@
     HfCluster, HfNode, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany, HfSendOneToOne,
 };
 
-<span class="kw">pub struct </span>HfStream&lt;<span class="lifetime">&#39;a</span>, T, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+<span class="doccomment">/// Marks the stream as being asynchronous, which means the presence
+/// of all elements is directly influenced by the runtime&#39;s batching
+/// behavior. Aggregation operations are not permitted on streams
+/// with this tag because the developer has not explicitly specified
+/// if they want to aggregate over the entire stream or just the
+/// current batch.
+</span><span class="kw">pub struct </span>Async {}
+
+<span class="doccomment">/// Marks the stream as being windowed, which means the developer has
+/// opted-into either a batched or persistent windowing semantics.
+/// Aggregation operations are permitted on streams with this tag.
+</span><span class="kw">pub struct </span>Windowed {}
+
+<span class="doccomment">/// An infinite stream of elements of type `T`.
+///
+/// Type Parameters:
+/// - `&#39;a`: the lifetime of the final Hydroflow graph, which constraints
+///   which values can be captured in closures passed to operators
+/// - `T`: the type of elements in the stream
+/// - `W`: the windowing semantics of the stream, which is either [`Async`]
+///    or [`Windowed`]
+/// - `N`: the type of the node that the stream is materialized on
+</span><span class="kw">pub struct </span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) ident: syn::Ident,
     <span class="kw">pub</span>(<span class="kw">crate</span>) node: N,
     <span class="kw">pub</span>(<span class="kw">crate</span>) next_id: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>RefCell&lt;usize&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) builders: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Builders,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut &amp;</span><span class="lifetime">&#39;a </span>T&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut &amp;</span><span class="lifetime">&#39;a </span>(), T, W)&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, T, N&gt; {
-    <span class="kw">fn </span>pipeline_op&lt;U&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, pipeline: Pipeline) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, U, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
+    <span class="kw">fn </span>pipeline_op&lt;U, W2&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, pipeline: Pipeline) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, U, W2, N&gt; {
         <span class="kw">let </span>next_id = {
             <span class="kw">let </span><span class="kw-2">mut </span>next_id = <span class="self">self</span>.next_id.borrow_mut();
             <span class="kw">let </span>id = <span class="kw-2">*</span>next_id;
@@ -717,7 +798,7 @@
                 #ident = #self_ident -&gt; #pipeline -&gt; tee();
             });
 
-        HfStream {
+        Stream {
             ident,
             node: <span class="self">self</span>.node.clone(),
             next_id: <span class="self">self</span>.next_id,
@@ -726,16 +807,16 @@
         }
     }
 
-    <span class="kw">pub fn </span>map&lt;U, F: Fn(T) -&gt; U + <span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, F&gt;) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, U, N&gt; {
+    <span class="kw">pub fn </span>map&lt;U, F: Fn(T) -&gt; U + <span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, F&gt;) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, U, W, N&gt; {
         <span class="kw">let </span>f = f.splice();
         <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(map(#f)))
     }
 
-    <span class="kw">pub fn </span>enumerate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, (usize, T), N&gt; {
+    <span class="kw">pub fn </span>enumerate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (usize, T), W, N&gt; {
         <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(enumerate()))
     }
 
-    <span class="kw">pub fn </span>inspect&lt;F: Fn(<span class="kw-2">&amp;</span>T) + <span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, F&gt;) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, T, N&gt; {
+    <span class="kw">pub fn </span>inspect&lt;F: Fn(<span class="kw-2">&amp;</span>T) + <span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, F&gt;) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
         <span class="kw">let </span>f = f.splice();
         <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(inspect(#f)))
     }
@@ -743,7 +824,7 @@
     <span class="kw">pub fn </span>filter&lt;F: Fn(<span class="kw-2">&amp;</span>T) -&gt; bool + <span class="lifetime">&#39;a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, F&gt;,
-    ) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, T, N&gt; {
+    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
         <span class="kw">let </span>f = f.splice();
         <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(filter(#f)))
     }
@@ -751,37 +832,17 @@
     <span class="kw">pub fn </span>filter_map&lt;U, F: Fn(T) -&gt; <span class="prelude-ty">Option</span>&lt;U&gt; + <span class="lifetime">&#39;a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, F&gt;,
-    ) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, U, N&gt; {
+    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, U, W, N&gt; {
         <span class="kw">let </span>f = f.splice();
         <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(filter_map(#f)))
     }
 
-    <span class="kw">pub fn </span>fold&lt;A, I: Fn() -&gt; A + <span class="lifetime">&#39;a</span>, C: Fn(<span class="kw-2">&amp;mut </span>A, T)&gt;(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, I&gt;,
-        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, C&gt;,
-    ) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, A, N&gt; {
-        <span class="kw">let </span>init = init.splice();
-        <span class="kw">let </span>comb = comb.splice();
-        <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(fold::&lt;<span class="lifetime">&#39;tick</span>&gt;(#init, #comb)))
-    }
-
-    <span class="kw">pub fn </span>persist(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, T, N&gt; {
+    <span class="kw">pub fn </span>persist(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
         <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(persist()))
     }
 
-    <span class="kw">pub fn </span>delta(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, T, N&gt; {
-        <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(multiset_delta()))
-    }
-
-    <span class="kw">pub fn </span>unique(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, T, N&gt;
-    <span class="kw">where
-        </span>T: Eq + Hash,
-    {
-        <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(unique::&lt;<span class="lifetime">&#39;tick</span>&gt;()))
-    }
-
-    <span class="kw">pub fn </span>cross_product&lt;O&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>HfStream&lt;<span class="lifetime">&#39;a</span>, O, N&gt;) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, (T, O), N&gt; {
+    <span class="comment">// TODO(shadaj): should allow for differing windows, using strongest one
+    </span><span class="kw">pub fn </span>cross_product&lt;O&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, O, W, N&gt;) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (T, O), W, N&gt; {
         <span class="kw">let </span>next_id = {
             <span class="kw">let </span><span class="kw-2">mut </span>next_id = <span class="self">self</span>.next_id.borrow_mut();
             <span class="kw">let </span>id = <span class="kw-2">*</span>next_id;
@@ -812,7 +873,7 @@
             #other_ident -&gt; [<span class="number">1</span>]#ident;
         });
 
-        HfStream {
+        Stream {
             ident,
             node: <span class="self">self</span>.node.clone(),
             next_id: <span class="self">self</span>.next_id,
@@ -821,7 +882,7 @@
         }
     }
 
-    <span class="kw">pub fn </span>union(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>HfStream&lt;<span class="lifetime">&#39;a</span>, T, N&gt;) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, T, N&gt; {
+    <span class="kw">pub fn </span>union(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
         <span class="kw">let </span>next_id = {
             <span class="kw">let </span><span class="kw-2">mut </span>next_id = <span class="self">self</span>.next_id.borrow_mut();
             <span class="kw">let </span>id = <span class="kw-2">*</span>next_id;
@@ -852,7 +913,7 @@
             #other_ident -&gt; [<span class="number">1</span>]#ident;
         });
 
-        HfStream {
+        Stream {
             ident,
             node: <span class="self">self</span>.node.clone(),
             next_id: <span class="self">self</span>.next_id,
@@ -890,16 +951,62 @@
                 #self_ident -&gt; dest_sink(#sink);
             });
     }
+
+    <span class="kw">pub fn </span>assume_windowed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
+        Stream {
+            ident: <span class="self">self</span>.ident.clone(),
+            node: <span class="self">self</span>.node.clone(),
+            next_id: <span class="self">self</span>.next_id,
+            builders: <span class="self">self</span>.builders,
+            _phantom: PhantomData,
+        }
+    }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Clone, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, <span class="kw-2">&amp;</span>T, N&gt; {
-    <span class="kw">pub fn </span>cloned(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, T, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N&gt; {
+    <span class="kw">pub fn </span>batched(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
+        Stream {
+            ident: <span class="self">self</span>.ident.clone(),
+            node: <span class="self">self</span>.node.clone(),
+            next_id: <span class="self">self</span>.next_id,
+            builders: <span class="self">self</span>.builders,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
+    <span class="kw">pub fn </span>fold&lt;A, I: Fn() -&gt; A + <span class="lifetime">&#39;a</span>, C: Fn(<span class="kw-2">&amp;mut </span>A, T)&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, I&gt;,
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, C&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, A, Windowed, N&gt; {
+        <span class="kw">let </span>init = init.splice();
+        <span class="kw">let </span>comb = comb.splice();
+        <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(fold::&lt;<span class="lifetime">&#39;tick</span>&gt;(#init, #comb)))
+    }
+
+    <span class="kw">pub fn </span>delta(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
+        <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(multiset_delta()))
+    }
+
+    <span class="kw">pub fn </span>unique(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt;
+    <span class="kw">where
+        </span>T: Eq + Hash,
+    {
+        <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(unique::&lt;<span class="lifetime">&#39;tick</span>&gt;()))
+    }
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Clone, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="kw-2">&amp;</span>T, W, N&gt; {
+    <span class="kw">pub fn </span>cloned(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
         <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(map(|d| d.clone())))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, K, V1, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, (K, V1), N&gt; {
-    <span class="kw">pub fn </span>join&lt;V2&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, n: <span class="kw-2">&amp;</span>HfStream&lt;<span class="lifetime">&#39;a</span>, (K, V2), N&gt;) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, (K, (V1, V2)), N&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, K, V1, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (K, V1), W, N&gt; {
+    <span class="comment">// TODO(shadaj): figure out window semantics
+    </span><span class="kw">pub fn </span>join&lt;W2, V2&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, n: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, (K, V2), W2, N&gt;) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (K, (V1, V2)), W, N&gt;
     <span class="kw">where
         </span>K: Eq + Hash,
     {
@@ -933,7 +1040,7 @@
             #other_ident -&gt; [<span class="number">1</span>]#ident;
         });
 
-        HfStream {
+        Stream {
             ident,
             node: <span class="self">self</span>.node.clone(),
             next_id: <span class="self">self</span>.next_id,
@@ -955,7 +1062,7 @@
     }
 }
 
-<span class="kw">fn </span>node_send_direct&lt;<span class="lifetime">&#39;a</span>, T, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(me: <span class="kw-2">&amp;</span>HfStream&lt;<span class="lifetime">&#39;a</span>, T, N&gt;, sink: Pipeline) {
+<span class="kw">fn </span>node_send_direct&lt;<span class="lifetime">&#39;a</span>, T, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;, sink: Pipeline) {
     <span class="kw">let </span>self_ident = <span class="kw-2">&amp;</span>me.ident;
 
     <span class="kw">let </span><span class="kw-2">mut </span>builders_borrowed = me.builders.borrow_mut();
@@ -969,7 +1076,7 @@
         });
 }
 
-<span class="kw">fn </span>node_send_bincode&lt;<span class="lifetime">&#39;a</span>, T: Serialize, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(me: <span class="kw-2">&amp;</span>HfStream&lt;<span class="lifetime">&#39;a</span>, T, N&gt;, sink: Pipeline) {
+<span class="kw">fn </span>node_send_bincode&lt;<span class="lifetime">&#39;a</span>, T: Serialize, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;, sink: Pipeline) {
     <span class="kw">let </span>self_ident = <span class="kw-2">&amp;</span>me.ident;
 
     <span class="kw">let </span><span class="kw-2">mut </span>builders_borrowed = me.builders.borrow_mut();
@@ -990,7 +1097,7 @@
         });
 }
 
-<span class="kw">fn </span>cluster_demux_bincode&lt;<span class="lifetime">&#39;a</span>, T, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(me: <span class="kw-2">&amp;</span>HfStream&lt;<span class="lifetime">&#39;a</span>, (u32, T), N&gt;, sink: Pipeline) {
+<span class="kw">fn </span>cluster_demux_bincode&lt;<span class="lifetime">&#39;a</span>, T, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), W, N&gt;, sink: Pipeline) {
     <span class="kw">let </span>self_ident = <span class="kw-2">&amp;</span>me.ident;
 
     <span class="kw">let </span><span class="kw-2">mut </span>builders_borrowed = me.builders.borrow_mut();
@@ -1011,8 +1118,8 @@
         });
 }
 
-<span class="kw">fn </span>node_recv_direct&lt;<span class="lifetime">&#39;a</span>, T, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;, N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    me: <span class="kw-2">&amp;</span>HfStream&lt;<span class="lifetime">&#39;a</span>, T, N&gt;,
+<span class="kw">fn </span>node_recv_direct&lt;<span class="lifetime">&#39;a</span>, T, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;, N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;,
     other: <span class="kw-2">&amp;</span>N2,
     source: Pipeline,
 ) -&gt; syn::Ident {
@@ -1038,8 +1145,8 @@
     ident
 }
 
-<span class="kw">fn </span>node_recv_bincode&lt;<span class="lifetime">&#39;a</span>, T1, T2: DeserializeOwned, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;, N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    me: <span class="kw-2">&amp;</span>HfStream&lt;<span class="lifetime">&#39;a</span>, T1, N&gt;,
+<span class="kw">fn </span>node_recv_bincode&lt;<span class="lifetime">&#39;a</span>, T1, T2: DeserializeOwned, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;, N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T1, W, N&gt;,
     other: <span class="kw-2">&amp;</span>N2,
     source: Pipeline,
     tagged: bool,
@@ -1081,11 +1188,11 @@
     ident
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, Bytes, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, Bytes, W, N&gt; {
     <span class="kw">pub fn </span>send_bytes&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
     <span class="kw">where
         </span>N: HfSendOneToOne&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
@@ -1097,7 +1204,7 @@
 
         <span class="self">self</span>.node.connect(other, <span class="kw-2">&amp;</span>send_port, <span class="kw-2">&amp;</span>recv_port);
 
-        HfStream {
+        Stream {
             ident,
             node: other.clone(),
             next_id: <span class="self">self</span>.next_id,
@@ -1109,7 +1216,7 @@
     <span class="kw">pub fn </span>send_bytes_tagged&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;(u32, BytesMut), io::Error&gt;, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;(u32, BytesMut), io::Error&gt;, Async, N2&gt;
     <span class="kw">where
         </span>N: HfSendManyToOne&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
@@ -1121,7 +1228,7 @@
 
         <span class="self">self</span>.node.connect(other, <span class="kw-2">&amp;</span>send_port, <span class="kw-2">&amp;</span>recv_port);
 
-        HfStream {
+        Stream {
             ident,
             node: other.clone(),
             next_id: <span class="self">self</span>.next_id,
@@ -1133,28 +1240,32 @@
     <span class="kw">pub fn </span>broadcast_bytes&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt; + HfCluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
     <span class="kw">where
         </span>N: HfSendOneToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
         <span class="kw">let </span>other_ids = <span class="self">self</span>.node.source_iter(other.ids()).cloned();
-        other_ids.cross_product(<span class="self">self</span>).demux_bytes(other)
+        other_ids
+            .cross_product(<span class="kw-2">&amp;</span><span class="self">self</span>.assume_windowed())
+            .demux_bytes(other)
     }
 
     <span class="kw">pub fn </span>broadcast_bytes_tagged&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt; + HfCluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;(u32, BytesMut), io::Error&gt;, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;(u32, BytesMut), io::Error&gt;, Async, N2&gt;
     <span class="kw">where
         </span>N: HfSendManyToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
         <span class="kw">let </span>other_ids = <span class="self">self</span>.node.source_iter(other.ids()).cloned();
-        other_ids.cross_product(<span class="self">self</span>).demux_bytes_tagged(other)
+        other_ids
+            .cross_product(<span class="kw-2">&amp;</span><span class="self">self</span>.assume_windowed())
+            .demux_bytes_tagged(other)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Serialize + DeserializeOwned, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, T, N&gt; {
-    <span class="kw">pub fn </span>send_bincode&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, T, N2&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Serialize + DeserializeOwned, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
+    <span class="kw">pub fn </span>send_bincode&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N2&gt;
     <span class="kw">where
         </span>N: HfSendOneToOne&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
@@ -1162,7 +1273,7 @@
         node_send_bincode(<span class="self">self</span>, <span class="self">self</span>.node.gen_sink_statement(<span class="kw-2">&amp;</span>send_port));
 
         <span class="kw">let </span>recv_port = other.next_port();
-        <span class="kw">let </span>ident = node_recv_bincode::&lt;<span class="kw">_</span>, T, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
+        <span class="kw">let </span>ident = node_recv_bincode::&lt;<span class="kw">_</span>, T, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
             <span class="self">self</span>,
             other,
             N::gen_source_statement(other, <span class="kw-2">&amp;</span>recv_port),
@@ -1171,7 +1282,7 @@
 
         <span class="self">self</span>.node.connect(other, <span class="kw-2">&amp;</span>send_port, <span class="kw-2">&amp;</span>recv_port);
 
-        HfStream {
+        Stream {
             ident,
             node: other.clone(),
             next_id: <span class="self">self</span>.next_id,
@@ -1180,7 +1291,7 @@
         }
     }
 
-    <span class="kw">pub fn </span>send_bincode_tagged&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, (u32, T), N2&gt;
+    <span class="kw">pub fn </span>send_bincode_tagged&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), Async, N2&gt;
     <span class="kw">where
         </span>N: HfSendManyToOne&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
@@ -1188,7 +1299,7 @@
         node_send_bincode(<span class="self">self</span>, <span class="self">self</span>.node.gen_sink_statement(<span class="kw-2">&amp;</span>send_port));
 
         <span class="kw">let </span>recv_port = other.next_port();
-        <span class="kw">let </span>ident = node_recv_bincode::&lt;<span class="kw">_</span>, T, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
+        <span class="kw">let </span>ident = node_recv_bincode::&lt;<span class="kw">_</span>, T, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
             <span class="self">self</span>,
             other,
             N::gen_source_statement(other, <span class="kw-2">&amp;</span>recv_port),
@@ -1197,7 +1308,7 @@
 
         <span class="self">self</span>.node.connect(other, <span class="kw-2">&amp;</span>send_port, <span class="kw-2">&amp;</span>recv_port);
 
-        HfStream {
+        Stream {
             ident,
             node: other.clone(),
             next_id: <span class="self">self</span>.next_id,
@@ -1209,31 +1320,35 @@
     <span class="kw">pub fn </span>broadcast_bincode&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt; + HfCluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, T, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N2&gt;
     <span class="kw">where
         </span>N: HfSendOneToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
         <span class="kw">let </span>other_ids = <span class="self">self</span>.node.source_iter(other.ids()).cloned();
-        other_ids.cross_product(<span class="self">self</span>).demux_bincode(other)
+        other_ids
+            .cross_product(<span class="kw-2">&amp;</span><span class="self">self</span>.assume_windowed())
+            .demux_bincode(other)
     }
 
     <span class="kw">pub fn </span>broadcast_bincode_tagged&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt; + HfCluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, (u32, T), N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), Async, N2&gt;
     <span class="kw">where
         </span>N: HfSendManyToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
         <span class="kw">let </span>other_ids = <span class="self">self</span>.node.source_iter(other.ids()).cloned();
-        other_ids.cross_product(<span class="self">self</span>).demux_bincode_tagged(other)
+        other_ids
+            .cross_product(<span class="kw-2">&amp;</span><span class="self">self</span>.assume_windowed())
+            .demux_bincode_tagged(other)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, (u32, Bytes), N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, Bytes), W, N&gt; {
     <span class="kw">pub fn </span>demux_bytes&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
     <span class="kw">where
         </span>N: HfSendOneToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
@@ -1245,7 +1360,7 @@
 
         <span class="self">self</span>.node.connect(other, <span class="kw-2">&amp;</span>send_port, <span class="kw-2">&amp;</span>recv_port);
 
-        HfStream {
+        Stream {
             ident,
             node: other.clone(),
             next_id: <span class="self">self</span>.next_id,
@@ -1255,8 +1370,8 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Serialize + DeserializeOwned, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, (u32, T), N&gt; {
-    <span class="kw">pub fn </span>demux_bincode&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, T, N2&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Serialize + DeserializeOwned, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), W, N&gt; {
+    <span class="kw">pub fn </span>demux_bincode&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N2&gt;
     <span class="kw">where
         </span>N: HfSendOneToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
@@ -1264,7 +1379,7 @@
         cluster_demux_bincode(<span class="self">self</span>, <span class="self">self</span>.node.gen_sink_statement(<span class="kw-2">&amp;</span>send_port));
 
         <span class="kw">let </span>recv_port = other.next_port();
-        <span class="kw">let </span>ident = node_recv_bincode::&lt;<span class="kw">_</span>, T, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
+        <span class="kw">let </span>ident = node_recv_bincode::&lt;<span class="kw">_</span>, T, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
             <span class="self">self</span>,
             other,
             N::gen_source_statement(other, <span class="kw-2">&amp;</span>recv_port),
@@ -1273,7 +1388,7 @@
 
         <span class="self">self</span>.node.connect(other, <span class="kw-2">&amp;</span>send_port, <span class="kw-2">&amp;</span>recv_port);
 
-        HfStream {
+        Stream {
             ident,
             node: other.clone(),
             next_id: <span class="self">self</span>.next_id,
@@ -1283,11 +1398,11 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, (u32, Bytes), N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, Bytes), W, N&gt; {
     <span class="kw">pub fn </span>demux_bytes_tagged&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;(u32, BytesMut), io::Error&gt;, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;(u32, BytesMut), io::Error&gt;, Async, N2&gt;
     <span class="kw">where
         </span>N: HfSendManyToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
@@ -1299,7 +1414,7 @@
 
         <span class="self">self</span>.node.connect(other, <span class="kw-2">&amp;</span>send_port, <span class="kw-2">&amp;</span>recv_port);
 
-        HfStream {
+        Stream {
             ident,
             node: other.clone(),
             next_id: <span class="self">self</span>.next_id,
@@ -1309,8 +1424,11 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Serialize + DeserializeOwned, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, (u32, T), N&gt; {
-    <span class="kw">pub fn </span>demux_bincode_tagged&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; HfStream&lt;<span class="lifetime">&#39;a</span>, (u32, T), N2&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Serialize + DeserializeOwned, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), W, N&gt; {
+    <span class="kw">pub fn </span>demux_bincode_tagged&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        other: <span class="kw-2">&amp;</span>N2,
+    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), Async, N2&gt;
     <span class="kw">where
         </span>N: HfSendManyToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
@@ -1318,7 +1436,7 @@
         cluster_demux_bincode(<span class="self">self</span>, <span class="self">self</span>.node.gen_sink_statement(<span class="kw-2">&amp;</span>send_port));
 
         <span class="kw">let </span>recv_port = other.next_port();
-        <span class="kw">let </span>ident = node_recv_bincode::&lt;<span class="kw">_</span>, T, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
+        <span class="kw">let </span>ident = node_recv_bincode::&lt;<span class="kw">_</span>, T, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;(
             <span class="self">self</span>,
             other,
             N::gen_source_statement(other, <span class="kw-2">&amp;</span>recv_port),
@@ -1327,7 +1445,7 @@
 
         <span class="self">self</span>.node.connect(other, <span class="kw-2">&amp;</span>send_port, <span class="kw-2">&amp;</span>recv_port);
 
-        HfStream {
+        Stream {
             ident,
             node: other.clone(),
             next_id: <span class="self">self</span>.next_id,

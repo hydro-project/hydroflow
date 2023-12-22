@@ -11,11 +11,11 @@
 </pre></div><pre class="rust"><code><span class="comment">// cannot use hydroflow::main because connect_local_blocking causes a deadlock
 </span><span class="attr">#[tokio::main]
 </span><span class="kw">async fn </span>main() {
-    <span class="kw">let </span>node_id: usize = std::env::args().nth(<span class="number">1</span>).unwrap().parse().unwrap();
     <span class="kw">let </span>ports = hydroflow::util::cli::init().<span class="kw">await</span>;
 
-    <span class="kw">let </span>joined = <span class="macro">hydroflow_plus_test::cluster::simple_cluster_runtime!</span>(<span class="kw-2">&amp;</span>ports, node_id);
-
-    hydroflow::util::cli::launch_flow(joined).<span class="kw">await</span>;
+    hydroflow::util::cli::launch_flow(<span class="macro">hydroflow_plus_test::cluster::simple_cluster_runtime!</span>(
+        <span class="kw-2">&amp;</span>ports
+    ))
+    .<span class="kw">await</span>;
 }
 </code></pre></div></section></main></body></html>

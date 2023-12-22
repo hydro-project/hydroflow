@@ -89,6 +89,9 @@
 <a href="#89" id="89">89</a>
 <a href="#90" id="90">90</a>
 <a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
 </pre></div><pre class="rust"><code><span class="attr">#![allow(missing_docs)] </span><span class="comment">// TODO(mingwei)
 
 </span><span class="kw">use </span>std::cell::RefCell;
@@ -119,9 +122,9 @@
     }
 }
 
-<span class="kw">pub struct </span>HydroCLI&lt;T&gt; {
+<span class="kw">pub struct </span>HydroCLI&lt;T = <span class="prelude-ty">Option</span>&lt;()&gt;&gt; {
     ports: RefCell&lt;HashMap&lt;String, ServerOrBound&gt;&gt;,
-    <span class="kw">pub </span>meta: <span class="prelude-ty">Option</span>&lt;T&gt;,
+    <span class="kw">pub </span>meta: T,
 }
 
 <span class="kw">impl</span>&lt;T&gt; HydroCLI&lt;T&gt; {
@@ -134,7 +137,7 @@
     }
 }
 
-<span class="kw">pub async fn </span>init&lt;T: DeserializeOwned&gt;() -&gt; HydroCLI&lt;T&gt; {
+<span class="kw">pub async fn </span>init&lt;T: DeserializeOwned + Default&gt;() -&gt; HydroCLI&lt;T&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>input = String::new();
     std::io::stdin().read_line(<span class="kw-2">&amp;mut </span>input).unwrap();
     <span class="kw">let </span>trimmed = input.trim();
@@ -177,7 +180,10 @@
 
     HydroCLI {
         ports: RefCell::new(all_connected),
-        meta: bind_config.<span class="number">1</span>.map(|s| serde_json::from_str(<span class="kw-2">&amp;</span>s).unwrap()),
+        meta: bind_config
+            .<span class="number">1
+            </span>.map(|b| serde_json::from_str(<span class="kw-2">&amp;</span>b).unwrap())
+            .unwrap_or_default(),
     }
 }
 </code></pre></div></section></main></body></html>

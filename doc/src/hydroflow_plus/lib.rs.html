@@ -62,8 +62,8 @@
     <span class="kw">pub use </span>bincode;
 }
 
-<span class="kw">mod </span>stream;
-<span class="kw">pub use </span>stream::HfStream;
+<span class="kw">pub mod </span>stream;
+<span class="kw">pub use </span>stream::Stream;
 
 <span class="kw">pub mod </span>node;
 
@@ -71,7 +71,7 @@
 <span class="kw">pub use </span>cycle::HfCycle;
 
 <span class="kw">pub mod </span>builder;
-<span class="kw">pub use </span>builder::HfBuilder;
+<span class="kw">pub use </span>builder::GraphBuilder;
 
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>RuntimeContext&lt;<span class="lifetime">&#39;a</span>&gt; {

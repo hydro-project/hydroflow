@@ -496,6 +496,7 @@
 <a href="#496" id="496">496</a>
 <a href="#497" id="497">497</a>
 <a href="#498" id="498">498</a>
+<a href="#499" id="499">499</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
@@ -506,6 +507,7 @@
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures_core::Future;
 <span class="kw">use </span>hydroflow_cli_integration::{InitConfig, ServerPort};
+<span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>tokio::sync::RwLock;
 
 <span class="kw">use </span><span class="self">self</span>::ports::{HydroflowPortConfig, HydroflowSink, SourcePath};
@@ -700,12 +702,12 @@
         }
     }
 
-    <span class="kw">pub fn </span>set_meta(<span class="kw-2">&amp;mut </span><span class="self">self</span>, meta: String) {
-        <span class="kw">if </span><span class="self">self</span>.meta.is_some() {
-            <span class="macro">panic!</span>(<span class="string">&quot;meta already set&quot;</span>);
+    <span class="kw">pub fn </span>update_meta&lt;T: Serialize&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, meta: T) {
+        <span class="kw">if </span><span class="self">self</span>.launched_binary.is_some() {
+            <span class="macro">panic!</span>(<span class="string">&quot;Cannot update meta after binary has been launched&quot;</span>)
         }
 
-        <span class="self">self</span>.meta = <span class="prelude-val">Some</span>(meta);
+        <span class="self">self</span>.meta = <span class="prelude-val">Some</span>(serde_json::to_string(<span class="kw-2">&amp;</span>meta).unwrap());
     }
 
     <span class="kw">pub fn </span>get_port(

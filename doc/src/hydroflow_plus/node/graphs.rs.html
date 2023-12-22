@@ -100,32 +100,47 @@
 <a href="#100" id="100">100</a>
 <a href="#101" id="101">101</a>
 <a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 
 <span class="kw">use </span>stageleft::{Quoted, RuntimeData};
 
-<span class="kw">use super</span>::{HfCluster, HfDeploy, HfNode, HfNodeBuilder};
+<span class="kw">use super</span>::{HfCluster, HfNode, LocalDeploy, NodeBuilder};
 <span class="kw">use </span><span class="kw">crate</span>::builder::Builders;
-<span class="kw">use </span><span class="kw">crate</span>::HfBuilder;
+<span class="kw">use </span><span class="kw">crate</span>::GraphBuilder;
 
 <span class="kw">pub struct </span>SingleGraph {}
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; HfDeploy&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>SingleGraph {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; LocalDeploy&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>SingleGraph {
     <span class="kw">type </span>Node = SingleNode&lt;<span class="lifetime">&#39;a</span>&gt;;
     <span class="kw">type </span>Cluster = SingleNode&lt;<span class="lifetime">&#39;a</span>&gt;;
     <span class="kw">type </span>Meta = ();
-    <span class="kw">type </span>RuntimeID = usize;
+    <span class="kw">type </span>RuntimeID = ();
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; HfNodeBuilder&lt;<span class="lifetime">&#39;a</span>, SingleGraph&gt; <span class="kw">for </span>() {
-    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, _id: usize, builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, SingleGraph&gt;) -&gt; SingleNode&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; NodeBuilder&lt;<span class="lifetime">&#39;a</span>, SingleGraph&gt; <span class="kw">for </span>() {
+    <span class="kw">fn </span>build(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        _id: usize,
+        builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, SingleGraph&gt;,
+        _meta: <span class="kw-2">&amp;mut </span>(),
+    ) -&gt; SingleNode&lt;<span class="lifetime">&#39;a</span>&gt; {
         SingleNode { builder }
     }
 }
 
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>SingleNode&lt;<span class="lifetime">&#39;a</span>&gt; {
-    builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, SingleGraph&gt;,
+    builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, SingleGraph&gt;,
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; HfNode&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>SingleNode&lt;<span class="lifetime">&#39;a</span>&gt; {
@@ -144,7 +159,7 @@
         <span class="macro">panic!</span>();
     }
 
-    <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _meta: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Meta&gt;) {}
+    <span class="kw">fn </span>update_meta(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _meta: <span class="kw-2">&amp;</span><span class="self">Self</span>::Meta) {}
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; HfCluster&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>SingleNode&lt;<span class="lifetime">&#39;a</span>&gt; {
@@ -157,22 +172,27 @@
 
 <span class="kw">pub struct </span>MultiGraph {}
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; HfDeploy&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>MultiGraph {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; LocalDeploy&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>MultiGraph {
     <span class="kw">type </span>Node = MultiNode&lt;<span class="lifetime">&#39;a</span>&gt;;
     <span class="kw">type </span>Cluster = MultiNode&lt;<span class="lifetime">&#39;a</span>&gt;;
     <span class="kw">type </span>Meta = ();
     <span class="kw">type </span>RuntimeID = usize;
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; HfNodeBuilder&lt;<span class="lifetime">&#39;a</span>, MultiGraph&gt; <span class="kw">for </span>() {
-    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, id: usize, builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, MultiGraph&gt;) -&gt; MultiNode&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; NodeBuilder&lt;<span class="lifetime">&#39;a</span>, MultiGraph&gt; <span class="kw">for </span>() {
+    <span class="kw">fn </span>build(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        id: usize,
+        builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, MultiGraph&gt;,
+        _meta: <span class="kw-2">&amp;mut </span>(),
+    ) -&gt; MultiNode&lt;<span class="lifetime">&#39;a</span>&gt; {
         MultiNode { builder, id }
     }
 }
 
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>MultiNode&lt;<span class="lifetime">&#39;a</span>&gt; {
-    builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, MultiGraph&gt;,
+    builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, MultiGraph&gt;,
     id: usize,
 }
 
@@ -192,7 +212,7 @@
         <span class="macro">panic!</span>();
     }
 
-    <span class="kw">fn </span>build(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _meta: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Meta&gt;) {}
+    <span class="kw">fn </span>update_meta(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _meta: <span class="kw-2">&amp;</span><span class="self">Self</span>::Meta) {}
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; HfCluster&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>MultiNode&lt;<span class="lifetime">&#39;a</span>&gt; {

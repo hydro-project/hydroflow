@@ -86,20 +86,17 @@
 <a href="#86" id="86">86</a>
 <a href="#87" id="87">87</a>
 <a href="#88" id="88">88</a>
-<a href="#89" id="89">89</a>
-<a href="#90" id="90">90</a>
-<a href="#91" id="91">91</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow::bytes::BytesMut;
 <span class="kw">use </span>hydroflow::util::cli::HydroCLI;
-<span class="kw">use </span>hydroflow_plus::node::{HfNetworkedDeploy, HfNode, HfNodeBuilder};
+<span class="kw">use </span>hydroflow_plus::node::{Deploy, HfNode, NodeBuilder};
 <span class="kw">use </span>hydroflow_plus::scheduled::graph::Hydroflow;
-<span class="kw">use </span>hydroflow_plus::HfBuilder;
+<span class="kw">use </span>hydroflow_plus::GraphBuilder;
 <span class="kw">use </span>hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 <span class="kw">use </span>stageleft::{q, Quoted, RuntimeData};
 
-<span class="kw">pub fn </span>networked_basic&lt;<span class="lifetime">&#39;a</span>, D: HfNetworkedDeploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    node_builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>HfNodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+<span class="kw">pub fn </span>networked_basic&lt;<span class="lifetime">&#39;a</span>, D: Deploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+    node_builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>NodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
 ) -&gt; (D::NodePort, D::Node, D::Node) {
     <span class="kw">let </span>node_zero = graph.node(node_builder);
     <span class="kw">let </span>node_one = graph.node(node_builder);
@@ -121,12 +118,11 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>networked_basic_runtime&lt;<span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HfBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
+    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
-    node_id: RuntimeData&lt;usize&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
     <span class="kw">let _ </span>= networked_basic(graph, <span class="kw-2">&amp;</span>cli);
-    graph.build(node_id)
+    graph.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::runtime]
@@ -144,19 +140,17 @@
         <span class="kw">let </span><span class="kw-2">mut </span>deployment = Deployment::new();
         <span class="kw">let </span>localhost = deployment.Localhost();
 
-        <span class="kw">let </span>builder = hydroflow_plus::HfBuilder::new();
+        <span class="kw">let </span>builder = hydroflow_plus::GraphBuilder::new();
         <span class="kw">let </span>(source_zero_port, <span class="kw">_</span>, node_one) = <span class="kw">super</span>::networked_basic(
             <span class="kw-2">&amp;</span>builder,
-            <span class="kw-2">&amp;</span>CLIDeployNodeBuilder::new(|id| {
+            <span class="kw-2">&amp;</span>CLIDeployNodeBuilder::new(|| {
                 deployment.add_service(
                     HydroflowCrate::new(<span class="string">&quot;.&quot;</span>, localhost.clone())
                         .bin(<span class="string">&quot;networked_basic&quot;</span>)
-                        .profile(<span class="string">&quot;dev&quot;</span>)
-                        .args(<span class="macro">vec!</span>[id.to_string()]),
+                        .profile(<span class="string">&quot;dev&quot;</span>),
                 )
             }),
         );
-        builder.wire();
 
         <span class="kw">let </span>port_to_zero = source_zero_port
             .create_sender(<span class="kw-2">&amp;mut </span>deployment, <span class="kw-2">&amp;</span>localhost)

@@ -1,4 +1,4 @@
 (function() {var implementors = {
-"hydroflow_plus":[["impl&lt;'a, D: <a class=\"trait\" href=\"hydroflow_plus/node/trait.HfDeploy.html\" title=\"trait hydroflow_plus::node::HfDeploy\">HfDeploy</a>&lt;'a&gt;&gt; <a class=\"trait\" href=\"stageleft/trait.QuotedContext.html\" title=\"trait stageleft::QuotedContext\">QuotedContext</a> for <a class=\"struct\" href=\"hydroflow_plus/builder/struct.HfBuilder.html\" title=\"struct hydroflow_plus::builder::HfBuilder\">HfBuilder</a>&lt;'a, D&gt;"]],
+"hydroflow_plus":[["impl&lt;'a, D: <a class=\"trait\" href=\"hydroflow_plus/node/trait.LocalDeploy.html\" title=\"trait hydroflow_plus::node::LocalDeploy\">LocalDeploy</a>&lt;'a&gt;&gt; <a class=\"trait\" href=\"stageleft/trait.QuotedContext.html\" title=\"trait stageleft::QuotedContext\">QuotedContext</a> for <a class=\"struct\" href=\"hydroflow_plus/builder/struct.GraphBuilder.html\" title=\"struct hydroflow_plus::builder::GraphBuilder\">GraphBuilder</a>&lt;'a, D&gt;"]],
 "stageleft":[]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
