@@ -73,6 +73,11 @@ jobs:
           working-directory: hydro_deploy/hydro_cli
           target: ${{ matrix.target }}
           manylinux: auto
+          # fix openssl, based on https://github.com/Intreecom/scyllapy/blob/develop/.github/workflows/release.yaml
+          before-script-linux: |
+            if command -v yum &> /dev/null; then
+              yum update -y && yum install -y perl-core
+            fi
           args: --release --out dist
       - name: "Install built wheel"
         if: ${{ startsWith(matrix.target, 'x86_64') }}
