@@ -5,27 +5,69 @@ points in the code base, for example, changes to configuration values.</p>
 <h2 id="usage"><a href="#usage">Usage</a></h2>
 <p><a href="fn.channel.html" title="fn hydroflow_plus::tokio::sync::watch::channel"><code>channel</code></a> returns a <a href="struct.Sender.html" title="struct hydroflow_plus::tokio::sync::watch::Sender"><code>Sender</code></a> / <a href="struct.Receiver.html" title="struct hydroflow_plus::tokio::sync::watch::Receiver"><code>Receiver</code></a> pair. These are the producer
 and consumer halves of the channel. The channel is created with an initial
-value. The <strong>latest</strong> value stored in the channel is accessed with
-<a href="struct.Receiver.html#method.borrow" title="method hydroflow_plus::tokio::sync::watch::Receiver::borrow"><code>Receiver::borrow()</code></a>. Awaiting <a href="struct.Receiver.html#method.changed" title="method hydroflow_plus::tokio::sync::watch::Receiver::changed"><code>Receiver::changed()</code></a> waits for a new
-value to be sent by the <a href="struct.Sender.html" title="struct hydroflow_plus::tokio::sync::watch::Sender"><code>Sender</code></a> half.</p>
+value.</p>
+<p>Each <a href="struct.Receiver.html" title="struct hydroflow_plus::tokio::sync::watch::Receiver"><code>Receiver</code></a> independently tracks the last value <em>seen</em> by its caller.</p>
+<p>To access the <strong>current</strong> value stored in the channel and mark it as <em>seen</em>
+by a given <a href="struct.Receiver.html" title="struct hydroflow_plus::tokio::sync::watch::Receiver"><code>Receiver</code></a>, use <a href="struct.Receiver.html#method.borrow_and_update" title="method hydroflow_plus::tokio::sync::watch::Receiver::borrow_and_update"><code>Receiver::borrow_and_update()</code></a>.</p>
+<p>To access the current value <strong>without</strong> marking it as <em>seen</em>, use
+<a href="struct.Receiver.html#method.borrow" title="method hydroflow_plus::tokio::sync::watch::Receiver::borrow"><code>Receiver::borrow()</code></a>. (If the value has already been marked <em>seen</em>,
+<a href="struct.Receiver.html#method.borrow" title="method hydroflow_plus::tokio::sync::watch::Receiver::borrow"><code>Receiver::borrow()</code></a> is equivalent to <a href="struct.Receiver.html#method.borrow_and_update" title="method hydroflow_plus::tokio::sync::watch::Receiver::borrow_and_update"><code>Receiver::borrow_and_update()</code></a>.)</p>
+<p>For more information on when to use these methods, see
+<a href="#borrow_and_update-versus-borrow">here</a>.</p>
+<h3 id="change-notifications"><a href="#change-notifications">Change notifications</a></h3>
+<p>The <a href="struct.Receiver.html" title="struct hydroflow_plus::tokio::sync::watch::Receiver"><code>Receiver</code></a> half provides an asynchronous <a href="struct.Receiver.html#method.changed" title="method hydroflow_plus::tokio::sync::watch::Receiver::changed"><code>changed</code></a> method. This
+method is ready when a new, <em>unseen</em> value is sent via the <a href="struct.Sender.html" title="struct hydroflow_plus::tokio::sync::watch::Sender"><code>Sender</code></a> half.</p>
+<ul>
+<li><a href="struct.Receiver.html#method.changed" title="method hydroflow_plus::tokio::sync::watch::Receiver::changed"><code>Receiver::changed()</code></a> returns <code>Ok(())</code> on receiving a new value, or
+<code>Err(</code><a href="error/struct.RecvError.html" title="struct hydroflow_plus::tokio::sync::watch::error::RecvError"><code>error::RecvError</code></a><code>)</code> if the <a href="struct.Sender.html" title="struct hydroflow_plus::tokio::sync::watch::Sender"><code>Sender</code></a> has been dropped.</li>
+<li>If the current value is <em>unseen</em> when calling <a href="struct.Receiver.html#method.changed" title="method hydroflow_plus::tokio::sync::watch::Receiver::changed"><code>changed</code></a>, then
+<a href="struct.Receiver.html#method.changed" title="method hydroflow_plus::tokio::sync::watch::Receiver::changed"><code>changed</code></a> will return immediately. If the current value is <em>seen</em>, then
+it will sleep until either a new message is sent via the <a href="struct.Sender.html" title="struct hydroflow_plus::tokio::sync::watch::Sender"><code>Sender</code></a> half,
+or the <a href="struct.Sender.html" title="struct hydroflow_plus::tokio::sync::watch::Sender"><code>Sender</code></a> is dropped.</li>
+<li>On completion, the <a href="struct.Receiver.html#method.changed" title="method hydroflow_plus::tokio::sync::watch::Receiver::changed"><code>changed</code></a> method marks the new value as <em>seen</em>.</li>
+<li>At creation, the initial value is considered <em>seen</em>. In other words,
+<a href="struct.Receiver.html#method.changed" title="method hydroflow_plus::tokio::sync::watch::Receiver::changed"><code>Receiver::changed()</code></a> will not return until a subsequent value is sent.</li>
+<li>New <a href="struct.Receiver.html" title="struct hydroflow_plus::tokio::sync::watch::Receiver"><code>Receiver</code></a> instances can be created with <a href="struct.Sender.html#method.subscribe" title="method hydroflow_plus::tokio::sync::watch::Sender::subscribe"><code>Sender::subscribe()</code></a>.
+The current value at the time the <a href="struct.Receiver.html" title="struct hydroflow_plus::tokio::sync::watch::Receiver"><code>Receiver</code></a> is created is considered
+<em>seen</em>.</li>
+</ul>
+<h3 id="borrow_and_update-versus-borrow"><a href="#borrow_and_update-versus-borrow"><code>borrow_and_update</code> versus <code>borrow</code></a></h3>
+<p>If the receiver intends to await notifications from <a href="struct.Receiver.html#method.changed" title="method hydroflow_plus::tokio::sync::watch::Receiver::changed"><code>changed</code></a> in a loop,
+<a href="struct.Receiver.html#method.borrow_and_update" title="method hydroflow_plus::tokio::sync::watch::Receiver::borrow_and_update"><code>Receiver::borrow_and_update()</code></a> should be preferred over
+<a href="struct.Receiver.html#method.borrow" title="method hydroflow_plus::tokio::sync::watch::Receiver::borrow"><code>Receiver::borrow()</code></a>.  This avoids a potential race where a new value is
+sent between <a href="struct.Receiver.html#method.changed" title="method hydroflow_plus::tokio::sync::watch::Receiver::changed"><code>changed</code></a> being ready and the value being read. (If
+<a href="struct.Receiver.html#method.borrow" title="method hydroflow_plus::tokio::sync::watch::Receiver::borrow"><code>Receiver::borrow()</code></a> is used, the loop may run twice with the same value.)</p>
+<p>If the receiver is only interested in the current value, and does not intend
+to wait for changes, then <a href="struct.Receiver.html#method.borrow" title="method hydroflow_plus::tokio::sync::watch::Receiver::borrow"><code>Receiver::borrow()</code></a> can be used. It may be more
+convenient to use <a href="struct.Receiver.html#method.borrow" title="method hydroflow_plus::tokio::sync::watch::Receiver::borrow"><code>borrow</code></a> since it’s an <code>&amp;self</code>
+method—<a href="struct.Receiver.html#method.borrow_and_update" title="method hydroflow_plus::tokio::sync::watch::Receiver::borrow_and_update"><code>borrow_and_update</code></a> requires <code>&amp;mut self</code>.</p>
 <h2 id="examples"><a href="#examples">Examples</a></h2>
+<p>The following example prints <code>hello! world! </code>.</p>
+
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::sync::watch;
+<span class="kw">use </span>tokio::time::{Duration, sleep};
 
 <span class="kw">let </span>(tx, <span class="kw-2">mut </span>rx) = watch::channel(<span class="string">&quot;hello&quot;</span>);
 
 tokio::spawn(<span class="kw">async move </span>{
-    <span class="kw">while </span>rx.changed().<span class="kw">await</span>.is_ok() {
-        <span class="macro">println!</span>(<span class="string">&quot;received = {:?}&quot;</span>, <span class="kw-2">*</span>rx.borrow());
+    <span class="comment">// Use the equivalent of a &quot;do-while&quot; loop so the initial value is
+    // processed before awaiting the `changed()` future.
+    </span><span class="kw">loop </span>{
+        <span class="macro">println!</span>(<span class="string">&quot;{}! &quot;</span>, <span class="kw-2">*</span>rx.borrow_and_update());
+        <span class="kw">if </span>rx.changed().<span class="kw">await</span>.is_err() {
+            <span class="kw">break</span>;
+        }
     }
 });
 
+sleep(Duration::from_millis(<span class="number">100</span>)).<span class="kw">await</span>;
 tx.send(<span class="string">&quot;world&quot;</span>)<span class="question-mark">?</span>;</code></pre></div>
 <h2 id="closing"><a href="#closing">Closing</a></h2>
 <p><a href="struct.Sender.html#method.is_closed" title="method hydroflow_plus::tokio::sync::watch::Sender::is_closed"><code>Sender::is_closed</code></a> and <a href="struct.Sender.html#method.closed" title="method hydroflow_plus::tokio::sync::watch::Sender::closed"><code>Sender::closed</code></a> allow the producer to detect
 when all <a href="struct.Receiver.html" title="struct hydroflow_plus::tokio::sync::watch::Receiver"><code>Receiver</code></a> handles have been dropped. This indicates that there
 is no further interest in the values being produced and work can be stopped.</p>
-<p>The value in the channel will not be dropped until the sender and all receivers
-have been dropped.</p>
+<p>The value in the channel will not be dropped until the sender and all
+receivers have been dropped.</p>
 <h2 id="thread-safety"><a href="#thread-safety">Thread safety</a></h2>
 <p>Both <a href="struct.Sender.html" title="struct hydroflow_plus::tokio::sync::watch::Sender"><code>Sender</code></a> and <a href="struct.Receiver.html" title="struct hydroflow_plus::tokio::sync::watch::Receiver"><code>Receiver</code></a> are thread safe. They can be moved to other
 threads and can be used in a concurrent environment. Clones of <a href="struct.Receiver.html" title="struct hydroflow_plus::tokio::sync::watch::Receiver"><code>Receiver</code></a>

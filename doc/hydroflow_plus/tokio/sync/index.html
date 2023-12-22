@@ -142,11 +142,11 @@ passing.</p>
 
     <span class="prelude-val">Ok</span>(())
 }</code></pre></div>
-<p>The <a href="mpsc/index.html" title="mod hydroflow_plus::tokio::sync::mpsc"><code>mpsc</code></a> and <a href="oneshot/index.html" title="mod hydroflow_plus::tokio::sync::oneshot"><code>oneshot</code></a> channels can be combined to
-provide a request / response type synchronization pattern with a shared
-resource. A task is spawned to synchronize a resource and waits on commands
-received on a <a href="mpsc/index.html" title="mod hydroflow_plus::tokio::sync::mpsc"><code>mpsc</code></a> channel. Each command includes a
-<a href="oneshot/index.html" title="mod hydroflow_plus::tokio::sync::oneshot"><code>oneshot</code></a> <code>Sender</code> on which the result of the command is sent.</p>
+<p>The <a href="mpsc/index.html" title="mod hydroflow_plus::tokio::sync::mpsc"><code>mpsc</code></a> and <a href="oneshot/index.html" title="mod hydroflow_plus::tokio::sync::oneshot"><code>oneshot</code></a> channels can be combined to provide a request /
+response type synchronization pattern with a shared resource. A task is
+spawned to synchronize a resource and waits on commands received on a
+<a href="mpsc/index.html" title="mod hydroflow_plus::tokio::sync::mpsc"><code>mpsc</code></a> channel. Each command includes a <a href="oneshot/index.html" title="mod hydroflow_plus::tokio::sync::oneshot"><code>oneshot</code></a> <code>Sender</code> on which the
+result of the command is sent.</p>
 <p><strong>Example:</strong> use a task to synchronize a <code>u64</code> counter. Each task sends an
 “fetch and increment” command. The counter value <strong>before</strong> the increment is
 sent over the provided <code>oneshot</code> channel.</p>
@@ -329,7 +329,7 @@ the file changes, the configuration changes are signalled to consumers.</p>
                         </span>sleep.set(time::sleep_until(op_start + conf.timeout));
                     }
                     <span class="kw">_ </span>= rx.changed() =&gt; {
-                        conf = rx.borrow().clone();
+                        conf = rx.borrow_and_update().clone();
 
                         <span class="comment">// The configuration has been updated. Update the
                         // `sleep` using the new `timeout` value.
@@ -357,12 +357,12 @@ operate in a similar way as their <code>std</code> counterparts but will wait
 asynchronously instead of blocking the thread.</p>
 <ul>
 <li>
-<p><a href="struct.Barrier.html" title="struct hydroflow_plus::tokio::sync::Barrier"><code>Barrier</code></a> Ensures multiple tasks will wait for each other to
-reach a point in the program, before continuing execution all together.</p>
+<p><a href="struct.Barrier.html" title="struct hydroflow_plus::tokio::sync::Barrier"><code>Barrier</code></a> Ensures multiple tasks will wait for each other to reach a
+point in the program, before continuing execution all together.</p>
 </li>
 <li>
-<p><a href="struct.Mutex.html" title="struct hydroflow_plus::tokio::sync::Mutex"><code>Mutex</code></a> Mutual Exclusion mechanism, which ensures that at most
-one thread at a time is able to access some data.</p>
+<p><a href="struct.Mutex.html" title="struct hydroflow_plus::tokio::sync::Mutex"><code>Mutex</code></a> Mutual Exclusion mechanism, which ensures that at most one
+thread at a time is able to access some data.</p>
 </li>
 <li>
 <p><a href="struct.Notify.html" title="struct hydroflow_plus::tokio::sync::Notify"><code>Notify</code></a> Basic task notification. <code>Notify</code> supports notifying a
@@ -370,15 +370,15 @@ receiving task without sending data. In this case, the task wakes up and
 resumes processing.</p>
 </li>
 <li>
-<p><a href="struct.RwLock.html" title="struct hydroflow_plus::tokio::sync::RwLock"><code>RwLock</code></a> Provides a mutual exclusion mechanism which allows
-multiple readers at the same time, while allowing only one writer at a
-time. In some cases, this can be more efficient than a mutex.</p>
+<p><a href="struct.RwLock.html" title="struct hydroflow_plus::tokio::sync::RwLock"><code>RwLock</code></a> Provides a mutual exclusion mechanism which allows multiple
+readers at the same time, while allowing only one writer at a time. In
+some cases, this can be more efficient than a mutex.</p>
 </li>
 <li>
-<p><a href="struct.Semaphore.html" title="struct hydroflow_plus::tokio::sync::Semaphore"><code>Semaphore</code></a> Limits the amount of concurrency. A semaphore
-holds a number of permits, which tasks may request in order to enter a
-critical section. Semaphores are useful for implementing limiting or
-bounding of any kind.</p>
+<p><a href="struct.Semaphore.html" title="struct hydroflow_plus::tokio::sync::Semaphore"><code>Semaphore</code></a> Limits the amount of concurrency. A semaphore holds a
+number of permits, which tasks may request in order to enter a critical
+section. Semaphores are useful for implementing limiting or bounding of
+any kind.</p>
 </li>
 </ul>
 </div></details><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="broadcast/index.html" title="mod hydroflow_plus::tokio::sync::broadcast">broadcast</a></div><div class="desc docblock-short">A multi-producer, multi-consumer broadcast queue. Each sent value is seen by

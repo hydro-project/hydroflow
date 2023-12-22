@@ -80,6 +80,34 @@ example:</p>
 </span><span class="macro">assert!</span>(join.<span class="kw">await</span>.is_err());</code></pre></div>
 <p><code>spawn</code>, <code>JoinHandle</code>, and <code>JoinError</code> are present when the “rt”
 feature flag is enabled.</p>
+<h5 id="cancellation"><a href="#cancellation">Cancellation</a></h5>
+<p>Spawned tasks may be cancelled using the <a href="struct.JoinHandle.html#method.abort" title="method hydroflow_plus::tokio::task::JoinHandle::abort"><code>JoinHandle::abort</code></a> or
+<a href="struct.AbortHandle.html#method.abort" title="method hydroflow_plus::tokio::task::AbortHandle::abort"><code>AbortHandle::abort</code></a> methods. When one of these methods are called, the
+task is signalled to shut down next time it yields at an <code>.await</code> point. If
+the task is already idle, then it will be shut down as soon as possible
+without running again before being shut down. Additionally, shutting down a
+Tokio runtime (e.g. by returning from <code>#[tokio::main]</code>) immediately cancels
+all tasks on it.</p>
+<p>When tasks are shut down, it will stop running at whichever <code>.await</code> it has
+yielded at. All local variables are destroyed by running their detructor.
+Once shutdown has completed, awaiting the <a href="struct.JoinHandle.html" title="struct hydroflow_plus::tokio::task::JoinHandle"><code>JoinHandle</code></a> will fail with a
+<a href="struct.JoinError.html#method.is_cancelled" title="method hydroflow_plus::tokio::task::JoinError::is_cancelled">cancelled error</a>.</p>
+<p>Note that aborting a task does not guarantee that it fails with a cancelled
+error, since it may complete normally first. For example, if the task does
+not yield to the runtime at any point between the call to <code>abort</code> and the
+end of the task, then the <a href="struct.JoinHandle.html" title="struct hydroflow_plus::tokio::task::JoinHandle"><code>JoinHandle</code></a> will instead report that the task
+exited normally.</p>
+<p>Be aware that calls to <a href="struct.JoinHandle.html#method.abort" title="method hydroflow_plus::tokio::task::JoinHandle::abort"><code>JoinHandle::abort</code></a> just schedule the task for
+cancellation, and will return before the cancellation has completed. To wait
+for cancellation to complete, wait for the task to finish by awaiting the
+<a href="struct.JoinHandle.html" title="struct hydroflow_plus::tokio::task::JoinHandle"><code>JoinHandle</code></a>. Similarly, the <a href="struct.JoinHandle.html#method.is_finished" title="method hydroflow_plus::tokio::task::JoinHandle::is_finished"><code>JoinHandle::is_finished</code></a> method does not
+return <code>true</code> until the cancellation has finished.</p>
+<p>Calling <a href="struct.JoinHandle.html#method.abort" title="method hydroflow_plus::tokio::task::JoinHandle::abort"><code>JoinHandle::abort</code></a> multiple times has the same effect as calling
+it once.</p>
+<p>Tokio also provides an <a href="struct.AbortHandle.html" title="struct hydroflow_plus::tokio::task::AbortHandle"><code>AbortHandle</code></a>, which is like the <a href="struct.JoinHandle.html" title="struct hydroflow_plus::tokio::task::JoinHandle"><code>JoinHandle</code></a>,
+except that it does not provide a mechanism to wait for the task to finish.
+Each task can only have one <a href="struct.JoinHandle.html" title="struct hydroflow_plus::tokio::task::JoinHandle"><code>JoinHandle</code></a>, but it can have more than one
+<a href="struct.AbortHandle.html" title="struct hydroflow_plus::tokio::task::AbortHandle"><code>AbortHandle</code></a>.</p>
 <h4 id="blocking-and-yielding"><a href="#blocking-and-yielding">Blocking and Yielding</a></h4>
 <p>As we discussed above, code running in asynchronous tasks should not perform
 operations that can block. A blocking operation performed in a task running

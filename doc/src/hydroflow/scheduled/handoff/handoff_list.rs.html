@@ -154,18 +154,11 @@
 <a href="#154" id="154">154</a>
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
-<a href="#157" id="157">157</a>
-<a href="#158" id="158">158</a>
-<a href="#159" id="159">159</a>
-<a href="#160" id="160">160</a>
-<a href="#161" id="161">161</a>
-<a href="#162" id="162">162</a>
-<a href="#163" id="163">163</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for variadic handoff port lists, [`PortList`].
 
 </span><span class="kw">use </span>ref_cast::RefCast;
 <span class="kw">use </span>sealed::sealed;
-<span class="kw">use </span>variadics::Variadic;
+<span class="kw">use </span>variadics::{variadic_trait, Variadic};
 
 <span class="kw">use </span><span class="kw">super</span>::Handoff;
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::graph::HandoffData;
@@ -303,25 +296,18 @@
     }
 }
 
-<span class="doccomment">/// A variadic list of Handoff types, represented using a lisp-style tuple structure.
-///
-/// This trait is sealed and not meant to be implemented or used directly. Instead tuple lists (which already implement this trait) should be used, for example:
-/// ```ignore
-/// type MyHandoffList = (VecHandoff&lt;usize&gt;, (VecHandoff&lt;String&gt;, (TeeingHandoff&lt;u32&gt;, ())));
-/// ```
-/// The [`var_expr!`](variadics::var_expr) macro simplifies usage of this kind:
-/// ```ignore
-/// type MyHandoffList = var_expr!(VecHandoff&lt;usize&gt;, VecHandoff&lt;String&gt;, TeeingHandoff&lt;u32&gt;);
-/// ```
-</span><span class="attr">#[sealed]
-</span><span class="kw">pub trait </span>HandoffList: Variadic {}
-<span class="attr">#[sealed]
-</span><span class="kw">impl</span>&lt;H, L&gt; HandoffList <span class="kw">for </span>(H, L)
-<span class="kw">where
-    </span>H: <span class="lifetime">&#39;static </span>+ Handoff,
-    L: HandoffList,
-{
+<span class="macro">variadic_trait! </span>{
+    <span class="doccomment">/// A variadic list of Handoff types, represented using a lisp-style tuple structure.
+    ///
+    /// This trait is sealed and not meant to be implemented or used directly. Instead tuple lists (which already implement this trait) should be used, for example:
+    /// ```ignore
+    /// type MyHandoffList = (VecHandoff&lt;usize&gt;, (VecHandoff&lt;String&gt;, (TeeingHandoff&lt;u32&gt;, ())));
+    /// ```
+    /// The [`var_expr!`](crate::var) macro simplifies usage of this kind:
+    /// ```ignore
+    /// type MyHandoffList = var_expr!(VecHandoff&lt;usize&gt;, VecHandoff&lt;String&gt;, TeeingHandoff&lt;u32&gt;);
+    /// ```
+    </span><span class="attr">#[sealed]
+    </span><span class="kw">pub </span>variadic&lt;T&gt; HandoffList <span class="kw">where </span>T: <span class="lifetime">&#39;static </span>+ Handoff {}
 }
-<span class="attr">#[sealed]
-</span><span class="kw">impl </span>HandoffList <span class="kw">for </span>() {}
 </code></pre></div></section></main></body></html>

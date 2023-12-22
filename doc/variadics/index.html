@@ -1,24 +1,39 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Crate for macro-free variadic tuple metaprogramming."><title>variadics - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="variadics" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../variadics/index.html">variadics</a><span class="version">0.0.2</span></h2></div><div class="sidebar-elems"><ul class="block">
-            <li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#macros">Macros</a></li><li><a href="#traits">Traits</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a class="mod" href="#">variadics</a><button id="copy-path" title="Copy item path to clipboard"><img src="../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../src/variadics/lib.rs.html#1-294">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Crate for macro-free variadic tuple metaprogramming.</p>
-<h2 id="rationale"><a href="#rationale">Rationale</a></h2>
-<p>As of writing this crate, Rust does not support variadic generics
-and does not allow to reason about tuples in general.</p>
-<p>Most importantly, Rust does not allow one to generically
-implement a trait for all tuples whose elements implement it.</p>
-<p>This crate attempts to fill the gap by providing a way
-to recursively define traits for tuples.</p>
-<h2 id="tuple-lists"><a href="#tuple-lists">Tuple lists</a></h2>
-<p>Tuple <code>(A, B, C, D)</code> can be unambiguously mapped into recursive tuple <code>(A, (B, (C, (D, ()))))</code>.</p>
-<p>On each level it consists of a pair <code>(Head, Tail)</code>, where <code>Head</code> is tuple element and
-<code>Tail</code> is a remainder of the list. For last element <code>Tail</code> is an empty list.</p>
-<p>Unlike regular flat tuples, such recursive tuples can be effectively reasoned about in Rust.</p>
-<p>This crate calls such structures “variadics” and provides a set of traits and macros
-allowing one to conveniently work with them.</p>
-<h2 id="acknowledgements"><a href="#acknowledgements">Acknowledgements</a></h2>
-<p>This crate is based on <a href="https://github.com/VFLashM/tuple_list"><code>tuple_list</code> by VFLashM</a></p>
-<div class="example-wrap"><pre class="language-text"><code>MIT License
-
-Copyright (c) 2020 Valerii Lashmanov
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Variadics"><title>variadics - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="variadics" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../variadics/index.html">variadics</a><span class="version">0.0.2</span></h2></div><div class="sidebar-elems"><ul class="block">
+            <li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#macros">Macros</a></li><li><a href="#traits">Traits</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a class="mod" href="#">variadics</a><button id="copy-path" title="Copy item path to clipboard"><img src="../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../src/variadics/lib.rs.html#1-291">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="variadics"><a href="#variadics">Variadics</a></h2>
+<p>Variadic generics in stable Rust</p>
+<h3 id="variadic-generics"><a href="#variadic-generics">Variadic Generics?</a></h3>
+<p>Variadic generics are one of the most discussed potential Rust features. They would enable
+traits, functions, and data structures to be generic over variable length tuples of arbitrary
+types.</p>
+<p>Currently you can only implement generic code for tuples of a specific length. If you want to
+handle tuples of varying lengths you must write a separate implementation for each length. This
+leads to the notorious limitation that traits in Rust generally
+<a href="https://doc.rust-lang.org/std/primitive.tuple.html#impl-From%3C(T,+T,+T,+T,+T,+T,+T,+T,+T,+T,+T,+T)%3E-for-%5BT;+12%5D">only apply for tuples up to length 12</a>.</p>
+<p>Variadic generics allow generic code to handle tuples of any length.</p>
+<h3 id="tuple-lists"><a href="#tuple-lists">Tuple lists</a></h3>
+<p>Although variadic generics fundamentally require changing the Rust compiler, we can emulate
+pretty well with tuple lists.</p>
+<p>Any tuple <code>(A, B, C, D)</code> can be mapped to (and from) a recursive tuple <code>(A, (B, (C, (D, ()))))</code>.</p>
+<p>Each element consists of a nested pair <code>(Item, Rest)</code>, where <code>Item</code> is tuple element and <code>Rest</code>
+is the rest of the list. For last element <code>Rest</code> is a unit tuple <code>()</code>. Unlike regular flat
+tuples, these recursive tuples can be effectively reasoned about in stable Rust.</p>
+<p>You may recognize this fundamental structure from <a href="https://en.wikipedia.org/wiki/Cons#Lists"><code>cons</code> lists in Lisp</a>
+as well as <a href="https://hackage.haskell.org/package/HList/docs/Data-HList-HList.html"><code>HList</code>s in Haskell</a>.</p>
+<p>This crate calls these lists “variadics” and provides traits and macros to allow simple,
+ergonimc use of them.</p>
+<h3 id="usage"><a href="#usage">Usage</a></h3>
+<p><a href="macro.var_expr.html" title="macro variadics::var_expr"><code>var_expr!</code></a> creates variadic values/expressions,
+<a href="macro.var_type.html" title="macro variadics::var_type"><code>var_type!</code></a> creates variadic types,
+and <a href="macro.var_args.html" title="macro variadics::var_args"><code>var_args!</code></a> creates variadic patterns (used in unpacking arguments, on the left side of <code>let</code>
+declarations, etc.).</p>
+<p>These macros support the “spread” syntax <code>...</code>, also known as “splat”. For example, <code>var_expr!(a, ...var_b, ...var_c, d)</code>
+will concatenate <code>a</code>, the items of <code>var_b</code>, the items of <code>var_c</code> and <code>d</code> together into a single
+variadic list.</p>
+<h3 id="acknowledgements"><a href="#acknowledgements">Acknowledgements</a></h3>
+<p>This crate is based on <a href="https://github.com/VFLashM/tuple_list"><code>tuple_list</code> by VFLashM</a>, which is MIT licensed:</p>
+<details>
+    <summary>MIT license</summary>
+<div class="example-wrap"><pre class="language-text"><code>Copyright (c) 2020 Valerii Lashmanov
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the &quot;Software&quot;), to deal
@@ -36,7 +51,98 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-</code></pre></div></div></details><h2 id="macros" class="small-section-header"><a href="#macros">Macros</a></h2><ul class="item-table"><li><div class="item-name"><a class="macro" href="macro.var_args.html" title="macro variadics::var_args">var_args</a></div><div class="desc docblock-short">Macro for pattern-matching with variadic tuples. This is mainly used for function arguments,
-but it can also be used in <code>match</code>, <code>if let ...</code>, and <code>let ... else</code> expressions.</div></li><li><div class="item-name"><a class="macro" href="macro.var_expr.html" title="macro variadics::var_expr">var_expr</a></div><div class="desc docblock-short">Macro creating a variadic tuple value from a list of expressions.</div></li><li><div class="item-name"><a class="macro" href="macro.var_type.html" title="macro variadics::var_type">var_type</a></div><div class="desc docblock-short">Macro creating a variadic tuple type from a list of types.</div></li><li><div class="item-name"><a class="macro" href="macro.variadic_trait.html" title="macro variadics::variadic_trait">variadic_trait</a></div><div class="desc docblock-short">This macro generates a basic variadic trait where each element must fulfill the trait clause.
-Currently of limited usefulness.</div></li></ul><h2 id="traits" class="small-section-header"><a href="#traits">Traits</a></h2><ul class="item-table"><li><div class="item-name"><a class="trait" href="trait.Extend.html" title="trait variadics::Extend">Extend</a></div></li><li><div class="item-name"><a class="trait" href="trait.Split.html" title="trait variadics::Split">Split</a></div></li><li><div class="item-name"><a class="trait" href="trait.SplitPrefix.html" title="trait variadics::SplitPrefix">SplitPrefix</a></div></li><li><div class="item-name"><a class="trait" href="trait.Variadic.html" title="trait variadics::Variadic">Variadic</a></div></li></ul></section></div></main></body></html>
+SOFTWARE
+</code></pre></div></details>
+&nbsp;
+<h2 id="main-macros"><a href="#main-macros">Main Macros</a></h2><h3 id="var_expr"><a href="#var_expr"><code>var_expr!</code></a></h3>
+<p>Variadic expressions (values) macro.</p>
+<p>Creates a variadic tuple value from a list of expressions.</p>
+<p>Create a variadic tuple value:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>variadics::var_expr;
+
+<span class="kw">let </span>list = <span class="macro">var_expr!</span>(<span class="number">10</span>, <span class="bool-val">false</span>, <span class="string">&quot;foo&quot;</span>);
+
+<span class="macro">assert_eq!</span>(list, (<span class="number">10</span>, (<span class="bool-val">false</span>, (<span class="string">&quot;foo&quot;</span>, ()))),)</code></pre></div>
+<p>Although this can be used as a pattern to unpack tuples, <a href="macro.var_args.html" title="macro variadics::var_args"><code>var_args!</code></a> should be used instead:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// Ok...
+</span><span class="kw">let </span><span class="macro">var_expr!</span>(a, b, c) = <span class="macro">var_expr!</span>(<span class="number">10</span>, <span class="bool-val">false</span>, <span class="string">&quot;foo&quot;</span>);
+<span class="comment">// Better:
+</span><span class="kw">let </span><span class="macro">var_args!</span>(a, b, c) = <span class="macro">var_expr!</span>(<span class="number">10</span>, <span class="bool-val">false</span>, <span class="string">&quot;foo&quot;</span>);
+
+<span class="macro">assert_eq!</span>(a, <span class="number">10</span>);
+<span class="macro">assert_eq!</span>(b, <span class="bool-val">false</span>);
+<span class="macro">assert_eq!</span>(c, <span class="string">&quot;foo&quot;</span>);</code></pre></div>
+<p>The “spread” (or “splat”) syntax <code>...</code> can be used to concatenate variadics together:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>list_a = <span class="macro">var_expr!</span>(<span class="number">0.5</span>, <span class="string">&quot;foo&quot;</span>);
+<span class="kw">let </span>list_b = <span class="macro">var_expr!</span>(-<span class="number">5</span>, <span class="bool-val">false</span>);
+<span class="comment">// Spread syntax:
+</span><span class="kw">let </span>list_c = <span class="macro">var_expr!</span>(...list_a, ...list_b, <span class="string">&quot;bar&quot;</span>);
+<span class="comment">// Equals `var_expr!(0.5, &quot;foo&quot;, -5, false, &quot;bar)`.</span></code></pre></div>
+<h3 id="var_type"><a href="#var_type"><code>var_type!</code></a></h3>
+<p>Variadic types macro.</p>
+<p>Creates a variadic tuple type from a list of types.</p>
+<p><code>var_expr!</code> can be used to define simple types but will result in confusing errors for more
+complex types. Use this macro, <code>var_type!</code> instead.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>variadics::{var_expr, var_type};
+
+<span class="comment">// A simple variadic type. Although `var_expr!` would work in this case, it cannot handle
+// more complex types i.e. ones with generics.
+</span><span class="kw">let </span>list: <span class="macro">var_type!</span>(i32, bool, String) = Default::default();
+
+<span class="comment">// A more complex type:
+</span><span class="kw">let </span>list: <span class="macro">var_type!</span>(
+    <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+    HashMap&lt;i32, i32&gt;,
+    &lt;std::vec::Vec&lt;bool&gt; <span class="kw">as </span>IntoIterator&gt;::Item,
+) = <span class="macro">var_expr!</span>(<span class="string">&quot;foo&quot;</span>, HashMap::new(), <span class="bool-val">false</span>);</code></pre></div>
+<p>The “spread” (or “splat”) syntax <code>...</code> can be used to concatenate variadics together:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">type </span>ListA = <span class="macro">var_type!</span>(f32, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str);
+<span class="kw">type </span>ListB = <span class="macro">var_type!</span>(i32, bool);
+<span class="comment">// Spread syntax:
+</span><span class="kw">type </span>ListC = <span class="macro">var_type!</span>(...ListA, ...ListB, <span class="prelude-ty">Option</span>::&lt;()&gt;);
+<span class="comment">// Equals `var_type!(f32, &amp;&#39;static str, i32, bool, Option::&lt;()&gt;)`.</span></code></pre></div>
+<p>Unfortunately, expressions and types cannot be handled using the same macro due to the
+undefeated <a href="https://github.com/rust-lang/rust/blob/7fd15f09008dd72f40d76a5bebb60e3991095a5f/src/test/ui/parser/bastion-of-the-turbofish.rs">bastion of the turbofish</a>.</p>
+<h3 id="var_args"><a href="#var_args"><code>var_args!</code></a></h3>
+<p>Variadic patterns macro.</p>
+<p>Used to <a href="https://doc.rust-lang.org/reference/patterns.html">pattern-match</a> or “unpack” variadic
+tuples. This is used for function arguments, as well as in <code>match</code>, <code>if/while let ...</code>,
+<code>let ... else</code>, and <code>for</code> expressions.</p>
+<p>Although it may somtimes be possible to use <code>var_expr!</code> in place of this macro, doing so may
+cause confusing errors.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>variadics::{var_args, var_expr, var_type};
+
+<span class="kw">fn </span>my_fn(<span class="macro">var_args!</span>(a, b, c): <span class="macro">var_type!</span>(usize, <span class="kw-2">&amp;</span>str, bool)) {
+    <span class="macro">println!</span>(<span class="string">&quot;{} {} {}&quot;</span>, a, b, c);
+}
+my_fn(<span class="macro">var_expr!</span>(<span class="number">12</span>, <span class="string">&quot;hello&quot;</span>, <span class="bool-val">false</span>));</code></pre></div>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>variadics::{var_args, var_expr};
+
+<span class="kw">let </span>val = <span class="macro">var_expr!</span>(<span class="bool-val">true</span>, <span class="prelude-val">Some</span>(<span class="string">&quot;foo&quot;</span>), <span class="number">2</span>);
+<span class="kw">if let </span><span class="macro">var_args!</span>(<span class="bool-val">true</span>, <span class="prelude-val">Some</span>(item), <span class="number">0</span>..=<span class="number">3</span>) = val {
+    <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, item);
+} <span class="kw">else </span>{
+    <span class="macro">unreachable!</span>();
+}</code></pre></div>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">match </span><span class="macro">var_expr!</span>(<span class="bool-val">true</span>, <span class="prelude-val">Some</span>(<span class="number">100</span>), <span class="number">5</span>) {
+    <span class="macro">var_args!</span>(<span class="bool-val">false</span>, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
+    <span class="macro">var_args!</span>(<span class="bool-val">true</span>, <span class="prelude-val">None</span>, <span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
+    <span class="macro">var_args!</span>(<span class="bool-val">true</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>..=<span class="number">10</span>), <span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
+    <span class="macro">var_args!</span>(<span class="bool-val">true</span>, <span class="prelude-val">Some</span>(a), b) =&gt; <span class="macro">println!</span>(<span class="string">&quot;{} {}&quot;</span>, a, b),
+}</code></pre></div>
+<p>The “spread” (or “splat”) syntax <code>...</code> can be used to unpack the tail of a variadic. Note that
+unlike with the other macros, this macro (<code>var_args!</code>) only allows the spread syntax on the
+final argument.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="macro">var_args!</span>(a, b, ...list_c) = <span class="macro">var_expr!</span>(<span class="string">&quot;hi&quot;</span>, <span class="number">100</span>, <span class="number">0.5</span>, <span class="bool-val">false</span>);
+<span class="macro">assert_eq!</span>(<span class="macro">var_expr!</span>(<span class="number">0.5</span>, <span class="bool-val">false</span>), list_c);</code></pre></div>
+</div></details><h2 id="macros" class="small-section-header"><a href="#macros">Macros</a></h2><ul class="item-table"><li><div class="item-name"><a class="macro" href="macro.var_args.html" title="macro variadics::var_args">var_args</a></div><div class="desc docblock-short">Variadic patterns macro.</div></li><li><div class="item-name"><a class="macro" href="macro.var_expr.html" title="macro variadics::var_expr">var_expr</a></div><div class="desc docblock-short">Variadic expressions (values) macro.</div></li><li><div class="item-name"><a class="macro" href="macro.var_type.html" title="macro variadics::var_type">var_type</a></div><div class="desc docblock-short">Variadic types macro.</div></li><li><div class="item-name"><a class="macro" href="macro.variadic_trait.html" title="macro variadics::variadic_trait">variadic_trait</a></div><div class="desc docblock-short">This macro generates a basic variadic trait where each element must fulfill the <code>where</code> clause.</div></li></ul><h2 id="traits" class="small-section-header"><a href="#traits">Traits</a></h2><ul class="item-table"><li><div class="item-name"><a class="trait" href="trait.HomogenousVariadic.html" title="trait variadics::HomogenousVariadic">HomogenousVariadic</a></div><div class="desc docblock-short">A variadic where all elements are the same type, <code>T</code>.</div></li><li><div class="item-name"><a class="trait" href="trait.Split.html" title="trait variadics::Split">Split</a></div><div class="desc docblock-short">Helper trait for splitting a variadic into two parts. <code>Prefix</code> is the first part, everything
+after is the <code>Suffix</code> or second part.</div></li><li><div class="item-name"><a class="trait" href="trait.Variadic.html" title="trait variadics::Variadic">Variadic</a></div><div class="desc docblock-short">A variadic tuple list.</div></li><li><div class="item-name"><a class="trait" href="trait.VariadicExt.html" title="trait variadics::VariadicExt">VariadicExt</a></div><div class="desc docblock-short">Extension methods/types for <a href="trait.Variadic.html" title="trait variadics::Variadic"><code>Variadic</code></a>s.</div></li></ul></section></div></main></body></html>

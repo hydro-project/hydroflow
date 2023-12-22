@@ -289,178 +289,85 @@
 <a href="#289" id="289">289</a>
 <a href="#290" id="290">290</a>
 <a href="#291" id="291">291</a>
-<a href="#292" id="292">292</a>
-<a href="#293" id="293">293</a>
-<a href="#294" id="294">294</a>
-</pre></div><pre class="rust"><code><span class="doccomment">//! Crate for macro-free variadic tuple metaprogramming.
+</pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
+#![doc = <span class="macro">include_str!</span>(<span class="string">&quot;../README.md&quot;</span>)]
+</span><span class="doccomment">//! &amp;nbsp;
 //!
-//! # Rationale
+//! # Main Macros
 //!
-//! As of writing this crate, Rust does not support variadic generics
-//! and does not allow to reason about tuples in general.
-//!
-//! Most importantly, Rust does not allow one to generically
-//! implement a trait for all tuples whose elements implement it.
-//!
-//! This crate attempts to fill the gap by providing a way
-//! to recursively define traits for tuples.
-//!
-//! # Tuple lists
-//!
-//! Tuple `(A, B, C, D)` can be unambiguously mapped into recursive tuple `(A, (B, (C, (D, ()))))`.
-//!
-//! On each level it consists of a pair `(Head, Tail)`, where `Head` is tuple element and
-//! `Tail` is a remainder of the list. For last element `Tail` is an empty list.
-//!
-//! Unlike regular flat tuples, such recursive tuples can be effectively reasoned about in Rust.
-//!
-//! This crate calls such structures &quot;variadics&quot; and provides a set of traits and macros
-//! allowing one to conveniently work with them.
-//!
-//! # Acknowledgements
-//!
-//! This crate is based on [`tuple_list` by VFLashM](https://github.com/VFLashM/tuple_list)
-//! ```text
-//! MIT License
-//!
-//! Copyright (c) 2020 Valerii Lashmanov
-//!
-//! Permission is hereby granted, free of charge, to any person obtaining a copy
-//! of this software and associated documentation files (the &quot;Software&quot;), to deal
-//! in the Software without restriction, including without limitation the rights
-//! to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//! copies of the Software, and to permit persons to whom the Software is
-//! furnished to do so, subject to the following conditions:
-//!
-//! The above copyright notice and this permission notice shall be included in all
-//! copies or substantial portions of the Software.
-//!
-//! THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//! IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//! FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//! AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//! LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//! OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-//! SOFTWARE.
-//! ```
+//! ## [`var_expr!`]
+</span><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">&quot;../var_expr.md&quot;</span>)]
+</span><span class="doccomment">//! ## [`var_type!`]
+</span><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">&quot;../var_type.md&quot;</span>)]
+</span><span class="doccomment">//! ## [`var_args!`]
+</span><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">&quot;../var_args.md&quot;</span>)]
 
-/// Macro creating a variadic tuple value from a list of expressions.
-///
-/// # Examples
-///
-/// Main use of this macro is to create variadic tuple values:
-/// ```rust
-/// use variadics::var_expr;
-///
-/// let list = var_expr!(10, false, &quot;foo&quot;);
-///
-/// assert_eq!(list, (10, (false, (&quot;foo&quot;, ()))),)
-/// ```
-///
-/// It can also be used to unpack tuples:
-/// ```
-/// # use variadics::var_expr;
-/// let var_expr!(a, b, c) = var_expr!(10, false, &quot;foo&quot;);
-///
-/// assert_eq!(a, 10);
-/// assert_eq!(b, false);
-/// assert_eq!(c, &quot;foo&quot;);
-/// ```
-</span><span class="attr">#[macro_export]
+</span><span class="kw">use </span>sealed::sealed;
+
+<span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">&quot;../var_expr.md&quot;</span>)]
+#[macro_export]
 </span><span class="macro">macro_rules! </span>var_expr {
     () =&gt; ( () );
-    (<span class="macro-nonterminal">$a</span>:ident $(, <span class="macro-nonterminal">$b</span>:ident)* $(,)<span class="question-mark">?</span>)  =&gt; ( (<span class="macro-nonterminal">$a</span>, <span class="macro-nonterminal">$</span><span class="macro">crate::var_expr!</span>($(<span class="macro-nonterminal">$b</span>),<span class="kw-2">*</span>)) );
-    (<span class="macro-nonterminal">$a</span>:expr  $(, <span class="macro-nonterminal">$b</span>:expr )* $(,)<span class="question-mark">?</span>)  =&gt; ( (<span class="macro-nonterminal">$a</span>, <span class="macro-nonterminal">$</span><span class="macro">crate::var_expr!</span>($(<span class="macro-nonterminal">$b</span>),<span class="kw-2">*</span>)) );
+
+    (...<span class="macro-nonterminal">$a</span>:ident $(,)<span class="question-mark">? </span>) =&gt; ( <span class="macro-nonterminal">$a </span>);
+    (...<span class="macro-nonterminal">$a</span>:expr  $(,)<span class="question-mark">? </span>) =&gt; ( <span class="macro-nonterminal">$a </span>);
+    (...<span class="macro-nonterminal">$a</span>:ident, $( <span class="macro-nonterminal">$b</span>:tt )+) =&gt; ( <span class="macro-nonterminal">$crate::VariadicExt::extend</span>(<span class="macro-nonterminal">$a</span>, <span class="macro-nonterminal">$</span><span class="macro">crate::var_expr!</span>( $( <span class="macro-nonterminal">$b </span>)* )) );
+    (...<span class="macro-nonterminal">$a</span>:expr,  $( <span class="macro-nonterminal">$b</span>:tt )+) =&gt; ( <span class="macro-nonterminal">$crate::VariadicExt::extend</span>(<span class="macro-nonterminal">$a</span>, <span class="macro-nonterminal">$</span><span class="macro">crate::var_expr!</span>( $( <span class="macro-nonterminal">$b </span>)* )) );
+
+    (<span class="macro-nonterminal">$a</span>:ident $(,)<span class="question-mark">? </span>) =&gt; ( (<span class="macro-nonterminal">$a</span>, ()) );
+    (<span class="macro-nonterminal">$a</span>:expr  $(,)<span class="question-mark">? </span>) =&gt; ( (<span class="macro-nonterminal">$a</span>, ()) );
+    (<span class="macro-nonterminal">$a</span>:ident, $( <span class="macro-nonterminal">$b</span>:tt )+) =&gt; ( (<span class="macro-nonterminal">$a</span>, <span class="macro-nonterminal">$</span><span class="macro">crate::var_expr!</span>( $( <span class="macro-nonterminal">$b </span>)* )) );
+    (<span class="macro-nonterminal">$a</span>:expr,  $( <span class="macro-nonterminal">$b</span>:tt )+) =&gt; ( (<span class="macro-nonterminal">$a</span>, <span class="macro-nonterminal">$</span><span class="macro">crate::var_expr!</span>( $( <span class="macro-nonterminal">$b </span>)* )) );
 }
 
-<span class="doccomment">/// Macro for pattern-matching with variadic tuples. This is mainly used for function arguments,
-/// but it can also be used in `match`, `if let ...`, and `let ... else` expressions.
-///
-/// Although it may somtimes be possible to use `var_expr!` in place of this macro, doing so may
-/// cause confusing errors.
-///
-/// # Examples
-///
-/// ```rust
-/// use variadics::{var_args, var_expr, var_type};
-///
-/// fn my_fn(var_args!(a, b, c): var_type!(usize, &amp;str, bool)) {
-///     println!(&quot;{} {} {}&quot;, a, b, c);
-/// }
-/// my_fn(var_expr!(12, &quot;hello&quot;, false));
-/// ```
-///
-/// ```rust
-/// use variadics::{var_args, var_expr};
-///
-/// let val = var_expr!(true, Some(&quot;foo&quot;), 2);
-/// if let var_args!(true, Some(item), 0..=3) = val {
-///     println!(&quot;{}&quot;, item);
-/// } else {
-///     unreachable!();
-/// }
-/// ```
-///
-/// ```rust
-/// # use variadics::{var_expr, var_args};
-/// match var_expr!(true, Some(100), 5) {
-///     var_args!(false, _, _) =&gt; unreachable!(),
-///     var_args!(true, None, _) =&gt; unreachable!(),
-///     var_args!(true, Some(0..=10), _) =&gt; unreachable!(),
-///     var_args!(true, Some(a), b) =&gt; println!(&quot;{} {}&quot;, a, b),
-/// }
-</span><span class="attr">#[macro_export]
-</span><span class="macro">macro_rules! </span>var_args {
-    () =&gt; ( () );
-    (<span class="macro-nonterminal">$a</span>:pat $(, <span class="macro-nonterminal">$b</span>:pat)* $(,)<span class="question-mark">?</span>)  =&gt; ( (<span class="macro-nonterminal">$a</span>, <span class="macro-nonterminal">$</span><span class="macro">crate::var_args!</span>($(<span class="macro-nonterminal">$b</span>),<span class="kw-2">*</span>)) );
-}
-
-<span class="doccomment">/// Macro creating a variadic tuple type from a list of types.
-///
-/// `var_expr!` can be used to define simple types but will result in confusing errors for more
-/// complex types. Use this macro, `var_type!` instead.
-///
-/// # Examples
-///
-/// ```rust
-/// # use std::collections::HashMap;
-/// use variadics::{var_expr, var_type};
-///
-/// // A simple variadic type. Although `var_expr!` would work in this case, it cannot handle
-/// // more complex types i.e. ones with generics.
-/// let list: var_type!(i32, bool, String) = Default::default();
-///
-/// // A more complex type:
-/// let list: var_type!(
-///     &amp;&#39;static str,
-///     HashMap&lt;i32, i32&gt;,
-///     &lt;std::vec::Vec&lt;bool&gt; as IntoIterator&gt;::Item,
-/// ) = var_expr!(&quot;foo&quot;, HashMap::new(), false);
-/// ```
-///
-/// Unfortunately, expressions and types cannot be handled using the same macro due to the
-/// undefeated [bastion of the turbofish](https://github.com/rust-lang/rust/blob/7fd15f09008dd72f40d76a5bebb60e3991095a5f/src/test/ui/parser/bastion-of-the-turbofish.rs).
-</span><span class="attr">#[macro_export]
+<span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">&quot;../var_type.md&quot;</span>)]
+#[macro_export]
 </span><span class="macro">macro_rules! </span>var_type {
     () =&gt; ( () );
-    (<span class="macro-nonterminal">$a</span>:ty $(, <span class="macro-nonterminal">$b</span>:ty)* $(,)<span class="question-mark">?</span>)  =&gt; ( (<span class="macro-nonterminal">$a</span>, <span class="macro-nonterminal">$</span><span class="macro">crate::var_type!</span>($(<span class="macro-nonterminal">$b</span>),<span class="kw-2">*</span>)) );
+
+    (...<span class="macro-nonterminal">$a</span>:ty $(,)<span class="question-mark">? </span>) =&gt; ( <span class="macro-nonterminal">$a </span>);
+    (...<span class="macro-nonterminal">$a</span>:ty, $( <span class="macro-nonterminal">$b</span>:tt )+) =&gt; ( &lt;<span class="macro-nonterminal">$a </span><span class="kw">as </span><span class="macro-nonterminal">$crate::VariadicExt</span>&gt;::Extend::&lt;<span class="macro-nonterminal">$</span><span class="macro">crate::var_type!</span>( $( <span class="macro-nonterminal">$b </span>)* )&gt; );
+
+    (<span class="macro-nonterminal">$a</span>:ty $(,)<span class="question-mark">? </span>) =&gt; ( (<span class="macro-nonterminal">$a</span>, ()) );
+    (<span class="macro-nonterminal">$a</span>:ty, $( <span class="macro-nonterminal">$b</span>:tt )+) =&gt; ( (<span class="macro-nonterminal">$a</span>, <span class="macro-nonterminal">$</span><span class="macro">crate::var_type!</span>( $( <span class="macro-nonterminal">$b </span>)* )) );
 }
 
-<span class="doccomment">/// This macro generates a basic variadic trait where each element must fulfill the trait clause.
-/// Currently of limited usefulness.
+<span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">&quot;../var_args.md&quot;</span>)]
+#[macro_export]
+</span><span class="macro">macro_rules! </span>var_args {
+    () =&gt; ( () );
+
+    (...<span class="macro-nonterminal">$a</span>:pat $(,)<span class="question-mark">? </span>) =&gt; ( <span class="macro-nonterminal">$a </span>);
+    (...<span class="macro-nonterminal">$a</span>:ty, $( <span class="macro-nonterminal">$b</span>:tt )+) =&gt; ( <span class="macro">::core::compile_error!</span>(<span class="string">&quot;`var_args!` can only have the `...` spread syntax on the last field.&quot;</span>) );
+
+    (<span class="macro-nonterminal">$a</span>:pat $(,)<span class="question-mark">? </span>) =&gt; ( (<span class="macro-nonterminal">$a</span>, ()) );
+    (<span class="macro-nonterminal">$a</span>:pat, $( <span class="macro-nonterminal">$b</span>:tt )+) =&gt; ( (<span class="macro-nonterminal">$a</span>, <span class="macro-nonterminal">$</span><span class="macro">crate::var_args!</span>( $( <span class="macro-nonterminal">$b </span>)* )) );
+}
+
+<span class="doccomment">/// This macro generates a basic variadic trait where each element must fulfill the `where` clause.
 ///
 /// ```rust
 /// use variadics::{var_expr, variadic_trait};
 ///
 /// variadic_trait! {
 ///     /// A variadic list of `Debug` items.
-///     pub variadic&lt;T&gt; DebugList where T: std::fmt::Debug {}
+///     pub variadic&lt;Item&gt; DebugList where Item: std::fmt::Debug {}
 /// }
 ///
 /// let x = &amp;var_expr!(1, &quot;hello&quot;, 5.6);
 /// let _: &amp;dyn DebugList = x;
 /// println!(&quot;{:?}&quot;, x);
 /// ```
+///
+/// This uses a special syntax similar to traits, but with the `trait` keyword replaced with
+/// `variadic&lt;T&gt;` where `T` is the generic parameter name for each item in the variadic list. `T`
+/// can be changed to any valid generic identifier. The bounds on `T` must be put in the where
+/// clause; they cannot be expressed directly-- `variadic&lt;T: Clone&gt;` is invalid.
+///
+/// For now this can only create traits which bounds the `Item`s and cannot have associated
+/// methods. This means the body of the variadic trait must be empty. But in the future this
+/// declarative macro may be converted into a more powerful procedural macro with associated
+/// method support.
 </span><span class="attr">#[macro_export]
 </span><span class="macro">macro_rules! </span>variadic_trait {
     (
@@ -469,97 +376,175 @@
     ) =&gt; {
         $( <span class="attr">#[$( <span class="macro-nonterminal">$attrs </span>)<span class="kw-2">*</span>] </span>)*
         <span class="macro-nonterminal">$vis </span><span class="kw">trait </span><span class="macro-nonterminal">$name</span>: <span class="macro-nonterminal">$crate::Variadic </span>{}
-        <span class="kw">impl </span><span class="macro-nonterminal">$name </span><span class="kw">for </span>() {}
-        <span class="kw">impl</span>&lt;<span class="macro-nonterminal">$item</span>, __Rest: <span class="macro-nonterminal">$name</span>&gt; <span class="macro-nonterminal">$name </span><span class="kw">for </span>(<span class="macro-nonterminal">$item</span>, __Rest) $( <span class="macro-nonterminal">$clause </span>)*
+        $( <span class="attr">#[$( <span class="macro-nonterminal">$attrs </span>)<span class="kw-2">*</span>] </span>)*
+        <span class="kw">impl </span><span class="macro-nonterminal">$name </span><span class="kw">for </span><span class="macro-nonterminal">$</span><span class="macro">crate::var_type!</span>() {}
+        $( <span class="attr">#[$( <span class="macro-nonterminal">$attrs </span>)<span class="kw-2">*</span>] </span>)*
+        <span class="kw">impl</span>&lt;<span class="macro-nonterminal">$item</span>, __Rest: <span class="macro-nonterminal">$name</span>&gt; <span class="macro-nonterminal">$name </span><span class="kw">for </span><span class="macro-nonterminal">$</span><span class="macro">crate::var_type!</span>(<span class="macro-nonterminal">$item</span>, ...__Rest) $( <span class="macro-nonterminal">$clause </span>)*
     };
 }
 
-<span class="kw">pub trait </span>Variadic {}
-<span class="kw">impl </span>Variadic <span class="kw">for </span>() {}
-<span class="kw">impl</span>&lt;X, T&gt; Variadic <span class="kw">for </span>(X, T) <span class="kw">where </span>T: Variadic {}
+<span class="doccomment">/// A variadic tuple list.
+///
+/// This is a sealed trait, implemented only for `(Item, Rest) where Rest: Variadic` and `()`.
+</span><span class="attr">#[sealed]
+</span><span class="kw">pub trait </span>Variadic {}
+<span class="attr">#[sealed]
+</span><span class="kw">impl</span>&lt;Item, Rest&gt; Variadic <span class="kw">for </span>(Item, Rest) <span class="kw">where </span>Rest: Variadic {}
+<span class="attr">#[sealed]
+</span><span class="kw">impl </span>Variadic <span class="kw">for </span>() {}
 
-<span class="kw">pub trait </span>Extend&lt;U&gt;: Variadic
-<span class="kw">where
-    </span>U: Variadic,
-{
-    <span class="kw">type </span>Extended: Variadic;
-    <span class="kw">fn </span>extend(<span class="self">self</span>, input: U) -&gt; <span class="self">Self</span>::Extended;
+<span class="doccomment">/// Extension methods/types for [`Variadic`]s.
+///
+/// This is a sealed trait.
+</span><span class="attr">#[sealed]
+</span><span class="kw">pub trait </span>VariadicExt: Variadic {
+    <span class="doccomment">/// The number of items in this variadic (its length).
+    </span><span class="kw">const </span>LEN: usize;
+
+    <span class="doccomment">/// Creates a new (longer) variadic type by appending `Suffix` onto the end of this variadc.
+    </span><span class="kw">type </span>Extend&lt;Suffix&gt;: VariadicExt
+    <span class="kw">where
+        </span>Suffix: VariadicExt;
+    <span class="doccomment">/// Extends this variadic value by appending `suffix` onto the end.
+    </span><span class="kw">fn </span>extend&lt;Suffix&gt;(<span class="self">self</span>, suffix: Suffix) -&gt; <span class="self">Self</span>::Extend&lt;Suffix&gt;
+    <span class="kw">where
+        </span>Suffix: VariadicExt;
+
+    <span class="doccomment">/// The reverse of this variadic type.
+    </span><span class="kw">type </span>Reverse: VariadicExt;
+    <span class="doccomment">/// Reverses this variadic value.
+    </span><span class="kw">fn </span>reverse(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Reverse;
 }
-
-<span class="kw">impl</span>&lt;X, T, U&gt; Extend&lt;U&gt; <span class="kw">for </span>(X, T)
+<span class="attr">#[sealed]
+</span><span class="kw">impl</span>&lt;Item, Rest&gt; VariadicExt <span class="kw">for </span>(Item, Rest)
 <span class="kw">where
-    </span>T: Variadic + Extend&lt;U&gt;,
-    U: Variadic,
+    </span>Rest: VariadicExt,
 {
-    <span class="kw">type </span>Extended = (X, &lt;T <span class="kw">as </span>Extend&lt;U&gt;&gt;::Extended);
-    <span class="kw">fn </span>extend(<span class="self">self</span>, input: U) -&gt; <span class="self">Self</span>::Extended {
-        <span class="kw">let </span>(x, t) = <span class="self">self</span>;
-        (x, t.extend(input))
+    <span class="kw">const </span>LEN: usize = <span class="number">1 </span>+ Rest::LEN;
+
+    <span class="kw">type </span>Extend&lt;Suffix&gt; = (Item, Rest::Extend&lt;Suffix&gt;) <span class="kw">where </span>Suffix: VariadicExt;
+    <span class="kw">fn </span>extend&lt;Suffix&gt;(<span class="self">self</span>, suffix: Suffix) -&gt; <span class="self">Self</span>::Extend&lt;Suffix&gt;
+    <span class="kw">where
+        </span>Suffix: VariadicExt,
+    {
+        <span class="kw">let </span>(item, rest) = <span class="self">self</span>;
+        (item, rest.extend(suffix))
+    }
+
+    <span class="kw">type </span>Reverse = &lt;Rest::Reverse <span class="kw">as </span>VariadicExt&gt;::Extend&lt;(Item, ())&gt;;
+    <span class="kw">fn </span>reverse(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Reverse {
+        <span class="kw">let </span>(item, rest) = <span class="self">self</span>;
+        rest.reverse().extend((item, ()))
     }
 }
-<span class="kw">impl</span>&lt;U&gt; Extend&lt;U&gt; <span class="kw">for </span>()
+<span class="attr">#[sealed]
+</span><span class="kw">impl </span>VariadicExt <span class="kw">for </span>() {
+    <span class="kw">const </span>LEN: usize = <span class="number">0</span>;
+
+    <span class="kw">type </span>Extend&lt;Suffix&gt; = Suffix <span class="kw">where </span>Suffix: VariadicExt;
+    <span class="kw">fn </span>extend&lt;Suffix&gt;(<span class="self">self</span>, suffix: Suffix) -&gt; <span class="self">Self</span>::Extend&lt;Suffix&gt;
+    <span class="kw">where
+        </span>Suffix: VariadicExt,
+    {
+        suffix
+    }
+
+    <span class="kw">type </span>Reverse = ();
+    <span class="kw">fn </span>reverse(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Reverse {}
+}
+
+<span class="doccomment">/// A variadic where all elements are the same type, `T`.
+///
+/// This is a sealed trait.
+</span><span class="attr">#[sealed]
+</span><span class="kw">pub trait </span>HomogenousVariadic&lt;T&gt;: Variadic {
+    <span class="doccomment">/// Returns a reference to an element.
+    </span><span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>T&gt;;
+    <span class="doccomment">/// Returns an exclusive reference to an element.
+    </span><span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: usize) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>T&gt;;
+
+    <span class="doccomment">/// Iterator type returned by `into_iter`.
+    </span><span class="kw">type </span>IntoIter: Iterator&lt;Item = T&gt;;
+    <span class="doccomment">/// Turns this `HomogenousVariadic&lt;T&gt;` into an iterator of items `T`.
+    </span><span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoIter;
+}
+<span class="attr">#[sealed]
+</span><span class="kw">impl</span>&lt;T&gt; HomogenousVariadic&lt;T&gt; <span class="kw">for </span>() {
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, _i: usize) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>T&gt; {
+        <span class="prelude-val">None
+    </span>}
+    <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _i: usize) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>T&gt; {
+        <span class="prelude-val">None
+    </span>}
+
+    <span class="kw">type </span>IntoIter = std::iter::Empty&lt;T&gt;;
+    <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoIter {
+        std::iter::empty()
+    }
+}
+<span class="attr">#[sealed]
+</span><span class="kw">impl</span>&lt;T, Rest&gt; HomogenousVariadic&lt;T&gt; <span class="kw">for </span>(T, Rest)
 <span class="kw">where
-    </span>U: Variadic,
+    </span>Rest: HomogenousVariadic&lt;T&gt;,
 {
-    <span class="kw">type </span>Extended = U;
-    <span class="kw">fn </span>extend(<span class="self">self</span>, input: U) -&gt; <span class="self">Self</span>::Extended {
-        input
+    <span class="kw">fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>T&gt; {
+        <span class="kw">let </span>(item, rest) = <span class="self">self</span>;
+        <span class="kw">if </span>i == <span class="number">0 </span>{
+            <span class="prelude-val">Some</span>(item)
+        } <span class="kw">else </span>{
+            rest.get(i)
+        }
+    }
+    <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: usize) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>T&gt; {
+        <span class="kw">let </span>(item, rest) = <span class="self">self</span>;
+        <span class="kw">if </span>i == <span class="number">0 </span>{
+            <span class="prelude-val">Some</span>(item)
+        } <span class="kw">else </span>{
+            rest.get_mut(i)
+        }
+    }
+
+    <span class="kw">type </span>IntoIter = std::iter::Chain&lt;std::iter::Once&lt;T&gt;, Rest::IntoIter&gt;;
+    <span class="kw">fn </span>into_iter(<span class="self">self</span>) -&gt; <span class="self">Self</span>::IntoIter {
+        <span class="kw">let </span>(item, rest) = <span class="self">self</span>;
+        std::iter::once(item).chain(rest.into_iter())
     }
 }
 
-<span class="kw">pub trait </span>SplitPrefix&lt;U&gt;: Variadic
+<span class="doccomment">/// Helper trait for splitting a variadic into two parts. `Prefix` is the first part, everything
+/// after is the `Suffix` or second part.
+///
+/// This is a sealed trait.
+</span><span class="attr">#[sealed]
+</span><span class="kw">pub trait </span>Split&lt;Prefix&gt;: Variadic
 <span class="kw">where
-    </span>U: Variadic,
+    </span>Prefix: Variadic,
 {
-    <span class="kw">type </span>Suffix: Variadic;
-    <span class="kw">fn </span>split(<span class="self">self</span>) -&gt; (U, <span class="self">Self</span>::Suffix);
+    <span class="doccomment">/// The second part when splitting this variadic by `Prefix`.
+    </span><span class="kw">type </span>Suffix: Variadic;
+    <span class="doccomment">/// Splits this variadic into two parts, first the `Prefix`, and second the `Suffix`.
+    </span><span class="kw">fn </span>split(<span class="self">self</span>) -&gt; (Prefix, <span class="self">Self</span>::Suffix);
 }
-<span class="kw">impl</span>&lt;X, T, U&gt; SplitPrefix&lt;(X, U)&gt; <span class="kw">for </span>(X, T)
+<span class="attr">#[sealed]
+</span><span class="kw">impl</span>&lt;Item, Rest, PrefixRest&gt; Split&lt;(Item, PrefixRest)&gt; <span class="kw">for </span>(Item, Rest)
 <span class="kw">where
-    </span>U: Variadic,
-    T: SplitPrefix&lt;U&gt;,
+    </span>PrefixRest: Variadic,
+    Rest: Split&lt;PrefixRest&gt;,
 {
-    <span class="kw">type </span>Suffix = &lt;T <span class="kw">as </span>SplitPrefix&lt;U&gt;&gt;::Suffix;
-    <span class="kw">fn </span>split(<span class="self">self</span>) -&gt; ((X, U), <span class="self">Self</span>::Suffix) {
-        <span class="kw">let </span>(x, t) = <span class="self">self</span>;
-        <span class="kw">let </span>(t, u) = t.split();
-        ((x, t), u)
+    <span class="kw">type </span>Suffix = &lt;Rest <span class="kw">as </span>Split&lt;PrefixRest&gt;&gt;::Suffix;
+    <span class="kw">fn </span>split(<span class="self">self</span>) -&gt; ((Item, PrefixRest), <span class="self">Self</span>::Suffix) {
+        <span class="kw">let </span>(item, rest) = <span class="self">self</span>;
+        <span class="kw">let </span>(prefix_rest, suffix) = rest.split();
+        ((item, prefix_rest), suffix)
     }
 }
-<span class="kw">impl</span>&lt;T&gt; SplitPrefix&lt;()&gt; <span class="kw">for </span>T
+<span class="attr">#[sealed]
+</span><span class="kw">impl</span>&lt;Rest&gt; Split&lt;()&gt; <span class="kw">for </span>Rest
 <span class="kw">where
-    </span>T: Variadic,
+    </span>Rest: Variadic,
 {
-    <span class="kw">type </span>Suffix = T;
+    <span class="kw">type </span>Suffix = Rest;
     <span class="kw">fn </span>split(<span class="self">self</span>) -&gt; ((), <span class="self">Self</span>::Suffix) {
-        ((), <span class="self">self</span>)
-    }
-}
-
-<span class="kw">pub trait </span>Split&lt;U, V&gt;: Variadic
-<span class="kw">where
-    </span>U: Variadic,
-    V: Variadic,
-{
-    <span class="kw">fn </span>split(<span class="self">self</span>) -&gt; (U, V);
-}
-<span class="kw">impl</span>&lt;X, T, U, V&gt; Split&lt;(X, U), V&gt; <span class="kw">for </span>(X, T)
-<span class="kw">where
-    </span>T: Split&lt;U, V&gt;,
-    U: Variadic,
-    V: Variadic,
-{
-    <span class="kw">fn </span>split(<span class="self">self</span>) -&gt; ((X, U), V) {
-        <span class="kw">let </span>(x, t) = <span class="self">self</span>;
-        <span class="kw">let </span>(u, v) = t.split();
-        ((x, u), v)
-    }
-}
-<span class="kw">impl</span>&lt;T&gt; Split&lt;(), T&gt; <span class="kw">for </span>T
-<span class="kw">where
-    </span>T: Variadic,
-{
-    <span class="kw">fn </span>split(<span class="self">self</span>) -&gt; ((), T) {
         ((), <span class="self">self</span>)
     }
 }
@@ -571,7 +556,7 @@
     <span class="kw">type </span>MyList = <span class="macro">var_type!</span>(u8, u16, u32, u64);
     <span class="kw">type </span>MyPrefix = <span class="macro">var_type!</span>(u8, u16);
 
-    <span class="kw">type </span>MySuffix = &lt;MyList <span class="kw">as </span>SplitPrefix&lt;MyPrefix&gt;&gt;::Suffix;
+    <span class="kw">type </span>MySuffix = &lt;MyList <span class="kw">as </span>Split&lt;MyPrefix&gt;&gt;::Suffix;
 
     <span class="attr">#[allow(dead_code)]
     </span><span class="kw">const _</span>: MySuffix = <span class="macro">var_expr!</span>(<span class="number">0_u32</span>, <span class="number">0_u64</span>);
@@ -585,5 +570,14 @@
         <span class="kw">let _ </span>= <span class="macro">var_expr!</span>(<span class="string">&quot;a&quot;</span>,);
         <span class="kw">let _ </span>= <span class="macro">var_expr!</span>(<span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="number">1 </span>+ <span class="number">2</span>);
     }
+
+    <span class="macro">variadic_trait! </span>{
+        <span class="doccomment">/// Variaidic list of futures.
+        </span><span class="kw">pub </span>variadic&lt;F&gt; FuturesList <span class="kw">where </span>F: std::future::Future {}
+    }
+
+    <span class="kw">type </span>_ListA = <span class="macro">var_type!</span>(u32, u8, i32);
+    <span class="kw">type </span>_ListB = <span class="macro">var_type!</span>(..._ListA, bool, <span class="prelude-ty">Option</span>&lt;()&gt;);
+    <span class="kw">type </span>_ListC = <span class="macro">var_type!</span>(..._ListA, bool, <span class="prelude-ty">Option</span>::&lt;()&gt;);
 }
 </code></pre></div></section></main></body></html>
