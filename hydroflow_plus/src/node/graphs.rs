@@ -12,7 +12,7 @@ impl<'a> HfDeploy<'a> for SingleGraph {
     type Node = SingleNode<'a>;
     type Cluster = SingleNode<'a>;
     type Meta = ();
-    type RuntimeID = usize;
+    type RuntimeID = ();
 }
 
 impl<'a> HfNodeBuilder<'a, SingleGraph> for () {

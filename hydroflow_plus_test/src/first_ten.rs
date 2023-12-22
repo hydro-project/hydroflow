@@ -4,7 +4,7 @@ use stageleft::*;
 
 pub fn first_ten<'a, D: HfDeploy<'a>>(
     graph: &'a HfBuilder<'a, D>,
-    node_builder: &mut impl HfNodeBuilder<'a, D>,
+    node_builder: &impl HfNodeBuilder<'a, D>,
 ) {
     let node = graph.node(node_builder);
     let numbers = node.source_iter(q!(0..10));
@@ -15,8 +15,8 @@ pub fn first_ten<'a, D: HfDeploy<'a>>(
 pub fn first_ten_runtime<'a>(
     graph: &'a HfBuilder<'a, SingleGraph>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    first_ten(graph, &mut ());
-    graph.build(q!(0))
+    first_ten(graph, &());
+    graph.build_single()
 }
 
 pub fn first_ten_distributed<'a, D: HfNetworkedDeploy<'a>>(
