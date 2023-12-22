@@ -1503,7 +1503,6 @@ dependencies = [
  "hydro_deploy",
  "hydroflow_plus",
  "serde",
- "serde_json",
  "stageleft",
  "stageleft_tool",
  "syn 2.0.14",
