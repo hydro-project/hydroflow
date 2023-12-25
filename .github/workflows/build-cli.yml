@@ -6,6 +6,7 @@ on:
       - main
     tags:
       - 'hydro_cli-v[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
 
 env:
   PACKAGE_NAME: hydro_deploy
@@ -76,7 +77,13 @@ jobs:
           # fix openssl, based on https://github.com/Intreecom/scyllapy/blob/develop/.github/workflows/release.yaml
           before-script-linux: |
             if command -v yum &> /dev/null; then
-              yum update -y && yum install -y perl-core
+              yum update -y && yum install -y perl-core libatomic
+
+              # If we're running on i686 we need to symlink libatomic
+              # in order to build openssl with -latomic flag.
+              if [[ ! -d "/usr/lib64" ]]; then
+                ln -s /usr/lib/libatomic.so.1 /usr/lib/libatomic.so
+              fi
             fi
           args: --release --out dist
       - name: "Install built wheel"
