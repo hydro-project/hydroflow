@@ -1,90 +1,103 @@
 stageleft::stageleft_crate!(flow_macro);
 
-use hydroflow_plus::bytes::BytesMut;
-use hydroflow_plus::node::{HfNetworkedDeploy, HfNode, HfNodeBuilder};
-use hydroflow_plus::scheduled::graph::Hydroflow;
-use hydroflow_plus::util::cli::HydroCLI;
-use hydroflow_plus::HfBuilder;
-use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
+use hydroflow_plus::node::{Deploy, HfNode, NodeBuilder, ClusterBuilder, HfCluster};
+use hydroflow_plus::GraphBuilder;
 use stageleft::{q, Quoted, RuntimeData};
 
-pub fn my_dataflow<'a, D: HfNetworkedDeploy<'a>>(
-    graph: &'a HfBuilder<'a, D>,
-    node_builder: &impl HfNodeBuilder<'a, D>,
-) -> (D::NodePort, D::Node, D::Node) {
-    let node_zero = graph.node(node_builder);
-    let node_one = graph.node(node_builder);
+use hydroflow_plus::scheduled::graph::Hydroflow;
+use hydroflow_plus::util::cli::HydroCLI;
+use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
-    let (source_zero_port, source_zero) = node_zero.source_external();
+pub fn partitioned_char_counter<'a, D: Deploy<'a>>(
+    graph: &'a GraphBuilder<'a, D>,
+    node_builder: &impl NodeBuilder<'a, D>,
+    cluster_builder: &impl ClusterBuilder<'a, D>,
+) -> (D::Node, D::Cluster) {
+    let node = graph.node(node_builder);
+    let cluster = graph.cluster(cluster_builder);
 
-    source_zero
-        .map(q!(|v| v.unwrap().freeze()))
-        .send_bytes(&node_one)
-        .for_each(q!(|v: Result<BytesMut, _>| {
-            println!(
-                "node one received: {:?}",
-                std::str::from_utf8(&v.unwrap()).unwrap()
-            );
-        }));
+    let words = node
+        .source_iter(q!(vec!["abc", "abc", "xyz"]))
+        .map(q!(|s| s.to_string()));
 
-    (source_zero_port, node_zero, node_one)
+    let all_ids_vec = cluster.ids();
+    let words_partitioned = words.enumerate().map(q!({
+        let cluster_size = all_ids_vec.len();
+        move |(i, w)| ((i % cluster_size) as u32, w)
+    }));
+
+    words_partitioned
+        .demux_bincode(&cluster)
+        .batched()
+        .fold(q!(|| 0), q!(|count, string: String| *count += string.len()))
+        .inspect(q!(|count| println!("partition count: {}", count)))
+        .send_bincode_tagged(&node)
+        .persist()
+        .map(q!(|(_mid, count)| count))
+        .fold(q!(|| 0), q!(|total, count| *total += count))
+        .for_each(q!(|data| println!("total: {}", data)));
+
+    (node, cluster)
 }
 
 #[stageleft::entry]
-pub fn my_dataflow_runtime<'a>(
-    graph: &'a HfBuilder<'a, CLIRuntime>,
+pub fn partitioned_char_counter_runtime<'a>(
+    graph: &'a GraphBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-    node_id: RuntimeData<usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = my_dataflow(graph, &cli);
-    graph.build(node_id)
+    let _ = partitioned_char_counter(graph, &cli, &cli);
+    graph.build(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
-    use std::vec;
+    use std::cell::RefCell;
 
     use hydro_deploy::{Deployment, HydroflowCrate};
-    use hydroflow_plus::futures::SinkExt;
-    use hydroflow_plus::util::cli::ConnectedSink;
-    use hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, DeployCrateWrapper};
+    use hydroflow_plus::futures::StreamExt;
+    use hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, DeployCrateWrapper, CLIDeployClusterBuilder};
 
     #[tokio::test]
-    async fn networked_basic() {
+    async fn partitioned_char_counter() {
         let mut deployment = Deployment::new();
         let localhost = deployment.Localhost();
 
-        let builder = hydroflow_plus::HfBuilder::new();
-        let (source_zero_port, _, node_one) = super::my_dataflow(
+        let deployment_cell = RefCell::new(deployment);
+        let builder = hydroflow_plus::GraphBuilder::new();
+        let (leader, _) = super::partitioned_char_counter(
             &builder,
-            &mut CLIDeployNodeBuilder::new(|id| {
-                deployment.add_service(HydroflowCrate::new(
-                    ".", localhost.clone()
-                ).bin("my_dataflow").profile("dev").args(vec![id.to_string()]))
+            &CLIDeployNodeBuilder::new(|| {
+                deployment_cell.borrow_mut().add_service(
+                    HydroflowCrate::new(".", localhost.clone())
+                        .bin("my_dataflow")
+                        .profile("dev"),
+                )
+            }),
+            &CLIDeployClusterBuilder::new(|| {
+                (0..2).map(|_| {
+                    deployment_cell.borrow_mut().add_service(
+                        HydroflowCrate::new(".", localhost.clone())
+                            .bin("my_dataflow")
+                            .profile("dev"),
+                    )
+                }).collect()
             }),
         );
 
-        let port_to_zero = source_zero_port
-            .create_sender(&mut deployment, &localhost)
-            .await;
-
+        let mut deployment = deployment_cell.into_inner();
         deployment.deploy().await.unwrap();
 
-        let mut conn_to_zero = port_to_zero.connect().await.into_sink();
-        let node_one_stdout = node_one.stdout().await;
+        let mut leader_stdout = leader.stdout().await;
 
         deployment.start().await.unwrap();
 
-        conn_to_zero.send("hello world!".into()).await.unwrap();
+        while let Some(line) = leader_stdout.next().await {
+            if line == "total: 9" {
+                return;
+            }
+        }
 
-        assert_eq!(
-            tokio::time::timeout(Duration::from_secs(1), node_one_stdout.recv())
-                .await
-                .unwrap()
-                .unwrap(),
-            "node one received: \"hello world!\""
-        );
+        panic!("did not find total: 9");
     }
 }
