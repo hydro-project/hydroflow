@@ -1,0 +1,140 @@
+---
+sidebar_position: 4
+---
+
+# Node Clusters
+So far, we have looked at distributed systems where there is a single node running each piece of the compute graph -- **compute parallelism** (like pipelining). However, we can also use Hydroflow+ to run the same computation on multiple nodes -- achieving **data parallelism** (like replication and partitioning). This is done by creating a **cluster** of nodes that all run the same subgraph.
+
+## Creating Clusters
+Just like we use `NodeBuilder` to create nodes, we use `ClusterBuilder` to create clusters. We can then use the `graph.cluster(builder)` method to instantiate a cluster in our graph. Let's create a simple application where a leader node broadcasts data to a cluster of workers.
+
+We start with the standard architecture, with a flow graph and a runtime entrypoint, but now take a cluster builder in addition to a node builder.
+
+:::tip
+
+If you have been following along with the Hydroflow+ template, you'll now need to declare a new module for this example. Create a new file at `flow/src/broadcast.rs` and add the following to `flow/src/lib.rs`:
+
+```rust title="flow/src/lib.rs"
+pub mod broadcast;
+```
+
+:::
+
+
+```rust title="flow/src/broadcast.rs"
+use hydroflow_plus::*;
+use hydroflow_plus::node::*;
+use stageleft::*;
+
+pub fn broadcast<'a, D: Deploy<'a>>(
+    graph: &'a GraphBuilder<'a, D>,
+    node_builder: &impl NodeBuilder<'a, D>,
+    cluster_builder: &impl ClusterBuilder<'a, D>
+) {
+    let leader = graph.node(node_builder);
+    let workers = graph.cluster(cluster_builder);
+}
+```
+
+## Broadcasting Data
+When sending data between individual nodes, we used the `send_bincode` operator. When sending data from a node to a cluster, we can use the `broadcast_bincode` operator instead.
+
+```rust
+let data = leader.source_iter(q!(0..10));
+data
+    .broadcast_bincode(&workers)
+    .for_each(q!(|n| println!("{}", n)));
+```
+
+The `Stream` returned by `broadcast_bincode` represents the data received on _each_ node in the cluster. Because all nodes in a cluster run the exact same computation, we can then use the `for_each` operator directly on that stream to print the data on each node.
+
+## Deploying Graphs with Clusters
+To deploy this application, we must set up the runtime entrypoint and the Hydro Deploy configuration. The entrypoint looks similar to before, but now uses the CLI data to instantiate the cluster as well.
+
+```rust title="flow/src/broadcast.rs"
+use hydroflow_plus::util::cli::HydroCLI;
+use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
+
+#[stageleft::entry]
+pub fn broadcast_runtime<'a>(
+    graph: &'a GraphBuilder<'a, CLIRuntime>,
+    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
+) -> impl Quoted<'a, Hydroflow<'a>> {
+    broadcast(graph, &cli, &cli);
+    graph.build(q!(cli.meta.subgraph_id))
+}
+```
+
+Our binary (`src/bin/broadcast.rs`) looks similar to before:
+
+```rust title="flow/src/bin/broadcast.rs"
+#[tokio::main]
+async fn main() {
+    let ports = hydroflow_plus::util::cli::init().await;
+
+    hydroflow_plus::util::cli::launch_flow(
+        flow::broadcast::broadcast_runtime!(&ports)
+    ).await;
+}
+```
+
+Finally, our deployment script (`examples/broadcast.rs`) instantiates multiple services for the leader node and the workers. Because we are sharing the deployment across multiple builders, we wrap it in a `RefCell`. Since this script defines the physical deployment, we explicitly instantiate multiple services for the cluster builder, returning a `Vec` of services. We also set a display name for each service so that we can tell them apart in the logs.
+
+```rust title="flow/examples/broadcast.rs"
+use std::cell::RefCell;
+
+use hydro_deploy::{Deployment, HydroflowCrate};
+use hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, CLIDeployClusterBuilder};
+
+#[tokio::main]
+async fn main() {
+    let deployment = RefCell::new(Deployment::new());
+    let localhost = deployment.borrow_mut().Localhost();
+
+    let builder = hydroflow_plus::GraphBuilder::new();
+    flow::broadcast::broadcast(
+        &builder,
+        &CLIDeployNodeBuilder::new(|| {
+            let mut deployment = deployment.borrow_mut();
+            deployment.add_service(
+                HydroflowCrate::new(".", localhost.clone())
+                    .bin("broadcast")
+                    .profile(profile)
+                    .display_name("leader"),
+            )
+        }),
+        &CLIDeployClusterBuilder::new(|| {
+            let mut deployment = deployment.borrow_mut();
+            (0..2)
+                .map(|idx| {
+                    deployment.add_service(
+                        HydroflowCrate::new(".", localhost.clone())
+                            .bin("broadcast")
+                            .profile(profile)
+                            .display_name(format!("worker/{}", idx)),
+                    )
+                })
+                .collect()
+        }),
+    );
+
+    let mut deployment = deployment.into_inner();
+
+    deployment.deploy().await.unwrap();
+
+    deployment.start().await.unwrap();
+
+    tokio::signal::ctrl_c().await.unwrap()
+}
+```
+
+If we run this script, we should see the following output:
+
+```bash
+$ cargo run --example broadcast
+[worker/0] 0
+[worker/1] 0
+[worker/0] 1
+[worker/1] 1
+...
+```
