@@ -1581,7 +1581,6 @@ version = "0.0.0"
 dependencies = [
  "futures",
  "hydro_deploy",
- "hydroflow",
  "hydroflow_plus",
  "hydroflow_plus_cli_integration",
  "hydroflow_plus_test_macro",
@@ -1595,7 +1594,6 @@ dependencies = [
 name = "hydroflow_plus_test_macro"
 version = "0.0.0"
 dependencies = [
- "hydroflow",
  "hydroflow_plus",
  "hydroflow_plus_cli_integration",
  "stageleft",
