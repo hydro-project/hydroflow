@@ -68,7 +68,7 @@ pub fn map_reduce<'a, D: Deploy<'a>>(
     (node, cluster)
 }
 
-use hydroflow::util::cli::HydroCLI;
+use hydroflow_plus::util::cli::HydroCLI;
 use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
@@ -105,7 +105,6 @@ mod tests {
     use std::time::Duration;
 
     use hydro_deploy::{Deployment, HydroflowCrate};
-    use hydroflow::lattices::cc_traits::Iter;
     use hydroflow_plus_cli_integration::{
         CLIDeployClusterBuilder, CLIDeployNodeBuilder, DeployCrateWrapper,
     };

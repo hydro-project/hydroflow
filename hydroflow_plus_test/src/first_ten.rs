@@ -34,7 +34,7 @@ pub fn first_ten_distributed<'a, D: Deploy<'a>>(
     second_node
 }
 
-use hydroflow::util::cli::HydroCLI;
+use hydroflow_plus::util::cli::HydroCLI;
 use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
