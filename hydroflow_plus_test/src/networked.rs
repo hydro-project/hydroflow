@@ -1,5 +1,5 @@
-use hydroflow::bytes::BytesMut;
-use hydroflow::util::cli::HydroCLI;
+use hydroflow_plus::bytes::BytesMut;
+use hydroflow_plus::util::cli::HydroCLI;
 use hydroflow_plus::node::{Deploy, HfNode, NodeBuilder};
 use hydroflow_plus::scheduled::graph::Hydroflow;
 use hydroflow_plus::GraphBuilder;
@@ -41,8 +41,8 @@ pub fn networked_basic_runtime<'a>(
 #[cfg(test)]
 mod tests {
     use hydro_deploy::{Deployment, HydroflowCrate};
-    use hydroflow::futures::SinkExt;
-    use hydroflow::util::cli::ConnectedSink;
+    use hydroflow_plus::futures::SinkExt;
+    use hydroflow_plus::util::cli::ConnectedSink;
     use hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, DeployCrateWrapper};
 
     #[tokio::test]
