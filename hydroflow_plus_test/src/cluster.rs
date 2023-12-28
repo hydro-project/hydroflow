@@ -56,11 +56,11 @@ pub fn map_reduce<'a, D: Deploy<'a>>(
 
     words_partitioned
         .demux_bincode(&cluster)
-        .batched()
+        .tick_batch()
         .fold(q!(|| 0), q!(|count, string: String| *count += string.len()))
         .inspect(q!(|count| println!("partition count: {}", count)))
         .send_bincode_tagged(&node)
-        .persist()
+        .all_ticks()
         .map(q!(|(_mid, count)| count))
         .fold(q!(|| 0), q!(|total, count| *total += count))
         .for_each(q!(|data| println!("total: {}", data)));
