@@ -163,3 +163,16 @@ pub fn test_fold_sort() {
 
     df.run_available(); // Should return quickly and not hang
 }
+
+#[multiplatform_test]
+pub fn test_fold_inference() {
+    let (_items_send, items_recv) = hydroflow::util::unbounded_channel::<String>();
+
+    let df = hydroflow::hydroflow_syntax! {
+        source_stream(items_recv)
+            -> fold::<'tick>(|| 0, |old, s| { *old += s.len() })
+            -> for_each(|_| {});
+    };
+
+    assert_graphvis_snapshots!(df);
+}
