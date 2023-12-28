@@ -109,10 +109,6 @@ impl<'a, T, W, N: HfNode<'a>> Stream<'a, T, W, N> {
         self.pipeline_op(parse_quote!(filter_map(#f)))
     }
 
-    pub fn persist(&self) -> Stream<'a, T, Windowed, N> {
-        self.pipeline_op(parse_quote!(persist()))
-    }
-
     // TODO(shadaj): should allow for differing windows, using strongest one
     pub fn cross_product<O>(&self, other: &Stream<'a, O, W, N>) -> Stream<'a, (T, O), W, N> {
         let next_id = {
@@ -236,7 +232,11 @@ impl<'a, T, W, N: HfNode<'a>> Stream<'a, T, W, N> {
 }
 
 impl<'a, T, N: HfNode<'a>> Stream<'a, T, Async, N> {
-    pub fn batched(&self) -> Stream<'a, T, Windowed, N> {
+    pub fn all_ticks(&self) -> Stream<'a, T, Windowed, N> {
+        self.pipeline_op(parse_quote!(persist()))
+    }
+
+    pub fn tick_batch(&self) -> Stream<'a, T, Windowed, N> {
         Stream {
             ident: self.ident.clone(),
             node: self.node.clone(),
