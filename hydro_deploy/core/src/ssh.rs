@@ -9,16 +9,17 @@ use async_channel::{Receiver, Sender};
 use async_ssh2_lite::ssh2::ErrorCode;
 use async_ssh2_lite::{AsyncChannel, AsyncSession, Error};
 use async_trait::async_trait;
-use futures::{AsyncWriteExt, StreamExt};
+use futures::io::BufReader;
+use futures::{AsyncBufReadExt, AsyncWriteExt, StreamExt};
 use hydroflow_cli_integration::ServerBindConfig;
 use nanoid::nanoid;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::RwLock;
 
-use super::localhost::create_broadcast;
 use super::progress::ProgressTracker;
 use super::util::async_retry;
 use super::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
+use crate::util::prioritized_broadcast;
 
 struct LaunchedSSHBinary {
     _resource_result: Arc<ResourceResult>,
@@ -26,7 +27,7 @@ struct LaunchedSSHBinary {
     channel: AsyncChannel<TcpStream>,
     stdin_sender: Sender<String>,
     stdout_receivers: Arc<RwLock<Vec<Sender<String>>>>,
-    stdout_cli_receivers: Arc<RwLock<Vec<Sender<String>>>>,
+    stdout_cli_receivers: Arc<RwLock<Option<tokio::sync::oneshot::Sender<String>>>>,
     stderr_receivers: Arc<RwLock<Vec<Sender<String>>>>,
 }
 
@@ -36,10 +37,15 @@ impl LaunchedBinary for LaunchedSSHBinary {
         self.stdin_sender.clone()
     }
 
-    async fn cli_stdout(&self) -> Receiver<String> {
+    async fn cli_stdout(&self) -> tokio::sync::oneshot::Receiver<String> {
         let mut receivers = self.stdout_cli_receivers.write().await;
-        let (sender, receiver) = async_channel::unbounded::<String>();
-        receivers.push(sender);
+
+        if receivers.is_some() {
+            panic!("Only one CLI stdout receiver is allowed at a time");
+        }
+
+        let (sender, receiver) = tokio::sync::oneshot::channel::<String>();
+        *receivers = Some(sender);
         receiver
     }
 
@@ -227,9 +233,13 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
 
         let id_clone = id.clone();
         let (stdout_cli_receivers, stdout_receivers) =
-            create_broadcast(channel.stream(0), move |s| println!("[{id_clone}] {s}"));
+            prioritized_broadcast(BufReader::new(channel.stream(0)).lines(), move |s| {
+                println!("[{id_clone}] {s}")
+            });
         let (_, stderr_receivers) =
-            create_broadcast(channel.stderr(), move |s| eprintln!("[{id}] {s}"));
+            prioritized_broadcast(BufReader::new(channel.stderr()).lines(), move |s| {
+                eprintln!("[{id}] {s}")
+            });
 
         Ok(Arc::new(RwLock::new(LaunchedSSHBinary {
             _resource_result: self.resource_result().clone(),
