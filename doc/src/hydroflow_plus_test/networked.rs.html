@@ -81,11 +81,6 @@
 <a href="#81" id="81">81</a>
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
-<a href="#84" id="84">84</a>
-<a href="#85" id="85">85</a>
-<a href="#86" id="86">86</a>
-<a href="#87" id="87">87</a>
-<a href="#88" id="88">88</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow::bytes::BytesMut;
 <span class="kw">use </span>hydroflow::util::cli::HydroCLI;
 <span class="kw">use </span>hydroflow_plus::node::{Deploy, HfNode, NodeBuilder};
@@ -128,8 +123,6 @@
 <span class="attr">#[stageleft::runtime]
 #[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span>std::time::Duration;
-
     <span class="kw">use </span>hydro_deploy::{Deployment, HydroflowCrate};
     <span class="kw">use </span>hydroflow::futures::SinkExt;
     <span class="kw">use </span>hydroflow::util::cli::ConnectedSink;
@@ -166,10 +159,7 @@
         conn_to_zero.send(<span class="string">&quot;hello world!&quot;</span>.into()).<span class="kw">await</span>.unwrap();
 
         <span class="macro">assert_eq!</span>(
-            tokio::time::timeout(Duration::from_secs(<span class="number">30</span>), node_one_stdout.recv())
-                .<span class="kw">await
-                </span>.unwrap()
-                .unwrap(),
+            node_one_stdout.recv().<span class="kw">await</span>.unwrap(),
             <span class="string">&quot;node one received: \&quot;hello world!\&quot;&quot;
         </span>);
     }

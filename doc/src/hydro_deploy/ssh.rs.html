@@ -270,6 +270,16 @@
 <a href="#270" id="270">270</a>
 <a href="#271" id="271">271</a>
 <a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::path::PathBuf;
@@ -281,16 +291,17 @@
 <span class="kw">use </span>async_ssh2_lite::ssh2::ErrorCode;
 <span class="kw">use </span>async_ssh2_lite::{AsyncChannel, AsyncSession, Error};
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>futures::{AsyncWriteExt, StreamExt};
+<span class="kw">use </span>futures::io::BufReader;
+<span class="kw">use </span>futures::{AsyncBufReadExt, AsyncWriteExt, StreamExt};
 <span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
 <span class="kw">use </span>nanoid::nanoid;
 <span class="kw">use </span>tokio::net::{TcpListener, TcpStream};
 <span class="kw">use </span>tokio::sync::RwLock;
 
-<span class="kw">use </span><span class="kw">super</span>::localhost::create_broadcast;
 <span class="kw">use </span><span class="kw">super</span>::progress::ProgressTracker;
 <span class="kw">use </span><span class="kw">super</span>::util::async_retry;
 <span class="kw">use super</span>::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
+<span class="kw">use </span><span class="kw">crate</span>::util::prioritized_broadcast;
 
 <span class="kw">struct </span>LaunchedSSHBinary {
     _resource_result: Arc&lt;ResourceResult&gt;,
@@ -298,7 +309,7 @@
     channel: AsyncChannel&lt;TcpStream&gt;,
     stdin_sender: Sender&lt;String&gt;,
     stdout_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
-    stdout_cli_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
+    stdout_cli_receivers: Arc&lt;RwLock&lt;<span class="prelude-ty">Option</span>&lt;tokio::sync::oneshot::Sender&lt;String&gt;&gt;&gt;&gt;,
     stderr_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
 }
 
@@ -308,10 +319,15 @@
         <span class="self">self</span>.stdin_sender.clone()
     }
 
-    <span class="kw">async fn </span>cli_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
+    <span class="kw">async fn </span>cli_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; tokio::sync::oneshot::Receiver&lt;String&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_cli_receivers.write().<span class="kw">await</span>;
-        <span class="kw">let </span>(sender, receiver) = async_channel::unbounded::&lt;String&gt;();
-        receivers.push(sender);
+
+        <span class="kw">if </span>receivers.is_some() {
+            <span class="macro">panic!</span>(<span class="string">&quot;Only one CLI stdout receiver is allowed at a time&quot;</span>);
+        }
+
+        <span class="kw">let </span>(sender, receiver) = tokio::sync::oneshot::channel::&lt;String&gt;();
+        <span class="kw-2">*</span>receivers = <span class="prelude-val">Some</span>(sender);
         receiver
     }
 
@@ -499,9 +515,13 @@
 
         <span class="kw">let </span>id_clone = id.clone();
         <span class="kw">let </span>(stdout_cli_receivers, stdout_receivers) =
-            create_broadcast(channel.stream(<span class="number">0</span>), <span class="kw">move </span>|s| <span class="macro">println!</span>(<span class="string">&quot;[{id_clone}] {s}&quot;</span>));
+            prioritized_broadcast(BufReader::new(channel.stream(<span class="number">0</span>)).lines(), <span class="kw">move </span>|s| {
+                <span class="macro">println!</span>(<span class="string">&quot;[{id_clone}] {s}&quot;</span>)
+            });
         <span class="kw">let </span>(<span class="kw">_</span>, stderr_receivers) =
-            create_broadcast(channel.stderr(), <span class="kw">move </span>|s| <span class="macro">eprintln!</span>(<span class="string">&quot;[{id}] {s}&quot;</span>));
+            prioritized_broadcast(BufReader::new(channel.stderr()).lines(), <span class="kw">move </span>|s| {
+                <span class="macro">eprintln!</span>(<span class="string">&quot;[{id}] {s}&quot;</span>)
+            });
 
         <span class="prelude-val">Ok</span>(Arc::new(RwLock::new(LaunchedSSHBinary {
             _resource_result: <span class="self">self</span>.resource_result().clone(),
