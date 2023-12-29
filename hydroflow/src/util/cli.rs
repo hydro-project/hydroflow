@@ -8,6 +8,17 @@ use serde::de::DeserializeOwned;
 
 use crate::scheduled::graph::Hydroflow;
 
+pub async fn launch<T: DeserializeOwned + Default>(
+    flow: impl FnOnce(&HydroCLI<T>) -> Hydroflow<'_>,
+) {
+    let ports = init_no_ack_start::<T>().await;
+    let flow = flow(&ports);
+
+    println!("ack start");
+
+    launch_flow(flow).await;
+}
+
 pub async fn launch_flow(mut flow: Hydroflow<'_>) {
     let stop = tokio::sync::oneshot::channel();
     tokio::task::spawn_blocking(|| {
@@ -43,7 +54,7 @@ impl<T> HydroCLI<T> {
     }
 }
 
-pub async fn init<T: DeserializeOwned + Default>() -> HydroCLI<T> {
+async fn init_no_ack_start<T: DeserializeOwned + Default>() -> HydroCLI<T> {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
     let trimmed = input.trim();
@@ -82,8 +93,6 @@ pub async fn init<T: DeserializeOwned + Default>() -> HydroCLI<T> {
         all_connected.insert(name, ServerOrBound::Bound(defn));
     }
 
-    println!("ack start");
-
     HydroCLI {
         ports: RefCell::new(all_connected),
         meta: bind_config
@@ -91,4 +100,12 @@ pub async fn init<T: DeserializeOwned + Default>() -> HydroCLI<T> {
             .map(|b| serde_json::from_str(&b).unwrap())
             .unwrap_or_default(),
     }
+}
+
+pub async fn init<T: DeserializeOwned + Default>() -> HydroCLI<T> {
+    let ret = init_no_ack_start::<T>().await;
+
+    println!("ack start");
+
+    ret
 }

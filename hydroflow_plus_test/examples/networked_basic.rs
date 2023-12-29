@@ -1,6 +1,6 @@
 use hydro_deploy::{Deployment, HydroflowCrate};
-use hydroflow::futures::SinkExt;
-use hydroflow::util::cli::ConnectedSink;
+use hydroflow_plus::futures::SinkExt;
+use hydroflow_plus::util::cli::ConnectedSink;
 use hydroflow_plus_cli_integration::CLIDeployNodeBuilder;
 
 #[tokio::main]

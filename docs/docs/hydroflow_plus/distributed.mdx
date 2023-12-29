@@ -49,7 +49,7 @@ numbers
 Now that our graph spans multiple nodes, our runtime entrypoint will involve multiple subgraphs. This means we can't get away with `build_single`. Instead, we must take the subgraph ID as a runtime parameter (`subgraph_id`) to select the appropriate graph. In addition, our dataflow involves the network, so we take a `HydroCLI` runtime parameter (`cli`) so that nodes can look up their network connections and instantiate the flow graph with access to it.
 
 ```rust
-use hydroflow::util::cli::HydroCLI;
+use hydroflow_plus::util::cli::HydroCLI;
 use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
@@ -67,10 +67,8 @@ The corresponding binary in `src/bin/first_ten_distributed.rs` then instantiates
 ```rust
 #[tokio::main]
 async fn main() {
-    let ports = hydroflow::util::cli::init().await;
-
-    hydroflow::util::cli::launch_flow(
-        flow::first_ten_distributed_runtime!(&ports)
+    hydroflow_plus::util::cli::launch(
+        |ports| flow::first_ten_distributed_runtime!(ports)
     ).await;
 }
 ```
