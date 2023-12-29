@@ -12,6 +12,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use stageleft::{IntoQuotedMut, Quoted};
 use syn::parse_quote;
+use syn::visit_mut::VisitMut;
 
 use crate::builder::Builders;
 use crate::node::{
@@ -334,6 +335,22 @@ fn get_this_crate() -> TokenStream {
     }
 }
 
+/// Rewrites use of alloc::string::* to use std::string::*
+struct RewriteAlloc {}
+impl VisitMut for RewriteAlloc {
+    fn visit_path_mut(&mut self, i: &mut syn::Path) {
+        if i.segments.iter().take(2).collect::<Vec<_>>()
+            == vec![
+                &syn::PathSegment::from(syn::Ident::new("alloc", Span::call_site())),
+                &syn::PathSegment::from(syn::Ident::new("string", Span::call_site())),
+            ]
+        {
+            *i.segments.first_mut().unwrap() =
+                syn::PathSegment::from(syn::Ident::new("std", Span::call_site()));
+        }
+    }
+}
+
 fn node_send_direct<'a, T, W, N: HfNode<'a>>(me: &Stream<'a, T, W, N>, sink: Pipeline) {
     let self_ident = &me.ident;
 
@@ -357,7 +374,8 @@ fn node_send_bincode<'a, T: Serialize, W, N: HfNode<'a>>(me: &Stream<'a, T, W, N
     let root = get_this_crate();
 
     // This may fail when instantiated in an environment with different deps
-    let t_type: syn::Type = syn::parse_str(std::any::type_name::<T>()).unwrap();
+    let mut t_type: syn::Type = syn::parse_str(std::any::type_name::<T>()).unwrap();
+    RewriteAlloc {}.visit_type_mut(&mut t_type);
 
     builders
         .entry(me.node.id())
@@ -378,7 +396,8 @@ fn cluster_demux_bincode<'a, T, W, N: HfNode<'a>>(me: &Stream<'a, (u32, T), W, N
     let root = get_this_crate();
 
     // This may fail when instantiated in an environment with different deps
-    let t_type: syn::Type = syn::parse_str(std::any::type_name::<T>()).unwrap();
+    let mut t_type: syn::Type = syn::parse_str(std::any::type_name::<T>()).unwrap();
+    RewriteAlloc {}.visit_type_mut(&mut t_type);
 
     builders
         .entry(me.node.id())
@@ -438,7 +457,8 @@ fn node_recv_bincode<'a, T1, T2: DeserializeOwned, W, N: HfNode<'a>, N2: HfNode<
     let root = get_this_crate();
 
     // This may fail when instantiated in an environment with different deps
-    let t_type: syn::Type = syn::parse_str(std::any::type_name::<T2>()).unwrap();
+    let mut t_type: syn::Type = syn::parse_str(std::any::type_name::<T2>()).unwrap();
+    RewriteAlloc {}.visit_type_mut(&mut t_type);
 
     builders.entry(other.id()).or_default().add_statement({
         if tagged {
