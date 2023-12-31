@@ -49,10 +49,9 @@ pub fn map_reduce<'a, D: Deploy<'a>>(
         .map(q!(|s| s.to_string()));
 
     let all_ids_vec = cluster.ids();
-    let words_partitioned = words.enumerate().map(q!({
-        let cluster_size = all_ids_vec.len();
-        move |(i, w)| ((i % cluster_size) as u32, w)
-    }));
+    let words_partitioned = words
+        .enumerate()
+        .map(q!({ |(i, w)| ((i % all_ids_vec.len()) as u32, w) }));
 
     words_partitioned
         .demux_bincode(&cluster)
