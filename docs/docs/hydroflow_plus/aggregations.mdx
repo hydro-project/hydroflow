@@ -1,0 +1,8 @@
+---
+sidebar_position: 4
+---
+
+# Aggregations and Ticks
+Hydroflow+ streams support aggregation operators such as `fold()`, which can be used to compute results that combine information from multiple elements along a stream. However, because Hydroflow+ streams are infinite, these operators have slightly different semantics than typical implementations.
+
+In particular, Hydroflow (and Hydroflow+) adhere to a _tick_ model of computation, where the stream is partitioned into finite _ticks_ of data.
