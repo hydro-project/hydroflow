@@ -1,8 +1,8 @@
 ---
-sidebar_position: 3
+sidebar_position: 2
 ---
 
-# Distributed Hydroflow+
+# Adding Distribution
 Continuing from our previous example, we will now look at how to extend our program to run on multiple nodes. Recall that our previous flow graph looked like this:
 
 ```rust title="flow/src/first_ten.rs"
@@ -76,7 +76,7 @@ async fn main() {
 ```
 
 ## The Deployment
-Finally, we need to deploy our dataflow with the appropriate network topology. We achieve this by using [Hydro Deploy](../deploy/index.md). Hydroflow+ integrates with Hydro Deploy to automatically construct the topology based on the flow graph. We can create a new file `examples/first_ten_distributed.rs` with the following contents:
+Finally, we need to deploy our dataflow with the appropriate network topology. We achieve this by using [Hydro Deploy](../../deploy/index.md). Hydroflow+ integrates with Hydro Deploy to automatically construct the topology based on the flow graph. We can create a new file `examples/first_ten_distributed.rs` with the following contents:
 
 ```rust title="flow/examples/first_ten_distributed.rs"
 use hydro_deploy::{Deployment, HydroflowCrate};
