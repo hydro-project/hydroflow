@@ -1,14 +1,12 @@
 ---
-sidebar_position: 2
+sidebar_position: 1
 ---
 
-# Building Dataflows
+# Your First Dataflow
 Hydroflow+ programs require special structure to support code generation and distributed deployments. There are three main components of a Hydroflow+ program:
 - The **flow graph** describes the dataflow logic of the program.
 - The **runtime** wraps the dataflow in an executable Rust binary.
 - The **deployment** describes how to map the flow graph to instances of the runtime. This is only needed for distributed deployments.
-
-Let's look a minimal example of a Hydroflow+ program. We'll start with a simple flow graph that prints out the first 10 natural numbers. First, we'll define the **flow graph**.
 
 :::tip
 
@@ -20,6 +18,9 @@ $ cargo generate hydro-project/hydroflow-plus-template
 ```
 
 :::
+
+
+Let's look a minimal example of a Hydroflow+ program. We'll start with a simple flow graph that prints out the first 10 natural numbers. First, we'll define the **flow graph**.
 
 
 ## The Flow Graph
