@@ -726,6 +726,18 @@
 <a href="#726" id="726">726</a>
 <a href="#727" id="727">727</a>
 <a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::io;
@@ -839,6 +851,10 @@
 
     <span class="comment">// TODO(shadaj): should allow for differing windows, using strongest one
     </span><span class="kw">pub fn </span>cross_product&lt;O&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, O, W, N&gt;) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (T, O), W, N&gt; {
+        <span class="kw">if </span><span class="self">self</span>.node.id() != other.node.id() {
+            <span class="macro">panic!</span>(<span class="string">&quot;cross_product must be called on streams on the same node&quot;</span>);
+        }
+
         <span class="kw">let </span>next_id = {
             <span class="kw">let </span><span class="kw-2">mut </span>next_id = <span class="self">self</span>.next_id.borrow_mut();
             <span class="kw">let </span>id = <span class="kw-2">*</span>next_id;
@@ -879,6 +895,10 @@
     }
 
     <span class="kw">pub fn </span>union(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
+        <span class="kw">if </span><span class="self">self</span>.node.id() != other.node.id() {
+            <span class="macro">panic!</span>(<span class="string">&quot;union must be called on streams on the same node&quot;</span>);
+        }
+
         <span class="kw">let </span>next_id = {
             <span class="kw">let </span><span class="kw-2">mut </span>next_id = <span class="self">self</span>.next_id.borrow_mut();
             <span class="kw">let </span>id = <span class="kw-2">*</span>next_id;
@@ -1010,6 +1030,10 @@
     <span class="kw">where
         </span>K: Eq + Hash,
     {
+        <span class="kw">if </span><span class="self">self</span>.node.id() != n.node.id() {
+            <span class="macro">panic!</span>(<span class="string">&quot;join must be called on streams on the same node&quot;</span>);
+        }
+
         <span class="kw">let </span>next_id = {
             <span class="kw">let </span><span class="kw-2">mut </span>next_id = <span class="self">self</span>.next_id.borrow_mut();
             <span class="kw">let </span>id = <span class="kw-2">*</span>next_id;
