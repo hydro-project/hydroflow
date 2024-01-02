@@ -111,6 +111,10 @@ impl<'a, T, W, N: HfNode<'a>> Stream<'a, T, W, N> {
 
     // TODO(shadaj): should allow for differing windows, using strongest one
     pub fn cross_product<O>(&self, other: &Stream<'a, O, W, N>) -> Stream<'a, (T, O), W, N> {
+        if self.node.id() != other.node.id() {
+            panic!("cross_product must be called on streams on the same node");
+        }
+
         let next_id = {
             let mut next_id = self.next_id.borrow_mut();
             let id = *next_id;
@@ -151,6 +155,10 @@ impl<'a, T, W, N: HfNode<'a>> Stream<'a, T, W, N> {
     }
 
     pub fn union(&self, other: &Stream<'a, T, W, N>) -> Stream<'a, T, W, N> {
+        if self.node.id() != other.node.id() {
+            panic!("union must be called on streams on the same node");
+        }
+
         let next_id = {
             let mut next_id = self.next_id.borrow_mut();
             let id = *next_id;
@@ -282,6 +290,10 @@ impl<'a, K, V1, W, N: HfNode<'a>> Stream<'a, (K, V1), W, N> {
     where
         K: Eq + Hash,
     {
+        if self.node.id() != n.node.id() {
+            panic!("join must be called on streams on the same node");
+        }
+
         let next_id = {
             let mut next_id = self.next_id.borrow_mut();
             let id = *next_id;
