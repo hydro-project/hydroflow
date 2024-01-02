@@ -183,9 +183,7 @@ where
     /// Remove an edge from the graph. If the edgeId is found then the edge is removed from the graph and returned.
     /// If the edgeId was not found in the graph then nothing is returned and nothing is done.
     pub fn remove_edge(&mut self, e: E) -> Option<(V, V)> {
-        let Some((src, dst)) = self.edges.remove(e) else {
-            return None;
-        };
+        let (src, dst) = self.edges.remove(e)?;
 
         self.succs[src].retain(|x| *x != e);
         self.preds[dst].retain(|x| *x != e);
