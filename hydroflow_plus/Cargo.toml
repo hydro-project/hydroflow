@@ -17,7 +17,7 @@ cli_integration = [ "hydroflow/cli_integration" ]
 
 [dependencies]
 quote = "1.0.0"
-syn = { version = "2.0.0", features = [ "parsing", "extra-traits" ] }
+syn = { version = "2.0.0", features = [ "parsing", "extra-traits", "visit-mut" ] }
 proc-macro2 = "1.0.57"
 proc-macro-crate = "1.1.0"
 hydroflow = { path = "../hydroflow", version = "^0.5.0", default-features = false }
