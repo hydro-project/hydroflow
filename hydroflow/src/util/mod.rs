@@ -2,6 +2,7 @@
 //! Helper utilities for the Hydroflow surface syntax.
 
 pub mod clear;
+#[cfg(feature = "hydroflow_macro")]
 pub mod demux_enum;
 pub mod monotonic_map;
 pub mod multiset;

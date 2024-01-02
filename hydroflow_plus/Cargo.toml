@@ -20,7 +20,7 @@ quote = "1.0.0"
 syn = { version = "2.0.0", features = [ "parsing", "extra-traits" ] }
 proc-macro2 = "1.0.57"
 proc-macro-crate = "1.1.0"
-hydroflow = { path = "../hydroflow", version = "^0.5.0" }
+hydroflow = { path = "../hydroflow", version = "^0.5.0", default-features = false }
 hydroflow_lang = { path = "../hydroflow_lang", version = "^0.5.0" }
 serde = { version = "1", features = [ "derive" ] }
 bincode = "1.3"
