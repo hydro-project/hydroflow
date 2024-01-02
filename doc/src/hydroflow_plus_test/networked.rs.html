@@ -81,10 +81,10 @@
 <a href="#81" id="81">81</a>
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow::bytes::BytesMut;
-<span class="kw">use </span>hydroflow::util::cli::HydroCLI;
+</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::bytes::BytesMut;
 <span class="kw">use </span>hydroflow_plus::node::{Deploy, HfNode, NodeBuilder};
 <span class="kw">use </span>hydroflow_plus::scheduled::graph::Hydroflow;
+<span class="kw">use </span>hydroflow_plus::util::cli::HydroCLI;
 <span class="kw">use </span>hydroflow_plus::GraphBuilder;
 <span class="kw">use </span>hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 <span class="kw">use </span>stageleft::{q, Quoted, RuntimeData};
@@ -124,8 +124,8 @@
 #[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>hydro_deploy::{Deployment, HydroflowCrate};
-    <span class="kw">use </span>hydroflow::futures::SinkExt;
-    <span class="kw">use </span>hydroflow::util::cli::ConnectedSink;
+    <span class="kw">use </span>hydroflow_plus::futures::SinkExt;
+    <span class="kw">use </span>hydroflow_plus::util::cli::ConnectedSink;
     <span class="kw">use </span>hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, DeployCrateWrapper};
 
     <span class="attr">#[tokio::test]

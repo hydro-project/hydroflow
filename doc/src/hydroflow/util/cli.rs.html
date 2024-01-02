@@ -92,6 +92,23 @@
 <a href="#92" id="92">92</a>
 <a href="#93" id="93">93</a>
 <a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
 </pre></div><pre class="rust"><code><span class="attr">#![allow(missing_docs)] </span><span class="comment">// TODO(mingwei)
 
 </span><span class="kw">use </span>std::cell::RefCell;
@@ -101,6 +118,17 @@
 <span class="kw">use </span>serde::de::DeserializeOwned;
 
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::graph::Hydroflow;
+
+<span class="kw">pub async fn </span>launch&lt;T: DeserializeOwned + Default&gt;(
+    flow: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;</span>HydroCLI&lt;T&gt;) -&gt; Hydroflow&lt;<span class="lifetime">&#39;_</span>&gt;,
+) {
+    <span class="kw">let </span>ports = init_no_ack_start::&lt;T&gt;().<span class="kw">await</span>;
+    <span class="kw">let </span>flow = flow(<span class="kw-2">&amp;</span>ports);
+
+    <span class="macro">println!</span>(<span class="string">&quot;ack start&quot;</span>);
+
+    launch_flow(flow).<span class="kw">await</span>;
+}
 
 <span class="kw">pub async fn </span>launch_flow(<span class="kw-2">mut </span>flow: Hydroflow&lt;<span class="lifetime">&#39;_</span>&gt;) {
     <span class="kw">let </span>stop = tokio::sync::oneshot::channel();
@@ -137,7 +165,7 @@
     }
 }
 
-<span class="kw">pub async fn </span>init&lt;T: DeserializeOwned + Default&gt;() -&gt; HydroCLI&lt;T&gt; {
+<span class="kw">async fn </span>init_no_ack_start&lt;T: DeserializeOwned + Default&gt;() -&gt; HydroCLI&lt;T&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>input = String::new();
     std::io::stdin().read_line(<span class="kw-2">&amp;mut </span>input).unwrap();
     <span class="kw">let </span>trimmed = input.trim();
@@ -176,8 +204,6 @@
         all_connected.insert(name, ServerOrBound::Bound(defn));
     }
 
-    <span class="macro">println!</span>(<span class="string">&quot;ack start&quot;</span>);
-
     HydroCLI {
         ports: RefCell::new(all_connected),
         meta: bind_config
@@ -185,5 +211,13 @@
             </span>.map(|b| serde_json::from_str(<span class="kw-2">&amp;</span>b).unwrap())
             .unwrap_or_default(),
     }
+}
+
+<span class="kw">pub async fn </span>init&lt;T: DeserializeOwned + Default&gt;() -&gt; HydroCLI&lt;T&gt; {
+    <span class="kw">let </span>ret = init_no_ack_start::&lt;T&gt;().<span class="kw">await</span>;
+
+    <span class="macro">println!</span>(<span class="string">&quot;ack start&quot;</span>);
+
+    ret
 }
 </code></pre></div></section></main></body></html>
