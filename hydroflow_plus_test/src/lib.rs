@@ -57,12 +57,12 @@ pub fn chat_app<'a>(
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let node = graph.node(&());
 
-    let users = node.source_stream(users_stream).persist();
+    let users = node.source_stream(users_stream).all_ticks();
     let messages = node.source_stream(messages);
     let messages = if replay_messages {
-        messages.persist()
+        messages.all_ticks()
     } else {
-        messages.batched()
+        messages.tick_batch()
     };
 
     let mut joined = users.cross_product(&messages);
@@ -98,7 +98,7 @@ pub fn graph_reachability<'a>(
         .map(q!(|(_from, (_, to))| to));
     set_reached_cycle.complete(&reachable);
 
-    reached.batched().unique().for_each(q!(|v| {
+    reached.tick_batch().unique().for_each(q!(|v| {
         reached_out.send(v).unwrap();
     }));
 
@@ -116,7 +116,7 @@ pub fn count_elems<'a, T: 'a>(
     let source = node.source_stream(input_stream);
     let count = source
         .map(q!(|_| 1))
-        .batched()
+        .tick_batch()
         .fold(q!(|| 0), q!(|a, b| *a += b));
 
     count.for_each(q!(|v| {
