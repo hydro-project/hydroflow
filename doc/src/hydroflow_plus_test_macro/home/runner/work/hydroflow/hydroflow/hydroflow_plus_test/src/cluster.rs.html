@@ -277,11 +277,11 @@
 
     words_partitioned
         .demux_bincode(<span class="kw-2">&amp;</span>cluster)
-        .batched()
+        .tick_batch()
         .fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|count, string: String| <span class="kw-2">*</span>count += string.len()))
         .inspect(<span class="macro">q!</span>(|count| <span class="macro">println!</span>(<span class="string">&quot;partition count: {}&quot;</span>, count)))
         .send_bincode_tagged(<span class="kw-2">&amp;</span>node)
-        .persist()
+        .all_ticks()
         .map(<span class="macro">q!</span>(|(_mid, count)| count))
         .fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|total, count| <span class="kw-2">*</span>total += count))
         .for_each(<span class="macro">q!</span>(|data| <span class="macro">println!</span>(<span class="string">&quot;total: {}&quot;</span>, data)));

@@ -837,10 +837,6 @@
         <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(filter_map(#f)))
     }
 
-    <span class="kw">pub fn </span>persist(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
-        <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(persist()))
-    }
-
     <span class="comment">// TODO(shadaj): should allow for differing windows, using strongest one
     </span><span class="kw">pub fn </span>cross_product&lt;O&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, O, W, N&gt;) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (T, O), W, N&gt; {
         <span class="kw">let </span>next_id = {
@@ -964,7 +960,11 @@
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N&gt; {
-    <span class="kw">pub fn </span>batched(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
+    <span class="kw">pub fn </span>all_ticks(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
+        <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(persist()))
+    }
+
+    <span class="kw">pub fn </span>tick_batch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
         Stream {
             ident: <span class="self">self</span>.ident.clone(),
             node: <span class="self">self</span>.node.clone(),

@@ -375,12 +375,12 @@
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
     <span class="kw">let </span>node = graph.node(<span class="kw-2">&amp;</span>());
 
-    <span class="kw">let </span>users = node.source_stream(users_stream).persist();
+    <span class="kw">let </span>users = node.source_stream(users_stream).all_ticks();
     <span class="kw">let </span>messages = node.source_stream(messages);
     <span class="kw">let </span>messages = <span class="kw">if </span>replay_messages {
-        messages.persist()
+        messages.all_ticks()
     } <span class="kw">else </span>{
-        messages.batched()
+        messages.tick_batch()
     };
 
     <span class="kw">let </span><span class="kw-2">mut </span>joined = users.cross_product(<span class="kw-2">&amp;</span>messages);
@@ -416,7 +416,7 @@
         .map(<span class="macro">q!</span>(|(_from, (<span class="kw">_</span>, to))| to));
     set_reached_cycle.complete(<span class="kw-2">&amp;</span>reachable);
 
-    reached.batched().unique().for_each(<span class="macro">q!</span>(|v| {
+    reached.tick_batch().unique().for_each(<span class="macro">q!</span>(|v| {
         reached_out.send(v).unwrap();
     }));
 
@@ -434,7 +434,7 @@
     <span class="kw">let </span>source = node.source_stream(input_stream);
     <span class="kw">let </span>count = source
         .map(<span class="macro">q!</span>(|<span class="kw">_</span>| <span class="number">1</span>))
-        .batched()
+        .tick_batch()
         .fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|a, b| <span class="kw-2">*</span>a += b));
 
     count.for_each(<span class="macro">q!</span>(|v| {
