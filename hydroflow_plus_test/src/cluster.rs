@@ -3,31 +3,31 @@ use hydroflow_plus::*;
 use stageleft::*;
 
 pub fn simple_cluster<'a, D: Deploy<'a>>(
-    graph: &'a GraphBuilder<'a, D>,
-    node_builder: &impl NodeBuilder<'a, D>,
-    cluster_builder: &impl ClusterBuilder<'a, D>,
-) -> (D::Node, D::Cluster) {
-    let node = graph.node(node_builder);
-    let cluster = graph.cluster(cluster_builder);
+    flow: &'a FlowBuilder<'a, D>,
+    process_spec: &impl ProcessSpec<'a, D>,
+    cluster_spec: &impl ClusterSpec<'a, D>,
+) -> (D::Process, D::Cluster) {
+    let process = flow.process(process_spec);
+    let cluster = flow.cluster(cluster_spec);
 
-    let numbers = node.source_iter(q!(0..5));
-    let ids = node.source_iter(cluster.ids()).map(q!(|&id| id));
+    let numbers = process.source_iter(q!(0..5));
+    let ids = process.source_iter(cluster.ids()).map(q!(|&id| id));
 
     ids.cross_product(&numbers)
         .map(q!(|(id, n)| (id, (id, n))))
         .demux_bincode(&cluster)
         .inspect(q!(|n| println!("cluster received: {:?}", n)))
-        .send_bincode_tagged(&node)
+        .send_bincode_tagged(&process)
         .for_each(q!(|(id, d)| println!("node received: ({}, {:?})", id, d)));
 
-    (node, cluster)
+    (process, cluster)
 }
 
 pub fn many_to_many<'a, D: Deploy<'a>>(
-    graph: &'a GraphBuilder<'a, D>,
-    cluster_builder: &impl ClusterBuilder<'a, D>,
+    flow: &'a FlowBuilder<'a, D>,
+    cluster_spec: &impl ClusterSpec<'a, D>,
 ) -> D::Cluster {
-    let cluster = graph.cluster(cluster_builder);
+    let cluster = flow.cluster(cluster_spec);
     cluster
         .source_iter(q!(0..2))
         .broadcast_bincode_tagged(&cluster)
@@ -37,14 +37,14 @@ pub fn many_to_many<'a, D: Deploy<'a>>(
 }
 
 pub fn map_reduce<'a, D: Deploy<'a>>(
-    graph: &'a GraphBuilder<'a, D>,
-    node_builder: &impl NodeBuilder<'a, D>,
-    cluster_builder: &impl ClusterBuilder<'a, D>,
-) -> (D::Node, D::Cluster) {
-    let node = graph.node(node_builder);
-    let cluster = graph.cluster(cluster_builder);
+    flow: &'a FlowBuilder<'a, D>,
+    process_spec: &impl ProcessSpec<'a, D>,
+    cluster_spec: &impl ClusterSpec<'a, D>,
+) -> (D::Process, D::Cluster) {
+    let process = flow.process(process_spec);
+    let cluster = flow.cluster(cluster_spec);
 
-    let words = node
+    let words = process
         .source_iter(q!(vec!["abc", "abc", "xyz"]))
         .map(q!(|s| s.to_string()));
 
@@ -58,13 +58,13 @@ pub fn map_reduce<'a, D: Deploy<'a>>(
         .tick_batch()
         .fold(q!(|| 0), q!(|count, string| *count += string.len()))
         .inspect(q!(|count| println!("partition count: {}", count)))
-        .send_bincode_tagged(&node)
+        .send_bincode_tagged(&process)
         .all_ticks()
         .map(q!(|(_mid, count)| count))
         .fold(q!(|| 0), q!(|total, count| *total += count))
         .for_each(q!(|data| println!("total: {}", data)));
 
-    (node, cluster)
+    (process, cluster)
 }
 
 use hydroflow_plus::util::cli::HydroCLI;
@@ -72,29 +72,29 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn simple_cluster_runtime<'a>(
-    graph: &'a GraphBuilder<'a, CLIRuntime>,
+    flow: &'a FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = simple_cluster(graph, &cli, &cli);
-    graph.build(q!(cli.meta.subgraph_id))
+    let _ = simple_cluster(flow, &cli, &cli);
+    flow.build(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::entry]
 pub fn many_to_many_runtime<'a>(
-    graph: &'a GraphBuilder<'a, CLIRuntime>,
+    flow: &'a FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = many_to_many(graph, &cli);
-    graph.build(q!(cli.meta.subgraph_id))
+    let _ = many_to_many(flow, &cli);
+    flow.build(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::entry]
 pub fn map_reduce_runtime<'a>(
-    graph: &'a GraphBuilder<'a, CLIRuntime>,
+    flow: &'a FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = map_reduce(graph, &cli, &cli);
-    graph.build(q!(cli.meta.subgraph_id))
+    let _ = map_reduce(flow, &cli, &cli);
+    flow.build(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::runtime]
@@ -104,7 +104,7 @@ mod tests {
 
     use hydro_deploy::{Deployment, HydroflowCrate};
     use hydroflow_plus_cli_integration::{
-        CLIDeployClusterBuilder, CLIDeployNodeBuilder, DeployCrateWrapper,
+        DeployClusterSpec, DeployCrateWrapper, DeployProcessSpec,
     };
 
     #[tokio::test]
@@ -112,17 +112,17 @@ mod tests {
         let deployment = RefCell::new(Deployment::new());
         let localhost = deployment.borrow_mut().Localhost();
 
-        let builder = hydroflow_plus::GraphBuilder::new();
+        let builder = hydroflow_plus::FlowBuilder::new();
         let (node, cluster) = super::simple_cluster(
             &builder,
-            &CLIDeployNodeBuilder::new(|| {
+            &DeployProcessSpec::new(|| {
                 deployment.borrow_mut().add_service(
                     HydroflowCrate::new(".", localhost.clone())
                         .bin("simple_cluster")
                         .profile("dev"),
                 )
             }),
-            &CLIDeployClusterBuilder::new(|| {
+            &DeployClusterSpec::new(|| {
                 (0..2)
                     .map(|_| {
                         deployment.borrow_mut().add_service(
@@ -173,10 +173,10 @@ mod tests {
         let deployment = RefCell::new(Deployment::new());
         let localhost = deployment.borrow_mut().Localhost();
 
-        let builder = hydroflow_plus::GraphBuilder::new();
+        let builder = hydroflow_plus::FlowBuilder::new();
         let cluster = super::many_to_many(
             &builder,
-            &CLIDeployClusterBuilder::new(|| {
+            &DeployClusterSpec::new(|| {
                 (0..2)
                     .map(|_| {
                         deployment.borrow_mut().add_service(
