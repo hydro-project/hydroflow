@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use hydro_deploy::gcp::GCPNetwork;
 use hydro_deploy::{Deployment, Host, HydroflowCrate};
-use hydroflow_plus_cli_integration::{CLIDeployClusterBuilder, CLIDeployNodeBuilder};
+use hydroflow_plus_cli_integration::{DeployClusterSpec, DeployProcessSpec};
 use tokio::sync::RwLock;
 
 type HostCreator = Box<dyn Fn(&mut Deployment) -> Arc<RwLock<dyn Host>>>;
@@ -39,10 +39,10 @@ async fn main() {
         )
     };
 
-    let builder = hydroflow_plus::GraphBuilder::new();
+    let builder = hydroflow_plus::FlowBuilder::new();
     hydroflow_plus_test::cluster::simple_cluster(
         &builder,
-        &CLIDeployNodeBuilder::new(|| {
+        &DeployProcessSpec::new(|| {
             let mut deployment = deployment.borrow_mut();
             let host = create_host(&mut deployment);
             deployment.add_service(
@@ -51,7 +51,7 @@ async fn main() {
                     .profile(profile),
             )
         }),
-        &CLIDeployClusterBuilder::new(|| {
+        &DeployClusterSpec::new(|| {
             let mut deployment = deployment.borrow_mut();
             (0..2)
                 .map(|_| {
