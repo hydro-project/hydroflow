@@ -9,10 +9,15 @@ export default function Home() {
     <Layout>
       <main>
         <div className={styles["jumbo"]}>
-          <h2 className={styles["indexTitle"]}>Build Software for <span className={styles["titleEveryScale"]}>Every Scale</span></h2>
+          <img src="/img/hydro-logo.svg" alt="Hydro Logo" style={{
+            width: "650px",
+            marginLeft: "auto",
+            marginRight: "auto",
+          }} />
+          <h2 className={styles["indexTitle"]}>build for <span className={styles["titleEveryScale"]}>every scale</span></h2>
 
           <div style={{ marginTop: "20px" }}>
-            <p className={styles["blurb"]}>The Hydro Project at UC Berkeley is developing <b>cloud-native</b> programming models that allow <b>anyone</b> to develop <b>scalable and resilient distributed applications</b> that take full advantage of cloud elasticity. Our research spans across <b>databases, distributed systems, and programming languages</b> to deliver a modern, end-to-end stack for cloud programming.</p>
+            <p className={styles["blurb"]}>The Hydro Project at UC Berkeley is developing <b>cloud-native</b> programming models that allow <b>anyone</b> to develop <b>scalable and resilient distributed applications</b>. Our research spans across <b>databases, distributed systems, and programming languages</b> to deliver a modern, end-to-end stack for cloud programming.</p>
             <div style={{
               display: "flex",
               flexDirection: "row",
