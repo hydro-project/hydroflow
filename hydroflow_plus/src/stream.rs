@@ -16,7 +16,7 @@ use syn::visit_mut::VisitMut;
 
 use crate::builder::Builders;
 use crate::node::{
-    HfCluster, HfNode, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany, HfSendOneToOne,
+    HfCluster, Location, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany, HfSendOneToOne,
 };
 
 /// Marks the stream as being asynchronous, which means the presence
@@ -41,7 +41,7 @@ pub struct Windowed {}
 /// - `W`: the windowing semantics of the stream, which is either [`Async`]
 ///    or [`Windowed`]
 /// - `N`: the type of the node that the stream is materialized on
-pub struct Stream<'a, T, W, N: HfNode<'a>> {
+pub struct Stream<'a, T, W, N: Location<'a>> {
     pub(crate) ident: syn::Ident,
     pub(crate) node: N,
     pub(crate) next_id: &'a RefCell<usize>,
@@ -49,7 +49,7 @@ pub struct Stream<'a, T, W, N: HfNode<'a>> {
     pub(crate) _phantom: PhantomData<(&'a mut &'a (), T, W)>,
 }
 
-impl<'a, T, W, N: HfNode<'a>> Stream<'a, T, W, N> {
+impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
     fn pipeline_op<U, W2>(&self, pipeline: Pipeline) -> Stream<'a, U, W2, N> {
         let next_id = {
             let mut next_id = self.next_id.borrow_mut();
@@ -240,7 +240,7 @@ impl<'a, T, W, N: HfNode<'a>> Stream<'a, T, W, N> {
     }
 }
 
-impl<'a, T, N: HfNode<'a>> Stream<'a, T, Async, N> {
+impl<'a, T, N: Location<'a>> Stream<'a, T, Async, N> {
     pub fn all_ticks(&self) -> Stream<'a, T, Windowed, N> {
         self.pipeline_op(parse_quote!(persist()))
     }
@@ -256,7 +256,7 @@ impl<'a, T, N: HfNode<'a>> Stream<'a, T, Async, N> {
     }
 }
 
-impl<'a, T, N: HfNode<'a>> Stream<'a, T, Windowed, N> {
+impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
     pub fn fold<A, I: Fn() -> A + 'a, C: Fn(&mut A, T)>(
         &self,
         init: impl IntoQuotedMut<'a, I>,
@@ -279,13 +279,13 @@ impl<'a, T, N: HfNode<'a>> Stream<'a, T, Windowed, N> {
     }
 }
 
-impl<'a, T: Clone, W, N: HfNode<'a>> Stream<'a, &T, W, N> {
+impl<'a, T: Clone, W, N: Location<'a>> Stream<'a, &T, W, N> {
     pub fn cloned(&self) -> Stream<'a, T, W, N> {
         self.pipeline_op(parse_quote!(map(|d| d.clone())))
     }
 }
 
-impl<'a, K, V1, W, N: HfNode<'a>> Stream<'a, (K, V1), W, N> {
+impl<'a, K, V1, W, N: Location<'a>> Stream<'a, (K, V1), W, N> {
     // TODO(shadaj): figure out window semantics
     pub fn join<W2, V2>(&self, n: &Stream<'a, (K, V2), W2, N>) -> Stream<'a, (K, (V1, V2)), W, N>
     where
@@ -363,7 +363,7 @@ impl VisitMut for RewriteAlloc {
     }
 }
 
-fn node_send_direct<'a, T, W, N: HfNode<'a>>(me: &Stream<'a, T, W, N>, sink: Pipeline) {
+fn node_send_direct<'a, T, W, N: Location<'a>>(me: &Stream<'a, T, W, N>, sink: Pipeline) {
     let self_ident = &me.ident;
 
     let mut builders_borrowed = me.builders.borrow_mut();
@@ -377,7 +377,7 @@ fn node_send_direct<'a, T, W, N: HfNode<'a>>(me: &Stream<'a, T, W, N>, sink: Pip
         });
 }
 
-fn node_send_bincode<'a, T: Serialize, W, N: HfNode<'a>>(me: &Stream<'a, T, W, N>, sink: Pipeline) {
+fn node_send_bincode<'a, T: Serialize, W, N: Location<'a>>(me: &Stream<'a, T, W, N>, sink: Pipeline) {
     let self_ident = &me.ident;
 
     let mut builders_borrowed = me.builders.borrow_mut();
@@ -399,7 +399,7 @@ fn node_send_bincode<'a, T: Serialize, W, N: HfNode<'a>>(me: &Stream<'a, T, W, N
         });
 }
 
-fn cluster_demux_bincode<'a, T, W, N: HfNode<'a>>(me: &Stream<'a, (u32, T), W, N>, sink: Pipeline) {
+fn cluster_demux_bincode<'a, T, W, N: Location<'a>>(me: &Stream<'a, (u32, T), W, N>, sink: Pipeline) {
     let self_ident = &me.ident;
 
     let mut builders_borrowed = me.builders.borrow_mut();
@@ -421,7 +421,7 @@ fn cluster_demux_bincode<'a, T, W, N: HfNode<'a>>(me: &Stream<'a, (u32, T), W, N
         });
 }
 
-fn node_recv_direct<'a, T, W, N: HfNode<'a>, N2: HfNode<'a>>(
+fn node_recv_direct<'a, T, W, N: Location<'a>, N2: Location<'a>>(
     me: &Stream<'a, T, W, N>,
     other: &N2,
     source: Pipeline,
@@ -448,7 +448,7 @@ fn node_recv_direct<'a, T, W, N: HfNode<'a>, N2: HfNode<'a>>(
     ident
 }
 
-fn node_recv_bincode<'a, T1, T2: DeserializeOwned, W, N: HfNode<'a>, N2: HfNode<'a>>(
+fn node_recv_bincode<'a, T1, T2: DeserializeOwned, W, N: Location<'a>, N2: Location<'a>>(
     me: &Stream<'a, T1, W, N>,
     other: &N2,
     source: Pipeline,
@@ -492,8 +492,8 @@ fn node_recv_bincode<'a, T1, T2: DeserializeOwned, W, N: HfNode<'a>, N2: HfNode<
     ident
 }
 
-impl<'a, W, N: HfNode<'a>> Stream<'a, Bytes, W, N> {
-    pub fn send_bytes<N2: HfNode<'a>>(
+impl<'a, W, N: Location<'a>> Stream<'a, Bytes, W, N> {
+    pub fn send_bytes<N2: Location<'a>>(
         &self,
         other: &N2,
     ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
@@ -517,7 +517,7 @@ impl<'a, W, N: HfNode<'a>> Stream<'a, Bytes, W, N> {
         }
     }
 
-    pub fn send_bytes_tagged<N2: HfNode<'a>>(
+    pub fn send_bytes_tagged<N2: Location<'a>>(
         &self,
         other: &N2,
     ) -> Stream<'a, Result<(u32, BytesMut), io::Error>, Async, N2>
@@ -541,7 +541,7 @@ impl<'a, W, N: HfNode<'a>> Stream<'a, Bytes, W, N> {
         }
     }
 
-    pub fn broadcast_bytes<N2: HfNode<'a> + HfCluster<'a>>(
+    pub fn broadcast_bytes<N2: Location<'a> + HfCluster<'a>>(
         &self,
         other: &N2,
     ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
@@ -554,7 +554,7 @@ impl<'a, W, N: HfNode<'a>> Stream<'a, Bytes, W, N> {
             .demux_bytes(other)
     }
 
-    pub fn broadcast_bytes_tagged<N2: HfNode<'a> + HfCluster<'a>>(
+    pub fn broadcast_bytes_tagged<N2: Location<'a> + HfCluster<'a>>(
         &self,
         other: &N2,
     ) -> Stream<'a, Result<(u32, BytesMut), io::Error>, Async, N2>
@@ -568,8 +568,8 @@ impl<'a, W, N: HfNode<'a>> Stream<'a, Bytes, W, N> {
     }
 }
 
-impl<'a, T: Serialize + DeserializeOwned, W, N: HfNode<'a>> Stream<'a, T, W, N> {
-    pub fn send_bincode<N2: HfNode<'a>>(&self, other: &N2) -> Stream<'a, T, Async, N2>
+impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N> {
+    pub fn send_bincode<N2: Location<'a>>(&self, other: &N2) -> Stream<'a, T, Async, N2>
     where
         N: HfSendOneToOne<'a, N2>,
     {
@@ -595,7 +595,7 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: HfNode<'a>> Stream<'a, T, W, N> 
         }
     }
 
-    pub fn send_bincode_tagged<N2: HfNode<'a>>(&self, other: &N2) -> Stream<'a, (u32, T), Async, N2>
+    pub fn send_bincode_tagged<N2: Location<'a>>(&self, other: &N2) -> Stream<'a, (u32, T), Async, N2>
     where
         N: HfSendManyToOne<'a, N2>,
     {
@@ -621,7 +621,7 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: HfNode<'a>> Stream<'a, T, W, N> 
         }
     }
 
-    pub fn broadcast_bincode<N2: HfNode<'a> + HfCluster<'a>>(
+    pub fn broadcast_bincode<N2: Location<'a> + HfCluster<'a>>(
         &self,
         other: &N2,
     ) -> Stream<'a, T, Async, N2>
@@ -634,7 +634,7 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: HfNode<'a>> Stream<'a, T, W, N> 
             .demux_bincode(other)
     }
 
-    pub fn broadcast_bincode_tagged<N2: HfNode<'a> + HfCluster<'a>>(
+    pub fn broadcast_bincode_tagged<N2: Location<'a> + HfCluster<'a>>(
         &self,
         other: &N2,
     ) -> Stream<'a, (u32, T), Async, N2>
@@ -648,8 +648,8 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: HfNode<'a>> Stream<'a, T, W, N> 
     }
 }
 
-impl<'a, W, N: HfNode<'a>> Stream<'a, (u32, Bytes), W, N> {
-    pub fn demux_bytes<N2: HfNode<'a>>(
+impl<'a, W, N: Location<'a>> Stream<'a, (u32, Bytes), W, N> {
+    pub fn demux_bytes<N2: Location<'a>>(
         &self,
         other: &N2,
     ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
@@ -674,8 +674,8 @@ impl<'a, W, N: HfNode<'a>> Stream<'a, (u32, Bytes), W, N> {
     }
 }
 
-impl<'a, T: Serialize + DeserializeOwned, W, N: HfNode<'a>> Stream<'a, (u32, T), W, N> {
-    pub fn demux_bincode<N2: HfNode<'a>>(&self, other: &N2) -> Stream<'a, T, Async, N2>
+impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, (u32, T), W, N> {
+    pub fn demux_bincode<N2: Location<'a>>(&self, other: &N2) -> Stream<'a, T, Async, N2>
     where
         N: HfSendOneToMany<'a, N2>,
     {
@@ -702,8 +702,8 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: HfNode<'a>> Stream<'a, (u32, T),
     }
 }
 
-impl<'a, W, N: HfNode<'a>> Stream<'a, (u32, Bytes), W, N> {
-    pub fn demux_bytes_tagged<N2: HfNode<'a>>(
+impl<'a, W, N: Location<'a>> Stream<'a, (u32, Bytes), W, N> {
+    pub fn demux_bytes_tagged<N2: Location<'a>>(
         &self,
         other: &N2,
     ) -> Stream<'a, Result<(u32, BytesMut), io::Error>, Async, N2>
@@ -728,8 +728,8 @@ impl<'a, W, N: HfNode<'a>> Stream<'a, (u32, Bytes), W, N> {
     }
 }
 
-impl<'a, T: Serialize + DeserializeOwned, W, N: HfNode<'a>> Stream<'a, (u32, T), W, N> {
-    pub fn demux_bincode_tagged<N2: HfNode<'a>>(
+impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, (u32, T), W, N> {
+    pub fn demux_bincode_tagged<N2: Location<'a>>(
         &self,
         other: &N2,
     ) -> Stream<'a, (u32, T), Async, N2>
