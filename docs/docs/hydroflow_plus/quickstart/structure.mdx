@@ -26,54 +26,60 @@ Let's look a minimal example of a Hydroflow+ program. We'll start with a simple 
 ## The Flow Graph
 ```rust title="flow/src/first_ten.rs"
 use hydroflow_plus::*;
-use hydroflow_plus::node::*;
+use hydroflow_plus::process::*;
 use stageleft::*;
 
 pub fn first_ten<'a, D: LocalDeploy<'a>>(
-    graph: &'a GraphBuilder<'a, D>,
-    node_builder: &impl NodeBuilder<'a, D>
+    flow: &'a FlowBuilder<'a, D>,
+    process_spec: &impl ProcessSpec<'a, D>
 ) {}
 ```
 
-The `graph` variable gives us access to the builder API for constructing the flow graph. The `node_builder` variable defines how to construct the nodes of the flow graph. For now, we will only use the builder once, to create a single node.
+To build a Hydroflow+ application, we need to define dataflow that spans multiple processes. The `FlowBuilder` parameter captures the global dataflow, while the `process_spec` variable defines how to construct the processes where the dataflow will be executed. For now, we will only use the `ProcessSpec` once, to add a single process to our global dataflow.
 
 ```rust
 pub fn first_ten<'a, D: LocalDeploy<'a>>(
-    graph: &'a GraphBuilder<'a, D>,
-    node_builder: &impl NodeBuilder<'a, D>
+    flow: &'a FlowBuilder<'a, D>,
+    process_spec: &impl ProcessSpec<'a, D>
 ) {
-    let node = graph.node(node_builder);
+    let process = flow.process(process_spec);
 }
 ```
 
-Now, we can build out the logic of the node. First, we instantiate a stream that emits the first 10 natural numbers.
+Now, we can build out the dataflow to run on this process. Every dataflow starts at a source that is bound to a specific process. First, we instantiate a stream that emits the first 10 natural numbers.
 
 ```rust
-let numbers = node.source_iter(q!(0..10));
+let numbers = process.source_iter(q!(0..10)); // : Stream<_, i32, _, _>
 ```
 
-In Hydroflow+, whenever there are snippets of code that will be executed during runtime, we use the `q!` macro to mark them. This includes both static sources of data as well as closures that transform them. For example, to print out these numbers, we can use the `for_each` operator:
+In Hydroflow+, whenever there are snippets of Rust code passed to operators (like `source_iter`, `map`, or `for_each`), we use the `q!` macro to mark them. For example, we may use Rust snippets to define static sources of data or closures that transform them.
+
+To print out these numbers, we can use the `for_each` operator (note that the body of `for_each` is a closure wrapped in `q!`):
 
 ```rust
 numbers.for_each(q!(|n| println!("{}", n)));
 ```
 
 ## The Runtime
-Next, we need to instantiate our flow graph into a runnable Rust binary. We do this by defining a Stageleft entrypoint for the graph, and then instantiating this inside a separate Rust binary.
+Next, we need to instantiate our dataflow into a runnable Rust binary. We do this by defining a [Stageleft entrypoint](../stageleft.mdx) for the graph, and then invoking the entrypoint inside a separate Rust binary.
 
-To define the entrypoint, we use the `#[stageleft::entry]` macro, which takes the graph being built and returns a generated Hydroflow program:
+To define the entrypoint, we use the `#[stageleft::entry]` macro, which takes the graph being built and returns a generated Hydroflow program. We define this as a new function `first_ten_runtime`. In this first example, we assume there is a single process so that we do not need to specify how the graph is laid out across processes. We specify this by using the `SingleProcessGraph` type parameter on `FlowBuilder`.
+
+Having done that, we can use some simple defaults for "distributing" this single-process deployment. First, we use `()` as an argument to `first_ten` to choose the default process spec. Then we use the `build_single` method to generate the Hydroflow program.
+
 
 ```rust title="flow/src/first_ten.rs"
 #[stageleft::entry]
 pub fn first_ten_runtime<'a>(
-    graph: &'a GraphBuilder<'a, SingleGraph>
+    flow: &'a FlowBuilder<'a, SingleProcessGraph>
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    first_ten(graph, &());
-    graph.build_single()
+    first_ten(flow, &() /* for a single process graph */);
+    flow.build_single() // : impl Quoted<'a, Hydroflow<'a>>
 }
 ```
 
-Because we are using a `SingleGraph` deployment, we can use the `build_single` method to generate a runnable Hydroflow program. Stageleft entries are usable as macros from other programs. In our case, we will instantiate our entrypoint from the Rust binary for our dataflow. We can create a new file `src/bin/first_ten.rs` with the following contents:
+Finally, it's time to write our `main` function.
+Stageleft entries are usable as macros from other programs. In our case, we will instantiate our entrypoint from the Rust binary for our dataflow. We can create a new file `src/bin/first_ten.rs` with the following contents. Note that Hydroflow+ requires that we use `tokio` and its `async` function specification:
 
 ```rust title="flow/src/bin/first_ten.rs"
 #[tokio::main]
@@ -98,4 +104,4 @@ $ cargo run -p flow --bin first_ten
 9
 ```
 
-In the next section, we will look at how to extend this program to run on multiple nodes.
+In the next section, we will look at how to extend this program to run on multiple processs.
