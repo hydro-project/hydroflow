@@ -91,10 +91,7 @@ export default function Home() {
           marginTop: "30px",
           marginBottom: "30px"
         }}>
-          <h1 style={{
-            fontSize: "4rem",
-            textAlign: "center"
-          }}>Latest Publications</h1>
+          <h1 className={styles["heading"]}>Latest Publications</h1>
           {papers.map((paper, i) => {
             return <div style={{
               marginTop: i > 0 ? "25px" : undefined,
@@ -134,7 +131,7 @@ export default function Home() {
                       textDecoration: "none"
                     }}>{paper["title"]}</Link>
                   </p>
-                  <p style={{ margin: 0, fontSize: "20px", fontWeight: 300 }}>{paper["authors"]}</p>
+                  <p style={{ margin: 0, fontSize: "20px", fontWeight: 300, lineHeight: "130%" }}>{paper["authors"]}</p>
                   <p style={{ margin: 0, marginTop: "5px", fontSize: "16px", fontWeight: 300, lineHeight: "1.4" }}>{paper.description[0]} <span className="paper-desc-extended">{paper.description[1]}</span></p>
                   <p style={{ margin: 0, marginTop: "5px", fontSize: "20px" }}>{paper.links}</p>
                 </div>

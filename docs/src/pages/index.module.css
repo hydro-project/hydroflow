@@ -4,14 +4,14 @@
  */
 
 .jumbo {
-  max-width: calc(min(1100px, 100vw - 60px));
+  max-width: calc(min(1000px, 100vw - 60px));
   min-height: calc(100vh - 360px);
   margin-left: auto;
   margin-right: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  margin-top: 80px;
+  margin-top: 50px;
   box-sizing: border-box;
   line-height: normal;
 }
@@ -26,9 +26,9 @@
 .indexTitle {
   text-align: center;
   font-family: 'Inter', sans-serif;
-  font-size: 120px;
+  font-size: 90px;
   font-weight: 800;
-  line-height: 105%;
+  line-height: 95%;
 
   color: #262626;
 
@@ -45,14 +45,14 @@
 
 @media screen and (max-width: 1000px) {
   .indexTitle {
-    font-size: 80px;
+    font-size: 50px;
   }
 }
 
 .blurb {
-  font-size: 22px;
+  font-size: 25px;
   font-weight: 300;
-  text-align: justify;
+  text-align: center;
 }
 
 @media screen and (max-width: 1000px) {

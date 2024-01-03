@@ -1,3 +1,14 @@
+.heading {
+  font-size: 3.8rem;
+  text-align: center;
+}
+
+@media screen and (max-width: 1000px) {
+  .heading {
+    font-size: 3.2rem;
+  }
+}
+
 .paperContainer {
   display: flex;
   align-items: center;
