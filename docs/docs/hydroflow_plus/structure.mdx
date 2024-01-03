@@ -10,9 +10,20 @@ Hydroflow+ programs require special structure to support code generation and dis
 
 Let's look a minimal example of a Hydroflow+ program. We'll start with a simple flow graph that prints out the first 10 natural numbers. First, we'll define the **flow graph**.
 
+:::tip
+
+We recommend using the Hydroflow+ template to get started with a new project. The template comes with a pre-configured build system and the following example pre-implemented.
+
+```bash
+$ cargo install cargo-generate
+$ cargo generate hydro-project/hydroflow-plus-template
+```
+
+:::
+
 
 ## The Flow Graph
-```rust
+```rust title="flow/src/first_ten.rs"
 use hydroflow_plus::*;
 use hydroflow_plus::node::*;
 use stageleft::*;
@@ -51,7 +62,7 @@ Next, we need to instantiate our flow graph into a runnable Rust binary. We do t
 
 To define the entrypoint, we use the `#[stageleft::entry]` macro, which takes the graph being built and returns a generated Hydroflow program:
 
-```rust
+```rust title="flow/src/first_ten.rs"
 #[stageleft::entry]
 pub fn first_ten_runtime<'a>(
     graph: &'a GraphBuilder<'a, SingleGraph>
@@ -63,17 +74,17 @@ pub fn first_ten_runtime<'a>(
 
 Because we are using a `SingleGraph` deployment, we can use the `build_single` method to generate a runnable Hydroflow program. Stageleft entries are usable as macros from other programs. In our case, we will instantiate our entrypoint from the Rust binary for our dataflow. We can create a new file `src/bin/first_ten.rs` with the following contents:
 
-```rust
+```rust title="flow/src/bin/first_ten.rs"
 #[tokio::main]
 async fn main() {
-    flow::first_ten_runtime!().run_async().await;
+    flow::first_ten::first_ten_runtime!().run_async().await;
 }
 ```
 
 We can now run this binary to see the output of our dataflow:
 
 ```bash
-$ cargo run --bin first_ten
+$ cargo run -p flow --bin first_ten
 0
 1
 2
