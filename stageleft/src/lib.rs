@@ -20,6 +20,22 @@ use runtime_support::FreeVariable;
 
 use crate::runtime_support::get_final_crate_name;
 
+#[cfg(windows)]
+#[macro_export]
+macro_rules! PATH_SEPARATOR {
+    () => {
+        r"\"
+    };
+}
+
+#[cfg(not(windows))]
+#[macro_export]
+macro_rules! PATH_SEPARATOR {
+    () => {
+        r"/"
+    };
+}
+
 #[macro_export]
 macro_rules! stageleft_crate {
     ($macro_crate:ident) => {
@@ -31,7 +47,11 @@ macro_rules! stageleft_crate {
         #[doc(hidden)]
         #[allow(unused, ambiguous_glob_reexports)]
         pub mod __staged {
-            include!(concat!(env!("OUT_DIR"), "/lib_pub.rs"));
+            include!(concat!(
+                env!("OUT_DIR"),
+                $crate::PATH_SEPARATOR!(),
+                "lib_pub.rs"
+            ));
         }
     };
 }
@@ -42,7 +62,11 @@ macro_rules! stageleft_no_entry_crate {
         #[doc(hidden)]
         #[allow(unused, ambiguous_glob_reexports)]
         pub mod __staged {
-            include!(concat!(env!("OUT_DIR"), "/lib_pub.rs"));
+            include!(concat!(
+                env!("OUT_DIR"),
+                $crate::PATH_SEPARATOR!(),
+                "lib_pub.rs"
+            ));
         }
     };
 }
@@ -50,7 +74,11 @@ macro_rules! stageleft_no_entry_crate {
 #[macro_export]
 macro_rules! stageleft_macro_crate {
     () => {
-        include!(concat!(env!("OUT_DIR"), "/lib.rs"));
+        include!(concat!(
+            env!("OUT_DIR"),
+            $crate::PATH_SEPARATOR!(),
+            "lib.rs"
+        ));
     };
 }
 
