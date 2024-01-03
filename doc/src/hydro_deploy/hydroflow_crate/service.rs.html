@@ -391,7 +391,7 @@
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use </span>anyhow::{anyhow, bail, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>anyhow::{bail, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>async_channel::Receiver;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures_core::Future;
@@ -399,7 +399,7 @@
 <span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>tokio::sync::RwLock;
 
-<span class="kw">use </span><span class="kw">super</span>::build::{build_crate, BuiltCrate};
+<span class="kw">use </span><span class="kw">super</span>::build::{build_crate, BuildError, BuiltCrate};
 <span class="kw">use </span><span class="kw">super</span>::ports::{<span class="self">self</span>, HydroflowPortConfig, HydroflowSink, SourcePath};
 <span class="kw">use </span><span class="kw">crate</span>::progress::ProgressTracker;
 <span class="kw">use crate</span>::{
@@ -429,7 +429,7 @@
     <span class="doccomment">/// Configuration for the ports that this service will listen on a port for.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) port_to_bind: HashMap&lt;String, ServerStrategy&gt;,
 
-    built_binary: Arc&lt;async_once_cell::OnceCell&lt;<span class="prelude-ty">Result</span>&lt;BuiltCrate, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str&gt;&gt;&gt;,
+    built_binary: Arc&lt;async_once_cell::OnceCell&lt;<span class="prelude-ty">Result</span>&lt;BuiltCrate, BuildError&gt;&gt;&gt;,
     launched_host: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt;,
 
     <span class="doccomment">/// A map of port names to config for how other services can connect to this one.
@@ -566,7 +566,7 @@
             .<span class="kw">await
     </span>}
 
-    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;BuiltCrate, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str&gt;&gt; {
+    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;BuiltCrate, BuildError&gt;&gt; {
         <span class="kw">let </span>src_cloned = <span class="self">self</span>.src.canonicalize().unwrap();
         <span class="kw">let </span>bin_cloned = <span class="self">self</span>.bin.clone();
         <span class="kw">let </span>example_cloned = <span class="self">self</span>.example.clone();
@@ -627,7 +627,7 @@
                 .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">&quot;service/{}&quot;</span>, <span class="self">self</span>.id)),
             <span class="prelude-val">None</span>,
             || <span class="kw">async </span>{
-                <span class="kw">let </span>built = <span class="self">self</span>.build().<span class="kw">await</span>.clone().map_err(|e| <span class="macro">anyhow!</span>(e))<span class="question-mark">?</span>;
+                <span class="kw">let </span>built = <span class="self">self</span>.build().<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="kw">let </span><span class="kw-2">mut </span>host_write = <span class="self">self</span>.on.write().<span class="kw">await</span>;
                 <span class="kw">let </span>launched = host_write.provision(resource_result).<span class="kw">await</span>;
@@ -655,7 +655,7 @@
             || <span class="kw">async </span>{
                 <span class="kw">let </span>launched_host = <span class="self">self</span>.launched_host.as_ref().unwrap();
 
-                <span class="kw">let </span>built = <span class="self">self</span>.build().<span class="kw">await</span>.clone().map_err(|e| <span class="macro">anyhow!</span>(e))<span class="question-mark">?</span>;
+                <span class="kw">let </span>built = <span class="self">self</span>.build().<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="kw">let </span>args = <span class="self">self</span>.args.as_ref().cloned().unwrap_or_default();
 
                 <span class="kw">let </span>binary = launched_host
