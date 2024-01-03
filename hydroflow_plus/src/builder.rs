@@ -10,20 +10,20 @@ use quote::quote;
 use stageleft::{Quoted, QuotedContext};
 use syn::parse_quote;
 
-use crate::node::{ClusterBuilder, HfNode, LocalDeploy, NodeBuilder};
+use crate::node::{ClusterSpec, HfNode, LocalDeploy, ProcessSpec};
 use crate::{HfBuilt, RuntimeContext};
 
 pub type Builders = RefCell<Option<BTreeMap<usize, FlatGraphBuilder>>>;
 
-pub struct GraphBuilder<'a, D: LocalDeploy<'a> + ?Sized> {
+pub struct FlowBuilder<'a, D: LocalDeploy<'a> + ?Sized> {
     pub(crate) next_id: RefCell<usize>,
     pub(crate) builders: Builders,
-    nodes: RefCell<Vec<D::Node>>,
+    nodes: RefCell<Vec<D::Process>>,
     clusters: RefCell<Vec<D::Cluster>>,
 
     /// Tracks metadata about concrete deployments in this graph, such
     /// as the IDs of each node in a cluster. This is written to
-    /// by `NodeBuilder` and `ClusterBuilder` and is written to
+    /// by `ProcessSpec` and `ClusterSpec` and is written to
     /// each instantiated node and cluster via `HfNode::update_meta`.
     meta: RefCell<D::Meta>,
 
@@ -31,16 +31,16 @@ pub struct GraphBuilder<'a, D: LocalDeploy<'a> + ?Sized> {
     _phantom: PhantomData<&'a mut &'a ()>,
 }
 
-impl<'a, D: LocalDeploy<'a>> QuotedContext for GraphBuilder<'a, D> {
+impl<'a, D: LocalDeploy<'a>> QuotedContext for FlowBuilder<'a, D> {
     fn create() -> Self {
-        GraphBuilder::new()
+        FlowBuilder::new()
     }
 }
 
-impl<'a, D: LocalDeploy<'a>> GraphBuilder<'a, D> {
+impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
     #[allow(clippy::new_without_default)]
-    pub fn new() -> GraphBuilder<'a, D> {
-        GraphBuilder {
+    pub fn new() -> FlowBuilder<'a, D> {
+        FlowBuilder {
             next_id: RefCell::new(0),
             builders: RefCell::new(Some(Default::default())),
             nodes: RefCell::new(Vec::new()),
@@ -55,7 +55,7 @@ impl<'a, D: LocalDeploy<'a>> GraphBuilder<'a, D> {
         (&self.next_id, &self.builders)
     }
 
-    pub fn node(&'a self, builder: &impl NodeBuilder<'a, D>) -> D::Node {
+    pub fn process(&'a self, builder: &impl ProcessSpec<'a, D>) -> D::Process {
         let mut next_node_id = self.next_node_id.borrow_mut();
         let id = *next_node_id;
         *next_node_id += 1;
@@ -68,7 +68,7 @@ impl<'a, D: LocalDeploy<'a>> GraphBuilder<'a, D> {
         node
     }
 
-    pub fn cluster(&'a self, builder: &impl ClusterBuilder<'a, D>) -> D::Cluster {
+    pub fn cluster(&'a self, builder: &impl ClusterSpec<'a, D>) -> D::Cluster {
         let mut next_node_id = self.next_node_id.borrow_mut();
         let id = *next_node_id;
         *next_node_id += 1;
@@ -99,7 +99,7 @@ impl<'a, D: LocalDeploy<'a>> GraphBuilder<'a, D> {
     }
 }
 
-fn build_inner<'a, D: LocalDeploy<'a>>(me: &GraphBuilder<'a, D>, id: TokenStream) -> HfBuilt<'a> {
+fn build_inner<'a, D: LocalDeploy<'a>>(me: &FlowBuilder<'a, D>, id: TokenStream) -> HfBuilt<'a> {
     let builders = me.builders.borrow_mut().take().unwrap();
 
     let mut conditioned_tokens = None;
@@ -155,13 +155,13 @@ fn build_inner<'a, D: LocalDeploy<'a>>(me: &GraphBuilder<'a, D>, id: TokenStream
     }
 }
 
-impl<'a, D: LocalDeploy<'a, RuntimeID = usize>> GraphBuilder<'a, D> {
+impl<'a, D: LocalDeploy<'a, RuntimeID = usize>> FlowBuilder<'a, D> {
     pub fn build(&self, id: impl Quoted<'a, usize>) -> HfBuilt<'a> {
         build_inner(self, id.splice())
     }
 }
 
-impl<'a, D: LocalDeploy<'a, RuntimeID = ()>> GraphBuilder<'a, D> {
+impl<'a, D: LocalDeploy<'a, RuntimeID = ()>> FlowBuilder<'a, D> {
     pub fn build_single(&self) -> HfBuilt<'a> {
         if self.builders.borrow().as_ref().unwrap().len() != 1 {
             panic!("Expected exactly one node in the graph.");

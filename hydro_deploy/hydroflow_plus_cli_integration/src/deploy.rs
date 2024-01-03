@@ -12,25 +12,25 @@ use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{Deployment, Host};
 use hydroflow_plus::builder::Builders;
 use hydroflow_plus::node::{
-    ClusterBuilder, Deploy, HfCluster, HfNode, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany,
-    HfSendOneToOne, NodeBuilder,
+    ClusterSpec, Deploy, HfCluster, HfNode, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany,
+    HfSendOneToOne, ProcessSpec,
 };
-use hydroflow_plus::GraphBuilder;
+use hydroflow_plus::FlowBuilder;
 use stageleft::internal::syn::parse_quote;
 use stageleft::q;
 use tokio::sync::RwLock;
 
 use super::HydroflowPlusMeta;
 
-pub struct CLIDeploy {}
+pub struct HydroDeploy {}
 
-impl<'a> Deploy<'a> for CLIDeploy {
-    type Node = CLIDeployNode<'a>;
-    type Cluster = CLIDeployCluster<'a>;
+impl<'a> Deploy<'a> for HydroDeploy {
+    type Process = DeployNode<'a>;
+    type Cluster = DeployCluster<'a>;
     type Meta = HashMap<usize, Vec<u32>>;
     type RuntimeID = ();
-    type NodePort = CLIDeployPort<CLIDeployNode<'a>>;
-    type ClusterPort = CLIDeployPort<CLIDeployCluster<'a>>;
+    type ProcessPort = DeployPort<DeployNode<'a>>;
+    type ClusterPort = DeployPort<DeployCluster<'a>>;
 }
 
 pub trait DeployCrateWrapper {
@@ -67,25 +67,25 @@ pub trait DeployCrateWrapper {
 }
 
 #[derive(Clone)]
-pub struct CLIDeployNode<'a> {
+pub struct DeployNode<'a> {
     id: usize,
-    builder: &'a GraphBuilder<'a, CLIDeploy>,
+    builder: &'a FlowBuilder<'a, HydroDeploy>,
     next_port: Rc<RefCell<usize>>,
     underlying: Arc<RwLock<HydroflowCrateService>>,
 }
 
-impl<'a> DeployCrateWrapper for CLIDeployNode<'a> {
+impl<'a> DeployCrateWrapper for DeployNode<'a> {
     fn underlying(&self) -> Arc<RwLock<HydroflowCrateService>> {
         self.underlying.clone()
     }
 }
 
-pub struct CLIDeployPort<N> {
+pub struct DeployPort<N> {
     node: N,
     port: String,
 }
 
-impl<'a> CLIDeployPort<CLIDeployNode<'a>> {
+impl<'a> DeployPort<DeployNode<'a>> {
     pub async fn create_sender(
         &self,
         deployment: &mut Deployment,
@@ -95,23 +95,23 @@ impl<'a> CLIDeployPort<CLIDeployNode<'a>> {
     }
 }
 
-impl<'a> HfNode<'a> for CLIDeployNode<'a> {
-    type Port = CLIDeployPort<Self>;
+impl<'a> HfNode<'a> for DeployNode<'a> {
+    type Port = DeployPort<Self>;
     type Meta = HashMap<usize, Vec<u32>>;
 
     fn id(&self) -> usize {
         self.id
     }
 
-    fn graph_builder(&self) -> (&'a RefCell<usize>, &'a Builders) {
+    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a Builders) {
         self.builder.builder_components()
     }
 
-    fn next_port(&self) -> CLIDeployPort<Self> {
+    fn next_port(&self) -> DeployPort<Self> {
         let next_port = *self.next_port.borrow();
         *self.next_port.borrow_mut() += 1;
 
-        CLIDeployPort {
+        DeployPort {
             node: self.clone(),
             port: format!("port_{}", next_port),
         }
@@ -138,30 +138,30 @@ impl DeployCrateWrapper for DeployClusterNode {
 }
 
 #[derive(Clone)]
-pub struct CLIDeployCluster<'a> {
+pub struct DeployCluster<'a> {
     id: usize,
-    builder: &'a GraphBuilder<'a, CLIDeploy>,
+    builder: &'a FlowBuilder<'a, HydroDeploy>,
     next_port: Rc<RefCell<usize>>,
-    pub nodes: Vec<DeployClusterNode>,
+    pub members: Vec<DeployClusterNode>,
 }
 
-impl<'a> HfNode<'a> for CLIDeployCluster<'a> {
-    type Port = CLIDeployPort<Self>;
+impl<'a> HfNode<'a> for DeployCluster<'a> {
+    type Port = DeployPort<Self>;
     type Meta = HashMap<usize, Vec<u32>>;
 
     fn id(&self) -> usize {
         self.id
     }
 
-    fn graph_builder(&self) -> (&'a RefCell<usize>, &'a Builders) {
+    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a Builders) {
         self.builder.builder_components()
     }
 
-    fn next_port(&self) -> CLIDeployPort<Self> {
+    fn next_port(&self) -> DeployPort<Self> {
         let next_port = *self.next_port.borrow();
         *self.next_port.borrow_mut() += 1;
 
-        CLIDeployPort {
+        DeployPort {
             node: self.clone(),
             port: format!("port_{}", next_port),
         }
@@ -173,25 +173,25 @@ impl<'a> HfNode<'a> for CLIDeployCluster<'a> {
             subgraph_id: self.id,
         };
 
-        self.nodes.iter().for_each(|n| {
+        self.members.iter().for_each(|n| {
             let mut n = n.underlying.try_write().unwrap();
             n.update_meta(&meta);
         });
     }
 }
 
-impl<'a> HfCluster<'a> for CLIDeployCluster<'a> {
+impl<'a> HfCluster<'a> for DeployCluster<'a> {
     fn ids(&self) -> impl stageleft::Quoted<'a, &'a Vec<u32>> + Copy + 'a {
         q!(panic!())
     }
 }
 
-impl<'a> HfSendOneToOne<'a, CLIDeployNode<'a>> for CLIDeployNode<'a> {
+impl<'a> HfSendOneToOne<'a, DeployNode<'a>> for DeployNode<'a> {
     fn connect(
         &self,
-        other: &CLIDeployNode<'a>,
-        source_port: &CLIDeployPort<CLIDeployNode<'a>>,
-        recipient_port: &CLIDeployPort<CLIDeployNode<'a>>,
+        other: &DeployNode<'a>,
+        source_port: &DeployPort<DeployNode<'a>>,
+        recipient_port: &DeployPort<DeployNode<'a>>,
     ) {
         let mut source_port = self
             .underlying
@@ -213,19 +213,19 @@ impl<'a> HfSendOneToOne<'a, CLIDeployNode<'a>> for CLIDeployNode<'a> {
     }
 
     fn gen_source_statement(
-        _other: &CLIDeployNode<'a>,
+        _other: &DeployNode<'a>,
         _port: &Self::Port,
     ) -> hydroflow_plus::lang::parse::Pipeline {
         parse_quote!(null())
     }
 }
 
-impl<'a> HfSendManyToOne<'a, CLIDeployNode<'a>> for CLIDeployCluster<'a> {
+impl<'a> HfSendManyToOne<'a, DeployNode<'a>> for DeployCluster<'a> {
     fn connect(
         &self,
-        other: &CLIDeployNode<'a>,
-        source_port: &CLIDeployPort<CLIDeployCluster<'a>>,
-        recipient_port: &CLIDeployPort<CLIDeployNode<'a>>,
+        other: &DeployNode<'a>,
+        source_port: &DeployPort<DeployCluster<'a>>,
+        recipient_port: &DeployPort<DeployNode<'a>>,
     ) {
         let mut recipient_port = other
             .underlying
@@ -234,7 +234,7 @@ impl<'a> HfSendManyToOne<'a, CLIDeployNode<'a>> for CLIDeployCluster<'a> {
             .get_port(recipient_port.port.clone(), &other.underlying)
             .merge();
 
-        for (i, node) in self.nodes.iter().enumerate() {
+        for (i, node) in self.members.iter().enumerate() {
             let source_port = node
                 .underlying
                 .try_read()
@@ -254,19 +254,19 @@ impl<'a> HfSendManyToOne<'a, CLIDeployNode<'a>> for CLIDeployCluster<'a> {
     }
 
     fn gen_source_statement(
-        _other: &CLIDeployNode<'a>,
-        _port: &CLIDeployPort<CLIDeployNode<'a>>,
+        _other: &DeployNode<'a>,
+        _port: &DeployPort<DeployNode<'a>>,
     ) -> hydroflow_plus::lang::parse::Pipeline {
         parse_quote!(null())
     }
 }
 
-impl<'a> HfSendOneToMany<'a, CLIDeployCluster<'a>> for CLIDeployNode<'a> {
+impl<'a> HfSendOneToMany<'a, DeployCluster<'a>> for DeployNode<'a> {
     fn connect(
         &self,
-        other: &CLIDeployCluster<'a>,
-        source_port: &CLIDeployPort<CLIDeployNode<'a>>,
-        recipient_port: &CLIDeployPort<CLIDeployCluster<'a>>,
+        other: &DeployCluster<'a>,
+        source_port: &DeployPort<DeployNode<'a>>,
+        recipient_port: &DeployPort<DeployCluster<'a>>,
     ) {
         let mut source_port = self
             .underlying
@@ -276,7 +276,7 @@ impl<'a> HfSendOneToMany<'a, CLIDeployCluster<'a>> for CLIDeployNode<'a> {
 
         let mut recipient_port = DemuxSink {
             demux: other
-                .nodes
+                .members
                 .iter()
                 .enumerate()
                 .map(|(id, c)| {
@@ -299,21 +299,21 @@ impl<'a> HfSendOneToMany<'a, CLIDeployCluster<'a>> for CLIDeployNode<'a> {
     }
 
     fn gen_source_statement(
-        _other: &CLIDeployCluster<'a>,
-        _port: &CLIDeployPort<CLIDeployCluster<'a>>,
+        _other: &DeployCluster<'a>,
+        _port: &DeployPort<DeployCluster<'a>>,
     ) -> hydroflow_plus::lang::parse::Pipeline {
         parse_quote!(null())
     }
 }
 
-impl<'a> HfSendManyToMany<'a, CLIDeployCluster<'a>> for CLIDeployCluster<'a> {
+impl<'a> HfSendManyToMany<'a, DeployCluster<'a>> for DeployCluster<'a> {
     fn connect(
         &self,
-        other: &CLIDeployCluster<'a>,
-        source_port: &CLIDeployPort<CLIDeployCluster<'a>>,
-        recipient_port: &CLIDeployPort<CLIDeployCluster<'a>>,
+        other: &DeployCluster<'a>,
+        source_port: &DeployPort<DeployCluster<'a>>,
+        recipient_port: &DeployPort<DeployCluster<'a>>,
     ) {
-        for (i, sender) in self.nodes.iter().enumerate() {
+        for (i, sender) in self.members.iter().enumerate() {
             let source_port = sender
                 .underlying
                 .try_read()
@@ -322,7 +322,7 @@ impl<'a> HfSendManyToMany<'a, CLIDeployCluster<'a>> for CLIDeployCluster<'a> {
 
             let mut recipient_port = DemuxSink {
                 demux: other
-                    .nodes
+                    .members
                     .iter()
                     .enumerate()
                     .map(|(id, c)| {
@@ -352,8 +352,8 @@ impl<'a> HfSendManyToMany<'a, CLIDeployCluster<'a>> for CLIDeployCluster<'a> {
     }
 
     fn gen_source_statement(
-        _other: &CLIDeployCluster<'a>,
-        _port: &CLIDeployPort<CLIDeployCluster<'a>>,
+        _other: &DeployCluster<'a>,
+        _port: &DeployPort<DeployCluster<'a>>,
     ) -> hydroflow_plus::lang::parse::Pipeline {
         parse_quote!(null())
     }
@@ -361,22 +361,22 @@ impl<'a> HfSendManyToMany<'a, CLIDeployCluster<'a>> for CLIDeployCluster<'a> {
 
 type CrateBuilder<'a> = dyn FnMut() -> Arc<RwLock<HydroflowCrateService>> + 'a;
 
-pub struct CLIDeployNodeBuilder<'a>(RefCell<Box<CrateBuilder<'a>>>);
+pub struct DeployProcessSpec<'a>(RefCell<Box<CrateBuilder<'a>>>);
 
-impl<'a> CLIDeployNodeBuilder<'a> {
+impl<'a> DeployProcessSpec<'a> {
     pub fn new<F: FnMut() -> Arc<RwLock<HydroflowCrateService>> + 'a>(f: F) -> Self {
         Self(RefCell::new(Box::new(f)))
     }
 }
 
-impl<'a: 'b, 'b> NodeBuilder<'a, CLIDeploy> for CLIDeployNodeBuilder<'b> {
+impl<'a: 'b, 'b> ProcessSpec<'a, HydroDeploy> for DeployProcessSpec<'b> {
     fn build(
         &self,
         id: usize,
-        builder: &'a GraphBuilder<'a, CLIDeploy>,
+        builder: &'a FlowBuilder<'a, HydroDeploy>,
         _meta: &mut HashMap<usize, Vec<u32>>,
-    ) -> CLIDeployNode<'a> {
-        CLIDeployNode {
+    ) -> DeployNode<'a> {
+        DeployNode {
             id,
             builder,
             next_port: Rc::new(RefCell::new(0)),
@@ -385,31 +385,31 @@ impl<'a: 'b, 'b> NodeBuilder<'a, CLIDeploy> for CLIDeployNodeBuilder<'b> {
     }
 }
 
-type ClusterBuilderFn<'a> = dyn FnMut() -> Vec<Arc<RwLock<HydroflowCrateService>>> + 'a;
+type ClusterSpecFn<'a> = dyn FnMut() -> Vec<Arc<RwLock<HydroflowCrateService>>> + 'a;
 
-pub struct CLIDeployClusterBuilder<'a>(RefCell<Box<ClusterBuilderFn<'a>>>);
+pub struct DeployClusterSpec<'a>(RefCell<Box<ClusterSpecFn<'a>>>);
 
-impl<'a> CLIDeployClusterBuilder<'a> {
+impl<'a> DeployClusterSpec<'a> {
     pub fn new<F: FnMut() -> Vec<Arc<RwLock<HydroflowCrateService>>> + 'a>(f: F) -> Self {
         Self(RefCell::new(Box::new(f)))
     }
 }
 
-impl<'a: 'b, 'b> ClusterBuilder<'a, CLIDeploy> for CLIDeployClusterBuilder<'b> {
+impl<'a: 'b, 'b> ClusterSpec<'a, HydroDeploy> for DeployClusterSpec<'b> {
     fn build(
         &self,
         id: usize,
-        builder: &'a GraphBuilder<'a, CLIDeploy>,
+        builder: &'a FlowBuilder<'a, HydroDeploy>,
         meta: &mut HashMap<usize, Vec<u32>>,
-    ) -> CLIDeployCluster<'a> {
+    ) -> DeployCluster<'a> {
         let cluster_nodes = (self.0.borrow_mut())();
         meta.insert(id, (0..(cluster_nodes.len() as u32)).collect());
 
-        CLIDeployCluster {
+        DeployCluster {
             id,
             builder,
             next_port: Rc::new(RefCell::new(0)),
-            nodes: cluster_nodes
+            members: cluster_nodes
                 .into_iter()
                 .map(|u| DeployClusterNode { underlying: u })
                 .collect(),
