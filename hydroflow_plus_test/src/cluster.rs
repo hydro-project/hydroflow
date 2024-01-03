@@ -57,7 +57,7 @@ pub fn map_reduce<'a, D: Deploy<'a>>(
     words_partitioned
         .demux_bincode(&cluster)
         .tick_batch()
-        .fold(q!(|| 0), q!(|count, string: String| *count += string.len()))
+        .fold(q!(|| 0), q!(|count, string| *count += string.len()))
         .inspect(q!(|count| println!("partition count: {}", count)))
         .send_bincode_tagged(&node)
         .all_ticks()
