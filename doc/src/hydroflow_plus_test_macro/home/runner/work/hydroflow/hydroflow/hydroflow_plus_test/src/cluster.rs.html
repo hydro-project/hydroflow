@@ -278,7 +278,7 @@
     words_partitioned
         .demux_bincode(<span class="kw-2">&amp;</span>cluster)
         .tick_batch()
-        .fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|count, string: String| <span class="kw-2">*</span>count += string.len()))
+        .fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|count, string| <span class="kw-2">*</span>count += string.len()))
         .inspect(<span class="macro">q!</span>(|count| <span class="macro">println!</span>(<span class="string">&quot;partition count: {}&quot;</span>, count)))
         .send_bincode_tagged(<span class="kw-2">&amp;</span>node)
         .all_ticks()

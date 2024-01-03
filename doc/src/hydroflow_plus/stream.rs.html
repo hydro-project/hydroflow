@@ -738,6 +738,26 @@
 <a href="#738" id="738">738</a>
 <a href="#739" id="739">739</a>
 <a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::io;
@@ -752,6 +772,7 @@
 <span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>stageleft::{IntoQuotedMut, Quoted};
 <span class="kw">use </span>syn::parse_quote;
+<span class="kw">use </span>syn::visit_mut::VisitMut;
 
 <span class="kw">use </span><span class="kw">crate</span>::builder::Builders;
 <span class="kw">use </span><span class="kw">crate</span>::node::{
@@ -1086,6 +1107,22 @@
     }
 }
 
+<span class="doccomment">/// Rewrites use of alloc::string::* to use std::string::*
+</span><span class="kw">struct </span>RewriteAlloc {}
+<span class="kw">impl </span>VisitMut <span class="kw">for </span>RewriteAlloc {
+    <span class="kw">fn </span>visit_path_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::Path) {
+        <span class="kw">if </span>i.segments.iter().take(<span class="number">2</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+            == <span class="macro">vec!</span>[
+                <span class="kw-2">&amp;</span>syn::PathSegment::from(syn::Ident::new(<span class="string">&quot;alloc&quot;</span>, Span::call_site())),
+                <span class="kw-2">&amp;</span>syn::PathSegment::from(syn::Ident::new(<span class="string">&quot;string&quot;</span>, Span::call_site())),
+            ]
+        {
+            <span class="kw-2">*</span>i.segments.first_mut().unwrap() =
+                syn::PathSegment::from(syn::Ident::new(<span class="string">&quot;std&quot;</span>, Span::call_site()));
+        }
+    }
+}
+
 <span class="kw">fn </span>node_send_direct&lt;<span class="lifetime">&#39;a</span>, T, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;, sink: Pipeline) {
     <span class="kw">let </span>self_ident = <span class="kw-2">&amp;</span>me.ident;
 
@@ -1109,7 +1146,8 @@
     <span class="kw">let </span>root = get_this_crate();
 
     <span class="comment">// This may fail when instantiated in an environment with different deps
-    </span><span class="kw">let </span>t_type: syn::Type = syn::parse_str(std::any::type_name::&lt;T&gt;()).unwrap();
+    </span><span class="kw">let </span><span class="kw-2">mut </span>t_type: syn::Type = syn::parse_str(std::any::type_name::&lt;T&gt;()).unwrap();
+    RewriteAlloc {}.visit_type_mut(<span class="kw-2">&amp;mut </span>t_type);
 
     builders
         .entry(me.node.id())
@@ -1130,7 +1168,8 @@
     <span class="kw">let </span>root = get_this_crate();
 
     <span class="comment">// This may fail when instantiated in an environment with different deps
-    </span><span class="kw">let </span>t_type: syn::Type = syn::parse_str(std::any::type_name::&lt;T&gt;()).unwrap();
+    </span><span class="kw">let </span><span class="kw-2">mut </span>t_type: syn::Type = syn::parse_str(std::any::type_name::&lt;T&gt;()).unwrap();
+    RewriteAlloc {}.visit_type_mut(<span class="kw-2">&amp;mut </span>t_type);
 
     builders
         .entry(me.node.id())
@@ -1190,7 +1229,8 @@
     <span class="kw">let </span>root = get_this_crate();
 
     <span class="comment">// This may fail when instantiated in an environment with different deps
-    </span><span class="kw">let </span>t_type: syn::Type = syn::parse_str(std::any::type_name::&lt;T2&gt;()).unwrap();
+    </span><span class="kw">let </span><span class="kw-2">mut </span>t_type: syn::Type = syn::parse_str(std::any::type_name::&lt;T2&gt;()).unwrap();
+    RewriteAlloc {}.visit_type_mut(<span class="kw-2">&amp;mut </span>t_type);
 
     builders.entry(other.id()).or_default().add_statement({
         <span class="kw">if </span>tagged {
