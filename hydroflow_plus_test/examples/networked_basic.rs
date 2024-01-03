@@ -1,17 +1,17 @@
 use hydro_deploy::{Deployment, HydroflowCrate};
 use hydroflow_plus::futures::SinkExt;
 use hydroflow_plus::util::cli::ConnectedSink;
-use hydroflow_plus_cli_integration::CLIDeployNodeBuilder;
+use hydroflow_plus_cli_integration::DeployProcessSpec;
 
 #[tokio::main]
 async fn main() {
     let mut deployment = Deployment::new();
     let localhost = deployment.Localhost();
 
-    let builder = hydroflow_plus::GraphBuilder::new();
+    let builder = hydroflow_plus::FlowBuilder::new();
     let (source_zero_port, _, _) = hydroflow_plus_test::networked::networked_basic(
         &builder,
-        &CLIDeployNodeBuilder::new(|| {
+        &DeployProcessSpec::new(|| {
             deployment.add_service(
                 HydroflowCrate::new(".", localhost.clone())
                     .bin("networked_basic")
