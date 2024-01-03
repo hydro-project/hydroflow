@@ -2,24 +2,24 @@ use std::cell::RefCell;
 
 use stageleft::{Quoted, RuntimeData};
 
-use super::{HfCluster, HfNode, LocalDeploy, NodeBuilder};
+use super::{HfCluster, HfNode, LocalDeploy, ProcessSpec};
 use crate::builder::Builders;
-use crate::GraphBuilder;
+use crate::FlowBuilder;
 
-pub struct SingleGraph {}
+pub struct SingleProcessGraph {}
 
-impl<'a> LocalDeploy<'a> for SingleGraph {
+impl<'a> LocalDeploy<'a> for SingleProcessGraph {
     type Node = SingleNode<'a>;
     type Cluster = SingleNode<'a>;
     type Meta = ();
     type RuntimeID = ();
 }
 
-impl<'a> NodeBuilder<'a, SingleGraph> for () {
+impl<'a> ProcessSpec<'a, SingleProcessGraph> for () {
     fn build(
         &self,
         _id: usize,
-        builder: &'a GraphBuilder<'a, SingleGraph>,
+        builder: &'a FlowBuilder<'a, SingleProcessGraph>,
         _meta: &mut (),
     ) -> SingleNode<'a> {
         SingleNode { builder }
@@ -28,7 +28,7 @@ impl<'a> NodeBuilder<'a, SingleGraph> for () {
 
 #[derive(Clone)]
 pub struct SingleNode<'a> {
-    builder: &'a GraphBuilder<'a, SingleGraph>,
+    builder: &'a FlowBuilder<'a, SingleProcessGraph>,
 }
 
 impl<'a> HfNode<'a> for SingleNode<'a> {
@@ -39,7 +39,7 @@ impl<'a> HfNode<'a> for SingleNode<'a> {
         0
     }
 
-    fn graph_builder(&self) -> (&'a RefCell<usize>, &'a Builders) {
+    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a Builders) {
         (&self.builder.next_id, &self.builder.builders)
     }
 
@@ -67,11 +67,11 @@ impl<'a> LocalDeploy<'a> for MultiGraph {
     type RuntimeID = usize;
 }
 
-impl<'a> NodeBuilder<'a, MultiGraph> for () {
+impl<'a> ProcessSpec<'a, MultiGraph> for () {
     fn build(
         &self,
         id: usize,
-        builder: &'a GraphBuilder<'a, MultiGraph>,
+        builder: &'a FlowBuilder<'a, MultiGraph>,
         _meta: &mut (),
     ) -> MultiNode<'a> {
         MultiNode { builder, id }
@@ -80,7 +80,7 @@ impl<'a> NodeBuilder<'a, MultiGraph> for () {
 
 #[derive(Clone)]
 pub struct MultiNode<'a> {
-    builder: &'a GraphBuilder<'a, MultiGraph>,
+    builder: &'a FlowBuilder<'a, MultiGraph>,
     id: usize,
 }
 
@@ -92,7 +92,7 @@ impl<'a> HfNode<'a> for MultiNode<'a> {
         self.id
     }
 
-    fn graph_builder(&self) -> (&'a RefCell<usize>, &'a Builders) {
+    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a Builders) {
         (&self.builder.next_id, &self.builder.builders)
     }
 

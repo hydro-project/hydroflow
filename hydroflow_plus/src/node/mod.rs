@@ -10,7 +10,7 @@ use syn::parse_quote;
 
 use crate::builder::Builders;
 use crate::stream::{Async, Windowed};
-use crate::{GraphBuilder, HfCycle, Stream};
+use crate::{FlowBuilder, HfCycle, Stream};
 
 mod graphs;
 pub use graphs::*;
@@ -26,14 +26,14 @@ pub trait LocalDeploy<'a> {
 }
 
 pub trait Deploy<'a> {
-    type Node: HfNode<'a, Meta = Self::Meta, Port = Self::NodePort>
-        + HfSendOneToOne<'a, Self::Node>
+    type Process: HfNode<'a, Meta = Self::Meta, Port = Self::ProcessPort>
+        + HfSendOneToOne<'a, Self::Process>
         + HfSendOneToMany<'a, Self::Cluster>;
     type Cluster: HfNode<'a, Meta = Self::Meta, Port = Self::ClusterPort>
-        + HfSendManyToOne<'a, Self::Node>
+        + HfSendManyToOne<'a, Self::Process>
         + HfSendManyToMany<'a, Self::Cluster>
         + HfCluster<'a>;
-    type NodePort;
+    type ProcessPort;
     type ClusterPort;
     type Meta: Default;
     type RuntimeID;
@@ -41,7 +41,7 @@ pub trait Deploy<'a> {
 
 impl<
         'a,
-        T: Deploy<'a, Node = N, Cluster = C, Meta = M, RuntimeID = R>,
+        T: Deploy<'a, Process = N, Cluster = C, Meta = M, RuntimeID = R>,
         N: HfNode<'a, Meta = M> + HfSendOneToOne<'a, N> + HfSendOneToMany<'a, C>,
         C: HfNode<'a, Meta = M> + HfSendManyToOne<'a, N> + HfSendManyToMany<'a, C> + HfCluster<'a>,
         M: Default,
@@ -54,12 +54,12 @@ impl<
     type RuntimeID = R;
 }
 
-pub trait NodeBuilder<'a, D: LocalDeploy<'a> + ?Sized> {
-    fn build(&self, id: usize, builder: &'a GraphBuilder<'a, D>, meta: &mut D::Meta) -> D::Node;
+pub trait ProcessSpec<'a, D: LocalDeploy<'a> + ?Sized> {
+    fn build(&self, id: usize, builder: &'a FlowBuilder<'a, D>, meta: &mut D::Meta) -> D::Node;
 }
 
-pub trait ClusterBuilder<'a, D: LocalDeploy<'a> + ?Sized> {
-    fn build(&self, id: usize, builder: &'a GraphBuilder<'a, D>, meta: &mut D::Meta) -> D::Cluster;
+pub trait ClusterSpec<'a, D: LocalDeploy<'a> + ?Sized> {
+    fn build(&self, id: usize, builder: &'a FlowBuilder<'a, D>, meta: &mut D::Meta) -> D::Cluster;
 }
 
 pub trait HfNode<'a>: Clone {
@@ -67,7 +67,7 @@ pub trait HfNode<'a>: Clone {
     type Meta;
 
     fn id(&self) -> usize;
-    fn graph_builder(&self) -> (&'a RefCell<usize>, &'a Builders);
+    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a Builders);
     fn next_port(&self) -> Self::Port;
 
     fn update_meta(&mut self, meta: &Self::Meta);
@@ -76,7 +76,7 @@ pub trait HfNode<'a>: Clone {
         &self,
         e: impl Quoted<'a, E>,
     ) -> Stream<'a, T, Async, Self> {
-        let (next_id_cell, builders) = self.graph_builder();
+        let (next_id_cell, builders) = self.flow_builder();
 
         let next_id = {
             let mut next_id = next_id_cell.borrow_mut();
@@ -116,7 +116,7 @@ pub trait HfNode<'a>: Clone {
     where
         Self: HfSendOneToOne<'a, Self>,
     {
-        let (next_id_cell, builders) = self.graph_builder();
+        let (next_id_cell, builders) = self.flow_builder();
 
         let next_id = {
             let mut next_id = next_id_cell.borrow_mut();
@@ -155,7 +155,7 @@ pub trait HfNode<'a>: Clone {
         &self,
         e: impl Quoted<'a, E>,
     ) -> Stream<'a, T, Windowed, Self> {
-        let (next_id_cell, builders) = self.graph_builder();
+        let (next_id_cell, builders) = self.flow_builder();
 
         let next_id = {
             let mut next_id = next_id_cell.borrow_mut();
@@ -187,7 +187,7 @@ pub trait HfNode<'a>: Clone {
     }
 
     fn cycle<T, W>(&self) -> (HfCycle<'a, T, W, Self>, Stream<'a, T, W, Self>) {
-        let (next_id_cell, builders) = self.graph_builder();
+        let (next_id_cell, builders) = self.flow_builder();
 
         let next_id = {
             let mut next_id = next_id_cell.borrow_mut();

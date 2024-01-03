@@ -21,7 +21,7 @@ pub mod cycle;
 pub use cycle::HfCycle;
 
 pub mod builder;
-pub use builder::GraphBuilder;
+pub use builder::FlowBuilder;
 
 #[derive(Clone)]
 pub struct RuntimeContext<'a> {
