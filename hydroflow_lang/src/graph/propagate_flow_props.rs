@@ -1,7 +1,7 @@
 //! Module for determining flow properties. See [`propagate_flow_props`].
 
 use super::ops::_upcast::_UPCAST;
-use super::{GraphNodeId, HydroflowGraph, Node};
+use super::{GraphNode, GraphNodeId, HydroflowGraph};
 use crate::diagnostic::Diagnostic;
 use crate::graph::graph_algorithms;
 use crate::graph::ops::FlowPropArgs;
@@ -20,12 +20,12 @@ pub fn propagate_flow_props(
     );
     // Only retain nodes that have a `flow_prop_fn` or are handoffs.
     node_order.retain(|&node_id| match graph.node(node_id) {
-        Node::Operator(_) => graph
+        GraphNode::Operator(_) => graph
             .node_op_inst(node_id)
             .and_then(|op_inst| op_inst.op_constraints.flow_prop_fn)
             .is_some(),
-        Node::Handoff { .. } => true,
-        Node::ModuleBoundary { .. } => panic!(),
+        GraphNode::Handoff { .. } => true,
+        GraphNode::ModuleBoundary { .. } => panic!(),
     });
     // Put upcast nodes first.
     node_order.sort_by_key(|&node_id| {
@@ -39,7 +39,7 @@ pub fn propagate_flow_props(
         let mut changed = false;
         for (idx_star_ord, &node_id) in node_order.iter().enumerate() {
             match graph.node(node_id) {
-                Node::Operator(_) => {
+                GraphNode::Operator(_) => {
                     let op_inst = graph.node_op_inst(node_id)
                         .expect("Operator instance info must be set when calling `propagate_flow_props`. (This is a Hydroflow bug).");
 
@@ -83,7 +83,7 @@ pub fn propagate_flow_props(
                         }
                     }
                 }
-                Node::Handoff { .. } => {
+                GraphNode::Handoff { .. } => {
                     // Handoffs just copy over their one input [`FlowProps`] to their one output.
                     assert_eq!(1, graph.node_degree_in(node_id));
                     assert_eq!(1, graph.node_degree_out(node_id));

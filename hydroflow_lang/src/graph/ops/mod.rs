@@ -13,7 +13,7 @@ use syn::punctuated::Punctuated;
 use syn::{parse_quote_spanned, Expr, Token};
 
 use super::{
-    FlowProps, GraphNodeId, GraphSubgraphId, LatticeFlowType, Node, OpInstGenerics,
+    FlowProps, GraphNode, GraphNodeId, GraphSubgraphId, LatticeFlowType, OpInstGenerics,
     OperatorInstance, PortIndexValue,
 };
 use crate::diagnostic::{Diagnostic, Level};
@@ -413,9 +413,9 @@ pub fn operator_lookup() -> &'static HashMap<&'static str, &'static OperatorCons
         OnceLock::new();
     OPERATOR_LOOKUP.get_or_init(|| OPERATORS.iter().map(|op| (op.name, op)).collect())
 }
-/// Find an operator by [`Node`].
-pub fn find_node_op_constraints(node: &Node) -> Option<&'static OperatorConstraints> {
-    if let Node::Operator(operator) = node {
+/// Find an operator by [`GraphNode`].
+pub fn find_node_op_constraints(node: &GraphNode) -> Option<&'static OperatorConstraints> {
+    if let GraphNode::Operator(operator) = node {
         find_op_op_constraints(operator)
     } else {
         None
