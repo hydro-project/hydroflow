@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Result};
 use async_channel::Receiver;
 use async_trait::async_trait;
 use futures_core::Future;
@@ -11,7 +11,7 @@ use hydroflow_cli_integration::{InitConfig, ServerPort};
 use serde::Serialize;
 use tokio::sync::RwLock;
 
-use super::build::{build_crate, BuiltCrate};
+use super::build::{build_crate, BuildError, BuiltCrate};
 use super::ports::{self, HydroflowPortConfig, HydroflowSink, SourcePath};
 use crate::progress::ProgressTracker;
 use crate::{
@@ -41,7 +41,7 @@ pub struct HydroflowCrateService {
     /// Configuration for the ports that this service will listen on a port for.
     pub(super) port_to_bind: HashMap<String, ServerStrategy>,
 
-    built_binary: Arc<async_once_cell::OnceCell<Result<BuiltCrate, &'static str>>>,
+    built_binary: Arc<async_once_cell::OnceCell<Result<BuiltCrate, BuildError>>>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
 
     /// A map of port names to config for how other services can connect to this one.
@@ -178,7 +178,7 @@ impl HydroflowCrateService {
             .await
     }
 
-    fn build(&self) -> impl Future<Output = Result<BuiltCrate, &'static str>> {
+    fn build(&self) -> impl Future<Output = Result<BuiltCrate, BuildError>> {
         let src_cloned = self.src.canonicalize().unwrap();
         let bin_cloned = self.bin.clone();
         let example_cloned = self.example.clone();
@@ -239,7 +239,7 @@ impl Service for HydroflowCrateService {
                 .unwrap_or_else(|| format!("service/{}", self.id)),
             None,
             || async {
-                let built = self.build().await.clone().map_err(|e| anyhow!(e))?;
+                let built = self.build().await?;
 
                 let mut host_write = self.on.write().await;
                 let launched = host_write.provision(resource_result).await;
@@ -267,7 +267,7 @@ impl Service for HydroflowCrateService {
             || async {
                 let launched_host = self.launched_host.as_ref().unwrap();
 
-                let built = self.build().await.clone().map_err(|e| anyhow!(e))?;
+                let built = self.build().await?;
                 let args = self.args.as_ref().cloned().unwrap_or_default();
 
                 let binary = launched_host
