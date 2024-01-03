@@ -141,7 +141,7 @@ mod tests {
 
         let node_stdout = node.stdout().await;
         let cluster_stdouts =
-            futures::future::join_all(cluster.nodes.iter().map(|node| node.stdout())).await;
+            futures::future::join_all(cluster.members.iter().map(|node| node.stdout())).await;
 
         deployment.start().await.unwrap();
 
@@ -194,7 +194,7 @@ mod tests {
         deployment.deploy().await.unwrap();
 
         let cluster_stdouts =
-            futures::future::join_all(cluster.nodes.iter().map(|node| node.stdout())).await;
+            futures::future::join_all(cluster.members.iter().map(|node| node.stdout())).await;
 
         deployment.start().await.unwrap();
 

@@ -142,7 +142,7 @@ pub struct DeployCluster<'a> {
     id: usize,
     builder: &'a FlowBuilder<'a, HydroDeploy>,
     next_port: Rc<RefCell<usize>>,
-    pub nodes: Vec<DeployClusterNode>,
+    pub members: Vec<DeployClusterNode>,
 }
 
 impl<'a> HfNode<'a> for DeployCluster<'a> {
@@ -173,7 +173,7 @@ impl<'a> HfNode<'a> for DeployCluster<'a> {
             subgraph_id: self.id,
         };
 
-        self.nodes.iter().for_each(|n| {
+        self.members.iter().for_each(|n| {
             let mut n = n.underlying.try_write().unwrap();
             n.update_meta(&meta);
         });
@@ -234,7 +234,7 @@ impl<'a> HfSendManyToOne<'a, DeployNode<'a>> for DeployCluster<'a> {
             .get_port(recipient_port.port.clone(), &other.underlying)
             .merge();
 
-        for (i, node) in self.nodes.iter().enumerate() {
+        for (i, node) in self.members.iter().enumerate() {
             let source_port = node
                 .underlying
                 .try_read()
@@ -276,7 +276,7 @@ impl<'a> HfSendOneToMany<'a, DeployCluster<'a>> for DeployNode<'a> {
 
         let mut recipient_port = DemuxSink {
             demux: other
-                .nodes
+                .members
                 .iter()
                 .enumerate()
                 .map(|(id, c)| {
@@ -313,7 +313,7 @@ impl<'a> HfSendManyToMany<'a, DeployCluster<'a>> for DeployCluster<'a> {
         source_port: &DeployPort<DeployCluster<'a>>,
         recipient_port: &DeployPort<DeployCluster<'a>>,
     ) {
-        for (i, sender) in self.nodes.iter().enumerate() {
+        for (i, sender) in self.members.iter().enumerate() {
             let source_port = sender
                 .underlying
                 .try_read()
@@ -322,7 +322,7 @@ impl<'a> HfSendManyToMany<'a, DeployCluster<'a>> for DeployCluster<'a> {
 
             let mut recipient_port = DemuxSink {
                 demux: other
-                    .nodes
+                    .members
                     .iter()
                     .enumerate()
                     .map(|(id, c)| {
@@ -409,7 +409,7 @@ impl<'a: 'b, 'b> ClusterSpec<'a, HydroDeploy> for DeployClusterSpec<'b> {
             id,
             builder,
             next_port: Rc::new(RefCell::new(0)),
-            nodes: cluster_nodes
+            members: cluster_nodes
                 .into_iter()
                 .map(|u| DeployClusterNode { underlying: u })
                 .collect(),
