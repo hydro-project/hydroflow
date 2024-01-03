@@ -1,9 +1,12 @@
 use std::collections::HashMap;
+use std::error::Error;
+use std::fmt::Display;
 use std::io::BufRead;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 
+use cargo_metadata::diagnostic::Diagnostic;
 use nanoid::nanoid;
 use once_cell::sync::Lazy;
 use tokio::sync::OnceCell;
@@ -33,7 +36,7 @@ pub async fn build_crate(
     profile: Option<String>,
     target_type: HostTargetType,
     features: Option<Vec<String>>,
-) -> Result<BuiltCrate, &'static str> {
+) -> Result<BuiltCrate, BuildError> {
     let key = CacheKey {
         src: src.clone(),
         bin: bin.clone(),
@@ -104,6 +107,7 @@ pub async fn build_crate(
                         }
                     });
 
+                    let mut diagnostics = Vec::new();
                     for message in cargo_metadata::Message::parse_stream(reader) {
                         match message.unwrap() {
                             cargo_metadata::Message::CompilerArtifact(artifact) => {
@@ -122,22 +126,52 @@ pub async fn build_crate(
                                 }
                             }
                             cargo_metadata::Message::CompilerMessage(msg) => {
-                                ProgressTracker::println(&msg.message.rendered.unwrap())
+                                ProgressTracker::println(msg.message.rendered.as_deref().unwrap());
+                                diagnostics.push(msg.message);
                             }
                             _ => {}
                         }
                     }
 
                     if spawned.wait().unwrap().success() {
-                        Err("cargo build succeeded but no binary was emitted")
+                        Err(BuildError::NoBinaryEmitted)
                     } else {
-                        Err("failed to build crate")
+                        Err(BuildError::FailedToBuildCrate(diagnostics))
                     }
                 })
                 .await
-                .map_err(|_| "failed to spawn blocking task")?
+                .map_err(|_| BuildError::TokioJoinError)?
             })
         })
         .await
         .cloned()
 }
+
+#[derive(Clone, Debug)]
+pub enum BuildError {
+    FailedToBuildCrate(Vec<Diagnostic>),
+    TokioJoinError,
+    NoBinaryEmitted,
+}
+
+impl Display for BuildError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::FailedToBuildCrate(diagnostics) => {
+                writeln!(f, "Failed to build crate:")?;
+                for diagnostic in diagnostics {
+                    write!(f, "{}", diagnostic)?;
+                }
+            }
+            Self::TokioJoinError => {
+                write!(f, "Failed to spawn tokio blocking task.")?;
+            }
+            Self::NoBinaryEmitted => {
+                write!(f, "`cargo build` succeeded but no binary was emitted.")?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl Error for BuildError {}
