@@ -92,7 +92,7 @@ export default function Home() {
           marginBottom: "30px"
         }}>
           <h1 style={{
-            fontSize: "4rem",
+            fontSize: "3.8rem",
             textAlign: "center"
           }}>Latest Publications</h1>
           {papers.map((paper, i) => {
