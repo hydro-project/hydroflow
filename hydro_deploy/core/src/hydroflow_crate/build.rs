@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::Display;
 use std::io::BufRead;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 
@@ -30,13 +30,21 @@ static BUILDS: Lazy<Mutex<HashMap<CacheKey, Arc<OnceCell<BuiltCrate>>>>> =
     Lazy::new(Default::default);
 
 pub async fn build_crate(
-    src: PathBuf,
+    src: impl AsRef<Path>,
     bin: Option<String>,
     example: Option<String>,
     profile: Option<String>,
     target_type: HostTargetType,
     features: Option<Vec<String>>,
 ) -> Result<BuiltCrate, BuildError> {
+    // `fs::canonicalize` prepends windows paths with the `r"\\?\"`
+    // https://stackoverflow.com/questions/21194530/what-does-mean-when-prepended-to-a-file-path
+    // However, this breaks the `include!(concat!(env!("OUT_DIR"), "/my/forward/slash/path.rs"))`
+    // Rust codegen pattern on windows. To help mitigate this happening in third party crates, we
+    // instead use `dunce::canonicalize` which is the same as `fs::canonicalize` but avoids the
+    // `\\?\` prefix when possible.
+    let src = dunce::canonicalize(src).expect("Failed to canonicalize path for build.");
+
     let key = CacheKey {
         src: src.clone(),
         bin: bin.clone(),

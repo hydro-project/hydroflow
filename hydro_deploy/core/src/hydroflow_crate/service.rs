@@ -179,7 +179,7 @@ impl HydroflowCrateService {
     }
 
     fn build(&self) -> impl Future<Output = Result<BuiltCrate, BuildError>> {
-        let src_cloned = self.src.canonicalize().unwrap();
+        let src_cloned = self.src.clone();
         let bin_cloned = self.bin.clone();
         let example_cloned = self.example.clone();
         let features_cloned = self.features.clone();
