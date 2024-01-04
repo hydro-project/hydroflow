@@ -567,7 +567,7 @@
     </span>}
 
     <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;BuiltCrate, BuildError&gt;&gt; {
-        <span class="kw">let </span>src_cloned = <span class="self">self</span>.src.canonicalize().unwrap();
+        <span class="kw">let </span>src_cloned = <span class="self">self</span>.src.clone();
         <span class="kw">let </span>bin_cloned = <span class="self">self</span>.bin.clone();
         <span class="kw">let </span>example_cloned = <span class="self">self</span>.example.clone();
         <span class="kw">let </span>features_cloned = <span class="self">self</span>.features.clone();

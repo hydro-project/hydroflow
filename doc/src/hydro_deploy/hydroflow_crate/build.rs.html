@@ -175,11 +175,19 @@
 <a href="#175" id="175">175</a>
 <a href="#176" id="176">176</a>
 <a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>std::fmt::Display;
 <span class="kw">use </span>std::io::BufRead;
-<span class="kw">use </span>std::path::PathBuf;
+<span class="kw">use </span>std::path::{Path, PathBuf};
 <span class="kw">use </span>std::process::{Command, Stdio};
 <span class="kw">use </span>std::sync::{Arc, Mutex};
 
@@ -207,13 +215,21 @@
     Lazy::new(Default::default);
 
 <span class="kw">pub async fn </span>build_crate(
-    src: PathBuf,
+    src: <span class="kw">impl </span>AsRef&lt;Path&gt;,
     bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
     example: <span class="prelude-ty">Option</span>&lt;String&gt;,
     profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
     target_type: HostTargetType,
     features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;BuiltCrate, BuildError&gt; {
+    <span class="comment">// `fs::canonicalize` prepends windows paths with the `r&quot;\\?\&quot;`
+    // https://stackoverflow.com/questions/21194530/what-does-mean-when-prepended-to-a-file-path
+    // However, this breaks the `include!(concat!(env!(&quot;OUT_DIR&quot;), &quot;/my/forward/slash/path.rs&quot;))`
+    // Rust codegen pattern on windows. To help mitigate this happening in third party crates, we
+    // instead use `dunce::canonicalize` which is the same as `fs::canonicalize` but avoids the
+    // `\\?\` prefix when possible.
+    </span><span class="kw">let </span>src = dunce::canonicalize(src).expect(<span class="string">&quot;Failed to canonicalize path for build.&quot;</span>);
+
     <span class="kw">let </span>key = CacheKey {
         src: src.clone(),
         bin: bin.clone(),
