@@ -2,10 +2,10 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
-use crate::graph::{OperatorInstance, PortIndexValue};
+use crate::graph::{GraphEdgeType, OperatorInstance, PortIndexValue};
 
 /// > 2 input streams of the same type T, 1 output stream of type T
 ///
@@ -43,6 +43,7 @@ pub const DIFFERENCE: OperatorConstraints = OperatorConstraints {
         }
         _else => None,
     },
+    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    op_span,

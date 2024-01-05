@@ -4,7 +4,7 @@ use super::{
     OperatorCategory, OperatorConstraints, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
-use crate::graph::{OpInstGenerics, OperatorInstance};
+use crate::graph::{OpInstGenerics, OperatorInstance, GraphEdgeType};
 
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
 ///
@@ -40,6 +40,7 @@ pub const JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
     input_delaytype_fn: |_| None,
+    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,

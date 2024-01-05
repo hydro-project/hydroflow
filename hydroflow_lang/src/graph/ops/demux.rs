@@ -10,7 +10,7 @@ use super::{
     PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{OperatorInstance, PortIndexValue};
+use crate::graph::{OperatorInstance, PortIndexValue, GraphEdgeType};
 use crate::pretty_span::PrettySpan;
 
 // TODO(mingwei): Preprocess rustdoc links in mdbook or in the `operator_docgen` macro.
@@ -56,6 +56,7 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: Some(|| PortListSpec::Variadic),
     input_delaytype_fn: |_| None,
+    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    root,
