@@ -158,11 +158,26 @@ jobs:
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.3
 
-      - name: Run cargo test on all targets
+      - name: Instal cargo-nextest (linux)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+
+      - name: Instal cargo-nextest (windows)
+        if: ${{ matrix.os == 'windows-latest' }}
+        shell: bash
+        run: curl -LsSf https://get.nexte.st/latest/windows-tar | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+
+      - name: Run cargo nextest on all targets
+        uses: actions-rs/cargo@v1
+        with:
+          command: nextest
+          args: run --profile cidev --no-fail-fast --features python --all-targets
+
+      - name: Run doctests
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --profile cidev --no-fail-fast --features python --all-targets
+          args: --profile cidev --no-fail-fast --features python --doc
 
       - name: Install Python
         uses: actions/setup-python@v4
