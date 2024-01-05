@@ -38,14 +38,6 @@ strip = true      # Strip symbols from the binary
 opt-level = 3
 lto = "fat"
 
-# There is only around 19GB of free space on the github free default runners
-# without stripping the debug info, the build artefacts take up about 19GB
-# with stripping the debug info, they take up about 5GB, so in ci we can use this profile to
-# avoid running out of disk space.
-[profile.cidev]
-inherits = "dev"
-strip = "debuginfo"
-
 [profile.profile]
 inherits = "release"
 debug = 2
