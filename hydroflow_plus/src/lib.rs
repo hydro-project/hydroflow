@@ -15,13 +15,17 @@ pub mod runtime_support {
 pub mod stream;
 pub use stream::Stream;
 
-pub mod node;
+pub mod location;
+pub use location::{
+    Cluster, ClusterSpec, Deploy, LocalDeploy, Location, MultiGraph, ProcessSpec,
+    SingleProcessGraph,
+};
 
 pub mod cycle;
 pub use cycle::HfCycle;
 
 pub mod builder;
-pub use builder::GraphBuilder;
+pub use builder::FlowBuilder;
 
 #[derive(Clone)]
 pub struct RuntimeContext<'a> {

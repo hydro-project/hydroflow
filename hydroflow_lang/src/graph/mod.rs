@@ -84,7 +84,7 @@ struct Varname(#[serde(with = "serde_syn")] pub Ident);
 
 /// A node, corresponding to an operator or a handoff.
 #[derive(Clone, Serialize, Deserialize)]
-pub enum Node {
+pub enum GraphNode {
     /// An operator.
     Operator(#[serde(with = "serde_syn")] Operator),
     /// A handoff point, used between subgraphs (or within a subgraph to break a cycle).
@@ -109,22 +109,22 @@ pub enum Node {
         import_expr: Span,
     },
 }
-impl Node {
+impl GraphNode {
     /// Return the node as a human-readable string.
     pub fn to_pretty_string(&self) -> Cow<'static, str> {
         match self {
-            Node::Operator(op) => op.to_pretty_string().into(),
-            Node::Handoff { .. } => HANDOFF_NODE_STR.into(),
-            Node::ModuleBoundary { .. } => MODULE_BOUNDARY_NODE_STR.into(),
+            GraphNode::Operator(op) => op.to_pretty_string().into(),
+            GraphNode::Handoff { .. } => HANDOFF_NODE_STR.into(),
+            GraphNode::ModuleBoundary { .. } => MODULE_BOUNDARY_NODE_STR.into(),
         }
     }
 
     /// Return the name of the node as a string, excluding parenthesis and op source code.
     pub fn to_name_string(&self) -> Cow<'static, str> {
         match self {
-            Node::Operator(op) => op.name_string().into(),
-            Node::Handoff { .. } => HANDOFF_NODE_STR.into(),
-            Node::ModuleBoundary { .. } => MODULE_BOUNDARY_NODE_STR.into(),
+            GraphNode::Operator(op) => op.name_string().into(),
+            GraphNode::Handoff { .. } => HANDOFF_NODE_STR.into(),
+            GraphNode::ModuleBoundary { .. } => MODULE_BOUNDARY_NODE_STR.into(),
         }
     }
 
@@ -137,7 +137,7 @@ impl Node {
         }
     }
 }
-impl std::fmt::Debug for Node {
+impl std::fmt::Debug for GraphNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Operator(operator) => {
@@ -149,6 +149,15 @@ impl std::fmt::Debug for Node {
             }
         }
     }
+}
+
+/// The type of the Hydroflow graph edge.
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum GraphEdgeType {
+    /// Standard, pass by value, iterator ownership edges.
+    Value,
+    /// State passed by reference.
+    Reference,
 }
 
 /// Meta-data relating to operators which may be useful throughout the compilation process.
