@@ -8,7 +8,9 @@ use syn::parse_quote;
 
 use super::hydroflow_graph::HydroflowGraph;
 use super::ops::{find_node_op_constraints, DelayType};
-use super::{graph_algorithms, node_color, Color, GraphEdgeId, GraphNodeId, GraphSubgraphId, Node};
+use super::{
+    graph_algorithms, node_color, Color, GraphEdgeId, GraphNode, GraphNodeId, GraphSubgraphId,
+};
 use crate::diagnostic::{Diagnostic, Level};
 use crate::union_find::UnionFind;
 
@@ -40,7 +42,11 @@ fn find_subgraph_unionfind(
         .filter_map(|(node_id, node)| {
             let inn_degree = partitioned_graph.node_degree_in(node_id);
             let out_degree = partitioned_graph.node_degree_out(node_id);
-            let op_color = node_color(matches!(node, Node::Handoff { .. }), inn_degree, out_degree);
+            let op_color = node_color(
+                matches!(node, GraphNode::Handoff { .. }),
+                inn_degree,
+                out_degree,
+            );
             op_color.map(|op_color| (node_id, op_color))
         })
         .collect();
@@ -110,14 +116,14 @@ fn make_subgraph_collect(
     let topo_sort = graph_algorithms::topo_sort(
         partitioned_graph
             .nodes()
-            .filter(|&(_, node)| !matches!(node, Node::Handoff { .. }))
+            .filter(|&(_, node)| !matches!(node, GraphNode::Handoff { .. }))
             .map(|(node_id, _)| node_id),
         |v| {
             partitioned_graph
                 .node_predecessor_nodes(v)
                 .filter(|&pred_id| {
                     let pred = partitioned_graph.node(pred_id);
-                    !matches!(pred, Node::Handoff { .. })
+                    !matches!(pred, GraphNode::Handoff { .. })
                 })
         },
     );
@@ -158,11 +164,13 @@ fn make_subgraphs(
         // Already has a handoff, no need to insert one.
         let src_node = partitioned_graph.node(src_id);
         let dst_node = partitioned_graph.node(dst_id);
-        if matches!(src_node, Node::Handoff { .. }) || matches!(dst_node, Node::Handoff { .. }) {
+        if matches!(src_node, GraphNode::Handoff { .. })
+            || matches!(dst_node, GraphNode::Handoff { .. })
+        {
             continue;
         }
 
-        let hoff = Node::Handoff {
+        let hoff = GraphNode::Handoff {
             src_span: src_node.span(),
             dst_span: dst_node.span(),
         };
@@ -266,7 +274,7 @@ fn find_subgraph_strata(
         Default::default();
 
     for (node_id, node) in partitioned_graph.nodes() {
-        if matches!(node, Node::Handoff { .. }) {
+        if matches!(node, GraphNode::Handoff { .. }) {
             assert_eq!(1, partitioned_graph.node_successors(node_id).count());
             let (succ_edge, succ) = partitioned_graph.node_successors(node_id).next().unwrap();
 
@@ -348,10 +356,10 @@ fn find_subgraph_strata(
                     let (new_node_id, new_edge_id) = partitioned_graph.insert_intermediate_node(
                         edge_id,
                         // TODO(mingwei): Proper span w/ `parse_quote_spanned!`?
-                        Node::Operator(parse_quote! { identity() }),
+                        GraphNode::Operator(parse_quote! { identity() }),
                     );
                     // Intermediate: A (src) -> H -> ID -> B (dst)
-                    let hoff = Node::Handoff {
+                    let hoff = GraphNode::Handoff {
                         src_span: Span::call_site(), // TODO(mingwei): Proper spanning?
                         dst_span: Span::call_site(),
                     };
@@ -424,7 +432,7 @@ fn separate_external_inputs(partitioned_graph: &mut HydroflowGraph) {
             .collect::<Vec<_>>()
         {
             let span = partitioned_graph.node(node_id).span();
-            let hoff = Node::Handoff {
+            let hoff = GraphNode::Handoff {
                 src_span: span,
                 dst_span: span,
             };

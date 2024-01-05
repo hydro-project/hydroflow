@@ -11,7 +11,7 @@ use syn::spanned::Spanned;
 use syn::{Error, Ident, ItemUse};
 
 use super::ops::find_op_op_constraints;
-use super::{GraphNodeId, HydroflowGraph, Node, PortIndexValue};
+use super::{GraphEdgeType, GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::{PortListSpec, RangeTrait};
 use crate::parse::{HfCode, HfStatement, Operator, Pipeline};
@@ -77,14 +77,14 @@ impl FlatGraphBuilder {
         builder.invocating_file_path = root_path; // imports inside of modules should be relative to the importing file.
         builder.module_boundary_nodes = Some((
             builder.flat_graph.insert_node(
-                Node::ModuleBoundary {
+                GraphNode::ModuleBoundary {
                     input: true,
                     import_expr: Span::call_site(),
                 },
                 Some(Ident::new("input", Span::call_site())),
             ),
             builder.flat_graph.insert_node(
-                Node::ModuleBoundary {
+                GraphNode::ModuleBoundary {
                     input: false,
                     import_expr: Span::call_site(),
                 },
@@ -219,7 +219,7 @@ impl FlatGraphBuilder {
                 let op_span = Some(operator.span());
                 let nid = self
                     .flat_graph
-                    .insert_node(Node::Operator(operator), current_varname.cloned());
+                    .insert_node(GraphNode::Operator(operator), current_varname.cloned());
                 Ends {
                     inn: Some((PortIndexValue::Elided(op_span), GraphDet::Determined(nid))),
                     out: Some((PortIndexValue::Elided(op_span), GraphDet::Determined(nid))),
@@ -292,14 +292,14 @@ impl FlatGraphBuilder {
 
         for (nid, node) in other.nodes() {
             match node {
-                Node::Operator(_) => {
+                GraphNode::Operator(_) => {
                     let varname = other.node_varname(nid);
                     let new_id = self.flat_graph.insert_node(node.clone(), varname);
                     node_mapping.insert(nid, new_id);
                 }
-                Node::ModuleBoundary { input, .. } => {
+                GraphNode::ModuleBoundary { input, .. } => {
                     let new_id = self.flat_graph.insert_node(
-                        Node::ModuleBoundary {
+                        GraphNode::ModuleBoundary {
                             input: *input,
                             import_expr: parent_span,
                         },
@@ -321,7 +321,9 @@ impl FlatGraphBuilder {
                             Some((PortIndexValue::Elided(None), GraphDet::Determined(new_id)));
                     }
                 }
-                Node::Handoff { .. } => panic!("Handoff in graph that is being merged into self"),
+                GraphNode::Handoff { .. } => {
+                    panic!("Handoff in graph that is being merged into self")
+                }
             }
         }
 
@@ -329,6 +331,7 @@ impl FlatGraphBuilder {
             let (src_port, dst_port) = other.edge_ports(eid);
 
             self.flat_graph.insert_edge(
+                other.edge_type(eid),
                 *node_mapping.get(&src).unwrap(),
                 src_port.clone(),
                 *node_mapping.get(&dst).unwrap(),
@@ -490,7 +493,8 @@ impl FlatGraphBuilder {
                 }
             }
         }
-        self.flat_graph.insert_edge(src, src_port, dst, dst_port);
+        self.flat_graph
+            .insert_edge(GraphEdgeType::Value, src, src_port, dst, dst_port);
     }
 
     /// Process operators and emit operator errors.
@@ -510,7 +514,7 @@ impl FlatGraphBuilder {
     fn check_operator_errors(&mut self) {
         for (node_id, node) in self.flat_graph.nodes() {
             match node {
-                Node::Operator(operator) => {
+                GraphNode::Operator(operator) => {
                     let Some(op_constraints) = find_op_op_constraints(operator) else {
                         continue;
                     };
@@ -693,8 +697,8 @@ impl FlatGraphBuilder {
                         &mut self.diagnostics,
                     );
                 }
-                Node::Handoff { .. } => todo!("Node::Handoff"),
-                Node::ModuleBoundary { .. } => {
+                GraphNode::Handoff { .. } => todo!("Node::Handoff"),
+                GraphNode::ModuleBoundary { .. } => {
                     // Module boundaries don't require any checking.
                 }
             }
