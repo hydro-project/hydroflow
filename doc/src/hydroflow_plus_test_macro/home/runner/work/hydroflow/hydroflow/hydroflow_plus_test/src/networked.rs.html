@@ -80,27 +80,25 @@
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
 <a href="#82" id="82">82</a>
-<a href="#83" id="83">83</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::bytes::BytesMut;
-<span class="kw">use </span>hydroflow_plus::node::{Deploy, HfNode, NodeBuilder};
 <span class="kw">use </span>hydroflow_plus::scheduled::graph::Hydroflow;
 <span class="kw">use </span>hydroflow_plus::util::cli::HydroCLI;
-<span class="kw">use </span>hydroflow_plus::GraphBuilder;
+<span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 <span class="kw">use </span>stageleft::{q, Quoted, RuntimeData};
 
 <span class="kw">pub fn </span>networked_basic&lt;<span class="lifetime">&#39;a</span>, D: Deploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    node_builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>NodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-) -&gt; (D::NodePort, D::Node, D::Node) {
-    <span class="kw">let </span>node_zero = graph.node(node_builder);
-    <span class="kw">let </span>node_one = graph.node(node_builder);
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+) -&gt; (D::ProcessPort, D::Process, D::Process) {
+    <span class="kw">let </span>process_zero = flow.process(process_spec);
+    <span class="kw">let </span>process_one = flow.process(process_spec);
 
-    <span class="kw">let </span>(source_zero_port, source_zero) = node_zero.source_external();
+    <span class="kw">let </span>(source_zero_port, source_zero) = process_zero.source_external();
 
     source_zero
         .map(<span class="macro">q!</span>(|v| v.unwrap().freeze()))
-        .send_bytes(<span class="kw-2">&amp;</span>node_one)
+        .send_bytes(<span class="kw-2">&amp;</span>process_one)
         .for_each(<span class="macro">q!</span>(|v: <span class="prelude-ty">Result</span>&lt;BytesMut, <span class="kw">_</span>&gt;| {
             <span class="macro">println!</span>(
                 <span class="string">&quot;node one received: {:?}&quot;</span>,
@@ -108,16 +106,16 @@
             );
         }));
 
-    (source_zero_port, node_zero, node_one)
+    (source_zero_port, process_zero, process_one)
 }
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>networked_basic_runtime&lt;<span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= networked_basic(graph, <span class="kw-2">&amp;</span>cli);
-    graph.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
+    <span class="kw">let _ </span>= networked_basic(flow, <span class="kw-2">&amp;</span>cli);
+    flow.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::runtime]
@@ -126,17 +124,17 @@
     <span class="kw">use </span>hydro_deploy::{Deployment, HydroflowCrate};
     <span class="kw">use </span>hydroflow_plus::futures::SinkExt;
     <span class="kw">use </span>hydroflow_plus::util::cli::ConnectedSink;
-    <span class="kw">use </span>hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, DeployCrateWrapper};
+    <span class="kw">use </span>hydroflow_plus_cli_integration::{DeployCrateWrapper, DeployProcessSpec};
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>networked_basic() {
         <span class="kw">let </span><span class="kw-2">mut </span>deployment = Deployment::new();
         <span class="kw">let </span>localhost = deployment.Localhost();
 
-        <span class="kw">let </span>builder = hydroflow_plus::GraphBuilder::new();
+        <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
         <span class="kw">let </span>(source_zero_port, <span class="kw">_</span>, node_one) = <span class="kw">super</span>::networked_basic(
             <span class="kw-2">&amp;</span>builder,
-            <span class="kw-2">&amp;</span>CLIDeployNodeBuilder::new(|| {
+            <span class="kw-2">&amp;</span>DeployProcessSpec::new(|| {
                 deployment.add_service(
                     HydroflowCrate::new(<span class="string">&quot;.&quot;</span>, localhost.clone())
                         .bin(<span class="string">&quot;networked_basic&quot;</span>)

@@ -261,14 +261,14 @@
 <span class="kw">use </span>std::rc::Rc;
 
 <span class="kw">use </span>hydroflow_plus::lang::parse::Pipeline;
-<span class="kw">use </span>hydroflow_plus::node::{
-    ClusterBuilder, Deploy, HfCluster, HfNode, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany,
-    HfSendOneToOne, NodeBuilder,
+<span class="kw">use </span>hydroflow_plus::location::{
+    Cluster, ClusterSpec, Deploy, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany,
+    HfSendOneToOne, Location, ProcessSpec,
 };
 <span class="kw">use </span>hydroflow_plus::util::cli::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged, HydroCLI,
 };
-<span class="kw">use </span>hydroflow_plus::GraphBuilder;
+<span class="kw">use </span>hydroflow_plus::FlowBuilder;
 <span class="kw">use </span>stageleft::{q, Quoted, RuntimeData};
 <span class="kw">use </span>syn::parse_quote;
 
@@ -277,23 +277,23 @@
 <span class="kw">pub struct </span>CLIRuntime {}
 
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Deploy&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>CLIRuntime {
-    <span class="kw">type </span>Node = CLIRuntimeNode&lt;<span class="lifetime">&#39;a</span>&gt;;
+    <span class="kw">type </span>Process = CLIRuntimeNode&lt;<span class="lifetime">&#39;a</span>&gt;;
     <span class="kw">type </span>Cluster = CLIRuntimeCluster&lt;<span class="lifetime">&#39;a</span>&gt;;
     <span class="kw">type </span>Meta = ();
     <span class="kw">type </span>RuntimeID = usize;
-    <span class="kw">type </span>NodePort = String;
+    <span class="kw">type </span>ProcessPort = String;
     <span class="kw">type </span>ClusterPort = String;
 }
 
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>CLIRuntimeNode&lt;<span class="lifetime">&#39;a</span>&gt; {
     id: usize,
-    builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
+    builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
     next_port: Rc&lt;RefCell&lt;usize&gt;&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; HfNode&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>CLIRuntimeNode&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Location&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>CLIRuntimeNode&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="kw">type </span>Port = String;
     <span class="kw">type </span>Meta = ();
 
@@ -301,7 +301,7 @@
         <span class="self">self</span>.id
     }
 
-    <span class="kw">fn </span>graph_builder(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>RefCell&lt;usize&gt;, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>hydroflow_plus::builder::Builders) {
+    <span class="kw">fn </span>flow_builder(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>RefCell&lt;usize&gt;, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>hydroflow_plus::builder::Builders) {
         <span class="self">self</span>.builder.builder_components()
     }
 
@@ -317,12 +317,12 @@
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>CLIRuntimeCluster&lt;<span class="lifetime">&#39;a</span>&gt; {
     id: usize,
-    builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
+    builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
     next_port: Rc&lt;RefCell&lt;usize&gt;&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; HfNode&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>CLIRuntimeCluster&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Location&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>CLIRuntimeCluster&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="kw">type </span>Port = String;
     <span class="kw">type </span>Meta = ();
 
@@ -330,7 +330,7 @@
         <span class="self">self</span>.id
     }
 
-    <span class="kw">fn </span>graph_builder(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>RefCell&lt;usize&gt;, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>hydroflow_plus::builder::Builders) {
+    <span class="kw">fn </span>flow_builder(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>RefCell&lt;usize&gt;, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>hydroflow_plus::builder::Builders) {
         <span class="self">self</span>.builder.builder_components()
     }
 
@@ -343,7 +343,7 @@
     <span class="kw">fn </span>update_meta(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _meta: <span class="kw-2">&amp;</span><span class="self">Self</span>::Meta) {}
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; HfCluster&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>CLIRuntimeCluster&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Cluster&lt;<span class="lifetime">&#39;a</span>&gt; <span class="kw">for </span>CLIRuntimeCluster&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="kw">fn </span>ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Vec&lt;u32&gt;&gt; + Copy + <span class="lifetime">&#39;a </span>{
         <span class="kw">let </span>cli = <span class="self">self</span>.cli;
         <span class="kw">let </span>self_id = <span class="self">self</span>.id;
@@ -485,11 +485,11 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;cli</span>&gt; NodeBuilder&lt;<span class="lifetime">&#39;cli</span>, CLIRuntime&gt; <span class="kw">for </span>RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;cli </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;cli</span>&gt; ProcessSpec&lt;<span class="lifetime">&#39;cli</span>, CLIRuntime&gt; <span class="kw">for </span>RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;cli </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt; {
     <span class="kw">fn </span>build(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         id: usize,
-        builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;cli </span>GraphBuilder&lt;<span class="lifetime">&#39;cli</span>, CLIRuntime&gt;,
+        builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;cli </span>FlowBuilder&lt;<span class="lifetime">&#39;cli</span>, CLIRuntime&gt;,
         _meta: <span class="kw-2">&amp;mut </span>(),
     ) -&gt; CLIRuntimeNode&lt;<span class="lifetime">&#39;cli</span>&gt; {
         CLIRuntimeNode {
@@ -501,11 +501,11 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;cli</span>&gt; ClusterBuilder&lt;<span class="lifetime">&#39;cli</span>, CLIRuntime&gt; <span class="kw">for </span>RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;cli </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;cli</span>&gt; ClusterSpec&lt;<span class="lifetime">&#39;cli</span>, CLIRuntime&gt; <span class="kw">for </span>RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;cli </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt; {
     <span class="kw">fn </span>build(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         id: usize,
-        builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;cli </span>GraphBuilder&lt;<span class="lifetime">&#39;cli</span>, CLIRuntime&gt;,
+        builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;cli </span>FlowBuilder&lt;<span class="lifetime">&#39;cli</span>, CLIRuntime&gt;,
         _meta: <span class="kw-2">&amp;mut </span>(),
     ) -&gt; CLIRuntimeCluster&lt;<span class="lifetime">&#39;cli</span>&gt; {
         CLIRuntimeCluster {

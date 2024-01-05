@@ -182,20 +182,20 @@
 <span class="kw">use </span>stageleft::{Quoted, QuotedContext};
 <span class="kw">use </span>syn::parse_quote;
 
-<span class="kw">use </span><span class="kw">crate</span>::node::{ClusterBuilder, HfNode, LocalDeploy, NodeBuilder};
+<span class="kw">use </span><span class="kw">crate</span>::location::{ClusterSpec, LocalDeploy, Location, ProcessSpec};
 <span class="kw">use crate</span>::{HfBuilt, RuntimeContext};
 
 <span class="kw">pub type </span>Builders = RefCell&lt;<span class="prelude-ty">Option</span>&lt;BTreeMap&lt;usize, FlatGraphBuilder&gt;&gt;&gt;;
 
-<span class="kw">pub struct </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, D: LocalDeploy&lt;<span class="lifetime">&#39;a</span>&gt; + <span class="question-mark">?</span>Sized&gt; {
+<span class="kw">pub struct </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D: LocalDeploy&lt;<span class="lifetime">&#39;a</span>&gt; + <span class="question-mark">?</span>Sized&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) next_id: RefCell&lt;usize&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) builders: Builders,
-    nodes: RefCell&lt;Vec&lt;D::Node&gt;&gt;,
+    nodes: RefCell&lt;Vec&lt;D::Process&gt;&gt;,
     clusters: RefCell&lt;Vec&lt;D::Cluster&gt;&gt;,
 
     <span class="doccomment">/// Tracks metadata about concrete deployments in this graph, such
     /// as the IDs of each node in a cluster. This is written to
-    /// by `NodeBuilder` and `ClusterBuilder` and is written to
+    /// by `ProcessSpec` and `ClusterSpec` and is written to
     /// each instantiated node and cluster via `HfNode::update_meta`.
     </span>meta: RefCell&lt;D::Meta&gt;,
 
@@ -203,16 +203,16 @@
     _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut &amp;</span><span class="lifetime">&#39;a </span>()&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, D: LocalDeploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt; QuotedContext <span class="kw">for </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, D: LocalDeploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt; QuotedContext <span class="kw">for </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt; {
     <span class="kw">fn </span>create() -&gt; <span class="self">Self </span>{
-        GraphBuilder::new()
+        FlowBuilder::new()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, D: LocalDeploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt; GraphBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, D: LocalDeploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt; FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt; {
     <span class="attr">#[allow(clippy::new_without_default)]
-    </span><span class="kw">pub fn </span>new() -&gt; GraphBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt; {
-        GraphBuilder {
+    </span><span class="kw">pub fn </span>new() -&gt; FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt; {
+        FlowBuilder {
             next_id: RefCell::new(<span class="number">0</span>),
             builders: RefCell::new(<span class="prelude-val">Some</span>(Default::default())),
             nodes: RefCell::new(Vec::new()),
@@ -227,7 +227,7 @@
         (<span class="kw-2">&amp;</span><span class="self">self</span>.next_id, <span class="kw-2">&amp;</span><span class="self">self</span>.builders)
     }
 
-    <span class="kw">pub fn </span>node(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>NodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;) -&gt; D::Node {
+    <span class="kw">pub fn </span>process(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;) -&gt; D::Process {
         <span class="kw">let </span><span class="kw-2">mut </span>next_node_id = <span class="self">self</span>.next_node_id.borrow_mut();
         <span class="kw">let </span>id = <span class="kw-2">*</span>next_node_id;
         <span class="kw-2">*</span>next_node_id += <span class="number">1</span>;
@@ -240,7 +240,7 @@
         node
     }
 
-    <span class="kw">pub fn </span>cluster(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;) -&gt; D::Cluster {
+    <span class="kw">pub fn </span>cluster(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;) -&gt; D::Cluster {
         <span class="kw">let </span><span class="kw-2">mut </span>next_node_id = <span class="self">self</span>.next_node_id.borrow_mut();
         <span class="kw">let </span>id = <span class="kw-2">*</span>next_node_id;
         <span class="kw-2">*</span>next_node_id += <span class="number">1</span>;
@@ -271,7 +271,7 @@
     }
 }
 
-<span class="kw">fn </span>build_inner&lt;<span class="lifetime">&#39;a</span>, D: LocalDeploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(me: <span class="kw-2">&amp;</span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;, id: TokenStream) -&gt; HfBuilt&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">fn </span>build_inner&lt;<span class="lifetime">&#39;a</span>, D: LocalDeploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(me: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;, id: TokenStream) -&gt; HfBuilt&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="kw">let </span>builders = me.builders.borrow_mut().take().unwrap();
 
     <span class="kw">let </span><span class="kw-2">mut </span>conditioned_tokens = <span class="prelude-val">None</span>;
@@ -327,13 +327,13 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, D: LocalDeploy&lt;<span class="lifetime">&#39;a</span>, RuntimeID = usize&gt;&gt; GraphBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, D: LocalDeploy&lt;<span class="lifetime">&#39;a</span>, RuntimeID = usize&gt;&gt; FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt; {
     <span class="kw">pub fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, usize&gt;) -&gt; HfBuilt&lt;<span class="lifetime">&#39;a</span>&gt; {
         build_inner(<span class="self">self</span>, id.splice())
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, D: LocalDeploy&lt;<span class="lifetime">&#39;a</span>, RuntimeID = ()&gt;&gt; GraphBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, D: LocalDeploy&lt;<span class="lifetime">&#39;a</span>, RuntimeID = ()&gt;&gt; FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt; {
     <span class="kw">pub fn </span>build_single(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HfBuilt&lt;<span class="lifetime">&#39;a</span>&gt; {
         <span class="kw">if </span><span class="self">self</span>.builders.borrow().as_ref().unwrap().len() != <span class="number">1 </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Expected exactly one node in the graph.&quot;</span>);

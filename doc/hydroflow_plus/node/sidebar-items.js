@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["network"],"struct":["MultiGraph","MultiNode","SingleGraph","SingleNode"],"trait":["ClusterBuilder","Deploy","HfCluster","HfNode","LocalDeploy","NodeBuilder"]};

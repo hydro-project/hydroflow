@@ -313,17 +313,13 @@
 <a href="#313" id="313">313</a>
 <a href="#314" id="314">314</a>
 <a href="#315" id="315">315</a>
-<a href="#316" id="316">316</a>
-<a href="#317" id="317">317</a>
-<a href="#318" id="318">318</a>
 </pre></div><pre class="rust"><code><span class="macro">stageleft::stageleft_crate!</span>(hydroflow_plus_test_macro);
 
 <span class="kw">use </span>hydroflow_plus::futures::stream::Stream;
-<span class="kw">use </span>hydroflow_plus::node::{HfNode, MultiGraph, SingleGraph};
 <span class="kw">use </span>hydroflow_plus::scheduled::graph::Hydroflow;
 <span class="kw">use </span>hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
-<span class="kw">use </span>hydroflow_plus::GraphBuilder;
+<span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::{q, Quoted, RuntimeData};
 
 <span class="kw">pub mod </span>cluster;
@@ -332,14 +328,14 @@
 
 <span class="attr">#[stageleft::entry(UnboundedReceiverStream&lt;u32&gt;)]
 </span><span class="kw">pub fn </span>teed_join&lt;<span class="lifetime">&#39;a</span>, S: Stream&lt;Item = u32&gt; + Unpin + <span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, MultiGraph&gt;,
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, MultiGraph&gt;,
     input_stream: RuntimeData&lt;S&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>UnboundedSender&lt;u32&gt;&gt;,
     send_twice: bool,
     subgraph_id: RuntimeData&lt;usize&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let </span>node_zero = graph.node(<span class="kw-2">&amp;</span>());
-    <span class="kw">let </span>node_one = graph.node(<span class="kw-2">&amp;</span>());
+    <span class="kw">let </span>node_zero = flow.process(<span class="kw-2">&amp;</span>());
+    <span class="kw">let </span>node_one = flow.process(<span class="kw-2">&amp;</span>());
 
     <span class="kw">let </span>source = node_zero.source_stream(input_stream);
     <span class="kw">let </span>map1 = source.map(<span class="macro">q!</span>(|v| (v + <span class="number">1</span>, ())));
@@ -362,21 +358,21 @@
         output.send(v).unwrap();
     }));
 
-    graph.build(subgraph_id)
+    flow.build(subgraph_id)
 }
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>chat_app&lt;<span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, SingleGraph&gt;,
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, SingleProcessGraph&gt;,
     users_stream: RuntimeData&lt;UnboundedReceiverStream&lt;u32&gt;&gt;,
     messages: RuntimeData&lt;UnboundedReceiverStream&lt;String&gt;&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>UnboundedSender&lt;(u32, String)&gt;&gt;,
     replay_messages: bool,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let </span>node = graph.node(<span class="kw-2">&amp;</span>());
+    <span class="kw">let </span>process = flow.process(<span class="kw-2">&amp;</span>());
 
-    <span class="kw">let </span>users = node.source_stream(users_stream).all_ticks();
-    <span class="kw">let </span>messages = node.source_stream(messages);
+    <span class="kw">let </span>users = process.source_stream(users_stream).all_ticks();
+    <span class="kw">let </span>messages = process.source_stream(messages);
     <span class="kw">let </span>messages = <span class="kw">if </span>replay_messages {
         messages.all_ticks()
     } <span class="kw">else </span>{
@@ -392,22 +388,22 @@
         output.send(t).unwrap();
     }));
 
-    graph.build_single()
+    flow.build_single()
 }
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>graph_reachability&lt;<span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, SingleGraph&gt;,
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, SingleProcessGraph&gt;,
     roots: RuntimeData&lt;UnboundedReceiverStream&lt;u32&gt;&gt;,
     edges: RuntimeData&lt;UnboundedReceiverStream&lt;(u32, u32)&gt;&gt;,
     reached_out: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>UnboundedSender&lt;u32&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let </span>node = graph.node(<span class="kw-2">&amp;</span>());
+    <span class="kw">let </span>process = flow.process(<span class="kw-2">&amp;</span>());
 
-    <span class="kw">let </span>roots = node.source_stream(roots);
-    <span class="kw">let </span>edges = node.source_stream(edges);
+    <span class="kw">let </span>roots = process.source_stream(roots);
+    <span class="kw">let </span>edges = process.source_stream(edges);
 
-    <span class="kw">let </span>(set_reached_cycle, reached_cycle) = node.cycle();
+    <span class="kw">let </span>(set_reached_cycle, reached_cycle) = process.cycle();
 
     <span class="kw">let </span>reached = roots.union(<span class="kw-2">&amp;</span>reached_cycle);
     <span class="kw">let </span>reachable = reached
@@ -420,18 +416,18 @@
         reached_out.send(v).unwrap();
     }));
 
-    graph.build_single()
+    flow.build_single()
 }
 
 <span class="attr">#[stageleft::entry(String)]
 </span><span class="kw">pub fn </span>count_elems&lt;<span class="lifetime">&#39;a</span>, T: <span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, SingleGraph&gt;,
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, SingleProcessGraph&gt;,
     input_stream: RuntimeData&lt;UnboundedReceiverStream&lt;T&gt;&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>UnboundedSender&lt;u32&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let </span>node = graph.node(<span class="kw-2">&amp;</span>());
+    <span class="kw">let </span>process = flow.process(<span class="kw-2">&amp;</span>());
 
-    <span class="kw">let </span>source = node.source_stream(input_stream);
+    <span class="kw">let </span>source = process.source_stream(input_stream);
     <span class="kw">let </span>count = source
         .map(<span class="macro">q!</span>(|<span class="kw">_</span>| <span class="number">1</span>))
         .tick_batch()
@@ -441,7 +437,7 @@
         output.send(v).unwrap();
     }));
 
-    graph.build_single()
+    flow.build_single()
 }
 
 <span class="attr">#[stageleft::runtime]
@@ -450,14 +446,12 @@
     <span class="kw">use </span>hydroflow_plus::assert_graphvis_snapshots;
     <span class="kw">use </span>hydroflow_plus::util::collect_ready;
 
-    <span class="kw">use super</span>::<span class="kw-2">*</span>;
-
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_teed_join() {
         <span class="kw">let </span>(in_send, input) = hydroflow_plus::util::unbounded_channel();
         <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow_plus::util::unbounded_channel();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>joined = <span class="macro">teed_join!</span>(input, <span class="kw-2">&amp;</span>out, <span class="bool-val">false</span>, <span class="number">0</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>joined = <span class="macro">super::teed_join!</span>(input, <span class="kw-2">&amp;</span>out, <span class="bool-val">false</span>, <span class="number">0</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(joined);
 
         in_send.send(<span class="number">1</span>).unwrap();
@@ -475,7 +469,7 @@
         <span class="kw">let </span>(in_send, input) = hydroflow_plus::util::unbounded_channel();
         <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow_plus::util::unbounded_channel();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>joined = <span class="macro">teed_join!</span>(input, <span class="kw-2">&amp;</span>out, <span class="bool-val">true</span>, <span class="number">0</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>joined = <span class="macro">super::teed_join!</span>(input, <span class="kw-2">&amp;</span>out, <span class="bool-val">true</span>, <span class="number">0</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(joined);
 
         in_send.send(<span class="number">1</span>).unwrap();
@@ -493,7 +487,7 @@
         <span class="kw">let </span>(<span class="kw">_</span>, input) = hydroflow_plus::util::unbounded_channel();
         <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow_plus::util::unbounded_channel();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>joined = <span class="macro">teed_join!</span>(input, <span class="kw-2">&amp;</span>out, <span class="bool-val">true</span>, <span class="number">1</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>joined = <span class="macro">super::teed_join!</span>(input, <span class="kw-2">&amp;</span>out, <span class="bool-val">true</span>, <span class="number">1</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(joined);
 
         joined.run_tick();
@@ -510,7 +504,7 @@
         <span class="kw">let </span>(messages_send, messages) = hydroflow_plus::util::unbounded_channel();
         <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow_plus::util::unbounded_channel();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>chat_server = <span class="macro">chat_app!</span>(users, messages, <span class="kw-2">&amp;</span>out, <span class="bool-val">false</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>chat_server = <span class="macro">super::chat_app!</span>(users, messages, <span class="kw-2">&amp;</span>out, <span class="bool-val">false</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(chat_server);
 
         users_send.send(<span class="number">1</span>).unwrap();
@@ -553,7 +547,7 @@
         <span class="kw">let </span>(messages_send, messages) = hydroflow_plus::util::unbounded_channel();
         <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow_plus::util::unbounded_channel();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>chat_server = <span class="macro">chat_app!</span>(users, messages, <span class="kw-2">&amp;</span>out, <span class="bool-val">true</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>chat_server = <span class="macro">super::chat_app!</span>(users, messages, <span class="kw-2">&amp;</span>out, <span class="bool-val">true</span>);
         <span class="macro">assert_graphvis_snapshots!</span>(chat_server);
 
         users_send.send(<span class="number">1</span>).unwrap();
@@ -598,7 +592,7 @@
         <span class="kw">let </span>(edges_send, edges) = hydroflow_plus::util::unbounded_channel();
         <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow_plus::util::unbounded_channel();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>reachability = <span class="macro">graph_reachability!</span>(roots, edges, <span class="kw-2">&amp;</span>out);
+        <span class="kw">let </span><span class="kw-2">mut </span>reachability = <span class="macro">super::graph_reachability!</span>(roots, edges, <span class="kw-2">&amp;</span>out);
         <span class="macro">assert_graphvis_snapshots!</span>(reachability);
 
         roots_send.send(<span class="number">1</span>).unwrap();
@@ -622,7 +616,7 @@
         <span class="kw">let </span>(in_send, input) = hydroflow_plus::util::unbounded_channel();
         <span class="kw">let </span>(out, <span class="kw-2">mut </span>out_recv) = hydroflow_plus::util::unbounded_channel();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>count = <span class="macro">count_elems!</span>(input, <span class="kw-2">&amp;</span>out);
+        <span class="kw">let </span><span class="kw-2">mut </span>count = <span class="macro">super::count_elems!</span>(input, <span class="kw-2">&amp;</span>out);
         <span class="macro">assert_graphvis_snapshots!</span>(count);
 
         in_send.send(<span class="number">1</span>).unwrap();

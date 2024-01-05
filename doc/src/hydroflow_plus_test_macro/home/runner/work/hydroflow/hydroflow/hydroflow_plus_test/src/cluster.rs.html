@@ -217,37 +217,35 @@
 <a href="#217" id="217">217</a>
 <a href="#218" id="218">218</a>
 <a href="#219" id="219">219</a>
-<a href="#220" id="220">220</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::node::<span class="kw-2">*</span>;
-<span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
+</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
 <span class="kw">pub fn </span>simple_cluster&lt;<span class="lifetime">&#39;a</span>, D: Deploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    node_builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>NodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    cluster_builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-) -&gt; (D::Node, D::Cluster) {
-    <span class="kw">let </span>node = graph.node(node_builder);
-    <span class="kw">let </span>cluster = graph.cluster(cluster_builder);
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+    cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+) -&gt; (D::Process, D::Cluster) {
+    <span class="kw">let </span>process = flow.process(process_spec);
+    <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
 
-    <span class="kw">let </span>numbers = node.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>));
-    <span class="kw">let </span>ids = node.source_iter(cluster.ids()).map(<span class="macro">q!</span>(|<span class="kw-2">&amp;</span>id| id));
+    <span class="kw">let </span>numbers = process.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>));
+    <span class="kw">let </span>ids = process.source_iter(cluster.ids()).map(<span class="macro">q!</span>(|<span class="kw-2">&amp;</span>id| id));
 
     ids.cross_product(<span class="kw-2">&amp;</span>numbers)
         .map(<span class="macro">q!</span>(|(id, n)| (id, (id, n))))
         .demux_bincode(<span class="kw-2">&amp;</span>cluster)
         .inspect(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">&quot;cluster received: {:?}&quot;</span>, n)))
-        .send_bincode_tagged(<span class="kw-2">&amp;</span>node)
+        .send_bincode_tagged(<span class="kw-2">&amp;</span>process)
         .for_each(<span class="macro">q!</span>(|(id, d)| <span class="macro">println!</span>(<span class="string">&quot;node received: ({}, {:?})&quot;</span>, id, d)));
 
-    (node, cluster)
+    (process, cluster)
 }
 
 <span class="kw">pub fn </span>many_to_many&lt;<span class="lifetime">&#39;a</span>, D: Deploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    cluster_builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+    cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
 ) -&gt; D::Cluster {
-    <span class="kw">let </span>cluster = graph.cluster(cluster_builder);
+    <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
     cluster
         .source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">2</span>))
         .broadcast_bincode_tagged(<span class="kw-2">&amp;</span>cluster)
@@ -257,14 +255,14 @@
 }
 
 <span class="kw">pub fn </span>map_reduce&lt;<span class="lifetime">&#39;a</span>, D: Deploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    node_builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>NodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    cluster_builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-) -&gt; (D::Node, D::Cluster) {
-    <span class="kw">let </span>node = graph.node(node_builder);
-    <span class="kw">let </span>cluster = graph.cluster(cluster_builder);
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+    cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+) -&gt; (D::Process, D::Cluster) {
+    <span class="kw">let </span>process = flow.process(process_spec);
+    <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
 
-    <span class="kw">let </span>words = node
+    <span class="kw">let </span>words = process
         .source_iter(<span class="macro">q!</span>(<span class="macro">vec!</span>[<span class="string">&quot;abc&quot;</span>, <span class="string">&quot;abc&quot;</span>, <span class="string">&quot;xyz&quot;</span>]))
         .map(<span class="macro">q!</span>(|s| s.to_string()));
 
@@ -278,13 +276,13 @@
         .tick_batch()
         .fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|count, string| <span class="kw-2">*</span>count += string.len()))
         .inspect(<span class="macro">q!</span>(|count| <span class="macro">println!</span>(<span class="string">&quot;partition count: {}&quot;</span>, count)))
-        .send_bincode_tagged(<span class="kw-2">&amp;</span>node)
+        .send_bincode_tagged(<span class="kw-2">&amp;</span>process)
         .all_ticks()
         .map(<span class="macro">q!</span>(|(_mid, count)| count))
         .fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|total, count| <span class="kw-2">*</span>total += count))
         .for_each(<span class="macro">q!</span>(|data| <span class="macro">println!</span>(<span class="string">&quot;total: {}&quot;</span>, data)));
 
-    (node, cluster)
+    (process, cluster)
 }
 
 <span class="kw">use </span>hydroflow_plus::util::cli::HydroCLI;
@@ -292,29 +290,29 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>simple_cluster_runtime&lt;<span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= simple_cluster(graph, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
-    graph.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
+    <span class="kw">let _ </span>= simple_cluster(flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
+    flow.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>many_to_many_runtime&lt;<span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= many_to_many(graph, <span class="kw-2">&amp;</span>cli);
-    graph.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
+    <span class="kw">let _ </span>= many_to_many(flow, <span class="kw-2">&amp;</span>cli);
+    flow.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>map_reduce_runtime&lt;<span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= map_reduce(graph, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
-    graph.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
+    <span class="kw">let _ </span>= map_reduce(flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
+    flow.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::runtime]
@@ -324,7 +322,7 @@
 
     <span class="kw">use </span>hydro_deploy::{Deployment, HydroflowCrate};
     <span class="kw">use </span>hydroflow_plus_cli_integration::{
-        CLIDeployClusterBuilder, CLIDeployNodeBuilder, DeployCrateWrapper,
+        DeployClusterSpec, DeployCrateWrapper, DeployProcessSpec,
     };
 
     <span class="attr">#[tokio::test]
@@ -332,17 +330,17 @@
         <span class="kw">let </span>deployment = RefCell::new(Deployment::new());
         <span class="kw">let </span>localhost = deployment.borrow_mut().Localhost();
 
-        <span class="kw">let </span>builder = hydroflow_plus::GraphBuilder::new();
+        <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
         <span class="kw">let </span>(node, cluster) = <span class="kw">super</span>::simple_cluster(
             <span class="kw-2">&amp;</span>builder,
-            <span class="kw-2">&amp;</span>CLIDeployNodeBuilder::new(|| {
+            <span class="kw-2">&amp;</span>DeployProcessSpec::new(|| {
                 deployment.borrow_mut().add_service(
                     HydroflowCrate::new(<span class="string">&quot;.&quot;</span>, localhost.clone())
                         .bin(<span class="string">&quot;simple_cluster&quot;</span>)
                         .profile(<span class="string">&quot;dev&quot;</span>),
                 )
             }),
-            <span class="kw-2">&amp;</span>CLIDeployClusterBuilder::new(|| {
+            <span class="kw-2">&amp;</span>DeployClusterSpec::new(|| {
                 (<span class="number">0</span>..<span class="number">2</span>)
                     .map(|<span class="kw">_</span>| {
                         deployment.borrow_mut().add_service(
@@ -361,7 +359,7 @@
 
         <span class="kw">let </span>node_stdout = node.stdout().<span class="kw">await</span>;
         <span class="kw">let </span>cluster_stdouts =
-            futures::future::join_all(cluster.nodes.iter().map(|node| node.stdout())).<span class="kw">await</span>;
+            futures::future::join_all(cluster.members.iter().map(|node| node.stdout())).<span class="kw">await</span>;
 
         deployment.start().<span class="kw">await</span>.unwrap();
 
@@ -393,10 +391,10 @@
         <span class="kw">let </span>deployment = RefCell::new(Deployment::new());
         <span class="kw">let </span>localhost = deployment.borrow_mut().Localhost();
 
-        <span class="kw">let </span>builder = hydroflow_plus::GraphBuilder::new();
+        <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
         <span class="kw">let </span>cluster = <span class="kw">super</span>::many_to_many(
             <span class="kw-2">&amp;</span>builder,
-            <span class="kw-2">&amp;</span>CLIDeployClusterBuilder::new(|| {
+            <span class="kw-2">&amp;</span>DeployClusterSpec::new(|| {
                 (<span class="number">0</span>..<span class="number">2</span>)
                     .map(|<span class="kw">_</span>| {
                         deployment.borrow_mut().add_service(
@@ -414,7 +412,7 @@
         deployment.deploy().<span class="kw">await</span>.unwrap();
 
         <span class="kw">let </span>cluster_stdouts =
-            futures::future::join_all(cluster.nodes.iter().map(|node| node.stdout())).<span class="kw">await</span>;
+            futures::future::join_all(cluster.members.iter().map(|node| node.stdout())).<span class="kw">await</span>;
 
         deployment.start().<span class="kw">await</span>.unwrap();
 

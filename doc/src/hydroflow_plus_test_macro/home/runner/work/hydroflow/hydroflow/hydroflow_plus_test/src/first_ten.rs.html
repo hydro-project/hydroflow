@@ -79,41 +79,39 @@
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
-<a href="#82" id="82">82</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::node::<span class="kw-2">*</span>;
-<span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
+</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
 <span class="kw">pub fn </span>first_ten&lt;<span class="lifetime">&#39;a</span>, D: LocalDeploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    node_builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>NodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
 ) {
-    <span class="kw">let </span>node = graph.node(node_builder);
-    <span class="kw">let </span>numbers = node.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
+    <span class="kw">let </span>process = flow.process(process_spec);
+    <span class="kw">let </span>numbers = process.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
     numbers.for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, n)));
 }
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>first_ten_runtime&lt;<span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, SingleGraph&gt;,
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, SingleProcessGraph&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    first_ten(graph, <span class="kw-2">&amp;</span>());
-    graph.build_single()
+    first_ten(flow, <span class="kw-2">&amp;</span>());
+    flow.build_single()
 }
 
 <span class="kw">pub fn </span>first_ten_distributed&lt;<span class="lifetime">&#39;a</span>, D: Deploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    node_builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>NodeBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-) -&gt; D::Node {
-    <span class="kw">let </span>node = graph.node(node_builder);
-    <span class="kw">let </span>second_node = graph.node(node_builder);
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+) -&gt; D::Process {
+    <span class="kw">let </span>process = flow.process(process_spec);
+    <span class="kw">let </span>second_process = flow.process(process_spec);
 
-    <span class="kw">let </span>numbers = node.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
+    <span class="kw">let </span>numbers = process.source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
     numbers
-        .send_bincode(<span class="kw-2">&amp;</span>second_node)
+        .send_bincode(<span class="kw-2">&amp;</span>second_process)
         .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, n)));
 
-    second_node
+    second_process
 }
 
 <span class="kw">use </span>hydroflow_plus::util::cli::HydroCLI;
@@ -121,28 +119,28 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>first_ten_distributed_runtime&lt;<span class="lifetime">&#39;a</span>&gt;(
-    graph: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>GraphBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= first_ten_distributed(graph, <span class="kw-2">&amp;</span>cli);
-    graph.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
+    <span class="kw">let _ </span>= first_ten_distributed(flow, <span class="kw-2">&amp;</span>cli);
+    flow.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::runtime]
 #[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>hydro_deploy::{Deployment, HydroflowCrate};
-    <span class="kw">use </span>hydroflow_plus_cli_integration::{CLIDeployNodeBuilder, DeployCrateWrapper};
+    <span class="kw">use </span>hydroflow_plus_cli_integration::{DeployCrateWrapper, DeployProcessSpec};
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>first_ten_distributed() {
         <span class="kw">let </span><span class="kw-2">mut </span>deployment = Deployment::new();
         <span class="kw">let </span>localhost = deployment.Localhost();
 
-        <span class="kw">let </span>builder = hydroflow_plus::GraphBuilder::new();
+        <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
         <span class="kw">let </span>second_node = <span class="kw">super</span>::first_ten_distributed(
             <span class="kw-2">&amp;</span>builder,
-            <span class="kw-2">&amp;</span>CLIDeployNodeBuilder::new(|| {
+            <span class="kw-2">&amp;</span>DeployProcessSpec::new(|| {
                 deployment.add_service(
                     HydroflowCrate::new(<span class="string">&quot;.&quot;</span>, localhost.clone())
                         .bin(<span class="string">&quot;first_ten_distributed&quot;</span>)

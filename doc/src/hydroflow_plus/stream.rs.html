@@ -758,6 +758,15 @@
 <a href="#758" id="758">758</a>
 <a href="#759" id="759">759</a>
 <a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a>
+<a href="#764" id="764">764</a>
+<a href="#765" id="765">765</a>
+<a href="#766" id="766">766</a>
+<a href="#767" id="767">767</a>
+<a href="#768" id="768">768</a>
+<a href="#769" id="769">769</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::io;
@@ -775,8 +784,8 @@
 <span class="kw">use </span>syn::visit_mut::VisitMut;
 
 <span class="kw">use </span><span class="kw">crate</span>::builder::Builders;
-<span class="kw">use </span><span class="kw">crate</span>::node::{
-    HfCluster, HfNode, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany, HfSendOneToOne,
+<span class="kw">use </span><span class="kw">crate</span>::location::{
+    Cluster, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany, HfSendOneToOne, Location,
 };
 
 <span class="doccomment">/// Marks the stream as being asynchronous, which means the presence
@@ -801,7 +810,7 @@
 /// - `W`: the windowing semantics of the stream, which is either [`Async`]
 ///    or [`Windowed`]
 /// - `N`: the type of the node that the stream is materialized on
-</span><span class="kw">pub struct </span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+</span><span class="kw">pub struct </span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) ident: syn::Ident,
     <span class="kw">pub</span>(<span class="kw">crate</span>) node: N,
     <span class="kw">pub</span>(<span class="kw">crate</span>) next_id: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>RefCell&lt;usize&gt;,
@@ -809,7 +818,7 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut &amp;</span><span class="lifetime">&#39;a </span>(), T, W)&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
     <span class="kw">fn </span>pipeline_op&lt;U, W2&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, pipeline: Pipeline) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, U, W2, N&gt; {
         <span class="kw">let </span>next_id = {
             <span class="kw">let </span><span class="kw-2">mut </span>next_id = <span class="self">self</span>.next_id.borrow_mut();
@@ -1000,7 +1009,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N&gt; {
     <span class="kw">pub fn </span>all_ticks(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
         <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(persist()))
     }
@@ -1016,7 +1025,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
     <span class="kw">pub fn </span>fold&lt;A, I: Fn() -&gt; A + <span class="lifetime">&#39;a</span>, C: Fn(<span class="kw-2">&amp;mut </span>A, T)&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, I&gt;,
@@ -1039,13 +1048,13 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Clone, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="kw-2">&amp;</span>T, W, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Clone, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="kw-2">&amp;</span>T, W, N&gt; {
     <span class="kw">pub fn </span>cloned(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
         <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(map(|d| d.clone())))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, K, V1, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (K, V1), W, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, K, V1, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (K, V1), W, N&gt; {
     <span class="comment">// TODO(shadaj): figure out window semantics
     </span><span class="kw">pub fn </span>join&lt;W2, V2&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, n: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, (K, V2), W2, N&gt;) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (K, (V1, V2)), W, N&gt;
     <span class="kw">where
@@ -1123,7 +1132,7 @@
     }
 }
 
-<span class="kw">fn </span>node_send_direct&lt;<span class="lifetime">&#39;a</span>, T, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;, sink: Pipeline) {
+<span class="kw">fn </span>node_send_direct&lt;<span class="lifetime">&#39;a</span>, T, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;, sink: Pipeline) {
     <span class="kw">let </span>self_ident = <span class="kw-2">&amp;</span>me.ident;
 
     <span class="kw">let </span><span class="kw-2">mut </span>builders_borrowed = me.builders.borrow_mut();
@@ -1137,7 +1146,10 @@
         });
 }
 
-<span class="kw">fn </span>node_send_bincode&lt;<span class="lifetime">&#39;a</span>, T: Serialize, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;, sink: Pipeline) {
+<span class="kw">fn </span>node_send_bincode&lt;<span class="lifetime">&#39;a</span>, T: Serialize, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;,
+    sink: Pipeline,
+) {
     <span class="kw">let </span>self_ident = <span class="kw-2">&amp;</span>me.ident;
 
     <span class="kw">let </span><span class="kw-2">mut </span>builders_borrowed = me.builders.borrow_mut();
@@ -1159,7 +1171,10 @@
         });
 }
 
-<span class="kw">fn </span>cluster_demux_bincode&lt;<span class="lifetime">&#39;a</span>, T, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), W, N&gt;, sink: Pipeline) {
+<span class="kw">fn </span>cluster_demux_bincode&lt;<span class="lifetime">&#39;a</span>, T, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), W, N&gt;,
+    sink: Pipeline,
+) {
     <span class="kw">let </span>self_ident = <span class="kw-2">&amp;</span>me.ident;
 
     <span class="kw">let </span><span class="kw-2">mut </span>builders_borrowed = me.builders.borrow_mut();
@@ -1181,7 +1196,7 @@
         });
 }
 
-<span class="kw">fn </span>node_recv_direct&lt;<span class="lifetime">&#39;a</span>, T, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;, N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+<span class="kw">fn </span>node_recv_direct&lt;<span class="lifetime">&#39;a</span>, T, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;, N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
     me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;,
     other: <span class="kw-2">&amp;</span>N2,
     source: Pipeline,
@@ -1208,7 +1223,7 @@
     ident
 }
 
-<span class="kw">fn </span>node_recv_bincode&lt;<span class="lifetime">&#39;a</span>, T1, T2: DeserializeOwned, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;, N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+<span class="kw">fn </span>node_recv_bincode&lt;<span class="lifetime">&#39;a</span>, T1, T2: DeserializeOwned, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;, N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
     me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T1, W, N&gt;,
     other: <span class="kw-2">&amp;</span>N2,
     source: Pipeline,
@@ -1252,8 +1267,8 @@
     ident
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, Bytes, W, N&gt; {
-    <span class="kw">pub fn </span>send_bytes&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, Bytes, W, N&gt; {
+    <span class="kw">pub fn </span>send_bytes&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
     ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
@@ -1277,7 +1292,7 @@
         }
     }
 
-    <span class="kw">pub fn </span>send_bytes_tagged&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>send_bytes_tagged&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
     ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;(u32, BytesMut), io::Error&gt;, Async, N2&gt;
@@ -1301,7 +1316,7 @@
         }
     }
 
-    <span class="kw">pub fn </span>broadcast_bytes&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt; + HfCluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>broadcast_bytes&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt; + Cluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
     ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
@@ -1314,7 +1329,7 @@
             .demux_bytes(other)
     }
 
-    <span class="kw">pub fn </span>broadcast_bytes_tagged&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt; + HfCluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>broadcast_bytes_tagged&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt; + Cluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
     ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;(u32, BytesMut), io::Error&gt;, Async, N2&gt;
@@ -1328,8 +1343,8 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Serialize + DeserializeOwned, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
-    <span class="kw">pub fn </span>send_bincode&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N2&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Serialize + DeserializeOwned, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
+    <span class="kw">pub fn </span>send_bincode&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N2&gt;
     <span class="kw">where
         </span>N: HfSendOneToOne&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
@@ -1355,7 +1370,10 @@
         }
     }
 
-    <span class="kw">pub fn </span>send_bincode_tagged&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), Async, N2&gt;
+    <span class="kw">pub fn </span>send_bincode_tagged&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        other: <span class="kw-2">&amp;</span>N2,
+    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), Async, N2&gt;
     <span class="kw">where
         </span>N: HfSendManyToOne&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
@@ -1381,7 +1399,7 @@
         }
     }
 
-    <span class="kw">pub fn </span>broadcast_bincode&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt; + HfCluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>broadcast_bincode&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt; + Cluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
     ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N2&gt;
@@ -1394,7 +1412,7 @@
             .demux_bincode(other)
     }
 
-    <span class="kw">pub fn </span>broadcast_bincode_tagged&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt; + HfCluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>broadcast_bincode_tagged&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt; + Cluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
     ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), Async, N2&gt;
@@ -1408,8 +1426,8 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, Bytes), W, N&gt; {
-    <span class="kw">pub fn </span>demux_bytes&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, Bytes), W, N&gt; {
+    <span class="kw">pub fn </span>demux_bytes&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
     ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
@@ -1434,8 +1452,8 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Serialize + DeserializeOwned, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), W, N&gt; {
-    <span class="kw">pub fn </span>demux_bincode&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N2&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Serialize + DeserializeOwned, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), W, N&gt; {
+    <span class="kw">pub fn </span>demux_bincode&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N2&gt;
     <span class="kw">where
         </span>N: HfSendOneToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
@@ -1462,8 +1480,8 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, Bytes), W, N&gt; {
-    <span class="kw">pub fn </span>demux_bytes_tagged&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, Bytes), W, N&gt; {
+    <span class="kw">pub fn </span>demux_bytes_tagged&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
     ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;(u32, BytesMut), io::Error&gt;, Async, N2&gt;
@@ -1488,8 +1506,8 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Serialize + DeserializeOwned, W, N: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), W, N&gt; {
-    <span class="kw">pub fn </span>demux_bincode_tagged&lt;N2: HfNode&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Serialize + DeserializeOwned, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), W, N&gt; {
+    <span class="kw">pub fn </span>demux_bincode_tagged&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
     ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), Async, N2&gt;
