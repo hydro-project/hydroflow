@@ -19,7 +19,7 @@ The template includes two sample programs, `first_ten` and `first_ten_distribute
 
 `first_ten` demonstrates how to use Hydroflow+ to create dataflow programs for a single machine, and can be launched by running `cargo run -p flow --bin first_ten`.
 
-`first_ten_distributed` demonstrates how to use Hydroflow+ to create dataflow programs for a distributed system, and can be launched by running `cargo run -p flow --example first_ten_distributed`. Note the use of `--example` here because `src/bin/first_ten_distributed.rs` contains the binary that will be launched on each node, whereas `examples/first_ten_distributed.rs` contains a deployment script for connecting the nodes together.
+`first_ten_distributed` demonstrates how to use Hydroflow+ to create dataflow programs for a distributed system, and can be launched by running `cargo run -p flow --example first_ten_distributed`. Note the use of `--example` here because `src/bin/first_ten_distributed.rs` contains the binary that will be launched for each process, whereas `examples/first_ten_distributed.rs` contains a deployment script for connecting the processes together.
 
 This template also comes with an example of deploying the `first_ten_distributed` flow to Google Cloud. To deploy, you will need to install the [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) and [Terraform](https://developer.hashicorp.com/terraform/install). Then, authenticate with Google Cloud and launch the deployment script with your project ID as an argument:
 

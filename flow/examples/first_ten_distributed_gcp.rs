@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use hydro_deploy::{gcp::GCPNetwork, Deployment, HydroflowCrate};
-use hydroflow_plus_cli_integration::CLIDeployNodeBuilder;
+use hydroflow_plus_cli_integration::DeployProcessSpec;
 use tokio::sync::RwLock;
 
 #[tokio::main]
@@ -13,10 +13,10 @@ async fn main() {
     let mut deployment = Deployment::new();
     let vpc = Arc::new(RwLock::new(GCPNetwork::new(&gcp_project, None)));
 
-    let builder = hydroflow_plus::GraphBuilder::new();
+    let flow = hydroflow_plus::FlowBuilder::new();
     flow::first_ten_distributed::first_ten_distributed(
-        &builder,
-        &CLIDeployNodeBuilder::new(|| {
+        &flow,
+        &DeployProcessSpec::new(|| {
             let host = deployment.GCPComputeEngineHost(
                 gcp_project.clone(),
                 "e2-micro",

@@ -1,15 +1,15 @@
 use hydro_deploy::{Deployment, HydroflowCrate};
-use hydroflow_plus_cli_integration::CLIDeployNodeBuilder;
+use hydroflow_plus_cli_integration::DeployProcessSpec;
 
 #[tokio::main]
 async fn main() {
     let mut deployment = Deployment::new();
     let localhost = deployment.Localhost();
 
-    let builder = hydroflow_plus::GraphBuilder::new();
+    let flow = hydroflow_plus::FlowBuilder::new();
     flow::first_ten_distributed::first_ten_distributed(
-        &builder,
-        &CLIDeployNodeBuilder::new(|| {
+        &flow,
+        &DeployProcessSpec::new(|| {
             deployment.add_service(
                 HydroflowCrate::new(".", localhost.clone())
                     .bin("first_ten_distributed")
