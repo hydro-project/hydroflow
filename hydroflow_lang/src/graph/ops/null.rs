@@ -1,3 +1,5 @@
+use crate::graph::GraphEdgeType;
+
 use super::{
     OperatorCategory, OperatorConstraints, NULL_WRITE_FN, RANGE_0,
 };
@@ -30,6 +32,7 @@ pub const NULL: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
+    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: NULL_WRITE_FN,
 };

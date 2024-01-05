@@ -5,7 +5,7 @@ use super::{
     DelayType, OperatorCategory, OperatorConstraints, OperatorInstance, WriteContextArgs,
     LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
 };
-use crate::graph::ops::OperatorWriteOutput;
+use crate::graph::{ops::OperatorWriteOutput, GraphEdgeType};
 
 /// > 1 input stream, 1 output stream
 ///
@@ -43,6 +43,7 @@ pub const LATTICE_REDUCE: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::MonotoneAccum),
+    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: Some(LATTICE_FOLD_REDUCE_FLOW_PROP_FN),
     write_fn: |wc @ &WriteContextArgs {
                    root,
