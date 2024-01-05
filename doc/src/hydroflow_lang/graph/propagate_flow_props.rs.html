@@ -108,7 +108,7 @@
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for determining flow properties. See [`propagate_flow_props`].
 
 </span><span class="kw">use </span><span class="kw">super</span>::ops::_upcast::_UPCAST;
-<span class="kw">use super</span>::{GraphNodeId, HydroflowGraph, Node};
+<span class="kw">use super</span>::{GraphNode, GraphNodeId, HydroflowGraph};
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::Diagnostic;
 <span class="kw">use </span><span class="kw">crate</span>::graph::graph_algorithms;
 <span class="kw">use </span><span class="kw">crate</span>::graph::ops::FlowPropArgs;
@@ -127,12 +127,12 @@
     );
     <span class="comment">// Only retain nodes that have a `flow_prop_fn` or are handoffs.
     </span>node_order.retain(|<span class="kw-2">&amp;</span>node_id| <span class="kw">match </span>graph.node(node_id) {
-        Node::Operator(<span class="kw">_</span>) =&gt; graph
+        GraphNode::Operator(<span class="kw">_</span>) =&gt; graph
             .node_op_inst(node_id)
             .and_then(|op_inst| op_inst.op_constraints.flow_prop_fn)
             .is_some(),
-        Node::Handoff { .. } =&gt; <span class="bool-val">true</span>,
-        Node::ModuleBoundary { .. } =&gt; <span class="macro">panic!</span>(),
+        GraphNode::Handoff { .. } =&gt; <span class="bool-val">true</span>,
+        GraphNode::ModuleBoundary { .. } =&gt; <span class="macro">panic!</span>(),
     });
     <span class="comment">// Put upcast nodes first.
     </span>node_order.sort_by_key(|<span class="kw-2">&amp;</span>node_id| {
@@ -146,7 +146,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>changed = <span class="bool-val">false</span>;
         <span class="kw">for </span>(idx_star_ord, <span class="kw-2">&amp;</span>node_id) <span class="kw">in </span>node_order.iter().enumerate() {
             <span class="kw">match </span>graph.node(node_id) {
-                Node::Operator(<span class="kw">_</span>) =&gt; {
+                GraphNode::Operator(<span class="kw">_</span>) =&gt; {
                     <span class="kw">let </span>op_inst = graph.node_op_inst(node_id)
                         .expect(<span class="string">&quot;Operator instance info must be set when calling `propagate_flow_props`. (This is a Hydroflow bug).&quot;</span>);
 
@@ -190,7 +190,7 @@
                         }
                     }
                 }
-                Node::Handoff { .. } =&gt; {
+                GraphNode::Handoff { .. } =&gt; {
                     <span class="comment">// Handoffs just copy over their one input [`FlowProps`] to their one output.
                     </span><span class="macro">assert_eq!</span>(<span class="number">1</span>, graph.node_degree_in(node_id));
                     <span class="macro">assert_eq!</span>(<span class="number">1</span>, graph.node_degree_out(node_id));

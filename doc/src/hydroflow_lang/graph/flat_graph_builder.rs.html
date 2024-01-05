@@ -759,6 +759,10 @@
 <a href="#759" id="759">759</a>
 <a href="#760" id="760">760</a>
 <a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a>
+<a href="#764" id="764">764</a>
+<a href="#765" id="765">765</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Build a flat graph from [`HfStatement`]s.
 
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -772,7 +776,7 @@
 <span class="kw">use </span>syn::{Error, Ident, ItemUse};
 
 <span class="kw">use </span><span class="kw">super</span>::ops::find_op_op_constraints;
-<span class="kw">use super</span>::{GraphNodeId, HydroflowGraph, Node, PortIndexValue};
+<span class="kw">use super</span>::{GraphEdgeType, GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span><span class="kw">crate</span>::graph::ops::{PortListSpec, RangeTrait};
 <span class="kw">use </span><span class="kw">crate</span>::parse::{HfCode, HfStatement, Operator, Pipeline};
@@ -838,14 +842,14 @@
         builder.invocating_file_path = root_path; <span class="comment">// imports inside of modules should be relative to the importing file.
         </span>builder.module_boundary_nodes = <span class="prelude-val">Some</span>((
             builder.flat_graph.insert_node(
-                Node::ModuleBoundary {
+                GraphNode::ModuleBoundary {
                     input: <span class="bool-val">true</span>,
                     import_expr: Span::call_site(),
                 },
                 <span class="prelude-val">Some</span>(Ident::new(<span class="string">&quot;input&quot;</span>, Span::call_site())),
             ),
             builder.flat_graph.insert_node(
-                Node::ModuleBoundary {
+                GraphNode::ModuleBoundary {
                     input: <span class="bool-val">false</span>,
                     import_expr: Span::call_site(),
                 },
@@ -980,7 +984,7 @@
                 <span class="kw">let </span>op_span = <span class="prelude-val">Some</span>(operator.span());
                 <span class="kw">let </span>nid = <span class="self">self
                     </span>.flat_graph
-                    .insert_node(Node::Operator(operator), current_varname.cloned());
+                    .insert_node(GraphNode::Operator(operator), current_varname.cloned());
                 Ends {
                     inn: <span class="prelude-val">Some</span>((PortIndexValue::Elided(op_span), GraphDet::Determined(nid))),
                     out: <span class="prelude-val">Some</span>((PortIndexValue::Elided(op_span), GraphDet::Determined(nid))),
@@ -1053,14 +1057,14 @@
 
         <span class="kw">for </span>(nid, node) <span class="kw">in </span>other.nodes() {
             <span class="kw">match </span>node {
-                Node::Operator(<span class="kw">_</span>) =&gt; {
+                GraphNode::Operator(<span class="kw">_</span>) =&gt; {
                     <span class="kw">let </span>varname = other.node_varname(nid);
                     <span class="kw">let </span>new_id = <span class="self">self</span>.flat_graph.insert_node(node.clone(), varname);
                     node_mapping.insert(nid, new_id);
                 }
-                Node::ModuleBoundary { input, .. } =&gt; {
+                GraphNode::ModuleBoundary { input, .. } =&gt; {
                     <span class="kw">let </span>new_id = <span class="self">self</span>.flat_graph.insert_node(
-                        Node::ModuleBoundary {
+                        GraphNode::ModuleBoundary {
                             input: <span class="kw-2">*</span>input,
                             import_expr: parent_span,
                         },
@@ -1082,7 +1086,9 @@
                             <span class="prelude-val">Some</span>((PortIndexValue::Elided(<span class="prelude-val">None</span>), GraphDet::Determined(new_id)));
                     }
                 }
-                Node::Handoff { .. } =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Handoff in graph that is being merged into self&quot;</span>),
+                GraphNode::Handoff { .. } =&gt; {
+                    <span class="macro">panic!</span>(<span class="string">&quot;Handoff in graph that is being merged into self&quot;</span>)
+                }
             }
         }
 
@@ -1090,6 +1096,7 @@
             <span class="kw">let </span>(src_port, dst_port) = other.edge_ports(eid);
 
             <span class="self">self</span>.flat_graph.insert_edge(
+                other.edge_type(eid),
                 <span class="kw-2">*</span>node_mapping.get(<span class="kw-2">&amp;</span>src).unwrap(),
                 src_port.clone(),
                 <span class="kw-2">*</span>node_mapping.get(<span class="kw-2">&amp;</span>dst).unwrap(),
@@ -1251,7 +1258,8 @@
                 }
             }
         }
-        <span class="self">self</span>.flat_graph.insert_edge(src, src_port, dst, dst_port);
+        <span class="self">self</span>.flat_graph
+            .insert_edge(GraphEdgeType::Value, src, src_port, dst, dst_port);
     }
 
     <span class="doccomment">/// Process operators and emit operator errors.
@@ -1271,7 +1279,7 @@
     </span><span class="kw">fn </span>check_operator_errors(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">for </span>(node_id, node) <span class="kw">in </span><span class="self">self</span>.flat_graph.nodes() {
             <span class="kw">match </span>node {
-                Node::Operator(operator) =&gt; {
+                GraphNode::Operator(operator) =&gt; {
                     <span class="kw">let </span><span class="prelude-val">Some</span>(op_constraints) = find_op_op_constraints(operator) <span class="kw">else </span>{
                         <span class="kw">continue</span>;
                     };
@@ -1454,8 +1462,8 @@
                         <span class="kw-2">&amp;mut </span><span class="self">self</span>.diagnostics,
                     );
                 }
-                Node::Handoff { .. } =&gt; <span class="macro">todo!</span>(<span class="string">&quot;Node::Handoff&quot;</span>),
-                Node::ModuleBoundary { .. } =&gt; {
+                GraphNode::Handoff { .. } =&gt; <span class="macro">todo!</span>(<span class="string">&quot;Node::Handoff&quot;</span>),
+                GraphNode::ModuleBoundary { .. } =&gt; {
                     <span class="comment">// Module boundaries don&#39;t require any checking.
                 </span>}
             }

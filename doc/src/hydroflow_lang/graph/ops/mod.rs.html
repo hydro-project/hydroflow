@@ -670,7 +670,7 @@
 <span class="kw">use </span>syn::{parse_quote_spanned, Expr, Token};
 
 <span class="kw">use super</span>::{
-    FlowProps, GraphNodeId, GraphSubgraphId, LatticeFlowType, Node, OpInstGenerics,
+    FlowProps, GraphNode, GraphNodeId, GraphSubgraphId, LatticeFlowType, OpInstGenerics,
     OperatorInstance, PortIndexValue,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
@@ -1070,9 +1070,9 @@
         OnceLock::new();
     OPERATOR_LOOKUP.get_or_init(|| OPERATORS.iter().map(|op| (op.name, op)).collect())
 }
-<span class="doccomment">/// Find an operator by [`Node`].
-</span><span class="kw">pub fn </span>find_node_op_constraints(node: <span class="kw-2">&amp;</span>Node) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>OperatorConstraints&gt; {
-    <span class="kw">if let </span>Node::Operator(operator) = node {
+<span class="doccomment">/// Find an operator by [`GraphNode`].
+</span><span class="kw">pub fn </span>find_node_op_constraints(node: <span class="kw-2">&amp;</span>GraphNode) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>OperatorConstraints&gt; {
+    <span class="kw">if let </span>GraphNode::Operator(operator) = node {
         find_op_op_constraints(operator)
     } <span class="kw">else </span>{
         <span class="prelude-val">None

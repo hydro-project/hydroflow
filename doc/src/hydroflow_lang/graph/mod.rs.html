@@ -427,6 +427,15 @@
 <a href="#427" id="427">427</a>
 <a href="#428" id="428">428</a>
 <a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Graph representation stages for Hydroflow graphs.
 
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -513,7 +522,7 @@
 
 <span class="doccomment">/// A node, corresponding to an operator or a handoff.
 </span><span class="attr">#[derive(Clone, Serialize, Deserialize)]
-</span><span class="kw">pub enum </span>Node {
+</span><span class="kw">pub enum </span>GraphNode {
     <span class="doccomment">/// An operator.
     </span>Operator(<span class="attr">#[serde(with = <span class="string">&quot;serde_syn&quot;</span>)] </span>Operator),
     <span class="doccomment">/// A handoff point, used between subgraphs (or within a subgraph to break a cycle).
@@ -538,22 +547,22 @@
         </span>import_expr: Span,
     },
 }
-<span class="kw">impl </span>Node {
+<span class="kw">impl </span>GraphNode {
     <span class="doccomment">/// Return the node as a human-readable string.
     </span><span class="kw">pub fn </span>to_pretty_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Cow&lt;<span class="lifetime">&#39;static</span>, str&gt; {
         <span class="kw">match </span><span class="self">self </span>{
-            Node::Operator(op) =&gt; op.to_pretty_string().into(),
-            Node::Handoff { .. } =&gt; HANDOFF_NODE_STR.into(),
-            Node::ModuleBoundary { .. } =&gt; MODULE_BOUNDARY_NODE_STR.into(),
+            GraphNode::Operator(op) =&gt; op.to_pretty_string().into(),
+            GraphNode::Handoff { .. } =&gt; HANDOFF_NODE_STR.into(),
+            GraphNode::ModuleBoundary { .. } =&gt; MODULE_BOUNDARY_NODE_STR.into(),
         }
     }
 
     <span class="doccomment">/// Return the name of the node as a string, excluding parenthesis and op source code.
     </span><span class="kw">pub fn </span>to_name_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Cow&lt;<span class="lifetime">&#39;static</span>, str&gt; {
         <span class="kw">match </span><span class="self">self </span>{
-            Node::Operator(op) =&gt; op.name_string().into(),
-            Node::Handoff { .. } =&gt; HANDOFF_NODE_STR.into(),
-            Node::ModuleBoundary { .. } =&gt; MODULE_BOUNDARY_NODE_STR.into(),
+            GraphNode::Operator(op) =&gt; op.name_string().into(),
+            GraphNode::Handoff { .. } =&gt; HANDOFF_NODE_STR.into(),
+            GraphNode::ModuleBoundary { .. } =&gt; MODULE_BOUNDARY_NODE_STR.into(),
         }
     }
 
@@ -566,7 +575,7 @@
         }
     }
 }
-<span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>Node {
+<span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>GraphNode {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::Operator(operator) =&gt; {
@@ -578,6 +587,15 @@
             }
         }
     }
+}
+
+<span class="doccomment">/// The type of the Hydroflow graph edge.
+</span><span class="attr">#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+</span><span class="kw">pub enum </span>GraphEdgeType {
+    <span class="doccomment">/// Standard, pass by value, iterator ownership edges.
+    </span>Value,
+    <span class="doccomment">/// State passed by reference.
+    </span>Reference,
 }
 
 <span class="doccomment">/// Meta-data relating to operators which may be useful throughout the compilation process.

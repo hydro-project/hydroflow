@@ -1398,6 +1398,19 @@
 <a href="#1398" id="1398">1398</a>
 <a href="#1399" id="1399">1399</a>
 <a href="#1400" id="1400">1400</a>
+<a href="#1401" id="1401">1401</a>
+<a href="#1402" id="1402">1402</a>
+<a href="#1403" id="1403">1403</a>
+<a href="#1404" id="1404">1404</a>
+<a href="#1405" id="1405">1405</a>
+<a href="#1406" id="1406">1406</a>
+<a href="#1407" id="1407">1407</a>
+<a href="#1408" id="1408">1408</a>
+<a href="#1409" id="1409">1409</a>
+<a href="#1410" id="1410">1410</a>
+<a href="#1411" id="1411">1411</a>
+<a href="#1412" id="1412">1412</a>
+<a href="#1413" id="1413">1413</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -1414,9 +1427,9 @@
 <span class="kw">use </span><span class="kw">super</span>::graph_write::{Dot, GraphWrite, Mermaid};
 <span class="kw">use </span><span class="kw">super</span>::ops::{find_op_op_constraints, OperatorWriteOutput, WriteContextArgs, OPERATORS};
 <span class="kw">use super</span>::{
-    get_operator_generics, node_color, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphNodeId,
-    GraphSubgraphId, Node, OperatorInstance, PortIndexValue, Varname, CONTEXT, HANDOFF_NODE_STR,
-    HYDROFLOW,
+    get_operator_generics, node_color, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphEdgeType,
+    GraphNode, GraphNodeId, GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT,
+    HANDOFF_NODE_STR, HYDROFLOW,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span><span class="kw">crate</span>::graph::ops::null_write_iterator_fn;
@@ -1433,8 +1446,11 @@
 /// method then add it.
 </span><span class="attr">#[derive(Default, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>HydroflowGraph {
-    <span class="doccomment">/// Each node (operator or handoff).
-    </span>nodes: SlotMap&lt;GraphNodeId, Node&gt;,
+    <span class="doccomment">/// Each node type (operator or handoff).
+    </span>nodes: SlotMap&lt;GraphNodeId, GraphNode&gt;,
+    <span class="doccomment">/// Edge types
+    </span>edge_types: SecondaryMap&lt;GraphEdgeId, GraphEdgeType&gt;,
+
     <span class="doccomment">/// Instance data corresponding to each operator node.
     /// This field will be empty after deserialization.
     </span><span class="attr">#[serde(skip)]
@@ -1472,7 +1488,7 @@
 <span class="comment">// Node methods.
 </span><span class="kw">impl </span>HydroflowGraph {
     <span class="doccomment">/// Get a node with its operator instance (if applicable).
-    </span><span class="kw">pub fn </span>node(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId) -&gt; <span class="kw-2">&amp;</span>Node {
+    </span><span class="kw">pub fn </span>node(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId) -&gt; <span class="kw-2">&amp;</span>GraphNode {
         <span class="self">self</span>.nodes.get(node_id).expect(<span class="string">&quot;Node not found.&quot;</span>)
     }
 
@@ -1583,17 +1599,17 @@
     }
 
     <span class="doccomment">/// Iterator of node IDs `GraphNodeId`.
-    </span><span class="kw">pub fn </span>node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; slotmap::basic::Keys&lt;<span class="lifetime">&#39;_</span>, GraphNodeId, Node&gt; {
+    </span><span class="kw">pub fn </span>node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; slotmap::basic::Keys&lt;<span class="lifetime">&#39;_</span>, GraphNodeId, GraphNode&gt; {
         <span class="self">self</span>.nodes.keys()
     }
 
     <span class="doccomment">/// Iterator over `(GraphNodeId, &amp;Node)` pairs.
-    </span><span class="kw">pub fn </span>nodes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; slotmap::basic::Iter&lt;<span class="lifetime">&#39;_</span>, GraphNodeId, Node&gt; {
+    </span><span class="kw">pub fn </span>nodes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; slotmap::basic::Iter&lt;<span class="lifetime">&#39;_</span>, GraphNodeId, GraphNode&gt; {
         <span class="self">self</span>.nodes.iter()
     }
 
     <span class="doccomment">/// Insert a node, assigning the given varname.
-    </span><span class="kw">pub fn </span>insert_node(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node: Node, varname_opt: <span class="prelude-ty">Option</span>&lt;Ident&gt;) -&gt; GraphNodeId {
+    </span><span class="kw">pub fn </span>insert_node(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node: GraphNode, varname_opt: <span class="prelude-ty">Option</span>&lt;Ident&gt;) -&gt; GraphNodeId {
         <span class="kw">let </span>node_id = <span class="self">self</span>.nodes.insert(node);
         <span class="kw">if let </span><span class="prelude-val">Some</span>(varname) = varname_opt {
             <span class="self">self</span>.node_varnames.insert(node_id, Varname(varname));
@@ -1603,7 +1619,10 @@
 
     <span class="doccomment">/// Insert an operator instance for the given node. Panics if already set.
     </span><span class="kw">pub fn </span>insert_node_op_inst(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node_id: GraphNodeId, op_inst: OperatorInstance) {
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(<span class="self">self</span>.nodes.get(node_id), <span class="prelude-val">Some</span>(Node::Operator(<span class="kw">_</span>))));
+        <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+            <span class="self">self</span>.nodes.get(node_id),
+            <span class="prelude-val">Some</span>(GraphNode::Operator(<span class="kw">_</span>))
+        ));
         <span class="kw">let </span>old_inst = <span class="self">self</span>.operator_instances.insert(node_id, op_inst);
         <span class="macro">assert!</span>(old_inst.is_none());
     }
@@ -1612,7 +1631,7 @@
     </span><span class="kw">pub fn </span>insert_node_op_insts_all(<span class="kw-2">&amp;mut </span><span class="self">self</span>, diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;) {
         <span class="kw">let </span><span class="kw-2">mut </span>op_insts = Vec::new();
         <span class="kw">for </span>(node_id, node) <span class="kw">in </span><span class="self">self</span>.nodes() {
-            <span class="kw">let </span>Node::Operator(operator) = node <span class="kw">else </span>{
+            <span class="kw">let </span>GraphNode::Operator(operator) = node <span class="kw">else </span>{
                 <span class="kw">continue</span>;
             };
             <span class="kw">if </span><span class="self">self</span>.node_op_inst(node_id).is_some() {
@@ -1720,13 +1739,13 @@
     </span><span class="kw">pub fn </span>insert_intermediate_node(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         edge_id: GraphEdgeId,
-        new_node: Node,
+        new_node: GraphNode,
     ) -&gt; (GraphNodeId, GraphEdgeId) {
         <span class="kw">let </span>span = <span class="prelude-val">Some</span>(new_node.span());
 
         <span class="comment">// Make corresponding operator instance (if `node` is an operator).
         </span><span class="kw">let </span>op_inst_opt = <span class="lifetime">&#39;oc</span>: {
-            <span class="kw">let </span>Node::Operator(operator) = <span class="kw-2">&amp;</span>new_node <span class="kw">else </span>{
+            <span class="kw">let </span>GraphNode::Operator(operator) = <span class="kw-2">&amp;</span>new_node <span class="kw">else </span>{
                 <span class="kw">break </span><span class="lifetime">&#39;oc </span><span class="prelude-val">None</span>;
             };
             <span class="kw">let </span><span class="prelude-val">Some</span>(op_constraints) = find_op_op_constraints(operator) <span class="kw">else </span>{
@@ -1808,7 +1827,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>to_remove = Vec::new();
 
         <span class="kw">for </span>(nid, node) <span class="kw">in </span><span class="self">self</span>.nodes() {
-            <span class="kw">if </span><span class="macro">matches!</span>(node, Node::ModuleBoundary { .. }) {
+            <span class="kw">if </span><span class="macro">matches!</span>(node, GraphNode::ModuleBoundary { .. }) {
                 to_remove.push(nid);
             }
         }
@@ -1847,7 +1866,7 @@
         {
             <span class="comment">// get module boundary node
             </span><span class="kw">match </span><span class="self">self</span>.node(nid) {
-                Node::ModuleBoundary { input, import_expr } =&gt; {
+                GraphNode::ModuleBoundary { input, import_expr } =&gt; {
                     <span class="kw">if </span><span class="kw-2">*</span>input {
                         <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic {
                             span: <span class="kw-2">*</span>import_expr,
@@ -1899,6 +1918,11 @@
         (src, dst)
     }
 
+    <span class="doccomment">/// Gets the type of the edge.
+    </span><span class="kw">pub fn </span>edge_type(<span class="kw-2">&amp;</span><span class="self">self</span>, edge_id: GraphEdgeId) -&gt; GraphEdgeType {
+        <span class="self">self</span>.edge_types[edge_id]
+    }
+
     <span class="doccomment">/// Get the source and destination ports for an edge: `(src &amp;PortIndexValue, dst &amp;PortIndexValue)`.
     </span><span class="kw">pub fn </span>edge_ports(<span class="kw-2">&amp;</span><span class="self">self</span>, edge_id: GraphEdgeId) -&gt; (<span class="kw-2">&amp;</span>PortIndexValue, <span class="kw-2">&amp;</span>PortIndexValue) {
         <span class="kw">let </span>(src_port, dst_port) = <span class="self">self</span>.ports.get(edge_id).expect(<span class="string">&quot;Edge not found.&quot;</span>);
@@ -1924,12 +1948,14 @@
     <span class="doccomment">/// Insert an edge between nodes thru the given ports.
     </span><span class="kw">pub fn </span>insert_edge(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        edge_type: GraphEdgeType,
         src: GraphNodeId,
         src_port: PortIndexValue,
         dst: GraphNodeId,
         dst_port: PortIndexValue,
     ) -&gt; GraphEdgeId {
         <span class="kw">let </span>edge_id = <span class="self">self</span>.graph.insert_edge(src, dst);
+        <span class="self">self</span>.edge_types.insert(edge_id, edge_type);
         <span class="self">self</span>.ports.insert(edge_id, (src_port, dst_port));
         edge_id
     }
@@ -2036,19 +2062,19 @@
     <span class="doccomment">/// Helper to generate a deterministic `Ident` for the given node.
     </span><span class="kw">fn </span>node_as_ident(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId, is_pred: bool) -&gt; Ident {
         <span class="kw">let </span>name = <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id] {
-            Node::Operator(<span class="kw">_</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;op_{:?}&quot;</span>, node_id.data()),
-            Node::Handoff { .. } =&gt; <span class="macro">format!</span>(
+            GraphNode::Operator(<span class="kw">_</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;op_{:?}&quot;</span>, node_id.data()),
+            GraphNode::Handoff { .. } =&gt; <span class="macro">format!</span>(
                 <span class="string">&quot;hoff_{:?}_{}&quot;</span>,
                 node_id.data(),
                 <span class="kw">if </span>is_pred { <span class="string">&quot;recv&quot; </span>} <span class="kw">else </span>{ <span class="string">&quot;send&quot; </span>}
             ),
-            Node::ModuleBoundary { .. } =&gt; <span class="macro">panic!</span>(),
+            GraphNode::ModuleBoundary { .. } =&gt; <span class="macro">panic!</span>(),
         };
         <span class="kw">let </span>span = <span class="kw">match </span>(is_pred, <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id]) {
-            (<span class="kw">_</span>, Node::Operator(operator)) =&gt; operator.span(),
-            (<span class="bool-val">true</span>, <span class="kw-2">&amp;</span>Node::Handoff { src_span, .. }) =&gt; src_span,
-            (<span class="bool-val">false</span>, <span class="kw-2">&amp;</span>Node::Handoff { dst_span, .. }) =&gt; dst_span,
-            (<span class="kw">_</span>, Node::ModuleBoundary { .. }) =&gt; <span class="macro">panic!</span>(),
+            (<span class="kw">_</span>, GraphNode::Operator(operator)) =&gt; operator.span(),
+            (<span class="bool-val">true</span>, <span class="kw-2">&amp;</span>GraphNode::Handoff { src_span, .. }) =&gt; src_span,
+            (<span class="bool-val">false</span>, <span class="kw-2">&amp;</span>GraphNode::Handoff { dst_span, .. }) =&gt; dst_span,
+            (<span class="kw">_</span>, GraphNode::ModuleBoundary { .. }) =&gt; <span class="macro">panic!</span>(),
         };
         Ident::new(<span class="kw-2">&amp;*</span>name, span)
     }
@@ -2070,7 +2096,7 @@
 
         <span class="comment">// For each handoff node, add it to the `send`/`recv` lists for the corresponding subgraphs.
         </span><span class="kw">for </span>(hoff_id, node) <span class="kw">in </span><span class="self">self</span>.nodes() {
-            <span class="kw">if </span>!<span class="macro">matches!</span>(node, Node::Handoff { .. }) {
+            <span class="kw">if </span>!<span class="macro">matches!</span>(node, GraphNode::Handoff { .. }) {
                 <span class="kw">continue</span>;
             }
             <span class="comment">// Receivers from the handoff. (Should really only be one).
@@ -2103,9 +2129,9 @@
             </span>.nodes
             .iter()
             .filter_map(|(node_id, node)| <span class="kw">match </span>node {
-                Node::Operator(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
-                <span class="kw-2">&amp;</span>Node::Handoff { src_span, dst_span } =&gt; <span class="prelude-val">Some</span>((node_id, (src_span, dst_span))),
-                Node::ModuleBoundary { .. } =&gt; <span class="macro">panic!</span>(),
+                GraphNode::Operator(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
+                <span class="kw-2">&amp;</span>GraphNode::Handoff { src_span, dst_span } =&gt; <span class="prelude-val">Some</span>((node_id, (src_span, dst_span))),
+                GraphNode::ModuleBoundary { .. } =&gt; <span class="macro">panic!</span>(),
             })
             .map(|(node_id, (src_span, dst_span))| {
                 <span class="kw">let </span>ident_send = Ident::new(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;hoff_{:?}_send&quot;</span>, node_id.data()), dst_span);
@@ -2167,7 +2193,7 @@
                         .iter()
                         .position(|<span class="kw-2">&amp;</span>node_id| {
                             node_color(
-                                <span class="macro">matches!</span>(<span class="self">self</span>.nodes[node_id], Node::Handoff { .. }),
+                                <span class="macro">matches!</span>(<span class="self">self</span>.nodes[node_id], GraphNode::Handoff { .. }),
                                 <span class="self">self</span>.graph.degree_in(node_id),
                                 <span class="self">self</span>.graph.degree_out(node_id),
                             )
@@ -2181,7 +2207,7 @@
 
                     <span class="kw">for </span>(idx, <span class="kw-2">&amp;</span>node_id) <span class="kw">in </span>nodes_iter.enumerate() {
                         <span class="kw">let </span>node = <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id];
-                        <span class="macro">assert!</span>(<span class="macro">matches!</span>(node, Node::Operator(<span class="kw">_</span>)), <span class="string">&quot;Handoffs are not part of subgraphs.&quot;</span>);
+                        <span class="macro">assert!</span>(<span class="macro">matches!</span>(node, GraphNode::Operator(<span class="kw">_</span>)), <span class="string">&quot;Handoffs are not part of subgraphs.&quot;</span>);
                         <span class="kw">let </span>op_inst = <span class="kw-2">&amp;</span><span class="self">self</span>.operator_instances[node_id];
 
                         <span class="kw">let </span>op_span = node.span();
@@ -2469,7 +2495,7 @@
             .filter_map(|(node_id, node)| {
                 <span class="kw">let </span>inn_degree = <span class="self">self</span>.node_degree_in(node_id);
                 <span class="kw">let </span>out_degree = <span class="self">self</span>.node_degree_out(node_id);
-                <span class="kw">let </span>is_handoff = <span class="macro">matches!</span>(node, Node::Handoff { .. });
+                <span class="kw">let </span>is_handoff = <span class="macro">matches!</span>(node, GraphNode::Handoff { .. });
                 <span class="kw">let </span>op_color = node_color(is_handoff, inn_degree, out_degree);
                 op_color.map(|op_color| (node_id, op_color))
             })
@@ -2484,7 +2510,7 @@
                     <span class="kw">let </span>inn_degree = <span class="self">self</span>.node_degree_in(node_id);
                     <span class="kw">let </span>out_degree = <span class="self">self</span>.node_degree_out(node_id);
                     <span class="kw">let </span>node = <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id];
-                    <span class="kw">let </span>is_handoff = <span class="macro">matches!</span>(node, Node::Handoff { .. });
+                    <span class="kw">let </span>is_handoff = <span class="macro">matches!</span>(node, GraphNode::Handoff { .. });
                     node_color(is_handoff, inn_degree, out_degree)
                         .map(|color| Color::Pull != color)
                         .unwrap_or(<span class="bool-val">false</span>)
@@ -2599,7 +2625,7 @@
         </span><span class="kw">let </span><span class="kw-2">mut </span>skipped_handoffs = BTreeSet::new();
         <span class="kw">let </span><span class="kw-2">mut </span>subgraph_handoffs = &lt;BTreeMap&lt;GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt;&gt;::new();
         <span class="kw">for </span>(node_id, node) <span class="kw">in </span><span class="self">self</span>.nodes() {
-            <span class="kw">if </span><span class="macro">matches!</span>(node, Node::Handoff { .. }) {
+            <span class="kw">if </span><span class="macro">matches!</span>(node, GraphNode::Handoff { .. }) {
                 <span class="kw">if </span>write_config.no_handoffs {
                     skipped_handoffs.insert(node_id);
                     <span class="kw">continue</span>;
@@ -2705,11 +2731,11 @@
     </span><span class="kw">pub fn </span>write_surface_syntax(<span class="kw-2">&amp;</span><span class="self">self</span>, write: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>std::fmt::Write) -&gt; std::fmt::Result {
         <span class="kw">for </span>(key, node) <span class="kw">in </span><span class="self">self</span>.nodes.iter() {
             <span class="kw">match </span>node {
-                Node::Operator(op) =&gt; {
+                GraphNode::Operator(op) =&gt; {
                     <span class="macro">writeln!</span>(write, <span class="string">&quot;{:?} = {};&quot;</span>, key.data(), op.to_token_stream())<span class="question-mark">?</span>;
                 }
-                Node::Handoff { .. } =&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;HANDOFF IN FLAT GRAPH.&quot;</span>),
-                Node::ModuleBoundary { .. } =&gt; <span class="macro">panic!</span>(),
+                GraphNode::Handoff { .. } =&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;HANDOFF IN FLAT GRAPH.&quot;</span>),
+                GraphNode::ModuleBoundary { .. } =&gt; <span class="macro">panic!</span>(),
             }
         }
         <span class="macro">writeln!</span>(write)<span class="question-mark">?</span>;
@@ -2731,7 +2757,7 @@
         <span class="macro">writeln!</span>(write, <span class="string">&quot;flowchart TB&quot;</span>)<span class="question-mark">?</span>;
         <span class="kw">for </span>(key, node) <span class="kw">in </span><span class="self">self</span>.nodes.iter() {
             <span class="kw">match </span>node {
-                Node::Operator(operator) =&gt; <span class="macro">writeln!</span>(
+                GraphNode::Operator(operator) =&gt; <span class="macro">writeln!</span>(
                     write,
                     <span class="string">&quot;    %% {span}\n    {id:?}[\&quot;{row_col} &lt;tt&gt;{code}&lt;/tt&gt;\&quot;]&quot;</span>,
                     span = PrettySpan(node.span()),
@@ -2746,10 +2772,10 @@
                         .replace(<span class="string">&#39;&quot;&#39;</span>, <span class="string">&quot;&amp;quot;&quot;</span>)
                         .replace(<span class="string">&#39;\n&#39;</span>, <span class="string">&quot;&lt;br&gt;&quot;</span>),
                 ),
-                Node::Handoff { .. } =&gt; {
+                GraphNode::Handoff { .. } =&gt; {
                     <span class="macro">writeln!</span>(write, <span class="string">r#&quot;    {:?}{{&quot;{}&quot;}}&quot;#</span>, key.data(), HANDOFF_NODE_STR)
                 }
-                Node::ModuleBoundary { .. } =&gt; {
+                GraphNode::ModuleBoundary { .. } =&gt; {
                     <span class="macro">writeln!</span>(
                         write,
                         <span class="string">r#&quot;    {:?}{{&quot;{}&quot;}}&quot;#</span>,
