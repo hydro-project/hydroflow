@@ -10,7 +10,7 @@ license = "Apache-2.0"
 [dependencies]
 
 [dev-dependencies]
-criterion = { version = "0.4", features = [ "async_tokio", "html_reports" ] }
+criterion = { version = "0.5", features = [ "async_tokio", "html_reports" ] }
 hydroflow = { path = "../hydroflow" }
 lazy_static = "1.4.0"
 # pprof = { version = "0.6", features = [ "flamegraph", "criterion" ] }
