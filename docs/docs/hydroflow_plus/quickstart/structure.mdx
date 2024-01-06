@@ -13,8 +13,10 @@ Hydroflow+ programs require special structure to support code generation and dis
 We recommend using the Hydroflow+ template to get started with a new project. The template comes with a pre-configured build system and the following example pre-implemented.
 
 ```bash
-$ cargo install cargo-generate
-$ cargo generate hydro-project/hydroflow-plus-template
+#shell-command-next-line
+cargo install cargo-generate
+#shell-command-next-line
+cargo generate hydro-project/hydroflow-plus-template
 ```
 
 :::
@@ -90,7 +92,8 @@ async fn main() {
 We can now run this binary to see the output of our dataflow:
 
 ```bash
-$ cargo run -p flow --bin first_ten
+#shell-command-next-line
+cargo run -p flow --bin first_ten
 0
 1
 2
