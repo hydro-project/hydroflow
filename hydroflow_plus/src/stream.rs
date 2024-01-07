@@ -10,7 +10,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use stageleft::{IntoQuotedMut, Quoted};
+use stageleft::{q, IntoQuotedMut, Quoted};
 use syn::parse_quote;
 use syn::visit_mut::VisitMut;
 
@@ -46,11 +46,15 @@ pub struct Stream<'a, T, W, N: Location<'a>> {
     pub(crate) node: N,
     pub(crate) next_id: &'a RefCell<usize>,
     pub(crate) builders: &'a Builders,
+
+    /// Does this stream represent a delta of the underlying data?
+    /// i.e. is the true stream supposed to have a `persist()` at the end
+    pub(crate) is_delta: bool,
     pub(crate) _phantom: PhantomData<(&'a mut &'a (), T, W)>,
 }
 
 impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
-    fn pipeline_op<U, W2>(&self, pipeline: Pipeline) -> Stream<'a, U, W2, N> {
+    fn pipeline_op<U, W2>(&self, pipeline: Pipeline, produces_delta: bool) -> Stream<'a, U, W2, N> {
         let next_id = {
             let mut next_id = self.next_id.borrow_mut();
             let id = *next_id;
@@ -76,22 +80,42 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
             node: self.node.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            is_delta: produces_delta,
             _phantom: PhantomData,
+        }
+    }
+
+    /// Reifies the stream to ensure that it is not producing deltas.
+    pub(crate) fn ensure_concrete(&self) -> Stream<'a, T, Windowed, N> {
+        if self.is_delta {
+            self.pipeline_op(parse_quote!(persist()), false)
+        } else {
+            self.assume_windowed()
         }
     }
 
     pub fn map<U, F: Fn(T) -> U + 'a>(&self, f: impl IntoQuotedMut<'a, F>) -> Stream<'a, U, W, N> {
         let f = f.splice();
-        self.pipeline_op(parse_quote!(map(#f)))
+        self.pipeline_op(parse_quote!(map(#f)), self.is_delta)
+    }
+
+    pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
+        &self,
+        f: impl IntoQuotedMut<'a, F>,
+    ) -> Stream<'a, U, W, N> {
+        let f = f.splice();
+        self.pipeline_op(parse_quote!(flat_map(#f)), self.is_delta)
     }
 
     pub fn enumerate(&self) -> Stream<'a, (usize, T), W, N> {
-        self.pipeline_op(parse_quote!(enumerate()))
+        self.ensure_concrete()
+            .pipeline_op(parse_quote!(enumerate()), self.is_delta)
     }
 
     pub fn inspect<F: Fn(&T) + 'a>(&self, f: impl IntoQuotedMut<'a, F>) -> Stream<'a, T, W, N> {
         let f = f.splice();
-        self.pipeline_op(parse_quote!(inspect(#f)))
+        self.ensure_concrete()
+            .pipeline_op(parse_quote!(inspect(#f)), self.is_delta)
     }
 
     pub fn filter<F: Fn(&T) -> bool + 'a>(
@@ -99,7 +123,7 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
         f: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, T, W, N> {
         let f = f.splice();
-        self.pipeline_op(parse_quote!(filter(#f)))
+        self.pipeline_op(parse_quote!(filter(#f)), self.is_delta)
     }
 
     pub fn filter_map<U, F: Fn(T) -> Option<U> + 'a>(
@@ -107,7 +131,7 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
         f: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, U, W, N> {
         let f = f.splice();
-        self.pipeline_op(parse_quote!(filter_map(#f)))
+        self.pipeline_op(parse_quote!(filter_map(#f)), self.is_delta)
     }
 
     // TODO(shadaj): should allow for differing windows, using strongest one
@@ -134,9 +158,36 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
             .entry(self.node.id())
             .or_default();
 
-        builder.add_statement(parse_quote! {
-            #ident = cross_join::<'tick, 'tick>() -> tee();
-        });
+        let output_delta = match (self.is_delta, other.is_delta) {
+            (true, true) => {
+                builder.add_statement(parse_quote! {
+                    #ident = cross_join::<'static, 'static>() -> tee();
+                });
+
+                false // TODO(shadaj): cross_join already replays?
+            }
+            (true, false) => {
+                builder.add_statement(parse_quote! {
+                    #ident = cross_join::<'static, 'tick>() -> tee();
+                });
+
+                false
+            }
+            (false, true) => {
+                builder.add_statement(parse_quote! {
+                    #ident = cross_join::<'tick, 'static>() -> tee();
+                });
+
+                false
+            }
+            (false, false) => {
+                builder.add_statement(parse_quote! {
+                    #ident = cross_join::<'tick, 'tick>() -> tee();
+                });
+
+                false
+            }
+        };
 
         builder.add_statement(parse_quote! {
             #self_ident -> [0]#ident;
@@ -151,6 +202,7 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
             node: self.node.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            is_delta: output_delta,
             _phantom: PhantomData,
         }
     }
@@ -167,8 +219,8 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
             id
         };
 
-        let self_ident = &self.ident;
-        let other_ident = &other.ident;
+        let self_ident = &self.ensure_concrete().ident;
+        let other_ident = &other.ensure_concrete().ident;
         let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
 
         let mut builders = self.builders.borrow_mut();
@@ -195,12 +247,13 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
             node: self.node.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            is_delta: false,
             _phantom: PhantomData,
         }
     }
 
     pub fn for_each<F: Fn(T) + 'a>(&self, f: impl IntoQuotedMut<'a, F>) {
-        let self_ident = &self.ident;
+        let self_ident = &self.ensure_concrete().ident;
         let f = f.splice();
 
         self.builders
@@ -215,7 +268,7 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
     }
 
     pub fn dest_sink<S: Unpin + Sink<T> + 'a>(&self, sink: impl Quoted<'a, S>) {
-        let self_ident = &self.ident;
+        let self_ident = &self.ensure_concrete().ident;
         let sink = sink.splice();
 
         self.builders
@@ -229,28 +282,41 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
             });
     }
 
+    pub fn all_ticks(&self) -> Stream<'a, T, Windowed, N> {
+        if self.is_delta {
+            self.ensure_concrete().all_ticks()
+        } else {
+            Stream {
+                ident: self.ident.clone(),
+                node: self.node.clone(),
+                next_id: self.next_id,
+                builders: self.builders,
+                is_delta: true,
+                _phantom: PhantomData,
+            }
+        }
+    }
+
     pub fn assume_windowed(&self) -> Stream<'a, T, Windowed, N> {
         Stream {
             ident: self.ident.clone(),
             node: self.node.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            is_delta: self.is_delta,
             _phantom: PhantomData,
         }
     }
 }
 
 impl<'a, T, N: Location<'a>> Stream<'a, T, Async, N> {
-    pub fn all_ticks(&self) -> Stream<'a, T, Windowed, N> {
-        self.pipeline_op(parse_quote!(persist()))
-    }
-
     pub fn tick_batch(&self) -> Stream<'a, T, Windowed, N> {
         Stream {
             ident: self.ident.clone(),
             node: self.node.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            is_delta: self.is_delta,
             _phantom: PhantomData,
         }
     }
@@ -264,24 +330,49 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
     ) -> Stream<'a, A, Windowed, N> {
         let init = init.splice();
         let comb = comb.splice();
-        self.pipeline_op(parse_quote!(fold::<'tick>(#init, #comb)))
+
+        if self.is_delta {
+            self.pipeline_op(parse_quote!(fold::<'static>(#init, #comb)), false)
+        } else {
+            self.pipeline_op(parse_quote!(fold::<'tick>(#init, #comb)), false)
+        }
     }
 
     pub fn delta(&self) -> Stream<'a, T, Windowed, N> {
-        self.pipeline_op(parse_quote!(multiset_delta()))
+        if self.is_delta {
+            Stream {
+                ident: self.ident.clone(),
+                node: self.node.clone(),
+                next_id: self.next_id,
+                builders: self.builders,
+                is_delta: false,
+                _phantom: PhantomData,
+            }
+        } else {
+            self.pipeline_op(parse_quote!(multiset_delta()), false)
+        }
     }
 
     pub fn unique(&self) -> Stream<'a, T, Windowed, N>
     where
         T: Eq + Hash,
     {
-        self.pipeline_op(parse_quote!(unique::<'tick>()))
+        self.ensure_concrete()
+            .pipeline_op(parse_quote!(unique::<'tick>()), false)
+    }
+
+    pub fn sample_every(
+        &self,
+        duration: impl Quoted<'a, std::time::Duration> + Copy + 'a,
+    ) -> Stream<'a, T, Windowed, N> {
+        self.cross_product(&self.node.source_interval(duration).tick_batch())
+            .map(q!(|(a, _)| a))
     }
 }
 
 impl<'a, T: Clone, W, N: Location<'a>> Stream<'a, &T, W, N> {
     pub fn cloned(&self) -> Stream<'a, T, W, N> {
-        self.pipeline_op(parse_quote!(map(|d| d.clone())))
+        self.pipeline_op(parse_quote!(map(|d| d.clone())), self.is_delta)
     }
 }
 
@@ -313,9 +404,36 @@ impl<'a, K, V1, W, N: Location<'a>> Stream<'a, (K, V1), W, N> {
             .entry(self.node.id())
             .or_default();
 
-        builder.add_statement(parse_quote! {
-            #ident = join::<'tick, 'tick>() -> tee();
-        });
+        let output_delta = match (self.is_delta, n.is_delta) {
+            (true, true) => {
+                builder.add_statement(parse_quote! {
+                    #ident = join::<'static, 'static>() -> tee();
+                });
+
+                false // TODO(shadaj): join already replays?
+            }
+            (true, false) => {
+                builder.add_statement(parse_quote! {
+                    #ident = join::<'static, 'tick>() -> tee();
+                });
+
+                false
+            }
+            (false, true) => {
+                builder.add_statement(parse_quote! {
+                    #ident = join::<'tick, 'static>() -> tee();
+                });
+
+                false
+            }
+            (false, false) => {
+                builder.add_statement(parse_quote! {
+                    #ident = join::<'tick, 'tick>() -> tee();
+                });
+
+                false
+            }
+        };
 
         builder.add_statement(parse_quote! {
             #self_ident -> [0]#ident;
@@ -330,6 +448,7 @@ impl<'a, K, V1, W, N: Location<'a>> Stream<'a, (K, V1), W, N> {
             node: self.node.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            is_delta: output_delta,
             _phantom: PhantomData,
         }
     }
@@ -347,8 +466,9 @@ fn get_this_crate() -> TokenStream {
     }
 }
 
+// TODO(shadaj): has to be public due to temporary stageleft limitations
 /// Rewrites use of alloc::string::* to use std::string::*
-struct RewriteAlloc {}
+pub struct RewriteAlloc {}
 impl VisitMut for RewriteAlloc {
     fn visit_path_mut(&mut self, i: &mut syn::Path) {
         if i.segments.iter().take(2).collect::<Vec<_>>()
@@ -519,6 +639,7 @@ impl<'a, W, N: Location<'a>> Stream<'a, Bytes, W, N> {
             node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            is_delta: self.is_delta,
             _phantom: PhantomData,
         }
     }
@@ -543,6 +664,7 @@ impl<'a, W, N: Location<'a>> Stream<'a, Bytes, W, N> {
             node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            is_delta: self.is_delta,
             _phantom: PhantomData,
         }
     }
@@ -597,6 +719,7 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N
             node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            is_delta: self.is_delta,
             _phantom: PhantomData,
         }
     }
@@ -626,6 +749,7 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N
             node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            is_delta: self.is_delta,
             _phantom: PhantomData,
         }
     }
@@ -678,6 +802,7 @@ impl<'a, W, N: Location<'a>> Stream<'a, (u32, Bytes), W, N> {
             node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            is_delta: self.is_delta,
             _phantom: PhantomData,
         }
     }
@@ -706,6 +831,7 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, (u32, T
             node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            is_delta: self.is_delta,
             _phantom: PhantomData,
         }
     }
@@ -732,6 +858,7 @@ impl<'a, W, N: Location<'a>> Stream<'a, (u32, Bytes), W, N> {
             node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            is_delta: self.is_delta,
             _phantom: PhantomData,
         }
     }
@@ -763,6 +890,7 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, (u32, T
             node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            is_delta: self.is_delta,
             _phantom: PhantomData,
         }
     }

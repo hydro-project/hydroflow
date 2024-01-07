@@ -1,3 +1,5 @@
+stageleft::stageleft_no_entry_crate!();
+
 use std::marker::PhantomData;
 
 use hydroflow::scheduled::context::Context;
