@@ -1,4 +1,5 @@
 var srcIndex = JSON.parse('{\
+"compute_pi":["",[],["compute_pi.rs"]],\
 "first_ten_distributed":["",[],["first_ten_distributed.rs"]],\
 "hydro_cli":["",[],["cli.rs","lib.rs"]],\
 "hydro_deploy":["",[["hydroflow_crate",[],["build.rs","mod.rs","ports.rs","service.rs"]],["localhost",[],["launched_binary.rs","mod.rs"]]],["custom_service.rs","deployment.rs","gcp.rs","lib.rs","progress.rs","ssh.rs","terraform.rs","util.rs"]],\

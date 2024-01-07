@@ -226,6 +226,9 @@
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
 <a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashSet;
 
 <span class="kw">mod </span>prelude;
@@ -343,7 +346,10 @@
             syn::Pat::Ident(pat_ident) =&gt; {
                 <span class="self">self</span>.current_scope.insert_term(pat_ident.ident.clone());
             }
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Local variables must be identifiers&quot;</span>),
+            syn::Pat::Type(pat_type) =&gt; {
+                <span class="self">self</span>.visit_pat(<span class="kw-2">&amp;</span>pat_type.pat);
+            }
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Local variables must be identifiers, got {:?}&quot;</span>, i.pat),
         }
     }
 

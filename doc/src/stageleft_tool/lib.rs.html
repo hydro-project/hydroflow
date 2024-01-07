@@ -237,6 +237,7 @@
 <a href="#237" id="237">237</a>
 <a href="#238" id="238">238</a>
 <a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>std::{env, fs};
 
@@ -425,7 +426,8 @@
                     <span class="kw">return</span>;
                 }
             } <span class="kw">else if let </span>syn::Item::Impl(e) = i {
-                <span class="kw-2">*</span>i = <span class="macro">parse_quote!</span>(
+                <span class="comment">// TODO(shadaj): emit impls if the struct is private
+                </span><span class="kw-2">*</span>i = <span class="macro">parse_quote!</span>(
                     <span class="attr">#[cfg(feature = <span class="string">&quot;macro&quot;</span>)]
                     </span>#e
                 );

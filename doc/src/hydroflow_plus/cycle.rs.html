@@ -33,6 +33,7 @@
 <a href="#33" id="33">33</a>
 <a href="#34" id="34">34</a>
 <a href="#35" id="35">35</a>
+<a href="#36" id="36">36</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 
 <span class="kw">use </span>syn::parse_quote;
@@ -55,7 +56,8 @@
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; HfCycle&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
     <span class="kw">pub fn </span>complete(<span class="self">self</span>, stream: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;) {
         <span class="kw">let </span>ident = <span class="self">self</span>.ident;
-        <span class="kw">let </span>stream_ident = stream.ident.clone();
+        <span class="comment">// TODO(shadaj): avoid having to concretize within cycles
+        </span><span class="kw">let </span>stream_ident = stream.ensure_concrete().ident.clone();
 
         <span class="self">self</span>.builders
             .borrow_mut()

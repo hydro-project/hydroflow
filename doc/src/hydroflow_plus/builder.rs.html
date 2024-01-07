@@ -227,12 +227,12 @@
         (<span class="kw-2">&amp;</span><span class="self">self</span>.next_id, <span class="kw-2">&amp;</span><span class="self">self</span>.builders)
     }
 
-    <span class="kw">pub fn </span>process(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;) -&gt; D::Process {
+    <span class="kw">pub fn </span>process(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;) -&gt; D::Process {
         <span class="kw">let </span><span class="kw-2">mut </span>next_node_id = <span class="self">self</span>.next_node_id.borrow_mut();
         <span class="kw">let </span>id = <span class="kw-2">*</span>next_node_id;
         <span class="kw-2">*</span>next_node_id += <span class="number">1</span>;
 
-        <span class="kw">let </span>node = builder.build(id, <span class="self">self</span>, <span class="kw-2">&amp;mut </span><span class="self">self</span>.meta.borrow_mut());
+        <span class="kw">let </span>node = spec.build(id, <span class="self">self</span>, <span class="kw-2">&amp;mut </span><span class="self">self</span>.meta.borrow_mut());
         <span class="self">self</span>.nodes.borrow_mut().push(node.clone());
 
         <span class="self">self</span>.update_metas();
@@ -240,12 +240,12 @@
         node
     }
 
-    <span class="kw">pub fn </span>cluster(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, builder: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;) -&gt; D::Cluster {
+    <span class="kw">pub fn </span>cluster(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;) -&gt; D::Cluster {
         <span class="kw">let </span><span class="kw-2">mut </span>next_node_id = <span class="self">self</span>.next_node_id.borrow_mut();
         <span class="kw">let </span>id = <span class="kw-2">*</span>next_node_id;
         <span class="kw-2">*</span>next_node_id += <span class="number">1</span>;
 
-        <span class="kw">let </span>cluster = builder.build(id, <span class="self">self</span>, <span class="kw-2">&amp;mut </span><span class="self">self</span>.meta.borrow_mut());
+        <span class="kw">let </span>cluster = spec.build(id, <span class="self">self</span>, <span class="kw-2">&amp;mut </span><span class="self">self</span>.meta.borrow_mut());
         <span class="self">self</span>.clusters.borrow_mut().push(cluster.clone());
 
         <span class="self">self</span>.update_metas();

@@ -140,11 +140,17 @@
 <a href="#140" id="140">140</a>
 <a href="#141" id="141">141</a>
 <a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::mem::MaybeUninit;
 
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
 <span class="kw">use </span>quote::quote;
+
+<span class="kw">use </span><span class="kw">crate</span>::Quoted;
 
 <span class="kw">pub fn </span>get_final_crate_name(crate_name: <span class="kw-2">&amp;</span>str) -&gt; TokenStream {
     <span class="kw">let </span>final_crate = proc_macro_crate::crate_name(crate_name)
@@ -225,6 +231,8 @@
                     (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="macro">quote!</span>(#<span class="self">self</span>)))
                 }
             }
+
+            <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Quoted&lt;<span class="lifetime">&#39;a</span>, <span class="macro-nonterminal">$ty</span>&gt; <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{}
         )*
     };
 }
