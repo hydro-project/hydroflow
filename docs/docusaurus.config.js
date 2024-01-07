@@ -104,6 +104,9 @@ const config = {
     ({
       // Replace with your project's social card
       image: 'img/social-card.png',
+      colorMode: {
+        respectPrefersColorScheme: true,
+      },
       navbar: {
         title: 'Hydro',
         logo: {
