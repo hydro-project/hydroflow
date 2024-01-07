@@ -186,6 +186,7 @@ impl VisitMut for GenFinalPubVistor {
                     return;
                 }
             } else if let syn::Item::Impl(e) = i {
+                // TODO(shadaj): emit impls if the struct is private
                 *i = parse_quote!(
                     #[cfg(feature = "macro")]
                     #e

@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use hydroflow_plus::*;
 use stageleft::*;
 
@@ -66,6 +68,52 @@ pub fn map_reduce<'a, D: Deploy<'a>>(
     (process, cluster)
 }
 
+pub fn compute_pi<'a, D: Deploy<'a>>(
+    flow: &'a FlowBuilder<'a, D>,
+    process_spec: &impl ProcessSpec<'a, D>,
+    cluster_spec: &impl ClusterSpec<'a, D>,
+) -> D::Process {
+    let cluster = flow.cluster(cluster_spec);
+    let process = flow.process(process_spec);
+
+    let trials = cluster
+        .spin_batch(q!(8192))
+        .map(q!(|_| rand::random::<(f64, f64)>()))
+        .map(q!(|(x, y)| x * x + y * y < 1.0))
+        .fold(
+            q!(|| (0u64, 0u64)),
+            q!(|(inside, total), sample_inside| {
+                if sample_inside {
+                    *inside += 1;
+                }
+
+                *total += 1;
+            }),
+        );
+
+    trials
+        .send_bincode_tagged(&process)
+        .map(q!(|(_mid, v)| v))
+        .all_ticks()
+        .fold(
+            q!(|| (0, 0)),
+            q!(|(inside, total), (inside_, total_)| {
+                *inside += inside_;
+                *total += total_;
+            }),
+        )
+        .sample_every(q!(Duration::from_secs(1)))
+        .for_each(q!(|(inside, total)| {
+            println!(
+                "pi: {} ({} trials)",
+                4.0 * inside as f64 / total as f64,
+                total
+            );
+        }));
+
+    process
+}
+
 use hydroflow_plus::util::cli::HydroCLI;
 use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
@@ -93,6 +141,15 @@ pub fn map_reduce_runtime<'a>(
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = map_reduce(flow, &cli, &cli);
+    flow.build(q!(cli.meta.subgraph_id))
+}
+
+#[stageleft::entry]
+pub fn compute_pi_runtime<'a>(
+    flow: &'a FlowBuilder<'a, CLIRuntime>,
+    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
+) -> impl Quoted<'a, Hydroflow<'a>> {
+    let _ = compute_pi(flow, &cli, &cli);
     flow.build(q!(cli.meta.subgraph_id))
 }
 

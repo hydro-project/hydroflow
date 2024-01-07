@@ -20,7 +20,8 @@ pub struct HfCycle<'a, T, W, N: Location<'a>> {
 impl<'a, T, W, N: Location<'a>> HfCycle<'a, T, W, N> {
     pub fn complete(self, stream: &Stream<'a, T, W, N>) {
         let ident = self.ident;
-        let stream_ident = stream.ident.clone();
+        // TODO(shadaj): avoid having to concretize within cycles
+        let stream_ident = stream.ensure_concrete().ident.clone();
 
         self.builders
             .borrow_mut()
