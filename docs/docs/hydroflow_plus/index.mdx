@@ -11,12 +11,15 @@ The main logic of Hydroflow+ programs manipulates **streams**, which capture inf
 Hydroflow+ requires a particular workspace setup, as any crate that uses Hydroflow+ must have an supporting macro crate to drive the code generation. To get started, we recommend using the Hydroflow+ template.
 
 ```bash
-$ cargo install cargo-generate
-$ cargo generate hydro-project/hydroflow-plus-template
+#shell-command-next-line
+cargo install cargo-generate
+#shell-command-next-line
+cargo generate hydro-project/hydroflow-plus-template
 ```
 
 Then, you can test the example dataflow:
 
 ```bash
-$ cargo test
+#shell-command-next-line
+cargo test
 ```
