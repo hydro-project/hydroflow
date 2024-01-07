@@ -1565,6 +1565,7 @@ dependencies = [
  "quote",
  "serde",
  "stageleft",
+ "stageleft_tool",
  "syn 2.0.42",
 ]
 
@@ -1592,6 +1593,7 @@ dependencies = [
  "hydroflow_plus_cli_integration",
  "hydroflow_plus_test_macro",
  "insta",
+ "rand 0.8.5",
  "stageleft",
  "stageleft_tool",
  "tokio",
@@ -1603,6 +1605,7 @@ version = "0.0.0"
 dependencies = [
  "hydroflow_plus",
  "hydroflow_plus_cli_integration",
+ "rand 0.8.5",
  "stageleft",
  "stageleft_tool",
  "tokio",
