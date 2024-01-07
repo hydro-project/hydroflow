@@ -86,10 +86,18 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
                     let #ident = {
                         let mut #input = #input;
                         let #accumulator_ident = #input.next();
+
+                        #[inline(always)]
+                        /// A: accumulator type
+                        /// O: output type
+                        fn call_comb_type<A, O>(acc: &mut A, item: A, f: impl Fn(&mut A, A) -> O) -> O {
+                            f(acc, item)
+                        }
+
                         if let ::std::option::Option::Some(mut #accumulator_ident) = #accumulator_ident {
                             for #iterator_item_ident in #input {
                                 #[allow(clippy::redundant_closure_call)]
-                                (#func)(&mut #accumulator_ident, #iterator_item_ident);
+                                call_comb_type(&mut #accumulator_ident, #iterator_item_ident, #func);
                             }
 
                             ::std::option::Option::Some(#accumulator_ident)
@@ -115,10 +123,17 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
                             #input.next()
                         };
 
+                        #[inline(always)]
+                        /// A: accumulator type
+                        /// O: output type
+                        fn call_comb_type<A, O>(acc: &mut A, item: A, f: impl Fn(&mut A, A) -> O) -> O {
+                            f(acc, item)
+                        }
+
                         let #ret_ident = if let ::std::option::Option::Some(mut #accumulator_ident) = #accumulator_ident {
                             for #iterator_item_ident in #input {
                                 #[allow(clippy::redundant_closure_call)]
-                                (#func)(&mut #accumulator_ident, #iterator_item_ident);
+                                call_comb_type(&mut #accumulator_ident, #iterator_item_ident, #func);
                             }
 
                             ::std::option::Option::Some(#accumulator_ident)

@@ -4,6 +4,8 @@ use std::mem::MaybeUninit;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 
+use crate::Quoted;
+
 pub fn get_final_crate_name(crate_name: &str) -> TokenStream {
     let final_crate = proc_macro_crate::crate_name(crate_name)
         .unwrap_or_else(|_| panic!("{crate_name} should be present in `Cargo.toml`"));
@@ -83,6 +85,8 @@ macro_rules! impl_free_variable_from_literal_numeric {
                     (None, Some(quote!(#self)))
                 }
             }
+
+            impl<'a> Quoted<'a, $ty> for $ty {}
         )*
     };
 }

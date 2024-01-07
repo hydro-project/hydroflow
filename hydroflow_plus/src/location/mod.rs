@@ -1,18 +1,19 @@
 use std::cell::RefCell;
 use std::io;
 use std::marker::PhantomData;
+use std::time::Duration;
 
 use hydroflow::bytes::BytesMut;
 use hydroflow::futures::stream::Stream as FuturesStream;
 use proc_macro2::Span;
-use stageleft::Quoted;
+use stageleft::{q, Quoted};
 use syn::parse_quote;
 
 use crate::builder::Builders;
 use crate::stream::{Async, Windowed};
 use crate::{FlowBuilder, HfCycle, Stream};
 
-mod graphs;
+pub mod graphs;
 pub use graphs::*;
 
 pub mod network;
@@ -72,6 +73,48 @@ pub trait Location<'a>: Clone {
 
     fn update_meta(&mut self, meta: &Self::Meta);
 
+    fn spin(&self) -> Stream<'a, (), Async, Self> {
+        let (next_id_cell, builders) = self.flow_builder();
+
+        let next_id = {
+            let mut next_id = next_id_cell.borrow_mut();
+            let id = *next_id;
+            *next_id += 1;
+            id
+        };
+
+        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
+
+        builders
+            .borrow_mut()
+            .as_mut()
+            .unwrap()
+            .entry(self.id())
+            .or_default()
+            .add_statement(parse_quote! {
+                #ident = spin() -> tee();
+            });
+
+        Stream {
+            ident,
+            node: self.clone(),
+            next_id: next_id_cell,
+            builders,
+            is_delta: false,
+            _phantom: PhantomData,
+        }
+    }
+
+    fn spin_batch(
+        &self,
+        batch_size: impl Quoted<'a, usize> + Copy + 'a,
+    ) -> Stream<'a, (), Windowed, Self> {
+        self.spin()
+            .flat_map(q!(move |_| 0..batch_size))
+            .map(q!(|_| ()))
+            .tick_batch()
+    }
+
     fn source_stream<T, E: FuturesStream<Item = T> + Unpin>(
         &self,
         e: impl Quoted<'a, E>,
@@ -103,6 +146,7 @@ pub trait Location<'a>: Clone {
             node: self.clone(),
             next_id: next_id_cell,
             builders,
+            is_delta: false,
             _phantom: PhantomData,
         }
     }
@@ -146,6 +190,7 @@ pub trait Location<'a>: Clone {
                 node: self.clone(),
                 next_id: next_id_cell,
                 builders,
+                is_delta: false,
                 _phantom: PhantomData,
             },
         )
@@ -182,6 +227,43 @@ pub trait Location<'a>: Clone {
             node: self.clone(),
             next_id: next_id_cell,
             builders,
+            is_delta: false,
+            _phantom: PhantomData,
+        }
+    }
+
+    fn source_interval(
+        &self,
+        interval: impl Quoted<'a, Duration> + Copy + 'a,
+    ) -> Stream<'a, hydroflow::tokio::time::Instant, Async, Self> {
+        let (next_id_cell, builders) = self.flow_builder();
+
+        let next_id = {
+            let mut next_id = next_id_cell.borrow_mut();
+            let id = *next_id;
+            *next_id += 1;
+            id
+        };
+
+        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
+        let interval = interval.splice();
+
+        builders
+            .borrow_mut()
+            .as_mut()
+            .unwrap()
+            .entry(self.id())
+            .or_default()
+            .add_statement(parse_quote! {
+                #ident = source_interval(#interval) -> tee();
+            });
+
+        Stream {
+            ident,
+            node: self.clone(),
+            next_id: next_id_cell,
+            builders,
+            is_delta: false,
             _phantom: PhantomData,
         }
     }
@@ -220,6 +302,7 @@ pub trait Location<'a>: Clone {
                 node: self.clone(),
                 next_id: next_id_cell,
                 builders,
+                is_delta: false,
                 _phantom: PhantomData,
             },
         )
