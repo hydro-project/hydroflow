@@ -55,12 +55,12 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
         (&self.next_id, &self.builders)
     }
 
-    pub fn process(&'a self, builder: &impl ProcessSpec<'a, D>) -> D::Process {
+    pub fn process(&'a self, spec: &impl ProcessSpec<'a, D>) -> D::Process {
         let mut next_node_id = self.next_node_id.borrow_mut();
         let id = *next_node_id;
         *next_node_id += 1;
 
-        let node = builder.build(id, self, &mut self.meta.borrow_mut());
+        let node = spec.build(id, self, &mut self.meta.borrow_mut());
         self.nodes.borrow_mut().push(node.clone());
 
         self.update_metas();
@@ -68,12 +68,12 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
         node
     }
 
-    pub fn cluster(&'a self, builder: &impl ClusterSpec<'a, D>) -> D::Cluster {
+    pub fn cluster(&'a self, spec: &impl ClusterSpec<'a, D>) -> D::Cluster {
         let mut next_node_id = self.next_node_id.borrow_mut();
         let id = *next_node_id;
         *next_node_id += 1;
 
-        let cluster = builder.build(id, self, &mut self.meta.borrow_mut());
+        let cluster = spec.build(id, self, &mut self.meta.borrow_mut());
         self.clusters.borrow_mut().push(cluster.clone());
 
         self.update_metas();
