@@ -53,7 +53,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ca33f4bc4ed1babef42cad36cc1f51fa88be00420404e5b1e80ab1b18f7678c"
 dependencies = [
  "concurrent-queue",
- "event-listener 4.0.2",
+ "event-listener 4.0.3",
  "event-listener-strategy",
  "futures-core",
  "pin-project-lite",
@@ -89,7 +89,7 @@ dependencies = [
  "cfg-if",
  "concurrent-queue",
  "futures-io",
- "futures-lite 2.1.0",
+ "futures-lite 2.2.0",
  "parking",
  "polling 3.3.1",
  "rustix 0.38.28",
@@ -113,7 +113,7 @@ version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7125e42787d53db9dd54261812ef17e937c95a51e4d291373b670342fa44310c"
 dependencies = [
- "event-listener 4.0.2",
+ "event-listener 4.0.3",
  "event-listener-strategy",
  "pin-project-lite",
 ]
@@ -280,7 +280,7 @@ dependencies = [
  "async-task",
  "fastrand 2.0.1",
  "futures-io",
- "futures-lite 2.1.0",
+ "futures-lite 2.2.0",
  "piper",
  "tracing",
 ]
@@ -475,9 +475,9 @@ dependencies = [
 
 [[package]]
 name = "event-listener"
-version = "4.0.2"
+version = "4.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "218a870470cce1469024e9fb66b901aa983929d81304a1cdb299f28118e550d5"
+checksum = "67b215c49b2b248c855fb73579eb1f4f26c38ffdc12973e20e07b91d78d5646e"
 dependencies = [
  "concurrent-queue",
  "parking",
@@ -490,7 +490,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "958e4d70b6d5e81971bebec42271ec641e7ff4e170a6fa605f2b8a8b65cb97d3"
 dependencies = [
- "event-listener 4.0.2",
+ "event-listener 4.0.3",
  "pin-project-lite",
 ]
 
@@ -599,9 +599,9 @@ dependencies = [
 
 [[package]]
 name = "futures-lite"
-version = "2.1.0"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aeee267a1883f7ebef3700f262d2d54de95dfaf38189015a74fdc4e0c7ad8143"
+checksum = "445ba825b27408685aaecefd65178908c36c6e96aaf6d8599419d46e624192ba"
 dependencies = [
  "futures-core",
  "pin-project-lite",
@@ -704,7 +704,7 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 [[package]]
 name = "hydro_deploy"
 version = "0.5.0"
-source = "git+https://github.com/hydro-project/hydroflow.git#a0af314a032096fc94b9f4aabb21aadc8184fb30"
+source = "git+https://github.com/hydro-project/hydroflow.git#af6e3be60fdb69ceec1613347910f4dd49980d34"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -735,7 +735,7 @@ dependencies = [
 [[package]]
 name = "hydroflow"
 version = "0.5.0"
-source = "git+https://github.com/hydro-project/hydroflow.git#a0af314a032096fc94b9f4aabb21aadc8184fb30"
+source = "git+https://github.com/hydro-project/hydroflow.git#af6e3be60fdb69ceec1613347910f4dd49980d34"
 dependencies = [
  "bincode",
  "byteorder",
@@ -766,7 +766,7 @@ dependencies = [
 [[package]]
 name = "hydroflow_cli_integration"
 version = "0.3.0"
-source = "git+https://github.com/hydro-project/hydroflow.git#a0af314a032096fc94b9f4aabb21aadc8184fb30"
+source = "git+https://github.com/hydro-project/hydroflow.git#af6e3be60fdb69ceec1613347910f4dd49980d34"
 dependencies = [
  "async-recursion",
  "async-trait",
@@ -782,7 +782,7 @@ dependencies = [
 [[package]]
 name = "hydroflow_lang"
 version = "0.5.0"
-source = "git+https://github.com/hydro-project/hydroflow.git#a0af314a032096fc94b9f4aabb21aadc8184fb30"
+source = "git+https://github.com/hydro-project/hydroflow.git#af6e3be60fdb69ceec1613347910f4dd49980d34"
 dependencies = [
  "auto_impl",
  "itertools",
@@ -799,7 +799,7 @@ dependencies = [
 [[package]]
 name = "hydroflow_plus"
 version = "0.5.0"
-source = "git+https://github.com/hydro-project/hydroflow.git#a0af314a032096fc94b9f4aabb21aadc8184fb30"
+source = "git+https://github.com/hydro-project/hydroflow.git#af6e3be60fdb69ceec1613347910f4dd49980d34"
 dependencies = [
  "bincode",
  "hydroflow",
@@ -809,13 +809,14 @@ dependencies = [
  "quote",
  "serde",
  "stageleft",
+ "stageleft_tool",
  "syn 2.0.48",
 ]
 
 [[package]]
 name = "hydroflow_plus_cli_integration"
 version = "0.5.0"
-source = "git+https://github.com/hydro-project/hydroflow.git#a0af314a032096fc94b9f4aabb21aadc8184fb30"
+source = "git+https://github.com/hydro-project/hydroflow.git#af6e3be60fdb69ceec1613347910f4dd49980d34"
 dependencies = [
  "async-channel 1.9.0",
  "hydro_deploy",
@@ -900,7 +901,7 @@ dependencies = [
 [[package]]
 name = "lattices"
 version = "0.5.0"
-source = "git+https://github.com/hydro-project/hydroflow.git#a0af314a032096fc94b9f4aabb21aadc8184fb30"
+source = "git+https://github.com/hydro-project/hydroflow.git#af6e3be60fdb69ceec1613347910f4dd49980d34"
 dependencies = [
  "cc-traits",
  "sealed",
@@ -1274,9 +1275,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.75"
+version = "1.0.76"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "907a61bd0f64c2f29cd1cf1dc34d05176426a3f504a78010f08416ddb7b13708"
+checksum = "95fc56cda0b5c3325f5fbbd7ff9fda9e02bb00bb3dac51252d2f1bfa1cb8cc8c"
 dependencies = [
  "unicode-ident",
 ]
@@ -1284,7 +1285,7 @@ dependencies = [
 [[package]]
 name = "pusherator"
 version = "0.0.3"
-source = "git+https://github.com/hydro-project/hydroflow.git#a0af314a032096fc94b9f4aabb21aadc8184fb30"
+source = "git+https://github.com/hydro-project/hydroflow.git#af6e3be60fdb69ceec1613347910f4dd49980d34"
 dependencies = [
  "either",
  "variadics",
@@ -1470,18 +1471,18 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.194"
+version = "1.0.195"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b114498256798c94a0689e1a15fec6005dee8ac1f41de56404b67afc2a4b773"
+checksum = "63261df402c67811e9ac6def069e4786148c4563f4b50fd4bf30aa370d626b02"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.194"
+version = "1.0.195"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3385e45322e8f9931410f01b3031ec534c3947d0e94c18049af4d9f9907d4e0"
+checksum = "46fe8f8603d81ba86327b23a2e9cdf49e1255fb94a4c5f297f6ee0547178ea2c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1598,7 +1599,7 @@ dependencies = [
 [[package]]
 name = "stageleft"
 version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow.git#a0af314a032096fc94b9f4aabb21aadc8184fb30"
+source = "git+https://github.com/hydro-project/hydroflow.git#af6e3be60fdb69ceec1613347910f4dd49980d34"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -1610,7 +1611,7 @@ dependencies = [
 [[package]]
 name = "stageleft_macro"
 version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow.git#a0af314a032096fc94b9f4aabb21aadc8184fb30"
+source = "git+https://github.com/hydro-project/hydroflow.git#af6e3be60fdb69ceec1613347910f4dd49980d34"
 dependencies = [
  "lazy_static",
  "proc-macro-crate",
@@ -1623,7 +1624,7 @@ dependencies = [
 [[package]]
 name = "stageleft_tool"
 version = "0.1.0"
-source = "git+https://github.com/hydro-project/hydroflow.git#a0af314a032096fc94b9f4aabb21aadc8184fb30"
+source = "git+https://github.com/hydro-project/hydroflow.git#af6e3be60fdb69ceec1613347910f4dd49980d34"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1823,7 +1824,7 @@ checksum = "e51733f11c9c4f72aa0c160008246859e340b00807569a0da0e7a1079b27ba85"
 [[package]]
 name = "variadics"
 version = "0.0.2"
-source = "git+https://github.com/hydro-project/hydroflow.git#a0af314a032096fc94b9f4aabb21aadc8184fb30"
+source = "git+https://github.com/hydro-project/hydroflow.git#af6e3be60fdb69ceec1613347910f4dd49980d34"
 dependencies = [
  "sealed",
 ]
@@ -2138,9 +2139,9 @@ checksum = "dff9641d1cd4be8d1a070daf9e3773c5f67e78b4d9d42263020c057706765c04"
 
 [[package]]
 name = "winnow"
-version = "0.5.32"
+version = "0.5.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8434aeec7b290e8da5c3f0d628cb0eac6cabcb31d14bb74f779a08109a5914d6"
+checksum = "b7520bbdec7211caa7c4e682eb1fbe07abe20cee6756b6e00f537c82c11816aa"
 dependencies = [
  "memchr",
 ]
