@@ -71,20 +71,19 @@ let stream = cluster.source_iter(q!(vec![123, 456, 789]))
     .for_each(q!(|(id, x)| println!("{}: {}", id, x)));
 ```
 
-A common pattern if you don't care which instance sent the data is to use a map to discard the ID:
+If you don't care which instance sent the data is to, you can use `send_{bincode,bytes}_interleaved`, where the recipient receives a stream of `T` elements, but the elements received from different instances will be interleaved.
 ```rust
 let stream = cluster.source_iter(q!(vec![123, 456, 789]))
-    .send_bincode_tagged(process)
-    .map(q!(|(_, x)| x))
+    .send_bincode_interleaved(process)
     .for_each(q!(|x| println!("{}", x)));
 ```
 
 ### Many-to-Many
 Finally, when sending data from one cluster to another (or to itself as in distributed protocols), the primary API is `demux_{bincode,bytes}_tagged`, which takes a stream of tuples of the form `(u32, T)` and sends each `T` element to the instance with the matching `u32` ID, but the recipient also gets `(u32, T)` tuples with the ID of the sender.
 
-There are also `broadcast_{bincode,bytes}_tagged` shortcuts available. For example, we can use `broadcast_bincode_tagged` to send data from all instances in a cluster to all instances in another cluster, and then print them all out:
+There are also `broadcast_{bincode,bytes}_tagged` and `{demux,broadcast}_{bincode,bytes}_interleaved` shortcuts available. For example, we can use `broadcast_bincode_interleaved` to send data from all instances in a cluster to all instances in another cluster, and then print them all out:
 ```rust
 let stream = cluster1.source_iter(q!(vec![123, 456, 789]))
-    .broadcast_bincode_tagged(cluster2)
-    .for_each(q!(|(id, x)| println!("{}: {}", id, x)));
+    .broadcast_bincode_interleaved(cluster2)
+    .for_each(q!(|x| println!("{}", x)));
 ```

@@ -59,9 +59,8 @@ pub fn map_reduce<'a, D: Deploy<'a>>(
         .tick_batch()
         .fold(q!(|| 0), q!(|count, string| *count += string.len()))
         .inspect(q!(|count| println!("partition count: {}", count)))
-        .send_bincode_tagged(&process)
+        .send_bincode_interleaved(&process)
         .all_ticks()
-        .map(q!(|(_mid, count)| count))
         .fold(q!(|| 0), q!(|total, count| *total += count))
         .for_each(q!(|data| println!("total: {}", data)));
 
@@ -92,8 +91,7 @@ pub fn compute_pi<'a, D: Deploy<'a>>(
         );
 
     trials
-        .send_bincode_tagged(&process)
-        .map(q!(|(_mid, v)| v))
+        .send_bincode_interleaved(&process)
         .all_ticks()
         .reduce(q!(|(inside, total), (inside_batch, total_batch)| {
             *inside += inside_batch;
