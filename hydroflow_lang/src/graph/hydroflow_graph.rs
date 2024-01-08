@@ -411,16 +411,14 @@ impl HydroflowGraph {
     /// in the above eaxmple, the \[myport\] port will be used to connect the source_iter with the map that is inside of the module.
     /// The output module boundary has elided ports, this is also used to match up the input/output across the module boundary.
     pub fn merge_modules(&mut self) -> Result<(), Diagnostic> {
-        let mut to_remove = Vec::new();
+        let mod_bound_nodes = self
+            .nodes()
+            .filter(|(_nid, node)| matches!(node, GraphNode::ModuleBoundary { .. }))
+            .map(|(nid, _node)| nid)
+            .collect::<Vec<_>>();
 
-        for (nid, node) in self.nodes() {
-            if matches!(node, GraphNode::ModuleBoundary { .. }) {
-                to_remove.push(nid);
-            }
-        }
-
-        for nid in to_remove {
-            self.remove_module_boundary(nid)?;
+        for mod_bound_node in mod_bound_nodes {
+            self.remove_module_boundary(mod_bound_node)?;
         }
 
         Ok(())
@@ -429,70 +427,72 @@ impl HydroflowGraph {
     /// see `merge_modules`
     /// This function removes a singular module boundary from the graph and performs the necessary stitching to fix the graph aftward.
     /// `merge_modules` calls this function for each module boundary in the graph.
-    fn remove_module_boundary(&mut self, nid: GraphNodeId) -> Result<(), Diagnostic> {
+    fn remove_module_boundary(&mut self, mod_bound_node: GraphNodeId) -> Result<(), Diagnostic> {
         assert!(
             self.node_subgraph.is_empty() && self.subgraph_nodes.is_empty(),
             "Should not remove intermediate node after subgraph partitioning"
         );
 
-        let mut predecessor_ports = BTreeMap::new();
-        let mut successor_ports = BTreeMap::new();
+        let mut mod_pred_ports = BTreeMap::new();
+        let mut mod_succ_ports = BTreeMap::new();
 
-        for eid in self.node_predecessor_edges(nid) {
-            let (predecessor_port, successor_port) = self.edge_ports(eid);
-            predecessor_ports.insert(successor_port.clone(), (eid, predecessor_port.clone()));
+        for mod_out_edge in self.node_predecessor_edges(mod_bound_node) {
+            let (pred_port, succ_port) = self.edge_ports(mod_out_edge);
+            mod_pred_ports.insert(succ_port.clone(), (mod_out_edge, pred_port.clone()));
         }
 
-        for eid in self.node_successor_edges(nid) {
-            let (predecessor_port, successor_port) = self.edge_ports(eid);
-            successor_ports.insert(predecessor_port.clone(), (eid, successor_port.clone()));
+        for mod_inn_edge in self.node_successor_edges(mod_bound_node) {
+            let (pred_port, succ_port) = self.edge_ports(mod_inn_edge);
+            mod_succ_ports.insert(pred_port.clone(), (mod_inn_edge, succ_port.clone()));
         }
 
-        if predecessor_ports.keys().collect::<BTreeSet<_>>()
-            != successor_ports.keys().collect::<BTreeSet<_>>()
+        if mod_pred_ports.keys().collect::<BTreeSet<_>>()
+            != mod_succ_ports.keys().collect::<BTreeSet<_>>()
         {
             // get module boundary node
-            match self.node(nid) {
-                GraphNode::ModuleBoundary { input, import_expr } => {
-                    if *input {
-                        return Err(Diagnostic {
-                            span: *import_expr,
-                            level: Level::Error,
-                            message: format!(
-                                "The ports into the module did not match. input: {:?}, expected: {:?}",
-                                predecessor_ports.keys().map(|x| x.to_string()).join(", "),
-                                successor_ports.keys().map(|x| x.to_string()).join(", ")
-                            ),
-                        });
-                    } else {
-                        return Err(Diagnostic {
-                            span: *import_expr,
-                            level: Level::Error,
-                            message: format!("The ports out of the module did not match. output: {:?}, expected: {:?}",
-                                successor_ports.keys().map(|x| x.to_string()).join(", "),
-                                predecessor_ports.keys().map(|x| x.to_string()).join(", "),
-                        )});
-                    }
-                }
-                _ => panic!(),
+            let GraphNode::ModuleBoundary { input, import_expr } = self.node(mod_bound_node) else {
+                panic!();
+            };
+
+            if *input {
+                return Err(Diagnostic {
+                    span: *import_expr,
+                    level: Level::Error,
+                    message: format!(
+                        "The ports into the module did not match. input: {:?}, expected: {:?}",
+                        mod_pred_ports.keys().map(|x| x.to_string()).join(", "),
+                        mod_succ_ports.keys().map(|x| x.to_string()).join(", ")
+                    ),
+                });
+            } else {
+                return Err(Diagnostic {
+                    span: *import_expr,
+                    level: Level::Error,
+                    message: format!(
+                        "The ports out of the module did not match. output: {:?}, expected: {:?}",
+                        mod_succ_ports.keys().map(|x| x.to_string()).join(", "),
+                        mod_pred_ports.keys().map(|x| x.to_string()).join(", "),
+                    ),
+                });
             }
         }
 
-        for (port, (predecessor_edge, predecessor_port)) in predecessor_ports {
-            let (successor_edge, successor_port) = successor_ports.remove(&port).unwrap();
+        for (port, (pred_edge, pred_port)) in mod_pred_ports {
+            let (succ_edge, succ_port) = mod_succ_ports.remove(&port).unwrap();
 
-            let (src, _) = self.graph.remove_edge(predecessor_edge).unwrap();
-            let (_, dst) = self.graph.remove_edge(successor_edge).unwrap();
+            let (src, _) = self.edge(pred_edge);
+            let (_, dst) = self.edge(succ_edge);
+            let edge_type = self.edge_type(pred_edge);
+            self.remove_edge(pred_edge);
+            self.remove_edge(succ_edge);
 
-            self.ports.remove(predecessor_edge);
-            self.ports.remove(successor_edge);
-
-            let eid = self.graph.insert_edge(src, dst);
-            self.ports.insert(eid, (predecessor_port, successor_port));
+            let new_edge_id = self.graph.insert_edge(src, dst);
+            self.ports.insert(new_edge_id, (pred_port, succ_port));
+            self.edge_types.insert(new_edge_id, edge_type);
         }
 
-        self.graph.remove_vertex(nid);
-        self.nodes.remove(nid);
+        self.graph.remove_vertex(mod_bound_node);
+        self.nodes.remove(mod_bound_node);
 
         Ok(())
     }
@@ -535,18 +535,33 @@ impl HydroflowGraph {
     /// Insert an edge between nodes thru the given ports.
     pub fn insert_edge(
         &mut self,
-        edge_type: GraphEdgeType,
         src: GraphNodeId,
         src_port: PortIndexValue,
         dst: GraphNodeId,
         dst_port: PortIndexValue,
     ) -> GraphEdgeId {
         let edge_id = self.graph.insert_edge(src, dst);
-        self.edge_types.insert(edge_id, edge_type);
         self.ports.insert(edge_id, (src_port, dst_port));
         edge_id
     }
+
+    /// Set the edge type for an edge.
+    pub fn insert_edge_type(
+        &mut self,
+        edge: GraphEdgeId,
+        edge_type: GraphEdgeType,
+    ) -> Option<GraphEdgeType> {
+        self.edge_types.insert(edge, edge_type)
+    }
+
+    /// Removes an edge and its corresponding ports and edge type info.
+    pub fn remove_edge(&mut self, edge: GraphEdgeId) {
+        let (_src, _dst) = self.graph.remove_edge(edge).unwrap();
+        let (_src_port, _dst_port) = self.ports.remove(edge).unwrap();
+        let _edge_type = self.edge_types.remove(edge);
+    }
 }
+
 // Subgraph methods.
 impl HydroflowGraph {
     /// Nodes belonging to the given subgraph.
