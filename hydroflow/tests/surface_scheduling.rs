@@ -47,18 +47,14 @@ pub fn test_tick_loop() {
 async fn test_persist_stratum_run_available() -> Result<(), Box<dyn Error>> {
     let (out_send, out_recv) = hydroflow::util::unbounded_channel();
 
-    let handle = tokio::task::spawn_blocking(|| {
-        let mut df = hydroflow_syntax! {
-            a = source_iter([0])
-                -> persist()
-                -> next_stratum()
-                -> for_each(|x| out_send.send(x).unwrap());
-        };
-        assert_graphvis_snapshots!(df);
-        df.run_available();
-    });
-    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-    handle.abort();
+    let mut df = hydroflow_syntax! {
+        a = source_iter([0])
+            -> persist()
+            -> next_stratum()
+            -> for_each(|x| out_send.send(x).unwrap());
+    };
+    assert_graphvis_snapshots!(df);
+    df.run_available();
 
     let seen: Vec<_> = hydroflow::util::collect_ready_async(out_recv).await;
     rassert_eq!(
@@ -68,7 +64,6 @@ async fn test_persist_stratum_run_available() -> Result<(), Box<dyn Error>> {
         seen.len()
     )?;
 
-    handle.await.unwrap();
     Ok(())
 }
 
