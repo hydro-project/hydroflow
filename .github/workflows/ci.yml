@@ -25,7 +25,7 @@ jobs:
           cancel_others: "true"
 
   check:
-    name: Check
+    name: Lint and Check
     if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
     timeout-minutes: 15
     needs: pre_job
@@ -40,7 +40,15 @@ jobs:
           # resolve to 'nothing' so we will exclude 'nothing'. https://stackoverflow.com/a/73822998
           - rust_release: ${{ (needs.pre_job.outputs.should_skip != 'true' && 'nothing') || 'pinned-nightly' }}
           - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
-          - os: ${{ (github.event_name != 'pull_request' && 'nothing') || 'windows-latest' }}
+
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
+      CARGO_PROFILE_DEV_STRIP: "debuginfo"
+      CARGO_PROFILE_TEST_STRIP: "debuginfo"
+      CARGO_PROFILE_RELEASE_STRIP: "debuginfo"
 
     steps:
       - name: Checkout sources
@@ -52,6 +60,22 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: ${{ matrix.rust_release == 'latest-nightly' }}
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
+
+      - name: Run cargo fmt
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+      - name: Run cargo clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --all-targets --features python -- -D warnings
 
       - name: Run cargo check
         uses: actions-rs/cargo@v1
@@ -108,12 +132,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        target_selection:
-          - "--lib --bins"
-          - "--examples"
-          - "--tests"
-          - "--benches"
-          - "--doc"
         rust_release: [pinned-nightly, latest-nightly]
         exclude:
           # For non-pull requests, event_name != 'pull_request' will be true, and 'nothing' is
@@ -121,7 +139,15 @@ jobs:
           # resolve to 'nothing' so we will exclude 'nothing'. https://stackoverflow.com/a/73822998
           - rust_release: ${{ (needs.pre_job.outputs.should_skip != 'true' && 'nothing') || 'pinned-nightly' }}
           - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
-          - os: ${{ (github.event_name != 'pull_request' && 'nothing') || 'windows-latest' }}
+
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
+      CARGO_PROFILE_DEV_STRIP: "debuginfo"
+      CARGO_PROFILE_TEST_STRIP: "debuginfo"
+      CARGO_PROFILE_RELEASE_STRIP: "debuginfo"
 
     steps:
       - name: Checkout sources
@@ -134,11 +160,70 @@ jobs:
           toolchain: nightly
           override: ${{ matrix.rust_release == 'latest-nightly' }}
 
-      - name: Run cargo test on target_selection
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
+
+      - name: Install cargo-nextest (linux)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+
+      - name: Install cargo-nextest (windows)
+        if: ${{ matrix.os == 'windows-latest' }}
+        shell: bash
+        run: curl -LsSf https://get.nexte.st/latest/windows-tar | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+
+      - name: Run cargo nextest on all targets
+        uses: actions-rs/cargo@v1
+        with:
+          command: nextest
+          args: run --no-fail-fast --features python --all-targets
+
+      - name: Run doctests
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --profile cidev --no-fail-fast --features python ${{ matrix.target_selection }}
+          args: --no-fail-fast --features python --doc
+
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Build CLI (Linux)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          cd hydro_deploy/hydro_cli
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install maturin
+          maturin develop
+      
+      - name: Build CLI (Windows)
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+          cd hydro_deploy/hydro_cli
+          python -m venv .venv
+          .venv/Scripts/activate
+          pip install maturin
+          maturin develop
+
+      - name: Run Python tests (Linux)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          cd hydro_deploy/hydro_cli
+          source .venv/bin/activate
+          cd python_tests
+          pip install -r requirements.txt
+          RUST_BACKTRACE=1 pytest *.py
+      
+      - name: Run Python tests (Windows)
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: |
+          cd hydro_deploy/hydro_cli
+          .venv/Scripts/activate
+          cd python_tests
+          pip install -r requirements.txt
+          pytest *.py
 
   test-wasm:
     name: Test Suite (WebAssembly)
@@ -185,85 +270,6 @@ jobs:
         with:
           command: test
           args: -p hydroflow --target wasm32-unknown-unknown --tests --no-fail-fast
-
-  test-cli:
-    name: Test CLI
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
-    timeout-minutes: 25
-    needs: pre_job
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v3
-
-      - name: Install nightly toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-
-      - name: Install Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Build CLI
-        run: |
-          cd hydro_deploy/hydro_cli
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install maturin
-          maturin develop
-
-      - name: Run Python tests
-        run: |
-          ulimit -c unlimited
-          cd hydro_deploy/hydro_cli
-          source .venv/bin/activate
-          cd python_tests
-          pip install -r requirements.txt
-          RUST_BACKTRACE=1 pytest *.py
-
-  lints:
-    name: Lints
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' || github.event_name != 'pull_request' }}
-    timeout-minutes: 10
-    needs: pre_job
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust_release: [pinned-nightly, latest-nightly]
-        exclude:
-          # For non-pull requests, event_name != 'pull_request' will be true, and 'nothing' is
-          # truthy, so the entire && operator will resolve to 'nothing'. Then the || operator will
-          # resolve to 'nothing' so we will exclude 'nothing'. https://stackoverflow.com/a/73822998
-          - rust_release: ${{ (needs.pre_job.outputs.should_skip != 'true' && 'nothing') || 'pinned-nightly' }}
-          - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
-
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v3
-
-      - name: Install nightly toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          override: ${{ matrix.rust_release == 'latest-nightly' }}
-          components: rustfmt, clippy
-
-      - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-
-      - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --all-targets --features python -- -D warnings
 
   build-website:
     name: Build Website
