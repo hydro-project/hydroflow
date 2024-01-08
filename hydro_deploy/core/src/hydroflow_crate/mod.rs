@@ -132,7 +132,8 @@ mod tests {
 
         let service = deployment.add_service(
             HydroflowCrate::new("../hydro_cli_examples", localhost.clone())
-                .example("panic_program"),
+                .example("panic_program")
+                .profile("dev"),
         );
 
         deployment.deploy().await.unwrap();
