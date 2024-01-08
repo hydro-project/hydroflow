@@ -682,6 +682,16 @@ impl<'a, W, N: Location<'a>> Stream<'a, Bytes, W, N> {
         }
     }
 
+    pub fn send_bytes_interleaved<N2: Location<'a>>(
+        &self,
+        other: &N2,
+    ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
+    where
+        N: HfSendManyToOne<'a, N2>,
+    {
+        self.send_bytes_tagged(other).map(q!(|r| r.map(|(_, b)| b)))
+    }
+
     pub fn broadcast_bytes<N2: Location<'a> + Cluster<'a>>(
         &self,
         other: &N2,
@@ -706,6 +716,17 @@ impl<'a, W, N: Location<'a>> Stream<'a, Bytes, W, N> {
         other_ids
             .cross_product(&self.assume_windowed())
             .demux_bytes_tagged(other)
+    }
+
+    pub fn broadcast_bytes_interleaved<N2: Location<'a> + Cluster<'a>>(
+        &self,
+        other: &N2,
+    ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
+    where
+        N: HfSendManyToMany<'a, N2>,
+    {
+        self.broadcast_bytes_tagged(other)
+            .map(q!(|r| r.map(|(_, b)| b)))
     }
 }
 
@@ -767,6 +788,13 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N
         }
     }
 
+    pub fn send_bincode_interleaved<N2: Location<'a>>(&self, other: &N2) -> Stream<'a, T, Async, N2>
+    where
+        N: HfSendManyToOne<'a, N2>,
+    {
+        self.send_bincode_tagged(other).map(q!(|(_, b)| b))
+    }
+
     pub fn broadcast_bincode<N2: Location<'a> + Cluster<'a>>(
         &self,
         other: &N2,
@@ -791,6 +819,16 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N
         other_ids
             .cross_product(&self.assume_windowed())
             .demux_bincode_tagged(other)
+    }
+
+    pub fn broadcast_bincode_interleaved<N2: Location<'a> + Cluster<'a>>(
+        &self,
+        other: &N2,
+    ) -> Stream<'a, T, Async, N2>
+    where
+        N: HfSendManyToMany<'a, N2>,
+    {
+        self.broadcast_bincode_tagged(other).map(q!(|(_, b)| b))
     }
 }
 
@@ -875,6 +913,17 @@ impl<'a, W, N: Location<'a>> Stream<'a, (u32, Bytes), W, N> {
             _phantom: PhantomData,
         }
     }
+
+    pub fn demux_bytes_interleaved<N2: Location<'a>>(
+        &self,
+        other: &N2,
+    ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
+    where
+        N: HfSendManyToMany<'a, N2>,
+    {
+        self.demux_bytes_tagged(other)
+            .map(q!(|r| r.map(|(_, b)| b)))
+    }
 }
 
 impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, (u32, T), W, N> {
@@ -906,5 +955,15 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, (u32, T
             is_delta: self.is_delta,
             _phantom: PhantomData,
         }
+    }
+
+    pub fn demux_bincode_interleaved<N2: Location<'a>>(
+        &self,
+        other: &N2,
+    ) -> Stream<'a, T, Async, N2>
+    where
+        N: HfSendManyToMany<'a, N2>,
+    {
+        self.demux_bincode_tagged(other).map(q!(|(_, b)| b))
     }
 }
