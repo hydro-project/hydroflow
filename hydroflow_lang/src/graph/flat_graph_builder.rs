@@ -11,7 +11,7 @@ use syn::spanned::Spanned;
 use syn::{Error, Ident, ItemUse};
 
 use super::ops::find_op_op_constraints;
-use super::{GraphEdgeType, GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
+use super::{GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::{PortListSpec, RangeTrait};
 use crate::parse::{HfCode, HfStatement, Operator, Pipeline};
@@ -290,12 +290,12 @@ impl FlatGraphBuilder {
 
         let mut node_mapping = BTreeMap::new();
 
-        for (nid, node) in other.nodes() {
+        for (other_node_id, node) in other.nodes() {
             match node {
                 GraphNode::Operator(_) => {
-                    let varname = other.node_varname(nid);
+                    let varname = other.node_varname(other_node_id);
                     let new_id = self.flat_graph.insert_node(node.clone(), varname);
-                    node_mapping.insert(nid, new_id);
+                    node_mapping.insert(other_node_id, new_id);
                 }
                 GraphNode::ModuleBoundary { input, .. } => {
                     let new_id = self.flat_graph.insert_node(
@@ -305,18 +305,18 @@ impl FlatGraphBuilder {
                         },
                         Some(Ident::new(&format!("module_{}", input), parent_span)),
                     );
-                    node_mapping.insert(nid, new_id);
+                    node_mapping.insert(other_node_id, new_id);
 
                     // in the case of nested imports, this module boundary might not be the module boundary into or out of the top-most module
                     // So we have to be careful to only target those two boundaries.
                     // There should be no inputs to it, if it is an input boundary, if it is the top-most one.
                     // and there should be no outputs from it, if it is an output boundary, if it is the top-most one.
-                    if *input && other.node_predecessor_nodes(nid).count() == 0 {
-                        if other.node_predecessor_nodes(nid).count() == 0 {
+                    if *input && other.node_predecessor_nodes(other_node_id).count() == 0 {
+                        if other.node_predecessor_nodes(other_node_id).count() == 0 {
                             ends.inn =
                                 Some((PortIndexValue::Elided(None), GraphDet::Determined(new_id)));
                         }
-                    } else if !(*input) && other.node_successor_nodes(nid).count() == 0 {
+                    } else if !(*input) && other.node_successor_nodes(other_node_id).count() == 0 {
                         ends.out =
                             Some((PortIndexValue::Elided(None), GraphDet::Determined(new_id)));
                     }
@@ -327,14 +327,13 @@ impl FlatGraphBuilder {
             }
         }
 
-        for (eid, (src, dst)) in other.edges() {
-            let (src_port, dst_port) = other.edge_ports(eid);
+        for (other_edge_id, (other_src, other_dst)) in other.edges() {
+            let (src_port, dst_port) = other.edge_ports(other_edge_id);
 
-            self.flat_graph.insert_edge(
-                other.edge_type(eid),
-                *node_mapping.get(&src).unwrap(),
+            let _new_edge_id = self.flat_graph.insert_edge(
+                *node_mapping.get(&other_src).unwrap(),
                 src_port.clone(),
-                *node_mapping.get(&dst).unwrap(),
+                *node_mapping.get(&other_dst).unwrap(),
                 dst_port.clone(),
             );
         }
@@ -493,13 +492,13 @@ impl FlatGraphBuilder {
                 }
             }
         }
-        self.flat_graph
-            .insert_edge(GraphEdgeType::Value, src, src_port, dst, dst_port);
+        self.flat_graph.insert_edge(src, src_port, dst, dst_port);
     }
 
     /// Process operators and emit operator errors.
     fn process_operator_errors(&mut self) {
         self.make_operator_instances();
+        self.insert_operator_edge_types();
         self.check_operator_errors();
     }
 
@@ -507,6 +506,37 @@ impl FlatGraphBuilder {
     fn make_operator_instances(&mut self) {
         self.flat_graph
             .insert_node_op_insts_all(&mut self.diagnostics);
+    }
+
+    /// Find and insert operator [`GraphEdgeType`]s for edges.
+    fn insert_operator_edge_types(&mut self) {
+        for edge_id in self.flat_graph.edge_ids().collect::<Vec<_>>() {
+            let (src, _dst) = self.flat_graph.edge(edge_id);
+            match self.flat_graph.node(src) {
+                GraphNode::Operator(_) => {
+                    let Some(src_op_inst) = self.flat_graph.node_op_inst(src) else {
+                        continue;
+                    };
+                    let (src_port, _dst_port) = self.flat_graph.edge_ports(edge_id);
+                    let edge_type = (src_op_inst.op_constraints.output_edgetype_fn)(src_port);
+                    assert!(self
+                        .flat_graph
+                        .insert_edge_type(edge_id, edge_type)
+                        .is_none());
+                }
+                GraphNode::Handoff { .. } => {
+                    // TODO(mingwei)
+                    // // This is still a flat graph - there should generally not be handoffs.
+                    // // Handoffs can only handle value edges.
+                    // self.flat_graph
+                    //     .insert_edge_type(edge_id, GraphEdgeType::Value);
+                    unimplemented!();
+                }
+                GraphNode::ModuleBoundary { .. } => {
+                    // No-op. Handle when the module is connected.
+                }
+            }
+        }
     }
 
     /// Validates that operators have valid number of inputs, outputs, & arguments.
