@@ -599,6 +599,56 @@ impl Host for AzureHost {
                 })
             );
 
+        // Define network security rules - for now, accept all connections
+        resource_batch
+            .terraform
+            .resource
+            .entry("azurerm_network_security_group".to_string())
+            .or_default()
+            .insert(
+                "example".to_string(),
+                json!({
+                    "name": "acceptanceTestSecurityGroup1",
+                    "location": "${azurerm_resource_group.example.location}",
+                    "resource_group_name": "${azurerm_resource_group.example.name}",
+                })
+            );
+
+        resource_batch
+            .terraform
+            .resource
+            .entry("azurerm_network_security_rule".to_string())
+            .or_default()
+            .insert(
+                "example".to_string(),
+                json!({
+                    "name": "allowall",
+                    "priority": 100,
+                    "direction": "Inbound",
+                    "access": "Allow",
+                    "protocol": "Tcp",
+                    "source_port_range": "*",
+                    "destination_port_range": "*",
+                    "source_address_prefix": "*",
+                    "destination_address_prefix": "*",
+                    "resource_group_name": "${azurerm_resource_group.example.name}",
+                    "network_security_group_name": "${azurerm_network_security_group.example.name}",
+                })
+            );
+
+        resource_batch
+            .terraform
+            .resource
+            .entry("azurerm_subnet_network_security_group_association".to_string())
+            .or_default()
+            .insert(
+                "example".to_string(),
+                json!({
+                    "subnet_id": "${azurerm_subnet.example.id}",
+                    "network_security_group_id": "${azurerm_network_security_group.example.id}",
+                })
+            );
+
 
         let user = self.user.as_ref().cloned().unwrap_or("hydro".to_string());
         let os_type = format!("azurerm_{}_virtual_machine", self.os_type.clone());
