@@ -220,20 +220,35 @@ fn main() {
                         >(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> {
                             iter
                         }
+                        #[inline(always)]
+                        /// A: accumulator type
+                        /// T: iterator item type
+                        /// O: output type
+                        fn call_comb_type<A, T, O>(
+                            a: &mut A,
+                            t: T,
+                            f: impl Fn(&mut A, T) -> O,
+                        ) -> O {
+                            f(a, t)
+                        }
                         for kv in check_input(hoff_6v3_recv) {
                             #[allow(unknown_lints, clippy::unwrap_or_default)]
                             let entry = sg_1v1_node_10v1_hashtable
                                 .entry(kv.0)
                                 .or_insert_with(|| (None,));
                             #[allow(clippy::redundant_closure_call)]
-                            (|old: &mut (Option<_>,), val: (_,)| {
-                                old
-                                    .0 = if let Some(prev) = old.0.take() {
-                                    Some(std::cmp::max(prev, val.0))
-                                } else {
-                                    Some(val.0)
-                                };
-                            })(entry, kv.1);
+                            call_comb_type(
+                                entry,
+                                kv.1,
+                                |old: &mut (Option<_>,), val: (_,)| {
+                                    old
+                                        .0 = if let Some(prev) = old.0.take() {
+                                        Some(std::cmp::max(prev, val.0))
+                                    } else {
+                                        Some(val.0)
+                                    };
+                                },
+                            );
                         }
                     }
                     let op_10v1 = sg_1v1_node_10v1_hashtable.drain();

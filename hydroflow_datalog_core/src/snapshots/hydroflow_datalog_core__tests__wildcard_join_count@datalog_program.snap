@@ -424,20 +424,35 @@ fn main() {
                         >(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> {
                             iter
                         }
+                        #[inline(always)]
+                        /// A: accumulator type
+                        /// T: iterator item type
+                        /// O: output type
+                        fn call_comb_type<A, T, O>(
+                            a: &mut A,
+                            t: T,
+                            f: impl Fn(&mut A, T) -> O,
+                        ) -> O {
+                            f(a, t)
+                        }
                         for kv in check_input(hoff_10v3_recv) {
                             #[allow(unknown_lints, clippy::unwrap_or_default)]
                             let entry = sg_3v1_node_22v1_hashtable
                                 .entry(kv.0)
                                 .or_insert_with(|| (None,));
                             #[allow(clippy::redundant_closure_call)]
-                            (|old: &mut (Option<_>,), val: (_,)| {
-                                old
-                                    .0 = if let Some(prev) = old.0.take() {
-                                    Some(prev + 1)
-                                } else {
-                                    Some(1)
-                                };
-                            })(entry, kv.1);
+                            call_comb_type(
+                                entry,
+                                kv.1,
+                                |old: &mut (Option<_>,), val: (_,)| {
+                                    old
+                                        .0 = if let Some(prev) = old.0.take() {
+                                        Some(prev + 1)
+                                    } else {
+                                        Some(1)
+                                    };
+                                },
+                            );
                         }
                     }
                     let op_22v1 = sg_3v1_node_22v1_hashtable.drain();
@@ -631,34 +646,49 @@ fn main() {
                         >(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> {
                             iter
                         }
+                        #[inline(always)]
+                        /// A: accumulator type
+                        /// T: iterator item type
+                        /// O: output type
+                        fn call_comb_type<A, T, O>(
+                            a: &mut A,
+                            t: T,
+                            f: impl Fn(&mut A, T) -> O,
+                        ) -> O {
+                            f(a, t)
+                        }
                         for kv in check_input(hoff_1v3_recv) {
                             #[allow(unknown_lints, clippy::unwrap_or_default)]
                             let entry = sg_4v1_node_29v1_hashtable
                                 .entry(kv.0)
                                 .or_insert_with(|| (None,));
                             #[allow(clippy::redundant_closure_call)]
-                            (|old: &mut (Option<_>,), val: (_,)| {
-                                old
-                                    .0 = if let Some(prev) = old.0.take() {
-                                    Some({
-                                        let prev: (hydroflow::rustc_hash::FxHashSet<_>, _) = prev;
-                                        let mut set: hydroflow::rustc_hash::FxHashSet<_> = prev.0;
-                                        if set.insert(val.0) {
-                                            (set, prev.1 + 1)
-                                        } else {
-                                            (set, prev.1)
-                                        }
-                                    })
-                                } else {
-                                    Some({
-                                        let mut set = hydroflow::rustc_hash::FxHashSet::<
-                                            _,
-                                        >::default();
-                                        set.insert(val.0);
-                                        (set, 1)
-                                    })
-                                };
-                            })(entry, kv.1);
+                            call_comb_type(
+                                entry,
+                                kv.1,
+                                |old: &mut (Option<_>,), val: (_,)| {
+                                    old
+                                        .0 = if let Some(prev) = old.0.take() {
+                                        Some({
+                                            let prev: (hydroflow::rustc_hash::FxHashSet<_>, _) = prev;
+                                            let mut set: hydroflow::rustc_hash::FxHashSet<_> = prev.0;
+                                            if set.insert(val.0) {
+                                                (set, prev.1 + 1)
+                                            } else {
+                                                (set, prev.1)
+                                            }
+                                        })
+                                    } else {
+                                        Some({
+                                            let mut set = hydroflow::rustc_hash::FxHashSet::<
+                                                _,
+                                            >::default();
+                                            set.insert(val.0);
+                                            (set, 1)
+                                        })
+                                    };
+                                },
+                            );
                         }
                     }
                     let op_29v1 = sg_4v1_node_29v1_hashtable.drain();
