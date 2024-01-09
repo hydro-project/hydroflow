@@ -46,7 +46,7 @@ pub fn map_reduce<'a, D: Deploy<'a>>(
     let cluster = flow.cluster(cluster_spec);
 
     let words = process
-        .source_iter(q!(vec!["abc", "abc", "xyz"]))
+        .source_iter(q!(vec!["abc", "abc", "xyz", "abc"]))
         .map(q!(|s| s.to_string()));
 
     let all_ids_vec = cluster.ids();
@@ -57,12 +57,16 @@ pub fn map_reduce<'a, D: Deploy<'a>>(
     words_partitioned
         .demux_bincode(&cluster)
         .tick_batch()
-        .fold(q!(|| 0), q!(|count, string| *count += string.len()))
-        .inspect(q!(|count| println!("partition count: {}", count)))
+        .map(q!(|string| (string, ())))
+        .fold_keyed(q!(|| 0), q!(|count, _| *count += 1))
+        .inspect(q!(|(string, count)| println!(
+            "partition count: {} - {}",
+            string, count
+        )))
         .send_bincode_interleaved(&process)
         .all_ticks()
-        .fold(q!(|| 0), q!(|total, count| *total += count))
-        .for_each(q!(|data| println!("total: {}", data)));
+        .reduce_keyed(q!(|total, count| *total += count))
+        .for_each(q!(|(string, count)| println!("{}: {}", string, count)));
 
     (process, cluster)
 }

@@ -143,11 +143,19 @@ pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
                             fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A: ::std::clone::Clone, B: ::std::clone::Clone>(iter: Iter)
                                 -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
 
+                            #[inline(always)]
+                            /// A: accumulator type
+                            /// T: iterator item type
+                            /// O: output type
+                            fn call_comb_type<A, T, O>(a: &mut A, t: T, f: impl Fn(&mut A, T) -> O) -> O {
+                                f(a, t)
+                            }
+
                             for kv in check_input(#input) {
                                 // TODO(mingwei): remove `unknown_lints` when `clippy::unwrap_or_default` is stabilized.
                                 #[allow(unknown_lints, clippy::unwrap_or_default)]
                                 let entry = #hashtable_ident.entry(kv.0).or_insert_with(#initfn);
-                                #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
+                                #[allow(clippy::redundant_closure_call)] call_comb_type(entry, kv.1, #aggfn);
                             }
                         }
 
@@ -172,11 +180,19 @@ pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
                             fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A: ::std::clone::Clone, B: ::std::clone::Clone>(iter: Iter)
                                 -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
 
+                            #[inline(always)]
+                            /// A: accumulator type
+                            /// T: iterator item type
+                            /// O: output type
+                            fn call_comb_type<A, T, O>(a: &mut A, t: T, f: impl Fn(&mut A, T) -> O) -> O {
+                                f(a, t)
+                            }
+
                             for kv in check_input(#input) {
                                 // TODO(mingwei): remove `unknown_lints` when `clippy::unwrap_or_default` is stabilized.
                                 #[allow(unknown_lints, clippy::unwrap_or_default)]
                                 let entry = #hashtable_ident.entry(kv.0).or_insert_with(#initfn);
-                                #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, kv.1);
+                                #[allow(clippy::redundant_closure_call)] call_comb_type(entry, kv.1, #aggfn);
                             }
                         }
 
@@ -206,11 +222,19 @@ pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
                             fn check_input<Iter: ::std::iter::Iterator<Item = #root::util::PersistenceKeyed::<K, V>>, K: ::std::clone::Clone, V: ::std::clone::Clone>(iter: Iter)
                                 -> impl ::std::iter::Iterator<Item = #root::util::PersistenceKeyed::<K, V>> { iter }
 
+                            #[inline(always)]
+                            /// A: accumulator type
+                            /// T: iterator item type
+                            /// O: output type
+                            fn call_comb_type<A, T, O>(a: &mut A, t: T, f: impl Fn(&mut A, T) -> O) -> O {
+                                f(a, t)
+                            }
+
                             for item in check_input(#input) {
                                 match item {
                                     Persist(k, v) => {
                                         let entry = #hashtable_ident.entry(k).or_insert_with(#initfn);
-                                        #[allow(clippy::redundant_closure_call)] (#aggfn)(entry, v);
+                                        #[allow(clippy::redundant_closure_call)] call_comb_type(entry, v, #aggfn);
                                     },
                                     Delete(k) => {
                                         #hashtable_ident.remove(&k);
