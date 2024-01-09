@@ -214,7 +214,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
             create_broadcast(channel.stream(0), move |s| println!("[{id_clone}] {s}"));
         let stderr_receivers = create_broadcast(channel.stderr(), move |s| eprintln!("[{id}] {s}"));
 
-        ProgressTracker::println("Finished launching binary");
+        ProgressTracker::println("[launch_binary] Finished launching binary");
 
         Ok(Arc::new(RwLock::new(LaunchedSSHBinary {
             _resource_result: self.resource_result().clone(),

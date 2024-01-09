@@ -253,6 +253,8 @@ impl Service for HydroflowCrate {
                     bind_config.insert(port_name.clone(), launched_host.server_config(bind_type));
                 }
 
+                ProgressTracker::println(format!("[ready] creating bind config {:?}", bind_config).as_str());
+
                 let formatted_bind_config = serde_json::to_string(&bind_config).unwrap();
 
                 // request stdout before sending config so we don't miss the "ready" response
@@ -265,12 +267,14 @@ impl Service for HydroflowCrate {
                     .await
                     .send(format!("{formatted_bind_config}\n"))
                     .await?;
+                ProgressTracker::println("[ready] waiting for ready");
 
                 let ready_line = ProgressTracker::leaf(
                     "waiting for ready".to_string(),
                     tokio::time::timeout(Duration::from_secs(60), stdout_receiver.recv()),
                 )
                 .await??;
+                ProgressTracker::println(format!("[ready] ready_line: {ready_line}").as_str());
                 if ready_line.starts_with("ready: ") {
                     *self.server_defns.try_write().unwrap() =
                         serde_json::from_str(ready_line.trim_start_matches("ready: ")).unwrap();
