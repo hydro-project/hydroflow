@@ -34,7 +34,7 @@ pub const INSPECT: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    output_edgetype_fn: |_| GraphEdgeType::Value,
+    input_edgetype_fn: |_| Some(GraphEdgeType::Value), output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
         // Preserve input flow properties.
         Ok(vec![flow_props_in[0]])

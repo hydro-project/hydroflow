@@ -75,6 +75,8 @@ pub struct OperatorConstraints {
 
     /// Determines if this input must be preceeded by a stratum barrier.
     pub input_delaytype_fn: fn(&PortIndexValue) -> Option<DelayType>,
+    /// The required edge type for each input. `None` means any is OK.
+    pub input_edgetype_fn: fn(&PortIndexValue) -> Option<GraphEdgeType>,
     /// Specifies the edge type for each output port.
     pub output_edgetype_fn: fn(&PortIndexValue) -> GraphEdgeType,
 
