@@ -237,6 +237,30 @@
 <a href="#237" id="237">237</a>
 <a href="#238" id="238">238</a>
 <a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 
 <span class="kw">use super</span>::{
@@ -382,11 +406,19 @@
                             </span><span class="kw">fn </span>check_input&lt;Iter: ::std::iter::Iterator&lt;Item = (A, B)&gt;, A: ::std::clone::Clone, B: ::std::clone::Clone&gt;(iter: Iter)
                                 -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = (A, B)&gt; { iter }
 
+                            <span class="attr">#[inline(always)]
+                            </span><span class="doccomment">/// A: accumulator type
+                            /// T: iterator item type
+                            /// O: output type
+                            </span><span class="kw">fn </span>call_comb_type&lt;A, T, O&gt;(a: <span class="kw-2">&amp;mut </span>A, t: T, f: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;mut </span>A, T) -&gt; O) -&gt; O {
+                                f(a, t)
+                            }
+
                             <span class="kw">for </span>kv <span class="kw">in </span>check_input(#input) {
                                 <span class="comment">// TODO(mingwei): remove `unknown_lints` when `clippy::unwrap_or_default` is stabilized.
                                 </span><span class="attr">#[allow(unknown_lints, clippy::unwrap_or_default)]
                                 </span><span class="kw">let </span>entry = #hashtable_ident.entry(kv.<span class="number">0</span>).or_insert_with(#initfn);
-                                <span class="attr">#[allow(clippy::redundant_closure_call)] </span>(#aggfn)(entry, kv.<span class="number">1</span>);
+                                <span class="attr">#[allow(clippy::redundant_closure_call)] </span>call_comb_type(entry, kv.<span class="number">1</span>, #aggfn);
                             }
                         }
 
@@ -411,11 +443,19 @@
                             </span><span class="kw">fn </span>check_input&lt;Iter: ::std::iter::Iterator&lt;Item = (A, B)&gt;, A: ::std::clone::Clone, B: ::std::clone::Clone&gt;(iter: Iter)
                                 -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = (A, B)&gt; { iter }
 
+                            <span class="attr">#[inline(always)]
+                            </span><span class="doccomment">/// A: accumulator type
+                            /// T: iterator item type
+                            /// O: output type
+                            </span><span class="kw">fn </span>call_comb_type&lt;A, T, O&gt;(a: <span class="kw-2">&amp;mut </span>A, t: T, f: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;mut </span>A, T) -&gt; O) -&gt; O {
+                                f(a, t)
+                            }
+
                             <span class="kw">for </span>kv <span class="kw">in </span>check_input(#input) {
                                 <span class="comment">// TODO(mingwei): remove `unknown_lints` when `clippy::unwrap_or_default` is stabilized.
                                 </span><span class="attr">#[allow(unknown_lints, clippy::unwrap_or_default)]
                                 </span><span class="kw">let </span>entry = #hashtable_ident.entry(kv.<span class="number">0</span>).or_insert_with(#initfn);
-                                <span class="attr">#[allow(clippy::redundant_closure_call)] </span>(#aggfn)(entry, kv.<span class="number">1</span>);
+                                <span class="attr">#[allow(clippy::redundant_closure_call)] </span>call_comb_type(entry, kv.<span class="number">1</span>, #aggfn);
                             }
                         }
 
@@ -445,11 +485,19 @@
                             </span><span class="kw">fn </span>check_input&lt;Iter: ::std::iter::Iterator&lt;Item = #root::util::PersistenceKeyed::&lt;K, V&gt;&gt;, K: ::std::clone::Clone, V: ::std::clone::Clone&gt;(iter: Iter)
                                 -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = #root::util::PersistenceKeyed::&lt;K, V&gt;&gt; { iter }
 
+                            <span class="attr">#[inline(always)]
+                            </span><span class="doccomment">/// A: accumulator type
+                            /// T: iterator item type
+                            /// O: output type
+                            </span><span class="kw">fn </span>call_comb_type&lt;A, T, O&gt;(a: <span class="kw-2">&amp;mut </span>A, t: T, f: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;mut </span>A, T) -&gt; O) -&gt; O {
+                                f(a, t)
+                            }
+
                             <span class="kw">for </span>item <span class="kw">in </span>check_input(#input) {
                                 <span class="kw">match </span>item {
                                     Persist(k, v) =&gt; {
                                         <span class="kw">let </span>entry = #hashtable_ident.entry(k).or_insert_with(#initfn);
-                                        <span class="attr">#[allow(clippy::redundant_closure_call)] </span>(#aggfn)(entry, v);
+                                        <span class="attr">#[allow(clippy::redundant_closure_call)] </span>call_comb_type(entry, v, #aggfn);
                                     },
                                     Delete(k) =&gt; {
                                         #hashtable_ident.remove(<span class="kw-2">&amp;</span>k);

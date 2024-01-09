@@ -205,6 +205,20 @@
 <a href="#205" id="205">205</a>
 <a href="#206" id="206">206</a>
 <a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 
 <span class="kw">use super</span>::{
@@ -339,13 +353,20 @@
                             </span><span class="kw">fn </span>check_input&lt;Iter: ::std::iter::Iterator&lt;Item = (A, B)&gt;, A: ::std::clone::Clone, B: ::std::clone::Clone&gt;(iter: Iter)
                                 -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = (A, B)&gt; { iter }
 
+                            <span class="attr">#[inline(always)]
+                            </span><span class="doccomment">/// A: accumulator type
+                            /// O: output type
+                            </span><span class="kw">fn </span>call_comb_type&lt;A, O&gt;(acc: <span class="kw-2">&amp;mut </span>A, item: A, f: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;mut </span>A, A) -&gt; O) -&gt; O {
+                                f(acc, item)
+                            }
+
                             <span class="kw">for </span>kv <span class="kw">in </span>check_input(#input) {
                                 <span class="kw">match </span>#hashtable_ident.entry(kv.<span class="number">0</span>) {
                                     ::std::collections::hash_map::Entry::Vacant(vacant) =&gt; {
                                         vacant.insert(kv.<span class="number">1</span>);
                                     }
                                     ::std::collections::hash_map::Entry::Occupied(<span class="kw-2">mut </span>occupied) =&gt; {
-                                        <span class="attr">#[allow(clippy::redundant_closure_call)] </span>(#aggfn)(occupied.get_mut(), kv.<span class="number">1</span>);
+                                        <span class="attr">#[allow(clippy::redundant_closure_call)] </span>call_comb_type(occupied.get_mut(), kv.<span class="number">1</span>, #aggfn);
                                     }
                                 }
                             }
@@ -372,13 +393,20 @@
                             </span><span class="kw">fn </span>check_input&lt;Iter: ::std::iter::Iterator&lt;Item = (A, B)&gt;, A: ::std::clone::Clone, B: ::std::clone::Clone&gt;(iter: Iter)
                                 -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = (A, B)&gt; { iter }
 
+                            <span class="attr">#[inline(always)]
+                            </span><span class="doccomment">/// A: accumulator type
+                            /// O: output type
+                            </span><span class="kw">fn </span>call_comb_type&lt;A, O&gt;(acc: <span class="kw-2">&amp;mut </span>A, item: A, f: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;mut </span>A, A) -&gt; O) -&gt; O {
+                                f(acc, item)
+                            }
+
                             <span class="kw">for </span>kv <span class="kw">in </span>check_input(#input) {
                                 <span class="kw">match </span>#hashtable_ident.entry(kv.<span class="number">0</span>) {
                                     ::std::collections::hash_map::Entry::Vacant(vacant) =&gt; {
                                         vacant.insert(kv.<span class="number">1</span>);
                                     }
                                     ::std::collections::hash_map::Entry::Occupied(<span class="kw-2">mut </span>occupied) =&gt; {
-                                        <span class="attr">#[allow(clippy::redundant_closure_call)] </span>(#aggfn)(occupied.get_mut(), kv.<span class="number">1</span>);
+                                        <span class="attr">#[allow(clippy::redundant_closure_call)] </span>call_comb_type(occupied.get_mut(), kv.<span class="number">1</span>, #aggfn);
                                     }
                                 }
                             }

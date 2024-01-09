@@ -269,6 +269,10 @@
 <a href="#269" id="269">269</a>
 <a href="#270" id="270">270</a>
 <a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
@@ -317,7 +321,7 @@
     <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
 
     <span class="kw">let </span>words = process
-        .source_iter(<span class="macro">q!</span>(<span class="macro">vec!</span>[<span class="string">&quot;abc&quot;</span>, <span class="string">&quot;abc&quot;</span>, <span class="string">&quot;xyz&quot;</span>]))
+        .source_iter(<span class="macro">q!</span>(<span class="macro">vec!</span>[<span class="string">&quot;abc&quot;</span>, <span class="string">&quot;abc&quot;</span>, <span class="string">&quot;xyz&quot;</span>, <span class="string">&quot;abc&quot;</span>]))
         .map(<span class="macro">q!</span>(|s| s.to_string()));
 
     <span class="kw">let </span>all_ids_vec = cluster.ids();
@@ -328,12 +332,16 @@
     words_partitioned
         .demux_bincode(<span class="kw-2">&amp;</span>cluster)
         .tick_batch()
-        .fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|count, string| <span class="kw-2">*</span>count += string.len()))
-        .inspect(<span class="macro">q!</span>(|count| <span class="macro">println!</span>(<span class="string">&quot;partition count: {}&quot;</span>, count)))
+        .map(<span class="macro">q!</span>(|string| (string, ())))
+        .fold_keyed(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|count, <span class="kw">_</span>| <span class="kw-2">*</span>count += <span class="number">1</span>))
+        .inspect(<span class="macro">q!</span>(|(string, count)| <span class="macro">println!</span>(
+            <span class="string">&quot;partition count: {} - {}&quot;</span>,
+            string, count
+        )))
         .send_bincode_interleaved(<span class="kw-2">&amp;</span>process)
         .all_ticks()
-        .fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|total, count| <span class="kw-2">*</span>total += count))
-        .for_each(<span class="macro">q!</span>(|data| <span class="macro">println!</span>(<span class="string">&quot;total: {}&quot;</span>, data)));
+        .reduce_keyed(<span class="macro">q!</span>(|total, count| <span class="kw-2">*</span>total += count))
+        .for_each(<span class="macro">q!</span>(|(string, count)| <span class="macro">println!</span>(<span class="string">&quot;{}: {}&quot;</span>, string, count)));
 
     (process, cluster)
 }
