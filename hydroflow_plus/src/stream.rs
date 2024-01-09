@@ -467,6 +467,39 @@ impl<'a, K, V1, W, N: Location<'a>> Stream<'a, (K, V1), W, N> {
     }
 }
 
+impl<'a, K: Eq + Hash, V, N: Location<'a>> Stream<'a, (K, V), Windowed, N> {
+    pub fn fold_keyed<A, I: Fn() -> A + 'a, C: Fn(&mut A, V)>(
+        &self,
+        init: impl IntoQuotedMut<'a, I>,
+        comb: impl IntoQuotedMut<'a, C>,
+    ) -> Stream<'a, (K, A), Windowed, N>
+    where
+        K: Eq + Hash,
+    {
+        let init = init.splice();
+        let comb = comb.splice();
+
+        if self.is_delta {
+            self.pipeline_op(parse_quote!(fold_keyed::<'static>(#init, #comb)), false)
+        } else {
+            self.pipeline_op(parse_quote!(fold_keyed::<'tick>(#init, #comb)), false)
+        }
+    }
+
+    pub fn reduce_keyed<F: Fn(&mut V, V) + 'a>(
+        &self,
+        comb: impl IntoQuotedMut<'a, F>,
+    ) -> Stream<'a, (K, V), Windowed, N> {
+        let comb = comb.splice();
+
+        if self.is_delta {
+            self.pipeline_op(parse_quote!(reduce_keyed::<'static>(#comb)), false)
+        } else {
+            self.pipeline_op(parse_quote!(reduce_keyed::<'tick>(#comb)), false)
+        }
+    }
+}
+
 fn get_this_crate() -> TokenStream {
     let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
         .expect("hydroflow_plus should be present in `Cargo.toml`");
