@@ -32,7 +32,7 @@ pub const TEE: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    output_edgetype_fn: |_| GraphEdgeType::Value, // TODO(mingwei): pass-through value types?
+    input_edgetype_fn: |_| Some(GraphEdgeType::Value), output_edgetype_fn: |_| GraphEdgeType::Value, // TODO(mingwei): pass-through value types?
     flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
         Ok(vec![flow_props_in[0]])
     }),

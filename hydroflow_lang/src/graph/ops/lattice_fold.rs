@@ -43,6 +43,7 @@ pub const LATTICE_FOLD: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::MonotoneAccum),
+    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
     output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: Some(LATTICE_FOLD_REDUCE_FLOW_PROP_FN),
     write_fn: |wc @ &WriteContextArgs {
