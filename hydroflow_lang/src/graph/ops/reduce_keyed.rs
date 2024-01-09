@@ -132,13 +132,20 @@ pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
                             fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A: ::std::clone::Clone, B: ::std::clone::Clone>(iter: Iter)
                                 -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
 
+                            #[inline(always)]
+                            /// A: accumulator type
+                            /// O: output type
+                            fn call_comb_type<A, O>(acc: &mut A, item: A, f: impl Fn(&mut A, A) -> O) -> O {
+                                f(acc, item)
+                            }
+
                             for kv in check_input(#input) {
                                 match #hashtable_ident.entry(kv.0) {
                                     ::std::collections::hash_map::Entry::Vacant(vacant) => {
                                         vacant.insert(kv.1);
                                     }
                                     ::std::collections::hash_map::Entry::Occupied(mut occupied) => {
-                                        #[allow(clippy::redundant_closure_call)] (#aggfn)(occupied.get_mut(), kv.1);
+                                        #[allow(clippy::redundant_closure_call)] call_comb_type(occupied.get_mut(), kv.1, #aggfn);
                                     }
                                 }
                             }
@@ -165,13 +172,20 @@ pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
                             fn check_input<Iter: ::std::iter::Iterator<Item = (A, B)>, A: ::std::clone::Clone, B: ::std::clone::Clone>(iter: Iter)
                                 -> impl ::std::iter::Iterator<Item = (A, B)> { iter }
 
+                            #[inline(always)]
+                            /// A: accumulator type
+                            /// O: output type
+                            fn call_comb_type<A, O>(acc: &mut A, item: A, f: impl Fn(&mut A, A) -> O) -> O {
+                                f(acc, item)
+                            }
+
                             for kv in check_input(#input) {
                                 match #hashtable_ident.entry(kv.0) {
                                     ::std::collections::hash_map::Entry::Vacant(vacant) => {
                                         vacant.insert(kv.1);
                                     }
                                     ::std::collections::hash_map::Entry::Occupied(mut occupied) => {
-                                        #[allow(clippy::redundant_closure_call)] (#aggfn)(occupied.get_mut(), kv.1);
+                                        #[allow(clippy::redundant_closure_call)] call_comb_type(occupied.get_mut(), kv.1, #aggfn);
                                     }
                                 }
                             }
