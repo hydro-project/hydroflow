@@ -269,8 +269,6 @@
 <a href="#269" id="269">269</a>
 <a href="#270" id="270">270</a>
 <a href="#271" id="271">271</a>
-<a href="#272" id="272">272</a>
-<a href="#273" id="273">273</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
@@ -332,9 +330,8 @@
         .tick_batch()
         .fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|count, string| <span class="kw-2">*</span>count += string.len()))
         .inspect(<span class="macro">q!</span>(|count| <span class="macro">println!</span>(<span class="string">&quot;partition count: {}&quot;</span>, count)))
-        .send_bincode_tagged(<span class="kw-2">&amp;</span>process)
+        .send_bincode_interleaved(<span class="kw-2">&amp;</span>process)
         .all_ticks()
-        .map(<span class="macro">q!</span>(|(_mid, count)| count))
         .fold(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|total, count| <span class="kw-2">*</span>total += count))
         .for_each(<span class="macro">q!</span>(|data| <span class="macro">println!</span>(<span class="string">&quot;total: {}&quot;</span>, data)));
 
@@ -365,8 +362,7 @@
         );
 
     trials
-        .send_bincode_tagged(<span class="kw-2">&amp;</span>process)
-        .map(<span class="macro">q!</span>(|(_mid, v)| v))
+        .send_bincode_interleaved(<span class="kw-2">&amp;</span>process)
         .all_ticks()
         .reduce(<span class="macro">q!</span>(|(inside, total), (inside_batch, total_batch)| {
             <span class="kw-2">*</span>inside += inside_batch;
