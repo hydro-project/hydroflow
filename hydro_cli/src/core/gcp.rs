@@ -510,6 +510,8 @@ impl Host for GCPComputeEngineHost {
                 ),
             },
         );
+
+        print!("{:?}", resource_batch.terraform.resource);
     }
 
     fn launched(&self) -> Option<Arc<dyn LaunchedHost>> {

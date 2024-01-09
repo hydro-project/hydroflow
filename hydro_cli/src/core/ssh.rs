@@ -102,6 +102,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         binary: Arc<(String, Vec<u8>, PathBuf)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
+        ProgressTracker::println("[launch_binary] start");
         let session = self.open_ssh_session().await?;
 
         let sftp = async_retry(
@@ -163,6 +164,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
             .await?;
         }
         drop(sftp);
+        ProgressTracker::println("[launch_binary] uploaded binary");
 
         let channel = ProgressTracker::leaf(
             format!("launching binary /home/{user}/hydro-{unique_name}"),
@@ -193,6 +195,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
             },
         )
         .await?;
+        ProgressTracker::println("[launch_binary] launched binary");
 
         let (stdin_sender, mut stdin_receiver) = async_channel::unbounded::<String>();
         let mut stdin = channel.stream(0); // stream 0 is stdout/stdin, we use it for stdin
@@ -211,6 +214,8 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
             create_broadcast(channel.stream(0), move |s| println!("[{id_clone}] {s}"));
         let stderr_receivers = create_broadcast(channel.stderr(), move |s| eprintln!("[{id}] {s}"));
 
+        ProgressTracker::println("Finished launching binary");
+
         Ok(Arc::new(RwLock::new(LaunchedSSHBinary {
             _resource_result: self.resource_result().clone(),
             session: Some(session),
@@ -222,10 +227,13 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
     }
 
     async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr> {
+        ProgressTracker::println("Forwarding port");
         let session = self.open_ssh_session().await?;
 
+        ProgressTracker::println("[forward_port]: binding to tcp listener localhost");
         let local_port = TcpListener::bind("127.0.0.1:0").await?;
         let local_addr = local_port.local_addr()?;
+        ProgressTracker::println("[forward_port]: bound to localhost");
 
         let internal_ip = addr.ip().to_string();
         let port = addr.port();

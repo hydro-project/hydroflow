@@ -207,6 +207,40 @@ impl Deployment {
         .into_py(py))
     }
 
+    #[allow(non_snake_case, clippy::too_many_arguments)]
+    fn AzureHost(
+        &self,
+        py: Python<'_>,
+        project: String,
+        os_type: String, // linux or windows
+        machine_size: String,
+        image: String,
+        region: String,
+        user: Option<String>,
+    ) -> PyResult<Py<PyAny>> {
+        println!("Creating azure host");
+        let arc = self.underlying.blocking_write().add_host(|id| {
+            crate::core::AzureHost::new(
+                id,
+                project,
+                os_type,
+                machine_size,
+                image,
+                region,
+                user,
+            )
+        });
+
+        Ok(Py::new(
+            py,
+            PyClassInitializer::from(Host {
+                underlying: arc.clone(),
+            })
+            .add_subclass(AzureHost { underlying: arc }),
+        )?
+        .into_py(py))
+    }
+
     #[allow(non_snake_case)]
     fn CustomService(
         &self,
@@ -243,6 +277,7 @@ impl Deployment {
         display_id: Option<String>,
         external_ports: Option<Vec<u16>>,
     ) -> PyResult<Py<PyAny>> {
+        println!("Creating crate");
         let service = self.underlying.blocking_write().add_service(|id| {
             crate::core::HydroflowCrate::new(
                 id,
@@ -345,6 +380,49 @@ struct GCPComputeEngineHost {
 
 #[pymethods]
 impl GCPComputeEngineHost {
+    #[getter]
+    fn internal_ip(&self) -> String {
+        self.underlying
+            .blocking_read()
+            .launched
+            .as_ref()
+            .unwrap()
+            .internal_ip
+            .clone()
+    }
+
+    #[getter]
+    fn external_ip(&self) -> Option<String> {
+        self.underlying
+            .blocking_read()
+            .launched
+            .as_ref()
+            .unwrap()
+            .external_ip
+            .clone()
+    }
+
+    #[getter]
+    fn ssh_key_path(&self) -> String {
+        self.underlying
+            .blocking_read()
+            .launched
+            .as_ref()
+            .unwrap()
+            .ssh_key_path()
+            .to_str()
+            .unwrap()
+            .to_string()
+    }
+}
+
+#[pyclass(extends=Host, subclass)]
+struct AzureHost {
+    underlying: Arc<RwLock<crate::core::AzureHost>>,
+}
+
+#[pymethods]
+impl AzureHost {
     #[getter]
     fn internal_ip(&self) -> String {
         self.underlying
