@@ -488,7 +488,9 @@ impl HydroflowGraph {
 
             let new_edge_id = self.graph.insert_edge(src, dst);
             self.ports.insert(new_edge_id, (pred_port, succ_port));
-            self.edge_types.insert(new_edge_id, edge_type);
+            if let Some(edge_type) = edge_type {
+                self.edge_types.insert(new_edge_id, edge_type);
+            }
         }
 
         self.graph.remove_vertex(mod_bound_node);
@@ -506,8 +508,8 @@ impl HydroflowGraph {
     }
 
     /// Gets the type of the edge.
-    pub fn edge_type(&self, edge_id: GraphEdgeId) -> GraphEdgeType {
-        self.edge_types[edge_id]
+    pub fn edge_type(&self, edge_id: GraphEdgeId) -> Option<GraphEdgeType> {
+        self.edge_types.get(edge_id).copied()
     }
 
     /// Get the source and destination ports for an edge: `(src &PortIndexValue, dst &PortIndexValue)`.

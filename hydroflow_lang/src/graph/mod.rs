@@ -152,7 +152,7 @@ impl std::fmt::Debug for GraphNode {
 }
 
 /// The type of the Hydroflow graph edge.
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum GraphEdgeType {
     /// Standard, pass by value, iterator ownership edges.
     Value,

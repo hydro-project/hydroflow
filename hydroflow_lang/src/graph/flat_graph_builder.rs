@@ -179,7 +179,7 @@ impl FlatGraphBuilder {
                     self.diagnostics.push(
                         Error::new(
                             pipeline_name.span(),
-                            "mod is only usable inside of a module",
+                            "`mod` is only usable inside of a module.",
                         )
                         .into(),
                     );
@@ -329,13 +329,17 @@ impl FlatGraphBuilder {
 
         for (other_edge_id, (other_src, other_dst)) in other.edges() {
             let (src_port, dst_port) = other.edge_ports(other_edge_id);
+            let edge_type = other.edge_type(other_edge_id);
 
-            let _new_edge_id = self.flat_graph.insert_edge(
+            let new_edge_id = self.flat_graph.insert_edge(
                 *node_mapping.get(&other_src).unwrap(),
                 src_port.clone(),
                 *node_mapping.get(&other_dst).unwrap(),
                 dst_port.clone(),
             );
+            if let Some(edge_type) = edge_type {
+                self.flat_graph.insert_edge_type(new_edge_id, edge_type);
+            }
         }
 
         ends
@@ -519,10 +523,8 @@ impl FlatGraphBuilder {
                     };
                     let (src_port, _dst_port) = self.flat_graph.edge_ports(edge_id);
                     let edge_type = (src_op_inst.op_constraints.output_edgetype_fn)(src_port);
-                    assert!(self
-                        .flat_graph
-                        .insert_edge_type(edge_id, edge_type)
-                        .is_none());
+                    let _old_edge_type = self.flat_graph.insert_edge_type(edge_id, edge_type);
+                    // _old_edge_type should usually be `None`? Except from modules?
                 }
                 GraphNode::Handoff { .. } => {
                     // TODO(mingwei)
@@ -546,6 +548,7 @@ impl FlatGraphBuilder {
             match node {
                 GraphNode::Operator(operator) => {
                     let Some(op_constraints) = find_op_op_constraints(operator) else {
+                        // Error already emitted by `insert_node_op_insts_all`.
                         continue;
                     };
                     // Check number of args
@@ -726,6 +729,52 @@ impl FlatGraphBuilder {
                         "output",
                         &mut self.diagnostics,
                     );
+
+                    // Check edge types.
+                    {
+                        for (edge_id, prev_node_id) in self.flat_graph.node_predecessors(node_id) {
+                            {
+                                // Module boundaries will not have an edge type.
+                                if matches!(
+                                    self.flat_graph.node(prev_node_id),
+                                    GraphNode::ModuleBoundary { .. }
+                                ) {
+                                    continue;
+                                }
+                                // Skip if previous node is unknown. // TODO(mingwei): handle explicit handoffs if we add them.
+                                if self.flat_graph.node_op_inst(prev_node_id).is_none() {
+                                    continue;
+                                }
+                            }
+
+                            let port_in = self.flat_graph.edge_ports(edge_id).0;
+                            let Some(edge_type_expected) =
+                                (op_constraints.input_edgetype_fn)(port_in)
+                            else {
+                                // `None` means any edge type is allowed.
+                                continue;
+                            };
+                            let Some(edge_type_actual) = self.flat_graph.edge_type(edge_id) else {
+                                self.diagnostics.push(Diagnostic::spanned(
+                                    port_in.span(),
+                                    Level::Error,
+                                    "Operator input has no edge type, this is a Hydroflow bug.",
+                                ));
+                                continue;
+                            };
+                            if edge_type_expected != edge_type_actual {
+                                self.diagnostics.push(Diagnostic::spanned(
+                                    port_in.span(),
+                                    Level::Error,
+                                    format!(
+                                        "Operator requires a {:?} edge type input, but received a {:?} edge type input.",
+                                        edge_type_expected,
+                                        edge_type_actual,
+                                    ),
+                                ));
+                            }
+                        }
+                    }
                 }
                 GraphNode::Handoff { .. } => todo!("Node::Handoff"),
                 GraphNode::ModuleBoundary { .. } => {
