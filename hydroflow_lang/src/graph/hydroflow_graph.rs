@@ -425,7 +425,7 @@ impl HydroflowGraph {
     }
 
     /// see `merge_modules`
-    /// This function removes a singular module boundary from the graph and performs the necessary stitching to fix the graph aftward.
+    /// This function removes a singular module boundary from the graph and performs the necessary stitching to fix the graph afterward.
     /// `merge_modules` calls this function for each module boundary in the graph.
     fn remove_module_boundary(&mut self, mod_bound_node: GraphNodeId) -> Result<(), Diagnostic> {
         assert!(
