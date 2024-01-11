@@ -178,7 +178,7 @@ where
                 Some(LatticeFlowType::Cumul) => "==",
             },
             arrow_head = match delay_type {
-                None => ">",
+                None | Some(DelayType::MonotoneAccum) => ">",
                 Some(DelayType::Stratum) => "x",
                 Some(DelayType::Tick | DelayType::TickLazy) => "o",
             },
@@ -196,8 +196,10 @@ where
                 self.link_count,
                 match (delay_type, lattice_flow_type) {
                     (None, None) => unreachable!(),
-                    (Some(_), _) => "red",
-                    (None, Some(_)) => "#060",
+                    (Some(DelayType::Stratum), _)
+                    | (Some(DelayType::Tick), _)
+                    | (Some(DelayType::TickLazy), _) => "red",
+                    (Some(DelayType::MonotoneAccum), _) | (None, Some(_)) => "#060",
                 }
             )?;
         }

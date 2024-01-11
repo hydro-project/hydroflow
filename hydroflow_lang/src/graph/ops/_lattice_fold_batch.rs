@@ -2,8 +2,8 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, PortListSpec,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::graph::{OpInstGenerics, OperatorInstance};
 
@@ -44,7 +44,7 @@ pub const _LATTICE_FOLD_BATCH: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: Some(|| PortListSpec::Fixed(parse_quote! { input, signal })),
     ports_out: None,
-    input_delaytype_fn: |_| Some(DelayType::Stratum),
+    input_delaytype_fn: |_| Some(DelayType::MonotoneAccum),
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    context,

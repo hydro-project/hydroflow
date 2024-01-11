@@ -390,6 +390,10 @@ fn find_subgraph_strata(
                     return Err(Diagnostic::spanned(dst_port.span(), Level::Error, "Negative edge creates a negative cycle which must be broken with a `defer_tick()` operator."));
                 }
             }
+            DelayType::MonotoneAccum => {
+                // cycles are actually fine
+                continue;
+            }
         }
     }
     Ok(())
