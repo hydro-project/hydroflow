@@ -263,7 +263,7 @@ pub fn run_server<RX>(
 
                 // Send get results back to user
                 lookup
-                    -> map(|singleton_map: lattices::map_union::MapUnionSingletonMap<_, lattices::Pair::<MyLastWriteWins<BUFFER_SIZE>, MySetUnion>>| {  
+                    -> map(|singleton_map: lattices::map_union::MapUnionSingletonMap<_, lattices::Pair::<MyLastWriteWins<BUFFER_SIZE>, MySetUnion>>| {
                         let lattices::collections::SingletonMap(k, v) = singleton_map.into_reveal();
                         (k, (v.into_reveal()))
                     })
