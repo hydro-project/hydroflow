@@ -46,7 +46,7 @@ fn test_lattice_fold_loop() {
             -> map(|x| Max::<u8>::new(x.into_reveal() + 1))
             -> filter(|x| !x.is_top())
             -> tee();
-        folder -> cast(Some(Delta)) -> folder;
+        folder -> folder;
         folder
             -> for_each(|v: Max<u8>| output_send.send(*v.as_reveal_ref()).unwrap());
     };
