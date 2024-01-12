@@ -57,14 +57,20 @@ pub fn test_lattice_join_fused_join_map_union() {
         source_iter([(7, MapUnionSingletonMap::new_from((3, Min::new(5)))), (7, MapUnionSingletonMap::new_from((3, Min::new(4))))]) -> [1]my_join;
 
         my_join = _lattice_join_fused_join::<MapUnionHashMap<usize, Min<usize>>, MapUnionHashMap<usize, Min<usize>>>()
-            // -> map(|singleton_map| { // TODO(mingwei)
-            //     let lattices::collections::SingletonMap(k, v) = singleton_map.into_reveal();
-            //     (k, (v.into_reveal()))
-            // }) // TODO(mingwei)
-            // -> assert_eq([
-            //     (7, (Min::new(3), Min::new(4)))
-            // ]);
-            -> null();
+            -> map(|singleton_map| {  // TODO(mingwei)
+                let lattices::collections::SingletonMap(k, v) = singleton_map.into_reveal();
+                (k, v.into_reveal())
+            })
+            -> assert(|(_k, (mu1, mu2))| mu1.as_reveal_ref().len() == 1 && mu2.as_reveal_ref().len() == 1)
+            -> map(|(k, (mu1, mu2))| {
+                let v1 = mu1.into_reveal().into_iter().next().unwrap();
+                let v2 = mu2.into_reveal().into_iter().next().unwrap();
+                (k, (v1, v2))
+            }) // TODO(mingwei)
+            -> assert_eq([
+                (7, ( (3, Min::new(4)), (3, Min::new(4)) ))
+            ]);
+            // -> null();
     };
 
     df.run_available();
