@@ -22,11 +22,13 @@ use crate::parse::{Operator, PortIndex};
 /// The delay (soft barrier) type, for each input to an operator if needed.
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
 pub enum DelayType {
-    /// Input should be collected over the preceeding stratum.
+    /// Input must be collected over the preceeding stratum.
     Stratum,
-    /// Input should be collected over the previous tick.
+    /// Monotone accumulation: can delay to reduce flow rate, but also correct to emit "early"
+    MonotoneAccum,
+    /// Input must be collected over the previous tick.
     Tick,
-    /// Input should be collected over the previous tick but also not cause a new tick to occur.
+    /// Input must be collected over the previous tick but also not cause a new tick to occur.
     TickLazy,
 }
 

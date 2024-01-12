@@ -2,8 +2,8 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, PortListSpec,
+    WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
 };
 use crate::graph::{OpInstGenerics, OperatorInstance};
 
@@ -44,8 +44,9 @@ pub const _LATTICE_FOLD_BATCH: OperatorConstraints = OperatorConstraints {
     is_external_input: false,
     ports_inn: Some(|| PortListSpec::Fixed(parse_quote! { input, signal })),
     ports_out: None,
-    input_delaytype_fn: |_| Some(DelayType::Stratum),
-    flow_prop_fn: None,
+    input_delaytype_fn: |_| Some(DelayType::MonotoneAccum),
+    // kind of like tick-based lattice_fold(), this is batch-at-a-time
+    flow_prop_fn: Some(LATTICE_FOLD_REDUCE_FLOW_PROP_FN),
     write_fn: |wc @ &WriteContextArgs {
                    context,
                    hydroflow,

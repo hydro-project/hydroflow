@@ -71,7 +71,7 @@ fn run_topolotree(
 
         from_neighbors = parsed_input[payload] -> tee();
         pings = parsed_input[ping] -> tee();
-        pongs = parsed_input[pong] -> tee();
+        pongs = parsed_input[pong];
 
         pings -> map(|(src, _)| (src, TopolotreeMessage::Pong())) -> output;
 
@@ -94,7 +94,7 @@ fn run_topolotree(
                 } else {
                     None
                 }
-            }) -> tee();
+            });
 
         from_neighbors
             -> map(|(_, payload): (NodeID, Payload<i64>)| payload.key)
