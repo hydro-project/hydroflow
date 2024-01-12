@@ -2,6 +2,7 @@
 
 use std::borrow::Borrow;
 use std::hash::Hash;
+use std::marker::PhantomData;
 
 use cc_traits::{
     covariant_item_mut, covariant_item_ref, covariant_key_ref, simple_keyed_ref, Collection,
@@ -219,6 +220,52 @@ impl<K, V> MapIterMut for VecMap<K, V> {
 
     fn iter_mut(&mut self) -> Self::IterMut<'_> {
         self.keys.iter().zip(self.vals.iter_mut())
+    }
+}
+
+/// A type that will always be an empty set.
+#[derive(Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct EmptySet<T> {
+    _x: PhantomData<T>,
+}
+
+impl<T> Collection for EmptySet<T> {
+    type Item = T;
+}
+
+impl<T> CollectionRef for EmptySet<T> {
+    type ItemRef<'a> = &'a Self::Item where Self::Item: 'a;
+
+    covariant_item_ref!();
+}
+
+impl<'a, Q, T> Get<&'a Q> for EmptySet<T> {
+    fn get(&self, _key: &'a Q) -> Option<Self::ItemRef<'_>> {
+        None
+    }
+}
+
+impl<T> Len for EmptySet<T> {
+    fn len(&self) -> usize {
+        0
+    }
+}
+
+impl<T> Iter for EmptySet<T> {
+    type Iter<'a> = std::iter::Empty<&'a T> where T: 'a;
+
+    fn iter(&self) -> Self::Iter<'_> {
+        std::iter::empty()
+    }
+}
+
+impl<T> IntoIterator for EmptySet<T> {
+    type Item = T;
+    type IntoIter = std::iter::Empty<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        std::iter::empty()
     }
 }
 
