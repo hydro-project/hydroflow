@@ -14,6 +14,7 @@ mod ord;
 mod pair;
 mod point;
 pub mod set_union;
+pub mod set_union_with_tombstones;
 pub mod test;
 pub mod union_find;
 mod unit;
