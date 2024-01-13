@@ -459,6 +459,10 @@
 <a href="#459" id="459">459</a>
 <a href="#460" id="460">460</a>
 <a href="#461" id="461">461</a>
+<a href="#462" id="462">462</a>
+<a href="#463" id="463">463</a>
+<a href="#464" id="464">464</a>
+<a href="#465" id="465">465</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Subgraph partioning algorithm
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -850,6 +854,10 @@
                 </span><span class="kw">if </span>dst_stratum &lt;= src_stratum {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic::spanned(dst_port.span(), Level::Error, <span class="string">&quot;Negative edge creates a negative cycle which must be broken with a `defer_tick()` operator.&quot;</span>));
                 }
+            }
+            DelayType::MonotoneAccum =&gt; {
+                <span class="comment">// cycles are actually fine
+                </span><span class="kw">continue</span>;
             }
         }
     }

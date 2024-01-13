@@ -655,6 +655,8 @@
 <a href="#655" id="655">655</a>
 <a href="#656" id="656">656</a>
 <a href="#657" id="657">657</a>
+<a href="#658" id="658">658</a>
+<a href="#659" id="659">659</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Hydroflow&#39;s operators
 
 </span><span class="kw">use </span>std::collections::HashMap;
@@ -679,11 +681,13 @@
 <span class="doccomment">/// The delay (soft barrier) type, for each input to an operator if needed.
 </span><span class="attr">#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
 </span><span class="kw">pub enum </span>DelayType {
-    <span class="doccomment">/// Input should be collected over the preceeding stratum.
+    <span class="doccomment">/// Input must be collected over the preceeding stratum.
     </span>Stratum,
-    <span class="doccomment">/// Input should be collected over the previous tick.
+    <span class="doccomment">/// Monotone accumulation: can delay to reduce flow rate, but also correct to emit &quot;early&quot;
+    </span>MonotoneAccum,
+    <span class="doccomment">/// Input must be collected over the previous tick.
     </span>Tick,
-    <span class="doccomment">/// Input should be collected over the previous tick but also not cause a new tick to occur.
+    <span class="doccomment">/// Input must be collected over the previous tick but also not cause a new tick to occur.
     </span>TickLazy,
 }
 

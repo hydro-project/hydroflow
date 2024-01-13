@@ -364,7 +364,7 @@
 
         from_neighbors = parsed_input[payload] -&gt; tee();
         pings = parsed_input[ping] -&gt; tee();
-        pongs = parsed_input[pong] -&gt; tee();
+        pongs = parsed_input[pong];
 
         pings -&gt; map(|(src, <span class="kw">_</span>)| (src, TopolotreeMessage::Pong())) -&gt; output;
 
@@ -387,7 +387,7 @@
                 } <span class="kw">else </span>{
                     <span class="prelude-val">None
                 </span>}
-            }) -&gt; tee();
+            });
 
         from_neighbors
             -&gt; map(|(<span class="kw">_</span>, payload): (NodeID, Payload&lt;i64&gt;)| payload.key)
