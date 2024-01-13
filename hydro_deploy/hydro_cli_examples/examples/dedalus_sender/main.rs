@@ -16,7 +16,7 @@ async fn main() {
     let broadcast_sink = broadcast_port.into_sink();
 
     let periodic = IntervalStream::new(tokio::time::interval(std::time::Duration::from_secs(1)));
-    let to_repeat = vec![
+    let to_repeat = [
         (format!("Hello {sender_i}"),),
         (format!("world {sender_i}"),),
     ];
