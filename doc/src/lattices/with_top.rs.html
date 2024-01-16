@@ -215,9 +215,20 @@
 <a href="#215" id="215">215</a>
 <a href="#216" id="216">216</a>
 <a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 
-<span class="kw">use crate</span>::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+<span class="kw">use crate</span>::{Atomize, DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 <span class="doccomment">/// Wraps a lattice in [`Option`], treating [`None`] as a new top element which compares as greater
 /// than to all other values.
@@ -262,6 +273,17 @@
 {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>(<span class="prelude-val">Some</span>(Inner::default()))
+    }
+}
+
+<span class="kw">impl</span>&lt;Inner&gt; DeepReveal <span class="kw">for </span>WithTop&lt;Inner&gt;
+<span class="kw">where
+    </span>Inner: DeepReveal,
+{
+    <span class="kw">type </span>Revealed = <span class="prelude-ty">Option</span>&lt;Inner::Revealed&gt;;
+
+    <span class="kw">fn </span>deep_reveal(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Revealed {
+        <span class="self">self</span>.<span class="number">0</span>.map(DeepReveal::deep_reveal)
     }
 }
 

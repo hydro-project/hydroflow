@@ -329,6 +329,14 @@
 <a href="#329" id="329">329</a>
 <a href="#330" id="330">330</a>
 <a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module containing the [`UnionFind`] lattice and aliases for different datastructures.
 
 </span><span class="kw">use </span>std::cell::Cell;
@@ -338,7 +346,7 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::cc_traits::{Keyed, Map, MapIter, MapMut};
 <span class="kw">use </span><span class="kw">crate</span>::collections::{ArrayMap, OptionMap, SingletonMap, VecMap};
-<span class="kw">use crate</span>::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Max, Merge, Min};
+<span class="kw">use crate</span>::{Atomize, DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Max, Merge, Min};
 
 <span class="comment">// TODO(mingwei): handling malformed trees - parents must be Ord smaller than children.
 
@@ -388,9 +396,17 @@
     </span>}
 }
 
-<span class="kw">impl</span>&lt;MapSelf, K&gt; UnionFind&lt;MapSelf&gt;
+<span class="kw">impl</span>&lt;Map&gt; DeepReveal <span class="kw">for </span>UnionFind&lt;Map&gt; {
+    <span class="kw">type </span>Revealed = Map;
+
+    <span class="kw">fn </span>deep_reveal(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Revealed {
+        <span class="self">self</span>.<span class="number">0
+    </span>}
+}
+
+<span class="kw">impl</span>&lt;Map, K&gt; UnionFind&lt;Map&gt;
 <span class="kw">where
-    </span>MapSelf: MapMut&lt;K, Cell&lt;K&gt;, Key = K, Item = Cell&lt;K&gt;&gt;,
+    </span>Map: MapMut&lt;K, Cell&lt;K&gt;, Key = K, Item = Cell&lt;K&gt;&gt;,
     K: Copy + Eq,
 {
     <span class="doccomment">/// Union the sets containg `a` and `b`.
@@ -517,7 +533,7 @@
                 .any(|(item, parent)| !<span class="self">self</span>.same(<span class="kw-2">*</span>item, parent.get()).into_reveal()))
     }
 }
-<span class="kw">impl</span>&lt;MapSelf&gt; Eq <span class="kw">for </span>UnionFind&lt;MapSelf&gt; <span class="kw">where </span><span class="self">Self</span>: PartialEq {}
+<span class="kw">impl</span>&lt;Map&gt; Eq <span class="kw">for </span>UnionFind&lt;Map&gt; <span class="kw">where </span><span class="self">Self</span>: PartialEq {}
 
 <span class="kw">impl</span>&lt;Map, K&gt; IsBot <span class="kw">for </span>UnionFind&lt;Map&gt;
 <span class="kw">where

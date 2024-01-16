@@ -324,6 +324,18 @@
 <a href="#324" id="324">324</a>
 <a href="#325" id="325">325</a>
 <a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module containing the [`MapUnion`] lattice and aliases for different datastructures.
 
 </span><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
@@ -333,8 +345,8 @@
 <span class="kw">use </span>cc_traits::Iter;
 
 <span class="kw">use </span><span class="kw">crate</span>::cc_traits::{GetMut, Keyed, Map, MapIter, SimpleKeyedRef};
-<span class="kw">use </span><span class="kw">crate</span>::collections::{ArrayMap, OptionMap, SingletonMap, VecMap};
-<span class="kw">use crate</span>::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+<span class="kw">use </span><span class="kw">crate</span>::collections::{ArrayMap, MapMapValues, OptionMap, SingletonMap, VecMap};
+<span class="kw">use crate</span>::{Atomize, DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 <span class="doccomment">/// Map-union compound lattice.
 ///
@@ -369,6 +381,18 @@
     </span><span class="kw">pub fn </span>into_reveal(<span class="self">self</span>) -&gt; Map {
         <span class="self">self</span>.<span class="number">0
     </span>}
+}
+
+<span class="kw">impl</span>&lt;Map, Val&gt; DeepReveal <span class="kw">for </span>MapUnion&lt;Map&gt;
+<span class="kw">where
+    </span>Map: Keyed&lt;Item = Val&gt; + MapMapValues&lt;Val&gt;,
+    Val: DeepReveal,
+{
+    <span class="kw">type </span>Revealed = Map::MapValue&lt;Val::Revealed&gt;;
+
+    <span class="kw">fn </span>deep_reveal(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Revealed {
+        <span class="self">self</span>.<span class="number">0</span>.map_values(DeepReveal::deep_reveal)
+    }
 }
 
 <span class="kw">impl</span>&lt;MapSelf, MapOther, K, ValSelf, ValOther&gt; Merge&lt;MapUnion&lt;MapOther&gt;&gt; <span class="kw">for </span>MapUnion&lt;MapSelf&gt;

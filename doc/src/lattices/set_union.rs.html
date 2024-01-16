@@ -225,6 +225,14 @@
 <a href="#225" id="225">225</a>
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module containing the [`SetUnion`] lattice and aliases for different datastructures.
 
 </span><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
@@ -232,7 +240,7 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::cc_traits::{Iter, Len, Set};
 <span class="kw">use </span><span class="kw">crate</span>::collections::{ArraySet, OptionSet, SingletonSet};
-<span class="kw">use crate</span>::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+<span class="kw">use crate</span>::{Atomize, DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 <span class="doccomment">/// Set-union lattice.
 ///
@@ -264,6 +272,14 @@
 
     <span class="doccomment">/// Gets the inner by value, consuming self.
     </span><span class="kw">pub fn </span>into_reveal(<span class="self">self</span>) -&gt; Set {
+        <span class="self">self</span>.<span class="number">0
+    </span>}
+}
+
+<span class="kw">impl</span>&lt;Set&gt; DeepReveal <span class="kw">for </span>SetUnion&lt;Set&gt; {
+    <span class="kw">type </span>Revealed = Set;
+
+    <span class="kw">fn </span>deep_reveal(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Revealed {
         <span class="self">self</span>.<span class="number">0
     </span>}
 }

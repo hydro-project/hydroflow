@@ -137,9 +137,17 @@
 <a href="#137" id="137">137</a>
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 
-<span class="kw">use crate</span>::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+<span class="kw">use crate</span>::{DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 <span class="doccomment">/// A `Conflict` lattice, stores a single instance of `T` and goes to a &quot;conflict&quot; state (`None`)
 /// if inequal `T` instances are merged together.
@@ -177,6 +185,14 @@
 
     <span class="doccomment">/// Gets the inner by value, consuming self.
     </span><span class="kw">pub fn </span>into_reveal(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+        <span class="self">self</span>.<span class="number">0
+    </span>}
+}
+
+<span class="kw">impl</span>&lt;T&gt; DeepReveal <span class="kw">for </span>Conflict&lt;T&gt; {
+    <span class="kw">type </span>Revealed = <span class="prelude-ty">Option</span>&lt;T&gt;;
+
+    <span class="kw">fn </span>deep_reveal(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Revealed {
         <span class="self">self</span>.<span class="number">0
     </span>}
 }
