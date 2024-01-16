@@ -146,6 +146,7 @@
 <a href="#146" id="146">146</a>
 <a href="#147" id="147">147</a>
 <a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -153,7 +154,7 @@
     OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
-<span class="kw">use </span><span class="kw">crate</span>::graph::{FlowProps, LatticeFlowType};
+<span class="kw">use </span><span class="kw">crate</span>::graph::{FlowProps, LatticeFlowType, GraphEdgeType};
 
 <span class="doccomment">/// Stores each item as it passes through, and replays all item every tick.
 ///
@@ -198,6 +199,7 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
+    input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(GraphEdgeType::Value), output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value,
     flow_prop_fn: <span class="prelude-val">Some</span>(
         |fp @ FlowPropArgs {
              op_span, op_name, ..

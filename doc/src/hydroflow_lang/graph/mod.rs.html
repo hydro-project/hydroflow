@@ -590,7 +590,7 @@
 }
 
 <span class="doccomment">/// The type of the Hydroflow graph edge.
-</span><span class="attr">#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+</span><span class="attr">#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 </span><span class="kw">pub enum </span>GraphEdgeType {
     <span class="doccomment">/// Standard, pass by value, iterator ownership edges.
     </span>Value,

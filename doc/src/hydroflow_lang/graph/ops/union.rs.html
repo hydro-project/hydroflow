@@ -105,13 +105,14 @@
 <a href="#105" id="105">105</a>
 <a href="#106" id="106">106</a>
 <a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 
 <span class="kw">use super</span>::{
     FlowPropArgs, FlowProps, OperatorCategory,
     OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
 };
-<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
+<span class="kw">use crate</span>::{diagnostic::{Diagnostic, Level}, graph::GraphEdgeType};
 
 <span class="doccomment">/// &gt; *n* input streams of the same type, 1 output stream of the same type
 ///
@@ -142,6 +143,7 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
+    input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(GraphEdgeType::Value), output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value,
     flow_prop_fn: <span class="prelude-val">Some</span>(
         |fp @ FlowPropArgs {
              op_name,

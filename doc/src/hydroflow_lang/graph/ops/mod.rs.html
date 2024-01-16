@@ -657,6 +657,11 @@
 <a href="#657" id="657">657</a>
 <a href="#658" id="658">658</a>
 <a href="#659" id="659">659</a>
+<a href="#660" id="660">660</a>
+<a href="#661" id="661">661</a>
+<a href="#662" id="662">662</a>
+<a href="#663" id="663">663</a>
+<a href="#664" id="664">664</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Hydroflow&#39;s operators
 
 </span><span class="kw">use </span>std::collections::HashMap;
@@ -672,8 +677,8 @@
 <span class="kw">use </span>syn::{parse_quote_spanned, Expr, Token};
 
 <span class="kw">use super</span>::{
-    FlowProps, GraphNode, GraphNodeId, GraphSubgraphId, LatticeFlowType, OpInstGenerics,
-    OperatorInstance, PortIndexValue,
+    FlowProps, GraphEdgeType, GraphNode, GraphNodeId, GraphSubgraphId, LatticeFlowType,
+    OpInstGenerics, OperatorInstance, PortIndexValue,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span><span class="kw">crate</span>::parse::{Operator, PortIndex};
@@ -734,6 +739,10 @@
 
     <span class="doccomment">/// Determines if this input must be preceeded by a stratum barrier.
     </span><span class="kw">pub </span>input_delaytype_fn: <span class="kw">fn</span>(<span class="kw-2">&amp;</span>PortIndexValue) -&gt; <span class="prelude-ty">Option</span>&lt;DelayType&gt;,
+    <span class="doccomment">/// The required edge type for each input. `None` means any is OK.
+    </span><span class="kw">pub </span>input_edgetype_fn: <span class="kw">fn</span>(<span class="kw-2">&amp;</span>PortIndexValue) -&gt; <span class="prelude-ty">Option</span>&lt;GraphEdgeType&gt;,
+    <span class="doccomment">/// Specifies the edge type for each output port.
+    </span><span class="kw">pub </span>output_edgetype_fn: <span class="kw">fn</span>(<span class="kw-2">&amp;</span>PortIndexValue) -&gt; GraphEdgeType,
 
     <span class="doccomment">/// Return the output flow types for the given input flow types.
     ///
@@ -1061,6 +1070,7 @@
     source_stdin::SOURCE_STDIN,
     source_stream::SOURCE_STREAM,
     source_stream_serde::SOURCE_STREAM_SERDE,
+    state::STATE,
     tee::TEE,
     unique::UNIQUE,
     unzip::UNZIP,

@@ -1411,6 +1411,23 @@
 <a href="#1411" id="1411">1411</a>
 <a href="#1412" id="1412">1412</a>
 <a href="#1413" id="1413">1413</a>
+<a href="#1414" id="1414">1414</a>
+<a href="#1415" id="1415">1415</a>
+<a href="#1416" id="1416">1416</a>
+<a href="#1417" id="1417">1417</a>
+<a href="#1418" id="1418">1418</a>
+<a href="#1419" id="1419">1419</a>
+<a href="#1420" id="1420">1420</a>
+<a href="#1421" id="1421">1421</a>
+<a href="#1422" id="1422">1422</a>
+<a href="#1423" id="1423">1423</a>
+<a href="#1424" id="1424">1424</a>
+<a href="#1425" id="1425">1425</a>
+<a href="#1426" id="1426">1426</a>
+<a href="#1427" id="1427">1427</a>
+<a href="#1428" id="1428">1428</a>
+<a href="#1429" id="1429">1429</a>
+<a href="#1430" id="1430">1430</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -1824,88 +1841,90 @@
     /// in the above eaxmple, the \[myport\] port will be used to connect the source_iter with the map that is inside of the module.
     /// The output module boundary has elided ports, this is also used to match up the input/output across the module boundary.
     </span><span class="kw">pub fn </span>merge_modules(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), Diagnostic&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>to_remove = Vec::new();
+        <span class="kw">let </span>mod_bound_nodes = <span class="self">self
+            </span>.nodes()
+            .filter(|(_nid, node)| <span class="macro">matches!</span>(node, GraphNode::ModuleBoundary { .. }))
+            .map(|(nid, _node)| nid)
+            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
-        <span class="kw">for </span>(nid, node) <span class="kw">in </span><span class="self">self</span>.nodes() {
-            <span class="kw">if </span><span class="macro">matches!</span>(node, GraphNode::ModuleBoundary { .. }) {
-                to_remove.push(nid);
-            }
-        }
-
-        <span class="kw">for </span>nid <span class="kw">in </span>to_remove {
-            <span class="self">self</span>.remove_module_boundary(nid)<span class="question-mark">?</span>;
+        <span class="kw">for </span>mod_bound_node <span class="kw">in </span>mod_bound_nodes {
+            <span class="self">self</span>.remove_module_boundary(mod_bound_node)<span class="question-mark">?</span>;
         }
 
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="doccomment">/// see `merge_modules`
-    /// This function removes a singular module boundary from the graph and performs the necessary stitching to fix the graph aftward.
+    /// This function removes a singular module boundary from the graph and performs the necessary stitching to fix the graph afterward.
     /// `merge_modules` calls this function for each module boundary in the graph.
-    </span><span class="kw">fn </span>remove_module_boundary(<span class="kw-2">&amp;mut </span><span class="self">self</span>, nid: GraphNodeId) -&gt; <span class="prelude-ty">Result</span>&lt;(), Diagnostic&gt; {
+    </span><span class="kw">fn </span>remove_module_boundary(<span class="kw-2">&amp;mut </span><span class="self">self</span>, mod_bound_node: GraphNodeId) -&gt; <span class="prelude-ty">Result</span>&lt;(), Diagnostic&gt; {
         <span class="macro">assert!</span>(
             <span class="self">self</span>.node_subgraph.is_empty() &amp;&amp; <span class="self">self</span>.subgraph_nodes.is_empty(),
             <span class="string">&quot;Should not remove intermediate node after subgraph partitioning&quot;
         </span>);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>predecessor_ports = BTreeMap::new();
-        <span class="kw">let </span><span class="kw-2">mut </span>successor_ports = BTreeMap::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>mod_pred_ports = BTreeMap::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>mod_succ_ports = BTreeMap::new();
 
-        <span class="kw">for </span>eid <span class="kw">in </span><span class="self">self</span>.node_predecessor_edges(nid) {
-            <span class="kw">let </span>(predecessor_port, successor_port) = <span class="self">self</span>.edge_ports(eid);
-            predecessor_ports.insert(successor_port.clone(), (eid, predecessor_port.clone()));
+        <span class="kw">for </span>mod_out_edge <span class="kw">in </span><span class="self">self</span>.node_predecessor_edges(mod_bound_node) {
+            <span class="kw">let </span>(pred_port, succ_port) = <span class="self">self</span>.edge_ports(mod_out_edge);
+            mod_pred_ports.insert(succ_port.clone(), (mod_out_edge, pred_port.clone()));
         }
 
-        <span class="kw">for </span>eid <span class="kw">in </span><span class="self">self</span>.node_successor_edges(nid) {
-            <span class="kw">let </span>(predecessor_port, successor_port) = <span class="self">self</span>.edge_ports(eid);
-            successor_ports.insert(predecessor_port.clone(), (eid, successor_port.clone()));
+        <span class="kw">for </span>mod_inn_edge <span class="kw">in </span><span class="self">self</span>.node_successor_edges(mod_bound_node) {
+            <span class="kw">let </span>(pred_port, succ_port) = <span class="self">self</span>.edge_ports(mod_inn_edge);
+            mod_succ_ports.insert(pred_port.clone(), (mod_inn_edge, succ_port.clone()));
         }
 
-        <span class="kw">if </span>predecessor_ports.keys().collect::&lt;BTreeSet&lt;<span class="kw">_</span>&gt;&gt;()
-            != successor_ports.keys().collect::&lt;BTreeSet&lt;<span class="kw">_</span>&gt;&gt;()
+        <span class="kw">if </span>mod_pred_ports.keys().collect::&lt;BTreeSet&lt;<span class="kw">_</span>&gt;&gt;()
+            != mod_succ_ports.keys().collect::&lt;BTreeSet&lt;<span class="kw">_</span>&gt;&gt;()
         {
             <span class="comment">// get module boundary node
-            </span><span class="kw">match </span><span class="self">self</span>.node(nid) {
-                GraphNode::ModuleBoundary { input, import_expr } =&gt; {
-                    <span class="kw">if </span><span class="kw-2">*</span>input {
-                        <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic {
-                            span: <span class="kw-2">*</span>import_expr,
-                            level: Level::Error,
-                            message: <span class="macro">format!</span>(
-                                <span class="string">&quot;The ports into the module did not match. input: {:?}, expected: {:?}&quot;</span>,
-                                predecessor_ports.keys().map(|x| x.to_string()).join(<span class="string">&quot;, &quot;</span>),
-                                successor_ports.keys().map(|x| x.to_string()).join(<span class="string">&quot;, &quot;</span>)
-                            ),
-                        });
-                    } <span class="kw">else </span>{
-                        <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic {
-                            span: <span class="kw-2">*</span>import_expr,
-                            level: Level::Error,
-                            message: <span class="macro">format!</span>(<span class="string">&quot;The ports out of the module did not match. output: {:?}, expected: {:?}&quot;</span>,
-                                successor_ports.keys().map(|x| x.to_string()).join(<span class="string">&quot;, &quot;</span>),
-                                predecessor_ports.keys().map(|x| x.to_string()).join(<span class="string">&quot;, &quot;</span>),
-                        )});
-                    }
-                }
-                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(),
+            </span><span class="kw">let </span>GraphNode::ModuleBoundary { input, import_expr } = <span class="self">self</span>.node(mod_bound_node) <span class="kw">else </span>{
+                <span class="macro">panic!</span>();
+            };
+
+            <span class="kw">if </span><span class="kw-2">*</span>input {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic {
+                    span: <span class="kw-2">*</span>import_expr,
+                    level: Level::Error,
+                    message: <span class="macro">format!</span>(
+                        <span class="string">&quot;The ports into the module did not match. input: {:?}, expected: {:?}&quot;</span>,
+                        mod_pred_ports.keys().map(|x| x.to_string()).join(<span class="string">&quot;, &quot;</span>),
+                        mod_succ_ports.keys().map(|x| x.to_string()).join(<span class="string">&quot;, &quot;</span>)
+                    ),
+                });
+            } <span class="kw">else </span>{
+                <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic {
+                    span: <span class="kw-2">*</span>import_expr,
+                    level: Level::Error,
+                    message: <span class="macro">format!</span>(
+                        <span class="string">&quot;The ports out of the module did not match. output: {:?}, expected: {:?}&quot;</span>,
+                        mod_succ_ports.keys().map(|x| x.to_string()).join(<span class="string">&quot;, &quot;</span>),
+                        mod_pred_ports.keys().map(|x| x.to_string()).join(<span class="string">&quot;, &quot;</span>),
+                    ),
+                });
             }
         }
 
-        <span class="kw">for </span>(port, (predecessor_edge, predecessor_port)) <span class="kw">in </span>predecessor_ports {
-            <span class="kw">let </span>(successor_edge, successor_port) = successor_ports.remove(<span class="kw-2">&amp;</span>port).unwrap();
+        <span class="kw">for </span>(port, (pred_edge, pred_port)) <span class="kw">in </span>mod_pred_ports {
+            <span class="kw">let </span>(succ_edge, succ_port) = mod_succ_ports.remove(<span class="kw-2">&amp;</span>port).unwrap();
 
-            <span class="kw">let </span>(src, <span class="kw">_</span>) = <span class="self">self</span>.graph.remove_edge(predecessor_edge).unwrap();
-            <span class="kw">let </span>(<span class="kw">_</span>, dst) = <span class="self">self</span>.graph.remove_edge(successor_edge).unwrap();
+            <span class="kw">let </span>(src, <span class="kw">_</span>) = <span class="self">self</span>.edge(pred_edge);
+            <span class="kw">let </span>(<span class="kw">_</span>, dst) = <span class="self">self</span>.edge(succ_edge);
+            <span class="kw">let </span>edge_type = <span class="self">self</span>.edge_type(pred_edge);
+            <span class="self">self</span>.remove_edge(pred_edge);
+            <span class="self">self</span>.remove_edge(succ_edge);
 
-            <span class="self">self</span>.ports.remove(predecessor_edge);
-            <span class="self">self</span>.ports.remove(successor_edge);
-
-            <span class="kw">let </span>eid = <span class="self">self</span>.graph.insert_edge(src, dst);
-            <span class="self">self</span>.ports.insert(eid, (predecessor_port, successor_port));
+            <span class="kw">let </span>new_edge_id = <span class="self">self</span>.graph.insert_edge(src, dst);
+            <span class="self">self</span>.ports.insert(new_edge_id, (pred_port, succ_port));
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(edge_type) = edge_type {
+                <span class="self">self</span>.edge_types.insert(new_edge_id, edge_type);
+            }
         }
 
-        <span class="self">self</span>.graph.remove_vertex(nid);
-        <span class="self">self</span>.nodes.remove(nid);
+        <span class="self">self</span>.graph.remove_vertex(mod_bound_node);
+        <span class="self">self</span>.nodes.remove(mod_bound_node);
 
         <span class="prelude-val">Ok</span>(())
     }
@@ -1919,8 +1938,8 @@
     }
 
     <span class="doccomment">/// Gets the type of the edge.
-    </span><span class="kw">pub fn </span>edge_type(<span class="kw-2">&amp;</span><span class="self">self</span>, edge_id: GraphEdgeId) -&gt; GraphEdgeType {
-        <span class="self">self</span>.edge_types[edge_id]
+    </span><span class="kw">pub fn </span>edge_type(<span class="kw-2">&amp;</span><span class="self">self</span>, edge_id: GraphEdgeId) -&gt; <span class="prelude-ty">Option</span>&lt;GraphEdgeType&gt; {
+        <span class="self">self</span>.edge_types.get(edge_id).copied()
     }
 
     <span class="doccomment">/// Get the source and destination ports for an edge: `(src &amp;PortIndexValue, dst &amp;PortIndexValue)`.
@@ -1948,18 +1967,33 @@
     <span class="doccomment">/// Insert an edge between nodes thru the given ports.
     </span><span class="kw">pub fn </span>insert_edge(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        edge_type: GraphEdgeType,
         src: GraphNodeId,
         src_port: PortIndexValue,
         dst: GraphNodeId,
         dst_port: PortIndexValue,
     ) -&gt; GraphEdgeId {
         <span class="kw">let </span>edge_id = <span class="self">self</span>.graph.insert_edge(src, dst);
-        <span class="self">self</span>.edge_types.insert(edge_id, edge_type);
         <span class="self">self</span>.ports.insert(edge_id, (src_port, dst_port));
         edge_id
     }
+
+    <span class="doccomment">/// Set the edge type for an edge.
+    </span><span class="kw">pub fn </span>insert_edge_type(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        edge: GraphEdgeId,
+        edge_type: GraphEdgeType,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;GraphEdgeType&gt; {
+        <span class="self">self</span>.edge_types.insert(edge, edge_type)
+    }
+
+    <span class="doccomment">/// Removes an edge and its corresponding ports and edge type info.
+    </span><span class="kw">pub fn </span>remove_edge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, edge: GraphEdgeId) {
+        <span class="kw">let </span>(_src, _dst) = <span class="self">self</span>.graph.remove_edge(edge).unwrap();
+        <span class="kw">let </span>(_src_port, _dst_port) = <span class="self">self</span>.ports.remove(edge).unwrap();
+        <span class="kw">let </span>_edge_type = <span class="self">self</span>.edge_types.remove(edge);
+    }
 }
+
 <span class="comment">// Subgraph methods.
 </span><span class="kw">impl </span>HydroflowGraph {
     <span class="doccomment">/// Nodes belonging to the given subgraph.
