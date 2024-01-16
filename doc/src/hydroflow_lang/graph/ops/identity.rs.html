@@ -38,6 +38,7 @@
 <a href="#38" id="38">38</a>
 <a href="#39" id="39">39</a>
 <a href="#40" id="40">40</a>
+<a href="#41" id="41">41</a>
 </pre></div><pre class="rust"><code><span class="kw">use super</span>::{OperatorCategory, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0, RANGE_1};
 <span class="kw">use </span><span class="kw">crate</span>::graph::GraphEdgeType;
 
@@ -74,7 +75,8 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(GraphEdgeType::Value), output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value,
+    input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(GraphEdgeType::Value),
+    output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value,
     flow_prop_fn: <span class="prelude-val">None</span>,
     write_fn: IDENTITY_WRITE_FN,
 };

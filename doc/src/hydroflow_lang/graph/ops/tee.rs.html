@@ -71,6 +71,7 @@
 <a href="#71" id="71">71</a>
 <a href="#72" id="72">72</a>
 <a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 
 <span class="kw">use </span><span class="kw">crate</span>::graph::GraphEdgeType;
@@ -105,7 +106,8 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(GraphEdgeType::Value), output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value, <span class="comment">// TODO(mingwei): pass-through value types?
+    input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(GraphEdgeType::Value),
+    output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value, <span class="comment">// TODO(mingwei): pass-through value types?
     </span>flow_prop_fn: <span class="prelude-val">Some</span>(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
         <span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[flow_props_in[<span class="number">0</span>]])
     }),

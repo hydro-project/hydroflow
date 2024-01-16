@@ -120,6 +120,7 @@
 <a href="#120" id="120">120</a>
 <a href="#121" id="121">121</a>
 <a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use </span><span class="kw">crate</span>::graph::GraphEdgeType;
@@ -168,7 +169,8 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(GraphEdgeType::Value), output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value,
+    input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(GraphEdgeType::Value),
+    output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value,
     flow_prop_fn: <span class="prelude-val">None</span>,
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
                    root,

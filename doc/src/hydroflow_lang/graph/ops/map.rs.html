@@ -69,6 +69,7 @@
 <a href="#69" id="69">69</a>
 <a href="#70" id="70">70</a>
 <a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use </span><span class="kw">crate</span>::graph::GraphEdgeType;
@@ -106,7 +107,8 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(GraphEdgeType::Value), output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value,
+    input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(GraphEdgeType::Value),
+    output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value,
     flow_prop_fn: <span class="prelude-val">Some</span>(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
         <span class="comment">// Preserve input flow properties.
         </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[flow_props_in[<span class="number">0</span>]])
