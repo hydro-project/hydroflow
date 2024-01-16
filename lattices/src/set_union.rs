@@ -5,7 +5,7 @@ use std::collections::{BTreeSet, HashSet};
 
 use crate::cc_traits::{Iter, Len, Set};
 use crate::collections::{ArraySet, OptionSet, SingletonSet};
-use crate::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{Atomize, DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Set-union lattice.
 ///
@@ -37,6 +37,14 @@ impl<Set> SetUnion<Set> {
 
     /// Gets the inner by value, consuming self.
     pub fn into_reveal(self) -> Set {
+        self.0
+    }
+}
+
+impl<Set> DeepReveal for SetUnion<Set> {
+    type Revealed = Set;
+
+    fn deep_reveal(self) -> Self::Revealed {
         self.0
     }
 }

@@ -1,6 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use crate::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{Atomize, DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Wraps a lattice in [`Option`], treating [`None`] as a new bottom element which compares as less
 /// than to all other values.
@@ -43,6 +43,17 @@ impl<Inner> WithBot<Inner> {
 impl<Inner> Default for WithBot<Inner> {
     fn default() -> Self {
         Self(None)
+    }
+}
+
+impl<Inner> DeepReveal for WithBot<Inner>
+where
+    Inner: DeepReveal,
+{
+    type Revealed = Option<Inner::Revealed>;
+
+    fn deep_reveal(self) -> Self::Revealed {
+        self.0.map(DeepReveal::deep_reveal)
     }
 }
 

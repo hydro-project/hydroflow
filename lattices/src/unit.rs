@@ -1,4 +1,12 @@
-use crate::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{Atomize, DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+
+impl DeepReveal for () {
+    type Revealed = ();
+
+    fn deep_reveal(self) -> Self::Revealed {
+        self
+    }
+}
 
 impl Merge<Self> for () {
     fn merge(&mut self, _other: Self) -> bool {

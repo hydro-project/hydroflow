@@ -1,6 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use crate::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{Atomize, DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Wraps a lattice in [`Option`], treating [`None`] as a new top element which compares as greater
 /// than to all other values.
@@ -45,6 +45,17 @@ where
 {
     fn default() -> Self {
         Self(Some(Inner::default()))
+    }
+}
+
+impl<Inner> DeepReveal for WithTop<Inner>
+where
+    Inner: DeepReveal,
+{
+    type Revealed = Option<Inner::Revealed>;
+
+    fn deep_reveal(self) -> Self::Revealed {
+        self.0.map(DeepReveal::deep_reveal)
     }
 }
 

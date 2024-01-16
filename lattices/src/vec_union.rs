@@ -2,7 +2,7 @@ use std::cmp::Ordering::{self, *};
 
 use cc_traits::Iter;
 
-use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Vec-union compound lattice.
 ///
@@ -41,6 +41,17 @@ impl<Lat> VecUnion<Lat> {
     /// Gets the inner by value, consuming self.
     pub fn into_reveal(self) -> Vec<Lat> {
         self.vec
+    }
+}
+
+impl<Lat> DeepReveal for VecUnion<Lat>
+where
+    Lat: DeepReveal,
+{
+    type Revealed = Vec<Lat::Revealed>;
+
+    fn deep_reveal(self) -> Self::Revealed {
+        self.vec.into_iter().map(DeepReveal::deep_reveal).collect()
     }
 }
 

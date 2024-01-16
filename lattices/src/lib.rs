@@ -141,3 +141,12 @@ pub trait Atomize: Merge<Self::Atom> {
     /// Returned values must merge to reform a value equal to the original `self`.
     fn atomize(self) -> Self::AtomIter;
 }
+
+/// Trait for recursively revealing the underlying types within lattice types.
+pub trait DeepReveal {
+    /// The underlying type when revealed.
+    type Revealed;
+
+    /// Reveals the underlying lattice types recursively.
+    fn deep_reveal(self) -> Self::Revealed;
+}
