@@ -29,7 +29,8 @@ pub const JOIN_FUSED_RHS: OperatorConstraints = OperatorConstraints {
         }
         _ => None,
     },
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value), output_edgetype_fn: |_| GraphEdgeType::Value,
+    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
+    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    op_span,
