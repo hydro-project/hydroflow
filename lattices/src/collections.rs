@@ -1,6 +1,7 @@
 //! Simple singleton or array collection with [`cc_traits`] implementations.
 
 use std::borrow::Borrow;
+use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::marker::PhantomData;
 
@@ -9,6 +10,47 @@ use cc_traits::{
     CollectionMut, CollectionRef, Get, GetKeyValue, GetKeyValueMut, GetMut, Iter, IterMut, Keyed,
     KeyedRef, Len, MapIter, MapIterMut, SimpleKeyedRef,
 };
+
+/// Trait for transforming the values of a map without changing the overall type of the data structure.
+pub trait MapMapValues<OldVal> {
+    /// Output type, should be `Self` but with `OldVal` replaced with `NewVal`.
+    type MapValue<NewVal>;
+
+    /// Map the values into using the `map_fn`.
+    fn map_values<NewVal, MapFn>(self, map_fn: MapFn) -> Self::MapValue<NewVal>
+    where
+        MapFn: FnMut(OldVal) -> NewVal;
+}
+impl<Key, OldVal> MapMapValues<OldVal> for HashMap<Key, OldVal>
+where
+    Key: Eq + Hash,
+{
+    type MapValue<NewVal> = HashMap<Key, NewVal>;
+
+    fn map_values<NewVal, MapFn>(self, mut map_fn: MapFn) -> Self::MapValue<NewVal>
+    where
+        MapFn: FnMut(OldVal) -> NewVal,
+    {
+        self.into_iter()
+            .map(|(k, val)| (k, (map_fn)(val)))
+            .collect()
+    }
+}
+impl<Key, OldVal> MapMapValues<OldVal> for BTreeMap<Key, OldVal>
+where
+    Key: Eq + Ord,
+{
+    type MapValue<NewVal> = BTreeMap<Key, NewVal>;
+
+    fn map_values<NewVal, MapFn>(self, mut map_fn: MapFn) -> Self::MapValue<NewVal>
+    where
+        MapFn: FnMut(OldVal) -> NewVal,
+    {
+        self.into_iter()
+            .map(|(k, val)| (k, (map_fn)(val)))
+            .collect()
+    }
+}
 
 /// A [`Vec`]-wrapper representing a naively-implemented set.
 #[repr(transparent)]
@@ -220,6 +262,18 @@ impl<K, V> MapIterMut for VecMap<K, V> {
 
     fn iter_mut(&mut self) -> Self::IterMut<'_> {
         self.keys.iter().zip(self.vals.iter_mut())
+    }
+}
+impl<K, OldVal> MapMapValues<OldVal> for VecMap<K, OldVal> {
+    type MapValue<NewVal> = VecMap<K, NewVal>;
+
+    fn map_values<NewVal, MapFn>(self, map_fn: MapFn) -> Self::MapValue<NewVal>
+    where
+        MapFn: FnMut(OldVal) -> NewVal,
+    {
+        let Self { keys, vals } = self;
+        let vals = vals.into_iter().map(map_fn).collect();
+        VecMap { keys, vals }
     }
 }
 
@@ -461,6 +515,18 @@ impl<K, V> MapIterMut for SingletonMap<K, V> {
         std::iter::once((&self.0, &mut self.1))
     }
 }
+impl<K, OldVal> MapMapValues<OldVal> for SingletonMap<K, OldVal> {
+    type MapValue<NewVal> = SingletonMap<K, NewVal>;
+
+    fn map_values<NewVal, MapFn>(self, mut map_fn: MapFn) -> Self::MapValue<NewVal>
+    where
+        MapFn: FnMut(OldVal) -> NewVal,
+    {
+        let Self(key, val) = self;
+        let val = (map_fn)(val);
+        SingletonMap(key, val)
+    }
+}
 
 /// A wrapper around `Option`, representing either a singleton or empty set.
 #[repr(transparent)]
@@ -686,6 +752,16 @@ impl<K, V> MapIterMut for OptionMap<K, V> {
         self.0.as_mut().map(|(k, v)| (&*k, v)).into_iter()
     }
 }
+impl<K, OldVal> MapMapValues<OldVal> for OptionMap<K, OldVal> {
+    type MapValue<NewVal> = OptionMap<K, NewVal>;
+
+    fn map_values<NewVal, MapFn>(self, mut map_fn: MapFn) -> Self::MapValue<NewVal>
+    where
+        MapFn: FnMut(OldVal) -> NewVal,
+    {
+        OptionMap(self.0.map(|(key, val)| (key, (map_fn)(val))))
+    }
+}
 
 /// An array wrapper representing a fixed-size set (modulo duplicate items).
 #[repr(transparent)]
@@ -900,6 +976,18 @@ impl<K, V, const N: usize> MapIterMut for ArrayMap<K, V, N> {
 
     fn iter_mut(&mut self) -> Self::IterMut<'_> {
         self.keys.iter().zip(self.vals.iter_mut())
+    }
+}
+impl<K, OldVal, const N: usize> MapMapValues<OldVal> for ArrayMap<K, OldVal, N> {
+    type MapValue<NewVal> = ArrayMap<K, NewVal, N>;
+
+    fn map_values<NewVal, MapFn>(self, map_fn: MapFn) -> Self::MapValue<NewVal>
+    where
+        MapFn: FnMut(OldVal) -> NewVal,
+    {
+        let Self { keys, vals } = self;
+        let vals = vals.map(map_fn);
+        ArrayMap { keys, vals }
     }
 }
 

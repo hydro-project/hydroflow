@@ -1,6 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// A `Conflict` lattice, stores a single instance of `T` and goes to a "conflict" state (`None`)
 /// if inequal `T` instances are merged together.
@@ -38,6 +38,14 @@ impl<T> Conflict<T> {
 
     /// Gets the inner by value, consuming self.
     pub fn into_reveal(self) -> Option<T> {
+        self.0
+    }
+}
+
+impl<T> DeepReveal for Conflict<T> {
+    type Revealed = Option<T>;
+
+    fn deep_reveal(self) -> Self::Revealed {
         self.0
     }
 }

@@ -7,8 +7,8 @@ use std::fmt::Debug;
 use cc_traits::Iter;
 
 use crate::cc_traits::{GetMut, Keyed, Map, MapIter, SimpleKeyedRef};
-use crate::collections::{ArrayMap, OptionMap, SingletonMap, VecMap};
-use crate::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::collections::{ArrayMap, MapMapValues, OptionMap, SingletonMap, VecMap};
+use crate::{Atomize, DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Map-union compound lattice.
 ///
@@ -42,6 +42,18 @@ impl<Map> MapUnion<Map> {
     /// Gets the inner by value, consuming self.
     pub fn into_reveal(self) -> Map {
         self.0
+    }
+}
+
+impl<Map, Val> DeepReveal for MapUnion<Map>
+where
+    Map: Keyed<Item = Val> + MapMapValues<Val>,
+    Val: DeepReveal,
+{
+    type Revealed = Map::MapValue<Val::Revealed>;
+
+    fn deep_reveal(self) -> Self::Revealed {
+        self.0.map_values(DeepReveal::deep_reveal)
     }
 }
 

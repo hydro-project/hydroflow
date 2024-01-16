@@ -1,6 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Dominating pair compound lattice.
 ///
@@ -49,6 +49,18 @@ impl<Key, Val> DomPair<Key, Val> {
     /// Gets the inner by value, consuming self.
     pub fn into_reveal(self) -> (Key, Val) {
         (self.key, self.val)
+    }
+}
+
+impl<Key, Val> DeepReveal for DomPair<Key, Val>
+where
+    Key: DeepReveal,
+    Val: DeepReveal,
+{
+    type Revealed = (Key::Revealed, Val::Revealed);
+
+    fn deep_reveal(self) -> Self::Revealed {
+        (self.key.deep_reveal(), self.val.deep_reveal())
     }
 }
 
