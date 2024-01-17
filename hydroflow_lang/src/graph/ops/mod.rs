@@ -75,7 +75,7 @@ pub struct OperatorConstraints {
 
     /// Determines if this input must be preceeded by a stratum barrier.
     pub input_delaytype_fn: fn(&PortIndexValue) -> Option<DelayType>,
-    /// The required edge type for each input. `None` means any is OK.
+    /// The required edge type for each input. Return `None` when any is OK, or for unknown `PortIndexValue` inputs.
     pub input_edgetype_fn: fn(&PortIndexValue) -> Option<GraphEdgeType>,
     /// Specifies the edge type for each output port.
     pub output_edgetype_fn: fn(&PortIndexValue) -> GraphEdgeType,
@@ -407,6 +407,7 @@ declare_ops![
     source_stream::SOURCE_STREAM,
     source_stream_serde::SOURCE_STREAM_SERDE,
     state::STATE,
+    state_join::STATE_JOIN,
     tee::TEE,
     unique::UNIQUE,
     unzip::UNZIP,
@@ -457,9 +458,9 @@ pub struct WriteContextArgs<'a> {
     pub ident: &'a Ident,
     /// If a pull iterator (true) or pusherator (false) should be used.
     pub is_pull: bool,
-    /// Input operator idents (used for pull).
+    /// Input operator idents (or ref idents; used for pull).
     pub inputs: &'a [Ident],
-    /// Output operator idents (used for push).
+    /// Output operator idents (or ref idents; used for push).
     pub outputs: &'a [Ident],
 
     /// Operator name.

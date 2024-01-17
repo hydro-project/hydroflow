@@ -48,10 +48,7 @@ fn find_subgraph_unionfind(
 
     // Will contain all edges which are handoffs. Starts out with all edges and
     // we remove from this set as we construct subgraphs.
-    let mut handoff_edges: BTreeSet<GraphEdgeId> = partitioned_graph
-        .edges()
-        .map(|(edge_id, _)| edge_id)
-        .collect();
+    let mut handoff_edges: BTreeSet<GraphEdgeId> = partitioned_graph.edge_ids().collect();
     // Would sort edges here for priority (for now, no sort/priority).
 
     // Each edge gets looked at in order. However we may not know if a linear
