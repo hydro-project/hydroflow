@@ -41,6 +41,21 @@ fn main() {
                         >::default(),
                     ),
                 );
+            let sg_1v1_node_10v1_groupbydata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::rustc_hash::FxHashMap::<(_,), (Option<_>,)>::default(),
+                    ),
+                );
+            let sg_1v1_node_5v1_uniquedata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::<
+                            _,
+                            hydroflow::rustc_hash::FxHashSet<_>,
+                        >::default(),
+                    ),
+                );
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(2v1)",
                 0,
@@ -184,21 +199,6 @@ fn main() {
                     check_pivot_run(op_9v1, hoff_6v3_send);
                 },
             );
-            let sg_1v1_node_10v1_groupbydata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::rustc_hash::FxHashMap::<(_,), (Option<_>,)>::default(),
-                    ),
-                );
-            let sg_1v1_node_5v1_uniquedata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::<
-                            _,
-                            hydroflow::rustc_hash::FxHashSet<_>,
-                        >::default(),
-                    ),
-                );
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(1v1)",
                 1,

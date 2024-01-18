@@ -759,10 +759,13 @@ impl HydroflowGraph {
                     .any(|&node_id| self.node_degree_in(node_id) == 0)
             });
 
-        let subgraphs = subgraphs_without_preds
-            .iter()
-            .chain(subgraphs_with_preds.iter())
-            .filter_map(|&(subgraph_id, subgraph_nodes)| {
+        let mut op_prologue_code = Vec::new();
+        let mut subgraphs = Vec::new();
+        {
+            for &(subgraph_id, subgraph_nodes) in subgraphs_without_preds
+                .iter()
+                .chain(subgraphs_with_preds.iter())
+            {
                 let (recv_hoffs, send_hoffs) = &subgraph_handoffs[subgraph_id];
                 let recv_ports: Vec<Ident> = recv_hoffs
                     .iter()
@@ -773,14 +776,12 @@ impl HydroflowGraph {
                     .map(|&hoff_id| self.node_as_ident(hoff_id, false))
                     .collect();
 
-                let recv_port_code = recv_ports
-                    .iter()
-                    .map(|ident| {
-                        quote! {
-                            let mut #ident = #ident.borrow_mut_swap();
-                            let #ident = #ident.drain(..);
-                        }
-                    });
+                let recv_port_code = recv_ports.iter().map(|ident| {
+                    quote! {
+                        let mut #ident = #ident.borrow_mut_swap();
+                        let #ident = #ident.drain(..);
+                    }
+                });
                 let send_port_code = send_ports.iter().map(|ident| {
                     quote! {
                         let #ident = #root::pusherator::for_each::ForEach::new(|v| {
@@ -789,7 +790,6 @@ impl HydroflowGraph {
                     }
                 });
 
-                let mut op_prologue_code = Vec::new();
                 let mut subgraph_op_iter_code = Vec::new();
                 let mut subgraph_op_iter_after_code = Vec::new();
                 {
@@ -811,7 +811,10 @@ impl HydroflowGraph {
 
                     for (idx, &node_id) in nodes_iter.enumerate() {
                         let node = &self.nodes[node_id];
-                        assert!(matches!(node, GraphNode::Operator(_)), "Handoffs are not part of subgraphs.");
+                        assert!(
+                            matches!(node, GraphNode::Operator(_)),
+                            "Handoffs are not part of subgraphs."
+                        );
                         let op_inst = &self.operator_instances[node_id];
 
                         let op_span = node.span();
@@ -826,10 +829,11 @@ impl HydroflowGraph {
                         {
                             // TODO clean this up.
                             // Collect input arguments (predecessors).
-                            let mut input_edges: Vec<(&PortIndexValue, GraphNodeId)> =
-                                self.graph.predecessors(node_id)
-                                    .map(|(edge_id, pred)| (&self.ports[edge_id].1, pred))
-                                    .collect();
+                            let mut input_edges: Vec<(&PortIndexValue, GraphNodeId)> = self
+                                .graph
+                                .predecessors(node_id)
+                                .map(|(edge_id, pred)| (&self.ports[edge_id].1, pred))
+                                .collect();
                             // Ensure sorted by port index.
                             input_edges.sort();
 
@@ -839,10 +843,11 @@ impl HydroflowGraph {
                                 .collect();
 
                             // Collect output arguments (successors).
-                            let mut output_edges: Vec<(&PortIndexValue, GraphNodeId)> =
-                                self.graph.successors(node_id)
-                                    .map(|(edge_id, succ)| (&self.ports[edge_id].0, succ))
-                                    .collect();
+                            let mut output_edges: Vec<(&PortIndexValue, GraphNodeId)> = self
+                                .graph
+                                .successors(node_id)
+                                .map(|(edge_id, succ)| (&self.ports[edge_id].0, succ))
+                                .collect();
                             // Ensure sorted by port index.
                             output_edges.sort();
 
@@ -852,7 +857,9 @@ impl HydroflowGraph {
                                 .collect();
 
                             // Corresponds 1:1 to inputs.
-                            let flow_props_in = self.graph.predecessor_edges(node_id)
+                            let flow_props_in = self
+                                .graph
+                                .predecessor_edges(node_id)
                                 .map(|edge_id| self.flow_props.get(edge_id).copied())
                                 .collect::<Vec<_>>();
 
@@ -882,7 +889,8 @@ impl HydroflowGraph {
                                 flow_props_in: &*flow_props_in,
                             };
 
-                            let write_result = (op_constraints.write_fn)(&context_args, diagnostics);
+                            let write_result =
+                                (op_constraints.write_fn)(&context_args, diagnostics);
                             let OperatorWriteOutput {
                                 write_prologue,
                                 write_iterator,
@@ -911,7 +919,9 @@ impl HydroflowGraph {
                                     #[cfg(not(feature = "diagnostics"))]
                                     let location = "unknown";
 
-                                    let location = location.to_string().replace(|x: char| !x.is_alphanumeric(), "_");
+                                    let location = location
+                                        .to_string()
+                                        .replace(|x: char| !x.is_alphanumeric(), "_");
 
                                     format!(
                                         "loc_{}_start_{}_{}_end_{}_{}",
@@ -922,7 +932,13 @@ impl HydroflowGraph {
                                         op_span.end().column
                                     )
                                 };
-                                let fn_ident = format_ident!("{}__{}__{}", ident, op_name, source_info, span = op_span);
+                                let fn_ident = format_ident!(
+                                    "{}__{}__{}",
+                                    ident,
+                                    op_name,
+                                    source_info,
+                                    span = op_span
+                                );
                                 let type_guard = if is_pull {
                                     quote_spanned! {op_span=>
                                         let #ident = {
@@ -990,7 +1006,8 @@ impl HydroflowGraph {
                     {
                         // Determine pull and push halves of the `Pivot`.
                         #[allow(unknown_lints)]
-                        #[allow(clippy::redundant_locals)] // https://github.com/rust-lang/rust-clippy/issues/11290
+                        // https://github.com/rust-lang/rust-clippy/issues/11290
+                        #[allow(clippy::redundant_locals)]
                         let pull_to_push_idx = pull_to_push_idx;
                         let pull_ident =
                             self.node_as_ident(subgraph_nodes[pull_to_push_idx - 1], false);
@@ -1009,7 +1026,7 @@ impl HydroflowGraph {
                                 Level::Error,
                                 "Degenerate subgraph detected, is there a disconnected `null()` or other degenerate pipeline somewhere?",
                             ));
-                            return None;
+                            continue;
                         };
 
                         // Pivot span is combination of pull and push spans (or if not possible, just take the push).
@@ -1032,9 +1049,7 @@ impl HydroflowGraph {
                     self.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(0),
                 );
                 let laziness = self.subgraph_laziness(subgraph_id);
-                Some(quote! {
-                    #( #op_prologue_code )*
-
+                subgraphs.push(quote! {
                     #hf.add_subgraph_stratified(
                         #hoff_name,
                         #stratum,
@@ -1048,8 +1063,9 @@ impl HydroflowGraph {
                             #( #subgraph_op_iter_after_code )*
                         },
                     );
-                })
-            });
+                });
+            }
+        }
 
         // These two are quoted separately here because iterators are lazily evaluated, so this
         // forces them to do their work. This work includes populating some data, namely
@@ -1057,6 +1073,7 @@ impl HydroflowGraph {
         // -Mingwei
         let code = quote! {
             #( #handoffs )*
+            #( #op_prologue_code )*
             #( #subgraphs )*
         };
 
