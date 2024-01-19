@@ -73,7 +73,7 @@ pub fn test_diff_static() {
 
     df.run_tick();
 
-    assert_eq!(&[1], &*collect_ready::<Vec<_>, _>(&mut output_recv));
+    assert_eq!(&[1, 1], &*collect_ready::<Vec<_>, _>(&mut output_recv));
 
     pos_send.send(1).unwrap();
     pos_send.send(1).unwrap();
@@ -82,7 +82,7 @@ pub fn test_diff_static() {
 
     df.run_tick();
 
-    assert_eq!(&[1, 3], &*collect_ready::<Vec<_>, _>(&mut output_recv));
+    assert_eq!(&[1, 1, 3], &*collect_ready::<Vec<_>, _>(&mut output_recv));
 }
 
 #[multiplatform_test]
