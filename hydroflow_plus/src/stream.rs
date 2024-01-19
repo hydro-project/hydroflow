@@ -733,7 +733,7 @@ impl<'a, W, N: Location<'a>> Stream<'a, Bytes, W, N> {
     where
         N: HfSendOneToMany<'a, N2>,
     {
-        let other_ids = self.node.source_iter(other.ids()).cloned();
+        let other_ids = self.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
             .cross_product(&self.assume_windowed())
             .demux_bytes(other)
@@ -746,7 +746,7 @@ impl<'a, W, N: Location<'a>> Stream<'a, Bytes, W, N> {
     where
         N: HfSendManyToMany<'a, N2>,
     {
-        let other_ids = self.node.source_iter(other.ids()).cloned();
+        let other_ids = self.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
             .cross_product(&self.assume_windowed())
             .demux_bytes_tagged(other)
@@ -836,7 +836,7 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N
     where
         N: HfSendOneToMany<'a, N2>,
     {
-        let other_ids = self.node.source_iter(other.ids()).cloned();
+        let other_ids = self.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
             .cross_product(&self.assume_windowed())
             .demux_bincode(other)
@@ -849,7 +849,7 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N
     where
         N: HfSendManyToMany<'a, N2>,
     {
-        let other_ids = self.node.source_iter(other.ids()).cloned();
+        let other_ids = self.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
             .cross_product(&self.assume_windowed())
             .demux_bincode_tagged(other)
