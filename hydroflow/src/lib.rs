@@ -43,7 +43,7 @@ pub use hydroflow_datalog::*;
 #[cfg(feature = "hydroflow_macro")]
 pub use hydroflow_macro::{
     hydroflow_main as main, hydroflow_parser, hydroflow_syntax, hydroflow_syntax_noemit,
-    hydroflow_test as test, monotonic_fn, morphism,
+    hydroflow_test as test, monotonic_fn, morphism, DemuxEnum,
 };
 
 #[cfg(not(nightly))]
