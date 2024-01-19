@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["networked_basic","networked_basic_runtime"],"macro":["networked_basic_runtime"]};
+window.SIDEBAR_ITEMS = {"fn":["networked_basic","networked_basic_runtime"],"macro":["networked_basic_runtime"],"struct":["NetworkedBasicIO"]};

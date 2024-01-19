@@ -26,7 +26,10 @@
     E: Stream&lt;Item = T&gt; + <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Unpin.html" title="trait core::marker::Unpin">Unpin</a>,</span></h4></section><section id="method.source_external" class="method trait-impl"><a href="#method.source_external" class="anchor">§</a><h4 class="code-header">fn <a class="fn">source_external</a>(
     &amp;self
 ) -&gt; (Self::Port, Stream&lt;'a, <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;BytesMut, <a class="struct" href="https://doc.rust-lang.org/nightly/std/io/error/struct.Error.html" title="struct std::io::error::Error">Error</a>&gt;, Async, Self&gt;)<span class="where fmt-newline">where
-    Self: HfSendOneToOne&lt;'a, Self&gt;,</span></h4></section><section id="method.source_iter" class="method trait-impl"><a href="#method.source_iter" class="anchor">§</a><h4 class="code-header">fn <a class="fn">source_iter</a>&lt;T, E&gt;(
+    Self: HfSendOneToOne&lt;'a, Self&gt;,</span></h4></section><section id="method.many_source_external" class="method trait-impl"><a href="#method.many_source_external" class="anchor">§</a><h4 class="code-header">fn <a class="fn">many_source_external</a>&lt;S&gt;(
+    &amp;self
+) -&gt; (Self::Port, Stream&lt;'a, <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;BytesMut, <a class="struct" href="https://doc.rust-lang.org/nightly/std/io/error/struct.Error.html" title="struct std::io::error::Error">Error</a>&gt;, Async, Self&gt;)<span class="where fmt-newline">where
+    S: Location&lt;'a&gt; + HfSendOneToMany&lt;'a, Self&gt;,</span></h4></section><section id="method.source_iter" class="method trait-impl"><a href="#method.source_iter" class="anchor">§</a><h4 class="code-header">fn <a class="fn">source_iter</a>&lt;T, E&gt;(
     &amp;self,
     e: impl Quoted&lt;'a, E&gt;
 ) -&gt; Stream&lt;'a, T, Windowed, Self&gt;<span class="where fmt-newline">where

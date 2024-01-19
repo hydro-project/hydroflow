@@ -80,6 +80,59 @@
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
 <a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::bytes::BytesMut;
 <span class="kw">use </span>hydroflow_plus::scheduled::graph::Hydroflow;
 <span class="kw">use </span>hydroflow_plus::util::cli::HydroCLI;
@@ -87,10 +140,19 @@
 <span class="kw">use </span>hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 <span class="kw">use </span>stageleft::{q, Quoted, RuntimeData};
 
+<span class="kw">pub struct </span>NetworkedBasicIO&lt;<span class="lifetime">&#39;a</span>, D: Deploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+    <span class="kw">pub </span>source_zero_port: D::ProcessPort,
+    <span class="kw">pub </span>process_zero: D::Process,
+    <span class="kw">pub </span>process_one: D::Process,
+    <span class="kw">pub </span>cluster_port: D::ClusterPort,
+    <span class="kw">pub </span>cluster: D::Cluster,
+}
+
 <span class="kw">pub fn </span>networked_basic&lt;<span class="lifetime">&#39;a</span>, D: Deploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
     flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
     process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-) -&gt; (D::ProcessPort, D::Process, D::Process) {
+    cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+) -&gt; NetworkedBasicIO&lt;<span class="lifetime">&#39;a</span>, D&gt; {
     <span class="kw">let </span>process_zero = flow.process(process_spec);
     <span class="kw">let </span>process_one = flow.process(process_spec);
 
@@ -106,7 +168,22 @@
             );
         }));
 
-    (source_zero_port, process_zero, process_one)
+    <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
+    <span class="kw">let </span>(cluster_port, cluster_stream) = cluster.many_source_external::&lt;D::Process&gt;();
+    cluster_stream.for_each(<span class="macro">q!</span>(|v: <span class="prelude-ty">Result</span>&lt;BytesMut, <span class="kw">_</span>&gt;| {
+        <span class="macro">println!</span>(
+            <span class="string">&quot;cluster received: {:?}&quot;</span>,
+            std::str::from_utf8(<span class="kw-2">&amp;</span>v.unwrap()).unwrap()
+        );
+    }));
+
+    NetworkedBasicIO {
+        source_zero_port,
+        process_zero,
+        process_one,
+        cluster_port,
+        cluster,
+    }
 }
 
 <span class="attr">#[stageleft::entry]
@@ -114,17 +191,21 @@
     flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= networked_basic(flow, <span class="kw-2">&amp;</span>cli);
+    <span class="kw">let _ </span>= networked_basic(flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
     flow.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::runtime]
 #[cfg(test)]
 </span><span class="kw">mod </span>tests {
+    <span class="kw">use </span>std::cell::RefCell;
+
     <span class="kw">use </span>hydro_deploy::{Deployment, HydroflowCrate};
     <span class="kw">use </span>hydroflow_plus::futures::SinkExt;
     <span class="kw">use </span>hydroflow_plus::util::cli::ConnectedSink;
-    <span class="kw">use </span>hydroflow_plus_cli_integration::{DeployCrateWrapper, DeployProcessSpec};
+    <span class="kw">use </span>hydroflow_plus_cli_integration::{
+        DeployClusterSpec, DeployCrateWrapper, DeployProcessSpec,
+    };
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>networked_basic() {
@@ -132,33 +213,58 @@
         <span class="kw">let </span>localhost = deployment.Localhost();
 
         <span class="kw">let </span>builder = hydroflow_plus::FlowBuilder::new();
-        <span class="kw">let </span>(source_zero_port, <span class="kw">_</span>, node_one) = <span class="kw">super</span>::networked_basic(
+        <span class="kw">let </span>deployment = RefCell::new(deployment);
+        <span class="kw">let </span>io = <span class="kw">super</span>::networked_basic(
             <span class="kw-2">&amp;</span>builder,
             <span class="kw-2">&amp;</span>DeployProcessSpec::new(|| {
-                deployment.add_service(
+                deployment.borrow_mut().add_service(
                     HydroflowCrate::new(<span class="string">&quot;.&quot;</span>, localhost.clone())
                         .bin(<span class="string">&quot;networked_basic&quot;</span>)
                         .profile(<span class="string">&quot;dev&quot;</span>),
                 )
             }),
+            <span class="kw-2">&amp;</span>DeployClusterSpec::new(|| {
+                <span class="macro">vec!</span>[deployment.borrow_mut().add_service(
+                    HydroflowCrate::new(<span class="string">&quot;.&quot;</span>, localhost.clone())
+                        .bin(<span class="string">&quot;networked_basic&quot;</span>)
+                        .profile(<span class="string">&quot;dev&quot;</span>),
+                )]
+            }),
         );
 
-        <span class="kw">let </span>port_to_zero = source_zero_port
+        <span class="kw">let </span><span class="kw-2">mut </span>deployment = deployment.into_inner();
+
+        <span class="kw">let </span>port_to_zero = io
+            .source_zero_port
             .create_sender(<span class="kw-2">&amp;mut </span>deployment, <span class="kw-2">&amp;</span>localhost)
+            .<span class="kw">await</span>;
+
+        <span class="kw">let </span>ports_to_cluster = io
+            .cluster_port
+            .create_senders(<span class="kw-2">&amp;mut </span>deployment, <span class="kw-2">&amp;</span>localhost)
             .<span class="kw">await</span>;
 
         deployment.deploy().<span class="kw">await</span>.unwrap();
 
         <span class="kw">let </span><span class="kw-2">mut </span>conn_to_zero = port_to_zero.connect().<span class="kw">await</span>.into_sink();
-        <span class="kw">let </span>node_one_stdout = node_one.stdout().<span class="kw">await</span>;
+        <span class="kw">let </span>node_one_stdout = io.process_one.stdout().<span class="kw">await</span>;
+
+        <span class="kw">let </span><span class="kw-2">mut </span>conn_to_cluster = ports_to_cluster[<span class="number">0</span>].connect().<span class="kw">await</span>.into_sink();
+        <span class="kw">let </span>cluster_stdout = io.cluster.members[<span class="number">0</span>].stdout().<span class="kw">await</span>;
 
         deployment.start().<span class="kw">await</span>.unwrap();
 
         conn_to_zero.send(<span class="string">&quot;hello world!&quot;</span>.into()).<span class="kw">await</span>.unwrap();
+        conn_to_cluster.send(<span class="string">&quot;hello cluster!&quot;</span>.into()).<span class="kw">await</span>.unwrap();
 
         <span class="macro">assert_eq!</span>(
             node_one_stdout.recv().<span class="kw">await</span>.unwrap(),
             <span class="string">&quot;node one received: \&quot;hello world!\&quot;&quot;
+        </span>);
+
+        <span class="macro">assert_eq!</span>(
+            cluster_stdout.recv().<span class="kw">await</span>.unwrap(),
+            <span class="string">&quot;cluster received: \&quot;hello cluster!\&quot;&quot;
         </span>);
     }
 }

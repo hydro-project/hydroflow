@@ -997,6 +997,10 @@
 <a href="#997" id="997">997</a>
 <a href="#998" id="998">998</a>
 <a href="#999" id="999">999</a>
+<a href="#1000" id="1000">1000</a>
+<a href="#1001" id="1001">1001</a>
+<a href="#1002" id="1002">1002</a>
+<a href="#1003" id="1003">1003</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::io;
@@ -1348,6 +1352,10 @@
         } <span class="kw">else </span>{
             <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(reduce::&lt;<span class="lifetime">&#39;tick</span>&gt;(#comb)), <span class="bool-val">false</span>)
         }
+    }
+
+    <span class="kw">pub fn </span>count(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, usize, Windowed, N&gt; {
+        <span class="self">self</span>.fold(<span class="macro">q!</span>(|| <span class="number">0usize</span>), <span class="macro">q!</span>(|count, <span class="kw">_</span>| <span class="kw-2">*</span>count += <span class="number">1</span>))
     }
 
     <span class="kw">pub fn </span>delta(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
