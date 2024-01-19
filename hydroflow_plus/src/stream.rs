@@ -351,6 +351,10 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
         }
     }
 
+    pub fn count(&self) -> Stream<'a, usize, Windowed, N> {
+        self.fold(q!(|| 0usize), q!(|count, _| *count += 1))
+    }
+
     pub fn delta(&self) -> Stream<'a, T, Windowed, N> {
         if self.is_delta {
             Stream {

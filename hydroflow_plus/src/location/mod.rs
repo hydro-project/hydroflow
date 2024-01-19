@@ -196,6 +196,51 @@ pub trait Location<'a>: Clone {
         )
     }
 
+    fn many_source_external<S: Location<'a>>(
+        &self,
+    ) -> (
+        Self::Port,
+        Stream<'a, Result<BytesMut, io::Error>, Async, Self>,
+    )
+    where
+        S: HfSendOneToMany<'a, Self>,
+    {
+        let (next_id_cell, builders) = self.flow_builder();
+
+        let next_id = {
+            let mut next_id = next_id_cell.borrow_mut();
+            let id = *next_id;
+            *next_id += 1;
+            id
+        };
+
+        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
+        let port = self.next_port();
+        let source_pipeline = S::gen_source_statement(self, &port);
+
+        builders
+            .borrow_mut()
+            .as_mut()
+            .unwrap()
+            .entry(self.id())
+            .or_default()
+            .add_statement(parse_quote! {
+                #ident = #source_pipeline -> tee();
+            });
+
+        (
+            port,
+            Stream {
+                ident,
+                node: self.clone(),
+                next_id: next_id_cell,
+                builders,
+                is_delta: false,
+                _phantom: PhantomData,
+            },
+        )
+    }
+
     fn source_iter<T, E: IntoIterator<Item = T>>(
         &self,
         e: impl Quoted<'a, E>,

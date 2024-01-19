@@ -95,6 +95,21 @@ impl<'a> DeployPort<DeployNode<'a>> {
     }
 }
 
+impl<'a> DeployPort<DeployCluster<'a>> {
+    pub async fn create_senders(
+        &self,
+        deployment: &mut Deployment,
+        on: &Arc<RwLock<impl Host + 'static>>,
+    ) -> Vec<CustomClientPort> {
+        let mut out = vec![];
+        for member in &self.node.members {
+            out.push(member.create_sender(&self.port, deployment, on).await);
+        }
+
+        out
+    }
+}
+
 impl<'a> Location<'a> for DeployNode<'a> {
     type Port = DeployPort<Self>;
     type Meta = HashMap<usize, Vec<u32>>;
