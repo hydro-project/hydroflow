@@ -1,5 +1,7 @@
 use quote::quote_spanned;
 
+use crate::graph::GraphEdgeType;
+
 use super::{
     DelayType, OperatorCategory, OperatorConstraints,
     OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
@@ -29,6 +31,8 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
+    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
+    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    op_span,

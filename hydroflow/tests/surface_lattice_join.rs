@@ -1,5 +1,9 @@
+use std::collections::HashSet;
+
 use hydroflow::util::collect_ready;
 use hydroflow_macro::hydroflow_syntax;
+use lattices::collections::SingletonMap;
+use lattices::DeepReveal;
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
@@ -14,7 +18,10 @@ pub fn test_lattice_join_fused_join_reducing_behavior() {
         source_iter([(7, Max::new(5)), (7, Max::new(6))]) -> [1]my_join;
 
         my_join = _lattice_join_fused_join::<Min<usize>, Max<usize>>()
-            -> assert_eq([(7, (Min::new(5), Max::new(6)))]);
+            -> map(DeepReveal::deep_reveal)
+            -> assert_eq([
+                SingletonMap(7, (5, 6))
+            ]);
     };
 
     df.run_available();
@@ -30,7 +37,8 @@ pub fn test_lattice_join_fused_join_set_union() {
         source_iter([(7, SetUnionSingletonSet::new_from(5)), (7, SetUnionSingletonSet::new_from(6))]) -> [1]my_join;
 
         my_join = _lattice_join_fused_join::<SetUnionHashSet<usize>, SetUnionHashSet<usize>>()
-            -> assert_eq([(7, (SetUnionHashSet::new_from([5, 6]), SetUnionHashSet::new_from([5, 6])))]);
+            -> map(DeepReveal::deep_reveal)
+            -> assert_eq([SingletonMap(7, (HashSet::from_iter([5, 6]), HashSet::from_iter([5, 6])))]);
     };
 
     df.run_available();
@@ -47,7 +55,16 @@ pub fn test_lattice_join_fused_join_map_union() {
         source_iter([(7, MapUnionSingletonMap::new_from((3, Min::new(5)))), (7, MapUnionSingletonMap::new_from((3, Min::new(4))))]) -> [1]my_join;
 
         my_join = _lattice_join_fused_join::<MapUnionHashMap<usize, Min<usize>>, MapUnionHashMap<usize, Min<usize>>>()
-            -> assert_eq([(7, (MapUnionHashMap::new_from([(3, Min::new(4))]), MapUnionHashMap::new_from([(3, Min::new(4))])))]);
+            -> map(DeepReveal::deep_reveal)
+            -> assert(|SingletonMap(_k, (mu1, mu2))| mu1.len() == 1 && mu2.len() == 1)
+            -> map(|SingletonMap(k, (mu1, mu2))| {
+                let v1 = mu1.into_iter().next().unwrap();
+                let v2 = mu2.into_iter().next().unwrap();
+                (k, (v1, v2))
+            })
+            -> assert_eq([
+                (7, ((3, 4), (3, 4)))
+            ]);
     };
 
     df.run_available();
@@ -60,7 +77,7 @@ pub fn test_lattice_join_fused_join() {
     // 'static, 'tick.
     {
         let (out_tx, mut out_rx) =
-            hydroflow::util::unbounded_channel::<(usize, (Max<usize>, Max<usize>))>();
+            hydroflow::util::unbounded_channel::<SingletonMap<usize, (usize, usize)>>();
         let (lhs_tx, lhs_rx) = hydroflow::util::unbounded_channel::<(usize, Max<usize>)>();
         let (rhs_tx, rhs_rx) = hydroflow::util::unbounded_channel::<(usize, Max<usize>)>();
 
@@ -70,7 +87,9 @@ pub fn test_lattice_join_fused_join() {
             source_stream(lhs_rx) -> [0]my_join;
             source_stream(rhs_rx) -> [1]my_join;
 
-            my_join -> for_each(|v| out_tx.send(v).unwrap());
+            my_join
+                -> map(DeepReveal::deep_reveal)
+                -> for_each(|v| out_tx.send(v).unwrap());
         };
 
         // Merges forward correctly, without going backward
@@ -82,7 +101,7 @@ pub fn test_lattice_join_fused_join() {
         df.run_tick();
 
         let out: Vec<_> = collect_ready(&mut out_rx);
-        assert_eq!(out, vec![(7, (Max::new(4), Max::new(6)))]);
+        assert_eq!(out, [SingletonMap(7, (4, 6))]);
 
         // Forgets rhs state
         rhs_tx.send((7, Max::new(6))).unwrap();
@@ -91,13 +110,13 @@ pub fn test_lattice_join_fused_join() {
         df.run_tick();
 
         let out: Vec<_> = collect_ready(&mut out_rx);
-        assert_eq!(out, vec![(7, (Max::new(4), Max::new(6)))]);
+        assert_eq!(out, [SingletonMap(7, (4, 6))]);
     }
 
     // 'static, 'static.
     {
         let (out_tx, mut out_rx) =
-            hydroflow::util::unbounded_channel::<(usize, (Max<usize>, Max<usize>))>();
+            hydroflow::util::unbounded_channel::<SingletonMap<usize, (usize, usize)>>();
         let (lhs_tx, lhs_rx) = hydroflow::util::unbounded_channel::<(usize, Max<usize>)>();
         let (rhs_tx, rhs_rx) = hydroflow::util::unbounded_channel::<(usize, Max<usize>)>();
 
@@ -107,7 +126,9 @@ pub fn test_lattice_join_fused_join() {
             source_stream(lhs_rx) -> [0]my_join;
             source_stream(rhs_rx) -> [1]my_join;
 
-            my_join -> for_each(|v| out_tx.send(v).unwrap());
+            my_join
+                -> map(DeepReveal::deep_reveal)
+                -> for_each(|v| out_tx.send(v).unwrap());
         };
 
         lhs_tx.send((7, Max::new(3))).unwrap();
@@ -117,7 +138,7 @@ pub fn test_lattice_join_fused_join() {
 
         df.run_tick();
         let out: Vec<_> = collect_ready(&mut out_rx);
-        assert_eq!(out, vec![(7, (Max::new(4), Max::new(6)))]);
+        assert_eq!(out, [SingletonMap(7, (4, 6))]);
 
         // Doesn't forget
         lhs_tx.send((7, Max::new(4))).unwrap();
@@ -125,6 +146,6 @@ pub fn test_lattice_join_fused_join() {
 
         df.run_tick();
         let out: Vec<_> = collect_ready(&mut out_rx);
-        assert_eq!(out, vec![(7, (Max::new(4), Max::new(6)))]);
+        assert_eq!(out, [SingletonMap(7, (4, 6))]);
     }
 }

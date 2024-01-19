@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// A totally ordered max lattice. Merging returns the larger value.
 ///
@@ -32,6 +32,14 @@ impl<T> Max<T> {
 
     /// Gets the inner by value, consuming self.
     pub fn into_reveal(self) -> T {
+        self.0
+    }
+}
+
+impl<T> DeepReveal for Max<T> {
+    type Revealed = T;
+
+    fn deep_reveal(self) -> Self::Revealed {
         self.0
     }
 }
@@ -91,6 +99,14 @@ impl<T> Min<T> {
 
     /// Gets the inner by value, consuming self.
     pub fn into_reveal(self) -> T {
+        self.0
+    }
+}
+
+impl<T> DeepReveal for Min<T> {
+    type Revealed = T;
+
+    fn deep_reveal(self) -> Self::Revealed {
         self.0
     }
 }

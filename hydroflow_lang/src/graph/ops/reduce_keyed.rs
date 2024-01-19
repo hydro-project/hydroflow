@@ -5,7 +5,7 @@ use super::{
     OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{OpInstGenerics, OperatorInstance};
+use crate::graph::{OpInstGenerics, OperatorInstance, GraphEdgeType};
 
 /// > 1 input stream of type `(K, V)`, 1 output stream of type `(K, V)`.
 /// The output will have one tuple for each distinct `K`, with an accumulated (reduced) value of
@@ -70,6 +70,8 @@ pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
+    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
+    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    hydroflow,

@@ -1,6 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// Pair compound lattice.
 ///
@@ -38,6 +38,18 @@ impl<LatA, LatB> Pair<LatA, LatB> {
     /// Gets the inner by value, consuming self.
     pub fn into_reveal(self) -> (LatA, LatB) {
         (self.a, self.b)
+    }
+}
+
+impl<LatA, LatB> DeepReveal for Pair<LatA, LatB>
+where
+    LatA: DeepReveal,
+    LatB: DeepReveal,
+{
+    type Revealed = (LatA::Revealed, LatB::Revealed);
+
+    fn deep_reveal(self) -> Self::Revealed {
+        (self.a.deep_reveal(), self.b.deep_reveal())
     }
 }
 

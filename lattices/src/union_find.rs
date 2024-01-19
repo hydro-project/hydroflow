@@ -7,7 +7,7 @@ use std::fmt::Debug;
 
 use crate::cc_traits::{Keyed, Map, MapIter, MapMut};
 use crate::collections::{ArrayMap, OptionMap, SingletonMap, VecMap};
-use crate::{Atomize, IsBot, IsTop, LatticeFrom, LatticeOrd, Max, Merge, Min};
+use crate::{Atomize, DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Max, Merge, Min};
 
 // TODO(mingwei): handling malformed trees - parents must be Ord smaller than children.
 
@@ -57,9 +57,17 @@ impl<Map> UnionFind<Map> {
     }
 }
 
-impl<MapSelf, K> UnionFind<MapSelf>
+impl<Map> DeepReveal for UnionFind<Map> {
+    type Revealed = Map;
+
+    fn deep_reveal(self) -> Self::Revealed {
+        self.0
+    }
+}
+
+impl<Map, K> UnionFind<Map>
 where
-    MapSelf: MapMut<K, Cell<K>, Key = K, Item = Cell<K>>,
+    Map: MapMut<K, Cell<K>, Key = K, Item = Cell<K>>,
     K: Copy + Eq,
 {
     /// Union the sets containg `a` and `b`.
@@ -186,7 +194,7 @@ where
                 .any(|(item, parent)| !self.same(*item, parent.get()).into_reveal()))
     }
 }
-impl<MapSelf> Eq for UnionFind<MapSelf> where Self: PartialEq {}
+impl<Map> Eq for UnionFind<Map> where Self: PartialEq {}
 
 impl<Map, K> IsBot for UnionFind<Map>
 where

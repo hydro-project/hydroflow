@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
 
 /// A `Point` lattice, corresponding to a single instance of `T`.
 ///
@@ -37,6 +37,13 @@ impl<T, Provenance> Point<T, Provenance> {
     /// Create a new `Point` lattice instance from a value using `Into`.
     pub fn new_from(val: impl Into<T>) -> Self {
         Self::new(val.into())
+    }
+}
+impl<T, Provenance> DeepReveal for Point<T, Provenance> {
+    type Revealed = T;
+
+    fn deep_reveal(self) -> Self::Revealed {
+        self.val
     }
 }
 

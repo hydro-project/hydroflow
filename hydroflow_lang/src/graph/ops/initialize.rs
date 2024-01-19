@@ -1,10 +1,7 @@
 use syn::parse_quote_spanned;
 
-use super::{
-    OperatorCategory, OperatorConstraints, WriteContextArgs,
-    RANGE_0, RANGE_1,
-};
-use crate::graph::OperatorInstance;
+use super::{OperatorCategory, OperatorConstraints, WriteContextArgs, RANGE_0, RANGE_1};
+use crate::graph::{GraphEdgeType, OperatorInstance};
 
 /// > 0 input streams, 1 output stream
 ///
@@ -30,6 +27,8 @@ pub const INITIALIZE: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
+    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
+    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs { op_span, .. }, diagnostics| {
         let wc = WriteContextArgs {
