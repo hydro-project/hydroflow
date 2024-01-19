@@ -1,0 +1,18 @@
+[test-groups]
+serial-integration = { max-threads = 1 }
+
+[[profile.default.overrides]]
+filter = 'binary(deadlock_detector)'
+test-group = 'serial-integration'
+
+[[profile.default.overrides]]
+filter = 'binary(two_pc)'
+test-group = 'serial-integration'
+
+[[profile.default.overrides]]
+filter = 'binary(kvs)'
+test-group = 'serial-integration'
+
+[[profile.default.overrides]]
+filter = 'binary(kvs_replicated)'
+test-group = 'serial-integration'
