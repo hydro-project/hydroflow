@@ -43,7 +43,6 @@ pub async fn init() -> HydroCLI {
     let mut binds = HashMap::new();
     for (name, config) in bind_config {
         let bound = config.bind().await;
-        println!("Border Check 2: {:?}", bound);
         bind_results.insert(name.clone(), bound.sink_port());
         binds.insert(name.clone(), bound);
     }

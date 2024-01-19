@@ -140,8 +140,6 @@ impl ServerBindConfig {
                     }
                 });
 
-                println!("[bind in cli_integration] returning");
-
                 BoundConnection::TcpPort(conn_recv, addr)
             }
             ServerBindConfig::Demux(bindings) => {

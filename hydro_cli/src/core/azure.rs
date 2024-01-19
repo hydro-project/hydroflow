@@ -699,7 +699,7 @@ impl Host for AzureHost {
             format!("{vm_key}-internal-ip"),
             TerraformOutput {
                 value: format!(
-                    "${{azurerm_public_ip.example.ip_address}}"
+                    "${{azurerm_network_interface.example.private_ip_address}}"
                 ),
             },
         );
@@ -730,6 +730,7 @@ impl Host for AzureHost {
                 .map(|v| v.value.clone());
 
             ProgressTracker::println(format!("External ip: {:?}", external_ip).as_str());
+            ProgressTracker::println(format!("Internal ip: {:?}", internal_ip).as_str());
 
             self.launched = Some(Arc::new(LaunchedComputeEngine {
                 resource_result: resource_result.clone(),
