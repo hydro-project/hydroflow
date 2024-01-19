@@ -1736,7 +1736,7 @@
     <span class="kw">where
         </span>N: HfSendOneToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
-        <span class="kw">let </span>other_ids = <span class="self">self</span>.node.source_iter(other.ids()).cloned();
+        <span class="kw">let </span>other_ids = <span class="self">self</span>.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
             .cross_product(<span class="kw-2">&amp;</span><span class="self">self</span>.assume_windowed())
             .demux_bytes(other)
@@ -1749,7 +1749,7 @@
     <span class="kw">where
         </span>N: HfSendManyToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
-        <span class="kw">let </span>other_ids = <span class="self">self</span>.node.source_iter(other.ids()).cloned();
+        <span class="kw">let </span>other_ids = <span class="self">self</span>.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
             .cross_product(<span class="kw-2">&amp;</span><span class="self">self</span>.assume_windowed())
             .demux_bytes_tagged(other)
@@ -1839,7 +1839,7 @@
     <span class="kw">where
         </span>N: HfSendOneToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
-        <span class="kw">let </span>other_ids = <span class="self">self</span>.node.source_iter(other.ids()).cloned();
+        <span class="kw">let </span>other_ids = <span class="self">self</span>.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
             .cross_product(<span class="kw-2">&amp;</span><span class="self">self</span>.assume_windowed())
             .demux_bincode(other)
@@ -1852,7 +1852,7 @@
     <span class="kw">where
         </span>N: HfSendManyToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
     {
-        <span class="kw">let </span>other_ids = <span class="self">self</span>.node.source_iter(other.ids()).cloned();
+        <span class="kw">let </span>other_ids = <span class="self">self</span>.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
             .cross_product(<span class="kw-2">&amp;</span><span class="self">self</span>.assume_windowed())
             .demux_bincode_tagged(other)
