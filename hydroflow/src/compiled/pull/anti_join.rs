@@ -44,17 +44,21 @@ where
     Ipos: 'a + Iterator<Item = (Key, V)>,
 {
     if new_tick {
-        for kv in input_pos {
-            if !state_neg.contains(&kv.0) {
-                state_pos.insert(kv);
-            }
-        }
-
         Either::Left(
             state_pos
                 .iter()
-                .filter(|(k, _)| !state_neg.contains(k))
-                .cloned(),
+                .filter(|kv| !state_neg.contains(&kv.0))
+                .cloned()
+                .collect::<Vec<_>>()
+                .into_iter()
+                .chain(input_pos.filter_map(|kv| {
+                    if !state_neg.contains(&kv.0) {
+                        state_pos.insert(kv.clone());
+                        Some(kv)
+                    } else {
+                        None
+                    }
+                })),
         )
     } else {
         Either::Right(AntiJoin {

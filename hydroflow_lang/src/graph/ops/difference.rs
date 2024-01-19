@@ -16,8 +16,7 @@ use crate::graph::{GraphEdgeType, OperatorInstance, PortIndexValue};
 /// `difference` can be provided with one or two generic lifetime persistence arguments
 /// in the same way as [`join`](#join), see [`join`'s documentation](#join) for more info.
 ///
-/// Note set semantics here: duplicate items in the `pos` input
-/// are output 0 or 1 times (if they do/do-not have a match in `neg` respectively.)
+/// Note set semantics only for the `neg` input.
 ///
 /// ```hydroflow
 /// source_iter(vec!["dog", "cat", "elephant"]) -> [pos]diff;

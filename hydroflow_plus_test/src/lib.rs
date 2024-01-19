@@ -9,6 +9,7 @@ use stageleft::{q, Quoted, RuntimeData};
 
 pub mod cluster;
 pub mod first_ten;
+pub mod negation;
 pub mod networked;
 
 #[stageleft::entry(UnboundedReceiverStream<u32>)]
