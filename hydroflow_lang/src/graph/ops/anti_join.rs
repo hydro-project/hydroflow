@@ -13,8 +13,9 @@ use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance, PortIndexVal
 ///
 /// For a given tick, computes the anti-join of the items in the input
 /// streams, returning unique items in the `pos` input that do not have matching keys
-/// in the `neg` input. Note this is set semantics, so duplicate items in the `pos` input
-/// are output 0 or 1 times (if they do/do-not have a match in `neg` respectively.)
+/// in the `neg` input. Note this is set semantics only for the `neg element`. Order
+/// is preserved for new elements in a given tick, but not for elements processed
+/// in a previous tick with `'static`.
 ///
 /// ```hydroflow
 /// source_iter(vec![("dog", 1), ("cat", 2), ("elephant", 3)]) -> [pos]diff;

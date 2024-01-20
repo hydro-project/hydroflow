@@ -315,7 +315,10 @@ pub fn test_anti_join() {
 
     flow.run_available();
     let out: Vec<_> = collect_ready(&mut out_recv);
-    assert_eq!(&[(1, 2), (2, 3), (3, 4), (4, 5), (5, 4), (6, 5)], &*out);
+    assert_eq!(
+        &[(1, 2), (1, 2), (2, 3), (3, 4), (4, 5), (5, 4), (6, 5)],
+        &*out
+    );
 }
 
 #[multiplatform_test]
@@ -339,7 +342,7 @@ pub fn test_anti_join_static() {
     }
     flow.run_tick();
     let out: Vec<_> = collect_ready(&mut out_recv);
-    assert_eq!(&[(1, 2), (5, 6), (400, 5)], &*out);
+    assert_eq!(&[(1, 2), (1, 2), (5, 6), (400, 5)], &*out);
 
     neg_send.send(400).unwrap();
 
@@ -369,7 +372,7 @@ pub fn test_anti_join_tick_static() {
     }
     flow.run_tick();
     let out: Vec<_> = collect_ready(&mut out_recv);
-    assert_eq!(&[(1, 2), (5, 6), (400, 5)], &*out);
+    assert_eq!(&[(1, 2), (1, 2), (5, 6), (400, 5)], &*out);
 
     for x in [(10, 10), (10, 10), (200, 5)] {
         pos_send.send(x).unwrap();
@@ -377,7 +380,7 @@ pub fn test_anti_join_tick_static() {
 
     flow.run_available();
     let out: Vec<_> = collect_ready(&mut out_recv);
-    assert_eq!(&[(10, 10)], &*out);
+    assert_eq!(&[(10, 10), (10, 10)], &*out);
 }
 
 #[multiplatform_test]

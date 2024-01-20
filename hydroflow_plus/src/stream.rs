@@ -378,6 +378,90 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
             .pipeline_op(parse_quote!(unique::<'tick>()), false)
     }
 
+    pub fn filter_not_in(&self, other: &Stream<'a, T, Windowed, N>) -> Stream<'a, T, Windowed, N>
+    where
+        T: Eq + Hash,
+    {
+        if self.node.id() != other.node.id() {
+            panic!("union must be called on streams on the same node");
+        }
+
+        let next_id = {
+            let mut next_id = self.next_id.borrow_mut();
+            let id = *next_id;
+            *next_id += 1;
+            id
+        };
+
+        let self_ident = if (self.is_delta, other.is_delta) == (true, false) {
+            self.ensure_concrete().ident
+        } else {
+            self.ident.clone()
+        };
+
+        let other_ident = &other.ident;
+        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
+
+        let mut builders = self.builders.borrow_mut();
+        let builder = builders
+            .as_mut()
+            .unwrap()
+            .entry(self.node.id())
+            .or_default();
+
+        let output_delta = match (self.is_delta, other.is_delta) {
+            (true, true) => {
+                // we don't gain any performance by having the first be 'tick,
+                // just persist the second one and we get deltas out
+                builder.add_statement(parse_quote! {
+                    #ident = difference::<'tick, 'static>() -> tee();
+                });
+
+                true
+            }
+            (true, false) => {
+                // difference/anti_join<'static, _> does not replay
+                // but we need to re-filter every tick
+                builder.add_statement(parse_quote! {
+                    #ident = difference::<'tick, 'tick>() -> tee();
+                });
+
+                false
+            }
+            (false, true) => {
+                builder.add_statement(parse_quote! {
+                    #ident = difference::<'tick, 'static>() -> tee();
+                });
+
+                false
+            }
+            (false, false) => {
+                builder.add_statement(parse_quote! {
+                    #ident = difference::<'tick, 'tick>() -> tee();
+                });
+
+                false
+            }
+        };
+
+        builder.add_statement(parse_quote! {
+            #self_ident -> [pos]#ident;
+        });
+
+        builder.add_statement(parse_quote! {
+            #other_ident -> [neg]#ident;
+        });
+
+        Stream {
+            ident,
+            node: self.node.clone(),
+            next_id: self.next_id,
+            builders: self.builders,
+            is_delta: output_delta,
+            _phantom: PhantomData,
+        }
+    }
+
     pub fn sample_every(
         &self,
         duration: impl Quoted<'a, std::time::Duration> + Copy + 'a,
@@ -458,6 +542,90 @@ impl<'a, K, V1, W, N: Location<'a>> Stream<'a, (K, V1), W, N> {
 
         builder.add_statement(parse_quote! {
             #other_ident -> [1]#ident;
+        });
+
+        Stream {
+            ident,
+            node: self.node.clone(),
+            next_id: self.next_id,
+            builders: self.builders,
+            is_delta: output_delta,
+            _phantom: PhantomData,
+        }
+    }
+
+    pub fn anti_join<W2>(&self, n: &Stream<'a, K, W2, N>) -> Stream<'a, (K, V1), W, N>
+    where
+        K: Eq + Hash,
+    {
+        if self.node.id() != n.node.id() {
+            panic!("anti_join must be called on streams on the same node");
+        }
+
+        let next_id = {
+            let mut next_id = self.next_id.borrow_mut();
+            let id = *next_id;
+            *next_id += 1;
+            id
+        };
+
+        let self_ident = if (self.is_delta, n.is_delta) == (true, false) {
+            self.ensure_concrete().ident
+        } else {
+            self.ident.clone()
+        };
+
+        let other_ident = &n.ident;
+        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
+
+        let mut builders = self.builders.borrow_mut();
+        let builder = builders
+            .as_mut()
+            .unwrap()
+            .entry(self.node.id())
+            .or_default();
+
+        let output_delta = match (self.is_delta, n.is_delta) {
+            (true, true) => {
+                // we don't gain any performance by having the first be 'tick,
+                // just persist the second one and we get deltas out
+                builder.add_statement(parse_quote! {
+                    #ident = anti_join::<'tick, 'static>() -> tee();
+                });
+
+                true
+            }
+            (true, false) => {
+                // difference/anti_join<'static, _> does not replay
+                // but we need to re-filter every tick
+                builder.add_statement(parse_quote! {
+                    #ident = anti_join::<'tick, 'tick>() -> tee();
+                });
+
+                false
+            }
+            (false, true) => {
+                builder.add_statement(parse_quote! {
+                    #ident = anti_join::<'tick, 'static>() -> tee();
+                });
+
+                false
+            }
+            (false, false) => {
+                builder.add_statement(parse_quote! {
+                    #ident = anti_join::<'tick, 'tick>() -> tee();
+                });
+
+                false
+            }
+        };
+
+        builder.add_statement(parse_quote! {
+            #self_ident -> [pos]#ident;
+        });
+
+        builder.add_statement(parse_quote! {
+            #other_ident -> [neg]#ident;
         });
 
         Stream {
