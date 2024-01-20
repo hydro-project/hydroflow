@@ -11,7 +11,7 @@ var srcIndex = JSON.parse('{\
 "hydroflow_macro":["",[],["lib.rs"]],\
 "hydroflow_plus":["",[["location",[],["graphs.rs","mod.rs","network.rs"]]],["builder.rs","cycle.rs","lib.rs","stream.rs"]],\
 "hydroflow_plus_cli_integration":["",[],["lib.rs","runtime.rs"]],\
-"hydroflow_plus_test":["",[],["cluster.rs","first_ten.rs","lib.rs","networked.rs"]],\
+"hydroflow_plus_test":["",[],["cluster.rs","first_ten.rs","lib.rs","negation.rs","networked.rs"]],\
 "hydroflow_plus_test_macro":["",[],["lib.rs"]],\
 "latency_measure":["",[],["latency_measure.rs","protocol.rs"]],\
 "lattices":["",[],["collections.rs","conflict.rs","dom_pair.rs","lib.rs","map_union.rs","ord.rs","pair.rs","point.rs","set_union.rs","set_union_with_tombstones.rs","test.rs","union_find.rs","unit.rs","vec_union.rs","with_bot.rs","with_top.rs"]],\

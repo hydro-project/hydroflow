@@ -73,7 +73,6 @@
 <a href="#73" id="73">73</a>
 <a href="#74" id="74">74</a>
 <a href="#75" id="75">75</a>
-<a href="#76" id="76">76</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
@@ -92,8 +91,7 @@
 /// `difference` can be provided with one or two generic lifetime persistence arguments
 /// in the same way as [`join`](#join), see [`join`&#39;s documentation](#join) for more info.
 ///
-/// Note set semantics here: duplicate items in the `pos` input
-/// are output 0 or 1 times (if they do/do-not have a match in `neg` respectively.)
+/// Note set semantics only for the `neg` input.
 ///
 /// ```hydroflow
 /// source_iter(vec![&quot;dog&quot;, &quot;cat&quot;, &quot;elephant&quot;]) -&gt; [pos]diff;
