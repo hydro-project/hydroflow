@@ -224,11 +224,22 @@ impl<K, V> MapIterMut for VecMap<K, V> {
 }
 
 /// A type that will always be an empty set.
-#[derive(Default)]
+#[derive(Default, Debug, Clone, Copy, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct EmptySet<T> {
     _x: PhantomData<T>,
 }
+
+impl<T, Rhs> PartialEq<Rhs> for EmptySet<T>
+where
+    Rhs: Len,
+{
+    fn eq(&self, other: &Rhs) -> bool {
+        other.is_empty()
+    }
+}
+
+impl<T> Eq for EmptySet<T> {}
 
 impl<T> Collection for EmptySet<T> {
     type Item = T;
@@ -343,6 +354,129 @@ impl<T> IterMut for SingletonSet<T> {
 
     fn iter_mut(&mut self) -> Self::IterMut<'_> {
         std::iter::once(&mut self.0)
+    }
+}
+
+/// A key-value entry wrapper representing a singleton map.
+#[derive(Debug, Clone, Copy, PartialOrd, Ord, Hash, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct EmptyMap<K, V>(pub PhantomData<K>, pub PhantomData<V>);
+impl<K, V> IntoIterator for EmptyMap<K, V> {
+    type Item = (K, V);
+    type IntoIter = std::iter::Empty<(K, V)>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        std::iter::empty()
+    }
+}
+
+impl<K, V, Rhs> PartialEq<Rhs> for EmptyMap<K, V>
+where
+    Rhs: Len,
+{
+    fn eq(&self, other: &Rhs) -> bool {
+        other.is_empty()
+    }
+}
+
+impl<K, V> Eq for EmptyMap<K, V> {}
+
+impl<K, V> Collection for EmptyMap<K, V> {
+    type Item = V;
+}
+impl<K, V> Len for EmptyMap<K, V> {
+    fn len(&self) -> usize {
+        0
+    }
+}
+impl<K, V> CollectionRef for EmptyMap<K, V> {
+    type ItemRef<'a> = &'a Self::Item
+    where
+        Self: 'a;
+
+    covariant_item_ref!();
+}
+impl<'a, Q, K, V> Get<&'a Q> for EmptyMap<K, V>
+where
+    K: Borrow<Q>,
+    Q: Eq + ?Sized,
+{
+    fn get(&self, _key: &'a Q) -> Option<Self::ItemRef<'_>> {
+        None
+    }
+}
+impl<K, V> CollectionMut for EmptyMap<K, V> {
+    type ItemMut<'a> = &'a mut Self::Item
+    where
+        Self: 'a;
+
+    covariant_item_mut!();
+}
+impl<'a, Q, K, V> GetMut<&'a Q> for EmptyMap<K, V>
+where
+    K: Borrow<Q>,
+    Q: Eq + ?Sized,
+{
+    fn get_mut(&mut self, _key: &'a Q) -> Option<Self::ItemMut<'_>> {
+        None
+    }
+}
+impl<K, V> Keyed for EmptyMap<K, V> {
+    type Key = K;
+}
+impl<K, V> KeyedRef for EmptyMap<K, V> {
+    type KeyRef<'a> = &'a Self::Key
+	where
+		Self: 'a;
+
+    covariant_key_ref!();
+}
+impl<'a, Q, K, V> GetKeyValue<&'a Q> for EmptyMap<K, V>
+where
+    K: Borrow<Q>,
+    Q: Eq + ?Sized,
+{
+    fn get_key_value(&self, _key: &'a Q) -> Option<(Self::KeyRef<'_>, Self::ItemRef<'_>)> {
+        None
+    }
+}
+impl<'a, Q, K, V> GetKeyValueMut<&'a Q> for EmptyMap<K, V>
+where
+    K: Borrow<Q>,
+    Q: Eq + ?Sized,
+{
+    fn get_key_value_mut(&mut self, _key: &'a Q) -> Option<(Self::KeyRef<'_>, Self::ItemMut<'_>)> {
+        None
+    }
+}
+impl<K, V> Iter for EmptyMap<K, V> {
+    type Iter<'a> = std::iter::Empty<&'a V>
+	where
+		Self: 'a;
+
+    fn iter(&self) -> Self::Iter<'_> {
+        std::iter::empty()
+    }
+}
+impl<K, V> SimpleKeyedRef for EmptyMap<K, V> {
+    simple_keyed_ref!();
+}
+impl<K, V> MapIter for EmptyMap<K, V> {
+    type Iter<'a> = std::iter::Empty<(&'a K, &'a V)>
+	where
+		Self: 'a;
+
+    fn iter(&self) -> Self::Iter<'_> {
+        std::iter::empty()
+    }
+}
+impl<K, V> MapIterMut for EmptyMap<K, V> {
+    type IterMut<'a> = std::iter::Empty<(&'a K, &'a mut V)>
+	where
+		Self: 'a;
+
+    fn iter_mut(&mut self) -> Self::IterMut<'_> {
+        std::iter::empty()
     }
 }
 
