@@ -159,6 +159,15 @@ pub enum GraphEdgeType {
     /// State passed by reference.
     Reference,
 }
+impl GraphEdgeType {
+    /// Returns if this affects ownership for the sake of subgraph partitioning into in-out trees.
+    pub fn affects_in_out_graph_ownership(self) -> bool {
+        match self {
+            GraphEdgeType::Value => true,
+            GraphEdgeType::Reference => false,
+        }
+    }
+}
 
 /// Meta-data relating to operators which may be useful throughout the compilation process.
 ///

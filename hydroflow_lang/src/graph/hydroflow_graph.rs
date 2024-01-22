@@ -415,8 +415,25 @@ impl HydroflowGraph {
         if matches!(self.node(node_id), GraphNode::Handoff { .. }) {
             return Some(Color::Hoff);
         }
-        let inn_degree = self.node_degree_in(node_id);
-        let out_degree = self.node_degree_out(node_id);
+        // In-degree excluding ref-edges.
+        let inn_degree = self
+            .node_predecessor_edges(node_id)
+            .filter(|&edge_id| {
+                self.edge_type(edge_id)
+                    .unwrap()
+                    .affects_in_out_graph_ownership()
+            })
+            .count();
+        // Out-degree excluding ref-edges.
+        let out_degree = self
+            .node_successor_edges(node_id)
+            .filter(|&edge_id| {
+                self.edge_type(edge_id)
+                    .unwrap()
+                    .affects_in_out_graph_ownership()
+            })
+            .count();
+
         match (inn_degree, out_degree) {
             (0, 0) => None, // Generally should not happen, "Degenerate subgraph detected".
             (0, 1) => Some(Color::Pull),
