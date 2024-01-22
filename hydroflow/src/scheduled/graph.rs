@@ -202,7 +202,11 @@ impl<'a> Hydroflow<'a> {
                 let sg_data = &mut self.subgraphs[sg_id.0];
                 // This must be true for the subgraph to be enqueued.
                 assert!(sg_data.is_scheduled.take());
-                tracing::trace!(sg_id = sg_id.0, "Running subgraph.");
+                tracing::trace!(
+                    sg_id = sg_id.0,
+                    sg_name = &*sg_data.name,
+                    "Running subgraph."
+                );
 
                 self.context.subgraph_id = sg_id;
                 self.context.subgraph_last_tick_run_in = sg_data.last_tick_run_in;
@@ -220,6 +224,11 @@ impl<'a> Hydroflow<'a> {
                         // If we have sent data to the next tick, then we can start the next tick.
                         if succ_sg_data.stratum < self.context.current_stratum && !sg_data.is_lazy {
                             self.can_start_tick = true;
+                            tracing::trace!(
+                                sg_id = succ_id.0,
+                                sg_name = &*succ_sg_data.name,
+                                "successor subgraph scheduled"
+                            );
                         }
                         // Add subgraph to stratum queue if it is not already scheduled.
                         if !succ_sg_data.is_scheduled.replace(true) {
