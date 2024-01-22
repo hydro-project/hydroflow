@@ -47,6 +47,52 @@ fn main() {
                 }
                 check_stream(ints2)
             };
+            let sg_2v1_node_17v1_groupbydata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::rustc_hash::FxHashMap::<(), (Option<_>,)>::default(),
+                    ),
+                );
+            let sg_2v1_node_10v1_uniquedata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::<
+                            _,
+                            hydroflow::rustc_hash::FxHashSet<_>,
+                        >::default(),
+                    ),
+                );
+            let sg_3v1_node_7v1_uniquedata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::<
+                            _,
+                            hydroflow::rustc_hash::FxHashSet<_>,
+                        >::default(),
+                    ),
+                );
+            let sg_3v1_node_2v1_uniquedata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::<
+                            _,
+                            hydroflow::rustc_hash::FxHashSet<_>,
+                        >::default(),
+                    ),
+                );
+            let sg_3v1_node_3v1_antijoindata_neg = df
+                .add_state(
+                    std::cell::RefCell::new(hydroflow::rustc_hash::FxHashSet::default()),
+                );
+            let sg_3v1_node_3v1_antijoindata_pos = df
+                .add_state(
+                    std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::<
+                            _,
+                            hydroflow::rustc_hash::FxHashSet<_>,
+                        >::default(),
+                    ),
+                );
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(4v1)",
                 0,
@@ -174,21 +220,6 @@ fn main() {
                     check_pivot_run(op_5v1, hoff_11v3_send);
                 },
             );
-            let sg_2v1_node_17v1_groupbydata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::rustc_hash::FxHashMap::<(), (Option<_>,)>::default(),
-                    ),
-                );
-            let sg_2v1_node_10v1_uniquedata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::<
-                            _,
-                            hydroflow::rustc_hash::FxHashSet<_>,
-                        >::default(),
-                    ),
-                );
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(2v1)",
                 2,
@@ -420,37 +451,6 @@ fn main() {
                     context.schedule_subgraph(context.current_subgraph(), false);
                 },
             );
-            let sg_3v1_node_7v1_uniquedata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::<
-                            _,
-                            hydroflow::rustc_hash::FxHashSet<_>,
-                        >::default(),
-                    ),
-                );
-            let sg_3v1_node_2v1_uniquedata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::<
-                            _,
-                            hydroflow::rustc_hash::FxHashSet<_>,
-                        >::default(),
-                    ),
-                );
-            let sg_3v1_node_3v1_antijoindata_neg = df
-                .add_state(
-                    std::cell::RefCell::new(hydroflow::rustc_hash::FxHashSet::default()),
-                );
-            let sg_3v1_node_3v1_antijoindata_pos = df
-                .add_state(
-                    std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::<
-                            _,
-                            hydroflow::rustc_hash::FxHashSet<_>,
-                        >::default(),
-                    ),
-                );
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(3v1)",
                 1,

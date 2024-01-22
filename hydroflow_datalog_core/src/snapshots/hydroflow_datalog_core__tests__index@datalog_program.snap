@@ -91,6 +91,109 @@ fn main() {
                         hydroflow::util::monotonic_map::MonotonicMap::new_init(0..),
                     ),
                 );
+            let sg_4v1_node_37v1_groupbydata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::rustc_hash::FxHashMap::<(_,), (Option<_>,)>::default(),
+                    ),
+                );
+            let sg_4v1_node_38v1_counterdata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::new_init(0..),
+                    ),
+                );
+            let sg_4v1_node_8v1_uniquedata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::<
+                            _,
+                            hydroflow::rustc_hash::FxHashSet<_>,
+                        >::default(),
+                    ),
+                );
+            let sg_5v1_node_22v1_uniquedata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::<
+                            _,
+                            hydroflow::rustc_hash::FxHashSet<_>,
+                        >::default(),
+                    ),
+                );
+            let sg_5v1_node_23v1_antijoindata_neg = df
+                .add_state(
+                    std::cell::RefCell::new(hydroflow::rustc_hash::FxHashSet::default()),
+                );
+            let sg_5v1_node_23v1_antijoindata_pos = df
+                .add_state(
+                    std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::<
+                            _,
+                            hydroflow::rustc_hash::FxHashSet<_>,
+                        >::default(),
+                    ),
+                );
+            let sg_5v1_node_11v1_uniquedata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::<
+                            _,
+                            hydroflow::rustc_hash::FxHashSet<_>,
+                        >::default(),
+                    ),
+                );
+            let sg_5v1_node_45v1_persistdata = df
+                .add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
+            let sg_5v1_node_43v1_counterdata = df
+                .add_state(::std::cell::RefCell::new(0..));
+            let sg_6v1_node_47v1_groupbydata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::rustc_hash::FxHashMap::<(_,), (Option<_>,)>::default(),
+                    ),
+                );
+            let sg_6v1_node_48v1_counterdata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::new_init(0..),
+                    ),
+                );
+            let sg_6v1_node_14v1_uniquedata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::<
+                            _,
+                            hydroflow::rustc_hash::FxHashSet<_>,
+                        >::default(),
+                    ),
+                );
+            let sg_7v1_node_51v1_counterdata = df
+                .add_state(::std::cell::RefCell::new(0..));
+            let sg_7v1_node_17v1_uniquedata = df
+                .add_state(
+                    ::std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::<
+                            _,
+                            hydroflow::rustc_hash::FxHashSet<_>,
+                        >::default(),
+                    ),
+                );
+            let sg_7v1_node_18v1_antijoindata_neg = df
+                .add_state(
+                    std::cell::RefCell::new(hydroflow::rustc_hash::FxHashSet::default()),
+                );
+            let sg_7v1_node_18v1_antijoindata_pos = df
+                .add_state(
+                    std::cell::RefCell::new(
+                        hydroflow::util::monotonic_map::MonotonicMap::<
+                            _,
+                            hydroflow::rustc_hash::FxHashSet<_>,
+                        >::default(),
+                    ),
+                );
+            let sg_7v1_node_31v1_persistdata = df
+                .add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(3v1)",
                 0,
@@ -623,27 +726,6 @@ fn main() {
                     check_pivot_run(op_25v1, hoff_9v3_send);
                 },
             );
-            let sg_4v1_node_37v1_groupbydata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::rustc_hash::FxHashMap::<(_,), (Option<_>,)>::default(),
-                    ),
-                );
-            let sg_4v1_node_38v1_counterdata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::new_init(0..),
-                    ),
-                );
-            let sg_4v1_node_8v1_uniquedata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::<
-                            _,
-                            hydroflow::rustc_hash::FxHashSet<_>,
-                        >::default(),
-                    ),
-                );
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(4v1)",
                 1,
@@ -911,41 +993,6 @@ fn main() {
                     check_pivot_run(op_8v1, op_28v1);
                 },
             );
-            let sg_5v1_node_22v1_uniquedata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::<
-                            _,
-                            hydroflow::rustc_hash::FxHashSet<_>,
-                        >::default(),
-                    ),
-                );
-            let sg_5v1_node_23v1_antijoindata_neg = df
-                .add_state(
-                    std::cell::RefCell::new(hydroflow::rustc_hash::FxHashSet::default()),
-                );
-            let sg_5v1_node_23v1_antijoindata_pos = df
-                .add_state(
-                    std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::<
-                            _,
-                            hydroflow::rustc_hash::FxHashSet<_>,
-                        >::default(),
-                    ),
-                );
-            let sg_5v1_node_11v1_uniquedata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::<
-                            _,
-                            hydroflow::rustc_hash::FxHashSet<_>,
-                        >::default(),
-                    ),
-                );
-            let sg_5v1_node_45v1_persistdata = df
-                .add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
-            let sg_5v1_node_43v1_counterdata = df
-                .add_state(::std::cell::RefCell::new(0..));
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(5v1)",
                 1,
@@ -1489,27 +1536,6 @@ fn main() {
                     context.schedule_subgraph(context.current_subgraph(), false);
                 },
             );
-            let sg_6v1_node_47v1_groupbydata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::rustc_hash::FxHashMap::<(_,), (Option<_>,)>::default(),
-                    ),
-                );
-            let sg_6v1_node_48v1_counterdata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::new_init(0..),
-                    ),
-                );
-            let sg_6v1_node_14v1_uniquedata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::<
-                            _,
-                            hydroflow::rustc_hash::FxHashSet<_>,
-                        >::default(),
-                    ),
-                );
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(6v1)",
                 2,
@@ -1787,32 +1813,6 @@ fn main() {
                     context.schedule_subgraph(context.current_subgraph(), false);
                 },
             );
-            let sg_7v1_node_51v1_counterdata = df
-                .add_state(::std::cell::RefCell::new(0..));
-            let sg_7v1_node_17v1_uniquedata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::<
-                            _,
-                            hydroflow::rustc_hash::FxHashSet<_>,
-                        >::default(),
-                    ),
-                );
-            let sg_7v1_node_18v1_antijoindata_neg = df
-                .add_state(
-                    std::cell::RefCell::new(hydroflow::rustc_hash::FxHashSet::default()),
-                );
-            let sg_7v1_node_18v1_antijoindata_pos = df
-                .add_state(
-                    std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::<
-                            _,
-                            hydroflow::rustc_hash::FxHashSet<_>,
-                        >::default(),
-                    ),
-                );
-            let sg_7v1_node_31v1_persistdata = df
-                .add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(7v1)",
                 1,
