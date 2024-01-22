@@ -1428,6 +1428,23 @@
 <a href="#1428" id="1428">1428</a>
 <a href="#1429" id="1429">1429</a>
 <a href="#1430" id="1430">1430</a>
+<a href="#1431" id="1431">1431</a>
+<a href="#1432" id="1432">1432</a>
+<a href="#1433" id="1433">1433</a>
+<a href="#1434" id="1434">1434</a>
+<a href="#1435" id="1435">1435</a>
+<a href="#1436" id="1436">1436</a>
+<a href="#1437" id="1437">1437</a>
+<a href="#1438" id="1438">1438</a>
+<a href="#1439" id="1439">1439</a>
+<a href="#1440" id="1440">1440</a>
+<a href="#1441" id="1441">1441</a>
+<a href="#1442" id="1442">1442</a>
+<a href="#1443" id="1443">1443</a>
+<a href="#1444" id="1444">1444</a>
+<a href="#1445" id="1445">1445</a>
+<a href="#1446" id="1446">1446</a>
+<a href="#1447" id="1447">1447</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -2189,10 +2206,13 @@
                     .any(|<span class="kw-2">&amp;</span>node_id| <span class="self">self</span>.node_degree_in(node_id) == <span class="number">0</span>)
             });
 
-        <span class="kw">let </span>subgraphs = subgraphs_without_preds
-            .iter()
-            .chain(subgraphs_with_preds.iter())
-            .filter_map(|<span class="kw-2">&amp;</span>(subgraph_id, subgraph_nodes)| {
+        <span class="kw">let </span><span class="kw-2">mut </span>op_prologue_code = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>subgraphs = Vec::new();
+        {
+            <span class="kw">for </span><span class="kw-2">&amp;</span>(subgraph_id, subgraph_nodes) <span class="kw">in </span>subgraphs_without_preds
+                .iter()
+                .chain(subgraphs_with_preds.iter())
+            {
                 <span class="kw">let </span>(recv_hoffs, send_hoffs) = <span class="kw-2">&amp;</span>subgraph_handoffs[subgraph_id];
                 <span class="kw">let </span>recv_ports: Vec&lt;Ident&gt; = recv_hoffs
                     .iter()
@@ -2203,14 +2223,12 @@
                     .map(|<span class="kw-2">&amp;</span>hoff_id| <span class="self">self</span>.node_as_ident(hoff_id, <span class="bool-val">false</span>))
                     .collect();
 
-                <span class="kw">let </span>recv_port_code = recv_ports
-                    .iter()
-                    .map(|ident| {
-                        <span class="macro">quote! </span>{
-                            <span class="kw">let </span><span class="kw-2">mut </span>#ident = #ident.borrow_mut_swap();
-                            <span class="kw">let </span>#ident = #ident.drain(..);
-                        }
-                    });
+                <span class="kw">let </span>recv_port_code = recv_ports.iter().map(|ident| {
+                    <span class="macro">quote! </span>{
+                        <span class="kw">let </span><span class="kw-2">mut </span>#ident = #ident.borrow_mut_swap();
+                        <span class="kw">let </span>#ident = #ident.drain(..);
+                    }
+                });
                 <span class="kw">let </span>send_port_code = send_ports.iter().map(|ident| {
                     <span class="macro">quote! </span>{
                         <span class="kw">let </span>#ident = #root::pusherator::for_each::ForEach::new(|v| {
@@ -2219,7 +2237,6 @@
                     }
                 });
 
-                <span class="kw">let </span><span class="kw-2">mut </span>op_prologue_code = Vec::new();
                 <span class="kw">let </span><span class="kw-2">mut </span>subgraph_op_iter_code = Vec::new();
                 <span class="kw">let </span><span class="kw-2">mut </span>subgraph_op_iter_after_code = Vec::new();
                 {
@@ -2241,7 +2258,10 @@
 
                     <span class="kw">for </span>(idx, <span class="kw-2">&amp;</span>node_id) <span class="kw">in </span>nodes_iter.enumerate() {
                         <span class="kw">let </span>node = <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id];
-                        <span class="macro">assert!</span>(<span class="macro">matches!</span>(node, GraphNode::Operator(<span class="kw">_</span>)), <span class="string">&quot;Handoffs are not part of subgraphs.&quot;</span>);
+                        <span class="macro">assert!</span>(
+                            <span class="macro">matches!</span>(node, GraphNode::Operator(<span class="kw">_</span>)),
+                            <span class="string">&quot;Handoffs are not part of subgraphs.&quot;
+                        </span>);
                         <span class="kw">let </span>op_inst = <span class="kw-2">&amp;</span><span class="self">self</span>.operator_instances[node_id];
 
                         <span class="kw">let </span>op_span = node.span();
@@ -2256,10 +2276,11 @@
                         {
                             <span class="comment">// TODO clean this up.
                             // Collect input arguments (predecessors).
-                            </span><span class="kw">let </span><span class="kw-2">mut </span>input_edges: Vec&lt;(<span class="kw-2">&amp;</span>PortIndexValue, GraphNodeId)&gt; =
-                                <span class="self">self</span>.graph.predecessors(node_id)
-                                    .map(|(edge_id, pred)| (<span class="kw-2">&amp;</span><span class="self">self</span>.ports[edge_id].<span class="number">1</span>, pred))
-                                    .collect();
+                            </span><span class="kw">let </span><span class="kw-2">mut </span>input_edges: Vec&lt;(<span class="kw-2">&amp;</span>PortIndexValue, GraphNodeId)&gt; = <span class="self">self
+                                </span>.graph
+                                .predecessors(node_id)
+                                .map(|(edge_id, pred)| (<span class="kw-2">&amp;</span><span class="self">self</span>.ports[edge_id].<span class="number">1</span>, pred))
+                                .collect();
                             <span class="comment">// Ensure sorted by port index.
                             </span>input_edges.sort();
 
@@ -2269,10 +2290,11 @@
                                 .collect();
 
                             <span class="comment">// Collect output arguments (successors).
-                            </span><span class="kw">let </span><span class="kw-2">mut </span>output_edges: Vec&lt;(<span class="kw-2">&amp;</span>PortIndexValue, GraphNodeId)&gt; =
-                                <span class="self">self</span>.graph.successors(node_id)
-                                    .map(|(edge_id, succ)| (<span class="kw-2">&amp;</span><span class="self">self</span>.ports[edge_id].<span class="number">0</span>, succ))
-                                    .collect();
+                            </span><span class="kw">let </span><span class="kw-2">mut </span>output_edges: Vec&lt;(<span class="kw-2">&amp;</span>PortIndexValue, GraphNodeId)&gt; = <span class="self">self
+                                </span>.graph
+                                .successors(node_id)
+                                .map(|(edge_id, succ)| (<span class="kw-2">&amp;</span><span class="self">self</span>.ports[edge_id].<span class="number">0</span>, succ))
+                                .collect();
                             <span class="comment">// Ensure sorted by port index.
                             </span>output_edges.sort();
 
@@ -2282,7 +2304,9 @@
                                 .collect();
 
                             <span class="comment">// Corresponds 1:1 to inputs.
-                            </span><span class="kw">let </span>flow_props_in = <span class="self">self</span>.graph.predecessor_edges(node_id)
+                            </span><span class="kw">let </span>flow_props_in = <span class="self">self
+                                </span>.graph
+                                .predecessor_edges(node_id)
                                 .map(|edge_id| <span class="self">self</span>.flow_props.get(edge_id).copied())
                                 .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
@@ -2312,7 +2336,8 @@
                                 flow_props_in: <span class="kw-2">&amp;*</span>flow_props_in,
                             };
 
-                            <span class="kw">let </span>write_result = (op_constraints.write_fn)(<span class="kw-2">&amp;</span>context_args, diagnostics);
+                            <span class="kw">let </span>write_result =
+                                (op_constraints.write_fn)(<span class="kw-2">&amp;</span>context_args, diagnostics);
                             <span class="kw">let </span>OperatorWriteOutput {
                                 write_prologue,
                                 write_iterator,
@@ -2341,7 +2366,9 @@
                                     </span><span class="attr">#[cfg(not(feature = <span class="string">&quot;diagnostics&quot;</span>))]
                                     </span><span class="kw">let </span>location = <span class="string">&quot;unknown&quot;</span>;
 
-                                    <span class="kw">let </span>location = location.to_string().replace(|x: char| !x.is_alphanumeric(), <span class="string">&quot;_&quot;</span>);
+                                    <span class="kw">let </span>location = location
+                                        .to_string()
+                                        .replace(|x: char| !x.is_alphanumeric(), <span class="string">&quot;_&quot;</span>);
 
                                     <span class="macro">format!</span>(
                                         <span class="string">&quot;loc_{}_start_{}_{}_end_{}_{}&quot;</span>,
@@ -2352,7 +2379,13 @@
                                         op_span.end().column
                                     )
                                 };
-                                <span class="kw">let </span>fn_ident = <span class="macro">format_ident!</span>(<span class="string">&quot;{}__{}__{}&quot;</span>, ident, op_name, source_info, span = op_span);
+                                <span class="kw">let </span>fn_ident = <span class="macro">format_ident!</span>(
+                                    <span class="string">&quot;{}__{}__{}&quot;</span>,
+                                    ident,
+                                    op_name,
+                                    source_info,
+                                    span = op_span
+                                );
                                 <span class="kw">let </span>type_guard = <span class="kw">if </span>is_pull {
                                     <span class="macro">quote_spanned! </span>{op_span=&gt;
                                         <span class="kw">let </span>#ident = {
@@ -2420,7 +2453,8 @@
                     {
                         <span class="comment">// Determine pull and push halves of the `Pivot`.
                         </span><span class="attr">#[allow(unknown_lints)]
-                        #[allow(clippy::redundant_locals)] </span><span class="comment">// https://github.com/rust-lang/rust-clippy/issues/11290
+                        </span><span class="comment">// https://github.com/rust-lang/rust-clippy/issues/11290
+                        </span><span class="attr">#[allow(clippy::redundant_locals)]
                         </span><span class="kw">let </span>pull_to_push_idx = pull_to_push_idx;
                         <span class="kw">let </span>pull_ident =
                             <span class="self">self</span>.node_as_ident(subgraph_nodes[pull_to_push_idx - <span class="number">1</span>], <span class="bool-val">false</span>);
@@ -2439,7 +2473,7 @@
                                 Level::Error,
                                 <span class="string">&quot;Degenerate subgraph detected, is there a disconnected `null()` or other degenerate pipeline somewhere?&quot;</span>,
                             ));
-                            <span class="kw">return </span><span class="prelude-val">None</span>;
+                            <span class="kw">continue</span>;
                         };
 
                         <span class="comment">// Pivot span is combination of pull and push spans (or if not possible, just take the push).
@@ -2462,9 +2496,7 @@
                     <span class="self">self</span>.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(<span class="number">0</span>),
                 );
                 <span class="kw">let </span>laziness = <span class="self">self</span>.subgraph_laziness(subgraph_id);
-                <span class="prelude-val">Some</span>(<span class="macro">quote! </span>{
-                    #( #op_prologue_code )*
-
+                subgraphs.push(<span class="macro">quote! </span>{
                     #hf.add_subgraph_stratified(
                         #hoff_name,
                         #stratum,
@@ -2478,8 +2510,9 @@
                             #( #subgraph_op_iter_after_code )*
                         },
                     );
-                })
-            });
+                });
+            }
+        }
 
         <span class="comment">// These two are quoted separately here because iterators are lazily evaluated, so this
         // forces them to do their work. This work includes populating some data, namely
@@ -2487,6 +2520,7 @@
         // -Mingwei
         </span><span class="kw">let </span>code = <span class="macro">quote! </span>{
             #( #handoffs )*
+            #( #op_prologue_code )*
             #( #subgraphs )*
         };
 
