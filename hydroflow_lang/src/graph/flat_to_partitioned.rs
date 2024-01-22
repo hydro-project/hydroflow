@@ -47,7 +47,7 @@ fn find_subgraph_unionfind(
         UnionFind::with_capacity(partitioned_graph.nodes().len());
 
     // Will contain all edges which are handoffs. Starts out with all edges and
-    // we remove from this set as we construct subgraphs.
+    // we remove from this set as we combine nodes into subgraphs.
     let mut handoff_edges: BTreeSet<GraphEdgeId> = partitioned_graph.edge_ids().collect();
     // Would sort edges here for priority (for now, no sort/priority).
 
@@ -60,12 +60,21 @@ fn find_subgraph_unionfind(
     let mut progress = true;
     while progress {
         progress = false;
+        // TODO(mingwei): Could this iterate `handoff_edges` instead? (Modulo ownership). Then no case (1) below.
         for (edge_id, (src, dst)) in partitioned_graph.edges().collect::<Vec<_>>() {
-            // Ignore (1) already added edges as well as (2) new self-cycles.
+            // Ignore (1) already added edges as well as (2) new self-cycles. (Unless reference edge).
             if subgraph_unionfind.same_set(src, dst) {
-                // Note this might be triggered even if the edge (src, dst) is not in the subgraph (not case 1).
-                // This prevents self-loops which would violate the in-out tree structure (case 2).
+                // Note that the _edge_ `edge_id` might not be in the subgraph even when both `src` and `dst` are. This prevents case 2.
                 // Handoffs will be inserted later for this self-loop.
+                if !partitioned_graph
+                    .edge_type(edge_id)
+                    .unwrap()
+                    .affects_in_out_graph_ownership()
+                {
+                    // However self-loops are ok in the case of reference edges.
+                    // (This may hit trigger times for the same reference edge).
+                    progress |= handoff_edges.remove(&edge_id);
+                }
                 continue;
             }
 
@@ -84,7 +93,7 @@ fn find_subgraph_unionfind(
                 // within a single subgraph.
                 subgraph_unionfind.union(src, dst);
                 assert!(handoff_edges.remove(&edge_id));
-                progress = true;
+                progress |= true;
             }
         }
     }
@@ -438,8 +447,8 @@ fn separate_external_inputs(partitioned_graph: &mut HydroflowGraph) {
 ///
 /// Returns an error if a negative cycle exists in the graph. Negative cycles prevent partioning.
 pub fn partition_graph(flat_graph: HydroflowGraph) -> Result<HydroflowGraph, Diagnostic> {
+    let mut barrier_crossers = find_barrier_crossers(&flat_graph);
     let mut partitioned_graph = flat_graph;
-    let mut barrier_crossers = find_barrier_crossers(&partitioned_graph);
 
     // Partition into subgraphs.
     make_subgraphs(&mut partitioned_graph, &mut barrier_crossers);

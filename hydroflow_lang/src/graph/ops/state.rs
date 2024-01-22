@@ -1,11 +1,11 @@
-use quote::quote_spanned;
+use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
     OperatorCategory, OperatorConstraints, OperatorWriteOutput, PortListSpec, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
-use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance};
+use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance, PortIndexValue};
 
 // TODO(mingwei)
 pub const STATE: OperatorConstraints = OperatorConstraints {
@@ -23,7 +23,12 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
     ports_out: Some(|| PortListSpec::Fixed(parse_quote! { state, items })),
     input_delaytype_fn: |_| None,
     input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Reference,
+    output_edgetype_fn: |idx| match idx {
+        PortIndexValue::Path(path) if "state" == path.to_token_stream().to_string() => {
+            GraphEdgeType::Reference
+        }
+        _else => GraphEdgeType::Value,
+    },
     flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    root,
