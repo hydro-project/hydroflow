@@ -256,27 +256,6 @@ pub enum Color {
     Hoff,
 }
 
-/// Determine op color based on in and out degree. If linear (1 in 1 out), color is None.
-///
-/// Note that this does NOT consider `DelayType` barriers, which generally imply `Pull`.
-pub fn node_color(is_handoff: bool, inn_degree: usize, out_degree: usize) -> Option<Color> {
-    if is_handoff {
-        Some(Color::Hoff)
-    } else {
-        match (1 < inn_degree, 1 < out_degree) {
-            (true, true) => Some(Color::Comp),
-            (true, false) => Some(Color::Pull),
-            (false, true) => Some(Color::Push),
-            (false, false) => match (inn_degree, out_degree) {
-                (0, _) => Some(Color::Pull),
-                (_, 0) => Some(Color::Push),
-                // (1, 1) =>
-                _both_unary => None,
-            },
-        }
-    }
-}
-
 /// Helper struct for [`PortIndex`] which keeps span information for elided ports.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum PortIndexValue {

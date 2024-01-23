@@ -8,9 +8,7 @@ use syn::parse_quote;
 
 use super::hydroflow_graph::HydroflowGraph;
 use super::ops::{find_node_op_constraints, DelayType};
-use super::{
-    graph_algorithms, node_color, Color, GraphEdgeId, GraphNode, GraphNodeId, GraphSubgraphId,
-};
+use super::{graph_algorithms, Color, GraphEdgeId, GraphNode, GraphNodeId, GraphSubgraphId};
 use crate::diagnostic::{Diagnostic, Level};
 use crate::union_find::UnionFind;
 
@@ -37,19 +35,13 @@ fn find_subgraph_unionfind(
     // TODO(mingwei)? This does NOT consider `DelayType` barriers (which generally imply `Pull`),
     // which makes it inconsistant with the final output in `as_code()`. But this doesn't create
     // any bugs since we exclude `DelayType` edges from joining subgraphs anyway.
-    let mut node_color: SparseSecondaryMap<GraphNodeId, Color> = partitioned_graph
-        .nodes()
-        .filter_map(|(node_id, node)| {
-            let inn_degree = partitioned_graph.node_degree_in(node_id);
-            let out_degree = partitioned_graph.node_degree_out(node_id);
-            let op_color = node_color(
-                matches!(node, GraphNode::Handoff { .. }),
-                inn_degree,
-                out_degree,
-            );
-            op_color.map(|op_color| (node_id, op_color))
+    let mut node_color = partitioned_graph
+        .node_ids()
+        .filter_map(|node_id| {
+            let op_color = partitioned_graph.node_color(node_id)?;
+            Some((node_id, op_color))
         })
-        .collect();
+        .collect::<SparseSecondaryMap<_, _>>();
 
     let mut subgraph_unionfind: UnionFind<GraphNodeId> =
         UnionFind::with_capacity(partitioned_graph.nodes().len());
