@@ -877,32 +877,52 @@ impl HydroflowGraph {
                         {
                             // TODO clean this up.
                             // Collect input arguments (predecessors).
-                            let mut input_edges: Vec<(&PortIndexValue, GraphNodeId)> = self
+                            let mut input_edges = self
                                 .graph
-                                .predecessors(node_id)
-                                .map(|(edge_id, pred)| (&self.ports[edge_id].1, pred))
-                                .collect();
+                                .predecessor_edges(node_id)
+                                .map(|edge_id| (self.edge_ports(edge_id).1, edge_id))
+                                .collect::<Vec<_>>();
                             // Ensure sorted by port index.
                             input_edges.sort();
 
-                            let inputs: Vec<Ident> = input_edges
+                            let inputs = input_edges
                                 .iter()
-                                .map(|&(_port, pred)| self.node_as_ident(pred, true))
-                                .collect();
+                                .map(|&(_port, edge_id)| {
+                                    let (pred, _) = self.edge(edge_id);
+                                    self.node_as_ident(pred, true)
+                                })
+                                .collect::<Vec<_>>();
+                            let input_edgetypes = input_edges
+                                .iter()
+                                .map(|&(_port, edge_id)| {
+                                    self.edge_type(edge_id)
+                                        .expect("Unset edge_type, this is a bug.")
+                                })
+                                .collect::<Vec<_>>();
 
                             // Collect output arguments (successors).
-                            let mut output_edges: Vec<(&PortIndexValue, GraphNodeId)> = self
+                            let mut output_edges = self
                                 .graph
-                                .successors(node_id)
-                                .map(|(edge_id, succ)| (&self.ports[edge_id].0, succ))
-                                .collect();
+                                .successor_edges(node_id)
+                                .map(|edge_id| (&self.ports[edge_id].0, edge_id))
+                                .collect::<Vec<_>>();
                             // Ensure sorted by port index.
                             output_edges.sort();
 
-                            let outputs: Vec<Ident> = output_edges
+                            let outputs = output_edges
                                 .iter()
-                                .map(|&(_port, succ)| self.node_as_ident(succ, false))
-                                .collect();
+                                .map(|&(_port, edge_id)| {
+                                    let (_, succ) = self.edge(edge_id);
+                                    self.node_as_ident(succ, false)
+                                })
+                                .collect::<Vec<_>>();
+                            let output_edgetypes = output_edges
+                                .iter()
+                                .map(|&(_port, edge_id)| {
+                                    self.edge_type(edge_id)
+                                        .expect("Unset edge_type, this is a bug.")
+                                })
+                                .collect::<Vec<_>>();
 
                             // Corresponds 1:1 to inputs.
                             let flow_props_in = self
@@ -932,6 +952,8 @@ impl HydroflowGraph {
                                 is_pull,
                                 inputs: &*inputs,
                                 outputs: &*outputs,
+                                input_edgetypes: &*input_edgetypes,
+                                output_edgetypes: &*output_edgetypes,
                                 op_name,
                                 op_inst,
                                 flow_props_in: &*flow_props_in,

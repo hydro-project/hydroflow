@@ -462,6 +462,11 @@ pub struct WriteContextArgs<'a> {
     pub inputs: &'a [Ident],
     /// Output operator idents (or ref idents; used for push).
     pub outputs: &'a [Ident],
+    /// Input edge types (value or reference).
+    pub input_edgetypes: &'a [GraphEdgeType],
+    /// Output edge types (value or reference). Likely not that useful (since the operator decides
+    /// its output edgetypes) but provided for completeness,
+    pub output_edgetypes: &'a [GraphEdgeType],
 
     /// Operator name.
     pub op_name: &'static str,
