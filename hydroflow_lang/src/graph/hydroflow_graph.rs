@@ -14,8 +14,8 @@ use syn::spanned::Spanned;
 use super::graph_write::{Dot, GraphWrite, Mermaid};
 use super::ops::{find_op_op_constraints, OperatorWriteOutput, WriteContextArgs, OPERATORS};
 use super::{
-    get_operator_generics, node_color, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphEdgeType,
-    GraphNode, GraphNodeId, GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT,
+    get_operator_generics, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphEdgeType, GraphNode,
+    GraphNodeId, GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT,
     HANDOFF_NODE_STR, HYDROFLOW,
 };
 use crate::diagnostic::{Diagnostic, Level};
@@ -66,13 +66,16 @@ pub struct HydroflowGraph {
     /// If the value does not exist for a given subgraph id then the subgraph is not lazy.
     subgraph_laziness: SecondaryMap<GraphSubgraphId, bool>,
 }
+
+/// Basic methods.
 impl HydroflowGraph {
     /// Create a new empty `HydroflowGraph`.
     pub fn new() -> Self {
         Default::default()
     }
 }
-// Node methods.
+
+/// Node methods.
 impl HydroflowGraph {
     /// Get a node with its operator instance (if applicable).
     pub fn node(&self, node_id: GraphNodeId) -> &GraphNode {
@@ -403,6 +406,31 @@ impl HydroflowGraph {
         self.ports.insert(new_edge_id, (src_port, dst_port));
     }
 
+    /// Helper method: determine the "color" (pull vs push) of a node based on its in and out degree,
+    /// excluding reference edges. If linear (1 in, 1 out), color is `None`, indicating it can be
+    /// either push or pull.
+    ///
+    /// Note that this does NOT consider `DelayType` barriers (which generally implies `Pull`).
+    pub(crate) fn node_color(&self, node_id: GraphNodeId) -> Option<Color> {
+        if matches!(self.node(node_id), GraphNode::Handoff { .. }) {
+            return Some(Color::Hoff);
+        }
+        let inn_degree = self.node_degree_in(node_id);
+        let out_degree = self.node_degree_out(node_id);
+        match (inn_degree, out_degree) {
+            (0, 0) => None, // Generally should not happen, "Degenerate subgraph detected".
+            (0, 1) => Some(Color::Pull),
+            (1, 0) => Some(Color::Push),
+            (1, 1) => None, // Linear, can be either push or pull.
+            (_many, 0 | 1) => Some(Color::Pull),
+            (0 | 1, _many) => Some(Color::Push),
+            (_many, _to_many) => Some(Color::Comp),
+        }
+    }
+}
+
+/// Module methods.
+impl HydroflowGraph {
     /// When modules are imported into a flat graph, they come with an input and output ModuleBoundary node.
     /// The partitioner doesn't understand these nodes and will panic if it encounters them.
     /// merge_modules removes them from the graph, stitching the input and ouput sides of the ModuleBondaries based on their ports
@@ -499,7 +527,8 @@ impl HydroflowGraph {
         Ok(())
     }
 }
-// Edge methods.
+
+/// Edge methods.
 impl HydroflowGraph {
     /// Get the `src` and `dst` for an edge: `(src GraphNodeId, dst GraphNodeId)`.
     pub fn edge(&self, edge_id: GraphEdgeId) -> (GraphNodeId, GraphNodeId) {
@@ -564,7 +593,7 @@ impl HydroflowGraph {
     }
 }
 
-// Subgraph methods.
+/// Subgraph methods.
 impl HydroflowGraph {
     /// Nodes belonging to the given subgraph.
     pub fn subgraph(&self, subgraph_id: GraphSubgraphId) -> &Vec<GraphNodeId> {
@@ -642,8 +671,20 @@ impl HydroflowGraph {
     pub fn max_stratum(&self) -> Option<usize> {
         self.subgraph_stratum.values().copied().max()
     }
+
+    /// Helper: finds the first index in `subgraph_nodes` where it transitions from pull to push.
+    fn find_pull_to_push_idx(&self, subgraph_nodes: &[GraphNodeId]) -> usize {
+        subgraph_nodes
+            .iter()
+            .position(|&node_id| {
+                self.node_color(node_id)
+                    .map_or(false, |color| Color::Pull != color)
+            })
+            .unwrap_or(subgraph_nodes.len())
+    }
 }
-// Flow properties
+
+/// Flow properties
 impl HydroflowGraph {
     /// Gets the flow properties associated with the edge, if set.
     pub fn edge_flow_props(&self, edge_id: GraphEdgeId) -> Option<FlowProps> {
@@ -661,7 +702,8 @@ impl HydroflowGraph {
         self.flow_props.insert(edge_id, flow_props)
     }
 }
-// Display/output stuff.
+
+/// Display/output methods.
 impl HydroflowGraph {
     /// Helper to generate a deterministic `Ident` for the given node.
     fn node_as_ident(&self, node_id: GraphNodeId, is_pred: bool) -> Ident {
@@ -793,18 +835,7 @@ impl HydroflowGraph {
                 let mut subgraph_op_iter_code = Vec::new();
                 let mut subgraph_op_iter_after_code = Vec::new();
                 {
-                    let pull_to_push_idx = subgraph_nodes
-                        .iter()
-                        .position(|&node_id| {
-                            node_color(
-                                matches!(self.nodes[node_id], GraphNode::Handoff { .. }),
-                                self.graph.degree_in(node_id),
-                                self.graph.degree_out(node_id),
-                            )
-                            .map(|color| Color::Pull != color)
-                            .unwrap_or(false)
-                        })
-                        .unwrap_or(subgraph_nodes.len());
+                    let pull_to_push_idx = self.find_pull_to_push_idx(subgraph_nodes);
 
                     let (pull_half, push_half) = subgraph_nodes.split_at(pull_to_push_idx);
                     let nodes_iter = pull_half.iter().chain(push_half.iter().rev());
@@ -1107,36 +1138,17 @@ impl HydroflowGraph {
     /// Color mode (pull vs. push, handoff vs. comp) for nodes. Some nodes can be push *OR* pull;
     /// those nodes will not be set in the returned map.
     pub fn node_color_map(&self) -> SparseSecondaryMap<GraphNodeId, Color> {
-        // TODO(mingwei): this repeated code will be unified when `SerdeGraph` is subsumed into `HydroflowGraph`.
-        // TODO(mingwei): REPEATED CODE, COPIED FROM `flat_to_partitioned.rs`
-
         let mut node_color_map: SparseSecondaryMap<GraphNodeId, Color> = self
-            .nodes
-            .iter()
-            .filter_map(|(node_id, node)| {
-                let inn_degree = self.node_degree_in(node_id);
-                let out_degree = self.node_degree_out(node_id);
-                let is_handoff = matches!(node, GraphNode::Handoff { .. });
-                let op_color = node_color(is_handoff, inn_degree, out_degree);
-                op_color.map(|op_color| (node_id, op_color))
+            .node_ids()
+            .filter_map(|node_id| {
+                let op_color = self.node_color(node_id)?;
+                Some((node_id, op_color))
             })
             .collect();
 
         // Fill in rest via subgraphs.
         for sg_nodes in self.subgraph_nodes.values() {
-            // TODO(mingwei): REPEATED CODE, COPIED FROM `partitioned_graph.rs` codegen.
-            let pull_to_push_idx = sg_nodes
-                .iter()
-                .position(|&node_id| {
-                    let inn_degree = self.node_degree_in(node_id);
-                    let out_degree = self.node_degree_out(node_id);
-                    let node = &self.nodes[node_id];
-                    let is_handoff = matches!(node, GraphNode::Handoff { .. });
-                    node_color(is_handoff, inn_degree, out_degree)
-                        .map(|color| Color::Pull != color)
-                        .unwrap_or(false)
-                })
-                .unwrap_or(sg_nodes.len());
+            let pull_to_push_idx = self.find_pull_to_push_idx(sg_nodes);
 
             for (idx, node_id) in sg_nodes.iter().copied().enumerate() {
                 let is_pull = idx < pull_to_push_idx;
