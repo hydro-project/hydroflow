@@ -415,27 +415,6 @@
 <a href="#415" id="415">415</a>
 <a href="#416" id="416">416</a>
 <a href="#417" id="417">417</a>
-<a href="#418" id="418">418</a>
-<a href="#419" id="419">419</a>
-<a href="#420" id="420">420</a>
-<a href="#421" id="421">421</a>
-<a href="#422" id="422">422</a>
-<a href="#423" id="423">423</a>
-<a href="#424" id="424">424</a>
-<a href="#425" id="425">425</a>
-<a href="#426" id="426">426</a>
-<a href="#427" id="427">427</a>
-<a href="#428" id="428">428</a>
-<a href="#429" id="429">429</a>
-<a href="#430" id="430">430</a>
-<a href="#431" id="431">431</a>
-<a href="#432" id="432">432</a>
-<a href="#433" id="433">433</a>
-<a href="#434" id="434">434</a>
-<a href="#435" id="435">435</a>
-<a href="#436" id="436">436</a>
-<a href="#437" id="437">437</a>
-<a href="#438" id="438">438</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Graph representation stages for Hydroflow graphs.
 
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -692,27 +671,6 @@
     </span>Comp,
     <span class="doccomment">/// Handoff (grey) -- not a color for operators, inserted between subgraphs.
     </span>Hoff,
-}
-
-<span class="doccomment">/// Determine op color based on in and out degree. If linear (1 in 1 out), color is None.
-///
-/// Note that this does NOT consider `DelayType` barriers, which generally imply `Pull`.
-</span><span class="kw">pub fn </span>node_color(is_handoff: bool, inn_degree: usize, out_degree: usize) -&gt; <span class="prelude-ty">Option</span>&lt;Color&gt; {
-    <span class="kw">if </span>is_handoff {
-        <span class="prelude-val">Some</span>(Color::Hoff)
-    } <span class="kw">else </span>{
-        <span class="kw">match </span>(<span class="number">1 </span>&lt; inn_degree, <span class="number">1 </span>&lt; out_degree) {
-            (<span class="bool-val">true</span>, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Some</span>(Color::Comp),
-            (<span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; <span class="prelude-val">Some</span>(Color::Pull),
-            (<span class="bool-val">false</span>, <span class="bool-val">true</span>) =&gt; <span class="prelude-val">Some</span>(Color::Push),
-            (<span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; <span class="kw">match </span>(inn_degree, out_degree) {
-                (<span class="number">0</span>, <span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(Color::Pull),
-                (<span class="kw">_</span>, <span class="number">0</span>) =&gt; <span class="prelude-val">Some</span>(Color::Push),
-                <span class="comment">// (1, 1) =&gt;
-                </span>_both_unary =&gt; <span class="prelude-val">None</span>,
-            },
-        }
-    }
 }
 
 <span class="doccomment">/// Helper struct for [`PortIndex`] which keeps span information for elided ports.

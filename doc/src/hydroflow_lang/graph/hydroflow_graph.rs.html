@@ -1445,6 +1445,18 @@
 <a href="#1445" id="1445">1445</a>
 <a href="#1446" id="1446">1446</a>
 <a href="#1447" id="1447">1447</a>
+<a href="#1448" id="1448">1448</a>
+<a href="#1449" id="1449">1449</a>
+<a href="#1450" id="1450">1450</a>
+<a href="#1451" id="1451">1451</a>
+<a href="#1452" id="1452">1452</a>
+<a href="#1453" id="1453">1453</a>
+<a href="#1454" id="1454">1454</a>
+<a href="#1455" id="1455">1455</a>
+<a href="#1456" id="1456">1456</a>
+<a href="#1457" id="1457">1457</a>
+<a href="#1458" id="1458">1458</a>
+<a href="#1459" id="1459">1459</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -1461,8 +1473,8 @@
 <span class="kw">use </span><span class="kw">super</span>::graph_write::{Dot, GraphWrite, Mermaid};
 <span class="kw">use </span><span class="kw">super</span>::ops::{find_op_op_constraints, OperatorWriteOutput, WriteContextArgs, OPERATORS};
 <span class="kw">use super</span>::{
-    get_operator_generics, node_color, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphEdgeType,
-    GraphNode, GraphNodeId, GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT,
+    get_operator_generics, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphEdgeType, GraphNode,
+    GraphNodeId, GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT,
     HANDOFF_NODE_STR, HYDROFLOW,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
@@ -1513,13 +1525,16 @@
     /// If the value does not exist for a given subgraph id then the subgraph is not lazy.
     </span>subgraph_laziness: SecondaryMap&lt;GraphSubgraphId, bool&gt;,
 }
-<span class="kw">impl </span>HydroflowGraph {
+
+<span class="doccomment">/// Basic methods.
+</span><span class="kw">impl </span>HydroflowGraph {
     <span class="doccomment">/// Create a new empty `HydroflowGraph`.
     </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         Default::default()
     }
 }
-<span class="comment">// Node methods.
+
+<span class="doccomment">/// Node methods.
 </span><span class="kw">impl </span>HydroflowGraph {
     <span class="doccomment">/// Get a node with its operator instance (if applicable).
     </span><span class="kw">pub fn </span>node(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId) -&gt; <span class="kw-2">&amp;</span>GraphNode {
@@ -1850,6 +1865,31 @@
         <span class="self">self</span>.ports.insert(new_edge_id, (src_port, dst_port));
     }
 
+    <span class="doccomment">/// Helper method: determine the &quot;color&quot; (pull vs push) of a node based on its in and out degree,
+    /// excluding reference edges. If linear (1 in, 1 out), color is `None`, indicating it can be
+    /// either push or pull.
+    ///
+    /// Note that this does NOT consider `DelayType` barriers (which generally implies `Pull`).
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>node_color(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId) -&gt; <span class="prelude-ty">Option</span>&lt;Color&gt; {
+        <span class="kw">if </span><span class="macro">matches!</span>(<span class="self">self</span>.node(node_id), GraphNode::Handoff { .. }) {
+            <span class="kw">return </span><span class="prelude-val">Some</span>(Color::Hoff);
+        }
+        <span class="kw">let </span>inn_degree = <span class="self">self</span>.node_degree_in(node_id);
+        <span class="kw">let </span>out_degree = <span class="self">self</span>.node_degree_out(node_id);
+        <span class="kw">match </span>(inn_degree, out_degree) {
+            (<span class="number">0</span>, <span class="number">0</span>) =&gt; <span class="prelude-val">None</span>, <span class="comment">// Generally should not happen, &quot;Degenerate subgraph detected&quot;.
+            </span>(<span class="number">0</span>, <span class="number">1</span>) =&gt; <span class="prelude-val">Some</span>(Color::Pull),
+            (<span class="number">1</span>, <span class="number">0</span>) =&gt; <span class="prelude-val">Some</span>(Color::Push),
+            (<span class="number">1</span>, <span class="number">1</span>) =&gt; <span class="prelude-val">None</span>, <span class="comment">// Linear, can be either push or pull.
+            </span>(_many, <span class="number">0 </span>| <span class="number">1</span>) =&gt; <span class="prelude-val">Some</span>(Color::Pull),
+            (<span class="number">0 </span>| <span class="number">1</span>, _many) =&gt; <span class="prelude-val">Some</span>(Color::Push),
+            (_many, _to_many) =&gt; <span class="prelude-val">Some</span>(Color::Comp),
+        }
+    }
+}
+
+<span class="doccomment">/// Module methods.
+</span><span class="kw">impl </span>HydroflowGraph {
     <span class="doccomment">/// When modules are imported into a flat graph, they come with an input and output ModuleBoundary node.
     /// The partitioner doesn&#39;t understand these nodes and will panic if it encounters them.
     /// merge_modules removes them from the graph, stitching the input and ouput sides of the ModuleBondaries based on their ports
@@ -1946,7 +1986,8 @@
         <span class="prelude-val">Ok</span>(())
     }
 }
-<span class="comment">// Edge methods.
+
+<span class="doccomment">/// Edge methods.
 </span><span class="kw">impl </span>HydroflowGraph {
     <span class="doccomment">/// Get the `src` and `dst` for an edge: `(src GraphNodeId, dst GraphNodeId)`.
     </span><span class="kw">pub fn </span>edge(<span class="kw-2">&amp;</span><span class="self">self</span>, edge_id: GraphEdgeId) -&gt; (GraphNodeId, GraphNodeId) {
@@ -2011,7 +2052,7 @@
     }
 }
 
-<span class="comment">// Subgraph methods.
+<span class="doccomment">/// Subgraph methods.
 </span><span class="kw">impl </span>HydroflowGraph {
     <span class="doccomment">/// Nodes belonging to the given subgraph.
     </span><span class="kw">pub fn </span>subgraph(<span class="kw-2">&amp;</span><span class="self">self</span>, subgraph_id: GraphSubgraphId) -&gt; <span class="kw-2">&amp;</span>Vec&lt;GraphNodeId&gt; {
@@ -2089,8 +2130,20 @@
     </span><span class="kw">pub fn </span>max_stratum(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
         <span class="self">self</span>.subgraph_stratum.values().copied().max()
     }
+
+    <span class="doccomment">/// Helper: finds the first index in `subgraph_nodes` where it transitions from pull to push.
+    </span><span class="kw">fn </span>find_pull_to_push_idx(<span class="kw-2">&amp;</span><span class="self">self</span>, subgraph_nodes: <span class="kw-2">&amp;</span>Vec&lt;GraphNodeId&gt;) -&gt; usize {
+        subgraph_nodes
+            .iter()
+            .position(|<span class="kw-2">&amp;</span>node_id| {
+                <span class="self">self</span>.node_color(node_id)
+                    .map_or(<span class="bool-val">false</span>, |color| Color::Pull != color)
+            })
+            .unwrap_or(subgraph_nodes.len())
+    }
 }
-<span class="comment">// Flow properties
+
+<span class="doccomment">/// Flow properties
 </span><span class="kw">impl </span>HydroflowGraph {
     <span class="doccomment">/// Gets the flow properties associated with the edge, if set.
     </span><span class="kw">pub fn </span>edge_flow_props(<span class="kw-2">&amp;</span><span class="self">self</span>, edge_id: GraphEdgeId) -&gt; <span class="prelude-ty">Option</span>&lt;FlowProps&gt; {
@@ -2108,7 +2161,8 @@
         <span class="self">self</span>.flow_props.insert(edge_id, flow_props)
     }
 }
-<span class="comment">// Display/output stuff.
+
+<span class="doccomment">/// Display/output methods.
 </span><span class="kw">impl </span>HydroflowGraph {
     <span class="doccomment">/// Helper to generate a deterministic `Ident` for the given node.
     </span><span class="kw">fn </span>node_as_ident(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId, is_pred: bool) -&gt; Ident {
@@ -2240,18 +2294,7 @@
                 <span class="kw">let </span><span class="kw-2">mut </span>subgraph_op_iter_code = Vec::new();
                 <span class="kw">let </span><span class="kw-2">mut </span>subgraph_op_iter_after_code = Vec::new();
                 {
-                    <span class="kw">let </span>pull_to_push_idx = subgraph_nodes
-                        .iter()
-                        .position(|<span class="kw-2">&amp;</span>node_id| {
-                            node_color(
-                                <span class="macro">matches!</span>(<span class="self">self</span>.nodes[node_id], GraphNode::Handoff { .. }),
-                                <span class="self">self</span>.graph.degree_in(node_id),
-                                <span class="self">self</span>.graph.degree_out(node_id),
-                            )
-                            .map(|color| Color::Pull != color)
-                            .unwrap_or(<span class="bool-val">false</span>)
-                        })
-                        .unwrap_or(subgraph_nodes.len());
+                    <span class="kw">let </span>pull_to_push_idx = <span class="self">self</span>.find_pull_to_push_idx(subgraph_nodes);
 
                     <span class="kw">let </span>(pull_half, push_half) = subgraph_nodes.split_at(pull_to_push_idx);
                     <span class="kw">let </span>nodes_iter = pull_half.iter().chain(push_half.iter().rev());
@@ -2554,36 +2597,17 @@
     <span class="doccomment">/// Color mode (pull vs. push, handoff vs. comp) for nodes. Some nodes can be push *OR* pull;
     /// those nodes will not be set in the returned map.
     </span><span class="kw">pub fn </span>node_color_map(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SparseSecondaryMap&lt;GraphNodeId, Color&gt; {
-        <span class="comment">// TODO(mingwei): this repeated code will be unified when `SerdeGraph` is subsumed into `HydroflowGraph`.
-        // TODO(mingwei): REPEATED CODE, COPIED FROM `flat_to_partitioned.rs`
-
-        </span><span class="kw">let </span><span class="kw-2">mut </span>node_color_map: SparseSecondaryMap&lt;GraphNodeId, Color&gt; = <span class="self">self
-            </span>.nodes
-            .iter()
-            .filter_map(|(node_id, node)| {
-                <span class="kw">let </span>inn_degree = <span class="self">self</span>.node_degree_in(node_id);
-                <span class="kw">let </span>out_degree = <span class="self">self</span>.node_degree_out(node_id);
-                <span class="kw">let </span>is_handoff = <span class="macro">matches!</span>(node, GraphNode::Handoff { .. });
-                <span class="kw">let </span>op_color = node_color(is_handoff, inn_degree, out_degree);
-                op_color.map(|op_color| (node_id, op_color))
+        <span class="kw">let </span><span class="kw-2">mut </span>node_color_map: SparseSecondaryMap&lt;GraphNodeId, Color&gt; = <span class="self">self
+            </span>.node_ids()
+            .filter_map(|node_id| {
+                <span class="kw">let </span>op_color = <span class="self">self</span>.node_color(node_id)<span class="question-mark">?</span>;
+                <span class="prelude-val">Some</span>((node_id, op_color))
             })
             .collect();
 
         <span class="comment">// Fill in rest via subgraphs.
         </span><span class="kw">for </span>sg_nodes <span class="kw">in </span><span class="self">self</span>.subgraph_nodes.values() {
-            <span class="comment">// TODO(mingwei): REPEATED CODE, COPIED FROM `partitioned_graph.rs` codegen.
-            </span><span class="kw">let </span>pull_to_push_idx = sg_nodes
-                .iter()
-                .position(|<span class="kw-2">&amp;</span>node_id| {
-                    <span class="kw">let </span>inn_degree = <span class="self">self</span>.node_degree_in(node_id);
-                    <span class="kw">let </span>out_degree = <span class="self">self</span>.node_degree_out(node_id);
-                    <span class="kw">let </span>node = <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id];
-                    <span class="kw">let </span>is_handoff = <span class="macro">matches!</span>(node, GraphNode::Handoff { .. });
-                    node_color(is_handoff, inn_degree, out_degree)
-                        .map(|color| Color::Pull != color)
-                        .unwrap_or(<span class="bool-val">false</span>)
-                })
-                .unwrap_or(sg_nodes.len());
+            <span class="kw">let </span>pull_to_push_idx = <span class="self">self</span>.find_pull_to_push_idx(sg_nodes);
 
             <span class="kw">for </span>(idx, node_id) <span class="kw">in </span>sg_nodes.iter().copied().enumerate() {
                 <span class="kw">let </span>is_pull = idx &lt; pull_to_push_idx;
