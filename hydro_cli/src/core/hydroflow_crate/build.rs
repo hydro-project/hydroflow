@@ -32,7 +32,6 @@ pub async fn build_crate(
     target_type: HostTargetType,
     features: Option<Vec<String>>,
 ) -> Result<BuiltCrate> {
-    ProgressTracker::println("Building the crate");
     let key = (
         src.clone(),
         example.clone(),
@@ -50,7 +49,6 @@ pub async fn build_crate(
         .get_or_try_init(move || {
             ProgressTracker::rich_leaf("build".to_string(), move |_, set_msg| async move {
                 tokio::task::spawn_blocking(move || {
-                    ProgressTracker::println("Check 1");
                     let mut command = Command::new("cargo");
                     command.args([
                         "build".to_string(),
@@ -121,8 +119,6 @@ pub async fn build_crate(
                             _ => {}
                         }
                     }
-
-                    ProgressTracker::println("Check 2");
 
                     if spawned.wait().unwrap().success() {
                         bail!("cargo build succeeded but no binary was emitted")

@@ -218,7 +218,6 @@ impl Deployment {
         region: String,
         user: Option<String>,
     ) -> PyResult<Py<PyAny>> {
-        println!("Creating azure host");
         let arc = self.underlying.blocking_write().add_host(|id| {
             crate::core::AzureHost::new(
                 id,
@@ -277,7 +276,6 @@ impl Deployment {
         display_id: Option<String>,
         external_ports: Option<Vec<u16>>,
     ) -> PyResult<Py<PyAny>> {
-        println!("Creating crate");
         let service = self.underlying.blocking_write().add_service(|id| {
             crate::core::HydroflowCrate::new(
                 id,

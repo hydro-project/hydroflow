@@ -670,8 +670,6 @@ impl Host for AzureHost {
                         "public_key": "${tls_private_key.vm_instance_ssh_key.public_key_openssh}",
                     },
                     "admin_username": user,
-                    // "disable_password_authentication": false,
-                    // "admin_password": "ABCabc123@",
                     "os_disk": {
                         "caching": "ReadWrite",
                         "storage_account_type": "Standard_LRS",
@@ -694,7 +692,6 @@ impl Host for AzureHost {
             },
         );
 
-        // TODO: change to private ip address
         resource_batch.terraform.output.insert(
             format!("{vm_key}-internal-ip"),
             TerraformOutput {
@@ -728,9 +725,6 @@ impl Host for AzureHost {
                 .outputs
                 .get(&format!("vm-instance-{id}-public-ip"))
                 .map(|v| v.value.clone());
-
-            ProgressTracker::println(format!("External ip: {:?}", external_ip).as_str());
-            ProgressTracker::println(format!("Internal ip: {:?}", internal_ip).as_str());
 
             self.launched = Some(Arc::new(LaunchedComputeEngine {
                 resource_result: resource_result.clone(),
@@ -771,7 +765,7 @@ impl Host for AzureHost {
                 }),
             ))
         } else {
-            anyhow::bail!("Could not find a strategy to connect to GCP instance")
+            anyhow::bail!("Could not find a strategy to connect to Azure instance")
         }
     }
 
@@ -790,10 +784,10 @@ impl Host for AzureHost {
                 }
             }
             ClientStrategy::InternalTcpPort(target_host) => {
-                if let Some(gcp_target) =
+                if let Some(provider_target) =
                     target_host.as_any().downcast_ref::<AzureHost>()
                 {
-                    self.project == gcp_target.project
+                    self.project == provider_target.project
                 } else {
                     false
                 }
