@@ -2132,7 +2132,7 @@
     }
 
     <span class="doccomment">/// Helper: finds the first index in `subgraph_nodes` where it transitions from pull to push.
-    </span><span class="kw">fn </span>find_pull_to_push_idx(<span class="kw-2">&amp;</span><span class="self">self</span>, subgraph_nodes: <span class="kw-2">&amp;</span>Vec&lt;GraphNodeId&gt;) -&gt; usize {
+    </span><span class="kw">fn </span>find_pull_to_push_idx(<span class="kw-2">&amp;</span><span class="self">self</span>, subgraph_nodes: <span class="kw-2">&amp;</span>[GraphNodeId]) -&gt; usize {
         subgraph_nodes
             .iter()
             .position(|<span class="kw-2">&amp;</span>node_id| {
