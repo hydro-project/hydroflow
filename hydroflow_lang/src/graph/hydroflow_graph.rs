@@ -742,6 +742,11 @@ impl HydroflowGraph {
         Ident::new(&*name, span)
     }
 
+    /// For reference edges. Helper to generate a deterministic `Ident` for the given [reference] edge.
+    fn edge_as_ident(&self, edge_id: GraphEdgeId, span: Span) -> Ident {
+        Ident::new(&*format!("edge_{:?}", edge_id.data()), span)
+    }
+
     /// Returns each subgraph's receive and send handoffs.
     /// `Map<GraphSubgraphId, (recv handoffs, send handoffs)>`
     fn helper_collect_subgraph_handoffs(
@@ -887,9 +892,14 @@ impl HydroflowGraph {
 
                             let inputs = input_edges
                                 .iter()
-                                .map(|&(_port, edge_id)| {
-                                    let (pred, _) = self.edge(edge_id);
-                                    self.node_as_ident(pred, true)
+                                .map(|&(_port, edge_id)| match self.edge_type(edge_id).unwrap() {
+                                    GraphEdgeType::Value => {
+                                        let (pred, _) = self.edge(edge_id);
+                                        self.node_as_ident(pred, true)
+                                    }
+                                    GraphEdgeType::Reference => {
+                                        self.edge_as_ident(edge_id, op_span)
+                                    }
                                 })
                                 .collect::<Vec<_>>();
                             let input_edgetypes = input_edges
@@ -911,9 +921,14 @@ impl HydroflowGraph {
 
                             let outputs = output_edges
                                 .iter()
-                                .map(|&(_port, edge_id)| {
-                                    let (_, succ) = self.edge(edge_id);
-                                    self.node_as_ident(succ, false)
+                                .map(|&(_port, edge_id)| match self.edge_type(edge_id).unwrap() {
+                                    GraphEdgeType::Value => {
+                                        let (_, succ) = self.edge(edge_id);
+                                        self.node_as_ident(succ, false)
+                                    }
+                                    GraphEdgeType::Reference => {
+                                        self.edge_as_ident(edge_id, op_span)
+                                    }
                                 })
                                 .collect::<Vec<_>>();
                             let output_edgetypes = output_edges
