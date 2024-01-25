@@ -138,7 +138,12 @@ pub fn hydroflow_parser(input: proc_macro::TokenStream) -> proc_macro::TokenStre
             let lit0 = Literal::string(&*flat_mermaid);
             let lit1 = Literal::string(&*part_mermaid);
 
-            return quote! { println!("{}\n\n{}\n", #lit0, #lit1); }.into();
+            return quote! {
+                {
+                    println!("{}\n\n{}\n", #lit0, #lit1);
+                }
+            }
+            .into();
         }
     }
 
