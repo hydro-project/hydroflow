@@ -22,6 +22,9 @@ pub mod ssh;
 pub mod gcp;
 pub use gcp::GCPComputeEngineHost;
 
+pub mod azure;
+pub use azure::AzureHost;
+
 pub mod hydroflow_crate;
 pub use hydroflow_crate::HydroflowCrate;
 
