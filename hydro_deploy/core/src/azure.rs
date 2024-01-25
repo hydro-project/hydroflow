@@ -306,7 +306,7 @@ impl Host for AzureHost {
             .entry("azurerm_resource_group".to_string())
             .or_default()
             .insert(
-                "example".to_string(),
+                vm_key.to_string(),
                 json!({
                     "name": project,
                     "location": self.region.clone(),
@@ -319,12 +319,12 @@ impl Host for AzureHost {
             .entry("azurerm_virtual_network".to_string())
             .or_default()
             .insert(
-                "example".to_string(),
+                vm_key.to_string(),
                 json!({
-                    "name": "example-network",
+                    "name": format!("{vm_key}-network"),
                     "address_space": ["10.0.0.0/16"],
                     "location": self.region.clone(),
-                    "resource_group_name": "${azurerm_resource_group.example.name}"
+                    "resource_group_name": format!("${{azurerm_resource_group.{vm_key}.name}}")
                 }),
             );
 
@@ -334,11 +334,11 @@ impl Host for AzureHost {
             .entry("azurerm_subnet".to_string())
             .or_default()
             .insert(
-                "example".to_string(),
+                vm_key.to_string(),
                 json!({
                     "name": "internal",
-                    "resource_group_name": "${azurerm_resource_group.example.name}",
-                    "virtual_network_name": "${azurerm_virtual_network.example.name}",
+                    "resource_group_name": format!("${{azurerm_resource_group.{vm_key}.name}}"),
+                    "virtual_network_name": format!("${{azurerm_virtual_network.{vm_key}.name}}"),
                     "address_prefixes": ["10.0.2.0/24"]
                 }),
             );
@@ -349,11 +349,11 @@ impl Host for AzureHost {
             .entry("azurerm_public_ip".to_string())
             .or_default()
             .insert(
-                "example".to_string(),
+                vm_key.to_string(),
                 json!({
                     "name": "hydropubip",
-                    "resource_group_name": "${azurerm_resource_group.example.name}",
-                    "location": "${azurerm_resource_group.example.location}",
+                    "resource_group_name": format!("${{azurerm_resource_group.{vm_key}.name}}"),
+                    "location": format!("${{azurerm_resource_group.{vm_key}.location}}"),
                     "allocation_method": "Static",
                 }),
             );
@@ -364,16 +364,16 @@ impl Host for AzureHost {
             .entry("azurerm_network_interface".to_string())
             .or_default()
             .insert(
-                "example".to_string(),
+                vm_key.to_string(),
                 json!({
-                    "name": "example-nic",
-                    "location": "${azurerm_resource_group.example.location}",
-                    "resource_group_name": "${azurerm_resource_group.example.name}",
+                    "name": format!("{vm_key}-nic"),
+                    "location": format!("${{azurerm_resource_group.{vm_key}.location}}"),
+                    "resource_group_name": format!("${{azurerm_resource_group.{vm_key}.name}}"),
                     "ip_configuration": {
                         "name": "internal",
-                        "subnet_id": "${azurerm_subnet.example.id}",
+                        "subnet_id": format!("${{azurerm_subnet.{vm_key}.id}}"),
                         "private_ip_address_allocation": "Dynamic",
-                        "public_ip_address_id": "${azurerm_public_ip.example.id}",
+                        "public_ip_address_id": format!("${{azurerm_public_ip.{vm_key}.id}}"),
                     }
                 }),
             );
@@ -385,11 +385,11 @@ impl Host for AzureHost {
             .entry("azurerm_network_security_group".to_string())
             .or_default()
             .insert(
-                "example".to_string(),
+                vm_key.to_string(),
                 json!({
-                    "name": "acceptanceTestSecurityGroup1",
-                    "location": "${azurerm_resource_group.example.location}",
-                    "resource_group_name": "${azurerm_resource_group.example.name}",
+                    "name": "primary_security_group",
+                    "location": format!("${{azurerm_resource_group.{vm_key}.location}}"),
+                    "resource_group_name": format!("${{azurerm_resource_group.{vm_key}.name}}"),
                 }),
             );
 
@@ -399,7 +399,7 @@ impl Host for AzureHost {
             .entry("azurerm_network_security_rule".to_string())
             .or_default()
             .insert(
-                "example".to_string(),
+                vm_key.to_string(),
                 json!({
                     "name": "allowall",
                     "priority": 100,
@@ -410,9 +410,9 @@ impl Host for AzureHost {
                     "destination_port_range": "*",
                     "source_address_prefix": "*",
                     "destination_address_prefix": "*",
-                    "resource_group_name": "${azurerm_resource_group.example.name}",
-                    "network_security_group_name": "${azurerm_network_security_group.example.name}",
-                }),
+                    "resource_group_name": format!("${{azurerm_resource_group.{vm_key}.name}}"),
+                    "network_security_group_name": format!("${{azurerm_network_security_group.{vm_key}.name}}"),
+                })
             );
 
         resource_batch
@@ -421,11 +421,11 @@ impl Host for AzureHost {
             .entry("azurerm_subnet_network_security_group_association".to_string())
             .or_default()
             .insert(
-                "example".to_string(),
+                vm_key.to_string(),
                 json!({
-                    "subnet_id": "${azurerm_subnet.example.id}",
-                    "network_security_group_id": "${azurerm_network_security_group.example.id}",
-                }),
+                    "subnet_id": format!("${{azurerm_subnet.{vm_key}.id}}"),
+                    "network_security_group_id": format!("${{azurerm_network_security_group.{vm_key}.id}}"),
+                })
             );
 
         let user = self.user.as_ref().cloned().unwrap_or("hydro".to_string());
@@ -438,11 +438,11 @@ impl Host for AzureHost {
             .insert(
                 vm_key.clone(),
                 json!({
-                    "name": "example-machine",
-                    "resource_group_name": "${azurerm_resource_group.example.name}",
-                    "location": "${azurerm_resource_group.example.location}",
+                    "name": vm_name,
+                    "resource_group_name": format!("${{azurerm_resource_group.{vm_key}.name}}"),
+                    "location": format!("${{azurerm_resource_group.{vm_key}.location}}"),
                     "size": self.machine_size.clone(),
-                    "network_interface_ids": ["${azurerm_network_interface.example.id}"],
+                    "network_interface_ids": [format!("${{azurerm_network_interface.{vm_key}.id}}")],
                     "admin_ssh_key": {
                         "username": user,
                         "public_key": "${tls_private_key.vm_instance_ssh_key.public_key_openssh}",
@@ -464,14 +464,14 @@ impl Host for AzureHost {
         resource_batch.terraform.output.insert(
             format!("{vm_key}-public-ip"),
             TerraformOutput {
-                value: format!("${{azurerm_public_ip.example.ip_address}}"),
+                value: format!("${{azurerm_public_ip.{vm_key}.ip_address}}"),
             },
         );
 
         resource_batch.terraform.output.insert(
             format!("{vm_key}-internal-ip"),
             TerraformOutput {
-                value: format!("${{azurerm_network_interface.example.private_ip_address}}"),
+                value: format!("${{azurerm_network_interface.{vm_key}.private_ip_address}}"),
             },
         );
     }
