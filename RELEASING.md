@@ -98,6 +98,9 @@ When adding a new crate which is published, you need to:
    https://doc.rust-lang.org/cargo/reference/publishing.html#before-publishing-a-new-crate
 2. Ensure any `path` dependencies to/from `my_crate` also include `version = "^0.1.0"`
    (substitute correct version).
+3. If you want your package to be lockstep-versioned alongside hydroflow then make sure to add it
+   to the [command in the `release.yml` workflow](https://github.com/hydro-project/hydroflow/blob/main/.github/workflows/release.yml#L82).
+
 Then just run the release workflow as normal.
 
 Previously this section also required creating an empty changelog file: "Commit an (empty) file

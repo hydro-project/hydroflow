@@ -3,6 +3,7 @@
 # See "Adding new crates" and "Moving crates" addendum sections in `RELEASING.md`
 members = [
     "benches",
+    "hydro_deploy/core",
     "hydro_deploy/hydro_cli",
     "hydro_deploy/hydro_cli_examples",
     "hydro_deploy/hydroflow_cli_integration",
