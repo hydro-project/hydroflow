@@ -1,5 +1,6 @@
 [workspace]
 
+# See "Adding new crates" and "Moving crates" addendum sections in `RELEASING.md`
 members = [
     "benches",
     "hydro_deploy/hydro_cli",
