@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.1 (2024-01-29)
+
+### Chore
+
+ - <csr-id-1b555e57c8c812bed4d6495d2960cbf77fb0b3ef/> manually set lockstep-versioned crates (and `lattices`) to version `0.5.1`
+   Setting manually since
+   https://github.com/frewsxcv/rust-crates-index/issues/159 is messing with
+   smart-release
+ - <csr-id-ba6afab8416ad66eee4fdb9d0c73e62d45752617/> fix clippy lints on latest nightly
+ - <csr-id-f6a729925ddeb6063fa8c4b03d6621c1c35f0cc8/> fix `clippy::items_after_test_module`, simplify rustdoc links
+
+### New Features
+
+ - <csr-id-e30602e6a3210a4ea4fe8a65aedb9469e79e3c37/> Add `DeepReveal` trait
+ - <csr-id-3f701997ec1e6ca2a364537fbd2ef39cf96ce0f1/> add set_union_with_tombstones
+
+### Bug Fixes
+
+ - <csr-id-0539e2a91eb3ba71ed1c9fbe8d0c74b6344ad1bf/> chat and two_pc no longer replay
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 7 commits contributed to the release over the course of 109 calendar days.
+ - 110 days passed between releases.
+ - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 4 unique issues were worked on: [#1032](https://github.com/hydro-project/hydroflow/issues/1032), [#942](https://github.com/hydro-project/hydroflow/issues/942), [#960](https://github.com/hydro-project/hydroflow/issues/960), [#967](https://github.com/hydro-project/hydroflow/issues/967)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1032](https://github.com/hydro-project/hydroflow/issues/1032)**
+    - Fixup! feat(lattices): Add `DeepReveal` trait ([`0bed8ca`](https://github.com/hydro-project/hydroflow/commit/0bed8cab4a5e7a7be88de4d2e9c3c2d8ee0e7b7f))
+    - Add `DeepReveal` trait ([`e30602e`](https://github.com/hydro-project/hydroflow/commit/e30602e6a3210a4ea4fe8a65aedb9469e79e3c37))
+ * **[#942](https://github.com/hydro-project/hydroflow/issues/942)**
+    - Fix `clippy::items_after_test_module`, simplify rustdoc links ([`f6a7299`](https://github.com/hydro-project/hydroflow/commit/f6a729925ddeb6063fa8c4b03d6621c1c35f0cc8))
+ * **[#960](https://github.com/hydro-project/hydroflow/issues/960)**
+    - Fix clippy lints on latest nightly ([`ba6afab`](https://github.com/hydro-project/hydroflow/commit/ba6afab8416ad66eee4fdb9d0c73e62d45752617))
+ * **[#967](https://github.com/hydro-project/hydroflow/issues/967)**
+    - Chat and two_pc no longer replay ([`0539e2a`](https://github.com/hydro-project/hydroflow/commit/0539e2a91eb3ba71ed1c9fbe8d0c74b6344ad1bf))
+ * **Uncategorized**
+    - Manually set lockstep-versioned crates (and `lattices`) to version `0.5.1` ([`1b555e5`](https://github.com/hydro-project/hydroflow/commit/1b555e57c8c812bed4d6495d2960cbf77fb0b3ef))
+    - Add set_union_with_tombstones ([`3f70199`](https://github.com/hydro-project/hydroflow/commit/3f701997ec1e6ca2a364537fbd2ef39cf96ce0f1))
+</details>
+
 ## 0.5.0 (2023-10-11)
 
 <csr-id-e788989737fbd501173bc99c6f9f5f5ba514ec9c/>
@@ -30,7 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 6 commits contributed to the release over the course of 41 calendar days.
+ - 7 commits contributed to the release over the course of 41 calendar days.
  - 56 days passed between releases.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#915](https://github.com/hydro-project/hydroflow/issues/915), [#922](https://github.com/hydro-project/hydroflow/issues/922)
@@ -47,6 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#922](https://github.com/hydro-project/hydroflow/issues/922)**
     - Add serde derives to collections ([`488d6dd`](https://github.com/hydro-project/hydroflow/commit/488d6dd448e10e2bf217693dd2a29973488c838a))
  * **Uncategorized**
+    - Release hydroflow_macro v0.5.0, lattices v0.5.0, hydroflow v0.5.0, hydro_cli v0.5.0 ([`12697c2`](https://github.com/hydro-project/hydroflow/commit/12697c2f19bd96802591fa63a5b6b12104ecfe0d))
     - Release hydroflow_lang v0.5.0, hydroflow_datalog_core v0.5.0, hydroflow_datalog v0.5.0, hydroflow_macro v0.5.0, lattices v0.5.0, hydroflow v0.5.0, hydro_cli v0.5.0, safety bump 4 crates ([`2e2d8b3`](https://github.com/hydro-project/hydroflow/commit/2e2d8b386fb086c8276a2853d2a1f96ad4d7c221))
     - Fix lattice math link ([`6b82126`](https://github.com/hydro-project/hydroflow/commit/6b82126347e2ae3c11cc10fea4f3fbcb463734e6))
     - Fix `clippy::implied_bounds_in_impls` from latest nightlies ([`e788989`](https://github.com/hydro-project/hydroflow/commit/e788989737fbd501173bc99c6f9f5f5ba514ec9c))
