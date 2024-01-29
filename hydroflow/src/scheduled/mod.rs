@@ -43,6 +43,6 @@ impl Display for HandoffId {
 
 /// A staten handle's ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct StateId(pub(crate) usize);
