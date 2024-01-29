@@ -9,7 +9,9 @@ use super::StateId;
 #[must_use]
 #[derive(Debug)]
 pub struct StateHandle<T> {
-    pub(crate) state_id: StateId,
+    /// A staten handle's ID. Invalid if used in a different [`graph::Hydroflow`]
+    /// instance than the original that created it.
+    pub state_id: StateId,
     pub(crate) _phantom: PhantomData<*mut T>,
 }
 impl<T> Copy for StateHandle<T> {}
