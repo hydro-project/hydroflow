@@ -7,12 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.5.1 (2024-01-29)
 
+<csr-id-1b555e57c8c812bed4d6495d2960cbf77fb0b3ef/>
+
 ### Chore
 
  - <csr-id-1b555e57c8c812bed4d6495d2960cbf77fb0b3ef/> manually set lockstep-versioned crates (and `lattices`) to version `0.5.1`
    Setting manually since
    https://github.com/frewsxcv/rust-crates-index/issues/159 is messing with
    smart-release
+
+### Documentation
+
+ - <csr-id-3b36020d16792f26da4df3c5b09652a4ab47ec4f/> actually committing empty CHANGELOG.md is required
 
 ### New Features
 
@@ -38,8 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 10 commits contributed to the release over the course of 39 calendar days.
- - 10 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 11 commits contributed to the release over the course of 39 calendar days.
+ - 11 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 9 unique issues were worked on: [#1010](https://github.com/hydro-project/hydroflow/issues/1010), [#1014](https://github.com/hydro-project/hydroflow/issues/1014), [#986](https://github.com/hydro-project/hydroflow/issues/986), [#987](https://github.com/hydro-project/hydroflow/issues/987), [#992](https://github.com/hydro-project/hydroflow/issues/992), [#994](https://github.com/hydro-project/hydroflow/issues/994), [#995](https://github.com/hydro-project/hydroflow/issues/995), [#996](https://github.com/hydro-project/hydroflow/issues/996), [#999](https://github.com/hydro-project/hydroflow/issues/999)
 
 ### Commit Details
@@ -67,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#999](https://github.com/hydro-project/hydroflow/issues/999)**
     - Race conditions when handshake channels capture other outputs ([`f8a0b95`](https://github.com/hydro-project/hydroflow/commit/f8a0b95113e92e003061d2a3865c84d69851dd8e))
  * **Uncategorized**
+    - Actually committing empty CHANGELOG.md is required ([`3b36020`](https://github.com/hydro-project/hydroflow/commit/3b36020d16792f26da4df3c5b09652a4ab47ec4f))
     - Manually set lockstep-versioned crates (and `lattices`) to version `0.5.1` ([`1b555e5`](https://github.com/hydro-project/hydroflow/commit/1b555e57c8c812bed4d6495d2960cbf77fb0b3ef))
 </details>
 
