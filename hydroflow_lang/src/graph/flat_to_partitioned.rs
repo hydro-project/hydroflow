@@ -443,10 +443,27 @@ fn separate_external_inputs(partitioned_graph: &mut HydroflowGraph) {
     }
 }
 
+/// Ensure edgetypes are set.
+pub fn assert_edgetypes_set(flat_graph: &HydroflowGraph) {
+    let missing_edgetypes = flat_graph
+        .edge_ids()
+        .filter(|&edge_id| flat_graph.edge_type(edge_id).is_none())
+        .count();
+    assert!(
+        0 == missing_edgetypes,
+        "`partition_graph` requires edge types to be set, but was unset for {} out of {} edges. This is a Hydroflow bug.",
+        missing_edgetypes,
+        flat_graph.edge_ids().len(),
+    );
+}
+
 /// Main method for this module. Partions a flat [`HydroflowGraph`] into one with subgraphs.
 ///
 /// Returns an error if a negative cycle exists in the graph. Negative cycles prevent partioning.
 pub fn partition_graph(flat_graph: HydroflowGraph) -> Result<HydroflowGraph, Diagnostic> {
+    assert_edgetypes_set(&flat_graph);
+
+    // Pre-find barrier crossers (input edges with a `DelayType`).
     let mut barrier_crossers = find_barrier_crossers(&flat_graph);
     let mut partitioned_graph = flat_graph;
 

@@ -326,6 +326,9 @@ impl HydroflowGraph {
     /// After:  A (src) -> X (new) -> B (dst)
     ///
     /// Returns the ID of X & ID of edge OUT of X.
+    ///
+    /// Note that both the edges will be new and `edge_id` will be removed. Both new edges will
+    /// get the edge type of the original edge.
     pub fn insert_intermediate_node(
         &mut self,
         edge_id: GraphEdgeId,
@@ -374,6 +377,12 @@ impl HydroflowGraph {
         self.ports
             .insert(e1, (PortIndexValue::Elided(span), dst_idx));
 
+        // Duplicate edge types.
+        if let Some(edge_type) = self.edge_types.remove(edge_id) {
+            self.insert_edge_type(e0, edge_type);
+            self.insert_edge_type(e1, edge_type);
+        }
+
         (node_id, e1)
     }
 
@@ -404,6 +413,16 @@ impl HydroflowGraph {
         let (src_port, _) = self.ports.remove(pred_edge_id).unwrap();
         let (_, dst_port) = self.ports.remove(succ_edge_id).unwrap();
         self.ports.insert(new_edge_id, (src_port, dst_port));
+
+        let pred_edge_type = self.edge_types.remove(pred_edge_id);
+        let succ_edge_type = self.edge_types.remove(succ_edge_id);
+        assert_eq!(
+            pred_edge_type, succ_edge_type,
+            "Edge type should be the same before and after a union/tee."
+        );
+        if let Some(edge_type) = pred_edge_type {
+            self.insert_edge_type(new_edge_id, edge_type);
+        }
     }
 
     /// Helper method: determine the "color" (pull vs push) of a node based on its in and out degree,
@@ -420,7 +439,7 @@ impl HydroflowGraph {
             .node_predecessor_edges(node_id)
             .filter(|&edge_id| {
                 self.edge_type(edge_id)
-                    .unwrap()
+                    .expect("Edge type should be set, this is a Hydroflow bug.")
                     .affects_in_out_graph_ownership()
             })
             .count();
@@ -429,7 +448,7 @@ impl HydroflowGraph {
             .node_successor_edges(node_id)
             .filter(|&edge_id| {
                 self.edge_type(edge_id)
-                    .unwrap()
+                    .expect("Edge type should be set, this is a Hydroflow bug.")
                     .affects_in_out_graph_ownership()
             })
             .count();
