@@ -1190,6 +1190,7 @@
 <a href="#1190" id="1190">1190</a>
 <a href="#1191" id="1191">1191</a>
 <a href="#1192" id="1192">1192</a>
+<a href="#1193" id="1193">1193</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap, HashSet};
 <span class="kw">use </span>std::ops::Deref;
 
@@ -1462,6 +1463,7 @@
     }
 
     <span class="kw">let </span>(<span class="kw-2">mut </span>flat_graph, _uses, <span class="kw-2">mut </span>diagnostics) = flat_graph_builder.build();
+
     diagnostics.retain(Diagnostic::is_error);
     <span class="kw">if </span>!diagnostics.is_empty() {
         <span class="kw">return </span><span class="prelude-val">Err</span>(diagnostics);

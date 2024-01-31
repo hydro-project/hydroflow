@@ -1457,6 +1457,79 @@
 <a href="#1457" id="1457">1457</a>
 <a href="#1458" id="1458">1458</a>
 <a href="#1459" id="1459">1459</a>
+<a href="#1460" id="1460">1460</a>
+<a href="#1461" id="1461">1461</a>
+<a href="#1462" id="1462">1462</a>
+<a href="#1463" id="1463">1463</a>
+<a href="#1464" id="1464">1464</a>
+<a href="#1465" id="1465">1465</a>
+<a href="#1466" id="1466">1466</a>
+<a href="#1467" id="1467">1467</a>
+<a href="#1468" id="1468">1468</a>
+<a href="#1469" id="1469">1469</a>
+<a href="#1470" id="1470">1470</a>
+<a href="#1471" id="1471">1471</a>
+<a href="#1472" id="1472">1472</a>
+<a href="#1473" id="1473">1473</a>
+<a href="#1474" id="1474">1474</a>
+<a href="#1475" id="1475">1475</a>
+<a href="#1476" id="1476">1476</a>
+<a href="#1477" id="1477">1477</a>
+<a href="#1478" id="1478">1478</a>
+<a href="#1479" id="1479">1479</a>
+<a href="#1480" id="1480">1480</a>
+<a href="#1481" id="1481">1481</a>
+<a href="#1482" id="1482">1482</a>
+<a href="#1483" id="1483">1483</a>
+<a href="#1484" id="1484">1484</a>
+<a href="#1485" id="1485">1485</a>
+<a href="#1486" id="1486">1486</a>
+<a href="#1487" id="1487">1487</a>
+<a href="#1488" id="1488">1488</a>
+<a href="#1489" id="1489">1489</a>
+<a href="#1490" id="1490">1490</a>
+<a href="#1491" id="1491">1491</a>
+<a href="#1492" id="1492">1492</a>
+<a href="#1493" id="1493">1493</a>
+<a href="#1494" id="1494">1494</a>
+<a href="#1495" id="1495">1495</a>
+<a href="#1496" id="1496">1496</a>
+<a href="#1497" id="1497">1497</a>
+<a href="#1498" id="1498">1498</a>
+<a href="#1499" id="1499">1499</a>
+<a href="#1500" id="1500">1500</a>
+<a href="#1501" id="1501">1501</a>
+<a href="#1502" id="1502">1502</a>
+<a href="#1503" id="1503">1503</a>
+<a href="#1504" id="1504">1504</a>
+<a href="#1505" id="1505">1505</a>
+<a href="#1506" id="1506">1506</a>
+<a href="#1507" id="1507">1507</a>
+<a href="#1508" id="1508">1508</a>
+<a href="#1509" id="1509">1509</a>
+<a href="#1510" id="1510">1510</a>
+<a href="#1511" id="1511">1511</a>
+<a href="#1512" id="1512">1512</a>
+<a href="#1513" id="1513">1513</a>
+<a href="#1514" id="1514">1514</a>
+<a href="#1515" id="1515">1515</a>
+<a href="#1516" id="1516">1516</a>
+<a href="#1517" id="1517">1517</a>
+<a href="#1518" id="1518">1518</a>
+<a href="#1519" id="1519">1519</a>
+<a href="#1520" id="1520">1520</a>
+<a href="#1521" id="1521">1521</a>
+<a href="#1522" id="1522">1522</a>
+<a href="#1523" id="1523">1523</a>
+<a href="#1524" id="1524">1524</a>
+<a href="#1525" id="1525">1525</a>
+<a href="#1526" id="1526">1526</a>
+<a href="#1527" id="1527">1527</a>
+<a href="#1528" id="1528">1528</a>
+<a href="#1529" id="1529">1529</a>
+<a href="#1530" id="1530">1530</a>
+<a href="#1531" id="1531">1531</a>
+<a href="#1532" id="1532">1532</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -1785,6 +1858,9 @@
     /// After:  A (src) -&gt; X (new) -&gt; B (dst)
     ///
     /// Returns the ID of X &amp; ID of edge OUT of X.
+    ///
+    /// Note that both the edges will be new and `edge_id` will be removed. Both new edges will
+    /// get the edge type of the original edge.
     </span><span class="kw">pub fn </span>insert_intermediate_node(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         edge_id: GraphEdgeId,
@@ -1833,6 +1909,12 @@
         <span class="self">self</span>.ports
             .insert(e1, (PortIndexValue::Elided(span), dst_idx));
 
+        <span class="comment">// Duplicate edge types.
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(edge_type) = <span class="self">self</span>.edge_types.remove(edge_id) {
+            <span class="self">self</span>.insert_edge_type(e0, edge_type);
+            <span class="self">self</span>.insert_edge_type(e1, edge_type);
+        }
+
         (node_id, e1)
     }
 
@@ -1863,6 +1945,16 @@
         <span class="kw">let </span>(src_port, <span class="kw">_</span>) = <span class="self">self</span>.ports.remove(pred_edge_id).unwrap();
         <span class="kw">let </span>(<span class="kw">_</span>, dst_port) = <span class="self">self</span>.ports.remove(succ_edge_id).unwrap();
         <span class="self">self</span>.ports.insert(new_edge_id, (src_port, dst_port));
+
+        <span class="kw">let </span>pred_edge_type = <span class="self">self</span>.edge_types.remove(pred_edge_id);
+        <span class="kw">let </span>succ_edge_type = <span class="self">self</span>.edge_types.remove(succ_edge_id);
+        <span class="macro">assert_eq!</span>(
+            pred_edge_type, succ_edge_type,
+            <span class="string">&quot;Edge type should be the same before and after a union/tee.&quot;
+        </span>);
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(edge_type) = pred_edge_type {
+            <span class="self">self</span>.insert_edge_type(new_edge_id, edge_type);
+        }
     }
 
     <span class="doccomment">/// Helper method: determine the &quot;color&quot; (pull vs push) of a node based on its in and out degree,
@@ -1874,8 +1966,25 @@
         <span class="kw">if </span><span class="macro">matches!</span>(<span class="self">self</span>.node(node_id), GraphNode::Handoff { .. }) {
             <span class="kw">return </span><span class="prelude-val">Some</span>(Color::Hoff);
         }
-        <span class="kw">let </span>inn_degree = <span class="self">self</span>.node_degree_in(node_id);
-        <span class="kw">let </span>out_degree = <span class="self">self</span>.node_degree_out(node_id);
+        <span class="comment">// In-degree excluding ref-edges.
+        </span><span class="kw">let </span>inn_degree = <span class="self">self
+            </span>.node_predecessor_edges(node_id)
+            .filter(|<span class="kw-2">&amp;</span>edge_id| {
+                <span class="self">self</span>.edge_type(edge_id)
+                    .expect(<span class="string">&quot;Edge type should be set, this is a Hydroflow bug.&quot;</span>)
+                    .affects_in_out_graph_ownership()
+            })
+            .count();
+        <span class="comment">// Out-degree excluding ref-edges.
+        </span><span class="kw">let </span>out_degree = <span class="self">self
+            </span>.node_successor_edges(node_id)
+            .filter(|<span class="kw-2">&amp;</span>edge_id| {
+                <span class="self">self</span>.edge_type(edge_id)
+                    .expect(<span class="string">&quot;Edge type should be set, this is a Hydroflow bug.&quot;</span>)
+                    .affects_in_out_graph_ownership()
+            })
+            .count();
+
         <span class="kw">match </span>(inn_degree, out_degree) {
             (<span class="number">0</span>, <span class="number">0</span>) =&gt; <span class="prelude-val">None</span>, <span class="comment">// Generally should not happen, &quot;Degenerate subgraph detected&quot;.
             </span>(<span class="number">0</span>, <span class="number">1</span>) =&gt; <span class="prelude-val">Some</span>(Color::Pull),
@@ -2184,6 +2293,11 @@
         Ident::new(<span class="kw-2">&amp;*</span>name, span)
     }
 
+    <span class="doccomment">/// For reference edges. Helper to generate a deterministic `Ident` for the given [reference] edge.
+    </span><span class="kw">fn </span>edge_as_ident(<span class="kw-2">&amp;</span><span class="self">self</span>, edge_id: GraphEdgeId, span: Span) -&gt; Ident {
+        Ident::new(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;edge_{:?}&quot;</span>, edge_id.data()), span)
+    }
+
     <span class="doccomment">/// Returns each subgraph&#39;s receive and send handoffs.
     /// `Map&lt;GraphSubgraphId, (recv handoffs, send handoffs)&gt;`
     </span><span class="kw">fn </span>helper_collect_subgraph_handoffs(
@@ -2319,32 +2433,62 @@
                         {
                             <span class="comment">// TODO clean this up.
                             // Collect input arguments (predecessors).
-                            </span><span class="kw">let </span><span class="kw-2">mut </span>input_edges: Vec&lt;(<span class="kw-2">&amp;</span>PortIndexValue, GraphNodeId)&gt; = <span class="self">self
+                            </span><span class="kw">let </span><span class="kw-2">mut </span>input_edges = <span class="self">self
                                 </span>.graph
-                                .predecessors(node_id)
-                                .map(|(edge_id, pred)| (<span class="kw-2">&amp;</span><span class="self">self</span>.ports[edge_id].<span class="number">1</span>, pred))
-                                .collect();
+                                .predecessor_edges(node_id)
+                                .map(|edge_id| (<span class="self">self</span>.edge_ports(edge_id).<span class="number">1</span>, edge_id))
+                                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
                             <span class="comment">// Ensure sorted by port index.
                             </span>input_edges.sort();
 
-                            <span class="kw">let </span>inputs: Vec&lt;Ident&gt; = input_edges
+                            <span class="kw">let </span>inputs = input_edges
                                 .iter()
-                                .map(|<span class="kw-2">&amp;</span>(_port, pred)| <span class="self">self</span>.node_as_ident(pred, <span class="bool-val">true</span>))
-                                .collect();
+                                .map(|<span class="kw-2">&amp;</span>(_port, edge_id)| <span class="kw">match </span><span class="self">self</span>.edge_type(edge_id).unwrap() {
+                                    GraphEdgeType::Value =&gt; {
+                                        <span class="kw">let </span>(pred, <span class="kw">_</span>) = <span class="self">self</span>.edge(edge_id);
+                                        <span class="self">self</span>.node_as_ident(pred, <span class="bool-val">true</span>)
+                                    }
+                                    GraphEdgeType::Reference =&gt; {
+                                        <span class="self">self</span>.edge_as_ident(edge_id, op_span)
+                                    }
+                                })
+                                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                            <span class="kw">let </span>input_edgetypes = input_edges
+                                .iter()
+                                .map(|<span class="kw-2">&amp;</span>(_port, edge_id)| {
+                                    <span class="self">self</span>.edge_type(edge_id)
+                                        .expect(<span class="string">&quot;Unset edge_type, this is a bug.&quot;</span>)
+                                })
+                                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
                             <span class="comment">// Collect output arguments (successors).
-                            </span><span class="kw">let </span><span class="kw-2">mut </span>output_edges: Vec&lt;(<span class="kw-2">&amp;</span>PortIndexValue, GraphNodeId)&gt; = <span class="self">self
+                            </span><span class="kw">let </span><span class="kw-2">mut </span>output_edges = <span class="self">self
                                 </span>.graph
-                                .successors(node_id)
-                                .map(|(edge_id, succ)| (<span class="kw-2">&amp;</span><span class="self">self</span>.ports[edge_id].<span class="number">0</span>, succ))
-                                .collect();
+                                .successor_edges(node_id)
+                                .map(|edge_id| (<span class="kw-2">&amp;</span><span class="self">self</span>.ports[edge_id].<span class="number">0</span>, edge_id))
+                                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
                             <span class="comment">// Ensure sorted by port index.
                             </span>output_edges.sort();
 
-                            <span class="kw">let </span>outputs: Vec&lt;Ident&gt; = output_edges
+                            <span class="kw">let </span>outputs = output_edges
                                 .iter()
-                                .map(|<span class="kw-2">&amp;</span>(_port, succ)| <span class="self">self</span>.node_as_ident(succ, <span class="bool-val">false</span>))
-                                .collect();
+                                .map(|<span class="kw-2">&amp;</span>(_port, edge_id)| <span class="kw">match </span><span class="self">self</span>.edge_type(edge_id).unwrap() {
+                                    GraphEdgeType::Value =&gt; {
+                                        <span class="kw">let </span>(<span class="kw">_</span>, succ) = <span class="self">self</span>.edge(edge_id);
+                                        <span class="self">self</span>.node_as_ident(succ, <span class="bool-val">false</span>)
+                                    }
+                                    GraphEdgeType::Reference =&gt; {
+                                        <span class="self">self</span>.edge_as_ident(edge_id, op_span)
+                                    }
+                                })
+                                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                            <span class="kw">let </span>output_edgetypes = output_edges
+                                .iter()
+                                .map(|<span class="kw-2">&amp;</span>(_port, edge_id)| {
+                                    <span class="self">self</span>.edge_type(edge_id)
+                                        .expect(<span class="string">&quot;Unset edge_type, this is a bug.&quot;</span>)
+                                })
+                                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
                             <span class="comment">// Corresponds 1:1 to inputs.
                             </span><span class="kw">let </span>flow_props_in = <span class="self">self
@@ -2374,6 +2518,8 @@
                                 is_pull,
                                 inputs: <span class="kw-2">&amp;*</span>inputs,
                                 outputs: <span class="kw-2">&amp;*</span>outputs,
+                                input_edgetypes: <span class="kw-2">&amp;*</span>input_edgetypes,
+                                output_edgetypes: <span class="kw-2">&amp;*</span>output_edgetypes,
                                 op_name,
                                 op_inst,
                                 flow_props_in: <span class="kw-2">&amp;*</span>flow_props_in,

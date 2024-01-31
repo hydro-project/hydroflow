@@ -455,6 +455,29 @@
 <a href="#455" id="455">455</a>
 <a href="#456" id="456">456</a>
 <a href="#457" id="457">457</a>
+<a href="#458" id="458">458</a>
+<a href="#459" id="459">459</a>
+<a href="#460" id="460">460</a>
+<a href="#461" id="461">461</a>
+<a href="#462" id="462">462</a>
+<a href="#463" id="463">463</a>
+<a href="#464" id="464">464</a>
+<a href="#465" id="465">465</a>
+<a href="#466" id="466">466</a>
+<a href="#467" id="467">467</a>
+<a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a>
+<a href="#470" id="470">470</a>
+<a href="#471" id="471">471</a>
+<a href="#472" id="472">472</a>
+<a href="#473" id="473">473</a>
+<a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a>
+<a href="#476" id="476">476</a>
+<a href="#477" id="477">477</a>
+<a href="#478" id="478">478</a>
+<a href="#479" id="479">479</a>
+<a href="#480" id="480">480</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Subgraph partioning algorithm
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -504,11 +527,8 @@
         UnionFind::with_capacity(partitioned_graph.nodes().len());
 
     <span class="comment">// Will contain all edges which are handoffs. Starts out with all edges and
-    // we remove from this set as we construct subgraphs.
-    </span><span class="kw">let </span><span class="kw-2">mut </span>handoff_edges: BTreeSet&lt;GraphEdgeId&gt; = partitioned_graph
-        .edges()
-        .map(|(edge_id, <span class="kw">_</span>)| edge_id)
-        .collect();
+    // we remove from this set as we combine nodes into subgraphs.
+    </span><span class="kw">let </span><span class="kw-2">mut </span>handoff_edges: BTreeSet&lt;GraphEdgeId&gt; = partitioned_graph.edge_ids().collect();
     <span class="comment">// Would sort edges here for priority (for now, no sort/priority).
 
     // Each edge gets looked at in order. However we may not know if a linear
@@ -520,13 +540,22 @@
     </span><span class="kw">let </span><span class="kw-2">mut </span>progress = <span class="bool-val">true</span>;
     <span class="kw">while </span>progress {
         progress = <span class="bool-val">false</span>;
-        <span class="kw">for </span>(edge_id, (src, dst)) <span class="kw">in </span>partitioned_graph.edges().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;() {
-            <span class="comment">// Ignore (1) already added edges as well as (2) new self-cycles.
+        <span class="comment">// TODO(mingwei): Could this iterate `handoff_edges` instead? (Modulo ownership). Then no case (1) below.
+        </span><span class="kw">for </span>(edge_id, (src, dst)) <span class="kw">in </span>partitioned_graph.edges().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;() {
+            <span class="comment">// Ignore (1) already added edges as well as (2) new self-cycles. (Unless reference edge).
             </span><span class="kw">if </span>subgraph_unionfind.same_set(src, dst) {
-                <span class="comment">// Note this might be triggered even if the edge (src, dst) is not in the subgraph (not case 1).
-                // This prevents self-loops which would violate the in-out tree structure (case 2).
+                <span class="comment">// Note that the _edge_ `edge_id` might not be in the subgraph even when both `src` and `dst` are. This prevents case 2.
                 // Handoffs will be inserted later for this self-loop.
-                </span><span class="kw">continue</span>;
+                </span><span class="kw">if </span>!partitioned_graph
+                    .edge_type(edge_id)
+                    .unwrap()
+                    .affects_in_out_graph_ownership()
+                {
+                    <span class="comment">// However self-loops are ok in the case of reference edges.
+                    // (This may hit trigger times for the same reference edge).
+                    </span>progress |= handoff_edges.remove(<span class="kw-2">&amp;</span>edge_id);
+                }
+                <span class="kw">continue</span>;
             }
 
             <span class="comment">// Ignore if would join stratum crossers (next edges).
@@ -544,7 +573,7 @@
                 // within a single subgraph.
                 </span>subgraph_unionfind.union(src, dst);
                 <span class="macro">assert!</span>(handoff_edges.remove(<span class="kw-2">&amp;</span>edge_id));
-                progress = <span class="bool-val">true</span>;
+                progress |= <span class="bool-val">true</span>;
             }
         }
     }
@@ -894,12 +923,29 @@
     }
 }
 
+<span class="doccomment">/// Ensure edgetypes are set.
+</span><span class="kw">pub fn </span>assert_edgetypes_set(flat_graph: <span class="kw-2">&amp;</span>HydroflowGraph) {
+    <span class="kw">let </span>missing_edgetypes = flat_graph
+        .edge_ids()
+        .filter(|<span class="kw-2">&amp;</span>edge_id| flat_graph.edge_type(edge_id).is_none())
+        .count();
+    <span class="macro">assert!</span>(
+        <span class="number">0 </span>== missing_edgetypes,
+        <span class="string">&quot;`partition_graph` requires edge types to be set, but was unset for {} out of {} edges. This is a Hydroflow bug.&quot;</span>,
+        missing_edgetypes,
+        flat_graph.edge_ids().len(),
+    );
+}
+
 <span class="doccomment">/// Main method for this module. Partions a flat [`HydroflowGraph`] into one with subgraphs.
 ///
 /// Returns an error if a negative cycle exists in the graph. Negative cycles prevent partioning.
 </span><span class="kw">pub fn </span>partition_graph(flat_graph: HydroflowGraph) -&gt; <span class="prelude-ty">Result</span>&lt;HydroflowGraph, Diagnostic&gt; {
+    assert_edgetypes_set(<span class="kw-2">&amp;</span>flat_graph);
+
+    <span class="comment">// Pre-find barrier crossers (input edges with a `DelayType`).
+    </span><span class="kw">let </span><span class="kw-2">mut </span>barrier_crossers = find_barrier_crossers(<span class="kw-2">&amp;</span>flat_graph);
     <span class="kw">let </span><span class="kw-2">mut </span>partitioned_graph = flat_graph;
-    <span class="kw">let </span><span class="kw-2">mut </span>barrier_crossers = find_barrier_crossers(<span class="kw-2">&amp;</span>partitioned_graph);
 
     <span class="comment">// Partition into subgraphs.
     </span>make_subgraphs(<span class="kw-2">&amp;mut </span>partitioned_graph, <span class="kw-2">&amp;mut </span>barrier_crossers);

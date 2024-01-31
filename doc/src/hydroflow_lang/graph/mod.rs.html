@@ -415,6 +415,15 @@
 <a href="#415" id="415">415</a>
 <a href="#416" id="416">416</a>
 <a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Graph representation stages for Hydroflow graphs.
 
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -575,6 +584,15 @@
     </span>Value,
     <span class="doccomment">/// State passed by reference.
     </span>Reference,
+}
+<span class="kw">impl </span>GraphEdgeType {
+    <span class="doccomment">/// Returns if this affects ownership for the sake of subgraph partitioning into in-out trees.
+    </span><span class="kw">pub fn </span>affects_in_out_graph_ownership(<span class="self">self</span>) -&gt; bool {
+        <span class="kw">match </span><span class="self">self </span>{
+            GraphEdgeType::Value =&gt; <span class="bool-val">true</span>,
+            GraphEdgeType::Reference =&gt; <span class="bool-val">false</span>,
+        }
+    }
 }
 
 <span class="doccomment">/// Meta-data relating to operators which may be useful throughout the compilation process.

@@ -662,6 +662,12 @@
 <a href="#662" id="662">662</a>
 <a href="#663" id="663">663</a>
 <a href="#664" id="664">664</a>
+<a href="#665" id="665">665</a>
+<a href="#666" id="666">666</a>
+<a href="#667" id="667">667</a>
+<a href="#668" id="668">668</a>
+<a href="#669" id="669">669</a>
+<a href="#670" id="670">670</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Hydroflow&#39;s operators
 
 </span><span class="kw">use </span>std::collections::HashMap;
@@ -739,7 +745,7 @@
 
     <span class="doccomment">/// Determines if this input must be preceeded by a stratum barrier.
     </span><span class="kw">pub </span>input_delaytype_fn: <span class="kw">fn</span>(<span class="kw-2">&amp;</span>PortIndexValue) -&gt; <span class="prelude-ty">Option</span>&lt;DelayType&gt;,
-    <span class="doccomment">/// The required edge type for each input. `None` means any is OK.
+    <span class="doccomment">/// The required edge type for each input. Return `None` when any is OK, or for unknown `PortIndexValue` inputs.
     </span><span class="kw">pub </span>input_edgetype_fn: <span class="kw">fn</span>(<span class="kw-2">&amp;</span>PortIndexValue) -&gt; <span class="prelude-ty">Option</span>&lt;GraphEdgeType&gt;,
     <span class="doccomment">/// Specifies the edge type for each output port.
     </span><span class="kw">pub </span>output_edgetype_fn: <span class="kw">fn</span>(<span class="kw-2">&amp;</span>PortIndexValue) -&gt; GraphEdgeType,
@@ -1071,6 +1077,7 @@
     source_stream::SOURCE_STREAM,
     source_stream_serde::SOURCE_STREAM_SERDE,
     state::STATE,
+    state_join::STATE_JOIN,
     tee::TEE,
     unique::UNIQUE,
     unzip::UNZIP,
@@ -1121,10 +1128,15 @@
     </span><span class="kw">pub </span>ident: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Ident,
     <span class="doccomment">/// If a pull iterator (true) or pusherator (false) should be used.
     </span><span class="kw">pub </span>is_pull: bool,
-    <span class="doccomment">/// Input operator idents (used for pull).
+    <span class="doccomment">/// Input operator idents (or ref idents; used for pull).
     </span><span class="kw">pub </span>inputs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Ident],
-    <span class="doccomment">/// Output operator idents (used for push).
+    <span class="doccomment">/// Output operator idents (or ref idents; used for push).
     </span><span class="kw">pub </span>outputs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Ident],
+    <span class="doccomment">/// Input edge types (value or reference).
+    </span><span class="kw">pub </span>input_edgetypes: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[GraphEdgeType],
+    <span class="doccomment">/// Output edge types (value or reference). Likely not that useful (since the operator decides
+    /// its output edgetypes) but provided for completeness,
+    </span><span class="kw">pub </span>output_edgetypes: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[GraphEdgeType],
 
     <span class="doccomment">/// Operator name.
     </span><span class="kw">pub </span>op_name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
