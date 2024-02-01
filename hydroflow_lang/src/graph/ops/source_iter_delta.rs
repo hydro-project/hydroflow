@@ -4,14 +4,26 @@ use crate::graph::{FlowProps, LatticeFlowType};
 /// > 0 input streams, 1 output stream
 ///
 /// > Arguments: An iterable Rust object.
-/// Takes the iterable object and delivers its elements downstream
-/// one by one.
+///
+/// The same as [`source_iter`](#source_iter) but marks the output as a `Delta` lattice flow type
+/// for flow analysis. This is temporary, mainly for testing, until a more comprehensive system is
+/// in place.
+///
+/// Takes the iterable object and delivers its elements downstream one by one.
+///
+/// The items should be lattice points although this is not currently enforced.
 ///
 /// Note that all elements are emitted during the first tick.
 ///
 /// ```hydroflow
-///     source_iter(vec!["Hello", "World"])
-///         -> for_each(|x| println!("{}", x));
+///     use lattices::set_union::{SetUnionArray, SetUnionHashSet};
+///
+///     source_iter_delta([
+///         SetUnionArray::new_from(["hello", "world"]),
+///         SetUnionArray::new_from(["goodbye", "world"]),
+///     ])
+///         -> lattice_fold(SetUnionHashSet::default)
+///         -> for_each(|x| println!("{:?}", x));
 /// ```
 pub const SOURCE_ITER_DELTA: OperatorConstraints = OperatorConstraints {
     name: "source_iter_delta",
