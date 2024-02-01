@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["ArrayMap","ArraySet","EmptySet","OptionMap","OptionSet","SingletonMap","SingletonSet","VecMap","VecSet"],"trait":["MapMapValues"]};
+window.SIDEBAR_ITEMS = {"struct":["ArrayMap","ArraySet","EmptyMap","EmptySet","OptionMap","OptionSet","SingletonMap","SingletonSet","VecMap","VecSet"],"trait":["MapMapValues"]};
