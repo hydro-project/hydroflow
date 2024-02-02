@@ -1,6 +1,6 @@
 [package]
 name = "hydroflow_plus_cli_integration"
-publish = false
+publish = true
 version = "0.5.1"
 edition = "2021"
 
