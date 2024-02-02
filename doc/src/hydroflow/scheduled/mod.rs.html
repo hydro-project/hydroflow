@@ -91,7 +91,7 @@
 
 <span class="doccomment">/// A staten handle&#39;s ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.
-</span><span class="attr">#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+</span><span class="attr">#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 </span><span class="kw">pub struct </span>StateId(<span class="kw">pub</span>(<span class="kw">crate</span>) usize);
 </code></pre></div></section></main></body></html>
