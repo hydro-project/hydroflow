@@ -5,7 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.2 (2024-02-02)
+
+### New Features
+
+ - <csr-id-87e86a2ab9e068634ebed17616b7482b3e69d539/> add map_union_with_tombstones, fix #336
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 1 commit contributed to the release.
+ - 4 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#1052](https://github.com/hydro-project/hydroflow/issues/1052)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1052](https://github.com/hydro-project/hydroflow/issues/1052)**
+    - Add map_union_with_tombstones, fix #336 ([`87e86a2`](https://github.com/hydro-project/hydroflow/commit/87e86a2ab9e068634ebed17616b7482b3e69d539))
+</details>
+
 ## 0.5.1 (2024-01-29)
+
+<csr-id-1b555e57c8c812bed4d6495d2960cbf77fb0b3ef/>
+<csr-id-ba6afab8416ad66eee4fdb9d0c73e62d45752617/>
+<csr-id-f6a729925ddeb6063fa8c4b03d6621c1c35f0cc8/>
 
 ### Chore
 
@@ -29,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 7 commits contributed to the release over the course of 109 calendar days.
+ - 8 commits contributed to the release over the course of 109 calendar days.
  - 110 days passed between releases.
  - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1032](https://github.com/hydro-project/hydroflow/issues/1032), [#942](https://github.com/hydro-project/hydroflow/issues/942), [#960](https://github.com/hydro-project/hydroflow/issues/960), [#967](https://github.com/hydro-project/hydroflow/issues/967)
@@ -50,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#967](https://github.com/hydro-project/hydroflow/issues/967)**
     - Chat and two_pc no longer replay ([`0539e2a`](https://github.com/hydro-project/hydroflow/commit/0539e2a91eb3ba71ed1c9fbe8d0c74b6344ad1bf))
  * **Uncategorized**
+    - Release hydroflow_cli_integration v0.5.1, hydroflow_lang v0.5.1, hydroflow_datalog_core v0.5.1, hydroflow_datalog v0.5.1, hydroflow_macro v0.5.1, lattices v0.5.1, variadics v0.0.3, pusherator v0.0.4, hydroflow v0.5.1, stageleft_macro v0.1.0, stageleft v0.1.0, hydroflow_plus v0.5.1, hydro_deploy v0.5.1, hydro_cli v0.5.1 ([`478aebc`](https://github.com/hydro-project/hydroflow/commit/478aebc8fee2aa78eab86bd386322db1c70bde6a))
     - Manually set lockstep-versioned crates (and `lattices`) to version `0.5.1` ([`1b555e5`](https://github.com/hydro-project/hydroflow/commit/1b555e57c8c812bed4d6495d2960cbf77fb0b3ef))
     - Add set_union_with_tombstones ([`3f70199`](https://github.com/hydro-project/hydroflow/commit/3f701997ec1e6ca2a364537fbd2ef39cf96ce0f1))
 </details>

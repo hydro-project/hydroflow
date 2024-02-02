@@ -5,7 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.2 (2024-02-02)
+
+### Chore
+
+ - <csr-id-d4d786269e44cdf938580b8fb7abf888952eca0e/> update snapshots for
+   (#929)
+
+### Bug Fixes
+
+ - <csr-id-175cc20e15b90627ae86d488e31ec91278c8beeb/> ensure other graph methods handle edge types
+   (#929)
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release over the course of 2 calendar days.
+ - 4 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#1041](https://github.com/hydro-project/hydroflow/issues/1041)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1041](https://github.com/hydro-project/hydroflow/issues/1041)**
+    - Update snapshots for ([`d4d7862`](https://github.com/hydro-project/hydroflow/commit/d4d786269e44cdf938580b8fb7abf888952eca0e))
+    - Ensure other graph methods handle edge types ([`175cc20`](https://github.com/hydro-project/hydroflow/commit/175cc20e15b90627ae86d488e31ec91278c8beeb))
+</details>
+
 ## 0.5.1 (2024-01-29)
+
+<csr-id-1b555e57c8c812bed4d6495d2960cbf77fb0b3ef/>
+<csr-id-1a80f1cd57e6f3a5ee806e1bf3b8ad59dcecfff7/>
 
 ### Chore
 
@@ -34,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 6 commits contributed to the release over the course of 103 calendar days.
+ - 7 commits contributed to the release over the course of 103 calendar days.
  - 110 days passed between releases.
  - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 5 unique issues were worked on: [#1016](https://github.com/hydro-project/hydroflow/issues/1016), [#1023](https://github.com/hydro-project/hydroflow/issues/1023), [#1033](https://github.com/hydro-project/hydroflow/issues/1033), [#945](https://github.com/hydro-project/hydroflow/issues/945), [#989](https://github.com/hydro-project/hydroflow/issues/989)
@@ -56,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#989](https://github.com/hydro-project/hydroflow/issues/989)**
     - Fix spelling of "propagate" ([`38411ea`](https://github.com/hydro-project/hydroflow/commit/38411ea007d4feb30dd16bdd1505802a111a67d1))
  * **Uncategorized**
+    - Release hydroflow_cli_integration v0.5.1, hydroflow_lang v0.5.1, hydroflow_datalog_core v0.5.1, hydroflow_datalog v0.5.1, hydroflow_macro v0.5.1, lattices v0.5.1, variadics v0.0.3, pusherator v0.0.4, hydroflow v0.5.1, stageleft_macro v0.1.0, stageleft v0.1.0, hydroflow_plus v0.5.1, hydro_deploy v0.5.1, hydro_cli v0.5.1 ([`478aebc`](https://github.com/hydro-project/hydroflow/commit/478aebc8fee2aa78eab86bd386322db1c70bde6a))
     - Manually set lockstep-versioned crates (and `lattices`) to version `0.5.1` ([`1b555e5`](https://github.com/hydro-project/hydroflow/commit/1b555e57c8c812bed4d6495d2960cbf77fb0b3ef))
 </details>
 

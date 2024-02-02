@@ -5,7 +5,68 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.2 (2024-02-02)
+
+### Documentation
+
+ - <csr-id-56fbc34bec94bc87b2c5d4a6fc68ced7f6fc43a3/> `source_iter_delta` docs, fix #962
+
+### New Features
+
+ - <csr-id-7a791b8ccc489050ef10ddb186409cc046bd30f0/> implement state operator
+   (#929)
+ - <csr-id-420580d5bd94aa9caa531690926181ae5144753f/> generate different idents for ref edges state
+   (#929)
+ - <csr-id-fa8cfdb41e0c1dded8bd973fffa4398e34d4d536/> Add `input/output_edgtypes` field to `WriteContextArgs`
+   (#929)
+ - <csr-id-5969bc968bb2bd033ee6330e8a172459425a1b5d/> subgraph partitioning handling (ignoring) reference edges
+   (#929)
+   
+   (currently panics)
+ - <csr-id-f661f01016790bb15a241fecb32ab7e9af82e665/> Add `state`, `state_join` ops for testing ref edges
+   (#929)
+
+### Bug Fixes
+
+ - <csr-id-a572dee118fb9d014954a18d560413a6c6fc5deb/> fix coloring of `_lattice_join_fused_join`, fix #943
+ - <csr-id-175cc20e15b90627ae86d488e31ec91278c8beeb/> ensure other graph methods handle edge types
+   (#929)
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 8 commits contributed to the release over the course of 2 calendar days.
+ - 4 days passed between releases.
+ - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 3 unique issues were worked on: [#1041](https://github.com/hydro-project/hydroflow/issues/1041), [#1053](https://github.com/hydro-project/hydroflow/issues/1053), [#1055](https://github.com/hydro-project/hydroflow/issues/1055)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1041](https://github.com/hydro-project/hydroflow/issues/1041)**
+    - Ensure other graph methods handle edge types ([`175cc20`](https://github.com/hydro-project/hydroflow/commit/175cc20e15b90627ae86d488e31ec91278c8beeb))
+    - Implement state operator ([`7a791b8`](https://github.com/hydro-project/hydroflow/commit/7a791b8ccc489050ef10ddb186409cc046bd30f0))
+    - Generate different idents for ref edges state ([`420580d`](https://github.com/hydro-project/hydroflow/commit/420580d5bd94aa9caa531690926181ae5144753f))
+    - Add `input/output_edgtypes` field to `WriteContextArgs` ([`fa8cfdb`](https://github.com/hydro-project/hydroflow/commit/fa8cfdb41e0c1dded8bd973fffa4398e34d4d536))
+    - Subgraph partitioning handling (ignoring) reference edges ([`5969bc9`](https://github.com/hydro-project/hydroflow/commit/5969bc968bb2bd033ee6330e8a172459425a1b5d))
+    - Add `state`, `state_join` ops for testing ref edges ([`f661f01`](https://github.com/hydro-project/hydroflow/commit/f661f01016790bb15a241fecb32ab7e9af82e665))
+ * **[#1053](https://github.com/hydro-project/hydroflow/issues/1053)**
+    - `source_iter_delta` docs, fix #962 ([`56fbc34`](https://github.com/hydro-project/hydroflow/commit/56fbc34bec94bc87b2c5d4a6fc68ced7f6fc43a3))
+ * **[#1055](https://github.com/hydro-project/hydroflow/issues/1055)**
+    - Fix coloring of `_lattice_join_fused_join`, fix #943 ([`a572dee`](https://github.com/hydro-project/hydroflow/commit/a572dee118fb9d014954a18d560413a6c6fc5deb))
+</details>
+
 ## 0.5.1 (2024-01-29)
+
+<csr-id-1b555e57c8c812bed4d6495d2960cbf77fb0b3ef/>
+<csr-id-ba6afab8416ad66eee4fdb9d0c73e62d45752617/>
+<csr-id-2b0a6672b06eb1d71d4602eec296b5ce55ea293e/>
+<csr-id-1a80f1cd57e6f3a5ee806e1bf3b8ad59dcecfff7/>
+<csr-id-ff4bddd844969a9e8da5e8a1948712567a6e39bb/>
 
 ### Chore
 
@@ -35,35 +96,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Bug Fixes
 
+<csr-id-f0a03786b47d590477f8169bb0a40fd4981fef9e/>
+<csr-id-d0b0a35fa5ed1fdbfd2c2dc5034a3ec52a078779/>
+<csr-id-38411ea007d4feb30dd16bdd1505802a111a67d1/>
+<csr-id-43280cb698cf6bc070483365ee272106c271dca4/>
+<csr-id-f89d11a9c8c6712183c76a193674aba21349675e/>
+<csr-id-35b1e9e83f2a0cfa171b4994a2cffb0d22706abf/>
+<csr-id-8ef14a396c5c56789e2993284b96234ad5032be1/>
+
  - <csr-id-a67f43f35ec4eada3aab69781234c9d3d82648e8/> typo
  - <csr-id-5ed9be478daf4fef91c6d35893f68944da8eac94/> lattice ops are monotone and return stream of lattices
    * fix: lattice ops are monotone and return stream of lattices
-   
-   * fix: remove trailing whitespace
-   
-   * fix: remove warnings from unused tees in topolotree
-   
-   * fix: avoid error message in test
-   
-   * fix: set `flow_prop_fn` properly in `_lattice_fold_batch.rs`
-   
-   * fix: test_lattice_join_fused_join_map_union now checks assertions
- - <csr-id-f0a03786b47d590477f8169bb0a40fd4981fef9e/> improve type inference for fold accumulators
- - <csr-id-d0b0a35fa5ed1fdbfd2c2dc5034a3ec52a078779/> clippy lints on latest nightly
- - <csr-id-38411ea007d4feb30dd16bdd1505802a111a67d1/> fix spelling of "propagate"
- - <csr-id-43280cb698cf6bc070483365ee272106c271dca4/> `multiset_delta` incorrect `is_first_run_this_tick` check, fixes #958
-   Introduced in #906
-   
-   Also adds more `multiset_delta` tests.
- - <csr-id-f89d11a9c8c6712183c76a193674aba21349675e/> 2 nested module imports bugs
-   The first bug is that when importing nested modules, when the flat
-   graphs are merged together, they did not always attach to the correct
-   input and output module boundaries.
-   
-   The second bug is that imports inside of modules were not relative to
-   the module file, but they are now.
- - <csr-id-35b1e9e83f2a0cfa171b4994a2cffb0d22706abf/> avoid panic-ing on degen `null()`
- - <csr-id-8ef14a396c5c56789e2993284b96234ad5032be1/> fix/improve rendering with `--no-handoffs` and double-labelled edges
+* fix: remove trailing whitespace
+* fix: remove warnings from unused tees in topolotree
+* fix: avoid error message in test
+* fix: set `flow_prop_fn` properly in `_lattice_fold_batch.rs`
+* fix: test_lattice_join_fused_join_map_union now checks assertions
 
 ### Refactor
 
@@ -81,7 +129,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 27 commits contributed to the release over the course of 104 calendar days.
+ - 28 commits contributed to the release over the course of 104 calendar days.
  - 110 days passed between releases.
  - 26 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 20 unique issues were worked on: [#1005](https://github.com/hydro-project/hydroflow/issues/1005), [#1009](https://github.com/hydro-project/hydroflow/issues/1009), [#1016](https://github.com/hydro-project/hydroflow/issues/1016), [#1017](https://github.com/hydro-project/hydroflow/issues/1017), [#1021](https://github.com/hydro-project/hydroflow/issues/1021), [#1023](https://github.com/hydro-project/hydroflow/issues/1023), [#1026](https://github.com/hydro-project/hydroflow/issues/1026), [#1033](https://github.com/hydro-project/hydroflow/issues/1033), [#1036](https://github.com/hydro-project/hydroflow/issues/1036), [#1040](https://github.com/hydro-project/hydroflow/issues/1040), [#899](https://github.com/hydro-project/hydroflow/issues/899), [#945](https://github.com/hydro-project/hydroflow/issues/945), [#947](https://github.com/hydro-project/hydroflow/issues/947), [#948](https://github.com/hydro-project/hydroflow/issues/948), [#949](https://github.com/hydro-project/hydroflow/issues/949), [#950](https://github.com/hydro-project/hydroflow/issues/950), [#959](https://github.com/hydro-project/hydroflow/issues/959), [#960](https://github.com/hydro-project/hydroflow/issues/960), [#978](https://github.com/hydro-project/hydroflow/issues/978), [#989](https://github.com/hydro-project/hydroflow/issues/989)
@@ -138,9 +186,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#989](https://github.com/hydro-project/hydroflow/issues/989)**
     - Fix spelling of "propagate" ([`38411ea`](https://github.com/hydro-project/hydroflow/commit/38411ea007d4feb30dd16bdd1505802a111a67d1))
  * **Uncategorized**
+    - Release hydroflow_cli_integration v0.5.1, hydroflow_lang v0.5.1, hydroflow_datalog_core v0.5.1, hydroflow_datalog v0.5.1, hydroflow_macro v0.5.1, lattices v0.5.1, variadics v0.0.3, pusherator v0.0.4, hydroflow v0.5.1, stageleft_macro v0.1.0, stageleft v0.1.0, hydroflow_plus v0.5.1, hydro_deploy v0.5.1, hydro_cli v0.5.1 ([`478aebc`](https://github.com/hydro-project/hydroflow/commit/478aebc8fee2aa78eab86bd386322db1c70bde6a))
     - Manually set lockstep-versioned crates (and `lattices`) to version `0.5.1` ([`1b555e5`](https://github.com/hydro-project/hydroflow/commit/1b555e57c8c812bed4d6495d2960cbf77fb0b3ef))
     - 2 nested module imports bugs ([`f89d11a`](https://github.com/hydro-project/hydroflow/commit/f89d11a9c8c6712183c76a193674aba21349675e))
 </details>
+
+<csr-unknown>
+ improve type inference for fold accumulators clippy lints on latest nightly fix spelling of “propagate” multiset_delta incorrect is_first_run_this_tick check, fixes #958Introduced in #906Also adds more multiset_delta tests. 2 nested module imports bugsThe first bug is that when importing nested modules, when the flatgraphs are merged together, they did not always attach to the correctinput and output module boundaries.The second bug is that imports inside of modules were not relative tothe module file, but they are now. avoid panic-ing on degen null() fix/improve rendering with --no-handoffs and double-labelled edges<csr-unknown/>
 
 ## 0.5.0 (2023-10-11)
 
@@ -298,9 +350,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Implement `flow_prop_fn` for `union()` ([`1bdbf73`](https://github.com/hydro-project/hydroflow/commit/1bdbf73b630e4f2eff009b00b0e66d71be53bb4a))
     - Fix `clippy::implied_bounds_in_impls` from latest nightlies ([`e788989`](https://github.com/hydro-project/hydroflow/commit/e788989737fbd501173bc99c6f9f5f5ba514ec9c))
 </details>
-
-<csr-unknown>
- open mermaid/dot graph in browserBehind a new hydroflow/debugging/hydroflow_lang/debugging featuregate. Update documentation and improve error messages for demux_enum operator add type guard to demux_enum codegen initial technically working version of demux_enum with very bad error messagesTechnically does not check port names at all, just depends on their order. Implement partition operatorSupports both named ports and numeric indices. add context.is_first_time_subgraph_is_scheduled to simplify replaying operators make lattice_fold and lattice_reduce consistent with fold/reduce add import!() expression Implement flow_prop_fn for union() Add Cumul flow_prop_fns for lattice_fold() and lattice_reduce() Update dot/graphviz rendering of delta/cumul and defer_tick edges Make propegate_flow_props fallible, cleanup flow_prop_fn definition. add cast operator Update mermaid rendering of hydroflow graph to show flow properties Add monotonic_fn and morphism macros, update snapshots for flow props. Move structs into separate flow_props module, make flow_prop_fn return Options, impl for map Add source_iter_delta op for testing, basic flow props test, cleanups. Implement basic flow prop traversal (untested) Setup structure for tracking flow properties<csr-unknown/>
 
 ## 0.4.0 (2023-08-15)
 
