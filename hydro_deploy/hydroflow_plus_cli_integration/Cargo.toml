@@ -3,6 +3,9 @@ name = "hydroflow_plus_cli_integration"
 publish = true
 version = "0.5.1"
 edition = "2021"
+license = "Apache-2.0"
+documentation = "https://docs.rs/hydroflow_plus_cli_integration/"
+description = "Library for working with hydro_deploy and hydroflow_plus"
 
 [features]
 default = []
