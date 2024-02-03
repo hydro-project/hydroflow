@@ -1,6 +1,9 @@
 
 
-## v0.5.1 (2024-02-02)
+## v0.5.1 (2024-02-03)
+
+<csr-id-e9c7ced8760f88e3215a4b1b4e23f8b9db159a84/>
+<csr-id-1b555e57c8c812bed4d6495d2960cbf77fb0b3ef/>
 
 ### Chore
 
@@ -10,6 +13,10 @@
    Setting manually since
    https://github.com/frewsxcv/rust-crates-index/issues/159 is messing with
    smart-release
+
+### Chore
+
+ - <csr-id-03ce73d2eb1377179f5ebd6f80e082c2889588a7/> fix/add releasing for `hydroflow_plus_cli_integration`, `stageleft[_macro/_tool]`
 
 ### New Features
 
@@ -24,8 +31,8 @@
 
 <csr-read-only-do-not-edit/>
 
- - 8 commits contributed to the release over the course of 43 calendar days.
- - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 10 commits contributed to the release over the course of 44 calendar days.
+ - 9 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 6 unique issues were worked on: [#1013](https://github.com/hydro-project/hydroflow/issues/1013), [#1056](https://github.com/hydro-project/hydroflow/issues/1056), [#986](https://github.com/hydro-project/hydroflow/issues/986), [#987](https://github.com/hydro-project/hydroflow/issues/987), [#995](https://github.com/hydro-project/hydroflow/issues/995), [#996](https://github.com/hydro-project/hydroflow/issues/996)
 
 ### Commit Details
@@ -47,6 +54,8 @@
  * **[#996](https://github.com/hydro-project/hydroflow/issues/996)**
     - Pass subgraph ID through deploy metadata ([`46d87fa`](https://github.com/hydro-project/hydroflow/commit/46d87fa364d3fe01422cf3c404fbc8a1d5e9fb88))
  * **Uncategorized**
+    - Fix/add releasing for `hydroflow_plus_cli_integration`, `stageleft[_macro/_tool]` ([`03ce73d`](https://github.com/hydro-project/hydroflow/commit/03ce73d2eb1377179f5ebd6f80e082c2889588a7))
+    - Release hydroflow_lang v0.5.2, hydroflow_datalog_core v0.5.2, hydroflow_macro v0.5.2, lattices v0.5.2, hydroflow v0.5.2, hydro_cli v0.5.1, hydroflow_plus_cli_integration v0.5.1 ([`6ac8720`](https://github.com/hydro-project/hydroflow/commit/6ac872081753548ebb8ec95549b4d820dc050d3e))
     - Manually set lockstep-versioned crates (and `lattices`) to version `0.5.1` ([`1b555e5`](https://github.com/hydro-project/hydroflow/commit/1b555e57c8c812bed4d6495d2960cbf77fb0b3ef))
     - Add APIs for declaring external ports on clusters ([`7d930a2`](https://github.com/hydro-project/hydroflow/commit/7d930a2ccf656d3d6bc5db3e22eb63c5fd6d37d1))
 </details>
