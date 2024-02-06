@@ -1,7 +1,6 @@
 mod fold;
 mod fold_from;
 mod multiset;
-mod multiset2;
 mod reduce;
 mod set;
 
@@ -10,12 +9,10 @@ use std::slice;
 
 pub use fold::HalfJoinStateFold;
 pub use fold_from::HalfJoinStateFoldFrom;
-pub use multiset2::HalfJoinStateMultiset;
+pub use multiset::HalfMultisetJoinState;
 pub use reduce::HalfJoinStateReduce;
 pub use set::HalfSetJoinState;
 use smallvec::SmallVec;
-
-pub use self::multiset::HalfMultisetJoinState;
 
 pub trait HalfJoinState<Key, ValBuild, ValProbe> {
     /// Insert a key value pair into the join state, currently this is always inserting into a hash table
