@@ -34,13 +34,9 @@
 <a href="#32" id="32">32</a>
 <a href="#33" id="33">33</a>
 <a href="#34" id="34">34</a>
-<a href="#35" id="35">35</a>
-<a href="#36" id="36">36</a>
-<a href="#37" id="37">37</a>
 </pre></div><pre class="rust"><code><span class="kw">mod </span>fold;
 <span class="kw">mod </span>fold_from;
 <span class="kw">mod </span>multiset;
-<span class="kw">mod </span>multiset2;
 <span class="kw">mod </span>reduce;
 <span class="kw">mod </span>set;
 
@@ -49,12 +45,10 @@
 
 <span class="kw">pub use </span>fold::HalfJoinStateFold;
 <span class="kw">pub use </span>fold_from::HalfJoinStateFoldFrom;
-<span class="kw">pub use </span>multiset2::HalfJoinStateMultiset;
+<span class="kw">pub use </span>multiset::HalfMultisetJoinState;
 <span class="kw">pub use </span>reduce::HalfJoinStateReduce;
 <span class="kw">pub use </span>set::HalfSetJoinState;
 <span class="kw">use </span>smallvec::SmallVec;
-
-<span class="kw">pub use </span><span class="self">self</span>::multiset::HalfMultisetJoinState;
 
 <span class="kw">pub trait </span>HalfJoinState&lt;Key, ValBuild, ValProbe&gt; {
     <span class="doccomment">/// Insert a key value pair into the join state, currently this is always inserting into a hash table
