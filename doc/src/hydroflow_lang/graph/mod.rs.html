@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../hydroflow_lang/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -477,12 +479,12 @@
 }
 
 <span class="doccomment">/// Context identifier as a string.
-</span><span class="kw">const </span>CONTEXT: <span class="kw-2">&amp;</span>str = <span class="string">&quot;context&quot;</span>;
+</span><span class="kw">const </span>CONTEXT: <span class="kw-2">&amp;</span>str = <span class="string">"context"</span>;
 <span class="doccomment">/// Hydroflow identifier as a string.
-</span><span class="kw">const </span>HYDROFLOW: <span class="kw-2">&amp;</span>str = <span class="string">&quot;df&quot;</span>;
+</span><span class="kw">const </span>HYDROFLOW: <span class="kw-2">&amp;</span>str = <span class="string">"df"</span>;
 
-<span class="kw">const </span>HANDOFF_NODE_STR: <span class="kw-2">&amp;</span>str = <span class="string">&quot;handoff&quot;</span>;
-<span class="kw">const </span>MODULE_BOUNDARY_NODE_STR: <span class="kw-2">&amp;</span>str = <span class="string">&quot;module_boundary&quot;</span>;
+<span class="kw">const </span>HANDOFF_NODE_STR: <span class="kw-2">&amp;</span>str = <span class="string">"handoff"</span>;
+<span class="kw">const </span>MODULE_BOUNDARY_NODE_STR: <span class="kw-2">&amp;</span>str = <span class="string">"module_boundary"</span>;
 
 <span class="kw">mod </span>serde_syn {
     <span class="kw">use </span>serde::{Deserialize, Deserializer, Serializer};
@@ -495,9 +497,9 @@
         serializer.serialize_str(<span class="kw-2">&amp;*</span>value.to_token_stream().to_string())
     }
 
-    <span class="kw">pub fn </span>deserialize&lt;<span class="lifetime">&#39;de</span>, D, T&gt;(deserializer: D) -&gt; <span class="prelude-ty">Result</span>&lt;T, D::Error&gt;
+    <span class="kw">pub fn </span>deserialize&lt;<span class="lifetime">'de</span>, D, T&gt;(deserializer: D) -&gt; <span class="prelude-ty">Result</span>&lt;T, D::Error&gt;
     <span class="kw">where
-        </span>D: Deserializer&lt;<span class="lifetime">&#39;de</span>&gt;,
+        </span>D: Deserializer&lt;<span class="lifetime">'de</span>&gt;,
         T: syn::parse::Parse,
     {
         <span class="kw">let </span>s = String::deserialize(deserializer)<span class="question-mark">?</span>;
@@ -506,20 +508,20 @@
 }
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq)]
-</span><span class="kw">struct </span>Varname(<span class="attr">#[serde(with = <span class="string">&quot;serde_syn&quot;</span>)] </span><span class="kw">pub </span>Ident);
+</span><span class="kw">struct </span>Varname(<span class="attr">#[serde(with = <span class="string">"serde_syn"</span>)] </span><span class="kw">pub </span>Ident);
 
 <span class="doccomment">/// A node, corresponding to an operator or a handoff.
 </span><span class="attr">#[derive(Clone, Serialize, Deserialize)]
 </span><span class="kw">pub enum </span>GraphNode {
     <span class="doccomment">/// An operator.
-    </span>Operator(<span class="attr">#[serde(with = <span class="string">&quot;serde_syn&quot;</span>)] </span>Operator),
+    </span>Operator(<span class="attr">#[serde(with = <span class="string">"serde_syn"</span>)] </span>Operator),
     <span class="doccomment">/// A handoff point, used between subgraphs (or within a subgraph to break a cycle).
     </span>Handoff {
         <span class="doccomment">/// The span of the input into the handoff.
-        </span><span class="attr">#[serde(skip, default = <span class="string">&quot;Span::call_site&quot;</span>)]
+        </span><span class="attr">#[serde(skip, default = <span class="string">"Span::call_site"</span>)]
         </span>src_span: Span,
         <span class="doccomment">/// The span of the output out of the handoff.
-        </span><span class="attr">#[serde(skip, default = <span class="string">&quot;Span::call_site&quot;</span>)]
+        </span><span class="attr">#[serde(skip, default = <span class="string">"Span::call_site"</span>)]
         </span>dst_span: Span,
     },
 
@@ -531,13 +533,13 @@
         <span class="doccomment">/// The span of the import!() expression that imported this module.
         /// The value of this span when the ModuleBoundary node is still inside the module is Span::call_site()
         /// TODO: This could one day reference into the module file itself?
-        </span><span class="attr">#[serde(skip, default = <span class="string">&quot;Span::call_site&quot;</span>)]
+        </span><span class="attr">#[serde(skip, default = <span class="string">"Span::call_site"</span>)]
         </span>import_expr: Span,
     },
 }
 <span class="kw">impl </span>GraphNode {
     <span class="doccomment">/// Return the node as a human-readable string.
-    </span><span class="kw">pub fn </span>to_pretty_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Cow&lt;<span class="lifetime">&#39;static</span>, str&gt; {
+    </span><span class="kw">pub fn </span>to_pretty_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Cow&lt;<span class="lifetime">'static</span>, str&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             GraphNode::Operator(op) =&gt; op.to_pretty_string().into(),
             GraphNode::Handoff { .. } =&gt; HANDOFF_NODE_STR.into(),
@@ -546,7 +548,7 @@
     }
 
     <span class="doccomment">/// Return the name of the node as a string, excluding parenthesis and op source code.
-    </span><span class="kw">pub fn </span>to_name_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Cow&lt;<span class="lifetime">&#39;static</span>, str&gt; {
+    </span><span class="kw">pub fn </span>to_name_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Cow&lt;<span class="lifetime">'static</span>, str&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             GraphNode::Operator(op) =&gt; op.name_string().into(),
             GraphNode::Handoff { .. } =&gt; HANDOFF_NODE_STR.into(),
@@ -564,14 +566,14 @@
     }
 }
 <span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>GraphNode {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::Operator(operator) =&gt; {
-                <span class="macro">write!</span>(f, <span class="string">&quot;Node::Operator({} span)&quot;</span>, PrettySpan(operator.span()))
+                <span class="macro">write!</span>(f, <span class="string">"Node::Operator({} span)"</span>, PrettySpan(operator.span()))
             }
-            <span class="self">Self</span>::Handoff { .. } =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;Node::Handoff&quot;</span>),
+            <span class="self">Self</span>::Handoff { .. } =&gt; <span class="macro">write!</span>(f, <span class="string">"Node::Handoff"</span>),
             <span class="self">Self</span>::ModuleBoundary { input, .. } =&gt; {
-                <span class="macro">write!</span>(f, <span class="string">&quot;Node::ModuleBoundary{{input: {}}}&quot;</span>, input)
+                <span class="macro">write!</span>(f, <span class="string">"Node::ModuleBoundary{{input: {}}}"</span>, input)
             }
         }
     }
@@ -601,17 +603,17 @@
 /// pre-computed as many algorithms use the same info. Stuff like port names, arguments, and the
 /// [`OperatorConstraints`] for the operator.
 ///
-/// Because it is derived from the graph itself, there can be &quot;cache invalidation&quot;-esque issues
+/// Because it is derived from the graph itself, there can be "cache invalidation"-esque issues
 /// if this data is not kept in sync with the graph.
 </span><span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub struct </span>OperatorInstance {
     <span class="doccomment">/// Name of the operator (will match [`OperatorConstraints::name`]).
-    </span><span class="kw">pub </span>op_constraints: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>OperatorConstraints,
+    </span><span class="kw">pub </span>op_constraints: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>OperatorConstraints,
     <span class="comment">// /// The source span of this operator instance.
     // pub op_span: Span,
-    </span><span class="doccomment">/// Port values used as this operator&#39;s input.
+    </span><span class="doccomment">/// Port values used as this operator's input.
     </span><span class="kw">pub </span>input_ports: Vec&lt;PortIndexValue&gt;,
-    <span class="doccomment">/// Port values used as this operator&#39;s output.
+    <span class="doccomment">/// Port values used as this operator's output.
     </span><span class="kw">pub </span>output_ports: Vec&lt;PortIndexValue&gt;,
 
     <span class="doccomment">/// Generic arguments.
@@ -633,7 +635,7 @@
 }
 
 <span class="doccomment">/// Gets the generic arguments for the operator. This helper method is here due to the special
-/// handling of persistence lifetimes (`&#39;static`, `&#39;tick`, `&#39;mutable`) which must come before
+/// handling of persistence lifetimes (`'static`, `'tick`, `'mutable`) which must come before
 /// other generic parameters.
 </span><span class="kw">pub fn </span>get_operator_generics(
     diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
@@ -644,14 +646,14 @@
     <span class="kw">let </span>persistence_args = generic_args.iter().flatten().map_while(|generic_arg| <span class="kw">match </span>generic_arg {
             GenericArgument::Lifetime(lifetime) =&gt; {
                 <span class="kw">match </span><span class="kw-2">&amp;*</span>lifetime.ident.to_string() {
-                    <span class="string">&quot;static&quot; </span>=&gt; <span class="prelude-val">Some</span>(Persistence::Static),
-                    <span class="string">&quot;tick&quot; </span>=&gt; <span class="prelude-val">Some</span>(Persistence::Tick),
-                    <span class="string">&quot;mutable&quot; </span>=&gt; <span class="prelude-val">Some</span>(Persistence::Mutable),
+                    <span class="string">"static" </span>=&gt; <span class="prelude-val">Some</span>(Persistence::Static),
+                    <span class="string">"tick" </span>=&gt; <span class="prelude-val">Some</span>(Persistence::Tick),
+                    <span class="string">"mutable" </span>=&gt; <span class="prelude-val">Some</span>(Persistence::Mutable),
                     <span class="kw">_ </span>=&gt; {
                         diagnostics.push(Diagnostic::spanned(
                             generic_arg.span(),
                             Level::Error,
-                            <span class="macro">format!</span>(<span class="string">&quot;Unknown lifetime generic argument `&#39;{}`, expected `&#39;tick`, `&#39;static`, or `&#39;mutable`.&quot;</span>, lifetime.ident),
+                            <span class="macro">format!</span>(<span class="string">"Unknown lifetime generic argument `'{}`, expected `'tick`, `'static`, or `'mutable`."</span>, lifetime.ident),
                         ));
                         <span class="comment">// TODO(mingwei): should really keep going and not short circuit?
                         </span><span class="prelude-val">None
@@ -694,10 +696,10 @@
 <span class="doccomment">/// Helper struct for [`PortIndex`] which keeps span information for elided ports.
 </span><span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub enum </span>PortIndexValue {
-    <span class="doccomment">/// An integer value: `[0]`, `[1]`, etc. Can be negative although we don&#39;t use that (2023-08-16).
-    </span>Int(<span class="attr">#[serde(with = <span class="string">&quot;serde_syn&quot;</span>)] </span>IndexInt),
-    <span class="doccomment">/// A name or path. `[pos]`, `[neg]`, etc. Can use `::` separators but we don&#39;t use that (2023-08-16).
-    </span>Path(<span class="attr">#[serde(with = <span class="string">&quot;serde_syn&quot;</span>)] </span>ExprPath),
+    <span class="doccomment">/// An integer value: `[0]`, `[1]`, etc. Can be negative although we don't use that (2023-08-16).
+    </span>Int(<span class="attr">#[serde(with = <span class="string">"serde_syn"</span>)] </span>IndexInt),
+    <span class="doccomment">/// A name or path. `[pos]`, `[neg]`, etc. Can use `::` separators but we don't use that (2023-08-16).
+    </span>Path(<span class="attr">#[serde(with = <span class="string">"serde_syn"</span>)] </span>ExprPath),
     <span class="doccomment">/// Elided, unspecified port. We have this variant, rather than wrapping in `Option`, in order
     /// to preserve the `Span` information.
     </span>Elided(<span class="attr">#[serde(skip)] </span><span class="prelude-ty">Option</span>&lt;Span&gt;),
@@ -743,9 +745,9 @@
     <span class="doccomment">/// Formats self as a human-readable string for error messages.
     </span><span class="kw">pub fn </span>as_error_message_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         <span class="kw">match </span><span class="self">self </span>{
-            PortIndexValue::Int(n) =&gt; <span class="macro">format!</span>(<span class="string">&quot;`{}`&quot;</span>, n.value),
-            PortIndexValue::Path(path) =&gt; <span class="macro">format!</span>(<span class="string">&quot;`{}`&quot;</span>, path.to_token_stream()),
-            PortIndexValue::Elided(<span class="kw">_</span>) =&gt; <span class="string">&quot;&lt;elided&gt;&quot;</span>.to_owned(),
+            PortIndexValue::Int(n) =&gt; <span class="macro">format!</span>(<span class="string">"`{}`"</span>, n.value),
+            PortIndexValue::Path(path) =&gt; <span class="macro">format!</span>(<span class="string">"`{}`"</span>, path.to_token_stream()),
+            PortIndexValue::Elided(<span class="kw">_</span>) =&gt; <span class="string">"&lt;elided&gt;"</span>.to_owned(),
         }
     }
 
@@ -800,11 +802,11 @@
 }
 
 <span class="kw">impl </span>Display <span class="kw">for </span>PortIndexValue {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
         <span class="kw">match </span><span class="self">self </span>{
-            PortIndexValue::Int(x) =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, x.to_token_stream()),
-            PortIndexValue::Path(x) =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, x.to_token_stream()),
-            PortIndexValue::Elided(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;[]&quot;</span>),
+            PortIndexValue::Int(x) =&gt; <span class="macro">write!</span>(f, <span class="string">"{}"</span>, x.to_token_stream()),
+            PortIndexValue::Path(x) =&gt; <span class="macro">write!</span>(f, <span class="string">"{}"</span>, x.to_token_stream()),
+            PortIndexValue::Elided(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(f, <span class="string">"[]"</span>),
         }
     }
 }

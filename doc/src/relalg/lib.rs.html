@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `relalg/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="relalg" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `relalg/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="relalg" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../relalg/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -216,7 +218,7 @@
         <span class="kw">if let </span>Datum::Int(i) = <span class="self">self </span>{
             i
         } <span class="kw">else </span>{
-            <span class="macro">panic!</span>(<span class="string">&quot;was not int&quot;</span>)
+            <span class="macro">panic!</span>(<span class="string">"was not int"</span>)
         }
     }
 
@@ -262,7 +264,7 @@
 <span class="kw">fn </span>parse_scalar(s: Sexp) -&gt; anyhow::Result&lt;ScalarExpr&gt; {
     <span class="kw">match </span>s {
         Sexp::Atom(s) =&gt; {
-            <span class="kw">if </span>s.strip_prefix(<span class="string">&#39;@&#39;</span>).is_some() {
+            <span class="kw">if </span>s.strip_prefix(<span class="string">'@'</span>).is_some() {
                 <span class="prelude-val">Ok</span>(ScalarExpr::ColRef(s[<span class="number">1</span>..].parse::&lt;usize&gt;()<span class="question-mark">?</span>))
             } <span class="kw">else </span>{
                 <span class="prelude-val">Ok</span>(ScalarExpr::Literal(Datum::Int(s.parse::&lt;i64&gt;()<span class="question-mark">?</span>)))
@@ -271,28 +273,28 @@
         Sexp::String(s) =&gt; <span class="prelude-val">Ok</span>(ScalarExpr::Literal(Datum::String(s))),
         Sexp::List(list, <span class="kw">_</span>) =&gt; {
             <span class="kw">if </span>list.is_empty() {
-                <span class="macro">bail!</span>(<span class="string">&quot;empty list is not a relexpr&quot;</span>);
+                <span class="macro">bail!</span>(<span class="string">"empty list is not a relexpr"</span>);
             }
             <span class="kw">match </span>list[<span class="number">0</span>].clone().expect_atom()<span class="question-mark">?</span>.as_str() {
-                <span class="string">&quot;=&quot; </span>=&gt; {
+                <span class="string">"=" </span>=&gt; {
                     <span class="kw">if </span>list.len() &lt; <span class="number">3 </span>{
-                        <span class="macro">bail!</span>(<span class="string">&quot;= requires two arguments&quot;</span>);
+                        <span class="macro">bail!</span>(<span class="string">"= requires two arguments"</span>);
                     }
                     <span class="prelude-val">Ok</span>(ScalarExpr::Eq(
                         Box::new(parse_scalar(list[<span class="number">1</span>].clone())<span class="question-mark">?</span>),
                         Box::new(parse_scalar(list[<span class="number">2</span>].clone())<span class="question-mark">?</span>),
                     ))
                 }
-                <span class="string">&quot;+&quot; </span>=&gt; {
+                <span class="string">"+" </span>=&gt; {
                     <span class="kw">if </span>list.len() &lt; <span class="number">3 </span>{
-                        <span class="macro">bail!</span>(<span class="string">&quot;+ requires two arguments&quot;</span>);
+                        <span class="macro">bail!</span>(<span class="string">"+ requires two arguments"</span>);
                     }
                     <span class="prelude-val">Ok</span>(ScalarExpr::Plus(
                         Box::new(parse_scalar(list[<span class="number">1</span>].clone())<span class="question-mark">?</span>),
                         Box::new(parse_scalar(list[<span class="number">2</span>].clone())<span class="question-mark">?</span>),
                     ))
                 }
-                v =&gt; <span class="macro">bail!</span>(<span class="string">&quot;{} is not a scalar operator&quot;</span>, v),
+                v =&gt; <span class="macro">bail!</span>(<span class="string">"{} is not a scalar operator"</span>, v),
             }
         }
     }
@@ -301,12 +303,12 @@
 <span class="kw">fn </span>parse_relexpr(s: Sexp) -&gt; anyhow::Result&lt;RelExpr&gt; {
     <span class="kw">let </span>(list, <span class="kw">_</span>) = s.expect_list()<span class="question-mark">?</span>;
     <span class="kw">if </span>list.is_empty() {
-        <span class="macro">bail!</span>(<span class="string">&quot;empty list is not a relexpr&quot;</span>);
+        <span class="macro">bail!</span>(<span class="string">"empty list is not a relexpr"</span>);
     }
     <span class="kw">match </span>list[<span class="number">0</span>].clone().expect_atom()<span class="question-mark">?</span>.as_str() {
-        <span class="string">&quot;values&quot; </span>=&gt; {
+        <span class="string">"values" </span>=&gt; {
             <span class="kw">if </span>list.len() &lt; <span class="number">2 </span>{
-                <span class="macro">bail!</span>(<span class="string">&quot;values requires an argument&quot;</span>);
+                <span class="macro">bail!</span>(<span class="string">"values requires an argument"</span>);
             }
             <span class="kw">let </span>(values, <span class="kw">_</span>) = list[<span class="number">1</span>].clone().expect_list()<span class="question-mark">?</span>;
             <span class="kw">let </span><span class="kw-2">mut </span>rows = Vec::new();
@@ -320,9 +322,9 @@
             }
             <span class="prelude-val">Ok</span>(RelExpr::Values(rows))
         }
-        <span class="string">&quot;project&quot; </span>=&gt; {
+        <span class="string">"project" </span>=&gt; {
             <span class="kw">if </span>list.len() &lt; <span class="number">3 </span>{
-                <span class="macro">bail!</span>(<span class="string">&quot;filter requires two arguments&quot;</span>);
+                <span class="macro">bail!</span>(<span class="string">"filter requires two arguments"</span>);
             }
             <span class="kw">let </span>(exprs_sexp, <span class="kw">_</span>) = list[<span class="number">1</span>].clone().expect_list()<span class="question-mark">?</span>;
             <span class="kw">let </span>exprs = exprs_sexp
@@ -335,9 +337,9 @@
                 Box::new(parse_relexpr(list[<span class="number">2</span>].clone())<span class="question-mark">?</span>),
             ))
         }
-        <span class="string">&quot;filter&quot; </span>=&gt; {
+        <span class="string">"filter" </span>=&gt; {
             <span class="kw">if </span>list.len() &lt; <span class="number">3 </span>{
-                <span class="macro">bail!</span>(<span class="string">&quot;filter requires two arguments&quot;</span>);
+                <span class="macro">bail!</span>(<span class="string">"filter requires two arguments"</span>);
             }
             <span class="kw">let </span>(filters_sexp, <span class="kw">_</span>) = list[<span class="number">1</span>].clone().expect_list()<span class="question-mark">?</span>;
             <span class="kw">let </span>filters = filters_sexp
@@ -350,7 +352,7 @@
                 Box::new(parse_relexpr(list[<span class="number">2</span>].clone())<span class="question-mark">?</span>),
             ))
         }
-        v =&gt; <span class="macro">bail!</span>(<span class="string">&quot;{} is not a relational operator&quot;</span>, v),
+        v =&gt; <span class="macro">bail!</span>(<span class="string">"{} is not a relational operator"</span>, v),
     }
 }
 
@@ -363,29 +365,29 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>datadriven_tests() {
-        datadriven::walk(<span class="string">&quot;testdata/&quot;</span>, |t| {
+        datadriven::walk(<span class="string">"testdata/"</span>, |t| {
             t.run(|test_case| <span class="kw">match </span>test_case.directive.as_str() {
-                <span class="string">&quot;compile&quot; </span>=&gt; {
+                <span class="string">"compile" </span>=&gt; {
                     <span class="kw">let </span>sexps = Sexp::parse(test_case.input.clone()).unwrap();
                     <span class="kw">let </span>sexp = sexps[<span class="number">0</span>].clone();
                     <span class="kw">let </span>rel_expr = parse_relexpr(sexp).unwrap();
                     <span class="kw">let </span>output = generate_dataflow(rel_expr);
-                    <span class="macro">format!</span>(<span class="string">&quot;{}\n&quot;</span>, output)
+                    <span class="macro">format!</span>(<span class="string">"{}\n"</span>, output)
                 }
-                <span class="string">&quot;build&quot; </span>=&gt; {
+                <span class="string">"build" </span>=&gt; {
                     <span class="kw">let </span>sexps = Sexp::parse(test_case.input.clone()).unwrap();
                     <span class="kw">let </span>sexp = sexps[<span class="number">0</span>].clone();
                     <span class="kw">let </span>rel_expr = parse_relexpr(sexp);
-                    <span class="macro">format!</span>(<span class="string">&quot;{:?}\n&quot;</span>, rel_expr)
+                    <span class="macro">format!</span>(<span class="string">"{:?}\n"</span>, rel_expr)
                 }
-                <span class="string">&quot;run&quot; </span>=&gt; {
+                <span class="string">"run" </span>=&gt; {
                     <span class="kw">let </span>sexps = Sexp::parse(test_case.input.clone()).unwrap();
                     <span class="kw">let </span>sexp = sexps[<span class="number">0</span>].clone();
                     <span class="kw">let </span>rel_expr = parse_relexpr(sexp).unwrap();
                     <span class="kw">let </span>output = run_dataflow(rel_expr);
-                    <span class="macro">format!</span>(<span class="string">&quot;{:?}\n&quot;</span>, output)
+                    <span class="macro">format!</span>(<span class="string">"{:?}\n"</span>, output)
                 }
-                <span class="kw">_ </span>=&gt; <span class="string">&quot;unhandled directive\n&quot;</span>.into(),
+                <span class="kw">_ </span>=&gt; <span class="string">"unhandled directive\n"</span>.into(),
             })
         });
     }

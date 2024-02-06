@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow/src/scheduled/graph_ext.rs`."><title>graph_ext.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow/src/scheduled/graph_ext.rs`."><title>graph_ext.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../hydroflow/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -239,8 +241,8 @@
     ) =&gt; {
         <span class="doccomment">/// Adds a subgraph with specific topology:
         ///
-        </span><span class="attr">#[doc = <span class="macro">concat!</span>(<span class="string">&quot;* Inputs: &quot;</span>, $( <span class="macro">stringify!</span>( <span class="macro-nonterminal">$recv_generic </span>), <span class="string">&quot;, &quot;</span>, )<span class="kw-2">*</span>)]
-        #[doc = <span class="macro">concat!</span>(<span class="string">&quot;* Outputs: &quot;</span>, $( <span class="macro">stringify!</span>( <span class="macro-nonterminal">$send_generic </span>), <span class="string">&quot;, &quot;</span>, )<span class="kw-2">*</span>)]
+        </span><span class="attr">#[doc = <span class="macro">concat!</span>(<span class="string">"* Inputs: "</span>, $( <span class="macro">stringify!</span>( <span class="macro-nonterminal">$recv_generic </span>), <span class="string">", "</span>, )<span class="kw-2">*</span>)]
+        #[doc = <span class="macro">concat!</span>(<span class="string">"* Outputs: "</span>, $( <span class="macro">stringify!</span>( <span class="macro-nonterminal">$send_generic </span>), <span class="string">", "</span>, )<span class="kw-2">*</span>)]
         </span><span class="kw">fn </span><span class="macro-nonterminal">$fn_name </span>&lt;Name, F, $(<span class="macro-nonterminal">$recv_generic</span>,)* $(<span class="macro-nonterminal">$send_generic</span>),<span class="kw-2">*</span>&gt; (
             <span class="kw-2">&amp;mut </span><span class="self">self</span>,
             name: Name,
@@ -248,10 +250,10 @@
             $(<span class="macro-nonterminal">$send_param </span>: SendPort&lt; <span class="macro-nonterminal">$send_generic </span>&gt;,)* subgraph: F
         ) -&gt; SubgraphId
         <span class="kw">where
-            </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
-            F: <span class="lifetime">&#39;static </span>+ FnMut(<span class="kw-2">&amp;</span>Context, $(<span class="kw-2">&amp;</span>RecvCtx&lt; <span class="macro-nonterminal">$recv_generic </span>&gt;,)* $(<span class="kw-2">&amp;</span>SendCtx&lt; <span class="macro-nonterminal">$send_generic </span>&gt;),<span class="kw-2">*</span>),
-            $(<span class="macro-nonterminal">$recv_generic </span>: <span class="lifetime">&#39;static </span>+ Handoff,)*
-            $(<span class="macro-nonterminal">$send_generic </span>: <span class="lifetime">&#39;static </span>+ Handoff,)<span class="kw-2">*</span>;
+            </span>Name: Into&lt;Cow&lt;<span class="lifetime">'static</span>, str&gt;&gt;,
+            F: <span class="lifetime">'static </span>+ FnMut(<span class="kw-2">&amp;</span>Context, $(<span class="kw-2">&amp;</span>RecvCtx&lt; <span class="macro-nonterminal">$recv_generic </span>&gt;,)* $(<span class="kw-2">&amp;</span>SendCtx&lt; <span class="macro-nonterminal">$send_generic </span>&gt;),<span class="kw-2">*</span>),
+            $(<span class="macro-nonterminal">$recv_generic </span>: <span class="lifetime">'static </span>+ Handoff,)*
+            $(<span class="macro-nonterminal">$send_generic </span>: <span class="lifetime">'static </span>+ Handoff,)<span class="kw-2">*</span>;
     };
     (
         <span class="kw">impl
@@ -266,10 +268,10 @@
             $(<span class="macro-nonterminal">$send_param </span>: SendPort&lt; <span class="macro-nonterminal">$send_generic </span>&gt;,)* subgraph: F
         ) -&gt; SubgraphId
         <span class="kw">where
-            </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
-            F: <span class="lifetime">&#39;static </span>+ FnMut(<span class="kw-2">&amp;</span>Context, $(<span class="kw-2">&amp;</span>RecvCtx&lt; <span class="macro-nonterminal">$recv_generic </span>&gt;,)* $(<span class="kw-2">&amp;</span>SendCtx&lt; <span class="macro-nonterminal">$send_generic </span>&gt;),<span class="kw-2">*</span>),
-            $(<span class="macro-nonterminal">$recv_generic </span>: <span class="lifetime">&#39;static </span>+ Handoff,)*
-            $(<span class="macro-nonterminal">$send_generic </span>: <span class="lifetime">&#39;static </span>+ Handoff,)*
+            </span>Name: Into&lt;Cow&lt;<span class="lifetime">'static</span>, str&gt;&gt;,
+            F: <span class="lifetime">'static </span>+ FnMut(<span class="kw-2">&amp;</span>Context, $(<span class="kw-2">&amp;</span>RecvCtx&lt; <span class="macro-nonterminal">$recv_generic </span>&gt;,)* $(<span class="kw-2">&amp;</span>SendCtx&lt; <span class="macro-nonterminal">$send_generic </span>&gt;),<span class="kw-2">*</span>),
+            $(<span class="macro-nonterminal">$recv_generic </span>: <span class="lifetime">'static </span>+ Handoff,)*
+            $(<span class="macro-nonterminal">$send_generic </span>: <span class="lifetime">'static </span>+ Handoff,)*
         {
             <span class="kw">let </span><span class="kw-2">mut </span>subgraph = subgraph;
             <span class="self">self</span>.add_subgraph(
@@ -314,11 +316,11 @@
         send_port: SendPort&lt;W&gt;,
     ) -&gt; Input&lt;T, SyncSender&lt;T&gt;&gt;
     <span class="kw">where
-        </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
-        T: <span class="lifetime">&#39;static</span>,
-        W: <span class="lifetime">&#39;static </span>+ Handoff + CanReceive&lt;T&gt;;
+        </span>Name: Into&lt;Cow&lt;<span class="lifetime">'static</span>, str&gt;&gt;,
+        T: <span class="lifetime">'static</span>,
+        W: <span class="lifetime">'static </span>+ Handoff + CanReceive&lt;T&gt;;
 
-    <span class="doccomment">/// Adds an &quot;input&quot; operator, returning a handle to insert data into it.
+    <span class="doccomment">/// Adds an "input" operator, returning a handle to insert data into it.
     /// TODO(justin): make this thing work better
     </span><span class="kw">fn </span>add_input&lt;Name, T, W&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
@@ -326,9 +328,9 @@
         send_port: SendPort&lt;W&gt;,
     ) -&gt; Input&lt;T, <span class="kw">super</span>::input::Buffer&lt;T&gt;&gt;
     <span class="kw">where
-        </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
-        T: <span class="lifetime">&#39;static</span>,
-        W: <span class="lifetime">&#39;static </span>+ Handoff + CanReceive&lt;T&gt;;
+        </span>Name: Into&lt;Cow&lt;<span class="lifetime">'static</span>, str&gt;&gt;,
+        T: <span class="lifetime">'static</span>,
+        W: <span class="lifetime">'static </span>+ Handoff + CanReceive&lt;T&gt;;
 
     <span class="kw">fn </span>add_input_from_stream&lt;Name, T, W, S&gt;(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
@@ -336,12 +338,12 @@
         send_port: SendPort&lt;W&gt;,
         stream: S,
     ) <span class="kw">where
-        </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
-        S: <span class="lifetime">&#39;static </span>+ Stream&lt;Item = T&gt;,
-        W: <span class="lifetime">&#39;static </span>+ Handoff + CanReceive&lt;T&gt;;
+        </span>Name: Into&lt;Cow&lt;<span class="lifetime">'static</span>, str&gt;&gt;,
+        S: <span class="lifetime">'static </span>+ Stream&lt;Item = T&gt;,
+        W: <span class="lifetime">'static </span>+ Handoff + CanReceive&lt;T&gt;;
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; GraphExt <span class="kw">for </span>Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; GraphExt <span class="kw">for </span>Hydroflow&lt;<span class="lifetime">'a</span>&gt; {
     <span class="macro">subgraph_ext!</span>(<span class="kw">impl </span>add_subgraph_sink, (recv_port: R), ());
     <span class="macro">subgraph_ext!</span>(
         <span class="kw">impl </span>add_subgraph_2sink,
@@ -375,9 +377,9 @@
         send_port: SendPort&lt;W&gt;,
     ) -&gt; Input&lt;T, SyncSender&lt;T&gt;&gt;
     <span class="kw">where
-        </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
-        T: <span class="lifetime">&#39;static</span>,
-        W: <span class="lifetime">&#39;static </span>+ Handoff + CanReceive&lt;T&gt;,
+        </span>Name: Into&lt;Cow&lt;<span class="lifetime">'static</span>, str&gt;&gt;,
+        T: <span class="lifetime">'static</span>,
+        W: <span class="lifetime">'static </span>+ Handoff + CanReceive&lt;T&gt;,
     {
         <span class="kw">use </span>std::sync::mpsc;
 
@@ -396,9 +398,9 @@
         send_port: SendPort&lt;W&gt;,
     ) -&gt; Input&lt;T, <span class="kw">super</span>::input::Buffer&lt;T&gt;&gt;
     <span class="kw">where
-        </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
-        T: <span class="lifetime">&#39;static</span>,
-        W: <span class="lifetime">&#39;static </span>+ Handoff + CanReceive&lt;T&gt;,
+        </span>Name: Into&lt;Cow&lt;<span class="lifetime">'static</span>, str&gt;&gt;,
+        T: <span class="lifetime">'static</span>,
+        W: <span class="lifetime">'static </span>+ Handoff + CanReceive&lt;T&gt;,
     {
         <span class="kw">let </span>input = <span class="kw">super</span>::input::Buffer::default();
         <span class="kw">let </span>inner_input = input.clone();
@@ -416,9 +418,9 @@
         send_port: SendPort&lt;W&gt;,
         stream: S,
     ) <span class="kw">where
-        </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
-        S: <span class="lifetime">&#39;static </span>+ Stream&lt;Item = T&gt;,
-        W: <span class="lifetime">&#39;static </span>+ Handoff + CanReceive&lt;T&gt;,
+        </span>Name: Into&lt;Cow&lt;<span class="lifetime">'static</span>, str&gt;&gt;,
+        S: <span class="lifetime">'static </span>+ Stream&lt;Item = T&gt;,
+        W: <span class="lifetime">'static </span>+ Handoff + CanReceive&lt;T&gt;,
     {
         <span class="kw">let </span><span class="kw-2">mut </span>stream = Box::pin(stream);
         <span class="self">self</span>.add_subgraph_source::&lt;<span class="kw">_</span>, <span class="kw">_</span>, W&gt;(name, send_port, <span class="kw">move </span>|ctx, send| {

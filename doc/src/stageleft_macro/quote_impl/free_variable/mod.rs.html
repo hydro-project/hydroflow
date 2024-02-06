@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `stageleft_macro/src/quote_impl/free_variable/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="stageleft_macro" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `stageleft_macro/src/quote_impl/free_variable/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="stageleft_macro" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../stageleft_macro/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -262,7 +264,7 @@
     <span class="kw">pub fn </span>insert_term(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ident: syn::Ident) {
         <span class="self">self</span>.scopes
             .last_mut()
-            .expect(<span class="string">&quot;Scope stack should not be empty&quot;</span>)
+            .expect(<span class="string">"Scope stack should not be empty"</span>)
             .<span class="number">0
             </span>.insert(ident.to_string());
     }
@@ -270,7 +272,7 @@
     <span class="kw">pub fn </span>insert_type(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ident: syn::Ident) {
         <span class="self">self</span>.scopes
             .last_mut()
-            .expect(<span class="string">&quot;Scope stack should not be empty&quot;</span>)
+            .expect(<span class="string">"Scope stack should not be empty"</span>)
             .<span class="number">1
             </span>.insert(ident.to_string());
     }
@@ -298,8 +300,8 @@
     <span class="kw">pub </span>current_scope: ScopeStack,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;ast</span>&gt; Visit&lt;<span class="lifetime">&#39;ast</span>&gt; <span class="kw">for </span>FreeVariableVisitor {
-    <span class="kw">fn </span>visit_expr_closure(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ast </span>syn::ExprClosure) {
+<span class="kw">impl</span>&lt;<span class="lifetime">'ast</span>&gt; Visit&lt;<span class="lifetime">'ast</span>&gt; <span class="kw">for </span>FreeVariableVisitor {
+    <span class="kw">fn </span>visit_expr_closure(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::ExprClosure) {
         <span class="self">self</span>.current_scope.push();
         i.inputs.iter().for_each(|input| {
             <span class="self">self</span>.visit_pat(input);
@@ -310,13 +312,13 @@
         <span class="self">self</span>.current_scope.pop();
     }
 
-    <span class="kw">fn </span>visit_item_fn(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ast </span>syn::ItemFn) {
+    <span class="kw">fn </span>visit_item_fn(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::ItemFn) {
         <span class="self">self</span>.current_scope.push();
         syn::visit::visit_item_fn(<span class="self">self</span>, i);
         <span class="self">self</span>.current_scope.pop();
     }
 
-    <span class="kw">fn </span>visit_generic_param(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ast </span>syn::GenericParam) {
+    <span class="kw">fn </span>visit_generic_param(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::GenericParam) {
         <span class="kw">match </span>i {
             syn::GenericParam::Type(type_param) =&gt; {
                 <span class="self">self</span>.current_scope.insert_type(type_param.ident.clone());
@@ -331,13 +333,13 @@
         }
     }
 
-    <span class="kw">fn </span>visit_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ast </span>syn::Block) {
+    <span class="kw">fn </span>visit_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::Block) {
         <span class="self">self</span>.current_scope.push();
         syn::visit::visit_block(<span class="self">self</span>, i);
         <span class="self">self</span>.current_scope.pop();
     }
 
-    <span class="kw">fn </span>visit_local(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ast </span>syn::Local) {
+    <span class="kw">fn </span>visit_local(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::Local) {
         i.init.iter().for_each(|init| {
             syn::visit::visit_local_init(<span class="self">self</span>, init);
         });
@@ -349,23 +351,23 @@
             syn::Pat::Type(pat_type) =&gt; {
                 <span class="self">self</span>.visit_pat(<span class="kw-2">&amp;</span>pat_type.pat);
             }
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Local variables must be identifiers, got {:?}&quot;</span>, i.pat),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Local variables must be identifiers, got {:?}"</span>, i.pat),
         }
     }
 
-    <span class="kw">fn </span>visit_ident(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ast </span>proc_macro2::Ident) {
+    <span class="kw">fn </span>visit_ident(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>proc_macro2::Ident) {
         <span class="kw">if </span>!<span class="self">self</span>.current_scope.contains_term(i) {
             <span class="self">self</span>.free_variables.push(i.clone());
         }
     }
 
-    <span class="kw">fn </span>visit_lifetime(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ast </span>syn::Lifetime) {
+    <span class="kw">fn </span>visit_lifetime(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::Lifetime) {
         <span class="kw">if </span>!<span class="self">self</span>.current_scope.contains_type(<span class="kw-2">&amp;</span>i.ident) {
             <span class="self">self</span>.free_variables.push(i.ident.clone());
         }
     }
 
-    <span class="kw">fn </span>visit_path(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ast </span>syn::Path) {
+    <span class="kw">fn </span>visit_path(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::Path) {
         <span class="kw">if </span>i.leading_colon.is_none() &amp;&amp; !is_prelude(<span class="kw-2">&amp;</span>i.segments.first().unwrap().ident) {
             <span class="kw">let </span>node = i.segments.first().unwrap();
             <span class="kw">if </span>i.segments.len() == <span class="number">1 </span>&amp;&amp; !<span class="self">self</span>.current_scope.contains_term(<span class="kw-2">&amp;</span>node.ident) {
@@ -378,33 +380,33 @@
         }
     }
 
-    <span class="kw">fn </span>visit_arm(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ast </span>syn::Arm) {
+    <span class="kw">fn </span>visit_arm(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::Arm) {
         <span class="self">self</span>.current_scope.push();
         syn::visit::visit_arm(<span class="self">self</span>, i);
         <span class="self">self</span>.current_scope.pop();
     }
 
-    <span class="kw">fn </span>visit_field_pat(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ast </span>syn::FieldPat) {
+    <span class="kw">fn </span>visit_field_pat(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::FieldPat) {
         <span class="kw">for </span>it <span class="kw">in </span><span class="kw-2">&amp;</span>i.attrs {
             <span class="self">self</span>.visit_attribute(it);
         }
         <span class="self">self</span>.visit_pat(<span class="kw-2">&amp;</span>i.pat);
     }
 
-    <span class="kw">fn </span>visit_pat_ident(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ast </span>syn::PatIdent) {
+    <span class="kw">fn </span>visit_pat_ident(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::PatIdent) {
         <span class="self">self</span>.current_scope.insert_term(i.ident.clone());
     }
 
-    <span class="kw">fn </span>visit_expr_method_call(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ast </span>syn::ExprMethodCall) {
+    <span class="kw">fn </span>visit_expr_method_call(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::ExprMethodCall) {
         syn::visit::visit_expr(<span class="self">self</span>, <span class="kw-2">&amp;</span>i.receiver);
         <span class="kw">for </span>arg <span class="kw">in </span><span class="kw-2">&amp;</span>i.args {
             <span class="self">self</span>.visit_expr(arg);
         }
     }
 
-    <span class="kw">fn </span>visit_type(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ast </span>syn::Type) {}
+    <span class="kw">fn </span>visit_type(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::Type) {}
 
-    <span class="kw">fn </span>visit_expr_struct(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ast </span>syn::ExprStruct) {
+    <span class="kw">fn </span>visit_expr_struct(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::ExprStruct) {
         <span class="kw">for </span>it <span class="kw">in </span><span class="kw-2">&amp;</span>node.attrs {
             <span class="self">self</span>.visit_attribute(it);
         }
@@ -422,11 +424,11 @@
         }
     }
 
-    <span class="kw">fn </span>visit_expr_field(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ast </span>syn::ExprField) {
+    <span class="kw">fn </span>visit_expr_field(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::ExprField) {
         <span class="self">self</span>.visit_expr(<span class="kw-2">&amp;</span>i.base);
     }
 
-    <span class="kw">fn </span>visit_macro(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ast </span>syn::Macro) {
+    <span class="kw">fn </span>visit_macro(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::Macro) {
         <span class="comment">// TODO(shadaj): emit a warning if our guess at parsing fails
         </span><span class="kw">match </span>i.delimiter {
             MacroDelimiter::Paren(_binding_0) =&gt; i

@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Waits on multiple concurrent branches, returning when the first branch completes, cancelling the remaining branches."><title>select in hydroflow_plus::tokio - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_plus" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc macro"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../hydroflow_plus/index.html">hydroflow_plus</a><span class="version">0.5.1</span></h2></div><div class="sidebar-elems"><h2><a href="index.html">In hydroflow_plus::tokio</a></h2></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Macro <a href="../index.html">hydroflow_plus</a>::<wbr><a href="index.html">tokio</a>::<wbr><a class="macro" href="#">select</a><button id="copy-path" title="Copy item path to clipboard"><img src="../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><pre class="rust item-decl"><span class="macro">macro_rules! </span>select {
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Waits on multiple concurrent branches, returning when the first branch completes, cancelling the remaining branches."><title>select in hydroflow_plus::tokio - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_plus" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc macro"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../hydroflow_plus/index.html">hydroflow_plus</a><span class="version">0.5.1</span></h2></div><div class="sidebar-elems"><h2><a href="index.html">In hydroflow_plus::tokio</a></h2></div></nav><div class="sidebar-resizer"></div>
+    <main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../hydroflow_plus/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Macro <a href="../index.html">hydroflow_plus</a>::<wbr><a href="index.html">tokio</a>::<wbr><a class="macro" href="#">select</a><button id="copy-path" title="Copy item path to clipboard"><img src="../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><pre class="rust item-decl"><span class="macro">macro_rules! </span>select {
     (@ {
         <span class="comment">// The index of the future to poll first (in bias mode), or the RNG
         // expression to use to pick a future to poll first.
@@ -70,14 +71,14 @@ and for the remainder of the current call to <code>select!</code>. Continue from
 <li>If <strong>all</strong> branches are disabled, evaluate the <code>else</code> expression. If no
 else branch is provided, panic.</li>
 </ol>
-<h2 id="runtime-characteristics"><a href="#runtime-characteristics">Runtime characteristics</a></h2>
+<h2 id="runtime-characteristics"><a class="doc-anchor" href="#runtime-characteristics">§</a>Runtime characteristics</h2>
 <p>By running all async expressions on the current task, the expressions are
 able to run <strong>concurrently</strong> but not in <strong>parallel</strong>. This means all
 expressions are run on the same thread and if one branch blocks the thread,
 all other expressions will be unable to continue. If parallelism is
 required, spawn each async expression using <a href="fn.spawn.html" title="fn hydroflow_plus::tokio::spawn"><code>tokio::spawn</code></a> and pass the
 join handle to <code>select!</code>.</p>
-<h2 id="fairness"><a href="#fairness">Fairness</a></h2>
+<h2 id="fairness"><a class="doc-anchor" href="#fairness">§</a>Fairness</h2>
 <p>By default, <code>select!</code> randomly picks a branch to check first. This provides
 some level of fairness when calling <code>select!</code> in a loop with branches that
 are always ready.</p>
@@ -96,12 +97,12 @@ huge volume of messages and zero or nearly zero time between them, you should
 place the shutdown future earlier in the <code>select!</code> list to ensure that it is
 always polled, and will not be ignored due to the stream being constantly
 ready.</p>
-<h2 id="panics"><a href="#panics">Panics</a></h2>
+<h2 id="panics"><a class="doc-anchor" href="#panics">§</a>Panics</h2>
 <p>The <code>select!</code> macro panics if all branches are disabled <strong>and</strong> there is no
 provided <code>else</code> branch. A branch is disabled when the provided <code>if</code>
 precondition returns <code>false</code> <strong>or</strong> when the pattern does not match the
 result of <code>&lt;async expression&gt;</code>.</p>
-<h2 id="cancellation-safety"><a href="#cancellation-safety">Cancellation safety</a></h2>
+<h2 id="cancellation-safety"><a class="doc-anchor" href="#cancellation-safety">§</a>Cancellation safety</h2>
 <p>When using <code>select!</code> in a loop to receive messages from multiple sources,
 you should make sure that the receive call is cancellation safe to avoid
 losing messages. This section goes through various common methods and
@@ -154,7 +155,7 @@ going around the loop.</p>
 necessarily wrong. For example, if you are cancelling a task because the
 application is shutting down, then you probably don’t care that partially
 read data is lost.</p>
-<h2 id="examples"><a href="#examples">Examples</a></h2>
+<h2 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h2>
 <p>Basic select with two branches.</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">async fn </span>do_stuff_async() {
@@ -169,10 +170,10 @@ read data is lost.</p>
 </span><span class="kw">async fn </span>main() {
     <span class="macro">tokio::select! </span>{
         <span class="kw">_ </span>= do_stuff_async() =&gt; {
-            <span class="macro">println!</span>(<span class="string">&quot;do_stuff_async() completed first&quot;</span>)
+            <span class="macro">println!</span>(<span class="string">"do_stuff_async() completed first"</span>)
         }
         <span class="kw">_ </span>= more_async_work() =&gt; {
-            <span class="macro">println!</span>(<span class="string">&quot;more_async_work() completed first&quot;</span>)
+            <span class="macro">println!</span>(<span class="string">"more_async_work() completed first"</span>)
         }
     };
 }</code></pre></div>
@@ -234,13 +235,13 @@ future can be made <a href="https://doc.rust-lang.org/nightly/core/marker/trait.
         <span class="macro">tokio::select! </span>{
             maybe_v = stream.next() =&gt; {
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(v) = maybe_v {
-                    <span class="macro">println!</span>(<span class="string">&quot;got = {}&quot;</span>, v);
+                    <span class="macro">println!</span>(<span class="string">"got = {}"</span>, v);
                 } <span class="kw">else </span>{
                     <span class="kw">break</span>;
                 }
             }
             <span class="kw">_ </span>= <span class="kw-2">&amp;mut </span>sleep =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;timeout&quot;</span>);
+                <span class="macro">println!</span>(<span class="string">"timeout"</span>);
                 <span class="kw">break</span>;
             }
         }
@@ -256,11 +257,11 @@ future can be made <a href="https://doc.rust-lang.org/nightly/core/marker/trait.
     <span class="kw">let </span>(tx2, <span class="kw-2">mut </span>rx2) = oneshot::channel();
 
     tokio::spawn(<span class="kw">async move </span>{
-        tx1.send(<span class="string">&quot;first&quot;</span>).unwrap();
+        tx1.send(<span class="string">"first"</span>).unwrap();
     });
 
     tokio::spawn(<span class="kw">async move </span>{
-        tx2.send(<span class="string">&quot;second&quot;</span>).unwrap();
+        tx2.send(<span class="string">"second"</span>).unwrap();
     });
 
     <span class="kw">let </span><span class="kw-2">mut </span>a = <span class="prelude-val">None</span>;
@@ -275,8 +276,8 @@ future can be made <a href="https://doc.rust-lang.org/nightly/core/marker/trait.
 
     <span class="kw">let </span>res = (a.unwrap(), b.unwrap());
 
-    <span class="macro">assert_eq!</span>(res.<span class="number">0</span>, <span class="string">&quot;first&quot;</span>);
-    <span class="macro">assert_eq!</span>(res.<span class="number">1</span>, <span class="string">&quot;second&quot;</span>);
+    <span class="macro">assert_eq!</span>(res.<span class="number">0</span>, <span class="string">"first"</span>);
+    <span class="macro">assert_eq!</span>(res.<span class="number">1</span>, <span class="string">"second"</span>);
 }</code></pre></div>
 <p>Using the <code>biased;</code> mode to control polling order.</p>
 
@@ -314,7 +315,7 @@ future can be made <a href="https://doc.rust-lang.org/nightly/core/marker/trait.
         };
     }
 }</code></pre></div>
-<h3 id="avoid-racy-if-preconditions"><a href="#avoid-racy-if-preconditions">Avoid racy <code>if</code> preconditions</a></h3>
+<h3 id="avoid-racy-if-preconditions"><a class="doc-anchor" href="#avoid-racy-if-preconditions">§</a>Avoid racy <code>if</code> preconditions</h3>
 <p>Given that <code>if</code> preconditions are used to disable <code>select!</code> branches, some
 caution must be used to avoid missing values.</p>
 <p>For example, here is <strong>incorrect</strong> usage of <code>sleep</code> with <code>if</code>. The objective
@@ -335,15 +336,15 @@ However, there is a potential for the <code>sleep</code> completion to be missed
     <span class="kw">while </span>!sleep.is_elapsed() {
         <span class="macro">tokio::select! </span>{
             <span class="kw">_ </span>= <span class="kw-2">&amp;mut </span>sleep, <span class="kw">if </span>!sleep.is_elapsed() =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;operation timed out&quot;</span>);
+                <span class="macro">println!</span>(<span class="string">"operation timed out"</span>);
             }
             <span class="kw">_ </span>= some_async_work() =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;operation completed&quot;</span>);
+                <span class="macro">println!</span>(<span class="string">"operation completed"</span>);
             }
         }
     }
 
-    <span class="macro">panic!</span>(<span class="string">&quot;This example shows how not to do it!&quot;</span>);
+    <span class="macro">panic!</span>(<span class="string">"This example shows how not to do it!"</span>);
 }</code></pre></div>
 <p>In the above example, <code>sleep.is_elapsed()</code> may return <code>true</code> even if
 <code>sleep.poll()</code> never returned <code>Ready</code>. This opens up a potential race
@@ -366,11 +367,11 @@ run uninterrupted despite the sleep having elapsed.</p>
     <span class="kw">loop </span>{
         <span class="macro">tokio::select! </span>{
             <span class="kw">_ </span>= <span class="kw-2">&amp;mut </span>sleep =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;operation timed out&quot;</span>);
+                <span class="macro">println!</span>(<span class="string">"operation timed out"</span>);
                 <span class="kw">break</span>;
             }
             <span class="kw">_ </span>= some_async_work() =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;operation completed&quot;</span>);
+                <span class="macro">println!</span>(<span class="string">"operation completed"</span>);
             }
         }
     }

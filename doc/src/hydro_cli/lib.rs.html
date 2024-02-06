@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydro_deploy/hydro_cli/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydro_cli" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydro_deploy/hydro_cli/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydro_cli" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../hydro_cli/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -876,7 +878,7 @@
 
     <span class="kw">fn </span>spawn&lt;F&gt;(fut: F) -&gt; <span class="self">Self</span>::JoinHandle
     <span class="kw">where
-        </span>F: Future&lt;Output = ()&gt; + Send + <span class="lifetime">&#39;static</span>,
+        </span>F: Future&lt;Output = ()&gt; + Send + <span class="lifetime">'static</span>,
     {
         TOKIO_RUNTIME
             .read()
@@ -896,7 +898,7 @@
 <span class="kw">impl </span>pyo3_asyncio::generic::ContextExt <span class="kw">for </span>TokioRuntime {
     <span class="kw">fn </span>scope&lt;F, R&gt;(locals: TaskLocals, fut: F) -&gt; Pin&lt;Box&lt;<span class="kw">dyn </span>Future&lt;Output = R&gt; + Send&gt;&gt;
     <span class="kw">where
-        </span>F: Future&lt;Output = R&gt; + Send + <span class="lifetime">&#39;static</span>,
+        </span>F: Future&lt;Output = R&gt; + Send + <span class="lifetime">'static</span>,
     {
         <span class="kw">let </span>cell = once_cell::unsync::OnceCell::new();
         cell.set(locals).unwrap();
@@ -931,9 +933,9 @@
 <span class="kw">static </span>CONVERTERS_MODULE: once_cell::sync::OnceCell&lt;Py&lt;PyModule&gt;&gt; =
     once_cell::sync::OnceCell::new();
 
-<span class="kw">fn </span>interruptible_future_to_py&lt;F, T&gt;(py: Python&lt;<span class="lifetime">&#39;_</span>&gt;, fut: F) -&gt; PyResult&lt;<span class="kw-2">&amp;</span>PyAny&gt;
+<span class="kw">fn </span>interruptible_future_to_py&lt;F, T&gt;(py: Python&lt;<span class="lifetime">'_</span>&gt;, fut: F) -&gt; PyResult&lt;<span class="kw-2">&amp;</span>PyAny&gt;
 <span class="kw">where
-    </span>F: Future&lt;Output = PyResult&lt;T&gt;&gt; + Send + <span class="lifetime">&#39;static</span>,
+    </span>F: Future&lt;Output = PyResult&lt;T&gt;&gt; + Send + <span class="lifetime">'static</span>,
     T: IntoPy&lt;PyObject&gt;,
 {
     <span class="kw">let </span>module = CONVERTERS_MODULE.get().unwrap().clone().into_ref(py);
@@ -949,7 +951,7 @@
     })<span class="question-mark">?</span>;
 
     module.call_method1(
-        <span class="string">&quot;coroutine_to_safely_cancellable&quot;</span>,
+        <span class="string">"coroutine_to_safely_cancellable"</span>,
         (
             base_coro,
             SafeCancelToken {
@@ -969,7 +971,7 @@
 </span><span class="kw">impl </span>AnyhowWrapper {
     <span class="kw">fn </span>__str__(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PyResult&lt;String&gt; {
         <span class="prelude-val">Ok</span>(<span class="macro">format!</span>(
-            <span class="string">&quot;{:?}&quot;</span>,
+            <span class="string">"{:?}"</span>,
             <span class="self">self</span>.underlying.try_read().unwrap().as_ref().unwrap()
         ))
     }
@@ -981,7 +983,7 @@
     underlying: Arc&lt;RwLock&lt;<span class="kw">dyn </span><span class="kw">crate</span>::core::hydroflow_crate::ports::HydroflowSink&gt;&gt;,
 }
 
-<span class="attr">#[pyclass(name = <span class="string">&quot;Deployment&quot;</span>)]
+<span class="attr">#[pyclass(name = <span class="string">"Deployment"</span>)]
 </span><span class="kw">pub struct </span>Deployment {
     underlying: Arc&lt;RwLock&lt;<span class="kw">crate</span>::core::Deployment&gt;&gt;,
 }
@@ -996,7 +998,7 @@
     }
 
     <span class="attr">#[allow(non_snake_case)]
-    </span><span class="kw">fn </span>Localhost(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
+    </span><span class="kw">fn </span>Localhost(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
         <span class="kw">let </span>arc = <span class="self">self</span>.underlying.blocking_write().Localhost();
 
         <span class="prelude-val">Ok</span>(Py::new(
@@ -1012,7 +1014,7 @@
     <span class="attr">#[allow(non_snake_case, clippy::too_many_arguments)]
     </span><span class="kw">fn </span>GCPComputeEngineHost(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        py: Python&lt;<span class="lifetime">&#39;_</span>&gt;,
+        py: Python&lt;<span class="lifetime">'_</span>&gt;,
         project: String,
         machine_type: String,
         image: String,
@@ -1045,7 +1047,7 @@
     <span class="attr">#[allow(non_snake_case)]
     </span><span class="kw">fn </span>CustomService(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        py: Python&lt;<span class="lifetime">&#39;_</span>&gt;,
+        py: Python&lt;<span class="lifetime">'_</span>&gt;,
         on: <span class="kw-2">&amp;</span>Host,
         external_ports: Vec&lt;u16&gt;,
     ) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
@@ -1069,7 +1071,7 @@
     <span class="attr">#[allow(non_snake_case, clippy::too_many_arguments)]
     </span><span class="kw">fn </span>HydroflowCrate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        py: Python&lt;<span class="lifetime">&#39;_</span>&gt;,
+        py: Python&lt;<span class="lifetime">'_</span>&gt;,
         src: String,
         on: <span class="kw-2">&amp;</span>Host,
         bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
@@ -1107,7 +1109,7 @@
         </span>.into_py(py))
     }
 
-    <span class="kw">fn </span>deploy&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
+    <span class="kw">fn </span>deploy&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         <span class="kw">let </span>py_none = py.<span class="prelude-val">None</span>();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
@@ -1120,7 +1122,7 @@
         })
     }
 
-    <span class="kw">fn </span>start&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
+    <span class="kw">fn </span>start&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         <span class="kw">let </span>py_none = py.<span class="prelude-val">None</span>();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
@@ -1146,7 +1148,7 @@
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>LocalhostHost {
-    <span class="kw">fn </span>client_only(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
+    <span class="kw">fn </span>client_only(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
         <span class="kw">let </span>arc = Arc::new(RwLock::new(
             <span class="self">self</span>.underlying.try_read().unwrap().client_only(),
         ));
@@ -1230,7 +1232,7 @@
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>Service {
-    <span class="kw">fn </span>stop&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
+    <span class="kw">fn </span>stop&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         <span class="kw">let </span>py_none = py.<span class="prelude-val">None</span>();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
@@ -1247,11 +1249,11 @@
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>PyReceiver {
-    <span class="kw">fn </span>__aiter__(slf: PyRef&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>&gt;) -&gt; PyRef&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>__aiter__(slf: PyRef&lt;<span class="lifetime">'_</span>, <span class="self">Self</span>&gt;) -&gt; PyRef&lt;<span class="lifetime">'_</span>, <span class="self">Self</span>&gt; {
         slf
     }
 
-    <span class="kw">fn </span>__anext__&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
+    <span class="kw">fn </span>__anext__&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>my_receiver = <span class="self">self</span>.receiver.clone();
         <span class="prelude-val">Some</span>(
             interruptible_future_to_py(py, <span class="kw">async move </span>{
@@ -1272,7 +1274,7 @@
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>CustomService {
-    <span class="kw">fn </span>client_port(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
+    <span class="kw">fn </span>client_port(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
         <span class="kw">let </span>arc = Arc::new(RwLock::new(
             <span class="kw">crate</span>::core::custom_service::CustomClientPort::new(Arc::downgrade(<span class="kw-2">&amp;</span><span class="self">self</span>.underlying)),
         ));
@@ -1314,7 +1316,7 @@
         }
     }
 
-    <span class="kw">fn </span>server_port&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
+    <span class="kw">fn </span>server_port&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
@@ -1332,7 +1334,7 @@
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>HydroflowCrate {
-    <span class="kw">fn </span>stdout&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
+    <span class="kw">fn </span>stdout&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
@@ -1342,7 +1344,7 @@
         })
     }
 
-    <span class="kw">fn </span>stderr&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
+    <span class="kw">fn </span>stderr&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
@@ -1352,7 +1354,7 @@
         })
     }
 
-    <span class="kw">fn </span>exit_code&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
+    <span class="kw">fn </span>exit_code&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
@@ -1376,7 +1378,7 @@
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>HydroflowCratePorts {
-    <span class="kw">fn </span>__getattribute__(<span class="kw-2">&amp;</span><span class="self">self</span>, name: String, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
+    <span class="kw">fn </span>__getattribute__(<span class="kw-2">&amp;</span><span class="self">self</span>, name: String, py: Python&lt;<span class="lifetime">'_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
         <span class="kw">let </span>arc = Arc::new(RwLock::new(
             <span class="self">self</span>.underlying
                 .try_read()
@@ -1403,7 +1405,7 @@
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>HydroflowCratePort {
-    <span class="kw">fn </span>merge(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
+    <span class="kw">fn </span>merge(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
         <span class="kw">let </span>arc = Arc::new(RwLock::new(
             <span class="self">self</span>.underlying.try_read().unwrap().clone().merge(),
         ));
@@ -1510,7 +1512,7 @@
 }
 
 <span class="attr">#[pyfunction]
-</span><span class="kw">fn </span>null(py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
+</span><span class="kw">fn </span>null(py: Python&lt;<span class="lifetime">'_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
     <span class="kw">let </span>arc = Arc::new(RwLock::new(
         <span class="kw">crate</span>::core::hydroflow_crate::ports::NullSourceSink,
     ));
@@ -1538,12 +1540,12 @@
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>ServerPort {
-    <span class="kw">fn </span>json(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Py&lt;PyAny&gt; {
+    <span class="kw">fn </span>json(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'_</span>&gt;) -&gt; Py&lt;PyAny&gt; {
         pythonize(py, <span class="kw-2">&amp;</span><span class="self">self</span>.underlying).unwrap()
     }
 
     <span class="attr">#[allow(clippy::wrong_self_convention)]
-    </span><span class="kw">fn </span>into_source&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
+    </span><span class="kw">fn </span>into_source&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>realized = with_tokio_runtime(|| ServerOrBound::Server((<span class="kw-2">&amp;</span><span class="self">self</span>.underlying).into()));
 
         interruptible_future_to_py(py, <span class="kw">async move </span>{
@@ -1556,7 +1558,7 @@
     }
 
     <span class="attr">#[allow(clippy::wrong_self_convention)]
-    </span><span class="kw">fn </span>into_sink&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
+    </span><span class="kw">fn </span>into_sink&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>realized = with_tokio_runtime(|| ServerOrBound::Server((<span class="kw-2">&amp;</span><span class="self">self</span>.underlying).into()));
 
         interruptible_future_to_py(py, <span class="kw">async move </span>{
@@ -1577,7 +1579,7 @@
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>PythonSink {
-    <span class="kw">fn </span>send&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, data: Py&lt;PyBytes&gt;, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
+    <span class="kw">fn </span>send&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, data: Py&lt;PyBytes&gt;, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         <span class="kw">let </span>bytes = Bytes::from(data.as_bytes(py).to_vec());
         interruptible_future_to_py(py, <span class="kw">async move </span>{
@@ -1595,11 +1597,11 @@
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>PythonStream {
-    <span class="kw">fn </span>__aiter__(slf: PyRef&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>&gt;) -&gt; PyRef&lt;<span class="lifetime">&#39;_</span>, <span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>__aiter__(slf: PyRef&lt;<span class="lifetime">'_</span>, <span class="self">Self</span>&gt;) -&gt; PyRef&lt;<span class="lifetime">'_</span>, <span class="self">Self</span>&gt; {
         slf
     }
 
-    <span class="kw">fn </span>__anext__&lt;<span class="lifetime">&#39;p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">&#39;p</span>&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>PyAny&gt; {
+    <span class="kw">fn </span>__anext__&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         <span class="prelude-val">Some</span>(
             interruptible_future_to_py(py, <span class="kw">async move </span>{
@@ -1615,7 +1617,7 @@
 }
 
 <span class="attr">#[pymodule]
-</span><span class="kw">pub fn </span>_core(py: Python&lt;<span class="lifetime">&#39;_</span>&gt;, module: <span class="kw-2">&amp;</span>PyModule) -&gt; PyResult&lt;()&gt; {
+</span><span class="kw">pub fn </span>_core(py: Python&lt;<span class="lifetime">'_</span>&gt;, module: <span class="kw-2">&amp;</span>PyModule) -&gt; PyResult&lt;()&gt; {
     <span class="kw">unsafe </span>{
         pyo3::ffi::PyEval_InitThreads();
     }
@@ -1624,7 +1626,7 @@
         .set(
             PyModule::from_code(
                 py,
-                <span class="string">&quot;
+                <span class="string">"
 import asyncio
 async def coroutine_to_safely_cancellable(c, cancel_token):
     try:
@@ -1633,19 +1635,19 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
         cancel_token.safe_cancel()
         await c
         raise asyncio.CancelledError()
-&quot;</span>,
-                <span class="string">&quot;converters&quot;</span>,
-                <span class="string">&quot;converters&quot;</span>,
+"</span>,
+                <span class="string">"converters"</span>,
+                <span class="string">"converters"</span>,
             )<span class="question-mark">?
             </span>.into(),
         )
         .unwrap();
 
     <span class="kw-2">*</span>TOKIO_RUNTIME.write().unwrap() = <span class="prelude-val">Some</span>(tokio::runtime::Runtime::new().unwrap());
-    <span class="kw">let </span>atexit = PyModule::import(py, <span class="string">&quot;atexit&quot;</span>)<span class="question-mark">?</span>;
-    atexit.call_method1(<span class="string">&quot;register&quot;</span>, (<span class="macro">wrap_pyfunction!</span>(cleanup_runtime, module)<span class="question-mark">?</span>,))<span class="question-mark">?</span>;
+    <span class="kw">let </span>atexit = PyModule::import(py, <span class="string">"atexit"</span>)<span class="question-mark">?</span>;
+    atexit.call_method1(<span class="string">"register"</span>, (<span class="macro">wrap_pyfunction!</span>(cleanup_runtime, module)<span class="question-mark">?</span>,))<span class="question-mark">?</span>;
 
-    module.add(<span class="string">&quot;AnyhowError&quot;</span>, py.get_type::&lt;AnyhowError&gt;())<span class="question-mark">?</span>;
+    module.add(<span class="string">"AnyhowError"</span>, py.get_type::&lt;AnyhowError&gt;())<span class="question-mark">?</span>;
     module.add_class::&lt;AnyhowWrapper&gt;()<span class="question-mark">?</span>;
 
     module.add_class::&lt;HydroflowSink&gt;()<span class="question-mark">?</span>;

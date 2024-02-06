@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `relalg/src/sexp.rs`."><title>sexp.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="relalg" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `relalg/src/sexp.rs`."><title>sexp.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="relalg" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../relalg/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -299,21 +301,21 @@
 
 <span class="kw">fn </span>closer(ch: char) -&gt; char {
     <span class="kw">match </span>ch {
-        <span class="string">&#39;(&#39; </span>=&gt; <span class="string">&#39;)&#39;</span>,
-        <span class="string">&#39;[&#39; </span>=&gt; <span class="string">&#39;]&#39;</span>,
-        <span class="string">&#39;{&#39; </span>=&gt; <span class="string">&#39;}&#39;</span>,
-        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;&quot;</span>),
+        <span class="string">'(' </span>=&gt; <span class="string">')'</span>,
+        <span class="string">'[' </span>=&gt; <span class="string">']'</span>,
+        <span class="string">'{' </span>=&gt; <span class="string">'}'</span>,
+        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">""</span>),
     }
 }
 
 <span class="kw">impl </span>Parser {
     <span class="kw">fn </span>atom_char(ch: char) -&gt; bool {
-        ch != <span class="string">&#39;{&#39;
-            </span>&amp;&amp; ch != <span class="string">&#39;}&#39;
-            </span>&amp;&amp; ch != <span class="string">&#39;[&#39;
-            </span>&amp;&amp; ch != <span class="string">&#39;]&#39;
-            </span>&amp;&amp; ch != <span class="string">&#39;(&#39;
-            </span>&amp;&amp; ch != <span class="string">&#39;)&#39;
+        ch != <span class="string">'{'
+            </span>&amp;&amp; ch != <span class="string">'}'
+            </span>&amp;&amp; ch != <span class="string">'['
+            </span>&amp;&amp; ch != <span class="string">']'
+            </span>&amp;&amp; ch != <span class="string">'('
+            </span>&amp;&amp; ch != <span class="string">')'
             </span>&amp;&amp; !ch.is_whitespace()
     }
 
@@ -338,7 +340,7 @@
                 <span class="kw">break</span>;
             }
             <span class="kw">match </span><span class="self">self</span>.input[<span class="self">self</span>.idx] {
-                <span class="string">&#39;)&#39; </span>| <span class="string">&#39;]&#39; </span>| <span class="string">&#39;}&#39; </span>=&gt; <span class="kw">break</span>,
+                <span class="string">')' </span>| <span class="string">']' </span>| <span class="string">'}' </span>=&gt; <span class="kw">break</span>,
                 <span class="kw">_ </span>=&gt; out.push(<span class="self">self</span>.parse_one()<span class="question-mark">?</span>),
             }
         }
@@ -349,36 +351,36 @@
     <span class="kw">fn </span>parse_one(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Sexp, anyhow::Error&gt; {
         <span class="self">self</span>.munch();
         <span class="kw">match </span><span class="self">self</span>.input[<span class="self">self</span>.idx] {
-            ch @ <span class="string">&#39;[&#39; </span>| ch @ <span class="string">&#39;(&#39; </span>| ch @ <span class="string">&#39;{&#39; </span>=&gt; {
+            ch @ <span class="string">'[' </span>| ch @ <span class="string">'(' </span>| ch @ <span class="string">'{' </span>=&gt; {
                 <span class="self">self</span>.idx += <span class="number">1</span>;
                 <span class="kw">let </span>contents = <span class="self">self</span>.parse_multiple()<span class="question-mark">?</span>;
                 <span class="self">self</span>.munch();
                 <span class="kw">if </span><span class="self">self</span>.idx &gt;= <span class="self">self</span>.input.len() || <span class="self">self</span>.input[<span class="self">self</span>.idx] != closer(ch) {
-                    <span class="macro">bail!</span>(<span class="string">&quot;unclosed {}&quot;</span>, ch);
+                    <span class="macro">bail!</span>(<span class="string">"unclosed {}"</span>, ch);
                 }
                 <span class="self">self</span>.idx += <span class="number">1</span>;
                 <span class="prelude-val">Ok</span>(Sexp::List(contents, ch))
             }
-            <span class="string">&#39;&quot;&#39; </span>=&gt; {
+            <span class="string">'"' </span>=&gt; {
                 <span class="self">self</span>.idx += <span class="number">1</span>;
                 <span class="kw">let </span><span class="kw-2">mut </span>out = String::new();
                 <span class="kw">while </span><span class="self">self</span>.idx &lt; <span class="self">self</span>.input.len() {
                     <span class="kw">match </span><span class="self">self</span>.input[<span class="self">self</span>.idx] {
-                        <span class="string">&#39;&quot;&#39; </span>=&gt; {
+                        <span class="string">'"' </span>=&gt; {
                             <span class="self">self</span>.idx += <span class="number">1</span>;
                             <span class="kw">return </span><span class="prelude-val">Ok</span>(Sexp::String(out));
                         }
-                        <span class="string">&#39;\\&#39; </span>=&gt; {
+                        <span class="string">'\\' </span>=&gt; {
                             <span class="self">self</span>.idx += <span class="number">1</span>;
                             <span class="kw">if </span><span class="self">self</span>.idx &gt;= <span class="self">self</span>.input.len() {
-                                <span class="macro">bail!</span>(<span class="string">&quot;unexpected EOF after \\&quot;</span>)
+                                <span class="macro">bail!</span>(<span class="string">"unexpected EOF after \\"</span>)
                             }
                             <span class="kw">match </span><span class="self">self</span>.input[<span class="self">self</span>.idx] {
-                                <span class="string">&#39;n&#39; </span>=&gt; out.push(<span class="string">&#39;\n&#39;</span>),
-                                <span class="string">&#39;t&#39; </span>=&gt; out.push(<span class="string">&#39;\t&#39;</span>),
-                                <span class="string">&#39;&quot;&#39; </span>=&gt; out.push(<span class="string">&#39;&quot;&#39;</span>),
-                                <span class="string">&#39;\\&#39; </span>=&gt; out.push(<span class="string">&#39;\\&#39;</span>),
-                                <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;unknown escape sequence&quot;</span>),
+                                <span class="string">'n' </span>=&gt; out.push(<span class="string">'\n'</span>),
+                                <span class="string">'t' </span>=&gt; out.push(<span class="string">'\t'</span>),
+                                <span class="string">'"' </span>=&gt; out.push(<span class="string">'"'</span>),
+                                <span class="string">'\\' </span>=&gt; out.push(<span class="string">'\\'</span>),
+                                <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">"unknown escape sequence"</span>),
                             }
                             <span class="self">self</span>.idx += <span class="number">1</span>;
                         }
@@ -388,7 +390,7 @@
                     }
                     <span class="self">self</span>.idx += <span class="number">1</span>;
                 }
-                <span class="macro">bail!</span>(<span class="string">&quot;unclosed &#39;\&quot;&#39;&quot;</span>);
+                <span class="macro">bail!</span>(<span class="string">"unclosed '\"'"</span>);
             }
             ch <span class="kw">if </span><span class="self">Self</span>::atom_char(ch) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>s = String::new();
@@ -398,7 +400,7 @@
                 }
                 <span class="prelude-val">Ok</span>(Sexp::Atom(s))
             }
-            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;unhandled: {:?}&quot;</span>, <span class="self">self</span>.input[<span class="self">self</span>.idx]),
+            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">"unhandled: {:?}"</span>, <span class="self">self</span>.input[<span class="self">self</span>.idx]),
         }
     }
 }
@@ -414,21 +416,21 @@
     <span class="kw">pub fn </span>expect_atom(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String, anyhow::Error&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             Sexp::Atom(r) =&gt; <span class="prelude-val">Ok</span>(r),
-            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;expected atom&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">"expected atom"</span>),
         }
     }
 
     <span class="kw">pub fn </span>expect_list(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(Vec&lt;Sexp&gt;, char), anyhow::Error&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             Sexp::List(v, ch) =&gt; <span class="prelude-val">Ok</span>((v, ch)),
-            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;expected list&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">"expected list"</span>),
         }
     }
 
     <span class="kw">pub fn </span>expect_string(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String, anyhow::Error&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             Sexp::String(r) =&gt; <span class="prelude-val">Ok</span>(r),
-            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;expected string&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">"expected string"</span>),
         }
     }
 
@@ -446,25 +448,25 @@
     <span class="kw">fn </span>write(<span class="kw-2">&amp;</span><span class="self">self</span>, s: <span class="kw-2">&amp;mut </span>String) {
         <span class="kw">match </span><span class="self">self </span>{
             Sexp::String(st) =&gt; {
-                s.push(<span class="string">&#39;&quot;&#39;</span>);
+                s.push(<span class="string">'"'</span>);
                 <span class="kw">for </span>ch <span class="kw">in </span>st.chars() {
                     <span class="kw">match </span>ch {
-                        <span class="string">&#39;\n&#39; </span>=&gt; s.push_str(<span class="string">&quot;\\n&quot;</span>),
-                        <span class="string">&#39;&quot;&#39; </span>=&gt; s.push_str(<span class="string">&quot;\\\&quot;&quot;</span>),
-                        <span class="string">&#39;\t&#39; </span>=&gt; s.push_str(<span class="string">&quot;\\t&quot;</span>),
-                        <span class="string">&#39;\\&#39; </span>=&gt; s.push_str(<span class="string">&quot;\\\\&quot;</span>),
+                        <span class="string">'\n' </span>=&gt; s.push_str(<span class="string">"\\n"</span>),
+                        <span class="string">'"' </span>=&gt; s.push_str(<span class="string">"\\\""</span>),
+                        <span class="string">'\t' </span>=&gt; s.push_str(<span class="string">"\\t"</span>),
+                        <span class="string">'\\' </span>=&gt; s.push_str(<span class="string">"\\\\"</span>),
                         ch =&gt; s.push(ch),
                     }
                 }
-                s.push(<span class="string">&#39;&quot;&#39;</span>);
+                s.push(<span class="string">'"'</span>);
             }
             Sexp::Atom(atom) =&gt; s.push_str(atom),
             Sexp::List(v, ch) =&gt; {
                 s.push(<span class="kw-2">*</span>ch);
-                <span class="kw">let </span><span class="kw-2">mut </span>space = <span class="string">&quot;&quot;</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>space = <span class="string">""</span>;
                 <span class="kw">for </span>sexp <span class="kw">in </span>v {
                     s.push_str(space);
-                    space = <span class="string">&quot; &quot;</span>;
+                    space = <span class="string">" "</span>;
                     <span class="self">Self</span>::write(sexp, s);
                 }
                 s.push(closer(<span class="kw-2">*</span>ch));
@@ -504,7 +506,7 @@
 
 <span class="kw">impl</span>&lt;I: ToSexp&gt; ToSexp <span class="kw">for </span>Vec&lt;I&gt; {
     <span class="kw">fn </span>to_sexp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sexp {
-        Sexp::List(<span class="self">self</span>.iter().map(|i| i.to_sexp()).collect(), <span class="string">&#39;[&#39;</span>)
+        Sexp::List(<span class="self">self</span>.iter().map(|i| i.to_sexp()).collect(), <span class="string">'['</span>)
     }
 }
 
@@ -512,7 +514,7 @@
     <span class="kw">fn </span>from_sexp(s: Sexp) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, anyhow::Error&gt; {
         <span class="kw">let </span>(v, <span class="kw">_</span>) = s.expect_list()<span class="question-mark">?</span>;
         <span class="kw">if </span>v.len() != <span class="number">2 </span>{
-            <span class="macro">bail!</span>(<span class="string">&quot;expected pair&quot;</span>);
+            <span class="macro">bail!</span>(<span class="string">"expected pair"</span>);
         }
         <span class="comment">// TODO: remove clone
         </span><span class="prelude-val">Ok</span>((A::from_sexp(v[<span class="number">0</span>].clone())<span class="question-mark">?</span>, B::from_sexp(v[<span class="number">1</span>].clone())<span class="question-mark">?</span>))
@@ -521,7 +523,7 @@
 
 <span class="kw">impl</span>&lt;A: ToSexp, B: ToSexp&gt; ToSexp <span class="kw">for </span>(A, B) {
     <span class="kw">fn </span>to_sexp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sexp {
-        Sexp::List(<span class="macro">vec!</span>[<span class="self">self</span>.<span class="number">0</span>.to_sexp(), <span class="self">self</span>.<span class="number">1</span>.to_sexp()], <span class="string">&#39;(&#39;</span>)
+        Sexp::List(<span class="macro">vec!</span>[<span class="self">self</span>.<span class="number">0</span>.to_sexp(), <span class="self">self</span>.<span class="number">1</span>.to_sexp()], <span class="string">'('</span>)
     }
 }
 
@@ -535,7 +537,7 @@
 
         <span class="kw">impl </span>ToSexp <span class="kw">for </span><span class="macro-nonterminal">$name </span>{
             <span class="kw">fn </span>to_sexp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sexp {
-                Sexp::Atom(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="self">self</span>))
+                Sexp::Atom(<span class="macro">format!</span>(<span class="string">"{}"</span>, <span class="self">self</span>))
             }
         }
     };
@@ -562,13 +564,13 @@
 
 <span class="kw">impl </span>ToSexp <span class="kw">for </span>() {
     <span class="kw">fn </span>to_sexp(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sexp {
-        Sexp::List(Vec::new(), <span class="string">&#39;(&#39;</span>)
+        Sexp::List(Vec::new(), <span class="string">'('</span>)
     }
 }
 
 <span class="attr">#[test]
 </span><span class="kw">fn </span>test_parse() {
-    <span class="kw">for </span>s <span class="kw">in </span>[<span class="string">&quot;1&quot;</span>, <span class="string">&quot;(1)&quot;</span>, <span class="string">&quot;(plus (one two))&quot;</span>, <span class="string">&quot;(+ 1 2)&quot;</span>, <span class="string">&quot;\&quot;foo\&quot;&quot;</span>] {
+    <span class="kw">for </span>s <span class="kw">in </span>[<span class="string">"1"</span>, <span class="string">"(1)"</span>, <span class="string">"(plus (one two))"</span>, <span class="string">"(+ 1 2)"</span>, <span class="string">"\"foo\""</span>] {
         <span class="macro">assert_eq!</span>(
             s,
             Sexp::parse(s.into())
@@ -576,7 +578,7 @@
                 .into_iter()
                 .map(|s| s.format())
                 .collect::&lt;Vec&lt;String&gt;&gt;()
-                .join(<span class="string">&quot; &quot;</span>)
+                .join(<span class="string">" "</span>)
         );
     }
 }

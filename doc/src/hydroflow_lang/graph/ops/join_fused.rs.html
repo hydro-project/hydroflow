@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/ops/join_fused.rs`."><title>join_fused.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/ops/join_fused.rs`."><title>join_fused.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../hydroflow_lang/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -363,10 +365,10 @@
 /// Examples of all three configuration options are below:
 /// ```hydroflow,ignore
 /// // Left hand side input will use fold, right hand side input will use reduce,
-/// join_fused(Fold(|| &quot;default value&quot;, |x, y| *x += y), Reduce(|x, y| *x -= y))
+/// join_fused(Fold(|| "default value", |x, y| *x += y), Reduce(|x, y| *x -= y))
 ///
 /// // Left hand side input will use FoldFrom, and the right hand side input will use Reduce again
-/// join_fused(FoldFrom(|x| &quot;conversion function&quot;, |x, y| *x += y), Reduce(|x, y| *x *= y))
+/// join_fused(FoldFrom(|x| "conversion function", |x, y| *x += y), Reduce(|x, y| *x *= y))
 /// ```
 /// The three currently supported fused operator types are `Fold(Fn() -&gt; A, Fn(A, T) -&gt; A)`, `Reduce(Fn(A, A) -&gt; A)`, and `FoldFrom(Fn(T) -&gt; A, Fn(A, T) -&gt; A)`
 ///
@@ -375,66 +377,66 @@
 /// For example, the following two hydroflow programs are equivalent, the former would optimize into the latter:
 ///
 /// ```hydroflow
-/// source_iter(vec![(&quot;key&quot;, 0), (&quot;key&quot;, 1), (&quot;key&quot;, 2)])
+/// source_iter(vec![("key", 0), ("key", 1), ("key", 2)])
 ///     -&gt; reduce_keyed(|x: &amp;mut _, y| *x += y)
 ///     -&gt; [0]my_join;
-/// source_iter(vec![(&quot;key&quot;, 2), (&quot;key&quot;, 3)])
+/// source_iter(vec![("key", 2), ("key", 3)])
 ///     -&gt; fold_keyed(|| 1, |x: &amp;mut _, y| *x *= y)
 ///     -&gt; [1]my_join;
 /// my_join = join_multiset()
-///     -&gt; assert_eq([(&quot;key&quot;, (3, 6))]);
+///     -&gt; assert_eq([("key", (3, 6))]);
 /// ```
 ///
 /// ```hydroflow
-/// source_iter(vec![(&quot;key&quot;, 0), (&quot;key&quot;, 1), (&quot;key&quot;, 2)])
+/// source_iter(vec![("key", 0), ("key", 1), ("key", 2)])
 ///     -&gt; [0]my_join;
-/// source_iter(vec![(&quot;key&quot;, 2), (&quot;key&quot;, 3)])
+/// source_iter(vec![("key", 2), ("key", 3)])
 ///     -&gt; [1]my_join;
 /// my_join = join_fused(Reduce(|x, y| *x += y), Fold(|| 1, |x, y| *x *= y))
-///     -&gt; assert_eq([(&quot;key&quot;, (3, 6))]);
+///     -&gt; assert_eq([("key", (3, 6))]);
 /// ```
 ///
 /// Here is an example of using FoldFrom to derive the accumulator from the first value:
 ///
 /// ```hydroflow
-/// source_iter(vec![(&quot;key&quot;, 0), (&quot;key&quot;, 1), (&quot;key&quot;, 2)])
+/// source_iter(vec![("key", 0), ("key", 1), ("key", 2)])
 ///     -&gt; [0]my_join;
-/// source_iter(vec![(&quot;key&quot;, 2), (&quot;key&quot;, 3)])
+/// source_iter(vec![("key", 2), ("key", 3)])
 ///     -&gt; [1]my_join;
 /// my_join = join_fused(FoldFrom(|x| x + 3, |x, y| *x += y), Fold(|| 1, |x, y| *x *= y))
-///     -&gt; assert_eq([(&quot;key&quot;, (6, 6))]);
+///     -&gt; assert_eq([("key", (6, 6))]);
 /// ```
 ///
 /// The benefit of this is that the state between the reducing/folding operator and the join is merged together.
 ///
-/// `join_fused` follows the same persistence rules as `join` and all other operators. By default, both the left hand side and right hand side are `&#39;tick` persistence. They can be set to `&#39;static` persistence
-/// by specifying `&#39;static` in the type arguments of the operator.
+/// `join_fused` follows the same persistence rules as `join` and all other operators. By default, both the left hand side and right hand side are `'tick` persistence. They can be set to `'static` persistence
+/// by specifying `'static` in the type arguments of the operator.
 ///
-/// for `join_fused::&lt;&#39;static&gt;`, the operator will replay all _keys_ that the join has ever seen each tick, and not only the new matches from that specific tick.
+/// for `join_fused::&lt;'static&gt;`, the operator will replay all _keys_ that the join has ever seen each tick, and not only the new matches from that specific tick.
 /// This means that it behaves identically to if `persist()` were placed before the inputs and the persistence of
 /// for example, the two following examples have identical behavior:
 ///
 /// ```hydroflow
-/// source_iter(vec![(&quot;key&quot;, 0), (&quot;key&quot;, 1), (&quot;key&quot;, 2)]) -&gt; persist() -&gt; [0]my_join;
-/// source_iter(vec![(&quot;key&quot;, 2)]) -&gt; my_union;
-/// source_iter(vec![(&quot;key&quot;, 3)]) -&gt; defer_tick() -&gt; my_union;
+/// source_iter(vec![("key", 0), ("key", 1), ("key", 2)]) -&gt; persist() -&gt; [0]my_join;
+/// source_iter(vec![("key", 2)]) -&gt; my_union;
+/// source_iter(vec![("key", 3)]) -&gt; defer_tick() -&gt; my_union;
 /// my_union = union() -&gt; persist() -&gt; [1]my_join;
 ///
 /// my_join = join_fused(Reduce(|x, y| *x += y), Fold(|| 1, |x, y| *x *= y))
-///     -&gt; assert_eq([(&quot;key&quot;, (3, 2)), (&quot;key&quot;, (3, 6))]);
+///     -&gt; assert_eq([("key", (3, 2)), ("key", (3, 6))]);
 /// ```
 ///
 /// ```hydroflow
-/// source_iter(vec![(&quot;key&quot;, 0), (&quot;key&quot;, 1), (&quot;key&quot;, 2)]) -&gt; [0]my_join;
-/// source_iter(vec![(&quot;key&quot;, 2)]) -&gt; my_union;
-/// source_iter(vec![(&quot;key&quot;, 3)]) -&gt; defer_tick() -&gt; my_union;
+/// source_iter(vec![("key", 0), ("key", 1), ("key", 2)]) -&gt; [0]my_join;
+/// source_iter(vec![("key", 2)]) -&gt; my_union;
+/// source_iter(vec![("key", 3)]) -&gt; defer_tick() -&gt; my_union;
 /// my_union = union() -&gt; [1]my_join;
 ///
-/// my_join = join_fused::&lt;&#39;static&gt;(Reduce(|x, y| *x += y), Fold(|| 1, |x, y| *x *= y))
-///     -&gt; assert_eq([(&quot;key&quot;, (3, 2)), (&quot;key&quot;, (3, 6))]);
+/// my_join = join_fused::&lt;'static&gt;(Reduce(|x, y| *x += y), Fold(|| 1, |x, y| *x *= y))
+///     -&gt; assert_eq([("key", (3, 2)), ("key", (3, 6))]);
 /// ```
 </span><span class="kw">pub const </span>JOIN_FUSED: OperatorConstraints = OperatorConstraints {
-    name: <span class="string">&quot;join_fused&quot;</span>,
+    name: <span class="string">"join_fused"</span>,
     categories: <span class="kw-2">&amp;</span>[OperatorCategory::MultiIn],
     hard_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
     soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
@@ -478,11 +480,11 @@
             parse_argument(<span class="kw-2">&amp;</span>arguments[<span class="number">1</span>]).map_err(|err| diagnostics.push(err))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>(lhs_joindata_ident, lhs_borrow_ident, lhs_prologue, lhs_borrow) =
-            make_joindata(wc, persistences[<span class="number">0</span>], <span class="kw-2">&amp;</span>lhs_join_options, <span class="string">&quot;lhs&quot;</span>)
+            make_joindata(wc, persistences[<span class="number">0</span>], <span class="kw-2">&amp;</span>lhs_join_options, <span class="string">"lhs"</span>)
                 .map_err(|err| diagnostics.push(err))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>(rhs_joindata_ident, rhs_borrow_ident, rhs_prologue, rhs_borrow) =
-            make_joindata(wc, persistences[<span class="number">1</span>], <span class="kw-2">&amp;</span>rhs_join_options, <span class="string">&quot;rhs&quot;</span>)
+            make_joindata(wc, persistences[<span class="number">1</span>], <span class="kw-2">&amp;</span>rhs_join_options, <span class="string">"rhs"</span>)
                 .map_err(|err| diagnostics.push(err))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
@@ -520,7 +522,7 @@
             },
         };
 
-        <span class="comment">// Since both input arguments are stratum blocking then we don&#39;t need to keep track of ticks to avoid emitting the same thing twice in the same tick.
+        <span class="comment">// Since both input arguments are stratum blocking then we don't need to keep track of ticks to avoid emitting the same thing twice in the same tick.
         </span><span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span><span class="kw-2">mut </span>#lhs_borrow_ident = #context.state_ref(#lhs_joindata_ident).borrow_mut();
             <span class="kw">let </span><span class="kw-2">mut </span>#rhs_borrow_ident = #context.state_ref(#rhs_joindata_ident).borrow_mut();
@@ -557,10 +559,10 @@
     },
 };
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum </span>JoinOptions&lt;<span class="lifetime">&#39;a</span>&gt; {
-    FoldFrom(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Expr, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Expr),
-    Fold(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Expr, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Expr),
-    Reduce(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Expr),
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum </span>JoinOptions&lt;<span class="lifetime">'a</span>&gt; {
+    FoldFrom(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>Expr, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Expr),
+    Fold(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>Expr, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Expr),
+    Reduce(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>Expr),
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>parse_argument(arg: <span class="kw-2">&amp;</span>Expr) -&gt; <span class="prelude-ty">Result</span>&lt;JoinOptions, Diagnostic&gt; {
@@ -574,7 +576,7 @@
         <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic::spanned(
             arg.span(),
             Level::Error,
-            <span class="macro">format!</span>(<span class="string">&quot;Argument must be a function call: {arg:?}&quot;</span>),
+            <span class="macro">format!</span>(<span class="string">"Argument must be a function call: {arg:?}"</span>),
         ));
     };
 
@@ -582,38 +584,38 @@
     <span class="kw">let </span>func_name = func.to_token_stream().to_string();
 
     <span class="kw">match </span>func_name.as_str() {
-        <span class="string">&quot;Fold&quot; </span>=&gt; <span class="kw">match </span>(elems.next(), elems.next()) {
+        <span class="string">"Fold" </span>=&gt; <span class="kw">match </span>(elems.next(), elems.next()) {
             (<span class="prelude-val">Some</span>(default), <span class="prelude-val">Some</span>(fold)) =&gt; <span class="prelude-val">Ok</span>(JoinOptions::Fold(default, fold)),
             <span class="kw">_ </span>=&gt; {
                 <span class="prelude-val">Err</span>(Diagnostic::spanned(
                         args.span(),
                         Level::Error,
-                        <span class="macro">format!</span>(<span class="string">&quot;Fold requires two arguments, first is the default function, second is the folding function: {func:?}&quot;</span>),
+                        <span class="macro">format!</span>(<span class="string">"Fold requires two arguments, first is the default function, second is the folding function: {func:?}"</span>),
                     ))
             }
         },
-        <span class="string">&quot;FoldFrom&quot; </span>=&gt; <span class="kw">match </span>(elems.next(), elems.next()) {
+        <span class="string">"FoldFrom" </span>=&gt; <span class="kw">match </span>(elems.next(), elems.next()) {
             (<span class="prelude-val">Some</span>(from), <span class="prelude-val">Some</span>(fold)) =&gt; <span class="prelude-val">Ok</span>(JoinOptions::FoldFrom(from, fold)),
             <span class="kw">_ </span>=&gt; {
                 <span class="prelude-val">Err</span>(Diagnostic::spanned(
                     args.span(),
                     Level::Error,
-                    <span class="macro">format!</span>(<span class="string">&quot;FoldFrom requires two arguments, first is the From function, second is the folding function: {func:?}&quot;</span>),
+                    <span class="macro">format!</span>(<span class="string">"FoldFrom requires two arguments, first is the From function, second is the folding function: {func:?}"</span>),
                 ))
             }
         },
-        <span class="string">&quot;Reduce&quot; </span>=&gt; <span class="kw">match </span>elems.next() {
+        <span class="string">"Reduce" </span>=&gt; <span class="kw">match </span>elems.next() {
             <span class="prelude-val">Some</span>(reduce) =&gt; <span class="prelude-val">Ok</span>(JoinOptions::Reduce(reduce)),
             <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(Diagnostic::spanned(
                 args.span(),
                 Level::Error,
-                <span class="macro">format!</span>(<span class="string">&quot;Reduce requires one argument, the reducing function: {func:?}&quot;</span>),
+                <span class="macro">format!</span>(<span class="string">"Reduce requires one argument, the reducing function: {func:?}"</span>),
             )),
         },
         <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(Diagnostic::spanned(
             func.span(),
             Level::Error,
-            <span class="macro">format!</span>(<span class="string">&quot;Unknown summarizing function: {func:?}&quot;</span>),
+            <span class="macro">format!</span>(<span class="string">"Unknown summarizing function: {func:?}"</span>),
         )),
     }
 }
@@ -621,11 +623,11 @@
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>make_joindata(
     wc: <span class="kw-2">&amp;</span>WriteContextArgs,
     persistence: Persistence,
-    join_options: <span class="kw-2">&amp;</span>JoinOptions&lt;<span class="lifetime">&#39;_</span>&gt;,
+    join_options: <span class="kw-2">&amp;</span>JoinOptions&lt;<span class="lifetime">'_</span>&gt;,
     side: <span class="kw-2">&amp;</span>str,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(Ident, Ident, TokenStream, TokenStream), Diagnostic&gt; {
-    <span class="kw">let </span>joindata_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">&quot;joindata_{}&quot;</span>, side));
-    <span class="kw">let </span>borrow_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">&quot;joindata_{}_borrow&quot;</span>, side));
+    <span class="kw">let </span>joindata_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">"joindata_{}"</span>, side));
+    <span class="kw">let </span>borrow_ident = wc.make_ident(<span class="macro">format!</span>(<span class="string">"joindata_{}_borrow"</span>, side));
 
     <span class="kw">let </span>context = wc.context;
     <span class="kw">let </span>hydroflow = wc.hydroflow;
@@ -671,7 +673,7 @@
             <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic::spanned(
                 op_span,
                 Level::Error,
-                <span class="string">&quot;An implementation of &#39;mutable does not exist&quot;</span>,
+                <span class="string">"An implementation of 'mutable does not exist"</span>,
             ));
         }
     };
@@ -683,7 +685,7 @@
         [] =&gt; [Persistence::Tick, Persistence::Tick],
         [a] =&gt; [<span class="kw-2">*</span>a, <span class="kw-2">*</span>a],
         [a, b] =&gt; [<span class="kw-2">*</span>a, <span class="kw-2">*</span>b],
-        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Too many persistences: {persistences:?}&quot;</span>),
+        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Too many persistences: {persistences:?}"</span>),
     }
 }
 </code></pre></div></section></main></body></html>

@@ -1,5 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A runtime for writing reliable network applications without compromising speed."><title>hydroflow_plus::tokio - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_plus" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../crates.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../hydroflow_plus/index.html">hydroflow_plus</a><span class="version">0.5.1</span></h2></div><div class="sidebar-elems"><ul class="block">
-            <li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#modules">Modules</a></li><li><a href="#macros">Macros</a></li><li><a href="#functions">Functions</a></li><li><a href="#attributes">Attribute Macros</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a href="../index.html">hydroflow_plus</a>::<wbr><a class="mod" href="#">tokio</a><button id="copy-path" title="Copy item path to clipboard"><img src="../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>A runtime for writing reliable network applications without compromising speed.</p>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A runtime for writing reliable network applications without compromising speed."><title>hydroflow_plus::tokio - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_plus" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../crates.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../hydroflow_plus/index.html">hydroflow_plus</a><span class="version">0.5.1</span></h2></div><div class="sidebar-elems"><ul class="block">
+            <li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#modules">Modules</a></li><li><a href="#macros">Macros</a></li><li><a href="#functions">Functions</a></li><li><a href="#attributes">Attribute Macros</a></li></ul></section></div></nav><div class="sidebar-resizer"></div>
+    <main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../hydroflow_plus/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a href="../index.html">hydroflow_plus</a>::<wbr><a class="mod" href="#">tokio</a><button id="copy-path" title="Copy item path to clipboard"><img src="../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>A runtime for writing reliable network applications without compromising speed.</p>
 <p>Tokio is an event-driven, non-blocking I/O platform for writing asynchronous
 applications with the Rust programming language. At a high level, it
 provides a few major components:</p>
@@ -14,7 +15,7 @@ an I/O driver backed by the operating system’s event queue (epoll, kqueue,
 IOCP, etc…), and a high performance timer.</li>
 </ul>
 <p>Guide level documentation is found on the <a href="https://tokio.rs/tokio/tutorial">website</a>.</p>
-<h2 id="a-tour-of-tokio"><a href="#a-tour-of-tokio">A Tour of Tokio</a></h2>
+<h2 id="a-tour-of-tokio"><a class="doc-anchor" href="#a-tour-of-tokio">§</a>A Tour of Tokio</h2>
 <p>Tokio consists of a number of modules that provide a range of functionality
 essential for implementing asynchronous applications in Rust. In this
 section, we will take a brief tour of Tokio, summarizing the major APIs and
@@ -22,24 +23,24 @@ their uses.</p>
 <p>The easiest way to get started is to enable all features. Do this by
 enabling the <code>full</code> feature flag:</p>
 <div class="example-wrap"><pre class="language-toml"><code>tokio = { version = &quot;1&quot;, features = [&quot;full&quot;] }
-</code></pre></div><h4 id="authoring-applications"><a href="#authoring-applications">Authoring applications</a></h4>
+</code></pre></div><h4 id="authoring-applications"><a class="doc-anchor" href="#authoring-applications">§</a>Authoring applications</h4>
 <p>Tokio is great for writing applications and most users in this case shouldn’t
 worry too much about what features they should pick. If you’re unsure, we suggest
 going with <code>full</code> to ensure that you don’t run into any road blocks while you’re
 building your application.</p>
-<h5 id="example"><a href="#example">Example</a></h5>
+<h5 id="example"><a class="doc-anchor" href="#example">§</a>Example</h5>
 <p>This example shows the quickest way to get started with Tokio.</p>
 <div class="example-wrap"><pre class="language-toml"><code>tokio = { version = &quot;1&quot;, features = [&quot;full&quot;] }
-</code></pre></div><h4 id="authoring-libraries"><a href="#authoring-libraries">Authoring libraries</a></h4>
+</code></pre></div><h4 id="authoring-libraries"><a class="doc-anchor" href="#authoring-libraries">§</a>Authoring libraries</h4>
 <p>As a library author your goal should be to provide the lightest weight crate
 that is based on Tokio. To achieve this you should ensure that you only enable
 the features you need. This allows users to pick up your crate without having
 to enable unnecessary features.</p>
-<h5 id="example-1"><a href="#example-1">Example</a></h5>
+<h5 id="example-1"><a class="doc-anchor" href="#example-1">§</a>Example</h5>
 <p>This example shows how you may want to import features for a library that just
 needs to <code>tokio::spawn</code> and use a <code>TcpStream</code>.</p>
 <div class="example-wrap"><pre class="language-toml"><code>tokio = { version = &quot;1&quot;, features = [&quot;rt&quot;, &quot;net&quot;] }
-</code></pre></div><h3 id="working-with-tasks"><a href="#working-with-tasks">Working With Tasks</a></h3>
+</code></pre></div><h3 id="working-with-tasks"><a class="doc-anchor" href="#working-with-tasks">§</a>Working With Tasks</h3>
 <p>Asynchronous programs in Rust are based around lightweight, non-blocking
 units of execution called <a href="#working-with-tasks"><em>tasks</em></a>. The <a href="task/index.html" title="mod hydroflow_plus::tokio::task"><code>tokio::task</code></a> module provides
 important tools for working with tasks:</p>
@@ -79,7 +80,7 @@ enable the current-thread <a href="runtime/index.html#current-thread-scheduler">
 scheduler</a>, respectively. See the <a href="runtime/index.html#runtime-scheduler"><code>runtime</code> module
 documentation</a> for details. In addition, the “macros” feature
 flag enables the <code>#[tokio::main]</code> and <code>#[tokio::test]</code> attributes.</p>
-<h3 id="cpu-bound-tasks-and-blocking-code"><a href="#cpu-bound-tasks-and-blocking-code">CPU-bound tasks and blocking code</a></h3>
+<h3 id="cpu-bound-tasks-and-blocking-code"><a class="doc-anchor" href="#cpu-bound-tasks-and-blocking-code">§</a>CPU-bound tasks and blocking code</h3>
 <p>Tokio is able to concurrently run many tasks on a few threads by repeatedly
 swapping the currently running task on each thread. However, this kind of
 swapping can only happen at <code>.await</code> points, so code that spends a long time
@@ -119,7 +120,7 @@ runtime runs <em>only</em> CPU-bound tasks, as IO-bound tasks on that runtime
 will behave poorly.</p>
 <p>Hint: If using rayon, you can use a <a href="sync/oneshot/index.html" title="mod hydroflow_plus::tokio::sync::oneshot"><code>oneshot</code></a> channel to send the result back
 to Tokio when the rayon task finishes.</p>
-<h3 id="asynchronous-io"><a href="#asynchronous-io">Asynchronous IO</a></h3>
+<h3 id="asynchronous-io"><a class="doc-anchor" href="#asynchronous-io">§</a>Asynchronous IO</h3>
 <p>As well as scheduling and running tasks, Tokio provides everything you need
 to perform input and output asynchronously.</p>
 <p>The <a href="io/index.html" title="mod hydroflow_plus::tokio::io"><code>tokio::io</code></a> module provides Tokio’s asynchronous core I/O primitives,
@@ -139,7 +140,7 @@ asynchronously (enabled by the “fs” feature flag),</li>
 <li><a href="process/index.html" title="mod hydroflow_plus::tokio::process"><code>tokio::process</code></a>, for spawning and managing child processes (enabled by
 the “process” feature flag).</li>
 </ul>
-<h2 id="examples"><a href="#examples">Examples</a></h2>
+<h2 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h2>
 <p>A simple TCP echo server:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::net::TcpListener;
@@ -147,7 +148,7 @@ the “process” feature flag).</li>
 
 <span class="attr">#[tokio::main]
 </span><span class="kw">async fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>std::error::Error&gt;&gt; {
-    <span class="kw">let </span>listener = TcpListener::bind(<span class="string">&quot;127.0.0.1:8080&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>listener = TcpListener::bind(<span class="string">"127.0.0.1:8080"</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">loop </span>{
         <span class="kw">let </span>(<span class="kw-2">mut </span>socket, <span class="kw">_</span>) = listener.accept().<span class="kw">await</span><span class="question-mark">?</span>;
@@ -162,21 +163,21 @@ the “process” feature flag).</li>
                     </span><span class="prelude-val">Ok</span>(n) <span class="kw">if </span>n == <span class="number">0 </span>=&gt; <span class="kw">return</span>,
                     <span class="prelude-val">Ok</span>(n) =&gt; n,
                     <span class="prelude-val">Err</span>(e) =&gt; {
-                        <span class="macro">eprintln!</span>(<span class="string">&quot;failed to read from socket; err = {:?}&quot;</span>, e);
+                        <span class="macro">eprintln!</span>(<span class="string">"failed to read from socket; err = {:?}"</span>, e);
                         <span class="kw">return</span>;
                     }
                 };
 
                 <span class="comment">// Write the data back
                 </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = socket.write_all(<span class="kw-2">&amp;</span>buf[<span class="number">0</span>..n]).<span class="kw">await </span>{
-                    <span class="macro">eprintln!</span>(<span class="string">&quot;failed to write to socket; err = {:?}&quot;</span>, e);
+                    <span class="macro">eprintln!</span>(<span class="string">"failed to write to socket; err = {:?}"</span>, e);
                     <span class="kw">return</span>;
                 }
             }
         });
     }
 }</code></pre></div>
-<h3 id="feature-flags"><a href="#feature-flags">Feature flags</a></h3>
+<h3 id="feature-flags"><a class="doc-anchor" href="#feature-flags">§</a>Feature flags</h3>
 <p>Tokio uses a set of <a href="https://doc.rust-lang.org/cargo/reference/manifest.html#the-features-section">feature flags</a> to reduce the amount of compiled code. It
 is possible to just enable certain features over others. By default, Tokio
 does not enable any features but allows one to enable a subset for their use
@@ -212,7 +213,7 @@ in a const context. MSRV may increase according to the
 </ul>
 <p><em>Note: <code>AsyncRead</code> and <code>AsyncWrite</code> traits do not require any features and are
 always available.</em></p>
-<h4 id="unstable-features"><a href="#unstable-features">Unstable features</a></h4>
+<h4 id="unstable-features"><a class="doc-anchor" href="#unstable-features">§</a>Unstable features</h4>
 <p>Some feature flags are only available when specifying the <code>tokio_unstable</code> flag:</p>
 <ul>
 <li><code>tracing</code>: Enables tracing events.</li>
@@ -240,7 +241,7 @@ cargo build
 </code></pre></div><div class="example-wrap"><pre class="language-powershell"><code>## Windows PowerShell:
 $Env:RUSTFLAGS=&quot;--cfg tokio_unstable&quot;
 cargo build
-</code></pre></div><h3 id="supported-platforms"><a href="#supported-platforms">Supported platforms</a></h3>
+</code></pre></div><h3 id="supported-platforms"><a class="doc-anchor" href="#supported-platforms">§</a>Supported platforms</h3>
 <p>Tokio currently guarantees support for the following platforms:</p>
 <ul>
 <li>Linux</li>
@@ -260,7 +261,7 @@ documentation</a>. However, these additional platforms may
 become unsupported in the future.</p>
 <p>Note that Wine is considered to be a different platform from Windows. See
 mio’s documentation for more information on Wine support.</p>
-<h4 id="wasm-support"><a href="#wasm-support">WASM support</a></h4>
+<h4 id="wasm-support"><a class="doc-anchor" href="#wasm-support">§</a>WASM support</h4>
 <p>Tokio has some limited support for the WASM platform. Without the
 <code>tokio_unstable</code> flag, the following features are supported:</p>
 <ul>
@@ -278,7 +279,7 @@ platform that does not support timers.</p>
 <p>Note also that if the runtime becomes indefinitely idle, it will panic
 immediately instead of blocking forever. On platforms that don’t support
 time, this means that the runtime can never be idle in any way.</p>
-<h4 id="unstable-wasm-support"><a href="#unstable-wasm-support">Unstable WASM support</a></h4>
+<h4 id="unstable-wasm-support"><a class="doc-anchor" href="#unstable-wasm-support">§</a>Unstable WASM support</h4>
 <p>Tokio also has unstable support for some additional WASM features. This
 requires the use of the <code>tokio_unstable</code> flag.</p>
 <p>Using this flag enables the use of <code>tokio::net</code> on the wasm32-wasi target.
@@ -286,13 +287,13 @@ However, not all methods are available on the networking types as WASI
 currently does not support the creation of new sockets from within WASM.
 Because of this, sockets must currently be created via the <code>FromRawFd</code>
 trait.</p>
-</div></details><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="fs/index.html" title="mod hydroflow_plus::tokio::fs">fs</a></div><div class="desc docblock-short">Asynchronous file and standard stream adaptation.</div></li><li><div class="item-name"><a class="mod" href="io/index.html" title="mod hydroflow_plus::tokio::io">io</a></div><div class="desc docblock-short">Traits, helpers, and type definitions for asynchronous I/O functionality.</div></li><li><div class="item-name"><a class="mod" href="net/index.html" title="mod hydroflow_plus::tokio::net">net</a></div><div class="desc docblock-short">TCP/UDP/Unix bindings for <code>tokio</code>.</div></li><li><div class="item-name"><a class="mod" href="process/index.html" title="mod hydroflow_plus::tokio::process">process</a></div><div class="desc docblock-short">An implementation of asynchronous process management for Tokio.</div></li><li><div class="item-name"><a class="mod" href="runtime/index.html" title="mod hydroflow_plus::tokio::runtime">runtime</a></div><div class="desc docblock-short">The Tokio runtime.</div></li><li><div class="item-name"><a class="mod" href="signal/index.html" title="mod hydroflow_plus::tokio::signal">signal</a></div><div class="desc docblock-short">Asynchronous signal handling for Tokio.</div></li><li><div class="item-name"><a class="mod" href="stream/index.html" title="mod hydroflow_plus::tokio::stream">stream</a></div><div class="desc docblock-short">Due to the <code>Stream</code> trait’s inclusion in <code>std</code> landing later than Tokio’s 1.0
+</div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="fs/index.html" title="mod hydroflow_plus::tokio::fs">fs</a></div><div class="desc docblock-short">Asynchronous file and standard stream adaptation.</div></li><li><div class="item-name"><a class="mod" href="io/index.html" title="mod hydroflow_plus::tokio::io">io</a></div><div class="desc docblock-short">Traits, helpers, and type definitions for asynchronous I/O functionality.</div></li><li><div class="item-name"><a class="mod" href="net/index.html" title="mod hydroflow_plus::tokio::net">net</a></div><div class="desc docblock-short">TCP/UDP/Unix bindings for <code>tokio</code>.</div></li><li><div class="item-name"><a class="mod" href="process/index.html" title="mod hydroflow_plus::tokio::process">process</a></div><div class="desc docblock-short">An implementation of asynchronous process management for Tokio.</div></li><li><div class="item-name"><a class="mod" href="runtime/index.html" title="mod hydroflow_plus::tokio::runtime">runtime</a></div><div class="desc docblock-short">The Tokio runtime.</div></li><li><div class="item-name"><a class="mod" href="signal/index.html" title="mod hydroflow_plus::tokio::signal">signal</a></div><div class="desc docblock-short">Asynchronous signal handling for Tokio.</div></li><li><div class="item-name"><a class="mod" href="stream/index.html" title="mod hydroflow_plus::tokio::stream">stream</a></div><div class="desc docblock-short">Due to the <code>Stream</code> trait’s inclusion in <code>std</code> landing later than Tokio’s 1.0
 release, most of the Tokio stream utilities have been moved into the <a href="https://docs.rs/tokio-stream"><code>tokio-stream</code></a>
-crate.</div></li><li><div class="item-name"><a class="mod" href="sync/index.html" title="mod hydroflow_plus::tokio::sync">sync</a></div><div class="desc docblock-short">Synchronization primitives for use in asynchronous contexts.</div></li><li><div class="item-name"><a class="mod" href="task/index.html" title="mod hydroflow_plus::tokio::task">task</a></div><div class="desc docblock-short">Asynchronous green-threads.</div></li><li><div class="item-name"><a class="mod" href="time/index.html" title="mod hydroflow_plus::tokio::time">time</a></div><div class="desc docblock-short">Utilities for tracking time.</div></li></ul><h2 id="macros" class="small-section-header"><a href="#macros">Macros</a></h2><ul class="item-table"><li><div class="item-name"><a class="macro" href="macro.join.html" title="macro hydroflow_plus::tokio::join">join</a></div><div class="desc docblock-short">Waits on multiple concurrent branches, returning when <strong>all</strong> branches
+crate.</div></li><li><div class="item-name"><a class="mod" href="sync/index.html" title="mod hydroflow_plus::tokio::sync">sync</a></div><div class="desc docblock-short">Synchronization primitives for use in asynchronous contexts.</div></li><li><div class="item-name"><a class="mod" href="task/index.html" title="mod hydroflow_plus::tokio::task">task</a></div><div class="desc docblock-short">Asynchronous green-threads.</div></li><li><div class="item-name"><a class="mod" href="time/index.html" title="mod hydroflow_plus::tokio::time">time</a></div><div class="desc docblock-short">Utilities for tracking time.</div></li></ul><h2 id="macros" class="section-header">Macros<a href="#macros" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="macro" href="macro.join.html" title="macro hydroflow_plus::tokio::join">join</a></div><div class="desc docblock-short">Waits on multiple concurrent branches, returning when <strong>all</strong> branches
 complete.</div></li><li><div class="item-name"><a class="macro" href="macro.pin.html" title="macro hydroflow_plus::tokio::pin">pin</a></div><div class="desc docblock-short">Pins a value on the stack.</div></li><li><div class="item-name"><a class="macro" href="macro.select.html" title="macro hydroflow_plus::tokio::select">select</a></div><div class="desc docblock-short">Waits on multiple concurrent branches, returning when the <strong>first</strong> branch
 completes, cancelling the remaining branches.</div></li><li><div class="item-name"><a class="macro" href="macro.task_local.html" title="macro hydroflow_plus::tokio::task_local">task_local</a></div><div class="desc docblock-short">Declares a new task-local key of type <a href="task/struct.LocalKey.html" title="struct hydroflow_plus::tokio::task::LocalKey"><code>tokio::task::LocalKey</code></a>.</div></li><li><div class="item-name"><a class="macro" href="macro.try_join.html" title="macro hydroflow_plus::tokio::try_join">try_join</a></div><div class="desc docblock-short">Waits on multiple concurrent branches, returning when <strong>all</strong> branches
-complete with <code>Ok(_)</code> or on the first <code>Err(_)</code>.</div></li></ul><h2 id="functions" class="small-section-header"><a href="#functions">Functions</a></h2><ul class="item-table"><li><div class="item-name"><a class="fn" href="fn.spawn.html" title="fn hydroflow_plus::tokio::spawn">spawn</a></div><div class="desc docblock-short">Spawns a new asynchronous task, returning a
-<a href="task/struct.JoinHandle.html" title="struct hydroflow_plus::tokio::task::JoinHandle"><code>JoinHandle</code></a> for it.</div></li></ul><h2 id="attributes" class="small-section-header"><a href="#attributes">Attribute Macros</a></h2><ul class="item-table"><li><div class="item-name"><a class="attr" href="attr.main.html" title="attr hydroflow_plus::tokio::main">main</a></div><div class="desc docblock-short">Marks async function to be executed by the selected runtime. This macro
+complete with <code>Ok(_)</code> or on the first <code>Err(_)</code>.</div></li></ul><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="fn" href="fn.spawn.html" title="fn hydroflow_plus::tokio::spawn">spawn</a></div><div class="desc docblock-short">Spawns a new asynchronous task, returning a
+<a href="task/struct.JoinHandle.html" title="struct hydroflow_plus::tokio::task::JoinHandle"><code>JoinHandle</code></a> for it.</div></li></ul><h2 id="attributes" class="section-header">Attribute Macros<a href="#attributes" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="attr" href="attr.main.html" title="attr hydroflow_plus::tokio::main">main</a></div><div class="desc docblock-short">Marks async function to be executed by the selected runtime. This macro
 helps set up a <code>Runtime</code> without requiring the user to use
 <a href="../tokio/runtime/struct.Runtime.html">Runtime</a> or
 <a href="../tokio/runtime/struct.Builder.html">Builder</a> directly.</div></li><li><div class="item-name"><a class="attr" href="attr.test.html" title="attr hydroflow_plus::tokio::test">test</a></div><div class="desc docblock-short">Marks async function to be executed by runtime, suitable to test environment.

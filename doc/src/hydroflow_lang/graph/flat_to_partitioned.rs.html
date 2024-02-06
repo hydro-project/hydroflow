@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/flat_to_partitioned.rs`."><title>flat_to_partitioned.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/flat_to_partitioned.rs`."><title>flat_to_partitioned.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../hydroflow_lang/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -513,7 +515,7 @@
 ) -&gt; (UnionFind&lt;GraphNodeId&gt;, BTreeSet&lt;GraphEdgeId&gt;) {
     <span class="comment">// Modality (color) of nodes, push or pull.
     // TODO(mingwei)? This does NOT consider `DelayType` barriers (which generally imply `Pull`),
-    // which makes it inconsistant with the final output in `as_code()`. But this doesn&#39;t create
+    // which makes it inconsistant with the final output in `as_code()`. But this doesn't create
     // any bugs since we exclude `DelayType` edges from joining subgraphs anyway.
     </span><span class="kw">let </span><span class="kw-2">mut </span>node_color = partitioned_graph
         .node_ids()
@@ -660,7 +662,7 @@
         }
     }
 
-    <span class="comment">// Determine node&#39;s subgraph and subgraph&#39;s nodes.
+    <span class="comment">// Determine node's subgraph and subgraph's nodes.
     // This list of nodes in each subgraph are to be in topological sort order.
     // Eventually returned directly in the `HydroflowGraph`.
     </span><span class="kw">let </span>grouped_nodes = make_subgraph_collect(partitioned_graph, subgraph_unionfind);
@@ -684,8 +686,8 @@
     // Pull -&gt; [Computation] -&gt; Push
     // Push -&gt; [Handoff] -&gt; Pull
     </span><span class="kw">let </span>can_connect = <span class="kw">match </span>(node_color.get(src), node_color.get(dst)) {
-        <span class="comment">// Linear chain, can&#39;t connect because it may cause future conflicts.
-        // But if it doesn&#39;t in the _future_ we can connect it (once either/both ends are determined).
+        <span class="comment">// Linear chain, can't connect because it may cause future conflicts.
+        // But if it doesn't in the _future_ we can connect it (once either/both ends are determined).
         </span>(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; <span class="bool-val">false</span>,
 
         <span class="comment">// Infer left side.
@@ -735,7 +737,7 @@
     partitioned_graph: <span class="kw-2">&amp;mut </span>HydroflowGraph,
     barrier_crossers: <span class="kw-2">&amp;</span>SecondaryMap&lt;GraphEdgeId, DelayType&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), Diagnostic&gt; {
-    <span class="comment">// Determine subgraphs&#39;s stratum number.
+    <span class="comment">// Determine subgraphs's stratum number.
     // Find SCCs ignoring `defer_tick()` (`DelayType::Tick`) edges, then do TopoSort on the
     // resulting DAG.
     // Cycles thru cross-stratum negative edges (both `DelayType::Tick` and `DelayType::Stratum`)
@@ -784,7 +786,7 @@
         |u| subgraph_succs.get(<span class="kw-2">&amp;</span>u).into_iter().flatten().cloned(),
     );
 
-    <span class="comment">// Each subgraph&#39;s stratum number is the same as it&#39;s predecessors. Unless there is a negative
+    <span class="comment">// Each subgraph's stratum number is the same as it's predecessors. Unless there is a negative
     // edge, then we increment.
     </span><span class="kw">for </span>sg_id <span class="kw">in </span>topo_sort_order {
         <span class="kw">let </span>stratum = subgraph_preds
@@ -843,7 +845,7 @@
                     };
                     <span class="kw">let </span>(_hoff_node_id, _hoff_edge_id) =
                         partitioned_graph.insert_intermediate_node(new_edge_id, hoff);
-                    <span class="comment">// After: A (src) -&gt; H -&gt; ID -&gt; H&#39; -&gt; B (dst)
+                    <span class="comment">// After: A (src) -&gt; H -&gt; ID -&gt; H' -&gt; B (dst)
 
                     // Set stratum number for new intermediate:
                     // Create subgraph.
@@ -865,7 +867,7 @@
                 <span class="comment">// Any negative edges which go onto the same or previous stratum are bad.
                 // Indicates an unbroken negative cycle.
                 </span><span class="kw">if </span>dst_stratum &lt;= src_stratum {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic::spanned(dst_port.span(), Level::Error, <span class="string">&quot;Negative edge creates a negative cycle which must be broken with a `defer_tick()` operator.&quot;</span>));
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic::spanned(dst_port.span(), Level::Error, <span class="string">"Negative edge creates a negative cycle which must be broken with a `defer_tick()` operator."</span>));
                 }
             }
             DelayType::MonotoneAccum =&gt; {
@@ -878,7 +880,7 @@
 }
 
 <span class="doccomment">/// Put `is_external_input: true` operators in separate stratum 0 subgraphs if they are not in stratum 0.
-/// By ripping them out of their subgraph/stratum if they&#39;re not already in statum 0.
+/// By ripping them out of their subgraph/stratum if they're not already in statum 0.
 </span><span class="kw">fn </span>separate_external_inputs(partitioned_graph: <span class="kw-2">&amp;mut </span>HydroflowGraph) {
     <span class="kw">let </span>external_input_nodes: Vec&lt;<span class="kw">_</span>&gt; = partitioned_graph
         .nodes()
@@ -902,7 +904,7 @@
         <span class="comment">// Remove node from old subgraph.
         </span><span class="macro">assert!</span>(
             partitioned_graph.remove_from_subgraph(node_id),
-            <span class="string">&quot;Cannot move input node that is not in a subgraph, this is a Hydroflow bug.&quot;
+            <span class="string">"Cannot move input node that is not in a subgraph, this is a Hydroflow bug."
         </span>);
         <span class="comment">// Create new subgraph in stratum 0 for this source.
         </span><span class="kw">let </span>new_sg_id = partitioned_graph.insert_subgraph(<span class="macro">vec!</span>[node_id]).unwrap();
@@ -931,7 +933,7 @@
         .count();
     <span class="macro">assert!</span>(
         <span class="number">0 </span>== missing_edgetypes,
-        <span class="string">&quot;`partition_graph` requires edge types to be set, but was unset for {} out of {} edges. This is a Hydroflow bug.&quot;</span>,
+        <span class="string">"`partition_graph` requires edge types to be set, but was unset for {} out of {} edges. This is a Hydroflow bug."</span>,
         missing_edgetypes,
         flat_graph.edge_ids().len(),
     );

@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `stageleft/src/runtime_support.rs`."><title>runtime_support.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="stageleft" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `stageleft/src/runtime_support.rs`."><title>runtime_support.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="stageleft" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../stageleft/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -154,12 +156,12 @@
 
 <span class="kw">pub fn </span>get_final_crate_name(crate_name: <span class="kw-2">&amp;</span>str) -&gt; TokenStream {
     <span class="kw">let </span>final_crate = proc_macro_crate::crate_name(crate_name)
-        .unwrap_or_else(|<span class="kw">_</span>| <span class="macro">panic!</span>(<span class="string">&quot;{crate_name} should be present in `Cargo.toml`&quot;</span>));
+        .unwrap_or_else(|<span class="kw">_</span>| <span class="macro">panic!</span>(<span class="string">"{crate_name} should be present in `Cargo.toml`"</span>));
 
     <span class="kw">match </span>final_crate {
         proc_macro_crate::FoundCrate::Itself =&gt; {
-            <span class="kw">if </span>std::env::var(<span class="string">&quot;CARGO_BIN_NAME&quot;</span>).is_ok() {
-                <span class="kw">let </span>underscored = crate_name.replace(<span class="string">&#39;-&#39;</span>, <span class="string">&quot;_&quot;</span>);
+            <span class="kw">if </span>std::env::var(<span class="string">"CARGO_BIN_NAME"</span>).is_ok() {
+                <span class="kw">let </span>underscored = crate_name.replace(<span class="string">'-'</span>, <span class="string">"_"</span>);
                 <span class="kw">let </span>underscored_ident = syn::Ident::new(<span class="kw-2">&amp;</span>underscored, Span::call_site());
                 <span class="macro">quote! </span>{ #underscored_ident }
             } <span class="kw">else </span>{
@@ -187,7 +189,7 @@
                             lit: syn::Lit::Int(lit_int),
                             ..
                         }) =&gt; lit_int.base10_parse().unwrap(),
-                        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected literal&quot;</span>),
+                        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Expected literal"</span>),
                     }
                 }
             }
@@ -202,7 +204,7 @@
                 lit: syn::Lit::Bool(lit_bool),
                 ..
             }) =&gt; lit_bool.value(),
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected literal&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Expected literal"</span>),
         }
     }
 }
@@ -232,7 +234,7 @@
                 }
             }
 
-            <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Quoted&lt;<span class="lifetime">&#39;a</span>, <span class="macro-nonterminal">$ty</span>&gt; <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{}
+            <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Quoted&lt;<span class="lifetime">'a</span>, <span class="macro-nonterminal">$ty</span>&gt; <span class="kw">for </span><span class="macro-nonterminal">$ty </span>{}
         )*
     };
 }
@@ -247,10 +249,10 @@
 }
 
 <span class="kw">pub struct </span>Import&lt;T&gt; {
-    module_path: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
-    crate_name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
-    path: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
-    as_name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+    module_path: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
+    crate_name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
+    path: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
+    as_name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
     _phantom: PhantomData&lt;T&gt;,
 }
 
@@ -262,10 +264,10 @@
 }
 
 <span class="kw">pub fn </span>create_import&lt;T&gt;(
-    module_path: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
-    crate_name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
-    path: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
-    as_name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+    module_path: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
+    crate_name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
+    path: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
+    as_name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
     _unused_type_check: T,
 ) -&gt; Import&lt;T&gt; {
     Import {

@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `topolotree/src/pn_delta.rs`."><title>pn_delta.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="pn_delta" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `topolotree/src/pn_delta.rs`."><title>pn_delta.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="pn_delta" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../pn_delta/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -198,42 +200,42 @@
     <span class="kw">let </span>num_replicas = num_replicas[<span class="number">0</span>];
 
     <span class="kw">let </span>increment_requests = ports
-        .port(<span class="string">&quot;increment_requests&quot;</span>)
+        .port(<span class="string">"increment_requests"</span>)
         .connect::&lt;ConnectedDirect&gt;()
         .<span class="kw">await
         </span>.into_source();
 
     <span class="kw">let </span>query_responses = ports
-        .port(<span class="string">&quot;query_responses&quot;</span>)
+        .port(<span class="string">"query_responses"</span>)
         .connect::&lt;ConnectedDirect&gt;()
         .<span class="kw">await
         </span>.into_sink();
 
     <span class="kw">let </span>to_peer = ports
-        .port(<span class="string">&quot;to_peer&quot;</span>)
+        .port(<span class="string">"to_peer"</span>)
         .connect::&lt;ConnectedDemux&lt;ConnectedDirect&gt;&gt;()
         .<span class="kw">await
         </span>.into_sink();
 
     <span class="kw">let </span>from_peer = ports
-        .port(<span class="string">&quot;from_peer&quot;</span>)
+        .port(<span class="string">"from_peer"</span>)
         .connect::&lt;ConnectedTagged&lt;ConnectedDirect&gt;&gt;()
         .<span class="kw">await
         </span>.into_source();
 
     <span class="kw">let </span>f1 = <span class="kw">async move </span>{
-        <span class="attr">#[cfg(target_os = <span class="string">&quot;linux&quot;</span>)]
+        <span class="attr">#[cfg(target_os = <span class="string">"linux"</span>)]
         </span><span class="kw">loop </span>{
             <span class="kw">let </span>x = procinfo::pid::stat_self().unwrap();
             <span class="kw">let </span>bytes = x.rss * <span class="number">1024 </span>* <span class="number">4</span>;
-            <span class="macro">println!</span>(<span class="string">&quot;memory,{}&quot;</span>, bytes);
+            <span class="macro">println!</span>(<span class="string">"memory,{}"</span>, bytes);
             tokio::time::sleep(std::time::Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
         }
     };
 
     <span class="kw">let </span>df = <span class="macro">hydroflow_syntax! </span>{
         next_state = union()
-            -&gt; fold::&lt;<span class="lifetime">&#39;static</span>&gt;(|| (HashMap::&lt;u64, Rc&lt;RefCell&lt;(Vec&lt;u64&gt;, Vec&lt;u64&gt;)&gt;&gt;&gt;::new(), HashMap::new(), <span class="number">0</span>), |(cur_state, modified_tweets, last_tick): <span class="kw-2">&amp;mut </span>(HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;, HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;, <span class="kw">_</span>), goi| {
+            -&gt; fold::&lt;<span class="lifetime">'static</span>&gt;(|| (HashMap::&lt;u64, Rc&lt;RefCell&lt;(Vec&lt;u64&gt;, Vec&lt;u64&gt;)&gt;&gt;&gt;::new(), HashMap::new(), <span class="number">0</span>), |(cur_state, modified_tweets, last_tick): <span class="kw-2">&amp;mut </span>(HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;, HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;, <span class="kw">_</span>), goi| {
                 <span class="kw">if </span>context.current_tick() != <span class="kw-2">*</span>last_tick {
                     modified_tweets.clear();
                 }
@@ -295,7 +297,7 @@
 
         all_peers -&gt; [<span class="number">0</span>] broadcaster;
         next_state -&gt; [<span class="number">1</span>] broadcaster;
-        broadcaster = cross_join::&lt;<span class="lifetime">&#39;static</span>, <span class="lifetime">&#39;tick</span>&gt;()
+        broadcaster = cross_join::&lt;<span class="lifetime">'static</span>, <span class="lifetime">'tick</span>&gt;()
             -&gt; map(|(peer, state): (<span class="kw">_</span>, Vec&lt;NextStateType&gt;)| {
                 (peer <span class="kw">as </span>u32, state.iter().filter(|t| t.<span class="number">1</span>).map(|(k, <span class="kw">_</span>, v)| (<span class="kw-2">*</span>k, (my_id, v.as_ref().borrow().<span class="number">0</span>[my_id], v.as_ref().borrow().<span class="number">1</span>[my_id]))).collect())
             })
@@ -321,11 +323,11 @@
     };
 
     <span class="comment">// initial memory
-    </span><span class="attr">#[cfg(target_os = <span class="string">&quot;linux&quot;</span>)]
+    </span><span class="attr">#[cfg(target_os = <span class="string">"linux"</span>)]
     </span>{
         <span class="kw">let </span>x = procinfo::pid::stat_self().unwrap();
         <span class="kw">let </span>bytes = x.rss * <span class="number">1024 </span>* <span class="number">4</span>;
-        <span class="macro">println!</span>(<span class="string">&quot;memory,{}&quot;</span>, bytes);
+        <span class="macro">println!</span>(<span class="string">"memory,{}"</span>, bytes);
     }
 
     <span class="kw">let </span>f1_handle = tokio::spawn(f1);

@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/hydroflow_graph.rs`."><title>hydroflow_graph.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/hydroflow_graph.rs`."><title>hydroflow_graph.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../hydroflow_lang/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1556,7 +1558,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::pretty_span::{PrettyRowCol, PrettySpan};
 
 <span class="doccomment">/// A graph representing a Hydroflow dataflow graph (with or without subgraph partitioning,
-/// stratification, and handoff insertion). This is a &quot;meta&quot; graph used for generating Rust source
+/// stratification, and handoff insertion). This is a "meta" graph used for generating Rust source
 /// code in macros from Hydroflow surface sytnax.
 ///
 /// This struct has a lot of methods for manipulating the graph, vaguely grouped together in
@@ -1593,7 +1595,7 @@
     </span><span class="doccomment">/// Stream properties.
     </span>flow_props: SecondaryMap&lt;GraphEdgeId, FlowProps&gt;,
 
-    <span class="doccomment">/// If this subgraph is &#39;lazy&#39; then when it sends data to a lower stratum it does not cause a new tick to start
+    <span class="doccomment">/// If this subgraph is 'lazy' then when it sends data to a lower stratum it does not cause a new tick to start
     /// This is to support lazy defers
     /// If the value does not exist for a given subgraph id then the subgraph is not lazy.
     </span>subgraph_laziness: SecondaryMap&lt;GraphSubgraphId, bool&gt;,
@@ -1611,7 +1613,7 @@
 </span><span class="kw">impl </span>HydroflowGraph {
     <span class="doccomment">/// Get a node with its operator instance (if applicable).
     </span><span class="kw">pub fn </span>node(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId) -&gt; <span class="kw-2">&amp;</span>GraphNode {
-        <span class="self">self</span>.nodes.get(node_id).expect(<span class="string">&quot;Node not found.&quot;</span>)
+        <span class="self">self</span>.nodes.get(node_id).expect(<span class="string">"Node not found."</span>)
     }
 
     <span class="doccomment">/// Get the `OperatorInstance` for a given node. Node must be an operator and have an
@@ -1646,7 +1648,7 @@
     </span><span class="kw">pub fn </span>node_successors(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         src: GraphNodeId,
-    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">'_
            </span>+ DoubleEndedIterator&lt;Item = (GraphEdgeId, GraphNodeId)&gt;
            + ExactSizeIterator
            + FusedIterator
@@ -1659,7 +1661,7 @@
     </span><span class="kw">pub fn </span>node_predecessors(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         dst: GraphNodeId,
-    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">'_
            </span>+ DoubleEndedIterator&lt;Item = (GraphEdgeId, GraphNodeId)&gt;
            + ExactSizeIterator
            + FusedIterator
@@ -1672,7 +1674,7 @@
     </span><span class="kw">pub fn </span>node_successor_edges(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         src: GraphNodeId,
-    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">'_
            </span>+ DoubleEndedIterator&lt;Item = GraphEdgeId&gt;
            + ExactSizeIterator
            + FusedIterator
@@ -1685,7 +1687,7 @@
     </span><span class="kw">pub fn </span>node_predecessor_edges(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         dst: GraphNodeId,
-    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">'_
            </span>+ DoubleEndedIterator&lt;Item = GraphEdgeId&gt;
            + ExactSizeIterator
            + FusedIterator
@@ -1698,7 +1700,7 @@
     </span><span class="kw">pub fn </span>node_successor_nodes(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         src: GraphNodeId,
-    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">'_
            </span>+ DoubleEndedIterator&lt;Item = GraphNodeId&gt;
            + ExactSizeIterator
            + FusedIterator
@@ -1711,7 +1713,7 @@
     </span><span class="kw">pub fn </span>node_predecessor_nodes(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         dst: GraphNodeId,
-    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">'_
            </span>+ DoubleEndedIterator&lt;Item = GraphNodeId&gt;
            + ExactSizeIterator
            + FusedIterator
@@ -1721,12 +1723,12 @@
     }
 
     <span class="doccomment">/// Iterator of node IDs `GraphNodeId`.
-    </span><span class="kw">pub fn </span>node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; slotmap::basic::Keys&lt;<span class="lifetime">&#39;_</span>, GraphNodeId, GraphNode&gt; {
+    </span><span class="kw">pub fn </span>node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; slotmap::basic::Keys&lt;<span class="lifetime">'_</span>, GraphNodeId, GraphNode&gt; {
         <span class="self">self</span>.nodes.keys()
     }
 
     <span class="doccomment">/// Iterator over `(GraphNodeId, &amp;Node)` pairs.
-    </span><span class="kw">pub fn </span>nodes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; slotmap::basic::Iter&lt;<span class="lifetime">&#39;_</span>, GraphNodeId, GraphNode&gt; {
+    </span><span class="kw">pub fn </span>nodes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; slotmap::basic::Iter&lt;<span class="lifetime">'_</span>, GraphNodeId, GraphNode&gt; {
         <span class="self">self</span>.nodes.iter()
     }
 
@@ -1765,7 +1767,7 @@
                 diagnostics.push(Diagnostic::spanned(
                     operator.path.span(),
                     Level::Error,
-                    <span class="macro">format!</span>(<span class="string">&quot;Unknown operator `{}`&quot;</span>, operator.name_string()),
+                    <span class="macro">format!</span>(<span class="string">"Unknown operator `{}`"</span>, operator.name_string()),
                 ));
                 <span class="kw">continue</span>;
             };
@@ -1812,7 +1814,7 @@
                         generics.generic_args.span(),
                         Level::Error,
                         <span class="macro">format!</span>(
-                            <span class="string">&quot;`{}` should have {} persistence lifetime arguments, actually has {}.&quot;</span>,
+                            <span class="string">"`{}` should have {} persistence lifetime arguments, actually has {}."</span>,
                             op_constraints.name,
                             op_constraints.persistence_args.human_string(),
                             generics.persistence_args.len()
@@ -1824,7 +1826,7 @@
                         generics.generic_args.span(),
                         Level::Error,
                         <span class="macro">format!</span>(
-                            <span class="string">&quot;`{}` should have {} generic type arguments, actually has {}.&quot;</span>,
+                            <span class="string">"`{}` should have {} generic type arguments, actually has {}."</span>,
                             op_constraints.name,
                             op_constraints.type_args.human_string(),
                             generics.type_args.len()
@@ -1869,12 +1871,12 @@
         <span class="kw">let </span>span = <span class="prelude-val">Some</span>(new_node.span());
 
         <span class="comment">// Make corresponding operator instance (if `node` is an operator).
-        </span><span class="kw">let </span>op_inst_opt = <span class="lifetime">&#39;oc</span>: {
+        </span><span class="kw">let </span>op_inst_opt = <span class="lifetime">'oc</span>: {
             <span class="kw">let </span>GraphNode::Operator(operator) = <span class="kw-2">&amp;</span>new_node <span class="kw">else </span>{
-                <span class="kw">break </span><span class="lifetime">&#39;oc </span><span class="prelude-val">None</span>;
+                <span class="kw">break </span><span class="lifetime">'oc </span><span class="prelude-val">None</span>;
             };
             <span class="kw">let </span><span class="prelude-val">Some</span>(op_constraints) = find_op_op_constraints(operator) <span class="kw">else </span>{
-                <span class="kw">break </span><span class="lifetime">&#39;oc </span><span class="prelude-val">None</span>;
+                <span class="kw">break </span><span class="lifetime">'oc </span><span class="prelude-val">None</span>;
             };
             <span class="kw">let </span>(input_port, output_port) = <span class="self">self</span>.ports.get(edge_id).cloned().unwrap();
             <span class="kw">let </span>generics = get_operator_generics(
@@ -1924,16 +1926,16 @@
         <span class="macro">assert_eq!</span>(
             <span class="number">1</span>,
             <span class="self">self</span>.node_degree_in(node_id),
-            <span class="string">&quot;Removed intermediate node must have one predecessor&quot;
+            <span class="string">"Removed intermediate node must have one predecessor"
         </span>);
         <span class="macro">assert_eq!</span>(
             <span class="number">1</span>,
             <span class="self">self</span>.node_degree_out(node_id),
-            <span class="string">&quot;Removed intermediate node must have one successor&quot;
+            <span class="string">"Removed intermediate node must have one successor"
         </span>);
         <span class="macro">assert!</span>(
             <span class="self">self</span>.node_subgraph.is_empty() &amp;&amp; <span class="self">self</span>.subgraph_nodes.is_empty(),
-            <span class="string">&quot;Should not remove intermediate node after subgraph partitioning&quot;
+            <span class="string">"Should not remove intermediate node after subgraph partitioning"
         </span>);
 
         <span class="macro">assert!</span>(<span class="self">self</span>.nodes.remove(node_id).is_some());
@@ -1950,14 +1952,14 @@
         <span class="kw">let </span>succ_edge_type = <span class="self">self</span>.edge_types.remove(succ_edge_id);
         <span class="macro">assert_eq!</span>(
             pred_edge_type, succ_edge_type,
-            <span class="string">&quot;Edge type should be the same before and after a union/tee.&quot;
+            <span class="string">"Edge type should be the same before and after a union/tee."
         </span>);
         <span class="kw">if let </span><span class="prelude-val">Some</span>(edge_type) = pred_edge_type {
             <span class="self">self</span>.insert_edge_type(new_edge_id, edge_type);
         }
     }
 
-    <span class="doccomment">/// Helper method: determine the &quot;color&quot; (pull vs push) of a node based on its in and out degree,
+    <span class="doccomment">/// Helper method: determine the "color" (pull vs push) of a node based on its in and out degree,
     /// excluding reference edges. If linear (1 in, 1 out), color is `None`, indicating it can be
     /// either push or pull.
     ///
@@ -1971,7 +1973,7 @@
             </span>.node_predecessor_edges(node_id)
             .filter(|<span class="kw-2">&amp;</span>edge_id| {
                 <span class="self">self</span>.edge_type(edge_id)
-                    .expect(<span class="string">&quot;Edge type should be set, this is a Hydroflow bug.&quot;</span>)
+                    .expect(<span class="string">"Edge type should be set, this is a Hydroflow bug."</span>)
                     .affects_in_out_graph_ownership()
             })
             .count();
@@ -1980,13 +1982,13 @@
             </span>.node_successor_edges(node_id)
             .filter(|<span class="kw-2">&amp;</span>edge_id| {
                 <span class="self">self</span>.edge_type(edge_id)
-                    .expect(<span class="string">&quot;Edge type should be set, this is a Hydroflow bug.&quot;</span>)
+                    .expect(<span class="string">"Edge type should be set, this is a Hydroflow bug."</span>)
                     .affects_in_out_graph_ownership()
             })
             .count();
 
         <span class="kw">match </span>(inn_degree, out_degree) {
-            (<span class="number">0</span>, <span class="number">0</span>) =&gt; <span class="prelude-val">None</span>, <span class="comment">// Generally should not happen, &quot;Degenerate subgraph detected&quot;.
+            (<span class="number">0</span>, <span class="number">0</span>) =&gt; <span class="prelude-val">None</span>, <span class="comment">// Generally should not happen, "Degenerate subgraph detected".
             </span>(<span class="number">0</span>, <span class="number">1</span>) =&gt; <span class="prelude-val">Some</span>(Color::Pull),
             (<span class="number">1</span>, <span class="number">0</span>) =&gt; <span class="prelude-val">Some</span>(Color::Push),
             (<span class="number">1</span>, <span class="number">1</span>) =&gt; <span class="prelude-val">None</span>, <span class="comment">// Linear, can be either push or pull.
@@ -2000,7 +2002,7 @@
 <span class="doccomment">/// Module methods.
 </span><span class="kw">impl </span>HydroflowGraph {
     <span class="doccomment">/// When modules are imported into a flat graph, they come with an input and output ModuleBoundary node.
-    /// The partitioner doesn&#39;t understand these nodes and will panic if it encounters them.
+    /// The partitioner doesn't understand these nodes and will panic if it encounters them.
     /// merge_modules removes them from the graph, stitching the input and ouput sides of the ModuleBondaries based on their ports
     /// For example:
     ///     source_iter([]) -&gt; \[myport\]ModuleBoundary(input)\[my_port\] -&gt; map(|x| x) -&gt; ModuleBoundary(output) -&gt; null();
@@ -2026,7 +2028,7 @@
     </span><span class="kw">fn </span>remove_module_boundary(<span class="kw-2">&amp;mut </span><span class="self">self</span>, mod_bound_node: GraphNodeId) -&gt; <span class="prelude-ty">Result</span>&lt;(), Diagnostic&gt; {
         <span class="macro">assert!</span>(
             <span class="self">self</span>.node_subgraph.is_empty() &amp;&amp; <span class="self">self</span>.subgraph_nodes.is_empty(),
-            <span class="string">&quot;Should not remove intermediate node after subgraph partitioning&quot;
+            <span class="string">"Should not remove intermediate node after subgraph partitioning"
         </span>);
 
         <span class="kw">let </span><span class="kw-2">mut </span>mod_pred_ports = BTreeMap::new();
@@ -2055,9 +2057,9 @@
                     span: <span class="kw-2">*</span>import_expr,
                     level: Level::Error,
                     message: <span class="macro">format!</span>(
-                        <span class="string">&quot;The ports into the module did not match. input: {:?}, expected: {:?}&quot;</span>,
-                        mod_pred_ports.keys().map(|x| x.to_string()).join(<span class="string">&quot;, &quot;</span>),
-                        mod_succ_ports.keys().map(|x| x.to_string()).join(<span class="string">&quot;, &quot;</span>)
+                        <span class="string">"The ports into the module did not match. input: {:?}, expected: {:?}"</span>,
+                        mod_pred_ports.keys().map(|x| x.to_string()).join(<span class="string">", "</span>),
+                        mod_succ_ports.keys().map(|x| x.to_string()).join(<span class="string">", "</span>)
                     ),
                 });
             } <span class="kw">else </span>{
@@ -2065,9 +2067,9 @@
                     span: <span class="kw-2">*</span>import_expr,
                     level: Level::Error,
                     message: <span class="macro">format!</span>(
-                        <span class="string">&quot;The ports out of the module did not match. output: {:?}, expected: {:?}&quot;</span>,
-                        mod_succ_ports.keys().map(|x| x.to_string()).join(<span class="string">&quot;, &quot;</span>),
-                        mod_pred_ports.keys().map(|x| x.to_string()).join(<span class="string">&quot;, &quot;</span>),
+                        <span class="string">"The ports out of the module did not match. output: {:?}, expected: {:?}"</span>,
+                        mod_succ_ports.keys().map(|x| x.to_string()).join(<span class="string">", "</span>),
+                        mod_pred_ports.keys().map(|x| x.to_string()).join(<span class="string">", "</span>),
                     ),
                 });
             }
@@ -2100,7 +2102,7 @@
 </span><span class="kw">impl </span>HydroflowGraph {
     <span class="doccomment">/// Get the `src` and `dst` for an edge: `(src GraphNodeId, dst GraphNodeId)`.
     </span><span class="kw">pub fn </span>edge(<span class="kw-2">&amp;</span><span class="self">self</span>, edge_id: GraphEdgeId) -&gt; (GraphNodeId, GraphNodeId) {
-        <span class="kw">let </span>(src, dst) = <span class="self">self</span>.graph.edge(edge_id).expect(<span class="string">&quot;Edge not found.&quot;</span>);
+        <span class="kw">let </span>(src, dst) = <span class="self">self</span>.graph.edge(edge_id).expect(<span class="string">"Edge not found."</span>);
         (src, dst)
     }
 
@@ -2111,7 +2113,7 @@
 
     <span class="doccomment">/// Get the source and destination ports for an edge: `(src &amp;PortIndexValue, dst &amp;PortIndexValue)`.
     </span><span class="kw">pub fn </span>edge_ports(<span class="kw-2">&amp;</span><span class="self">self</span>, edge_id: GraphEdgeId) -&gt; (<span class="kw-2">&amp;</span>PortIndexValue, <span class="kw-2">&amp;</span>PortIndexValue) {
-        <span class="kw">let </span>(src_port, dst_port) = <span class="self">self</span>.ports.get(edge_id).expect(<span class="string">&quot;Edge not found.&quot;</span>);
+        <span class="kw">let </span>(src_port, dst_port) = <span class="self">self</span>.ports.get(edge_id).expect(<span class="string">"Edge not found."</span>);
         (src_port, dst_port)
     }
 
@@ -2123,7 +2125,7 @@
     <span class="doccomment">/// Iterator over all edges: `(GraphEdgeId, (src GraphNodeId, dst GraphNodeId))`.
     </span><span class="kw">pub fn </span>edges(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">'_
            </span>+ ExactSizeIterator&lt;Item = (GraphEdgeId, (GraphNodeId, GraphNodeId))&gt;
            + FusedIterator
            + Clone
@@ -2167,16 +2169,16 @@
     </span><span class="kw">pub fn </span>subgraph(<span class="kw-2">&amp;</span><span class="self">self</span>, subgraph_id: GraphSubgraphId) -&gt; <span class="kw-2">&amp;</span>Vec&lt;GraphNodeId&gt; {
         <span class="self">self</span>.subgraph_nodes
             .get(subgraph_id)
-            .expect(<span class="string">&quot;Subgraph not found.&quot;</span>)
+            .expect(<span class="string">"Subgraph not found."</span>)
     }
 
     <span class="doccomment">/// Iterator over all subgraph IDs.
-    </span><span class="kw">pub fn </span>subgraph_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; slotmap::basic::Keys&lt;<span class="lifetime">&#39;_</span>, GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt; {
+    </span><span class="kw">pub fn </span>subgraph_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; slotmap::basic::Keys&lt;<span class="lifetime">'_</span>, GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt; {
         <span class="self">self</span>.subgraph_nodes.keys()
     }
 
     <span class="doccomment">/// Iterator over all subgraphs, ID and members: `(GraphSubgraphId, Vec&lt;GraphNodeId&gt;)`.
-    </span><span class="kw">pub fn </span>subgraphs(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; slotmap::basic::Iter&lt;<span class="lifetime">&#39;_</span>, GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt; {
+    </span><span class="kw">pub fn </span>subgraphs(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; slotmap::basic::Iter&lt;<span class="lifetime">'_</span>, GraphSubgraphId, Vec&lt;GraphNodeId&gt;&gt; {
         <span class="self">self</span>.subgraph_nodes.iter()
     }
 
@@ -2216,7 +2218,7 @@
         <span class="self">self</span>.subgraph_stratum.get(sg_id).copied()
     }
 
-    <span class="doccomment">/// Set subgraph&#39;s stratum number, returning the old value if exists.
+    <span class="doccomment">/// Set subgraph's stratum number, returning the old value if exists.
     </span><span class="kw">pub fn </span>set_subgraph_stratum(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         sg_id: GraphSubgraphId,
@@ -2230,7 +2232,7 @@
         <span class="self">self</span>.subgraph_laziness.get(sg_id).copied().unwrap_or(<span class="bool-val">false</span>)
     }
 
-    <span class="doccomment">/// Set subgraph&#39;s laziness, returning the old value.
+    <span class="doccomment">/// Set subgraph's laziness, returning the old value.
     </span><span class="kw">pub fn </span>set_subgraph_laziness(<span class="kw-2">&amp;mut </span><span class="self">self</span>, sg_id: GraphSubgraphId, lazy: bool) -&gt; bool {
         <span class="self">self</span>.subgraph_laziness.insert(sg_id, lazy).unwrap_or(<span class="bool-val">false</span>)
     }
@@ -2276,11 +2278,11 @@
     <span class="doccomment">/// Helper to generate a deterministic `Ident` for the given node.
     </span><span class="kw">fn </span>node_as_ident(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId, is_pred: bool) -&gt; Ident {
         <span class="kw">let </span>name = <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id] {
-            GraphNode::Operator(<span class="kw">_</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;op_{:?}&quot;</span>, node_id.data()),
+            GraphNode::Operator(<span class="kw">_</span>) =&gt; <span class="macro">format!</span>(<span class="string">"op_{:?}"</span>, node_id.data()),
             GraphNode::Handoff { .. } =&gt; <span class="macro">format!</span>(
-                <span class="string">&quot;hoff_{:?}_{}&quot;</span>,
+                <span class="string">"hoff_{:?}_{}"</span>,
                 node_id.data(),
-                <span class="kw">if </span>is_pred { <span class="string">&quot;recv&quot; </span>} <span class="kw">else </span>{ <span class="string">&quot;send&quot; </span>}
+                <span class="kw">if </span>is_pred { <span class="string">"recv" </span>} <span class="kw">else </span>{ <span class="string">"send" </span>}
             ),
             GraphNode::ModuleBoundary { .. } =&gt; <span class="macro">panic!</span>(),
         };
@@ -2295,10 +2297,10 @@
 
     <span class="doccomment">/// For reference edges. Helper to generate a deterministic `Ident` for the given [reference] edge.
     </span><span class="kw">fn </span>edge_as_ident(<span class="kw-2">&amp;</span><span class="self">self</span>, edge_id: GraphEdgeId, span: Span) -&gt; Ident {
-        Ident::new(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;edge_{:?}&quot;</span>, edge_id.data()), span)
+        Ident::new(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">"edge_{:?}"</span>, edge_id.data()), span)
     }
 
-    <span class="doccomment">/// Returns each subgraph&#39;s receive and send handoffs.
+    <span class="doccomment">/// Returns each subgraph's receive and send handoffs.
     /// `Map&lt;GraphSubgraphId, (recv handoffs, send handoffs)&gt;`
     </span><span class="kw">fn </span>helper_collect_subgraph_handoffs(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -2353,9 +2355,9 @@
                 GraphNode::ModuleBoundary { .. } =&gt; <span class="macro">panic!</span>(),
             })
             .map(|(node_id, (src_span, dst_span))| {
-                <span class="kw">let </span>ident_send = Ident::new(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;hoff_{:?}_send&quot;</span>, node_id.data()), dst_span);
-                <span class="kw">let </span>ident_recv = Ident::new(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;hoff_{:?}_recv&quot;</span>, node_id.data()), src_span);
-                <span class="kw">let </span>hoff_name = Literal::string(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;handoff {:?}&quot;</span>, node_id));
+                <span class="kw">let </span>ident_send = Ident::new(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">"hoff_{:?}_send"</span>, node_id.data()), dst_span);
+                <span class="kw">let </span>ident_recv = Ident::new(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">"hoff_{:?}_recv"</span>, node_id.data()), src_span);
+                <span class="kw">let </span>hoff_name = Literal::string(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">"handoff {:?}"</span>, node_id));
                 <span class="macro">quote! </span>{
                     <span class="kw">let </span>(#ident_send, #ident_recv) =
                         #hf.make_edge::&lt;<span class="kw">_</span>, #root::scheduled::handoff::VecHandoff&lt;<span class="kw">_</span>&gt;&gt;(#hoff_name);
@@ -2417,7 +2419,7 @@
                         <span class="kw">let </span>node = <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[node_id];
                         <span class="macro">assert!</span>(
                             <span class="macro">matches!</span>(node, GraphNode::Operator(<span class="kw">_</span>)),
-                            <span class="string">&quot;Handoffs are not part of subgraphs.&quot;
+                            <span class="string">"Handoffs are not part of subgraphs."
                         </span>);
                         <span class="kw">let </span>op_inst = <span class="kw-2">&amp;</span><span class="self">self</span>.operator_instances[node_id];
 
@@ -2426,7 +2428,7 @@
                         <span class="kw">let </span>op_constraints = OPERATORS
                             .iter()
                             .find(|op| op_name == op.name)
-                            .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">&quot;Failed to find op: {}&quot;</span>, op_name));
+                            .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">"Failed to find op: {}"</span>, op_name));
 
                         <span class="kw">let </span>ident = <span class="self">self</span>.node_as_ident(node_id, <span class="bool-val">false</span>);
 
@@ -2457,7 +2459,7 @@
                                 .iter()
                                 .map(|<span class="kw-2">&amp;</span>(_port, edge_id)| {
                                     <span class="self">self</span>.edge_type(edge_id)
-                                        .expect(<span class="string">&quot;Unset edge_type, this is a bug.&quot;</span>)
+                                        .expect(<span class="string">"Unset edge_type, this is a bug."</span>)
                                 })
                                 .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
@@ -2486,7 +2488,7 @@
                                 .iter()
                                 .map(|<span class="kw-2">&amp;</span>(_port, edge_id)| {
                                     <span class="self">self</span>.edge_type(edge_id)
-                                        .expect(<span class="string">&quot;Unset edge_type, this is a bug.&quot;</span>)
+                                        .expect(<span class="string">"Unset edge_type, this is a bug."</span>)
                                 })
                                 .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
@@ -2501,13 +2503,13 @@
 
                             <span class="kw">let </span>context_args = WriteContextArgs {
                                 root,
-                                <span class="comment">// There&#39;s a bit of dark magic hidden in `Span`s... you&#39;d think it&#39;s just a `file:line:column`,
+                                <span class="comment">// There's a bit of dark magic hidden in `Span`s... you'd think it's just a `file:line:column`,
                                 // but it has one extra bit of info for _name resolution_, used for `Ident`s. `Span::call_site()`
                                 // has the (unhygienic) resolution we want, an ident is just solely determined by its string name,
-                                // which is what you&#39;d expect out of unhygienic proc macros like this. Meanwhile, declarative macros
-                                // use `Span::mixed_site()` which is weird and I don&#39;t understand it. It turns out that if you call
+                                // which is what you'd expect out of unhygienic proc macros like this. Meanwhile, declarative macros
+                                // use `Span::mixed_site()` which is weird and I don't understand it. It turns out that if you call
                                 // the hydroflow syntax proc macro from _within_ a declarative macro then `op_span` will have the
-                                // bad `Span::mixed_site()` name resolution and cause &quot;Cannot find value `df/context`&quot; errors. So
+                                // bad `Span::mixed_site()` name resolution and cause "Cannot find value `df/context`" errors. So
                                 // we call `.resolved_at()` to fix resolution back to `Span::call_site()`. -Mingwei
                                 </span>hydroflow: <span class="kw-2">&amp;</span>Ident::new(HYDROFLOW, op_span.resolved_at(hf.span())),
                                 context: <span class="kw-2">&amp;</span>Ident::new(CONTEXT, op_span.resolved_at(context.span())),
@@ -2534,7 +2536,7 @@
                             } = write_result.unwrap_or_else(|()| {
                                 <span class="macro">assert!</span>(
                                     diagnostics.iter().any(Diagnostic::is_error),
-                                    <span class="string">&quot;Operator `{}` returned `Err` but emitted no diagnostics, this is a Hydroflow bug.&quot;</span>,
+                                    <span class="string">"Operator `{}` returned `Err` but emitted no diagnostics, this is a Hydroflow bug."</span>,
                                     op_name,
                                 );
                                 OperatorWriteOutput { write_iterator: null_write_iterator_fn(<span class="kw-2">&amp;</span>context_args), ..Default::default() }
@@ -2547,20 +2549,20 @@
                                 <span class="kw">let </span>source_info = {
                                     <span class="comment">// TODO: This crashes when running tests from certain directories because of diagnostics flag being turned on when it should not be on.
                                     // Not sure of the solution yet, but it is not too important because the file is usually obvious as there can only be one until module support is added.
-                                    // #[cfg(feature = &quot;diagnostics&quot;)]
+                                    // #[cfg(feature = "diagnostics")]
                                     // let path = op_span.unwrap().source_file().path();
-                                    </span><span class="attr">#[cfg(feature = <span class="string">&quot;diagnostics&quot;</span>)]
-                                    </span><span class="kw">let </span>location = <span class="string">&quot;unknown&quot;</span>; <span class="comment">// path.display();
+                                    </span><span class="attr">#[cfg(feature = <span class="string">"diagnostics"</span>)]
+                                    </span><span class="kw">let </span>location = <span class="string">"unknown"</span>; <span class="comment">// path.display();
 
-                                    </span><span class="attr">#[cfg(not(feature = <span class="string">&quot;diagnostics&quot;</span>))]
-                                    </span><span class="kw">let </span>location = <span class="string">&quot;unknown&quot;</span>;
+                                    </span><span class="attr">#[cfg(not(feature = <span class="string">"diagnostics"</span>))]
+                                    </span><span class="kw">let </span>location = <span class="string">"unknown"</span>;
 
                                     <span class="kw">let </span>location = location
                                         .to_string()
-                                        .replace(|x: char| !x.is_alphanumeric(), <span class="string">&quot;_&quot;</span>);
+                                        .replace(|x: char| !x.is_alphanumeric(), <span class="string">"_"</span>);
 
                                     <span class="macro">format!</span>(
-                                        <span class="string">&quot;loc_{}_start_{}_{}_end_{}_{}&quot;</span>,
+                                        <span class="string">"loc_{}_start_{}_{}_end_{}_{}"</span>,
                                         location,
                                         op_span.start().line,
                                         op_span.start().column,
@@ -2569,7 +2571,7 @@
                                     )
                                 };
                                 <span class="kw">let </span>fn_ident = <span class="macro">format_ident!</span>(
-                                    <span class="string">&quot;{}__{}__{}&quot;</span>,
+                                    <span class="string">"{}__{}__{}"</span>,
                                     ident,
                                     op_name,
                                     source_info,
@@ -2660,7 +2662,7 @@
                             diagnostics.push(Diagnostic::spanned(
                                 pull_ident.span(),
                                 Level::Error,
-                                <span class="string">&quot;Degenerate subgraph detected, is there a disconnected `null()` or other degenerate pipeline somewhere?&quot;</span>,
+                                <span class="string">"Degenerate subgraph detected, is there a disconnected `null()` or other degenerate pipeline somewhere?"</span>,
                             ));
                             <span class="kw">continue</span>;
                         };
@@ -2680,7 +2682,7 @@
                     }
                 };
 
-                <span class="kw">let </span>hoff_name = Literal::string(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;Subgraph {:?}&quot;</span>, subgraph_id));
+                <span class="kw">let </span>hoff_name = Literal::string(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">"Subgraph {:?}"</span>, subgraph_id));
                 <span class="kw">let </span>stratum = Literal::usize_unsuffixed(
                     <span class="self">self</span>.subgraph_stratum.get(subgraph_id).cloned().unwrap_or(<span class="number">0</span>),
                 );
@@ -2823,7 +2825,7 @@
                 <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
             };
             <span class="kw">let </span>label = <span class="kw">match </span>(src_label, dst_label) {
-                (<span class="prelude-val">Some</span>(l1), <span class="prelude-val">Some</span>(l2)) =&gt; <span class="prelude-val">Some</span>(<span class="macro">format!</span>(<span class="string">&quot;{}\n{}&quot;</span>, l1, l2)),
+                (<span class="prelude-val">Some</span>(l1), <span class="prelude-val">Some</span>(l2)) =&gt; <span class="prelude-val">Some</span>(<span class="macro">format!</span>(<span class="string">"{}\n{}"</span>, l1, l2)),
                 (<span class="prelude-val">Some</span>(l1), <span class="prelude-val">None</span>) =&gt; <span class="prelude-val">Some</span>(l1),
                 (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(l2)) =&gt; <span class="prelude-val">Some</span>(l2),
                 (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; <span class="prelude-val">None</span>,
@@ -2970,15 +2972,15 @@
         <span class="kw">for </span>(key, node) <span class="kw">in </span><span class="self">self</span>.nodes.iter() {
             <span class="kw">match </span>node {
                 GraphNode::Operator(op) =&gt; {
-                    <span class="macro">writeln!</span>(write, <span class="string">&quot;{:?} = {};&quot;</span>, key.data(), op.to_token_stream())<span class="question-mark">?</span>;
+                    <span class="macro">writeln!</span>(write, <span class="string">"{:?} = {};"</span>, key.data(), op.to_token_stream())<span class="question-mark">?</span>;
                 }
-                GraphNode::Handoff { .. } =&gt; <span class="macro">unimplemented!</span>(<span class="string">&quot;HANDOFF IN FLAT GRAPH.&quot;</span>),
+                GraphNode::Handoff { .. } =&gt; <span class="macro">unimplemented!</span>(<span class="string">"HANDOFF IN FLAT GRAPH."</span>),
                 GraphNode::ModuleBoundary { .. } =&gt; <span class="macro">panic!</span>(),
             }
         }
         <span class="macro">writeln!</span>(write)<span class="question-mark">?</span>;
         <span class="kw">for </span>(_e, (src_key, dst_key)) <span class="kw">in </span><span class="self">self</span>.graph.edges() {
-            <span class="macro">writeln!</span>(write, <span class="string">&quot;{:?} -&gt; {:?};&quot;</span>, src_key.data(), dst_key.data())<span class="question-mark">?</span>;
+            <span class="macro">writeln!</span>(write, <span class="string">"{:?} -&gt; {:?};"</span>, src_key.data(), dst_key.data())<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
     }
@@ -2992,31 +2994,31 @@
 
     <span class="doccomment">/// Convert into a [mermaid](https://mermaid-js.github.io/) graph. Ignores subgraphs.
     </span><span class="kw">pub fn </span>write_mermaid_flat(<span class="kw-2">&amp;</span><span class="self">self</span>, write: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>std::fmt::Write) -&gt; std::fmt::Result {
-        <span class="macro">writeln!</span>(write, <span class="string">&quot;flowchart TB&quot;</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(write, <span class="string">"flowchart TB"</span>)<span class="question-mark">?</span>;
         <span class="kw">for </span>(key, node) <span class="kw">in </span><span class="self">self</span>.nodes.iter() {
             <span class="kw">match </span>node {
                 GraphNode::Operator(operator) =&gt; <span class="macro">writeln!</span>(
                     write,
-                    <span class="string">&quot;    %% {span}\n    {id:?}[\&quot;{row_col} &lt;tt&gt;{code}&lt;/tt&gt;\&quot;]&quot;</span>,
+                    <span class="string">"    %% {span}\n    {id:?}[\"{row_col} &lt;tt&gt;{code}&lt;/tt&gt;\"]"</span>,
                     span = PrettySpan(node.span()),
                     id = key.data(),
                     row_col = PrettyRowCol(node.span()),
                     code = operator
                         .to_token_stream()
                         .to_string()
-                        .replace(<span class="string">&#39;&amp;&#39;</span>, <span class="string">&quot;&amp;amp;&quot;</span>)
-                        .replace(<span class="string">&#39;&lt;&#39;</span>, <span class="string">&quot;&amp;lt;&quot;</span>)
-                        .replace(<span class="string">&#39;&gt;&#39;</span>, <span class="string">&quot;&amp;gt;&quot;</span>)
-                        .replace(<span class="string">&#39;&quot;&#39;</span>, <span class="string">&quot;&amp;quot;&quot;</span>)
-                        .replace(<span class="string">&#39;\n&#39;</span>, <span class="string">&quot;&lt;br&gt;&quot;</span>),
+                        .replace(<span class="string">'&amp;'</span>, <span class="string">"&amp;amp;"</span>)
+                        .replace(<span class="string">'&lt;'</span>, <span class="string">"&amp;lt;"</span>)
+                        .replace(<span class="string">'&gt;'</span>, <span class="string">"&amp;gt;"</span>)
+                        .replace(<span class="string">'"'</span>, <span class="string">"&amp;quot;"</span>)
+                        .replace(<span class="string">'\n'</span>, <span class="string">"&lt;br&gt;"</span>),
                 ),
                 GraphNode::Handoff { .. } =&gt; {
-                    <span class="macro">writeln!</span>(write, <span class="string">r#&quot;    {:?}{{&quot;{}&quot;}}&quot;#</span>, key.data(), HANDOFF_NODE_STR)
+                    <span class="macro">writeln!</span>(write, <span class="string">r#"    {:?}{{"{}"}}"#</span>, key.data(), HANDOFF_NODE_STR)
                 }
                 GraphNode::ModuleBoundary { .. } =&gt; {
                     <span class="macro">writeln!</span>(
                         write,
-                        <span class="string">r#&quot;    {:?}{{&quot;{}&quot;}}&quot;#</span>,
+                        <span class="string">r#"    {:?}{{"{}"}}"#</span>,
                         key.data(),
                         MODULE_BOUNDARY_NODE_STR
                     )
@@ -3025,7 +3027,7 @@
         }
         <span class="macro">writeln!</span>(write)<span class="question-mark">?</span>;
         <span class="kw">for </span>(_e, (src_key, dst_key)) <span class="kw">in </span><span class="self">self</span>.graph.edges() {
-            <span class="macro">writeln!</span>(write, <span class="string">&quot;    {:?}--&gt;{:?}&quot;</span>, src_key.data(), dst_key.data())<span class="question-mark">?</span>;
+            <span class="macro">writeln!</span>(write, <span class="string">"    {:?}--&gt;{:?}"</span>, src_key.data(), dst_key.data())<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
     }
@@ -3033,29 +3035,29 @@
 
 <span class="doccomment">/// Configuration for writing graphs.
 </span><span class="attr">#[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = <span class="string">&quot;debugging&quot;</span>, derive(clap::Args))]
+#[cfg_attr(feature = <span class="string">"debugging"</span>, derive(clap::Args))]
 </span><span class="kw">pub struct </span>WriteConfig {
     <span class="doccomment">/// Subgraphs will not be rendered if set.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">&quot;debugging&quot;</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
     </span><span class="kw">pub </span>no_subgraphs: bool,
     <span class="doccomment">/// Variable names will not be rendered if set.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">&quot;debugging&quot;</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
     </span><span class="kw">pub </span>no_varnames: bool,
     <span class="doccomment">/// Will not render pull/push shapes if set.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">&quot;debugging&quot;</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
     </span><span class="kw">pub </span>no_pull_push: bool,
     <span class="doccomment">/// Will not render handoffs if set.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">&quot;debugging&quot;</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
     </span><span class="kw">pub </span>no_handoffs: bool,
 
     <span class="doccomment">/// Op text will only be their name instead of the whole source.
-    </span><span class="attr">#[cfg_attr(feature = <span class="string">&quot;debugging&quot;</span>, arg(long))]
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
     </span><span class="kw">pub </span>op_short_text: bool,
 }
 
 <span class="doccomment">/// Enum for choosing between mermaid and dot graph writing.
 </span><span class="attr">#[derive(Copy, Clone, Debug)]
-#[cfg_attr(feature = <span class="string">&quot;debugging&quot;</span>, derive(clap::Parser, clap::ValueEnum))]
+#[cfg_attr(feature = <span class="string">"debugging"</span>, derive(clap::Parser, clap::ValueEnum))]
 </span><span class="kw">pub enum </span>WriteGraphType {
     <span class="doccomment">/// Mermaid graphs.
     </span>Mermaid,

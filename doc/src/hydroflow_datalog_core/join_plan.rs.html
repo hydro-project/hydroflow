@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_datalog_core/src/join_plan.rs`."><title>join_plan.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_datalog_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_datalog_core/src/join_plan.rs`."><title>join_plan.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_datalog_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../hydroflow_datalog_core/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -679,17 +681,17 @@
 <span class="kw">use </span><span class="kw">crate</span>::util::{repeat_tuple, Counter};
 
 <span class="doccomment">/// Captures the tree of joins used to compute contributions from a single rule.
-</span><span class="kw">pub enum </span>JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt; {
+</span><span class="kw">pub enum </span>JoinPlan&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// A single relation without any joins, leaves of the tree.
     /// Second element is whether this is a persisted relation.
-    </span>Source(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Spanned&lt;InputRelationExpr&gt;, bool),
+    </span>Source(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>Spanned&lt;InputRelationExpr&gt;, bool),
     <span class="doccomment">/// A join between two subtrees.
-    </span>Join(Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;, Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;),
-    AntiJoin(Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;, Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;),
-    Predicate(Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Spanned&lt;BoolExpr&gt;&gt;, Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;),
+    </span>Join(Box&lt;JoinPlan&lt;<span class="lifetime">'a</span>&gt;&gt;, Box&lt;JoinPlan&lt;<span class="lifetime">'a</span>&gt;&gt;),
+    AntiJoin(Box&lt;JoinPlan&lt;<span class="lifetime">'a</span>&gt;&gt;, Box&lt;JoinPlan&lt;<span class="lifetime">'a</span>&gt;&gt;),
+    Predicate(Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>Spanned&lt;BoolExpr&gt;&gt;, Box&lt;JoinPlan&lt;<span class="lifetime">'a</span>&gt;&gt;),
     <span class="doccomment">/// A join between some relation and a magic relation that emits values between
     /// 0 and some value in the input relation (upper-exclusive).
-    </span>MagicNatLt(Box&lt;JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt;&gt;, IdentOrUnderscore, IdentOrUnderscore),
+    </span>MagicNatLt(Box&lt;JoinPlan&lt;<span class="lifetime">'a</span>&gt;&gt;, IdentOrUnderscore, IdentOrUnderscore),
 }
 
 <span class="doccomment">/// Tracks the Hydroflow node that corresponds to a subtree of a join plan.
@@ -749,7 +751,7 @@
                 <span class="kw">let </span>idx_ident = syn::Index::from(<span class="kw-2">*</span>idx);
                 <span class="macro">parse_quote!</span>(_v.#idx_ident)
             } <span class="kw">else </span>{
-                <span class="macro">panic!</span>(<span class="string">&quot;Could not find key that is being joined on: {:?}&quot;</span>, ident);
+                <span class="macro">panic!</span>(<span class="string">"Could not find key that is being joined on: {:?}"</span>, ident);
             }
         })
         .collect();
@@ -761,7 +763,7 @@
                 <span class="kw">let </span>idx_ident = syn::Index::from(<span class="kw-2">*</span>idx);
                 <span class="macro">parse_quote!</span>(_v.#idx_ident)
             } <span class="kw">else </span>{
-                <span class="macro">panic!</span>(<span class="string">&quot;Could not find key that is being joined on: {:?}&quot;</span>, ident);
+                <span class="macro">panic!</span>(<span class="string">"Could not find key that is being joined on: {:?}"</span>, ident);
             }
         })
         .chain(source_expanded.wildcard_indices.iter().map(|idx| {
@@ -796,7 +798,7 @@
 
     <span class="kw">let </span>statement = <span class="kw">match </span>source_expanded.tee_idx {
         <span class="prelude-val">Some</span>(i) =&gt; {
-            <span class="kw">let </span>in_index = syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, i), Span::call_site());
+            <span class="kw">let </span>in_index = syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}"</span>, i), Span::call_site());
             <span class="macro">parse_quote_spanned! </span>{source_expanded.span=&gt; #source_name [#in_index] -&gt; #rhs; }
         }
         <span class="prelude-val">None </span>=&gt; <span class="macro">parse_quote_spanned! </span>{source_expanded.span=&gt; #source_name -&gt; #rhs; },
@@ -811,10 +813,10 @@
 /// constraints: the relation is only true when the values at those indices are equal.
 ///
 /// For example, `rel(a, b, a) := ...` requires that the values in the 0th and 2nd slots be the
-/// same, so we would return a map `{ &quot;a&quot; =&gt; [0, 2] }`. Note that since `b` is not repeated, it is
+/// same, so we would return a map `{ "a" =&gt; [0, 2] }`. Note that since `b` is not repeated, it is
 /// not in the map.
-</span><span class="kw">fn </span>find_relation_local_constraints&lt;<span class="lifetime">&#39;a</span>&gt;(
-    fields: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Spanned&lt;IdentOrUnderscore&gt;&gt;,
+</span><span class="kw">fn </span>find_relation_local_constraints&lt;<span class="lifetime">'a</span>&gt;(
+    fields: <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Spanned&lt;IdentOrUnderscore&gt;&gt;,
 ) -&gt; BTreeMap&lt;String, Vec&lt;usize&gt;&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>indices_grouped_by_var = BTreeMap::new();
     <span class="kw">for </span>(i, ident) <span class="kw">in </span>fields.enumerate() {
@@ -835,7 +837,7 @@
 <span class="doccomment">/// Given a mapping from variable names to their repeated indices, builds a Rust expression that
 /// tests whether the values at those indices are equal for each variable.
 ///
-/// For example, `rel(a, b, a, a, b)` would give us the map `{ &quot;a&quot; =&gt; [0, 2, 3], &quot;b&quot; =&gt; [1, 4] }`.
+/// For example, `rel(a, b, a, a, b)` would give us the map `{ "a" =&gt; [0, 2, 3], "b" =&gt; [1, 4] }`.
 /// Then we would want to generate the code `row.0 == row.2 &amp;&amp; row.0 == row.3 &amp;&amp; row.1 == row.4`.
 </span><span class="kw">fn </span>build_local_constraint_conditions(constraints: <span class="kw-2">&amp;</span>BTreeMap&lt;String, Vec&lt;usize&gt;&gt;) -&gt; syn::Expr {
     constraints
@@ -874,7 +876,7 @@
                 diagnostics.push(Diagnostic::spanned(
                     get_span(ident.span),
                     Level::Error,
-                    <span class="macro">format!</span>(<span class="string">&quot;Could not resolve reference to variable {}&quot;</span>, <span class="kw-2">&amp;</span>ident.name),
+                    <span class="macro">format!</span>(<span class="string">"Could not resolve reference to variable {}"</span>, <span class="kw-2">&amp;</span>ident.name),
                 ));
                 <span class="macro">parse_quote!</span>(())
             }
@@ -920,7 +922,7 @@
                 .entry(target.name.name.clone())
                 .or_insert_with(|| <span class="number">0</span>..)
                 .next()
-                .expect(<span class="string">&quot;Out of tee indices&quot;</span>);
+                .expect(<span class="string">"Out of tee indices"</span>);
 
             <span class="kw">let </span>row_type = <span class="macro">parse_quote!</span>((#(#row_types, )<span class="kw-2">*</span>));
 
@@ -941,8 +943,8 @@
 
             <span class="kw">let </span>filter_node = syn::Ident::new(
                 <span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                    <span class="string">&quot;join_{}_filter&quot;</span>,
-                    next_join_idx.next().expect(<span class="string">&quot;Out of join indices&quot;</span>)
+                    <span class="string">"join_{}_filter"</span>,
+                    next_join_idx.next().expect(<span class="string">"Out of join indices"</span>)
                 ),
                 Span::call_site(),
             );
@@ -1023,8 +1025,8 @@
 
             <span class="kw">let </span>join_node = syn::Ident::new(
                 <span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                    <span class="string">&quot;join_{}&quot;</span>,
-                    next_join_idx.next().expect(<span class="string">&quot;Out of join indices&quot;</span>)
+                    <span class="string">"join_{}"</span>,
+                    next_join_idx.next().expect(<span class="string">"Out of join indices"</span>)
                 ),
                 Span::call_site(),
             );
@@ -1110,14 +1112,14 @@
 
             <span class="kw">let </span>(lt_left, lt_right, is_persist): (syn::Lifetime, syn::Lifetime, bool) =
                 <span class="kw">match </span>(left_expanded.persisted, right_expanded.persisted, is_anti) {
-                    (<span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; (<span class="macro">parse_quote!</span>(<span class="lifetime">&#39;static</span>), <span class="macro">parse_quote!</span>(<span class="lifetime">&#39;tick</span>), <span class="bool-val">false</span>),
-                    (<span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; (<span class="macro">parse_quote!</span>(<span class="lifetime">&#39;tick</span>), <span class="macro">parse_quote!</span>(<span class="lifetime">&#39;static</span>), <span class="bool-val">false</span>),
-                    (<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; (<span class="macro">parse_quote!</span>(<span class="lifetime">&#39;static</span>), <span class="macro">parse_quote!</span>(<span class="lifetime">&#39;static</span>), <span class="bool-val">true</span>),
-                    <span class="kw">_ </span>=&gt; (<span class="macro">parse_quote!</span>(<span class="lifetime">&#39;tick</span>), <span class="macro">parse_quote!</span>(<span class="lifetime">&#39;tick</span>), <span class="bool-val">false</span>),
+                    (<span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; (<span class="macro">parse_quote!</span>(<span class="lifetime">'static</span>), <span class="macro">parse_quote!</span>(<span class="lifetime">'tick</span>), <span class="bool-val">false</span>),
+                    (<span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; (<span class="macro">parse_quote!</span>(<span class="lifetime">'tick</span>), <span class="macro">parse_quote!</span>(<span class="lifetime">'static</span>), <span class="bool-val">false</span>),
+                    (<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; (<span class="macro">parse_quote!</span>(<span class="lifetime">'static</span>), <span class="macro">parse_quote!</span>(<span class="lifetime">'static</span>), <span class="bool-val">true</span>),
+                    <span class="kw">_ </span>=&gt; (<span class="macro">parse_quote!</span>(<span class="lifetime">'tick</span>), <span class="macro">parse_quote!</span>(<span class="lifetime">'tick</span>), <span class="bool-val">false</span>),
                 };
 
             <span class="kw">if </span>is_anti {
-                <span class="comment">// this is always a &#39;tick join, so we place a persist operator in the join input pipeline
+                <span class="comment">// this is always a 'tick join, so we place a persist operator in the join input pipeline
                 </span>flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(rule_span)=&gt;
                     #join_node = anti_join() -&gt; map(#flatten_closure);
                 });
@@ -1221,8 +1223,8 @@
 
             <span class="kw">let </span>predicate_filter_node = syn::Ident::new(
                 <span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                    <span class="string">&quot;predicate_{}_filter&quot;</span>,
-                    next_join_idx.next().expect(<span class="string">&quot;Out of join indices&quot;</span>)
+                    <span class="string">"predicate_{}_filter"</span>,
+                    next_join_idx.next().expect(<span class="string">"Out of join indices"</span>)
                 ),
                 Span::call_site(),
             );
@@ -1244,8 +1246,8 @@
         JoinPlan::MagicNatLt(inner, less_than, threshold) =&gt; {
             <span class="kw">let </span>magic_node = syn::Ident::new(
                 <span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                    <span class="string">&quot;magic_nat_lt_{}&quot;</span>,
-                    next_join_idx.next().expect(<span class="string">&quot;Out of join indices&quot;</span>)
+                    <span class="string">"magic_nat_lt_{}"</span>,
+                    next_join_idx.next().expect(<span class="string">"Out of join indices"</span>)
                 ),
                 Span::call_site(),
             );
@@ -1267,20 +1269,20 @@
                     .variable_mapping
                     .contains_key(<span class="kw-2">&amp;</span>less_than.name)
                 {
-                    <span class="macro">todo!</span>(<span class="string">&quot;The values generated by less_than cannot currently be used in other parts of the query&quot;</span>);
+                    <span class="macro">todo!</span>(<span class="string">"The values generated by less_than cannot currently be used in other parts of the query"</span>);
                 }
             }
 
             <span class="kw">let </span>threshold_name = <span class="kw">if let </span>IdentOrUnderscore::Ident(threshold) = threshold {
                 threshold.name.clone()
             } <span class="kw">else </span>{
-                <span class="macro">panic!</span>(<span class="string">&quot;The threshold must be a variable&quot;</span>)
+                <span class="macro">panic!</span>(<span class="string">"The threshold must be a variable"</span>)
             };
 
             <span class="kw">let </span>threshold_index = inner_expanded
                 .variable_mapping
                 .get(<span class="kw-2">&amp;</span>threshold_name)
-                .expect(<span class="string">&quot;Threshold variable not found in inner plan&quot;</span>);
+                .expect(<span class="string">"Threshold variable not found in inner plan"</span>);
             <span class="kw">let </span>threshold_index = syn::Index::from(<span class="kw-2">*</span>threshold_index);
 
             <span class="kw">let </span><span class="kw-2">mut </span>flattened_elements: Vec&lt;syn::Expr&gt; = <span class="macro">vec!</span>[];
@@ -1301,7 +1303,7 @@
 
             <span class="kw">if let </span>IdentOrUnderscore::Ident(less_than) = less_than {
                 <span class="kw">if </span>less_than.name == threshold_name {
-                    <span class="macro">panic!</span>(<span class="string">&quot;The threshold and less_than variables must be different&quot;</span>)
+                    <span class="macro">panic!</span>(<span class="string">"The threshold and less_than variables must be different"</span>)
                 }
 
                 flattened_mapping.insert(less_than.name.clone(), flattened_elements.len());

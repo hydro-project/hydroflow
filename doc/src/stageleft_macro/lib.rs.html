@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `stageleft_macro/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="stageleft_macro" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `stageleft_macro/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="stageleft_macro" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../stageleft_macro/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -383,8 +385,8 @@
 /// `FnMut` context.
 </span><span class="attr">#[proc_macro]
 </span><span class="kw">pub fn </span>q(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
-    <span class="kw">let </span>stageleft_crate = proc_macro_crate::crate_name(<span class="string">&quot;stageleft&quot;</span>)
-        .expect(<span class="string">&quot;stageleft should be present in `Cargo.toml`&quot;</span>);
+    <span class="kw">let </span>stageleft_crate = proc_macro_crate::crate_name(<span class="string">"stageleft"</span>)
+        .expect(<span class="string">"stageleft should be present in `Cargo.toml`"</span>);
     <span class="kw">let </span>root = <span class="kw">match </span>stageleft_crate {
         proc_macro_crate::FoundCrate::Itself =&gt; <span class="macro">quote! </span>{ stageleft },
         proc_macro_crate::FoundCrate::Name(name) =&gt; {
@@ -435,7 +437,7 @@
                     <span class="attr">#[allow(non_upper_case_globals, non_snake_case)]
                     </span><span class="kw">let </span>#name_ident_unspanned = #root::runtime_support::create_import(
                         #full_path,
-                        <span class="macro">env!</span>(<span class="string">&quot;STAGELEFT_FINAL_CRATE_NAME&quot;</span>),
+                        <span class="macro">env!</span>(<span class="string">"STAGELEFT_FINAL_CRATE_NAME"</span>),
                         {
                             <span class="kw">let </span>__quse_local = ();
                             {
@@ -476,8 +478,8 @@
 
 <span class="attr">#[proc_macro]
 </span><span class="kw">pub fn </span>quse_fn(input: proc_macro::TokenStream) -&gt; proc_macro::TokenStream {
-    <span class="kw">let </span>stageleft_crate = proc_macro_crate::crate_name(<span class="string">&quot;stageleft&quot;</span>)
-        .expect(<span class="string">&quot;stageleft should be present in `Cargo.toml`&quot;</span>);
+    <span class="kw">let </span>stageleft_crate = proc_macro_crate::crate_name(<span class="string">"stageleft"</span>)
+        .expect(<span class="string">"stageleft should be present in `Cargo.toml`"</span>);
     <span class="kw">let </span>root = <span class="kw">match </span>stageleft_crate {
         proc_macro_crate::FoundCrate::Itself =&gt; <span class="macro">quote! </span>{ stageleft },
         proc_macro_crate::FoundCrate::Name(name) =&gt; {
@@ -515,7 +517,7 @@
     // one that is runtime-only with public fields and one that is staged-only without
     </span><span class="kw">let </span>input: TokenStream = input.into();
     proc_macro::TokenStream::from(<span class="macro">quote! </span>{
-        <span class="attr">#[cfg(not(feature = <span class="string">&quot;macro&quot;</span>))]
+        <span class="attr">#[cfg(not(feature = <span class="string">"macro"</span>))]
         </span>#input
     })
 }
@@ -543,8 +545,8 @@
     attr: proc_macro::TokenStream,
     input: proc_macro::TokenStream,
 ) -&gt; proc_macro::TokenStream {
-    <span class="kw">let </span>stageleft_crate = proc_macro_crate::crate_name(<span class="string">&quot;stageleft&quot;</span>)
-        .expect(<span class="string">&quot;stageleft should be present in `Cargo.toml`&quot;</span>);
+    <span class="kw">let </span>stageleft_crate = proc_macro_crate::crate_name(<span class="string">"stageleft"</span>)
+        .expect(<span class="string">"stageleft should be present in `Cargo.toml`"</span>);
     <span class="kw">let </span>root = <span class="kw">match </span>stageleft_crate {
         proc_macro_crate::FoundCrate::Itself =&gt; <span class="macro">quote! </span>{ stageleft },
         proc_macro_crate::FoundCrate::Name(name) =&gt; {
@@ -566,11 +568,11 @@
 
     <span class="kw">let </span>param_parsing = input.sig.inputs.iter().skip(<span class="number">1</span>).enumerate().flat_map(|(i, input)| {
         <span class="kw">match </span>input {
-            syn::FnArg::Receiver(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Staged functions cannot take self&quot;</span>),
+            syn::FnArg::Receiver(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">"Staged functions cannot take self"</span>),
             syn::FnArg::Typed(pat_type) =&gt; {
                 <span class="kw">let </span>runtime_tpe = <span class="kw">match </span>pat_type.ty.as_ref() {
                     Type::Path(path) =&gt; {
-                        <span class="kw">if </span>path.path.segments.len() == <span class="number">1 </span>&amp;&amp; path.path.segments[<span class="number">0</span>].ident == <span class="string">&quot;RuntimeData&quot; </span>{
+                        <span class="kw">if </span>path.path.segments.len() == <span class="number">1 </span>&amp;&amp; path.path.segments[<span class="number">0</span>].ident == <span class="string">"RuntimeData" </span>{
                             <span class="kw">match </span><span class="kw-2">&amp;</span>path.path.segments[<span class="number">0</span>].arguments {
                                 PathArguments::AngleBracketed(AngleBracketedGenericArguments {
                                     args,
@@ -611,11 +613,11 @@
     });
 
     <span class="kw">let </span>params_to_pass = input.sig.inputs.iter().skip(<span class="number">1</span>).map(|input| <span class="kw">match </span>input {
-        syn::FnArg::Receiver(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Staged functions cannot take self&quot;</span>),
+        syn::FnArg::Receiver(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">"Staged functions cannot take self"</span>),
         syn::FnArg::Typed(pat_type) =&gt; {
             <span class="kw">let </span>is_runtime = <span class="kw">match </span>pat_type.ty.as_ref() {
                 Type::Path(path) =&gt; {
-                    path.path.segments.len() == <span class="number">1 </span>&amp;&amp; path.path.segments[<span class="number">0</span>].ident == <span class="string">&quot;RuntimeData&quot;
+                    path.path.segments.len() == <span class="number">1 </span>&amp;&amp; path.path.segments[<span class="number">0</span>].ident == <span class="string">"RuntimeData"
                 </span>}
                 <span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
             };
@@ -623,7 +625,7 @@
             <span class="kw">if </span>is_runtime {
                 <span class="kw">let </span>pat_ident = <span class="kw">match </span>pat_type.pat.as_ref() {
                     syn::Pat::Ident(pat_ident) =&gt; pat_ident,
-                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;RuntimeData must be an identifier&quot;</span>),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"RuntimeData must be an identifier"</span>),
                 };
                 <span class="kw">let </span>pat_str = pat_ident.ident.to_string();
                 <span class="macro">quote!</span>(#root::RuntimeData::new(#pat_str))
@@ -636,7 +638,7 @@
 
     <span class="kw">let </span>expected_arg_count = input.sig.inputs.len() - <span class="number">1</span>;
 
-    <span class="kw">let </span>pound = Punct::new(<span class="string">&#39;#&#39;</span>, Spacing::Alone);
+    <span class="kw">let </span>pound = Punct::new(<span class="string">'#'</span>, Spacing::Alone);
     <span class="kw">let </span>passed_generics = <span class="kw">if </span>attr_params.is_empty() {
         <span class="macro">quote!</span>()
     } <span class="kw">else </span>{
@@ -652,17 +654,17 @@
                         syn::PathArguments::AngleBracketed(args) =&gt; {
                             <span class="kw">match </span>args.args.last().unwrap() {
                                 syn::GenericArgument::Type(ty) =&gt; ty.clone(),
-                                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Must return impl Quoted&lt;T&gt;&quot;</span>),
+                                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Must return impl Quoted&lt;T&gt;"</span>),
                             }
                         }
-                        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Must return impl Quoted&lt;T&gt;&quot;</span>),
+                        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Must return impl Quoted&lt;T&gt;"</span>),
                     }
                 }
-                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Must return impl Quoted&lt;T&gt;&quot;</span>),
+                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Must return impl Quoted&lt;T&gt;"</span>),
             },
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Must return impl Quoted&lt;T&gt;&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Must return impl Quoted&lt;T&gt;"</span>),
         },
-        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Must return impl Quoted&lt;T&gt;&quot;</span>),
+        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Must return impl Quoted&lt;T&gt;"</span>),
     };
 
     <span class="kw">let </span>input_contents = input
@@ -671,17 +673,17 @@
         .chars()
         .filter(|c| c.is_alphanumeric())
         .collect::&lt;String&gt;();
-    <span class="kw">let </span>input_hash = <span class="string">&quot;macro_&quot;</span>.to_string() + <span class="kw-2">&amp;</span>sha256::digest(input_contents);
+    <span class="kw">let </span>input_hash = <span class="string">"macro_"</span>.to_string() + <span class="kw-2">&amp;</span>sha256::digest(input_contents);
     <span class="kw">let </span>input_hash_ident = syn::Ident::new(<span class="kw-2">&amp;</span>input_hash, Span::call_site());
 
     <span class="kw">let </span>input_visibility = input.vis.clone();
 
     proc_macro::TokenStream::from(<span class="macro">quote_spanned! </span>{input.span()=&gt;
-        <span class="attr">#[cfg_attr(not(feature = <span class="string">&quot;macro&quot;</span>), allow(unused))]
+        <span class="attr">#[cfg_attr(not(feature = <span class="string">"macro"</span>), allow(unused))]
         </span>#input
 
-        <span class="attr">#[cfg_attr(not(feature = <span class="string">&quot;macro&quot;</span>), allow(unused))]
-        #[cfg_attr(not(feature = <span class="string">&quot;macro&quot;</span>), doc(hidden))]
+        <span class="attr">#[cfg_attr(not(feature = <span class="string">"macro"</span>), allow(unused))]
+        #[cfg_attr(not(feature = <span class="string">"macro"</span>), doc(hidden))]
         </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>#input_hash_ident(input: #root::internal::TokenStream) -&gt; #root::internal::TokenStream {
             <span class="kw">let </span>input_parsed = #root::internal::syn::parse::Parser::parse(
                 #root::internal::syn::punctuated::Punctuated::&lt;#root::internal::syn::Expr, #<span class="macro">root::internal::syn::Token!</span>[,]&gt;::parse_terminated,
@@ -689,7 +691,7 @@
             ).unwrap();
 
             <span class="kw">if </span>input_parsed.len() != #expected_arg_count {
-                <span class="macro">panic!</span>(<span class="string">&quot;Expected {} arguments, got {}&quot;</span>, #expected_arg_count, input_parsed.len());
+                <span class="macro">panic!</span>(<span class="string">"Expected {} arguments, got {}"</span>, #expected_arg_count, input_parsed.len());
             }
 
             #(#param_parsing)*
@@ -700,7 +702,7 @@
                 #root::Quoted::splice(#input_name #passed_generics(<span class="kw-2">&amp;</span>graph, #(#params_to_pass),<span class="kw-2">*</span>))
             };
 
-            <span class="kw">let </span>final_crate_name = <span class="macro">env!</span>(<span class="string">&quot;STAGELEFT_FINAL_CRATE_NAME&quot;</span>);
+            <span class="kw">let </span>final_crate_name = <span class="macro">env!</span>(<span class="string">"STAGELEFT_FINAL_CRATE_NAME"</span>);
             <span class="kw">let </span>final_crate_root = #root::runtime_support::get_final_crate_name(final_crate_name);
 
             <span class="kw">let </span>module_path: #root::internal::syn::Path = #root::internal::syn::parse_str(<span class="macro">module_path!</span>()).unwrap();
@@ -722,7 +724,7 @@
         }
 
         <span class="comment">// TODO(shadaj): fixes jump-to-definition but breaks Rust Analyzer due to $crate
-        // #[cfg(not(feature = &quot;macro&quot;))]
+        // #[cfg(not(feature = "macro"))]
         // #[macro_export]
         // macro_rules! #input_hash_ident {
         //     ($($tt:tt)*) =&gt; {
@@ -730,10 +732,10 @@
         //     }
         // }
 
-        // #[cfg(not(feature = &quot;macro&quot;))]
+        // #[cfg(not(feature = "macro"))]
         // #input_visibility use #input_hash_ident as #input_name;
 
-        </span><span class="attr">#[cfg(not(feature = <span class="string">&quot;macro&quot;</span>))]
+        </span><span class="attr">#[cfg(not(feature = <span class="string">"macro"</span>))]
         #[allow(unused_imports)]
         </span>#input_visibility <span class="kw">use </span><span class="kw">crate</span>::__macro::#input_hash_ident <span class="kw">as </span>#input_name;
     })

@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_datalog_core/src/grammar.rs`."><title>grammar.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_datalog_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_datalog_core/src/grammar.rs`."><title>grammar.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_datalog_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../hydroflow_datalog_core/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -310,7 +312,7 @@
 <a href="#310" id="310">310</a>
 <a href="#311" id="311">311</a>
 <a href="#312" id="312">312</a>
-</pre></div><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">&quot;datalog&quot;</span>)]
+</pre></div><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">"datalog"</span>)]
 #[allow(dead_code)]
 </span><span class="kw">pub mod </span>datalog {
     <span class="kw">use </span>rust_sitter::Spanned;
@@ -324,18 +326,18 @@
     <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub enum </span>Declaration {
         Input(
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.input&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">".input"</span>)] </span>(),
             Spanned&lt;Ident&gt;,
             RustSnippet,
         ),
         Output(
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.output&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">".output"</span>)] </span>(),
             Spanned&lt;Ident&gt;,
             RustSnippet,
         ),
-        Persist(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.persist&quot;</span>)] </span>(), Spanned&lt;Ident&gt;),
+        Persist(<span class="attr">#[rust_sitter::leaf(text = <span class="string">".persist"</span>)] </span>(), Spanned&lt;Ident&gt;),
         Async(
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.async&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">".async"</span>)] </span>(),
             Spanned&lt;Ident&gt;,
             <span class="doccomment">/// A pipeline for data to be sent to another node, which must consume `(NodeID, Data)` pairs.
             </span>RustSnippet,
@@ -344,7 +346,7 @@
         ),
         Rule(Spanned&lt;Rule&gt;),
         Static(
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.static&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">".static"</span>)] </span>(),
             Spanned&lt;Ident&gt;,
             RustSnippet,
         ),
@@ -352,11 +354,11 @@
 
     <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub struct </span>RustSnippet {
-        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;`&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(text = <span class="string">"`"</span>)]
         </span>_start: (),
-        <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r#&quot;[^`]*&quot;#</span>, transform = |s| s.to_string())]
+        <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r#"[^`]*"#</span>, transform = |s| s.to_string())]
         </span><span class="kw">pub </span>code: Spanned&lt;String&gt;,
-        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;`&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(text = <span class="string">"`"</span>)]
         </span>_end: (),
     }
 
@@ -368,26 +370,26 @@
 
         <span class="attr">#[rust_sitter::repeat(non_empty = <span class="bool-val">true</span>)]
         #[rust_sitter::delimited(
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;,&quot;</span>)]
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">","</span>)]
             </span>()
         )]
         <span class="kw">pub </span>sources: Vec&lt;Atom&gt;,
 
-        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;.&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(text = <span class="string">"."</span>)]
         </span>_dot: <span class="prelude-ty">Option</span>&lt;()&gt;,
     }
 
     <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub enum </span>RuleType {
-        Sync(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;:-&quot;</span>)] </span>()),
-        NextTick(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;:+&quot;</span>)] </span>()),
-        Async(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;:~&quot;</span>)] </span>()),
+        Sync(<span class="attr">#[rust_sitter::leaf(text = <span class="string">":-"</span>)] </span>()),
+        NextTick(<span class="attr">#[rust_sitter::leaf(text = <span class="string">":+"</span>)] </span>()),
+        Async(<span class="attr">#[rust_sitter::leaf(text = <span class="string">":~"</span>)] </span>()),
     }
 
     <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub enum </span>Atom {
         Relation(
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;!&quot;</span>)] </span><span class="prelude-ty">Option</span>&lt;()&gt;,
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"!"</span>)] </span><span class="prelude-ty">Option</span>&lt;()&gt;,
             Spanned&lt;InputRelationExpr&gt;,
         ),
         Predicate(Spanned&lt;BoolExpr&gt;),
@@ -396,23 +398,23 @@
     <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub enum </span>IdentOrUnderscore {
         Ident(Spanned&lt;Ident&gt;),
-        Underscore(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;_&quot;</span>)] </span>Spanned&lt;()&gt;),
+        Underscore(<span class="attr">#[rust_sitter::leaf(text = <span class="string">"_"</span>)] </span>Spanned&lt;()&gt;),
     }
 
     <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub struct </span>InputRelationExpr {
         <span class="kw">pub </span>name: Spanned&lt;Ident&gt;,
 
-        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(text = <span class="string">"("</span>)]
         </span>_l_paren: (),
 
         <span class="attr">#[rust_sitter::delimited(
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;,&quot;</span>)]
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">","</span>)]
             </span>()
         )]
         <span class="kw">pub </span>fields: Vec&lt;Spanned&lt;IdentOrUnderscore&gt;&gt;,
 
-        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(text = <span class="string">")"</span>)]
         </span>_r_paren: (),
     }
 
@@ -422,23 +424,23 @@
 
         <span class="kw">pub </span>at_node: <span class="prelude-ty">Option</span>&lt;AtNode&gt;,
 
-        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(text = <span class="string">"("</span>)]
         </span>_l_paren: (),
 
         <span class="attr">#[rust_sitter::delimited(
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;,&quot;</span>)]
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">","</span>)]
             </span>()
         )]
         <span class="kw">pub </span>fields: Vec&lt;Spanned&lt;TargetExpr&gt;&gt;,
 
-        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(text = <span class="string">")"</span>)]
         </span>_r_paren: (),
     }
 
     <span class="attr">#[derive(Debug, Clone)]
     #[allow(clippy::manual_non_exhaustive)]
     </span><span class="kw">pub struct </span>AtNode {
-        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;@&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(text = <span class="string">"@"</span>)]
         </span>_at: (),
 
         <span class="kw">pub </span>node: Spanned&lt;TargetExpr&gt;,
@@ -449,9 +451,9 @@
         Expr(IntExpr),
         Aggregation(Aggregation),
         Index(
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;index&quot;</span>)] </span>(),
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)] </span>(),
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"index"</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"("</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">")"</span>)] </span>(),
         ),
     }
 
@@ -477,80 +479,80 @@
     <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub enum </span>Aggregation {
         Min(
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;min&quot;</span>)] </span>(),
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"min"</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"("</span>)] </span>(),
             Spanned&lt;Ident&gt;,
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">")"</span>)] </span>(),
         ),
         Max(
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;max&quot;</span>)] </span>(),
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"max"</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"("</span>)] </span>(),
             Spanned&lt;Ident&gt;,
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">")"</span>)] </span>(),
         ),
         Sum(
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;sum&quot;</span>)] </span>(),
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"sum"</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"("</span>)] </span>(),
             Spanned&lt;Ident&gt;,
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">")"</span>)] </span>(),
         ),
-        Count(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;count(*)&quot;</span>)] </span>()),
+        Count(<span class="attr">#[rust_sitter::leaf(text = <span class="string">"count(*)"</span>)] </span>()),
         CountUnique(
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;count&quot;</span>)] </span>(),
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"count"</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"("</span>)] </span>(),
             <span class="attr">#[rust_sitter::delimited(
-                <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;,&quot;</span>)]
+                <span class="attr">#[rust_sitter::leaf(text = <span class="string">","</span>)]
                 </span>()
             )]
             Vec&lt;Spanned&lt;Ident&gt;&gt;,
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">")"</span>)] </span>(),
         ),
         Choose(
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;choose&quot;</span>)] </span>(),
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"choose"</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"("</span>)] </span>(),
             Spanned&lt;Ident&gt;,
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">")"</span>)] </span>(),
         ),
     }
 
     <span class="attr">#[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Debug)]
     </span><span class="kw">pub struct </span>Ident {
-        <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r&quot;[a-zA-Z][a-zA-Z0-9_]*&quot;</span>, transform = |s| s.to_string())]
+        <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r"[a-zA-Z][a-zA-Z0-9_]*"</span>, transform = |s| s.to_string())]
         </span><span class="kw">pub </span>name: String,
     }
 
     <span class="attr">#[rust_sitter::extra]
     </span><span class="kw">struct </span>Whitespace {
-        <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r&quot;\s&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r"\s"</span>)]
         </span>_whitespace: (),
     }
 
     <span class="attr">#[rust_sitter::extra]
     </span><span class="kw">struct </span>Comment {
-        <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r&quot;(#|\/\/).*&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r"(#|\/\/).*"</span>)]
         </span>_comment: (),
     }
 
     <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub enum </span>BoolOp {
-        Lt(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;&lt;&quot;</span>)] </span>()),
-        LtEq(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;&lt;=&quot;</span>)] </span>()),
-        Gt(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;&gt;&quot;</span>)] </span>()),
-        GtEq(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;&gt;=&quot;</span>)] </span>()),
-        Eq(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;==&quot;</span>)] </span>()),
-        Neq(<span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;!=&quot;</span>)] </span>()),
+        Lt(<span class="attr">#[rust_sitter::leaf(text = <span class="string">"&lt;"</span>)] </span>()),
+        LtEq(<span class="attr">#[rust_sitter::leaf(text = <span class="string">"&lt;="</span>)] </span>()),
+        Gt(<span class="attr">#[rust_sitter::leaf(text = <span class="string">"&gt;"</span>)] </span>()),
+        GtEq(<span class="attr">#[rust_sitter::leaf(text = <span class="string">"&gt;="</span>)] </span>()),
+        Eq(<span class="attr">#[rust_sitter::leaf(text = <span class="string">"=="</span>)] </span>()),
+        Neq(<span class="attr">#[rust_sitter::leaf(text = <span class="string">"!="</span>)] </span>()),
     }
 
     <span class="attr">#[derive(Debug, Clone)]
     </span><span class="kw">pub struct </span>BoolExpr {
-        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(text = <span class="string">"("</span>)]
         </span>_l_brace: (),
 
         <span class="kw">pub </span>left: Spanned&lt;IntExpr&gt;,
         <span class="kw">pub </span>op: BoolOp,
         <span class="kw">pub </span>right: Spanned&lt;IntExpr&gt;,
 
-        <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)]
+        <span class="attr">#[rust_sitter::leaf(text = <span class="string">")"</span>)]
         </span>_r_brace: (),
     }
 
@@ -558,36 +560,36 @@
     </span><span class="kw">pub enum </span>IntExpr {
         Ident(Spanned&lt;Ident&gt;),
         Integer(
-            <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r&quot;[0-9]+&quot;</span>, transform = |s| s.parse().unwrap())]
+            <span class="attr">#[rust_sitter::leaf(pattern = <span class="string">r"[0-9]+"</span>, transform = |s| s.parse().unwrap())]
             </span>Spanned&lt;i64&gt;,
         ),
         Parenthesized(
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;(&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"("</span>)] </span>(),
             Box&lt;IntExpr&gt;,
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;)&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">")"</span>)] </span>(),
         ),
         <span class="attr">#[rust_sitter::prec_left(<span class="number">1</span>)]
         </span>Add(
             Box&lt;IntExpr&gt;,
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;+&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"+"</span>)] </span>(),
             Box&lt;IntExpr&gt;,
         ),
         <span class="attr">#[rust_sitter::prec_left(<span class="number">1</span>)]
         </span>Sub(
             Box&lt;IntExpr&gt;,
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;-&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"-"</span>)] </span>(),
             Box&lt;IntExpr&gt;,
         ),
         <span class="attr">#[rust_sitter::prec_left(<span class="number">2</span>)]
         </span>Mul(
             Box&lt;IntExpr&gt;,
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;*&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"*"</span>)] </span>(),
             Box&lt;IntExpr&gt;,
         ),
         <span class="attr">#[rust_sitter::prec_left(<span class="number">1</span>)]
         </span>Mod(
             Box&lt;IntExpr&gt;,
-            <span class="attr">#[rust_sitter::leaf(text = <span class="string">&quot;%&quot;</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"%"</span>)] </span>(),
             Box&lt;IntExpr&gt;,
         ),
     }

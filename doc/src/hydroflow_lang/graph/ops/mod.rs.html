@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/ops/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/ops/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../hydroflow_lang/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -668,7 +670,7 @@
 <a href="#668" id="668">668</a>
 <a href="#669" id="669">669</a>
 <a href="#670" id="670">670</a>
-</pre></div><pre class="rust"><code><span class="doccomment">//! Hydroflow&#39;s operators
+</pre></div><pre class="rust"><code><span class="doccomment">//! Hydroflow's operators
 
 </span><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::fmt::{Debug, Display};
@@ -694,7 +696,7 @@
 </span><span class="kw">pub enum </span>DelayType {
     <span class="doccomment">/// Input must be collected over the preceeding stratum.
     </span>Stratum,
-    <span class="doccomment">/// Monotone accumulation: can delay to reduce flow rate, but also correct to emit &quot;early&quot;
+    <span class="doccomment">/// Monotone accumulation: can delay to reduce flow rate, but also correct to emit "early"
     </span>MonotoneAccum,
     <span class="doccomment">/// Input must be collected over the previous tick.
     </span>Tick,
@@ -702,7 +704,7 @@
     </span>TickLazy,
 }
 
-<span class="doccomment">/// Specification of the named (or unnamed) ports for an operator&#39;s inputs or outputs.
+<span class="doccomment">/// Specification of the named (or unnamed) ports for an operator's inputs or outputs.
 </span><span class="kw">pub enum </span>PortListSpec {
     <span class="doccomment">/// Any number of unnamed (or optionally named) ports.
     </span>Variadic,
@@ -712,28 +714,28 @@
 
 <span class="doccomment">/// An instance of this struct represents a single hydroflow operator.
 </span><span class="kw">pub struct </span>OperatorConstraints {
-    <span class="doccomment">/// Operator&#39;s name.
-    </span><span class="kw">pub </span>name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+    <span class="doccomment">/// Operator's name.
+    </span><span class="kw">pub </span>name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
     <span class="doccomment">/// Operator categories, for docs.
-    </span><span class="kw">pub </span>categories: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>[OperatorCategory],
+    </span><span class="kw">pub </span>categories: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>[OperatorCategory],
 
     <span class="comment">// TODO: generic argument ranges.
     </span><span class="doccomment">/// Input argument range required to not show an error.
-    </span><span class="kw">pub </span>hard_range_inn: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
+    </span><span class="kw">pub </span>hard_range_inn: <span class="kw-2">&amp;</span><span class="lifetime">'static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
     <span class="doccomment">/// Input argument range required to not show a warning.
-    </span><span class="kw">pub </span>soft_range_inn: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
+    </span><span class="kw">pub </span>soft_range_inn: <span class="kw-2">&amp;</span><span class="lifetime">'static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
     <span class="doccomment">/// Output argument range required to not show an error.
-    </span><span class="kw">pub </span>hard_range_out: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
+    </span><span class="kw">pub </span>hard_range_out: <span class="kw-2">&amp;</span><span class="lifetime">'static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
     <span class="doccomment">/// Output argument range required to not show an warning.
-    </span><span class="kw">pub </span>soft_range_out: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
+    </span><span class="kw">pub </span>soft_range_out: <span class="kw-2">&amp;</span><span class="lifetime">'static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
     <span class="doccomment">/// Number of arguments i.e. `operator(a, b, c)` has `num_args = 3`.
     </span><span class="kw">pub </span>num_args: usize,
     <span class="doccomment">/// How many persistence lifetime arguments can be provided.
-    </span><span class="kw">pub </span>persistence_args: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
+    </span><span class="kw">pub </span>persistence_args: <span class="kw-2">&amp;</span><span class="lifetime">'static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
     <span class="comment">// /// How many (non-persistence) lifetime arguments can be provided.
-    // pub lifetime_args: &amp;&#39;static dyn RangeTrait&lt;usize&gt;,
+    // pub lifetime_args: &amp;'static dyn RangeTrait&lt;usize&gt;,
     </span><span class="doccomment">/// How many generic type arguments can be provided.
-    </span><span class="kw">pub </span>type_args: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
+    </span><span class="kw">pub </span>type_args: <span class="kw-2">&amp;</span><span class="lifetime">'static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt;,
     <span class="doccomment">/// If this operator receives external inputs and therefore must be in
     /// stratum 0.
     </span><span class="kw">pub </span>is_external_input: bool,
@@ -762,62 +764,62 @@
     /// props which does not match the number of outputs.
     </span><span class="kw">pub </span>flow_prop_fn: <span class="prelude-ty">Option</span>&lt;FlowPropFn&gt;,
 
-    <span class="doccomment">/// The operator&#39;s codegen. Returns code that is emited is several different locations. See [`OperatorWriteOutput`].
+    <span class="doccomment">/// The operator's codegen. Returns code that is emited is several different locations. See [`OperatorWriteOutput`].
     </span><span class="kw">pub </span>write_fn: WriteFn,
 }
 
-<span class="doccomment">/// Type alias for [`OperatorConstraints::flow_prop_fn`]&#39;s type.
+<span class="doccomment">/// Type alias for [`OperatorConstraints::flow_prop_fn`]'s type.
 </span><span class="kw">pub type </span>FlowPropFn =
-    <span class="kw">fn</span>(FlowPropArgs&lt;<span class="lifetime">&#39;_</span>&gt;, <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="prelude-ty">Option</span>&lt;FlowProps&gt;&gt;, ()&gt;;
+    <span class="kw">fn</span>(FlowPropArgs&lt;<span class="lifetime">'_</span>&gt;, <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="prelude-ty">Option</span>&lt;FlowProps&gt;&gt;, ()&gt;;
 
-<span class="doccomment">/// Type alias for [`OperatorConstraints::write_fn`]&#39;s type.
+<span class="doccomment">/// Type alias for [`OperatorConstraints::write_fn`]'s type.
 </span><span class="kw">pub type </span>WriteFn =
-    <span class="kw">fn</span>(<span class="kw-2">&amp;</span>WriteContextArgs&lt;<span class="lifetime">&#39;_</span>&gt;, <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;OperatorWriteOutput, ()&gt;;
+    <span class="kw">fn</span>(<span class="kw-2">&amp;</span>WriteContextArgs&lt;<span class="lifetime">'_</span>&gt;, <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;OperatorWriteOutput, ()&gt;;
 
 <span class="doccomment">/// Arguments provided to [`OperatorConstraints::flow_prop_fn`].
-</span><span class="kw">pub struct </span>FlowPropArgs&lt;<span class="lifetime">&#39;a</span>&gt; {
+</span><span class="kw">pub struct </span>FlowPropArgs&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// The source span of this operator.
     </span><span class="kw">pub </span>op_span: Span,
 
     <span class="doccomment">/// Operator name.
-    </span><span class="kw">pub </span>op_name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+    </span><span class="kw">pub </span>op_name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
     <span class="doccomment">/// Operator instance arguments object.
-    </span><span class="kw">pub </span>op_inst: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>OperatorInstance,
+    </span><span class="kw">pub </span>op_inst: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>OperatorInstance,
 
     <span class="doccomment">/// Flow properties corresponding to each input.
     ///
     /// Sometimes (due to cycles, and for now usually due to no-yet-updated operators) the input
     /// flow props might not be set yet (`None`).
-    </span><span class="kw">pub </span>flow_props_in: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[<span class="prelude-ty">Option</span>&lt;FlowProps&gt;],
+    </span><span class="kw">pub </span>flow_props_in: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[<span class="prelude-ty">Option</span>&lt;FlowProps&gt;],
 
     <span class="doccomment">/// Internal: TODO(mingwei): new token value for output flows.
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) new_star_ord: usize,
 }
-<span class="kw">impl </span>FlowPropArgs&lt;<span class="lifetime">&#39;_</span>&gt; {
+<span class="kw">impl </span>FlowPropArgs&lt;<span class="lifetime">'_</span>&gt; {
     <span class="doccomment">/// Returns a new `star_ord` token, representing a new order/provenance.
-    /// TODO(mingwei): This shouldn&#39;t return the same value for multiple calls.
+    /// TODO(mingwei): This shouldn't return the same value for multiple calls.
     </span><span class="kw">pub fn </span>new_star_ord(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.new_star_ord
     }
 }
 
 <span class="kw">impl </span>Debug <span class="kw">for </span>OperatorConstraints {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; std::fmt::Result {
-        f.debug_struct(<span class="string">&quot;OperatorConstraints&quot;</span>)
-            .field(<span class="string">&quot;name&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.name)
-            .field(<span class="string">&quot;hard_range_inn&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.hard_range_inn)
-            .field(<span class="string">&quot;soft_range_inn&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.soft_range_inn)
-            .field(<span class="string">&quot;hard_range_out&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.hard_range_out)
-            .field(<span class="string">&quot;soft_range_out&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.soft_range_out)
-            .field(<span class="string">&quot;num_args&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.num_args)
-            .field(<span class="string">&quot;persistence_args&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.persistence_args)
-            .field(<span class="string">&quot;type_args&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.type_args)
-            .field(<span class="string">&quot;is_external_input&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.is_external_input)
-            .field(<span class="string">&quot;ports_inn&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.ports_inn)
-            .field(<span class="string">&quot;ports_out&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.ports_out)
-            <span class="comment">// .field(&quot;input_delaytype_fn&quot;, &amp;self.input_delaytype_fn)
-            // .field(&quot;flow_prop_fn&quot;, &amp;self.flow_prop_fn)
-            // .field(&quot;write_fn&quot;, &amp;self.write_fn)
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
+        f.debug_struct(<span class="string">"OperatorConstraints"</span>)
+            .field(<span class="string">"name"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.name)
+            .field(<span class="string">"hard_range_inn"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.hard_range_inn)
+            .field(<span class="string">"soft_range_inn"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.soft_range_inn)
+            .field(<span class="string">"hard_range_out"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.hard_range_out)
+            .field(<span class="string">"soft_range_out"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.soft_range_out)
+            .field(<span class="string">"num_args"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.num_args)
+            .field(<span class="string">"persistence_args"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.persistence_args)
+            .field(<span class="string">"type_args"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.type_args)
+            .field(<span class="string">"is_external_input"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.is_external_input)
+            .field(<span class="string">"ports_inn"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.ports_inn)
+            .field(<span class="string">"ports_out"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.ports_out)
+            <span class="comment">// .field("input_delaytype_fn", &amp;self.input_delaytype_fn)
+            // .field("flow_prop_fn", &amp;self.flow_prop_fn)
+            // .field("write_fn", &amp;self.write_fn)
             </span>.finish()
     }
 }
@@ -841,11 +843,11 @@
 }
 
 <span class="doccomment">/// Convenience range: zero or more (any number).
-</span><span class="kw">pub const </span>RANGE_ANY: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt; = <span class="kw-2">&amp;</span>(<span class="number">0</span>..);
+</span><span class="kw">pub const </span>RANGE_ANY: <span class="kw-2">&amp;</span><span class="lifetime">'static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt; = <span class="kw-2">&amp;</span>(<span class="number">0</span>..);
 <span class="doccomment">/// Convenience range: exactly zero.
-</span><span class="kw">pub const </span>RANGE_0: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt; = <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">0</span>);
+</span><span class="kw">pub const </span>RANGE_0: <span class="kw-2">&amp;</span><span class="lifetime">'static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt; = <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">0</span>);
 <span class="doccomment">/// Convenience range: exactly one.
-</span><span class="kw">pub const </span>RANGE_1: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt; = <span class="kw-2">&amp;</span>(<span class="number">1</span>..=<span class="number">1</span>);
+</span><span class="kw">pub const </span>RANGE_1: <span class="kw-2">&amp;</span><span class="lifetime">'static </span><span class="kw">dyn </span>RangeTrait&lt;usize&gt; = <span class="kw-2">&amp;</span>(<span class="number">1</span>..=<span class="number">1</span>);
 
 <span class="doccomment">/// Helper to write the `write_iterator` portion of [`OperatorConstraints::write_fn`] output for
 /// unary identity operators.
@@ -910,12 +912,12 @@
             <span class="prelude-val">Some</span>(LatticeFlowType::Cumul) =&gt; diagnostics.push(Diagnostic::spanned(
                 op_span,
                 Level::Warning,
-                <span class="macro">format!</span>(<span class="string">&quot;`{}` input is already cumulative lattice flow, this operator is redundant.&quot;</span>, op_name),
+                <span class="macro">format!</span>(<span class="string">"`{}` input is already cumulative lattice flow, this operator is redundant."</span>, op_name),
             )),
             <span class="prelude-val">None </span>=&gt; diagnostics.push(Diagnostic::spanned(
                 op_span,
                 Level::Warning,
-                <span class="macro">format!</span>(<span class="string">&quot;`{}` expects lattice flow input, has sequential input. This may be an error in the future.&quot;</span>, op_name),
+                <span class="macro">format!</span>(<span class="string">"`{}` expects lattice flow input, has sequential input. This may be an error in the future."</span>, op_name),
             )),
         }
         <span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[<span class="prelude-val">Some</span>(FlowProps {
@@ -945,13 +947,13 @@
             .reduce(std::cmp::min)
             .flatten();
         <span class="kw">let </span>lattice_flow_type = lattice_flow_type.map(|flow_type| {
-            <span class="comment">// Upgrade &#39;static to Cumul.
+            <span class="comment">// Upgrade 'static to Cumul.
             </span><span class="kw">match </span>persistence_args[..] {
                 [Persistence::Static, Persistence::Static] =&gt; LatticeFlowType::Cumul,
                 [Persistence::Static] =&gt; LatticeFlowType::Cumul,
                 <span class="kw">_ </span>=&gt; flow_type,
             }
-            <span class="comment">// TODO(mingwei): diagnostics warning for mismatch between &#39;static vs &#39;tick and flow props.
+            <span class="comment">// TODO(mingwei): diagnostics warning for mismatch between 'static vs 'tick and flow props.
         </span>});
         <span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[<span class="prelude-val">Some</span>(FlowProps {
             star_ord: fp.new_star_ord(),
@@ -1086,13 +1088,13 @@
 ];
 
 <span class="doccomment">/// Get the operator lookup table, generating it if needed.
-</span><span class="kw">pub fn </span>operator_lookup() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>OperatorConstraints&gt; {
-    <span class="kw">pub static </span>OPERATOR_LOOKUP: OnceLock&lt;HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>OperatorConstraints&gt;&gt; =
+</span><span class="kw">pub fn </span>operator_lookup() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>OperatorConstraints&gt; {
+    <span class="kw">pub static </span>OPERATOR_LOOKUP: OnceLock&lt;HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>OperatorConstraints&gt;&gt; =
         OnceLock::new();
     OPERATOR_LOOKUP.get_or_init(|| OPERATORS.iter().map(|op| (op.name, op)).collect())
 }
 <span class="doccomment">/// Find an operator by [`GraphNode`].
-</span><span class="kw">pub fn </span>find_node_op_constraints(node: <span class="kw-2">&amp;</span>GraphNode) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>OperatorConstraints&gt; {
+</span><span class="kw">pub fn </span>find_node_op_constraints(node: <span class="kw-2">&amp;</span>GraphNode) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>OperatorConstraints&gt; {
     <span class="kw">if let </span>GraphNode::Operator(operator) = node {
         find_op_op_constraints(operator)
     } <span class="kw">else </span>{
@@ -1100,23 +1102,23 @@
     </span>}
 }
 <span class="doccomment">/// Find an operator by an AST [`Operator`].
-</span><span class="kw">pub fn </span>find_op_op_constraints(operator: <span class="kw-2">&amp;</span>Operator) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>OperatorConstraints&gt; {
+</span><span class="kw">pub fn </span>find_op_op_constraints(operator: <span class="kw-2">&amp;</span>Operator) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>OperatorConstraints&gt; {
     <span class="kw">let </span>name = <span class="kw-2">&amp;*</span>operator.name_string();
     operator_lookup().get(name).copied()
 }
 
 <span class="doccomment">/// Context arguments provided to [`OperatorConstraints::write_fn`].
 </span><span class="attr">#[derive(Clone)]
-</span><span class="kw">pub struct </span>WriteContextArgs&lt;<span class="lifetime">&#39;a</span>&gt; {
+</span><span class="kw">pub struct </span>WriteContextArgs&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// `hydroflow` crate name for `use #root::something`.
-    </span><span class="kw">pub </span>root: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>TokenStream,
+    </span><span class="kw">pub </span>root: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>TokenStream,
     <span class="doccomment">/// `context` ident, the name of the provided
     /// [`hydroflow::scheduled::Context`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/context/struct.Context.html).
-    </span><span class="kw">pub </span>context: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Ident,
+    </span><span class="kw">pub </span>context: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Ident,
     <span class="doccomment">/// `df` ident, the name of the
     /// [`hydroflow::scheduled::graph::Hydroflow`](https://hydro-project.github.io/hydroflow/doc/hydroflow/scheduled/graph/struct.Hydroflow.html)
     /// instance.
-    </span><span class="kw">pub </span>hydroflow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Ident,
+    </span><span class="kw">pub </span>hydroflow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Ident,
     <span class="doccomment">/// Subgraph ID in which this operator is contained.
     </span><span class="kw">pub </span>subgraph_id: GraphSubgraphId,
     <span class="doccomment">/// Node ID identifying this operator in the flat or partitioned graph meta-datastructure.
@@ -1125,31 +1127,31 @@
     </span><span class="kw">pub </span>op_span: Span,
 
     <span class="doccomment">/// Ident the iterator or pullerator should be assigned to.
-    </span><span class="kw">pub </span>ident: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Ident,
+    </span><span class="kw">pub </span>ident: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Ident,
     <span class="doccomment">/// If a pull iterator (true) or pusherator (false) should be used.
     </span><span class="kw">pub </span>is_pull: bool,
     <span class="doccomment">/// Input operator idents (or ref idents; used for pull).
-    </span><span class="kw">pub </span>inputs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Ident],
+    </span><span class="kw">pub </span>inputs: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[Ident],
     <span class="doccomment">/// Output operator idents (or ref idents; used for push).
-    </span><span class="kw">pub </span>outputs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Ident],
+    </span><span class="kw">pub </span>outputs: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[Ident],
     <span class="doccomment">/// Input edge types (value or reference).
-    </span><span class="kw">pub </span>input_edgetypes: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[GraphEdgeType],
+    </span><span class="kw">pub </span>input_edgetypes: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[GraphEdgeType],
     <span class="doccomment">/// Output edge types (value or reference). Likely not that useful (since the operator decides
     /// its output edgetypes) but provided for completeness,
-    </span><span class="kw">pub </span>output_edgetypes: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[GraphEdgeType],
+    </span><span class="kw">pub </span>output_edgetypes: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[GraphEdgeType],
 
     <span class="doccomment">/// Operator name.
-    </span><span class="kw">pub </span>op_name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+    </span><span class="kw">pub </span>op_name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
     <span class="doccomment">/// Operator instance arguments object.
-    </span><span class="kw">pub </span>op_inst: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>OperatorInstance,
+    </span><span class="kw">pub </span>op_inst: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>OperatorInstance,
 
     <span class="doccomment">/// Flow properties corresponding to each input.
     ///
     /// Sometimes (due to cycles, and for now usually due to no-yet-updated operators) the input
     /// flow props might not be set yet (`None`).
-    </span><span class="kw">pub </span>flow_props_in: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[<span class="prelude-ty">Option</span>&lt;FlowProps&gt;],
+    </span><span class="kw">pub </span>flow_props_in: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[<span class="prelude-ty">Option</span>&lt;FlowProps&gt;],
 }
-<span class="kw">impl </span>WriteContextArgs&lt;<span class="lifetime">&#39;_</span>&gt; {
+<span class="kw">impl </span>WriteContextArgs&lt;<span class="lifetime">'_</span>&gt; {
     <span class="doccomment">/// Generate a (almost certainly) unique identifier with the given suffix.
     ///
     /// Includes the subgraph and node IDs in the generated identifier.
@@ -1158,7 +1160,7 @@
     </span><span class="kw">pub fn </span>make_ident(<span class="kw-2">&amp;</span><span class="self">self</span>, suffix: <span class="kw">impl </span>AsRef&lt;str&gt;) -&gt; Ident {
         Ident::new(
             <span class="kw-2">&amp;*</span><span class="macro">format!</span>(
-                <span class="string">&quot;sg_{:?}_node_{:?}_{}&quot;</span>,
+                <span class="string">"sg_{:?}_node_{:?}_{}"</span>,
                 <span class="self">self</span>.subgraph_id.data(),
                 <span class="self">self</span>.node_id.data(),
                 suffix.as_ref(),
@@ -1213,27 +1215,27 @@
         </span>T: Display + PartialEq,
     {
         <span class="kw">match </span>(<span class="self">self</span>.start_bound(), <span class="self">self</span>.end_bound()) {
-            (Bound::Unbounded, Bound::Unbounded) =&gt; <span class="string">&quot;any number of&quot;</span>.to_owned(),
+            (Bound::Unbounded, Bound::Unbounded) =&gt; <span class="string">"any number of"</span>.to_owned(),
 
             (Bound::Included(n), Bound::Included(x)) <span class="kw">if </span>n == x =&gt; {
-                <span class="macro">format!</span>(<span class="string">&quot;exactly {}&quot;</span>, n)
+                <span class="macro">format!</span>(<span class="string">"exactly {}"</span>, n)
             }
             (Bound::Included(n), Bound::Included(x)) =&gt; {
-                <span class="macro">format!</span>(<span class="string">&quot;at least {} and at most {}&quot;</span>, n, x)
+                <span class="macro">format!</span>(<span class="string">"at least {} and at most {}"</span>, n, x)
             }
             (Bound::Included(n), Bound::Excluded(x)) =&gt; {
-                <span class="macro">format!</span>(<span class="string">&quot;at least {} and less than {}&quot;</span>, n, x)
+                <span class="macro">format!</span>(<span class="string">"at least {} and less than {}"</span>, n, x)
             }
-            (Bound::Included(n), Bound::Unbounded) =&gt; <span class="macro">format!</span>(<span class="string">&quot;at least {}&quot;</span>, n),
+            (Bound::Included(n), Bound::Unbounded) =&gt; <span class="macro">format!</span>(<span class="string">"at least {}"</span>, n),
             (Bound::Excluded(n), Bound::Included(x)) =&gt; {
-                <span class="macro">format!</span>(<span class="string">&quot;more than {} and at most {}&quot;</span>, n, x)
+                <span class="macro">format!</span>(<span class="string">"more than {} and at most {}"</span>, n, x)
             }
             (Bound::Excluded(n), Bound::Excluded(x)) =&gt; {
-                <span class="macro">format!</span>(<span class="string">&quot;more than {} and less than {}&quot;</span>, n, x)
+                <span class="macro">format!</span>(<span class="string">"more than {} and less than {}"</span>, n, x)
             }
-            (Bound::Excluded(n), Bound::Unbounded) =&gt; <span class="macro">format!</span>(<span class="string">&quot;more than {}&quot;</span>, n),
-            (Bound::Unbounded, Bound::Included(x)) =&gt; <span class="macro">format!</span>(<span class="string">&quot;at most {}&quot;</span>, x),
-            (Bound::Unbounded, Bound::Excluded(x)) =&gt; <span class="macro">format!</span>(<span class="string">&quot;less than {}&quot;</span>, x),
+            (Bound::Excluded(n), Bound::Unbounded) =&gt; <span class="macro">format!</span>(<span class="string">"more than {}"</span>, n),
+            (Bound::Unbounded, Bound::Included(x)) =&gt; <span class="macro">format!</span>(<span class="string">"at most {}"</span>, x),
+            (Bound::Unbounded, Bound::Excluded(x)) =&gt; <span class="macro">format!</span>(<span class="string">"less than {}"</span>, x),
         }
     }
 }
@@ -1258,7 +1260,7 @@
     }
 }
 
-<span class="doccomment">/// Persistence lifetimes: `&#39;tick`, `&#39;static`, or `&#39;mutable`.
+<span class="doccomment">/// Persistence lifetimes: `'tick`, `'static`, or `'mutable`.
 </span><span class="attr">#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub enum </span>Persistence {
     <span class="doccomment">/// Persistence for one tick at-a-time only.
@@ -1271,7 +1273,7 @@
 
 <span class="doccomment">/// Helper which creates a error message string literal for when the Tokio runtime is not found.
 </span><span class="kw">fn </span>make_missing_runtime_msg(op_name: <span class="kw-2">&amp;</span>str) -&gt; Literal {
-    Literal::string(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">&quot;`{}()` must be used within a Tokio runtime. For example, use `#[hydroflow::main]` on your main method.&quot;</span>, op_name))
+    Literal::string(<span class="kw-2">&amp;*</span><span class="macro">format!</span>(<span class="string">"`{}()` must be used within a Tokio runtime. For example, use `#[hydroflow::main]` on your main method."</span>, op_name))
 }
 
 <span class="doccomment">/// Operator categories, for docs.
@@ -1296,44 +1298,44 @@
 }
 <span class="kw">impl </span>OperatorCategory {
     <span class="doccomment">/// Human-readible heading name, for docs.
-    </span><span class="kw">pub fn </span>name(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str {
+    </span><span class="kw">pub fn </span>name(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str {
         <span class="kw">match </span><span class="self">self </span>{
-            OperatorCategory::Map =&gt; <span class="string">&quot;Maps&quot;</span>,
-            OperatorCategory::Filter =&gt; <span class="string">&quot;Filters&quot;</span>,
-            OperatorCategory::Flatten =&gt; <span class="string">&quot;Flattens&quot;</span>,
-            OperatorCategory::Fold =&gt; <span class="string">&quot;Folds&quot;</span>,
-            OperatorCategory::KeyedFold =&gt; <span class="string">&quot;Keyed Folds&quot;</span>,
-            OperatorCategory::LatticeFold =&gt; <span class="string">&quot;Lattice Folds&quot;</span>,
-            OperatorCategory::Persistence =&gt; <span class="string">&quot;Persistent Operators&quot;</span>,
-            OperatorCategory::MultiIn =&gt; <span class="string">&quot;Multi-Input Operators&quot;</span>,
-            OperatorCategory::MultiOut =&gt; <span class="string">&quot;Multi-Output Operators&quot;</span>,
-            OperatorCategory::Source =&gt; <span class="string">&quot;Sources&quot;</span>,
-            OperatorCategory::Sink =&gt; <span class="string">&quot;Sinks&quot;</span>,
-            OperatorCategory::Control =&gt; <span class="string">&quot;Control Flow Operators&quot;</span>,
-            OperatorCategory::CompilerFusionOperator =&gt; <span class="string">&quot;Compiler Fusion Operators&quot;</span>,
+            OperatorCategory::Map =&gt; <span class="string">"Maps"</span>,
+            OperatorCategory::Filter =&gt; <span class="string">"Filters"</span>,
+            OperatorCategory::Flatten =&gt; <span class="string">"Flattens"</span>,
+            OperatorCategory::Fold =&gt; <span class="string">"Folds"</span>,
+            OperatorCategory::KeyedFold =&gt; <span class="string">"Keyed Folds"</span>,
+            OperatorCategory::LatticeFold =&gt; <span class="string">"Lattice Folds"</span>,
+            OperatorCategory::Persistence =&gt; <span class="string">"Persistent Operators"</span>,
+            OperatorCategory::MultiIn =&gt; <span class="string">"Multi-Input Operators"</span>,
+            OperatorCategory::MultiOut =&gt; <span class="string">"Multi-Output Operators"</span>,
+            OperatorCategory::Source =&gt; <span class="string">"Sources"</span>,
+            OperatorCategory::Sink =&gt; <span class="string">"Sinks"</span>,
+            OperatorCategory::Control =&gt; <span class="string">"Control Flow Operators"</span>,
+            OperatorCategory::CompilerFusionOperator =&gt; <span class="string">"Compiler Fusion Operators"</span>,
         }
     }
     <span class="doccomment">/// Human description, for docs.
-    </span><span class="kw">pub fn </span>description(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str {
+    </span><span class="kw">pub fn </span>description(<span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str {
         <span class="kw">match </span><span class="self">self </span>{
-            OperatorCategory::Map =&gt; <span class="string">&quot;Simple one-in-one-out operators.&quot;</span>,
-            OperatorCategory::Filter =&gt; <span class="string">&quot;One-in zero-or-one-out operators.&quot;</span>,
-            OperatorCategory::Flatten =&gt; <span class="string">&quot;One-in multiple-out operators.&quot;</span>,
-            OperatorCategory::Fold =&gt; <span class="string">&quot;Operators which accumulate elements together.&quot;</span>,
-            OperatorCategory::KeyedFold =&gt; <span class="string">&quot;Keyed fold operators.&quot;</span>,
-            OperatorCategory::LatticeFold =&gt; <span class="string">&quot;Folds based on lattice-merge.&quot;</span>,
-            OperatorCategory::Persistence =&gt; <span class="string">&quot;Persistent (stateful) operators.&quot;</span>,
-            OperatorCategory::MultiIn =&gt; <span class="string">&quot;Operators with multiple inputs.&quot;</span>,
-            OperatorCategory::MultiOut =&gt; <span class="string">&quot;Operators with multiple outputs.&quot;</span>,
+            OperatorCategory::Map =&gt; <span class="string">"Simple one-in-one-out operators."</span>,
+            OperatorCategory::Filter =&gt; <span class="string">"One-in zero-or-one-out operators."</span>,
+            OperatorCategory::Flatten =&gt; <span class="string">"One-in multiple-out operators."</span>,
+            OperatorCategory::Fold =&gt; <span class="string">"Operators which accumulate elements together."</span>,
+            OperatorCategory::KeyedFold =&gt; <span class="string">"Keyed fold operators."</span>,
+            OperatorCategory::LatticeFold =&gt; <span class="string">"Folds based on lattice-merge."</span>,
+            OperatorCategory::Persistence =&gt; <span class="string">"Persistent (stateful) operators."</span>,
+            OperatorCategory::MultiIn =&gt; <span class="string">"Operators with multiple inputs."</span>,
+            OperatorCategory::MultiOut =&gt; <span class="string">"Operators with multiple outputs."</span>,
             OperatorCategory::Source =&gt; {
-                <span class="string">&quot;Operators which produce output elements (and consume no inputs).&quot;
+                <span class="string">"Operators which produce output elements (and consume no inputs)."
             </span>}
             OperatorCategory::Sink =&gt; {
-                <span class="string">&quot;Operators which consume input elements (and produce no outputs).&quot;
+                <span class="string">"Operators which consume input elements (and produce no outputs)."
             </span>}
-            OperatorCategory::Control =&gt; <span class="string">&quot;Operators which affect control flow/scheduling.&quot;</span>,
+            OperatorCategory::Control =&gt; <span class="string">"Operators which affect control flow/scheduling."</span>,
             OperatorCategory::CompilerFusionOperator =&gt; {
-                <span class="string">&quot;Operators which are necessary to implement certain optimizations and rewrite rules&quot;
+                <span class="string">"Operators which are necessary to implement certain optimizations and rewrite rules"
             </span>}
         }
     }

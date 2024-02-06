@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydro_deploy/core/src/gcp.rs`."><title>gcp.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydro_deploy" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydro_deploy/core/src/gcp.rs`."><title>gcp.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydro_deploy" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../hydro_deploy/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -656,8 +658,8 @@
             .as_ref()
             .unwrap()
             .path()
-            .join(<span class="string">&quot;.ssh&quot;</span>)
-            .join(<span class="string">&quot;vm_instance_ssh_key_pem&quot;</span>)
+            .join(<span class="string">".ssh"</span>)
+            .join(<span class="string">"vm_instance_ssh_key_pem"</span>)
     }
 }
 
@@ -704,7 +706,7 @@
         <span class="kw">let </span>target_addr = SocketAddr::new(
             <span class="self">self</span>.external_ip
                 .as_ref()
-                .context(<span class="string">&quot;GCP host must be configured with an external IP to launch binaries&quot;</span>)<span class="question-mark">?
+                .context(<span class="string">"GCP host must be configured with an external IP to launch binaries"</span>)<span class="question-mark">?
                 </span>.parse()
                 .unwrap(),
             <span class="number">22</span>,
@@ -717,7 +719,7 @@
                 attempt_count += <span class="number">1</span>;
                 ProgressTracker::leaf(
                     <span class="macro">format!</span>(
-                        <span class="string">&quot;connecting to host @ {} (attempt: {})&quot;</span>,
+                        <span class="string">"connecting to host @ {} (attempt: {})"</span>,
                         <span class="self">self</span>.external_ip.as_ref().unwrap(),
                         attempt_count
                     ),
@@ -778,80 +780,80 @@
             .terraform
             .required_providers
             .insert(
-                <span class="string">&quot;google&quot;</span>.to_string(),
+                <span class="string">"google"</span>.to_string(),
                 TerraformProvider {
-                    source: <span class="string">&quot;hashicorp/google&quot;</span>.to_string(),
-                    version: <span class="string">&quot;4.53.1&quot;</span>.to_string(),
+                    source: <span class="string">"hashicorp/google"</span>.to_string(),
+                    version: <span class="string">"4.53.1"</span>.to_string(),
                 },
             );
 
-        <span class="kw">let </span>vpc_network = <span class="macro">format!</span>(<span class="string">&quot;hydro-vpc-network-{}&quot;</span>, <span class="self">self</span>.id);
+        <span class="kw">let </span>vpc_network = <span class="macro">format!</span>(<span class="string">"hydro-vpc-network-{}"</span>, <span class="self">self</span>.id);
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(existing) = <span class="self">self</span>.existing_vpc.as_ref() {
             <span class="kw">if </span>resource_batch
                 .terraform
                 .resource
-                .get(<span class="kw-2">&amp;</span><span class="string">&quot;google_compute_network&quot;</span>.to_string())
+                .get(<span class="kw-2">&amp;</span><span class="string">"google_compute_network"</span>.to_string())
                 .unwrap_or(<span class="kw-2">&amp;</span>HashMap::new())
                 .contains_key(existing)
             {
-                <span class="macro">format!</span>(<span class="string">&quot;google_compute_network.{existing}&quot;</span>)
+                <span class="macro">format!</span>(<span class="string">"google_compute_network.{existing}"</span>)
             } <span class="kw">else </span>{
                 resource_batch
                     .terraform
                     .data
-                    .entry(<span class="string">&quot;google_compute_network&quot;</span>.to_string())
+                    .entry(<span class="string">"google_compute_network"</span>.to_string())
                     .or_default()
                     .insert(
                         vpc_network.clone(),
                         <span class="macro">json!</span>({
-                            <span class="string">&quot;name&quot;</span>: existing,
-                            <span class="string">&quot;project&quot;</span>: <span class="self">self</span>.project,
+                            <span class="string">"name"</span>: existing,
+                            <span class="string">"project"</span>: <span class="self">self</span>.project,
                         }),
                     );
 
-                <span class="macro">format!</span>(<span class="string">&quot;data.google_compute_network.{vpc_network}&quot;</span>)
+                <span class="macro">format!</span>(<span class="string">"data.google_compute_network.{vpc_network}"</span>)
             }
         } <span class="kw">else </span>{
             resource_batch
                 .terraform
                 .resource
-                .entry(<span class="string">&quot;google_compute_network&quot;</span>.to_string())
+                .entry(<span class="string">"google_compute_network"</span>.to_string())
                 .or_default()
                 .insert(
                     vpc_network.clone(),
                     <span class="macro">json!</span>({
-                        <span class="string">&quot;name&quot;</span>: vpc_network,
-                        <span class="string">&quot;project&quot;</span>: <span class="self">self</span>.project,
-                        <span class="string">&quot;auto_create_subnetworks&quot;</span>: <span class="bool-val">true
+                        <span class="string">"name"</span>: vpc_network,
+                        <span class="string">"project"</span>: <span class="self">self</span>.project,
+                        <span class="string">"auto_create_subnetworks"</span>: <span class="bool-val">true
                     </span>}),
                 );
 
             <span class="kw">let </span>firewall_entries = resource_batch
                 .terraform
                 .resource
-                .entry(<span class="string">&quot;google_compute_firewall&quot;</span>.to_string())
+                .entry(<span class="string">"google_compute_firewall"</span>.to_string())
                 .or_default();
 
             <span class="comment">// allow all VMs to communicate with each other over internal IPs
             </span>firewall_entries.insert(
-                <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-internal&quot;</span>),
+                <span class="macro">format!</span>(<span class="string">"{vpc_network}-default-allow-internal"</span>),
                 <span class="macro">json!</span>({
-                    <span class="string">&quot;name&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-internal&quot;</span>),
-                    <span class="string">&quot;project&quot;</span>: <span class="self">self</span>.project,
-                    <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.name}}&quot;</span>),
-                    <span class="string">&quot;source_ranges&quot;</span>: [<span class="string">&quot;10.128.0.0/9&quot;</span>],
-                    <span class="string">&quot;allow&quot;</span>: [
+                    <span class="string">"name"</span>: <span class="macro">format!</span>(<span class="string">"{vpc_network}-default-allow-internal"</span>),
+                    <span class="string">"project"</span>: <span class="self">self</span>.project,
+                    <span class="string">"network"</span>: <span class="macro">format!</span>(<span class="string">"${{google_compute_network.{vpc_network}.name}}"</span>),
+                    <span class="string">"source_ranges"</span>: [<span class="string">"10.128.0.0/9"</span>],
+                    <span class="string">"allow"</span>: [
                         {
-                            <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;tcp&quot;</span>,
-                            <span class="string">&quot;ports&quot;</span>: [<span class="string">&quot;0-65535&quot;</span>]
+                            <span class="string">"protocol"</span>: <span class="string">"tcp"</span>,
+                            <span class="string">"ports"</span>: [<span class="string">"0-65535"</span>]
                         },
                         {
-                            <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;udp&quot;</span>,
-                            <span class="string">&quot;ports&quot;</span>: [<span class="string">&quot;0-65535&quot;</span>]
+                            <span class="string">"protocol"</span>: <span class="string">"udp"</span>,
+                            <span class="string">"ports"</span>: [<span class="string">"0-65535"</span>]
                         },
                         {
-                            <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;icmp&quot;
+                            <span class="string">"protocol"</span>: <span class="string">"icmp"
                         </span>}
                     ]
                 }),
@@ -859,15 +861,15 @@
 
             <span class="comment">// allow external pings to all VMs
             </span>firewall_entries.insert(
-                <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-ping&quot;</span>),
+                <span class="macro">format!</span>(<span class="string">"{vpc_network}-default-allow-ping"</span>),
                 <span class="macro">json!</span>({
-                    <span class="string">&quot;name&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;{vpc_network}-default-allow-ping&quot;</span>),
-                    <span class="string">&quot;project&quot;</span>: <span class="self">self</span>.project,
-                    <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_network.{vpc_network}.name}}&quot;</span>),
-                    <span class="string">&quot;source_ranges&quot;</span>: [<span class="string">&quot;0.0.0.0/0&quot;</span>],
-                    <span class="string">&quot;allow&quot;</span>: [
+                    <span class="string">"name"</span>: <span class="macro">format!</span>(<span class="string">"{vpc_network}-default-allow-ping"</span>),
+                    <span class="string">"project"</span>: <span class="self">self</span>.project,
+                    <span class="string">"network"</span>: <span class="macro">format!</span>(<span class="string">"${{google_compute_network.{vpc_network}.name}}"</span>),
+                    <span class="string">"source_ranges"</span>: [<span class="string">"0.0.0.0/0"</span>],
+                    <span class="string">"allow"</span>: [
                         {
-                            <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;icmp&quot;
+                            <span class="string">"protocol"</span>: <span class="string">"icmp"
                         </span>}
                     ]
                 }),
@@ -875,7 +877,7 @@
 
             <span class="self">self</span>.existing_vpc = <span class="prelude-val">Some</span>(vpc_network.clone());
 
-            <span class="macro">format!</span>(<span class="string">&quot;google_compute_network.{vpc_network}&quot;</span>)
+            <span class="macro">format!</span>(<span class="string">"google_compute_network.{vpc_network}"</span>)
         }
     }
 }
@@ -929,7 +931,7 @@
             ServerStrategy::ExternalTcpPort(port) =&gt; {
                 <span class="kw">if </span>!<span class="self">self</span>.external_ports.contains(port) {
                     <span class="kw">if </span><span class="self">self</span>.launched.is_some() {
-                        <span class="macro">todo!</span>(<span class="string">&quot;Cannot adjust firewall after host has been launched&quot;</span>);
+                        <span class="macro">todo!</span>(<span class="string">"Cannot adjust firewall after host has been launched"</span>);
                     }
 
                     <span class="self">self</span>.external_ports.push(<span class="kw-2">*</span>port);
@@ -987,10 +989,10 @@
             .terraform
             .required_providers
             .insert(
-                <span class="string">&quot;google&quot;</span>.to_string(),
+                <span class="string">"google"</span>.to_string(),
                 TerraformProvider {
-                    source: <span class="string">&quot;hashicorp/google&quot;</span>.to_string(),
-                    version: <span class="string">&quot;4.53.1&quot;</span>.to_string(),
+                    source: <span class="string">"hashicorp/google"</span>.to_string(),
+                    version: <span class="string">"4.53.1"</span>.to_string(),
                 },
             );
 
@@ -999,10 +1001,10 @@
             .terraform
             .required_providers
             .insert(
-                <span class="string">&quot;local&quot;</span>.to_string(),
+                <span class="string">"local"</span>.to_string(),
                 TerraformProvider {
-                    source: <span class="string">&quot;hashicorp/local&quot;</span>.to_string(),
-                    version: <span class="string">&quot;2.3.0&quot;</span>.to_string(),
+                    source: <span class="string">"hashicorp/local"</span>.to_string(),
+                    version: <span class="string">"2.3.0"</span>.to_string(),
                 },
             );
 
@@ -1011,10 +1013,10 @@
             .terraform
             .required_providers
             .insert(
-                <span class="string">&quot;tls&quot;</span>.to_string(),
+                <span class="string">"tls"</span>.to_string(),
                 TerraformProvider {
-                    source: <span class="string">&quot;hashicorp/tls&quot;</span>.to_string(),
-                    version: <span class="string">&quot;4.0.4&quot;</span>.to_string(),
+                    source: <span class="string">"hashicorp/tls"</span>.to_string(),
+                    version: <span class="string">"4.0.4"</span>.to_string(),
                 },
             );
 
@@ -1022,44 +1024,44 @@
         </span>resource_batch
             .terraform
             .resource
-            .entry(<span class="string">&quot;tls_private_key&quot;</span>.to_string())
+            .entry(<span class="string">"tls_private_key"</span>.to_string())
             .or_default()
             .insert(
-                <span class="string">&quot;vm_instance_ssh_key&quot;</span>.to_string(),
+                <span class="string">"vm_instance_ssh_key"</span>.to_string(),
                 <span class="macro">json!</span>({
-                    <span class="string">&quot;algorithm&quot;</span>: <span class="string">&quot;RSA&quot;</span>,
-                    <span class="string">&quot;rsa_bits&quot;</span>: <span class="number">4096
+                    <span class="string">"algorithm"</span>: <span class="string">"RSA"</span>,
+                    <span class="string">"rsa_bits"</span>: <span class="number">4096
                 </span>}),
             );
 
         resource_batch
             .terraform
             .resource
-            .entry(<span class="string">&quot;local_file&quot;</span>.to_string())
+            .entry(<span class="string">"local_file"</span>.to_string())
             .or_default()
             .insert(
-                <span class="string">&quot;vm_instance_ssh_key_pem&quot;</span>.to_string(),
+                <span class="string">"vm_instance_ssh_key_pem"</span>.to_string(),
                 <span class="macro">json!</span>({
-                    <span class="string">&quot;content&quot;</span>: <span class="string">&quot;${tls_private_key.vm_instance_ssh_key.private_key_pem}&quot;</span>,
-                    <span class="string">&quot;filename&quot;</span>: <span class="string">&quot;.ssh/vm_instance_ssh_key_pem&quot;</span>,
-                    <span class="string">&quot;file_permission&quot;</span>: <span class="string">&quot;0600&quot;
+                    <span class="string">"content"</span>: <span class="string">"${tls_private_key.vm_instance_ssh_key.private_key_pem}"</span>,
+                    <span class="string">"filename"</span>: <span class="string">".ssh/vm_instance_ssh_key_pem"</span>,
+                    <span class="string">"file_permission"</span>: <span class="string">"0600"
                 </span>}),
             );
 
-        <span class="kw">let </span>vm_key = <span class="macro">format!</span>(<span class="string">&quot;vm-instance-{}&quot;</span>, <span class="self">self</span>.id);
-        <span class="kw">let </span>vm_name = <span class="macro">format!</span>(<span class="string">&quot;hydro-vm-instance-{}&quot;</span>, <span class="macro">nanoid!</span>(<span class="number">8</span>, <span class="kw-2">&amp;</span>TERRAFORM_ALPHABET));
+        <span class="kw">let </span>vm_key = <span class="macro">format!</span>(<span class="string">"vm-instance-{}"</span>, <span class="self">self</span>.id);
+        <span class="kw">let </span>vm_name = <span class="macro">format!</span>(<span class="string">"hydro-vm-instance-{}"</span>, <span class="macro">nanoid!</span>(<span class="number">8</span>, <span class="kw-2">&amp;</span>TERRAFORM_ALPHABET));
 
         <span class="kw">let </span><span class="kw-2">mut </span>tags = <span class="macro">vec!</span>[];
         <span class="kw">let </span><span class="kw-2">mut </span>external_interfaces = <span class="macro">vec!</span>[];
 
         <span class="kw">if </span><span class="self">self</span>.external_ports.is_empty() {
-            external_interfaces.push(<span class="macro">json!</span>({ <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{{vpc_path}.self_link}}&quot;</span>) }));
+            external_interfaces.push(<span class="macro">json!</span>({ <span class="string">"network"</span>: <span class="macro">format!</span>(<span class="string">"${{{vpc_path}.self_link}}"</span>) }));
         } <span class="kw">else </span>{
             external_interfaces.push(<span class="macro">json!</span>({
-                <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{{vpc_path}.self_link}}&quot;</span>),
-                <span class="string">&quot;access_config&quot;</span>: [
+                <span class="string">"network"</span>: <span class="macro">format!</span>(<span class="string">"${{{vpc_path}.self_link}}"</span>),
+                <span class="string">"access_config"</span>: [
                     {
-                        <span class="string">&quot;network_tier&quot;</span>: <span class="string">&quot;STANDARD&quot;
+                        <span class="string">"network_tier"</span>: <span class="string">"STANDARD"
                     </span>}
                 ]
             }));
@@ -1070,71 +1072,71 @@
                 <span class="kw">let </span>firewall_rule = resource_batch
                     .terraform
                     .resource
-                    .entry(<span class="string">&quot;google_compute_firewall&quot;</span>.to_string())
+                    .entry(<span class="string">"google_compute_firewall"</span>.to_string())
                     .or_default()
-                    .entry(<span class="macro">format!</span>(<span class="string">&quot;open-external-port-{}&quot;</span>, port))
+                    .entry(<span class="macro">format!</span>(<span class="string">"open-external-port-{}"</span>, port))
                     .or_insert(<span class="macro">json!</span>({
-                        <span class="string">&quot;name&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;open-external-port-{}-{}&quot;</span>, port, rule_id),
-                        <span class="string">&quot;project&quot;</span>: project,
-                        <span class="string">&quot;network&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;${{{vpc_path}.name}}&quot;</span>),
-                        <span class="string">&quot;target_tags&quot;</span>: [<span class="macro">format!</span>(<span class="string">&quot;open-external-port-tag-{}-{}&quot;</span>, port, rule_id)],
-                        <span class="string">&quot;source_ranges&quot;</span>: [<span class="string">&quot;0.0.0.0/0&quot;</span>],
-                        <span class="string">&quot;allow&quot;</span>: [
+                        <span class="string">"name"</span>: <span class="macro">format!</span>(<span class="string">"open-external-port-{}-{}"</span>, port, rule_id),
+                        <span class="string">"project"</span>: project,
+                        <span class="string">"network"</span>: <span class="macro">format!</span>(<span class="string">"${{{vpc_path}.name}}"</span>),
+                        <span class="string">"target_tags"</span>: [<span class="macro">format!</span>(<span class="string">"open-external-port-tag-{}-{}"</span>, port, rule_id)],
+                        <span class="string">"source_ranges"</span>: [<span class="string">"0.0.0.0/0"</span>],
+                        <span class="string">"allow"</span>: [
                             {
-                                <span class="string">&quot;protocol&quot;</span>: <span class="string">&quot;tcp&quot;</span>,
-                                <span class="string">&quot;ports&quot;</span>: <span class="macro">vec!</span>[port.to_string()]
+                                <span class="string">"protocol"</span>: <span class="string">"tcp"</span>,
+                                <span class="string">"ports"</span>: <span class="macro">vec!</span>[port.to_string()]
                             }
                         ]
                     }));
 
-                firewall_rule[<span class="string">&quot;target_tags&quot;</span>].as_array().unwrap()[<span class="number">0</span>].clone()
+                firewall_rule[<span class="string">"target_tags"</span>].as_array().unwrap()[<span class="number">0</span>].clone()
             });
 
             tags.extend(my_external_tags);
 
             resource_batch.terraform.output.insert(
-                <span class="macro">format!</span>(<span class="string">&quot;{vm_key}-public-ip&quot;</span>),
+                <span class="macro">format!</span>(<span class="string">"{vm_key}-public-ip"</span>),
                 TerraformOutput {
-                    value: <span class="macro">format!</span>(<span class="string">&quot;${{google_compute_instance.{vm_key}.network_interface[0].access_config[0].nat_ip}}&quot;</span>)
+                    value: <span class="macro">format!</span>(<span class="string">"${{google_compute_instance.{vm_key}.network_interface[0].access_config[0].nat_ip}}"</span>)
                 }
             );
         }
 
-        <span class="kw">let </span>user = <span class="self">self</span>.user.as_ref().cloned().unwrap_or(<span class="string">&quot;hydro&quot;</span>.to_string());
+        <span class="kw">let </span>user = <span class="self">self</span>.user.as_ref().cloned().unwrap_or(<span class="string">"hydro"</span>.to_string());
         resource_batch
             .terraform
             .resource
-            .entry(<span class="string">&quot;google_compute_instance&quot;</span>.to_string())
+            .entry(<span class="string">"google_compute_instance"</span>.to_string())
             .or_default()
             .insert(
                 vm_key.clone(),
                 <span class="macro">json!</span>({
-                    <span class="string">&quot;name&quot;</span>: vm_name,
-                    <span class="string">&quot;project&quot;</span>: project,
-                    <span class="string">&quot;machine_type&quot;</span>: <span class="self">self</span>.machine_type,
-                    <span class="string">&quot;zone&quot;</span>: <span class="self">self</span>.region,
-                    <span class="string">&quot;tags&quot;</span>: tags,
-                    <span class="string">&quot;metadata&quot;</span>: {
-                        <span class="string">&quot;ssh-keys&quot;</span>: <span class="macro">format!</span>(<span class="string">&quot;{user}:${{tls_private_key.vm_instance_ssh_key.public_key_openssh}}&quot;</span>)
+                    <span class="string">"name"</span>: vm_name,
+                    <span class="string">"project"</span>: project,
+                    <span class="string">"machine_type"</span>: <span class="self">self</span>.machine_type,
+                    <span class="string">"zone"</span>: <span class="self">self</span>.region,
+                    <span class="string">"tags"</span>: tags,
+                    <span class="string">"metadata"</span>: {
+                        <span class="string">"ssh-keys"</span>: <span class="macro">format!</span>(<span class="string">"{user}:${{tls_private_key.vm_instance_ssh_key.public_key_openssh}}"</span>)
                     },
-                    <span class="string">&quot;boot_disk&quot;</span>: [
+                    <span class="string">"boot_disk"</span>: [
                         {
-                            <span class="string">&quot;initialize_params&quot;</span>: [
+                            <span class="string">"initialize_params"</span>: [
                                 {
-                                    <span class="string">&quot;image&quot;</span>: <span class="self">self</span>.image
+                                    <span class="string">"image"</span>: <span class="self">self</span>.image
                                 }
                             ]
                         }
                     ],
-                    <span class="string">&quot;network_interface&quot;</span>: external_interfaces
+                    <span class="string">"network_interface"</span>: external_interfaces
                 }),
             );
 
         resource_batch.terraform.output.insert(
-            <span class="macro">format!</span>(<span class="string">&quot;{vm_key}-internal-ip&quot;</span>),
+            <span class="macro">format!</span>(<span class="string">"{vm_key}-internal-ip"</span>),
             TerraformOutput {
                 value: <span class="macro">format!</span>(
-                    <span class="string">&quot;${{google_compute_instance.{vm_key}.network_interface[0].network_ip}}&quot;
+                    <span class="string">"${{google_compute_instance.{vm_key}.network_interface[0].network_ip}}"
                 </span>),
             },
         );
@@ -1153,7 +1155,7 @@
             <span class="kw">let </span>internal_ip = resource_result
                 .terraform
                 .outputs
-                .get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;vm-instance-{id}-internal-ip&quot;</span>))
+                .get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"vm-instance-{id}-internal-ip"</span>))
                 .unwrap()
                 .value
                 .clone();
@@ -1161,12 +1163,12 @@
             <span class="kw">let </span>external_ip = resource_result
                 .terraform
                 .outputs
-                .get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;vm-instance-{id}-public-ip&quot;</span>))
+                .get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"vm-instance-{id}-public-ip"</span>))
                 .map(|v| v.value.clone());
 
             <span class="self">self</span>.launched = <span class="prelude-val">Some</span>(Arc::new(LaunchedComputeEngine {
                 resource_result: resource_result.clone(),
-                user: <span class="self">self</span>.user.as_ref().cloned().unwrap_or(<span class="string">&quot;hydro&quot;</span>.to_string()),
+                user: <span class="self">self</span>.user.as_ref().cloned().unwrap_or(<span class="string">"hydro"</span>.to_string()),
                 internal_ip,
                 external_ip,
             }))
@@ -1175,11 +1177,11 @@
         <span class="self">self</span>.launched.as_ref().unwrap().clone()
     }
 
-    <span class="kw">fn </span>strategy_as_server&lt;<span class="lifetime">&#39;a</span>&gt;(
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
+    <span class="kw">fn </span>strategy_as_server&lt;<span class="lifetime">'a</span>&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
         client_host: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Host,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(
-        ClientStrategy&lt;<span class="lifetime">&#39;a</span>&gt;,
+        ClientStrategy&lt;<span class="lifetime">'a</span>&gt;,
         Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any) -&gt; ServerStrategy&gt;,
     )&gt; {
         <span class="kw">if </span>client_host.can_connect_to(ClientStrategy::UnixSocket(<span class="self">self</span>.id)) {
@@ -1203,7 +1205,7 @@
                 }),
             ))
         } <span class="kw">else </span>{
-            <span class="macro">anyhow::bail!</span>(<span class="string">&quot;Could not find a strategy to connect to GCP instance&quot;</span>)
+            <span class="macro">anyhow::bail!</span>(<span class="string">"Could not find a strategy to connect to GCP instance"</span>)
         }
     }
 

@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow/src/scheduled/graph.rs`."><title>graph.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow/src/scheduled/graph.rs`."><title>graph.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../hydroflow/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -824,15 +826,15 @@
 <span class="kw">use </span><span class="kw">crate</span>::Never;
 
 <span class="doccomment">/// A Hydroflow graph. Owns, schedules, and runs the compiled subgraphs.
-</span><span class="kw">pub struct </span>Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">pub</span>(<span class="kw">super</span>) subgraphs: Vec&lt;SubgraphData&lt;<span class="lifetime">&#39;a</span>&gt;&gt;,
+</span><span class="kw">pub struct </span>Hydroflow&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">pub</span>(<span class="kw">super</span>) subgraphs: Vec&lt;SubgraphData&lt;<span class="lifetime">'a</span>&gt;&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) context: Context,
     handoffs: Vec&lt;HandoffData&gt;,
 
     <span class="doccomment">/// TODO(mingwei): separate scheduler into its own struct/trait?
     /// Index is stratum, value is FIFO queue for that stratum.
     </span>stratum_queues: Vec&lt;VecDeque&lt;SubgraphId&gt;&gt;,
-    <span class="doccomment">/// Receive events, if second arg indicates if it is an external &quot;important&quot; event (true).
+    <span class="doccomment">/// Receive events, if second arg indicates if it is an external "important" event (true).
     </span>event_queue_recv: UnboundedReceiver&lt;(SubgraphId, bool)&gt;,
     <span class="doccomment">/// If external events or data can justify starting the next tick.
     </span>can_start_tick: bool,
@@ -844,7 +846,7 @@
     <span class="doccomment">/// See [`Self::diagnostics()`].
     </span>diagnostics: <span class="prelude-ty">Option</span>&lt;Vec&lt;Diagnostic&lt;SerdeSpan&gt;&gt;&gt;,
 }
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Default <span class="kw">for </span>Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Default <span class="kw">for </span>Hydroflow&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>stratum_queues = <span class="macro">vec!</span>[Default::default()]; <span class="comment">// Always initialize stratum #0.
         </span><span class="kw">let </span>(event_queue_send, event_queue_recv) = mpsc::unbounded_channel();
@@ -879,7 +881,7 @@
         }
     }
 }
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Hydroflow&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// Create a new empty Hydroflow graph.
     </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         Default::default()
@@ -889,7 +891,7 @@
     </span><span class="attr">#[doc(hidden)]
     </span><span class="kw">pub fn </span>__assign_meta_graph(<span class="kw-2">&amp;mut </span><span class="self">self</span>, meta_graph_json: <span class="kw-2">&amp;</span>str) {
         <span class="kw">let </span><span class="kw-2">mut </span>meta_graph: HydroflowGraph =
-            serde_json::from_str(meta_graph_json).expect(<span class="string">&quot;Failed to deserialize graph.&quot;</span>);
+            serde_json::from_str(meta_graph_json).expect(<span class="string">"Failed to deserialize graph."</span>);
 
         <span class="kw">let </span><span class="kw-2">mut </span>op_inst_diagnostics = Vec::new();
         meta_graph.insert_node_op_insts_all(<span class="kw-2">&amp;mut </span>op_inst_diagnostics);
@@ -899,9 +901,9 @@
     }
     <span class="doccomment">/// Assign the diagnostics via JSON string.
     </span><span class="attr">#[doc(hidden)]
-    </span><span class="kw">pub fn </span>__assign_diagnostics(<span class="kw-2">&amp;mut </span><span class="self">self</span>, diagnostics_json: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str) {
+    </span><span class="kw">pub fn </span>__assign_diagnostics(<span class="kw-2">&amp;mut </span><span class="self">self</span>, diagnostics_json: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) {
         <span class="kw">let </span>diagnostics: Vec&lt;Diagnostic&lt;SerdeSpan&gt;&gt; =
-            serde_json::from_str(diagnostics_json).expect(<span class="string">&quot;Failed to deserialize diagnostics.&quot;</span>);
+            serde_json::from_str(diagnostics_json).expect(<span class="string">"Failed to deserialize diagnostics."</span>);
 
         <span class="macro">assert!</span>(<span class="self">self</span>.diagnostics.replace(diagnostics).is_none());
     }
@@ -939,7 +941,7 @@
 
     <span class="doccomment">/// Runs the dataflow until the next tick begins.
     /// Returns true if any work was done.
-    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), ret)]
+    </span><span class="attr">#[tracing::instrument(level = <span class="string">"trace"</span>, skip(<span class="self">self</span>), ret)]
     </span><span class="kw">pub fn </span>run_tick(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
         <span class="kw">let </span><span class="kw-2">mut </span>work_done = <span class="bool-val">false</span>;
         <span class="comment">// While work is immediately available *on the current tick*.
@@ -955,7 +957,7 @@
     /// Runs at least one tick of dataflow, even if no external events have been received.
     /// If the dataflow contains loops this method may run forever.
     /// Returns true if any work was done.
-    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), ret)]
+    </span><span class="attr">#[tracing::instrument(level = <span class="string">"trace"</span>, skip(<span class="self">self</span>), ret)]
     </span><span class="kw">pub fn </span>run_available(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
         <span class="kw">let </span><span class="kw-2">mut </span>work_done = <span class="bool-val">false</span>;
         <span class="comment">// While work is immediately available.
@@ -972,7 +974,7 @@
     /// If the dataflow contains loops this method may run forever.
     /// Returns true if any work was done.
     /// Yields repeatedly to allow external events to happen.
-    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), ret)]
+    </span><span class="attr">#[tracing::instrument(level = <span class="string">"trace"</span>, skip(<span class="self">self</span>), ret)]
     </span><span class="kw">pub async fn </span>run_available_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
         <span class="kw">let </span><span class="kw-2">mut </span>work_done = <span class="bool-val">false</span>;
         <span class="comment">// While work is immediately available.
@@ -990,7 +992,7 @@
 
     <span class="doccomment">/// Runs the current stratum of the dataflow until no more local work is available (does not receive events).
     /// Returns true if any work was done.
-    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), fields(tick = <span class="self">self</span>.context.current_tick, stratum = <span class="self">self</span>.context.current_stratum), ret)]
+    </span><span class="attr">#[tracing::instrument(level = <span class="string">"trace"</span>, skip(<span class="self">self</span>), fields(tick = <span class="self">self</span>.context.current_tick, stratum = <span class="self">self</span>.context.current_stratum), ret)]
     </span><span class="kw">pub fn </span>run_stratum(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
         <span class="kw">let </span>current_tick = <span class="self">self</span>.context.current_tick;
 
@@ -1002,7 +1004,7 @@
                 <span class="kw">let </span>sg_data = <span class="kw-2">&amp;mut </span><span class="self">self</span>.subgraphs[sg_id.<span class="number">0</span>];
                 <span class="comment">// This must be true for the subgraph to be enqueued.
                 </span><span class="macro">assert!</span>(sg_data.is_scheduled.take());
-                <span class="macro">tracing::trace!</span>(sg_id = sg_id.<span class="number">0</span>, <span class="string">&quot;Running subgraph.&quot;</span>);
+                <span class="macro">tracing::trace!</span>(sg_id = sg_id.<span class="number">0</span>, <span class="string">"Running subgraph."</span>);
 
                 <span class="self">self</span>.context.subgraph_id = sg_id;
                 <span class="self">self</span>.context.subgraph_last_tick_run_in = sg_data.last_tick_run_in;
@@ -1043,17 +1045,17 @@
     ///
     /// If this returns false then the graph will be at the start of a tick (at stratum 0, can
     /// receive more external events).
-    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), ret)]
+    </span><span class="attr">#[tracing::instrument(level = <span class="string">"trace"</span>, skip(<span class="self">self</span>), ret)]
     </span><span class="kw">pub fn </span>next_stratum(<span class="kw-2">&amp;mut </span><span class="self">self</span>, current_tick_only: bool) -&gt; bool {
         <span class="macro">tracing::trace!</span>(
             events_received_tick = <span class="self">self</span>.events_received_tick,
             can_start_tick = <span class="self">self</span>.can_start_tick,
-            <span class="string">&quot;Starting `next_stratum` call.&quot;</span>,
+            <span class="string">"Starting `next_stratum` call."</span>,
         );
 
         <span class="kw">if </span><span class="number">0 </span>== <span class="self">self</span>.context.current_stratum {
             <span class="comment">// Starting the tick, reset this to `false`.
-            </span><span class="macro">tracing::trace!</span>(<span class="string">&quot;Starting tick, setting `can_start_tick = false`.&quot;</span>);
+            </span><span class="macro">tracing::trace!</span>(<span class="string">"Starting tick, setting `can_start_tick = false`."</span>);
             <span class="self">self</span>.can_start_tick = <span class="bool-val">false</span>;
             <span class="self">self</span>.context.current_tick_start = Instant::now();
 
@@ -1071,7 +1073,7 @@
             <span class="macro">tracing::trace!</span>(
                 tick = <span class="self">self</span>.context.current_tick,
                 stratum = <span class="self">self</span>.context.current_stratum,
-                <span class="string">&quot;Looking for work on stratum.&quot;
+                <span class="string">"Looking for work on stratum."
             </span>);
 
             <span class="comment">// If current stratum has work, return true.
@@ -1079,7 +1081,7 @@
                 <span class="macro">tracing::trace!</span>(
                     tick = <span class="self">self</span>.context.current_tick,
                     stratum = <span class="self">self</span>.context.current_stratum,
-                    <span class="string">&quot;Work found on stratum.&quot;
+                    <span class="string">"Work found on stratum."
                 </span>);
                 <span class="kw">return </span><span class="bool-val">true</span>;
             }
@@ -1089,7 +1091,7 @@
             <span class="kw">if </span><span class="self">self</span>.context.current_stratum &gt;= <span class="self">self</span>.stratum_queues.len() {
                 <span class="macro">tracing::trace!</span>(
                     can_start_tick = <span class="self">self</span>.can_start_tick,
-                    <span class="string">&quot;End of tick {}, starting tick {}.&quot;</span>,
+                    <span class="string">"End of tick {}, starting tick {}."</span>,
                     <span class="self">self</span>.context.current_tick,
                     <span class="self">self</span>.context.current_tick + <span class="number">1</span>,
                 );
@@ -1100,7 +1102,7 @@
 
                 <span class="kw">if </span>current_tick_only {
                     <span class="macro">tracing::trace!</span>(
-                        <span class="string">&quot;`current_tick_only` is `true`, returning `false` before receiving events.&quot;
+                        <span class="string">"`current_tick_only` is `true`, returning `false` before receiving events."
                     </span>);
                     <span class="kw">return </span><span class="bool-val">false</span>;
                 } <span class="kw">else </span>{
@@ -1108,14 +1110,14 @@
                     <span class="kw">if </span>std::mem::replace(<span class="kw-2">&amp;mut </span><span class="self">self</span>.can_start_tick, <span class="bool-val">false</span>) {
                         <span class="macro">tracing::trace!</span>(
                             tick = <span class="self">self</span>.context.current_tick,
-                            <span class="string">&quot;`can_start_tick` is `true`, continuing.&quot;
+                            <span class="string">"`can_start_tick` is `true`, continuing."
                         </span>);
                         <span class="comment">// Do a full loop more to find where events have been added.
                         </span>end_stratum = <span class="number">0</span>;
                         <span class="kw">continue</span>;
                     } <span class="kw">else </span>{
                         <span class="macro">tracing::trace!</span>(
-                            <span class="string">&quot;`can_start_tick` is `false`, re-setting `events_received_tick = false`, returning `false`.&quot;
+                            <span class="string">"`can_start_tick` is `false`, re-setting `events_received_tick = false`, returning `false`."
                         </span>);
                         <span class="self">self</span>.events_received_tick = <span class="bool-val">false</span>;
                         <span class="kw">return </span><span class="bool-val">false</span>;
@@ -1125,8 +1127,8 @@
 
             <span class="comment">// After incrementing, exit if we made a full loop around the strata.
             </span><span class="kw">if </span>end_stratum == <span class="self">self</span>.context.current_stratum {
-                <span class="macro">tracing::trace!</span>(<span class="string">&quot;Made full loop around stratum, re-setting `current_stratum = 0`, returning `false`.&quot;</span>);
-                <span class="comment">// Note: if current stratum had work, the very first loop iteration would&#39;ve
+                <span class="macro">tracing::trace!</span>(<span class="string">"Made full loop around stratum, re-setting `current_stratum = 0`, returning `false`."</span>);
+                <span class="comment">// Note: if current stratum had work, the very first loop iteration would've
                 // returned true. Therefore we can return false without checking.
                 // Also means nothing was done so we can reset the stratum to zero and wait for
                 // events.
@@ -1139,8 +1141,8 @@
 
     <span class="doccomment">/// Runs the dataflow graph forever.
     ///
-    /// TODO(mingwei): Currently blockes forever, no notion of &quot;completion.&quot;
-    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), ret)]
+    /// TODO(mingwei): Currently blockes forever, no notion of "completion."
+    </span><span class="attr">#[tracing::instrument(level = <span class="string">"trace"</span>, skip(<span class="self">self</span>), ret)]
     </span><span class="kw">pub fn </span>run(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Never&gt; {
         <span class="kw">loop </span>{
             <span class="self">self</span>.run_tick();
@@ -1149,8 +1151,8 @@
 
     <span class="doccomment">/// Runs the dataflow graph forever.
     ///
-    /// TODO(mingwei): Currently blockes forever, no notion of &quot;completion.&quot;
-    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), ret)]
+    /// TODO(mingwei): Currently blockes forever, no notion of "completion."
+    </span><span class="attr">#[tracing::instrument(level = <span class="string">"trace"</span>, skip(<span class="self">self</span>), ret)]
     </span><span class="kw">pub async fn </span>run_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Never&gt; {
         <span class="self">self</span>.context.spawn_tasks();
         <span class="kw">loop </span>{
@@ -1164,7 +1166,7 @@
     <span class="doccomment">/// Enqueues subgraphs triggered by events without blocking.
     ///
     /// Returns the number of subgraphs enqueued, and if any were external.
-    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), fields(events_received_tick = <span class="self">self</span>.events_received_tick), ret)]
+    </span><span class="attr">#[tracing::instrument(level = <span class="string">"trace"</span>, skip(<span class="self">self</span>), fields(events_received_tick = <span class="self">self</span>.events_received_tick), ret)]
     </span><span class="kw">pub fn </span>try_recv_events(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; usize {
         <span class="kw">let </span><span class="kw-2">mut </span>enqueued_count = <span class="number">0</span>;
         <span class="kw">while let </span><span class="prelude-val">Ok</span>((sg_id, is_external)) = <span class="self">self</span>.event_queue_recv.try_recv() {
@@ -1173,7 +1175,7 @@
                 sg_id = sg_id.<span class="number">0</span>,
                 is_external = is_external,
                 sg_stratum = sg_data.stratum,
-                <span class="string">&quot;Event received.&quot;
+                <span class="string">"Event received."
             </span>);
             <span class="kw">if </span>!sg_data.is_scheduled.replace(<span class="bool-val">true</span>) {
                 <span class="self">self</span>.stratum_queues[sg_data.stratum].push_back(sg_id);
@@ -1186,7 +1188,7 @@
                     <span class="macro">tracing::trace!</span>(
                         current_stratum = <span class="self">self</span>.context.current_stratum,
                         sg_stratum = sg_data.stratum,
-                        <span class="string">&quot;External event, setting `can_start_tick = true`.&quot;
+                        <span class="string">"External event, setting `can_start_tick = true`."
                     </span>);
                     <span class="self">self</span>.can_start_tick = <span class="bool-val">true</span>;
                 }
@@ -1199,7 +1201,7 @@
 
     <span class="doccomment">/// Enqueues subgraphs triggered by external events, blocking until at
     /// least one subgraph is scheduled **from an external event**.
-    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), fields(events_received_tick = <span class="self">self</span>.events_received_tick), ret)]
+    </span><span class="attr">#[tracing::instrument(level = <span class="string">"trace"</span>, skip(<span class="self">self</span>), fields(events_received_tick = <span class="self">self</span>.events_received_tick), ret)]
     </span><span class="kw">pub fn </span>recv_events(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>count = <span class="number">0</span>;
         <span class="kw">loop </span>{
@@ -1209,7 +1211,7 @@
                 sg_id = sg_id.<span class="number">0</span>,
                 is_external = is_external,
                 sg_stratum = sg_data.stratum,
-                <span class="string">&quot;Event received.&quot;
+                <span class="string">"Event received."
             </span>);
             <span class="kw">if </span>!sg_data.is_scheduled.replace(<span class="bool-val">true</span>) {
                 <span class="self">self</span>.stratum_queues[sg_data.stratum].push_back(sg_id);
@@ -1222,7 +1224,7 @@
                     <span class="macro">tracing::trace!</span>(
                         current_stratum = <span class="self">self</span>.context.current_stratum,
                         sg_stratum = sg_data.stratum,
-                        <span class="string">&quot;External event, setting `can_start_tick = true`.&quot;
+                        <span class="string">"External event, setting `can_start_tick = true`."
                     </span>);
                     <span class="self">self</span>.can_start_tick = <span class="bool-val">true</span>;
                 }
@@ -1241,18 +1243,18 @@
     /// which may be zero if an external event scheduled an already-scheduled subgraph.
     ///
     /// Returns `None` if the event queue is closed, but that should not happen normally.
-    </span><span class="attr">#[tracing::instrument(level = <span class="string">&quot;trace&quot;</span>, skip(<span class="self">self</span>), fields(events_received_tick = <span class="self">self</span>.events_received_tick), ret)]
+    </span><span class="attr">#[tracing::instrument(level = <span class="string">"trace"</span>, skip(<span class="self">self</span>), fields(events_received_tick = <span class="self">self</span>.events_received_tick), ret)]
     </span><span class="kw">pub async fn </span>recv_events_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>count = <span class="number">0</span>;
         <span class="kw">loop </span>{
-            <span class="macro">tracing::trace!</span>(<span class="string">&quot;Awaiting events (`event_queue_recv`).&quot;</span>);
+            <span class="macro">tracing::trace!</span>(<span class="string">"Awaiting events (`event_queue_recv`)."</span>);
             <span class="kw">let </span>(sg_id, is_external) = <span class="self">self</span>.event_queue_recv.recv().<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="kw">let </span>sg_data = <span class="kw-2">&amp;</span><span class="self">self</span>.subgraphs[sg_id.<span class="number">0</span>];
             <span class="macro">tracing::trace!</span>(
                 sg_id = sg_id.<span class="number">0</span>,
                 is_external = is_external,
                 sg_stratum = sg_data.stratum,
-                <span class="string">&quot;Event received.&quot;
+                <span class="string">"Event received."
             </span>);
             <span class="kw">if </span>!sg_data.is_scheduled.replace(<span class="bool-val">true</span>) {
                 <span class="self">self</span>.stratum_queues[sg_data.stratum].push_back(sg_id);
@@ -1265,7 +1267,7 @@
                     <span class="macro">tracing::trace!</span>(
                         current_stratum = <span class="self">self</span>.context.current_stratum,
                         sg_stratum = sg_data.stratum,
-                        <span class="string">&quot;External event, setting `can_start_tick = true`.&quot;
+                        <span class="string">"External event, setting `can_start_tick = true`."
                     </span>);
                     <span class="self">self</span>.can_start_tick = <span class="bool-val">true</span>;
                 }
@@ -1288,10 +1290,10 @@
         subgraph: F,
     ) -&gt; SubgraphId
     <span class="kw">where
-        </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
-        R: <span class="lifetime">&#39;static </span>+ PortList&lt;RECV&gt;,
-        W: <span class="lifetime">&#39;static </span>+ PortList&lt;SEND&gt;,
-        F: <span class="lifetime">&#39;static </span>+ <span class="kw">for</span>&lt;<span class="lifetime">&#39;ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span><span class="kw-2">mut </span>Context, R::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;, W::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;),
+        </span>Name: Into&lt;Cow&lt;<span class="lifetime">'static</span>, str&gt;&gt;,
+        R: <span class="lifetime">'static </span>+ PortList&lt;RECV&gt;,
+        W: <span class="lifetime">'static </span>+ PortList&lt;SEND&gt;,
+        F: <span class="lifetime">'static </span>+ <span class="kw">for</span>&lt;<span class="lifetime">'ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span><span class="kw-2">mut </span>Context, R::Ctx&lt;<span class="lifetime">'ctx</span>&gt;, W::Ctx&lt;<span class="lifetime">'ctx</span>&gt;),
     {
         <span class="self">self</span>.add_subgraph_stratified(name, <span class="number">0</span>, recv_ports, send_ports, <span class="bool-val">false</span>, subgraph)
     }
@@ -1309,10 +1311,10 @@
         <span class="kw-2">mut </span>subgraph: F,
     ) -&gt; SubgraphId
     <span class="kw">where
-        </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
-        R: <span class="lifetime">&#39;static </span>+ PortList&lt;RECV&gt;,
-        W: <span class="lifetime">&#39;static </span>+ PortList&lt;SEND&gt;,
-        F: <span class="lifetime">&#39;a </span>+ <span class="kw">for</span>&lt;<span class="lifetime">&#39;ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span><span class="kw-2">mut </span>Context, R::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;, W::Ctx&lt;<span class="lifetime">&#39;ctx</span>&gt;),
+        </span>Name: Into&lt;Cow&lt;<span class="lifetime">'static</span>, str&gt;&gt;,
+        R: <span class="lifetime">'static </span>+ PortList&lt;RECV&gt;,
+        W: <span class="lifetime">'static </span>+ PortList&lt;SEND&gt;,
+        F: <span class="lifetime">'a </span>+ <span class="kw">for</span>&lt;<span class="lifetime">'ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span><span class="kw-2">mut </span>Context, R::Ctx&lt;<span class="lifetime">'ctx</span>&gt;, W::Ctx&lt;<span class="lifetime">'ctx</span>&gt;),
     {
         <span class="kw">let </span>sg_id = SubgraphId(<span class="self">self</span>.subgraphs.len());
 
@@ -1349,11 +1351,11 @@
         subgraph: F,
     ) -&gt; SubgraphId
     <span class="kw">where
-        </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
-        R: <span class="lifetime">&#39;static </span>+ Handoff,
-        W: <span class="lifetime">&#39;static </span>+ Handoff,
-        F: <span class="lifetime">&#39;static
-            </span>+ <span class="kw">for</span>&lt;<span class="lifetime">&#39;ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span><span class="kw-2">mut </span>Context, <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>RecvCtx&lt;R&gt;], <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>SendCtx&lt;W&gt;]),
+        </span>Name: Into&lt;Cow&lt;<span class="lifetime">'static</span>, str&gt;&gt;,
+        R: <span class="lifetime">'static </span>+ Handoff,
+        W: <span class="lifetime">'static </span>+ Handoff,
+        F: <span class="lifetime">'static
+            </span>+ <span class="kw">for</span>&lt;<span class="lifetime">'ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span><span class="kw-2">mut </span>Context, <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>[<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>RecvCtx&lt;R&gt;], <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>[<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>SendCtx&lt;W&gt;]),
     {
         <span class="self">self</span>.add_subgraph_stratified_n_m(name, <span class="number">0</span>, recv_ports, send_ports, subgraph)
     }
@@ -1368,11 +1370,11 @@
         <span class="kw-2">mut </span>subgraph: F,
     ) -&gt; SubgraphId
     <span class="kw">where
-        </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
-        R: <span class="lifetime">&#39;static </span>+ Handoff,
-        W: <span class="lifetime">&#39;static </span>+ Handoff,
-        F: <span class="lifetime">&#39;static
-            </span>+ <span class="kw">for</span>&lt;<span class="lifetime">&#39;ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span><span class="kw-2">mut </span>Context, <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>RecvCtx&lt;R&gt;], <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>[<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>SendCtx&lt;W&gt;]),
+        </span>Name: Into&lt;Cow&lt;<span class="lifetime">'static</span>, str&gt;&gt;,
+        R: <span class="lifetime">'static </span>+ Handoff,
+        W: <span class="lifetime">'static </span>+ Handoff,
+        F: <span class="lifetime">'static
+            </span>+ <span class="kw">for</span>&lt;<span class="lifetime">'ctx</span>&gt; FnMut(<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span><span class="kw-2">mut </span>Context, <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>[<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>RecvCtx&lt;R&gt;], <span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>[<span class="kw-2">&amp;</span><span class="lifetime">'ctx </span>SendCtx&lt;W&gt;]),
     {
         <span class="kw">let </span>sg_id = SubgraphId(<span class="self">self</span>.subgraphs.len());
 
@@ -1396,7 +1398,7 @@
                         .handoff
                         .any_ref()
                         .downcast_ref()
-                        .expect(<span class="string">&quot;Attempted to cast handoff to wrong type.&quot;</span>)
+                        .expect(<span class="string">"Attempted to cast handoff to wrong type."</span>)
                 })
                 .map(RefCast::ref_cast)
                 .collect();
@@ -1410,7 +1412,7 @@
                         .handoff
                         .any_ref()
                         .downcast_ref()
-                        .expect(<span class="string">&quot;Attempted to cast handoff to wrong type.&quot;</span>)
+                        .expect(<span class="string">"Attempted to cast handoff to wrong type."</span>)
                 })
                 .map(RefCast::ref_cast)
                 .collect();
@@ -1443,8 +1445,8 @@
     <span class="doccomment">/// Creates a handoff edge and returns the corresponding send and receive ports.
     </span><span class="kw">pub fn </span>make_edge&lt;Name, H&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: Name) -&gt; (SendPort&lt;H&gt;, RecvPort&lt;H&gt;)
     <span class="kw">where
-        </span>Name: Into&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;,
-        H: <span class="lifetime">&#39;static </span>+ Handoff,
+        </span>Name: Into&lt;Cow&lt;<span class="lifetime">'static</span>, str&gt;&gt;,
+        H: <span class="lifetime">'static </span>+ Handoff,
     {
         <span class="kw">let </span>handoff_id = HandoffId(<span class="self">self</span>.handoffs.len());
 
@@ -1467,7 +1469,7 @@
     <span class="doccomment">/// Adds referenceable state into the `Hydroflow` instance. Returns a state handle which can be
     /// used externally or by operators to access the state.
     ///
-    /// This is part of the &quot;state API&quot;.
+    /// This is part of the "state API".
     </span><span class="kw">pub fn </span>add_state&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, state: T) -&gt; StateHandle&lt;T&gt;
     <span class="kw">where
         </span>T: Any,
@@ -1482,11 +1484,11 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Hydroflow&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// Alias for [`Context::request_task`].
     </span><span class="kw">pub fn </span>request_task&lt;Fut&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, future: Fut)
     <span class="kw">where
-        </span>Fut: Future&lt;Output = ()&gt; + <span class="lifetime">&#39;static</span>,
+        </span>Fut: Future&lt;Output = ()&gt; + <span class="lifetime">'static</span>,
     {
         <span class="self">self</span>.context.request_task(future);
     }
@@ -1497,12 +1499,12 @@
     }
 
     <span class="doccomment">/// Alias for [`Context::join_tasks`].
-    </span><span class="kw">pub fn </span>join_tasks(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ Future {
+    </span><span class="kw">pub fn </span>join_tasks(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw">impl </span><span class="lifetime">'_ </span>+ Future {
         <span class="self">self</span>.context.join_tasks()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Drop <span class="kw">for </span>Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Drop <span class="kw">for </span>Hydroflow&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.abort_tasks();
     }
@@ -1517,22 +1519,22 @@
 </span><span class="kw">pub struct </span>HandoffData {
     <span class="doccomment">/// A friendly name for diagnostics.
     </span><span class="attr">#[allow(dead_code)] </span><span class="comment">// TODO(mingwei): remove attr once used.
-    </span><span class="kw">pub</span>(<span class="kw">super</span>) name: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;,
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) name: Cow&lt;<span class="lifetime">'static</span>, str&gt;,
     <span class="doccomment">/// Crate-visible to crate for `handoff_list` internals.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) handoff: Box&lt;<span class="kw">dyn </span>HandoffMeta&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) preds: Vec&lt;SubgraphId&gt;,
     <span class="kw">pub</span>(<span class="kw">super</span>) succs: Vec&lt;SubgraphId&gt;,
 }
 <span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>HandoffData {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), std::fmt::Error&gt; {
-        f.debug_struct(<span class="string">&quot;HandoffData&quot;</span>)
-            .field(<span class="string">&quot;preds&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.preds)
-            .field(<span class="string">&quot;succs&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.succs)
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), std::fmt::Error&gt; {
+        f.debug_struct(<span class="string">"HandoffData"</span>)
+            .field(<span class="string">"preds"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.preds)
+            .field(<span class="string">"succs"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.succs)
             .finish_non_exhaustive()
     }
 }
 <span class="kw">impl </span>HandoffData {
-    <span class="kw">pub fn </span>new(name: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;, handoff: <span class="kw">impl </span><span class="lifetime">&#39;static </span>+ HandoffMeta) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new(name: Cow&lt;<span class="lifetime">'static</span>, str&gt;, handoff: <span class="kw">impl </span><span class="lifetime">'static </span>+ HandoffMeta) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>(preds, succs) = Default::default();
         <span class="self">Self </span>{
             name,
@@ -1547,14 +1549,14 @@
 ///
 /// Used internally by the [Hydroflow] struct to represent the dataflow graph
 /// structure and scheduled state.
-</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>SubgraphData&lt;<span class="lifetime">&#39;a</span>&gt; {
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>SubgraphData&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// A friendly name for diagnostics.
     </span><span class="attr">#[allow(dead_code)] </span><span class="comment">// TODO(mingwei): remove attr once used.
-    </span><span class="kw">pub</span>(<span class="kw">super</span>) name: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;,
-    <span class="doccomment">/// This subgraph&#39;s stratum number.
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) name: Cow&lt;<span class="lifetime">'static</span>, str&gt;,
+    <span class="doccomment">/// This subgraph's stratum number.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) stratum: usize,
     <span class="doccomment">/// The actual execution code of the subgraph.
-    </span>subgraph: Box&lt;<span class="kw">dyn </span>Subgraph + <span class="lifetime">&#39;a</span>&gt;,
+    </span>subgraph: Box&lt;<span class="kw">dyn </span>Subgraph + <span class="lifetime">'a</span>&gt;,
     <span class="attr">#[allow(dead_code)]
     </span>preds: Vec&lt;HandoffId&gt;,
     succs: Vec&lt;HandoffId&gt;,
@@ -1571,11 +1573,11 @@
     <span class="doccomment">/// If this subgraph is marked as lazy, then sending data back to a lower stratum does not trigger a new tick to be run.
     </span>is_lazy: bool,
 }
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; SubgraphData&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; SubgraphData&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">pub fn </span>new(
-        name: Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;,
+        name: Cow&lt;<span class="lifetime">'static</span>, str&gt;,
         stratum: usize,
-        subgraph: <span class="kw">impl </span>Subgraph + <span class="lifetime">&#39;a</span>,
+        subgraph: <span class="kw">impl </span>Subgraph + <span class="lifetime">'a</span>,
         preds: Vec&lt;HandoffId&gt;,
         succs: Vec&lt;HandoffId&gt;,
         is_scheduled: bool,

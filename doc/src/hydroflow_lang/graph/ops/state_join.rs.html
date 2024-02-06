@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/ops/state_join.rs`."><title>state_join.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/ops/state_join.rs`."><title>state_join.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../hydroflow_lang/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -182,7 +184,7 @@
 
 <span class="comment">// TODO(mingwei):
 </span><span class="kw">pub const </span>STATE_JOIN: OperatorConstraints = OperatorConstraints {
-    name: <span class="string">&quot;state_join&quot;</span>,
+    name: <span class="string">"state_join"</span>,
     categories: <span class="kw-2">&amp;</span>[OperatorCategory::MultiIn],
     hard_range_inn: <span class="kw-2">&amp;</span>(<span class="number">4</span>..=<span class="number">4</span>),
     soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">4</span>..=<span class="number">4</span>),
@@ -198,10 +200,10 @@
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
     input_edgetype_fn: |port| <span class="kw">match </span><span class="kw-2">&amp;*</span>port.to_string() {
-        <span class="string">&quot;items_0&quot; </span>=&gt; <span class="prelude-val">Some</span>(GraphEdgeType::Value),
-        <span class="string">&quot;items_1&quot; </span>=&gt; <span class="prelude-val">Some</span>(GraphEdgeType::Value),
-        <span class="string">&quot;state_0&quot; </span>=&gt; <span class="prelude-val">Some</span>(GraphEdgeType::Reference),
-        <span class="string">&quot;state_1&quot; </span>=&gt; <span class="prelude-val">Some</span>(GraphEdgeType::Reference),
+        <span class="string">"items_0" </span>=&gt; <span class="prelude-val">Some</span>(GraphEdgeType::Value),
+        <span class="string">"items_1" </span>=&gt; <span class="prelude-val">Some</span>(GraphEdgeType::Value),
+        <span class="string">"state_0" </span>=&gt; <span class="prelude-val">Some</span>(GraphEdgeType::Reference),
+        <span class="string">"state_1" </span>=&gt; <span class="prelude-val">Some</span>(GraphEdgeType::Reference),
         <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
     },
     output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value,
@@ -231,7 +233,7 @@
         <span class="comment">// TODO: This is really bad.
         // This will break if the user aliases HalfSetJoinState to something else. Temporary hacky solution.
         // Note that cross_join() depends on the implementation here as well.
-        </span><span class="kw">let </span>additional_trait_bounds = <span class="kw">if </span>join_type.to_string().contains(<span class="string">&quot;HalfSetJoinState&quot;</span>) {
+        </span><span class="kw">let </span>additional_trait_bounds = <span class="kw">if </span>join_type.to_string().contains(<span class="string">"HalfSetJoinState"</span>) {
             <span class="macro">quote_spanned!</span>(op_span=&gt;
                 + ::std::cmp::Eq
             )
@@ -240,8 +242,8 @@
         };
 
         <span class="comment">// let mut make_joindata = |persistence, side| {
-        //     let joindata_ident = wc.make_ident(format!(&quot;joindata_{}&quot;, side));
-        //     let borrow_ident = wc.make_ident(format!(&quot;joindata_{}_borrow&quot;, side));
+        //     let joindata_ident = wc.make_ident(format!("joindata_{}", side));
+        //     let borrow_ident = wc.make_ident(format!("joindata_{}_borrow", side));
         //     let (init, borrow) = match persistence {
         //         Persistence::Tick =&gt; (
         //             quote_spanned! {op_span=&gt;
@@ -265,7 +267,7 @@
         //             diagnostics.push(Diagnostic::spanned(
         //                 op_span,
         //                 Level::Error,
-        //                 &quot;An implementation of &#39;mutable does not exist&quot;,
+        //                 "An implementation of 'mutable does not exist",
         //             ));
         //             return Err(());
         //         }
@@ -274,9 +276,9 @@
         // };
 
         // let (lhs_joindata_ident, lhs_borrow_ident, lhs_init, lhs_borrow) =
-        //     make_joindata(persistences[0], &quot;lhs&quot;)?;
+        //     make_joindata(persistences[0], "lhs")?;
         // let (rhs_joindata_ident, rhs_borrow_ident, rhs_init, rhs_borrow) =
-        //     make_joindata(persistences[1], &quot;rhs&quot;)?;
+        //     make_joindata(persistences[1], "rhs")?;
 
         // let write_prologue = quote_spanned! {op_span=&gt;
         //     let #lhs_joindata_ident = #hydroflow.add_state(std::cell::RefCell::new(
@@ -292,8 +294,8 @@
         <span class="kw">let </span>lhs_state = <span class="kw-2">&amp;</span>inputs[<span class="number">2</span>];
         <span class="kw">let </span>rhs_state = <span class="kw-2">&amp;</span>inputs[<span class="number">3</span>];
 
-        <span class="kw">let </span>lhs_borrow_ident = wc.make_ident(<span class="string">&quot;joindata_lhs_borrow&quot;</span>);
-        <span class="kw">let </span>rhs_borrow_ident = wc.make_ident(<span class="string">&quot;joindata_rhs_borrow&quot;</span>);
+        <span class="kw">let </span>lhs_borrow_ident = wc.make_ident(<span class="string">"joindata_lhs_borrow"</span>);
+        <span class="kw">let </span>rhs_borrow_ident = wc.make_ident(<span class="string">"joindata_rhs_borrow"</span>);
 
         <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned! </span>{op_span=&gt;
             <span class="kw">let </span><span class="kw-2">mut </span>#lhs_borrow_ident = #context.state_ref(#lhs_state).borrow_mut();
@@ -301,19 +303,19 @@
             <span class="kw">let </span>#ident = {
                 <span class="comment">// Limit error propagation by bounding locally, erasing output iterator type.
                 </span><span class="attr">#[inline(always)]
-                </span><span class="kw">fn </span>check_inputs&lt;<span class="lifetime">&#39;a</span>, K, I1, V1, I2, V2&gt;(
+                </span><span class="kw">fn </span>check_inputs&lt;<span class="lifetime">'a</span>, K, I1, V1, I2, V2&gt;(
                     lhs: I1,
                     rhs: I2,
-                    lhs_state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>#join_type&lt;K, V1, V2&gt;,
-                    rhs_state: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>#join_type&lt;K, V2, V1&gt;,
+                    lhs_state: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>#join_type&lt;K, V1, V2&gt;,
+                    rhs_state: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>#join_type&lt;K, V2, V1&gt;,
                     is_new_tick: bool,
-                ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (K, (V1, V2))&gt;
+                ) -&gt; <span class="kw">impl </span><span class="lifetime">'a </span>+ Iterator&lt;Item = (K, (V1, V2))&gt;
                 <span class="kw">where
                     </span>K: Eq + std::hash::Hash + Clone,
                     V1: Clone #additional_trait_bounds,
                     V2: Clone #additional_trait_bounds,
-                    I1: <span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (K, V1)&gt;,
-                    I2: <span class="lifetime">&#39;a </span>+ Iterator&lt;Item = (K, V2)&gt;,
+                    I1: <span class="lifetime">'a </span>+ Iterator&lt;Item = (K, V1)&gt;,
+                    I2: <span class="lifetime">'a </span>+ Iterator&lt;Item = (K, V2)&gt;,
                 {
                     #root::compiled::pull::symmetric_hash_join_into_iter(lhs, rhs, lhs_state, rhs_state, is_new_tick)
                 }

@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/di_mul_graph.rs`."><title>di_mul_graph.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/di_mul_graph.rs`."><title>di_mul_graph.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../hydroflow_lang/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -328,7 +330,7 @@
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>slotmap::{Key, SecondaryMap, SlotMap};
 
-<span class="doccomment">/// A directed multigraph where an vertex&#39;s inbound and outbound edges are indexed.
+<span class="doccomment">/// A directed multigraph where an vertex's inbound and outbound edges are indexed.
 ///
 /// `DiMulGraph` does **not** allocate vertices `V`. The user shall use an external
 /// [`SlotMap&lt;V, _&gt;`] for allocating vertices, which also allows the user to associate data with
@@ -337,7 +339,7 @@
 /// `DiMulGraph` **does** allocate edges `E` as they are added. Additional data can be associated
 /// with edges via an external [`SecondaryMap&lt;E, _&gt;`].
 </span><span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(from = <span class="string">&quot;EdgeList&lt;V, E&gt;&quot;</span>, into = <span class="string">&quot;EdgeList&lt;V, E&gt;&quot;</span>)]
+#[serde(from = <span class="string">"EdgeList&lt;V, E&gt;"</span>, into = <span class="string">"EdgeList&lt;V, E&gt;"</span>)]
 </span><span class="kw">pub struct </span>DiMulGraph&lt;V, E&gt;
 <span class="kw">where
     </span>V: Key,
@@ -410,12 +412,12 @@
         </span><span class="macro">assert_eq!</span>(
             <span class="self">self</span>.edges.len(),
             <span class="self">self</span>.succs.values().map(|vec| vec.len()).sum::&lt;usize&gt;(),
-            <span class="string">&quot;succs broken (contains duplicate or removed edge?)&quot;
+            <span class="string">"succs broken (contains duplicate or removed edge?)"
         </span>);
         <span class="macro">assert_eq!</span>(
             <span class="self">self</span>.edges.len(),
             <span class="self">self</span>.preds.values().map(|vec| vec.len()).sum::&lt;usize&gt;(),
-            <span class="string">&quot;preds broken (contains duplicate or removed edge?)&quot;
+            <span class="string">"preds broken (contains duplicate or removed edge?)"
         </span>);
     }
 
@@ -439,7 +441,7 @@
     /// `A --e0--&gt; V --e1--&gt; B`. Returns the pair of new edge IDs in and out of `V`, i.e.
     /// `(e0, e1)`.
     ///
-    /// Returns `None` if the edge doesn&#39;t exist.
+    /// Returns `None` if the edge doesn't exist.
     ///
     /// `edge` is removed from the graph, both returned edge IDs are new.
     </span><span class="kw">pub fn </span>insert_intermediate_vertex(<span class="kw-2">&amp;mut </span><span class="self">self</span>, new_vertex: V, edge: E) -&gt; <span class="prelude-ty">Option</span>&lt;(E, E)&gt; {
@@ -467,11 +469,11 @@
         <span class="comment">// Insert new vertex succs/preds.
         </span><span class="macro">assert!</span>(
             <span class="self">self</span>.preds.insert(new_vertex, <span class="macro">vec!</span>[e0]).is_none(),
-            <span class="string">&quot;Cannot insert intermediate vertex that already exists&quot;
+            <span class="string">"Cannot insert intermediate vertex that already exists"
         </span>);
         <span class="macro">assert!</span>(
             <span class="self">self</span>.succs.insert(new_vertex, <span class="macro">vec!</span>[e1]).is_none(),
-            <span class="string">&quot;Cannot insert intermediate vertex that already exists&quot;
+            <span class="string">"Cannot insert intermediate vertex that already exists"
         </span>);
 
         <span class="self">self</span>.assert_valid();
@@ -533,12 +535,12 @@
     <span class="doccomment">/// Return an iterator over all edges in form `(E, (V, V))`.
     </span><span class="kw">pub fn </span>edges(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ ExactSizeIterator&lt;Item = (E, (V, V))&gt; + FusedIterator + Clone + Debug {
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">'_ </span>+ ExactSizeIterator&lt;Item = (E, (V, V))&gt; + FusedIterator + Clone + Debug {
         <span class="self">self</span>.edges.iter().map(|(e, <span class="kw-2">&amp;</span>(src, dst))| (e, (src, dst)))
     }
 
     <span class="doccomment">/// Return an iterator of all edge IDs coming out of `v`.
-    </span><span class="kw">pub fn </span>successor_edges(<span class="kw-2">&amp;</span><span class="self">self</span>, v: V) -&gt; std::iter::Copied&lt;std::slice::Iter&lt;<span class="lifetime">&#39;_</span>, E&gt;&gt; {
+    </span><span class="kw">pub fn </span>successor_edges(<span class="kw-2">&amp;</span><span class="self">self</span>, v: V) -&gt; std::iter::Copied&lt;std::slice::Iter&lt;<span class="lifetime">'_</span>, E&gt;&gt; {
         <span class="self">self</span>.succs
             .get(v)
             .map(|v| v.iter())
@@ -547,7 +549,7 @@
     }
 
     <span class="doccomment">/// Return an iterator of all edge IDs going into `v`.
-    </span><span class="kw">pub fn </span>predecessor_edges(<span class="kw-2">&amp;</span><span class="self">self</span>, v: V) -&gt; std::iter::Copied&lt;std::slice::Iter&lt;<span class="lifetime">&#39;_</span>, E&gt;&gt; {
+    </span><span class="kw">pub fn </span>predecessor_edges(<span class="kw-2">&amp;</span><span class="self">self</span>, v: V) -&gt; std::iter::Copied&lt;std::slice::Iter&lt;<span class="lifetime">'_</span>, E&gt;&gt; {
         <span class="self">self</span>.preds
             .get(v)
             .map(|v| v.iter())
@@ -559,7 +561,7 @@
     </span><span class="kw">pub fn </span>successor_vertices(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         v: V,
-    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ DoubleEndedIterator&lt;Item = V&gt; + ExactSizeIterator + FusedIterator + Clone + Debug
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">'_ </span>+ DoubleEndedIterator&lt;Item = V&gt; + ExactSizeIterator + FusedIterator + Clone + Debug
     {
         <span class="self">self</span>.successor_edges(v).map(|edge_id| <span class="self">self</span>.edges[edge_id].<span class="number">1</span>)
     }
@@ -568,7 +570,7 @@
     </span><span class="kw">pub fn </span>predecessor_vertices(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         v: V,
-    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ DoubleEndedIterator&lt;Item = V&gt; + ExactSizeIterator + FusedIterator + Clone + Debug
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">'_ </span>+ DoubleEndedIterator&lt;Item = V&gt; + ExactSizeIterator + FusedIterator + Clone + Debug
     {
         <span class="self">self</span>.predecessor_edges(v)
             .map(|edge_id| <span class="self">self</span>.edges[edge_id].<span class="number">0</span>)
@@ -578,7 +580,7 @@
     </span><span class="kw">pub fn </span>successors(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         v: V,
-    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ DoubleEndedIterator&lt;Item = (E, V)&gt; + ExactSizeIterator + FusedIterator + Clone + Debug
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">'_ </span>+ DoubleEndedIterator&lt;Item = (E, V)&gt; + ExactSizeIterator + FusedIterator + Clone + Debug
     {
         <span class="self">self</span>.successor_edges(v)
             .map(|edge_id| (edge_id, <span class="self">self</span>.edges[edge_id].<span class="number">1</span>))
@@ -588,7 +590,7 @@
     </span><span class="kw">pub fn </span>predecessors(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         v: V,
-    ) -&gt; <span class="kw">impl </span><span class="lifetime">&#39;_ </span>+ DoubleEndedIterator&lt;Item = (E, V)&gt; + ExactSizeIterator + FusedIterator + Clone + Debug
+    ) -&gt; <span class="kw">impl </span><span class="lifetime">'_ </span>+ DoubleEndedIterator&lt;Item = (E, V)&gt; + ExactSizeIterator + FusedIterator + Clone + Debug
     {
         <span class="self">self</span>.predecessor_edges(v)
             .map(|edge_id| (edge_id, <span class="self">self</span>.edges[edge_id].<span class="number">0</span>))

@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/work/hydroflow/hydroflow/hydroflow_plus_test/src/cluster.rs`."><title>cluster.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../../../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../../../../../../../" data-static-root-path="../../../../../../../../../static.files/" data-current-crate="hydroflow_plus_test_macro" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../../../../../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../../../../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../../../../../../src-files.js"></script><script defer src="../../../../../../../../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../../../../../../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/work/hydroflow/hydroflow/hydroflow_plus_test/src/cluster.rs`."><title>cluster.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../../../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../../../../../../../" data-static-root-path="../../../../../../../../../static.files/" data-current-crate="hydroflow_plus_test_macro" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../../../../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../../../../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../../../../../../src-files.js"></script><script defer src="../../../../../../../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../../../../../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../../../../../../hydroflow_plus_test_macro/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../../../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -278,10 +280,10 @@
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
-<span class="kw">pub fn </span>simple_cluster&lt;<span class="lifetime">&#39;a</span>, D: Deploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+<span class="kw">pub fn </span>simple_cluster&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
+    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
+    cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
 ) -&gt; (D::Process, D::Cluster) {
     <span class="kw">let </span>process = flow.process(process_spec);
     <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
@@ -292,36 +294,36 @@
     ids.cross_product(<span class="kw-2">&amp;</span>numbers)
         .map(<span class="macro">q!</span>(|(id, n)| (id, (id, n))))
         .demux_bincode(<span class="kw-2">&amp;</span>cluster)
-        .inspect(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">&quot;cluster received: {:?}&quot;</span>, n)))
+        .inspect(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"cluster received: {:?}"</span>, n)))
         .send_bincode_tagged(<span class="kw-2">&amp;</span>process)
-        .for_each(<span class="macro">q!</span>(|(id, d)| <span class="macro">println!</span>(<span class="string">&quot;node received: ({}, {:?})&quot;</span>, id, d)));
+        .for_each(<span class="macro">q!</span>(|(id, d)| <span class="macro">println!</span>(<span class="string">"node received: ({}, {:?})"</span>, id, d)));
 
     (process, cluster)
 }
 
-<span class="kw">pub fn </span>many_to_many&lt;<span class="lifetime">&#39;a</span>, D: Deploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+<span class="kw">pub fn </span>many_to_many&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
+    cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
 ) -&gt; D::Cluster {
     <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
     cluster
         .source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">2</span>))
         .broadcast_bincode_tagged(<span class="kw-2">&amp;</span>cluster)
-        .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">&quot;cluster received: {:?}&quot;</span>, n)));
+        .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"cluster received: {:?}"</span>, n)));
 
     cluster
 }
 
-<span class="kw">pub fn </span>map_reduce&lt;<span class="lifetime">&#39;a</span>, D: Deploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+<span class="kw">pub fn </span>map_reduce&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
+    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
+    cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
 ) -&gt; (D::Process, D::Cluster) {
     <span class="kw">let </span>process = flow.process(process_spec);
     <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
 
     <span class="kw">let </span>words = process
-        .source_iter(<span class="macro">q!</span>(<span class="macro">vec!</span>[<span class="string">&quot;abc&quot;</span>, <span class="string">&quot;abc&quot;</span>, <span class="string">&quot;xyz&quot;</span>, <span class="string">&quot;abc&quot;</span>]))
+        .source_iter(<span class="macro">q!</span>(<span class="macro">vec!</span>[<span class="string">"abc"</span>, <span class="string">"abc"</span>, <span class="string">"xyz"</span>, <span class="string">"abc"</span>]))
         .map(<span class="macro">q!</span>(|s| s.to_string()));
 
     <span class="kw">let </span>all_ids_vec = cluster.ids();
@@ -335,21 +337,21 @@
         .map(<span class="macro">q!</span>(|string| (string, ())))
         .fold_keyed(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|count, <span class="kw">_</span>| <span class="kw-2">*</span>count += <span class="number">1</span>))
         .inspect(<span class="macro">q!</span>(|(string, count)| <span class="macro">println!</span>(
-            <span class="string">&quot;partition count: {} - {}&quot;</span>,
+            <span class="string">"partition count: {} - {}"</span>,
             string, count
         )))
         .send_bincode_interleaved(<span class="kw-2">&amp;</span>process)
         .all_ticks()
         .reduce_keyed(<span class="macro">q!</span>(|total, count| <span class="kw-2">*</span>total += count))
-        .for_each(<span class="macro">q!</span>(|(string, count)| <span class="macro">println!</span>(<span class="string">&quot;{}: {}&quot;</span>, string, count)));
+        .for_each(<span class="macro">q!</span>(|(string, count)| <span class="macro">println!</span>(<span class="string">"{}: {}"</span>, string, count)));
 
     (process, cluster)
 }
 
-<span class="kw">pub fn </span>compute_pi&lt;<span class="lifetime">&#39;a</span>, D: Deploy&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
-    cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">&#39;a</span>, D&gt;,
+<span class="kw">pub fn </span>compute_pi&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
+    process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
+    cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
 ) -&gt; D::Process {
     <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
     <span class="kw">let </span>process = flow.process(process_spec);
@@ -379,7 +381,7 @@
         .sample_every(<span class="macro">q!</span>(Duration::from_secs(<span class="number">1</span>)))
         .for_each(<span class="macro">q!</span>(|(inside, total)| {
             <span class="macro">println!</span>(
-                <span class="string">&quot;pi: {} ({} trials)&quot;</span>,
+                <span class="string">"pi: {} ({} trials)"</span>,
                 <span class="number">4.0 </span>* inside <span class="kw">as </span>f64 / total <span class="kw">as </span>f64,
                 total
             );
@@ -392,37 +394,37 @@
 <span class="kw">use </span>hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 <span class="attr">#[stageleft::entry]
-</span><span class="kw">pub fn </span>simple_cluster_runtime&lt;<span class="lifetime">&#39;a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
-    cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
-) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+</span><span class="kw">pub fn </span>simple_cluster_runtime&lt;<span class="lifetime">'a</span>&gt;(
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
+    cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
+) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let _ </span>= simple_cluster(flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
     flow.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::entry]
-</span><span class="kw">pub fn </span>many_to_many_runtime&lt;<span class="lifetime">&#39;a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
-    cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
-) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+</span><span class="kw">pub fn </span>many_to_many_runtime&lt;<span class="lifetime">'a</span>&gt;(
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
+    cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
+) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let _ </span>= many_to_many(flow, <span class="kw-2">&amp;</span>cli);
     flow.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::entry]
-</span><span class="kw">pub fn </span>map_reduce_runtime&lt;<span class="lifetime">&#39;a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
-    cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
-) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+</span><span class="kw">pub fn </span>map_reduce_runtime&lt;<span class="lifetime">'a</span>&gt;(
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
+    cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
+) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let _ </span>= map_reduce(flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
     flow.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::entry]
-</span><span class="kw">pub fn </span>compute_pi_runtime&lt;<span class="lifetime">&#39;a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>FlowBuilder&lt;<span class="lifetime">&#39;a</span>, CLIRuntime&gt;,
-    cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
-) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, Hydroflow&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+</span><span class="kw">pub fn </span>compute_pi_runtime&lt;<span class="lifetime">'a</span>&gt;(
+    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
+    cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
+) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let _ </span>= compute_pi(flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
     flow.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
@@ -447,18 +449,18 @@
             <span class="kw-2">&amp;</span>builder,
             <span class="kw-2">&amp;</span>DeployProcessSpec::new(|| {
                 deployment.borrow_mut().add_service(
-                    HydroflowCrate::new(<span class="string">&quot;.&quot;</span>, localhost.clone())
-                        .bin(<span class="string">&quot;simple_cluster&quot;</span>)
-                        .profile(<span class="string">&quot;dev&quot;</span>),
+                    HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
+                        .bin(<span class="string">"simple_cluster"</span>)
+                        .profile(<span class="string">"dev"</span>),
                 )
             }),
             <span class="kw-2">&amp;</span>DeployClusterSpec::new(|| {
                 (<span class="number">0</span>..<span class="number">2</span>)
                     .map(|<span class="kw">_</span>| {
                         deployment.borrow_mut().add_service(
-                            HydroflowCrate::new(<span class="string">&quot;.&quot;</span>, localhost.clone())
-                                .bin(<span class="string">&quot;simple_cluster&quot;</span>)
-                                .profile(<span class="string">&quot;dev&quot;</span>),
+                            HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
+                                .bin(<span class="string">"simple_cluster"</span>)
+                                .profile(<span class="string">"dev"</span>),
                         )
                     })
                     .collect()
@@ -479,7 +481,7 @@
             <span class="kw">for </span>j <span class="kw">in </span><span class="number">0</span>..<span class="number">5 </span>{
                 <span class="macro">assert_eq!</span>(
                     stdout.recv().<span class="kw">await</span>.unwrap(),
-                    <span class="macro">format!</span>(<span class="string">&quot;cluster received: ({}, {})&quot;</span>, i, j)
+                    <span class="macro">format!</span>(<span class="string">"cluster received: ({}, {})"</span>, i, j)
                 );
             }
         }
@@ -493,7 +495,7 @@
         <span class="kw">for </span>(i, n) <span class="kw">in </span>node_outs.into_iter().enumerate() {
             <span class="macro">assert_eq!</span>(
                 n,
-                <span class="macro">format!</span>(<span class="string">&quot;node received: ({}, ({}, {}))&quot;</span>, i / <span class="number">5</span>, i / <span class="number">5</span>, i % <span class="number">5</span>)
+                <span class="macro">format!</span>(<span class="string">"node received: ({}, ({}, {}))"</span>, i / <span class="number">5</span>, i / <span class="number">5</span>, i % <span class="number">5</span>)
             );
         }
     }
@@ -510,9 +512,9 @@
                 (<span class="number">0</span>..<span class="number">2</span>)
                     .map(|<span class="kw">_</span>| {
                         deployment.borrow_mut().add_service(
-                            HydroflowCrate::new(<span class="string">&quot;.&quot;</span>, localhost.clone())
-                                .bin(<span class="string">&quot;many_to_many&quot;</span>)
-                                .profile(<span class="string">&quot;dev&quot;</span>),
+                            HydroflowCrate::new(<span class="string">"."</span>, localhost.clone())
+                                .bin(<span class="string">"many_to_many"</span>)
+                                .profile(<span class="string">"dev"</span>),
                         )
                     })
                     .collect()
@@ -541,7 +543,7 @@
                 <span class="kw">for </span>value <span class="kw">in </span><span class="number">0</span>..<span class="number">2 </span>{
                     <span class="macro">assert_eq!</span>(
                         node_outs.next().unwrap(),
-                        <span class="macro">format!</span>(<span class="string">&quot;cluster received: ({}, {})&quot;</span>, sender, value)
+                        <span class="macro">format!</span>(<span class="string">"cluster received: ({}, {})"</span>, sender, value)
                     );
                 }
             }

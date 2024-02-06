@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_plus/src/stream.rs`."><title>stream.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_plus" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_plus/src/stream.rs`."><title>stream.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_plus" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../hydroflow_plus/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1191,7 +1193,7 @@
 };
 
 <span class="doccomment">/// Marks the stream as being asynchronous, which means the presence
-/// of all elements is directly influenced by the runtime&#39;s batching
+/// of all elements is directly influenced by the runtime's batching
 /// behavior. Aggregation operations are not permitted on streams
 /// with this tag because the developer has not explicitly specified
 /// if they want to aggregate over the entire stream or just the
@@ -1206,26 +1208,26 @@
 <span class="doccomment">/// An infinite stream of elements of type `T`.
 ///
 /// Type Parameters:
-/// - `&#39;a`: the lifetime of the final Hydroflow graph, which constraints
+/// - `'a`: the lifetime of the final Hydroflow graph, which constraints
 ///   which values can be captured in closures passed to operators
 /// - `T`: the type of elements in the stream
 /// - `W`: the windowing semantics of the stream, which is either [`Async`]
 ///    or [`Windowed`]
 /// - `N`: the type of the node that the stream is materialized on
-</span><span class="kw">pub struct </span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; {
+</span><span class="kw">pub struct </span>Stream&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) ident: syn::Ident,
     <span class="kw">pub</span>(<span class="kw">crate</span>) node: N,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) next_id: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>RefCell&lt;usize&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) builders: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Builders,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) next_id: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;usize&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) builders: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Builders,
 
     <span class="doccomment">/// Does this stream represent a delta of the underlying data?
     /// i.e. is the true stream supposed to have a `persist()` at the end
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) is_delta: bool,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut &amp;</span><span class="lifetime">&#39;a </span>(), T, W)&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), T, W)&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
-    <span class="kw">fn </span>pipeline_op&lt;U, W2&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, pipeline: Pipeline, produces_delta: bool) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, U, W2, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
+    <span class="kw">fn </span>pipeline_op&lt;U, W2&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, pipeline: Pipeline, produces_delta: bool) -&gt; Stream&lt;<span class="lifetime">'a</span>, U, W2, N&gt; {
         <span class="kw">let </span>next_id = {
             <span class="kw">let </span><span class="kw-2">mut </span>next_id = <span class="self">self</span>.next_id.borrow_mut();
             <span class="kw">let </span>id = <span class="kw-2">*</span>next_id;
@@ -1234,7 +1236,7 @@
         };
 
         <span class="kw">let </span>self_ident = <span class="kw-2">&amp;</span><span class="self">self</span>.ident;
-        <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, next_id), Span::call_site());
+        <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, next_id), Span::call_site());
 
         <span class="self">self</span>.builders
             .borrow_mut()
@@ -1257,7 +1259,7 @@
     }
 
     <span class="doccomment">/// Reifies the stream to ensure that it is not producing deltas.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>ensure_concrete(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>ensure_concrete(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
         <span class="kw">if </span><span class="self">self</span>.is_delta {
             <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(persist()), <span class="bool-val">false</span>)
         } <span class="kw">else </span>{
@@ -1265,50 +1267,50 @@
         }
     }
 
-    <span class="kw">pub fn </span>map&lt;U, F: Fn(T) -&gt; U + <span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, F&gt;) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, U, W, N&gt; {
+    <span class="kw">pub fn </span>map&lt;U, F: Fn(T) -&gt; U + <span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, U, W, N&gt; {
         <span class="kw">let </span>f = f.splice();
         <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(map(#f)), <span class="self">self</span>.is_delta)
     }
 
-    <span class="kw">pub fn </span>flat_map&lt;U, I: IntoIterator&lt;Item = U&gt;, F: Fn(T) -&gt; I + <span class="lifetime">&#39;a</span>&gt;(
+    <span class="kw">pub fn </span>flat_map&lt;U, I: IntoIterator&lt;Item = U&gt;, F: Fn(T) -&gt; I + <span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, F&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, U, W, N&gt; {
+        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, U, W, N&gt; {
         <span class="kw">let </span>f = f.splice();
         <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(flat_map(#f)), <span class="self">self</span>.is_delta)
     }
 
-    <span class="kw">pub fn </span>enumerate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (usize, T), W, N&gt; {
+    <span class="kw">pub fn </span>enumerate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, (usize, T), W, N&gt; {
         <span class="self">self</span>.ensure_concrete()
             .pipeline_op(<span class="macro">parse_quote!</span>(enumerate()), <span class="self">self</span>.is_delta)
     }
 
-    <span class="kw">pub fn </span>inspect&lt;F: Fn(<span class="kw-2">&amp;</span>T) + <span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, F&gt;) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
+    <span class="kw">pub fn </span>inspect&lt;F: Fn(<span class="kw-2">&amp;</span>T) + <span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
         <span class="kw">let </span>f = f.splice();
         <span class="self">self</span>.ensure_concrete()
             .pipeline_op(<span class="macro">parse_quote!</span>(inspect(#f)), <span class="self">self</span>.is_delta)
     }
 
-    <span class="kw">pub fn </span>filter&lt;F: Fn(<span class="kw-2">&amp;</span>T) -&gt; bool + <span class="lifetime">&#39;a</span>&gt;(
+    <span class="kw">pub fn </span>filter&lt;F: Fn(<span class="kw-2">&amp;</span>T) -&gt; bool + <span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, F&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
+        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
         <span class="kw">let </span>f = f.splice();
         <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(filter(#f)), <span class="self">self</span>.is_delta)
     }
 
-    <span class="kw">pub fn </span>filter_map&lt;U, F: Fn(T) -&gt; <span class="prelude-ty">Option</span>&lt;U&gt; + <span class="lifetime">&#39;a</span>&gt;(
+    <span class="kw">pub fn </span>filter_map&lt;U, F: Fn(T) -&gt; <span class="prelude-ty">Option</span>&lt;U&gt; + <span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, F&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, U, W, N&gt; {
+        f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, U, W, N&gt; {
         <span class="kw">let </span>f = f.splice();
         <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(filter_map(#f)), <span class="self">self</span>.is_delta)
     }
 
     <span class="comment">// TODO(shadaj): should allow for differing windows, using strongest one
-    </span><span class="kw">pub fn </span>cross_product&lt;O&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, O, W, N&gt;) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (T, O), W, N&gt; {
+    </span><span class="kw">pub fn </span>cross_product&lt;O&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">'a</span>, O, W, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, (T, O), W, N&gt; {
         <span class="kw">if </span><span class="self">self</span>.node.id() != other.node.id() {
-            <span class="macro">panic!</span>(<span class="string">&quot;cross_product must be called on streams on the same node&quot;</span>);
+            <span class="macro">panic!</span>(<span class="string">"cross_product must be called on streams on the same node"</span>);
         }
 
         <span class="kw">let </span>next_id = {
@@ -1320,7 +1322,7 @@
 
         <span class="kw">let </span>self_ident = <span class="kw-2">&amp;</span><span class="self">self</span>.ident;
         <span class="kw">let </span>other_ident = <span class="kw-2">&amp;</span>other.ident;
-        <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, next_id), Span::call_site());
+        <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, next_id), Span::call_site());
 
         <span class="kw">let </span><span class="kw-2">mut </span>builders = <span class="self">self</span>.builders.borrow_mut();
         <span class="kw">let </span>builder = builders
@@ -1332,28 +1334,28 @@
         <span class="kw">let </span>output_delta = <span class="kw">match </span>(<span class="self">self</span>.is_delta, other.is_delta) {
             (<span class="bool-val">true</span>, <span class="bool-val">true</span>) =&gt; {
                 builder.add_statement(<span class="macro">parse_quote! </span>{
-                    #ident = cross_join::&lt;<span class="lifetime">&#39;static</span>, <span class="lifetime">&#39;static</span>&gt;() -&gt; tee();
+                    #ident = cross_join::&lt;<span class="lifetime">'static</span>, <span class="lifetime">'static</span>&gt;() -&gt; tee();
                 });
 
                 <span class="bool-val">false </span><span class="comment">// TODO(shadaj): cross_join already replays?
             </span>}
             (<span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; {
                 builder.add_statement(<span class="macro">parse_quote! </span>{
-                    #ident = cross_join::&lt;<span class="lifetime">&#39;static</span>, <span class="lifetime">&#39;tick</span>&gt;() -&gt; tee();
+                    #ident = cross_join::&lt;<span class="lifetime">'static</span>, <span class="lifetime">'tick</span>&gt;() -&gt; tee();
                 });
 
                 <span class="bool-val">false
             </span>}
             (<span class="bool-val">false</span>, <span class="bool-val">true</span>) =&gt; {
                 builder.add_statement(<span class="macro">parse_quote! </span>{
-                    #ident = cross_join::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;static</span>&gt;() -&gt; tee();
+                    #ident = cross_join::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'static</span>&gt;() -&gt; tee();
                 });
 
                 <span class="bool-val">false
             </span>}
             (<span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; {
                 builder.add_statement(<span class="macro">parse_quote! </span>{
-                    #ident = cross_join::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;tick</span>&gt;() -&gt; tee();
+                    #ident = cross_join::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'tick</span>&gt;() -&gt; tee();
                 });
 
                 <span class="bool-val">false
@@ -1378,9 +1380,9 @@
         }
     }
 
-    <span class="kw">pub fn </span>union(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
+    <span class="kw">pub fn </span>union(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
         <span class="kw">if </span><span class="self">self</span>.node.id() != other.node.id() {
-            <span class="macro">panic!</span>(<span class="string">&quot;union must be called on streams on the same node&quot;</span>);
+            <span class="macro">panic!</span>(<span class="string">"union must be called on streams on the same node"</span>);
         }
 
         <span class="kw">let </span>next_id = {
@@ -1392,7 +1394,7 @@
 
         <span class="kw">let </span>self_ident = <span class="kw-2">&amp;</span><span class="self">self</span>.ensure_concrete().ident;
         <span class="kw">let </span>other_ident = <span class="kw-2">&amp;</span>other.ensure_concrete().ident;
-        <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, next_id), Span::call_site());
+        <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, next_id), Span::call_site());
 
         <span class="kw">let </span><span class="kw-2">mut </span>builders = <span class="self">self</span>.builders.borrow_mut();
         <span class="kw">let </span>builder = builders
@@ -1423,7 +1425,7 @@
         }
     }
 
-    <span class="kw">pub fn </span>for_each&lt;F: Fn(T) + <span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, F&gt;) {
+    <span class="kw">pub fn </span>for_each&lt;F: Fn(T) + <span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) {
         <span class="kw">let </span>self_ident = <span class="kw-2">&amp;</span><span class="self">self</span>.ensure_concrete().ident;
         <span class="kw">let </span>f = f.splice();
 
@@ -1438,7 +1440,7 @@
             });
     }
 
-    <span class="kw">pub fn </span>dest_sink&lt;S: Unpin + Sink&lt;T&gt; + <span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, sink: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, S&gt;) {
+    <span class="kw">pub fn </span>dest_sink&lt;S: Unpin + Sink&lt;T&gt; + <span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, sink: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, S&gt;) {
         <span class="kw">let </span>self_ident = <span class="kw-2">&amp;</span><span class="self">self</span>.ensure_concrete().ident;
         <span class="kw">let </span>sink = sink.splice();
 
@@ -1453,7 +1455,7 @@
             });
     }
 
-    <span class="kw">pub fn </span>all_ticks(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
+    <span class="kw">pub fn </span>all_ticks(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
         <span class="kw">if </span><span class="self">self</span>.is_delta {
             <span class="self">self</span>.ensure_concrete().all_ticks()
         } <span class="kw">else </span>{
@@ -1468,7 +1470,7 @@
         }
     }
 
-    <span class="kw">pub fn </span>assume_windowed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
+    <span class="kw">pub fn </span>assume_windowed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
         Stream {
             ident: <span class="self">self</span>.ident.clone(),
             node: <span class="self">self</span>.node.clone(),
@@ -1480,8 +1482,8 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N&gt; {
-    <span class="kw">pub fn </span>tick_batch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;<span class="lifetime">'a</span>, T, Async, N&gt; {
+    <span class="kw">pub fn </span>tick_batch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
         Stream {
             ident: <span class="self">self</span>.ident.clone(),
             node: <span class="self">self</span>.node.clone(),
@@ -1493,40 +1495,40 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
-    <span class="kw">pub fn </span>fold&lt;A, I: Fn() -&gt; A + <span class="lifetime">&#39;a</span>, C: Fn(<span class="kw-2">&amp;mut </span>A, T)&gt;(
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
+    <span class="kw">pub fn </span>fold&lt;A, I: Fn() -&gt; A + <span class="lifetime">'a</span>, C: Fn(<span class="kw-2">&amp;mut </span>A, T)&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, I&gt;,
-        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, C&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, A, Windowed, N&gt; {
+        init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, I&gt;,
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, C&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, A, Windowed, N&gt; {
         <span class="kw">let </span>init = init.splice();
         <span class="kw">let </span>comb = comb.splice();
 
         <span class="kw">if </span><span class="self">self</span>.is_delta {
-            <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(fold::&lt;<span class="lifetime">&#39;static</span>&gt;(#init, #comb)), <span class="bool-val">false</span>)
+            <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(fold::&lt;<span class="lifetime">'static</span>&gt;(#init, #comb)), <span class="bool-val">false</span>)
         } <span class="kw">else </span>{
-            <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(fold::&lt;<span class="lifetime">&#39;tick</span>&gt;(#init, #comb)), <span class="bool-val">false</span>)
+            <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(fold::&lt;<span class="lifetime">'tick</span>&gt;(#init, #comb)), <span class="bool-val">false</span>)
         }
     }
 
-    <span class="kw">pub fn </span>reduce&lt;C: Fn(<span class="kw-2">&amp;mut </span>T, T) + <span class="lifetime">&#39;a</span>&gt;(
+    <span class="kw">pub fn </span>reduce&lt;C: Fn(<span class="kw-2">&amp;mut </span>T, T) + <span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, C&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, C&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
         <span class="kw">let </span>comb = comb.splice();
 
         <span class="kw">if </span><span class="self">self</span>.is_delta {
-            <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(reduce::&lt;<span class="lifetime">&#39;static</span>&gt;(#comb)), <span class="bool-val">false</span>)
+            <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(reduce::&lt;<span class="lifetime">'static</span>&gt;(#comb)), <span class="bool-val">false</span>)
         } <span class="kw">else </span>{
-            <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(reduce::&lt;<span class="lifetime">&#39;tick</span>&gt;(#comb)), <span class="bool-val">false</span>)
+            <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(reduce::&lt;<span class="lifetime">'tick</span>&gt;(#comb)), <span class="bool-val">false</span>)
         }
     }
 
-    <span class="kw">pub fn </span>count(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, usize, Windowed, N&gt; {
+    <span class="kw">pub fn </span>count(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, usize, Windowed, N&gt; {
         <span class="self">self</span>.fold(<span class="macro">q!</span>(|| <span class="number">0usize</span>), <span class="macro">q!</span>(|count, <span class="kw">_</span>| <span class="kw-2">*</span>count += <span class="number">1</span>))
     }
 
-    <span class="kw">pub fn </span>delta(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
+    <span class="kw">pub fn </span>delta(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
         <span class="kw">if </span><span class="self">self</span>.is_delta {
             Stream {
                 ident: <span class="self">self</span>.ident.clone(),
@@ -1541,20 +1543,20 @@
         }
     }
 
-    <span class="kw">pub fn </span>unique(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt;
+    <span class="kw">pub fn </span>unique(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt;
     <span class="kw">where
         </span>T: Eq + Hash,
     {
         <span class="self">self</span>.ensure_concrete()
-            .pipeline_op(<span class="macro">parse_quote!</span>(unique::&lt;<span class="lifetime">&#39;tick</span>&gt;()), <span class="bool-val">false</span>)
+            .pipeline_op(<span class="macro">parse_quote!</span>(unique::&lt;<span class="lifetime">'tick</span>&gt;()), <span class="bool-val">false</span>)
     }
 
-    <span class="kw">pub fn </span>filter_not_in(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt;) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt;
+    <span class="kw">pub fn </span>filter_not_in(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt;
     <span class="kw">where
         </span>T: Eq + Hash,
     {
         <span class="kw">if </span><span class="self">self</span>.node.id() != other.node.id() {
-            <span class="macro">panic!</span>(<span class="string">&quot;union must be called on streams on the same node&quot;</span>);
+            <span class="macro">panic!</span>(<span class="string">"union must be called on streams on the same node"</span>);
         }
 
         <span class="kw">let </span>next_id = {
@@ -1571,7 +1573,7 @@
         };
 
         <span class="kw">let </span>other_ident = <span class="kw-2">&amp;</span>other.ident;
-        <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, next_id), Span::call_site());
+        <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, next_id), Span::call_site());
 
         <span class="kw">let </span><span class="kw-2">mut </span>builders = <span class="self">self</span>.builders.borrow_mut();
         <span class="kw">let </span>builder = builders
@@ -1582,33 +1584,33 @@
 
         <span class="kw">let </span>output_delta = <span class="kw">match </span>(<span class="self">self</span>.is_delta, other.is_delta) {
             (<span class="bool-val">true</span>, <span class="bool-val">true</span>) =&gt; {
-                <span class="comment">// we don&#39;t gain any performance by having the first be &#39;tick,
+                <span class="comment">// we don't gain any performance by having the first be 'tick,
                 // just persist the second one and we get deltas out
                 </span>builder.add_statement(<span class="macro">parse_quote! </span>{
-                    #ident = difference::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;static</span>&gt;() -&gt; tee();
+                    #ident = difference::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'static</span>&gt;() -&gt; tee();
                 });
 
                 <span class="bool-val">true
             </span>}
             (<span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; {
-                <span class="comment">// difference/anti_join&lt;&#39;static, _&gt; does not replay
+                <span class="comment">// difference/anti_join&lt;'static, _&gt; does not replay
                 // but we need to re-filter every tick
                 </span>builder.add_statement(<span class="macro">parse_quote! </span>{
-                    #ident = difference::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;tick</span>&gt;() -&gt; tee();
+                    #ident = difference::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'tick</span>&gt;() -&gt; tee();
                 });
 
                 <span class="bool-val">false
             </span>}
             (<span class="bool-val">false</span>, <span class="bool-val">true</span>) =&gt; {
                 builder.add_statement(<span class="macro">parse_quote! </span>{
-                    #ident = difference::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;static</span>&gt;() -&gt; tee();
+                    #ident = difference::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'static</span>&gt;() -&gt; tee();
                 });
 
                 <span class="bool-val">false
             </span>}
             (<span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; {
                 builder.add_statement(<span class="macro">parse_quote! </span>{
-                    #ident = difference::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;tick</span>&gt;() -&gt; tee();
+                    #ident = difference::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'tick</span>&gt;() -&gt; tee();
                 });
 
                 <span class="bool-val">false
@@ -1635,27 +1637,27 @@
 
     <span class="kw">pub fn </span>sample_every(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        duration: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">&#39;a</span>, std::time::Duration&gt; + Copy + <span class="lifetime">&#39;a</span>,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Windowed, N&gt; {
+        duration: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, std::time::Duration&gt; + Copy + <span class="lifetime">'a</span>,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
         <span class="self">self</span>.cross_product(<span class="kw-2">&amp;</span><span class="self">self</span>.node.source_interval(duration).tick_batch())
             .map(<span class="macro">q!</span>(|(a, <span class="kw">_</span>)| a))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Clone, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="kw-2">&amp;</span>T, W, N&gt; {
-    <span class="kw">pub fn </span>cloned(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: Clone, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span>T, W, N&gt; {
+    <span class="kw">pub fn </span>cloned(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
         <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(map(|d| d.clone())), <span class="self">self</span>.is_delta)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, K, V1, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (K, V1), W, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K, V1, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;<span class="lifetime">'a</span>, (K, V1), W, N&gt; {
     <span class="comment">// TODO(shadaj): figure out window semantics
-    </span><span class="kw">pub fn </span>join&lt;W2, V2&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, n: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, (K, V2), W2, N&gt;) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (K, (V1, V2)), W, N&gt;
+    </span><span class="kw">pub fn </span>join&lt;W2, V2&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, n: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">'a</span>, (K, V2), W2, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, (K, (V1, V2)), W, N&gt;
     <span class="kw">where
         </span>K: Eq + Hash,
     {
         <span class="kw">if </span><span class="self">self</span>.node.id() != n.node.id() {
-            <span class="macro">panic!</span>(<span class="string">&quot;join must be called on streams on the same node&quot;</span>);
+            <span class="macro">panic!</span>(<span class="string">"join must be called on streams on the same node"</span>);
         }
 
         <span class="kw">let </span>next_id = {
@@ -1667,7 +1669,7 @@
 
         <span class="kw">let </span>self_ident = <span class="kw-2">&amp;</span><span class="self">self</span>.ident;
         <span class="kw">let </span>other_ident = <span class="kw-2">&amp;</span>n.ident;
-        <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, next_id), Span::call_site());
+        <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, next_id), Span::call_site());
 
         <span class="kw">let </span><span class="kw-2">mut </span>builders = <span class="self">self</span>.builders.borrow_mut();
         <span class="kw">let </span>builder = builders
@@ -1679,28 +1681,28 @@
         <span class="kw">let </span>output_delta = <span class="kw">match </span>(<span class="self">self</span>.is_delta, n.is_delta) {
             (<span class="bool-val">true</span>, <span class="bool-val">true</span>) =&gt; {
                 builder.add_statement(<span class="macro">parse_quote! </span>{
-                    #ident = join::&lt;<span class="lifetime">&#39;static</span>, <span class="lifetime">&#39;static</span>&gt;() -&gt; tee();
+                    #ident = join::&lt;<span class="lifetime">'static</span>, <span class="lifetime">'static</span>&gt;() -&gt; tee();
                 });
 
                 <span class="bool-val">false </span><span class="comment">// TODO(shadaj): join already replays?
             </span>}
             (<span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; {
                 builder.add_statement(<span class="macro">parse_quote! </span>{
-                    #ident = join::&lt;<span class="lifetime">&#39;static</span>, <span class="lifetime">&#39;tick</span>&gt;() -&gt; tee();
+                    #ident = join::&lt;<span class="lifetime">'static</span>, <span class="lifetime">'tick</span>&gt;() -&gt; tee();
                 });
 
                 <span class="bool-val">false
             </span>}
             (<span class="bool-val">false</span>, <span class="bool-val">true</span>) =&gt; {
                 builder.add_statement(<span class="macro">parse_quote! </span>{
-                    #ident = join::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;static</span>&gt;() -&gt; tee();
+                    #ident = join::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'static</span>&gt;() -&gt; tee();
                 });
 
                 <span class="bool-val">false
             </span>}
             (<span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; {
                 builder.add_statement(<span class="macro">parse_quote! </span>{
-                    #ident = join::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;tick</span>&gt;() -&gt; tee();
+                    #ident = join::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'tick</span>&gt;() -&gt; tee();
                 });
 
                 <span class="bool-val">false
@@ -1725,12 +1727,12 @@
         }
     }
 
-    <span class="kw">pub fn </span>anti_join&lt;W2&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, n: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, K, W2, N&gt;) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (K, V1), W, N&gt;
+    <span class="kw">pub fn </span>anti_join&lt;W2&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, n: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">'a</span>, K, W2, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, (K, V1), W, N&gt;
     <span class="kw">where
         </span>K: Eq + Hash,
     {
         <span class="kw">if </span><span class="self">self</span>.node.id() != n.node.id() {
-            <span class="macro">panic!</span>(<span class="string">&quot;anti_join must be called on streams on the same node&quot;</span>);
+            <span class="macro">panic!</span>(<span class="string">"anti_join must be called on streams on the same node"</span>);
         }
 
         <span class="kw">let </span>next_id = {
@@ -1747,7 +1749,7 @@
         };
 
         <span class="kw">let </span>other_ident = <span class="kw-2">&amp;</span>n.ident;
-        <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, next_id), Span::call_site());
+        <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, next_id), Span::call_site());
 
         <span class="kw">let </span><span class="kw-2">mut </span>builders = <span class="self">self</span>.builders.borrow_mut();
         <span class="kw">let </span>builder = builders
@@ -1758,33 +1760,33 @@
 
         <span class="kw">let </span>output_delta = <span class="kw">match </span>(<span class="self">self</span>.is_delta, n.is_delta) {
             (<span class="bool-val">true</span>, <span class="bool-val">true</span>) =&gt; {
-                <span class="comment">// we don&#39;t gain any performance by having the first be &#39;tick,
+                <span class="comment">// we don't gain any performance by having the first be 'tick,
                 // just persist the second one and we get deltas out
                 </span>builder.add_statement(<span class="macro">parse_quote! </span>{
-                    #ident = anti_join::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;static</span>&gt;() -&gt; tee();
+                    #ident = anti_join::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'static</span>&gt;() -&gt; tee();
                 });
 
                 <span class="bool-val">true
             </span>}
             (<span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; {
-                <span class="comment">// difference/anti_join&lt;&#39;static, _&gt; does not replay
+                <span class="comment">// difference/anti_join&lt;'static, _&gt; does not replay
                 // but we need to re-filter every tick
                 </span>builder.add_statement(<span class="macro">parse_quote! </span>{
-                    #ident = anti_join::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;tick</span>&gt;() -&gt; tee();
+                    #ident = anti_join::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'tick</span>&gt;() -&gt; tee();
                 });
 
                 <span class="bool-val">false
             </span>}
             (<span class="bool-val">false</span>, <span class="bool-val">true</span>) =&gt; {
                 builder.add_statement(<span class="macro">parse_quote! </span>{
-                    #ident = anti_join::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;static</span>&gt;() -&gt; tee();
+                    #ident = anti_join::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'static</span>&gt;() -&gt; tee();
                 });
 
                 <span class="bool-val">false
             </span>}
             (<span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; {
                 builder.add_statement(<span class="macro">parse_quote! </span>{
-                    #ident = anti_join::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;tick</span>&gt;() -&gt; tee();
+                    #ident = anti_join::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'tick</span>&gt;() -&gt; tee();
                 });
 
                 <span class="bool-val">false
@@ -1810,39 +1812,39 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, K: Eq + Hash, V, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (K, V), Windowed, N&gt; {
-    <span class="kw">pub fn </span>fold_keyed&lt;A, I: Fn() -&gt; A + <span class="lifetime">&#39;a</span>, C: Fn(<span class="kw-2">&amp;mut </span>A, V) + <span class="lifetime">&#39;a</span>&gt;(
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, K: Eq + Hash, V, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;<span class="lifetime">'a</span>, (K, V), Windowed, N&gt; {
+    <span class="kw">pub fn </span>fold_keyed&lt;A, I: Fn() -&gt; A + <span class="lifetime">'a</span>, C: Fn(<span class="kw-2">&amp;mut </span>A, V) + <span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, I&gt;,
-        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, C&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (K, A), Windowed, N&gt; {
+        init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, I&gt;,
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, C&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (K, A), Windowed, N&gt; {
         <span class="kw">let </span>init = init.splice();
         <span class="kw">let </span>comb = comb.splice();
 
         <span class="kw">if </span><span class="self">self</span>.is_delta {
-            <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(fold_keyed::&lt;<span class="lifetime">&#39;static</span>&gt;(#init, #comb)), <span class="bool-val">false</span>)
+            <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(fold_keyed::&lt;<span class="lifetime">'static</span>&gt;(#init, #comb)), <span class="bool-val">false</span>)
         } <span class="kw">else </span>{
-            <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(fold_keyed::&lt;<span class="lifetime">&#39;tick</span>&gt;(#init, #comb)), <span class="bool-val">false</span>)
+            <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(fold_keyed::&lt;<span class="lifetime">'tick</span>&gt;(#init, #comb)), <span class="bool-val">false</span>)
         }
     }
 
-    <span class="kw">pub fn </span>reduce_keyed&lt;F: Fn(<span class="kw-2">&amp;mut </span>V, V) + <span class="lifetime">&#39;a</span>&gt;(
+    <span class="kw">pub fn </span>reduce_keyed&lt;F: Fn(<span class="kw-2">&amp;mut </span>V, V) + <span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">&#39;a</span>, F&gt;,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (K, V), Windowed, N&gt; {
+        comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (K, V), Windowed, N&gt; {
         <span class="kw">let </span>comb = comb.splice();
 
         <span class="kw">if </span><span class="self">self</span>.is_delta {
-            <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(reduce_keyed::&lt;<span class="lifetime">&#39;static</span>&gt;(#comb)), <span class="bool-val">false</span>)
+            <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(reduce_keyed::&lt;<span class="lifetime">'static</span>&gt;(#comb)), <span class="bool-val">false</span>)
         } <span class="kw">else </span>{
-            <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(reduce_keyed::&lt;<span class="lifetime">&#39;tick</span>&gt;(#comb)), <span class="bool-val">false</span>)
+            <span class="self">self</span>.pipeline_op(<span class="macro">parse_quote!</span>(reduce_keyed::&lt;<span class="lifetime">'tick</span>&gt;(#comb)), <span class="bool-val">false</span>)
         }
     }
 }
 
 <span class="kw">fn </span>get_this_crate() -&gt; TokenStream {
-    <span class="kw">let </span>hydroflow_crate = proc_macro_crate::crate_name(<span class="string">&quot;hydroflow_plus&quot;</span>)
-        .expect(<span class="string">&quot;hydroflow_plus should be present in `Cargo.toml`&quot;</span>);
+    <span class="kw">let </span>hydroflow_crate = proc_macro_crate::crate_name(<span class="string">"hydroflow_plus"</span>)
+        .expect(<span class="string">"hydroflow_plus should be present in `Cargo.toml`"</span>);
     <span class="kw">match </span>hydroflow_crate {
         proc_macro_crate::FoundCrate::Itself =&gt; <span class="macro">quote! </span>{ hydroflow_plus },
         proc_macro_crate::FoundCrate::Name(name) =&gt; {
@@ -1859,17 +1861,17 @@
     <span class="kw">fn </span>visit_path_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::Path) {
         <span class="kw">if </span>i.segments.iter().take(<span class="number">2</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
             == <span class="macro">vec!</span>[
-                <span class="kw-2">&amp;</span>syn::PathSegment::from(syn::Ident::new(<span class="string">&quot;alloc&quot;</span>, Span::call_site())),
-                <span class="kw-2">&amp;</span>syn::PathSegment::from(syn::Ident::new(<span class="string">&quot;string&quot;</span>, Span::call_site())),
+                <span class="kw-2">&amp;</span>syn::PathSegment::from(syn::Ident::new(<span class="string">"alloc"</span>, Span::call_site())),
+                <span class="kw-2">&amp;</span>syn::PathSegment::from(syn::Ident::new(<span class="string">"string"</span>, Span::call_site())),
             ]
         {
             <span class="kw-2">*</span>i.segments.first_mut().unwrap() =
-                syn::PathSegment::from(syn::Ident::new(<span class="string">&quot;std&quot;</span>, Span::call_site()));
+                syn::PathSegment::from(syn::Ident::new(<span class="string">"std"</span>, Span::call_site()));
         }
     }
 }
 
-<span class="kw">fn </span>node_send_direct&lt;<span class="lifetime">&#39;a</span>, T, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;, sink: Pipeline) {
+<span class="kw">fn </span>node_send_direct&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt;, sink: Pipeline) {
     <span class="kw">let </span>self_ident = <span class="kw-2">&amp;</span>me.ident;
 
     <span class="kw">let </span><span class="kw-2">mut </span>builders_borrowed = me.builders.borrow_mut();
@@ -1883,8 +1885,8 @@
         });
 }
 
-<span class="kw">fn </span>node_send_bincode&lt;<span class="lifetime">&#39;a</span>, T: Serialize, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;,
+<span class="kw">fn </span>node_send_bincode&lt;<span class="lifetime">'a</span>, T: Serialize, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(
+    me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt;,
     sink: Pipeline,
 ) {
     <span class="kw">let </span>self_ident = <span class="kw-2">&amp;</span>me.ident;
@@ -1908,8 +1910,8 @@
         });
 }
 
-<span class="kw">fn </span>cluster_demux_bincode&lt;<span class="lifetime">&#39;a</span>, T, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), W, N&gt;,
+<span class="kw">fn </span>cluster_demux_bincode&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(
+    me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">'a</span>, (u32, T), W, N&gt;,
     sink: Pipeline,
 ) {
     <span class="kw">let </span>self_ident = <span class="kw-2">&amp;</span>me.ident;
@@ -1933,8 +1935,8 @@
         });
 }
 
-<span class="kw">fn </span>node_recv_direct&lt;<span class="lifetime">&#39;a</span>, T, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;, N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt;,
+<span class="kw">fn </span>node_recv_direct&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt;, N2: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(
+    me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt;,
     other: <span class="kw-2">&amp;</span>N2,
     source: Pipeline,
 ) -&gt; syn::Ident {
@@ -1945,7 +1947,7 @@
         id
     };
 
-    <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, recipient_next_id), Span::call_site());
+    <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, recipient_next_id), Span::call_site());
 
     <span class="kw">let </span><span class="kw-2">mut </span>builders_borrowed = me.builders.borrow_mut();
     <span class="kw">let </span>builders = builders_borrowed.as_mut().unwrap();
@@ -1960,8 +1962,8 @@
     ident
 }
 
-<span class="kw">fn </span>node_recv_bincode&lt;<span class="lifetime">&#39;a</span>, T1, T2: DeserializeOwned, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;, N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
-    me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">&#39;a</span>, T1, W, N&gt;,
+<span class="kw">fn </span>node_recv_bincode&lt;<span class="lifetime">'a</span>, T1, T2: DeserializeOwned, W, N: Location&lt;<span class="lifetime">'a</span>&gt;, N2: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(
+    me: <span class="kw-2">&amp;</span>Stream&lt;<span class="lifetime">'a</span>, T1, W, N&gt;,
     other: <span class="kw-2">&amp;</span>N2,
     source: Pipeline,
     tagged: bool,
@@ -1973,7 +1975,7 @@
         id
     };
 
-    <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;stream_{}&quot;</span>, recipient_next_id), Span::call_site());
+    <span class="kw">let </span>ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, recipient_next_id), Span::call_site());
 
     <span class="kw">let </span><span class="kw-2">mut </span>builders_borrowed = me.builders.borrow_mut();
     <span class="kw">let </span>builders = builders_borrowed.as_mut().unwrap();
@@ -2004,13 +2006,13 @@
     ident
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, Bytes, W, N&gt; {
-    <span class="kw">pub fn </span>send_bytes&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;<span class="lifetime">'a</span>, Bytes, W, N&gt; {
+    <span class="kw">pub fn </span>send_bytes&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendOneToOne&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendOneToOne&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="kw">let </span>send_port = <span class="self">self</span>.node.next_port();
         node_send_direct(<span class="self">self</span>, <span class="self">self</span>.node.gen_sink_statement(<span class="kw-2">&amp;</span>send_port));
@@ -2030,12 +2032,12 @@
         }
     }
 
-    <span class="kw">pub fn </span>send_bytes_tagged&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>send_bytes_tagged&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;(u32, BytesMut), io::Error&gt;, Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, <span class="prelude-ty">Result</span>&lt;(u32, BytesMut), io::Error&gt;, Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendManyToOne&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendManyToOne&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="kw">let </span>send_port = <span class="self">self</span>.node.next_port();
         node_send_direct(<span class="self">self</span>, <span class="self">self</span>.node.gen_sink_statement(<span class="kw-2">&amp;</span>send_port));
@@ -2055,22 +2057,22 @@
         }
     }
 
-    <span class="kw">pub fn </span>send_bytes_interleaved&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>send_bytes_interleaved&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendManyToOne&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendManyToOne&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="self">self</span>.send_bytes_tagged(other).map(<span class="macro">q!</span>(|r| r.map(|(<span class="kw">_</span>, b)| b)))
     }
 
-    <span class="kw">pub fn </span>broadcast_bytes&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt; + Cluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>broadcast_bytes&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt; + Cluster&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendOneToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendOneToMany&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="kw">let </span>other_ids = <span class="self">self</span>.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
@@ -2078,12 +2080,12 @@
             .demux_bytes(other)
     }
 
-    <span class="kw">pub fn </span>broadcast_bytes_tagged&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt; + Cluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>broadcast_bytes_tagged&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt; + Cluster&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;(u32, BytesMut), io::Error&gt;, Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, <span class="prelude-ty">Result</span>&lt;(u32, BytesMut), io::Error&gt;, Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendManyToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendManyToMany&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="kw">let </span>other_ids = <span class="self">self</span>.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
@@ -2091,22 +2093,22 @@
             .demux_bytes_tagged(other)
     }
 
-    <span class="kw">pub fn </span>broadcast_bytes_interleaved&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt; + Cluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>broadcast_bytes_interleaved&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt; + Cluster&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendManyToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendManyToMany&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="self">self</span>.broadcast_bytes_tagged(other)
             .map(<span class="macro">q!</span>(|r| r.map(|(<span class="kw">_</span>, b)| b)))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Serialize + DeserializeOwned, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, W, N&gt; {
-    <span class="kw">pub fn </span>send_bincode&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N2&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: Serialize + DeserializeOwned, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
+    <span class="kw">pub fn </span>send_bincode&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendOneToOne&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendOneToOne&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="kw">let </span>send_port = <span class="self">self</span>.node.next_port();
         node_send_bincode(<span class="self">self</span>, <span class="self">self</span>.node.gen_sink_statement(<span class="kw-2">&amp;</span>send_port));
@@ -2131,12 +2133,12 @@
         }
     }
 
-    <span class="kw">pub fn </span>send_bincode_tagged&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>send_bincode_tagged&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (u32, T), Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendManyToOne&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendManyToOne&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="kw">let </span>send_port = <span class="self">self</span>.node.next_port();
         node_send_bincode(<span class="self">self</span>, <span class="self">self</span>.node.gen_sink_statement(<span class="kw-2">&amp;</span>send_port));
@@ -2161,19 +2163,19 @@
         }
     }
 
-    <span class="kw">pub fn </span>send_bincode_interleaved&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N2&gt;
+    <span class="kw">pub fn </span>send_bincode_interleaved&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendManyToOne&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendManyToOne&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="self">self</span>.send_bincode_tagged(other).map(<span class="macro">q!</span>(|(<span class="kw">_</span>, b)| b))
     }
 
-    <span class="kw">pub fn </span>broadcast_bincode&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt; + Cluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>broadcast_bincode&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt; + Cluster&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendOneToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendOneToMany&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="kw">let </span>other_ids = <span class="self">self</span>.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
@@ -2181,12 +2183,12 @@
             .demux_bincode(other)
     }
 
-    <span class="kw">pub fn </span>broadcast_bincode_tagged&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt; + Cluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>broadcast_bincode_tagged&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt; + Cluster&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (u32, T), Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendManyToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendManyToMany&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="kw">let </span>other_ids = <span class="self">self</span>.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
@@ -2194,24 +2196,24 @@
             .demux_bincode_tagged(other)
     }
 
-    <span class="kw">pub fn </span>broadcast_bincode_interleaved&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt; + Cluster&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>broadcast_bincode_interleaved&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt; + Cluster&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendManyToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendManyToMany&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="self">self</span>.broadcast_bincode_tagged(other).map(<span class="macro">q!</span>(|(<span class="kw">_</span>, b)| b))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, Bytes), W, N&gt; {
-    <span class="kw">pub fn </span>demux_bytes&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;<span class="lifetime">'a</span>, (u32, Bytes), W, N&gt; {
+    <span class="kw">pub fn </span>demux_bytes&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendOneToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendOneToMany&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="kw">let </span>send_port = <span class="self">self</span>.node.next_port();
         node_send_direct(<span class="self">self</span>, <span class="self">self</span>.node.gen_sink_statement(<span class="kw-2">&amp;</span>send_port));
@@ -2232,10 +2234,10 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Serialize + DeserializeOwned, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), W, N&gt; {
-    <span class="kw">pub fn </span>demux_bincode&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N2&gt;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: Serialize + DeserializeOwned, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;<span class="lifetime">'a</span>, (u32, T), W, N&gt; {
+    <span class="kw">pub fn </span>demux_bincode&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>N2) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendOneToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendOneToMany&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="kw">let </span>send_port = <span class="self">self</span>.node.next_port();
         cluster_demux_bincode(<span class="self">self</span>, <span class="self">self</span>.node.gen_sink_statement(<span class="kw-2">&amp;</span>send_port));
@@ -2261,13 +2263,13 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, Bytes), W, N&gt; {
-    <span class="kw">pub fn </span>demux_bytes_tagged&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;<span class="lifetime">'a</span>, (u32, Bytes), W, N&gt; {
+    <span class="kw">pub fn </span>demux_bytes_tagged&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;(u32, BytesMut), io::Error&gt;, Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, <span class="prelude-ty">Result</span>&lt;(u32, BytesMut), io::Error&gt;, Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendManyToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendManyToMany&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="kw">let </span>send_port = <span class="self">self</span>.node.next_port();
         node_send_direct(<span class="self">self</span>, <span class="self">self</span>.node.gen_sink_statement(<span class="kw-2">&amp;</span>send_port));
@@ -2287,25 +2289,25 @@
         }
     }
 
-    <span class="kw">pub fn </span>demux_bytes_interleaved&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>demux_bytes_interleaved&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, <span class="prelude-ty">Result</span>&lt;BytesMut, io::Error&gt;, Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendManyToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendManyToMany&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="self">self</span>.demux_bytes_tagged(other)
             .map(<span class="macro">q!</span>(|r| r.map(|(<span class="kw">_</span>, b)| b)))
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, T: Serialize + DeserializeOwned, W, N: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), W, N&gt; {
-    <span class="kw">pub fn </span>demux_bincode_tagged&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: Serialize + DeserializeOwned, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;<span class="lifetime">'a</span>, (u32, T), W, N&gt; {
+    <span class="kw">pub fn </span>demux_bincode_tagged&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, (u32, T), Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (u32, T), Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendManyToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendManyToMany&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="kw">let </span>send_port = <span class="self">self</span>.node.next_port();
         cluster_demux_bincode(<span class="self">self</span>, <span class="self">self</span>.node.gen_sink_statement(<span class="kw-2">&amp;</span>send_port));
@@ -2330,12 +2332,12 @@
         }
     }
 
-    <span class="kw">pub fn </span>demux_bincode_interleaved&lt;N2: Location&lt;<span class="lifetime">&#39;a</span>&gt;&gt;(
+    <span class="kw">pub fn </span>demux_bincode_interleaved&lt;N2: Location&lt;<span class="lifetime">'a</span>&gt;&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">&#39;a</span>, T, Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSendManyToMany&lt;<span class="lifetime">&#39;a</span>, N2&gt;,
+        </span>N: HfSendManyToMany&lt;<span class="lifetime">'a</span>, N2&gt;,
     {
         <span class="self">self</span>.demux_bincode_tagged(other).map(<span class="macro">q!</span>(|(<span class="kw">_</span>, b)| b))
     }

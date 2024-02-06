@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `variadics/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="variadics" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `variadics/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="variadics" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../variadics/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -290,21 +292,21 @@
 <a href="#290" id="290">290</a>
 <a href="#291" id="291">291</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
-#![doc = <span class="macro">include_str!</span>(<span class="string">&quot;../README.md&quot;</span>)]
+#![doc = <span class="macro">include_str!</span>(<span class="string">"../README.md"</span>)]
 </span><span class="doccomment">//! &amp;nbsp;
 //!
 //! # Main Macros
 //!
 //! ## [`var_expr!`]
-</span><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">&quot;../var_expr.md&quot;</span>)]
+</span><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">"../var_expr.md"</span>)]
 </span><span class="doccomment">//! ## [`var_type!`]
-</span><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">&quot;../var_type.md&quot;</span>)]
+</span><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">"../var_type.md"</span>)]
 </span><span class="doccomment">//! ## [`var_args!`]
-</span><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">&quot;../var_args.md&quot;</span>)]
+</span><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">"../var_args.md"</span>)]
 
 </span><span class="kw">use </span>sealed::sealed;
 
-<span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">&quot;../var_expr.md&quot;</span>)]
+<span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">"../var_expr.md"</span>)]
 #[macro_export]
 </span><span class="macro">macro_rules! </span>var_expr {
     () =&gt; ( () );
@@ -320,7 +322,7 @@
     (<span class="macro-nonterminal">$a</span>:expr,  $( <span class="macro-nonterminal">$b</span>:tt )+) =&gt; ( (<span class="macro-nonterminal">$a</span>, <span class="macro-nonterminal">$</span><span class="macro">crate::var_expr!</span>( $( <span class="macro-nonterminal">$b </span>)* )) );
 }
 
-<span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">&quot;../var_type.md&quot;</span>)]
+<span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">"../var_type.md"</span>)]
 #[macro_export]
 </span><span class="macro">macro_rules! </span>var_type {
     () =&gt; ( () );
@@ -332,13 +334,13 @@
     (<span class="macro-nonterminal">$a</span>:ty, $( <span class="macro-nonterminal">$b</span>:tt )+) =&gt; ( (<span class="macro-nonterminal">$a</span>, <span class="macro-nonterminal">$</span><span class="macro">crate::var_type!</span>( $( <span class="macro-nonterminal">$b </span>)* )) );
 }
 
-<span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">&quot;../var_args.md&quot;</span>)]
+<span class="attr">#[doc = <span class="macro">include_str!</span>(<span class="string">"../var_args.md"</span>)]
 #[macro_export]
 </span><span class="macro">macro_rules! </span>var_args {
     () =&gt; ( () );
 
     (...<span class="macro-nonterminal">$a</span>:pat $(,)<span class="question-mark">? </span>) =&gt; ( <span class="macro-nonterminal">$a </span>);
-    (...<span class="macro-nonterminal">$a</span>:ty, $( <span class="macro-nonterminal">$b</span>:tt )+) =&gt; ( <span class="macro">::core::compile_error!</span>(<span class="string">&quot;`var_args!` can only have the `...` spread syntax on the last field.&quot;</span>) );
+    (...<span class="macro-nonterminal">$a</span>:ty, $( <span class="macro-nonterminal">$b</span>:tt )+) =&gt; ( <span class="macro">::core::compile_error!</span>(<span class="string">"`var_args!` can only have the `...` spread syntax on the last field."</span>) );
 
     (<span class="macro-nonterminal">$a</span>:pat $(,)<span class="question-mark">? </span>) =&gt; ( (<span class="macro-nonterminal">$a</span>, ()) );
     (<span class="macro-nonterminal">$a</span>:pat, $( <span class="macro-nonterminal">$b</span>:tt )+) =&gt; ( (<span class="macro-nonterminal">$a</span>, <span class="macro-nonterminal">$</span><span class="macro">crate::var_args!</span>( $( <span class="macro-nonterminal">$b </span>)* )) );
@@ -354,9 +356,9 @@
 ///     pub variadic&lt;Item&gt; DebugList where Item: std::fmt::Debug {}
 /// }
 ///
-/// let x = &amp;var_expr!(1, &quot;hello&quot;, 5.6);
+/// let x = &amp;var_expr!(1, "hello", 5.6);
 /// let _: &amp;dyn DebugList = x;
-/// println!(&quot;{:?}&quot;, x);
+/// println!("{:?}", x);
 /// ```
 ///
 /// This uses a special syntax similar to traits, but with the `trait` keyword replaced with
@@ -566,8 +568,8 @@
     </span><span class="kw">fn </span>test_basic_expr() {
         <span class="kw">let _ </span>= <span class="macro">var_expr!</span>();
         <span class="kw">let _ </span>= <span class="macro">var_expr!</span>(<span class="number">1</span>);
-        <span class="kw">let _ </span>= <span class="macro">var_expr!</span>(<span class="number">1</span>, <span class="string">&quot;b&quot;</span>,);
-        <span class="kw">let _ </span>= <span class="macro">var_expr!</span>(<span class="string">&quot;a&quot;</span>,);
+        <span class="kw">let _ </span>= <span class="macro">var_expr!</span>(<span class="number">1</span>, <span class="string">"b"</span>,);
+        <span class="kw">let _ </span>= <span class="macro">var_expr!</span>(<span class="string">"a"</span>,);
         <span class="kw">let _ </span>= <span class="macro">var_expr!</span>(<span class="bool-val">false</span>, <span class="bool-val">true</span>, <span class="number">1 </span>+ <span class="number">2</span>);
     }
 

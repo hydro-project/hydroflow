@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydro_deploy/hydroflow_cli_integration/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_cli_integration" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydro_deploy/hydroflow_cli_integration/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_cli_integration" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../hydroflow_cli_integration/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -870,7 +872,7 @@
                 <span class="attr">#[cfg(not(unix))]
                 </span>{
                     <span class="kw">let _ </span>= path;
-                    <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>)
+                    <span class="macro">panic!</span>(<span class="string">"Unix sockets are not supported on this platform"</span>)
                 }
             }
             ServerPort::TcpPort(addr) =&gt; {
@@ -917,7 +919,7 @@
                 <span class="attr">#[cfg(unix)]
                 </span>{
                     <span class="kw">let </span>dir = tempfile::tempdir().unwrap();
-                    <span class="kw">let </span>socket_path = dir.path().join(<span class="string">&quot;socket&quot;</span>);
+                    <span class="kw">let </span>socket_path = dir.path().join(<span class="string">"socket"</span>);
                     <span class="kw">let </span>bound = UnixListener::bind(socket_path).unwrap();
                     BoundConnection::UnixSocket(
                         tokio::spawn(<span class="kw">async move </span>{ <span class="prelude-val">Ok</span>(bound.accept().<span class="kw">await</span><span class="question-mark">?</span>.<span class="number">0</span>) }),
@@ -927,7 +929,7 @@
 
                 <span class="attr">#[cfg(not(unix))]
                 </span>{
-                    <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>)
+                    <span class="macro">panic!</span>(<span class="string">"Unix sockets are not supported on this platform"</span>)
                 }
             }
             ServerBindConfig::TcpPort(host) =&gt; {
@@ -991,7 +993,7 @@
         <span class="kw">if let </span>ServerOrBound::Bound(BoundConnection::TcpPort(handle, <span class="kw">_</span>)) = <span class="self">self </span>{
             handle.recv().<span class="kw">await</span>.unwrap().unwrap()
         } <span class="kw">else </span>{
-            <span class="macro">panic!</span>(<span class="string">&quot;Not a TCP port&quot;</span>)
+            <span class="macro">panic!</span>(<span class="string">"Not a TCP port"</span>)
         }
     }
 }
@@ -1045,13 +1047,13 @@
             BoundConnection::UnixSocket(<span class="kw">_</span>, tempdir) =&gt; {
                 <span class="attr">#[cfg(unix)]
                 </span>{
-                    ServerPort::UnixSocket(tempdir.path().join(<span class="string">&quot;socket&quot;</span>))
+                    ServerPort::UnixSocket(tempdir.path().join(<span class="string">"socket"</span>))
                 }
 
                 <span class="attr">#[cfg(not(unix))]
                 </span>{
                     <span class="kw">let _ </span>= tempdir;
-                    <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>)
+                    <span class="macro">panic!</span>(<span class="string">"Unix sockets are not supported on this platform"</span>)
                 }
             }
             BoundConnection::TcpPort(<span class="kw">_</span>, addr) =&gt; {
@@ -1100,7 +1102,7 @@
             <span class="attr">#[cfg(not(unix))]
             </span>{
                 drop(listener);
-                <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>)
+                <span class="macro">panic!</span>(<span class="string">"Unix sockets are not supported on this platform"</span>)
             }
         }
         BoundConnection::TcpPort(<span class="kw-2">mut </span>listener, <span class="kw">_</span>) =&gt; {
@@ -1128,8 +1130,8 @@
                 sink_only: <span class="prelude-val">None</span>,
             }
         }
-        BoundConnection::Demux(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a demux pipe directly&quot;</span>),
-        BoundConnection::Tagged(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a tagged pipe directly&quot;</span>),
+        BoundConnection::Demux(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">"Cannot connect to a demux pipe directly"</span>),
+        BoundConnection::Tagged(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">"Cannot connect to a tagged pipe directly"</span>),
         BoundConnection::Null =&gt; {
             ConnectedDirect::from_defn(ServerOrBound::Server(RealizedServerPort::Null)).<span class="kw">await
         </span>}
@@ -1152,7 +1154,7 @@
 <span class="kw">impl</span>&lt;T&gt; Sink&lt;T&gt; <span class="kw">for </span>IoErrorDrain&lt;T&gt; {
     <span class="kw">type </span>Error = io::Error;
 
-    <span class="kw">fn </span>poll_ready(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
+    <span class="kw">fn </span>poll_ready(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
         Poll::Ready(<span class="prelude-val">Ok</span>(()))
     }
 
@@ -1160,11 +1162,11 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn </span>poll_flush(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
+    <span class="kw">fn </span>poll_flush(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
         Poll::Ready(<span class="prelude-val">Ok</span>(()))
     }
 
-    <span class="kw">fn </span>poll_close(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
+    <span class="kw">fn </span>poll_close(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
         Poll::Ready(<span class="prelude-val">Ok</span>(()))
     }
 }
@@ -1210,7 +1212,7 @@
                 <span class="attr">#[cfg(not(unix))]
                 </span>{
                     drop(stream);
-                    <span class="macro">panic!</span>(<span class="string">&quot;Unix sockets are not supported on this platform&quot;</span>);
+                    <span class="macro">panic!</span>(<span class="string">"Unix sockets are not supported on this platform"</span>);
                 }
             }
             ServerOrBound::Server(RealizedServerPort::TcpPort(stream)) =&gt; {
@@ -1242,11 +1244,11 @@
                 }
             }
             ServerOrBound::Server(RealizedServerPort::Demux(<span class="kw">_</span>)) =&gt; {
-                <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a demux pipe directly&quot;</span>)
+                <span class="macro">panic!</span>(<span class="string">"Cannot connect to a demux pipe directly"</span>)
             }
 
             ServerOrBound::Server(RealizedServerPort::Tagged(<span class="kw">_</span>, <span class="kw">_</span>)) =&gt; {
-                <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a tagged pipe directly&quot;</span>)
+                <span class="macro">panic!</span>(<span class="string">"Cannot connect to a tagged pipe directly"</span>)
             }
 
             ServerOrBound::Server(RealizedServerPort::Null) =&gt; ConnectedDirect {
@@ -1308,7 +1310,7 @@
 <span class="kw">impl</span>&lt;T, S: Sink&lt;T, Error = io::Error&gt; + Send + Sync&gt; Sink&lt;(u32, T)&gt; <span class="kw">for </span>DemuxDrain&lt;T, S&gt; {
     <span class="kw">type </span>Error = io::Error;
 
-    <span class="kw">fn </span>poll_ready(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
+    <span class="kw">fn </span>poll_ready(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
         <span class="kw">for </span>sink <span class="kw">in </span><span class="self">self</span>.project().sinks.values_mut() {
             <span class="macro">ready!</span>(Sink::poll_ready(sink.as_mut(), _cx))<span class="question-mark">?</span>;
         }
@@ -1322,13 +1324,13 @@
                 .sinks
                 .get_mut()
                 .get_mut(<span class="kw-2">&amp;</span>item.<span class="number">0</span>)
-                .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">&quot;No sink in this demux for key {}&quot;</span>, item.<span class="number">0</span>))
+                .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">"No sink in this demux for key {}"</span>, item.<span class="number">0</span>))
                 .as_mut(),
             item.<span class="number">1</span>,
         )
     }
 
-    <span class="kw">fn </span>poll_flush(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
+    <span class="kw">fn </span>poll_flush(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
         <span class="kw">for </span>sink <span class="kw">in </span><span class="self">self</span>.project().sinks.values_mut() {
             <span class="macro">ready!</span>(Sink::poll_flush(sink.as_mut(), _cx))<span class="question-mark">?</span>;
         }
@@ -1336,7 +1338,7 @@
         Poll::Ready(<span class="prelude-val">Ok</span>(()))
     }
 
-    <span class="kw">fn </span>poll_close(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
+    <span class="kw">fn </span>poll_close(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, _cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt;&gt; {
         <span class="kw">for </span>sink <span class="kw">in </span><span class="self">self</span>.project().sinks.values_mut() {
             <span class="macro">ready!</span>(Sink::poll_close(sink.as_mut(), _cx))<span class="question-mark">?</span>;
         }
@@ -1348,7 +1350,7 @@
 <span class="attr">#[async_trait]
 </span><span class="kw">impl</span>&lt;T: Connected + ConnectedSink&gt; Connected <span class="kw">for </span>ConnectedDemux&lt;T&gt;
 <span class="kw">where
-    </span>&lt;T <span class="kw">as </span>ConnectedSink&gt;::Input: <span class="lifetime">&#39;static </span>+ Sync,
+    </span>&lt;T <span class="kw">as </span>ConnectedSink&gt;::Input: <span class="lifetime">'static </span>+ Sync,
 {
     <span class="kw">async fn </span>from_defn(pipe: ServerOrBound) -&gt; <span class="self">Self </span>{
         <span class="kw">match </span>pipe {
@@ -1403,14 +1405,14 @@
                     sink: <span class="prelude-val">Some</span>(demuxer),
                 }
             }
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a non-demux pipe as a demux&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Cannot connect to a non-demux pipe as a demux"</span>),
         }
     }
 }
 
 <span class="kw">impl</span>&lt;T: ConnectedSink&gt; ConnectedSink <span class="kw">for </span>ConnectedDemux&lt;T&gt;
 <span class="kw">where
-    </span>&lt;T <span class="kw">as </span>ConnectedSink&gt;::Input: <span class="lifetime">&#39;static </span>+ Sync,
+    </span>&lt;T <span class="kw">as </span>ConnectedSink&gt;::Input: <span class="lifetime">'static </span>+ Sync,
 {
     <span class="kw">type </span>Input = (u32, T::Input);
     <span class="kw">type </span>Sink = BufferedDrain&lt;T::Sink, T::Input&gt;;
@@ -1428,7 +1430,7 @@
 <span class="kw">impl</span>&lt;T: Unpin, S: Stream&lt;Item = T&gt; + Send + Sync + <span class="question-mark">?</span>Sized&gt; Stream <span class="kw">for </span>MergeSource&lt;T, S&gt; {
     <span class="kw">type </span>Item = T;
 
-    <span class="kw">fn </span>poll_next(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
+    <span class="kw">fn </span>poll_next(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
         <span class="kw">let </span>sources = <span class="kw-2">&amp;mut </span><span class="self">self</span>.get_mut().sources;
         <span class="kw">let </span><span class="kw-2">mut </span>next = <span class="prelude-val">None</span>;
 
@@ -1470,7 +1472,7 @@
 {
     <span class="kw">type </span>Item = <span class="prelude-ty">Result</span>&lt;(u32, T), io::Error&gt;;
 
-    <span class="kw">fn </span>poll_next(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
+    <span class="kw">fn </span>poll_next(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
         <span class="kw">let </span>id = <span class="self">self</span>.as_ref().id;
         <span class="kw">let </span>source = <span class="kw-2">&amp;mut </span><span class="self">self</span>.get_mut().source;
         <span class="kw">match </span>source.as_mut().poll_next(cx) {
@@ -1488,7 +1490,7 @@
 
 <span class="kw">pub struct </span>ConnectedTagged&lt;T: ConnectedSource&gt;
 <span class="kw">where
-    </span>&lt;T <span class="kw">as </span>ConnectedSource&gt;::Output: <span class="lifetime">&#39;static </span>+ Sync + Unpin,
+    </span>&lt;T <span class="kw">as </span>ConnectedSource&gt;::Output: <span class="lifetime">'static </span>+ Sync + Unpin,
 {
     source: MergedMux&lt;T&gt;,
 }
@@ -1496,7 +1498,7 @@
 <span class="attr">#[async_trait]
 </span><span class="kw">impl</span>&lt;T: Connected + ConnectedSource&gt; Connected <span class="kw">for </span>ConnectedTagged&lt;T&gt;
 <span class="kw">where
-    </span>&lt;T <span class="kw">as </span>ConnectedSource&gt;::Output: <span class="lifetime">&#39;static </span>+ Sync + Unpin,
+    </span>&lt;T <span class="kw">as </span>ConnectedSource&gt;::Output: <span class="lifetime">'static </span>+ Sync + Unpin,
 {
     <span class="kw">async fn </span>from_defn(pipe: ServerOrBound) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>sources = <span class="kw">match </span>pipe {
@@ -1524,7 +1526,7 @@
                             id,
                         ));
                     } <span class="kw">else </span>{
-                        <span class="macro">panic!</span>(<span class="string">&quot;Merge port must be tagged&quot;</span>);
+                        <span class="macro">panic!</span>(<span class="string">"Merge port must be tagged"</span>);
                     }
                 }
 
@@ -1555,14 +1557,14 @@
                             id,
                         ));
                     } <span class="kw">else </span>{
-                        <span class="macro">panic!</span>(<span class="string">&quot;Merge port must be tagged&quot;</span>);
+                        <span class="macro">panic!</span>(<span class="string">"Merge port must be tagged"</span>);
                     }
                 }
 
                 sources
             }
 
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot connect to a non-tagged pipe as a tagged&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Cannot connect to a non-tagged pipe as a tagged"</span>),
         };
 
         <span class="kw">let </span><span class="kw-2">mut </span>connected_mux = Vec::new();
@@ -1585,7 +1587,7 @@
 
 <span class="kw">impl</span>&lt;T: ConnectedSource&gt; ConnectedSource <span class="kw">for </span>ConnectedTagged&lt;T&gt;
 <span class="kw">where
-    </span>&lt;T <span class="kw">as </span>ConnectedSource&gt;::Output: <span class="lifetime">&#39;static </span>+ Sync + Unpin,
+    </span>&lt;T <span class="kw">as </span>ConnectedSource&gt;::Output: <span class="lifetime">'static </span>+ Sync + Unpin,
 {
     <span class="kw">type </span>Output = (u32, T::Output);
     <span class="kw">type </span>Stream = MergeSource&lt;<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Output, io::Error&gt;, TaggedSource&lt;T::Output, T::Stream&gt;&gt;;

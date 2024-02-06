@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/graph_write.rs`."><title>graph_write.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_lang/src/graph/graph_write.rs`."><title>graph_write.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="hydroflow_lang" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../hydroflow_lang/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -511,22 +513,22 @@
 <span class="doccomment">/// Escapes a string for use in a mermaid graph label.
 </span><span class="kw">pub fn </span>escape_mermaid(string: <span class="kw-2">&amp;</span>str) -&gt; String {
     string
-        .replace(<span class="string">&#39;&amp;&#39;</span>, <span class="string">&quot;&amp;amp;&quot;</span>)
-        .replace(<span class="string">&#39;&lt;&#39;</span>, <span class="string">&quot;&amp;lt;&quot;</span>)
-        .replace(<span class="string">&#39;&gt;&#39;</span>, <span class="string">&quot;&amp;gt;&quot;</span>)
-        .replace(<span class="string">&#39;&quot;&#39;</span>, <span class="string">&quot;&amp;quot;&quot;</span>)
+        .replace(<span class="string">'&amp;'</span>, <span class="string">"&amp;amp;"</span>)
+        .replace(<span class="string">'&lt;'</span>, <span class="string">"&amp;lt;"</span>)
+        .replace(<span class="string">'&gt;'</span>, <span class="string">"&amp;gt;"</span>)
+        .replace(<span class="string">'"'</span>, <span class="string">"&amp;quot;"</span>)
         <span class="comment">// Mermaid entity codes
         // https://mermaid.js.org/syntax/flowchart.html#entity-codes-to-escape-characters
-        </span>.replace(<span class="string">&#39;#&#39;</span>, <span class="string">&quot;&amp;num;&quot;</span>)
+        </span>.replace(<span class="string">'#'</span>, <span class="string">"&amp;num;"</span>)
         <span class="comment">// Not really needed, newline literals seem to work
-        </span>.replace(<span class="string">&#39;\n&#39;</span>, <span class="string">&quot;&lt;br&gt;&quot;</span>)
+        </span>.replace(<span class="string">'\n'</span>, <span class="string">"&lt;br&gt;"</span>)
         <span class="comment">// Mermaid font awesome fa
         // https://github.com/mermaid-js/mermaid/blob/e4d2118d4bfa023628a020b7ab1f8c491e6dc523/packages/mermaid/src/diagrams/flowchart/flowRenderer-v2.js#L62
-        </span>.replace(<span class="string">&quot;fa:fa&quot;</span>, <span class="string">&quot;fa:&lt;wbr&gt;fa&quot;</span>)
-        .replace(<span class="string">&quot;fab:fa&quot;</span>, <span class="string">&quot;fab:&lt;wbr&gt;fa&quot;</span>)
-        .replace(<span class="string">&quot;fal:fa&quot;</span>, <span class="string">&quot;fal:&lt;wbr&gt;fa&quot;</span>)
-        .replace(<span class="string">&quot;far:fa&quot;</span>, <span class="string">&quot;far:&lt;wbr&gt;fa&quot;</span>)
-        .replace(<span class="string">&quot;fas:fa&quot;</span>, <span class="string">&quot;fas:&lt;wbr&gt;fa&quot;</span>)
+        </span>.replace(<span class="string">"fa:fa"</span>, <span class="string">"fa:&lt;wbr&gt;fa"</span>)
+        .replace(<span class="string">"fab:fa"</span>, <span class="string">"fab:&lt;wbr&gt;fa"</span>)
+        .replace(<span class="string">"fal:fa"</span>, <span class="string">"fal:&lt;wbr&gt;fa"</span>)
+        .replace(<span class="string">"far:fa"</span>, <span class="string">"far:&lt;wbr&gt;fa"</span>)
+        .replace(<span class="string">"fas:fa"</span>, <span class="string">"fas:&lt;wbr&gt;fa"</span>)
 }
 
 <span class="kw">pub struct </span>Mermaid&lt;W&gt; {
@@ -552,23 +554,23 @@
     <span class="kw">fn </span>write_prologue(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
         <span class="macro">writeln!</span>(
             <span class="self">self</span>.write,
-            <span class="string">r&quot;%%{{init:{{&#39;theme&#39;:&#39;base&#39;,&#39;themeVariables&#39;:{{&#39;clusterBkg&#39;:&#39;#ddd&#39;,&#39;clusterBorder&#39;:&#39;#888&#39;}}}}}}%%&quot;</span>,
+            <span class="string">r"%%{{init:{{'theme':'base','themeVariables':{{'clusterBkg':'#ddd','clusterBorder':'#888'}}}}}}%%"</span>,
         )<span class="question-mark">?</span>;
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;flowchart TD&quot;</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"flowchart TD"</span>)<span class="question-mark">?</span>;
         <span class="macro">writeln!</span>(
             <span class="self">self</span>.write,
-            <span class="string">&quot;classDef pullClass fill:#8af,stroke:#000,text-align:left,white-space:pre&quot;</span>,
-        )<span class="question-mark">?</span>;
-        <span class="macro">writeln!</span>(
-            <span class="self">self</span>.write,
-            <span class="string">&quot;classDef pushClass fill:#ff8,stroke:#000,text-align:left,white-space:pre&quot;</span>,
+            <span class="string">"classDef pullClass fill:#8af,stroke:#000,text-align:left,white-space:pre"</span>,
         )<span class="question-mark">?</span>;
         <span class="macro">writeln!</span>(
             <span class="self">self</span>.write,
-            <span class="string">&quot;classDef otherClass fill:#fdc,stroke:#000,text-align:left,white-space:pre&quot;</span>,
+            <span class="string">"classDef pushClass fill:#ff8,stroke:#000,text-align:left,white-space:pre"</span>,
+        )<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(
+            <span class="self">self</span>.write,
+            <span class="string">"classDef otherClass fill:#fdc,stroke:#000,text-align:left,white-space:pre"</span>,
         )<span class="question-mark">?</span>;
 
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;linkStyle default stroke:#aaa&quot;</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"linkStyle default stroke:#aaa"</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
@@ -579,32 +581,32 @@
         node_color: <span class="prelude-ty">Option</span>&lt;Color&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
         <span class="kw">let </span>class_str = <span class="kw">match </span>node_color {
-            <span class="prelude-val">Some</span>(Color::Push) =&gt; <span class="string">&quot;pushClass&quot;</span>,
-            <span class="prelude-val">Some</span>(Color::Pull) =&gt; <span class="string">&quot;pullClass&quot;</span>,
-            <span class="kw">_ </span>=&gt; <span class="string">&quot;otherClass&quot;</span>,
+            <span class="prelude-val">Some</span>(Color::Push) =&gt; <span class="string">"pushClass"</span>,
+            <span class="prelude-val">Some</span>(Color::Pull) =&gt; <span class="string">"pullClass"</span>,
+            <span class="kw">_ </span>=&gt; <span class="string">"otherClass"</span>,
         };
         <span class="kw">let </span>label = <span class="macro">format!</span>(
-            <span class="string">r#&quot;{node_id:?}{lbracket}&quot;{node_label} &lt;code&gt;{code}&lt;/code&gt;&quot;{rbracket}:::{class}&quot;#</span>,
+            <span class="string">r#"{node_id:?}{lbracket}"{node_label} &lt;code&gt;{code}&lt;/code&gt;"{rbracket}:::{class}"#</span>,
             node_id = node_id.data(),
-            node_label = <span class="kw">if </span>node.contains(<span class="string">&#39;\n&#39;</span>) {
-                <span class="macro">format!</span>(<span class="string">&quot;&lt;div style=text-align:center&gt;({:?})&lt;/div&gt;&quot;</span>, node_id.data())
+            node_label = <span class="kw">if </span>node.contains(<span class="string">'\n'</span>) {
+                <span class="macro">format!</span>(<span class="string">"&lt;div style=text-align:center&gt;({:?})&lt;/div&gt;"</span>, node_id.data())
             } <span class="kw">else </span>{
-                <span class="macro">format!</span>(<span class="string">&quot;({:?})&quot;</span>, node_id.data())
+                <span class="macro">format!</span>(<span class="string">"({:?})"</span>, node_id.data())
             },
             class = class_str,
             lbracket = <span class="kw">match </span>node_color {
-                <span class="prelude-val">Some</span>(Color::Push) =&gt; <span class="string">r&quot;[/&quot;</span>,
-                <span class="prelude-val">Some</span>(Color::Pull) =&gt; <span class="string">r&quot;[\&quot;</span>,
-                <span class="kw">_ </span>=&gt; <span class="string">&quot;[&quot;</span>,
+                <span class="prelude-val">Some</span>(Color::Push) =&gt; <span class="string">r"[/"</span>,
+                <span class="prelude-val">Some</span>(Color::Pull) =&gt; <span class="string">r"[\"</span>,
+                <span class="kw">_ </span>=&gt; <span class="string">"["</span>,
             },
             code = escape_mermaid(node),
             rbracket = <span class="kw">match </span>node_color {
-                <span class="prelude-val">Some</span>(Color::Push) =&gt; <span class="string">r&quot;\]&quot;</span>,
-                <span class="prelude-val">Some</span>(Color::Pull) =&gt; <span class="string">r&quot;/]&quot;</span>,
-                <span class="kw">_ </span>=&gt; <span class="string">&quot;]&quot;</span>,
+                <span class="prelude-val">Some</span>(Color::Push) =&gt; <span class="string">r"\]"</span>,
+                <span class="prelude-val">Some</span>(Color::Pull) =&gt; <span class="string">r"/]"</span>,
+                <span class="kw">_ </span>=&gt; <span class="string">"]"</span>,
             },
         );
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;{}&quot;</span>, label)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"{}"</span>, label)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
@@ -616,41 +618,41 @@
         flow_props: <span class="prelude-ty">Option</span>&lt;FlowProps&gt;,
         label: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
-        <span class="kw">let </span>src_str = <span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, src_id.data());
-        <span class="kw">let </span>dest_str = <span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, dst_id.data());
+        <span class="kw">let </span>src_str = <span class="macro">format!</span>(<span class="string">"{:?}"</span>, src_id.data());
+        <span class="kw">let </span>dest_str = <span class="macro">format!</span>(<span class="string">"{:?}"</span>, dst_id.data());
         <span class="kw">let </span>lattice_flow_type = flow_props.and_then(|flow_props| flow_props.lattice_flow_type);
         <span class="macro">write!</span>(
             <span class="self">self</span>.write,
-            <span class="string">&quot;{src}{arrow_body}{arrow_head}{label}{dst}&quot;</span>,
+            <span class="string">"{src}{arrow_body}{arrow_head}{label}{dst}"</span>,
             src = src_str.trim(),
             arrow_body = <span class="kw">match </span>lattice_flow_type {
-                <span class="prelude-val">None </span>=&gt; <span class="string">&quot;--&quot;</span>,
-                <span class="prelude-val">Some</span>(LatticeFlowType::Delta) =&gt; <span class="string">&quot;-.-&quot;</span>,
-                <span class="prelude-val">Some</span>(LatticeFlowType::Cumul) =&gt; <span class="string">&quot;==&quot;</span>,
+                <span class="prelude-val">None </span>=&gt; <span class="string">"--"</span>,
+                <span class="prelude-val">Some</span>(LatticeFlowType::Delta) =&gt; <span class="string">"-.-"</span>,
+                <span class="prelude-val">Some</span>(LatticeFlowType::Cumul) =&gt; <span class="string">"=="</span>,
             },
             arrow_head = <span class="kw">match </span>delay_type {
-                <span class="prelude-val">None </span>| <span class="prelude-val">Some</span>(DelayType::MonotoneAccum) =&gt; <span class="string">&quot;&gt;&quot;</span>,
-                <span class="prelude-val">Some</span>(DelayType::Stratum) =&gt; <span class="string">&quot;x&quot;</span>,
-                <span class="prelude-val">Some</span>(DelayType::Tick | DelayType::TickLazy) =&gt; <span class="string">&quot;o&quot;</span>,
+                <span class="prelude-val">None </span>| <span class="prelude-val">Some</span>(DelayType::MonotoneAccum) =&gt; <span class="string">"&gt;"</span>,
+                <span class="prelude-val">Some</span>(DelayType::Stratum) =&gt; <span class="string">"x"</span>,
+                <span class="prelude-val">Some</span>(DelayType::Tick | DelayType::TickLazy) =&gt; <span class="string">"o"</span>,
             },
             label = <span class="kw">if let </span><span class="prelude-val">Some</span>(label) = <span class="kw-2">&amp;</span>label {
-                Cow::Owned(<span class="macro">format!</span>(<span class="string">&quot;|{}|&quot;</span>, escape_mermaid(label.trim())))
+                Cow::Owned(<span class="macro">format!</span>(<span class="string">"|{}|"</span>, escape_mermaid(label.trim())))
             } <span class="kw">else </span>{
-                Cow::Borrowed(<span class="string">&quot;&quot;</span>)
+                Cow::Borrowed(<span class="string">""</span>)
             },
             dst = dest_str.trim(),
         )<span class="question-mark">?</span>;
         <span class="kw">if </span>delay_type.is_some() || lattice_flow_type.is_some() {
             <span class="macro">write!</span>(
                 <span class="self">self</span>.write,
-                <span class="string">&quot;; linkStyle {} stroke:{}&quot;</span>,
+                <span class="string">"; linkStyle {} stroke:{}"</span>,
                 <span class="self">self</span>.link_count,
                 <span class="kw">match </span>(delay_type, lattice_flow_type) {
                     (<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; <span class="macro">unreachable!</span>(),
                     (<span class="prelude-val">Some</span>(DelayType::Stratum), <span class="kw">_</span>)
                     | (<span class="prelude-val">Some</span>(DelayType::Tick), <span class="kw">_</span>)
-                    | (<span class="prelude-val">Some</span>(DelayType::TickLazy), <span class="kw">_</span>) =&gt; <span class="string">&quot;red&quot;</span>,
-                    (<span class="prelude-val">Some</span>(DelayType::MonotoneAccum), <span class="kw">_</span>) | (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; <span class="string">&quot;#060&quot;</span>,
+                    | (<span class="prelude-val">Some</span>(DelayType::TickLazy), <span class="kw">_</span>) =&gt; <span class="string">"red"</span>,
+                    (<span class="prelude-val">Some</span>(DelayType::MonotoneAccum), <span class="kw">_</span>) | (<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; <span class="string">"#060"</span>,
                 }
             )<span class="question-mark">?</span>;
         }
@@ -667,12 +669,12 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
         <span class="macro">writeln!</span>(
             <span class="self">self</span>.write,
-            <span class="string">&quot;subgraph sg_{sg:?} [\&quot;sg_{sg:?} stratum {:?}\&quot;]&quot;</span>,
+            <span class="string">"subgraph sg_{sg:?} [\"sg_{sg:?} stratum {:?}\"]"</span>,
             stratum,
             sg = sg_id.data(),
         )<span class="question-mark">?</span>;
         <span class="kw">for </span>node_id <span class="kw">in </span>subgraph_nodes {
-            <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;    {node_id:?}&quot;</span>, node_id = node_id.data())<span class="question-mark">?</span>;
+            <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"    {node_id:?}"</span>, node_id = node_id.data())<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
     }
@@ -686,29 +688,29 @@
         <span class="kw">let </span>pad = <span class="kw">if let </span><span class="prelude-val">Some</span>(sg_id) = sg_id {
             <span class="macro">writeln!</span>(
                 <span class="self">self</span>.write,
-                <span class="string">&quot;    subgraph sg_{sg:?}_var_{var} [\&quot;var &lt;tt&gt;{var}&lt;/tt&gt;\&quot;]&quot;</span>,
+                <span class="string">"    subgraph sg_{sg:?}_var_{var} [\"var &lt;tt&gt;{var}&lt;/tt&gt;\"]"</span>,
                 sg = sg_id.data(),
                 var = varname,
             )<span class="question-mark">?</span>;
-            <span class="string">&quot;    &quot;
+            <span class="string">"    "
         </span>} <span class="kw">else </span>{
             <span class="macro">writeln!</span>(
                 <span class="self">self</span>.write,
-                <span class="string">&quot;subgraph var_{0} [\&quot;var &lt;tt&gt;{0}&lt;/tt&gt;\&quot;]&quot;</span>,
+                <span class="string">"subgraph var_{0} [\"var &lt;tt&gt;{0}&lt;/tt&gt;\"]"</span>,
                 varname,
             )<span class="question-mark">?</span>;
-            <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;style var_{} fill:transparent&quot;</span>, varname)<span class="question-mark">?</span>;
-            <span class="string">&quot;&quot;
+            <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"style var_{} fill:transparent"</span>, varname)<span class="question-mark">?</span>;
+            <span class="string">""
         </span>};
         <span class="kw">for </span>local_named_node <span class="kw">in </span>varname_nodes {
-            <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;    {}{:?}&quot;</span>, pad, local_named_node.data())<span class="question-mark">?</span>;
+            <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"    {}{:?}"</span>, pad, local_named_node.data())<span class="question-mark">?</span>;
         }
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;{}end&quot;</span>, pad)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"{}end"</span>, pad)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">fn </span>write_subgraph_end(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;end&quot;</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"end"</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
@@ -721,11 +723,11 @@
 <span class="doccomment">/// Escapes a string for use in a DOT graph label.
 ///
 /// Newline can be:
-/// * &quot;\\n&quot; for newline.
-/// * &quot;\\l&quot; for left-aligned newline.
-/// * &quot;\\r&quot; for right-aligned newline.
+/// * "\\n" for newline.
+/// * "\\l" for left-aligned newline.
+/// * "\\r" for right-aligned newline.
 </span><span class="kw">pub fn </span>escape_dot(string: <span class="kw-2">&amp;</span>str, newline: <span class="kw-2">&amp;</span>str) -&gt; String {
-    string.replace(<span class="string">&#39;&quot;&#39;</span>, <span class="string">&quot;\\\&quot;&quot;</span>).replace(<span class="string">&#39;\n&#39;</span>, newline)
+    string.replace(<span class="string">'"'</span>, <span class="string">"\\\""</span>).replace(<span class="string">'\n'</span>, newline)
 }
 
 <span class="kw">pub struct </span>Dot&lt;W&gt; {
@@ -743,10 +745,10 @@
     <span class="kw">type </span><span class="prelude-val">Err </span>= std::fmt::Error;
 
     <span class="kw">fn </span>write_prologue(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;digraph {{&quot;</span>)<span class="question-mark">?</span>;
-        <span class="kw">const </span>FONTS: <span class="kw-2">&amp;</span>str = <span class="string">&quot;\&quot;Monaco,Menlo,Consolas,&amp;quot;Droid Sans Mono&amp;quot;,Inconsolata,&amp;quot;Courier New&amp;quot;,monospace\&quot;&quot;</span>;
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;    node [fontname={}, style=filled];&quot;</span>, FONTS)<span class="question-mark">?</span>;
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;    edge [fontname={}];&quot;</span>, FONTS)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"digraph {{"</span>)<span class="question-mark">?</span>;
+        <span class="kw">const </span>FONTS: <span class="kw-2">&amp;</span>str = <span class="string">"\"Monaco,Menlo,Consolas,&amp;quot;Droid Sans Mono&amp;quot;,Inconsolata,&amp;quot;Courier New&amp;quot;,monospace\""</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"    node [fontname={}, style=filled];"</span>, FONTS)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"    edge [fontname={}];"</span>, FONTS)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
@@ -756,33 +758,33 @@
         node: <span class="kw-2">&amp;</span>str,
         node_color: <span class="prelude-ty">Option</span>&lt;Color&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
-        <span class="kw">let </span>nm = escape_dot(node, <span class="string">&quot;\\l&quot;</span>);
-        <span class="kw">let </span>label = <span class="macro">format!</span>(<span class="string">&quot;n{:?}&quot;</span>, node_id.data());
+        <span class="kw">let </span>nm = escape_dot(node, <span class="string">"\\l"</span>);
+        <span class="kw">let </span>label = <span class="macro">format!</span>(<span class="string">"n{:?}"</span>, node_id.data());
         <span class="kw">let </span>shape_str = <span class="kw">match </span>node_color {
-            <span class="prelude-val">Some</span>(Color::Push) =&gt; <span class="string">&quot;house&quot;</span>,
-            <span class="prelude-val">Some</span>(Color::Pull) =&gt; <span class="string">&quot;invhouse&quot;</span>,
-            <span class="prelude-val">Some</span>(Color::Hoff) =&gt; <span class="string">&quot;parallelogram&quot;</span>,
-            <span class="prelude-val">Some</span>(Color::Comp) =&gt; <span class="string">&quot;circle&quot;</span>,
-            <span class="prelude-val">None </span>=&gt; <span class="string">&quot;rectangle&quot;</span>,
+            <span class="prelude-val">Some</span>(Color::Push) =&gt; <span class="string">"house"</span>,
+            <span class="prelude-val">Some</span>(Color::Pull) =&gt; <span class="string">"invhouse"</span>,
+            <span class="prelude-val">Some</span>(Color::Hoff) =&gt; <span class="string">"parallelogram"</span>,
+            <span class="prelude-val">Some</span>(Color::Comp) =&gt; <span class="string">"circle"</span>,
+            <span class="prelude-val">None </span>=&gt; <span class="string">"rectangle"</span>,
         };
         <span class="kw">let </span>color_str = <span class="kw">match </span>node_color {
-            <span class="prelude-val">Some</span>(Color::Push) =&gt; <span class="string">&quot;\&quot;#ffff88\&quot;&quot;</span>,
-            <span class="prelude-val">Some</span>(Color::Pull) =&gt; <span class="string">&quot;\&quot;#88aaff\&quot;&quot;</span>,
-            <span class="prelude-val">Some</span>(Color::Hoff) =&gt; <span class="string">&quot;\&quot;#ddddff\&quot;&quot;</span>,
-            <span class="prelude-val">Some</span>(Color::Comp) =&gt; <span class="string">&quot;white&quot;</span>,
-            <span class="prelude-val">None </span>=&gt; <span class="string">&quot;\&quot;#ddddff\&quot;&quot;</span>,
+            <span class="prelude-val">Some</span>(Color::Push) =&gt; <span class="string">"\"#ffff88\""</span>,
+            <span class="prelude-val">Some</span>(Color::Pull) =&gt; <span class="string">"\"#88aaff\""</span>,
+            <span class="prelude-val">Some</span>(Color::Hoff) =&gt; <span class="string">"\"#ddddff\""</span>,
+            <span class="prelude-val">Some</span>(Color::Comp) =&gt; <span class="string">"white"</span>,
+            <span class="prelude-val">None </span>=&gt; <span class="string">"\"#ddddff\""</span>,
         };
         <span class="macro">write!</span>(
             <span class="self">self</span>.write,
-            <span class="string">&quot;    {} [label=\&quot;({}) {}{}\&quot;&quot;</span>,
+            <span class="string">"    {} [label=\"({}) {}{}\""</span>,
             label,
             label,
             nm,
-            <span class="comment">// if contains linebreak left-justify by appending another &quot;\\l&quot;
-            </span><span class="kw">if </span>nm.contains(<span class="string">&quot;\\l&quot;</span>) { <span class="string">&quot;\\l&quot; </span>} <span class="kw">else </span>{ <span class="string">&quot;&quot; </span>},
+            <span class="comment">// if contains linebreak left-justify by appending another "\\l"
+            </span><span class="kw">if </span>nm.contains(<span class="string">"\\l"</span>) { <span class="string">"\\l" </span>} <span class="kw">else </span>{ <span class="string">"" </span>},
         )<span class="question-mark">?</span>;
-        <span class="macro">write!</span>(<span class="self">self</span>.write, <span class="string">&quot;, shape={}, fillcolor={}&quot;</span>, shape_str, color_str)<span class="question-mark">?</span>;
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;]&quot;</span>)<span class="question-mark">?</span>;
+        <span class="macro">write!</span>(<span class="self">self</span>.write, <span class="string">", shape={}, fillcolor={}"</span>, shape_str, color_str)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"]"</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
@@ -795,35 +797,35 @@
         label: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
         <span class="kw">let </span>lattice_flow_type = flow_props.and_then(|flow_props| flow_props.lattice_flow_type);
-        <span class="kw">let </span><span class="kw-2">mut </span>properties = Vec::&lt;Cow&lt;<span class="lifetime">&#39;static</span>, str&gt;&gt;::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>properties = Vec::&lt;Cow&lt;<span class="lifetime">'static</span>, str&gt;&gt;::new();
         <span class="kw">if let </span><span class="prelude-val">Some</span>(label) = label {
-            properties.push(<span class="macro">format!</span>(<span class="string">&quot;label=\&quot;{}\&quot;&quot;</span>, escape_dot(label, <span class="string">&quot;\\n&quot;</span>)).into());
+            properties.push(<span class="macro">format!</span>(<span class="string">"label=\"{}\""</span>, escape_dot(label, <span class="string">"\\n"</span>)).into());
         };
         <span class="comment">// Color
         </span><span class="kw">if </span>delay_type.is_some() {
-            properties.push(<span class="string">&quot;color=red&quot;</span>.into());
+            properties.push(<span class="string">"color=red"</span>.into());
         } <span class="kw">else if </span>lattice_flow_type.is_some() {
-            properties.push(<span class="string">&quot;color=darkgreen&quot;</span>.into());
+            properties.push(<span class="string">"color=darkgreen"</span>.into());
         }
         <span class="comment">// Bold or dashed
         </span><span class="kw">match </span>lattice_flow_type {
             <span class="prelude-val">None </span>=&gt; {}
-            <span class="prelude-val">Some</span>(LatticeFlowType::Delta) =&gt; properties.push(<span class="string">&quot;style=dashed&quot;</span>.into()),
-            <span class="prelude-val">Some</span>(LatticeFlowType::Cumul) =&gt; properties.push(<span class="string">&quot;style=bold&quot;</span>.into()),
+            <span class="prelude-val">Some</span>(LatticeFlowType::Delta) =&gt; properties.push(<span class="string">"style=dashed"</span>.into()),
+            <span class="prelude-val">Some</span>(LatticeFlowType::Cumul) =&gt; properties.push(<span class="string">"style=bold"</span>.into()),
         }
 
         <span class="macro">write!</span>(
             <span class="self">self</span>.write,
-            <span class="string">&quot;    n{:?} -&gt; n{:?}&quot;</span>,
+            <span class="string">"    n{:?} -&gt; n{:?}"</span>,
             src_id.data(),
             dst_id.data(),
         )<span class="question-mark">?</span>;
         <span class="kw">if </span>!properties.is_empty() {
-            <span class="macro">write!</span>(<span class="self">self</span>.write, <span class="string">&quot; [&quot;</span>)<span class="question-mark">?</span>;
-            <span class="kw">for </span>prop <span class="kw">in </span>itertools::Itertools::intersperse(properties.into_iter(), <span class="string">&quot;, &quot;</span>.into()) {
-                <span class="macro">write!</span>(<span class="self">self</span>.write, <span class="string">&quot;{}&quot;</span>, prop)<span class="question-mark">?</span>;
+            <span class="macro">write!</span>(<span class="self">self</span>.write, <span class="string">" ["</span>)<span class="question-mark">?</span>;
+            <span class="kw">for </span>prop <span class="kw">in </span>itertools::Itertools::intersperse(properties.into_iter(), <span class="string">", "</span>.into()) {
+                <span class="macro">write!</span>(<span class="self">self</span>.write, <span class="string">"{}"</span>, prop)<span class="question-mark">?</span>;
             }
-            <span class="macro">write!</span>(<span class="self">self</span>.write, <span class="string">&quot;]&quot;</span>)<span class="question-mark">?</span>;
+            <span class="macro">write!</span>(<span class="self">self</span>.write, <span class="string">"]"</span>)<span class="question-mark">?</span>;
         }
         <span class="macro">writeln!</span>(<span class="self">self</span>.write)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
@@ -837,19 +839,19 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
         <span class="macro">writeln!</span>(
             <span class="self">self</span>.write,
-            <span class="string">&quot;    subgraph \&quot;cluster n{:?}\&quot; {{&quot;</span>,
+            <span class="string">"    subgraph \"cluster n{:?}\" {{"</span>,
             sg_id.data(),
         )<span class="question-mark">?</span>;
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;        fillcolor=\&quot;#dddddd\&quot;&quot;</span>)<span class="question-mark">?</span>;
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;        style=filled&quot;</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"        fillcolor=\"#dddddd\""</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"        style=filled"</span>)<span class="question-mark">?</span>;
         <span class="macro">writeln!</span>(
             <span class="self">self</span>.write,
-            <span class="string">&quot;        label = \&quot;sg_{:?}\\nstratum {}\&quot;&quot;</span>,
+            <span class="string">"        label = \"sg_{:?}\\nstratum {}\""</span>,
             sg_id.data(),
             stratum,
         )<span class="question-mark">?</span>;
         <span class="kw">for </span>node_id <span class="kw">in </span>subgraph_nodes {
-            <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;        n{:?}&quot;</span>, node_id.data(),)<span class="question-mark">?</span>;
+            <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"        n{:?}"</span>, node_id.data(),)<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
     }
@@ -863,40 +865,40 @@
         <span class="kw">let </span>pad = <span class="kw">if let </span><span class="prelude-val">Some</span>(sg_id) = sg_id {
             <span class="macro">writeln!</span>(
                 <span class="self">self</span>.write,
-                <span class="string">&quot;        subgraph \&quot;cluster_sg_{sg:?}_var_{var}\&quot; {{&quot;</span>,
+                <span class="string">"        subgraph \"cluster_sg_{sg:?}_var_{var}\" {{"</span>,
                 sg = sg_id.data(),
                 var = varname,
             )<span class="question-mark">?</span>;
-            <span class="string">&quot;    &quot;
+            <span class="string">"    "
         </span>} <span class="kw">else </span>{
             <span class="macro">writeln!</span>(
                 <span class="self">self</span>.write,
-                <span class="string">&quot;    subgraph \&quot;cluster_var_{var}\&quot; {{&quot;</span>,
+                <span class="string">"    subgraph \"cluster_var_{var}\" {{"</span>,
                 var = varname,
             )<span class="question-mark">?</span>;
-            <span class="string">&quot;&quot;
+            <span class="string">""
         </span>};
         <span class="macro">writeln!</span>(
             <span class="self">self</span>.write,
-            <span class="string">&quot;        {}label=\&quot;var {var}\&quot;&quot;</span>,
+            <span class="string">"        {}label=\"var {var}\""</span>,
             pad,
             var = varname
         )<span class="question-mark">?</span>;
         <span class="kw">for </span>local_named_node <span class="kw">in </span>varname_nodes {
-            <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;        {}n{:?}&quot;</span>, pad, local_named_node.data())<span class="question-mark">?</span>;
+            <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"        {}n{:?}"</span>, pad, local_named_node.data())<span class="question-mark">?</span>;
         }
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;    {}}}&quot;</span>, pad)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"    {}}}"</span>, pad)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">fn </span>write_subgraph_end(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
         <span class="comment">// subgraph footer
-        </span><span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;    }}&quot;</span>)<span class="question-mark">?</span>;
+        </span><span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"    }}"</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">fn </span>write_epilogue(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
-        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">&quot;}}&quot;</span>)<span class="question-mark">?</span>;
+        <span class="macro">writeln!</span>(<span class="self">self</span>.write, <span class="string">"}}"</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 }

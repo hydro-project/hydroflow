@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_datalog_core/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_datalog_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_datalog_core/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_datalog_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../hydroflow_datalog_core/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1216,7 +1218,7 @@
 <span class="kw">use </span>join_plan::{IntermediateJoinNode, JoinPlan};
 <span class="kw">use </span>util::{repeat_tuple, Counter};
 
-<span class="kw">static </span>MAGIC_RELATIONS: [<span class="kw-2">&amp;</span>str; <span class="number">1</span>] = [<span class="string">&quot;less_than&quot;</span>];
+<span class="kw">static </span>MAGIC_RELATIONS: [<span class="kw-2">&amp;</span>str; <span class="number">1</span>] = [<span class="string">"less_than"</span>];
 
 <span class="kw">pub fn </span>parse_pipeline(
     code_str: <span class="kw-2">&amp;</span>rust_sitter::Spanned&lt;String&gt;,
@@ -1228,7 +1230,7 @@
             <span class="macro">vec!</span>[Diagnostic {
                 span: err.span(),
                 level: Level::Error,
-                message: <span class="macro">format!</span>(<span class="string">&quot;Failed to parse input pipeline: {}&quot;</span>, err),
+                message: <span class="macro">format!</span>(<span class="string">"Failed to parse input pipeline: {}"</span>, err),
             }]
         })
 }
@@ -1243,7 +1245,7 @@
             <span class="macro">vec!</span>[Diagnostic {
                 span: err.span(),
                 level: Level::Error,
-                message: <span class="macro">format!</span>(<span class="string">&quot;Failed to parse static expression: {}&quot;</span>, err),
+                message: <span class="macro">format!</span>(<span class="string">"Failed to parse static expression: {}"</span>, err),
             }]
         })
 }
@@ -1252,19 +1254,19 @@
     literal: proc_macro2::Literal,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;HydroflowGraph, Vec&lt;Diagnostic&gt;&gt; {
     <span class="kw">let </span>offset = {
-        <span class="comment">// This includes the quotes, i.e. &#39;r#&quot;my test&quot;#&#39; or &#39;&quot;hello\nworld&quot;&#39;.
+        <span class="comment">// This includes the quotes, i.e. 'r#"my test"#' or '"hello\nworld"'.
         </span><span class="kw">let </span>source_str = literal.to_string();
         <span class="kw">let </span><span class="kw-2">mut </span>source_chars = source_str.chars();
-        <span class="kw">if </span><span class="prelude-val">Some</span>(<span class="string">&#39;r&#39;</span>) != source_chars.next() {
+        <span class="kw">if </span><span class="prelude-val">Some</span>(<span class="string">'r'</span>) != source_chars.next() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">vec!</span>[Diagnostic {
                 span: literal.span(),
                 level: Level::Error,
                 message:
-                    <span class="string">r##&quot;Input must be a raw string `r#&quot;...&quot;#` for correct diagnostic messages.&quot;##
+                    <span class="string">r##"Input must be a raw string `r#"..."#` for correct diagnostic messages."##
                         </span>.to_owned(),
             }]);
         }
-        <span class="kw">let </span>hashes = source_chars.take_while(|<span class="kw-2">&amp;</span>c| <span class="string">&#39;#&#39; </span>== c).count();
+        <span class="kw">let </span>hashes = source_chars.take_while(|<span class="kw-2">&amp;</span>c| <span class="string">'#' </span>== c).count();
         <span class="number">2 </span>+ hashes
     };
 
@@ -1331,7 +1333,7 @@
         <span class="kw">if </span>!created_rules.contains(<span class="kw-2">&amp;</span>target_ident.value) {
             created_rules.insert(target_ident.value.clone());
             <span class="kw">let </span>insert_name = syn::Ident::new(
-                <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}_insert&quot;</span>, target_ident.name),
+                <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}_insert"</span>, target_ident.name),
                 get_span(target_ident.span),
             );
             <span class="kw">let </span>read_name = syn::Ident::new(<span class="kw-2">&amp;</span>target_ident.name, get_span(target_ident.span));
@@ -1339,16 +1341,16 @@
             <span class="kw">if </span>persists.contains(<span class="kw-2">&amp;</span>target_ident.value.name) {
                 <span class="comment">// read outputs the *new* values for this tick
                 </span>flat_graph_builder
-                    .add_statement(<span class="macro">parse_quote_spanned!</span>{get_span(target_ident.span)=&gt; #insert_name = union() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;(); });
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>{get_span(target_ident.span)=&gt; #insert_name = union() -&gt; unique::&lt;<span class="lifetime">'tick</span>&gt;(); });
                 flat_graph_builder
-                    .add_statement(<span class="macro">parse_quote_spanned!</span>{get_span(target_ident.span)=&gt; #read_name = difference::&lt;<span class="lifetime">&#39;tick</span>, <span class="lifetime">&#39;static</span>&gt;() -&gt; tee(); });
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>{get_span(target_ident.span)=&gt; #read_name = difference::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'static</span>&gt;() -&gt; tee(); });
                 flat_graph_builder
                     .add_statement(<span class="macro">parse_quote_spanned!</span>{get_span(target_ident.span)=&gt; #insert_name -&gt; [pos] #read_name; });
                 flat_graph_builder
                     .add_statement(<span class="macro">parse_quote_spanned!</span>{get_span(target_ident.span)=&gt; #read_name -&gt; defer_tick() -&gt; [neg] #read_name; });
             } <span class="kw">else </span>{
                 flat_graph_builder
-                    .add_statement(<span class="macro">parse_quote_spanned!</span>{get_span(target_ident.span)=&gt; #insert_name = union() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;(); });
+                    .add_statement(<span class="macro">parse_quote_spanned!</span>{get_span(target_ident.span)=&gt; #insert_name = union() -&gt; unique::&lt;<span class="lifetime">'tick</span>&gt;(); });
                 flat_graph_builder
                     .add_statement(<span class="macro">parse_quote_spanned!</span>{get_span(target_ident.span)=&gt; #read_name = #insert_name -&gt; tee(); });
             }
@@ -1360,11 +1362,11 @@
             .entry(target.name.clone())
             .or_insert_with(|| <span class="number">0</span>..)
             .next()
-            .expect(<span class="string">&quot;Out of union indices&quot;</span>);
+            .expect(<span class="string">"Out of union indices"</span>);
 
         <span class="kw">let </span>my_union_index_lit =
-            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_union_index), get_span(target.span));
-        <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}_insert&quot;</span>, target.name), get_span(target.span));
+            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}"</span>, my_union_index), get_span(target.span));
+        <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}_insert"</span>, target.name), get_span(target.span));
 
         <span class="kw">let </span>input_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
 
@@ -1378,10 +1380,10 @@
             .entry(target.name.clone())
             .or_insert_with(|| <span class="number">0</span>..)
             .next()
-            .expect(<span class="string">&quot;Out of tee indices&quot;</span>);
+            .expect(<span class="string">"Out of tee indices"</span>);
 
         <span class="kw">let </span>my_tee_index_lit =
-            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_tee_index), get_span(target.span));
+            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}"</span>, my_tee_index), get_span(target.span));
         <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span>target.name, get_span(target.span));
 
         <span class="kw">let </span>output_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
@@ -1397,25 +1399,25 @@
     }
 
     <span class="kw">for </span>(target, send_hf, recv_hf) <span class="kw">in </span>asyncs {
-        <span class="kw">let </span>async_send_pipeline = <span class="macro">format!</span>(<span class="string">&quot;{}_async_send&quot;</span>, target.name);
+        <span class="kw">let </span>async_send_pipeline = <span class="macro">format!</span>(<span class="string">"{}_async_send"</span>, target.name);
         <span class="kw">let </span>async_send_pipeline = syn::Ident::new(<span class="kw-2">&amp;</span>async_send_pipeline, get_span(target.span));
 
         <span class="kw">let </span>recv_union_index = union_counter
             .entry(target.name.clone())
             .or_insert_with(|| <span class="number">0</span>..)
             .next()
-            .expect(<span class="string">&quot;Out of union indices&quot;</span>);
+            .expect(<span class="string">"Out of union indices"</span>);
 
         <span class="kw">let </span>recv_union_index_lit =
-            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, recv_union_index), get_span(target.span));
+            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}"</span>, recv_union_index), get_span(target.span));
         <span class="kw">let </span>target_ident =
-            syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}_insert&quot;</span>, target.name), get_span(target.span));
+            syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}_insert"</span>, target.name), get_span(target.span));
 
         <span class="kw">let </span>send_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>send_hf.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
         <span class="kw">let </span>recv_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>recv_hf.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
-            #async_send_pipeline = union() -&gt; unique::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; #send_pipeline;
+            #async_send_pipeline = union() -&gt; unique::&lt;<span class="lifetime">'tick</span>&gt;() -&gt; #send_pipeline;
         });
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned! </span>{get_span(target.span)=&gt;
@@ -1428,11 +1430,11 @@
             .entry(target.name.clone())
             .or_insert_with(|| <span class="number">0</span>..)
             .next()
-            .expect(<span class="string">&quot;Out of union indices&quot;</span>);
+            .expect(<span class="string">"Out of union indices"</span>);
 
         <span class="kw">let </span>my_union_index_lit =
-            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_union_index), get_span(target.span));
-        <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}_insert&quot;</span>, target.name), get_span(target.span));
+            syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}"</span>, my_union_index), get_span(target.span));
+        <span class="kw">let </span>name = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}_insert"</span>, target.name), get_span(target.span));
 
         <span class="kw">let </span>static_expression: syn::Expr = parse_static(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
 
@@ -1491,14 +1493,14 @@
                 diagnostics.push(Diagnostic::spanned(
                     my_span,
                     Level::Error,
-                    <span class="macro">format!</span>(<span class="string">&quot;Unexpected Token: &#39;{msg}&#39;&quot;</span>, msg = msg),
+                    <span class="macro">format!</span>(<span class="string">"Unexpected Token: '{msg}'"</span>, msg = msg),
                 ));
             }
             ParseErrorReason::MissingToken(msg) =&gt; {
                 diagnostics.push(Diagnostic::spanned(
                     my_span,
                     Level::Error,
-                    <span class="macro">format!</span>(<span class="string">&quot;Missing Token: &#39;{msg}&#39;&quot;</span>, msg = msg),
+                    <span class="macro">format!</span>(<span class="string">"Missing Token: '{msg}'"</span>, msg = msg),
                 ));
             }
             ParseErrorReason::FailedNode(parse_errors) =&gt; {
@@ -1506,7 +1508,7 @@
                     diagnostics.push(Diagnostic::spanned(
                         my_span,
                         Level::Error,
-                        <span class="string">&quot;Failed to parse&quot;</span>,
+                        <span class="string">"Failed to parse"</span>,
                     ));
                 } <span class="kw">else </span>{
                     diagnostics.extend(handle_errors(parse_errors, get_span));
@@ -1520,7 +1522,7 @@
 
 <span class="kw">pub fn </span>hydroflow_graph_to_program(flat_graph: HydroflowGraph, root: TokenStream) -&gt; TokenStream {
     <span class="kw">let </span><span class="kw-2">mut </span>partitioned_graph =
-        partition_graph(flat_graph).expect(<span class="string">&quot;Failed to partition (cycle detected).&quot;</span>);
+        partition_graph(flat_graph).expect(<span class="string">"Failed to partition (cycle detected)."</span>);
 
     <span class="kw">let </span><span class="kw-2">mut </span>diagnostics = Vec::new();
     <span class="comment">// Propagate flow properties throughout the graph.
@@ -1531,7 +1533,7 @@
     <span class="macro">assert_eq!</span>(
         <span class="number">0</span>,
         diagnostics.len(),
-        <span class="string">&quot;Operator diagnostic occured during codegen&quot;
+        <span class="string">"Operator diagnostic occured during codegen"
     </span>);
 
     code_tokens
@@ -1539,7 +1541,7 @@
 
 <span class="attr">#[allow(clippy::too_many_arguments)]
 </span><span class="kw">fn </span>generate_rule(
-    plan: JoinPlan&lt;<span class="lifetime">&#39;_</span>&gt;,
+    plan: JoinPlan&lt;<span class="lifetime">'_</span>&gt;,
     rule: <span class="kw-2">&amp;</span>rust_sitter::Spanned&lt;Rule&gt;,
     flat_graph_builder: <span class="kw-2">&amp;mut </span>FlatGraphBuilder,
     tee_counter: <span class="kw-2">&amp;mut </span>HashMap&lt;String, Counter&gt;,
@@ -1550,7 +1552,7 @@
     get_span: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn((usize, usize)) -&gt; Span,
 ) {
     <span class="kw">let </span>target = <span class="kw-2">&amp;</span>rule.target.name;
-    <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}_insert&quot;</span>, target.name), get_span(target.span));
+    <span class="kw">let </span>target_ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}_insert"</span>, target.name), get_span(target.span));
 
     <span class="kw">let </span>out_expanded = join_plan::expand_join_plan(
         <span class="kw-2">&amp;</span>plan,
@@ -1574,28 +1576,28 @@
         .entry(target.name.clone())
         .or_insert_with(|| <span class="number">0</span>..)
         .next()
-        .expect(<span class="string">&quot;Out of union indices&quot;</span>);
+        .expect(<span class="string">"Out of union indices"</span>);
 
-    <span class="kw">let </span>my_union_index_lit = syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, my_union_index), Span::call_site());
+    <span class="kw">let </span>my_union_index_lit = syn::LitInt::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}"</span>, my_union_index), Span::call_site());
 
     <span class="kw">let </span>after_join_and_send: Pipeline = <span class="kw">match </span>rule.rule_type.value {
         RuleType::Sync(<span class="kw">_</span>) =&gt; {
             <span class="kw">if </span>rule.target.at_node.is_some() {
-                <span class="macro">panic!</span>(<span class="string">&quot;Rule must be async to send data to other nodes&quot;</span>)
+                <span class="macro">panic!</span>(<span class="string">"Rule must be async to send data to other nodes"</span>)
             }
 
             <span class="macro">parse_quote_spanned!</span>(get_span(rule.rule_type.span)=&gt; #after_join -&gt; [#my_union_index_lit] #target_ident)
         }
         RuleType::NextTick(<span class="kw">_</span>) =&gt; {
             <span class="kw">if </span>rule.target.at_node.is_some() {
-                <span class="macro">panic!</span>(<span class="string">&quot;Rule must be async to send data to other nodes&quot;</span>)
+                <span class="macro">panic!</span>(<span class="string">"Rule must be async to send data to other nodes"</span>)
             }
 
             <span class="macro">parse_quote_spanned!</span>(get_span(rule.rule_type.span)=&gt; #after_join -&gt; defer_tick() -&gt; [#my_union_index_lit] #target_ident)
         }
         RuleType::Async(<span class="kw">_</span>) =&gt; {
             <span class="kw">if </span>rule.target.at_node.is_none() {
-                <span class="macro">panic!</span>(<span class="string">&quot;Async rules are only for sending data to other nodes&quot;</span>)
+                <span class="macro">panic!</span>(<span class="string">"Async rules are only for sending data to other nodes"</span>)
             }
 
             <span class="kw">let </span>exprs_get_data = rule
@@ -1616,7 +1618,7 @@
             );
 
             <span class="kw">let </span>send_pipeline_ident = syn::Ident::new(
-                <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{}_async_send&quot;</span>, <span class="kw-2">&amp;</span>rule.target.name.name),
+                <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}_async_send"</span>, <span class="kw-2">&amp;</span>rule.target.name.name),
                 get_span(rule.target.name.span),
             );
 
@@ -1644,7 +1646,7 @@
     }));
 }
 
-<span class="kw">fn </span>compute_join_plan&lt;<span class="lifetime">&#39;a</span>&gt;(sources: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Atom], persisted_rules: <span class="kw-2">&amp;</span>HashSet&lt;String&gt;) -&gt; JoinPlan&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">fn </span>compute_join_plan&lt;<span class="lifetime">'a</span>&gt;(sources: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[Atom], persisted_rules: <span class="kw-2">&amp;</span>HashSet&lt;String&gt;) -&gt; JoinPlan&lt;<span class="lifetime">'a</span>&gt; {
     <span class="comment">// TODO(shadaj): smarter plans
     </span><span class="kw">let </span><span class="kw-2">mut </span>plan: JoinPlan = sources
         .iter()
@@ -1691,7 +1693,7 @@
         Atom::Relation(negated, e) =&gt; {
             <span class="kw">if </span>MAGIC_RELATIONS.contains(<span class="kw-2">&amp;</span>e.name.name.as_str()) {
                 <span class="kw">match </span>e.name.name.as_str() {
-                    <span class="string">&quot;less_than&quot; </span>=&gt; {
+                    <span class="string">"less_than" </span>=&gt; {
                         <span class="macro">assert!</span>(negated.is_none());
                         JoinPlan::MagicNatLt(
                             Box::new(acc),
@@ -1699,7 +1701,7 @@
                             e.fields[<span class="number">1</span>].value.clone(),
                         )
                     }
-                    o =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unknown magic relation {}&quot;</span>, o),
+                    o =&gt; <span class="macro">panic!</span>(<span class="string">"Unknown magic relation {}"</span>, o),
                 }
             } <span class="kw">else </span>{
                 acc
@@ -1834,7 +1836,7 @@
                         diagnostics.push(Diagnostic::spanned(
                             get_span(ident.span),
                             Level::Error,
-                            <span class="macro">format!</span>(<span class="string">&quot;Could not find column {} in RHS of rule&quot;</span>, <span class="kw-2">&amp;</span>ident.name),
+                            <span class="macro">format!</span>(<span class="string">"Could not find column {} in RHS of rule"</span>, <span class="kw-2">&amp;</span>ident.name),
                         ));
                         <span class="macro">parse_quote!</span>(())
                     }
@@ -1895,10 +1897,10 @@
 
     <span class="kw">let </span>after_group_pipeline: Pipeline = <span class="kw">if </span>has_index {
         <span class="kw">if </span>out_expanded.persisted &amp;&amp; agg_exprs.is_empty() {
-            <span class="comment">// if there is an aggregation, we will use a group which replays so we should use `&#39;tick` instead
-            </span><span class="macro">parse_quote!</span>(enumerate::&lt;<span class="lifetime">&#39;static</span>&gt;() -&gt; map(|(i, (g, a)): (<span class="kw">_</span>, (#fold_keyed_input_type, <span class="kw">_</span>))| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
+            <span class="comment">// if there is an aggregation, we will use a group which replays so we should use `'tick` instead
+            </span><span class="macro">parse_quote!</span>(enumerate::&lt;<span class="lifetime">'static</span>&gt;() -&gt; map(|(i, (g, a)): (<span class="kw">_</span>, (#fold_keyed_input_type, <span class="kw">_</span>))| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
         } <span class="kw">else </span>{
-            <span class="macro">parse_quote!</span>(enumerate::&lt;<span class="lifetime">&#39;tick</span>&gt;() -&gt; map(|(i, (g, a)): (<span class="kw">_</span>, (#fold_keyed_input_type, <span class="kw">_</span>))| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
+            <span class="macro">parse_quote!</span>(enumerate::&lt;<span class="lifetime">'tick</span>&gt;() -&gt; map(|(i, (g, a)): (<span class="kw">_</span>, (#fold_keyed_input_type, <span class="kw">_</span>))| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
         }
     } <span class="kw">else </span>{
         <span class="macro">parse_quote!</span>(map(|(g, a): (#fold_keyed_input_type, <span class="kw">_</span>)| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
@@ -1993,11 +1995,11 @@
 
         <span class="kw">if </span>out_expanded.persisted {
             <span class="macro">parse_quote! </span>{
-                map(#pre_fold_keyed_map) -&gt; fold_keyed::&lt;<span class="lifetime">&#39;static</span>, #fold_keyed_input_type, #agg_type&gt;(|| #agg_initial, #fold_keyed_fn) -&gt; #after_group_pipeline
+                map(#pre_fold_keyed_map) -&gt; fold_keyed::&lt;<span class="lifetime">'static</span>, #fold_keyed_input_type, #agg_type&gt;(|| #agg_initial, #fold_keyed_fn) -&gt; #after_group_pipeline
             }
         } <span class="kw">else </span>{
             <span class="macro">parse_quote! </span>{
-                map(#pre_fold_keyed_map) -&gt; fold_keyed::&lt;<span class="lifetime">&#39;tick</span>, #fold_keyed_input_type, #agg_type&gt;(|| #agg_initial, #fold_keyed_fn) -&gt; #after_group_pipeline
+                map(#pre_fold_keyed_map) -&gt; fold_keyed::&lt;<span class="lifetime">'tick</span>, #fold_keyed_input_type, #agg_type&gt;(|| #agg_initial, #fold_keyed_fn) -&gt; #after_group_pipeline
             }
         }
     }
@@ -2014,7 +2016,7 @@
             <span class="kw">let </span>flat_graph = gen_hydroflow_graph(<span class="macro">parse_quote!</span>(<span class="macro-nonterminal">$program</span>)).unwrap();
 
             <span class="kw">let </span>flat_graph_ref = <span class="kw-2">&amp;</span>flat_graph;
-            <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="string">&quot;surface_graph&quot;</span>}, {
+            <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="string">"surface_graph"</span>}, {
                 <span class="macro">insta::assert_display_snapshot!</span>(flat_graph_ref.surface_syntax_string());
             });
 
@@ -2026,7 +2028,7 @@
                 }
             };
 
-            <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="string">&quot;datalog_program&quot;</span>}, {
+            <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="string">"datalog_program"</span>}, {
                 <span class="macro">insta::assert_display_snapshot!</span>(
                     prettyplease::unparse(<span class="kw-2">&amp;</span>wrapped)
                 );
@@ -2037,196 +2039,196 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>minimal_program() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input input `source_stream(input)`
             .output out `for_each(|v| out.send(v).unwrap())`
 
             out(y, x) :- input(x, y).
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>join_with_self() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input input `source_stream(input)`
             .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x, y) :- input(x, y), input(y, x).
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>wildcard_fields() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input input `source_stream(input)`
             .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x) :- input(x, _), input(_, x).
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>join_with_other() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input in1 `source_stream(in1)`
             .input in2 `source_stream(in2)`
             .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x, y) :- in1(x, y), in2(y, x).
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>multiple_contributors() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input in1 `source_stream(in1)`
             .input in2 `source_stream(in2)`
             .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x, y) :- in1(x, y).
             out(x, y) :- in2(y, x).
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>transitive_closure() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input edges `source_stream(edges)`
             .input seed_reachable `source_stream(seed_reachable)`
             .output reachable `for_each(|v| reachable.send(v).unwrap())`
 
             reachable(x) :- seed_reachable(x).
             reachable(y) :- reachable(x), edges(x, y).
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>single_column_program() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input in1 `source_stream(in1)`
             .input in2 `source_stream(in2)`
             .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x) :- in1(x), in2(x).
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>triple_relation_join() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input in1 `source_stream(in1)`
             .input in2 `source_stream(in2)`
             .input in3 `source_stream(in3)`
             .output out `for_each(|v| out.send(v).unwrap())`
 
             out(d, c, b, a) :- in1(a, b), in2(b, c), in3(c, d).
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>local_constraints() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input input `source_stream(input)`
             .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x, x) :- input(x, x).
-            &quot;#
+            "#
         </span>);
 
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input input `source_stream(input)`
             .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x, x, y, y) :- input(x, x, y, y).
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_simple_filter() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input input `source_stream(input)`
             .output out `for_each(|v| out.send(v).unwrap())`
 
             out(x, y) :- input(x, y), ( x &gt; y ), ( y == x ).
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_anti_join() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input ints_1 `source_stream(ints_1)`
             .input ints_2 `source_stream(ints_2)`
             .input ints_3 `source_stream(ints_3)`
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(x, z) :- ints_1(x, y), ints_2(y, z), !ints_3(y)
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_max() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input ints `source_stream(ints)`
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(max(a), b) :- ints(a, b)
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_max_all() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input ints `source_stream(ints)`
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(max(a), max(b)) :- ints(a, b)
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_send_to_node() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input ints `source_stream(ints)`
             .output result `for_each(|v| result.send(v).unwrap())`
             .async result `for_each(|(node, data)| async_send_result(node, data))` `source_stream(async_receive_result)`
 
             result@b(a) :~ ints(a, b)
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_aggregations_and_comments() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
-            # david doesn&#39;t think this line of code will execute
+            <span class="string">r#"
+            # david doesn't think this line of code will execute
             .input ints `source_stream(ints)`
             .output result `for_each(|v| result.send(v).unwrap())`
             .output result2 `for_each(|v| result2.send(v).unwrap())`
@@ -2234,38 +2236,38 @@
             result(count(a), b) :- ints(a, b)
             result(sum(a), b) :+ ints(a, b)
             result2(choose(a), b) :- ints(a, b)
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_aggregations_fold_keyed_expr() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input ints `source_stream(ints)`
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(a % 2, sum(b)) :- ints(a, b)
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_non_copy_but_clone() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input strings `source_stream(strings)`
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(a, a) :- strings(a)
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_expr_lhs() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input ints `source_stream(ints)`
             .output result `for_each(|v| result.send(v).unwrap())`
 
@@ -2275,14 +2277,14 @@
             result(123 - a) :- ints(a)
             result(123 % (a + 5)) :- ints(a)
             result(a * 5) :- ints(a)
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_expr_predicate() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input ints `source_stream(ints)`
             .output result `for_each(|v| result.send(v).unwrap())`
 
@@ -2290,14 +2292,14 @@
             result(2) :- ints(a), (a != 0)
             result(3) :- ints(a), (a - 1 == 0)
             result(4) :- ints(a), (a - 1 == 1 - 1)
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_persist() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input ints1 `source_stream(ints1)`
             .persist ints1
 
@@ -2320,14 +2322,14 @@
             .persist intermediate_persist
             intermediate_persist(a) :- ints1(a)
             result4(a) :- intermediate_persist(a)
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_persist_uniqueness() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .persist ints1
 
             .input ints2 `source_stream(ints2)`
@@ -2337,14 +2339,14 @@
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(count(a)) :- ints1(a)
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_wildcard_join_count() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input ints1 `source_stream(ints1)` 
             .input ints2 `source_stream(ints2)`
             
@@ -2353,14 +2355,14 @@
 
             result(count(*)) :- ints1(a, _), ints2(a)
             result2(count(a)) :- ints1(a, _), ints2(a)
-            &quot;#
+            "#
         </span>);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_index() {
         <span class="macro">test_snapshots!</span>(
-            <span class="string">r#&quot;
+            <span class="string">r#"
             .input ints `source_stream(ints)` 
             
             .output result `for_each(|v| result.send(v).unwrap())`
@@ -2380,7 +2382,7 @@
             result3(a, b, index()) :- ints_persisted(a, b)
             result4(a, count(b), index()) :- ints_persisted(a, b)
             result5(a, b, index()) :- ints_persisted(a, b)
-            &quot;#
+            "#
         </span>);
     }
 }

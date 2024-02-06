@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydro_deploy/core/src/terraform.rs`."><title>terraform.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydro_deploy" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydro_deploy/core/src/terraform.rs`."><title>terraform.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydro_deploy" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (bf3c6c5be 2024-02-01)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../hydro_deploy/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -389,7 +391,7 @@
 <span class="kw">use </span><span class="kw">super</span>::progress::ProgressTracker;
 
 <span class="kw">pub static </span>TERRAFORM_ALPHABET: [char; <span class="number">16</span>] = [
-    <span class="string">&#39;1&#39;</span>, <span class="string">&#39;2&#39;</span>, <span class="string">&#39;3&#39;</span>, <span class="string">&#39;4&#39;</span>, <span class="string">&#39;5&#39;</span>, <span class="string">&#39;6&#39;</span>, <span class="string">&#39;7&#39;</span>, <span class="string">&#39;8&#39;</span>, <span class="string">&#39;9&#39;</span>, <span class="string">&#39;0&#39;</span>, <span class="string">&#39;a&#39;</span>, <span class="string">&#39;b&#39;</span>, <span class="string">&#39;c&#39;</span>, <span class="string">&#39;d&#39;</span>, <span class="string">&#39;e&#39;</span>, <span class="string">&#39;f&#39;</span>,
+    <span class="string">'1'</span>, <span class="string">'2'</span>, <span class="string">'3'</span>, <span class="string">'4'</span>, <span class="string">'5'</span>, <span class="string">'6'</span>, <span class="string">'7'</span>, <span class="string">'8'</span>, <span class="string">'9'</span>, <span class="string">'0'</span>, <span class="string">'a'</span>, <span class="string">'b'</span>, <span class="string">'c'</span>, <span class="string">'d'</span>, <span class="string">'e'</span>, <span class="string">'f'</span>,
 ];
 
 <span class="doccomment">/// Keeps track of resources which may need to be cleaned up.
@@ -407,14 +409,14 @@
         <span class="kw">let </span>next_counter = <span class="self">self</span>.counter;
         <span class="self">self</span>.counter += <span class="number">1</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>apply_command = Command::new(<span class="string">&quot;terraform&quot;</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>apply_command = Command::new(<span class="string">"terraform"</span>);
 
         apply_command
             .current_dir(deployment_folder.path())
-            .arg(<span class="string">&quot;apply&quot;</span>)
-            .arg(<span class="string">&quot;-auto-approve&quot;</span>)
-            .arg(<span class="string">&quot;-no-color&quot;</span>)
-            .arg(<span class="string">&quot;-parallelism=128&quot;</span>);
+            .arg(<span class="string">"apply"</span>)
+            .arg(<span class="string">"-auto-approve"</span>)
+            .arg(<span class="string">"-no-color"</span>)
+            .arg(<span class="string">"-parallelism=128"</span>);
 
         <span class="attr">#[cfg(unix)]
         </span>{
@@ -425,7 +427,7 @@
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .context(<span class="string">&quot;Failed to spawn `terraform`. Is it installed?&quot;</span>)<span class="question-mark">?</span>;
+            .context(<span class="string">"Failed to spawn `terraform`. Is it installed?"</span>)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>spawned_id = spawned_child.id();
 
@@ -455,7 +457,7 @@
 <span class="attr">#[derive(Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>TerraformBatch {
     <span class="kw">pub </span>terraform: TerraformConfig,
-    <span class="attr">#[serde(skip_serializing_if = <span class="string">&quot;HashMap::is_empty&quot;</span>)]
+    <span class="attr">#[serde(skip_serializing_if = <span class="string">"HashMap::is_empty"</span>)]
     </span><span class="kw">pub </span>data: HashMap&lt;String, HashMap&lt;String, serde_json::Value&gt;&gt;,
     <span class="kw">pub </span>resource: HashMap&lt;String, HashMap&lt;String, serde_json::Value&gt;&gt;,
     <span class="kw">pub </span>output: HashMap&lt;String, TerraformOutput&gt;,
@@ -492,34 +494,34 @@
             });
         }
 
-        ProgressTracker::with_group(<span class="string">&quot;terraform&quot;</span>, <span class="prelude-val">None</span>, || <span class="kw">async </span>{
-            <span class="kw">let </span>dothydro_folder = std::env::current_dir().unwrap().join(<span class="string">&quot;.hydro&quot;</span>);
+        ProgressTracker::with_group(<span class="string">"terraform"</span>, <span class="prelude-val">None</span>, || <span class="kw">async </span>{
+            <span class="kw">let </span>dothydro_folder = std::env::current_dir().unwrap().join(<span class="string">".hydro"</span>);
             std::fs::create_dir_all(<span class="kw-2">&amp;</span>dothydro_folder).unwrap();
             <span class="kw">let </span>deployment_folder = tempfile::tempdir_in(dothydro_folder).unwrap();
 
             std::fs::write(
-                deployment_folder.path().join(<span class="string">&quot;main.tf.json&quot;</span>),
+                deployment_folder.path().join(<span class="string">"main.tf.json"</span>),
                 serde_json::to_string(<span class="kw-2">&amp;</span><span class="self">self</span>).unwrap(),
             )
             .unwrap();
 
-            <span class="kw">if </span>!Command::new(<span class="string">&quot;terraform&quot;</span>)
+            <span class="kw">if </span>!Command::new(<span class="string">"terraform"</span>)
                 .current_dir(deployment_folder.path())
-                .arg(<span class="string">&quot;init&quot;</span>)
+                .arg(<span class="string">"init"</span>)
                 .stdout(Stdio::null())
                 .spawn()
-                .context(<span class="string">&quot;Failed to spawn `terraform`. Is it installed?&quot;</span>)<span class="question-mark">?
+                .context(<span class="string">"Failed to spawn `terraform`. Is it installed?"</span>)<span class="question-mark">?
                 </span>.wait()
-                .context(<span class="string">&quot;Failed to launch terraform init command&quot;</span>)<span class="question-mark">?
+                .context(<span class="string">"Failed to launch terraform init command"</span>)<span class="question-mark">?
                 </span>.success()
             {
-                <span class="macro">bail!</span>(<span class="string">&quot;Failed to initialize terraform&quot;</span>);
+                <span class="macro">bail!</span>(<span class="string">"Failed to initialize terraform"</span>);
             }
 
             <span class="kw">let </span>(apply_id, apply) = pool.create_apply(deployment_folder)<span class="question-mark">?</span>;
 
             <span class="kw">let </span>output = ProgressTracker::with_group(
-                <span class="string">&quot;apply&quot;</span>,
+                <span class="string">"apply"</span>,
                 <span class="prelude-val">Some</span>(<span class="self">self</span>.resource.values().map(|r| r.len()).sum()),
                 || <span class="kw">async </span>{ apply.write().<span class="kw">await</span>.output().<span class="kw">await </span>},
             )
@@ -542,21 +544,21 @@
 
     <span class="kw">for </span>line <span class="kw">in </span>lines {
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(line) = line {
-            <span class="kw">let </span><span class="kw-2">mut </span>split = line.split(<span class="string">&#39;:&#39;</span>);
+            <span class="kw">let </span><span class="kw-2">mut </span>split = line.split(<span class="string">':'</span>);
             <span class="kw">if let </span><span class="prelude-val">Some</span>(first) = split.next() {
-                <span class="kw">if </span>first.chars().all(|c| c != <span class="string">&#39; &#39;</span>)
+                <span class="kw">if </span>first.chars().all(|c| c != <span class="string">' '</span>)
                     &amp;&amp; split.next().is_some()
                     &amp;&amp; split.next().is_none()
                 {
-                    <span class="kw">if </span>line.starts_with(<span class="string">&quot;Plan:&quot;</span>)
-                        || line.starts_with(<span class="string">&quot;Outputs:&quot;</span>)
-                        || line.contains(<span class="string">&quot;: Still creating...&quot;</span>)
-                        || line.contains(<span class="string">&quot;: Reading...&quot;</span>)
-                        || line.contains(<span class="string">&quot;: Still reading...&quot;</span>)
-                        || line.contains(<span class="string">&quot;: Read complete after&quot;</span>)
+                    <span class="kw">if </span>line.starts_with(<span class="string">"Plan:"</span>)
+                        || line.starts_with(<span class="string">"Outputs:"</span>)
+                        || line.contains(<span class="string">": Still creating..."</span>)
+                        || line.contains(<span class="string">": Reading..."</span>)
+                        || line.contains(<span class="string">": Still reading..."</span>)
+                        || line.contains(<span class="string">": Read complete after"</span>)
                     {
-                    } <span class="kw">else if </span>line.ends_with(<span class="string">&quot;: Creating...&quot;</span>) {
-                        <span class="kw">let </span>id = line.split(<span class="string">&#39;:&#39;</span>).next().unwrap().trim().to_string();
+                    } <span class="kw">else if </span>line.ends_with(<span class="string">": Creating..."</span>) {
+                        <span class="kw">let </span>id = line.split(<span class="string">':'</span>).next().unwrap().trim().to_string();
                         <span class="kw">let </span>(channel_send, channel_recv) = tokio::sync::oneshot::channel();
                         waiting_for_result.insert(
                             id.to_string(),
@@ -567,13 +569,13 @@
                                 })),
                             ),
                         );
-                    } <span class="kw">else if </span>line.contains(<span class="string">&quot;: Creation complete after&quot;</span>) {
-                        <span class="kw">let </span>id = line.split(<span class="string">&#39;:&#39;</span>).next().unwrap().trim();
+                    } <span class="kw">else if </span>line.contains(<span class="string">": Creation complete after"</span>) {
+                        <span class="kw">let </span>id = line.split(<span class="string">':'</span>).next().unwrap().trim();
                         <span class="kw">let </span>(sender, to_await) = waiting_for_result.remove(id).unwrap();
                         <span class="kw">let _ </span>= sender.send(());
                         to_await.<span class="kw">await</span>.unwrap();
                     } <span class="kw">else </span>{
-                        <span class="macro">panic!</span>(<span class="string">&quot;Unexpected from Terraform: {}&quot;</span>, line);
+                        <span class="macro">panic!</span>(<span class="string">"Unexpected from Terraform: {}"</span>, line);
                     }
                 }
             }
@@ -587,13 +589,13 @@
     <span class="kw">let </span>lines = BufReader::new(child.stdout.take().unwrap()).lines();
     <span class="kw">for </span>line <span class="kw">in </span>lines {
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(line) = line {
-            <span class="kw">let </span><span class="kw-2">mut </span>split = line.split(<span class="string">&#39;:&#39;</span>);
+            <span class="kw">let </span><span class="kw-2">mut </span>split = line.split(<span class="string">':'</span>);
             <span class="kw">if let </span><span class="prelude-val">Some</span>(first) = split.next() {
-                <span class="kw">if </span>first.chars().all(|c| c != <span class="string">&#39; &#39;</span>)
+                <span class="kw">if </span>first.chars().all(|c| c != <span class="string">' '</span>)
                     &amp;&amp; split.next().is_some()
                     &amp;&amp; split.next().is_none()
                 {
-                    <span class="macro">println!</span>(<span class="string">&quot;[terraform] {}&quot;</span>, line);
+                    <span class="macro">println!</span>(<span class="string">"[terraform] {}"</span>, line);
                 }
             }
         } <span class="kw">else </span>{
@@ -617,7 +619,7 @@
         <span class="kw">let </span>stderr_loop = tokio::task::spawn_blocking(<span class="kw">move </span>|| {
             <span class="kw">let </span><span class="kw-2">mut </span>lines = BufReader::new(stderr).lines();
             <span class="kw">while let </span><span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(line)) = lines.next() {
-                ProgressTracker::println(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;[terraform] {}&quot;</span>, line));
+                ProgressTracker::println(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"[terraform] {}"</span>, line));
             }
         });
 
@@ -628,14 +630,14 @@
         <span class="self">self</span>.child = <span class="prelude-val">None</span>;
 
         <span class="kw">if </span>!status.unwrap().success() {
-            <span class="macro">bail!</span>(<span class="string">&quot;Terraform deployment failed&quot;</span>);
+            <span class="macro">bail!</span>(<span class="string">"Terraform deployment failed"</span>);
         }
 
-        <span class="kw">let </span><span class="kw-2">mut </span>output_command = Command::new(<span class="string">&quot;terraform&quot;</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>output_command = Command::new(<span class="string">"terraform"</span>);
         output_command
             .current_dir(<span class="self">self</span>.deployment_folder.as_ref().unwrap().path())
-            .arg(<span class="string">&quot;output&quot;</span>)
-            .arg(<span class="string">&quot;-json&quot;</span>);
+            .arg(<span class="string">"output"</span>)
+            .arg(<span class="string">"-json"</span>);
 
         <span class="attr">#[cfg(unix)]
         </span>{
@@ -644,7 +646,7 @@
 
         <span class="kw">let </span>output = output_command
             .output()
-            .context(<span class="string">&quot;Failed to read Terraform outputs&quot;</span>)<span class="question-mark">?</span>;
+            .context(<span class="string">"Failed to read Terraform outputs"</span>)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(TerraformResult {
             outputs: serde_json::from_slice(<span class="kw-2">&amp;</span>output.stdout).unwrap(),
@@ -655,17 +657,17 @@
 
 <span class="kw">fn </span>destroy_deployment(deployment_folder: TempDir) {
     <span class="macro">println!</span>(
-        <span class="string">&quot;Destroying terraform deployment at {}&quot;</span>,
+        <span class="string">"Destroying terraform deployment at {}"</span>,
         deployment_folder.path().display()
     );
 
-    <span class="kw">let </span><span class="kw-2">mut </span>destroy_command = Command::new(<span class="string">&quot;terraform&quot;</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>destroy_command = Command::new(<span class="string">"terraform"</span>);
     destroy_command
         .current_dir(deployment_folder.path())
-        .arg(<span class="string">&quot;destroy&quot;</span>)
-        .arg(<span class="string">&quot;-auto-approve&quot;</span>)
-        .arg(<span class="string">&quot;-no-color&quot;</span>)
-        .arg(<span class="string">&quot;-parallelism=128&quot;</span>)
+        .arg(<span class="string">"destroy"</span>)
+        .arg(<span class="string">"-auto-approve"</span>)
+        .arg(<span class="string">"-no-color"</span>)
+        .arg(<span class="string">"-parallelism=128"</span>)
         .stdout(Stdio::piped());
 
     <span class="attr">#[cfg(unix)]
@@ -675,18 +677,18 @@
 
     <span class="kw">let </span><span class="kw-2">mut </span>destroy_child = destroy_command
         .spawn()
-        .expect(<span class="string">&quot;Failed to spawn terraform destroy command&quot;</span>);
+        .expect(<span class="string">"Failed to spawn terraform destroy command"</span>);
 
     filter_terraform_logs(<span class="kw-2">&amp;mut </span>destroy_child);
 
     <span class="kw">if </span>!destroy_child
         .wait()
-        .expect(<span class="string">&quot;Failed to destroy terraform deployment&quot;</span>)
+        .expect(<span class="string">"Failed to destroy terraform deployment"</span>)
         .success()
     {
         <span class="comment">// prevent the folder from being deleted
         </span><span class="kw">let _ </span>= deployment_folder.into_path();
-        <span class="macro">eprintln!</span>(<span class="string">&quot;WARNING: failed to destroy terraform deployment&quot;</span>);
+        <span class="macro">eprintln!</span>(<span class="string">"WARNING: failed to destroy terraform deployment"</span>);
     }
 }
 
@@ -704,7 +706,7 @@
 
             <span class="kw">let </span><span class="kw-2">mut </span>child_write = child.write().unwrap();
             <span class="kw">if </span>child_write.try_wait().unwrap().is_none() {
-                <span class="macro">println!</span>(<span class="string">&quot;Waiting for Terraform apply to finish...&quot;</span>);
+                <span class="macro">println!</span>(<span class="string">"Waiting for Terraform apply to finish..."</span>);
                 child_write.wait().unwrap();
             }
         }
