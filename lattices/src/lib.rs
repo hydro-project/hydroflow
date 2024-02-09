@@ -151,3 +151,69 @@ pub trait DeepReveal {
     /// Reveals the underlying lattice types recursively.
     fn deep_reveal(self) -> Self::Revealed;
 }
+
+/// Semilattice morphism. Lattice merge must distribute over this unary function.
+///
+/// Use [`crate::test::check_lattice_morphism`] to spot-test an implementation.
+///
+/// See the [lattice math doc's lattice morphism section](https://hydro.run/docs/hydroflow/lattices_crate/lattice_math/#lattice-morphism).
+pub trait LatticeMorphism<LatIn> {
+    /// The output lattice type.
+    type Output;
+    /// Executes the function.
+    fn call(&mut self, lat_in: LatIn) -> Self::Output;
+}
+
+/// Semilattice bimorphism. Lattice merge must distribute over this binary function, in both arguments.
+///
+/// Use [`crate::test::check_lattice_bimorphism`] to spot-test an implementation.
+///
+/// See the [lattice math doc's lattice bimorphism section](https://hydro.run/docs/hydroflow/lattices_crate/lattice_math/#lattice-bimorphism).
+pub trait LatticeBimorphism<LatA, LatB> {
+    /// The output lattice type.
+    type Output;
+    /// Executes the function.
+    fn call(&mut self, lat_a: LatA, lat_b: LatB) -> Self::Output;
+}
+
+/// Converts a closure to a morphism. Does not check for correctness.
+pub fn closure_to_morphism<LatIn, LatOut, F>(
+    func: F,
+) -> impl LatticeMorphism<LatIn, Output = LatOut>
+where
+    F: FnMut(LatIn) -> LatOut,
+{
+    struct FnMorphism<F>(F);
+    impl<F, LatIn, LatOut> LatticeMorphism<LatIn> for FnMorphism<F>
+    where
+        F: FnMut(LatIn) -> LatOut,
+    {
+        type Output = LatOut;
+
+        fn call(&mut self, lat_in: LatIn) -> Self::Output {
+            (self.0)(lat_in)
+        }
+    }
+    FnMorphism(func)
+}
+
+/// Converts a closure to a bimorphism. Does not check for correctness.
+pub fn closure_to_bimorphism<LatA, LatB, LatOut, F>(
+    func: F,
+) -> impl LatticeBimorphism<LatA, LatB, Output = LatOut>
+where
+    F: FnMut(LatA, LatB) -> LatOut,
+{
+    struct FnBimorphism<F>(F);
+    impl<F, LatA, LatB, LatOut> LatticeBimorphism<LatA, LatB> for FnBimorphism<F>
+    where
+        F: FnMut(LatA, LatB) -> LatOut,
+    {
+        type Output = LatOut;
+
+        fn call(&mut self, lat_a: LatA, lat_b: LatB) -> Self::Output {
+            (self.0)(lat_a, lat_b)
+        }
+    }
+    FnBimorphism(func)
+}

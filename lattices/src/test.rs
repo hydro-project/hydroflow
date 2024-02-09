@@ -2,7 +2,10 @@
 
 use std::fmt::Debug;
 
-use crate::{Atomize, IsBot, IsTop, Lattice, LatticeOrd, Merge, NaiveLatticeOrd};
+use crate::{
+    Atomize, IsBot, IsTop, Lattice, LatticeBimorphism, LatticeMorphism, LatticeOrd, Merge,
+    NaiveLatticeOrd,
+};
 
 /// Helper which calls many other `check_*` functions in this module. See source code for which
 /// functions are called.
@@ -195,6 +198,72 @@ pub fn check_atomize_each<
             reformed.merge(atom);
         }
         assert_eq!(item, &reformed, "`{:?}` atomize failed to reform", item);
+    }
+}
+
+/// Checks that the [`LatticeMorphism`] is valid, i.e. that merge distributes over it.
+pub fn check_lattice_morphism<LatIn, Func>(mut func: Func, items: &[LatIn])
+where
+    Func: LatticeMorphism<LatIn>,
+    LatIn: Merge<LatIn> + Clone + Eq + Debug,
+    Func::Output: Merge<Func::Output> + Clone + Eq + Debug,
+{
+    for [a, b] in cartesian_power(items) {
+        assert_eq!(
+            func.call(Merge::merge_owned(a.clone(), b.clone())),
+            Merge::merge_owned(func.call(a.clone()), func.call(b.clone())),
+            "Func not a morphism: `f(a ⊔ b) != f(a) ⊔ f(b)`
+            \n`a = {:?}`, `b = {:?}`",
+            a,
+            b
+        )
+    }
+}
+
+/// Checks that the [`LatticeBimorphism`] is valid, i.e. that merge distributes over both arguments of it.
+pub fn check_lattice_bimorphism<LatA, LatB, Func>(
+    mut func: Func,
+    items_a: &[LatA],
+    items_b: &[LatB],
+) where
+    Func: LatticeBimorphism<LatA, LatB>,
+    LatA: Merge<LatA> + Clone + Eq + Debug,
+    LatB: Merge<LatB> + Clone + Eq + Debug,
+    Func::Output: Merge<Func::Output> + Clone + Eq + Debug,
+{
+    // Morphism LHS, fixed RHS:
+    for b in items_b {
+        for [a, da] in cartesian_power(items_a) {
+            assert_eq!(
+                func.call(Merge::merge_owned(a.clone(), da.clone()), b.clone()),
+                Merge::merge_owned(
+                    func.call(a.clone(), b.clone()),
+                    func.call(da.clone(), b.clone())
+                ),
+                "Left arg not a morphism: `f(a ⊔ da, b) != f(a, b) ⊔ f(da, b)`
+                \n`a = {:?}`, `da = {:?}`, `b = {:?}`",
+                a,
+                da,
+                b,
+            );
+        }
+    }
+    // Fixed LHS, morphism RHS:
+    for a in items_a {
+        for [b, db] in cartesian_power(items_b) {
+            assert_eq!(
+                func.call(a.clone(), Merge::merge_owned(b.clone(), db.clone())),
+                Merge::merge_owned(
+                    func.call(a.clone(), b.clone()),
+                    func.call(a.clone(), db.clone())
+                ),
+                "Right arg not a morphism: `f(a, b ⊔ db) != f(a, b) ⊔ f(a, db)`
+                \n`a = {:?}`, `b = {:?}`, `db = {:?}`",
+                a,
+                b,
+                db,
+            );
+        }
     }
 }
 
