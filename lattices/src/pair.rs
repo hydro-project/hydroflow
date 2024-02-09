@@ -1,6 +1,6 @@
 use std::cmp::Ordering::{self, *};
 
-use crate::{DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{DeepReveal, IsBot, IsTop, LatticeBimorphism, LatticeFrom, LatticeOrd, Merge};
 
 /// Pair compound lattice.
 ///
@@ -137,13 +137,24 @@ where
     }
 }
 
+/// Bimorphism which pairs up the two input lattices.
+#[derive(Default)]
+pub struct PairBimorphism;
+impl<LatA, LatB> LatticeBimorphism<LatA, LatB> for PairBimorphism {
+    type Output = Pair<LatA, LatB>;
+
+    fn call(&mut self, lat_a: LatA, lat_b: LatB) -> Self::Output {
+        Pair::new(lat_a, lat_b)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;
 
     use super::*;
-    use crate::set_union::SetUnionHashSet;
-    use crate::test::check_all;
+    use crate::set_union::{SetUnionBTreeSet, SetUnionHashSet};
+    use crate::test::{check_all, check_lattice_bimorphism};
     use crate::WithTop;
 
     #[test]
@@ -188,5 +199,24 @@ mod test {
         }
 
         check_all(&test_vec);
+    }
+
+    #[test]
+    fn test_pair_bimorphism() {
+        let items_a = &[
+            SetUnionHashSet::new_from([]),
+            SetUnionHashSet::new_from([0]),
+            SetUnionHashSet::new_from([1]),
+            SetUnionHashSet::new_from([0, 1]),
+        ];
+        let items_b = &[
+            SetUnionBTreeSet::new("hello".chars().collect()),
+            SetUnionBTreeSet::new("world".chars().collect()),
+        ];
+
+        check_lattice_bimorphism(PairBimorphism, items_a, items_a);
+        check_lattice_bimorphism(PairBimorphism, items_a, items_b);
+        check_lattice_bimorphism(PairBimorphism, items_b, items_a);
+        check_lattice_bimorphism(PairBimorphism, items_b, items_b);
     }
 }

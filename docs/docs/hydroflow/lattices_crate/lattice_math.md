@@ -163,7 +163,7 @@ A function $f: S\rightarrow T$ from lattice domain $S$ to lattice codomain $T$ i
 it structurally preserves merges, i.e. merges distribute across the function. For all $a,b\in S$:
 $$
     f(a \sqcup_S b) \quad=\quad f(a) \sqcup_T f(b)
-    \quad\quad\quad\mathrm{\textit{(morphism)}}
+    \quad\quad\quad\mathrm{\textit{(lattice morphism)}}
 $$
 (Because both the domain and codomain are semilattice spaces, _semilattice homomorphism_ is the
 most precise term for this.)
@@ -171,6 +171,18 @@ most precise term for this.)
 Lattice morphisms are a special kind of monotonic function which are _differentially computable_.
 Because merge distributes over a morphism, we can evaluate the morphisms on a small "delta" of data
 and merge that delta into the existing result rather than recompute the entire morphism on all data.
+
+### Lattice Bimorphism
+
+A function $f: R\times S\rightarrow T$ is a _lattice bimorphism_ if it acts like a lattice morphism separately in both of its arguments. For all $a, \delta a \in R$ and $b, \delta b \in S$:
+$$
+    f(a \sqcup_R \delta a,\ b) \quad=\quad f(a,\ b)\ \sqcup_T\ f(\delta a,\ b) \\
+    f(a,\ b \sqcup_S \delta b) \quad=\quad f(a,\ b)\ \sqcup_T\ f(a,\ \delta b) \\
+    \qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\mathrm{\textit{(lattice bimorphism)}}
+$$
+
+Lattice bimorphisms are _differentially computable_ in both arguments, in the same way morphisms
+are.
 
 ### Further Reading
 
