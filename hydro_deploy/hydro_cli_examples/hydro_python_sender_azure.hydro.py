@@ -8,10 +8,6 @@ async def main(args):
     deployment = hydro.Deployment()
     localhost_machine = deployment.Localhost()
 
-    # gcp_vpc = hydro.GCPNetwork(
-    #     project="autocompartmentalization",
-    # )
-
     machine2 = deployment.AzureHost(
         project="hydro-example" + str(int(time.time())),
         os_type="linux",

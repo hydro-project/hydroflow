@@ -21,7 +21,6 @@ use super::{
     ServerStrategy,
 };
 
-// #[derive(Debug)]
 pub struct LaunchedComputeEngine {
     resource_result: Arc<ResourceResult>,
     user: String,
