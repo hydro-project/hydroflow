@@ -16,6 +16,7 @@ use pyo3_asyncio::TaskLocals;
 use pythonize::pythonize;
 use tokio::sync::oneshot::Sender;
 use tokio::sync::RwLock;
+use std::collections::HashMap;
 
 use crate::core::hydroflow_crate::ports::HydroflowSource;
 
@@ -211,8 +212,8 @@ impl Deployment {
         project: String,
         os_type: String, // linux or windows
         machine_size: String,
-        image: String,
         region: String,
+        image: Option<HashMap<String, String>>,
         user: Option<String>,
     ) -> PyResult<Py<PyAny>> {
         let arc = self.underlying.blocking_write().add_host(|id| {

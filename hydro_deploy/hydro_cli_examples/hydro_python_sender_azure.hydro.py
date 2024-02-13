@@ -17,7 +17,7 @@ async def main(args):
         os_type="linux",
         machine_size="Standard_B1s",
         region="East US",
-        image="",
+        # image is optional
     ) if machine_azure else localhost_machine
 
     sender = deployment.CustomService(
