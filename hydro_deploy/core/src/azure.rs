@@ -328,8 +328,6 @@ impl Host for AzureHost {
                 }),
             );
 
-
-
         resource_batch
             .terraform
             .resource
@@ -430,12 +428,14 @@ impl Host for AzureHost {
                 })
             );
 
-
         let user = self.user.as_ref().cloned().unwrap_or("hydro".to_string());
         let os_type = format!("azurerm_{}_virtual_machine", self.os_type.clone());
         let image = self.image.as_ref().cloned().unwrap_or(HashMap::from([
             ("publisher".to_string(), "Canonical".to_string()),
-            ("offer".to_string(), "0001-com-ubuntu-server-jammy".to_string()),
+            (
+                "offer".to_string(),
+                "0001-com-ubuntu-server-jammy".to_string(),
+            ),
             ("sku".to_string(), "22_04-lts".to_string()),
             ("version".to_string(), "latest".to_string()),
         ]));
