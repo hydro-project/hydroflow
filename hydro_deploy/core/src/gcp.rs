@@ -1,142 +1,19 @@
 use std::collections::HashMap;
-use std::net::SocketAddr;
-use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Duration;
 
-use anyhow::{Context, Result};
-use async_ssh2_lite::{AsyncSession, SessionConfiguration};
+use anyhow::Result;
 use async_trait::async_trait;
-use hydroflow_cli_integration::ServerBindConfig;
 use nanoid::nanoid;
 use serde_json::json;
-use tokio::net::TcpStream;
 use tokio::sync::RwLock;
 
-use super::progress::ProgressTracker;
-use super::ssh::LaunchedSSHHost;
 use super::terraform::{TerraformOutput, TerraformProvider, TERRAFORM_ALPHABET};
-use super::util::async_retry;
 use super::{
     ClientStrategy, Host, HostTargetType, LaunchedHost, ResourceBatch, ResourceResult,
     ServerStrategy,
 };
 
-// #[derive(Debug)]
-pub struct LaunchedComputeEngine {
-    resource_result: Arc<ResourceResult>,
-    user: String,
-    pub internal_ip: String,
-    pub external_ip: Option<String>,
-}
-
-impl LaunchedComputeEngine {
-    pub fn ssh_key_path(&self) -> PathBuf {
-        self.resource_result
-            .terraform
-            .deployment_folder
-            .as_ref()
-            .unwrap()
-            .path()
-            .join(".ssh")
-            .join("vm_instance_ssh_key_pem")
-    }
-}
-
-#[async_trait]
-impl LaunchedSSHHost for LaunchedComputeEngine {
-    fn server_config(&self, bind_type: &ServerStrategy) -> ServerBindConfig {
-        match bind_type {
-            ServerStrategy::UnixSocket => ServerBindConfig::UnixSocket,
-            ServerStrategy::InternalTcpPort => ServerBindConfig::TcpPort(self.internal_ip.clone()),
-            ServerStrategy::ExternalTcpPort(_) => todo!(),
-            ServerStrategy::Demux(demux) => {
-                let mut config_map = HashMap::new();
-                for (key, underlying) in demux {
-                    config_map.insert(*key, LaunchedSSHHost::server_config(self, underlying));
-                }
-
-                ServerBindConfig::Demux(config_map)
-            }
-            ServerStrategy::Merge(merge) => {
-                let mut configs = vec![];
-                for underlying in merge {
-                    configs.push(LaunchedSSHHost::server_config(self, underlying));
-                }
-
-                ServerBindConfig::Merge(configs)
-            }
-            ServerStrategy::Tagged(underlying, id) => ServerBindConfig::Tagged(
-                Box::new(LaunchedSSHHost::server_config(self, underlying)),
-                *id,
-            ),
-            ServerStrategy::Null => ServerBindConfig::Null,
-        }
-    }
-
-    fn resource_result(&self) -> &Arc<ResourceResult> {
-        &self.resource_result
-    }
-
-    fn ssh_user(&self) -> &str {
-        self.user.as_str()
-    }
-
-    async fn open_ssh_session(&self) -> Result<AsyncSession<TcpStream>> {
-        let target_addr = SocketAddr::new(
-            self.external_ip
-                .as_ref()
-                .context("GCP host must be configured with an external IP to launch binaries")?
-                .parse()
-                .unwrap(),
-            22,
-        );
-
-        let mut attempt_count = 0;
-
-        let res = async_retry(
-            || {
-                attempt_count += 1;
-                ProgressTracker::leaf(
-                    format!(
-                        "connecting to host @ {} (attempt: {})",
-                        self.external_ip.as_ref().unwrap(),
-                        attempt_count
-                    ),
-                    async {
-                        let mut config = SessionConfiguration::new();
-                        config.set_compress(true);
-
-                        tokio::time::timeout(Duration::from_secs(15), async move {
-                            let mut session =
-                                AsyncSession::<TcpStream>::connect(target_addr, Some(config))
-                                    .await?;
-
-                            session.handshake().await?;
-
-                            session
-                                .userauth_pubkey_file(
-                                    self.user.as_str(),
-                                    None,
-                                    self.ssh_key_path().as_path(),
-                                    None,
-                                )
-                                .await?;
-
-                            Ok(session)
-                        })
-                        .await?
-                    },
-                )
-            },
-            10,
-            Duration::from_secs(1),
-        )
-        .await?;
-
-        Ok(res)
-    }
-}
+use super::LaunchedVirtualMachine;
 
 #[derive(Debug)]
 pub struct GCPNetwork {
@@ -270,7 +147,7 @@ pub struct GCPComputeEngineHost {
     pub region: String,
     pub network: Arc<RwLock<GCPNetwork>>,
     pub user: Option<String>,
-    pub launched: Option<Arc<LaunchedComputeEngine>>,
+    pub launched: Option<Arc<LaunchedVirtualMachine>>,
     external_ports: Vec<u16>,
 }
 
@@ -546,7 +423,8 @@ impl Host for GCPComputeEngineHost {
                 .get(&format!("vm-instance-{id}-public-ip"))
                 .map(|v| v.value.clone());
 
-            self.launched = Some(Arc::new(LaunchedComputeEngine {
+            self.launched = Some(Arc::new(LaunchedVirtualMachine {
+                cloud_provider: "gcp".to_string(),
                 resource_result: resource_result.clone(),
                 user: self.user.as_ref().cloned().unwrap_or("hydro".to_string()),
                 internal_ip,
