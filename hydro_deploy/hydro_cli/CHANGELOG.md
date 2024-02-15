@@ -5,6 +5,96 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.1 (2024-02-02)
+
+<csr-id-ba6afab8416ad66eee4fdb9d0c73e62d45752617/>
+<csr-id-1b555e57c8c812bed4d6495d2960cbf77fb0b3ef/>
+<csr-id-69e04167f4774cf1ca3351e7ac34d15cfa83362b/>
+
+### Chore
+
+ - <csr-id-ba6afab8416ad66eee4fdb9d0c73e62d45752617/> fix clippy lints on latest nightly
+
+### Bug Fixes
+
+ - <csr-id-1ae27de6aafb72cee5da0cce6cf52748161d0f33/> don't vendor openssl and fix docker build
+
+### Chore
+
+ - <csr-id-1b555e57c8c812bed4d6495d2960cbf77fb0b3ef/> manually set lockstep-versioned crates (and `lattices`) to version `0.5.1`
+   Setting manually since
+   https://github.com/frewsxcv/rust-crates-index/issues/159 is messing with
+   smart-release
+ - <csr-id-69e04167f4774cf1ca3351e7ac34d15cfa83362b/> generate pre-move changelogs for `hydro_cli` and `hydroflow_cli_integration`
+
+### New Features
+
+ - <csr-id-174607d12277d7544d0f42890c9a5da2ff184df4/> support building graphs for symmetric clusters in Hydroflow+
+ - <csr-id-9e275824c88b24d060a7de5822e1359959b36b03/> auto-configure Hydro Deploy based on Hydroflow+ plans
+ - <csr-id-7e46da04de306b42c454cd4c29d1cbc677827740/> perf improvements and better deploy logic
+ - <csr-id-d8ca3d47c6ebd9268c61c6066eba23acfc3e1b26/> implement core fault tolerance protocol
+ - <csr-id-6158a7aae2ef9b58245c23fc668715a3fb2ff7dc/> new implementation and Hydro Deploy setup
+   --
+ - <csr-id-53d7aee8dcc574d47864ec89bfea30a82eab0ee7/> improve Rust API for defining services
+ - <csr-id-c50ca121b6d5e30dc07843f82caa135b68626301/> split Rust core from Python bindings
+
+### Pre-Move Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 6 commits contributed to the release over the course of 42 calendar days.
+ - 70 days passed between releases.
+ - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 6 unique issues were worked on: [#909](https://github.com/hydro-project/hydroflow/issues/909), [#910](https://github.com/hydro-project/hydroflow/issues/910), [#914](https://github.com/hydro-project/hydroflow/issues/914), [#960](https://github.com/hydro-project/hydroflow/issues/960), [#982](https://github.com/hydro-project/hydroflow/issues/982), [#984](https://github.com/hydro-project/hydroflow/issues/984)
+
+### Pre-Move Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#909](https://github.com/hydro-project/hydroflow/issues/909)**
+    - New implementation and Hydro Deploy setup ([`6158a7a`](https://github.com/hydro-project/hydroflow/commit/6158a7aae2ef9b58245c23fc668715a3fb2ff7dc))
+ * **[#910](https://github.com/hydro-project/hydroflow/issues/910)**
+    - Implement core fault tolerance protocol ([`d8ca3d4`](https://github.com/hydro-project/hydroflow/commit/d8ca3d47c6ebd9268c61c6066eba23acfc3e1b26))
+ * **[#914](https://github.com/hydro-project/hydroflow/issues/914)**
+    - Perf improvements and better deploy logic ([`7e46da0`](https://github.com/hydro-project/hydroflow/commit/7e46da04de306b42c454cd4c29d1cbc677827740))
+ * **[#960](https://github.com/hydro-project/hydroflow/issues/960)**
+    - Fix clippy lints on latest nightly ([`ba6afab`](https://github.com/hydro-project/hydroflow/commit/ba6afab8416ad66eee4fdb9d0c73e62d45752617))
+ * **[#982](https://github.com/hydro-project/hydroflow/issues/982)**
+    - Auto-configure Hydro Deploy based on Hydroflow+ plans ([`9e27582`](https://github.com/hydro-project/hydroflow/commit/9e275824c88b24d060a7de5822e1359959b36b03))
+ * **[#984](https://github.com/hydro-project/hydroflow/issues/984)**
+    - Support building graphs for symmetric clusters in Hydroflow+ ([`174607d`](https://github.com/hydro-project/hydroflow/commit/174607d12277d7544d0f42890c9a5da2ff184df4))
+</details>
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 6 commits contributed to the release over the course of 43 calendar days.
+ - 114 days passed between releases.
+ - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 4 unique issues were worked on: [#1046](https://github.com/hydro-project/hydroflow/issues/1046), [#986](https://github.com/hydro-project/hydroflow/issues/986), [#987](https://github.com/hydro-project/hydroflow/issues/987), [#994](https://github.com/hydro-project/hydroflow/issues/994)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1046](https://github.com/hydro-project/hydroflow/issues/1046)**
+    - Generate pre-move changelogs for `hydro_cli` and `hydroflow_cli_integration` ([`69e0416`](https://github.com/hydro-project/hydroflow/commit/69e04167f4774cf1ca3351e7ac34d15cfa83362b))
+ * **[#986](https://github.com/hydro-project/hydroflow/issues/986)**
+    - Split Rust core from Python bindings ([`c50ca12`](https://github.com/hydro-project/hydroflow/commit/c50ca121b6d5e30dc07843f82caa135b68626301))
+ * **[#987](https://github.com/hydro-project/hydroflow/issues/987)**
+    - Improve Rust API for defining services ([`53d7aee`](https://github.com/hydro-project/hydroflow/commit/53d7aee8dcc574d47864ec89bfea30a82eab0ee7))
+ * **[#994](https://github.com/hydro-project/hydroflow/issues/994)**
+    - Don't vendor openssl and fix docker build ([`1ae27de`](https://github.com/hydro-project/hydroflow/commit/1ae27de6aafb72cee5da0cce6cf52748161d0f33))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.5.1, hydroflow_lang v0.5.1, hydroflow_datalog_core v0.5.1, hydroflow_datalog v0.5.1, hydroflow_macro v0.5.1, lattices v0.5.1, variadics v0.0.3, pusherator v0.0.4, hydroflow v0.5.1, stageleft_macro v0.1.0, stageleft v0.1.0, hydroflow_plus v0.5.1, hydro_deploy v0.5.1, hydro_cli v0.5.1 ([`478aebc`](https://github.com/hydro-project/hydroflow/commit/478aebc8fee2aa78eab86bd386322db1c70bde6a))
+    - Manually set lockstep-versioned crates (and `lattices`) to version `0.5.1` ([`1b555e5`](https://github.com/hydro-project/hydroflow/commit/1b555e57c8c812bed4d6495d2960cbf77fb0b3ef))
+</details>
+
 ## 0.5.0 (2023-10-11)
 
 <csr-id-2b95a6d08c993760adaf79b945fdd0fbbdc8ecf2/>
@@ -18,16 +108,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-5d77694b6a3603381ae4217eb7aba8e00ee8d1e5/> better error message when using wrong port types
  - <csr-id-a927dc6afbe3178815b7c7c58ed2838d42d80334/> clippy warning on multiline string in hydro_cli, py_udf
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release over the course of 41 calendar days.
+ - 5 commits contributed to the release over the course of 41 calendar days.
  - 56 days passed between releases.
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#931](https://github.com/hydro-project/hydroflow/issues/931)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -36,6 +126,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#931](https://github.com/hydro-project/hydroflow/issues/931)**
     - Better error message when using wrong port types ([`5d77694`](https://github.com/hydro-project/hydroflow/commit/5d77694b6a3603381ae4217eb7aba8e00ee8d1e5))
  * **Uncategorized**
+    - Release hydroflow_macro v0.5.0, lattices v0.5.0, hydroflow v0.5.0, hydro_cli v0.5.0 ([`12697c2`](https://github.com/hydro-project/hydroflow/commit/12697c2f19bd96802591fa63a5b6b12104ecfe0d))
     - Release hydroflow_lang v0.5.0, hydroflow_datalog_core v0.5.0, hydroflow_datalog v0.5.0, hydroflow_macro v0.5.0, lattices v0.5.0, hydroflow v0.5.0, hydro_cli v0.5.0, safety bump 4 crates ([`2e2d8b3`](https://github.com/hydro-project/hydroflow/commit/2e2d8b386fb086c8276a2853d2a1f96ad4d7c221))
     - Clippy warning on multiline string in hydro_cli, py_udf ([`a927dc6`](https://github.com/hydro-project/hydroflow/commit/a927dc6afbe3178815b7c7c58ed2838d42d80334))
     - Add `clippy::needless_pass_by_ref_mut` false-positive workaround ([`2b95a6d`](https://github.com/hydro-project/hydroflow/commit/2b95a6d08c993760adaf79b945fdd0fbbdc8ecf2))
@@ -49,7 +140,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  - <csr-id-949db02e9fa9878e1a7176c180d6f44c5cddf052/> fix lints for latest nightly
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -58,7 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#844](https://github.com/hydro-project/hydroflow/issues/844)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -80,7 +171,7 @@ Unchanged from previous release.
 
  - <csr-id-4c2cf81411835529b5d7daa35717834e46e28b9b/> mark hydro_cli as unchanged for 0.3 release
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -89,7 +180,7 @@ Unchanged from previous release.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -112,7 +203,7 @@ Unchanged from previous release.
 
  - <csr-id-8b2c9f09b1f423ac6d562c29d4ea587578f1c98a/> Add more detailed Hydro Deploy docs and rename `ConnectedBidi` => `ConnectedDirect`
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -121,7 +212,7 @@ Unchanged from previous release.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#723](https://github.com/hydro-project/hydroflow/issues/723)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 
@@ -187,7 +278,7 @@ Unchanged from previous release.
  - <csr-id-20a1b2c0cd04a8b495a02ce345db3d48a99ea0e9/> rustfmt group imports
  - <csr-id-1eda91a2ef8794711ef037240f15284e8085d863/> rustfmt prescribe flat-module `use` format
 
-### Commit Statistics
+### Pre-Move Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
@@ -195,7 +286,7 @@ Unchanged from previous release.
  - 12 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 63 unique issues were worked on: [#390](https://github.com/hydro-project/hydroflow/issues/390), [#397](https://github.com/hydro-project/hydroflow/issues/397), [#410](https://github.com/hydro-project/hydroflow/issues/410), [#411](https://github.com/hydro-project/hydroflow/issues/411), [#417](https://github.com/hydro-project/hydroflow/issues/417), [#420](https://github.com/hydro-project/hydroflow/issues/420), [#433](https://github.com/hydro-project/hydroflow/issues/433), [#436](https://github.com/hydro-project/hydroflow/issues/436), [#437](https://github.com/hydro-project/hydroflow/issues/437), [#445](https://github.com/hydro-project/hydroflow/issues/445), [#446](https://github.com/hydro-project/hydroflow/issues/446), [#451](https://github.com/hydro-project/hydroflow/issues/451), [#452](https://github.com/hydro-project/hydroflow/issues/452), [#460](https://github.com/hydro-project/hydroflow/issues/460), [#461](https://github.com/hydro-project/hydroflow/issues/461), [#462](https://github.com/hydro-project/hydroflow/issues/462), [#466](https://github.com/hydro-project/hydroflow/issues/466), [#473](https://github.com/hydro-project/hydroflow/issues/473), [#474](https://github.com/hydro-project/hydroflow/issues/474), [#477](https://github.com/hydro-project/hydroflow/issues/477), [#479](https://github.com/hydro-project/hydroflow/issues/479), [#481](https://github.com/hydro-project/hydroflow/issues/481), [#484](https://github.com/hydro-project/hydroflow/issues/484), [#492](https://github.com/hydro-project/hydroflow/issues/492), [#494](https://github.com/hydro-project/hydroflow/issues/494), [#498](https://github.com/hydro-project/hydroflow/issues/498), [#503](https://github.com/hydro-project/hydroflow/issues/503), [#513](https://github.com/hydro-project/hydroflow/issues/513), [#515](https://github.com/hydro-project/hydroflow/issues/515), [#525](https://github.com/hydro-project/hydroflow/issues/525), [#527](https://github.com/hydro-project/hydroflow/issues/527), [#531](https://github.com/hydro-project/hydroflow/issues/531), [#532](https://github.com/hydro-project/hydroflow/issues/532), [#533](https://github.com/hydro-project/hydroflow/issues/533), [#534](https://github.com/hydro-project/hydroflow/issues/534), [#535](https://github.com/hydro-project/hydroflow/issues/535), [#537](https://github.com/hydro-project/hydroflow/issues/537), [#542](https://github.com/hydro-project/hydroflow/issues/542), [#557](https://github.com/hydro-project/hydroflow/issues/557), [#560](https://github.com/hydro-project/hydroflow/issues/560), [#576](https://github.com/hydro-project/hydroflow/issues/576), [#582](https://github.com/hydro-project/hydroflow/issues/582), [#586](https://github.com/hydro-project/hydroflow/issues/586), [#596](https://github.com/hydro-project/hydroflow/issues/596), [#600](https://github.com/hydro-project/hydroflow/issues/600), [#612](https://github.com/hydro-project/hydroflow/issues/612), [#617](https://github.com/hydro-project/hydroflow/issues/617), [#620](https://github.com/hydro-project/hydroflow/issues/620), [#626](https://github.com/hydro-project/hydroflow/issues/626), [#627](https://github.com/hydro-project/hydroflow/issues/627), [#628](https://github.com/hydro-project/hydroflow/issues/628), [#631](https://github.com/hydro-project/hydroflow/issues/631), [#647](https://github.com/hydro-project/hydroflow/issues/647), [#656](https://github.com/hydro-project/hydroflow/issues/656), [#660](https://github.com/hydro-project/hydroflow/issues/660), [#679](https://github.com/hydro-project/hydroflow/issues/679), [#681](https://github.com/hydro-project/hydroflow/issues/681), [#684](https://github.com/hydro-project/hydroflow/issues/684), [#694](https://github.com/hydro-project/hydroflow/issues/694), [#699](https://github.com/hydro-project/hydroflow/issues/699), [#708](https://github.com/hydro-project/hydroflow/issues/708), [#712](https://github.com/hydro-project/hydroflow/issues/712), [#715](https://github.com/hydro-project/hydroflow/issues/715)
 
-### Commit Details
+### Pre-Move Commit Details
 
 <csr-read-only-do-not-edit/>
 

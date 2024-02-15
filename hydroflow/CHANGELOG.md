@@ -5,6 +5,189 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.2 (2024-02-02)
+
+### Documentation
+
+ - <csr-id-fe2b4a7a865c32849582b27f8866f77af3637cf0/> add explanation for outputing synchronously from Hydroflow, fix #342
+
+### New Features
+
+ - <csr-id-5cbce2bac61130e3aefc7e73a9bc9080bd2b5a32/> add `StateHandleErased` (no type param) for storage in data structures, fix #1048
+
+### Bug Fixes
+
+ - <csr-id-a572dee118fb9d014954a18d560413a6c6fc5deb/> fix coloring of `_lattice_join_fused_join`, fix #943
+ - <csr-id-175cc20e15b90627ae86d488e31ec91278c8beeb/> ensure other graph methods handle edge types
+   (#929)
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release over the course of 2 calendar days.
+ - 4 days passed between releases.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 4 unique issues were worked on: [#1041](https://github.com/hydro-project/hydroflow/issues/1041), [#1051](https://github.com/hydro-project/hydroflow/issues/1051), [#1054](https://github.com/hydro-project/hydroflow/issues/1054), [#1055](https://github.com/hydro-project/hydroflow/issues/1055)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1041](https://github.com/hydro-project/hydroflow/issues/1041)**
+    - Ensure other graph methods handle edge types ([`175cc20`](https://github.com/hydro-project/hydroflow/commit/175cc20e15b90627ae86d488e31ec91278c8beeb))
+ * **[#1051](https://github.com/hydro-project/hydroflow/issues/1051)**
+    - Add explanation for outputing synchronously from Hydroflow, fix #342 ([`fe2b4a7`](https://github.com/hydro-project/hydroflow/commit/fe2b4a7a865c32849582b27f8866f77af3637cf0))
+ * **[#1054](https://github.com/hydro-project/hydroflow/issues/1054)**
+    - Add `StateHandleErased` (no type param) for storage in data structures, fix #1048 ([`5cbce2b`](https://github.com/hydro-project/hydroflow/commit/5cbce2bac61130e3aefc7e73a9bc9080bd2b5a32))
+ * **[#1055](https://github.com/hydro-project/hydroflow/issues/1055)**
+    - Fix coloring of `_lattice_join_fused_join`, fix #943 ([`a572dee`](https://github.com/hydro-project/hydroflow/commit/a572dee118fb9d014954a18d560413a6c6fc5deb))
+</details>
+
+## 0.5.1 (2024-01-29)
+
+<csr-id-1b555e57c8c812bed4d6495d2960cbf77fb0b3ef/>
+<csr-id-ba6afab8416ad66eee4fdb9d0c73e62d45752617/>
+<csr-id-f6a729925ddeb6063fa8c4b03d6621c1c35f0cc8/>
+<csr-id-6bf846f9ce72688fccd9947cf263f8c0ebba4f3a/>
+<csr-id-26818be2ec47f936db9de770e935ab98ee26392b/>
+<csr-id-7e65a08711775656e435e854777c5f089dd31a05/>
+<csr-id-7e1eae6b708ef89c833cd2d2c2e5112c2bd84395/>
+
+### Chore
+
+ - <csr-id-1b555e57c8c812bed4d6495d2960cbf77fb0b3ef/> manually set lockstep-versioned crates (and `lattices`) to version `0.5.1`
+   Setting manually since
+   https://github.com/frewsxcv/rust-crates-index/issues/159 is messing with
+   smart-release
+ - <csr-id-ba6afab8416ad66eee4fdb9d0c73e62d45752617/> fix clippy lints on latest nightly
+ - <csr-id-f6a729925ddeb6063fa8c4b03d6621c1c35f0cc8/> fix `clippy::items_after_test_module`, simplify rustdoc links
+ - <csr-id-6bf846f9ce72688fccd9947cf263f8c0ebba4f3a/> update trybuild output for nightly bump
+
+### New Features
+
+ - <csr-id-5a03ed41548b5766b945efbd1eedb0dfceb714d9/> add core negation operators
+ - <csr-id-1edc5ae5b5f70e1390183e8c8eb27eb0ab32196d/> provide simpler API for launching and minimize dependencies
+ - <csr-id-46d87fa364d3fe01422cf3c404fbc8a1d5e9fb88/> pass subgraph ID through deploy metadata
+ - <csr-id-c50ca121b6d5e30dc07843f82caa135b68626301/> split Rust core from Python bindings
+ - <csr-id-174607d12277d7544d0f42890c9a5da2ff184df4/> support building graphs for symmetric clusters in Hydroflow+
+ - <csr-id-e5bdd12e32d6ea72fd91a55c12e09f07a0edaa5c/> add initial test using Hydro CLI from Hydroflow+
+   This also required a change to Hydroflow core to make it possible to run the dataflow itself on a single thread (using a LocalSet), even if the surrounding runtime is not single-threaded (required to work around deadlocks because we can't use async APIs inside Hydroflow+). This requires us to spawn any Hydroflow tasks (only for `dest_sink` at the moment) right next to when we run the dataflow rather than when the Hydroflow graph is initialized. From a conceptual perspective, this seems _more right_, since now creating a Hydroflow program will not result in any actual tasks running.
+   
+   In the third PR of this series, I aim to add a new Hydroflow+ operator that will automate the setup of a `dest_sink`/`source_stream` pair that span nodes.
+ - <csr-id-6158a7aae2ef9b58245c23fc668715a3fb2ff7dc/> new implementation and Hydro Deploy setup
+   --
+ - <csr-id-8b635683e5ac3c4ed2d896ae88e2953db1c6312c/> add a functional surface syntax using staging
+ - <csr-id-f327b02c8001129e619fb253ab9b6d550e229a48/> add left,right,outer join module examples
+ - <csr-id-7df0a0df61597764eed763b68138929fed1413ac/> add defer() which is the same as defer_tick() except that it is lazy
+ - <csr-id-6158a7aae2ef9b58245c23fc668715a3fb2ff7dc/> new implementation and Hydro Deploy setup
+   --
+
+### Bug Fixes
+
+<csr-id-45452ae7f984b6677a430fca7d7fad9478998495/>
+<csr-id-01dec519d9be015b68a965c33926dd8bf9eae185/>
+<csr-id-f0a03786b47d590477f8169bb0a40fd4981fef9e/>
+<csr-id-bc35a5a5e05ccc3990bb3c430129f0a735bc8c0a/>
+<csr-id-0539e2a91eb3ba71ed1c9fbe8d0c74b6344ad1bf/>
+<csr-id-43280cb698cf6bc070483365ee272106c271dca4/>
+<csr-id-35b1e9e83f2a0cfa171b4994a2cffb0d22706abf/>
+
+ - <csr-id-5ed9be478daf4fef91c6d35893f68944da8eac94/> lattice ops are monotone and return stream of lattices
+   * fix: lattice ops are monotone and return stream of lattices
+* fix: remove trailing whitespace
+* fix: remove warnings from unused tees in topolotree
+* fix: avoid error message in test
+* fix: set `flow_prop_fn` properly in `_lattice_fold_batch.rs`
+* fix: test_lattice_join_fused_join_map_union now checks assertions
+
+### Refactor
+
+ - <csr-id-26818be2ec47f936db9de770e935ab98ee26392b/> Update `surface_lattice_join` tests to use `DeepReveal`
+ - <csr-id-7e65a08711775656e435e854777c5f089dd31a05/> Improvements prepping for release
+   - Adds the "spread"/"splat" `...` syntax to the three variadics macros.
+   - Adds `#[sealed]` traits.
+   - Adds testing of error messages.
+   - Improves docs: `README.md` and Rust docs.
+ - <csr-id-7e1eae6b708ef89c833cd2d2c2e5112c2bd84395/> remove intrinsics from KVS bench, fixes warning
+
+### Bug Fixes (BREAKING)
+
+ - <csr-id-3136e0f286f87e944e7f718d926fd7670b44194b/> fold takes initial value by closure rather than by value
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 27 commits contributed to the release over the course of 109 calendar days.
+ - 110 days passed between releases.
+ - 26 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 23 unique issues were worked on: [#1003](https://github.com/hydro-project/hydroflow/issues/1003), [#1005](https://github.com/hydro-project/hydroflow/issues/1005), [#1024](https://github.com/hydro-project/hydroflow/issues/1024), [#1025](https://github.com/hydro-project/hydroflow/issues/1025), [#1026](https://github.com/hydro-project/hydroflow/issues/1026), [#1032](https://github.com/hydro-project/hydroflow/issues/1032), [#1036](https://github.com/hydro-project/hydroflow/issues/1036), [#899](https://github.com/hydro-project/hydroflow/issues/899), [#909](https://github.com/hydro-project/hydroflow/issues/909), [#942](https://github.com/hydro-project/hydroflow/issues/942), [#945](https://github.com/hydro-project/hydroflow/issues/945), [#948](https://github.com/hydro-project/hydroflow/issues/948), [#950](https://github.com/hydro-project/hydroflow/issues/950), [#959](https://github.com/hydro-project/hydroflow/issues/959), [#960](https://github.com/hydro-project/hydroflow/issues/960), [#967](https://github.com/hydro-project/hydroflow/issues/967), [#971](https://github.com/hydro-project/hydroflow/issues/971), [#974](https://github.com/hydro-project/hydroflow/issues/974), [#978](https://github.com/hydro-project/hydroflow/issues/978), [#979](https://github.com/hydro-project/hydroflow/issues/979), [#984](https://github.com/hydro-project/hydroflow/issues/984), [#986](https://github.com/hydro-project/hydroflow/issues/986), [#996](https://github.com/hydro-project/hydroflow/issues/996)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1003](https://github.com/hydro-project/hydroflow/issues/1003)**
+    - Provide simpler API for launching and minimize dependencies ([`1edc5ae`](https://github.com/hydro-project/hydroflow/commit/1edc5ae5b5f70e1390183e8c8eb27eb0ab32196d))
+ * **[#1005](https://github.com/hydro-project/hydroflow/issues/1005)**
+    - Improve type inference for fold accumulators ([`f0a0378`](https://github.com/hydro-project/hydroflow/commit/f0a03786b47d590477f8169bb0a40fd4981fef9e))
+ * **[#1024](https://github.com/hydro-project/hydroflow/issues/1024)**
+    - Remove stale instructions about python driver for chat ([`01dec51`](https://github.com/hydro-project/hydroflow/commit/01dec519d9be015b68a965c33926dd8bf9eae185))
+ * **[#1025](https://github.com/hydro-project/hydroflow/issues/1025)**
+    - Re-export `hydroflow_macro::DemuxEnum` derive macro ([`45452ae`](https://github.com/hydro-project/hydroflow/commit/45452ae7f984b6677a430fca7d7fad9478998495))
+ * **[#1026](https://github.com/hydro-project/hydroflow/issues/1026)**
+    - Lattice ops are monotone and return stream of lattices ([`5ed9be4`](https://github.com/hydro-project/hydroflow/commit/5ed9be478daf4fef91c6d35893f68944da8eac94))
+ * **[#1032](https://github.com/hydro-project/hydroflow/issues/1032)**
+    - Update `surface_lattice_join` tests to use `DeepReveal` ([`26818be`](https://github.com/hydro-project/hydroflow/commit/26818be2ec47f936db9de770e935ab98ee26392b))
+ * **[#1036](https://github.com/hydro-project/hydroflow/issues/1036)**
+    - Add core negation operators ([`5a03ed4`](https://github.com/hydro-project/hydroflow/commit/5a03ed41548b5766b945efbd1eedb0dfceb714d9))
+ * **[#899](https://github.com/hydro-project/hydroflow/issues/899)**
+    - Add a functional surface syntax using staging ([`8b63568`](https://github.com/hydro-project/hydroflow/commit/8b635683e5ac3c4ed2d896ae88e2953db1c6312c))
+ * **[#909](https://github.com/hydro-project/hydroflow/issues/909)**
+    - New implementation and Hydro Deploy setup ([`6158a7a`](https://github.com/hydro-project/hydroflow/commit/6158a7aae2ef9b58245c23fc668715a3fb2ff7dc))
+ * **[#942](https://github.com/hydro-project/hydroflow/issues/942)**
+    - Fix `clippy::items_after_test_module`, simplify rustdoc links ([`f6a7299`](https://github.com/hydro-project/hydroflow/commit/f6a729925ddeb6063fa8c4b03d6621c1c35f0cc8))
+    - Update trybuild output for nightly bump ([`6bf846f`](https://github.com/hydro-project/hydroflow/commit/6bf846f9ce72688fccd9947cf263f8c0ebba4f3a))
+ * **[#945](https://github.com/hydro-project/hydroflow/issues/945)**
+    - Add defer() which is the same as defer_tick() except that it is lazy ([`7df0a0d`](https://github.com/hydro-project/hydroflow/commit/7df0a0df61597764eed763b68138929fed1413ac))
+ * **[#948](https://github.com/hydro-project/hydroflow/issues/948)**
+    - Fold takes initial value by closure rather than by value ([`3136e0f`](https://github.com/hydro-project/hydroflow/commit/3136e0f286f87e944e7f718d926fd7670b44194b))
+ * **[#950](https://github.com/hydro-project/hydroflow/issues/950)**
+    - Avoid panic-ing on degen `null()` ([`35b1e9e`](https://github.com/hydro-project/hydroflow/commit/35b1e9e83f2a0cfa171b4994a2cffb0d22706abf))
+ * **[#959](https://github.com/hydro-project/hydroflow/issues/959)**
+    - `multiset_delta` incorrect `is_first_run_this_tick` check, fixes #958 ([`43280cb`](https://github.com/hydro-project/hydroflow/commit/43280cb698cf6bc070483365ee272106c271dca4))
+ * **[#960](https://github.com/hydro-project/hydroflow/issues/960)**
+    - Fix clippy lints on latest nightly ([`ba6afab`](https://github.com/hydro-project/hydroflow/commit/ba6afab8416ad66eee4fdb9d0c73e62d45752617))
+ * **[#967](https://github.com/hydro-project/hydroflow/issues/967)**
+    - Chat and two_pc no longer replay ([`0539e2a`](https://github.com/hydro-project/hydroflow/commit/0539e2a91eb3ba71ed1c9fbe8d0c74b6344ad1bf))
+ * **[#971](https://github.com/hydro-project/hydroflow/issues/971)**
+    - Add 100ms wait to chat example to avoid dropped packet ([`bc35a5a`](https://github.com/hydro-project/hydroflow/commit/bc35a5a5e05ccc3990bb3c430129f0a735bc8c0a))
+ * **[#974](https://github.com/hydro-project/hydroflow/issues/974)**
+    - Improvements prepping for release ([`7e65a08`](https://github.com/hydro-project/hydroflow/commit/7e65a08711775656e435e854777c5f089dd31a05))
+ * **[#978](https://github.com/hydro-project/hydroflow/issues/978)**
+    - Add initial test using Hydro CLI from Hydroflow+ ([`e5bdd12`](https://github.com/hydro-project/hydroflow/commit/e5bdd12e32d6ea72fd91a55c12e09f07a0edaa5c))
+ * **[#979](https://github.com/hydro-project/hydroflow/issues/979)**
+    - Remove intrinsics from KVS bench, fixes warning ([`7e1eae6`](https://github.com/hydro-project/hydroflow/commit/7e1eae6b708ef89c833cd2d2c2e5112c2bd84395))
+ * **[#984](https://github.com/hydro-project/hydroflow/issues/984)**
+    - Support building graphs for symmetric clusters in Hydroflow+ ([`174607d`](https://github.com/hydro-project/hydroflow/commit/174607d12277d7544d0f42890c9a5da2ff184df4))
+ * **[#986](https://github.com/hydro-project/hydroflow/issues/986)**
+    - Split Rust core from Python bindings ([`c50ca12`](https://github.com/hydro-project/hydroflow/commit/c50ca121b6d5e30dc07843f82caa135b68626301))
+ * **[#996](https://github.com/hydro-project/hydroflow/issues/996)**
+    - Pass subgraph ID through deploy metadata ([`46d87fa`](https://github.com/hydro-project/hydroflow/commit/46d87fa364d3fe01422cf3c404fbc8a1d5e9fb88))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.5.1, hydroflow_lang v0.5.1, hydroflow_datalog_core v0.5.1, hydroflow_datalog v0.5.1, hydroflow_macro v0.5.1, lattices v0.5.1, variadics v0.0.3, pusherator v0.0.4, hydroflow v0.5.1, stageleft_macro v0.1.0, stageleft v0.1.0, hydroflow_plus v0.5.1, hydro_deploy v0.5.1, hydro_cli v0.5.1 ([`478aebc`](https://github.com/hydro-project/hydroflow/commit/478aebc8fee2aa78eab86bd386322db1c70bde6a))
+    - Manually set lockstep-versioned crates (and `lattices`) to version `0.5.1` ([`1b555e5`](https://github.com/hydro-project/hydroflow/commit/1b555e57c8c812bed4d6495d2960cbf77fb0b3ef))
+    - Add left,right,outer join module examples ([`f327b02`](https://github.com/hydro-project/hydroflow/commit/f327b02c8001129e619fb253ab9b6d550e229a48))
+</details>
+
+<csr-unknown>
+ re-export hydroflow_macro::DemuxEnum derive macro remove stale instructions about python driver for chat improve type inference for fold accumulators add 100ms wait to chat example to avoid dropped packet chat and two_pc no longer replay multiset_delta incorrect is_first_run_this_tick check, fixes #958Introduced in #906Also adds more multiset_delta tests. avoid panic-ing on degen null()<csr-unknown/>
+
 ## 0.5.0 (2023-10-11)
 
 <csr-id-cc15bab782830ac2af23b3ad3139986c8e186303/>
@@ -97,7 +280,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 45 commits contributed to the release over the course of 49 calendar days.
+ - 46 commits contributed to the release over the course of 49 calendar days.
  - 56 days passed between releases.
  - 43 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 19 unique issues were worked on: [#882](https://github.com/hydro-project/hydroflow/issues/882), [#884](https://github.com/hydro-project/hydroflow/issues/884), [#885](https://github.com/hydro-project/hydroflow/issues/885), [#886](https://github.com/hydro-project/hydroflow/issues/886), [#887](https://github.com/hydro-project/hydroflow/issues/887), [#892](https://github.com/hydro-project/hydroflow/issues/892), [#893](https://github.com/hydro-project/hydroflow/issues/893), [#896](https://github.com/hydro-project/hydroflow/issues/896), [#897](https://github.com/hydro-project/hydroflow/issues/897), [#898](https://github.com/hydro-project/hydroflow/issues/898), [#902](https://github.com/hydro-project/hydroflow/issues/902), [#906](https://github.com/hydro-project/hydroflow/issues/906), [#918](https://github.com/hydro-project/hydroflow/issues/918), [#919](https://github.com/hydro-project/hydroflow/issues/919), [#923](https://github.com/hydro-project/hydroflow/issues/923), [#924](https://github.com/hydro-project/hydroflow/issues/924), [#926](https://github.com/hydro-project/hydroflow/issues/926), [#932](https://github.com/hydro-project/hydroflow/issues/932), [#935](https://github.com/hydro-project/hydroflow/issues/935)
@@ -163,6 +346,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Restore in-subgraph rendering of self-handoffs ([`2edf779`](https://github.com/hydro-project/hydroflow/commit/2edf77961ca0218265b35f179c2d86c810795266))
     - Kvs_bench graphwrite ([`e519fb1`](https://github.com/hydro-project/hydroflow/commit/e519fb1518615463eab08935a42a10be2fe180fc))
  * **Uncategorized**
+    - Release hydroflow_macro v0.5.0, lattices v0.5.0, hydroflow v0.5.0, hydro_cli v0.5.0 ([`12697c2`](https://github.com/hydro-project/hydroflow/commit/12697c2f19bd96802591fa63a5b6b12104ecfe0d))
     - Release hydroflow_lang v0.5.0, hydroflow_datalog_core v0.5.0, hydroflow_datalog v0.5.0, hydroflow_macro v0.5.0, lattices v0.5.0, hydroflow v0.5.0, hydro_cli v0.5.0, safety bump 4 crates ([`2e2d8b3`](https://github.com/hydro-project/hydroflow/commit/2e2d8b386fb086c8276a2853d2a1f96ad4d7c221))
     - Clippy warning on multiline string in hydro_cli, py_udf ([`a927dc6`](https://github.com/hydro-project/hydroflow/commit/a927dc6afbe3178815b7c7c58ed2838d42d80334))
     - Update documentation and improve error messages for `demux_enum` operator ([`9646ca0`](https://github.com/hydro-project/hydroflow/commit/9646ca06e61af8c827e2d2fb9826ce62b70b6799))
@@ -175,9 +359,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Make deadlock detector filter out spruious UDP `ConnectionReset`s on Windows ([`e8b027b`](https://github.com/hydro-project/hydroflow/commit/e8b027b67b35820f5710df2239da029b0f7fdc77))
     - Ignore PermissionDenied on already-closed socket on Windows ([`d9a1350`](https://github.com/hydro-project/hydroflow/commit/d9a13509c9e82837b65c4547503293d8146d1f7e))
 </details>
-
-<csr-unknown>
-Behind a new hydroflow/debugging/hydroflow_lang/debugging featuregate. Update documentation and improve error messages for demux_enum operator initial technically working version of demux_enum with very bad error messagesTechnically does not check port names at all, just depends on their order. Implement partition operatorSupports both named ports and numeric indices. add context.is_first_time_subgraph_is_scheduled to simplify replaying operators make lattice_fold and lattice_reduce consistent with fold/reduce add import!() expression Move hydroflow_expect_warnings into library, use in tests/surface_flow_props.rs Implement flow_prop_fn for union() Add Cumul flow_prop_fns for lattice_fold() and lattice_reduce() Update dot/graphviz rendering of delta/cumul and defer_tick edges Make propegate_flow_props fallible, cleanup flow_prop_fn definition. add cast operator Update mermaid rendering of hydroflow graph to show flow properties Add monotonic_fn and morphism macros, update snapshots for flow props. Add source_iter_delta op for testing, basic flow props test, cleanups.<csr-unknown/>
 
 ## 0.4.0 (2023-08-15)
 

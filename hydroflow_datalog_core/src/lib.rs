@@ -270,6 +270,7 @@ pub fn gen_hydroflow_graph(
     }
 
     let (mut flat_graph, _uses, mut diagnostics) = flat_graph_builder.build();
+
     diagnostics.retain(Diagnostic::is_error);
     if !diagnostics.is_empty() {
         return Err(diagnostics);

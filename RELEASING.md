@@ -93,13 +93,34 @@ junk you mistakenly pushed.
 ## Addendum: Adding new crates
 
 When adding a new crate which is published, you need to:
-1. Commit an (empty) file `my_crate/CHANGELOG.md`.
-2. Ensure `publish = true` and other required fields (`license`, `description`, `documentation`,
+1. Ensure `publish = true` and other required fields (`license`, `description`, `documentation`,
    etc.), are set in `my_crate/Cargo.toml`
    https://doc.rust-lang.org/cargo/reference/publishing.html#before-publishing-a-new-crate
-3. Ensure any `path` dependencies to/from `my_crate` also include `version = "^0.1.0"`
+2. Ensure any `path` dependencies to/from `my_crate` also include `version = "^0.1.0"`
    (substitute correct version).
+3. You must commit a new (empty) file `my_crate/CHANGELOG.md` to ensure the file will be tracked
+   by git and pushed by `cargo-smart-release`
+4. If you want your package to be lockstep-versioned alongside hydroflow then make sure to add it
+   to the [command in the `release.yml` workflow](https://github.com/hydro-project/hydroflow/blob/main/.github/workflows/release.yml#L82).
+
 Then just run the release workflow as normal.
+
+## Addendum: Moving crates
+
+`cargo-smart-release` automatically generates changelogs. However it only looks for changes in the
+package's _current_ directory, so if you move a package to a different directory then the changelog
+may lose old commit info if you're not careful.
+
+On the commit immediately _before_ you move the package(s) and run the following:
+```
+cargo changelog --write <crate_to_be_moved> <other_crate_to_be_moved> ...
+```
+Then, before committing the changes, go through the modified `CHANGELOG.md` files and add a prefix
+to the `Commit Statistics` and `Commit Details` headers, for example: `Pre-Move Commit Statistics`/`Pre-Move Commit Details`.
+This is necessary because otherwise `cargo-smart-release` will treat those sections as auto-generated
+and will not preserve them, but then won't regenerate them due to the package moving. Commit the
+updated changelogs and cherry-pick that commit to the latest version if you went back in history.
+The changelogs should now be safely preserved by future releases.
 
 ## Addendum: The GitHub App account
 

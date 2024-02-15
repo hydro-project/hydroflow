@@ -5,7 +5,102 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.2 (2024-02-02)
+
+### Chore
+
+ - <csr-id-d4d786269e44cdf938580b8fb7abf888952eca0e/> update snapshots for
+   (#929)
+
+### Bug Fixes
+
+ - <csr-id-175cc20e15b90627ae86d488e31ec91278c8beeb/> ensure other graph methods handle edge types
+   (#929)
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release over the course of 2 calendar days.
+ - 4 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#1041](https://github.com/hydro-project/hydroflow/issues/1041)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1041](https://github.com/hydro-project/hydroflow/issues/1041)**
+    - Update snapshots for ([`d4d7862`](https://github.com/hydro-project/hydroflow/commit/d4d786269e44cdf938580b8fb7abf888952eca0e))
+    - Ensure other graph methods handle edge types ([`175cc20`](https://github.com/hydro-project/hydroflow/commit/175cc20e15b90627ae86d488e31ec91278c8beeb))
+</details>
+
+## 0.5.1 (2024-01-29)
+
+<csr-id-1b555e57c8c812bed4d6495d2960cbf77fb0b3ef/>
+<csr-id-1a80f1cd57e6f3a5ee806e1bf3b8ad59dcecfff7/>
+
+### Chore
+
+ - <csr-id-1b555e57c8c812bed4d6495d2960cbf77fb0b3ef/> manually set lockstep-versioned crates (and `lattices`) to version `0.5.1`
+   Setting manually since
+   https://github.com/frewsxcv/rust-crates-index/issues/159 is messing with
+   smart-release
+
+### New Features
+
+ - <csr-id-73e9b68ec2f5b2627784addcce9fba684848bb55/> implement keyed fold and reduce
+ - <csr-id-a0af314a032096fc94b9f4aabb21aadc8184fb30/> Add initial structure for by-reference edge types
+ - <csr-id-7df0a0df61597764eed763b68138929fed1413ac/> add defer() which is the same as defer_tick() except that it is lazy
+
+### Bug Fixes
+
+ - <csr-id-38411ea007d4feb30dd16bdd1505802a111a67d1/> fix spelling of "propagate"
+
+### Refactor
+
+ - <csr-id-1a80f1cd57e6f3a5ee806e1bf3b8ad59dcecfff7/> emit prologue code before all subgraph code
+   Before, prologue code would be emitted before its subgraph, resulting in
+   interleaving between subgraphs.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 7 commits contributed to the release over the course of 103 calendar days.
+ - 110 days passed between releases.
+ - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 5 unique issues were worked on: [#1016](https://github.com/hydro-project/hydroflow/issues/1016), [#1023](https://github.com/hydro-project/hydroflow/issues/1023), [#1033](https://github.com/hydro-project/hydroflow/issues/1033), [#945](https://github.com/hydro-project/hydroflow/issues/945), [#989](https://github.com/hydro-project/hydroflow/issues/989)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1016](https://github.com/hydro-project/hydroflow/issues/1016)**
+    - Add initial structure for by-reference edge types ([`a0af314`](https://github.com/hydro-project/hydroflow/commit/a0af314a032096fc94b9f4aabb21aadc8184fb30))
+ * **[#1023](https://github.com/hydro-project/hydroflow/issues/1023)**
+    - Implement keyed fold and reduce ([`73e9b68`](https://github.com/hydro-project/hydroflow/commit/73e9b68ec2f5b2627784addcce9fba684848bb55))
+ * **[#1033](https://github.com/hydro-project/hydroflow/issues/1033)**
+    - Emit prologue code before all subgraph code ([`1a80f1c`](https://github.com/hydro-project/hydroflow/commit/1a80f1cd57e6f3a5ee806e1bf3b8ad59dcecfff7))
+ * **[#945](https://github.com/hydro-project/hydroflow/issues/945)**
+    - Add defer() which is the same as defer_tick() except that it is lazy ([`7df0a0d`](https://github.com/hydro-project/hydroflow/commit/7df0a0df61597764eed763b68138929fed1413ac))
+ * **[#989](https://github.com/hydro-project/hydroflow/issues/989)**
+    - Fix spelling of "propagate" ([`38411ea`](https://github.com/hydro-project/hydroflow/commit/38411ea007d4feb30dd16bdd1505802a111a67d1))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.5.1, hydroflow_lang v0.5.1, hydroflow_datalog_core v0.5.1, hydroflow_datalog v0.5.1, hydroflow_macro v0.5.1, lattices v0.5.1, variadics v0.0.3, pusherator v0.0.4, hydroflow v0.5.1, stageleft_macro v0.1.0, stageleft v0.1.0, hydroflow_plus v0.5.1, hydro_deploy v0.5.1, hydro_cli v0.5.1 ([`478aebc`](https://github.com/hydro-project/hydroflow/commit/478aebc8fee2aa78eab86bd386322db1c70bde6a))
+    - Manually set lockstep-versioned crates (and `lattices`) to version `0.5.1` ([`1b555e5`](https://github.com/hydro-project/hydroflow/commit/1b555e57c8c812bed4d6495d2960cbf77fb0b3ef))
+</details>
+
 ## 0.5.0 (2023-10-11)
+
+<csr-id-f19eccc79d6d7c88de7ba1ef6a0abf1caaef377f/>
+<csr-id-1fb753ea85511ade1a834ec2536f56358ade9858/>
+<csr-id-7c7eea7fddda7ea9526c5af4191520e821c979dc/>
+<csr-id-9144dd96b915e1b807ef14f40d963cdbd47e9078/>
 
 ### Chore
 
@@ -31,7 +126,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 10 commits contributed to the release over the course of 42 calendar days.
+ - 11 commits contributed to the release over the course of 42 calendar days.
  - 56 days passed between releases.
  - 10 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 7 unique issues were worked on: [#882](https://github.com/hydro-project/hydroflow/issues/882), [#893](https://github.com/hydro-project/hydroflow/issues/893), [#896](https://github.com/hydro-project/hydroflow/issues/896), [#898](https://github.com/hydro-project/hydroflow/issues/898), [#906](https://github.com/hydro-project/hydroflow/issues/906), [#924](https://github.com/hydro-project/hydroflow/issues/924), [#926](https://github.com/hydro-project/hydroflow/issues/926)
@@ -58,6 +153,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#926](https://github.com/hydro-project/hydroflow/issues/926)**
     - Update snapshots ([`9144dd9`](https://github.com/hydro-project/hydroflow/commit/9144dd96b915e1b807ef14f40d963cdbd47e9078))
  * **Uncategorized**
+    - Release hydroflow_lang v0.5.0, hydroflow_datalog_core v0.5.0, hydroflow_datalog v0.5.0, hydroflow_macro v0.5.0, lattices v0.5.0, hydroflow v0.5.0, hydro_cli v0.5.0, safety bump 4 crates ([`2e2d8b3`](https://github.com/hydro-project/hydroflow/commit/2e2d8b386fb086c8276a2853d2a1f96ad4d7c221))
     - Bump proc-macro2 min version to 1.0.63 ([`f19eccc`](https://github.com/hydro-project/hydroflow/commit/f19eccc79d6d7c88de7ba1ef6a0abf1caaef377f))
     - Implement `flow_prop_fn` for `union()` ([`1bdbf73`](https://github.com/hydro-project/hydroflow/commit/1bdbf73b630e4f2eff009b00b0e66d71be53bb4a))
 </details>
@@ -121,9 +217,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Release hydroflow_lang v0.4.0, hydroflow_datalog_core v0.4.0, hydroflow_datalog v0.4.0, hydroflow_macro v0.4.0, lattices v0.4.0, pusherator v0.0.3, hydroflow v0.4.0, hydro_cli v0.4.0, safety bump 4 crates ([`cb313f0`](https://github.com/hydro-project/hydroflow/commit/cb313f0635214460a8308d05cbef4bf7f4bfaa15))
     - Fix new clippy lints on latest nightly 1.73.0-nightly (db7ff98a7 2023-07-31) ([`6a2ad6b`](https://github.com/hydro-project/hydroflow/commit/6a2ad6b770c2ccf470548320d8753025b3a66c0a))
 </details>
-
-<csr-unknown>
-Also add multiset data structure, use it in some tests, make join()replay logic more similar to anti_join’s and presist’s. joins now replay correctly rename next_tick -> defer, batch -> defer_signal<csr-unknown/>
 
 ## 0.3.0 (2023-07-04)
 

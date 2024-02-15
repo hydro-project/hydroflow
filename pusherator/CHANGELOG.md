@@ -5,7 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.0.4 (2024-01-29)
+
+### Chore
+
+ - <csr-id-1b555e57c8c812bed4d6495d2960cbf77fb0b3ef/> manually set lockstep-versioned crates (and `lattices`) to version `0.5.1`
+   Setting manually since
+   https://github.com/frewsxcv/rust-crates-index/issues/159 is messing with
+   smart-release
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 1 commit contributed to the release.
+ - 167 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Manually set lockstep-versioned crates (and `lattices`) to version `0.5.1` ([`1b555e5`](https://github.com/hydro-project/hydroflow/commit/1b555e57c8c812bed4d6495d2960cbf77fb0b3ef))
+</details>
+
 ## 0.0.3 (2023-08-15)
+
+<csr-id-f60053f70da3071c54de4a0eabb059a143aa2ccc/>
 
 ### Chore
 
@@ -20,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release over the course of 39 calendar days.
+ - 3 commits contributed to the release over the course of 39 calendar days.
  - 42 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#822](https://github.com/hydro-project/hydroflow/issues/822), [#835](https://github.com/hydro-project/hydroflow/issues/835)
@@ -35,6 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Fix lint, format errors for latest nightly version (without updated pinned) ([`f60053f`](https://github.com/hydro-project/hydroflow/commit/f60053f70da3071c54de4a0eabb059a143aa2ccc))
  * **[#835](https://github.com/hydro-project/hydroflow/issues/835)**
     - Rename assert => assert_eq, add assert, change underlying implementation to work across ticks ([`8f306e2`](https://github.com/hydro-project/hydroflow/commit/8f306e2a36582e168417808099eedf8a9de3b419))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.4.0, hydroflow_datalog_core v0.4.0, hydroflow_datalog v0.4.0, hydroflow_macro v0.4.0, lattices v0.4.0, pusherator v0.0.3, hydroflow v0.4.0, hydro_cli v0.4.0, safety bump 4 crates ([`cb313f0`](https://github.com/hydro-project/hydroflow/commit/cb313f0635214460a8308d05cbef4bf7f4bfaa15))
 </details>
 
 ## 0.0.2 (2023-07-04)

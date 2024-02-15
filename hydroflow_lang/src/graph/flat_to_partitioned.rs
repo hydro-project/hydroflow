@@ -8,9 +8,7 @@ use syn::parse_quote;
 
 use super::hydroflow_graph::HydroflowGraph;
 use super::ops::{find_node_op_constraints, DelayType};
-use super::{
-    graph_algorithms, node_color, Color, GraphEdgeId, GraphNode, GraphNodeId, GraphSubgraphId,
-};
+use super::{graph_algorithms, Color, GraphEdgeId, GraphNode, GraphNodeId, GraphSubgraphId};
 use crate::diagnostic::{Diagnostic, Level};
 use crate::union_find::UnionFind;
 
@@ -37,29 +35,20 @@ fn find_subgraph_unionfind(
     // TODO(mingwei)? This does NOT consider `DelayType` barriers (which generally imply `Pull`),
     // which makes it inconsistant with the final output in `as_code()`. But this doesn't create
     // any bugs since we exclude `DelayType` edges from joining subgraphs anyway.
-    let mut node_color: SparseSecondaryMap<GraphNodeId, Color> = partitioned_graph
-        .nodes()
-        .filter_map(|(node_id, node)| {
-            let inn_degree = partitioned_graph.node_degree_in(node_id);
-            let out_degree = partitioned_graph.node_degree_out(node_id);
-            let op_color = node_color(
-                matches!(node, GraphNode::Handoff { .. }),
-                inn_degree,
-                out_degree,
-            );
-            op_color.map(|op_color| (node_id, op_color))
+    let mut node_color = partitioned_graph
+        .node_ids()
+        .filter_map(|node_id| {
+            let op_color = partitioned_graph.node_color(node_id)?;
+            Some((node_id, op_color))
         })
-        .collect();
+        .collect::<SparseSecondaryMap<_, _>>();
 
     let mut subgraph_unionfind: UnionFind<GraphNodeId> =
         UnionFind::with_capacity(partitioned_graph.nodes().len());
 
     // Will contain all edges which are handoffs. Starts out with all edges and
-    // we remove from this set as we construct subgraphs.
-    let mut handoff_edges: BTreeSet<GraphEdgeId> = partitioned_graph
-        .edges()
-        .map(|(edge_id, _)| edge_id)
-        .collect();
+    // we remove from this set as we combine nodes into subgraphs.
+    let mut handoff_edges: BTreeSet<GraphEdgeId> = partitioned_graph.edge_ids().collect();
     // Would sort edges here for priority (for now, no sort/priority).
 
     // Each edge gets looked at in order. However we may not know if a linear
@@ -71,12 +60,21 @@ fn find_subgraph_unionfind(
     let mut progress = true;
     while progress {
         progress = false;
+        // TODO(mingwei): Could this iterate `handoff_edges` instead? (Modulo ownership). Then no case (1) below.
         for (edge_id, (src, dst)) in partitioned_graph.edges().collect::<Vec<_>>() {
-            // Ignore (1) already added edges as well as (2) new self-cycles.
+            // Ignore (1) already added edges as well as (2) new self-cycles. (Unless reference edge).
             if subgraph_unionfind.same_set(src, dst) {
-                // Note this might be triggered even if the edge (src, dst) is not in the subgraph (not case 1).
-                // This prevents self-loops which would violate the in-out tree structure (case 2).
+                // Note that the _edge_ `edge_id` might not be in the subgraph even when both `src` and `dst` are. This prevents case 2.
                 // Handoffs will be inserted later for this self-loop.
+                if !partitioned_graph
+                    .edge_type(edge_id)
+                    .unwrap()
+                    .affects_in_out_graph_ownership()
+                {
+                    // However self-loops are ok in the case of reference edges.
+                    // (This may hit trigger times for the same reference edge).
+                    progress |= handoff_edges.remove(&edge_id);
+                }
                 continue;
             }
 
@@ -95,7 +93,7 @@ fn find_subgraph_unionfind(
                 // within a single subgraph.
                 subgraph_unionfind.union(src, dst);
                 assert!(handoff_edges.remove(&edge_id));
-                progress = true;
+                progress |= true;
             }
         }
     }
@@ -445,12 +443,29 @@ fn separate_external_inputs(partitioned_graph: &mut HydroflowGraph) {
     }
 }
 
+/// Ensure edgetypes are set.
+pub fn assert_edgetypes_set(flat_graph: &HydroflowGraph) {
+    let missing_edgetypes = flat_graph
+        .edge_ids()
+        .filter(|&edge_id| flat_graph.edge_type(edge_id).is_none())
+        .count();
+    assert!(
+        0 == missing_edgetypes,
+        "`partition_graph` requires edge types to be set, but was unset for {} out of {} edges. This is a Hydroflow bug.",
+        missing_edgetypes,
+        flat_graph.edge_ids().len(),
+    );
+}
+
 /// Main method for this module. Partions a flat [`HydroflowGraph`] into one with subgraphs.
 ///
 /// Returns an error if a negative cycle exists in the graph. Negative cycles prevent partioning.
 pub fn partition_graph(flat_graph: HydroflowGraph) -> Result<HydroflowGraph, Diagnostic> {
+    assert_edgetypes_set(&flat_graph);
+
+    // Pre-find barrier crossers (input edges with a `DelayType`).
+    let mut barrier_crossers = find_barrier_crossers(&flat_graph);
     let mut partitioned_graph = flat_graph;
-    let mut barrier_crossers = find_barrier_crossers(&partitioned_graph);
 
     // Partition into subgraphs.
     make_subgraphs(&mut partitioned_graph, &mut barrier_crossers);
