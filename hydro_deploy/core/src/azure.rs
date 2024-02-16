@@ -6,19 +6,18 @@ use async_trait::async_trait;
 use nanoid::nanoid;
 use serde_json::json;
 
-use crate::ssh::LaunchedSSHHost;
-
 use super::terraform::{TerraformOutput, TerraformProvider, TERRAFORM_ALPHABET};
 use super::{
     ClientStrategy, Host, HostTargetType, LaunchedHost, ResourceBatch, ResourceResult,
     ServerStrategy,
 };
+use crate::ssh::LaunchedSSHHost;
 
 pub struct LaunchedVirtualMachine {
-  resource_result: Arc<ResourceResult>,
-  user: String,
-  pub internal_ip: String,
-  pub external_ip: Option<String>,
+    resource_result: Arc<ResourceResult>,
+    user: String,
+    pub internal_ip: String,
+    pub external_ip: Option<String>,
 }
 
 impl LaunchedSSHHost for LaunchedVirtualMachine {
@@ -38,7 +37,6 @@ impl LaunchedSSHHost for LaunchedVirtualMachine {
         self.user.as_str()
     }
 }
-
 
 pub struct AzureHost {
     pub id: usize,

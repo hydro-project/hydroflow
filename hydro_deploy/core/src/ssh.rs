@@ -5,10 +5,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_channel::{Receiver, Sender};
 use async_ssh2_lite::ssh2::ErrorCode;
-use anyhow::Context;
 use async_ssh2_lite::{AsyncChannel, AsyncSession, Error, SessionConfiguration};
 use async_trait::async_trait;
 use futures::io::BufReader;
@@ -120,7 +119,9 @@ pub trait LaunchedSSHHost: Send + Sync {
     fn server_config(&self, bind_type: &ServerStrategy) -> ServerBindConfig {
         match bind_type {
             ServerStrategy::UnixSocket => ServerBindConfig::UnixSocket,
-            ServerStrategy::InternalTcpPort => ServerBindConfig::TcpPort(self.get_internal_ip().clone()),
+            ServerStrategy::InternalTcpPort => {
+                ServerBindConfig::TcpPort(self.get_internal_ip().clone())
+            }
             ServerStrategy::ExternalTcpPort(_) => todo!(),
             ServerStrategy::Demux(demux) => {
                 let mut config_map = HashMap::new();
@@ -150,7 +151,10 @@ pub trait LaunchedSSHHost: Send + Sync {
         let target_addr = SocketAddr::new(
             self.get_external_ip()
                 .as_ref()
-                .context(self.get_cloud_provider() + " host must be configured with an external IP to launch binaries")?
+                .context(
+                    self.get_cloud_provider()
+                        + " host must be configured with an external IP to launch binaries",
+                )?
                 .parse()
                 .unwrap(),
             22,
