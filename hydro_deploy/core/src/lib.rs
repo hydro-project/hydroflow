@@ -11,7 +11,6 @@ use tokio::sync::RwLock;
 
 pub mod deployment;
 pub mod launch;
-pub use launch::LaunchedVirtualMachine;
 pub use deployment::Deployment;
 
 pub mod progress;

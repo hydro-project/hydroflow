@@ -7,13 +7,38 @@ use nanoid::nanoid;
 use serde_json::json;
 use tokio::sync::RwLock;
 
+use crate::ssh::LaunchedSSHHost;
+
 use super::terraform::{TerraformOutput, TerraformProvider, TERRAFORM_ALPHABET};
 use super::{
     ClientStrategy, Host, HostTargetType, LaunchedHost, ResourceBatch, ResourceResult,
     ServerStrategy,
 };
 
-use super::LaunchedVirtualMachine;
+pub struct LaunchedComputeEngine {
+    resource_result: Arc<ResourceResult>,
+    user: String,
+    pub internal_ip: String,
+    pub external_ip: Option<String>,
+}
+
+impl LaunchedSSHHost for LaunchedComputeEngine {
+    fn get_external_ip(&self) -> Option<String> {
+        self.external_ip.clone()
+    }
+    fn get_internal_ip(&self) -> String {
+        self.internal_ip.clone()
+    }
+    fn get_cloud_provider(&self) -> String {
+        "GCP".to_string()
+    }
+    fn resource_result(&self) -> &Arc<ResourceResult> {
+        &self.resource_result
+    }
+    fn ssh_user(&self) -> &str {
+        self.user.as_str()
+    }
+}
 
 #[derive(Debug)]
 pub struct GCPNetwork {
@@ -147,7 +172,7 @@ pub struct GCPComputeEngineHost {
     pub region: String,
     pub network: Arc<RwLock<GCPNetwork>>,
     pub user: Option<String>,
-    pub launched: Option<Arc<LaunchedVirtualMachine>>,
+    pub launched: Option<Arc<LaunchedComputeEngine>>,
     external_ports: Vec<u16>,
 }
 
@@ -423,8 +448,7 @@ impl Host for GCPComputeEngineHost {
                 .get(&format!("vm-instance-{id}-public-ip"))
                 .map(|v| v.value.clone());
 
-            self.launched = Some(Arc::new(LaunchedVirtualMachine {
-                cloud_provider: "gcp".to_string(),
+            self.launched = Some(Arc::new(LaunchedComputeEngine {
                 resource_result: resource_result.clone(),
                 user: self.user.as_ref().cloned().unwrap_or("hydro".to_string()),
                 internal_ip,
