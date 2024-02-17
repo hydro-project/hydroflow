@@ -89,6 +89,7 @@ use hydroflow_plus_cli_integration::{DeployProcessSpec, DeployClusterSpec};
 async fn main() {
     let deployment = RefCell::new(Deployment::new());
     let localhost = deployment.borrow_mut().Localhost();
+    let profile = "dev";
 
     let builder = hydroflow_plus::FlowBuilder::new();
     flow::broadcast::broadcast(
