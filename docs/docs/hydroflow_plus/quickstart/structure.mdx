@@ -36,7 +36,7 @@ pub fn first_ten<'a, D: LocalDeploy<'a>>(
 ) {}
 ```
 
-To build a Hydroflow+ application, we need to define dataflow that spans multiple processes. The `FlowBuilder` parameter captures the global dataflow, while the `process_spec` variable defines how to construct the processes where the dataflow will be executed. For now, we will only use the `ProcessSpec` once, to add a single process to our global dataflow.
+To build a Hydroflow+ application, we need to define a dataflow that spans multiple processes. The `FlowBuilder` parameter captures the global dataflow, while the `process_spec` variable defines how to construct the processes where the dataflow will be executed. For now, we will only use the `ProcessSpec` once, to add a single process to our global dataflow.
 
 ```rust
 pub fn first_ten<'a, D: LocalDeploy<'a>>(
