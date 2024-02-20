@@ -11,4 +11,5 @@ pub mod diagnostic;
 pub mod graph;
 pub mod parse;
 pub mod pretty_span;
+pub mod process_singletons;
 pub mod union_find;
