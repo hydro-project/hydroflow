@@ -24,15 +24,19 @@ impl LaunchedSSHHost for LaunchedVirtualMachine {
     fn get_external_ip(&self) -> Option<String> {
         self.external_ip.clone()
     }
+
     fn get_internal_ip(&self) -> String {
         self.internal_ip.clone()
     }
+
     fn get_cloud_provider(&self) -> String {
         "Azure".to_string()
     }
+
     fn resource_result(&self) -> &Arc<ResourceResult> {
         &self.resource_result
     }
+    
     fn ssh_user(&self) -> &str {
         self.user.as_str()
     }
