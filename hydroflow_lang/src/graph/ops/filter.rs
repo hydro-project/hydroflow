@@ -1,8 +1,8 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowPropArgs, OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    FlowPropArgs, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
 use crate::graph::GraphEdgeType;
 
@@ -39,17 +39,19 @@ pub const FILTER: OperatorConstraints = OperatorConstraints {
         // Preserve input flow properties.
         Ok(vec![flow_props_in[0]])
     }),
-    write_fn: |&WriteContextArgs {
+    write_fn: |wc @ &WriteContextArgs {
                    root,
                    op_span,
                    ident,
                    inputs,
                    outputs,
                    is_pull,
-                   op_inst: OperatorInstance { arguments, .. },
+                   //    op_inst: OperatorInstance { arguments, .. },
                    ..
                },
                _| {
+        let arguments = wc.argument_processed_singletons();
+
         let write_iterator = if is_pull {
             let input = &inputs[0];
             quote_spanned! {op_span=>
