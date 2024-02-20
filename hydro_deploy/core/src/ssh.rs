@@ -1,13 +1,14 @@
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_channel::{Receiver, Sender};
 use async_ssh2_lite::ssh2::ErrorCode;
-use async_ssh2_lite::{AsyncChannel, AsyncSession, Error};
+use async_ssh2_lite::{AsyncChannel, AsyncSession, Error, SessionConfiguration};
 use async_trait::async_trait;
 use futures::io::BufReader;
 use futures::{AsyncBufReadExt, AsyncWriteExt, StreamExt};
@@ -98,10 +99,101 @@ impl Drop for LaunchedSSHBinary {
 
 #[async_trait]
 pub trait LaunchedSSHHost: Send + Sync {
-    fn server_config(&self, bind_type: &ServerStrategy) -> ServerBindConfig;
+    fn get_internal_ip(&self) -> String;
+    fn get_external_ip(&self) -> Option<String>;
+    fn get_cloud_provider(&self) -> String;
     fn resource_result(&self) -> &Arc<ResourceResult>;
     fn ssh_user(&self) -> &str;
-    async fn open_ssh_session(&self) -> Result<AsyncSession<TcpStream>>;
+
+    fn ssh_key_path(&self) -> PathBuf {
+        self.resource_result()
+            .terraform
+            .deployment_folder
+            .as_ref()
+            .unwrap()
+            .path()
+            .join(".ssh")
+            .join("vm_instance_ssh_key_pem")
+    }
+
+    fn server_config(&self, bind_type: &ServerStrategy) -> ServerBindConfig {
+        match bind_type {
+            ServerStrategy::UnixSocket => ServerBindConfig::UnixSocket,
+            ServerStrategy::InternalTcpPort => {
+                ServerBindConfig::TcpPort(self.get_internal_ip().clone())
+            }
+            ServerStrategy::ExternalTcpPort(_) => todo!(),
+            ServerStrategy::Demux(demux) => {
+                let mut config_map = HashMap::new();
+                for (key, underlying) in demux {
+                    config_map.insert(*key, LaunchedSSHHost::server_config(self, underlying));
+                }
+
+                ServerBindConfig::Demux(config_map)
+            }
+            ServerStrategy::Merge(merge) => {
+                let mut configs = vec![];
+                for underlying in merge {
+                    configs.push(LaunchedSSHHost::server_config(self, underlying));
+                }
+
+                ServerBindConfig::Merge(configs)
+            }
+            ServerStrategy::Tagged(underlying, id) => ServerBindConfig::Tagged(
+                Box::new(LaunchedSSHHost::server_config(self, underlying)),
+                *id,
+            ),
+            ServerStrategy::Null => ServerBindConfig::Null,
+        }
+    }
+
+    async fn open_ssh_session(&self) -> Result<AsyncSession<TcpStream>> {
+        let target_addr = SocketAddr::new(
+            self.get_external_ip()
+                .as_ref()
+                .context(
+                    self.get_cloud_provider()
+                        + " host must be configured with an external IP to launch binaries",
+                )?
+                .parse()
+                .unwrap(),
+            22,
+        );
+
+        let res = ProgressTracker::leaf(
+            format!(
+                "connecting to host @ {}",
+                self.get_external_ip().as_ref().unwrap()
+            ),
+            async_retry(
+                &|| async {
+                    let mut config = SessionConfiguration::new();
+                    config.set_compress(true);
+
+                    let mut session =
+                        AsyncSession::<TcpStream>::connect(target_addr, Some(config)).await?;
+
+                    session.handshake().await?;
+
+                    session
+                        .userauth_pubkey_file(
+                            self.ssh_user(),
+                            None,
+                            self.ssh_key_path().as_path(),
+                            None,
+                        )
+                        .await?;
+
+                    Ok(session)
+                },
+                10,
+                Duration::from_secs(1),
+            ),
+        )
+        .await?;
+
+        Ok(res)
+    }
 }
 
 #[async_trait]
