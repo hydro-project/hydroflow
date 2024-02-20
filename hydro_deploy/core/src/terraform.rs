@@ -79,6 +79,7 @@ impl Drop for TerraformPool {
 #[derive(Serialize, Deserialize)]
 pub struct TerraformBatch {
     pub terraform: TerraformConfig,
+    pub provider: HashMap<String, serde_json::Value>,
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     pub data: HashMap<String, HashMap<String, serde_json::Value>>,
     pub resource: HashMap<String, HashMap<String, serde_json::Value>>,
@@ -91,6 +92,7 @@ impl Default for TerraformBatch {
             terraform: TerraformConfig {
                 required_providers: HashMap::new(),
             },
+            provider: HashMap::new(),
             data: HashMap::new(),
             resource: HashMap::new(),
             output: HashMap::new(),
