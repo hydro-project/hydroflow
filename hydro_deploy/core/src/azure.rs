@@ -36,7 +36,7 @@ impl LaunchedSSHHost for LaunchedVirtualMachine {
     fn resource_result(&self) -> &Arc<ResourceResult> {
         &self.resource_result
     }
-    
+
     fn ssh_user(&self) -> &str {
         self.user.as_str()
     }
