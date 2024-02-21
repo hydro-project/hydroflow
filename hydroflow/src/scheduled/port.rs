@@ -31,7 +31,7 @@ impl Polarity for SEND {}
 impl Polarity for RECV {}
 
 /// Lightweight ID struct representing an input or output port for a [`Handoff`] added to a
-/// [`Hydroflow`](super::graph::Hydroflow) instance..
+/// [`Hydroflow`] instance..
 #[must_use]
 pub struct Port<S: Polarity, H>
 where
