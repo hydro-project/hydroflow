@@ -523,175 +523,40 @@
 <a href="#521" id="521">521</a>
 <a href="#522" id="522">522</a>
 <a href="#523" id="523">523</a>
-<a href="#524" id="524">524</a>
-<a href="#525" id="525">525</a>
-<a href="#526" id="526">526</a>
-<a href="#527" id="527">527</a>
-<a href="#528" id="528">528</a>
-<a href="#529" id="529">529</a>
-<a href="#530" id="530">530</a>
-<a href="#531" id="531">531</a>
-<a href="#532" id="532">532</a>
-<a href="#533" id="533">533</a>
-<a href="#534" id="534">534</a>
-<a href="#535" id="535">535</a>
-<a href="#536" id="536">536</a>
-<a href="#537" id="537">537</a>
-<a href="#538" id="538">538</a>
-<a href="#539" id="539">539</a>
-<a href="#540" id="540">540</a>
-<a href="#541" id="541">541</a>
-<a href="#542" id="542">542</a>
-<a href="#543" id="543">543</a>
-<a href="#544" id="544">544</a>
-<a href="#545" id="545">545</a>
-<a href="#546" id="546">546</a>
-<a href="#547" id="547">547</a>
-<a href="#548" id="548">548</a>
-<a href="#549" id="549">549</a>
-<a href="#550" id="550">550</a>
-<a href="#551" id="551">551</a>
-<a href="#552" id="552">552</a>
-<a href="#553" id="553">553</a>
-<a href="#554" id="554">554</a>
-<a href="#555" id="555">555</a>
-<a href="#556" id="556">556</a>
-<a href="#557" id="557">557</a>
-<a href="#558" id="558">558</a>
-<a href="#559" id="559">559</a>
-<a href="#560" id="560">560</a>
-<a href="#561" id="561">561</a>
-<a href="#562" id="562">562</a>
-<a href="#563" id="563">563</a>
-<a href="#564" id="564">564</a>
-<a href="#565" id="565">565</a>
-<a href="#566" id="566">566</a>
-<a href="#567" id="567">567</a>
-<a href="#568" id="568">568</a>
-<a href="#569" id="569">569</a>
-<a href="#570" id="570">570</a>
-<a href="#571" id="571">571</a>
-<a href="#572" id="572">572</a>
-<a href="#573" id="573">573</a>
-<a href="#574" id="574">574</a>
-<a href="#575" id="575">575</a>
-<a href="#576" id="576">576</a>
-<a href="#577" id="577">577</a>
-<a href="#578" id="578">578</a>
-<a href="#579" id="579">579</a>
-<a href="#580" id="580">580</a>
-<a href="#581" id="581">581</a>
-<a href="#582" id="582">582</a>
-<a href="#583" id="583">583</a>
-<a href="#584" id="584">584</a>
-<a href="#585" id="585">585</a>
-<a href="#586" id="586">586</a>
-<a href="#587" id="587">587</a>
-<a href="#588" id="588">588</a>
-<a href="#589" id="589">589</a>
-<a href="#590" id="590">590</a>
-<a href="#591" id="591">591</a>
-<a href="#592" id="592">592</a>
-<a href="#593" id="593">593</a>
-<a href="#594" id="594">594</a>
-<a href="#595" id="595">595</a>
-<a href="#596" id="596">596</a>
-<a href="#597" id="597">597</a>
-<a href="#598" id="598">598</a>
-<a href="#599" id="599">599</a>
-<a href="#600" id="600">600</a>
-<a href="#601" id="601">601</a>
-<a href="#602" id="602">602</a>
-<a href="#603" id="603">603</a>
-<a href="#604" id="604">604</a>
-<a href="#605" id="605">605</a>
-<a href="#606" id="606">606</a>
-<a href="#607" id="607">607</a>
-<a href="#608" id="608">608</a>
-<a href="#609" id="609">609</a>
-<a href="#610" id="610">610</a>
-<a href="#611" id="611">611</a>
-<a href="#612" id="612">612</a>
-<a href="#613" id="613">613</a>
-<a href="#614" id="614">614</a>
-<a href="#615" id="615">615</a>
-<a href="#616" id="616">616</a>
-<a href="#617" id="617">617</a>
-<a href="#618" id="618">618</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
-<span class="kw">use </span>std::net::SocketAddr;
-<span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
-<span class="kw">use </span>async_ssh2_lite::{AsyncSession, SessionConfiguration};
+<span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
 <span class="kw">use </span>nanoid::nanoid;
 <span class="kw">use </span>serde_json::json;
-<span class="kw">use </span>tokio::net::TcpStream;
 <span class="kw">use </span>tokio::sync::RwLock;
 
-<span class="kw">use </span><span class="kw">super</span>::progress::ProgressTracker;
-<span class="kw">use </span><span class="kw">super</span>::ssh::LaunchedSSHHost;
 <span class="kw">use </span><span class="kw">super</span>::terraform::{TerraformOutput, TerraformProvider, TERRAFORM_ALPHABET};
-<span class="kw">use </span><span class="kw">super</span>::util::async_retry;
 <span class="kw">use super</span>::{
     ClientStrategy, Host, HostTargetType, LaunchedHost, ResourceBatch, ResourceResult,
     ServerStrategy,
 };
+<span class="kw">use </span><span class="kw">crate</span>::ssh::LaunchedSSHHost;
 
-<span class="comment">// #[derive(Debug)]
-</span><span class="kw">pub struct </span>LaunchedComputeEngine {
+<span class="kw">pub struct </span>LaunchedComputeEngine {
     resource_result: Arc&lt;ResourceResult&gt;,
     user: String,
     <span class="kw">pub </span>internal_ip: String,
     <span class="kw">pub </span>external_ip: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
-<span class="kw">impl </span>LaunchedComputeEngine {
-    <span class="kw">pub fn </span>ssh_key_path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PathBuf {
-        <span class="self">self</span>.resource_result
-            .terraform
-            .deployment_folder
-            .as_ref()
-            .unwrap()
-            .path()
-            .join(<span class="string">".ssh"</span>)
-            .join(<span class="string">"vm_instance_ssh_key_pem"</span>)
+<span class="kw">impl </span>LaunchedSSHHost <span class="kw">for </span>LaunchedComputeEngine {
+    <span class="kw">fn </span>get_external_ip(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;String&gt; {
+        <span class="self">self</span>.external_ip.clone()
     }
-}
 
-<span class="attr">#[async_trait]
-</span><span class="kw">impl </span>LaunchedSSHHost <span class="kw">for </span>LaunchedComputeEngine {
-    <span class="kw">fn </span>server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>ServerStrategy) -&gt; ServerBindConfig {
-        <span class="kw">match </span>bind_type {
-            ServerStrategy::UnixSocket =&gt; ServerBindConfig::UnixSocket,
-            ServerStrategy::InternalTcpPort =&gt; ServerBindConfig::TcpPort(<span class="self">self</span>.internal_ip.clone()),
-            ServerStrategy::ExternalTcpPort(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(),
-            ServerStrategy::Demux(demux) =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>config_map = HashMap::new();
-                <span class="kw">for </span>(key, underlying) <span class="kw">in </span>demux {
-                    config_map.insert(<span class="kw-2">*</span>key, LaunchedSSHHost::server_config(<span class="self">self</span>, underlying));
-                }
+    <span class="kw">fn </span>get_internal_ip(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        <span class="self">self</span>.internal_ip.clone()
+    }
 
-                ServerBindConfig::Demux(config_map)
-            }
-            ServerStrategy::Merge(merge) =&gt; {
-                <span class="kw">let </span><span class="kw-2">mut </span>configs = <span class="macro">vec!</span>[];
-                <span class="kw">for </span>underlying <span class="kw">in </span>merge {
-                    configs.push(LaunchedSSHHost::server_config(<span class="self">self</span>, underlying));
-                }
-
-                ServerBindConfig::Merge(configs)
-            }
-            ServerStrategy::Tagged(underlying, id) =&gt; ServerBindConfig::Tagged(
-                Box::new(LaunchedSSHHost::server_config(<span class="self">self</span>, underlying)),
-                <span class="kw-2">*</span>id,
-            ),
-            ServerStrategy::Null =&gt; ServerBindConfig::Null,
-        }
+    <span class="kw">fn </span>get_cloud_provider(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        <span class="string">"GCP"</span>.to_string()
     }
 
     <span class="kw">fn </span>resource_result(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt; {
@@ -700,61 +565,6 @@
 
     <span class="kw">fn </span>ssh_user(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
         <span class="self">self</span>.user.as_str()
-    }
-
-    <span class="kw">async fn </span>open_ssh_session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;AsyncSession&lt;TcpStream&gt;&gt; {
-        <span class="kw">let </span>target_addr = SocketAddr::new(
-            <span class="self">self</span>.external_ip
-                .as_ref()
-                .context(<span class="string">"GCP host must be configured with an external IP to launch binaries"</span>)<span class="question-mark">?
-                </span>.parse()
-                .unwrap(),
-            <span class="number">22</span>,
-        );
-
-        <span class="kw">let </span><span class="kw-2">mut </span>attempt_count = <span class="number">0</span>;
-
-        <span class="kw">let </span>res = async_retry(
-            || {
-                attempt_count += <span class="number">1</span>;
-                ProgressTracker::leaf(
-                    <span class="macro">format!</span>(
-                        <span class="string">"connecting to host @ {} (attempt: {})"</span>,
-                        <span class="self">self</span>.external_ip.as_ref().unwrap(),
-                        attempt_count
-                    ),
-                    <span class="kw">async </span>{
-                        <span class="kw">let </span><span class="kw-2">mut </span>config = SessionConfiguration::new();
-                        config.set_compress(<span class="bool-val">true</span>);
-
-                        tokio::time::timeout(Duration::from_secs(<span class="number">15</span>), <span class="kw">async move </span>{
-                            <span class="kw">let </span><span class="kw-2">mut </span>session =
-                                AsyncSession::&lt;TcpStream&gt;::connect(target_addr, <span class="prelude-val">Some</span>(config))
-                                    .<span class="kw">await</span><span class="question-mark">?</span>;
-
-                            session.handshake().<span class="kw">await</span><span class="question-mark">?</span>;
-
-                            session
-                                .userauth_pubkey_file(
-                                    <span class="self">self</span>.user.as_str(),
-                                    <span class="prelude-val">None</span>,
-                                    <span class="self">self</span>.ssh_key_path().as_path(),
-                                    <span class="prelude-val">None</span>,
-                                )
-                                .<span class="kw">await</span><span class="question-mark">?</span>;
-
-                            <span class="prelude-val">Ok</span>(session)
-                        })
-                        .<span class="kw">await</span><span class="question-mark">?
-                    </span>},
-                )
-            },
-            <span class="number">10</span>,
-            Duration::from_secs(<span class="number">1</span>),
-        )
-        .<span class="kw">await</span><span class="question-mark">?</span>;
-
-        <span class="prelude-val">Ok</span>(res)
     }
 }
 

@@ -214,6 +214,9 @@
 <a href="#212" id="212">212</a>
 <a href="#213" id="213">213</a>
 <a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::path::PathBuf;
@@ -237,6 +240,9 @@
 
 <span class="kw">pub mod </span>gcp;
 <span class="kw">pub use </span>gcp::GCPComputeEngineHost;
+
+<span class="kw">pub mod </span>azure;
+<span class="kw">pub use </span>azure::AzureHost;
 
 <span class="kw">pub mod </span>hydroflow_crate;
 <span class="kw">pub use </span>hydroflow_crate::HydroflowCrate;
