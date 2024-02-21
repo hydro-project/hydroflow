@@ -5,7 +5,7 @@ use std::sync::mpsc;
 
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::scheduled::graph_ext::GraphExt;
-use hydroflow::scheduled::handoff::VecHandoff;
+use hydroflow::scheduled::handoff::{TeeingHandoff, VecHandoff};
 use hydroflow::scheduled::port::{RecvCtx, SendCtx};
 use hydroflow::{var_args, var_expr};
 use multiplatform_test::multiplatform_test;
@@ -281,6 +281,38 @@ fn test_cycle() {
 //     assert_eq!((*out1).borrow().clone(), vec![1, 2, 3, 4]);
 //     assert_eq!((*out2).borrow().clone(), vec![1, 2, 3, 4]);
 // }
+#[test]
+fn test_auto_tee() {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+    let mut df = Hydroflow::new();
+    let mut data = vec![1, 2, 3, 4];
+    let (source, sink1) = df.make_edge::<_, TeeingHandoff<i32>>("ok");
+    let sink2 = sink1.tee(&mut df);
+
+    df.add_subgraph_source("source", source, move |_context, send| {
+        send.give(std::mem::take(&mut data));
+    });
+    let out1 = Rc::new(RefCell::new(Vec::new()));
+    let out1_inner = out1.clone();
+
+    df.add_subgraph_sink("sink1", sink1, move |_context, recv| {
+        for v in recv.take_inner() {
+            out1_inner.borrow_mut().extend(v);
+        }
+    });
+
+    let out2 = Rc::new(RefCell::new(Vec::new()));
+    let out2_inner = out2.clone();
+    df.add_subgraph_sink("sink2", sink2, move |_context, recv| {
+        for v in recv.take_inner() {
+            out2_inner.borrow_mut().extend(v);
+        }
+    });
+    df.run_available();
+    assert_eq!((*out1).borrow().clone(), vec![1, 2, 3, 4]);
+    assert_eq!((*out2).borrow().clone(), vec![1, 2, 3, 4]);
+}
 
 #[multiplatform_test]
 fn test_input_handle() {

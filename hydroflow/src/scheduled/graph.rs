@@ -80,6 +80,24 @@ impl<'a> Default for Hydroflow<'a> {
     }
 }
 impl<'a> Hydroflow<'a> {
+    /// Adds a new handoff to the graph.
+    pub fn add_handoff<Name: Into<Cow<'static, str>>>(
+        &mut self,
+        name: Name,
+        handoff: impl HandoffMeta + 'static,
+    ) -> HandoffId {
+        let handoff_id = HandoffId(self.handoffs.len());
+
+        // insert handoff.
+        self.handoffs.push(HandoffData::new(name.into(), handoff));
+        handoff_id
+    }
+    /// Get the handoff data by ID.
+    pub fn get_handoff_by_id(&self, id: HandoffId) -> &HandoffData {
+        &self.handoffs[id.0]
+    }
+}
+impl<'a> Hydroflow<'a> {
     /// Create a new empty Hydroflow graph.
     pub fn new() -> Self {
         Default::default()

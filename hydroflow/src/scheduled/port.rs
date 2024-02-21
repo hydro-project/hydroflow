@@ -6,7 +6,8 @@ use ref_cast::RefCast;
 use sealed::sealed;
 
 use super::HandoffId;
-use crate::scheduled::handoff::{CanReceive, Handoff, TryCanReceive};
+use crate::scheduled::graph::Hydroflow;
+use crate::scheduled::handoff::{CanReceive, Handoff, TeeingHandoff, TryCanReceive};
 
 /// An empty trait used to denote [`Polarity`]: either **send** or **receive**.
 ///
@@ -44,6 +45,26 @@ where
 pub type SendPort<H> = Port<SEND, H>;
 /// Recv-specific variant of [`Port`]. An input port.
 pub type RecvPort<H> = Port<RECV, H>;
+
+impl<T: Clone> RecvPort<TeeingHandoff<T>> {
+    /// Clone a tee recv port, See [`TeeingHandoff::tee`] for more information.
+    pub fn tee(&self, df: &mut Hydroflow) -> RecvPort<TeeingHandoff<T>> {
+        let data = df.get_handoff_by_id(self.handoff_id);
+        let name = data.name.clone();
+        let typed_data = data
+            .handoff
+            .any_ref()
+            .downcast_ref::<TeeingHandoff<T>>()
+            .unwrap();
+        let new_handoff = typed_data.tee();
+        let new_handoff_id = df.add_handoff(name, new_handoff);
+        let output_port = RecvPort {
+            handoff_id: new_handoff_id,
+            _marker: PhantomData,
+        };
+        output_port
+    }
+}
 
 /// Wrapper around a handoff to differentiate between output and input.
 #[derive(RefCast)]

@@ -24,8 +24,8 @@ struct TeeingHandoffInternal<T> {
     readers: Vec<ReaderHandoff<T>>,
 }
 
-// A [Handoff] which is part of a "family" of handoffs. Writing to this handoff
-// will write to every reader. New readers can be created by calling `tee`.
+/// A [Handoff] which is part of a "family" of handoffs. Writing to this handoff
+/// will write to every reader. New readers can be created by calling `tee`.
 #[derive(Clone)]
 pub struct TeeingHandoff<T>
 where
