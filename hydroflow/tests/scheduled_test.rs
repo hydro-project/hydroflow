@@ -12,9 +12,6 @@ use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
 fn map_filter() {
-    use std::cell::RefCell;
-    use std::rc::Rc;
-
     use hydroflow::scheduled::handoff::VecHandoff;
 
     // A simple dataflow with one source feeding into one sink with some processing in the middle.
@@ -241,46 +238,6 @@ fn test_cycle() {
 
     assert_eq!(&*reachable_verts.borrow(), &[1, 2, 3, 4, 5]);
 }
-
-// #[test]
-// fn test_auto_tee() {
-//     use std::cell::RefCell;
-//     use std::rc::Rc;
-
-//     use crate::scheduled::handoff::TeeingHandoff;
-
-//     let mut df = Hydroflow::new();
-
-//     let mut data = vec![1, 2, 3, 4];
-//     let source = df.add_source(move |send: &SendCtx<TeeingHandoff<_>>| {
-//         send.give(std::mem::take(&mut data));
-//     });
-
-//     let out1 = Rc::new(RefCell::new(Vec::new()));
-//     let out1_inner = out1.clone();
-
-//     let sink1 = df.add_sink(move |recv: &RecvCtx<_>| {
-//         for v in recv.take_inner() {
-//             out1_inner.borrow_mut().extend(v);
-//         }
-//     });
-
-//     let out2 = Rc::new(RefCell::new(Vec::new()));
-//     let out2_inner = out2.clone();
-//     let sink2 = df.add_sink(move |recv: &RecvCtx<_>| {
-//         for v in recv.take_inner() {
-//             out2_inner.borrow_mut().extend(v);
-//         }
-//     });
-
-//     df.add_edge(source.clone(), sink1);
-//     df.add_edge(source, sink2);
-
-//     df.run_available();
-
-//     assert_eq!((*out1).borrow().clone(), vec![1, 2, 3, 4]);
-//     assert_eq!((*out2).borrow().clone(), vec![1, 2, 3, 4]);
-// }
 
 #[multiplatform_test]
 fn test_input_handle() {
