@@ -3,7 +3,7 @@
 use std::any::Any;
 use std::borrow::Cow;
 use std::cell::Cell;
-use std::collections::VecDeque;
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::future::Future;
 use std::marker::PhantomData;
 
@@ -29,6 +29,11 @@ pub struct Hydroflow<'a> {
     pub(super) subgraphs: Vec<SubgraphData<'a>>,
     pub(super) context: Context,
     handoffs: Vec<HandoffData>,
+    /// The root handoff of a handoff that's tee'd.
+    /// child -> root
+    handoff_root: BTreeMap<HandoffId, HandoffId>,
+    /// The set of child handoffs of a root tee handoff
+    handoff_tee_childs: BTreeMap<HandoffId, BTreeSet<HandoffId>>,
 
     /// TODO(mingwei): separate scheduler into its own struct/trait?
     /// Index is stratum, value is FIFO queue for that stratum.
@@ -69,6 +74,8 @@ impl<'a> Default for Hydroflow<'a> {
             subgraphs: Vec::new(),
             context,
             handoffs: Vec::new(),
+            handoff_root: BTreeMap::new(),
+            handoff_tee_childs: BTreeMap::new(),
 
             stratum_queues,
             event_queue_recv,
@@ -78,6 +85,41 @@ impl<'a> Default for Hydroflow<'a> {
             meta_graph: None,
             diagnostics: None,
         }
+    }
+}
+impl<'a> Hydroflow<'a> {
+    /// Adds a handoff that's teed from a old handoff `root` to the graph.
+    pub(crate) fn add_tee_handoff<Name: Into<Cow<'static, str>>>(
+        &mut self,
+        name: Name,
+        mut root: HandoffId,
+        handoff: impl HandoffMeta + 'static,
+    ) -> HandoffId {
+        let handoff_id = HandoffId(self.handoffs.len());
+        let old_root = root;
+        while let Some(prev) = self.handoff_root.get(&root) {
+            if prev == &root {
+                break;
+            }
+            root = *prev;
+        }
+        // compress the path. so cases like 0 -tee-> 1, 1 -tee->2, will allow
+        // 2  to correctly know root being 0
+        self.handoff_root.insert(old_root, root);
+        // insert handoff's root id.
+        self.handoff_root.insert(handoff_id, root);
+        self.handoff_tee_childs
+            .entry(root)
+            .or_default()
+            .insert(handoff_id);
+
+        // insert handoff.
+        self.handoffs.push(HandoffData::new(name.into(), handoff));
+        handoff_id
+    }
+    /// Get the handoff data by ID.
+    pub(crate) fn get_handoff_by_id(&self, id: HandoffId) -> &HandoffData {
+        &self.handoffs[id.0]
     }
 }
 impl<'a> Hydroflow<'a> {
@@ -216,11 +258,18 @@ impl<'a> Hydroflow<'a> {
             }
 
             let sg_data = &self.subgraphs[sg_id.0];
-
             for &handoff_id in sg_data.succs.iter() {
                 let handoff = &self.handoffs[handoff_id.0];
                 if !handoff.handoff.is_bottom() {
-                    for &succ_id in handoff.succs.iter() {
+                    // find out all child handoff spawn from teeing(if any)
+                    let mut all_succs = vec![handoff.succs.iter()];
+                    if let Some(childs) = self.handoff_tee_childs.get(&handoff_id) {
+                        for ch in childs.iter() {
+                            all_succs.push(self.handoffs[ch.0].succs.iter());
+                        }
+                    }
+
+                    for &succ_id in all_succs.iter().flat_map(|it| it.clone()) {
                         let succ_sg_data = &self.subgraphs[succ_id.0];
                         // If we have sent data to the next tick, then we can start the next tick.
                         if succ_sg_data.stratum < self.context.current_stratum && !sg_data.is_lazy {
@@ -482,6 +531,18 @@ impl<'a> Hydroflow<'a> {
         // Enqueue any other immediate events.
         let extra_count = self.try_recv_events();
         Some(count + extra_count)
+    }
+
+    /// Schedules a subgraph to be run. See also: [`Context::schedule_subgraph`].
+    pub fn schedule_subgraph(&mut self, sg_id: SubgraphId) -> bool {
+        let sg_data = &self.subgraphs[sg_id.0];
+        let already_scheduled = sg_data.is_scheduled.replace(true);
+        if !already_scheduled {
+            self.stratum_queues[sg_data.stratum].push_back(sg_id);
+            true
+        } else {
+            false
+        }
     }
 
     /// Adds a new compiled subgraph with the specified inputs and outputs in stratum 0.

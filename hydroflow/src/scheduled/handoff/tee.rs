@@ -24,8 +24,8 @@ struct TeeingHandoffInternal<T> {
     readers: Vec<ReaderHandoff<T>>,
 }
 
-// A [Handoff] which is part of a "family" of handoffs. Writing to this handoff
-// will write to every reader. New readers can be created by calling `tee`.
+/// A [Handoff] which is part of a "family" of handoffs. Writing to this handoff
+/// will write to every reader. New readers can be created by calling `tee`.
 #[derive(Clone)]
 pub struct TeeingHandoff<T>
 where
@@ -69,8 +69,13 @@ impl<T> HandoffMeta for TeeingHandoff<T> {
         self
     }
 
+    /// if all reader's content is empty, return true
     fn is_bottom(&self) -> bool {
-        true
+        self.internal
+            .borrow()
+            .readers
+            .iter()
+            .all(|r| r.contents.is_empty())
     }
 }
 
@@ -92,11 +97,12 @@ where
 {
     fn give(&self, vec: Vec<T>) -> Vec<T> {
         let readers = &mut (*self.internal).borrow_mut().readers;
-        for i in 0..(readers.len() - 1) {
-            readers[i].contents.push_back(vec.clone());
+        if let Some((last, rest)) = readers.split_last_mut() {
+            for reader in rest {
+                reader.contents.push_back(vec.clone());
+            }
+            last.contents.push_back(vec);
         }
-        let last = readers.len() - 1;
-        readers[last].contents.push_back(vec);
         Vec::new()
     }
 }
