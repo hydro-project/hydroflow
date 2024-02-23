@@ -1,7 +1,5 @@
 #![doc = include_str!("../README.md")]
 
-use std::iter::Iterator;
-
 use proc_macro::TokenStream;
 use quote::{quote, quote_spanned};
 

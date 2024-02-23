@@ -34,7 +34,6 @@ use std::num::NonZeroUsize;
 use std::process::{Child, ChildStdin, ChildStdout, Stdio};
 use std::task::{Context, Poll};
 
-use bincode;
 use futures::Stream;
 use serde::de::DeserializeOwned;
 use serde::ser::Serialize;

@@ -1,7 +1,6 @@
 stageleft::stageleft_crate!(hydroflow_plus_test_macro);
 
 use hydroflow_plus::futures::stream::Stream;
-use hydroflow_plus::scheduled::graph::Hydroflow;
 use hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::*;
