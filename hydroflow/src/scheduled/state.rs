@@ -71,10 +71,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use std::marker::PhantomData;
-
     use super::*;
-    use crate::scheduled::StateId;
 
     #[test]
     fn test_erasure() {

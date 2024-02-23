@@ -7,7 +7,6 @@ use std::time::Instant;
 
 use futures::{SinkExt, StreamExt};
 use hydroflow::bytes::Bytes;
-use hydroflow::tokio;
 use hydroflow::util::cli::{ConnectedDirect, ConnectedSink, ConnectedSource};
 use hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 

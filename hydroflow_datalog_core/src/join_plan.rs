@@ -7,7 +7,7 @@ use hydroflow_lang::graph::FlatGraphBuilder;
 use hydroflow_lang::parse::Pipeline;
 use proc_macro2::Span;
 use rust_sitter::Spanned;
-use syn::{self, parse_quote, parse_quote_spanned};
+use syn::{parse_quote, parse_quote_spanned};
 
 use crate::grammar::datalog::{BoolExpr, BoolOp, IdentOrUnderscore, InputRelationExpr, IntExpr};
 use crate::util::{repeat_tuple, Counter};
