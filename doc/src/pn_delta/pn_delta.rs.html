@@ -172,12 +172,12 @@
 <span class="kw">use </span>std::ops::Deref;
 <span class="kw">use </span>std::rc::Rc;
 
+<span class="kw">use </span>hydroflow::hydroflow_syntax;
 <span class="kw">use </span>hydroflow::serde::{Deserialize, Serialize};
 <span class="kw">use </span>hydroflow::util::cli::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged,
 };
 <span class="kw">use </span>hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
-<span class="kw">use </span>hydroflow::{hydroflow_syntax, tokio};
 
 <span class="kw">mod </span>protocol;
 <span class="kw">use </span>protocol::<span class="kw-2">*</span>;
