@@ -1,6 +1,7 @@
 //! AST for surface syntax, modelled on [`syn`]'s ASTs.
 #![allow(missing_docs)]
 
+use std::fmt::Debug;
 use std::hash::Hash;
 
 use proc_macro2::{Span, TokenStream};
@@ -375,12 +376,13 @@ impl ToTokens for PortIndex {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Operator {
     pub path: Path,
     pub paren_token: Paren,
     pub args: Punctuated<Expr, Token![,]>,
 }
+
 impl Operator {
     pub fn name(&self) -> Path {
         Path {
@@ -462,12 +464,22 @@ impl Parse for Operator {
         })
     }
 }
+
 impl ToTokens for Operator {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.path.to_tokens(tokens);
         self.paren_token.surround(tokens, |tokens| {
             self.args.to_tokens(tokens);
         });
+    }
+}
+
+impl Debug for Operator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Operator")
+            .field("path", &self.path.to_token_stream().to_string())
+            .field("args", &self.args.iter().map(|a| a.to_token_stream().to_string()).collect::<Vec<_>>())
+            .finish()
     }
 }
 
