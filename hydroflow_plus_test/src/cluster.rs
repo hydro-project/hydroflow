@@ -14,7 +14,7 @@ pub fn simple_cluster<'a, D: Deploy<'a>>(
     let numbers = process.source_iter(q!(0..5));
     let ids = process.source_iter(cluster.ids()).map(q!(|&id| id));
 
-    ids.cross_product(&numbers)
+    ids.cross_product(numbers)
         .map(q!(|(id, n)| (id, (id, n))))
         .demux_bincode(&cluster)
         .inspect(q!(|n| println!("cluster received: {:?}", n)))
