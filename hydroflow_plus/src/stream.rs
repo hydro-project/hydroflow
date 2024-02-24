@@ -2,6 +2,8 @@ use std::cell::RefCell;
 use std::hash::Hash;
 use std::io;
 use std::marker::PhantomData;
+use std::ops::Deref;
+use std::rc::Rc;
 
 use hydroflow::bytes::{Bytes, BytesMut};
 use hydroflow::futures::Sink;
@@ -14,6 +16,7 @@ use stageleft::{q, IntoQuotedMut, Quoted};
 use syn::parse_quote;
 use syn::visit_mut::VisitMut;
 
+use crate::__staged::ir::{HfPlusNode, HfPlusSource};
 use crate::builder::Builders;
 use crate::location::{
     Cluster, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany, HfSendOneToOne, Location,
@@ -47,14 +50,45 @@ pub struct Stream<'a, T, W, N: Location<'a>> {
     pub(crate) next_id: &'a RefCell<usize>,
     pub(crate) builders: &'a Builders,
 
+    pub(crate) ir_leaves: &'a RefCell<Vec<HfPlusNode>>,
+    pub(crate) ir_node: RefCell<HfPlusNode>,
+
     /// Does this stream represent a delta of the underlying data?
     /// i.e. is the true stream supposed to have a `persist()` at the end
     pub(crate) is_delta: bool,
     pub(crate) _phantom: PhantomData<(&'a mut &'a (), T, W)>,
 }
 
+impl<'a, T: Clone, W, N: Location<'a>> Clone for Stream<'a, T, W, N> {
+    fn clone(&self) -> Self {
+        if !matches!(self.ir_node.borrow().deref(), HfPlusNode::Tee { .. }) {
+            let orig_ir_node = self.ir_node.replace(HfPlusNode::Todo);
+            *self.ir_node.borrow_mut() = HfPlusNode::Tee {
+                inner: Rc::new(RefCell::new(orig_ir_node)),
+            };
+        }
+
+        if let HfPlusNode::Tee { inner } = self.ir_node.borrow().deref() {
+            Stream {
+                ident: self.ident.clone(),
+                node: self.node.clone(),
+                next_id: self.next_id,
+                builders: self.builders,
+                ir_leaves: self.ir_leaves,
+                ir_node: RefCell::new(HfPlusNode::Tee {
+                    inner: inner.clone(),
+                }),
+                is_delta: self.is_delta,
+                _phantom: PhantomData,
+            }
+        } else {
+            unreachable!()
+        }
+    }
+}
+
 impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
-    fn pipeline_op<U, W2>(&self, pipeline: Pipeline, produces_delta: bool) -> Stream<'a, U, W2, N> {
+    fn pipeline_op<U, W2>(self, pipeline: Pipeline, produces_delta: bool) -> Stream<'a, U, W2, N> {
         let next_id = {
             let mut next_id = self.next_id.borrow_mut();
             let id = *next_id;
@@ -80,13 +114,19 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
             node: self.node.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            ir_leaves: self.ir_leaves,
+            ir_node: RefCell::new(HfPlusNode::PipelineOp {
+                input: Box::new(self.ir_node.into_inner()),
+                pipeline,
+                produces_delta,
+            }),
             is_delta: produces_delta,
             _phantom: PhantomData,
         }
     }
 
     /// Reifies the stream to ensure that it is not producing deltas.
-    pub(crate) fn ensure_concrete(&self) -> Stream<'a, T, Windowed, N> {
+    pub(crate) fn ensure_concrete(self) -> Stream<'a, T, Windowed, N> {
         if self.is_delta {
             self.pipeline_op(parse_quote!(persist()), false)
         } else {
@@ -94,48 +134,52 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
         }
     }
 
-    pub fn map<U, F: Fn(T) -> U + 'a>(&self, f: impl IntoQuotedMut<'a, F>) -> Stream<'a, U, W, N> {
+    pub fn map<U, F: Fn(T) -> U + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Stream<'a, U, W, N> {
         let f = f.splice();
-        self.pipeline_op(parse_quote!(map(#f)), self.is_delta)
+        let is_delta = self.is_delta;
+        self.pipeline_op(parse_quote!(map(#f)), is_delta)
     }
 
     pub fn flat_map<U, I: IntoIterator<Item = U>, F: Fn(T) -> I + 'a>(
-        &self,
+        self,
         f: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, U, W, N> {
         let f = f.splice();
-        self.pipeline_op(parse_quote!(flat_map(#f)), self.is_delta)
+        let is_delta = self.is_delta;
+        self.pipeline_op(parse_quote!(flat_map(#f)), is_delta)
     }
 
-    pub fn enumerate(&self) -> Stream<'a, (usize, T), W, N> {
+    pub fn enumerate(self) -> Stream<'a, (usize, T), W, N> {
         self.ensure_concrete()
-            .pipeline_op(parse_quote!(enumerate()), self.is_delta)
+            .pipeline_op(parse_quote!(enumerate()), false)
     }
 
-    pub fn inspect<F: Fn(&T) + 'a>(&self, f: impl IntoQuotedMut<'a, F>) -> Stream<'a, T, W, N> {
+    pub fn inspect<F: Fn(&T) + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Stream<'a, T, W, N> {
         let f = f.splice();
         self.ensure_concrete()
-            .pipeline_op(parse_quote!(inspect(#f)), self.is_delta)
+            .pipeline_op(parse_quote!(inspect(#f)), false)
     }
 
     pub fn filter<F: Fn(&T) -> bool + 'a>(
-        &self,
+        self,
         f: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, T, W, N> {
         let f = f.splice();
-        self.pipeline_op(parse_quote!(filter(#f)), self.is_delta)
+        let is_delta = self.is_delta;
+        self.pipeline_op(parse_quote!(filter(#f)), is_delta)
     }
 
     pub fn filter_map<U, F: Fn(T) -> Option<U> + 'a>(
-        &self,
+        self,
         f: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, U, W, N> {
         let f = f.splice();
-        self.pipeline_op(parse_quote!(filter_map(#f)), self.is_delta)
+        let is_delta = self.is_delta;
+        self.pipeline_op(parse_quote!(filter_map(#f)), is_delta)
     }
 
     // TODO(shadaj): should allow for differing windows, using strongest one
-    pub fn cross_product<O>(&self, other: &Stream<'a, O, W, N>) -> Stream<'a, (T, O), W, N> {
+    pub fn cross_product<O>(self, other: Stream<'a, O, W, N>) -> Stream<'a, (T, O), W, N> {
         if self.node.id() != other.node.id() {
             panic!("cross_product must be called on streams on the same node");
         }
@@ -197,17 +241,24 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
             #other_ident -> [1]#ident;
         });
 
+        drop(builders);
+
         Stream {
             ident,
             node: self.node.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            ir_leaves: self.ir_leaves,
+            ir_node: RefCell::new(HfPlusNode::CrossProduct(
+                Box::new(self.ir_node.into_inner()),
+                Box::new(other.ir_node.into_inner()),
+            )),
             is_delta: output_delta,
             _phantom: PhantomData,
         }
     }
 
-    pub fn union(&self, other: &Stream<'a, T, W, N>) -> Stream<'a, T, W, N> {
+    pub fn union(self, other: Stream<'a, T, W, N>) -> Stream<'a, T, W, N> {
         if self.node.id() != other.node.id() {
             panic!("union must be called on streams on the same node");
         }
@@ -219,15 +270,16 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
             id
         };
 
-        let self_ident = &self.ensure_concrete().ident;
-        let other_ident = &other.ensure_concrete().ident;
+        let self_concrete = self.ensure_concrete();
+        let self_ident = self_concrete.ident;
+        let other_ident = other.ensure_concrete().ident;
         let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
 
-        let mut builders = self.builders.borrow_mut();
+        let mut builders = self_concrete.builders.borrow_mut();
         let builder = builders
             .as_mut()
             .unwrap()
-            .entry(self.node.id())
+            .entry(self_concrete.node.id())
             .or_default();
 
         builder.add_statement(parse_quote! {
@@ -244,45 +296,68 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
 
         Stream {
             ident,
-            node: self.node.clone(),
-            next_id: self.next_id,
-            builders: self.builders,
+            node: self_concrete.node.clone(),
+            next_id: self_concrete.next_id,
+            builders: self_concrete.builders,
+            ir_leaves: self_concrete.ir_leaves,
+            ir_node: RefCell::new(HfPlusNode::Todo),
             is_delta: false,
             _phantom: PhantomData,
         }
     }
 
-    pub fn for_each<F: Fn(T) + 'a>(&self, f: impl IntoQuotedMut<'a, F>) {
-        let self_ident = &self.ensure_concrete().ident;
+    pub fn for_each<F: Fn(T) + 'a>(self, f: impl IntoQuotedMut<'a, F>) {
+        let self_concrete = self.ensure_concrete();
+        let self_ident = self_concrete.ident;
         let f = f.splice();
 
-        self.builders
+        self_concrete
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
-            .entry(self.node.id())
+            .entry(self_concrete.node.id())
             .or_default()
             .add_statement(parse_quote! {
                 #self_ident -> for_each(#f);
             });
+
+        self_concrete
+            .ir_leaves
+            .borrow_mut()
+            .push(HfPlusNode::ForEach {
+                input: Box::new(self_concrete.ir_node.into_inner()),
+                f: syn::parse2::<syn::Expr>(f).unwrap().into(),
+            });
     }
 
-    pub fn dest_sink<S: Unpin + Sink<T> + 'a>(&self, sink: impl Quoted<'a, S>) {
-        let self_ident = &self.ensure_concrete().ident;
+    pub fn dest_sink<S: Unpin + Sink<T> + 'a>(self, sink: impl Quoted<'a, S>) {
+        let self_concrete = self.ensure_concrete();
+        let self_ident = self_concrete.ident;
         let sink = sink.splice();
 
-        self.builders
+        self_concrete
+            .builders
             .borrow_mut()
             .as_mut()
             .unwrap()
-            .entry(self.node.id())
+            .entry(self_concrete.node.id())
             .or_default()
             .add_statement(parse_quote! {
                 #self_ident -> dest_sink(#sink);
             });
+
+        self_concrete
+            .ir_leaves
+            .borrow_mut()
+            .push(HfPlusNode::DestSink {
+                sink: syn::parse2::<syn::Expr>(sink).unwrap().into(),
+                input: Box::new(self_concrete.ir_node.into_inner()),
+                send_delta: false,
+            });
     }
 
-    pub fn all_ticks(&self) -> Stream<'a, T, Windowed, N> {
+    pub fn all_ticks(self) -> Stream<'a, T, Windowed, N> {
         if self.is_delta {
             self.ensure_concrete().all_ticks()
         } else {
@@ -291,18 +366,22 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
                 node: self.node.clone(),
                 next_id: self.next_id,
                 builders: self.builders,
+                ir_leaves: self.ir_leaves,
+                ir_node: RefCell::new(HfPlusNode::Persist(Box::new(self.ir_node.into_inner()))),
                 is_delta: true,
                 _phantom: PhantomData,
             }
         }
     }
 
-    pub fn assume_windowed(&self) -> Stream<'a, T, Windowed, N> {
+    pub fn assume_windowed(self) -> Stream<'a, T, Windowed, N> {
         Stream {
             ident: self.ident.clone(),
             node: self.node.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            ir_leaves: self.ir_leaves,
+            ir_node: self.ir_node,
             is_delta: self.is_delta,
             _phantom: PhantomData,
         }
@@ -310,12 +389,14 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
 }
 
 impl<'a, T, N: Location<'a>> Stream<'a, T, Async, N> {
-    pub fn tick_batch(&self) -> Stream<'a, T, Windowed, N> {
+    pub fn tick_batch(self) -> Stream<'a, T, Windowed, N> {
         Stream {
             ident: self.ident.clone(),
             node: self.node.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            ir_leaves: self.ir_leaves,
+            ir_node: self.ir_node,
             is_delta: self.is_delta,
             _phantom: PhantomData,
         }
@@ -324,7 +405,7 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Async, N> {
 
 impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
     pub fn fold<A, I: Fn() -> A + 'a, C: Fn(&mut A, T)>(
-        &self,
+        self,
         init: impl IntoQuotedMut<'a, I>,
         comb: impl IntoQuotedMut<'a, C>,
     ) -> Stream<'a, A, Windowed, N> {
@@ -339,7 +420,7 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
     }
 
     pub fn reduce<C: Fn(&mut T, T) + 'a>(
-        &self,
+        self,
         comb: impl IntoQuotedMut<'a, C>,
     ) -> Stream<'a, T, Windowed, N> {
         let comb = comb.splice();
@@ -351,17 +432,19 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
         }
     }
 
-    pub fn count(&self) -> Stream<'a, usize, Windowed, N> {
+    pub fn count(self) -> Stream<'a, usize, Windowed, N> {
         self.fold(q!(|| 0usize), q!(|count, _| *count += 1))
     }
 
-    pub fn delta(&self) -> Stream<'a, T, Windowed, N> {
+    pub fn delta(self) -> Stream<'a, T, Windowed, N> {
         if self.is_delta {
             Stream {
                 ident: self.ident.clone(),
                 node: self.node.clone(),
                 next_id: self.next_id,
                 builders: self.builders,
+                ir_leaves: self.ir_leaves,
+                ir_node: self.ir_node,
                 is_delta: false,
                 _phantom: PhantomData,
             }
@@ -370,7 +453,7 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
         }
     }
 
-    pub fn unique(&self) -> Stream<'a, T, Windowed, N>
+    pub fn unique(self) -> Stream<'a, T, Windowed, N>
     where
         T: Eq + Hash,
     {
@@ -378,7 +461,7 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
             .pipeline_op(parse_quote!(unique::<'tick>()), false)
     }
 
-    pub fn filter_not_in(&self, other: &Stream<'a, T, Windowed, N>) -> Stream<'a, T, Windowed, N>
+    pub fn filter_not_in(self, other: Stream<'a, T, Windowed, N>) -> Stream<'a, T, Windowed, N>
     where
         T: Eq + Hash,
     {
@@ -393,6 +476,13 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
             id
         };
 
+        let self_node = self.node.clone();
+        let self_next_id_cell = self.next_id;
+        let self_builders_cell = self.builders;
+        let self_is_delta = self.is_delta;
+        let self_ir_leaves = self.ir_leaves;
+        let self_ir_node = self.ir_node.borrow().clone();
+
         let self_ident = if (self.is_delta, other.is_delta) == (true, false) {
             self.ensure_concrete().ident
         } else {
@@ -402,14 +492,14 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
         let other_ident = &other.ident;
         let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
 
-        let mut builders = self.builders.borrow_mut();
+        let mut builders = self_builders_cell.borrow_mut();
         let builder = builders
             .as_mut()
             .unwrap()
-            .entry(self.node.id())
+            .entry(self_node.id())
             .or_default();
 
-        let output_delta = match (self.is_delta, other.is_delta) {
+        let output_delta = match (self_is_delta, other.is_delta) {
             (true, true) => {
                 // we don't gain any performance by having the first be 'tick,
                 // just persist the second one and we get deltas out
@@ -454,32 +544,38 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
 
         Stream {
             ident,
-            node: self.node.clone(),
-            next_id: self.next_id,
-            builders: self.builders,
+            node: self_node,
+            next_id: self_next_id_cell,
+            builders: self_builders_cell,
+            ir_leaves: self_ir_leaves,
+            ir_node: RefCell::new(HfPlusNode::Difference(
+                Box::new(self_ir_node),
+                Box::new(other.ir_node.into_inner()),
+            )),
             is_delta: output_delta,
             _phantom: PhantomData,
         }
     }
 
     pub fn sample_every(
-        &self,
+        self,
         duration: impl Quoted<'a, std::time::Duration> + Copy + 'a,
     ) -> Stream<'a, T, Windowed, N> {
-        self.cross_product(&self.node.source_interval(duration).tick_batch())
-            .map(q!(|(a, _)| a))
+        let samples = self.node.source_interval(duration).tick_batch();
+        self.cross_product(samples).map(q!(|(a, _)| a))
     }
 }
 
 impl<'a, T: Clone, W, N: Location<'a>> Stream<'a, &T, W, N> {
-    pub fn cloned(&self) -> Stream<'a, T, W, N> {
-        self.pipeline_op(parse_quote!(map(|d| d.clone())), self.is_delta)
+    pub fn cloned(self) -> Stream<'a, T, W, N> {
+        let self_is_delta = self.is_delta;
+        self.pipeline_op(parse_quote!(map(|d| d.clone())), self_is_delta)
     }
 }
 
 impl<'a, K, V1, W, N: Location<'a>> Stream<'a, (K, V1), W, N> {
     // TODO(shadaj): figure out window semantics
-    pub fn join<W2, V2>(&self, n: &Stream<'a, (K, V2), W2, N>) -> Stream<'a, (K, (V1, V2)), W, N>
+    pub fn join<W2, V2>(self, n: Stream<'a, (K, V2), W2, N>) -> Stream<'a, (K, (V1, V2)), W, N>
     where
         K: Eq + Hash,
     {
@@ -544,17 +640,24 @@ impl<'a, K, V1, W, N: Location<'a>> Stream<'a, (K, V1), W, N> {
             #other_ident -> [1]#ident;
         });
 
+        drop(builders);
+
         Stream {
             ident,
             node: self.node.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            ir_leaves: self.ir_leaves,
+            ir_node: RefCell::new(HfPlusNode::Join(
+                Box::new(self.ir_node.into_inner()),
+                Box::new(n.ir_node.into_inner()),
+            )),
             is_delta: output_delta,
             _phantom: PhantomData,
         }
     }
 
-    pub fn anti_join<W2>(&self, n: &Stream<'a, K, W2, N>) -> Stream<'a, (K, V1), W, N>
+    pub fn anti_join<W2>(self, n: Stream<'a, K, W2, N>) -> Stream<'a, (K, V1), W, N>
     where
         K: Eq + Hash,
     {
@@ -569,6 +672,12 @@ impl<'a, K, V1, W, N: Location<'a>> Stream<'a, (K, V1), W, N> {
             id
         };
 
+        let self_is_delta = self.is_delta;
+        let node = self.node.clone();
+        let next_id_cell = self.next_id;
+        let builders_cell = self.builders;
+        let ir_leaves = self.ir_leaves;
+
         let self_ident = if (self.is_delta, n.is_delta) == (true, false) {
             self.ensure_concrete().ident
         } else {
@@ -578,14 +687,10 @@ impl<'a, K, V1, W, N: Location<'a>> Stream<'a, (K, V1), W, N> {
         let other_ident = &n.ident;
         let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
 
-        let mut builders = self.builders.borrow_mut();
-        let builder = builders
-            .as_mut()
-            .unwrap()
-            .entry(self.node.id())
-            .or_default();
+        let mut builders = builders_cell.borrow_mut();
+        let builder = builders.as_mut().unwrap().entry(node.id()).or_default();
 
-        let output_delta = match (self.is_delta, n.is_delta) {
+        let output_delta = match (self_is_delta, n.is_delta) {
             (true, true) => {
                 // we don't gain any performance by having the first be 'tick,
                 // just persist the second one and we get deltas out
@@ -630,9 +735,11 @@ impl<'a, K, V1, W, N: Location<'a>> Stream<'a, (K, V1), W, N> {
 
         Stream {
             ident,
-            node: self.node.clone(),
-            next_id: self.next_id,
-            builders: self.builders,
+            node,
+            next_id: next_id_cell,
+            builders: builders_cell,
+            ir_leaves,
+            ir_node: RefCell::new(HfPlusNode::Todo),
             is_delta: output_delta,
             _phantom: PhantomData,
         }
@@ -641,7 +748,7 @@ impl<'a, K, V1, W, N: Location<'a>> Stream<'a, (K, V1), W, N> {
 
 impl<'a, K: Eq + Hash, V, N: Location<'a>> Stream<'a, (K, V), Windowed, N> {
     pub fn fold_keyed<A, I: Fn() -> A + 'a, C: Fn(&mut A, V) + 'a>(
-        &self,
+        self,
         init: impl IntoQuotedMut<'a, I>,
         comb: impl IntoQuotedMut<'a, C>,
     ) -> Stream<'a, (K, A), Windowed, N> {
@@ -656,7 +763,7 @@ impl<'a, K: Eq + Hash, V, N: Location<'a>> Stream<'a, (K, V), Windowed, N> {
     }
 
     pub fn reduce_keyed<F: Fn(&mut V, V) + 'a>(
-        &self,
+        self,
         comb: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, (K, V), Windowed, N> {
         let comb = comb.splice();
@@ -698,7 +805,7 @@ impl VisitMut for RewriteAlloc {
     }
 }
 
-fn node_send_direct<'a, T, W, N: Location<'a>>(me: &Stream<'a, T, W, N>, sink: Pipeline) {
+fn node_send_direct<'a, T, W, N: Location<'a>>(me: &Stream<'a, T, W, N>, sink: TokenStream) {
     let self_ident = &me.ident;
 
     let mut builders_borrowed = me.builders.borrow_mut();
@@ -708,13 +815,19 @@ fn node_send_direct<'a, T, W, N: Location<'a>>(me: &Stream<'a, T, W, N>, sink: P
         .entry(me.node.id())
         .or_default()
         .add_statement(parse_quote! {
-            #self_ident -> #sink;
+            #self_ident -> dest_sink(#sink);
         });
+
+    me.ir_leaves.borrow_mut().push(HfPlusNode::DestSink {
+        input: Box::new(me.ir_node.replace(HfPlusNode::Todo)),
+        sink: syn::parse2::<syn::Expr>(sink).unwrap().into(),
+        send_delta: me.is_delta,
+    });
 }
 
 fn node_send_bincode<'a, T: Serialize, W, N: Location<'a>>(
     me: &Stream<'a, T, W, N>,
-    sink: Pipeline,
+    sink: TokenStream,
 ) {
     let self_ident = &me.ident;
 
@@ -733,13 +846,27 @@ fn node_send_bincode<'a, T: Serialize, W, N: Location<'a>>(
         .add_statement(parse_quote! {
             #self_ident -> map(|data| {
                 #root::runtime_support::bincode::serialize::<#t_type>(&data).unwrap().into()
-            }) -> #sink;
+            }) -> dest_sink(#sink);
         });
+
+    me.ir_leaves.borrow_mut().push(HfPlusNode::DestSink {
+        input: Box::new(HfPlusNode::PipelineOp {
+            input: Box::new(me.ir_node.replace(HfPlusNode::Todo)),
+            pipeline: parse_quote! {
+                map(|data| {
+                    #root::runtime_support::bincode::serialize::<#t_type>(&data).unwrap().into()
+                })
+            },
+            produces_delta: me.is_delta,
+        }),
+        send_delta: me.is_delta,
+        sink: syn::parse2::<syn::Expr>(sink).unwrap().into(),
+    });
 }
 
 fn cluster_demux_bincode<'a, T, W, N: Location<'a>>(
     me: &Stream<'a, (u32, T), W, N>,
-    sink: Pipeline,
+    sink: TokenStream,
 ) {
     let self_ident = &me.ident;
 
@@ -758,15 +885,31 @@ fn cluster_demux_bincode<'a, T, W, N: Location<'a>>(
         .add_statement(parse_quote! {
             #self_ident -> map(|(id, data)| {
                 (id, #root::runtime_support::bincode::serialize::<#t_type>(&data).unwrap().into())
-            }) -> #sink;
+            }) -> dest_sink(#sink);
+        });
+
+    me.ir_leaves
+        .borrow_mut()
+        .push(HfPlusNode::DestSink {
+            input: Box::new(HfPlusNode::PipelineOp {
+                input: Box::new(me.ir_node.replace(HfPlusNode::Todo)),
+                pipeline: parse_quote! {
+                    map(|(id, data)| {
+                        (id, #root::runtime_support::bincode::serialize::<#t_type>(&data).unwrap().into())
+                    })
+                },
+                produces_delta: me.is_delta,
+            }),
+            sink: syn::parse2::<syn::Expr>(sink).unwrap().into(),
+            send_delta: me.is_delta,
         });
 }
 
 fn node_recv_direct<'a, T, W, N: Location<'a>, N2: Location<'a>>(
     me: &Stream<'a, T, W, N>,
     other: &N2,
-    source: Pipeline,
-) -> syn::Ident {
+    source: TokenStream,
+) -> (syn::Ident, HfPlusNode) {
     let recipient_next_id = {
         let mut next_id = me.next_id.borrow_mut();
         let id = *next_id;
@@ -783,18 +926,25 @@ fn node_recv_direct<'a, T, W, N: Location<'a>, N2: Location<'a>>(
         .entry(other.id())
         .or_default()
         .add_statement(parse_quote! {
-            #ident = #source -> tee();
+            #ident = source_stream(#source) -> tee();
         });
 
-    ident
+    (
+        ident,
+        HfPlusNode::Source {
+            source: HfPlusSource::Stream(syn::parse2::<syn::Expr>(source).unwrap().into()),
+            location_id: other.id(),
+            produces_delta: me.is_delta,
+        },
+    )
 }
 
 fn node_recv_bincode<'a, T1, T2: DeserializeOwned, W, N: Location<'a>, N2: Location<'a>>(
     me: &Stream<'a, T1, W, N>,
     other: &N2,
-    source: Pipeline,
+    source: TokenStream,
     tagged: bool,
-) -> syn::Ident {
+) -> (syn::Ident, HfPlusNode) {
     let recipient_next_id = {
         let mut next_id = me.next_id.borrow_mut();
         let id = *next_id;
@@ -816,36 +966,69 @@ fn node_recv_bincode<'a, T1, T2: DeserializeOwned, W, N: Location<'a>, N2: Locat
     builders.entry(other.id()).or_default().add_statement({
         if tagged {
             parse_quote! {
-                #ident = #source -> map(|res| {
+                #ident = source_stream(#source) -> map(|res| {
                     let (id, b) = res.unwrap();
                     (id, #root::runtime_support::bincode::deserialize::<#t_type>(&b).unwrap())
                 }) -> tee();
             }
         } else {
             parse_quote! {
-                #ident = #source -> map(|res| {
+                #ident = source_stream(#source) -> map(|res| {
                     #root::runtime_support::bincode::deserialize::<#t_type>(&res.unwrap()).unwrap()
                 }) -> tee();
             }
         }
     });
 
-    ident
+    (
+        ident,
+        if tagged {
+            HfPlusNode::PipelineOp {
+                pipeline: parse_quote! {
+                    map(|res| {
+                        let (id, b) = res.unwrap();
+                        (id, #root::runtime_support::bincode::deserialize::<#t_type>(&b).unwrap())
+                    })
+                },
+                input: Box::new(HfPlusNode::Source {
+                    source: HfPlusSource::Stream(syn::parse2::<syn::Expr>(source).unwrap().into()),
+                    location_id: other.id(),
+                    produces_delta: me.is_delta,
+                }),
+                produces_delta: me.is_delta,
+            }
+        } else {
+            HfPlusNode::PipelineOp {
+                pipeline: parse_quote! {
+                    map(|res| {
+                        #root::runtime_support::bincode::deserialize::<#t_type>(&res.unwrap()).unwrap()
+                    })
+                },
+                input: Box::new(HfPlusNode::Source {
+                    source: HfPlusSource::Stream(syn::parse2::<syn::Expr>(source).unwrap().into()),
+                    location_id: other.id(),
+                    produces_delta: me.is_delta,
+                }),
+                produces_delta: me.is_delta,
+            }
+        },
+    )
 }
 
 impl<'a, W, N: Location<'a>> Stream<'a, Bytes, W, N> {
     pub fn send_bytes<N2: Location<'a>>(
-        &self,
+        self,
         other: &N2,
     ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
     where
         N: HfSendOneToOne<'a, N2>,
     {
         let send_port = self.node.next_port();
-        node_send_direct(self, self.node.gen_sink_statement(&send_port));
+        node_send_direct(&self, self.node.gen_sink_statement(&send_port));
 
         let recv_port = other.next_port();
-        let ident = node_recv_direct(self, other, N::gen_source_statement(other, &recv_port));
+        let (ident, recv_ir) =
+            node_recv_direct(&self, other, N::gen_source_statement(other, &recv_port));
 
         self.node.connect(other, &send_port, &recv_port);
 
@@ -854,23 +1037,26 @@ impl<'a, W, N: Location<'a>> Stream<'a, Bytes, W, N> {
             node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            ir_leaves: self.ir_leaves,
+            ir_node: RefCell::new(recv_ir),
             is_delta: self.is_delta,
             _phantom: PhantomData,
         }
     }
 
     pub fn send_bytes_tagged<N2: Location<'a>>(
-        &self,
+        self,
         other: &N2,
     ) -> Stream<'a, Result<(u32, BytesMut), io::Error>, Async, N2>
     where
         N: HfSendManyToOne<'a, N2>,
     {
         let send_port = self.node.next_port();
-        node_send_direct(self, self.node.gen_sink_statement(&send_port));
+        node_send_direct(&self, self.node.gen_sink_statement(&send_port));
 
         let recv_port = other.next_port();
-        let ident = node_recv_direct(self, other, N::gen_source_statement(other, &recv_port));
+        let (ident, recv_ir) =
+            node_recv_direct(&self, other, N::gen_source_statement(other, &recv_port));
 
         self.node.connect(other, &send_port, &recv_port);
 
@@ -879,13 +1065,15 @@ impl<'a, W, N: Location<'a>> Stream<'a, Bytes, W, N> {
             node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            ir_leaves: self.ir_leaves,
+            ir_node: RefCell::new(recv_ir),
             is_delta: self.is_delta,
             _phantom: PhantomData,
         }
     }
 
     pub fn send_bytes_interleaved<N2: Location<'a>>(
-        &self,
+        self,
         other: &N2,
     ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
     where
@@ -895,7 +1083,7 @@ impl<'a, W, N: Location<'a>> Stream<'a, Bytes, W, N> {
     }
 
     pub fn broadcast_bytes<N2: Location<'a> + Cluster<'a>>(
-        &self,
+        self,
         other: &N2,
     ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
     where
@@ -903,12 +1091,12 @@ impl<'a, W, N: Location<'a>> Stream<'a, Bytes, W, N> {
     {
         let other_ids = self.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
-            .cross_product(&self.assume_windowed())
+            .cross_product(self.assume_windowed())
             .demux_bytes(other)
     }
 
     pub fn broadcast_bytes_tagged<N2: Location<'a> + Cluster<'a>>(
-        &self,
+        self,
         other: &N2,
     ) -> Stream<'a, Result<(u32, BytesMut), io::Error>, Async, N2>
     where
@@ -916,12 +1104,12 @@ impl<'a, W, N: Location<'a>> Stream<'a, Bytes, W, N> {
     {
         let other_ids = self.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
-            .cross_product(&self.assume_windowed())
+            .cross_product(self.assume_windowed())
             .demux_bytes_tagged(other)
     }
 
     pub fn broadcast_bytes_interleaved<N2: Location<'a> + Cluster<'a>>(
-        &self,
+        self,
         other: &N2,
     ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
     where
@@ -933,16 +1121,16 @@ impl<'a, W, N: Location<'a>> Stream<'a, Bytes, W, N> {
 }
 
 impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N> {
-    pub fn send_bincode<N2: Location<'a>>(&self, other: &N2) -> Stream<'a, T, Async, N2>
+    pub fn send_bincode<N2: Location<'a>>(self, other: &N2) -> Stream<'a, T, Async, N2>
     where
         N: HfSendOneToOne<'a, N2>,
     {
         let send_port = self.node.next_port();
-        node_send_bincode(self, self.node.gen_sink_statement(&send_port));
+        node_send_bincode(&self, self.node.gen_sink_statement(&send_port));
 
         let recv_port = other.next_port();
-        let ident = node_recv_bincode::<_, T, _, _, _>(
-            self,
+        let (ident, recv_ir) = node_recv_bincode::<_, T, _, _, _>(
+            &self,
             other,
             N::gen_source_statement(other, &recv_port),
             false,
@@ -955,6 +1143,8 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N
             node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            ir_leaves: self.ir_leaves,
+            ir_node: RefCell::new(recv_ir),
             is_delta: self.is_delta,
             _phantom: PhantomData,
         }
@@ -971,7 +1161,7 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N
         node_send_bincode(self, self.node.gen_sink_statement(&send_port));
 
         let recv_port = other.next_port();
-        let ident = node_recv_bincode::<_, T, _, _, _>(
+        let (ident, recv_ir) = node_recv_bincode::<_, T, _, _, _>(
             self,
             other,
             N::gen_source_statement(other, &recv_port),
@@ -985,6 +1175,8 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N
             node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            ir_leaves: self.ir_leaves,
+            ir_node: RefCell::new(recv_ir),
             is_delta: self.is_delta,
             _phantom: PhantomData,
         }
@@ -998,7 +1190,7 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N
     }
 
     pub fn broadcast_bincode<N2: Location<'a> + Cluster<'a>>(
-        &self,
+        self,
         other: &N2,
     ) -> Stream<'a, T, Async, N2>
     where
@@ -1006,12 +1198,12 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N
     {
         let other_ids = self.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
-            .cross_product(&self.assume_windowed())
+            .cross_product(self.assume_windowed())
             .demux_bincode(other)
     }
 
     pub fn broadcast_bincode_tagged<N2: Location<'a> + Cluster<'a>>(
-        &self,
+        self,
         other: &N2,
     ) -> Stream<'a, (u32, T), Async, N2>
     where
@@ -1019,12 +1211,12 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N
     {
         let other_ids = self.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
-            .cross_product(&self.assume_windowed())
+            .cross_product(self.assume_windowed())
             .demux_bincode_tagged(other)
     }
 
     pub fn broadcast_bincode_interleaved<N2: Location<'a> + Cluster<'a>>(
-        &self,
+        self,
         other: &N2,
     ) -> Stream<'a, T, Async, N2>
     where
@@ -1046,7 +1238,8 @@ impl<'a, W, N: Location<'a>> Stream<'a, (u32, Bytes), W, N> {
         node_send_direct(self, self.node.gen_sink_statement(&send_port));
 
         let recv_port = other.next_port();
-        let ident = node_recv_direct(self, other, N::gen_source_statement(other, &recv_port));
+        let (ident, recv_ir) =
+            node_recv_direct(self, other, N::gen_source_statement(other, &recv_port));
 
         self.node.connect(other, &send_port, &recv_port);
 
@@ -1055,6 +1248,8 @@ impl<'a, W, N: Location<'a>> Stream<'a, (u32, Bytes), W, N> {
             node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            ir_leaves: self.ir_leaves,
+            ir_node: RefCell::new(recv_ir),
             is_delta: self.is_delta,
             _phantom: PhantomData,
         }
@@ -1062,16 +1257,16 @@ impl<'a, W, N: Location<'a>> Stream<'a, (u32, Bytes), W, N> {
 }
 
 impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, (u32, T), W, N> {
-    pub fn demux_bincode<N2: Location<'a>>(&self, other: &N2) -> Stream<'a, T, Async, N2>
+    pub fn demux_bincode<N2: Location<'a>>(self, other: &N2) -> Stream<'a, T, Async, N2>
     where
         N: HfSendOneToMany<'a, N2>,
     {
         let send_port = self.node.next_port();
-        cluster_demux_bincode(self, self.node.gen_sink_statement(&send_port));
+        cluster_demux_bincode(&self, self.node.gen_sink_statement(&send_port));
 
         let recv_port = other.next_port();
-        let ident = node_recv_bincode::<_, T, _, _, _>(
-            self,
+        let (ident, recv_ir) = node_recv_bincode::<_, T, _, _, _>(
+            &self,
             other,
             N::gen_source_statement(other, &recv_port),
             false,
@@ -1084,6 +1279,8 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, (u32, T
             node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            ir_leaves: self.ir_leaves,
+            ir_node: RefCell::new(recv_ir),
             is_delta: self.is_delta,
             _phantom: PhantomData,
         }
@@ -1092,17 +1289,18 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, (u32, T
 
 impl<'a, W, N: Location<'a>> Stream<'a, (u32, Bytes), W, N> {
     pub fn demux_bytes_tagged<N2: Location<'a>>(
-        &self,
+        self,
         other: &N2,
     ) -> Stream<'a, Result<(u32, BytesMut), io::Error>, Async, N2>
     where
         N: HfSendManyToMany<'a, N2>,
     {
         let send_port = self.node.next_port();
-        node_send_direct(self, self.node.gen_sink_statement(&send_port));
+        node_send_direct(&self, self.node.gen_sink_statement(&send_port));
 
         let recv_port = other.next_port();
-        let ident = node_recv_direct(self, other, N::gen_source_statement(other, &recv_port));
+        let (ident, recv_ir) =
+            node_recv_direct(&self, other, N::gen_source_statement(other, &recv_port));
 
         self.node.connect(other, &send_port, &recv_port);
 
@@ -1111,13 +1309,15 @@ impl<'a, W, N: Location<'a>> Stream<'a, (u32, Bytes), W, N> {
             node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            ir_leaves: self.ir_leaves,
+            ir_node: RefCell::new(recv_ir),
             is_delta: self.is_delta,
             _phantom: PhantomData,
         }
     }
 
     pub fn demux_bytes_interleaved<N2: Location<'a>>(
-        &self,
+        self,
         other: &N2,
     ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
     where
@@ -1130,18 +1330,18 @@ impl<'a, W, N: Location<'a>> Stream<'a, (u32, Bytes), W, N> {
 
 impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, (u32, T), W, N> {
     pub fn demux_bincode_tagged<N2: Location<'a>>(
-        &self,
+        self,
         other: &N2,
     ) -> Stream<'a, (u32, T), Async, N2>
     where
         N: HfSendManyToMany<'a, N2>,
     {
         let send_port = self.node.next_port();
-        cluster_demux_bincode(self, self.node.gen_sink_statement(&send_port));
+        cluster_demux_bincode(&self, self.node.gen_sink_statement(&send_port));
 
         let recv_port = other.next_port();
-        let ident = node_recv_bincode::<_, T, _, _, _>(
-            self,
+        let (ident, recv_ir) = node_recv_bincode::<_, T, _, _, _>(
+            &self,
             other,
             N::gen_source_statement(other, &recv_port),
             true,
@@ -1154,15 +1354,14 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, (u32, T
             node: other.clone(),
             next_id: self.next_id,
             builders: self.builders,
+            ir_leaves: self.ir_leaves,
+            ir_node: RefCell::new(recv_ir),
             is_delta: self.is_delta,
             _phantom: PhantomData,
         }
     }
 
-    pub fn demux_bincode_interleaved<N2: Location<'a>>(
-        &self,
-        other: &N2,
-    ) -> Stream<'a, T, Async, N2>
+    pub fn demux_bincode_interleaved<N2: Location<'a>>(self, other: &N2) -> Stream<'a, T, Async, N2>
     where
         N: HfSendManyToMany<'a, N2>,
     {
