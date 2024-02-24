@@ -29,6 +29,8 @@ pub use cycle::HfCycle;
 pub mod builder;
 pub use builder::FlowBuilder;
 
+pub mod ir;
+
 #[derive(Clone)]
 pub struct RuntimeContext<'a> {
     _phantom: PhantomData<&'a mut &'a ()>,
