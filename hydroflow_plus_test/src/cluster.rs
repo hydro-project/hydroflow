@@ -14,7 +14,7 @@ pub fn simple_cluster<'a, D: Deploy<'a>>(
     let numbers = process.source_iter(q!(0..5));
     let ids = process.source_iter(cluster.ids()).map(q!(|&id| id));
 
-    ids.cross_product(&numbers)
+    ids.cross_product(numbers)
         .map(q!(|(id, n)| (id, (id, n))))
         .demux_bincode(&cluster)
         .inspect(q!(|n| println!("cluster received: {:?}", n)))
@@ -71,47 +71,47 @@ pub fn map_reduce<'a, D: Deploy<'a>>(
     (process, cluster)
 }
 
-pub fn compute_pi<'a, D: Deploy<'a>>(
-    flow: &'a FlowBuilder<'a, D>,
-    process_spec: &impl ProcessSpec<'a, D>,
-    cluster_spec: &impl ClusterSpec<'a, D>,
-) -> D::Process {
-    let cluster = flow.cluster(cluster_spec);
-    let process = flow.process(process_spec);
+// pub fn compute_pi<'a, D: Deploy<'a>>(
+//     flow: &'a FlowBuilder<'a, D>,
+//     process_spec: &impl ProcessSpec<'a, D>,
+//     cluster_spec: &impl ClusterSpec<'a, D>,
+// ) -> D::Process {
+//     let cluster = flow.cluster(cluster_spec);
+//     let process = flow.process(process_spec);
 
-    let trials = cluster
-        .spin_batch(8192)
-        .map(q!(|_| rand::random::<(f64, f64)>()))
-        .map(q!(|(x, y)| x * x + y * y < 1.0))
-        .fold(
-            q!(|| (0u64, 0u64)),
-            q!(|(inside, total), sample_inside| {
-                if sample_inside {
-                    *inside += 1;
-                }
+//     let trials = cluster
+//         .spin_batch(8192)
+//         .map(q!(|_| rand::random::<(f64, f64)>()))
+//         .map(q!(|(x, y)| x * x + y * y < 1.0))
+//         .fold(
+//             q!(|| (0u64, 0u64)),
+//             q!(|(inside, total), sample_inside| {
+//                 if sample_inside {
+//                     *inside += 1;
+//                 }
 
-                *total += 1;
-            }),
-        );
+//                 *total += 1;
+//             }),
+//         );
 
-    trials
-        .send_bincode_interleaved(&process)
-        .all_ticks()
-        .reduce(q!(|(inside, total), (inside_batch, total_batch)| {
-            *inside += inside_batch;
-            *total += total_batch;
-        }))
-        .sample_every(q!(Duration::from_secs(1)))
-        .for_each(q!(|(inside, total)| {
-            println!(
-                "pi: {} ({} trials)",
-                4.0 * inside as f64 / total as f64,
-                total
-            );
-        }));
+//     trials
+//         .send_bincode_interleaved(&process)
+//         .all_ticks()
+//         .reduce(q!(|(inside, total), (inside_batch, total_batch)| {
+//             *inside += inside_batch;
+//             *total += total_batch;
+//         }))
+//         .sample_every(q!(Duration::from_secs(1)))
+//         .for_each(q!(|(inside, total)| {
+//             println!(
+//                 "pi: {} ({} trials)",
+//                 4.0 * inside as f64 / total as f64,
+//                 total
+//             );
+//         }));
 
-    process
-}
+//     process
+// }
 
 use hydroflow_plus::util::cli::HydroCLI;
 use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
@@ -143,14 +143,14 @@ pub fn map_reduce_runtime<'a>(
     flow.build(q!(cli.meta.subgraph_id))
 }
 
-#[stageleft::entry]
-pub fn compute_pi_runtime<'a>(
-    flow: &'a FlowBuilder<'a, CLIRuntime>,
-    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = compute_pi(flow, &cli, &cli);
-    flow.build(q!(cli.meta.subgraph_id))
-}
+// #[stageleft::entry]
+// pub fn compute_pi_runtime<'a>(
+//     flow: &'a FlowBuilder<'a, CLIRuntime>,
+//     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
+// ) -> impl Quoted<'a, Hydroflow<'a>> {
+//     let _ = compute_pi(flow, &cli, &cli);
+//     flow.build(q!(cli.meta.subgraph_id))
+// }
 
 #[stageleft::runtime]
 #[cfg(test)]
