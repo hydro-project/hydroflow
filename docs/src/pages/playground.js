@@ -195,6 +195,7 @@ export function EditorDemo({ compileFn, examples, mermaidId }) {
 
   const [showGraphOpts, setShowGraphOpts] = useState(false);
   const [writeGraphConfig, setWriteGraphConfig] = useState({
+    // Code relies on key order.
     noSubgraphs: false,
     noVarnames: false,
     noPullPush: false,
@@ -203,6 +204,7 @@ export function EditorDemo({ compileFn, examples, mermaidId }) {
   });
   const writeGraphConfigOnChange = (name) => {
     writeGraphConfig[name] = !writeGraphConfig[name];
+    // Code relies on key order, `{ ...x }` preserves key order.
     setWriteGraphConfig({ ...writeGraphConfig });
     return true;
   };
@@ -252,15 +254,9 @@ export function EditorDemo({ compileFn, examples, mermaidId }) {
     </div>
     <div className={styles["panel"]} style={{ marginRight: "0" }}>
       <div style={{ textAlign: "center", fontWeight: "700", marginBottom: "9px" }}>
-        <a className={showingMermaid ? styles["selected-tab"] : styles["unselected-tab"]} style={{
-          cursor: "pointer"
-        }} onClick={() => {
-          setShowingMermaid(true);
-        }}>Graph</a> / <a className={!showingMermaid ? styles["selected-tab"] : styles["unselected-tab"]} style={{
-          cursor: "pointer"
-        }} onClick={() => {
-          setShowingMermaid(false);
-        }}>Compiled Rust</a>
+        <a className={showingMermaid ? styles["selected-tab"] : styles["unselected-tab"]} onClick={() => setShowingMermaid(true)} role="button">Graph</a>
+        &nbsp;/&nbsp;
+        <a className={!showingMermaid ? styles["selected-tab"] : styles["unselected-tab"]} onClick={() => setShowingMermaid(false)} role="button">Compiled Rust</a>
       </div>
       {(() => {
         if (null == output) {
@@ -270,7 +266,30 @@ export function EditorDemo({ compileFn, examples, mermaidId }) {
           </div>;
         }
         if (showingMermaid) {
-          return <MermaidGraph id={mermaidId} source={output.mermaid} />;
+          return <div style={{position: 'relative' }}>
+            <a className={ styles["opts-toggle"] } onClick={() => setShowGraphOpts(!showGraphOpts)}>&hellip;</a>
+            <div className={ styles["opts-pane"] } style={{ display: showGraphOpts ? 'block' : 'none' }}>
+              <ul className={ styles["opts-list"] }>
+                {Object.keys(writeGraphConfig).map(name => {
+                  return (
+                    <li key={name}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          name={name}
+                          value={name}
+                          checked={writeGraphConfig[name]}
+                          onChange={() => writeGraphConfigOnChange(name)}
+                        />
+                        <code>{name}</code>
+                      </label>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+            <MermaidGraph id={mermaidId} source={output.mermaid} />
+          </div>;
         } else {
           return <Editor
             height="70vh"
@@ -283,27 +302,6 @@ export function EditorDemo({ compileFn, examples, mermaidId }) {
           />;
         }
       })()}
-    </div>
-    <div>
-      <li>
-        {Object.keys(writeGraphConfig).map(name => {
-          return (
-            <li>
-              <label>
-                <input
-                  key={name}
-                  type="checkbox"
-                  name={name}
-                  value={name}
-                  checked={writeGraphConfig[name]}
-                  onChange={() => writeGraphConfigOnChange(name)}
-                />
-                <code>{name}</code>
-              </label>
-            </li>
-          )
-        })}
-      </li>
     </div>
   </div>
 }
