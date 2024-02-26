@@ -185,15 +185,29 @@ export function DatalogDemo() {
 }
 
 export function EditorDemo({ compileFn, examples, mermaidId }) {
-  const [program, setProgram] = useState(Object.values(examples)[0]);
-  const [showingMermaid, setShowingMermaid] = useState(true);
-  const [editorAndMonaco, setEditorAndMonaco] = useState(null);
-
   if (siteConfig.customFields.LOAD_PLAYGROUND !== '1') {
     return <div>Please set LOAD_PLAYGROUND environment variable to 1 to enable the playground.</div>;
   }
 
-  const { output, diagnostics } = (compileFn)(program);
+  const [program, setProgram] = useState(Object.values(examples)[0]);
+  const [showingMermaid, setShowingMermaid] = useState(true);
+  const [editorAndMonaco, setEditorAndMonaco] = useState(null);
+
+  const [showGraphOpts, setShowGraphOpts] = useState(false);
+  const [writeGraphConfig, setWriteGraphConfig] = useState({
+    noSubgraphs: false,
+    noVarnames: false,
+    noPullPush: false,
+    noHandoffs: false,
+    opShortText: false,
+  });
+  const writeGraphConfigOnChange = (name) => {
+    writeGraphConfig[name] = !writeGraphConfig[name];
+    setWriteGraphConfig({ ...writeGraphConfig });
+    return true;
+  };
+
+  const { output, diagnostics } = (compileFn)(program, ...Object.values(writeGraphConfig));
   const numberOfLines = program.split("\n").length;
 
   useEffect(() => {
@@ -269,6 +283,27 @@ export function EditorDemo({ compileFn, examples, mermaidId }) {
           />;
         }
       })()}
+    </div>
+    <div>
+      <li>
+        {Object.keys(writeGraphConfig).map(name => {
+          return (
+            <li>
+              <label>
+                <input
+                  key={name}
+                  type="checkbox"
+                  name={name}
+                  value={name}
+                  checked={writeGraphConfig[name]}
+                  onChange={() => writeGraphConfigOnChange(name)}
+                />
+                <code>{name}</code>
+              </label>
+            </li>
+          )
+        })}
+      </li>
     </div>
   </div>
 }
