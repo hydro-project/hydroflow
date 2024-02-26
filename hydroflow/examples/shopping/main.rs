@@ -2,7 +2,6 @@
 
 use clap::{Parser, ValueEnum};
 use driver::run_driver;
-use hydroflow::tokio;
 use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 
 mod driver;
