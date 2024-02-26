@@ -10,7 +10,7 @@ use hydro_deploy::hydroflow_crate::ports::{
 };
 use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{Deployment, Host};
-use hydroflow_plus::builder::Builders;
+use hydroflow_plus::ir::HfPlusNode;
 use hydroflow_plus::location::{
     Cluster, ClusterSpec, Deploy, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany,
     HfSendOneToOne, Location, ProcessSpec,
@@ -118,7 +118,7 @@ impl<'a> Location<'a> for DeployNode<'a> {
         self.id
     }
 
-    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a Builders) {
+    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a RefCell<Vec<HfPlusNode>>) {
         self.builder.builder_components()
     }
 
@@ -168,7 +168,7 @@ impl<'a> Location<'a> for DeployCluster<'a> {
         self.id
     }
 
-    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a Builders) {
+    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a RefCell<Vec<HfPlusNode>>) {
         self.builder.builder_components()
     }
 
@@ -223,15 +223,12 @@ impl<'a> HfSendOneToOne<'a, DeployNode<'a>> for DeployNode<'a> {
         source_port.send_to(&mut recipient_port);
     }
 
-    fn gen_sink_statement(&self, _port: &Self::Port) -> hydroflow_plus::lang::parse::Pipeline {
-        parse_quote!(null())
+    fn gen_sink_statement(&self, _port: &Self::Port) -> syn::Expr {
+        parse_quote!(null)
     }
 
-    fn gen_source_statement(
-        _other: &DeployNode<'a>,
-        _port: &Self::Port,
-    ) -> hydroflow_plus::lang::parse::Pipeline {
-        parse_quote!(null())
+    fn gen_source_statement(_other: &DeployNode<'a>, _port: &Self::Port) -> syn::Expr {
+        parse_quote!(null)
     }
 }
 
@@ -264,15 +261,15 @@ impl<'a> HfSendManyToOne<'a, DeployNode<'a>> for DeployCluster<'a> {
         }
     }
 
-    fn gen_sink_statement(&self, _port: &Self::Port) -> hydroflow_plus::lang::parse::Pipeline {
-        parse_quote!(null())
+    fn gen_sink_statement(&self, _port: &Self::Port) -> syn::Expr {
+        parse_quote!(null)
     }
 
     fn gen_source_statement(
         _other: &DeployNode<'a>,
         _port: &DeployPort<DeployNode<'a>>,
-    ) -> hydroflow_plus::lang::parse::Pipeline {
-        parse_quote!(null())
+    ) -> syn::Expr {
+        parse_quote!(null)
     }
 }
 
@@ -309,15 +306,15 @@ impl<'a> HfSendOneToMany<'a, DeployCluster<'a>> for DeployNode<'a> {
         source_port.send_to(&mut recipient_port);
     }
 
-    fn gen_sink_statement(&self, _port: &Self::Port) -> hydroflow_plus::lang::parse::Pipeline {
-        parse_quote!(null())
+    fn gen_sink_statement(&self, _port: &Self::Port) -> syn::Expr {
+        parse_quote!(null)
     }
 
     fn gen_source_statement(
         _other: &DeployCluster<'a>,
         _port: &DeployPort<DeployCluster<'a>>,
-    ) -> hydroflow_plus::lang::parse::Pipeline {
-        parse_quote!(null())
+    ) -> syn::Expr {
+        parse_quote!(null)
     }
 }
 
@@ -362,15 +359,15 @@ impl<'a> HfSendManyToMany<'a, DeployCluster<'a>> for DeployCluster<'a> {
         }
     }
 
-    fn gen_sink_statement(&self, _port: &Self::Port) -> hydroflow_plus::lang::parse::Pipeline {
-        parse_quote!(null())
+    fn gen_sink_statement(&self, _port: &Self::Port) -> syn::Expr {
+        parse_quote!(null)
     }
 
     fn gen_source_statement(
         _other: &DeployCluster<'a>,
         _port: &DeployPort<DeployCluster<'a>>,
-    ) -> hydroflow_plus::lang::parse::Pipeline {
-        parse_quote!(null())
+    ) -> syn::Expr {
+        parse_quote!(null)
     }
 }
 

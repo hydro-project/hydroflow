@@ -1,0 +1,82 @@
+---
+source: hydroflow_plus_test/src/cluster.rs
+expression: builder.ir()
+---
+[
+    ForEach {
+        f: { use crate :: __staged :: cluster :: * ; | (inside , total) | { println ! ("pi: {} ({} trials)" , 4.0 * inside as f64 / total as f64 , total) ; } },
+        input: PipelineOp {
+            kind: "map",
+            gen_pipeline: <function>,
+            input: CrossProduct(
+                PipelineOp {
+                    kind: "reduce",
+                    gen_pipeline: <function>,
+                    input: Persist(
+                        PipelineOp {
+                            kind: "map",
+                            gen_pipeline: <function>,
+                            input: Network {
+                                to_location: 1,
+                                serialize_pipeline: Some(
+                                    Operator(
+                                        Operator {
+                                            path: "map",
+                                            args: [
+                                                "| data | { hydroflow_plus :: runtime_support :: bincode :: serialize :: < (u64 , u64) > (& data) . unwrap () . into () }",
+                                            ],
+                                        },
+                                    ),
+                                ),
+                                sink_expr: null,
+                                source_expr: null,
+                                deserialize_pipeline: Some(
+                                    Operator(
+                                        Operator {
+                                            path: "map",
+                                            args: [
+                                                "| res | { let (id , b) = res . unwrap () ; (id , hydroflow_plus :: runtime_support :: bincode :: deserialize :: < (u64 , u64) > (& b) . unwrap ()) }",
+                                            ],
+                                        },
+                                    ),
+                                ),
+                                input: PipelineOp {
+                                    kind: "fold",
+                                    gen_pipeline: <function>,
+                                    input: PipelineOp {
+                                        kind: "map",
+                                        gen_pipeline: <function>,
+                                        input: PipelineOp {
+                                            kind: "map",
+                                            gen_pipeline: <function>,
+                                            input: PipelineOp {
+                                                kind: "map",
+                                                gen_pipeline: <function>,
+                                                input: PipelineOp {
+                                                    kind: "flat_map",
+                                                    gen_pipeline: <function>,
+                                                    input: Source {
+                                                        source: Spin,
+                                                        produces_delta: false,
+                                                        location_id: 0,
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    ),
+                },
+                Source {
+                    source: Interval(
+                        { use crate :: __staged :: cluster :: * ; Duration :: from_secs (1) },
+                    ),
+                    produces_delta: false,
+                    location_id: 1,
+                },
+            ),
+        },
+    },
+]
