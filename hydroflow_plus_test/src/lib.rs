@@ -23,12 +23,12 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
     let node_one = flow.process(&());
 
     let source = node_zero.source_stream(input_stream);
-    let map1 = source.map(q!(|v| (v + 1, ())));
+    let map1 = source.clone().map(q!(|v| (v + 1, ())));
     let map2 = source.map(q!(|v| (v - 1, ())));
 
-    let joined = map1.join(&map2).map(q!(|t| t.0));
+    let joined = map1.join(map2).map(q!(|t| t.0));
 
-    joined.for_each(q!(|v| {
+    joined.clone().for_each(q!(|v| {
         output.send(v).unwrap();
     }));
 
@@ -64,7 +64,7 @@ pub fn chat_app<'a>(
         messages.tick_batch()
     };
 
-    let mut joined = users.cross_product(&messages);
+    let mut joined = users.cross_product(messages);
     if replay_messages {
         joined = joined.delta();
     }
@@ -90,12 +90,13 @@ pub fn graph_reachability<'a>(
 
     let (set_reached_cycle, reached_cycle) = process.cycle();
 
-    let reached = roots.union(&reached_cycle);
+    let reached = roots.union(reached_cycle);
     let reachable = reached
+        .clone()
         .map(q!(|r| (r, ())))
-        .join(&edges)
+        .join(edges)
         .map(q!(|(_from, (_, to))| to));
-    set_reached_cycle.complete(&reachable);
+    set_reached_cycle.complete(reachable);
 
     reached.tick_batch().unique().for_each(q!(|v| {
         reached_out.send(v).unwrap();
