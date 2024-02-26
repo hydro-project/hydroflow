@@ -3,7 +3,7 @@
 use std::any::Any;
 use std::borrow::Cow;
 use std::cell::Cell;
-use std::collections::VecDeque;
+use std::collections::{BTreeMap, VecDeque};
 use std::future::Future;
 use std::marker::PhantomData;
 
@@ -28,6 +28,8 @@ pub struct Hydroflow<'a> {
     pub(super) subgraphs: Vec<SubgraphData<'a>>,
     pub(super) context: Context,
     handoffs: Vec<HandoffData>,
+    /// The root handoff of a handoff that's tee'd.
+    handoff_root: BTreeMap<HandoffId, HandoffId>,
 
     /// TODO(mingwei): separate scheduler into its own struct/trait?
     /// Index is stratum, value is FIFO queue for that stratum.
@@ -68,6 +70,7 @@ impl<'a> Default for Hydroflow<'a> {
             subgraphs: Vec::new(),
             context,
             handoffs: Vec::new(),
+            handoff_root: BTreeMap::new(),
 
             stratum_queues,
             event_queue_recv,
@@ -80,20 +83,32 @@ impl<'a> Default for Hydroflow<'a> {
     }
 }
 impl<'a> Hydroflow<'a> {
-    /// Adds a new handoff to the graph.
-    pub fn add_handoff<Name: Into<Cow<'static, str>>>(
+    /// Adds a handoff that's teed from a old handoff `root` to the graph.
+    pub(crate) fn add_tee_handoff<Name: Into<Cow<'static, str>>>(
         &mut self,
         name: Name,
+        mut root: HandoffId,
         handoff: impl HandoffMeta + 'static,
     ) -> HandoffId {
         let handoff_id = HandoffId(self.handoffs.len());
+        let old_root = root;
+        while let Some(prev) = self.handoff_root.get(&root) {
+            if prev == &root {
+                break;
+            }
+            root = *prev;
+        }
+        // compress the path.
+        self.handoff_root.insert(old_root, root);
+        // insert handoff's root id.
+        self.handoff_root.insert(handoff_id, root);
 
         // insert handoff.
         self.handoffs.push(HandoffData::new(name.into(), handoff));
         handoff_id
     }
     /// Get the handoff data by ID.
-    pub fn get_handoff_by_id(&self, id: HandoffId) -> &HandoffData {
+    pub(crate) fn get_handoff_by_id(&self, id: HandoffId) -> &HandoffData {
         &self.handoffs[id.0]
     }
 }
@@ -598,7 +613,11 @@ impl<'a> Hydroflow<'a> {
         let subgraph_succs = send_ports.iter().map(|port| port.handoff_id).collect();
 
         for recv_port in recv_ports.iter() {
-            self.handoffs[recv_port.handoff_id.0].succs.push(sg_id);
+            let handoff_root = self
+                .handoff_root
+                .get(&recv_port.handoff_id)
+                .unwrap_or(&recv_port.handoff_id);
+            self.handoffs[handoff_root.0].succs.push(sg_id);
         }
         for send_port in send_ports.iter() {
             self.handoffs[send_port.handoff_id.0].preds.push(sg_id);

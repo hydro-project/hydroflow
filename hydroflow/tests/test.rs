@@ -289,6 +289,7 @@ fn test_auto_tee() {
     let mut data = vec![1, 2, 3, 4];
     let (source, sink1) = df.make_edge::<_, TeeingHandoff<i32>>("ok");
     let sink2 = sink1.tee(&mut df);
+    let sink3 = sink2.tee(&mut df);
 
     df.add_subgraph_source("source", source, move |_context, send| {
         send.give(std::mem::take(&mut data));
@@ -309,9 +310,18 @@ fn test_auto_tee() {
             out2_inner.borrow_mut().extend(v);
         }
     });
+
+    let out3 = Rc::new(RefCell::new(Vec::new()));
+    let out3_inner = out3.clone();
+    df.add_subgraph_sink("sink2", sink3, move |_context, recv| {
+        for v in recv.take_inner() {
+            out3_inner.borrow_mut().extend(v);
+        }
+    });
     df.run_available();
     assert_eq!((*out1).borrow().clone(), vec![1, 2, 3, 4]);
     assert_eq!((*out2).borrow().clone(), vec![1, 2, 3, 4]);
+    assert_eq!((*out3).borrow().clone(), vec![1, 2, 3, 4]);
 }
 
 #[multiplatform_test]

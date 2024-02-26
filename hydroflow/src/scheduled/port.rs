@@ -51,13 +51,13 @@ impl<T: Clone> RecvPort<TeeingHandoff<T>> {
     pub fn tee(&self, df: &mut Hydroflow) -> RecvPort<TeeingHandoff<T>> {
         let data = df.get_handoff_by_id(self.handoff_id);
         let name = data.name.clone();
-        let typed_data = data
+        let typed_handoff = data
             .handoff
             .any_ref()
             .downcast_ref::<TeeingHandoff<T>>()
             .unwrap();
-        let new_handoff = typed_data.tee();
-        let new_handoff_id = df.add_handoff(name, new_handoff);
+        let new_handoff = typed_handoff.tee();
+        let new_handoff_id = df.add_tee_handoff(name, self.handoff_id, new_handoff);
         let output_port = RecvPort {
             handoff_id: new_handoff_id,
             _marker: PhantomData,
