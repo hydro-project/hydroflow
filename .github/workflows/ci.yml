@@ -44,8 +44,6 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
       CARGO_INCREMENTAL: 0
-      SCCACHE_GHA_ENABLED: "true"
-      RUSTC_WRAPPER: "sccache"
       CARGO_PROFILE_DEV_STRIP: "debuginfo"
       CARGO_PROFILE_TEST_STRIP: "debuginfo"
       CARGO_PROFILE_RELEASE_STRIP: "debuginfo"
@@ -60,9 +58,17 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: ${{ matrix.rust_release == 'latest-nightly' }}
+          components: rustfmt, clippy
 
       - name: Run sccache-cache
+        if: matrix.rust_release == 'pinned-nightly'
         uses: mozilla-actions/sccache-action@v0.0.3
+
+      - name: Set Rust caching env vars
+        if: matrix.rust_release == 'pinned-nightly'
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - name: Run cargo fmt
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -144,8 +150,6 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
       CARGO_INCREMENTAL: 0
-      SCCACHE_GHA_ENABLED: "true"
-      RUSTC_WRAPPER: "sccache"
       CARGO_PROFILE_DEV_STRIP: "debuginfo"
       CARGO_PROFILE_TEST_STRIP: "debuginfo"
       CARGO_PROFILE_RELEASE_STRIP: "debuginfo"
@@ -162,7 +166,14 @@ jobs:
           override: ${{ matrix.rust_release == 'latest-nightly' }}
 
       - name: Run sccache-cache
+        if: matrix.rust_release == 'pinned-nightly'
         uses: mozilla-actions/sccache-action@v0.0.3
+
+      - name: Set Rust caching env vars
+        if: matrix.rust_release == 'pinned-nightly'
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - name: Install cargo-nextest (linux)
         if: ${{ matrix.os == 'ubuntu-latest' }}
