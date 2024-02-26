@@ -340,10 +340,7 @@ pub type MapUnionWithTombstonesTombstoneSingletonSetOnly<K, Val> =
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
-
     use super::*;
-    use crate::collections::{SingletonMap, SingletonSet};
     use crate::set_union::{SetUnion, SetUnionHashSet, SetUnionSingletonSet};
     use crate::test::check_all;
     use crate::NaiveLatticeOrd;

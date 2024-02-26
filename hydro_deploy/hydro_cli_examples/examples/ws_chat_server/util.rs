@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use futures::channel::mpsc::UnboundedSender;
 use futures::stream::SplitSink;
-use futures::{self, SinkExt, StreamExt};
+use futures::{SinkExt, StreamExt};
 use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio::net::TcpListener;
 use tokio_tungstenite::tungstenite::Message;

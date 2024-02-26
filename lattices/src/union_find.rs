@@ -253,7 +253,6 @@ pub type UnionFindOptionMap<K> = UnionFind<OptionMap<K, Cell<K>>>;
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::collections::SingletonMap;
     use crate::test::{check_all, check_atomize_each};
 
     #[test]

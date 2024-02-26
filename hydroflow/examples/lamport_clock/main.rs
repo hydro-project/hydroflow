@@ -2,7 +2,6 @@ use std::net::SocketAddr;
 
 use clap::{Parser, ValueEnum};
 use client::run_client;
-use hydroflow::tokio;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 use server::run_server;
