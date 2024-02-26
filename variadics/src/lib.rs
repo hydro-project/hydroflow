@@ -282,6 +282,7 @@ mod test {
 
     variadic_trait! {
         /// Variaidic list of futures.
+        #[allow(dead_code)]
         pub variadic<F> FuturesList where F: std::future::Future {}
     }
 
