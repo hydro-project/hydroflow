@@ -25,26 +25,37 @@
   }
 }
 
-.unselected-tab {
+.unselected-tab, .selected-tab, .opts-toggle {
+  cursor: pointer;
+}
+
+.unselected-tab, .unselected-tab:hover {
   color: gray;
 }
 
-.unselected-tab:hover {
-  color: gray;
-}
-
-.selected-tab {
+.selected-tab, .selected-tab:hover, .opts-toggle, .opts-toggle:hover {
   color: black;
 }
 
-.selected-tab:hover {
-  color: black;
-}
-
-[data-theme='dark'] .selected-tab {
+[data-theme='dark'] .selected-tab, [data-theme='dark'] .selected-tab:hover, [data-theme='dark'] .opts-toggle {
   color: white;
 }
 
-[data-theme='dark'] .selected-tab:hover {
-  color: white;
+.opts-toggle {
+  position: absolute;
+  top: -2em;
+  right: 0;
+}
+.opts-pane {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.5em;
+  background-color: var(--ifm-background-surface-color);
+  box-shadow: var(--ifm-navbar-shadow);
+}
+.opts-list {
+  list-style-type: none; /* Remove bullets */
+  padding: 0; /* Remove padding */
+  margin: 0;
 }
