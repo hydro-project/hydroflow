@@ -6,7 +6,6 @@ use std::path::Path;
 /// This is a remedial distributed deadlock (cycle) detector
 use clap::Parser;
 use hydroflow::lang::graph::{WriteConfig, WriteGraphType};
-use hydroflow::tokio;
 use peer::run_detector;
 use serde::Deserialize;
 

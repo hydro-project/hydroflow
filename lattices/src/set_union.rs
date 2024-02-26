@@ -174,7 +174,6 @@ pub type SetUnionOptionSet<Item> = SetUnion<OptionSet<Item>>;
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::collections::SingletonSet;
     use crate::test::{check_all, check_atomize_each};
 
     #[test]

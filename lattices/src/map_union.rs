@@ -274,7 +274,7 @@ mod test {
     use std::collections::HashSet;
 
     use super::*;
-    use crate::collections::{SingletonMap, SingletonSet};
+    use crate::collections::SingletonSet;
     use crate::set_union::{SetUnionHashSet, SetUnionSingletonSet};
     use crate::test::{cartesian_power, check_all, check_atomize_each};
 

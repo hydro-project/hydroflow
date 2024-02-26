@@ -1,4 +1,3 @@
-use std::iter::Iterator;
 use std::net::SocketAddr;
 
 use hydroflow::util::ipv4_resolve;
