@@ -30,6 +30,7 @@ jobs:
     timeout-minutes: 15
     needs: pre_job
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.rust_release == 'latest-nightly' }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
@@ -135,6 +136,7 @@ jobs:
     timeout-minutes: 25
     needs: pre_job
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.rust_release == 'latest-nightly' }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
