@@ -1,23 +1,20 @@
-use std::cell::RefCell;
-use std::collections::BTreeMap;
+use std::cell::{Ref, RefCell};
+use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 
-use hydroflow_lang::graph::{
-    eliminate_extra_unions_tees, partition_graph, propagate_flow_props, FlatGraphBuilder,
-};
+use hydroflow_lang::graph::{eliminate_extra_unions_tees, partition_graph, propagate_flow_props};
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use stageleft::{Quoted, QuotedContext};
 use syn::parse_quote;
 
+use crate::ir::HfPlusLeaf;
 use crate::location::{ClusterSpec, LocalDeploy, Location, ProcessSpec};
 use crate::{HfBuilt, RuntimeContext};
 
-pub type Builders = RefCell<Option<BTreeMap<usize, FlatGraphBuilder>>>;
-
 pub struct FlowBuilder<'a, D: LocalDeploy<'a> + ?Sized> {
     pub(crate) next_id: RefCell<usize>,
-    pub(crate) builders: Builders,
+    pub(crate) ir_leaves: RefCell<Vec<HfPlusLeaf>>,
     nodes: RefCell<Vec<D::Process>>,
     clusters: RefCell<Vec<D::Cluster>>,
 
@@ -31,6 +28,12 @@ pub struct FlowBuilder<'a, D: LocalDeploy<'a> + ?Sized> {
     _phantom: PhantomData<&'a mut &'a ()>,
 }
 
+impl<'a, D: LocalDeploy<'a> + ?Sized> FlowBuilder<'a, D> {
+    pub fn ir(&self) -> Ref<'_, Vec<HfPlusLeaf>> {
+        self.ir_leaves.borrow()
+    }
+}
+
 impl<'a, D: LocalDeploy<'a>> QuotedContext for FlowBuilder<'a, D> {
     fn create() -> Self {
         FlowBuilder::new()
@@ -42,7 +45,7 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
     pub fn new() -> FlowBuilder<'a, D> {
         FlowBuilder {
             next_id: RefCell::new(0),
-            builders: RefCell::new(Some(Default::default())),
+            ir_leaves: RefCell::new(Vec::new()),
             nodes: RefCell::new(Vec::new()),
             clusters: RefCell::new(Vec::new()),
             meta: RefCell::new(Default::default()),
@@ -51,8 +54,8 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
         }
     }
 
-    pub fn builder_components(&self) -> (&RefCell<usize>, &Builders) {
-        (&self.next_id, &self.builders)
+    pub fn builder_components(&self) -> (&RefCell<usize>, &RefCell<Vec<HfPlusLeaf>>) {
+        (&self.next_id, &self.ir_leaves)
     }
 
     pub fn process(&'a self, spec: &impl ProcessSpec<'a, D>) -> D::Process {
@@ -99,8 +102,21 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
     }
 }
 
-fn build_inner<'a, D: LocalDeploy<'a>>(me: &FlowBuilder<'a, D>, id: TokenStream) -> HfBuilt<'a> {
-    let builders = me.builders.borrow_mut().take().unwrap();
+fn build_inner<'a, D: LocalDeploy<'a>>(
+    me: &FlowBuilder<'a, D>,
+    id: TokenStream,
+    is_single: bool,
+) -> HfBuilt<'a> {
+    let mut builders = BTreeMap::new();
+    let mut built_tees = HashMap::new();
+    let mut next_stmt_id = 0;
+    for leaf in me.ir_leaves.replace(Default::default()) {
+        leaf.emit(&mut builders, &mut built_tees, &mut next_stmt_id);
+    }
+
+    if is_single && builders.len() != 1 {
+        panic!("Expected exactly one node in the graph.");
+    }
 
     let mut conditioned_tokens = None;
     for (subgraph_id, builder) in builders {
@@ -157,16 +173,12 @@ fn build_inner<'a, D: LocalDeploy<'a>>(me: &FlowBuilder<'a, D>, id: TokenStream)
 
 impl<'a, D: LocalDeploy<'a, RuntimeID = usize>> FlowBuilder<'a, D> {
     pub fn build(&self, id: impl Quoted<'a, usize>) -> HfBuilt<'a> {
-        build_inner(self, id.splice())
+        build_inner(self, id.splice(), false)
     }
 }
 
 impl<'a, D: LocalDeploy<'a, RuntimeID = ()>> FlowBuilder<'a, D> {
     pub fn build_single(&self) -> HfBuilt<'a> {
-        if self.builders.borrow().as_ref().unwrap().len() != 1 {
-            panic!("Expected exactly one node in the graph.");
-        }
-
-        build_inner(self, quote!(0))
+        build_inner(self, quote!(0), true)
     }
 }

@@ -14,7 +14,7 @@ pub fn simple_cluster<'a, D: Deploy<'a>>(
     let numbers = process.source_iter(q!(0..5));
     let ids = process.source_iter(cluster.ids()).map(q!(|&id| id));
 
-    ids.cross_product(&numbers)
+    ids.cross_product(numbers)
         .map(q!(|(id, n)| (id, (id, n))))
         .demux_bincode(&cluster)
         .inspect(q!(|n| println!("cluster received: {:?}", n)))
@@ -190,6 +190,8 @@ mod tests {
             }),
         );
 
+        insta::assert_debug_snapshot!(builder.ir());
+
         let mut deployment = deployment.into_inner();
 
         deployment.deploy().await.unwrap();
@@ -244,6 +246,8 @@ mod tests {
             }),
         );
 
+        insta::assert_debug_snapshot!(builder.ir());
+
         let mut deployment = deployment.into_inner();
 
         deployment.deploy().await.unwrap();
@@ -271,5 +275,43 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn map_reduce_ir() {
+        let deployment = RefCell::new(Deployment::new());
+        let localhost = deployment.borrow_mut().Localhost();
+
+        let builder = hydroflow_plus::FlowBuilder::new();
+        let _ = super::map_reduce(
+            &builder,
+            &DeployProcessSpec::new(|| {
+                deployment
+                    .borrow_mut()
+                    .add_service(HydroflowCrate::new(".", localhost.clone()))
+            }),
+            &DeployClusterSpec::new(Vec::new),
+        );
+
+        insta::assert_debug_snapshot!(builder.ir());
+    }
+
+    #[test]
+    fn compute_pi_ir() {
+        let deployment = RefCell::new(Deployment::new());
+        let localhost = deployment.borrow_mut().Localhost();
+
+        let builder = hydroflow_plus::FlowBuilder::new();
+        let _ = super::compute_pi(
+            &builder,
+            &DeployProcessSpec::new(|| {
+                deployment
+                    .borrow_mut()
+                    .add_service(HydroflowCrate::new(".", localhost.clone()))
+            }),
+            &DeployClusterSpec::new(Vec::new),
+        );
+
+        insta::assert_debug_snapshot!(builder.ir());
     }
 }
