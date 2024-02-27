@@ -1,0 +1,36 @@
+---
+source: hydroflow_plus_test/src/networked.rs
+expression: builder.ir()
+---
+[
+    ForEach {
+        f: { use crate :: __staged :: networked :: * ; | v : Result < BytesMut , _ > | { println ! ("node one received: {:?}" , std :: str :: from_utf8 (& v . unwrap ()) . unwrap ()) ; } },
+        input: Network {
+            to_location: 1,
+            serialize_pipeline: None,
+            sink_expr: null,
+            source_expr: null,
+            deserialize_pipeline: None,
+            input: Map {
+                f: { use crate :: __staged :: networked :: * ; | v | v . unwrap () . freeze () },
+                input: Source {
+                    source: Stream(
+                        null,
+                    ),
+                    produces_delta: false,
+                    location_id: 0,
+                },
+            },
+        },
+    },
+    ForEach {
+        f: { use crate :: __staged :: networked :: * ; | v : Result < BytesMut , _ > | { println ! ("cluster received: {:?}" , std :: str :: from_utf8 (& v . unwrap ()) . unwrap ()) ; } },
+        input: Source {
+            source: Stream(
+                null,
+            ),
+            produces_delta: false,
+            location_id: 2,
+        },
+    },
+]

@@ -7,9 +7,8 @@ use hydroflow::bytes::BytesMut;
 use hydroflow::futures::stream::Stream as FuturesStream;
 use proc_macro2::Span;
 use stageleft::{q, Quoted};
-use syn::parse_quote;
 
-use crate::builder::Builders;
+use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::stream::{Async, Windowed};
 use crate::{FlowBuilder, HfCycle, Stream};
 
@@ -68,41 +67,22 @@ pub trait Location<'a>: Clone {
     type Meta;
 
     fn id(&self) -> usize;
-    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a Builders);
+    fn ir_leaves(&self) -> &'a RefCell<Vec<HfPlusLeaf>>;
+    fn cycle_counter(&self) -> &RefCell<usize>;
     fn next_port(&self) -> Self::Port;
 
     fn update_meta(&mut self, meta: &Self::Meta);
 
     fn spin(&self) -> Stream<'a, (), Async, Self> {
-        let (next_id_cell, builders) = self.flow_builder();
-
-        let next_id = {
-            let mut next_id = next_id_cell.borrow_mut();
-            let id = *next_id;
-            *next_id += 1;
-            id
-        };
-
-        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
-
-        builders
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .entry(self.id())
-            .or_default()
-            .add_statement(parse_quote! {
-                #ident = spin() -> tee();
-            });
-
-        Stream {
-            ident,
-            node: self.clone(),
-            next_id: next_id_cell,
-            builders,
-            is_delta: false,
-            _phantom: PhantomData,
-        }
+        Stream::new(
+            self.clone(),
+            self.ir_leaves(),
+            HfPlusNode::Source {
+                source: HfPlusSource::Spin(),
+                produces_delta: false,
+                location_id: self.id(),
+            },
+        )
     }
 
     fn spin_batch(
@@ -119,36 +99,17 @@ pub trait Location<'a>: Clone {
         &self,
         e: impl Quoted<'a, E>,
     ) -> Stream<'a, T, Async, Self> {
-        let (next_id_cell, builders) = self.flow_builder();
-
-        let next_id = {
-            let mut next_id = next_id_cell.borrow_mut();
-            let id = *next_id;
-            *next_id += 1;
-            id
-        };
-
-        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
         let e = e.splice();
 
-        builders
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .entry(self.id())
-            .or_default()
-            .add_statement(parse_quote! {
-                #ident = source_stream(#e) -> tee();
-            });
-
-        Stream {
-            ident,
-            node: self.clone(),
-            next_id: next_id_cell,
-            builders,
-            is_delta: false,
-            _phantom: PhantomData,
-        }
+        Stream::new(
+            self.clone(),
+            self.ir_leaves(),
+            HfPlusNode::Source {
+                source: HfPlusSource::Stream(e.into()),
+                location_id: self.id(),
+                produces_delta: false,
+            },
+        )
     }
 
     fn source_external(
@@ -160,39 +121,20 @@ pub trait Location<'a>: Clone {
     where
         Self: HfSendOneToOne<'a, Self>,
     {
-        let (next_id_cell, builders) = self.flow_builder();
-
-        let next_id = {
-            let mut next_id = next_id_cell.borrow_mut();
-            let id = *next_id;
-            *next_id += 1;
-            id
-        };
-
-        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
         let port = self.next_port();
         let source_pipeline = Self::gen_source_statement(self, &port);
 
-        builders
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .entry(self.id())
-            .or_default()
-            .add_statement(parse_quote! {
-                #ident = #source_pipeline -> tee();
-            });
-
         (
             port,
-            Stream {
-                ident,
-                node: self.clone(),
-                next_id: next_id_cell,
-                builders,
-                is_delta: false,
-                _phantom: PhantomData,
-            },
+            Stream::new(
+                self.clone(),
+                self.ir_leaves(),
+                HfPlusNode::Source {
+                    source: HfPlusSource::Stream(source_pipeline.into()),
+                    location_id: self.id(),
+                    produces_delta: false,
+                },
+            ),
         )
     }
 
@@ -205,39 +147,20 @@ pub trait Location<'a>: Clone {
     where
         S: HfSendOneToMany<'a, Self>,
     {
-        let (next_id_cell, builders) = self.flow_builder();
-
-        let next_id = {
-            let mut next_id = next_id_cell.borrow_mut();
-            let id = *next_id;
-            *next_id += 1;
-            id
-        };
-
-        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
         let port = self.next_port();
         let source_pipeline = S::gen_source_statement(self, &port);
 
-        builders
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .entry(self.id())
-            .or_default()
-            .add_statement(parse_quote! {
-                #ident = #source_pipeline -> tee();
-            });
-
         (
             port,
-            Stream {
-                ident,
-                node: self.clone(),
-                next_id: next_id_cell,
-                builders,
-                is_delta: false,
-                _phantom: PhantomData,
-            },
+            Stream::new(
+                self.clone(),
+                self.ir_leaves(),
+                HfPlusNode::Source {
+                    source: HfPlusSource::Stream(source_pipeline.into()),
+                    location_id: self.id(),
+                    produces_delta: false,
+                },
+            ),
         )
     }
 
@@ -245,76 +168,38 @@ pub trait Location<'a>: Clone {
         &self,
         e: impl Quoted<'a, E>,
     ) -> Stream<'a, T, Windowed, Self> {
-        let (next_id_cell, builders) = self.flow_builder();
-
-        let next_id = {
-            let mut next_id = next_id_cell.borrow_mut();
-            let id = *next_id;
-            *next_id += 1;
-            id
-        };
-
-        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
         let e = e.splice();
 
-        builders
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .entry(self.id())
-            .or_default()
-            .add_statement(parse_quote! {
-                #ident = source_iter(#e) -> tee();
-            });
-
-        Stream {
-            ident,
-            node: self.clone(),
-            next_id: next_id_cell,
-            builders,
-            is_delta: false,
-            _phantom: PhantomData,
-        }
+        Stream::new(
+            self.clone(),
+            self.ir_leaves(),
+            HfPlusNode::Source {
+                source: HfPlusSource::Iter(e.into()),
+                location_id: self.id(),
+                produces_delta: false,
+            },
+        )
     }
 
     fn source_interval(
         &self,
         interval: impl Quoted<'a, Duration> + Copy + 'a,
     ) -> Stream<'a, hydroflow::tokio::time::Instant, Async, Self> {
-        let (next_id_cell, builders) = self.flow_builder();
-
-        let next_id = {
-            let mut next_id = next_id_cell.borrow_mut();
-            let id = *next_id;
-            *next_id += 1;
-            id
-        };
-
-        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
         let interval = interval.splice();
 
-        builders
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .entry(self.id())
-            .or_default()
-            .add_statement(parse_quote! {
-                #ident = source_interval(#interval) -> tee();
-            });
-
-        Stream {
-            ident,
-            node: self.clone(),
-            next_id: next_id_cell,
-            builders,
-            is_delta: false,
-            _phantom: PhantomData,
-        }
+        Stream::new(
+            self.clone(),
+            self.ir_leaves(),
+            HfPlusNode::Source {
+                source: HfPlusSource::Interval(interval.into()),
+                location_id: self.id(),
+                produces_delta: false,
+            },
+        )
     }
 
     fn cycle<T, W>(&self) -> (HfCycle<'a, T, W, Self>, Stream<'a, T, W, Self>) {
-        let (next_id_cell, builders) = self.flow_builder();
+        let next_id_cell = self.cycle_counter();
 
         let next_id = {
             let mut next_id = next_id_cell.borrow_mut();
@@ -323,33 +208,23 @@ pub trait Location<'a>: Clone {
             id
         };
 
-        let ident = syn::Ident::new(&format!("stream_{}", next_id), Span::call_site());
-
-        builders
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .entry(self.id())
-            .or_default()
-            .add_statement(parse_quote! {
-                #ident = tee();
-            });
+        let ident = syn::Ident::new(&format!("cycle_{}", next_id), Span::call_site());
 
         (
             HfCycle {
                 ident: ident.clone(),
                 node: self.clone(),
-                builders,
+                ir_leaves: self.ir_leaves(),
                 _phantom: PhantomData,
             },
-            Stream {
-                ident,
-                node: self.clone(),
-                next_id: next_id_cell,
-                builders,
-                is_delta: false,
-                _phantom: PhantomData,
-            },
+            Stream::new(
+                self.clone(),
+                self.ir_leaves(),
+                HfPlusNode::CycleSource {
+                    ident,
+                    location_id: self.id(),
+                },
+            ),
         )
     }
 }
