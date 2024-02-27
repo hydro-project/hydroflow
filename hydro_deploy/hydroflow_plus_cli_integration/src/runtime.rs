@@ -17,6 +17,7 @@ use super::HydroflowPlusMeta;
 pub struct CLIRuntime {}
 
 impl<'a> Deploy<'a> for CLIRuntime {
+    type ClusterID = u32;
     type Process = CLIRuntimeNode<'a>;
     type Cluster = CLIRuntimeCluster<'a>;
     type Meta = ();
@@ -94,6 +95,8 @@ impl<'a> Location<'a> for CLIRuntimeCluster<'a> {
 }
 
 impl<'a> Cluster<'a> for CLIRuntimeCluster<'a> {
+    type Id = u32;
+
     fn ids(&self) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
         let cli = self.cli;
         let self_id = self.id;
@@ -129,7 +132,7 @@ impl<'a> HfSendOneToOne<'a, CLIRuntimeNode<'a>> for CLIRuntimeNode<'a> {
     }
 }
 
-impl<'a> HfSendManyToOne<'a, CLIRuntimeNode<'a>> for CLIRuntimeCluster<'a> {
+impl<'a> HfSendManyToOne<'a, CLIRuntimeNode<'a>, u32> for CLIRuntimeCluster<'a> {
     fn connect(&self, _other: &CLIRuntimeNode, _source_port: &String, _recipient_port: &String) {}
 
     fn gen_sink_statement(&self, port: &String) -> syn::Expr {
@@ -157,7 +160,7 @@ impl<'a> HfSendManyToOne<'a, CLIRuntimeNode<'a>> for CLIRuntimeCluster<'a> {
     }
 }
 
-impl<'a> HfSendOneToMany<'a, CLIRuntimeCluster<'a>> for CLIRuntimeNode<'a> {
+impl<'a> HfSendOneToMany<'a, CLIRuntimeCluster<'a>, u32> for CLIRuntimeNode<'a> {
     fn connect(&self, _other: &CLIRuntimeCluster, _source_port: &String, _recipient_port: &String) {
     }
 
@@ -188,7 +191,7 @@ impl<'a> HfSendOneToMany<'a, CLIRuntimeCluster<'a>> for CLIRuntimeNode<'a> {
     }
 }
 
-impl<'a> HfSendManyToMany<'a, CLIRuntimeCluster<'a>> for CLIRuntimeCluster<'a> {
+impl<'a> HfSendManyToMany<'a, CLIRuntimeCluster<'a>, u32> for CLIRuntimeCluster<'a> {
     fn connect(&self, _other: &CLIRuntimeCluster, _source_port: &String, _recipient_port: &String) {
     }
 
