@@ -9,6 +9,7 @@ use crate::FlowBuilder;
 pub struct SingleProcessGraph {}
 
 impl<'a> LocalDeploy<'a> for SingleProcessGraph {
+    type ClusterID = ();
     type Process = SingleNode<'a>;
     type Cluster = SingleNode<'a>;
     type Meta = ();
@@ -55,7 +56,9 @@ impl<'a> Location<'a> for SingleNode<'a> {
 }
 
 impl<'a> Cluster<'a> for SingleNode<'a> {
-    fn ids(&self) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
+    type Id = ();
+
+    fn ids(&self) -> impl Quoted<'a, &'a Vec<()>> + Copy + 'a {
         panic!();
         #[allow(unreachable_code)]
         RuntimeData::new("")
@@ -65,6 +68,7 @@ impl<'a> Cluster<'a> for SingleNode<'a> {
 pub struct MultiGraph {}
 
 impl<'a> LocalDeploy<'a> for MultiGraph {
+    type ClusterID = u32;
     type Process = MultiNode<'a>;
     type Cluster = MultiNode<'a>;
     type Meta = ();
@@ -112,6 +116,8 @@ impl<'a> Location<'a> for MultiNode<'a> {
 }
 
 impl<'a> Cluster<'a> for MultiNode<'a> {
+    type Id = u32;
+
     fn ids(&self) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a {
         panic!();
         #[allow(unreachable_code)]
