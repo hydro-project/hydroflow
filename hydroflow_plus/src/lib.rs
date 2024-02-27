@@ -10,6 +10,9 @@ use quote::quote;
 use stageleft::runtime_support::FreeVariable;
 use stageleft::Quoted;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ClusterID(pub u32);
+
 pub mod runtime_support {
     pub use bincode;
 }

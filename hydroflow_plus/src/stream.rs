@@ -1,11 +1,10 @@
 use std::cell::RefCell;
 use std::hash::Hash;
-use std::io;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::rc::Rc;
 
-use hydroflow::bytes::{Bytes, BytesMut};
+use hydroflow::bytes::Bytes;
 use hydroflow::futures::Sink;
 use hydroflow_lang::parse::Pipeline;
 use proc_macro2::{Span, TokenStream};
@@ -17,9 +16,7 @@ use syn::parse_quote;
 use syn::visit_mut::VisitMut;
 
 use crate::ir::{DebugPipelineFn, HfPlusLeaf, HfPlusNode};
-use crate::location::{
-    Cluster, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany, HfSendOneToOne, Location,
-};
+use crate::location::{Cluster, HfSend, Location};
 
 /// Marks the stream as being asynchronous, which means the presence
 /// of all elements is directly influenced by the runtime's batching
@@ -461,124 +458,18 @@ fn deserialize_bincode<T2: DeserializeOwned>(tagged: bool) -> Pipeline {
     }
 }
 
-impl<'a, W, N: Location<'a>> Stream<'a, Bytes, W, N> {
-    pub fn send_bytes<N2: Location<'a>>(
-        self,
-        other: &N2,
-    ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
+impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
+    pub fn send_bincode<N2: Location<'a>, V, CoreType>(self, other: &N2) -> Stream<'a, N::Out<CoreType>, Async, N2>
     where
-        N: HfSendOneToOne<'a, N2>,
+        N: HfSend<'a, N2, V, In<CoreType> = T>,
+        CoreType: Serialize + DeserializeOwned,
     {
         let send_port = self.node.next_port();
+        let serialize_pipeline = Some(serialize_bincode::<CoreType>(N::is_demux()));
         let sink_expr = self.node.gen_sink_statement(&send_port).into();
 
         let recv_port = other.next_port();
-        let source_expr = N::gen_source_statement(other, &recv_port).into();
-
-        self.node.connect(other, &send_port, &recv_port);
-
-        Stream::new(
-            other.clone(),
-            self.ir_leaves,
-            HfPlusNode::Network {
-                to_location: other.id(),
-                serialize_pipeline: None,
-                sink_expr,
-                source_expr,
-                deserialize_pipeline: None,
-                input: Box::new(self.ir_node.into_inner()),
-            },
-        )
-    }
-
-    pub fn send_bytes_tagged<N2: Location<'a>>(
-        self,
-        other: &N2,
-    ) -> Stream<'a, Result<(u32, BytesMut), io::Error>, Async, N2>
-    where
-        N: HfSendManyToOne<'a, N2>,
-    {
-        let send_port = self.node.next_port();
-        let sink_expr = self.node.gen_sink_statement(&send_port).into();
-
-        let recv_port = other.next_port();
-        let source_expr = N::gen_source_statement(other, &recv_port).into();
-
-        self.node.connect(other, &send_port, &recv_port);
-
-        Stream::new(
-            other.clone(),
-            self.ir_leaves,
-            HfPlusNode::Network {
-                to_location: other.id(),
-                serialize_pipeline: None,
-                sink_expr,
-                source_expr,
-                deserialize_pipeline: None,
-                input: Box::new(self.ir_node.into_inner()),
-            },
-        )
-    }
-
-    pub fn send_bytes_interleaved<N2: Location<'a>>(
-        self,
-        other: &N2,
-    ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
-    where
-        N: HfSendManyToOne<'a, N2>,
-    {
-        self.send_bytes_tagged(other).map(q!(|r| r.map(|(_, b)| b)))
-    }
-
-    pub fn broadcast_bytes<N2: Location<'a> + Cluster<'a>>(
-        self,
-        other: &N2,
-    ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
-    where
-        N: HfSendOneToMany<'a, N2>,
-    {
-        let other_ids = self.node.source_iter(other.ids()).cloned().all_ticks();
-        other_ids
-            .cross_product(self.assume_windowed())
-            .demux_bytes(other)
-    }
-
-    pub fn broadcast_bytes_tagged<N2: Location<'a> + Cluster<'a>>(
-        self,
-        other: &N2,
-    ) -> Stream<'a, Result<(u32, BytesMut), io::Error>, Async, N2>
-    where
-        N: HfSendManyToMany<'a, N2>,
-    {
-        let other_ids = self.node.source_iter(other.ids()).cloned().all_ticks();
-        other_ids
-            .cross_product(self.assume_windowed())
-            .demux_bytes_tagged(other)
-    }
-
-    pub fn broadcast_bytes_interleaved<N2: Location<'a> + Cluster<'a>>(
-        self,
-        other: &N2,
-    ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
-    where
-        N: HfSendManyToMany<'a, N2>,
-    {
-        self.broadcast_bytes_tagged(other)
-            .map(q!(|r| r.map(|(_, b)| b)))
-    }
-}
-
-impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N> {
-    pub fn send_bincode<N2: Location<'a>>(self, other: &N2) -> Stream<'a, T, Async, N2>
-    where
-        N: HfSendOneToOne<'a, N2>,
-    {
-        let send_port = self.node.next_port();
-        let serialize_pipeline = Some(serialize_bincode::<T>(false));
-        let sink_expr = self.node.gen_sink_statement(&send_port).into();
-
-        let recv_port = other.next_port();
-        let deserialize_pipeline = Some(deserialize_bincode::<T>(false));
+        let deserialize_pipeline = Some(deserialize_bincode::<CoreType>(N::is_tagged()));
         let source_expr = N::gen_source_statement(other, &recv_port).into();
 
         self.node.connect(other, &send_port, &recv_port);
@@ -597,19 +488,14 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N
         )
     }
 
-    pub fn send_bincode_tagged<N2: Location<'a>>(
-        self,
-        other: &N2,
-    ) -> Stream<'a, (u32, T), Async, N2>
+    pub fn send_bytes<N2: Location<'a>, V>(self, other: &N2) -> Stream<'a, N::Out<Bytes>, Async, N2>
     where
-        N: HfSendManyToOne<'a, N2>,
+        N: HfSend<'a, N2, V, In<Bytes> = T>,
     {
         let send_port = self.node.next_port();
-        let serialize_pipeline = Some(serialize_bincode::<T>(false));
         let sink_expr = self.node.gen_sink_statement(&send_port).into();
 
         let recv_port = other.next_port();
-        let deserialize_pipeline = Some(deserialize_bincode::<T>(true));
         let source_expr = N::gen_source_statement(other, &recv_port).into();
 
         self.node.connect(other, &send_port, &recv_port);
@@ -619,198 +505,96 @@ impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, T, W, N
             self.ir_leaves,
             HfPlusNode::Network {
                 to_location: other.id(),
-                serialize_pipeline,
+                serialize_pipeline: None,
                 sink_expr,
                 source_expr,
-                deserialize_pipeline,
+                deserialize_pipeline: if N::is_tagged() {
+                    Some(
+                        parse_quote!(map(|(id, b)| (id, b.unwrap().freeze())))
+                    )
+                } else {
+                    Some(
+                        parse_quote!(map(|b| b.unwrap().freeze()))
+                    )
+                },
                 input: Box::new(self.ir_node.into_inner()),
             },
         )
     }
 
-    pub fn send_bincode_interleaved<N2: Location<'a>>(self, other: &N2) -> Stream<'a, T, Async, N2>
-    where
-        N: HfSendManyToOne<'a, N2>,
-    {
-        self.send_bincode_tagged(other).map(q!(|(_, b)| b))
-    }
-
-    pub fn broadcast_bincode<N2: Location<'a> + Cluster<'a>>(
+    pub fn send_bincode_interleaved<N2: Location<'a>, Tag, CoreType, V>(
         self,
         other: &N2,
     ) -> Stream<'a, T, Async, N2>
     where
-        N: HfSendOneToMany<'a, N2>,
+        N: HfSend<'a, N2, V, In<CoreType> = T, Out<CoreType> = (Tag, T)>,
+        CoreType: Serialize + DeserializeOwned,
     {
-        let other_ids = self.node.source_iter(other.ids()).cloned().all_ticks();
-        other_ids
-            .cross_product(self.assume_windowed())
-            .demux_bincode(other)
+        self.send_bincode::<N2, V, CoreType>(other).map(q!(|(_, b)| b))
     }
 
-    pub fn broadcast_bincode_tagged<N2: Location<'a> + Cluster<'a>>(
+    pub fn send_bytes_interleaved<N2: Location<'a>, Tag, V>(
         self,
         other: &N2,
-    ) -> Stream<'a, (u32, T), Async, N2>
+    ) -> Stream<'a, Bytes, Async, N2>
     where
-        N: HfSendManyToMany<'a, N2>,
+        N: HfSend<'a, N2, V, In<Bytes> = T, Out<Bytes> = (Tag, Bytes)>,
+    {
+        self.send_bytes::<N2, V>(other).map(q!(|(_, b)| b))
+    }
+
+    pub fn broadcast_bincode<N2: Location<'a> + Cluster<'a, Cid>, Cid: 'static + Clone, V>(
+        self,
+        other: &N2,
+    ) -> Stream<'a, N::Out<T>, Async, N2>
+    where
+        N: HfSend<'a, N2, V, In<T> = (Cid, T)>,
+        T: Serialize + DeserializeOwned,
     {
         let other_ids = self.node.source_iter(other.ids()).cloned().all_ticks();
         other_ids
             .cross_product(self.assume_windowed())
-            .demux_bincode_tagged(other)
+            .send_bincode(other)
     }
 
-    pub fn broadcast_bincode_interleaved<N2: Location<'a> + Cluster<'a>>(
+    pub fn broadcast_bincode_interleaved<N2: Location<'a> + Cluster<'a, Cid>, Cid: 'static + Clone, Tag, V>(
         self,
         other: &N2,
     ) -> Stream<'a, T, Async, N2>
     where
-        N: HfSendManyToMany<'a, N2>,
+        N: HfSend<'a, N2, V, In<T> = (Cid, T), Out<T> = (Tag, T)>,
+        T: Serialize + DeserializeOwned,
     {
-        self.broadcast_bincode_tagged(other).map(q!(|(_, b)| b))
+        self
+            .broadcast_bincode(other)
+            .map(q!(|(_, b)| b))
     }
-}
 
-impl<'a, W, N: Location<'a>> Stream<'a, (u32, Bytes), W, N> {
-    pub fn demux_bytes<N2: Location<'a>>(
+    pub fn broadcast_bytes<N2: Location<'a> + Cluster<'a, Cid>, Cid: 'static + Clone, V>(
         self,
         other: &N2,
-    ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
+    ) -> Stream<'a, N::Out<Bytes>, Async, N2>
     where
-        N: HfSendOneToMany<'a, N2>,
+        N: HfSend<'a, N2, V, In<Bytes> = (Cid, T)>,
     {
-        let send_port = self.node.next_port();
-        let sink_expr = self.node.gen_sink_statement(&send_port).into();
-
-        let recv_port = other.next_port();
-        let source_expr = N::gen_source_statement(other, &recv_port).into();
-
-        self.node.connect(other, &send_port, &recv_port);
-
-        Stream::new(
-            other.clone(),
-            self.ir_leaves,
-            HfPlusNode::Network {
-                to_location: other.id(),
-                serialize_pipeline: None,
-                sink_expr,
-                source_expr,
-                deserialize_pipeline: None,
-                input: Box::new(self.ir_node.into_inner()),
-            },
-        )
+        let other_ids = self.node.source_iter(other.ids()).cloned().all_ticks();
+        other_ids
+            .cross_product(self.assume_windowed())
+            .send_bytes(other)
     }
-}
 
-impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, (u32, T), W, N> {
-    pub fn demux_bincode<N2: Location<'a>>(self, other: &N2) -> Stream<'a, T, Async, N2>
-    where
-        N: HfSendOneToMany<'a, N2>,
-    {
-        let send_port = self.node.next_port();
-        let serialize_pipeline = Some(serialize_bincode::<T>(true));
-        let sink_expr = self.node.gen_sink_statement(&send_port).into();
-
-        let recv_port = other.next_port();
-        let deserialize_pipeline = Some(deserialize_bincode::<T>(false));
-        let source_expr = N::gen_source_statement(other, &recv_port).into();
-
-        self.node.connect(other, &send_port, &recv_port);
-
-        Stream::new(
-            other.clone(),
-            self.ir_leaves,
-            HfPlusNode::Network {
-                to_location: other.id(),
-                serialize_pipeline,
-                sink_expr,
-                source_expr,
-                deserialize_pipeline,
-                input: Box::new(self.ir_node.into_inner()),
-            },
-        )
-    }
-}
-
-impl<'a, W, N: Location<'a>> Stream<'a, (u32, Bytes), W, N> {
-    pub fn demux_bytes_tagged<N2: Location<'a>>(
+    pub fn broadcast_bytes_interleaved<
+        N2: Location<'a> + Cluster<'a, Cid>,
+        Cid: 'static + Clone,
+        Tag,
+        V,
+    >(
         self,
         other: &N2,
-    ) -> Stream<'a, Result<(u32, BytesMut), io::Error>, Async, N2>
+    ) -> Stream<'a, Bytes, Async, N2>
     where
-        N: HfSendManyToMany<'a, N2>,
+        N: HfSend<'a, N2, V, In<Bytes> = (Cid, T), Out<Bytes> = (Tag, Bytes)>,
     {
-        let send_port = self.node.next_port();
-        let sink_expr = self.node.gen_sink_statement(&send_port).into();
-
-        let recv_port = other.next_port();
-        let source_expr = N::gen_source_statement(other, &recv_port).into();
-
-        self.node.connect(other, &send_port, &recv_port);
-
-        Stream::new(
-            other.clone(),
-            self.ir_leaves,
-            HfPlusNode::Network {
-                to_location: other.id(),
-                serialize_pipeline: None,
-                sink_expr,
-                source_expr,
-                deserialize_pipeline: None,
-                input: Box::new(self.ir_node.into_inner()),
-            },
-        )
-    }
-
-    pub fn demux_bytes_interleaved<N2: Location<'a>>(
-        self,
-        other: &N2,
-    ) -> Stream<'a, Result<BytesMut, io::Error>, Async, N2>
-    where
-        N: HfSendManyToMany<'a, N2>,
-    {
-        self.demux_bytes_tagged(other)
-            .map(q!(|r| r.map(|(_, b)| b)))
-    }
-}
-
-impl<'a, T: Serialize + DeserializeOwned, W, N: Location<'a>> Stream<'a, (u32, T), W, N> {
-    pub fn demux_bincode_tagged<N2: Location<'a>>(
-        self,
-        other: &N2,
-    ) -> Stream<'a, (u32, T), Async, N2>
-    where
-        N: HfSendManyToMany<'a, N2>,
-    {
-        let send_port = self.node.next_port();
-        let serialize_pipeline = Some(serialize_bincode::<T>(true));
-        let sink_expr = self.node.gen_sink_statement(&send_port).into();
-
-        let recv_port = other.next_port();
-        let deserialize_pipeline = Some(deserialize_bincode::<T>(true));
-        let source_expr = N::gen_source_statement(other, &recv_port).into();
-
-        self.node.connect(other, &send_port, &recv_port);
-
-        Stream::new(
-            other.clone(),
-            self.ir_leaves,
-            HfPlusNode::Network {
-                to_location: other.id(),
-                serialize_pipeline,
-                sink_expr,
-                source_expr,
-                deserialize_pipeline,
-                input: Box::new(self.ir_node.into_inner()),
-            },
-        )
-    }
-
-    pub fn demux_bincode_interleaved<N2: Location<'a>>(self, other: &N2) -> Stream<'a, T, Async, N2>
-    where
-        N: HfSendManyToMany<'a, N2>,
-    {
-        self.demux_bincode_tagged(other).map(q!(|(_, b)| b))
+        self.broadcast_bytes(other).map(q!(|(_, b)| b))
     }
 }

@@ -1,4 +1,4 @@
-use hydroflow_plus::bytes::BytesMut;
+use hydroflow_plus::bytes::Bytes;
 use hydroflow_plus::util::cli::HydroCLI;
 use hydroflow_plus::*;
 use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
@@ -23,21 +23,20 @@ pub fn networked_basic<'a, D: Deploy<'a>>(
     let (source_zero_port, source_zero) = process_zero.source_external();
 
     source_zero
-        .map(q!(|v| v.unwrap().freeze()))
         .send_bytes(&process_one)
-        .for_each(q!(|v: Result<BytesMut, _>| {
+        .for_each(q!(|v: Bytes| {
             println!(
                 "node one received: {:?}",
-                std::str::from_utf8(&v.unwrap()).unwrap()
+                std::str::from_utf8(&v).unwrap()
             );
         }));
 
     let cluster = flow.cluster(cluster_spec);
-    let (cluster_port, cluster_stream) = cluster.many_source_external::<D::Process>();
-    cluster_stream.for_each(q!(|v: Result<BytesMut, _>| {
+    let (cluster_port, cluster_stream) = cluster.many_source_external::<D::Process, _>();
+    cluster_stream.for_each(q!(|v: Bytes| {
         println!(
             "cluster received: {:?}",
-            std::str::from_utf8(&v.unwrap()).unwrap()
+            std::str::from_utf8(&v).unwrap()
         );
     }));
 

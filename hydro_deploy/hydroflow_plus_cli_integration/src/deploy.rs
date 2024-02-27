@@ -25,6 +25,7 @@ use super::HydroflowPlusMeta;
 pub struct HydroDeploy {}
 
 impl<'a> Deploy<'a> for HydroDeploy {
+    type ClusterID = u32;
     type Process = DeployNode<'a>;
     type Cluster = DeployCluster<'a>;
     type Meta = HashMap<usize, Vec<u32>>;
@@ -195,7 +196,7 @@ impl<'a> Location<'a> for DeployCluster<'a> {
     }
 }
 
-impl<'a> Cluster<'a> for DeployCluster<'a> {
+impl<'a> Cluster<'a, u32> for DeployCluster<'a> {
     fn ids(&self) -> impl stageleft::Quoted<'a, &'a Vec<u32>> + Copy + 'a {
         q!(panic!())
     }
@@ -273,7 +274,7 @@ impl<'a> HfSendManyToOne<'a, DeployNode<'a>> for DeployCluster<'a> {
     }
 }
 
-impl<'a> HfSendOneToMany<'a, DeployCluster<'a>> for DeployNode<'a> {
+impl<'a> HfSendOneToMany<'a, DeployCluster<'a>, u32> for DeployNode<'a> {
     fn connect(
         &self,
         other: &DeployCluster<'a>,
@@ -318,7 +319,7 @@ impl<'a> HfSendOneToMany<'a, DeployCluster<'a>> for DeployNode<'a> {
     }
 }
 
-impl<'a> HfSendManyToMany<'a, DeployCluster<'a>> for DeployCluster<'a> {
+impl<'a> HfSendManyToMany<'a, DeployCluster<'a>, u32> for DeployCluster<'a> {
     fn connect(
         &self,
         other: &DeployCluster<'a>,
