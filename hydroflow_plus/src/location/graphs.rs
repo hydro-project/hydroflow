@@ -1,9 +1,10 @@
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use stageleft::{Quoted, RuntimeData};
 
 use super::{Cluster, LocalDeploy, Location, ProcessSpec};
-use crate::builder::Builders;
+use crate::ir::HfPlusLeaf;
 use crate::FlowBuilder;
 
 pub struct SingleProcessGraph {}
@@ -22,13 +23,17 @@ impl<'a> ProcessSpec<'a, SingleProcessGraph> for () {
         builder: &'a FlowBuilder<'a, SingleProcessGraph>,
         _meta: &mut (),
     ) -> SingleNode<'a> {
-        SingleNode { builder }
+        SingleNode {
+            builder,
+            cycle_counter: Rc::new(RefCell::new(0)),
+        }
     }
 }
 
 #[derive(Clone)]
 pub struct SingleNode<'a> {
     builder: &'a FlowBuilder<'a, SingleProcessGraph>,
+    cycle_counter: Rc<RefCell<usize>>,
 }
 
 impl<'a> Location<'a> for SingleNode<'a> {
@@ -39,8 +44,12 @@ impl<'a> Location<'a> for SingleNode<'a> {
         0
     }
 
-    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a Builders) {
-        (&self.builder.next_id, &self.builder.builders)
+    fn ir_leaves(&self) -> &'a RefCell<Vec<HfPlusLeaf>> {
+        &self.builder.ir_leaves()
+    }
+
+    fn cycle_counter(&self) -> &RefCell<usize> {
+        self.cycle_counter.as_ref()
     }
 
     fn next_port(&self) {
@@ -74,7 +83,11 @@ impl<'a> ProcessSpec<'a, MultiGraph> for () {
         builder: &'a FlowBuilder<'a, MultiGraph>,
         _meta: &mut (),
     ) -> MultiNode<'a> {
-        MultiNode { builder, id }
+        MultiNode {
+            builder,
+            id,
+            cycle_counter: Rc::new(RefCell::new(0)),
+        }
     }
 }
 
@@ -82,6 +95,7 @@ impl<'a> ProcessSpec<'a, MultiGraph> for () {
 pub struct MultiNode<'a> {
     builder: &'a FlowBuilder<'a, MultiGraph>,
     id: usize,
+    cycle_counter: Rc<RefCell<usize>>,
 }
 
 impl<'a> Location<'a> for MultiNode<'a> {
@@ -92,8 +106,12 @@ impl<'a> Location<'a> for MultiNode<'a> {
         self.id
     }
 
-    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a Builders) {
-        (&self.builder.next_id, &self.builder.builders)
+    fn ir_leaves(&self) -> &'a RefCell<Vec<HfPlusLeaf>> {
+        &self.builder.ir_leaves()
+    }
+
+    fn cycle_counter(&self) -> &RefCell<usize> {
+        self.cycle_counter.as_ref()
     }
 
     fn next_port(&self) {
