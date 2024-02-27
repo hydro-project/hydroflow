@@ -92,11 +92,12 @@ where
 {
     fn give(&self, vec: Vec<T>) -> Vec<T> {
         let readers = &mut (*self.internal).borrow_mut().readers;
-        for i in 0..(readers.len() - 1) {
-            readers[i].contents.push_back(vec.clone());
+        if let Some((last, rest)) = readers.split_last_mut() {
+            for reader in rest {
+                reader.contents.push_back(vec.clone());
+            }
+            last.contents.push_back(vec);
         }
-        let last = readers.len() - 1;
-        readers[last].contents.push_back(vec);
         Vec::new()
     }
 }

@@ -512,6 +512,18 @@ impl<'a> Hydroflow<'a> {
         Some(count + extra_count)
     }
 
+    /// Schedules a subgraph to be run. See also: [`Context::schedule_subgraph`].
+    pub fn schedule_subgraph(&mut self, sg_id: SubgraphId) -> bool {
+        let sg_data = &self.subgraphs[sg_id.0];
+        let already_scheduled = sg_data.is_scheduled.replace(true);
+        if !already_scheduled {
+            self.stratum_queues[sg_data.stratum].push_back(sg_id);
+            true
+        } else {
+            false
+        }
+    }
+
     /// Adds a new compiled subgraph with the specified inputs and outputs in stratum 0.
     pub fn add_subgraph<Name, R, W, F>(
         &mut self,

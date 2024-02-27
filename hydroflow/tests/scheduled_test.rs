@@ -12,9 +12,6 @@ use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
 fn map_filter() {
-    use std::cell::RefCell;
-    use std::rc::Rc;
-
     use hydroflow::scheduled::handoff::VecHandoff;
 
     // A simple dataflow with one source feeding into one sink with some processing in the middle.
@@ -240,88 +237,6 @@ fn test_cycle() {
     df.run_available();
 
     assert_eq!(&*reachable_verts.borrow(), &[1, 2, 3, 4, 5]);
-}
-
-// #[test]
-// fn test_auto_tee() {
-//     use std::cell::RefCell;
-//     use std::rc::Rc;
-
-//     use crate::scheduled::handoff::TeeingHandoff;
-
-//     let mut df = Hydroflow::new();
-
-//     let mut data = vec![1, 2, 3, 4];
-//     let source = df.add_source(move |send: &SendCtx<TeeingHandoff<_>>| {
-//         send.give(std::mem::take(&mut data));
-//     });
-
-//     let out1 = Rc::new(RefCell::new(Vec::new()));
-//     let out1_inner = out1.clone();
-
-//     let sink1 = df.add_sink(move |recv: &RecvCtx<_>| {
-//         for v in recv.take_inner() {
-//             out1_inner.borrow_mut().extend(v);
-//         }
-//     });
-
-//     let out2 = Rc::new(RefCell::new(Vec::new()));
-//     let out2_inner = out2.clone();
-//     let sink2 = df.add_sink(move |recv: &RecvCtx<_>| {
-//         for v in recv.take_inner() {
-//             out2_inner.borrow_mut().extend(v);
-//         }
-//     });
-
-//     df.add_edge(source.clone(), sink1);
-//     df.add_edge(source, sink2);
-
-//     df.run_available();
-
-//     assert_eq!((*out1).borrow().clone(), vec![1, 2, 3, 4]);
-//     assert_eq!((*out2).borrow().clone(), vec![1, 2, 3, 4]);
-// }
-#[test]
-fn test_auto_tee() {
-    use std::cell::RefCell;
-    use std::rc::Rc;
-    let mut df = Hydroflow::new();
-    let mut data = vec![1, 2, 3, 4];
-    let (source, sink1) = df.make_edge::<_, TeeingHandoff<i32>>("ok");
-    let sink2 = sink1.tee(&mut df);
-    let sink3 = sink2.tee(&mut df);
-
-    df.add_subgraph_source("source", source, move |_context, send| {
-        send.give(std::mem::take(&mut data));
-    });
-    let out1 = Rc::new(RefCell::new(Vec::new()));
-    let out1_inner = out1.clone();
-
-    df.add_subgraph_sink("sink1", sink1, move |_context, recv| {
-        for v in recv.take_inner() {
-            out1_inner.borrow_mut().extend(v);
-        }
-    });
-
-    let out2 = Rc::new(RefCell::new(Vec::new()));
-    let out2_inner = out2.clone();
-    df.add_subgraph_sink("sink2", sink2, move |_context, recv| {
-        for v in recv.take_inner() {
-            out2_inner.borrow_mut().extend(v);
-        }
-    });
-
-    let out3 = Rc::new(RefCell::new(Vec::new()));
-    let out3_inner = out3.clone();
-    df.add_subgraph_sink("sink2", sink3, move |_context, recv| {
-        for v in recv.take_inner() {
-            out3_inner.borrow_mut().extend(v);
-        }
-    });
-    df.run_available();
-    assert_eq!((*out1).borrow().clone(), vec![1, 2, 3, 4]);
-    assert_eq!((*out2).borrow().clone(), vec![1, 2, 3, 4]);
-    assert_eq!((*out3).borrow().clone(), vec![1, 2, 3, 4]);
 }
 
 #[multiplatform_test]
