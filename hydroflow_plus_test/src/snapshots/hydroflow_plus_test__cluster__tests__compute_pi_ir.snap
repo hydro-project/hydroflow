@@ -1,0 +1,77 @@
+---
+source: hydroflow_plus_test/src/cluster.rs
+expression: builder.ir()
+---
+[
+    ForEach {
+        f: { use crate :: __staged :: cluster :: * ; | (inside , total) | { println ! ("pi: {} ({} trials)" , 4.0 * inside as f64 / total as f64 , total) ; } },
+        input: Map {
+            f: { use hydroflow_plus :: __staged :: stream :: * ; | (a , _) | a },
+            input: CrossProduct(
+                PipelineOp {
+                    kind: "reduce",
+                    gen_pipeline: <function>,
+                    input: Persist(
+                        Map {
+                            f: { use hydroflow_plus :: __staged :: stream :: * ; | (_ , b) | b },
+                            input: Network {
+                                to_location: 1,
+                                serialize_pipeline: Some(
+                                    Operator(
+                                        Operator {
+                                            path: "map",
+                                            args: [
+                                                "| data | { hydroflow_plus :: runtime_support :: bincode :: serialize :: < (u64 , u64) > (& data) . unwrap () . into () }",
+                                            ],
+                                        },
+                                    ),
+                                ),
+                                sink_expr: { use hydroflow_plus_cli_integration :: __staged :: runtime :: * ; let self_cli = FAKE ; let port = "port_0" ; { self_cli . port (port) . connect_local_blocking :: < ConnectedDirect > () . into_sink () } },
+                                source_expr: { use hydroflow_plus_cli_integration :: __staged :: runtime :: * ; let self_cli = FAKE ; let port = "port_0" ; { self_cli . port (port) . connect_local_blocking :: < ConnectedTagged < ConnectedDirect > > () . into_source () } },
+                                deserialize_pipeline: Some(
+                                    Operator(
+                                        Operator {
+                                            path: "map",
+                                            args: [
+                                                "| res | { let (id , b) = res . unwrap () ; (id , hydroflow_plus :: runtime_support :: bincode :: deserialize :: < (u64 , u64) > (& b) . unwrap ()) }",
+                                            ],
+                                        },
+                                    ),
+                                ),
+                                input: PipelineOp {
+                                    kind: "fold",
+                                    gen_pipeline: <function>,
+                                    input: Map {
+                                        f: { use crate :: __staged :: cluster :: * ; | (x , y) | x * x + y * y < 1.0 },
+                                        input: Map {
+                                            f: { use crate :: __staged :: cluster :: * ; | _ | rand :: random :: < (f64 , f64) > () },
+                                            input: Map {
+                                                f: { use hydroflow_plus :: __staged :: location :: * ; | _ | () },
+                                                input: PipelineOp {
+                                                    kind: "flat_map",
+                                                    gen_pipeline: <function>,
+                                                    input: Source {
+                                                        source: Spin,
+                                                        produces_delta: false,
+                                                        location_id: 0,
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    ),
+                },
+                Source {
+                    source: Interval(
+                        { use crate :: __staged :: cluster :: * ; Duration :: from_secs (1) },
+                    ),
+                    produces_delta: false,
+                    location_id: 1,
+                },
+            ),
+        },
+    },
+]

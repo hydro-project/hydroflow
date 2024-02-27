@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use stageleft::{Quoted, RuntimeData};
 
 use super::{Cluster, LocalDeploy, Location, ProcessSpec};
-use crate::builder::Builders;
+use crate::ir::HfPlusLeaf;
 use crate::FlowBuilder;
 
 pub struct SingleProcessGraph {}
@@ -39,8 +39,8 @@ impl<'a> Location<'a> for SingleNode<'a> {
         0
     }
 
-    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a Builders) {
-        (&self.builder.next_id, &self.builder.builders)
+    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a RefCell<Vec<HfPlusLeaf>>) {
+        (&self.builder.next_id, &self.builder.ir_leaves)
     }
 
     fn next_port(&self) {
@@ -92,8 +92,8 @@ impl<'a> Location<'a> for MultiNode<'a> {
         self.id
     }
 
-    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a Builders) {
-        (&self.builder.next_id, &self.builder.builders)
+    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a RefCell<Vec<HfPlusLeaf>>) {
+        (&self.builder.next_id, &self.builder.ir_leaves)
     }
 
     fn next_port(&self) {
