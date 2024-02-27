@@ -91,7 +91,7 @@ impl QuotedContext for () {
 }
 
 pub trait Quoted<'a, T>: FreeVariable<T> {
-    fn splice(self) -> TokenStream
+    fn splice(self) -> syn::Expr
     where
         Self: Sized,
     {
@@ -100,7 +100,7 @@ pub trait Quoted<'a, T>: FreeVariable<T> {
             panic!("Quoted value should not have prelude");
         }
 
-        value.unwrap()
+        syn::parse2(value.unwrap()).unwrap()
     }
 }
 

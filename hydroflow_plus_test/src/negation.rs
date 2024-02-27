@@ -21,7 +21,7 @@ pub fn test_difference<'a>(
         source2 = source2.all_ticks();
     }
 
-    source.filter_not_in(&source2).for_each(q!(|v| {
+    source.filter_not_in(source2).for_each(q!(|v| {
         output.send(v).unwrap();
     }));
 
@@ -48,7 +48,7 @@ pub fn test_anti_join<'a>(
     }
 
     // TODO(shadaj): inference fails without a for_each type annotation here
-    source.anti_join(&source2).for_each(q!(|v: (u32, u32)| {
+    source.anti_join(source2).for_each(q!(|v: (u32, u32)| {
         output.send(v.0).unwrap();
     }));
 
