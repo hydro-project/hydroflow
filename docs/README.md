@@ -21,6 +21,7 @@ $ rustup target add wasm32-unknown-unknown
 $ cargo install wasm-pack
 $ cd ../website_playground
 $ CARGO_CFG_HYDROFLOW_GENERATE_DOCS="1" RUSTFLAGS="--cfg procmacro2_semver_exempt --cfg super_unstable" wasm-pack build
+$ cd ../docs
 ```
 
 ### Notes on building on macOS

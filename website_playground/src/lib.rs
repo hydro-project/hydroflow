@@ -9,7 +9,7 @@ use hydroflow::datalog;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow_datalog_core::gen_hydroflow_graph;
 use hydroflow_lang::diagnostic::{Diagnostic, Level};
-use hydroflow_lang::graph::{build_hfcode, partition_graph};
+use hydroflow_lang::graph::{build_hfcode, partition_graph, WriteConfig};
 use proc_macro2::{LineColumn, Span};
 use quote::quote;
 use serde::{Deserialize, Serialize};
@@ -105,13 +105,28 @@ pub struct HydroflowOutput {
 }
 
 #[wasm_bindgen]
-pub fn compile_hydroflow(program: String) -> JsValue {
+pub fn compile_hydroflow(
+    program: String,
+    no_subgraphs: bool,
+    no_varnames: bool,
+    no_pull_push: bool,
+    no_handoffs: bool,
+    op_short_text: bool,
+) -> JsValue {
+    let write_config = WriteConfig {
+        no_subgraphs,
+        no_varnames,
+        no_pull_push,
+        no_handoffs,
+        op_short_text,
+    };
+
     let out = match syn::parse_str(&program) {
         Ok(input) => {
             let (graph_code_opt, diagnostics) =
                 build_hfcode(input, &quote!(hydroflow), PathBuf::default());
             let output = graph_code_opt.map(|(graph, code)| {
-                let mermaid = graph.to_mermaid(&Default::default());
+                let mermaid = graph.to_mermaid(&write_config);
                 let file = syn::parse_quote! {
                     fn main() {
                         let mut df = #code;
@@ -143,7 +158,22 @@ pub fn compile_hydroflow(program: String) -> JsValue {
 }
 
 #[wasm_bindgen]
-pub fn compile_datalog(program: String) -> JsValue {
+pub fn compile_datalog(
+    program: String,
+    no_subgraphs: bool,
+    no_varnames: bool,
+    no_pull_push: bool,
+    no_handoffs: bool,
+    op_short_text: bool,
+) -> JsValue {
+    let write_config = WriteConfig {
+        no_subgraphs,
+        no_varnames,
+        no_pull_push,
+        no_handoffs,
+        op_short_text,
+    };
+
     let wrapped = format!("r#\"{}\"#", program);
     let out = match syn::parse_str(&wrapped) {
         Ok(input) => match gen_hydroflow_graph(input) {
@@ -165,7 +195,7 @@ pub fn compile_datalog(program: String) -> JsValue {
 
                         Some(HydroflowOutput {
                             compiled: prettyplease::unparse(&file),
-                            mermaid: part_graph.to_mermaid(&Default::default()),
+                            mermaid: part_graph.to_mermaid(&write_config),
                         })
                     }
                     Err(diagnostic) => {
