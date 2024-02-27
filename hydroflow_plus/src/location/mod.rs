@@ -1,12 +1,12 @@
 use std::cell::RefCell;
-use std::io;
 use std::marker::PhantomData;
 use std::time::Duration;
 
-use hydroflow::bytes::BytesMut;
+use hydroflow::bytes::Bytes;
 use hydroflow::futures::stream::Stream as FuturesStream;
 use proc_macro2::Span;
 use stageleft::{q, Quoted};
+use syn::parse_quote;
 
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::stream::{Async, Windowed};
@@ -19,20 +19,23 @@ pub mod network;
 pub use network::*;
 
 pub trait LocalDeploy<'a> {
+    type ClusterID: Clone + 'static;
     type Process: Location<'a, Meta = Self::Meta>;
-    type Cluster: Location<'a, Meta = Self::Meta> + Cluster<'a>;
+    type Cluster: Location<'a, Meta = Self::Meta> + Cluster<'a, Id = Self::ClusterID>;
     type Meta: Default;
     type RuntimeID;
 }
 
 pub trait Deploy<'a> {
+    type ClusterID: Clone + 'static;
+
     type Process: Location<'a, Meta = Self::Meta, Port = Self::ProcessPort>
         + HfSendOneToOne<'a, Self::Process>
-        + HfSendOneToMany<'a, Self::Cluster>;
+        + HfSendOneToMany<'a, Self::Cluster, Self::ClusterID>;
     type Cluster: Location<'a, Meta = Self::Meta, Port = Self::ClusterPort>
         + HfSendManyToOne<'a, Self::Process>
-        + HfSendManyToMany<'a, Self::Cluster>
-        + Cluster<'a>;
+        + HfSendManyToMany<'a, Self::Cluster, Self::ClusterID>
+        + Cluster<'a, Id = Self::ClusterID>;
     type ProcessPort;
     type ClusterPort;
     type Meta: Default;
@@ -41,13 +44,18 @@ pub trait Deploy<'a> {
 
 impl<
         'a,
-        T: Deploy<'a, Process = N, Cluster = C, Meta = M, RuntimeID = R>,
-        N: Location<'a, Meta = M> + HfSendOneToOne<'a, N> + HfSendOneToMany<'a, C>,
-        C: Location<'a, Meta = M> + HfSendManyToOne<'a, N> + HfSendManyToMany<'a, C> + Cluster<'a>,
+        Cid: Clone + 'static,
+        T: Deploy<'a, ClusterID = Cid, Process = N, Cluster = C, Meta = M, RuntimeID = R>,
+        N: Location<'a, Meta = M> + HfSendOneToOne<'a, N> + HfSendOneToMany<'a, C, Cid>,
+        C: Location<'a, Meta = M>
+            + HfSendManyToOne<'a, N>
+            + HfSendManyToMany<'a, C, Cid>
+            + Cluster<'a, Id = Cid>,
         M: Default,
         R,
     > LocalDeploy<'a> for T
 {
+    type ClusterID = Cid;
     type Process = N;
     type Cluster = C;
     type Meta = M;
@@ -115,12 +123,7 @@ pub trait Location<'a>: Clone {
         )
     }
 
-    fn source_external(
-        &self,
-    ) -> (
-        Self::Port,
-        Stream<'a, Result<BytesMut, io::Error>, Async, Self>,
-    )
+    fn source_external(&self) -> (Self::Port, Stream<'a, Bytes, Async, Self>)
     where
         Self: HfSendOneToOne<'a, Self>,
     {
@@ -129,43 +132,50 @@ pub trait Location<'a>: Clone {
         let port = self.next_port();
         let source_pipeline = Self::gen_source_statement(self, &port);
 
+        let process: syn::Expr = parse_quote!(|b| b.unwrap().freeze());
+
         (
             port,
             Stream::new(
                 self.clone(),
                 ir_leaves,
-                HfPlusNode::Source {
-                    source: HfPlusSource::Stream(source_pipeline.into()),
-                    location_id: self.id(),
-                    produces_delta: false,
+                HfPlusNode::Map {
+                    f: process.into(),
+                    input: Box::new(HfPlusNode::Source {
+                        source: HfPlusSource::Stream(source_pipeline.into()),
+                        location_id: self.id(),
+                        produces_delta: false,
+                    }),
                 },
             ),
         )
     }
 
-    fn many_source_external<S: Location<'a>>(
+    fn many_source_external<S: Location<'a>, Cid>(
         &self,
-    ) -> (
-        Self::Port,
-        Stream<'a, Result<BytesMut, io::Error>, Async, Self>,
-    )
+    ) -> (Self::Port, Stream<'a, Bytes, Async, Self>)
     where
-        S: HfSendOneToMany<'a, Self>,
+        S: HfSendOneToMany<'a, Self, Cid>,
     {
         let (_, ir_leaves) = self.flow_builder();
 
         let port = self.next_port();
         let source_pipeline = S::gen_source_statement(self, &port);
 
+        let process: syn::Expr = parse_quote!(|b| b.unwrap().freeze());
+
         (
             port,
             Stream::new(
                 self.clone(),
                 ir_leaves,
-                HfPlusNode::Source {
-                    source: HfPlusSource::Stream(source_pipeline.into()),
-                    location_id: self.id(),
-                    produces_delta: false,
+                HfPlusNode::Map {
+                    f: process.into(),
+                    input: Box::new(HfPlusNode::Source {
+                        source: HfPlusSource::Stream(source_pipeline.into()),
+                        location_id: self.id(),
+                        produces_delta: false,
+                    }),
                 },
             ),
         )
@@ -241,5 +251,7 @@ pub trait Location<'a>: Clone {
 }
 
 pub trait Cluster<'a>: Location<'a> {
-    fn ids<'b>(&'b self) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a;
+    type Id: 'static;
+
+    fn ids<'b>(&'b self) -> impl Quoted<'a, &'a Vec<Self::Id>> + Copy + 'a;
 }
