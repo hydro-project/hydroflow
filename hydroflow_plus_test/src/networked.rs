@@ -96,6 +96,8 @@ mod tests {
             }),
         );
 
+        insta::assert_debug_snapshot!(builder.ir());
+
         let mut deployment = deployment.into_inner();
 
         let port_to_zero = io

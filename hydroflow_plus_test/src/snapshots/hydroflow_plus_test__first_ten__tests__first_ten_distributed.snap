@@ -1,0 +1,41 @@
+---
+source: hydroflow_plus_test/src/first_ten.rs
+expression: builder.ir()
+---
+[
+    ForEach {
+        f: { use crate :: __staged :: first_ten :: * ; | n | println ! ("{}" , n) },
+        input: Network {
+            to_location: 1,
+            serialize_pipeline: Some(
+                Operator(
+                    Operator {
+                        path: "map",
+                        args: [
+                            "| data | { hydroflow_plus :: runtime_support :: bincode :: serialize :: < i32 > (& data) . unwrap () . into () }",
+                        ],
+                    },
+                ),
+            ),
+            sink_expr: null,
+            source_expr: null,
+            deserialize_pipeline: Some(
+                Operator(
+                    Operator {
+                        path: "map",
+                        args: [
+                            "| res | { hydroflow_plus :: runtime_support :: bincode :: deserialize :: < i32 > (& res . unwrap ()) . unwrap () }",
+                        ],
+                    },
+                ),
+            ),
+            input: Source {
+                source: Iter(
+                    { use crate :: __staged :: first_ten :: * ; 0 .. 10 },
+                ),
+                produces_delta: false,
+                location_id: 0,
+            },
+        },
+    },
+]
