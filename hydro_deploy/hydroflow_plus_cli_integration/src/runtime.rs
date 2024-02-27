@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use hydroflow_plus::lang::parse::Pipeline;
+use hydroflow_plus::ir::HfPlusLeaf;
 use hydroflow_plus::location::{
     Cluster, ClusterSpec, Deploy, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany,
     HfSendOneToOne, Location, ProcessSpec,
@@ -11,7 +11,6 @@ use hydroflow_plus::util::cli::{
 };
 use hydroflow_plus::FlowBuilder;
 use stageleft::{q, Quoted, RuntimeData};
-use syn::parse_quote;
 
 use super::HydroflowPlusMeta;
 
@@ -42,8 +41,12 @@ impl<'a> Location<'a> for CLIRuntimeNode<'a> {
         self.id
     }
 
-    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a hydroflow_plus::builder::Builders) {
-        self.builder.builder_components()
+    fn ir_leaves(&self) -> &'a RefCell<Vec<HfPlusLeaf>> {
+        self.builder.ir_leaves()
+    }
+
+    fn cycle_counter(&self) -> &'a RefCell<usize> {
+        self.builder.cycle_counter()
     }
 
     fn next_port(&self) -> String {
@@ -71,8 +74,12 @@ impl<'a> Location<'a> for CLIRuntimeCluster<'a> {
         self.id
     }
 
-    fn flow_builder(&self) -> (&'a RefCell<usize>, &'a hydroflow_plus::builder::Builders) {
-        self.builder.builder_components()
+    fn ir_leaves(&self) -> &'a RefCell<Vec<HfPlusLeaf>> {
+        self.builder.ir_leaves()
+    }
+
+    fn cycle_counter(&self) -> &'a RefCell<usize> {
+        self.builder.cycle_counter()
     }
 
     fn next_port(&self) -> String {
@@ -95,64 +102,56 @@ impl<'a> Cluster<'a> for CLIRuntimeCluster<'a> {
 impl<'a> HfSendOneToOne<'a, CLIRuntimeNode<'a>> for CLIRuntimeNode<'a> {
     fn connect(&self, _other: &CLIRuntimeNode, _source_port: &String, _recipient_port: &String) {}
 
-    fn gen_sink_statement(&self, port: &String) -> Pipeline {
+    fn gen_sink_statement(&self, port: &String) -> syn::Expr {
         let self_cli = self.cli;
         let port = port.as_str();
-        let sink_quote = q!({
+        q!({
             self_cli
                 .port(port)
                 .connect_local_blocking::<ConnectedDirect>()
                 .into_sink()
         })
-        .splice();
-
-        parse_quote!(dest_sink(#sink_quote))
+        .splice()
     }
 
-    fn gen_source_statement(other: &CLIRuntimeNode<'a>, port: &String) -> Pipeline {
+    fn gen_source_statement(other: &CLIRuntimeNode<'a>, port: &String) -> syn::Expr {
         let self_cli = other.cli;
         let port = port.as_str();
-        let source_quote = q!({
+        q!({
             self_cli
                 .port(port)
                 .connect_local_blocking::<ConnectedDirect>()
                 .into_source()
         })
-        .splice();
-
-        parse_quote!(source_stream(#source_quote))
+        .splice()
     }
 }
 
 impl<'a> HfSendManyToOne<'a, CLIRuntimeNode<'a>> for CLIRuntimeCluster<'a> {
     fn connect(&self, _other: &CLIRuntimeNode, _source_port: &String, _recipient_port: &String) {}
 
-    fn gen_sink_statement(&self, port: &String) -> Pipeline {
+    fn gen_sink_statement(&self, port: &String) -> syn::Expr {
         let self_cli = self.cli;
         let port = port.as_str();
-        let sink_quote = q!({
+        q!({
             self_cli
                 .port(port)
                 .connect_local_blocking::<ConnectedDirect>()
                 .into_sink()
         })
-        .splice();
-
-        parse_quote!(dest_sink(#sink_quote))
+        .splice()
     }
 
-    fn gen_source_statement(other: &CLIRuntimeNode<'a>, port: &String) -> Pipeline {
+    fn gen_source_statement(other: &CLIRuntimeNode<'a>, port: &String) -> syn::Expr {
         let self_cli = other.cli;
         let port = port.as_str();
-        let source_quote = q!({
+        q!({
             self_cli
                 .port(port)
                 .connect_local_blocking::<ConnectedTagged<ConnectedDirect>>()
                 .into_source()
         })
-        .splice();
-
-        parse_quote!(source_stream(#source_quote))
+        .splice()
     }
 }
 
@@ -160,34 +159,30 @@ impl<'a> HfSendOneToMany<'a, CLIRuntimeCluster<'a>> for CLIRuntimeNode<'a> {
     fn connect(&self, _other: &CLIRuntimeCluster, _source_port: &String, _recipient_port: &String) {
     }
 
-    fn gen_sink_statement(&self, port: &String) -> Pipeline {
+    fn gen_sink_statement(&self, port: &String) -> syn::Expr {
         let self_cli = self.cli;
         let port = port.as_str();
 
-        let sink_quote = q!({
+        q!({
             self_cli
                 .port(port)
                 .connect_local_blocking::<ConnectedDemux<ConnectedDirect>>()
                 .into_sink()
         })
-        .splice();
-
-        parse_quote!(dest_sink(#sink_quote))
+        .splice()
     }
 
-    fn gen_source_statement(other: &CLIRuntimeCluster<'a>, port: &String) -> Pipeline {
+    fn gen_source_statement(other: &CLIRuntimeCluster<'a>, port: &String) -> syn::Expr {
         let self_cli = other.cli;
         let port = port.as_str();
 
-        let source_quote = q!({
+        q!({
             self_cli
                 .port(port)
                 .connect_local_blocking::<ConnectedDirect>()
                 .into_source()
         })
-        .splice();
-
-        parse_quote!(source_stream(#source_quote))
+        .splice()
     }
 }
 
@@ -195,34 +190,30 @@ impl<'a> HfSendManyToMany<'a, CLIRuntimeCluster<'a>> for CLIRuntimeCluster<'a> {
     fn connect(&self, _other: &CLIRuntimeCluster, _source_port: &String, _recipient_port: &String) {
     }
 
-    fn gen_sink_statement(&self, port: &String) -> Pipeline {
+    fn gen_sink_statement(&self, port: &String) -> syn::Expr {
         let self_cli = self.cli;
         let port = port.as_str();
 
-        let sink_quote = q!({
+        q!({
             self_cli
                 .port(port)
                 .connect_local_blocking::<ConnectedDemux<ConnectedDirect>>()
                 .into_sink()
         })
-        .splice();
-
-        parse_quote!(dest_sink(#sink_quote))
+        .splice()
     }
 
-    fn gen_source_statement(other: &CLIRuntimeCluster<'a>, port: &String) -> Pipeline {
+    fn gen_source_statement(other: &CLIRuntimeCluster<'a>, port: &String) -> syn::Expr {
         let self_cli = other.cli;
         let port = port.as_str();
 
-        let source_quote = q!({
+        q!({
             self_cli
                 .port(port)
                 .connect_local_blocking::<ConnectedTagged<ConnectedDirect>>()
                 .into_source()
         })
-        .splice();
-
-        parse_quote!(source_stream(#source_quote))
+        .splice()
     }
 }
 

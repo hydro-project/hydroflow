@@ -1,6 +1,7 @@
 //! AST for surface syntax, modelled on [`syn`]'s ASTs.
 #![allow(missing_docs)]
 
+use std::fmt::Debug;
 use std::hash::Hash;
 
 use proc_macro2::{Span, TokenStream};
@@ -109,7 +110,7 @@ impl ToTokens for PipelineStatement {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Pipeline {
     Paren(Ported<PipelineParen>),
     Name(Ported<Ident>),
@@ -204,7 +205,7 @@ impl ToTokens for Pipeline {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Import {
     pub import: Ident,
     pub bang: Token![!],
@@ -236,7 +237,7 @@ impl ToTokens for Import {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Ported<Inner> {
     pub inn: Option<Indexing>,
     pub inner: Inner,
@@ -274,7 +275,7 @@ where
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct PipelineParen {
     pub paren_token: Paren,
     pub pipeline: Box<Pipeline>,
@@ -298,7 +299,7 @@ impl ToTokens for PipelineParen {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct PipelineLink {
     pub lhs: Box<Pipeline>,
     pub arrow: Token![->],
@@ -321,7 +322,7 @@ impl ToTokens for PipelineLink {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Indexing {
     pub bracket_token: Bracket,
     pub index: PortIndex,
@@ -375,12 +376,13 @@ impl ToTokens for PortIndex {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Operator {
     pub path: Path,
     pub paren_token: Paren,
     pub args: Punctuated<Expr, Token![,]>,
 }
+
 impl Operator {
     pub fn name(&self) -> Path {
         Path {
@@ -462,12 +464,29 @@ impl Parse for Operator {
         })
     }
 }
+
 impl ToTokens for Operator {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.path.to_tokens(tokens);
         self.paren_token.surround(tokens, |tokens| {
             self.args.to_tokens(tokens);
         });
+    }
+}
+
+impl Debug for Operator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Operator")
+            .field("path", &self.path.to_token_stream().to_string())
+            .field(
+                "args",
+                &self
+                    .args
+                    .iter()
+                    .map(|a| a.to_token_stream().to_string())
+                    .collect::<Vec<_>>(),
+            )
+            .finish()
     }
 }
 
