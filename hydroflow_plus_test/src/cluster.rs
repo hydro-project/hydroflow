@@ -3,7 +3,7 @@ use std::time::Duration;
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn simple_cluster<'a, D: Deploy<'a>>(
+pub fn simple_cluster<'a, D: Deploy<'a, ClusterID = u32>>(
     flow: &'a FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
@@ -18,7 +18,7 @@ pub fn simple_cluster<'a, D: Deploy<'a>>(
         .map(q!(|(id, n)| (id, (id, n))))
         .demux_bincode(&cluster)
         .inspect(q!(|n| println!("cluster received: {:?}", n)))
-        .send_bincode_tagged(&process)
+        .send_bincode(&process)
         .for_each(q!(|(id, d)| println!("node received: ({}, {:?})", id, d)));
 
     (process, cluster)
@@ -31,13 +31,13 @@ pub fn many_to_many<'a, D: Deploy<'a>>(
     let cluster = flow.cluster(cluster_spec);
     cluster
         .source_iter(q!(0..2))
-        .broadcast_bincode_tagged(&cluster)
+        .broadcast_bincode(&cluster)
         .for_each(q!(|n| println!("cluster received: {:?}", n)));
 
     cluster
 }
 
-pub fn map_reduce<'a, D: Deploy<'a>>(
+pub fn map_reduce<'a, D: Deploy<'a, ClusterID = u32>>(
     flow: &'a FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,

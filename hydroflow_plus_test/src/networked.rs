@@ -33,7 +33,7 @@ pub fn networked_basic<'a, D: Deploy<'a>>(
         }));
 
     let cluster = flow.cluster(cluster_spec);
-    let (cluster_port, cluster_stream) = cluster.many_source_external::<D::Process>();
+    let (cluster_port, cluster_stream) = cluster.many_source_external::<D::Process, _>();
     cluster_stream.for_each(q!(|v: Result<BytesMut, _>| {
         println!(
             "cluster received: {:?}",

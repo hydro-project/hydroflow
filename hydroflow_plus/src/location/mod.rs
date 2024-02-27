@@ -19,20 +19,23 @@ pub mod network;
 pub use network::*;
 
 pub trait LocalDeploy<'a> {
+    type ClusterID: Clone + 'static;
     type Process: Location<'a, Meta = Self::Meta>;
-    type Cluster: Location<'a, Meta = Self::Meta> + Cluster<'a>;
+    type Cluster: Location<'a, Meta = Self::Meta> + Cluster<'a, Self::ClusterID>;
     type Meta: Default;
     type RuntimeID;
 }
 
 pub trait Deploy<'a> {
+    type ClusterID: Clone + 'static;
+
     type Process: Location<'a, Meta = Self::Meta, Port = Self::ProcessPort>
         + HfSendOneToOne<'a, Self::Process>
-        + HfSendOneToMany<'a, Self::Cluster>;
+        + HfSendOneToMany<'a, Self::Cluster, Self::ClusterID>;
     type Cluster: Location<'a, Meta = Self::Meta, Port = Self::ClusterPort>
         + HfSendManyToOne<'a, Self::Process>
-        + HfSendManyToMany<'a, Self::Cluster>
-        + Cluster<'a>;
+        + HfSendManyToMany<'a, Self::Cluster, Self::ClusterID>
+        + Cluster<'a, Self::ClusterID>;
     type ProcessPort;
     type ClusterPort;
     type Meta: Default;
@@ -41,13 +44,18 @@ pub trait Deploy<'a> {
 
 impl<
         'a,
-        T: Deploy<'a, Process = N, Cluster = C, Meta = M, RuntimeID = R>,
-        N: Location<'a, Meta = M> + HfSendOneToOne<'a, N> + HfSendOneToMany<'a, C>,
-        C: Location<'a, Meta = M> + HfSendManyToOne<'a, N> + HfSendManyToMany<'a, C> + Cluster<'a>,
+        Cid: Clone + 'static,
+        T: Deploy<'a, ClusterID = Cid, Process = N, Cluster = C, Meta = M, RuntimeID = R>,
+        N: Location<'a, Meta = M> + HfSendOneToOne<'a, N> + HfSendOneToMany<'a, C, Cid>,
+        C: Location<'a, Meta = M>
+            + HfSendManyToOne<'a, N>
+            + HfSendManyToMany<'a, C, Cid>
+            + Cluster<'a, Cid>,
         M: Default,
         R,
     > LocalDeploy<'a> for T
 {
+    type ClusterID = Cid;
     type Process = N;
     type Cluster = C;
     type Meta = M;
@@ -143,14 +151,14 @@ pub trait Location<'a>: Clone {
         )
     }
 
-    fn many_source_external<S: Location<'a>>(
+    fn many_source_external<S: Location<'a>, Cid>(
         &self,
     ) -> (
         Self::Port,
         Stream<'a, Result<BytesMut, io::Error>, Async, Self>,
     )
     where
-        S: HfSendOneToMany<'a, Self>,
+        S: HfSendOneToMany<'a, Self, Cid>,
     {
         let (_, ir_leaves) = self.flow_builder();
 
@@ -240,6 +248,6 @@ pub trait Location<'a>: Clone {
     }
 }
 
-pub trait Cluster<'a>: Location<'a> {
-    fn ids<'b>(&'b self) -> impl Quoted<'a, &'a Vec<u32>> + Copy + 'a;
+pub trait Cluster<'a, Cid: 'static>: Location<'a> {
+    fn ids<'b>(&'b self) -> impl Quoted<'a, &'a Vec<Cid>> + Copy + 'a;
 }
