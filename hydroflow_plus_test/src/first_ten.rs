@@ -68,6 +68,8 @@ mod tests {
             }),
         );
 
+        insta::assert_debug_snapshot!(builder.ir());
+
         deployment.deploy().await.unwrap();
 
         let second_node_stdout = second_node.stdout().await;
