@@ -171,7 +171,7 @@ fn build_inner<'a, D: LocalDeploy<'a>>(
     }
 }
 
-impl<'a, D: LocalDeploy<'a, RuntimeID = usize>> FlowBuilder<'a, D> {
+impl<'a, D: LocalDeploy<'a, GraphId = usize>> FlowBuilder<'a, D> {
     pub fn build(&self, id: impl Quoted<'a, usize>) -> HfBuilt<'a> {
         build_inner(self, id.splice(), false)
     }
@@ -196,7 +196,7 @@ impl<'a, D: LocalDeploy<'a, RuntimeID = usize>> FlowBuilder<'a, D> {
     }
 }
 
-impl<'a, D: LocalDeploy<'a, RuntimeID = ()>> FlowBuilder<'a, D> {
+impl<'a, D: LocalDeploy<'a, GraphId = ()>> FlowBuilder<'a, D> {
     pub fn build_single(&self) -> HfBuilt<'a> {
         build_inner(self, parse_quote!(0), true)
     }
