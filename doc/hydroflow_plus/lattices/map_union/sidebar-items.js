@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["MapUnion"],"type":["MapUnionArrayMap","MapUnionBTreeMap","MapUnionHashMap","MapUnionOptionMap","MapUnionSingletonMap","MapUnionVec"]};
+window.SIDEBAR_ITEMS = {"struct":["KeyedBimorphism","MapUnion"],"type":["MapUnionArrayMap","MapUnionBTreeMap","MapUnionHashMap","MapUnionOptionMap","MapUnionSingletonMap","MapUnionVec"]};

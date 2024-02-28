@@ -234,14 +234,95 @@
 <a href="#232" id="232">232</a>
 <a href="#233" id="233">233</a>
 <a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module containing the [`SetUnion`] lattice and aliases for different datastructures.
 
 </span><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 <span class="kw">use </span>std::collections::{BTreeSet, HashSet};
+<span class="kw">use </span>std::marker::PhantomData;
+
+<span class="kw">use </span>cc_traits::SimpleCollectionRef;
 
 <span class="kw">use </span><span class="kw">crate</span>::cc_traits::{Iter, Len, Set};
 <span class="kw">use </span><span class="kw">crate</span>::collections::{ArraySet, OptionSet, SingletonSet};
-<span class="kw">use crate</span>::{Atomize, DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+<span class="kw">use crate</span>::{Atomize, DeepReveal, IsBot, IsTop, LatticeBimorphism, LatticeFrom, LatticeOrd, Merge};
 
 <span class="doccomment">/// Set-union lattice.
 ///
@@ -407,10 +488,50 @@
 <span class="doccomment">/// [`Option`]-backed [`SetUnion`] lattice.
 </span><span class="kw">pub type </span>SetUnionOptionSet&lt;Item&gt; = SetUnion&lt;OptionSet&lt;Item&gt;&gt;;
 
+<span class="doccomment">/// Bimorphism for the cartesian product of two sets. Output is a set of all possible pairs of
+/// items from the two input sets.
+</span><span class="kw">pub struct </span>CartesianProductBimorphism&lt;SetOut&gt; {
+    _phantom: PhantomData&lt;<span class="kw">fn</span>() -&gt; SetOut&gt;,
+}
+<span class="kw">impl</span>&lt;SetOut&gt; Default <span class="kw">for </span>CartesianProductBimorphism&lt;SetOut&gt; {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            _phantom: Default::default(),
+        }
+    }
+}
+<span class="kw">impl</span>&lt;SetA, SetB, SetOut&gt; LatticeBimorphism&lt;SetUnion&lt;SetA&gt;, SetUnion&lt;SetB&gt;&gt;
+    <span class="kw">for </span>CartesianProductBimorphism&lt;SetOut&gt;
+<span class="kw">where
+    </span>SetA: IntoIterator,
+    SetB: Iter + SimpleCollectionRef,
+    SetA::Item: Clone,
+    SetB::Item: Clone,
+    SetOut: FromIterator&lt;(SetA::Item, SetB::Item)&gt;,
+{
+    <span class="kw">type </span>Output = SetUnion&lt;SetOut&gt;;
+
+    <span class="kw">fn </span>call(<span class="kw-2">&amp;mut </span><span class="self">self</span>, lat_a: SetUnion&lt;SetA&gt;, lat_b: SetUnion&lt;SetB&gt;) -&gt; <span class="self">Self</span>::Output {
+        <span class="kw">let </span>set_a = lat_a.into_reveal();
+        <span class="kw">let </span>set_b = lat_b.into_reveal();
+        <span class="kw">let </span>set_out = set_a
+            .into_iter()
+            .flat_map(|a_item| {
+                set_b
+                    .iter()
+                    .map(&lt;SetB <span class="kw">as </span>SimpleCollectionRef&gt;::into_ref)
+                    .cloned()
+                    .map(<span class="kw">move </span>|b_item| (a_item.clone(), b_item))
+            })
+            .collect::&lt;SetOut&gt;();
+        SetUnion::new(set_out)
+    }
+}
+
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span><span class="kw">crate</span>::test::{check_all, check_atomize_each};
+    <span class="kw">use </span><span class="kw">crate</span>::test::{check_all, check_atomize_each, check_lattice_bimorphism};
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_set_union() {
@@ -466,6 +587,41 @@
             SetUnionHashSet::new_from([<span class="number">0</span>, <span class="number">1</span>]),
             SetUnionHashSet::new((<span class="number">0</span>..<span class="number">10</span>).collect()),
         ]);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>cartesian_product() {
+        <span class="kw">let </span>items_a = <span class="kw-2">&amp;</span>[
+            SetUnionHashSet::new_from([]),
+            SetUnionHashSet::new_from([<span class="number">0</span>]),
+            SetUnionHashSet::new_from([<span class="number">1</span>]),
+            SetUnionHashSet::new_from([<span class="number">0</span>, <span class="number">1</span>]),
+        ];
+        <span class="kw">let </span>items_b = <span class="kw-2">&amp;</span>[
+            SetUnionBTreeSet::new(<span class="string">"hello"</span>.chars().collect()),
+            SetUnionBTreeSet::new(<span class="string">"world"</span>.chars().collect()),
+        ];
+
+        check_lattice_bimorphism(
+            CartesianProductBimorphism::&lt;HashSet&lt;<span class="kw">_</span>&gt;&gt;::default(),
+            items_a,
+            items_a,
+        );
+        check_lattice_bimorphism(
+            CartesianProductBimorphism::&lt;HashSet&lt;<span class="kw">_</span>&gt;&gt;::default(),
+            items_a,
+            items_b,
+        );
+        check_lattice_bimorphism(
+            CartesianProductBimorphism::&lt;HashSet&lt;<span class="kw">_</span>&gt;&gt;::default(),
+            items_b,
+            items_a,
+        );
+        check_lattice_bimorphism(
+            CartesianProductBimorphism::&lt;HashSet&lt;<span class="kw">_</span>&gt;&gt;::default(),
+            items_b,
+            items_b,
+        );
     }
 }
 </code></pre></div></section></main></body></html>

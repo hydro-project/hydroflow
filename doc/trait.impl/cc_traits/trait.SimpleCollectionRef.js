@@ -1,3 +1,4 @@
 (function() {var implementors = {
-"hydroflow_plus":[]
+"hydroflow_plus":[],
+"lattices":[["impl&lt;T&gt; SimpleCollectionRef for <a class=\"struct\" href=\"lattices/collections/struct.SingletonSet.html\" title=\"struct lattices::collections::SingletonSet\">SingletonSet</a>&lt;T&gt;"],["impl&lt;T&gt; SimpleCollectionRef for <a class=\"struct\" href=\"lattices/collections/struct.VecSet.html\" title=\"struct lattices::collections::VecSet\">VecSet</a>&lt;T&gt;"],["impl&lt;T, const N: <a class=\"primitive\" href=\"https://doc.rust-lang.org/nightly/std/primitive.usize.html\">usize</a>&gt; SimpleCollectionRef for <a class=\"struct\" href=\"lattices/collections/struct.ArraySet.html\" title=\"struct lattices::collections::ArraySet\">ArraySet</a>&lt;T, N&gt;"]]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
