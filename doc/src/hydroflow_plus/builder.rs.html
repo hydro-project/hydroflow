@@ -172,26 +172,76 @@
 <a href="#170" id="170">170</a>
 <a href="#171" id="171">171</a>
 <a href="#172" id="172">172</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
-<span class="kw">use </span>std::collections::BTreeMap;
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::{Ref, RefCell};
+<span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::marker::PhantomData;
 
 <span class="kw">use </span>hydroflow_lang::graph::{
-    eliminate_extra_unions_tees, partition_graph, propagate_flow_props, FlatGraphBuilder,
+    eliminate_extra_unions_tees, partition_graph, propagate_flow_props, HydroflowGraph,
 };
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
 <span class="kw">use </span>quote::quote;
 <span class="kw">use </span>stageleft::{Quoted, QuotedContext};
 <span class="kw">use </span>syn::parse_quote;
 
+<span class="kw">use </span><span class="kw">crate</span>::ir::HfPlusLeaf;
 <span class="kw">use </span><span class="kw">crate</span>::location::{ClusterSpec, LocalDeploy, Location, ProcessSpec};
 <span class="kw">use crate</span>::{HfBuilt, RuntimeContext};
 
-<span class="kw">pub type </span>Builders = RefCell&lt;<span class="prelude-ty">Option</span>&lt;BTreeMap&lt;usize, FlatGraphBuilder&gt;&gt;&gt;;
-
 <span class="kw">pub struct </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt; + <span class="question-mark">?</span>Sized&gt; {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) next_id: RefCell&lt;usize&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) builders: Builders,
+    ir_leaves: RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;,
     nodes: RefCell&lt;Vec&lt;D::Process&gt;&gt;,
     clusters: RefCell&lt;Vec&lt;D::Cluster&gt;&gt;,
 
@@ -205,6 +255,12 @@
     _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>()&gt;,
 }
 
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt; + <span class="question-mark">?</span>Sized&gt; FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt; {
+    <span class="kw">pub fn </span>ir(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Ref&lt;<span class="lifetime">'_</span>, Vec&lt;HfPlusLeaf&gt;&gt; {
+        <span class="self">self</span>.ir_leaves.borrow()
+    }
+}
+
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; QuotedContext <span class="kw">for </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt; {
     <span class="kw">fn </span>create() -&gt; <span class="self">Self </span>{
         FlowBuilder::new()
@@ -215,8 +271,7 @@
     <span class="attr">#[allow(clippy::new_without_default)]
     </span><span class="kw">pub fn </span>new() -&gt; FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt; {
         FlowBuilder {
-            next_id: RefCell::new(<span class="number">0</span>),
-            builders: RefCell::new(<span class="prelude-val">Some</span>(Default::default())),
+            ir_leaves: RefCell::new(Vec::new()),
             nodes: RefCell::new(Vec::new()),
             clusters: RefCell::new(Vec::new()),
             meta: RefCell::new(Default::default()),
@@ -225,8 +280,8 @@
         }
     }
 
-    <span class="kw">pub fn </span>builder_components(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="kw-2">&amp;</span>RefCell&lt;usize&gt;, <span class="kw-2">&amp;</span>Builders) {
-        (<span class="kw-2">&amp;</span><span class="self">self</span>.next_id, <span class="kw-2">&amp;</span><span class="self">self</span>.builders)
+    <span class="kw">pub fn </span>ir_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt; {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.ir_leaves
     }
 
     <span class="kw">pub fn </span>process(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>, spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;) -&gt; D::Process {
@@ -273,8 +328,21 @@
     }
 }
 
-<span class="kw">fn </span>build_inner&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt;(me: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;, id: TokenStream) -&gt; HfBuilt&lt;<span class="lifetime">'a</span>&gt; {
-    <span class="kw">let </span>builders = me.builders.borrow_mut().take().unwrap();
+<span class="kw">fn </span>build_inner&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
+    me: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
+    id: syn::Expr,
+    is_single: bool,
+) -&gt; HfBuilt&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>builders = BTreeMap::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>built_tees = HashMap::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>next_stmt_id = <span class="number">0</span>;
+    <span class="kw">for </span>leaf <span class="kw">in </span>me.ir_leaves().replace(Default::default()) {
+        leaf.emit(<span class="kw-2">&amp;mut </span>builders, <span class="kw-2">&amp;mut </span>built_tees, <span class="kw-2">&amp;mut </span>next_stmt_id);
+    }
+
+    <span class="kw">if </span>is_single &amp;&amp; builders.len() != <span class="number">1 </span>{
+        <span class="macro">panic!</span>(<span class="string">"Expected exactly one node in the graph."</span>);
+    }
 
     <span class="kw">let </span><span class="kw-2">mut </span>conditioned_tokens = <span class="prelude-val">None</span>;
     <span class="kw">for </span>(subgraph_id, builder) <span class="kw">in </span>builders {
@@ -319,29 +387,65 @@
     <span class="kw">let </span>conditioned_tokens: TokenStream = conditioned_tokens.unwrap();
 
     HfBuilt {
-        tokens: <span class="macro">parse_quote! </span>{
+        tokens: <span class="macro">parse_quote!</span>({
             <span class="kw">let </span>__given_id = #id;
             #conditioned_tokens <span class="kw">else </span>{
                 <span class="macro">panic!</span>(<span class="string">"Invalid node id: {}"</span>, __given_id);
             }
-        },
+        }),
         _phantom: PhantomData,
     }
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>, RuntimeID = usize&gt;&gt; FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt; {
     <span class="kw">pub fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, usize&gt;) -&gt; HfBuilt&lt;<span class="lifetime">'a</span>&gt; {
-        build_inner(<span class="self">self</span>, id.splice())
+        build_inner(<span class="self">self</span>, id.splice(), <span class="bool-val">false</span>)
+    }
+
+    <span class="kw">pub fn </span>hydroflow_ir(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BTreeMap&lt;usize, HydroflowGraph&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>builders = BTreeMap::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>built_tees = HashMap::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>next_stmt_id = <span class="number">0</span>;
+        <span class="kw">let </span>borrowed_leaves = <span class="self">self</span>.ir_leaves.borrow();
+        <span class="kw">for </span>leaf <span class="kw">in </span>borrowed_leaves.iter() {
+            leaf.clone()
+                .emit(<span class="kw-2">&amp;mut </span>builders, <span class="kw-2">&amp;mut </span>built_tees, <span class="kw-2">&amp;mut </span>next_stmt_id);
+        }
+
+        <span class="kw">let </span><span class="kw-2">mut </span>result = BTreeMap::new();
+        <span class="kw">for </span>(subgraph_id, builder) <span class="kw">in </span>builders {
+            <span class="kw">let </span>(flat_graph, <span class="kw">_</span>, <span class="kw">_</span>) = builder.build();
+            result.insert(subgraph_id, flat_graph);
+        }
+
+        result
     }
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>, RuntimeID = ()&gt;&gt; FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt; {
     <span class="kw">pub fn </span>build_single(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HfBuilt&lt;<span class="lifetime">'a</span>&gt; {
-        <span class="kw">if </span><span class="self">self</span>.builders.borrow().as_ref().unwrap().len() != <span class="number">1 </span>{
+        build_inner(<span class="self">self</span>, <span class="macro">parse_quote!</span>(<span class="number">0</span>), <span class="bool-val">true</span>)
+    }
+
+    <span class="kw">pub fn </span>single_hydroflow_ir(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HydroflowGraph {
+        <span class="kw">let </span><span class="kw-2">mut </span>builders = BTreeMap::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>built_tees = HashMap::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>next_stmt_id = <span class="number">0</span>;
+        <span class="kw">let </span>borrowed_leaves = <span class="self">self</span>.ir_leaves.borrow();
+        <span class="kw">for </span>leaf <span class="kw">in </span>borrowed_leaves.iter() {
+            leaf.clone()
+                .emit(<span class="kw-2">&amp;mut </span>builders, <span class="kw-2">&amp;mut </span>built_tees, <span class="kw-2">&amp;mut </span>next_stmt_id);
+        }
+
+        <span class="kw">if </span>builders.len() != <span class="number">1 </span>{
             <span class="macro">panic!</span>(<span class="string">"Expected exactly one node in the graph."</span>);
         }
 
-        build_inner(<span class="self">self</span>, <span class="macro">quote!</span>(<span class="number">0</span>))
-    }
+        builders
+            .remove(<span class="kw-2">&amp;</span><span class="number">0</span>)
+            .expect(<span class="string">"expected a single graph"</span>)
+            .build()
+            .<span class="number">0
+    </span>}
 }
 </code></pre></div></section></main></body></html>

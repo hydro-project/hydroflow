@@ -29,37 +29,33 @@
 <a href="#27" id="27">27</a>
 <a href="#28" id="28">28</a>
 <a href="#29" id="29">29</a>
-<a href="#30" id="30">30</a>
-<a href="#31" id="31">31</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_lang::parse::Pipeline;
-
-<span class="kw">use </span><span class="kw">super</span>::Location;
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::Location;
 
 <span class="kw">pub trait </span>HfSendOneToOne&lt;<span class="lifetime">'a</span>, O: Location&lt;<span class="lifetime">'a</span>&gt;&gt;: Location&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">fn </span>connect(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>O, source_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port, recipient_port: <span class="kw-2">&amp;</span>O::Port);
 
-    <span class="kw">fn </span>gen_sink_statement(<span class="kw-2">&amp;</span><span class="self">self</span>, port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port) -&gt; Pipeline;
-    <span class="kw">fn </span>gen_source_statement(other: <span class="kw-2">&amp;</span>O, port: <span class="kw-2">&amp;</span>O::Port) -&gt; Pipeline;
+    <span class="kw">fn </span>gen_sink_statement(<span class="kw-2">&amp;</span><span class="self">self</span>, port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port) -&gt; syn::Expr;
+    <span class="kw">fn </span>gen_source_statement(other: <span class="kw-2">&amp;</span>O, port: <span class="kw-2">&amp;</span>O::Port) -&gt; syn::Expr;
 }
 
 <span class="kw">pub trait </span>HfSendManyToOne&lt;<span class="lifetime">'a</span>, O: Location&lt;<span class="lifetime">'a</span>&gt;&gt;: Location&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">fn </span>connect(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>O, source_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port, recipient_port: <span class="kw-2">&amp;</span>O::Port);
 
-    <span class="kw">fn </span>gen_sink_statement(<span class="kw-2">&amp;</span><span class="self">self</span>, port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port) -&gt; Pipeline;
-    <span class="kw">fn </span>gen_source_statement(other: <span class="kw-2">&amp;</span>O, port: <span class="kw-2">&amp;</span>O::Port) -&gt; Pipeline;
+    <span class="kw">fn </span>gen_sink_statement(<span class="kw-2">&amp;</span><span class="self">self</span>, port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port) -&gt; syn::Expr;
+    <span class="kw">fn </span>gen_source_statement(other: <span class="kw-2">&amp;</span>O, port: <span class="kw-2">&amp;</span>O::Port) -&gt; syn::Expr;
 }
 
 <span class="kw">pub trait </span>HfSendOneToMany&lt;<span class="lifetime">'a</span>, O: Location&lt;<span class="lifetime">'a</span>&gt;&gt;: Location&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">fn </span>connect(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>O, source_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port, recipient_port: <span class="kw-2">&amp;</span>O::Port);
 
-    <span class="kw">fn </span>gen_sink_statement(<span class="kw-2">&amp;</span><span class="self">self</span>, port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port) -&gt; Pipeline;
-    <span class="kw">fn </span>gen_source_statement(other: <span class="kw-2">&amp;</span>O, port: <span class="kw-2">&amp;</span>O::Port) -&gt; Pipeline;
+    <span class="kw">fn </span>gen_sink_statement(<span class="kw-2">&amp;</span><span class="self">self</span>, port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port) -&gt; syn::Expr;
+    <span class="kw">fn </span>gen_source_statement(other: <span class="kw-2">&amp;</span>O, port: <span class="kw-2">&amp;</span>O::Port) -&gt; syn::Expr;
 }
 
 <span class="kw">pub trait </span>HfSendManyToMany&lt;<span class="lifetime">'a</span>, O: Location&lt;<span class="lifetime">'a</span>&gt;&gt;: Location&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">fn </span>connect(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>O, source_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port, recipient_port: <span class="kw-2">&amp;</span>O::Port);
 
-    <span class="kw">fn </span>gen_sink_statement(<span class="kw-2">&amp;</span><span class="self">self</span>, port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port) -&gt; Pipeline;
-    <span class="kw">fn </span>gen_source_statement(other: <span class="kw-2">&amp;</span>O, port: <span class="kw-2">&amp;</span>O::Port) -&gt; Pipeline;
+    <span class="kw">fn </span>gen_sink_statement(<span class="kw-2">&amp;</span><span class="self">self</span>, port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port) -&gt; syn::Expr;
+    <span class="kw">fn </span>gen_source_statement(other: <span class="kw-2">&amp;</span>O, port: <span class="kw-2">&amp;</span>O::Port) -&gt; syn::Expr;
 }
 </code></pre></div></section></main></body></html>

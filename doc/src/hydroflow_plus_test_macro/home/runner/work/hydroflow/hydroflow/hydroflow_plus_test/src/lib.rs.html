@@ -315,6 +315,7 @@
 <a href="#313" id="313">313</a>
 <a href="#314" id="314">314</a>
 <a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
 </pre></div><pre class="rust"><code><span class="macro">stageleft::stageleft_crate!</span>(hydroflow_plus_test_macro);
 
 <span class="kw">use </span>hydroflow_plus::futures::stream::Stream;
@@ -340,12 +341,12 @@
     <span class="kw">let </span>node_one = flow.process(<span class="kw-2">&amp;</span>());
 
     <span class="kw">let </span>source = node_zero.source_stream(input_stream);
-    <span class="kw">let </span>map1 = source.map(<span class="macro">q!</span>(|v| (v + <span class="number">1</span>, ())));
+    <span class="kw">let </span>map1 = source.clone().map(<span class="macro">q!</span>(|v| (v + <span class="number">1</span>, ())));
     <span class="kw">let </span>map2 = source.map(<span class="macro">q!</span>(|v| (v - <span class="number">1</span>, ())));
 
-    <span class="kw">let </span>joined = map1.join(<span class="kw-2">&amp;</span>map2).map(<span class="macro">q!</span>(|t| t.<span class="number">0</span>));
+    <span class="kw">let </span>joined = map1.join(map2).map(<span class="macro">q!</span>(|t| t.<span class="number">0</span>));
 
-    joined.for_each(<span class="macro">q!</span>(|v| {
+    joined.clone().for_each(<span class="macro">q!</span>(|v| {
         output.send(v).unwrap();
     }));
 
@@ -381,7 +382,7 @@
         messages.tick_batch()
     };
 
-    <span class="kw">let </span><span class="kw-2">mut </span>joined = users.cross_product(<span class="kw-2">&amp;</span>messages);
+    <span class="kw">let </span><span class="kw-2">mut </span>joined = users.cross_product(messages);
     <span class="kw">if </span>replay_messages {
         joined = joined.delta();
     }
@@ -407,12 +408,13 @@
 
     <span class="kw">let </span>(set_reached_cycle, reached_cycle) = process.cycle();
 
-    <span class="kw">let </span>reached = roots.union(<span class="kw-2">&amp;</span>reached_cycle);
+    <span class="kw">let </span>reached = roots.union(reached_cycle);
     <span class="kw">let </span>reachable = reached
+        .clone()
         .map(<span class="macro">q!</span>(|r| (r, ())))
-        .join(<span class="kw-2">&amp;</span>edges)
+        .join(edges)
         .map(<span class="macro">q!</span>(|(_from, (<span class="kw">_</span>, to))| to));
-    set_reached_cycle.complete(<span class="kw-2">&amp;</span>reachable);
+    set_reached_cycle.complete(reachable);
 
     reached.tick_batch().unique().for_each(<span class="macro">q!</span>(|v| {
         reached_out.send(v).unwrap();

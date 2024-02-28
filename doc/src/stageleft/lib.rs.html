@@ -341,7 +341,7 @@
 }
 
 <span class="kw">pub trait </span>Quoted&lt;<span class="lifetime">'a</span>, T&gt;: FreeVariable&lt;T&gt; {
-    <span class="kw">fn </span>splice(<span class="self">self</span>) -&gt; TokenStream
+    <span class="kw">fn </span>splice(<span class="self">self</span>) -&gt; syn::Expr
     <span class="kw">where
         </span><span class="self">Self</span>: Sized,
     {
@@ -350,7 +350,7 @@
             <span class="macro">panic!</span>(<span class="string">"Quoted value should not have prelude"</span>);
         }
 
-        value.unwrap()
+        syn::parse2(value.unwrap()).unwrap()
     }
 }
 

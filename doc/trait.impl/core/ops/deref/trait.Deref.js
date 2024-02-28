@@ -1,3 +1,4 @@
 (function() {var implementors = {
-"hydro_cli":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/deref/trait.Deref.html\" title=\"trait core::ops::deref::Deref\">Deref</a> for <a class=\"struct\" href=\"hydro_cli/struct.AnyhowError.html\" title=\"struct hydro_cli::AnyhowError\">AnyhowError</a>"]]
+"hydro_cli":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/deref/trait.Deref.html\" title=\"trait core::ops::deref::Deref\">Deref</a> for <a class=\"struct\" href=\"hydro_cli/struct.AnyhowError.html\" title=\"struct hydro_cli::AnyhowError\">AnyhowError</a>"]],
+"hydroflow_plus":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/deref/trait.Deref.html\" title=\"trait core::ops::deref::Deref\">Deref</a> for <a class=\"struct\" href=\"hydroflow_plus/ir/struct.DebugExpr.html\" title=\"struct hydroflow_plus::ir::DebugExpr\">DebugExpr</a>"]]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

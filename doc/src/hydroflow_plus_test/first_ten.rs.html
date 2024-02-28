@@ -81,6 +81,8 @@
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
@@ -150,6 +152,8 @@
                 )
             }),
         );
+
+        <span class="macro">insta::assert_debug_snapshot!</span>(builder.ir());
 
         deployment.deploy().<span class="kw">await</span>.unwrap();
 

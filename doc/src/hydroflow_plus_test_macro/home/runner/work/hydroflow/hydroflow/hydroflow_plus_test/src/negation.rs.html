@@ -220,7 +220,7 @@
         source2 = source2.all_ticks();
     }
 
-    source.filter_not_in(<span class="kw-2">&amp;</span>source2).for_each(<span class="macro">q!</span>(|v| {
+    source.filter_not_in(source2).for_each(<span class="macro">q!</span>(|v| {
         output.send(v).unwrap();
     }));
 
@@ -247,7 +247,7 @@
     }
 
     <span class="comment">// TODO(shadaj): inference fails without a for_each type annotation here
-    </span>source.anti_join(<span class="kw-2">&amp;</span>source2).for_each(<span class="macro">q!</span>(|v: (u32, u32)| {
+    </span>source.anti_join(source2).for_each(<span class="macro">q!</span>(|v: (u32, u32)| {
         output.send(v.<span class="number">0</span>).unwrap();
     }));
 
