@@ -3,7 +3,7 @@ use std::time::Duration;
 use hydroflow_plus::*;
 use stageleft::*;
 
-pub fn simple_cluster<'a, D: Deploy<'a>>(
+pub fn simple_cluster<'a, D: Deploy<'a, ClusterId = u32>>(
     flow: &'a FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
@@ -16,9 +16,9 @@ pub fn simple_cluster<'a, D: Deploy<'a>>(
 
     ids.cross_product(numbers)
         .map(q!(|(id, n)| (id, (id, n))))
-        .demux_bincode(&cluster)
+        .send_bincode(&cluster)
         .inspect(q!(|n| println!("cluster received: {:?}", n)))
-        .send_bincode_tagged(&process)
+        .send_bincode(&process)
         .for_each(q!(|(id, d)| println!("node received: ({}, {:?})", id, d)));
 
     (process, cluster)
@@ -27,17 +27,20 @@ pub fn simple_cluster<'a, D: Deploy<'a>>(
 pub fn many_to_many<'a, D: Deploy<'a>>(
     flow: &'a FlowBuilder<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
-) -> D::Cluster {
+) -> D::Cluster
+where
+    D::ClusterId: std::fmt::Debug,
+{
     let cluster = flow.cluster(cluster_spec);
     cluster
         .source_iter(q!(0..2))
-        .broadcast_bincode_tagged(&cluster)
+        .broadcast_bincode(&cluster)
         .for_each(q!(|n| println!("cluster received: {:?}", n)));
 
     cluster
 }
 
-pub fn map_reduce<'a, D: Deploy<'a>>(
+pub fn map_reduce<'a, D: Deploy<'a, ClusterId = u32>>(
     flow: &'a FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
@@ -55,7 +58,7 @@ pub fn map_reduce<'a, D: Deploy<'a>>(
         .map(q!(|(i, w)| ((i % all_ids_vec.len()) as u32, w)));
 
     words_partitioned
-        .demux_bincode(&cluster)
+        .send_bincode(&cluster)
         .tick_batch()
         .map(q!(|string| (string, ())))
         .fold_keyed(q!(|| 0), q!(|count, _| *count += 1))
