@@ -6,9 +6,10 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use cc_traits::{
-    covariant_item_mut, covariant_item_ref, covariant_key_ref, simple_keyed_ref, Collection,
-    CollectionMut, CollectionRef, Get, GetKeyValue, GetKeyValueMut, GetMut, Iter, IterMut, Keyed,
-    KeyedRef, Len, MapIter, MapIterMut, SimpleKeyedRef,
+    covariant_item_mut, covariant_item_ref, covariant_key_ref, simple_collection_ref,
+    simple_keyed_ref, Collection, CollectionMut, CollectionRef, Get, GetKeyValue, GetKeyValueMut,
+    GetMut, Iter, IterMut, Keyed, KeyedRef, Len, MapIter, MapIterMut, SimpleCollectionRef,
+    SimpleKeyedRef,
 };
 
 /// Trait for transforming the values of a map without changing the overall type of the data structure.
@@ -88,6 +89,9 @@ impl<T> CollectionRef for VecSet<T> {
         Self: 'a;
 
     covariant_item_ref!();
+}
+impl<T> SimpleCollectionRef for VecSet<T> {
+    simple_collection_ref!();
 }
 impl<'a, Q, T> Get<&'a Q> for VecSet<T>
 where
@@ -354,6 +358,9 @@ impl<T> From<T> for SingletonSet<T> {
 }
 impl<T> Collection for SingletonSet<T> {
     type Item = T;
+}
+impl<T> SimpleCollectionRef for SingletonSet<T> {
+    simple_collection_ref!();
 }
 impl<T> Len for SingletonSet<T> {
     fn len(&self) -> usize {
@@ -929,6 +936,9 @@ impl<T, const N: usize> CollectionRef for ArraySet<T, N> {
         Self: 'a;
 
     covariant_item_ref!();
+}
+impl<T, const N: usize> SimpleCollectionRef for ArraySet<T, N> {
+    simple_collection_ref!();
 }
 impl<'a, Q, T, const N: usize> Get<&'a Q> for ArraySet<T, N>
 where

@@ -3,12 +3,13 @@
 use std::cmp::Ordering::{self, *};
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
+use std::marker::PhantomData;
 
-use cc_traits::Iter;
+use cc_traits::{Collection, GetKeyValue, Iter, MapInsert, SimpleCollectionRef};
 
 use crate::cc_traits::{GetMut, Keyed, Map, MapIter, SimpleKeyedRef};
 use crate::collections::{ArrayMap, MapMapValues, OptionMap, SingletonMap, VecMap};
-use crate::{Atomize, DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{Atomize, DeepReveal, IsBot, IsTop, LatticeBimorphism, LatticeFrom, LatticeOrd, Merge};
 
 /// Map-union compound lattice.
 ///
@@ -269,14 +270,59 @@ pub type MapUnionSingletonMap<K, Val> = MapUnion<SingletonMap<K, Val>>;
 /// [`Option`]-backed [`MapUnion`] lattice.
 pub type MapUnionOptionMap<K, Val> = MapUnion<OptionMap<K, Val>>;
 
+/// Composable bimorphism, wraps an existing morphism by partitioning it per key.
+///
+/// For example, `KeyedBimorphism<..., CartesianProduct<...>>` is a join.
+pub struct KeyedBimorphism<MapOut, Bimorphism> {
+    bimorphism: Bimorphism,
+    _phantom: PhantomData<fn() -> MapOut>,
+}
+impl<MapOut, Bimorphism> From<Bimorphism> for KeyedBimorphism<MapOut, Bimorphism> {
+    fn from(bimorphism: Bimorphism) -> Self {
+        Self {
+            bimorphism,
+            _phantom: PhantomData,
+        }
+    }
+}
+impl<MapA, MapB, MapOut, ValFunc> LatticeBimorphism<MapUnion<MapA>, MapUnion<MapB>>
+    for KeyedBimorphism<MapOut, ValFunc>
+where
+    ValFunc: LatticeBimorphism<MapA::Item, MapB::Item>,
+    MapA: MapIter + SimpleKeyedRef + SimpleCollectionRef,
+    MapB: for<'a> GetKeyValue<&'a MapA::Key, Key = MapA::Key> + SimpleCollectionRef,
+    MapA::Key: Clone + Eq,
+    MapA::Item: Clone,
+    MapB::Item: Clone,
+    MapOut: Default + MapInsert<MapA::Key> + Collection<Item = ValFunc::Output>,
+{
+    type Output = MapUnion<MapOut>;
+
+    fn call(&mut self, lat_a: MapUnion<MapA>, lat_b: MapUnion<MapB>) -> Self::Output {
+        let mut output = MapUnion::<MapOut>::default();
+        for (key, val_a) in lat_a.as_reveal_ref().iter() {
+            let key = <MapA as SimpleKeyedRef>::into_ref(key);
+            let Some((_key, val_b)) = lat_b.as_reveal_ref().get_key_value(key) else {
+                continue;
+            };
+            let val_a = <MapA as SimpleCollectionRef>::into_ref(val_a).clone();
+            let val_b = <MapB as SimpleCollectionRef>::into_ref(val_b).clone();
+
+            let val_out = LatticeBimorphism::call(&mut self.bimorphism, val_a, val_b);
+            <MapOut as MapInsert<_>>::insert(output.as_reveal_mut(), key.clone(), val_out);
+        }
+        output
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;
 
     use super::*;
     use crate::collections::SingletonSet;
-    use crate::set_union::{SetUnionHashSet, SetUnionSingletonSet};
-    use crate::test::{cartesian_power, check_all, check_atomize_each};
+    use crate::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
+    use crate::test::{cartesian_power, check_all, check_atomize_each, check_lattice_bimorphism};
 
     #[test]
     fn test_map_union() {
@@ -334,5 +380,79 @@ mod test {
         assert_eq!(map_empty, map_a_bot);
         assert_eq!(map_empty, map_b_bot);
         assert_eq!(map_a_bot, map_b_bot);
+    }
+
+    #[test]
+    fn test_join_aka_keyed_cartesian_product() {
+        let items_a = &[
+            MapUnionHashMap::new_from([("foo", SetUnionHashSet::new_from(["bar"]))]),
+            MapUnionHashMap::new_from([("foo", SetUnionHashSet::new_from(["baz"]))]),
+            MapUnionHashMap::new_from([("hello", SetUnionHashSet::new_from(["world"]))]),
+        ];
+        let items_b = &[
+            MapUnionHashMap::new_from([("foo", SetUnionHashSet::new_from(["bang"]))]),
+            MapUnionHashMap::new_from([(
+                "hello",
+                SetUnionHashSet::new_from(["goodbye", "farewell"]),
+            )]),
+        ];
+
+        check_lattice_bimorphism(
+            KeyedBimorphism::<HashMap<_, _>, _>::from(
+                CartesianProductBimorphism::<HashSet<_>>::default(),
+            ),
+            items_a,
+            items_a,
+        );
+        check_lattice_bimorphism(
+            KeyedBimorphism::<HashMap<_, _>, _>::from(
+                CartesianProductBimorphism::<HashSet<_>>::default(),
+            ),
+            items_a,
+            items_b,
+        );
+        check_lattice_bimorphism(
+            KeyedBimorphism::<HashMap<_, _>, _>::from(
+                CartesianProductBimorphism::<HashSet<_>>::default(),
+            ),
+            items_b,
+            items_a,
+        );
+        check_lattice_bimorphism(
+            KeyedBimorphism::<HashMap<_, _>, _>::from(
+                CartesianProductBimorphism::<HashSet<_>>::default(),
+            ),
+            items_b,
+            items_b,
+        );
+
+        check_lattice_bimorphism(
+            KeyedBimorphism::<BTreeMap<_, _>, _>::from(
+                CartesianProductBimorphism::<HashSet<_>>::default(),
+            ),
+            items_a,
+            items_a,
+        );
+        check_lattice_bimorphism(
+            KeyedBimorphism::<BTreeMap<_, _>, _>::from(
+                CartesianProductBimorphism::<HashSet<_>>::default(),
+            ),
+            items_a,
+            items_b,
+        );
+        check_lattice_bimorphism(
+            KeyedBimorphism::<BTreeMap<_, _>, _>::from(
+                CartesianProductBimorphism::<HashSet<_>>::default(),
+            ),
+            items_b,
+            items_a,
+        );
+        check_lattice_bimorphism(
+            KeyedBimorphism::<BTreeMap<_, _>, _>::from(
+                CartesianProductBimorphism::<HashSet<_>>::default(),
+            ),
+            items_b,
+            items_b,
+        );
     }
 }

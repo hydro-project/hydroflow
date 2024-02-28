@@ -2,10 +2,13 @@
 
 use std::cmp::Ordering::{self, *};
 use std::collections::{BTreeSet, HashSet};
+use std::marker::PhantomData;
+
+use cc_traits::SimpleCollectionRef;
 
 use crate::cc_traits::{Iter, Len, Set};
 use crate::collections::{ArraySet, OptionSet, SingletonSet};
-use crate::{Atomize, DeepReveal, IsBot, IsTop, LatticeFrom, LatticeOrd, Merge};
+use crate::{Atomize, DeepReveal, IsBot, IsTop, LatticeBimorphism, LatticeFrom, LatticeOrd, Merge};
 
 /// Set-union lattice.
 ///
@@ -171,10 +174,50 @@ pub type SetUnionSingletonSet<Item> = SetUnion<SingletonSet<Item>>;
 /// [`Option`]-backed [`SetUnion`] lattice.
 pub type SetUnionOptionSet<Item> = SetUnion<OptionSet<Item>>;
 
+/// Bimorphism for the cartesian product of two sets. Output is a set of all possible pairs of
+/// items from the two input sets.
+pub struct CartesianProductBimorphism<SetOut> {
+    _phantom: PhantomData<fn() -> SetOut>,
+}
+impl<SetOut> Default for CartesianProductBimorphism<SetOut> {
+    fn default() -> Self {
+        Self {
+            _phantom: Default::default(),
+        }
+    }
+}
+impl<SetA, SetB, SetOut> LatticeBimorphism<SetUnion<SetA>, SetUnion<SetB>>
+    for CartesianProductBimorphism<SetOut>
+where
+    SetA: IntoIterator,
+    SetB: Iter + SimpleCollectionRef,
+    SetA::Item: Clone,
+    SetB::Item: Clone,
+    SetOut: FromIterator<(SetA::Item, SetB::Item)>,
+{
+    type Output = SetUnion<SetOut>;
+
+    fn call(&mut self, lat_a: SetUnion<SetA>, lat_b: SetUnion<SetB>) -> Self::Output {
+        let set_a = lat_a.into_reveal();
+        let set_b = lat_b.into_reveal();
+        let set_out = set_a
+            .into_iter()
+            .flat_map(|a_item| {
+                set_b
+                    .iter()
+                    .map(<SetB as SimpleCollectionRef>::into_ref)
+                    .cloned()
+                    .map(move |b_item| (a_item.clone(), b_item))
+            })
+            .collect::<SetOut>();
+        SetUnion::new(set_out)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::test::{check_all, check_atomize_each};
+    use crate::test::{check_all, check_atomize_each, check_lattice_bimorphism};
 
     #[test]
     fn test_set_union() {
@@ -230,5 +273,40 @@ mod test {
             SetUnionHashSet::new_from([0, 1]),
             SetUnionHashSet::new((0..10).collect()),
         ]);
+    }
+
+    #[test]
+    fn cartesian_product() {
+        let items_a = &[
+            SetUnionHashSet::new_from([]),
+            SetUnionHashSet::new_from([0]),
+            SetUnionHashSet::new_from([1]),
+            SetUnionHashSet::new_from([0, 1]),
+        ];
+        let items_b = &[
+            SetUnionBTreeSet::new("hello".chars().collect()),
+            SetUnionBTreeSet::new("world".chars().collect()),
+        ];
+
+        check_lattice_bimorphism(
+            CartesianProductBimorphism::<HashSet<_>>::default(),
+            items_a,
+            items_a,
+        );
+        check_lattice_bimorphism(
+            CartesianProductBimorphism::<HashSet<_>>::default(),
+            items_a,
+            items_b,
+        );
+        check_lattice_bimorphism(
+            CartesianProductBimorphism::<HashSet<_>>::default(),
+            items_b,
+            items_a,
+        );
+        check_lattice_bimorphism(
+            CartesianProductBimorphism::<HashSet<_>>::default(),
+            items_b,
+            items_b,
+        );
     }
 }
