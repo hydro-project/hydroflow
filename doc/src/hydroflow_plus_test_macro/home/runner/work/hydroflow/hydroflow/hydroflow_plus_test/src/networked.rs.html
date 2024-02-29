@@ -129,14 +129,7 @@
 <a href="#127" id="127">127</a>
 <a href="#128" id="128">128</a>
 <a href="#129" id="129">129</a>
-<a href="#130" id="130">130</a>
-<a href="#131" id="131">131</a>
-<a href="#132" id="132">132</a>
-<a href="#133" id="133">133</a>
-<a href="#134" id="134">134</a>
-<a href="#135" id="135">135</a>
-<a href="#136" id="136">136</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::bytes::BytesMut;
+</pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::bytes::Bytes;
 <span class="kw">use </span>hydroflow_plus::util::cli::HydroCLI;
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
@@ -161,22 +154,15 @@
     <span class="kw">let </span>(source_zero_port, source_zero) = process_zero.source_external();
 
     source_zero
-        .map(<span class="macro">q!</span>(|v| v.unwrap().freeze()))
         .send_bytes(<span class="kw-2">&amp;</span>process_one)
-        .for_each(<span class="macro">q!</span>(|v: <span class="prelude-ty">Result</span>&lt;BytesMut, <span class="kw">_</span>&gt;| {
-            <span class="macro">println!</span>(
-                <span class="string">"node one received: {:?}"</span>,
-                std::str::from_utf8(<span class="kw-2">&amp;</span>v.unwrap()).unwrap()
-            );
+        .for_each(<span class="macro">q!</span>(|v: Bytes| {
+            <span class="macro">println!</span>(<span class="string">"node one received: {:?}"</span>, std::str::from_utf8(<span class="kw-2">&amp;</span>v).unwrap());
         }));
 
     <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
-    <span class="kw">let </span>(cluster_port, cluster_stream) = cluster.many_source_external::&lt;D::Process&gt;();
-    cluster_stream.for_each(<span class="macro">q!</span>(|v: <span class="prelude-ty">Result</span>&lt;BytesMut, <span class="kw">_</span>&gt;| {
-        <span class="macro">println!</span>(
-            <span class="string">"cluster received: {:?}"</span>,
-            std::str::from_utf8(<span class="kw-2">&amp;</span>v.unwrap()).unwrap()
-        );
+    <span class="kw">let </span>(cluster_port, cluster_stream) = cluster.many_source_external::&lt;D::Process, <span class="kw">_</span>&gt;();
+    cluster_stream.for_each(<span class="macro">q!</span>(|v: Bytes| {
+        <span class="macro">println!</span>(<span class="string">"cluster received: {:?}"</span>, std::str::from_utf8(<span class="kw-2">&amp;</span>v).unwrap());
     }));
 
     NetworkedBasicIO {

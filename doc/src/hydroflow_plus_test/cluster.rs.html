@@ -316,12 +316,15 @@
 <a href="#314" id="314">314</a>
 <a href="#315" id="315">315</a>
 <a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
-<span class="kw">pub fn </span>simple_cluster&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
+<span class="kw">pub fn </span>simple_cluster&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>, ClusterId = u32&gt;&gt;(
     flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
     process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
     cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
@@ -334,9 +337,9 @@
 
     ids.cross_product(numbers)
         .map(<span class="macro">q!</span>(|(id, n)| (id, (id, n))))
-        .demux_bincode(<span class="kw-2">&amp;</span>cluster)
+        .send_bincode(<span class="kw-2">&amp;</span>cluster)
         .inspect(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"cluster received: {:?}"</span>, n)))
-        .send_bincode_tagged(<span class="kw-2">&amp;</span>process)
+        .send_bincode(<span class="kw-2">&amp;</span>process)
         .for_each(<span class="macro">q!</span>(|(id, d)| <span class="macro">println!</span>(<span class="string">"node received: ({}, {:?})"</span>, id, d)));
 
     (process, cluster)
@@ -345,17 +348,20 @@
 <span class="kw">pub fn </span>many_to_many&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
     flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
     cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
-) -&gt; D::Cluster {
+) -&gt; D::Cluster
+<span class="kw">where
+    </span>D::ClusterId: std::fmt::Debug,
+{
     <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
     cluster
         .source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">2</span>))
-        .broadcast_bincode_tagged(<span class="kw-2">&amp;</span>cluster)
+        .broadcast_bincode(<span class="kw-2">&amp;</span>cluster)
         .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"cluster received: {:?}"</span>, n)));
 
     cluster
 }
 
-<span class="kw">pub fn </span>map_reduce&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
+<span class="kw">pub fn </span>map_reduce&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>, ClusterId = u32&gt;&gt;(
     flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
     process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
     cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
@@ -373,7 +379,7 @@
         .map(<span class="macro">q!</span>(|(i, w)| ((i % all_ids_vec.len()) <span class="kw">as </span>u32, w)));
 
     words_partitioned
-        .demux_bincode(<span class="kw-2">&amp;</span>cluster)
+        .send_bincode(<span class="kw-2">&amp;</span>cluster)
         .tick_batch()
         .map(<span class="macro">q!</span>(|string| (string, ())))
         .fold_keyed(<span class="macro">q!</span>(|| <span class="number">0</span>), <span class="macro">q!</span>(|count, <span class="kw">_</span>| <span class="kw-2">*</span>count += <span class="number">1</span>))

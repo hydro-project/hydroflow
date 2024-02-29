@@ -397,7 +397,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>, RuntimeID = usize&gt;&gt; FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>, GraphId = usize&gt;&gt; FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt; {
     <span class="kw">pub fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, usize&gt;) -&gt; HfBuilt&lt;<span class="lifetime">'a</span>&gt; {
         build_inner(<span class="self">self</span>, id.splice(), <span class="bool-val">false</span>)
     }
@@ -422,7 +422,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>, RuntimeID = ()&gt;&gt; FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>, GraphId = ()&gt;&gt; FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt; {
     <span class="kw">pub fn </span>build_single(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HfBuilt&lt;<span class="lifetime">'a</span>&gt; {
         build_inner(<span class="self">self</span>, <span class="macro">parse_quote!</span>(<span class="number">0</span>), <span class="bool-val">true</span>)
     }
