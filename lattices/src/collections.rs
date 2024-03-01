@@ -182,6 +182,9 @@ impl<K, V> CollectionRef for VecMap<K, V> {
 
     covariant_item_ref!();
 }
+impl<K, V> SimpleCollectionRef for VecMap<K, V> {
+    simple_collection_ref!();
+}
 impl<'a, Q, K, V> Get<&'a Q> for VecMap<K, V>
 where
     K: Borrow<Q>,
@@ -308,6 +311,9 @@ impl<T> CollectionRef for EmptySet<T> {
 
     covariant_item_ref!();
 }
+impl<T> SimpleCollectionRef for EmptySet<T> {
+    simple_collection_ref!();
+}
 
 impl<'a, Q, T> Get<&'a Q> for EmptySet<T> {
     fn get(&self, _key: &'a Q) -> Option<Self::ItemRef<'_>> {
@@ -359,9 +365,6 @@ impl<T> From<T> for SingletonSet<T> {
 impl<T> Collection for SingletonSet<T> {
     type Item = T;
 }
-impl<T> SimpleCollectionRef for SingletonSet<T> {
-    simple_collection_ref!();
-}
 impl<T> Len for SingletonSet<T> {
     fn len(&self) -> usize {
         1
@@ -373,6 +376,9 @@ impl<T> CollectionRef for SingletonSet<T> {
         Self: 'a;
 
     covariant_item_ref!();
+}
+impl<T> SimpleCollectionRef for SingletonSet<T> {
+    simple_collection_ref!();
 }
 impl<'a, Q, T> Get<&'a Q> for SingletonSet<T>
 where
@@ -456,6 +462,9 @@ impl<K, V> CollectionRef for EmptyMap<K, V> {
         Self: 'a;
 
     covariant_item_ref!();
+}
+impl<K, V> SimpleCollectionRef for EmptyMap<K, V> {
+    simple_collection_ref!();
 }
 impl<'a, Q, K, V> Get<&'a Q> for EmptyMap<K, V>
 where
@@ -572,6 +581,9 @@ impl<K, V> CollectionRef for SingletonMap<K, V> {
         Self: 'a;
 
     covariant_item_ref!();
+}
+impl<K, V> SimpleCollectionRef for SingletonMap<K, V> {
+    simple_collection_ref!();
 }
 impl<'a, Q, K, V> Get<&'a Q> for SingletonMap<K, V>
 where
@@ -710,6 +722,9 @@ impl<T> CollectionRef for OptionSet<T> {
 
     covariant_item_ref!();
 }
+impl<T> SimpleCollectionRef for OptionSet<T> {
+    simple_collection_ref!();
+}
 impl<'a, Q, T> Get<&'a Q> for OptionSet<T>
 where
     T: Borrow<Q>,
@@ -793,6 +808,9 @@ impl<K, V> CollectionRef for OptionMap<K, V> {
         Self: 'a;
 
     covariant_item_ref!();
+}
+impl<K, V> SimpleCollectionRef for OptionMap<K, V> {
+    simple_collection_ref!();
 }
 impl<'a, Q, K, V> Get<&'a Q> for OptionMap<K, V>
 where
@@ -1026,6 +1044,9 @@ impl<K, V, const N: usize> CollectionRef for ArrayMap<K, V, N> {
         Self: 'a;
 
     covariant_item_ref!();
+}
+impl<K, V, const N: usize> SimpleCollectionRef for ArrayMap<K, V, N> {
+    simple_collection_ref!();
 }
 impl<'a, Q, K, V, const N: usize> Get<&'a Q> for ArrayMap<K, V, N>
 where
