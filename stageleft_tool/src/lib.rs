@@ -124,7 +124,12 @@ impl VisitMut for GenFinalPubVistor {
             .iter()
             .any(|a| a.path().to_token_stream().to_string() == "stageleft :: runtime");
 
-        if is_runtime {
+        let is_test = i
+            .attrs
+            .iter()
+            .any(|a| a.to_token_stream().to_string() == "# [cfg (test)]");
+
+        if is_runtime || is_test {
             *i = parse_quote! {
                 #[cfg(feature = "macro")]
                 #i
@@ -198,6 +203,7 @@ impl VisitMut for GenFinalPubVistor {
     }
 
     fn visit_file_mut(&mut self, i: &mut syn::File) {
+        i.attrs = vec![];
         i.items.retain(|i| match i {
             syn::Item::Macro(m) => {
                 m.mac.path.to_token_stream().to_string() != "stageleft :: stageleft_crate"
