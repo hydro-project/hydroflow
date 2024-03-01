@@ -1,36 +1,25 @@
 use crate::ir::*;
 
-fn predicate_pushdown_node(node: HfPlusNode) -> HfPlusNode {
-    match node {
+fn persist_pullup_node(node: HfPlusNode, seen_tees: &mut SeenTees) -> HfPlusNode {
+    match node.transform_children(persist_pullup_node, seen_tees) {
         HfPlusNode::Map {
             f,
             input: box HfPlusNode::Persist(behind_persist),
-        } => HfPlusNode::Persist(Box::new(predicate_pushdown_node(HfPlusNode::Map {
+        } => HfPlusNode::Persist(Box::new(HfPlusNode::Map {
             f,
             input: behind_persist,
-        }))),
+        })),
         o => o,
     }
 }
 
-fn predicate_pushdown_leaf(leaf: HfPlusLeaf) -> HfPlusLeaf {
-    match leaf {
-        HfPlusLeaf::ForEach { f, input } => {
-            let input = predicate_pushdown_node(*input);
-            HfPlusLeaf::ForEach {
-                f,
-                input: Box::new(input),
-            }
-        }
-        o => o,
-    }
+pub fn persist_pullup(ir: Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf> {
+    let mut seen_tees = Default::default();
+    ir.into_iter()
+        .map(|l| l.transform_children(persist_pullup_node, &mut seen_tees))
+        .collect()
 }
 
-pub fn predicate_pushdown(ir: Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf> {
-    ir.into_iter().map(predicate_pushdown_leaf).collect()
-}
-
-#[stageleft::runtime]
 #[cfg(test)]
 mod tests {
     use stageleft::*;
@@ -38,7 +27,7 @@ mod tests {
     use crate::{Location, MultiGraph};
 
     #[test]
-    fn predicate_pushdown_through_map() {
+    fn persist_pullup_through_map() {
         let flow = crate::builder::FlowBuilder::<MultiGraph>::new();
         let process = flow.process(&());
 
@@ -52,8 +41,31 @@ mod tests {
 
         insta::assert_debug_snapshot!(&built.ir);
 
-        let pushed_down = built.optimize_with(super::predicate_pushdown);
+        let optimized = built.optimize_with(super::persist_pullup);
 
-        insta::assert_debug_snapshot!(&pushed_down.ir);
+        insta::assert_debug_snapshot!(&optimized.ir);
+    }
+
+    #[test]
+    fn persist_pullup_behind_tee() {
+        let flow = crate::builder::FlowBuilder::<MultiGraph>::new();
+        let process = flow.process(&());
+
+        let before_tee = process
+            .source_iter(q!(0..10))
+            .all_ticks()
+            .map(q!(|v| v + 1));
+
+        before_tee.clone().for_each(q!(|n| println!("{}", n)));
+
+        before_tee.for_each(q!(|n| println!("{}", n)));
+
+        let built = flow.build();
+
+        insta::assert_debug_snapshot!(&built.ir);
+
+        let optimized = built.optimize_with(super::persist_pullup);
+
+        insta::assert_debug_snapshot!(&optimized.ir);
     }
 }
