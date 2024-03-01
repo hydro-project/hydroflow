@@ -23,11 +23,13 @@ pub(crate) fn rga_datalog_agg(
         // firstLastChild(Parent, max<Child>, min<Child) :- insertAfter(Child, Parent)
         firstLastChild = insertAfter[firstLastChild]
             -> map(|(c, p)| (p, c))
-            -> fold_keyed::<'static, Timestamp, (Timestamp, Timestamp)>(|| (Timestamp{node_ts: 0, node_id: 0}, Timestamp{node_ts: std::usize::MAX, node_id: std::usize::MAX}),
-                                                                      |(first, last): &mut (Timestamp, Timestamp), s2: Timestamp| {
-                                                                        if s2 > *first {*first = s2};
-                                                                        if s2 < *last {*last = s2};
-                                                                      })
+            -> fold_keyed::<'static, Timestamp, (Timestamp, Timestamp)>(
+                || (Timestamp{node_ts: 0, node_id: 0}, Timestamp{node_ts: std::usize::MAX, node_id: std::usize::MAX}),
+                |(first, last): &mut (Timestamp, Timestamp), s2: Timestamp| {
+                    if s2 > *first { *first = s2 };
+                    if s2 < *last { *last = s2 };
+                }
+            )
             -> tee();
 
         // firstChild(Parent, First) :- firstLastChild(Parent, First, Last)
@@ -42,7 +44,14 @@ pub(crate) fn rga_datalog_agg(
         insertAfter[sib2] -> map(|(c, p)| (p, c)) -> [1]sibling;
 
         // nextSibling (Sib1, max<Sib2>) :- sibling (Sib1, Sib2)
-        nextSibling = sibling -> fold_keyed::<'static, Timestamp, Timestamp>(|| Timestamp{node_ts: 0, node_id: 0}, |accum: &mut Timestamp, s2: Timestamp| if s2 > *accum {*accum = s2});
+        nextSibling = sibling
+            -> fold_keyed::<'static, Timestamp, Timestamp>(
+                || Timestamp{node_ts: 0, node_id: 0},
+                |accum: &mut Timestamp, s2: Timestamp| {
+                    eprintln!("accum {:?}, s2 {:?}", accum, s2);
+                    if s2 > *accum {*accum = s2}
+                }
+            );
 
         // nextSiblingAnc (Start, Next) :- nextSibling (Start, Next), Next != 0
         nextSiblingAnc = union() -> tee();
@@ -50,7 +59,7 @@ pub(crate) fn rga_datalog_agg(
 
         // nextSiblingAnc(Node, Next) :- lastChild(Parent, Node), nextSiblingAnc(Parent, Next)
         upEdge = join() -> map(|(_parent, (node, next))| (node, next)) -> nextSiblingAnc;
-        lastChild -> [0]upEdge;
+        lastChild      -> [0]upEdge;
         nextSiblingAnc -> [1]upEdge;
 
         // nextElem(Prev, Next) :- firstChild(Prev, Next)

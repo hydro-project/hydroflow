@@ -102,7 +102,7 @@ pub const PERSIST: OperatorConstraints = OperatorConstraints {
             quote_spanned! {op_span=>
                 let mut #vec_ident = #context.state_ref(#persistdata_ident).borrow_mut();
                 let #ident = {
-                    if context.is_first_run_this_tick() {
+                    if #context.is_first_run_this_tick() {
                         #vec_ident.extend(#input);
                         #vec_ident.iter().cloned()
                     } else {
@@ -132,7 +132,7 @@ pub const PERSIST: OperatorConstraints = OperatorConstraints {
                             vec.last().unwrap().clone()
                         }, output)
                     }
-                    constrain_types(&mut *#vec_ident, #output, context.is_first_run_this_tick())
+                    constrain_types(&mut *#vec_ident, #output, #context.is_first_run_this_tick())
                 };
             }
         };
