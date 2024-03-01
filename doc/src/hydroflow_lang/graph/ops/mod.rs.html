@@ -651,25 +651,6 @@
 <a href="#649" id="649">649</a>
 <a href="#650" id="650">650</a>
 <a href="#651" id="651">651</a>
-<a href="#652" id="652">652</a>
-<a href="#653" id="653">653</a>
-<a href="#654" id="654">654</a>
-<a href="#655" id="655">655</a>
-<a href="#656" id="656">656</a>
-<a href="#657" id="657">657</a>
-<a href="#658" id="658">658</a>
-<a href="#659" id="659">659</a>
-<a href="#660" id="660">660</a>
-<a href="#661" id="661">661</a>
-<a href="#662" id="662">662</a>
-<a href="#663" id="663">663</a>
-<a href="#664" id="664">664</a>
-<a href="#665" id="665">665</a>
-<a href="#666" id="666">666</a>
-<a href="#667" id="667">667</a>
-<a href="#668" id="668">668</a>
-<a href="#669" id="669">669</a>
-<a href="#670" id="670">670</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Hydroflow's operators
 
 </span><span class="kw">use </span>std::collections::HashMap;
@@ -928,34 +909,15 @@
 
 <span class="doccomment">/// [`OperatorConstraints::flow_prop_fn`] for `join` and `cross_join`.
 </span><span class="kw">pub const </span>JOIN_CROSS_JOIN_FLOW_PROP_FN: FlowPropFn =
-    |<span class="kw-2">ref </span>fp @ FlowPropArgs {
-         op_inst:
-             OperatorInstance {
-                 generics:
-                     OpInstGenerics {
-                         persistence_args, ..
-                     },
-                 ..
-             },
-         flow_props_in,
-         ..
-     },
-     _diagnostics| {
+    |<span class="kw-2">ref </span>fp @ FlowPropArgs { flow_props_in, .. }, _diagnostics| {
         <span class="kw">let </span>lattice_flow_type = flow_props_in
             .iter()
             .map(|flow_props| flow_props.and_then(|fp| fp.lattice_flow_type))
             .reduce(std::cmp::min)
             .flatten();
-        <span class="kw">let </span>lattice_flow_type = lattice_flow_type.map(|flow_type| {
-            <span class="comment">// Upgrade 'static to Cumul.
-            </span><span class="kw">match </span>persistence_args[..] {
-                [Persistence::Static, Persistence::Static] =&gt; LatticeFlowType::Cumul,
-                [Persistence::Static] =&gt; LatticeFlowType::Cumul,
-                <span class="kw">_ </span>=&gt; flow_type,
-            }
-            <span class="comment">// TODO(mingwei): diagnostics warning for mismatch between 'static vs 'tick and flow props.
-        </span>});
-        <span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[<span class="prelude-val">Some</span>(FlowProps {
+        <span class="comment">// TODO(mingwei): diagnostics warning for mismatch between 'static vs 'tick and flow props.
+        // Previously this upgraded `'static` joins to `Cumul`, which is dubious.
+        </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[<span class="prelude-val">Some</span>(FlowProps {
             star_ord: fp.new_star_ord(),
             lattice_flow_type,
         })])
@@ -1048,6 +1010,7 @@
     join_multiset::JOIN_MULTISET,
     fold_keyed::FOLD_KEYED,
     reduce_keyed::REDUCE_KEYED,
+    lattice_bimorphism::LATTICE_BIMORPHISM,
     _lattice_fold_batch::_LATTICE_FOLD_BATCH,
     lattice_fold::LATTICE_FOLD,
     _lattice_join_fused_join::_LATTICE_JOIN_FUSED_JOIN,
@@ -1079,7 +1042,6 @@
     source_stream::SOURCE_STREAM,
     source_stream_serde::SOURCE_STREAM_SERDE,
     state::STATE,
-    state_join::STATE_JOIN,
     tee::TEE,
     unique::UNIQUE,
     unzip::UNZIP,

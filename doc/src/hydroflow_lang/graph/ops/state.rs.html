@@ -121,7 +121,7 @@
 
 <span class="kw">use super</span>::{
     OperatorCategory, OperatorConstraints, OperatorWriteOutput, PortListSpec, WriteContextArgs,
-    RANGE_0, RANGE_1,
+    LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance, PortIndexValue};
 
@@ -147,7 +147,7 @@
         }
         _else =&gt; GraphEdgeType::Value,
     },
-    flow_prop_fn: <span class="prelude-val">None</span>,
+    flow_prop_fn: <span class="prelude-val">Some</span>(LATTICE_FOLD_REDUCE_FLOW_PROP_FN),
     write_fn: |<span class="kw-2">&amp;</span>WriteContextArgs {
                    root,
                    context,

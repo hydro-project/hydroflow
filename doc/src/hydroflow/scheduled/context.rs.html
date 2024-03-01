@@ -294,7 +294,7 @@
     }
 
     <span class="doccomment">/// Returns a shared reference to the state.
-    </span><span class="kw">pub fn </span>state_ref&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, handle: StateHandle&lt;T&gt;) -&gt; <span class="kw-2">&amp;</span>T
+    </span><span class="kw">pub fn </span>state_ref&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, handle: StateHandle&lt;T&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'_ </span>T
     <span class="kw">where
         </span>T: Any,
     {
@@ -307,7 +307,7 @@
     }
 
     <span class="doccomment">/// Returns an exclusive reference to the state.
-    </span><span class="kw">pub fn </span>state_mut&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, handle: StateHandle&lt;T&gt;) -&gt; <span class="kw-2">&amp;mut </span>T
+    </span><span class="kw">pub fn </span>state_mut&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, handle: StateHandle&lt;T&gt;) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'_ </span><span class="kw-2">mut </span>T
     <span class="kw">where
         </span>T: Any,
     {

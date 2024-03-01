@@ -603,7 +603,7 @@
             <span class="kw">if </span>resource_batch
                 .terraform
                 .resource
-                .get(<span class="kw-2">&amp;</span><span class="string">"google_compute_network"</span>.to_string())
+                .get(<span class="string">"google_compute_network"</span>)
                 .unwrap_or(<span class="kw-2">&amp;</span>HashMap::new())
                 .contains_key(existing)
             {
