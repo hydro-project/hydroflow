@@ -78,7 +78,7 @@ impl GCPNetwork {
             if resource_batch
                 .terraform
                 .resource
-                .get(&"google_compute_network".to_string())
+                .get("google_compute_network")
                 .unwrap_or(&HashMap::new())
                 .contains_key(existing)
             {

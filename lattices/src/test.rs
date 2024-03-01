@@ -83,7 +83,10 @@ pub fn check_partial_ord_properties<T: PartialOrd + Eq + Debug>(items: &[T]) {
         assert_eq!(a >= b, a > b || a == b, "`{:?}`, `{:?}`", a, b);
         // PartialEq:
         // a != b if and only if !(a == b).
-        assert_eq!(a != b, !(a == b), "`{:?}`, `{:?}`", a, b);
+        #[allow(clippy::nonminimal_bool)]
+        {
+            assert_eq!(a != b, !(a == b), "`{:?}`, `{:?}`", a, b);
+        }
     }
     // transitivity: a < b and b < c implies a < c. The same must hold for both == and >.
     for [a, b, c] in cartesian_power(items) {
