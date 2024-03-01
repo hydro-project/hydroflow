@@ -1,4 +1,4 @@
-use std::cell::{Ref, RefCell};
+use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 
@@ -29,12 +29,6 @@ pub struct FlowBuilder<'a, D: LocalDeploy<'a> + ?Sized> {
     _phantom: PhantomData<&'a mut &'a ()>,
 }
 
-impl<'a, D: LocalDeploy<'a> + ?Sized> FlowBuilder<'a, D> {
-    pub fn ir(&self) -> Ref<'_, Vec<HfPlusLeaf>> {
-        self.ir_leaves.borrow()
-    }
-}
-
 impl<'a, D: LocalDeploy<'a>> QuotedContext for FlowBuilder<'a, D> {
     fn create() -> Self {
         FlowBuilder::new()
@@ -50,6 +44,13 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
             clusters: RefCell::new(Vec::new()),
             meta: RefCell::new(Default::default()),
             next_node_id: RefCell::new(0),
+            _phantom: PhantomData,
+        }
+    }
+
+    pub fn build(&self) -> BuiltFlow<'a, D> {
+        BuiltFlow {
+            ir: self.ir_leaves.borrow().clone(),
             _phantom: PhantomData,
         }
     }
@@ -102,15 +103,34 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
     }
 }
 
+#[derive(Clone)]
+pub struct BuiltFlow<'a, D: LocalDeploy<'a>> {
+    pub ir: Vec<HfPlusLeaf>,
+
+    _phantom: PhantomData<&'a mut &'a D>,
+}
+
+impl<'a, D: LocalDeploy<'a>> BuiltFlow<'a, D> {
+    pub fn optimize_with(
+        self,
+        f: impl FnOnce(Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf>,
+    ) -> BuiltFlow<'a, D> {
+        BuiltFlow {
+            ir: f(self.ir),
+            _phantom: PhantomData,
+        }
+    }
+}
+
 fn build_inner<'a, D: LocalDeploy<'a>>(
-    me: &FlowBuilder<'a, D>,
+    me: BuiltFlow<'a, D>,
     id: syn::Expr,
     is_single: bool,
 ) -> HfBuilt<'a> {
     let mut builders = BTreeMap::new();
     let mut built_tees = HashMap::new();
     let mut next_stmt_id = 0;
-    for leaf in me.ir_leaves().replace(Default::default()) {
+    for leaf in me.ir {
         leaf.emit(&mut builders, &mut built_tees, &mut next_stmt_id);
     }
 
@@ -171,8 +191,8 @@ fn build_inner<'a, D: LocalDeploy<'a>>(
     }
 }
 
-impl<'a, D: LocalDeploy<'a, GraphId = usize>> FlowBuilder<'a, D> {
-    pub fn build(&self, id: impl Quoted<'a, usize>) -> HfBuilt<'a> {
+impl<'a, D: LocalDeploy<'a, GraphId = usize>> BuiltFlow<'a, D> {
+    pub fn emit(self, id: impl Quoted<'a, usize>) -> HfBuilt<'a> {
         build_inner(self, id.splice(), false)
     }
 
@@ -180,8 +200,7 @@ impl<'a, D: LocalDeploy<'a, GraphId = usize>> FlowBuilder<'a, D> {
         let mut builders = BTreeMap::new();
         let mut built_tees = HashMap::new();
         let mut next_stmt_id = 0;
-        let borrowed_leaves = self.ir_leaves.borrow();
-        for leaf in borrowed_leaves.iter() {
+        for leaf in self.ir.iter() {
             leaf.clone()
                 .emit(&mut builders, &mut built_tees, &mut next_stmt_id);
         }
@@ -196,8 +215,8 @@ impl<'a, D: LocalDeploy<'a, GraphId = usize>> FlowBuilder<'a, D> {
     }
 }
 
-impl<'a, D: LocalDeploy<'a, GraphId = ()>> FlowBuilder<'a, D> {
-    pub fn build_single(&self) -> HfBuilt<'a> {
+impl<'a, D: LocalDeploy<'a, GraphId = ()>> BuiltFlow<'a, D> {
+    pub fn emit_single(self) -> HfBuilt<'a> {
         build_inner(self, parse_quote!(0), true)
     }
 
@@ -205,8 +224,7 @@ impl<'a, D: LocalDeploy<'a, GraphId = ()>> FlowBuilder<'a, D> {
         let mut builders = BTreeMap::new();
         let mut built_tees = HashMap::new();
         let mut next_stmt_id = 0;
-        let borrowed_leaves = self.ir_leaves.borrow();
-        for leaf in borrowed_leaves.iter() {
+        for leaf in self.ir.iter() {
             leaf.clone()
                 .emit(&mut builders, &mut built_tees, &mut next_stmt_id);
         }

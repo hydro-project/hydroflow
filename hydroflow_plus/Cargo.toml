@@ -28,3 +28,6 @@ stageleft = { path = "../stageleft", version = "^0.1.0" }
 
 [build-dependencies]
 stageleft_tool = { path = "../stageleft_tool", version = "^0.1.0" }
+
+[dev-dependencies]
+insta = "1.7.1"

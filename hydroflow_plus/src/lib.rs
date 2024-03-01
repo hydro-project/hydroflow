@@ -1,3 +1,5 @@
+#![feature(box_patterns)]
+
 stageleft::stageleft_no_entry_crate!();
 
 use std::marker::PhantomData;
@@ -30,6 +32,8 @@ pub mod builder;
 pub use builder::FlowBuilder;
 
 pub mod ir;
+
+pub mod persist_pushdown;
 
 #[derive(Clone)]
 pub struct RuntimeContext<'a> {
