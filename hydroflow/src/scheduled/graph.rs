@@ -202,7 +202,11 @@ impl<'a> Hydroflow<'a> {
                 let sg_data = &mut self.subgraphs[sg_id.0];
                 // This must be true for the subgraph to be enqueued.
                 assert!(sg_data.is_scheduled.take());
-                tracing::trace!(sg_id = sg_id.0, "Running subgraph.");
+                tracing::trace!(
+                    sg_id = sg_id.0,
+                    sg_name = &*sg_data.name,
+                    "Running subgraph."
+                );
 
                 self.context.subgraph_id = sg_id;
                 self.context.subgraph_last_tick_run_in = sg_data.last_tick_run_in;
