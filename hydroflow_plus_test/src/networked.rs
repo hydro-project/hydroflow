@@ -49,7 +49,7 @@ pub fn networked_basic_runtime<'a>(
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = networked_basic(flow, &cli, &cli);
-    flow.build(q!(cli.meta.subgraph_id))
+    flow.build().emit(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::runtime]
@@ -89,7 +89,7 @@ mod tests {
             }),
         );
 
-        insta::assert_debug_snapshot!(builder.ir());
+        insta::assert_debug_snapshot!(builder.build().ir);
 
         let mut deployment = deployment.into_inner();
 

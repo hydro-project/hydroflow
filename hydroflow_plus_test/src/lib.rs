@@ -43,7 +43,7 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
         output.send(v).unwrap();
     }));
 
-    flow.build(subgraph_id)
+    flow.build().emit(subgraph_id)
 }
 
 #[stageleft::entry]
@@ -73,7 +73,7 @@ pub fn chat_app<'a>(
         output.send(t).unwrap();
     }));
 
-    flow.build_single()
+    flow.build().emit_single()
 }
 
 #[stageleft::entry]
@@ -102,7 +102,7 @@ pub fn graph_reachability<'a>(
         reached_out.send(v).unwrap();
     }));
 
-    flow.build_single()
+    flow.build().emit_single()
 }
 
 #[stageleft::entry(String)]
@@ -123,7 +123,7 @@ pub fn count_elems<'a, T: 'a>(
         output.send(v).unwrap();
     }));
 
-    flow.build_single()
+    flow.build().emit_single()
 }
 
 #[stageleft::runtime]

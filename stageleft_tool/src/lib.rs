@@ -198,6 +198,7 @@ impl VisitMut for GenFinalPubVistor {
     }
 
     fn visit_file_mut(&mut self, i: &mut syn::File) {
+        i.attrs = vec![];
         i.items.retain(|i| match i {
             syn::Item::Macro(m) => {
                 m.mac.path.to_token_stream().to_string() != "stageleft :: stageleft_crate"

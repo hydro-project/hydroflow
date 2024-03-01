@@ -125,7 +125,7 @@ pub fn simple_cluster_runtime<'a>(
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = simple_cluster(flow, &cli, &cli);
-    flow.build(q!(cli.meta.subgraph_id))
+    flow.build().emit(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::entry]
@@ -134,7 +134,7 @@ pub fn many_to_many_runtime<'a>(
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = many_to_many(flow, &cli);
-    flow.build(q!(cli.meta.subgraph_id))
+    flow.build().emit(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::entry]
@@ -143,7 +143,7 @@ pub fn map_reduce_runtime<'a>(
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = map_reduce(flow, &cli, &cli);
-    flow.build(q!(cli.meta.subgraph_id))
+    flow.build().emit(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::entry]
@@ -152,7 +152,7 @@ pub fn compute_pi_runtime<'a>(
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = compute_pi(flow, &cli, &cli);
-    flow.build(q!(cli.meta.subgraph_id))
+    flow.build().emit(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::runtime]
@@ -194,7 +194,7 @@ mod tests {
             }),
         );
 
-        insta::assert_debug_snapshot!(builder.ir());
+        insta::assert_debug_snapshot!(builder.build().ir);
 
         let mut deployment = deployment.into_inner();
 
@@ -250,7 +250,7 @@ mod tests {
             }),
         );
 
-        insta::assert_debug_snapshot!(builder.ir());
+        insta::assert_debug_snapshot!(builder.build().ir);
 
         let mut deployment = deployment.into_inner();
 
@@ -289,10 +289,11 @@ mod tests {
             &RuntimeData::new("FAKE"),
             &RuntimeData::new("FAKE"),
         );
+        let built = builder.build();
 
-        insta::assert_debug_snapshot!(builder.ir());
+        insta::assert_debug_snapshot!(built.ir);
 
-        for (id, ir) in builder.hydroflow_ir() {
+        for (id, ir) in built.hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(ir.surface_syntax_string());
             });
@@ -307,10 +308,11 @@ mod tests {
             &RuntimeData::new("FAKE"),
             &RuntimeData::new("FAKE"),
         );
+        let built = builder.build();
 
-        insta::assert_debug_snapshot!(builder.ir());
+        insta::assert_debug_snapshot!(built.ir);
 
-        for (id, ir) in builder.hydroflow_ir() {
+        for (id, ir) in built.hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(ir.surface_syntax_string());
             });
