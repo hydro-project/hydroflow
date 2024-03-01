@@ -103,7 +103,7 @@ impl Context {
     }
 
     /// Returns a shared reference to the state.
-    pub fn state_ref<T>(&self, handle: StateHandle<T>) -> &T
+    pub fn state_ref<T>(&self, handle: StateHandle<T>) -> &'_ T
     where
         T: Any,
     {
@@ -116,7 +116,7 @@ impl Context {
     }
 
     /// Returns an exclusive reference to the state.
-    pub fn state_mut<T>(&mut self, handle: StateHandle<T>) -> &mut T
+    pub fn state_mut<T>(&mut self, handle: StateHandle<T>) -> &'_ mut T
     where
         T: Any,
     {
