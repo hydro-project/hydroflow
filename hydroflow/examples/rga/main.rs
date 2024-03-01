@@ -37,6 +37,15 @@ struct Opts {
 
 #[hydroflow::main]
 pub async fn main() {
+    {
+        // Set up tracing logger.
+        let subscriber = tracing_subscriber::FmtSubscriber::builder()
+            .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+            .with_test_writer()
+            .finish();
+        let _ = tracing::subscriber::set_global_default(subscriber);
+    }
+
     // An edge in the input data = a pair of `Token` vertex IDs.
     let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(Token, Timestamp)>();
     let (rga_send, mut rga_recv) = hydroflow::util::unbounded_channel::<(Token, Timestamp)>();
