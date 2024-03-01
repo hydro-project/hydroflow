@@ -256,33 +256,14 @@ pub const LATTICE_FOLD_REDUCE_FLOW_PROP_FN: FlowPropFn =
 
 /// [`OperatorConstraints::flow_prop_fn`] for `join` and `cross_join`.
 pub const JOIN_CROSS_JOIN_FLOW_PROP_FN: FlowPropFn =
-    |ref fp @ FlowPropArgs {
-         op_inst:
-             OperatorInstance {
-                 generics:
-                     OpInstGenerics {
-                         persistence_args, ..
-                     },
-                 ..
-             },
-         flow_props_in,
-         ..
-     },
-     _diagnostics| {
+    |ref fp @ FlowPropArgs { flow_props_in, .. }, _diagnostics| {
         let lattice_flow_type = flow_props_in
             .iter()
             .map(|flow_props| flow_props.and_then(|fp| fp.lattice_flow_type))
             .reduce(std::cmp::min)
             .flatten();
-        let lattice_flow_type = lattice_flow_type.map(|flow_type| {
-            // Upgrade 'static to Cumul.
-            match persistence_args[..] {
-                [Persistence::Static, Persistence::Static] => LatticeFlowType::Cumul,
-                [Persistence::Static] => LatticeFlowType::Cumul,
-                _ => flow_type,
-            }
-            // TODO(mingwei): diagnostics warning for mismatch between 'static vs 'tick and flow props.
-        });
+        // TODO(mingwei): diagnostics warning for mismatch between 'static vs 'tick and flow props.
+        // Previously this upgraded `'static` joins to `Cumul`, which is dubious.
         Ok(vec![Some(FlowProps {
             star_ord: fp.new_star_ord(),
             lattice_flow_type,
@@ -376,6 +357,7 @@ declare_ops![
     join_multiset::JOIN_MULTISET,
     fold_keyed::FOLD_KEYED,
     reduce_keyed::REDUCE_KEYED,
+    lattice_bimorphism::LATTICE_BIMORPHISM,
     _lattice_fold_batch::_LATTICE_FOLD_BATCH,
     lattice_fold::LATTICE_FOLD,
     _lattice_join_fused_join::_LATTICE_JOIN_FUSED_JOIN,
@@ -407,7 +389,6 @@ declare_ops![
     source_stream::SOURCE_STREAM,
     source_stream_serde::SOURCE_STREAM_SERDE,
     state::STATE,
-    state_join::STATE_JOIN,
     tee::TEE,
     unique::UNIQUE,
     unzip::UNZIP,
