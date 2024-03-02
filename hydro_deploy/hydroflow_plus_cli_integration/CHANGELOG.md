@@ -1,9 +1,40 @@
 
 
+## v0.6.0 (2024-03-02)
+
+### New Features
+
+ - <csr-id-c1d1b51ee26cc9946af59ac02c040e0a33d15fde/> unify send/demux/tagged APIs
+   feat(hydroflow_plus): unify send/demux/tagged APIs
+ - <csr-id-eb34ccd13f56e1d07cbae35ead79daeb3b9bad20/> use an IR before lowering to Hydroflow
+   Makes it possible to write custom optimization passes.
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release over the course of 2 calendar days.
+ - 28 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 2 unique issues were worked on: [#1070](https://github.com/hydro-project/hydroflow/issues/1070), [#1080](https://github.com/hydro-project/hydroflow/issues/1080)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1070](https://github.com/hydro-project/hydroflow/issues/1070)**
+    - Use an IR before lowering to Hydroflow ([`eb34ccd`](https://github.com/hydro-project/hydroflow/commit/eb34ccd13f56e1d07cbae35ead79daeb3b9bad20))
+ * **[#1080](https://github.com/hydro-project/hydroflow/issues/1080)**
+    - Unify send/demux/tagged APIs ([`c1d1b51`](https://github.com/hydro-project/hydroflow/commit/c1d1b51ee26cc9946af59ac02c040e0a33d15fde))
+</details>
+
 ## v0.5.1 (2024-02-03)
 
 <csr-id-e9c7ced8760f88e3215a4b1b4e23f8b9db159a84/>
 <csr-id-1b555e57c8c812bed4d6495d2960cbf77fb0b3ef/>
+<csr-id-03ce73d2eb1377179f5ebd6f80e082c2889588a7/>
 
 ### Chore
 
@@ -31,7 +62,7 @@
 
 <csr-read-only-do-not-edit/>
 
- - 10 commits contributed to the release over the course of 44 calendar days.
+ - 11 commits contributed to the release over the course of 43 calendar days.
  - 9 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 6 unique issues were worked on: [#1013](https://github.com/hydro-project/hydroflow/issues/1013), [#1056](https://github.com/hydro-project/hydroflow/issues/1056), [#986](https://github.com/hydro-project/hydroflow/issues/986), [#987](https://github.com/hydro-project/hydroflow/issues/987), [#995](https://github.com/hydro-project/hydroflow/issues/995), [#996](https://github.com/hydro-project/hydroflow/issues/996)
 
@@ -54,6 +85,7 @@
  * **[#996](https://github.com/hydro-project/hydroflow/issues/996)**
     - Pass subgraph ID through deploy metadata ([`46d87fa`](https://github.com/hydro-project/hydroflow/commit/46d87fa364d3fe01422cf3c404fbc8a1d5e9fb88))
  * **Uncategorized**
+    - Release hydroflow_plus_cli_integration v0.5.1 ([`8202feb`](https://github.com/hydro-project/hydroflow/commit/8202febcd8ed160c23d08c37d7c13773831c97da))
     - Fix/add releasing for `hydroflow_plus_cli_integration`, `stageleft[_macro/_tool]` ([`03ce73d`](https://github.com/hydro-project/hydroflow/commit/03ce73d2eb1377179f5ebd6f80e082c2889588a7))
     - Release hydroflow_lang v0.5.2, hydroflow_datalog_core v0.5.2, hydroflow_macro v0.5.2, lattices v0.5.2, hydroflow v0.5.2, hydro_cli v0.5.1, hydroflow_plus_cli_integration v0.5.1 ([`6ac8720`](https://github.com/hydro-project/hydroflow/commit/6ac872081753548ebb8ec95549b4d820dc050d3e))
     - Manually set lockstep-versioned crates (and `lattices`) to version `0.5.1` ([`1b555e5`](https://github.com/hydro-project/hydroflow/commit/1b555e57c8c812bed4d6495d2960cbf77fb0b3ef))

@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.3 (2024-03-02)
+
+### Chore
+
+ - <csr-id-39ab8b0278e9e3fe96552ace0a4ae768a6bc10d8/> appease various clippy lints
+
+### New Features
+
+ - <csr-id-ff158dbb57ef3a754ed1cc834a19e30bb2895488/> impl missing `SimpleCollectionRef` for various collections types
+ - <csr-id-c8d6985cc99e623432d609e1e1bc4cfd4c31feb7/> add `Lattice[Bi]Morphism` traits, impls for cartesian product, pair, and keyed
+
+### Style
+
+ - <csr-id-71353f0d4dfd9766dfdc715c4a91a028081f910f/> fix imports for clippy
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release over the course of 4 calendar days.
+ - 28 days passed between releases.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 3 unique issues were worked on: [#1061](https://github.com/hydro-project/hydroflow/issues/1061), [#1062](https://github.com/hydro-project/hydroflow/issues/1062), [#1084](https://github.com/hydro-project/hydroflow/issues/1084)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1061](https://github.com/hydro-project/hydroflow/issues/1061)**
+    - Impl missing `SimpleCollectionRef` for various collections types ([`ff158db`](https://github.com/hydro-project/hydroflow/commit/ff158dbb57ef3a754ed1cc834a19e30bb2895488))
+ * **[#1062](https://github.com/hydro-project/hydroflow/issues/1062)**
+    - Add `Lattice[Bi]Morphism` traits, impls for cartesian product, pair, and keyed ([`c8d6985`](https://github.com/hydro-project/hydroflow/commit/c8d6985cc99e623432d609e1e1bc4cfd4c31feb7))
+ * **[#1084](https://github.com/hydro-project/hydroflow/issues/1084)**
+    - Appease various clippy lints ([`39ab8b0`](https://github.com/hydro-project/hydroflow/commit/39ab8b0278e9e3fe96552ace0a4ae768a6bc10d8))
+ * **Uncategorized**
+    - Fix imports for clippy ([`71353f0`](https://github.com/hydro-project/hydroflow/commit/71353f0d4dfd9766dfdc715c4a91a028081f910f))
+</details>
+
 ## 0.5.2 (2024-02-02)
 
 ### New Features
@@ -15,8 +55,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 1 commit contributed to the release.
- - 4 days passed between releases.
+ - 2 commits contributed to the release.
+ - 3 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#1052](https://github.com/hydro-project/hydroflow/issues/1052)
 
@@ -28,6 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  * **[#1052](https://github.com/hydro-project/hydroflow/issues/1052)**
     - Add map_union_with_tombstones, fix #336 ([`87e86a2`](https://github.com/hydro-project/hydroflow/commit/87e86a2ab9e068634ebed17616b7482b3e69d539))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.5.2, hydroflow_datalog_core v0.5.2, hydroflow_macro v0.5.2, lattices v0.5.2, hydroflow v0.5.2, hydro_cli v0.5.1, hydroflow_plus_cli_integration v0.5.1 ([`6ac8720`](https://github.com/hydro-project/hydroflow/commit/6ac872081753548ebb8ec95549b4d820dc050d3e))
 </details>
 
 ## 0.5.1 (2024-01-29)
