@@ -251,6 +251,8 @@ pub fn wait_for_process_output(
         }
 
         output_so_far.push_str(&String::from_utf8_lossy(&buffer[0..bytes_read]));
+
+        println!("XXX {}", output_so_far);
     }
 }
 
