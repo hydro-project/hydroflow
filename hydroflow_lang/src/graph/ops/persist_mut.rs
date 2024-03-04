@@ -9,7 +9,7 @@ use super::{
 
 /// `persist_mut()` is similar to `persist()` except that it also enables deletions.
 /// `persist_mut()` expects an input of type `Persistence<T>`, and it is this enumeration that enables the user to communicate deletion.
-/// Deletions/persists hapepn in the order they are received in the stream. For example, [Persist(1), Delete(1), Persist(1)] will result ina a single '1' value being stored.
+/// Deletions/persists happen in the order they are received in the stream. For example, [Persist(1), Delete(1), Persist(1)] will result ina a single '1' value being stored.
 ///
 /// ```hydroflow
 /// source_iter([hydroflow::util::Persistence::Persist(1), hydroflow::util::Persistence::Persist(2), hydroflow::util::Persistence::Delete(1)])
