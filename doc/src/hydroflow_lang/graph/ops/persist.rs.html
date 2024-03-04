@@ -254,7 +254,7 @@
             <span class="macro">quote_spanned! </span>{op_span=&gt;
                 <span class="kw">let </span><span class="kw-2">mut </span>#vec_ident = #context.state_ref(#persistdata_ident).borrow_mut();
                 <span class="kw">let </span>#ident = {
-                    <span class="kw">if </span>context.is_first_run_this_tick() {
+                    <span class="kw">if </span>#context.is_first_run_this_tick() {
                         #vec_ident.extend(#input);
                         #vec_ident.iter().cloned()
                     } <span class="kw">else </span>{
@@ -284,7 +284,7 @@
                             vec.last().unwrap().clone()
                         }, output)
                     }
-                    constrain_types(<span class="kw-2">&amp;mut *</span>#vec_ident, #output, context.is_first_run_this_tick())
+                    constrain_types(<span class="kw-2">&amp;mut *</span>#vec_ident, #output, #context.is_first_run_this_tick())
                 };
             }
         };

@@ -265,6 +265,88 @@
 <a href="#263" id="263">263</a>
 <a href="#264" id="264">264</a>
 <a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 
 <span class="kw">use super</span>::{
@@ -390,6 +472,7 @@
                 .map(ToTokens::to_token_stream)
                 .unwrap_or(<span class="macro">quote_spanned!</span>(op_span=&gt; <span class="kw">_</span>)),
         ];
+        <span class="kw">let </span>generic_type_key = <span class="kw-2">&amp;</span>generic_type_args[<span class="number">0</span>];
 
         <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
         <span class="kw">let </span>initfn = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
@@ -409,15 +492,21 @@
 
                         {
                             <span class="attr">#[inline(always)]
-                            </span><span class="kw">fn </span>check_input&lt;Iter: ::std::iter::Iterator&lt;Item = (A, B)&gt;, A: ::std::clone::Clone, B: ::std::clone::Clone&gt;(iter: Iter)
-                                -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = (A, B)&gt; { iter }
+                            </span><span class="kw">fn </span>check_input&lt;Iter, A, B&gt;(iter: Iter) -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = (A, B)&gt;
+                            <span class="kw">where
+                                </span>Iter: std::iter::Iterator&lt;Item = (A, B)&gt;,
+                                A: ::std::clone::Clone,
+                                B: ::std::clone::Clone
+                            {
+                                iter
+                            }
 
-                            <span class="attr">#[inline(always)]
-                            </span><span class="doccomment">/// A: accumulator type
+                            <span class="doccomment">/// A: accumulator type
                             /// T: iterator item type
                             /// O: output type
+                            </span><span class="attr">#[inline(always)]
                             </span><span class="kw">fn </span>call_comb_type&lt;A, T, O&gt;(a: <span class="kw-2">&amp;mut </span>A, t: T, f: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;mut </span>A, T) -&gt; O) -&gt; O {
-                                f(a, t)
+                                (f)(a, t)
                             }
 
                             <span class="kw">for </span>kv <span class="kw">in </span>check_input(#input) {
@@ -436,6 +525,7 @@
             Persistence::Static =&gt; {
                 <span class="kw">let </span>groupbydata_ident = wc.make_ident(<span class="string">"groupbydata"</span>);
                 <span class="kw">let </span>hashtable_ident = wc.make_ident(<span class="string">"hashtable"</span>);
+                <span class="kw">let </span>keyset_ident = wc.make_ident(<span class="string">"keyset"</span>);
 
                 (
                     <span class="macro">quote_spanned! </span>{op_span=&gt;
@@ -443,21 +533,32 @@
                     },
                     <span class="macro">quote_spanned! </span>{op_span=&gt;
                         <span class="kw">let </span><span class="kw-2">mut </span>#hashtable_ident = #context.state_ref(#groupbydata_ident).borrow_mut();
+                        <span class="kw">let </span><span class="kw-2">mut </span>#keyset_ident = #root::rustc_hash::FxHashSet::&lt;#generic_type_key&gt;::default();
 
                         {
                             <span class="attr">#[inline(always)]
-                            </span><span class="kw">fn </span>check_input&lt;Iter: ::std::iter::Iterator&lt;Item = (A, B)&gt;, A: ::std::clone::Clone, B: ::std::clone::Clone&gt;(iter: Iter)
-                                -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = (A, B)&gt; { iter }
+                            </span><span class="kw">fn </span>check_input&lt;Iter, A, B&gt;(iter: Iter) -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = (A, B)&gt;
+                            <span class="kw">where
+                                </span>Iter: std::iter::Iterator&lt;Item = (A, B)&gt;,
+                                A: ::std::clone::Clone,
+                                B: ::std::clone::Clone
+                            {
+                                iter
+                            }
 
-                            <span class="attr">#[inline(always)]
-                            </span><span class="doccomment">/// A: accumulator type
+                            <span class="doccomment">/// A: accumulator type
                             /// T: iterator item type
                             /// O: output type
+                            </span><span class="attr">#[inline(always)]
                             </span><span class="kw">fn </span>call_comb_type&lt;A, T, O&gt;(a: <span class="kw-2">&amp;mut </span>A, t: T, f: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;mut </span>A, T) -&gt; O) -&gt; O {
-                                f(a, t)
+                                (f)(a, t)
                             }
 
                             <span class="kw">for </span>kv <span class="kw">in </span>check_input(#input) {
+                                <span class="kw">if </span>#context.is_first_run_this_tick() {
+                                    <span class="comment">// #[allow(unknown_lints, noop_method_call, clippy::clone_on_copy)]
+                                    </span>#keyset_ident.insert(::std::clone::Clone::clone(<span class="kw-2">&amp;</span>kv.<span class="number">0</span>));
+                                }
                                 <span class="comment">// TODO(mingwei): remove `unknown_lints` when `clippy::unwrap_or_default` is stabilized.
                                 </span><span class="attr">#[allow(unknown_lints, clippy::unwrap_or_default)]
                                 </span><span class="kw">let </span>entry = #hashtable_ident.entry(kv.<span class="number">0</span>).or_insert_with(#initfn);
@@ -465,11 +566,74 @@
                             }
                         }
 
-                        <span class="kw">let </span>#ident = #hashtable_ident
-                            .iter()
-                            <span class="comment">// TODO(mingwei): remove `unknown_lints` when `suspicious_double_ref_op` is stabilized.
-                            </span>.map(<span class="attr">#[allow(unknown_lints, suspicious_double_ref_op, clippy::clone_on_copy)] </span>|(k, v)| (k.clone(), v.clone()));
-                    },
+                        <span class="kw">let </span>#ident = <span class="kw">if </span>#context.is_first_run_this_tick() {
+                            #root::itertools::Either::Left(
+                                #hashtable_ident
+                                    .iter()
+                                    <span class="comment">// TODO(mingwei): remove `unknown_lints` when `suspicious_double_ref_op` is stabilized.
+                                    </span>.map(
+                                        <span class="attr">#[allow(unknown_lints, suspicious_double_ref_op, clippy::clone_on_copy)]
+                                        </span>|(k, v)| (
+                                            ::std::clone::Clone::clone(k),
+                                            ::std::clone::Clone::clone(v),
+                                        )
+                                    )
+                            )
+                        } <span class="kw">else </span>{
+                            #root::itertools::Either::Right(
+                                #keyset_ident.into_iter()
+                                    .map(|k| {
+                                        <span class="kw">let </span>v = #hashtable_ident.get(<span class="kw-2">&amp;</span>k).unwrap();
+                                        (k, ::std::clone::Clone::clone(v))
+                                    })
+                            )
+                        };
+
+                        <span class="comment">// let mut #hashtable_ident = #context.state_ref(#groupbydata_ident).borrow_mut();
+
+                        // let #ident = {
+                        //     let replay_iter = if #context.is_first_run_this_tick() {
+                        //         // Note that this means streaming keys will get double-emited on the first run in the tick...
+                        //         #root::itertools::Either::Left(#hashtable_ident.iter())
+                        //     } else {
+                        //         #root::itertools::Either::Right(::std::iter::empty())
+                        //     };
+
+                        //     let new_items_iter = {
+                        //         #[inline(always)]
+                        //         fn check_input&lt;Iter, A, B&gt;(iter: Iter) -&gt; impl ::std::iter::Iterator&lt;Item = (A, B)&gt;
+                        //         where
+                        //             Iter: std::iter::Iterator&lt;Item = (A, B)&gt;,
+                        //             A: ::std::clone::Clone,
+                        //             B: ::std::clone::Clone
+                        //         {
+                        //             iter
+                        //         }
+
+                        //         check_input(#input).map(|(key, val)| {
+                        //             /// A: accumulator type
+                        //             /// T: iterator item type
+                        //             /// O: output type
+                        //             #[inline(always)]
+                        //             fn call_comb_type&lt;A, T, O&gt;(a: &amp;mut A, t: T, f: impl Fn(&amp;mut A, T) -&gt; O) -&gt; O {
+                        //                 (f)(a, t)
+                        //             }
+
+                        //             // TODO(mingwei): remove `unknown_lints` when `clippy::unwrap_or_default` is stabilized.
+                        //             #[allow(unknown_lints, clippy::unwrap_or_default)]
+                        //             let entry = #hashtable_ident.entry(key.clone()).or_insert_with(#initfn);
+                        //             #[allow(clippy::redundant_closure_call)]
+                        //             call_comb_type(entry, val, #aggfn);
+                        //             (key, entry.clone())
+                        //         })
+                        //     };
+
+                        //     replay_iter
+                        //         // TODO(mingwei): remove `unknown_lints` when `suspicious_double_ref_op` is stabilized.
+                        //         .map(#[allow(unknown_lints, suspicious_double_ref_op, clippy::clone_on_copy)] |(k, v)| (k.clone(), v.clone()))
+                        //         .chain(new_items_iter)
+                        // };
+                    </span>},
                     <span class="macro">quote_spanned! </span>{op_span=&gt;
                         #context.schedule_subgraph(#context.current_subgraph(), <span class="bool-val">false</span>);
                     },
