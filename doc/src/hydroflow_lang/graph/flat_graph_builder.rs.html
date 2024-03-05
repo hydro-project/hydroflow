@@ -841,9 +841,6 @@
 <a href="#839" id="839">839</a>
 <a href="#840" id="840">840</a>
 <a href="#841" id="841">841</a>
-<a href="#842" id="842">842</a>
-<a href="#843" id="843">843</a>
-<a href="#844" id="844">844</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Build a flat graph from [`HfStatement`]s.
 
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -1112,12 +1109,9 @@
                     }
                 };
 
-                <span class="kw">let </span>flat_graph_builder =
-                    <span class="kw">crate</span>::graph::FlatGraphBuilder::from_hfmodule(statements, file_path);
+                <span class="kw">let </span>flat_graph_builder = FlatGraphBuilder::from_hfmodule(statements, file_path);
                 <span class="kw">let </span>(flat_graph, _uses, diagnostics) = flat_graph_builder.build();
-                diagnostics
-                    .iter()
-                    .for_each(<span class="kw">crate</span>::diagnostic::Diagnostic::emit);
+                diagnostics.iter().for_each(Diagnostic::emit);
 
                 <span class="self">self</span>.merge_in(flat_graph, import.span())
             }

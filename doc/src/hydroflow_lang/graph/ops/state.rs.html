@@ -167,7 +167,7 @@
                _diagnostics| {
         <span class="kw">let </span>lattice_type = type_args
             .first()
-            .map(quote::ToTokens::to_token_stream)
+            .map(ToTokens::to_token_stream)
             .unwrap_or(<span class="macro">quote_spanned!</span>(op_span=&gt; <span class="kw">_</span>));
 
         <span class="kw">let </span>state_ident = <span class="kw-2">&amp;</span>outputs[<span class="number">1</span>];

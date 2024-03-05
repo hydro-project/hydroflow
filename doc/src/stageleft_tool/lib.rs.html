@@ -314,7 +314,7 @@
 
         <span class="kw">let </span>proc_macro_wrapper: syn::ItemFn = <span class="macro">parse_quote!</span>(
             <span class="attr">#[proc_macro]
-            #[allow(non_snake_case)]
+            #[allow(non_snake_case, unused_qualifications)]
             </span><span class="kw">pub fn </span>#underscored_path(input: ::proc_macro::TokenStream) -&gt; ::proc_macro::TokenStream {
                 <span class="kw">let </span>input = ::stageleft::internal::TokenStream::from(input);
                 <span class="kw">let </span>out = #exported_from::#underscored_path(input);

@@ -228,16 +228,10 @@
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
 <a href="#228" id="228">228</a>
-<a href="#229" id="229">229</a>
-<a href="#230" id="230">230</a>
-<a href="#231" id="231">231</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashSet;
 
 <span class="kw">mod </span>prelude;
 <span class="kw">use </span>prelude::is_prelude;
-<span class="kw">use </span>syn::punctuated::Punctuated;
-<span class="kw">use </span>syn::visit::Visit;
-<span class="kw">use </span>syn::MacroDelimiter;
 
 <span class="attr">#[derive(Debug)]
 </span><span class="kw">pub struct </span>ScopeStack {
@@ -300,7 +294,7 @@
     <span class="kw">pub </span>current_scope: ScopeStack,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'ast</span>&gt; Visit&lt;<span class="lifetime">'ast</span>&gt; <span class="kw">for </span>FreeVariableVisitor {
+<span class="kw">impl</span>&lt;<span class="lifetime">'ast</span>&gt; syn::visit::Visit&lt;<span class="lifetime">'ast</span>&gt; <span class="kw">for </span>FreeVariableVisitor {
     <span class="kw">fn </span>visit_expr_closure(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::ExprClosure) {
         <span class="self">self</span>.current_scope.push();
         i.inputs.iter().for_each(|input| {
@@ -415,7 +409,7 @@
         }
         <span class="comment">// No need to capture the struct path
         // self.visit_path(&amp;node.path);
-        </span><span class="kw">for </span>el <span class="kw">in </span>Punctuated::pairs(<span class="kw-2">&amp;</span>node.fields) {
+        </span><span class="kw">for </span>el <span class="kw">in </span>syn::punctuated::Punctuated::pairs(<span class="kw-2">&amp;</span>node.fields) {
             <span class="kw">let </span>it = el.value();
             <span class="self">self</span>.visit_expr(<span class="kw-2">&amp;</span>it.expr);
         }
@@ -431,7 +425,7 @@
     <span class="kw">fn </span>visit_macro(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::Macro) {
         <span class="comment">// TODO(shadaj): emit a warning if our guess at parsing fails
         </span><span class="kw">match </span>i.delimiter {
-            MacroDelimiter::Paren(_binding_0) =&gt; i
+            syn::MacroDelimiter::Paren(_binding_0) =&gt; i
                 .parse_body_with(
                     syn::punctuated::Punctuated::&lt;syn::Expr, <span class="macro">syn::Token!</span>[,]&gt;::parse_terminated,
                 )
@@ -441,7 +435,7 @@
                 .for_each(|expr| {
                     <span class="self">self</span>.visit_expr(expr);
                 }),
-            MacroDelimiter::Brace(_binding_0) =&gt; i
+            syn::MacroDelimiter::Brace(_binding_0) =&gt; i
                 .parse_body_with(syn::Block::parse_within)
                 .ok()
                 .iter()
@@ -449,7 +443,7 @@
                 .for_each(|stmt| {
                     <span class="self">self</span>.visit_stmt(stmt);
                 }),
-            MacroDelimiter::Bracket(_binding_0) =&gt; i
+            syn::MacroDelimiter::Bracket(_binding_0) =&gt; i
                 .parse_body_with(
                     syn::punctuated::Punctuated::&lt;syn::Expr, <span class="macro">syn::Token!</span>[,]&gt;::parse_terminated,
                 )

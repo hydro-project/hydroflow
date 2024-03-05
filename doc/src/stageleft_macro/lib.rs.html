@@ -374,7 +374,7 @@
 <span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
 <span class="kw">use </span>syn::punctuated::Punctuated;
 <span class="kw">use </span>syn::spanned::Spanned;
-<span class="kw">use </span>syn::{AngleBracketedGenericArguments, PathArguments, Token, Type};
+<span class="kw">use </span>syn::{AngleBracketedGenericArguments, Token, Type};
 
 <span class="kw">mod </span>quote_impl;
 
@@ -488,7 +488,7 @@
         }
     };
 
-    <span class="kw">let </span>input_tokens = proc_macro2::TokenStream::from(input);
+    <span class="kw">let </span>input_tokens = TokenStream::from(input);
     <span class="kw">let </span>import: syn::ItemUse = <span class="macro">syn::parse_quote!</span>(<span class="kw">use </span>#input_tokens;);
     <span class="kw">let </span><span class="kw-2">mut </span>all_paths_emitted = <span class="macro">vec!</span>[];
     gen_use_paths(
@@ -574,7 +574,7 @@
                     Type::Path(path) =&gt; {
                         <span class="kw">if </span>path.path.segments.len() == <span class="number">1 </span>&amp;&amp; path.path.segments[<span class="number">0</span>].ident == <span class="string">"RuntimeData" </span>{
                             <span class="kw">match </span><span class="kw-2">&amp;</span>path.path.segments[<span class="number">0</span>].arguments {
-                                PathArguments::AngleBracketed(AngleBracketedGenericArguments {
+                                syn::PathArguments::AngleBracketed(AngleBracketedGenericArguments {
                                     args,
                                     ..
                                 }) =&gt; <span class="prelude-val">Some</span>(args[<span class="number">0</span>].clone()),

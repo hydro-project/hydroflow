@@ -285,7 +285,7 @@
 
         <span class="kw">let </span>module_path = syn::parse_str::&lt;syn::Path&gt;(<span class="self">self</span>.module_path).unwrap();
         <span class="kw">let </span>parsed = syn::parse_str::&lt;syn::Path&gt;(<span class="self">self</span>.path).unwrap();
-        <span class="kw">let </span>as_ident = syn::Ident::new(<span class="self">self</span>.as_name, proc_macro2::Span::call_site());
+        <span class="kw">let </span>as_ident = syn::Ident::new(<span class="self">self</span>.as_name, Span::call_site());
         (
             <span class="prelude-val">Some</span>(<span class="macro">quote!</span>(<span class="kw">use </span>#final_crate_root::#module_path::#parsed <span class="kw">as </span>#as_ident;)),
             <span class="prelude-val">None</span>,

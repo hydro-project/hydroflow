@@ -577,8 +577,8 @@
 <span class="kw">use </span>syn::punctuated::Punctuated;
 <span class="kw">use </span>syn::token::{Bracket, Paren};
 <span class="kw">use </span>syn::{
-    bracketed, parenthesized, AngleBracketedGenericArguments, Error, Expr, ExprPath,
-    GenericArgument, Ident, ItemUse, LitInt, LitStr, Path, PathArguments, PathSegment, Token,
+    bracketed, parenthesized, AngleBracketedGenericArguments, Expr, ExprPath, GenericArgument,
+    Ident, ItemUse, LitInt, LitStr, Path, PathArguments, PathSegment, Token,
 };
 
 <span class="kw">pub struct </span>HfCode {
@@ -729,7 +729,7 @@
             </span>} <span class="kw">else if </span>lookahead2.peek(<span class="macro">Token!</span>[!]) {
                 <span class="kw">match </span>ident.to_string().as_str() {
                     <span class="string">"import" </span>=&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Import(input.parse()<span class="question-mark">?</span>)),
-                    <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(Error::new(ident.span(), <span class="string">r#"Expected "import""#</span>)),
+                    <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(syn::Error::new(ident.span(), <span class="string">r#"Expected "import""#</span>)),
                 }
             <span class="comment">// Otherwise it's a name
             </span>} <span class="kw">else </span>{

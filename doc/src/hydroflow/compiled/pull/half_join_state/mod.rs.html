@@ -31,17 +31,11 @@
 <a href="#29" id="29">29</a>
 <a href="#30" id="30">30</a>
 <a href="#31" id="31">31</a>
-<a href="#32" id="32">32</a>
-<a href="#33" id="33">33</a>
-<a href="#34" id="34">34</a>
 </pre></div><pre class="rust"><code><span class="kw">mod </span>fold;
 <span class="kw">mod </span>fold_from;
 <span class="kw">mod </span>multiset;
 <span class="kw">mod </span>reduce;
 <span class="kw">mod </span>set;
-
-<span class="kw">use </span>std::collections::hash_map::Iter;
-<span class="kw">use </span>std::slice;
 
 <span class="kw">pub use </span>fold::HalfJoinStateFold;
 <span class="kw">pub use </span>fold_from::HalfJoinStateFoldFrom;
@@ -65,7 +59,7 @@
     <span class="kw">fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.len() == <span class="number">0
     </span>}
-    <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Iter&lt;<span class="lifetime">'_</span>, Key, SmallVec&lt;[ValBuild; <span class="number">1</span>]&gt;&gt;;
-    <span class="kw">fn </span>full_probe(<span class="kw-2">&amp;</span><span class="self">self</span>, k: <span class="kw-2">&amp;</span>Key) -&gt; slice::Iter&lt;<span class="lifetime">'_</span>, ValBuild&gt;;
+    <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; std::collections::hash_map::Iter&lt;<span class="lifetime">'_</span>, Key, SmallVec&lt;[ValBuild; <span class="number">1</span>]&gt;&gt;;
+    <span class="kw">fn </span>full_probe(<span class="kw-2">&amp;</span><span class="self">self</span>, k: <span class="kw-2">&amp;</span>Key) -&gt; std::slice::Iter&lt;<span class="lifetime">'_</span>, ValBuild&gt;;
 }
 </code></pre></div></section></main></body></html>

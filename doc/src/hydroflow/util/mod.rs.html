@@ -352,6 +352,8 @@
 <a href="#350" id="350">350</a>
 <a href="#351" id="351">351</a>
 <a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 </span><span class="doccomment">//! Helper utilities for the Hydroflow surface syntax.
 
@@ -605,6 +607,8 @@
         }
 
         output_so_far.push_str(<span class="kw-2">&amp;</span>String::from_utf8_lossy(<span class="kw-2">&amp;</span>buffer[<span class="number">0</span>..bytes_read]));
+
+        <span class="macro">println!</span>(<span class="string">"XXX {}"</span>, output_so_far);
     }
 }
 

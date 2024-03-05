@@ -100,10 +100,8 @@
 <a href="#98" id="98">98</a>
 <a href="#99" id="99">99</a>
 <a href="#100" id="100">100</a>
-<a href="#101" id="101">101</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::hash_map::Entry;
 <span class="kw">use </span>std::collections::VecDeque;
-<span class="kw">use </span>std::slice;
 
 <span class="kw">use </span><span class="kw">super</span>::HalfJoinState;
 <span class="kw">use </span><span class="kw">crate</span>::util::clear::Clear;
@@ -183,7 +181,7 @@
         first
     }
 
-    <span class="kw">fn </span>full_probe(<span class="kw-2">&amp;</span><span class="self">self</span>, k: <span class="kw-2">&amp;</span>Key) -&gt; slice::Iter&lt;<span class="lifetime">'_</span>, ValBuild&gt; {
+    <span class="kw">fn </span>full_probe(<span class="kw-2">&amp;</span><span class="self">self</span>, k: <span class="kw-2">&amp;</span>Key) -&gt; std::slice::Iter&lt;<span class="lifetime">'_</span>, ValBuild&gt; {
         <span class="kw">let </span><span class="prelude-val">Some</span>(sv) = <span class="self">self</span>.table.get(k) <span class="kw">else </span>{
             <span class="kw">return </span>[].iter();
         };
@@ -198,7 +196,7 @@
     <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.len
     }
-    <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ::std::collections::hash_map::Iter&lt;<span class="lifetime">'_</span>, Key, SmallVec&lt;[ValBuild; <span class="number">1</span>]&gt;&gt; {
+    <span class="kw">fn </span>iter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; std::collections::hash_map::Iter&lt;<span class="lifetime">'_</span>, Key, SmallVec&lt;[ValBuild; <span class="number">1</span>]&gt;&gt; {
         <span class="self">self</span>.table.iter()
     }
 }

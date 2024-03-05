@@ -93,6 +93,14 @@
 <a href="#91" id="91">91</a>
 <a href="#92" id="92">92</a>
 <a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use </span><span class="kw">crate</span>::graph::GraphEdgeType;
@@ -103,11 +111,19 @@
 };
 
 <span class="doccomment">/// `persist_mut()` is similar to `persist()` except that it also enables deletions.
-/// `persist_mut()` expects an input of type `Persistence&lt;T&gt;`, and it is this enumeration that enables the user to communicate deletion.
-/// Deletions/persists hapepn in the order they are received in the stream. For example, [Persist(1), Delete(1), Persist(1)] will result ina a single '1' value being stored.
+/// `persist_mut()` expects an input of type [`Persistence&lt;T&gt;`](https://docs.rs/hydroflow/latest/hydroflow/util/enum.Persistence.html),
+/// and it is this enumeration that enables the user to communicate deletion.
+/// Deletions/persists happen in the order they are received in the stream.
+/// For example, `[Persist(1), Delete(1), Persist(1)]` will result in a a single `1` value being stored.
 ///
 /// ```hydroflow
-/// source_iter([hydroflow::util::Persistence::Persist(1), hydroflow::util::Persistence::Persist(2), hydroflow::util::Persistence::Delete(1)])
+/// use hydroflow::util::Persistence;
+///
+/// source_iter([
+///         Persistence::Persist(1),
+///         Persistence::Persist(2),
+///         Persistence::Delete(1),
+///     ])
 ///     -&gt; persist_mut()
 ///     -&gt; assert_eq([2]);
 /// ```
