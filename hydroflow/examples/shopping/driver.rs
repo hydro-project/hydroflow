@@ -25,11 +25,11 @@ async fn spawn_listener(
     let (_, ssiv_listener_in, _) = hydroflow::util::bind_udp_bytes(ssiv_listener_addr).await;
     // spawn a listener thread to print out what each flow sends over the network
     std::thread::spawn(move || {
-        let runtime = hydroflow::tokio::runtime::Builder::new_current_thread()
+        let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .unwrap();
-        let local = hydroflow::tokio::task::LocalSet::new();
+        let local = tokio::task::LocalSet::new();
         local.block_on(&runtime, async {
             let mut hf = listener_flow(tuple_listener_in, bp_listener_in, ssiv_listener_in).await;
             hf.run_async().await;
@@ -89,11 +89,11 @@ pub(crate) async fn run_driver(opts: Opts) {
 
             // Spawn server
             std::thread::spawn(move || {
-                let runtime = hydroflow::tokio::runtime::Builder::new_current_thread()
+                let runtime = tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()
                     .unwrap();
-                let local = hydroflow::tokio::task::LocalSet::new();
+                let local = tokio::task::LocalSet::new();
                 local.block_on(&runtime, async {
                     let mut hf = match opt {
                         5 => {
@@ -186,11 +186,11 @@ pub(crate) async fn run_driver(opts: Opts) {
 
                 // Spawn server
                 std::thread::spawn(move || {
-                    let runtime = hydroflow::tokio::runtime::Builder::new_current_thread()
+                    let runtime = tokio::runtime::Builder::new_current_thread()
                         .enable_all()
                         .build()
                         .unwrap();
-                    let local = hydroflow::tokio::task::LocalSet::new();
+                    let local = tokio::task::LocalSet::new();
                     local.block_on(&runtime, async {
                         let mut hf = rep_server_flow(
                             empty_ssiv,
@@ -238,8 +238,7 @@ pub(crate) async fn run_driver(opts: Opts) {
     }
 
     // Run the client for 1 second; should be long enough to get all the results
-    let _timeout =
-        hydroflow::tokio::time::timeout(std::time::Duration::from_secs(1), hf.run_async())
-            .await
-            .unwrap_err();
+    let _timeout = tokio::time::timeout(std::time::Duration::from_secs(1), hf.run_async())
+        .await
+        .unwrap_err();
 }

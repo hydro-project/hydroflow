@@ -4,9 +4,6 @@ mod multiset;
 mod reduce;
 mod set;
 
-use std::collections::hash_map::Iter;
-use std::slice;
-
 pub use fold::HalfJoinStateFold;
 pub use fold_from::HalfJoinStateFoldFrom;
 pub use multiset::HalfMultisetJoinState;
@@ -29,6 +26,6 @@ pub trait HalfJoinState<Key, ValBuild, ValProbe> {
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
-    fn iter(&self) -> Iter<'_, Key, SmallVec<[ValBuild; 1]>>;
-    fn full_probe(&self, k: &Key) -> slice::Iter<'_, ValBuild>;
+    fn iter(&self) -> std::collections::hash_map::Iter<'_, Key, SmallVec<[ValBuild; 1]>>;
+    fn full_probe(&self, k: &Key) -> std::slice::Iter<'_, ValBuild>;
 }

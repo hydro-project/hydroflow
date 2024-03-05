@@ -95,7 +95,7 @@ pub async fn bind_tcp<T: 'static, Codec: 'static + Clone + Decoder + Encoder<T>>
                 let client = clients.borrow_mut().remove(&addr);
 
                 if let Some(mut sender) = client {
-                    let _ = futures::SinkExt::send(&mut sender, payload).await;
+                    let _ = SinkExt::send(&mut sender, payload).await;
                     clients.borrow_mut().insert(addr, sender);
                 }
             }

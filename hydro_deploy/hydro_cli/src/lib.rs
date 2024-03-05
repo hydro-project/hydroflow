@@ -1,3 +1,4 @@
+use core::hydroflow_crate::ports::HydroflowSource;
 use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::pin::Pin;
@@ -17,8 +18,6 @@ use pyo3_asyncio::TaskLocals;
 use pythonize::pythonize;
 use tokio::sync::oneshot::Sender;
 use tokio::sync::RwLock;
-
-use crate::core::hydroflow_crate::ports::HydroflowSource;
 
 mod cli;
 use hydro_deploy as core;
@@ -142,12 +141,12 @@ impl AnyhowWrapper {
 #[pyclass(subclass)]
 #[derive(Clone)]
 struct HydroflowSink {
-    underlying: Arc<RwLock<dyn crate::core::hydroflow_crate::ports::HydroflowSink>>,
+    underlying: Arc<RwLock<dyn core::hydroflow_crate::ports::HydroflowSink>>,
 }
 
 #[pyclass(name = "Deployment")]
 pub struct Deployment {
-    underlying: Arc<RwLock<crate::core::Deployment>>,
+    underlying: Arc<RwLock<core::Deployment>>,
 }
 
 #[pymethods]
@@ -155,7 +154,7 @@ impl Deployment {
     #[new]
     fn new() -> Self {
         Deployment {
-            underlying: Arc::new(RwLock::new(crate::core::Deployment::default())),
+            underlying: Arc::new(RwLock::new(core::Deployment::default())),
         }
     }
 
@@ -185,7 +184,7 @@ impl Deployment {
         user: Option<String>,
     ) -> PyResult<Py<PyAny>> {
         let arc = self.underlying.blocking_write().add_host(|id| {
-            crate::core::GCPComputeEngineHost::new(
+            core::GCPComputeEngineHost::new(
                 id,
                 project,
                 machine_type,
@@ -218,7 +217,7 @@ impl Deployment {
         user: Option<String>,
     ) -> PyResult<Py<PyAny>> {
         let arc = self.underlying.blocking_write().add_host(|id| {
-            crate::core::AzureHost::new(id, project, os_type, machine_size, image, region, user)
+            core::AzureHost::new(id, project, os_type, machine_size, image, region, user)
         });
 
         Ok(Py::new(
@@ -325,12 +324,12 @@ impl Deployment {
 
 #[pyclass(subclass)]
 pub struct Host {
-    underlying: Arc<RwLock<dyn crate::core::Host>>,
+    underlying: Arc<RwLock<dyn core::Host>>,
 }
 
 #[pyclass(extends=Host, subclass)]
 struct LocalhostHost {
-    underlying: Arc<RwLock<crate::core::LocalhostHost>>,
+    underlying: Arc<RwLock<core::LocalhostHost>>,
 }
 
 #[pymethods]
@@ -354,7 +353,7 @@ impl LocalhostHost {
 #[pyclass]
 #[derive(Clone)]
 struct GCPNetwork {
-    underlying: Arc<RwLock<crate::core::gcp::GCPNetwork>>,
+    underlying: Arc<RwLock<core::gcp::GCPNetwork>>,
 }
 
 #[pymethods]
@@ -362,16 +361,14 @@ impl GCPNetwork {
     #[new]
     fn new(project: String, existing: Option<String>) -> Self {
         GCPNetwork {
-            underlying: Arc::new(RwLock::new(crate::core::gcp::GCPNetwork::new(
-                project, existing,
-            ))),
+            underlying: Arc::new(RwLock::new(core::gcp::GCPNetwork::new(project, existing))),
         }
     }
 }
 
 #[pyclass(extends=Host, subclass)]
 struct GCPComputeEngineHost {
-    underlying: Arc<RwLock<crate::core::GCPComputeEngineHost>>,
+    underlying: Arc<RwLock<core::GCPComputeEngineHost>>,
 }
 
 #[pymethods]
@@ -414,7 +411,7 @@ impl GCPComputeEngineHost {
 
 #[pyclass(extends=Host, subclass)]
 struct AzureHost {
-    underlying: Arc<RwLock<crate::core::AzureHost>>,
+    underlying: Arc<RwLock<core::AzureHost>>,
 }
 
 #[pymethods]
@@ -457,7 +454,7 @@ impl AzureHost {
 
 #[pyclass(subclass)]
 pub struct Service {
-    underlying: Arc<RwLock<dyn crate::core::Service>>,
+    underlying: Arc<RwLock<dyn core::Service>>,
 }
 
 #[pymethods]
@@ -499,15 +496,15 @@ impl PyReceiver {
 
 #[pyclass(extends=Service, subclass)]
 struct CustomService {
-    underlying: Arc<RwLock<crate::core::CustomService>>,
+    underlying: Arc<RwLock<core::CustomService>>,
 }
 
 #[pymethods]
 impl CustomService {
     fn client_port(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let arc = Arc::new(RwLock::new(
-            crate::core::custom_service::CustomClientPort::new(Arc::downgrade(&self.underlying)),
-        ));
+        let arc = Arc::new(RwLock::new(core::custom_service::CustomClientPort::new(
+            Arc::downgrade(&self.underlying),
+        )));
 
         Ok(Py::new(
             py,
@@ -523,7 +520,7 @@ impl CustomService {
 #[pyclass(extends=HydroflowSink, subclass)]
 #[derive(Clone)]
 struct CustomClientPort {
-    underlying: Arc<RwLock<crate::core::custom_service::CustomClientPort>>,
+    underlying: Arc<RwLock<core::custom_service::CustomClientPort>>,
 }
 
 #[pymethods]
@@ -537,12 +534,10 @@ impl CustomClientPort {
 
     fn tagged(&self, tag: u32) -> TaggedSource {
         TaggedSource {
-            underlying: Arc::new(RwLock::new(
-                crate::core::hydroflow_crate::ports::TaggedSource {
-                    source: self.underlying.clone(),
-                    tag,
-                },
-            )),
+            underlying: Arc::new(RwLock::new(core::hydroflow_crate::ports::TaggedSource {
+                source: self.underlying.clone(),
+                tag,
+            })),
         }
     }
 
@@ -630,7 +625,7 @@ impl HydroflowCratePorts {
 #[pyclass(extends=HydroflowSink, subclass)]
 #[derive(Clone)]
 struct HydroflowCratePort {
-    underlying: Arc<RwLock<crate::core::hydroflow_crate::ports::HydroflowPortConfig>>,
+    underlying: Arc<RwLock<core::hydroflow_crate::ports::HydroflowPortConfig>>,
 }
 
 #[pymethods]
@@ -659,12 +654,10 @@ impl HydroflowCratePort {
 
     fn tagged(&self, tag: u32) -> TaggedSource {
         TaggedSource {
-            underlying: Arc::new(RwLock::new(
-                crate::core::hydroflow_crate::ports::TaggedSource {
-                    source: self.underlying.clone(),
-                    tag,
-                },
-            )),
+            underlying: Arc::new(RwLock::new(core::hydroflow_crate::ports::TaggedSource {
+                source: self.underlying.clone(),
+                tag,
+            })),
         }
     }
 }
@@ -672,25 +665,23 @@ impl HydroflowCratePort {
 #[pyfunction]
 fn demux(mapping: &PyDict) -> HydroflowSink {
     HydroflowSink {
-        underlying: Arc::new(RwLock::new(
-            crate::core::hydroflow_crate::ports::DemuxSink {
-                demux: mapping
-                    .into_iter()
-                    .map(|(k, v)| {
-                        let k = k.extract::<u32>().unwrap();
-                        let v = v.extract::<HydroflowSink>().unwrap();
-                        (k, v.underlying)
-                    })
-                    .collect(),
-            },
-        )),
+        underlying: Arc::new(RwLock::new(core::hydroflow_crate::ports::DemuxSink {
+            demux: mapping
+                .into_iter()
+                .map(|(k, v)| {
+                    let k = k.extract::<u32>().unwrap();
+                    let v = v.extract::<HydroflowSink>().unwrap();
+                    (k, v.underlying)
+                })
+                .collect(),
+        })),
     }
 }
 
 #[pyclass(subclass)]
 #[derive(Clone)]
 struct TaggedSource {
-    underlying: Arc<RwLock<crate::core::hydroflow_crate::ports::TaggedSource>>,
+    underlying: Arc<RwLock<core::hydroflow_crate::ports::TaggedSource>>,
 }
 
 #[pymethods]
@@ -704,12 +695,10 @@ impl TaggedSource {
 
     fn tagged(&self, tag: u32) -> TaggedSource {
         TaggedSource {
-            underlying: Arc::new(RwLock::new(
-                crate::core::hydroflow_crate::ports::TaggedSource {
-                    source: self.underlying.clone(),
-                    tag,
-                },
-            )),
+            underlying: Arc::new(RwLock::new(core::hydroflow_crate::ports::TaggedSource {
+                source: self.underlying.clone(),
+                tag,
+            })),
         }
     }
 }
@@ -717,7 +706,7 @@ impl TaggedSource {
 #[pyclass(extends=HydroflowSink, subclass)]
 #[derive(Clone)]
 struct HydroflowNull {
-    underlying: Arc<RwLock<crate::core::hydroflow_crate::ports::NullSourceSink>>,
+    underlying: Arc<RwLock<core::hydroflow_crate::ports::NullSourceSink>>,
 }
 
 #[pymethods]
@@ -731,21 +720,17 @@ impl HydroflowNull {
 
     fn tagged(&self, tag: u32) -> TaggedSource {
         TaggedSource {
-            underlying: Arc::new(RwLock::new(
-                crate::core::hydroflow_crate::ports::TaggedSource {
-                    source: self.underlying.clone(),
-                    tag,
-                },
-            )),
+            underlying: Arc::new(RwLock::new(core::hydroflow_crate::ports::TaggedSource {
+                source: self.underlying.clone(),
+                tag,
+            })),
         }
     }
 }
 
 #[pyfunction]
 fn null(py: Python<'_>) -> PyResult<Py<PyAny>> {
-    let arc = Arc::new(RwLock::new(
-        crate::core::hydroflow_crate::ports::NullSourceSink,
-    ));
+    let arc = Arc::new(RwLock::new(core::hydroflow_crate::ports::NullSourceSink));
 
     Ok(Py::new(
         py,

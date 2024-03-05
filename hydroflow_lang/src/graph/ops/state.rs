@@ -49,7 +49,7 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
                _diagnostics| {
         let lattice_type = type_args
             .first()
-            .map(quote::ToTokens::to_token_stream)
+            .map(ToTokens::to_token_stream)
             .unwrap_or(quote_spanned!(op_span=> _));
 
         let state_ident = &outputs[1];

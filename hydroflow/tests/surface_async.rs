@@ -133,7 +133,7 @@ pub async fn test_echo_tcp() -> Result<(), Box<dyn Error>> {
     let local = LocalSet::new();
 
     // Port 0 -> picks any available port.
-    let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0)).await?;
+    let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).await?;
     let addr = listener.local_addr()?;
 
     // Server:
@@ -235,7 +235,7 @@ pub async fn test_echo() {
 pub async fn test_futures_stream_sink() {
     const MAX: usize = 20;
 
-    let (mut send, recv) = hydroflow::futures::channel::mpsc::channel::<usize>(5);
+    let (mut send, recv) = futures::channel::mpsc::channel::<usize>(5);
     send.try_send(0).unwrap();
 
     let (seen_send, seen_recv) = hydroflow::util::unbounded_channel();
@@ -268,7 +268,7 @@ async fn asynctest_dest_sink_bounded_channel() {
     let mut flow = hydroflow_syntax! {
         source_iter(0..10) -> dest_sink(send);
     };
-    tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
+    tokio::time::timeout(Duration::from_secs(1), flow.run_async())
         .await
         .expect_err("Expected time out");
 
@@ -302,7 +302,7 @@ async fn asynctest_dest_sink_duplex() {
             Bytes::from_static(b"world"),
         ]) -> dest_sink(sink);
     };
-    tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
+    tokio::time::timeout(Duration::from_secs(1), flow.run_async())
         .await
         .expect_err("Expected time out");
 
@@ -327,7 +327,7 @@ async fn asynctest_dest_asyncwrite_duplex() {
             Bytes::from_static("world".as_bytes()),
         ]) -> dest_sink(sink);
     };
-    tokio::time::timeout(std::time::Duration::from_secs(1), flow.run_async())
+    tokio::time::timeout(Duration::from_secs(1), flow.run_async())
         .await
         .expect_err("Expected time out");
 
