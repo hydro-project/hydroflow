@@ -11,6 +11,35 @@ Clients accept commands on stdin. Command syntax is as follows:
 - `GET <key>`
 Commands are case-insensitive. All keys and values are treated as `String`s.
 
+## Overwriting values?
+
+This KVS overwrites the old value when a new value is written to a key. In the general case this is not monotonic
+because we are deleting old information. For a more monotonic KVS, see the `kvs` example.
+
+The implementation difference can be found in `server.rs`. This implementation uses a `persist_mut_keyed()`
+to enable deletion on the `PUT` side of the `join()`.
+```rust
+// Store puts mutably (supporting deletion)
+puts
+    -> flat_map(|(key, value, _addr): (String, Option<String>, _)| {
+        match value {
+            Some(val) => vec![
+                // Clear key then put new value
+                PersistenceKeyed::Delete(key.clone()),
+                PersistenceKeyed::Persist(key, val),
+            ],
+            None => vec![
+                PersistenceKeyed::Delete(key),
+            ],
+        }
+    })
+    -> persist_mut_keyed()
+    -> [0]lookup;
+gets -> [1]lookup;
+// Join PUTs and GETs by key, persisting the PUTs.
+lookup = join::<'tick, 'tick>();
+```
+
 ## Running the example
 
 To run the example, open 2 terminals.

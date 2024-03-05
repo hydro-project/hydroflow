@@ -20,6 +20,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
         puts = network_recv[Put];
         gets = network_recv[Get];
 
+        /* DIFFERENCE HERE: SEE README.md */
         // Join PUTs and GETs by key, persisting the PUTs.
         puts -> map(|(key, value, _addr)| (key, value)) -> [0]lookup;
         gets -> [1]lookup;
