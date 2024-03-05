@@ -20,6 +20,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
         puts = network_recv[Put];
         gets = network_recv[Get];
 
+        /* DIFFERENCE HERE: SEE README.md */
         // Store puts mutably (supporting deletion)
         puts
             -> flat_map(|(key, value, _addr): (String, Option<String>, _)| {
