@@ -7,9 +7,9 @@ mod lattices;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use serde::de::{DeserializeSeed, VariantAccess, Visitor};
+use serde::de::{DeserializeSeed, EnumAccess, VariantAccess, Visitor};
 use serde::ser::SerializeStructVariant;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use self::lattices::MapUnionHashMapWrapper;
 use super::KvsRequest;
@@ -22,7 +22,7 @@ use crate::protocol::serialization::kvs_request_put_visitor::KvsRequestPutVisito
 impl<const SIZE: usize> Serialize for KvsRequest<SIZE> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer,
+        S: Serializer,
     {
         match self {
             KvsRequest::Put { key, value } => {
@@ -59,7 +59,7 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for KvsRequestDeserializer<SIZ
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
-        D: serde::Deserializer<'de>,
+        D: Deserializer<'de>,
     {
         struct KvsRequestVisitor<const SIZE: usize> {
             collector: Rc<RefCell<BufferPool<SIZE>>>,
@@ -73,7 +73,7 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for KvsRequestDeserializer<SIZ
 
             fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error>
             where
-                A: serde::de::EnumAccess<'de>,
+                A: EnumAccess<'de>,
             {
                 Ok(match data.variant()? {
                     (KvsRequestField::Put, variant) => variant.struct_variant(
@@ -152,8 +152,8 @@ impl<'de> Visitor<'de> for KVSRequestFieldVisitor {
 impl<'de> Deserialize<'de> for KvsRequestField {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: serde::Deserializer<'de>,
+        D: Deserializer<'de>,
     {
-        serde::Deserializer::deserialize_identifier(deserializer, KVSRequestFieldVisitor)
+        Deserializer::deserialize_identifier(deserializer, KVSRequestFieldVisitor)
     }
 }

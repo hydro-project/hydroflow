@@ -266,12 +266,9 @@ impl FlatGraphBuilder {
                     }
                 };
 
-                let flat_graph_builder =
-                    crate::graph::FlatGraphBuilder::from_hfmodule(statements, file_path);
+                let flat_graph_builder = FlatGraphBuilder::from_hfmodule(statements, file_path);
                 let (flat_graph, _uses, diagnostics) = flat_graph_builder.build();
-                diagnostics
-                    .iter()
-                    .for_each(crate::diagnostic::Diagnostic::emit);
+                diagnostics.iter().for_each(Diagnostic::emit);
 
                 self.merge_in(flat_graph, import.span())
             }

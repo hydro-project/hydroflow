@@ -1,4 +1,3 @@
-use std::io;
 use std::time::Duration;
 
 use hydroflow::bytes::{Bytes, BytesMut};
@@ -60,8 +59,9 @@ pub async fn read_all_query(
 async fn simple_payload_test() {
     let neighbors: Vec<u32> = vec![1, 2, 3];
 
-    let (_operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
-    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (_operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, std::io::Error>>();
+    let (mut input_send, input_recv) =
+        unbounded_channel::<Result<(u32, BytesMut), std::io::Error>>();
     let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
     let (query_send, mut query_recv) = unbounded_channel::<Bytes>();
 
@@ -96,9 +96,10 @@ async fn simple_payload_test() {
 #[hydroflow::test(start_paused = true)]
 async fn idempotence_test() {
     let neighbors: Vec<u32> = vec![1, 2, 3];
-    let (_operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
+    let (_operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, std::io::Error>>();
 
-    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (mut input_send, input_recv) =
+        unbounded_channel::<Result<(u32, BytesMut), std::io::Error>>();
     let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
     let (query_send, mut query_recv) = unbounded_channel::<Bytes>();
 
@@ -137,8 +138,9 @@ async fn idempotence_test() {
 async fn backwards_in_time_test() {
     let neighbors: Vec<u32> = vec![1, 2, 3];
 
-    let (_operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
-    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (_operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, std::io::Error>>();
+    let (mut input_send, input_recv) =
+        unbounded_channel::<Result<(u32, BytesMut), std::io::Error>>();
     let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
     let (query_send, mut query_recv) = unbounded_channel::<Bytes>();
 
@@ -176,9 +178,10 @@ async fn backwards_in_time_test() {
 #[hydroflow::test(start_paused = true)]
 async fn multiple_input_sources_test() {
     let neighbors: Vec<u32> = vec![1, 2, 3];
-    let (_operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
+    let (_operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, std::io::Error>>();
 
-    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (mut input_send, input_recv) =
+        unbounded_channel::<Result<(u32, BytesMut), std::io::Error>>();
     let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
     let (query_send, mut query_recv) = unbounded_channel::<Bytes>();
 
@@ -218,8 +221,10 @@ async fn multiple_input_sources_test() {
 async fn operations_across_ticks() {
     let neighbors: Vec<u32> = vec![1, 2, 3];
 
-    let (mut operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
-    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (mut operations_tx, operations_rx) =
+        unbounded_channel::<Result<BytesMut, std::io::Error>>();
+    let (mut input_send, input_recv) =
+        unbounded_channel::<Result<(u32, BytesMut), std::io::Error>>();
     let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
     let (query_send, mut query_recv) = unbounded_channel::<Bytes>();
 
@@ -279,8 +284,10 @@ async fn operations_across_ticks() {
 async fn operations_multiple_keys() {
     let neighbors: Vec<u32> = vec![1, 2, 3];
 
-    let (mut operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
-    let (mut _input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (mut operations_tx, operations_rx) =
+        unbounded_channel::<Result<BytesMut, std::io::Error>>();
+    let (mut _input_send, input_recv) =
+        unbounded_channel::<Result<(u32, BytesMut), std::io::Error>>();
     let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
     let (query_send, mut query_recv) = unbounded_channel::<Bytes>();
 
@@ -364,8 +371,10 @@ async fn operations_multiple_keys() {
 async fn gossip_multiple_keys() {
     let neighbors: Vec<u32> = vec![1, 2, 3];
 
-    let (mut _operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
-    let (mut input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (mut _operations_tx, operations_rx) =
+        unbounded_channel::<Result<BytesMut, std::io::Error>>();
+    let (mut input_send, input_recv) =
+        unbounded_channel::<Result<(u32, BytesMut), std::io::Error>>();
     let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
     let (query_send, mut query_recv) = unbounded_channel::<Bytes>();
 
@@ -432,8 +441,10 @@ async fn gossip_multiple_keys() {
 async fn ping_pongs() {
     let neighbors: Vec<u32> = vec![1];
 
-    let (mut _operations_tx, operations_rx) = unbounded_channel::<Result<BytesMut, io::Error>>();
-    let (mut _input_send, input_recv) = unbounded_channel::<Result<(u32, BytesMut), io::Error>>();
+    let (mut _operations_tx, operations_rx) =
+        unbounded_channel::<Result<BytesMut, std::io::Error>>();
+    let (mut _input_send, input_recv) =
+        unbounded_channel::<Result<(u32, BytesMut), std::io::Error>>();
     let (output_send, mut output_recv) = unbounded_channel::<(u32, Bytes)>();
     let (query_send, mut _query_recv) = unbounded_channel::<Bytes>();
 

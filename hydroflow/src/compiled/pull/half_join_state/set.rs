@@ -1,6 +1,5 @@
 use std::collections::hash_map::Entry;
 use std::collections::VecDeque;
-use std::slice;
 
 use super::HalfJoinState;
 use crate::util::clear::Clear;
@@ -85,7 +84,7 @@ where
         first
     }
 
-    fn full_probe(&self, k: &Key) -> slice::Iter<'_, ValBuild> {
+    fn full_probe(&self, k: &Key) -> std::slice::Iter<'_, ValBuild> {
         let Some(sv) = self.table.get(k) else {
             return [].iter();
         };
@@ -101,7 +100,7 @@ where
         self.len
     }
 
-    fn iter(&self) -> ::std::collections::hash_map::Iter<'_, Key, SmallVec<[ValBuild; 1]>> {
+    fn iter(&self) -> std::collections::hash_map::Iter<'_, Key, SmallVec<[ValBuild; 1]>> {
         self.table.iter()
     }
 }

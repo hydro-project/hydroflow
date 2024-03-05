@@ -2,7 +2,7 @@ use proc_macro2::{Punct, Spacing, Span, TokenStream};
 use quote::{quote, quote_spanned, ToTokens};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{AngleBracketedGenericArguments, PathArguments, Token, Type};
+use syn::{AngleBracketedGenericArguments, Token, Type};
 
 mod quote_impl;
 
@@ -116,7 +116,7 @@ pub fn quse_fn(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         }
     };
 
-    let input_tokens = proc_macro2::TokenStream::from(input);
+    let input_tokens = TokenStream::from(input);
     let import: syn::ItemUse = syn::parse_quote!(use #input_tokens;);
     let mut all_paths_emitted = vec![];
     gen_use_paths(
@@ -202,7 +202,7 @@ pub fn entry(
                     Type::Path(path) => {
                         if path.path.segments.len() == 1 && path.path.segments[0].ident == "RuntimeData" {
                             match &path.path.segments[0].arguments {
-                                PathArguments::AngleBracketed(AngleBracketedGenericArguments {
+                                syn::PathArguments::AngleBracketed(AngleBracketedGenericArguments {
                                     args,
                                     ..
                                 }) => Some(args[0].clone()),

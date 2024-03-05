@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use lattices::{Point, WithBot};
 use serde::de::{DeserializeSeed, Visitor};
-use serde::{Serialize, Serializer};
+use serde::{Deserializer, Serialize, Serializer};
 
 use super::point::PointWrapper;
 use crate::buffer_pool::{AutoReturnBuffer, BufferPool};
@@ -35,7 +35,7 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for WithBotDeserializer<SIZE> 
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
-        D: serde::Deserializer<'de>,
+        D: Deserializer<'de>,
     {
         struct V<const SIZE: usize> {
             pub collector: Rc<RefCell<BufferPool<SIZE>>>,
@@ -49,7 +49,7 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for WithBotDeserializer<SIZE> 
 
             fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
             where
-                D: serde::Deserializer<'de>,
+                D: Deserializer<'de>,
             {
                 struct V<const SIZE: usize> {
                     pub collector: Rc<RefCell<BufferPool<SIZE>>>,
@@ -66,9 +66,9 @@ impl<'de, const SIZE: usize> DeserializeSeed<'de> for WithBotDeserializer<SIZE> 
                         deserializer: D,
                     ) -> Result<Self::Value, D::Error>
                     where
-                        D: serde::Deserializer<'de>,
+                        D: Deserializer<'de>,
                     {
-                        serde::de::DeserializeSeed::deserialize(
+                        DeserializeSeed::deserialize(
                             PointDeserializer {
                                 collector: self.collector,
                             },

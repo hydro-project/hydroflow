@@ -10,8 +10,8 @@ use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::token::{Bracket, Paren};
 use syn::{
-    bracketed, parenthesized, AngleBracketedGenericArguments, Error, Expr, ExprPath,
-    GenericArgument, Ident, ItemUse, LitInt, LitStr, Path, PathArguments, PathSegment, Token,
+    bracketed, parenthesized, AngleBracketedGenericArguments, Expr, ExprPath, GenericArgument,
+    Ident, ItemUse, LitInt, LitStr, Path, PathArguments, PathSegment, Token,
 };
 
 pub struct HfCode {
@@ -162,7 +162,7 @@ impl Pipeline {
             } else if lookahead2.peek(Token![!]) {
                 match ident.to_string().as_str() {
                     "import" => Ok(Self::Import(input.parse()?)),
-                    _ => Err(Error::new(ident.span(), r#"Expected "import""#)),
+                    _ => Err(syn::Error::new(ident.span(), r#"Expected "import""#)),
                 }
             // Otherwise it's a name
             } else {

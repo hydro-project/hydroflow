@@ -137,7 +137,7 @@ impl<T> FreeVariable<T> for Import<T> {
 
         let module_path = syn::parse_str::<syn::Path>(self.module_path).unwrap();
         let parsed = syn::parse_str::<syn::Path>(self.path).unwrap();
-        let as_ident = syn::Ident::new(self.as_name, proc_macro2::Span::call_site());
+        let as_ident = syn::Ident::new(self.as_name, Span::call_site());
         (
             Some(quote!(use #final_crate_root::#module_path::#parsed as #as_ident;)),
             None,

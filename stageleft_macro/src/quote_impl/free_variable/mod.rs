@@ -2,9 +2,6 @@ use std::collections::HashSet;
 
 mod prelude;
 use prelude::is_prelude;
-use syn::punctuated::Punctuated;
-use syn::visit::Visit;
-use syn::MacroDelimiter;
 
 #[derive(Debug)]
 pub struct ScopeStack {
@@ -67,7 +64,7 @@ pub struct FreeVariableVisitor {
     pub current_scope: ScopeStack,
 }
 
-impl<'ast> Visit<'ast> for FreeVariableVisitor {
+impl<'ast> syn::visit::Visit<'ast> for FreeVariableVisitor {
     fn visit_expr_closure(&mut self, i: &'ast syn::ExprClosure) {
         self.current_scope.push();
         i.inputs.iter().for_each(|input| {
@@ -182,7 +179,7 @@ impl<'ast> Visit<'ast> for FreeVariableVisitor {
         }
         // No need to capture the struct path
         // self.visit_path(&node.path);
-        for el in Punctuated::pairs(&node.fields) {
+        for el in syn::punctuated::Punctuated::pairs(&node.fields) {
             let it = el.value();
             self.visit_expr(&it.expr);
         }
@@ -198,7 +195,7 @@ impl<'ast> Visit<'ast> for FreeVariableVisitor {
     fn visit_macro(&mut self, i: &'ast syn::Macro) {
         // TODO(shadaj): emit a warning if our guess at parsing fails
         match i.delimiter {
-            MacroDelimiter::Paren(_binding_0) => i
+            syn::MacroDelimiter::Paren(_binding_0) => i
                 .parse_body_with(
                     syn::punctuated::Punctuated::<syn::Expr, syn::Token![,]>::parse_terminated,
                 )
@@ -208,7 +205,7 @@ impl<'ast> Visit<'ast> for FreeVariableVisitor {
                 .for_each(|expr| {
                     self.visit_expr(expr);
                 }),
-            MacroDelimiter::Brace(_binding_0) => i
+            syn::MacroDelimiter::Brace(_binding_0) => i
                 .parse_body_with(syn::Block::parse_within)
                 .ok()
                 .iter()
@@ -216,7 +213,7 @@ impl<'ast> Visit<'ast> for FreeVariableVisitor {
                 .for_each(|stmt| {
                     self.visit_stmt(stmt);
                 }),
-            MacroDelimiter::Bracket(_binding_0) => i
+            syn::MacroDelimiter::Bracket(_binding_0) => i
                 .parse_body_with(
                     syn::punctuated::Punctuated::<syn::Expr, syn::Token![,]>::parse_terminated,
                 )
