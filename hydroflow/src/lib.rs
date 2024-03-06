@@ -47,9 +47,8 @@ pub use hydroflow_macro::{
 };
 
 #[cfg(not(nightly))]
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 /// Stand-in for the [nightly "never" type `!`](https://doc.rust-lang.org/std/primitive.never.html)
-pub enum Never {}
+pub type Never = std::convert::Infallible;
 #[cfg(nightly)]
 pub type Never = !;
 
