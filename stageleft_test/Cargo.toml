@@ -5,7 +5,7 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-stageleft = { path = "../stageleft", version = "^0.1.0" }
+stageleft = { path = "../stageleft", version = "^0.2.0" }
 stageleft_test_macro = { path = "../stageleft_test_macro" }
 
 [build-dependencies]

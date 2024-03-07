@@ -3,7 +3,7 @@ use syn::parse_quote;
 
 use super::{
     OperatorCategory, OperatorConstraints, OperatorWriteOutput, PortListSpec, WriteContextArgs,
-    RANGE_0, RANGE_1,
+    LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
 };
 use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance, PortIndexValue};
 
@@ -29,7 +29,7 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
         }
         _else => GraphEdgeType::Value,
     },
-    flow_prop_fn: None,
+    flow_prop_fn: Some(LATTICE_FOLD_REDUCE_FLOW_PROP_FN),
     write_fn: |&WriteContextArgs {
                    root,
                    context,
@@ -49,7 +49,7 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
                _diagnostics| {
         let lattice_type = type_args
             .first()
-            .map(quote::ToTokens::to_token_stream)
+            .map(ToTokens::to_token_stream)
             .unwrap_or(quote_spanned!(op_span=> _));
 
         let state_ident = &outputs[1];

@@ -78,8 +78,8 @@ pub fn test_basic_tee() {
 
     let out: HashSet<_> = collect_ready(&mut out_recv);
     assert_eq!(2, out.len());
-    assert!(out.contains(&"A 1".to_owned()));
-    assert!(out.contains(&"B 1".to_owned()));
+    assert!(out.contains("A 1"));
+    assert!(out.contains("B 1"));
 }
 
 #[multiplatform_test]

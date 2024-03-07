@@ -375,23 +375,26 @@ fn main() {
                         .borrow_mut();
                     {
                         #[inline(always)]
-                        fn check_input<
-                            Iter: ::std::iter::Iterator<Item = (A, B)>,
+                        fn check_input<Iter, A, B>(
+                            iter: Iter,
+                        ) -> impl ::std::iter::Iterator<Item = (A, B)>
+                        where
+                            Iter: std::iter::Iterator<Item = (A, B)>,
                             A: ::std::clone::Clone,
                             B: ::std::clone::Clone,
-                        >(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> {
+                        {
                             iter
                         }
-                        #[inline(always)]
                         /// A: accumulator type
                         /// T: iterator item type
                         /// O: output type
+                        #[inline(always)]
                         fn call_comb_type<A, T, O>(
                             a: &mut A,
                             t: T,
                             f: impl Fn(&mut A, T) -> O,
                         ) -> O {
-                            f(a, t)
+                            (f)(a, t)
                         }
                         for kv in check_input(hoff_9v3_recv) {
                             #[allow(unknown_lints, clippy::unwrap_or_default)]
@@ -678,23 +681,26 @@ fn main() {
                         .borrow_mut();
                     {
                         #[inline(always)]
-                        fn check_input<
-                            Iter: ::std::iter::Iterator<Item = (A, B)>,
+                        fn check_input<Iter, A, B>(
+                            iter: Iter,
+                        ) -> impl ::std::iter::Iterator<Item = (A, B)>
+                        where
+                            Iter: std::iter::Iterator<Item = (A, B)>,
                             A: ::std::clone::Clone,
                             B: ::std::clone::Clone,
-                        >(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> {
+                        {
                             iter
                         }
-                        #[inline(always)]
                         /// A: accumulator type
                         /// T: iterator item type
                         /// O: output type
+                        #[inline(always)]
                         fn call_comb_type<A, T, O>(
                             a: &mut A,
                             t: T,
                             f: impl Fn(&mut A, T) -> O,
                         ) -> O {
-                            f(a, t)
+                            (f)(a, t)
                         }
                         for kv in check_input(hoff_23v1_recv) {
                             #[allow(unknown_lints, clippy::unwrap_or_default)]
@@ -890,23 +896,26 @@ fn main() {
                         .borrow_mut();
                     {
                         #[inline(always)]
-                        fn check_input<
-                            Iter: ::std::iter::Iterator<Item = (A, B)>,
+                        fn check_input<Iter, A, B>(
+                            iter: Iter,
+                        ) -> impl ::std::iter::Iterator<Item = (A, B)>
+                        where
+                            Iter: std::iter::Iterator<Item = (A, B)>,
                             A: ::std::clone::Clone,
                             B: ::std::clone::Clone,
-                        >(iter: Iter) -> impl ::std::iter::Iterator<Item = (A, B)> {
+                        {
                             iter
                         }
-                        #[inline(always)]
                         /// A: accumulator type
                         /// T: iterator item type
                         /// O: output type
+                        #[inline(always)]
                         fn call_comb_type<A, T, O>(
                             a: &mut A,
                             t: T,
                             f: impl Fn(&mut A, T) -> O,
                         ) -> O {
-                            f(a, t)
+                            (f)(a, t)
                         }
                         for kv in check_input(hoff_1v3_recv) {
                             #[allow(unknown_lints, clippy::unwrap_or_default)]

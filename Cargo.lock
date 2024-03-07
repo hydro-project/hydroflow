@@ -75,9 +75,9 @@ dependencies = [
 
 [[package]]
 name = "anstream"
-version = "0.6.5"
+version = "0.6.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d664a92ecae85fd0a7392615844904654d1d5f5514837f471ddef4a057aba1b6"
+checksum = "d96bd03f33fe50a863e394ee9718a706f988b9079b20c3784fb726e7678b62fb"
 dependencies = [
  "anstyle",
  "anstyle-parse",
@@ -89,9 +89,9 @@ dependencies = [
 
 [[package]]
 name = "anstyle"
-version = "1.0.4"
+version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7079075b41f533b8c61d2a4d073c4676e1f8b249ff94a393b0595db304e0dd87"
+checksum = "8901269c6307e8d93993578286ac0edf7f195079ffff5ebdeea6a59ffb7e36bc"
 
 [[package]]
 name = "anstyle-parse"
@@ -1352,7 +1352,7 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hydro_cli"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -1387,7 +1387,7 @@ dependencies = [
 
 [[package]]
 name = "hydro_deploy"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -1417,7 +1417,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "bincode",
  "byteorder",
@@ -1483,7 +1483,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "hydroflow_datalog_core",
  "proc-macro-crate",
@@ -1494,7 +1494,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog_core"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "hydroflow_lang",
  "insta",
@@ -1511,7 +1511,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_lang"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "auto_impl",
  "clap 4.4.11",
@@ -1530,7 +1530,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_macro"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "hydroflow_lang",
  "itertools",
@@ -1542,7 +1542,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_plus"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "bincode",
  "hydroflow",
@@ -1559,7 +1559,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_plus_cli_integration"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "async-channel 1.9.0",
  "hydro_deploy",
@@ -1776,7 +1776,7 @@ dependencies = [
 
 [[package]]
 name = "lattices"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "cc-traits",
  "sealed",
@@ -2374,7 +2374,7 @@ dependencies = [
 
 [[package]]
 name = "pusherator"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "either",
  "variadics",
@@ -3036,7 +3036,7 @@ dependencies = [
 
 [[package]]
 name = "stageleft"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -3746,7 +3746,7 @@ checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
 
 [[package]]
 name = "variadics"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "sealed",
  "trybuild",

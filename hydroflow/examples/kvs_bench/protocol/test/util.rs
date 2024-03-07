@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use bincode::options;
 use serde::de::DeserializeSeed;
-use serde::Serialize;
+use serde::{Deserializer, Serialize, Serializer};
 
 use super::magic_buffer::MagicBuffer;
 use crate::buffer_pool::BufferPool;
@@ -45,8 +45,8 @@ fn serialize_deserialize<'de, S, D, const SIZE: usize>(
     mut deserializer: D,
 ) -> KvsRequest<SIZE>
 where
-    for<'a> &'a mut S: serde::Serializer,
-    for<'b> &'b mut D: serde::Deserializer<'de>,
+    for<'a> &'a mut S: Serializer,
+    for<'b> &'b mut D: Deserializer<'de>,
 {
     Serialize::serialize(&req, &mut serializer).unwrap();
 

@@ -5,6 +5,65 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.6.0 (2024-03-02)
+
+### Chore
+
+ - <csr-id-5a451ac4ae75024153a06416fc81d834d1fdae6f/> prep for 0.0.4 release
+ - <csr-id-39ab8b0278e9e3fe96552ace0a4ae768a6bc10d8/> appease various clippy lints
+ - <csr-id-92ee7eb4e81ff2852f873d6a84a44a5a5bdc6703/> remove unused multiset2 half join state
+ - <csr-id-8361f9c8f83992295cfa40cf4d27a17146afb2d9/> update pinned rust nightly version to 2024-02-03
+
+### New Features
+
+ - <csr-id-09f0c5711c2d038d1d5764d400fe6206da995ce3/> add (inefficient) `lattice_bimorphism` operator, fix #1073
+
+### Bug Fixes
+
+ - <csr-id-18ee2ad245dad997494267050a9568f20cbe215f/> cleanup timing in some `surface_async` tests, #1078
+
+### Other
+
+ - <csr-id-e9639f608f8dafd3f384837067800a66951b25df/> consolidate tasks and use sccache and nextest
+
+### Style
+
+ - <csr-id-71353f0d4dfd9766dfdc715c4a91a028081f910f/> fix imports for clippy
+ - <csr-id-b391447ec13f1f79c99142f296dc2fa8640034f4/> fix imports
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 9 commits contributed to the release over the course of 25 calendar days.
+ - 28 days passed between releases.
+ - 9 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 6 unique issues were worked on: [#1015](https://github.com/hydro-project/hydroflow/issues/1015), [#1057](https://github.com/hydro-project/hydroflow/issues/1057), [#1060](https://github.com/hydro-project/hydroflow/issues/1060), [#1061](https://github.com/hydro-project/hydroflow/issues/1061), [#1084](https://github.com/hydro-project/hydroflow/issues/1084), [#1085](https://github.com/hydro-project/hydroflow/issues/1085)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1015](https://github.com/hydro-project/hydroflow/issues/1015)**
+    - Consolidate tasks and use sccache and nextest ([`e9639f6`](https://github.com/hydro-project/hydroflow/commit/e9639f608f8dafd3f384837067800a66951b25df))
+ * **[#1057](https://github.com/hydro-project/hydroflow/issues/1057)**
+    - Update pinned rust nightly version to 2024-02-03 ([`8361f9c`](https://github.com/hydro-project/hydroflow/commit/8361f9c8f83992295cfa40cf4d27a17146afb2d9))
+ * **[#1060](https://github.com/hydro-project/hydroflow/issues/1060)**
+    - Remove unused multiset2 half join state ([`92ee7eb`](https://github.com/hydro-project/hydroflow/commit/92ee7eb4e81ff2852f873d6a84a44a5a5bdc6703))
+ * **[#1061](https://github.com/hydro-project/hydroflow/issues/1061)**
+    - Add (inefficient) `lattice_bimorphism` operator, fix #1073 ([`09f0c57`](https://github.com/hydro-project/hydroflow/commit/09f0c5711c2d038d1d5764d400fe6206da995ce3))
+ * **[#1084](https://github.com/hydro-project/hydroflow/issues/1084)**
+    - Appease various clippy lints ([`39ab8b0`](https://github.com/hydro-project/hydroflow/commit/39ab8b0278e9e3fe96552ace0a4ae768a6bc10d8))
+ * **[#1085](https://github.com/hydro-project/hydroflow/issues/1085)**
+    - Cleanup timing in some `surface_async` tests, #1078 ([`18ee2ad`](https://github.com/hydro-project/hydroflow/commit/18ee2ad245dad997494267050a9568f20cbe215f))
+ * **Uncategorized**
+    - Prep for 0.0.4 release ([`5a451ac`](https://github.com/hydro-project/hydroflow/commit/5a451ac4ae75024153a06416fc81d834d1fdae6f))
+    - Fix imports for clippy ([`71353f0`](https://github.com/hydro-project/hydroflow/commit/71353f0d4dfd9766dfdc715c4a91a028081f910f))
+    - Fix imports ([`b391447`](https://github.com/hydro-project/hydroflow/commit/b391447ec13f1f79c99142f296dc2fa8640034f4))
+</details>
+
 ## 0.5.2 (2024-02-02)
 
 ### Documentation
@@ -25,8 +84,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release over the course of 2 calendar days.
- - 4 days passed between releases.
+ - 5 commits contributed to the release over the course of 2 calendar days.
+ - 3 days passed between releases.
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1041](https://github.com/hydro-project/hydroflow/issues/1041), [#1051](https://github.com/hydro-project/hydroflow/issues/1051), [#1054](https://github.com/hydro-project/hydroflow/issues/1054), [#1055](https://github.com/hydro-project/hydroflow/issues/1055)
 
@@ -44,6 +103,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Add `StateHandleErased` (no type param) for storage in data structures, fix #1048 ([`5cbce2b`](https://github.com/hydro-project/hydroflow/commit/5cbce2bac61130e3aefc7e73a9bc9080bd2b5a32))
  * **[#1055](https://github.com/hydro-project/hydroflow/issues/1055)**
     - Fix coloring of `_lattice_join_fused_join`, fix #943 ([`a572dee`](https://github.com/hydro-project/hydroflow/commit/a572dee118fb9d014954a18d560413a6c6fc5deb))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.5.2, hydroflow_datalog_core v0.5.2, hydroflow_macro v0.5.2, lattices v0.5.2, hydroflow v0.5.2, hydro_cli v0.5.1, hydroflow_plus_cli_integration v0.5.1 ([`6ac8720`](https://github.com/hydro-project/hydroflow/commit/6ac872081753548ebb8ec95549b4d820dc050d3e))
 </details>
 
 ## 0.5.1 (2024-01-29)
@@ -82,6 +143,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-8b635683e5ac3c4ed2d896ae88e2953db1c6312c/> add a functional surface syntax using staging
  - <csr-id-f327b02c8001129e619fb253ab9b6d550e229a48/> add left,right,outer join module examples
  - <csr-id-7df0a0df61597764eed763b68138929fed1413ac/> add defer() which is the same as defer_tick() except that it is lazy
+ - <csr-id-6158a7aae2ef9b58245c23fc668715a3fb2ff7dc/> new implementation and Hydro Deploy setup
+   --
  - <csr-id-6158a7aae2ef9b58245c23fc668715a3fb2ff7dc/> new implementation and Hydro Deploy setup
    --
 
@@ -184,9 +247,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Manually set lockstep-versioned crates (and `lattices`) to version `0.5.1` ([`1b555e5`](https://github.com/hydro-project/hydroflow/commit/1b555e57c8c812bed4d6495d2960cbf77fb0b3ef))
     - Add left,right,outer join module examples ([`f327b02`](https://github.com/hydro-project/hydroflow/commit/f327b02c8001129e619fb253ab9b6d550e229a48))
 </details>
-
-<csr-unknown>
- re-export hydroflow_macro::DemuxEnum derive macro remove stale instructions about python driver for chat improve type inference for fold accumulators add 100ms wait to chat example to avoid dropped packet chat and two_pc no longer replay multiset_delta incorrect is_first_run_this_tick check, fixes #958Introduced in #906Also adds more multiset_delta tests. avoid panic-ing on degen null()<csr-unknown/>
 
 ## 0.5.0 (2023-10-11)
 

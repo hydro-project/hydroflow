@@ -63,9 +63,12 @@ showing that all the changelogs can be modified. Make sure the version bumps loo
 [INFO ] WOULD modify existing changelog for 'hydro_cli'.
 ```
 
-If the job does not succeed and it fails to generate changelogs for certain packages, then you will
-need to do a bit of manual work.
-In this case, you will need to create a commit to the package's `CHANGELOG.md` to mark it as
+If the job does not succeed or succeeds but fails to generate changelogs for certain packages, then you will
+need to do a bit of manual work. That looks like this in the log (check for this!):
+```log
+[WARN ] WOULD ask for review after commit as the changelog entry is empty for crates: hydroflow_datalog, hydroflow_macro
+```
+In this case, you will need to create a commit to each package's `CHANGELOG.md` to mark it as
 unchanged (or minimally changed). For example, [hydro_datalog 0.4](https://github.com/hydro-project/hydroflow/commit/5faee64ab82eeb7a24f62a1b55c46d72d8eb5320)
 or [hydro_cli 0.3](https://github.com/hydro-project/hydroflow/commit/4c2cf81411835529b5d7daa35717834e46e28b9b).
 

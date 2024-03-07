@@ -60,7 +60,7 @@ fn test() {
     let (_server, _, mut server_stdout) =
         run_cargo_example("kvs", "--role server --addr 127.0.0.1:2051");
 
-    let (_client, mut client_stdin, mut client_stdout) = run_cargo_example(
+    let (_client1, mut client1_stdin, mut client1_stdout) = run_cargo_example(
         "kvs",
         "--role client --addr 127.0.0.1:2052 --server-addr 127.0.0.1:2051",
     );
@@ -68,10 +68,10 @@ fn test() {
     let mut server_output = String::new();
     wait_for_process_output(&mut server_output, &mut server_stdout, "Server live!");
 
-    let mut client_output = String::new();
-    wait_for_process_output(&mut client_output, &mut client_stdout, "Client live!");
+    let mut client1_output = String::new();
+    wait_for_process_output(&mut client1_output, &mut client1_stdout, "Client live!");
 
-    client_stdin.write_all(b"PUT a,7\n").unwrap();
+    client1_stdin.write_all(b"PUT a,7\n").unwrap();
 
     let (_client2, mut client2_stdin, mut client2_stdout) = run_cargo_example(
         "kvs",
@@ -86,5 +86,14 @@ fn test() {
         &mut client2_output,
         &mut client2_stdout,
         r#"Got a Response: KvsResponse \{ key: "a", value: "7" \}"#,
+    );
+
+    client1_stdin.write_all(b"PUT a,8\n").unwrap();
+    client1_stdin.write_all(b"GET a\n").unwrap();
+    wait_for_process_output(
+        &mut client1_output,
+        &mut client1_stdout,
+        r#"Got a Response: KvsResponse \{ key: "a", value: "7" \}
+Got a Response: KvsResponse \{ key: "a", value: "8" \}"#,
     );
 }

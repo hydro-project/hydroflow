@@ -154,11 +154,9 @@ pub trait Location<'a>: Clone {
         )
     }
 
-    fn many_source_external<S: Location<'a>, Cid>(
-        &self,
-    ) -> (Self::Port, Stream<'a, Bytes, Async, Self>)
+    fn many_source_external<S, Cid>(&self) -> (Self::Port, Stream<'a, Bytes, Async, Self>)
     where
-        S: HfSendOneToMany<'a, Self, Cid>,
+        S: Location<'a> + HfSendOneToMany<'a, Self, Cid>,
     {
         let port = self.next_port();
         let source_pipeline = S::gen_source_statement(self, &port);

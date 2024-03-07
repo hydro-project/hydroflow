@@ -53,7 +53,7 @@ pub fn run_server<RX>(
             let (transducer_to_client_tx, mut _transducer_to_client_rx) =
                 hydroflow::util::unsync_channel::<(KvsResponse<BUFFER_SIZE>, NodeId)>(None);
 
-            let localset = tokio::task::LocalSet::new();
+            let localset = task::LocalSet::new();
 
             let inbound_networking_task = localset.run_until({
                 let buffer_pool = buffer_pool.clone();

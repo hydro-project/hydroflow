@@ -93,3 +93,31 @@ async fn test_persist_stratum_run_async() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
+#[multiplatform_test(test, wasm, env_tracing)]
+pub fn test_issue_800_1050_persist() {
+    let mut df = hydroflow_syntax! {
+        in1 = source_iter(0..10) -> map(|i| (i, i));
+        in1 -> persist() -> my_union_tee;
+
+        my_union_tee = union() -> tee();
+        my_union_tee -> filter(|_| false) -> my_union_tee;
+        my_union_tee -> for_each(|x| println!("A {} {} {:?}", context.current_tick(), context.current_stratum(), x));
+    };
+    assert_graphvis_snapshots!(df);
+    df.run_available();
+}
+
+#[multiplatform_test(test, wasm, env_tracing)]
+pub fn test_issue_800_1050_fold_keyed() {
+    let mut df = hydroflow_syntax! {
+        in1 = source_iter(0..10) -> map(|i| (i, i));
+        in1 -> fold_keyed::<'static>(Vec::new, Vec::push) -> my_union_tee;
+
+        my_union_tee = union() -> tee();
+        my_union_tee -> filter(|_| false) -> my_union_tee;
+        my_union_tee -> for_each(|x| println!("A {} {} {:?}", context.current_tick(), context.current_stratum(), x));
+    };
+    assert_graphvis_snapshots!(df);
+    df.run_available();
+}
