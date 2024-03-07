@@ -343,7 +343,7 @@ impl<'a> Hydroflow<'a> {
 
     /// Runs the dataflow graph forever.
     ///
-    /// TODO(mingwei): Currently blockes forever, no notion of "completion."
+    /// TODO(mingwei): Currently blocks forever, no notion of "completion."
     #[tracing::instrument(level = "trace", skip(self), ret)]
     pub fn run(&mut self) -> Option<Never> {
         loop {
@@ -353,7 +353,7 @@ impl<'a> Hydroflow<'a> {
 
     /// Runs the dataflow graph forever.
     ///
-    /// TODO(mingwei): Currently blockes forever, no notion of "completion."
+    /// TODO(mingwei): Currently blocks forever, no notion of "completion."
     #[tracing::instrument(level = "trace", skip(self), ret)]
     pub async fn run_async(&mut self) -> Option<Never> {
         self.context.spawn_tasks();
