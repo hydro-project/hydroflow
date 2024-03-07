@@ -149,9 +149,6 @@ impl FlatGraphBuilder {
                     }
                 }
             }
-            HfStatement::Singleton(_singleton) => {
-                // TODO(mingwei)
-            }
             HfStatement::Pipeline(pipeline_stmt) => {
                 self.add_pipeline(pipeline_stmt.pipeline, None);
             }

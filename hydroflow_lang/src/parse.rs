@@ -39,7 +39,6 @@ impl ToTokens for HfCode {
 pub enum HfStatement {
     Use(ItemUse),
     Named(NamedHfStatement),
-    Singleton(SingletonStatement),
     Pipeline(PipelineStatement),
 }
 impl Parse for HfStatement {
@@ -58,7 +57,6 @@ impl ToTokens for HfStatement {
         match self {
             HfStatement::Use(x) => x.to_tokens(tokens),
             HfStatement::Named(x) => x.to_tokens(tokens),
-            HfStatement::Singleton(x) => x.to_tokens(tokens),
             HfStatement::Pipeline(x) => x.to_tokens(tokens),
         }
     }
@@ -85,38 +83,6 @@ impl Parse for NamedHfStatement {
     }
 }
 impl ToTokens for NamedHfStatement {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.name.to_tokens(tokens);
-        self.equals.to_tokens(tokens);
-        self.pipeline.to_tokens(tokens);
-        self.semi_token.to_tokens(tokens);
-    }
-}
-
-pub struct SingletonStatement {
-    pub hash: Token![#],
-    pub name: Ident,
-    pub equals: Token![=],
-    pub pipeline: Pipeline,
-    pub semi_token: Token![;],
-}
-impl Parse for SingletonStatement {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let hash = input.parse()?;
-        let name = input.parse()?;
-        let equals = input.parse()?;
-        let pipeline = input.parse()?;
-        let semi_token = input.parse()?;
-        Ok(Self {
-            hash,
-            name,
-            equals,
-            pipeline,
-            semi_token,
-        })
-    }
-}
-impl ToTokens for SingletonStatement {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.name.to_tokens(tokens);
         self.equals.to_tokens(tokens);
