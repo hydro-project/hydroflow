@@ -384,6 +384,7 @@ pub struct Operator {
     pub paren_token: Paren,
     pub args_raw: TokenStream,
     pub args: Punctuated<Expr, Token![,]>,
+    pub singletons_referenced: Vec<Ident>,
 }
 
 impl Operator {
@@ -459,9 +460,10 @@ impl Parse for Operator {
         let content;
         let paren_token = parenthesized!(content in input);
         let args_raw: TokenStream = content.parse()?;
+        let mut singletons_referenced = Vec::new();
         let args = syn::parse2::<ParseTerminated<Expr, Token![,]>>(preprocess_singletons(
             args_raw.clone(),
-            &mut Vec::new(),
+            &mut singletons_referenced,
         ))?
         .0;
 
@@ -470,6 +472,7 @@ impl Parse for Operator {
             paren_token,
             args_raw,
             args,
+            singletons_referenced,
         })
     }
 }

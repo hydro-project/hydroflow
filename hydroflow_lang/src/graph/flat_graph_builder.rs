@@ -6,7 +6,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
 use proc_macro2::Span;
-use quote::ToTokens;
+use quote::{IdentFragment, ToTokens};
 use syn::spanned::Spanned;
 use syn::{Error, Ident, ItemUse};
 
@@ -67,7 +67,6 @@ impl FlatGraphBuilder {
             ..Default::default()
         };
         builder.process_statements(input.statements);
-
         builder
     }
 
@@ -345,6 +344,7 @@ impl FlatGraphBuilder {
     /// Connects operator links as a final building step. Processes all the links stored in
     /// `self.links` and actually puts them into the graph.
     fn connect_operator_links(&mut self) {
+        // `->` edges
         for Ends { out, inn } in std::mem::take(&mut self.links) {
             let out_opt = self.helper_resolve_name(out, false);
             let inn_opt = self.helper_resolve_name(inn, true);
@@ -353,11 +353,33 @@ impl FlatGraphBuilder {
                 self.connect_operators(out_port, out_node, inn_port, inn_node);
             }
         }
+        // Singleton references, which also act as edges.
+        for node_id in self.flat_graph.node_ids().collect::<Vec<_>>() {
+            if let GraphNode::Operator(operator) = self.flat_graph.node(node_id) {
+                for singleton_ref in operator
+                    .singletons_referenced
+                    .iter()
+                    .cloned()
+                    .collect::<Vec<_>>()
+                {
+                    let port = PortIndexValue::Elided(Some(singleton_ref.span()));
+                    if let Some((out_port, out_node)) = self.helper_resolve_name(
+                        Some((port.clone(), GraphDet::Undetermined(singleton_ref.clone()))),
+                        false,
+                    ) {
+                        self.connect_operators(out_port, out_node, port, node_id);
+                    }
+                }
+            }
+        }
     }
+
     /// Recursively resolve a variable name. For handling forward (and backward) name references
     /// after all names have been assigned.
     /// Returns `None` if the name is not resolvable, either because it was never assigned or
     /// because it contains a self-referential cycle.
+    ///
+    /// `is_in` set to `true` means the _input_ side will be returned. `false` means the _output_ side will be returned.
     fn helper_resolve_name(
         &mut self,
         mut port_det: Option<(PortIndexValue, GraphDet)>,
@@ -432,6 +454,7 @@ impl FlatGraphBuilder {
         ));
         None
     }
+
     /// Connect two operators on the given port indexes.
     fn connect_operators(
         &mut self,
