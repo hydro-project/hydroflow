@@ -148,9 +148,10 @@ pub mod datalog {
             match self {
                 TargetExpr::Expr(e) => e.idents(),
                 TargetExpr::Aggregation(Aggregation::Count(_)) => vec![],
-                TargetExpr::Aggregation(Aggregation::CountUnique(_, _, idents, _)) => {
-                    idents.iter().map(|i| &i.value).collect()
-                }
+                TargetExpr::Aggregation(
+                    Aggregation::CountUnique(_, _, idents, _)
+                    | Aggregation::CollectVec(_, _, idents, _),
+                ) => idents.iter().map(|i| &i.value).collect(),
                 TargetExpr::Aggregation(
                     Aggregation::Min(_, _, a, _)
                     | Aggregation::Max(_, _, a, _)
@@ -197,6 +198,16 @@ pub mod datalog {
             #[rust_sitter::leaf(text = "choose")] (),
             #[rust_sitter::leaf(text = "(")] (),
             Spanned<Ident>,
+            #[rust_sitter::leaf(text = ")")] (),
+        ),
+        CollectVec(
+            #[rust_sitter::leaf(text = "collect_vec")] (),
+            #[rust_sitter::leaf(text = "(")] (),
+            #[rust_sitter::delimited(
+                #[rust_sitter::leaf(text = ",")]
+                ()
+            )]
+            Vec<Spanned<Ident>>,
             #[rust_sitter::leaf(text = ")")] (),
         ),
     }
