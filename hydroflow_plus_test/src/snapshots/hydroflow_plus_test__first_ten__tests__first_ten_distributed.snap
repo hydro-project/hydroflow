@@ -1,6 +1,6 @@
 ---
 source: hydroflow_plus_test/src/first_ten.rs
-expression: builder.ir()
+expression: builder.build().ir()
 ---
 [
     ForEach {
@@ -33,7 +33,6 @@ expression: builder.ir()
                 source: Iter(
                     { use crate :: __staged :: first_ten :: * ; 0 .. 10 },
                 ),
-                produces_delta: false,
                 location_id: 0,
             },
         },

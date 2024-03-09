@@ -95,7 +95,6 @@ pub trait Location<'a>: Clone {
             self.ir_leaves(),
             HfPlusNode::Source {
                 source: HfPlusSource::Spin(),
-                produces_delta: false,
                 location_id: self.id(),
             },
         )
@@ -123,7 +122,6 @@ pub trait Location<'a>: Clone {
             HfPlusNode::Source {
                 source: HfPlusSource::Stream(e.into()),
                 location_id: self.id(),
-                produces_delta: false,
             },
         )
     }
@@ -147,7 +145,6 @@ pub trait Location<'a>: Clone {
                     input: Box::new(HfPlusNode::Source {
                         source: HfPlusSource::Stream(source_pipeline.into()),
                         location_id: self.id(),
-                        produces_delta: false,
                     }),
                 },
             ),
@@ -175,7 +172,6 @@ pub trait Location<'a>: Clone {
                     input: Box::new(HfPlusNode::Source {
                         source: HfPlusSource::Stream(source_pipeline.into()),
                         location_id: self.id(),
-                        produces_delta: false,
                     }),
                 },
             ),
@@ -194,7 +190,6 @@ pub trait Location<'a>: Clone {
             HfPlusNode::Source {
                 source: HfPlusSource::Iter(e.into()),
                 location_id: self.id(),
-                produces_delta: false,
             },
         )
     }
@@ -211,7 +206,6 @@ pub trait Location<'a>: Clone {
             HfPlusNode::Source {
                 source: HfPlusSource::Interval(interval.into()),
                 location_id: self.id(),
-                produces_delta: false,
             },
         )
     }

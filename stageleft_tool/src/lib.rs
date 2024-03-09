@@ -119,17 +119,12 @@ impl VisitMut for GenFinalPubVistor {
     }
 
     fn visit_item_mod_mut(&mut self, i: &mut syn::ItemMod) {
-        let is_runtime = i
-            .attrs
-            .iter()
-            .any(|a| a.path().to_token_stream().to_string() == "stageleft :: runtime");
+        let is_runtime_or_test = i.attrs.iter().any(|a| {
+            a.path().to_token_stream().to_string() == "stageleft :: runtime"
+                || a.to_token_stream().to_string() == "# [cfg (test)]"
+        });
 
-        let is_test = i
-            .attrs
-            .iter()
-            .any(|a| a.to_token_stream().to_string() == "# [cfg (test)]");
-
-        if is_runtime || is_test {
+        if is_runtime_or_test {
             *i = parse_quote! {
                 #[cfg(feature = "macro")]
                 #i

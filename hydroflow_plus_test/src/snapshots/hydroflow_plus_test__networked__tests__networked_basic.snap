@@ -1,6 +1,6 @@
 ---
 source: hydroflow_plus_test/src/networked.rs
-expression: builder.ir()
+expression: builder.build().ir()
 ---
 [
     ForEach {
@@ -26,7 +26,6 @@ expression: builder.ir()
                     source: Stream(
                         null,
                     ),
-                    produces_delta: false,
                     location_id: 0,
                 },
             },
@@ -40,7 +39,6 @@ expression: builder.ir()
                 source: Stream(
                     null,
                 ),
-                produces_delta: false,
                 location_id: 2,
             },
         },
