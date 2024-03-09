@@ -43,10 +43,10 @@ pub struct Windowed {}
 pub struct Stream<'a, T, W, N: Location<'a>> {
     node: N,
 
-    pub(crate) ir_leaves: &'a RefCell<Vec<HfPlusLeaf>>,
+    ir_leaves: &'a RefCell<Vec<HfPlusLeaf>>,
     pub(crate) ir_node: RefCell<HfPlusNode>,
 
-    pub(crate) _phantom: PhantomData<(&'a mut &'a (), T, W)>,
+    _phantom: PhantomData<(&'a mut &'a (), T, W)>,
 }
 
 impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
@@ -85,7 +85,7 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
     fn pipeline_op<U, W2>(
         self,
         kind: &'static str,
-        gen_pipeline: impl Fn(bool) -> Option<(Pipeline, bool)> + 'static,
+        gen_pipeline: impl Fn() -> Pipeline + 'static,
     ) -> Stream<'a, U, W2, N> {
         Stream::new(
             self.node,
@@ -114,28 +114,16 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
         f: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, U, W, N> {
         let f = f.splice();
-        self.pipeline_op("flat_map", move |d| Some((parse_quote!(flat_map(#f)), d)))
+        self.pipeline_op("flat_map", move || parse_quote!(flat_map(#f)))
     }
 
     pub fn enumerate(self) -> Stream<'a, (usize, T), W, N> {
-        self.pipeline_op("enumerate", |d| {
-            if d {
-                None
-            } else {
-                Some((parse_quote!(enumerate()), false))
-            }
-        })
+        self.pipeline_op("enumerate", || parse_quote!(enumerate()))
     }
 
     pub fn inspect<F: Fn(&T) + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Stream<'a, T, W, N> {
         let f = f.splice();
-        self.pipeline_op("inspect", move |d| {
-            if d {
-                None
-            } else {
-                Some((parse_quote!(inspect(#f)), false))
-            }
-        })
+        self.pipeline_op("inspect", move || parse_quote!(inspect(#f)))
     }
 
     pub fn filter<F: Fn(&T) -> bool + 'a>(
@@ -143,7 +131,7 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
         f: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, T, W, N> {
         let f = f.splice();
-        self.pipeline_op("filter", move |d| Some((parse_quote!(filter(#f)), d)))
+        self.pipeline_op("filter", move || parse_quote!(filter(#f)))
     }
 
     pub fn filter_map<U, F: Fn(T) -> Option<U> + 'a>(
@@ -151,9 +139,7 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
         f: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, U, W, N> {
         let f = f.splice();
-        self.pipeline_op("filter_map", move |d| {
-            Some((parse_quote!(filter_map(#f)), d))
-        })
+        self.pipeline_op("filter_map", move || parse_quote!(filter_map(#f)))
     }
 
     // TODO(shadaj): should allow for differing windows, using strongest one
@@ -229,28 +215,21 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
         let init = init.splice();
         let comb = comb.splice();
 
-        self.pipeline_op("fold", move |d| {
-            if d {
-                Some((parse_quote!(fold::<'static>(#init, #comb)), false))
-            } else {
-                Some((parse_quote!(fold::<'tick>(#init, #comb)), false))
-            }
-        })
+        self.pipeline_op("fold", move || parse_quote!(fold::<'tick>(#init, #comb)))
     }
 
     pub fn reduce<C: Fn(&mut T, T) + 'a>(
         self,
         comb: impl IntoQuotedMut<'a, C>,
     ) -> Stream<'a, T, Windowed, N> {
-        let comb = comb.splice();
-
-        self.pipeline_op("reduce", move |d| {
-            if d {
-                Some((parse_quote!(reduce::<'static>(#comb)), false))
-            } else {
-                Some((parse_quote!(reduce::<'tick>(#comb)), false))
-            }
-        })
+        Stream::new(
+            self.node,
+            self.ir_leaves,
+            HfPlusNode::Reduce {
+                f: comb.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
     }
 
     pub fn count(self) -> Stream<'a, usize, Windowed, N> {
@@ -269,13 +248,7 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
     where
         T: Eq + Hash,
     {
-        self.pipeline_op("unique", |d| {
-            if d {
-                None
-            } else {
-                Some((parse_quote!(unique::<'tick>()), false))
-            }
-        })
+        self.pipeline_op("unique", || parse_quote!(unique::<'tick>()))
     }
 
     pub fn filter_not_in(self, other: Stream<'a, T, Windowed, N>) -> Stream<'a, T, Windowed, N>
@@ -307,7 +280,7 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
 
 impl<'a, T: Clone, W, N: Location<'a>> Stream<'a, &T, W, N> {
     pub fn cloned(self) -> Stream<'a, T, W, N> {
-        self.pipeline_op("cloned", |d| Some((parse_quote!(map(|d| d.clone())), d)))
+        self.pipeline_op("cloned", || parse_quote!(map(|d| d.clone())))
     }
 }
 
@@ -359,28 +332,24 @@ impl<'a, K: Eq + Hash, V, N: Location<'a>> Stream<'a, (K, V), Windowed, N> {
         let init = init.splice();
         let comb = comb.splice();
 
-        self.pipeline_op("fold_keyed", move |d| {
-            if d {
-                Some((parse_quote!(fold_keyed::<'static>(#init, #comb)), false))
-            } else {
-                Some((parse_quote!(fold_keyed::<'tick>(#init, #comb)), false))
-            }
-        })
+        self.pipeline_op(
+            "fold_keyed",
+            move || parse_quote!(fold_keyed::<'tick>(#init, #comb)),
+        )
     }
 
     pub fn reduce_keyed<F: Fn(&mut V, V) + 'a>(
         self,
         comb: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, (K, V), Windowed, N> {
-        let comb = comb.splice();
-
-        self.pipeline_op("reduce_keyed", move |d| {
-            if d {
-                Some((parse_quote!(reduce_keyed::<'static>(#comb)), false))
-            } else {
-                Some((parse_quote!(reduce_keyed::<'tick>(#comb)), false))
-            }
-        })
+        Stream::new(
+            self.node,
+            self.ir_leaves,
+            HfPlusNode::ReduceKeyed {
+                f: comb.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
     }
 }
 

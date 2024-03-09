@@ -1,13 +1,12 @@
 ---
 source: hydroflow_plus_test/src/cluster.rs
-expression: builder.ir()
+expression: built.ir()
 ---
 [
     ForEach {
         f: { use crate :: __staged :: cluster :: * ; | (string , count) | println ! ("{}: {}" , string , count) },
-        input: PipelineOp {
-            kind: "reduce_keyed",
-            gen_pipeline: <function>,
+        input: ReduceKeyed {
+            f: { use crate :: __staged :: cluster :: * ; | total , count | * total += count },
             input: Persist(
                 Map {
                     f: { use hydroflow_plus :: __staged :: stream :: * ; | (_ , b) | b },
@@ -78,7 +77,6 @@ expression: builder.ir()
                                                         source: Iter(
                                                             { use crate :: __staged :: cluster :: * ; vec ! ["abc" , "abc" , "xyz" , "abc"] },
                                                         ),
-                                                        produces_delta: false,
                                                         location_id: 0,
                                                     },
                                                 },

@@ -43,7 +43,9 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
         output.send(v).unwrap();
     }));
 
-    flow.build().emit(subgraph_id)
+    flow.extract()
+        .optimize_default()
+        .with_dynamic_id(subgraph_id)
 }
 
 #[stageleft::entry]
@@ -64,6 +66,9 @@ pub fn chat_app<'a>(
         messages.tick_batch()
     };
 
+    // do this after the persist to test pullup
+    let messages = messages.map(q!(|s| s.to_uppercase()));
+
     let mut joined = users.cross_product(messages);
     if replay_messages {
         joined = joined.delta();
@@ -73,7 +78,7 @@ pub fn chat_app<'a>(
         output.send(t).unwrap();
     }));
 
-    flow.build().emit_single()
+    flow.extract().optimize_default()
 }
 
 #[stageleft::entry]
@@ -102,7 +107,7 @@ pub fn graph_reachability<'a>(
         reached_out.send(v).unwrap();
     }));
 
-    flow.build().emit_single()
+    flow.extract().optimize_default()
 }
 
 #[stageleft::entry(String)]
@@ -123,7 +128,7 @@ pub fn count_elems<'a, T: 'a>(
         output.send(v).unwrap();
     }));
 
-    flow.build().emit_single()
+    flow.extract().optimize_default()
 }
 
 #[stageleft::runtime]
@@ -204,10 +209,10 @@ mod tests {
         assert_eq!(
             &*collect_ready::<Vec<_>, _>(&mut out_recv),
             &[
-                (1, "hello".to_string()),
-                (2, "hello".to_string()),
-                (1, "world".to_string()),
-                (2, "world".to_string())
+                (1, "HELLO".to_string()),
+                (2, "HELLO".to_string()),
+                (1, "WORLD".to_string()),
+                (2, "WORLD".to_string())
             ]
         );
 
@@ -220,9 +225,9 @@ mod tests {
         assert_eq!(
             &*collect_ready::<Vec<_>, _>(&mut out_recv),
             &[
-                (1, "goodbye".to_string()),
-                (2, "goodbye".to_string()),
-                (3, "goodbye".to_string())
+                (1, "GOODBYE".to_string()),
+                (2, "GOODBYE".to_string()),
+                (3, "GOODBYE".to_string())
             ]
         );
     }
@@ -247,10 +252,10 @@ mod tests {
         assert_eq!(
             &*collect_ready::<Vec<_>, _>(&mut out_recv),
             &[
-                (1, "hello".to_string()),
-                (2, "hello".to_string()),
-                (1, "world".to_string()),
-                (2, "world".to_string())
+                (1, "HELLO".to_string()),
+                (2, "HELLO".to_string()),
+                (1, "WORLD".to_string()),
+                (2, "WORLD".to_string())
             ]
         );
 
@@ -263,11 +268,11 @@ mod tests {
         assert_eq!(
             &*collect_ready::<Vec<_>, _>(&mut out_recv),
             &[
-                (3, "hello".to_string()),
-                (3, "world".to_string()),
-                (1, "goodbye".to_string()),
-                (2, "goodbye".to_string()),
-                (3, "goodbye".to_string())
+                (3, "HELLO".to_string()),
+                (3, "WORLD".to_string()),
+                (1, "GOODBYE".to_string()),
+                (2, "GOODBYE".to_string()),
+                (3, "GOODBYE".to_string())
             ]
         );
     }

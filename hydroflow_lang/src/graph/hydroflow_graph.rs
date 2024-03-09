@@ -31,7 +31,7 @@ use crate::pretty_span::{PrettyRowCol, PrettySpan};
 /// separate `impl` blocks. You might notice a few particularly specific arbitray-seeming methods
 /// in here--those are just what was needed for the compilation algorithms. If you need another
 /// method then add it.
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct HydroflowGraph {
     /// Each node type (operator or handoff).
     nodes: SlotMap<GraphNodeId, GraphNode>,
