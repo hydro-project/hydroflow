@@ -37,13 +37,18 @@ mod tests {
             .map(q!(|v| v + 1))
             .for_each(q!(|n| println!("{}", n)));
 
-        let built = flow.build();
+        let built = flow.extract();
 
-        insta::assert_debug_snapshot!(&built.ir);
+        insta::assert_debug_snapshot!(built.ir());
 
         let optimized = built.optimize_with(super::persist_pullup);
 
-        insta::assert_debug_snapshot!(&optimized.ir);
+        insta::assert_debug_snapshot!(optimized.ir());
+        for (id, graph) in optimized.no_optimize().hydroflow_ir() {
+            insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
+                insta::assert_display_snapshot!(graph.surface_syntax_string());
+            });
+        }
     }
 
     #[test]
@@ -60,12 +65,18 @@ mod tests {
 
         before_tee.for_each(q!(|n| println!("{}", n)));
 
-        let built = flow.build();
+        let built = flow.extract();
 
-        insta::assert_debug_snapshot!(&built.ir);
+        insta::assert_debug_snapshot!(built.ir());
 
         let optimized = built.optimize_with(super::persist_pullup);
 
-        insta::assert_debug_snapshot!(&optimized.ir);
+        insta::assert_debug_snapshot!(optimized.ir());
+
+        for (id, graph) in optimized.no_optimize().hydroflow_ir() {
+            insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
+                insta::assert_display_snapshot!(graph.surface_syntax_string());
+            });
+        }
     }
 }
