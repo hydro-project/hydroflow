@@ -2,13 +2,9 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 
-use hydroflow_lang::graph::{
-    eliminate_extra_unions_tees, partition_graph, propagate_flow_props, HydroflowGraph,
-};
-use proc_macro2::{Span, TokenStream};
-use quote::quote;
-use stageleft::{Quoted, QuotedContext};
-use syn::parse_quote;
+use hydroflow::lattices::collections::MapMapValues;
+use hydroflow_lang::graph::eliminate_extra_unions_tees;
+use stageleft::QuotedContext;
 
 use crate::ir::HfPlusLeaf;
 use crate::location::{ClusterSpec, LocalDeploy, Location, ProcessSpec};
@@ -48,7 +44,7 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
         }
     }
 
-    pub fn build(&self) -> BuiltFlow<'a, D> {
+    pub fn extract(&self) -> BuiltFlow<'a, D> {
         BuiltFlow {
             ir: self.ir_leaves.borrow().clone(),
             _phantom: PhantomData,
@@ -105,12 +101,16 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
 
 #[derive(Clone)]
 pub struct BuiltFlow<'a, D: LocalDeploy<'a>> {
-    pub ir: Vec<HfPlusLeaf>,
+    pub(crate) ir: Vec<HfPlusLeaf>,
 
     _phantom: PhantomData<&'a mut &'a D>,
 }
 
 impl<'a, D: LocalDeploy<'a>> BuiltFlow<'a, D> {
+    pub fn ir(&self) -> &Vec<HfPlusLeaf> {
+        &self.ir
+    }
+
     pub fn optimize_with(
         self,
         f: impl FnOnce(Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf>,
@@ -122,11 +122,7 @@ impl<'a, D: LocalDeploy<'a>> BuiltFlow<'a, D> {
     }
 }
 
-fn build_inner<'a, D: LocalDeploy<'a>>(
-    me: BuiltFlow<'a, D>,
-    id: syn::Expr,
-    is_single: bool,
-) -> HfBuilt<'a> {
+fn build_inner<'a, D: LocalDeploy<'a>>(me: BuiltFlow<'a, D>) -> HfBuilt<'a, D::GraphId> {
     let mut builders = BTreeMap::new();
     let mut built_tees = HashMap::new();
     let mut next_stmt_id = 0;
@@ -134,109 +130,23 @@ fn build_inner<'a, D: LocalDeploy<'a>>(
         leaf.emit(&mut builders, &mut built_tees, &mut next_stmt_id);
     }
 
-    if is_single && builders.len() != 1 {
-        panic!("Expected exactly one node in the graph.");
-    }
-
-    let mut conditioned_tokens = None;
-    for (subgraph_id, builder) in builders {
-        let (mut flat_graph, _, _) = builder.build();
-        eliminate_extra_unions_tees(&mut flat_graph);
-        let mut partitioned_graph =
-            partition_graph(flat_graph).expect("Failed to partition (cycle detected).");
-
-        let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
-            .expect("hydroflow_plus should be present in `Cargo.toml`");
-        let root = match hydroflow_crate {
-            proc_macro_crate::FoundCrate::Itself => quote! { hydroflow_plus },
-            proc_macro_crate::FoundCrate::Name(name) => {
-                let ident = syn::Ident::new(&name, Span::call_site());
-                quote! { #ident }
-            }
-        };
-
-        let mut diagnostics = Vec::new();
-        // Propagate flow properties throughout the graph.
-        // TODO(mingwei): Should this be done at a flat graph stage instead?
-        let _ =
-            propagate_flow_props::propagate_flow_props(&mut partitioned_graph, &mut diagnostics);
-
-        let tokens = partitioned_graph.as_code(&root, true, quote::quote!(), &mut diagnostics);
-
-        if let Some(conditioned_tokens) = conditioned_tokens.as_mut() {
-            *conditioned_tokens = parse_quote! {
-                #conditioned_tokens else if __given_id == #subgraph_id {
-                    #tokens
-                }
-            };
-        } else {
-            conditioned_tokens = Some(parse_quote! {
-                if __given_id == #subgraph_id {
-                    #tokens
-                }
-            });
-        }
-    }
-
-    let conditioned_tokens: TokenStream = conditioned_tokens.unwrap();
-
     HfBuilt {
-        tokens: parse_quote!({
-            let __given_id = #id;
-            #conditioned_tokens else {
-                panic!("Invalid node id: {}", __given_id);
-            }
+        hydroflow_ir: builders.map_values(|v| {
+            let (mut flat_graph, _, _) = v.build();
+            eliminate_extra_unions_tees(&mut flat_graph);
+            flat_graph
         }),
         _phantom: PhantomData,
     }
 }
 
-impl<'a, D: LocalDeploy<'a, GraphId = usize>> BuiltFlow<'a, D> {
-    pub fn emit(self, id: impl Quoted<'a, usize>) -> HfBuilt<'a> {
-        build_inner(self, id.splice(), false)
+impl<'a, D: LocalDeploy<'a>> BuiltFlow<'a, D> {
+    pub fn no_optimize(self) -> HfBuilt<'a, D::GraphId> {
+        build_inner(self)
     }
 
-    pub fn hydroflow_ir(&self) -> BTreeMap<usize, HydroflowGraph> {
-        let mut builders = BTreeMap::new();
-        let mut built_tees = HashMap::new();
-        let mut next_stmt_id = 0;
-        for leaf in self.ir.iter() {
-            leaf.clone()
-                .emit(&mut builders, &mut built_tees, &mut next_stmt_id);
-        }
-
-        let mut result = BTreeMap::new();
-        for (subgraph_id, builder) in builders {
-            let (flat_graph, _, _) = builder.build();
-            result.insert(subgraph_id, flat_graph);
-        }
-
-        result
-    }
-}
-
-impl<'a, D: LocalDeploy<'a, GraphId = ()>> BuiltFlow<'a, D> {
-    pub fn emit_single(self) -> HfBuilt<'a> {
-        build_inner(self, parse_quote!(0), true)
-    }
-
-    pub fn single_hydroflow_ir(&self) -> HydroflowGraph {
-        let mut builders = BTreeMap::new();
-        let mut built_tees = HashMap::new();
-        let mut next_stmt_id = 0;
-        for leaf in self.ir.iter() {
-            leaf.clone()
-                .emit(&mut builders, &mut built_tees, &mut next_stmt_id);
-        }
-
-        if builders.len() != 1 {
-            panic!("Expected exactly one node in the graph.");
-        }
-
-        builders
-            .remove(&0)
-            .expect("expected a single graph")
-            .build()
-            .0
+    pub fn optimize_default(self) -> HfBuilt<'a, D::GraphId> {
+        self.optimize_with(super::persist_pullup::persist_pullup)
+            .no_optimize()
     }
 }

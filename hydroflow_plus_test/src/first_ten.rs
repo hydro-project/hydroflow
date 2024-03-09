@@ -15,7 +15,7 @@ pub fn first_ten_runtime<'a>(
     flow: &'a FlowBuilder<'a, SingleProcessGraph>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     first_ten(flow, &());
-    flow.build().emit_single()
+    flow.extract().optimize_default()
 }
 
 pub fn first_ten_distributed<'a, D: Deploy<'a>>(
@@ -42,7 +42,9 @@ pub fn first_ten_distributed_runtime<'a>(
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = first_ten_distributed(flow, &cli);
-    flow.build().emit(q!(cli.meta.subgraph_id))
+    flow.extract()
+        .optimize_default()
+        .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::runtime]
@@ -68,7 +70,7 @@ mod tests {
             }),
         );
 
-        insta::assert_debug_snapshot!(builder.build().ir);
+        insta::assert_debug_snapshot!(builder.extract().ir());
 
         deployment.deploy().await.unwrap();
 
