@@ -1547,6 +1547,7 @@ dependencies = [
  "bincode",
  "hydroflow",
  "hydroflow_lang",
+ "insta",
  "proc-macro-crate",
  "proc-macro2",
  "quote",

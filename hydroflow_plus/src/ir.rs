@@ -77,6 +77,32 @@ pub enum HfPlusLeaf {
 }
 
 impl HfPlusLeaf {
+    pub fn transform_children(
+        self,
+        transform: impl Fn(HfPlusNode, &mut SeenTees) -> HfPlusNode,
+        seen_tees: &mut SeenTees,
+    ) -> HfPlusLeaf {
+        match self {
+            HfPlusLeaf::ForEach { f, input } => HfPlusLeaf::ForEach {
+                f,
+                input: Box::new(transform(*input, seen_tees)),
+            },
+            HfPlusLeaf::DestSink { sink, input } => HfPlusLeaf::DestSink {
+                sink,
+                input: Box::new(transform(*input, seen_tees)),
+            },
+            HfPlusLeaf::CycleSink {
+                ident,
+                location_id,
+                input,
+            } => HfPlusLeaf::CycleSink {
+                ident,
+                location_id,
+                input: Box::new(transform(*input, seen_tees)),
+            },
+        }
+    }
+
     pub fn emit(
         self,
         graph_builders: &mut BTreeMap<usize, FlatGraphBuilder>,
@@ -184,7 +210,103 @@ pub enum HfPlusNode {
     },
 }
 
+pub type SeenTees = HashMap<*const RefCell<HfPlusNode>, Rc<RefCell<HfPlusNode>>>;
+
 impl HfPlusNode {
+    pub fn transform_children(
+        self,
+        transform: impl Fn(HfPlusNode, &mut SeenTees) -> HfPlusNode,
+        seen_tees: &mut SeenTees,
+    ) -> HfPlusNode {
+        match self {
+            HfPlusNode::Placeholder => HfPlusNode::Placeholder,
+            HfPlusNode::Persist(inner) => {
+                HfPlusNode::Persist(Box::new(transform(*inner, seen_tees)))
+            }
+            HfPlusNode::Delta(inner) => HfPlusNode::Delta(Box::new(transform(*inner, seen_tees))),
+            HfPlusNode::Source {
+                source,
+                produces_delta,
+                location_id,
+            } => HfPlusNode::Source {
+                source,
+                produces_delta,
+                location_id,
+            },
+            HfPlusNode::CycleSource { ident, location_id } => {
+                HfPlusNode::CycleSource { ident, location_id }
+            }
+            HfPlusNode::Tee { inner } => {
+                if let Some(transformed) =
+                    seen_tees.get(&(inner.as_ref() as *const RefCell<HfPlusNode>))
+                {
+                    HfPlusNode::Tee {
+                        inner: transformed.clone(),
+                    }
+                } else {
+                    let transformed_cell = Rc::new(RefCell::new(HfPlusNode::Placeholder));
+                    seen_tees.insert(
+                        inner.as_ref() as *const RefCell<HfPlusNode>,
+                        transformed_cell.clone(),
+                    );
+                    let orig = inner.borrow().clone();
+                    *transformed_cell.borrow_mut() = transform(orig, seen_tees);
+                    HfPlusNode::Tee {
+                        inner: transformed_cell,
+                    }
+                }
+            }
+            HfPlusNode::Union(left, right) => HfPlusNode::Union(
+                Box::new(transform(*left, seen_tees)),
+                Box::new(transform(*right, seen_tees)),
+            ),
+            HfPlusNode::CrossProduct(left, right) => HfPlusNode::CrossProduct(
+                Box::new(transform(*left, seen_tees)),
+                Box::new(transform(*right, seen_tees)),
+            ),
+            HfPlusNode::Join(left, right) => HfPlusNode::Join(
+                Box::new(transform(*left, seen_tees)),
+                Box::new(transform(*right, seen_tees)),
+            ),
+            HfPlusNode::Difference(left, right) => HfPlusNode::Difference(
+                Box::new(transform(*left, seen_tees)),
+                Box::new(transform(*right, seen_tees)),
+            ),
+            HfPlusNode::AntiJoin(left, right) => HfPlusNode::AntiJoin(
+                Box::new(transform(*left, seen_tees)),
+                Box::new(transform(*right, seen_tees)),
+            ),
+            HfPlusNode::Map { f, input } => HfPlusNode::Map {
+                f,
+                input: Box::new(transform(*input, seen_tees)),
+            },
+            HfPlusNode::PipelineOp {
+                kind,
+                gen_pipeline,
+                input,
+            } => HfPlusNode::PipelineOp {
+                kind,
+                gen_pipeline,
+                input: Box::new(transform(*input, seen_tees)),
+            },
+            HfPlusNode::Network {
+                to_location,
+                serialize_pipeline,
+                sink_expr,
+                source_expr,
+                deserialize_pipeline,
+                input,
+            } => HfPlusNode::Network {
+                to_location,
+                serialize_pipeline,
+                sink_expr,
+                source_expr,
+                deserialize_pipeline,
+                input: Box::new(transform(*input, seen_tees)),
+            },
+        }
+    }
+
     pub fn emit(
         self,
         graph_builders: &mut BTreeMap<usize, FlatGraphBuilder>,
