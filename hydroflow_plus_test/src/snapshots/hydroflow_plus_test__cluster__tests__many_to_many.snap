@@ -1,6 +1,6 @@
 ---
 source: hydroflow_plus_test/src/cluster.rs
-expression: builder.ir()
+expression: builder.extract().ir()
 ---
 [
     ForEach {
@@ -31,14 +31,12 @@ expression: builder.ir()
             ),
             input: CrossProduct(
                 Persist(
-                    PipelineOp {
-                        kind: "cloned",
-                        gen_pipeline: <function>,
+                    Map {
+                        f: { use hydroflow_plus :: __staged :: stream :: * ; | d | d . clone () },
                         input: Source {
                             source: Iter(
                                 { use hydroflow_plus_cli_integration :: __staged :: deploy :: * ; panic ! () },
                             ),
-                            produces_delta: false,
                             location_id: 0,
                         },
                     },
@@ -47,7 +45,6 @@ expression: builder.ir()
                     source: Iter(
                         { use crate :: __staged :: cluster :: * ; 0 .. 2 },
                     ),
-                    produces_delta: false,
                     location_id: 0,
                 },
             ),

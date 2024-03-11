@@ -39,7 +39,7 @@ impl std::fmt::Debug for DebugExpr {
 }
 
 #[derive(Clone)]
-pub struct DebugPipelineFn(pub Rc<dyn Fn(bool) -> Option<(Pipeline, bool)> + 'static>);
+pub struct DebugPipelineFn(pub Rc<dyn Fn() -> Pipeline + 'static>);
 
 impl std::fmt::Debug for DebugPipelineFn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -106,15 +106,13 @@ impl HfPlusLeaf {
     pub fn emit(
         self,
         graph_builders: &mut BTreeMap<usize, FlatGraphBuilder>,
-        built_tees: &mut HashMap<*const RefCell<HfPlusNode>, (syn::Ident, usize, bool)>,
+        built_tees: &mut HashMap<*const RefCell<HfPlusNode>, (syn::Ident, usize)>,
         next_stmt_id: &mut usize,
     ) {
         match self {
             HfPlusLeaf::ForEach { f, input } => {
-                let (input_ident, input_location_id, input_delta) =
+                let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
-
-                assert!(!input_delta, "for_each on a delta stream");
 
                 graph_builders
                     .entry(input_location_id)
@@ -125,10 +123,8 @@ impl HfPlusLeaf {
             }
 
             HfPlusLeaf::DestSink { sink, input } => {
-                let (input_ident, input_location_id, input_delta) =
+                let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
-
-                assert!(!input_delta, "sending delta in dest_sink");
 
                 graph_builders
                     .entry(input_location_id)
@@ -143,10 +139,9 @@ impl HfPlusLeaf {
                 location_id,
                 input,
             } => {
-                let (input_ident, input_location_id, input_delta) =
+                let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
-                assert!(!input_delta, "sending deltas into a cycle");
                 assert_eq!(
                     input_location_id, location_id,
                     "cycle_sink location mismatch"
@@ -168,20 +163,24 @@ impl HfPlusLeaf {
 #[derive(Clone, Debug)]
 pub enum HfPlusNode {
     Placeholder,
-    Persist(Box<HfPlusNode>),
-    Delta(Box<HfPlusNode>),
+
     Source {
         source: HfPlusSource,
-        produces_delta: bool,
         location_id: usize,
     },
+
     CycleSource {
         ident: syn::Ident,
         location_id: usize,
     },
+
     Tee {
         inner: Rc<RefCell<HfPlusNode>>,
     },
+
+    Persist(Box<HfPlusNode>),
+    Delta(Box<HfPlusNode>),
+
     Union(Box<HfPlusNode>, Box<HfPlusNode>),
     CrossProduct(Box<HfPlusNode>, Box<HfPlusNode>),
     Join(Box<HfPlusNode>, Box<HfPlusNode>),
@@ -192,11 +191,43 @@ pub enum HfPlusNode {
         f: DebugExpr,
         input: Box<HfPlusNode>,
     },
+    FlatMap {
+        f: DebugExpr,
+        input: Box<HfPlusNode>,
+    },
+    Filter {
+        f: DebugExpr,
+        input: Box<HfPlusNode>,
+    },
+    FilterMap {
+        f: DebugExpr,
+        input: Box<HfPlusNode>,
+    },
+    Enumerate(Box<HfPlusNode>),
+    Inspect {
+        f: DebugExpr,
+        input: Box<HfPlusNode>,
+    },
 
-    /// A temporary IR node for a custom pipeline, which eventually will be replaced by a proper node.
-    PipelineOp {
-        kind: &'static str,
-        gen_pipeline: DebugPipelineFn,
+    Unique(Box<HfPlusNode>),
+
+    Fold {
+        init: DebugExpr,
+        acc: DebugExpr,
+        input: Box<HfPlusNode>,
+    },
+    FoldKeyed {
+        init: DebugExpr,
+        acc: DebugExpr,
+        input: Box<HfPlusNode>,
+    },
+
+    Reduce {
+        f: DebugExpr,
+        input: Box<HfPlusNode>,
+    },
+    ReduceKeyed {
+        f: DebugExpr,
         input: Box<HfPlusNode>,
     },
 
@@ -220,22 +251,19 @@ impl HfPlusNode {
     ) -> HfPlusNode {
         match self {
             HfPlusNode::Placeholder => HfPlusNode::Placeholder,
-            HfPlusNode::Persist(inner) => {
-                HfPlusNode::Persist(Box::new(transform(*inner, seen_tees)))
-            }
-            HfPlusNode::Delta(inner) => HfPlusNode::Delta(Box::new(transform(*inner, seen_tees))),
+
             HfPlusNode::Source {
                 source,
-                produces_delta,
                 location_id,
             } => HfPlusNode::Source {
                 source,
-                produces_delta,
                 location_id,
             },
+
             HfPlusNode::CycleSource { ident, location_id } => {
                 HfPlusNode::CycleSource { ident, location_id }
             }
+
             HfPlusNode::Tee { inner } => {
                 if let Some(transformed) =
                     seen_tees.get(&(inner.as_ref() as *const RefCell<HfPlusNode>))
@@ -256,6 +284,12 @@ impl HfPlusNode {
                     }
                 }
             }
+
+            HfPlusNode::Persist(inner) => {
+                HfPlusNode::Persist(Box::new(transform(*inner, seen_tees)))
+            }
+            HfPlusNode::Delta(inner) => HfPlusNode::Delta(Box::new(transform(*inner, seen_tees))),
+
             HfPlusNode::Union(left, right) => HfPlusNode::Union(
                 Box::new(transform(*left, seen_tees)),
                 Box::new(transform(*right, seen_tees)),
@@ -276,19 +310,53 @@ impl HfPlusNode {
                 Box::new(transform(*left, seen_tees)),
                 Box::new(transform(*right, seen_tees)),
             ),
+
             HfPlusNode::Map { f, input } => HfPlusNode::Map {
                 f,
                 input: Box::new(transform(*input, seen_tees)),
             },
-            HfPlusNode::PipelineOp {
-                kind,
-                gen_pipeline,
-                input,
-            } => HfPlusNode::PipelineOp {
-                kind,
-                gen_pipeline,
+            HfPlusNode::FlatMap { f, input } => HfPlusNode::FlatMap {
+                f,
                 input: Box::new(transform(*input, seen_tees)),
             },
+            HfPlusNode::Filter { f, input } => HfPlusNode::Filter {
+                f,
+                input: Box::new(transform(*input, seen_tees)),
+            },
+            HfPlusNode::FilterMap { f, input } => HfPlusNode::FilterMap {
+                f,
+                input: Box::new(transform(*input, seen_tees)),
+            },
+            HfPlusNode::Enumerate(input) => {
+                HfPlusNode::Enumerate(Box::new(transform(*input, seen_tees)))
+            }
+            HfPlusNode::Inspect { f, input } => HfPlusNode::Inspect {
+                f,
+                input: Box::new(transform(*input, seen_tees)),
+            },
+
+            HfPlusNode::Unique(input) => HfPlusNode::Unique(Box::new(transform(*input, seen_tees))),
+
+            HfPlusNode::Fold { init, acc, input } => HfPlusNode::Fold {
+                init,
+                acc,
+                input: Box::new(transform(*input, seen_tees)),
+            },
+            HfPlusNode::FoldKeyed { init, acc, input } => HfPlusNode::FoldKeyed {
+                init,
+                acc,
+                input: Box::new(transform(*input, seen_tees)),
+            },
+
+            HfPlusNode::Reduce { f, input } => HfPlusNode::Reduce {
+                f,
+                input: Box::new(transform(*input, seen_tees)),
+            },
+            HfPlusNode::ReduceKeyed { f, input } => HfPlusNode::ReduceKeyed {
+                f,
+                input: Box::new(transform(*input, seen_tees)),
+            },
+
             HfPlusNode::Network {
                 to_location,
                 serialize_pipeline,
@@ -310,46 +378,50 @@ impl HfPlusNode {
     pub fn emit(
         self,
         graph_builders: &mut BTreeMap<usize, FlatGraphBuilder>,
-        built_tees: &mut HashMap<*const RefCell<HfPlusNode>, (syn::Ident, usize, bool)>,
+        built_tees: &mut HashMap<*const RefCell<HfPlusNode>, (syn::Ident, usize)>,
         next_stmt_id: &mut usize,
-    ) -> (syn::Ident, usize, bool) {
+    ) -> (syn::Ident, usize) {
         match self {
             HfPlusNode::Placeholder => {
                 panic!()
             }
 
             HfPlusNode::Persist(inner) => {
-                let (ident, location, inner_delta) =
-                    inner.emit(graph_builders, built_tees, next_stmt_id);
-                assert!(!inner_delta, "double persist");
-                (ident, location, true)
+                let (inner_ident, location) = inner.emit(graph_builders, built_tees, next_stmt_id);
+
+                let persist_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let persist_ident =
+                    syn::Ident::new(&format!("stream_{}", persist_id), Span::call_site());
+
+                let builder = graph_builders.entry(location).or_default();
+                builder.add_statement(parse_quote! {
+                    #persist_ident = #inner_ident -> persist();
+                });
+
+                (persist_ident, location)
             }
 
             HfPlusNode::Delta(inner) => {
-                let (inner_ident, location, inner_delta) =
-                    inner.emit(graph_builders, built_tees, next_stmt_id);
+                let (inner_ident, location) = inner.emit(graph_builders, built_tees, next_stmt_id);
 
-                if inner_delta {
-                    (inner_ident, location, false)
-                } else {
-                    let delta_id = *next_stmt_id;
-                    *next_stmt_id += 1;
+                let delta_id = *next_stmt_id;
+                *next_stmt_id += 1;
 
-                    let delta_ident =
-                        syn::Ident::new(&format!("stream_{}", delta_id), Span::call_site());
+                let delta_ident =
+                    syn::Ident::new(&format!("stream_{}", delta_id), Span::call_site());
 
-                    let builder = graph_builders.entry(location).or_default();
-                    builder.add_statement(parse_quote! {
-                        #delta_ident = #inner_ident -> multiset_delta();
-                    });
+                let builder = graph_builders.entry(location).or_default();
+                builder.add_statement(parse_quote! {
+                    #delta_ident = #inner_ident -> multiset_delta();
+                });
 
-                    (delta_ident, location, false)
-                }
+                (delta_ident, location)
             }
 
             HfPlusNode::Source {
                 source,
-                produces_delta,
                 location_id,
             } => {
                 let source_id = *next_stmt_id;
@@ -389,16 +461,16 @@ impl HfPlusNode {
                     .or_default()
                     .add_statement(source_stmt);
 
-                (source_ident, location_id, produces_delta)
+                (source_ident, location_id)
             }
 
-            HfPlusNode::CycleSource { ident, location_id } => (ident.clone(), location_id, false),
+            HfPlusNode::CycleSource { ident, location_id } => (ident.clone(), location_id),
 
             HfPlusNode::Tee { inner } => {
                 if let Some(ret) = built_tees.get(&(inner.as_ref() as *const RefCell<HfPlusNode>)) {
                     ret.clone()
                 } else {
-                    let (inner_ident, inner_location_id, inner_produces_delta) = inner
+                    let (inner_ident, inner_location_id) = inner
                         .replace(HfPlusNode::Placeholder)
                         .emit(graph_builders, built_tees, next_stmt_id);
 
@@ -415,26 +487,23 @@ impl HfPlusNode {
 
                     built_tees.insert(
                         inner.as_ref() as *const RefCell<HfPlusNode>,
-                        (tee_ident.clone(), inner_location_id, inner_produces_delta),
+                        (tee_ident.clone(), inner_location_id),
                     );
 
-                    (tee_ident, inner_location_id, inner_produces_delta)
+                    (tee_ident, inner_location_id)
                 }
             }
 
             HfPlusNode::Union(left, right) => {
-                let (left_ident, left_location_id, left_delta) =
+                let (left_ident, left_location_id) =
                     left.emit(graph_builders, built_tees, next_stmt_id);
-                let (right_ident, right_location_id, right_delta) =
+                let (right_ident, right_location_id) =
                     right.emit(graph_builders, built_tees, next_stmt_id);
 
                 assert_eq!(
                     left_location_id, right_location_id,
                     "union inputs must be in the same location"
                 );
-
-                assert!(!left_delta, "union on a delta stream");
-                assert!(!right_delta, "union on a delta stream");
 
                 let union_id = *next_stmt_id;
                 *next_stmt_id += 1;
@@ -455,7 +524,7 @@ impl HfPlusNode {
                     #right_ident -> [1]#union_ident;
                 });
 
-                (union_ident, left_location_id, false)
+                (union_ident, left_location_id)
             }
 
             HfPlusNode::CrossProduct(..) | HfPlusNode::Join(..) => {
@@ -465,69 +534,73 @@ impl HfPlusNode {
                     parse_quote!(join)
                 };
 
-                if let HfPlusNode::CrossProduct(left, right) | HfPlusNode::Join(left, right) = self
-                {
-                    let (left_ident, left_location_id, left_delta) =
-                        left.emit(graph_builders, built_tees, next_stmt_id);
-                    let (right_ident, right_location_id, right_delta) =
-                        right.emit(graph_builders, built_tees, next_stmt_id);
-
-                    assert_eq!(
-                        left_location_id, right_location_id,
-                        "join / cross product inputs must be in the same location"
-                    );
-
-                    let stream_id = *next_stmt_id;
-                    *next_stmt_id += 1;
-
-                    let stream_ident =
-                        syn::Ident::new(&format!("stream_{}", stream_id), Span::call_site());
-
-                    let builder = graph_builders.entry(left_location_id).or_default();
-
-                    let output_delta = match (left_delta, right_delta) {
-                        (true, true) => {
-                            builder.add_statement(parse_quote! {
-                                #stream_ident = #operator::<'static, 'static>();
-                            });
-
-                            false // TODO(shadaj): join/cross_join already replays?
-                        }
-                        (true, false) => {
-                            builder.add_statement(parse_quote! {
-                                #stream_ident = #operator::<'static, 'tick>();
-                            });
-
-                            false
-                        }
-                        (false, true) => {
-                            builder.add_statement(parse_quote! {
-                                #stream_ident = #operator::<'tick, 'static>();
-                            });
-
-                            false
-                        }
-                        (false, false) => {
-                            builder.add_statement(parse_quote! {
-                                #stream_ident = #operator::<'tick, 'tick>();
-                            });
-
-                            false
-                        }
-                    };
-
-                    builder.add_statement(parse_quote! {
-                        #left_ident -> [0]#stream_ident;
-                    });
-
-                    builder.add_statement(parse_quote! {
-                        #right_ident -> [1]#stream_ident;
-                    });
-
-                    (stream_ident, left_location_id, output_delta)
-                } else {
+                let (HfPlusNode::CrossProduct(left, right) | HfPlusNode::Join(left, right)) = self
+                else {
                     unreachable!()
-                }
+                };
+
+                let (left_inner, left_was_persist) = if let HfPlusNode::Persist(left) = *left {
+                    (left, true)
+                } else {
+                    (left, false)
+                };
+
+                let (right_inner, right_was_persist) = if let HfPlusNode::Persist(right) = *right {
+                    (right, true)
+                } else {
+                    (right, false)
+                };
+
+                let (left_ident, left_location_id) =
+                    left_inner.emit(graph_builders, built_tees, next_stmt_id);
+                let (right_ident, right_location_id) =
+                    right_inner.emit(graph_builders, built_tees, next_stmt_id);
+
+                assert_eq!(
+                    left_location_id, right_location_id,
+                    "join / cross product inputs must be in the same location"
+                );
+
+                let stream_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let stream_ident =
+                    syn::Ident::new(&format!("stream_{}", stream_id), Span::call_site());
+
+                let builder = graph_builders.entry(left_location_id).or_default();
+
+                match (left_was_persist, right_was_persist) {
+                    (true, true) => {
+                        builder.add_statement(parse_quote! {
+                            #stream_ident = #operator::<'static, 'static>();
+                        });
+                    }
+                    (true, false) => {
+                        builder.add_statement(parse_quote! {
+                            #stream_ident = #operator::<'static, 'tick>();
+                        });
+                    }
+                    (false, true) => {
+                        builder.add_statement(parse_quote! {
+                            #stream_ident = #operator::<'tick, 'static>();
+                        });
+                    }
+                    (false, false) => {
+                        builder.add_statement(parse_quote! {
+                            #stream_ident = #operator::<'tick, 'tick>();
+                        });
+                    }
+                };
+
+                builder.add_statement(parse_quote! {
+                    #left_ident -> [0]#stream_ident;
+                });
+
+                builder.add_statement(parse_quote! {
+                    #right_ident -> [1]#stream_ident;
+                });
+
+                (stream_ident, left_location_id)
             }
 
             HfPlusNode::Difference(..) | HfPlusNode::AntiJoin(..) => {
@@ -537,83 +610,59 @@ impl HfPlusNode {
                     parse_quote!(anti_join)
                 };
 
-                if let HfPlusNode::Difference(left, right) | HfPlusNode::AntiJoin(left, right) =
+                let (HfPlusNode::Difference(left, right) | HfPlusNode::AntiJoin(left, right)) =
                     self
-                {
-                    let (left_ident, left_location_id, left_delta) =
-                        left.emit(graph_builders, built_tees, next_stmt_id);
-                    let (right_ident, right_location_id, right_delta) =
-                        right.emit(graph_builders, built_tees, next_stmt_id);
-
-                    assert_eq!(
-                        left_location_id, right_location_id,
-                        "difference / anti join inputs must be in the same location"
-                    );
-
-                    let stream_id = *next_stmt_id;
-                    *next_stmt_id += 1;
-
-                    let stream_ident =
-                        syn::Ident::new(&format!("stream_{}", stream_id), Span::call_site());
-
-                    let builder = graph_builders.entry(left_location_id).or_default();
-                    let output_delta = match (left_delta, right_delta) {
-                        (true, true) => {
-                            // difference/anti_join<'static, _> does not replay
-                            // but we need to re-filter every tick
-                            builder.add_statement(parse_quote! {
-                                #stream_ident = #operator::<'tick, 'static>();
-                            });
-
-                            false
-                        }
-                        (true, false) => {
-                            // difference/anti_join<'static, _> does not replay
-                            // but we need to re-filter every tick
-                            builder.add_statement(parse_quote! {
-                                #stream_ident = #operator::<'tick, 'tick>();
-                            });
-
-                            false
-                        }
-                        (false, true) => {
-                            builder.add_statement(parse_quote! {
-                                #stream_ident = #operator::<'tick, 'static>();
-                            });
-
-                            false
-                        }
-                        (false, false) => {
-                            builder.add_statement(parse_quote! {
-                                #stream_ident = #operator::<'tick, 'tick>();
-                            });
-
-                            false
-                        }
-                    };
-
-                    if left_delta {
-                        builder.add_statement(parse_quote! {
-                            #left_ident -> persist() -> [pos]#stream_ident;
-                        });
-                    } else {
-                        builder.add_statement(parse_quote! {
-                            #left_ident -> [pos]#stream_ident;
-                        });
-                    }
-
-                    builder.add_statement(parse_quote! {
-                        #right_ident -> [neg]#stream_ident;
-                    });
-
-                    (stream_ident, left_location_id, output_delta)
-                } else {
+                else {
                     unreachable!()
+                };
+
+                let (right, right_was_persist) = if let HfPlusNode::Persist(right) = *right {
+                    (right, true)
+                } else {
+                    (right, false)
+                };
+
+                let (left_ident, left_location_id) =
+                    left.emit(graph_builders, built_tees, next_stmt_id);
+                let (right_ident, right_location_id) =
+                    right.emit(graph_builders, built_tees, next_stmt_id);
+
+                assert_eq!(
+                    left_location_id, right_location_id,
+                    "difference / anti join inputs must be in the same location"
+                );
+
+                let stream_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let stream_ident =
+                    syn::Ident::new(&format!("stream_{}", stream_id), Span::call_site());
+
+                let builder = graph_builders.entry(left_location_id).or_default();
+
+                if right_was_persist {
+                    builder.add_statement(parse_quote! {
+                        #stream_ident = #operator::<'tick, 'static>();
+                    });
+                } else {
+                    builder.add_statement(parse_quote! {
+                        #stream_ident = #operator::<'tick, 'tick>();
+                    });
                 }
+
+                builder.add_statement(parse_quote! {
+                    #left_ident -> [pos]#stream_ident;
+                });
+
+                builder.add_statement(parse_quote! {
+                    #right_ident -> [neg]#stream_ident;
+                });
+
+                (stream_ident, left_location_id)
             }
 
             HfPlusNode::Map { f, input } => {
-                let (input_ident, input_location_id, input_delta) =
+                let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
                 let map_id = *next_stmt_id;
@@ -623,14 +672,201 @@ impl HfPlusNode {
 
                 let builder = graph_builders.entry(input_location_id).or_default();
                 builder.add_statement(parse_quote! {
-                    #map_ident = map(#f);
+                    #map_ident = #input_ident -> map(#f);
                 });
 
+                (map_ident, input_location_id)
+            }
+
+            HfPlusNode::FlatMap { f, input } => {
+                let (input_ident, input_location_id) =
+                    input.emit(graph_builders, built_tees, next_stmt_id);
+
+                let flat_map_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let flat_map_ident =
+                    syn::Ident::new(&format!("stream_{}", flat_map_id), Span::call_site());
+
+                let builder = graph_builders.entry(input_location_id).or_default();
                 builder.add_statement(parse_quote! {
-                    #input_ident -> #map_ident;
+                    #flat_map_ident = #input_ident -> flat_map(#f);
                 });
 
-                (map_ident, input_location_id, input_delta)
+                (flat_map_ident, input_location_id)
+            }
+
+            HfPlusNode::Filter { f, input } => {
+                let (input_ident, input_location_id) =
+                    input.emit(graph_builders, built_tees, next_stmt_id);
+
+                let filter_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let filter_ident =
+                    syn::Ident::new(&format!("stream_{}", filter_id), Span::call_site());
+
+                let builder = graph_builders.entry(input_location_id).or_default();
+                builder.add_statement(parse_quote! {
+                    #filter_ident = #input_ident -> filter(#f);
+                });
+
+                (filter_ident, input_location_id)
+            }
+
+            HfPlusNode::FilterMap { f, input } => {
+                let (input_ident, input_location_id) =
+                    input.emit(graph_builders, built_tees, next_stmt_id);
+
+                let filter_map_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let filter_map_ident =
+                    syn::Ident::new(&format!("stream_{}", filter_map_id), Span::call_site());
+
+                let builder = graph_builders.entry(input_location_id).or_default();
+                builder.add_statement(parse_quote! {
+                    #filter_map_ident = #input_ident -> filter_map(#f);
+                });
+
+                (filter_map_ident, input_location_id)
+            }
+
+            HfPlusNode::Enumerate(input) => {
+                let (input_ident, input_location_id) =
+                    input.emit(graph_builders, built_tees, next_stmt_id);
+
+                let enumerate_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let enumerate_ident =
+                    syn::Ident::new(&format!("stream_{}", enumerate_id), Span::call_site());
+
+                let builder = graph_builders.entry(input_location_id).or_default();
+                builder.add_statement(parse_quote! {
+                    #enumerate_ident = #input_ident -> enumerate();
+                });
+
+                (enumerate_ident, input_location_id)
+            }
+
+            HfPlusNode::Inspect { f, input } => {
+                let (input_ident, input_location_id) =
+                    input.emit(graph_builders, built_tees, next_stmt_id);
+
+                let inspect_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let inspect_ident =
+                    syn::Ident::new(&format!("stream_{}", inspect_id), Span::call_site());
+
+                let builder = graph_builders.entry(input_location_id).or_default();
+                builder.add_statement(parse_quote! {
+                    #inspect_ident = #input_ident -> inspect(#f);
+                });
+
+                (inspect_ident, input_location_id)
+            }
+
+            HfPlusNode::Unique(input) => {
+                let (input_ident, input_location_id) =
+                    input.emit(graph_builders, built_tees, next_stmt_id);
+
+                let unique_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let unique_ident =
+                    syn::Ident::new(&format!("stream_{}", unique_id), Span::call_site());
+
+                let builder = graph_builders.entry(input_location_id).or_default();
+                builder.add_statement(parse_quote! {
+                    #unique_ident = #input_ident -> unique::<'tick>();
+                });
+
+                (unique_ident, input_location_id)
+            }
+
+            HfPlusNode::Fold { .. } | HfPlusNode::FoldKeyed { .. } => {
+                let operator: syn::Ident = if matches!(self, HfPlusNode::Fold { .. }) {
+                    parse_quote!(fold)
+                } else {
+                    parse_quote!(fold_keyed)
+                };
+
+                let (HfPlusNode::Fold { init, acc, input }
+                | HfPlusNode::FoldKeyed { init, acc, input }) = self
+                else {
+                    unreachable!()
+                };
+
+                let (input, input_was_persist) = if let HfPlusNode::Persist(input) = *input {
+                    (input, true)
+                } else {
+                    (input, false)
+                };
+
+                let (input_ident, input_location_id) =
+                    input.emit(graph_builders, built_tees, next_stmt_id);
+
+                let reduce_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let fold_ident =
+                    syn::Ident::new(&format!("stream_{}", reduce_id), Span::call_site());
+
+                let builder = graph_builders.entry(input_location_id).or_default();
+                if input_was_persist {
+                    builder.add_statement(parse_quote! {
+                        #fold_ident = #input_ident -> #operator::<'static>(#init, #acc);
+                    });
+                } else {
+                    builder.add_statement(parse_quote! {
+                        #fold_ident = #input_ident -> #operator::<'tick>(#init, #acc);
+                    });
+                }
+
+                (fold_ident, input_location_id)
+            }
+
+            HfPlusNode::Reduce { .. } | HfPlusNode::ReduceKeyed { .. } => {
+                let operator: syn::Ident = if matches!(self, HfPlusNode::Reduce { .. }) {
+                    parse_quote!(reduce)
+                } else {
+                    parse_quote!(reduce_keyed)
+                };
+
+                let (HfPlusNode::Reduce { f, input } | HfPlusNode::ReduceKeyed { f, input }) = self
+                else {
+                    unreachable!()
+                };
+
+                let (input, input_was_persist) = if let HfPlusNode::Persist(input) = *input {
+                    (input, true)
+                } else {
+                    (input, false)
+                };
+
+                let (input_ident, input_location_id) =
+                    input.emit(graph_builders, built_tees, next_stmt_id);
+
+                let reduce_id = *next_stmt_id;
+                *next_stmt_id += 1;
+
+                let reduce_ident =
+                    syn::Ident::new(&format!("stream_{}", reduce_id), Span::call_site());
+
+                let builder = graph_builders.entry(input_location_id).or_default();
+                if input_was_persist {
+                    builder.add_statement(parse_quote! {
+                        #reduce_ident = #input_ident -> #operator::<'static>(#f);
+                    });
+                } else {
+                    builder.add_statement(parse_quote! {
+                        #reduce_ident = #input_ident -> #operator::<'tick>(#f);
+                    });
+                }
+
+                (reduce_ident, input_location_id)
             }
 
             HfPlusNode::Network {
@@ -641,7 +877,7 @@ impl HfPlusNode {
                 deserialize_pipeline,
                 input,
             } => {
-                let (input_ident, input_location_id, input_delta) =
+                let (input_ident, input_location_id) =
                     input.emit(graph_builders, built_tees, next_stmt_id);
 
                 let sender_builder = graph_builders.entry(input_location_id).or_default();
@@ -673,46 +909,7 @@ impl HfPlusNode {
                     });
                 }
 
-                (receiver_stream_ident, to_location, input_delta)
-            }
-
-            HfPlusNode::PipelineOp {
-                kind: _,
-                gen_pipeline,
-                input,
-            } => {
-                let (input_ident, input_location_id, input_delta) =
-                    input.emit(graph_builders, built_tees, next_stmt_id);
-
-                let pipeline_id = *next_stmt_id;
-                *next_stmt_id += 1;
-
-                let pipeline_ident =
-                    syn::Ident::new(&format!("stream_{}", pipeline_id), Span::call_site());
-
-                if let Some((pipeline, is_delta)) = gen_pipeline.0(input_delta) {
-                    graph_builders
-                        .entry(input_location_id)
-                        .or_default()
-                        .add_statement(parse_quote! {
-                            #pipeline_ident = #input_ident -> #pipeline;
-                        });
-
-                    (pipeline_ident, input_location_id, is_delta)
-                } else if input_delta {
-                    let (pipeline, is_delta) = gen_pipeline.0(false)
-                        .expect("pipeline op refused to generate on a non-delta stream");
-                    graph_builders
-                        .entry(input_location_id)
-                        .or_default()
-                        .add_statement(parse_quote! {
-                            #pipeline_ident = #input_ident -> persist() -> #pipeline;
-                        });
-
-                    (pipeline_ident, input_location_id, is_delta)
-                } else {
-                    panic!("pipeline op refused to generate on a non-delta stream");
-                }
+                (receiver_stream_ident, to_location)
             }
         }
     }

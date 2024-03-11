@@ -15,7 +15,7 @@ use stageleft::{q, IntoQuotedMut, Quoted};
 use syn::parse_quote;
 use syn::visit_mut::VisitMut;
 
-use crate::ir::{DebugPipelineFn, HfPlusLeaf, HfPlusNode};
+use crate::ir::{HfPlusLeaf, HfPlusNode};
 use crate::location::{Cluster, HfSend, Location};
 
 /// Marks the stream as being asynchronous, which means the presence
@@ -43,10 +43,10 @@ pub struct Windowed {}
 pub struct Stream<'a, T, W, N: Location<'a>> {
     node: N,
 
-    pub(crate) ir_leaves: &'a RefCell<Vec<HfPlusLeaf>>,
+    ir_leaves: &'a RefCell<Vec<HfPlusLeaf>>,
     pub(crate) ir_node: RefCell<HfPlusNode>,
 
-    pub(crate) _phantom: PhantomData<(&'a mut &'a (), T, W)>,
+    _phantom: PhantomData<(&'a mut &'a (), T, W)>,
 }
 
 impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
@@ -82,22 +82,6 @@ impl<'a, T: Clone, W, N: Location<'a>> Clone for Stream<'a, T, W, N> {
 }
 
 impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
-    fn pipeline_op<U, W2>(
-        self,
-        kind: &'static str,
-        gen_pipeline: impl Fn(bool) -> Option<(Pipeline, bool)> + 'static,
-    ) -> Stream<'a, U, W2, N> {
-        Stream::new(
-            self.node,
-            self.ir_leaves,
-            HfPlusNode::PipelineOp {
-                kind,
-                gen_pipeline: DebugPipelineFn(Rc::new(gen_pipeline)),
-                input: Box::new(self.ir_node.into_inner()),
-            },
-        )
-    }
-
     pub fn map<U, F: Fn(T) -> U + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Stream<'a, U, W, N> {
         Stream::new(
             self.node,
@@ -113,47 +97,61 @@ impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
         self,
         f: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, U, W, N> {
-        let f = f.splice();
-        self.pipeline_op("flat_map", move |d| Some((parse_quote!(flat_map(#f)), d)))
+        Stream::new(
+            self.node,
+            self.ir_leaves,
+            HfPlusNode::FlatMap {
+                f: f.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
     }
 
     pub fn enumerate(self) -> Stream<'a, (usize, T), W, N> {
-        self.pipeline_op("enumerate", |d| {
-            if d {
-                None
-            } else {
-                Some((parse_quote!(enumerate()), false))
-            }
-        })
+        Stream::new(
+            self.node,
+            self.ir_leaves,
+            HfPlusNode::Enumerate(Box::new(self.ir_node.into_inner())),
+        )
     }
 
     pub fn inspect<F: Fn(&T) + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Stream<'a, T, W, N> {
-        let f = f.splice();
-        self.pipeline_op("inspect", move |d| {
-            if d {
-                None
-            } else {
-                Some((parse_quote!(inspect(#f)), false))
-            }
-        })
+        Stream::new(
+            self.node,
+            self.ir_leaves,
+            HfPlusNode::Inspect {
+                f: f.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
     }
 
     pub fn filter<F: Fn(&T) -> bool + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, T, W, N> {
-        let f = f.splice();
-        self.pipeline_op("filter", move |d| Some((parse_quote!(filter(#f)), d)))
+        Stream::new(
+            self.node,
+            self.ir_leaves,
+            HfPlusNode::Filter {
+                f: f.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
     }
 
     pub fn filter_map<U, F: Fn(T) -> Option<U> + 'a>(
         self,
         f: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, U, W, N> {
-        let f = f.splice();
-        self.pipeline_op("filter_map", move |d| {
-            Some((parse_quote!(filter_map(#f)), d))
-        })
+        Stream::new(
+            self.node,
+            self.ir_leaves,
+            HfPlusNode::FilterMap {
+                f: f.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
     }
 
     // TODO(shadaj): should allow for differing windows, using strongest one
@@ -226,31 +224,29 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
         init: impl IntoQuotedMut<'a, I>,
         comb: impl IntoQuotedMut<'a, C>,
     ) -> Stream<'a, A, Windowed, N> {
-        let init = init.splice();
-        let comb = comb.splice();
-
-        self.pipeline_op("fold", move |d| {
-            if d {
-                Some((parse_quote!(fold::<'static>(#init, #comb)), false))
-            } else {
-                Some((parse_quote!(fold::<'tick>(#init, #comb)), false))
-            }
-        })
+        Stream::new(
+            self.node,
+            self.ir_leaves,
+            HfPlusNode::Fold {
+                init: init.splice().into(),
+                acc: comb.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
     }
 
     pub fn reduce<C: Fn(&mut T, T) + 'a>(
         self,
         comb: impl IntoQuotedMut<'a, C>,
     ) -> Stream<'a, T, Windowed, N> {
-        let comb = comb.splice();
-
-        self.pipeline_op("reduce", move |d| {
-            if d {
-                Some((parse_quote!(reduce::<'static>(#comb)), false))
-            } else {
-                Some((parse_quote!(reduce::<'tick>(#comb)), false))
-            }
-        })
+        Stream::new(
+            self.node,
+            self.ir_leaves,
+            HfPlusNode::Reduce {
+                f: comb.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
     }
 
     pub fn count(self) -> Stream<'a, usize, Windowed, N> {
@@ -269,13 +265,11 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
     where
         T: Eq + Hash,
     {
-        self.pipeline_op("unique", |d| {
-            if d {
-                None
-            } else {
-                Some((parse_quote!(unique::<'tick>()), false))
-            }
-        })
+        Stream::new(
+            self.node,
+            self.ir_leaves,
+            HfPlusNode::Unique(Box::new(self.ir_node.into_inner())),
+        )
     }
 
     pub fn filter_not_in(self, other: Stream<'a, T, Windowed, N>) -> Stream<'a, T, Windowed, N>
@@ -307,7 +301,7 @@ impl<'a, T, N: Location<'a>> Stream<'a, T, Windowed, N> {
 
 impl<'a, T: Clone, W, N: Location<'a>> Stream<'a, &T, W, N> {
     pub fn cloned(self) -> Stream<'a, T, W, N> {
-        self.pipeline_op("cloned", |d| Some((parse_quote!(map(|d| d.clone())), d)))
+        self.map(q!(|d| d.clone()))
     }
 }
 
@@ -356,31 +350,29 @@ impl<'a, K: Eq + Hash, V, N: Location<'a>> Stream<'a, (K, V), Windowed, N> {
         init: impl IntoQuotedMut<'a, I>,
         comb: impl IntoQuotedMut<'a, C>,
     ) -> Stream<'a, (K, A), Windowed, N> {
-        let init = init.splice();
-        let comb = comb.splice();
-
-        self.pipeline_op("fold_keyed", move |d| {
-            if d {
-                Some((parse_quote!(fold_keyed::<'static>(#init, #comb)), false))
-            } else {
-                Some((parse_quote!(fold_keyed::<'tick>(#init, #comb)), false))
-            }
-        })
+        Stream::new(
+            self.node,
+            self.ir_leaves,
+            HfPlusNode::FoldKeyed {
+                init: init.splice().into(),
+                acc: comb.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
     }
 
     pub fn reduce_keyed<F: Fn(&mut V, V) + 'a>(
         self,
         comb: impl IntoQuotedMut<'a, F>,
     ) -> Stream<'a, (K, V), Windowed, N> {
-        let comb = comb.splice();
-
-        self.pipeline_op("reduce_keyed", move |d| {
-            if d {
-                Some((parse_quote!(reduce_keyed::<'static>(#comb)), false))
-            } else {
-                Some((parse_quote!(reduce_keyed::<'tick>(#comb)), false))
-            }
-        })
+        Stream::new(
+            self.node,
+            self.ir_leaves,
+            HfPlusNode::ReduceKeyed {
+                f: comb.splice().into(),
+                input: Box::new(self.ir_node.into_inner()),
+            },
+        )
     }
 }
 
