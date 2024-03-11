@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["FlowBuilder"]};
+window.SIDEBAR_ITEMS = {"struct":["BuiltFlow","FlowBuilder"]};

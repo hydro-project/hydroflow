@@ -224,7 +224,25 @@
 <a href="#222" id="222">222</a>
 <a href="#223" id="223">223</a>
 <a href="#224" id="224">224</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::{Ref, RefCell};
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -255,12 +273,6 @@
     _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>()&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt; + <span class="question-mark">?</span>Sized&gt; FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt; {
-    <span class="kw">pub fn </span>ir(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Ref&lt;<span class="lifetime">'_</span>, Vec&lt;HfPlusLeaf&gt;&gt; {
-        <span class="self">self</span>.ir_leaves.borrow()
-    }
-}
-
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; QuotedContext <span class="kw">for </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt; {
     <span class="kw">fn </span>create() -&gt; <span class="self">Self </span>{
         FlowBuilder::new()
@@ -276,6 +288,13 @@
             clusters: RefCell::new(Vec::new()),
             meta: RefCell::new(Default::default()),
             next_node_id: RefCell::new(<span class="number">0</span>),
+            _phantom: PhantomData,
+        }
+    }
+
+    <span class="kw">pub fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
+        BuiltFlow {
+            ir: <span class="self">self</span>.ir_leaves.borrow().clone(),
             _phantom: PhantomData,
         }
     }
@@ -328,15 +347,34 @@
     }
 }
 
+<span class="attr">#[derive(Clone)]
+</span><span class="kw">pub struct </span>BuiltFlow&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; {
+    <span class="kw">pub </span>ir: Vec&lt;HfPlusLeaf&gt;,
+
+    _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>D&gt;,
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
+    <span class="kw">pub fn </span>optimize_with(
+        <span class="self">self</span>,
+        f: <span class="kw">impl </span>FnOnce(Vec&lt;HfPlusLeaf&gt;) -&gt; Vec&lt;HfPlusLeaf&gt;,
+    ) -&gt; BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
+        BuiltFlow {
+            ir: f(<span class="self">self</span>.ir),
+            _phantom: PhantomData,
+        }
+    }
+}
+
 <span class="kw">fn </span>build_inner&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
-    me: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
+    me: BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt;,
     id: syn::Expr,
     is_single: bool,
 ) -&gt; HfBuilt&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>builders = BTreeMap::new();
     <span class="kw">let </span><span class="kw-2">mut </span>built_tees = HashMap::new();
     <span class="kw">let </span><span class="kw-2">mut </span>next_stmt_id = <span class="number">0</span>;
-    <span class="kw">for </span>leaf <span class="kw">in </span>me.ir_leaves().replace(Default::default()) {
+    <span class="kw">for </span>leaf <span class="kw">in </span>me.ir {
         leaf.emit(<span class="kw-2">&amp;mut </span>builders, <span class="kw-2">&amp;mut </span>built_tees, <span class="kw-2">&amp;mut </span>next_stmt_id);
     }
 
@@ -397,8 +435,8 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>, GraphId = usize&gt;&gt; FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt; {
-    <span class="kw">pub fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, usize&gt;) -&gt; HfBuilt&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>, GraphId = usize&gt;&gt; BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
+    <span class="kw">pub fn </span>emit(<span class="self">self</span>, id: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, usize&gt;) -&gt; HfBuilt&lt;<span class="lifetime">'a</span>&gt; {
         build_inner(<span class="self">self</span>, id.splice(), <span class="bool-val">false</span>)
     }
 
@@ -406,8 +444,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>builders = BTreeMap::new();
         <span class="kw">let </span><span class="kw-2">mut </span>built_tees = HashMap::new();
         <span class="kw">let </span><span class="kw-2">mut </span>next_stmt_id = <span class="number">0</span>;
-        <span class="kw">let </span>borrowed_leaves = <span class="self">self</span>.ir_leaves.borrow();
-        <span class="kw">for </span>leaf <span class="kw">in </span>borrowed_leaves.iter() {
+        <span class="kw">for </span>leaf <span class="kw">in </span><span class="self">self</span>.ir.iter() {
             leaf.clone()
                 .emit(<span class="kw-2">&amp;mut </span>builders, <span class="kw-2">&amp;mut </span>built_tees, <span class="kw-2">&amp;mut </span>next_stmt_id);
         }
@@ -422,8 +459,8 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>, GraphId = ()&gt;&gt; FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt; {
-    <span class="kw">pub fn </span>build_single(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HfBuilt&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>, GraphId = ()&gt;&gt; BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
+    <span class="kw">pub fn </span>emit_single(<span class="self">self</span>) -&gt; HfBuilt&lt;<span class="lifetime">'a</span>&gt; {
         build_inner(<span class="self">self</span>, <span class="macro">parse_quote!</span>(<span class="number">0</span>), <span class="bool-val">true</span>)
     }
 
@@ -431,8 +468,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>builders = BTreeMap::new();
         <span class="kw">let </span><span class="kw-2">mut </span>built_tees = HashMap::new();
         <span class="kw">let </span><span class="kw-2">mut </span>next_stmt_id = <span class="number">0</span>;
-        <span class="kw">let </span>borrowed_leaves = <span class="self">self</span>.ir_leaves.borrow();
-        <span class="kw">for </span>leaf <span class="kw">in </span>borrowed_leaves.iter() {
+        <span class="kw">for </span>leaf <span class="kw">in </span><span class="self">self</span>.ir.iter() {
             leaf.clone()
                 .emit(<span class="kw-2">&amp;mut </span>builders, <span class="kw-2">&amp;mut </span>built_tees, <span class="kw-2">&amp;mut </span>next_stmt_id);
         }

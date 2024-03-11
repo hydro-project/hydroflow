@@ -100,7 +100,7 @@
     flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     first_ten(flow, <span class="kw-2">&amp;</span>());
-    flow.build_single()
+    flow.build().emit_single()
 }
 
 <span class="kw">pub fn </span>first_ten_distributed&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
@@ -127,7 +127,7 @@
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let _ </span>= first_ten_distributed(flow, <span class="kw-2">&amp;</span>cli);
-    flow.build(<span class="macro">q!</span>(cli.meta.subgraph_id))
+    flow.build().emit(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::runtime]
@@ -153,7 +153,7 @@
             }),
         );
 
-        <span class="macro">insta::assert_debug_snapshot!</span>(builder.ir());
+        <span class="macro">insta::assert_debug_snapshot!</span>(builder.build().ir);
 
         deployment.deploy().<span class="kw">await</span>.unwrap();
 

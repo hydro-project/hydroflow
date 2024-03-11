@@ -361,7 +361,7 @@
         output.send(v).unwrap();
     }));
 
-    flow.build(subgraph_id)
+    flow.build().emit(subgraph_id)
 }
 
 <span class="attr">#[stageleft::entry]
@@ -391,7 +391,7 @@
         output.send(t).unwrap();
     }));
 
-    flow.build_single()
+    flow.build().emit_single()
 }
 
 <span class="attr">#[stageleft::entry]
@@ -420,7 +420,7 @@
         reached_out.send(v).unwrap();
     }));
 
-    flow.build_single()
+    flow.build().emit_single()
 }
 
 <span class="attr">#[stageleft::entry(String)]
@@ -441,7 +441,7 @@
         output.send(v).unwrap();
     }));
 
-    flow.build_single()
+    flow.build().emit_single()
 }
 
 <span class="attr">#[stageleft::runtime]
