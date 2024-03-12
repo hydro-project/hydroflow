@@ -223,10 +223,16 @@ impl<'a> Hydroflow<'a> {
                         let succ_sg_data = &self.subgraphs[succ_id.0];
                         // If we have sent data to the next tick, then we can start the next tick.
                         if succ_sg_data.stratum < self.context.current_stratum && !sg_data.is_lazy {
+                            tracing::trace!("Data sent to next tick, setting  `can_start_tick = true`.");
                             self.can_start_tick = true;
                         }
                         // Add subgraph to stratum queue if it is not already scheduled.
                         if !succ_sg_data.is_scheduled.replace(true) {
+                            tracing::trace!(
+                                sg_id = succ_id.0,
+                                sg_name = &*succ_sg_data.name,
+                                "Successor subgraph scheduled."
+                            );
                             self.stratum_queues[succ_sg_data.stratum].push_back(succ_id);
                         }
                     }
@@ -375,6 +381,7 @@ impl<'a> Hydroflow<'a> {
             let sg_data = &self.subgraphs[sg_id.0];
             tracing::trace!(
                 sg_id = sg_id.0,
+                sg_name = &*sg_data.name,
                 is_external = is_external,
                 sg_stratum = sg_data.stratum,
                 "Event received."
