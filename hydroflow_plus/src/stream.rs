@@ -43,7 +43,7 @@ pub struct Windowed {}
 pub struct Stream<'a, T, W, N: Location<'a>> {
     node: N,
 
-    ir_leaves: &'a RefCell<Vec<HfPlusLeaf>>,
+    ir_leaves: Rc<RefCell<Vec<HfPlusLeaf>>>,
     pub(crate) ir_node: RefCell<HfPlusNode>,
 
     _phantom: PhantomData<(&'a mut &'a (), T, W)>,
@@ -52,7 +52,7 @@ pub struct Stream<'a, T, W, N: Location<'a>> {
 impl<'a, T, W, N: Location<'a>> Stream<'a, T, W, N> {
     pub(crate) fn new(
         node: N,
-        ir_leaves: &'a RefCell<Vec<HfPlusLeaf>>,
+        ir_leaves: Rc<RefCell<Vec<HfPlusLeaf>>>,
         ir_node: HfPlusNode,
     ) -> Self {
         Stream {
@@ -75,7 +75,7 @@ impl<'a, T: Clone, W, N: Location<'a>> Clone for Stream<'a, T, W, N> {
 
         Stream::new(
             self.node.clone(),
-            self.ir_leaves,
+            self.ir_leaves.clone(),
             self.ir_node.borrow().clone(),
         )
     }

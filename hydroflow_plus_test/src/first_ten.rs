@@ -2,7 +2,7 @@ use hydroflow_plus::*;
 use stageleft::*;
 
 pub fn first_ten<'a, D: LocalDeploy<'a>>(
-    flow: &'a FlowBuilder<'a, D>,
+    flow: &FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
 ) {
     let process = flow.process(process_spec);
@@ -11,15 +11,15 @@ pub fn first_ten<'a, D: LocalDeploy<'a>>(
 }
 
 #[stageleft::entry]
-pub fn first_ten_runtime<'a>(
-    flow: &'a FlowBuilder<'a, SingleProcessGraph>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
-    first_ten(flow, &());
+pub fn first_ten_runtime(
+    flow: FlowBuilder<'_, SingleProcessGraph>,
+) -> impl Quoted<'_, Hydroflow<'_>> {
+    first_ten(&flow, &());
     flow.extract().optimize_default()
 }
 
 pub fn first_ten_distributed<'a, D: Deploy<'a>>(
-    flow: &'a FlowBuilder<'a, D>,
+    flow: &FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
 ) -> D::Process {
     let process = flow.process(process_spec);
@@ -38,10 +38,10 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn first_ten_distributed_runtime<'a>(
-    flow: &'a FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = first_ten_distributed(flow, &cli);
+    let _ = first_ten_distributed(&flow, &cli);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
@@ -70,7 +70,10 @@ mod tests {
             }),
         );
 
-        insta::assert_debug_snapshot!(builder.extract().ir());
+        // if we drop this, we drop the references to the deployment nodes
+        let built = builder.extract();
+
+        insta::assert_debug_snapshot!(built.ir());
 
         deployment.deploy().await.unwrap();
 
