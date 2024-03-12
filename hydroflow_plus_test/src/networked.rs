@@ -13,7 +13,7 @@ pub struct NetworkedBasicIO<'a, D: Deploy<'a>> {
 }
 
 pub fn networked_basic<'a, D: Deploy<'a>>(
-    flow: &'a FlowBuilder<'a, D>,
+    flow: &FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
 ) -> NetworkedBasicIO<'a, D> {
@@ -45,10 +45,10 @@ pub fn networked_basic<'a, D: Deploy<'a>>(
 
 #[stageleft::entry]
 pub fn networked_basic_runtime<'a>(
-    flow: &'a FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = networked_basic(flow, &cli, &cli);
+    let _ = networked_basic(&flow, &cli, &cli);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(q!(cli.meta.subgraph_id))

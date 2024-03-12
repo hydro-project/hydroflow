@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::marker::PhantomData;
+use std::rc::Rc;
 
 use crate::ir::HfPlusLeaf;
 use crate::location::Location;
@@ -12,8 +13,8 @@ use crate::Stream;
 pub struct HfCycle<'a, T, W, N: Location<'a>> {
     pub(crate) ident: syn::Ident,
     pub(crate) node: N,
-    pub(crate) ir_leaves: &'a RefCell<Vec<HfPlusLeaf>>,
-    pub(crate) _phantom: PhantomData<(T, W)>,
+    pub(crate) ir_leaves: Rc<RefCell<Vec<HfPlusLeaf>>>,
+    pub(crate) _phantom: PhantomData<(&'a mut &'a (), T, W)>,
 }
 
 impl<'a, T, W, N: Location<'a>> HfCycle<'a, T, W, N> {

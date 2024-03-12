@@ -5,10 +5,10 @@ Stageleft brings the magic of staged programming to Rust, making it easy to writ
 Stageleft makes it easy to write type-safe code generators. For example, consider a function that raises a number to a power, but the power is known at compile time. Then, we can compile away the power into repeatedly squaring the base. We can implement a staged program for this:
 
 ```rust
-use stageleft::{q, IntoQuotedOnce, Quoted, RuntimeData};
+use stageleft::{q, BorrowBounds, IntoQuotedOnce, Quoted, RuntimeData};
 
 #[stageleft::entry]
-fn raise_to_power(_ctx: &(), value: RuntimeData<i32>, power: u32) -> impl Quoted<i32> {
+fn raise_to_power(_ctx: BorrowBounds<'_>, value: RuntimeData<i32>, power: u32) -> impl Quoted<i32> {
     if power == 1 {
         q!(value).boxed()
     } else if power % 2 == 0 {
