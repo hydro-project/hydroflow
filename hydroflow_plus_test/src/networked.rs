@@ -20,7 +20,7 @@ pub fn networked_basic<'a, D: Deploy<'a>>(
     let process_zero = flow.process(process_spec);
     let process_one = flow.process(process_spec);
 
-    let (source_zero_port, source_zero) = process_zero.source_external();
+    let (source_zero_port, source_zero) = flow.source_external(&process_zero);
 
     source_zero
         .send_bytes(&process_one)
@@ -29,7 +29,7 @@ pub fn networked_basic<'a, D: Deploy<'a>>(
         }));
 
     let cluster = flow.cluster(cluster_spec);
-    let (cluster_port, cluster_stream) = cluster.many_source_external::<D::Process, _>();
+    let (cluster_port, cluster_stream) = flow.many_source_external::<D::Process, _, _>(&cluster);
     cluster_stream.for_each(q!(|v: Bytes| {
         println!("cluster received: {:?}", std::str::from_utf8(&v).unwrap());
     }));

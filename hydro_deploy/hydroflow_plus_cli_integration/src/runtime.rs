@@ -1,7 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use hydroflow_plus::ir::HfPlusLeaf;
 use hydroflow_plus::location::{
     Cluster, ClusterSpec, Deploy, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany,
     HfSendOneToOne, Location, ProcessSpec,
@@ -9,7 +8,6 @@ use hydroflow_plus::location::{
 use hydroflow_plus::util::cli::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged, HydroCLI,
 };
-use hydroflow_plus::FlowBuilder;
 use stageleft::{q, Quoted, RuntimeData};
 
 use super::HydroflowPlusMeta;
@@ -29,26 +27,16 @@ impl<'a> Deploy<'a> for CLIRuntime {
 #[derive(Clone)]
 pub struct CLIRuntimeNode<'a> {
     id: usize,
-    ir_leaves: Rc<RefCell<Vec<HfPlusLeaf>>>,
-    cycle_counter: Rc<RefCell<usize>>,
     next_port: Rc<RefCell<usize>>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 }
 
-impl<'a> Location<'a> for CLIRuntimeNode<'a> {
+impl<'a> Location for CLIRuntimeNode<'a> {
     type Port = String;
     type Meta = ();
 
     fn id(&self) -> usize {
         self.id
-    }
-
-    fn ir_leaves(&self) -> &Rc<RefCell<Vec<HfPlusLeaf>>> {
-        &self.ir_leaves
-    }
-
-    fn cycle_counter(&self) -> &RefCell<usize> {
-        self.cycle_counter.as_ref()
     }
 
     fn next_port(&self) -> String {
@@ -63,26 +51,16 @@ impl<'a> Location<'a> for CLIRuntimeNode<'a> {
 #[derive(Clone)]
 pub struct CLIRuntimeCluster<'a> {
     id: usize,
-    ir_leaves: Rc<RefCell<Vec<HfPlusLeaf>>>,
-    cycle_counter: Rc<RefCell<usize>>,
     next_port: Rc<RefCell<usize>>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 }
 
-impl<'a> Location<'a> for CLIRuntimeCluster<'a> {
+impl<'a> Location for CLIRuntimeCluster<'a> {
     type Port = String;
     type Meta = ();
 
     fn id(&self) -> usize {
         self.id
-    }
-
-    fn ir_leaves(&self) -> &Rc<RefCell<Vec<HfPlusLeaf>>> {
-        &self.ir_leaves
-    }
-
-    fn cycle_counter(&self) -> &RefCell<usize> {
-        self.cycle_counter.as_ref()
     }
 
     fn next_port(&self) -> String {
@@ -104,7 +82,7 @@ impl<'a> Cluster<'a> for CLIRuntimeCluster<'a> {
     }
 }
 
-impl<'a> HfSendOneToOne<'a, CLIRuntimeNode<'a>> for CLIRuntimeNode<'a> {
+impl<'a> HfSendOneToOne<CLIRuntimeNode<'a>> for CLIRuntimeNode<'a> {
     fn connect(&self, _other: &CLIRuntimeNode, _source_port: &String, _recipient_port: &String) {}
 
     fn gen_sink_statement(&self, port: &String) -> syn::Expr {
@@ -132,7 +110,7 @@ impl<'a> HfSendOneToOne<'a, CLIRuntimeNode<'a>> for CLIRuntimeNode<'a> {
     }
 }
 
-impl<'a> HfSendManyToOne<'a, CLIRuntimeNode<'a>, u32> for CLIRuntimeCluster<'a> {
+impl<'a> HfSendManyToOne<CLIRuntimeNode<'a>, u32> for CLIRuntimeCluster<'a> {
     fn connect(&self, _other: &CLIRuntimeNode, _source_port: &String, _recipient_port: &String) {}
 
     fn gen_sink_statement(&self, port: &String) -> syn::Expr {
@@ -160,7 +138,7 @@ impl<'a> HfSendManyToOne<'a, CLIRuntimeNode<'a>, u32> for CLIRuntimeCluster<'a> 
     }
 }
 
-impl<'a> HfSendOneToMany<'a, CLIRuntimeCluster<'a>, u32> for CLIRuntimeNode<'a> {
+impl<'a> HfSendOneToMany<CLIRuntimeCluster<'a>, u32> for CLIRuntimeNode<'a> {
     fn connect(&self, _other: &CLIRuntimeCluster, _source_port: &String, _recipient_port: &String) {
     }
 
@@ -191,7 +169,7 @@ impl<'a> HfSendOneToMany<'a, CLIRuntimeCluster<'a>, u32> for CLIRuntimeNode<'a> 
     }
 }
 
-impl<'a> HfSendManyToMany<'a, CLIRuntimeCluster<'a>, u32> for CLIRuntimeCluster<'a> {
+impl<'a> HfSendManyToMany<CLIRuntimeCluster<'a>, u32> for CLIRuntimeCluster<'a> {
     fn connect(&self, _other: &CLIRuntimeCluster, _source_port: &String, _recipient_port: &String) {
     }
 
@@ -223,16 +201,9 @@ impl<'a> HfSendManyToMany<'a, CLIRuntimeCluster<'a>, u32> for CLIRuntimeCluster<
 }
 
 impl<'cli> ProcessSpec<'cli, CLIRuntime> for RuntimeData<&'cli HydroCLI<HydroflowPlusMeta>> {
-    fn build(
-        &self,
-        id: usize,
-        builder: &FlowBuilder<'cli, CLIRuntime>,
-        _meta: &mut (),
-    ) -> CLIRuntimeNode<'cli> {
+    fn build(&self, id: usize, _meta: &mut ()) -> CLIRuntimeNode<'cli> {
         CLIRuntimeNode {
             id,
-            ir_leaves: builder.ir_leaves().clone(),
-            cycle_counter: Rc::new(RefCell::new(0)),
             next_port: Rc::new(RefCell::new(0)),
             cli: *self,
         }
@@ -240,16 +211,9 @@ impl<'cli> ProcessSpec<'cli, CLIRuntime> for RuntimeData<&'cli HydroCLI<Hydroflo
 }
 
 impl<'cli> ClusterSpec<'cli, CLIRuntime> for RuntimeData<&'cli HydroCLI<HydroflowPlusMeta>> {
-    fn build(
-        &self,
-        id: usize,
-        builder: &FlowBuilder<'cli, CLIRuntime>,
-        _meta: &mut (),
-    ) -> CLIRuntimeCluster<'cli> {
+    fn build(&self, id: usize, _meta: &mut ()) -> CLIRuntimeCluster<'cli> {
         CLIRuntimeCluster {
             id,
-            ir_leaves: builder.ir_leaves().clone(),
-            cycle_counter: Rc::new(RefCell::new(0)),
             next_port: Rc::new(RefCell::new(0)),
             cli: *self,
         }
