@@ -10,12 +10,10 @@ use hydro_deploy::hydroflow_crate::ports::{
 };
 use hydro_deploy::hydroflow_crate::HydroflowCrateService;
 use hydro_deploy::{Deployment, Host};
-use hydroflow_plus::ir::HfPlusLeaf;
 use hydroflow_plus::location::{
     Cluster, ClusterSpec, Deploy, HfSendManyToMany, HfSendManyToOne, HfSendOneToMany,
     HfSendOneToOne, Location, ProcessSpec,
 };
-use hydroflow_plus::FlowBuilder;
 use stageleft::internal::syn::parse_quote;
 use stageleft::q;
 use tokio::sync::RwLock;
@@ -70,8 +68,6 @@ pub trait DeployCrateWrapper {
 #[derive(Clone)]
 pub struct DeployNode {
     id: usize,
-    ir_leaves: Rc<RefCell<Vec<HfPlusLeaf>>>,
-    cycle_counter: Rc<RefCell<usize>>,
     next_port: Rc<RefCell<usize>>,
     underlying: Arc<RwLock<HydroflowCrateService>>,
 }
@@ -112,20 +108,12 @@ impl<'a> DeployPort<DeployCluster> {
     }
 }
 
-impl<'a> Location<'a> for DeployNode {
+impl Location for DeployNode {
     type Port = DeployPort<Self>;
     type Meta = HashMap<usize, Vec<u32>>;
 
     fn id(&self) -> usize {
         self.id
-    }
-
-    fn ir_leaves(&self) -> &Rc<RefCell<Vec<HfPlusLeaf>>> {
-        &self.ir_leaves
-    }
-
-    fn cycle_counter(&self) -> &RefCell<usize> {
-        self.cycle_counter.as_ref()
     }
 
     fn next_port(&self) -> DeployPort<Self> {
@@ -161,26 +149,16 @@ impl DeployCrateWrapper for DeployClusterNode {
 #[derive(Clone)]
 pub struct DeployCluster {
     id: usize,
-    ir_leaves: Rc<RefCell<Vec<HfPlusLeaf>>>,
-    cycle_counter: Rc<RefCell<usize>>,
     next_port: Rc<RefCell<usize>>,
     pub members: Vec<DeployClusterNode>,
 }
 
-impl<'a> Location<'a> for DeployCluster {
+impl Location for DeployCluster {
     type Port = DeployPort<Self>;
     type Meta = HashMap<usize, Vec<u32>>;
 
     fn id(&self) -> usize {
         self.id
-    }
-
-    fn ir_leaves(&self) -> &Rc<RefCell<Vec<HfPlusLeaf>>> {
-        &self.ir_leaves
-    }
-
-    fn cycle_counter(&self) -> &RefCell<usize> {
-        self.cycle_counter.as_ref()
     }
 
     fn next_port(&self) -> DeployPort<Self> {
@@ -214,7 +192,7 @@ impl<'a> Cluster<'a> for DeployCluster {
     }
 }
 
-impl<'a> HfSendOneToOne<'a, DeployNode> for DeployNode {
+impl HfSendOneToOne<DeployNode> for DeployNode {
     fn connect(
         &self,
         other: &DeployNode,
@@ -245,7 +223,7 @@ impl<'a> HfSendOneToOne<'a, DeployNode> for DeployNode {
     }
 }
 
-impl<'a> HfSendManyToOne<'a, DeployNode, u32> for DeployCluster {
+impl HfSendManyToOne<DeployNode, u32> for DeployCluster {
     fn connect(
         &self,
         other: &DeployNode,
@@ -283,7 +261,7 @@ impl<'a> HfSendManyToOne<'a, DeployNode, u32> for DeployCluster {
     }
 }
 
-impl<'a> HfSendOneToMany<'a, DeployCluster, u32> for DeployNode {
+impl HfSendOneToMany<DeployCluster, u32> for DeployNode {
     fn connect(
         &self,
         other: &DeployCluster,
@@ -328,7 +306,7 @@ impl<'a> HfSendOneToMany<'a, DeployCluster, u32> for DeployNode {
     }
 }
 
-impl<'a> HfSendManyToMany<'a, DeployCluster, u32> for DeployCluster {
+impl HfSendManyToMany<DeployCluster, u32> for DeployCluster {
     fn connect(
         &self,
         other: &DeployCluster,
@@ -392,16 +370,9 @@ impl<'a> DeployProcessSpec<'a> {
 }
 
 impl<'a: 'b, 'b> ProcessSpec<'a, HydroDeploy> for DeployProcessSpec<'b> {
-    fn build(
-        &self,
-        id: usize,
-        builder: &FlowBuilder<'a, HydroDeploy>,
-        _meta: &mut HashMap<usize, Vec<u32>>,
-    ) -> DeployNode {
+    fn build(&self, id: usize, _meta: &mut HashMap<usize, Vec<u32>>) -> DeployNode {
         DeployNode {
             id,
-            ir_leaves: builder.ir_leaves().clone(),
-            cycle_counter: Rc::new(RefCell::new(0)),
             next_port: Rc::new(RefCell::new(0)),
             underlying: (self.0.borrow_mut())(),
         }
@@ -419,19 +390,12 @@ impl<'a> DeployClusterSpec<'a> {
 }
 
 impl<'a: 'b, 'b> ClusterSpec<'a, HydroDeploy> for DeployClusterSpec<'b> {
-    fn build(
-        &self,
-        id: usize,
-        builder: &FlowBuilder<'a, HydroDeploy>,
-        meta: &mut HashMap<usize, Vec<u32>>,
-    ) -> DeployCluster {
+    fn build(&self, id: usize, meta: &mut HashMap<usize, Vec<u32>>) -> DeployCluster {
         let cluster_nodes = (self.0.borrow_mut())();
         meta.insert(id, (0..(cluster_nodes.len() as u32)).collect());
 
         DeployCluster {
             id,
-            ir_leaves: builder.ir_leaves().clone(),
-            cycle_counter: Rc::new(RefCell::new(0)),
             next_port: Rc::new(RefCell::new(0)),
             members: cluster_nodes
                 .into_iter()
