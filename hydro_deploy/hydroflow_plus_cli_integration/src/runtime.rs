@@ -29,7 +29,7 @@ impl<'a> Deploy<'a> for CLIRuntime {
 #[derive(Clone)]
 pub struct CLIRuntimeNode<'a> {
     id: usize,
-    builder: &'a FlowBuilder<'a, CLIRuntime>,
+    ir_leaves: Rc<RefCell<Vec<HfPlusLeaf>>>,
     cycle_counter: Rc<RefCell<usize>>,
     next_port: Rc<RefCell<usize>>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
@@ -43,8 +43,8 @@ impl<'a> Location<'a> for CLIRuntimeNode<'a> {
         self.id
     }
 
-    fn ir_leaves(&self) -> &'a RefCell<Vec<HfPlusLeaf>> {
-        self.builder.ir_leaves()
+    fn ir_leaves(&self) -> &Rc<RefCell<Vec<HfPlusLeaf>>> {
+        &self.ir_leaves
     }
 
     fn cycle_counter(&self) -> &RefCell<usize> {
@@ -63,7 +63,7 @@ impl<'a> Location<'a> for CLIRuntimeNode<'a> {
 #[derive(Clone)]
 pub struct CLIRuntimeCluster<'a> {
     id: usize,
-    builder: &'a FlowBuilder<'a, CLIRuntime>,
+    ir_leaves: Rc<RefCell<Vec<HfPlusLeaf>>>,
     cycle_counter: Rc<RefCell<usize>>,
     next_port: Rc<RefCell<usize>>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
@@ -77,8 +77,8 @@ impl<'a> Location<'a> for CLIRuntimeCluster<'a> {
         self.id
     }
 
-    fn ir_leaves(&self) -> &'a RefCell<Vec<HfPlusLeaf>> {
-        self.builder.ir_leaves()
+    fn ir_leaves(&self) -> &Rc<RefCell<Vec<HfPlusLeaf>>> {
+        &self.ir_leaves
     }
 
     fn cycle_counter(&self) -> &RefCell<usize> {
@@ -226,12 +226,12 @@ impl<'cli> ProcessSpec<'cli, CLIRuntime> for RuntimeData<&'cli HydroCLI<Hydroflo
     fn build(
         &self,
         id: usize,
-        builder: &'cli FlowBuilder<'cli, CLIRuntime>,
+        builder: &FlowBuilder<'cli, CLIRuntime>,
         _meta: &mut (),
     ) -> CLIRuntimeNode<'cli> {
         CLIRuntimeNode {
             id,
-            builder,
+            ir_leaves: builder.ir_leaves().clone(),
             cycle_counter: Rc::new(RefCell::new(0)),
             next_port: Rc::new(RefCell::new(0)),
             cli: *self,
@@ -243,12 +243,12 @@ impl<'cli> ClusterSpec<'cli, CLIRuntime> for RuntimeData<&'cli HydroCLI<Hydroflo
     fn build(
         &self,
         id: usize,
-        builder: &'cli FlowBuilder<'cli, CLIRuntime>,
+        builder: &FlowBuilder<'cli, CLIRuntime>,
         _meta: &mut (),
     ) -> CLIRuntimeCluster<'cli> {
         CLIRuntimeCluster {
             id,
-            builder,
+            ir_leaves: builder.ir_leaves().clone(),
             cycle_counter: Rc::new(RefCell::new(0)),
             next_port: Rc::new(RefCell::new(0)),
             cli: *self,
