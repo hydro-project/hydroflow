@@ -327,7 +327,7 @@ pub fn entry(
             let output_core = {
                 #[allow(clippy::let_unit_value)]
                 let graph = #root::QuotedContext::create();
-                #root::Quoted::splice(#input_name #passed_generics(&graph, #(#params_to_pass),*))
+                #root::Quoted::splice(#input_name #passed_generics(graph, #(#params_to_pass),*))
             };
 
             let final_crate_name = env!("STAGELEFT_FINAL_CRATE_NAME");
