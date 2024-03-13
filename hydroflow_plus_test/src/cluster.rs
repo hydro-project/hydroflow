@@ -4,7 +4,7 @@ use hydroflow_plus::*;
 use stageleft::*;
 
 pub fn simple_cluster<'a, D: Deploy<'a, ClusterId = u32>>(
-    flow: &'a FlowBuilder<'a, D>,
+    flow: &FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
 ) -> (D::Process, D::Cluster) {
@@ -25,7 +25,7 @@ pub fn simple_cluster<'a, D: Deploy<'a, ClusterId = u32>>(
 }
 
 pub fn many_to_many<'a, D: Deploy<'a>>(
-    flow: &'a FlowBuilder<'a, D>,
+    flow: &FlowBuilder<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
 ) -> D::Cluster
 where
@@ -41,7 +41,7 @@ where
 }
 
 pub fn map_reduce<'a, D: Deploy<'a, ClusterId = u32>>(
-    flow: &'a FlowBuilder<'a, D>,
+    flow: &FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
 ) -> (D::Process, D::Cluster) {
@@ -75,7 +75,7 @@ pub fn map_reduce<'a, D: Deploy<'a, ClusterId = u32>>(
 }
 
 pub fn compute_pi<'a, D: Deploy<'a>>(
-    flow: &'a FlowBuilder<'a, D>,
+    flow: &FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
 ) -> D::Process {
@@ -121,10 +121,10 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn simple_cluster_runtime<'a>(
-    flow: &'a FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = simple_cluster(flow, &cli, &cli);
+    let _ = simple_cluster(&flow, &cli, &cli);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
@@ -132,10 +132,10 @@ pub fn simple_cluster_runtime<'a>(
 
 #[stageleft::entry]
 pub fn many_to_many_runtime<'a>(
-    flow: &'a FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = many_to_many(flow, &cli);
+    let _ = many_to_many(&flow, &cli);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
@@ -143,10 +143,10 @@ pub fn many_to_many_runtime<'a>(
 
 #[stageleft::entry]
 pub fn map_reduce_runtime<'a>(
-    flow: &'a FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = map_reduce(flow, &cli, &cli);
+    let _ = map_reduce(&flow, &cli, &cli);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
@@ -154,10 +154,10 @@ pub fn map_reduce_runtime<'a>(
 
 #[stageleft::entry]
 pub fn compute_pi_runtime<'a>(
-    flow: &'a FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = compute_pi(flow, &cli, &cli);
+    let _ = compute_pi(&flow, &cli, &cli);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
