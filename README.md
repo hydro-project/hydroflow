@@ -51,6 +51,16 @@ cargo generate gh:hydro-project/hydroflow-template
 and you will get a well-formed Hydroflow/Rust project to use as a starting point. It provides a simple Echo Server and Client, and advice
 for adapting it to other uses.
 
+### Enable IDE Support for Ligatures
+Since flow edges `->` appear frequently in flows described using the Hydroflow surface syntax, enabling ligature support
+in your IDE may improve your code reading experience. This has no impact on code functionality or performance.
+
+Instructions to enable this for the `Fira Code` font:
+- [VSCode](https://github.com/tonsky/FiraCode/wiki/VS-Code-Instructions)
+- [IntelliJ](https://github.com/tonsky/FiraCode/wiki/IntelliJ-products-instructions)
+
+More font options are available [here](https://github.com/tonsky/FiraCode?tab=readme-ov-file#alternatives).
+
 ## Dev Setup
 
 See the [setup section of the book](https://hydro.run/docs/hydroflow/quickstart/setup).

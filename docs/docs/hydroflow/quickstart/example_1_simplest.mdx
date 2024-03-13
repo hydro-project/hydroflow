@@ -43,9 +43,11 @@ And then run the program:
 
 ## Understanding the Code
 Although this is a trivial program, it's useful to go through it line by line.
+
 <CodeBlock language="rust">{getLines(exampleCode, 1)}</CodeBlock>
+
 This import gives you everything you need from Hydroflow to write code with Hydroflow's
-[_surface syntax_](../syntax/index).
+[_surface syntax_](../syntax).
 
 Next, inside the main method we specify a flow by calling the
 `hydroflow_syntax!` macro. We assign the resulting `Hydroflow` instance to
