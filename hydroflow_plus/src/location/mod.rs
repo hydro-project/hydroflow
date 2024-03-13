@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::marker::PhantomData;
+use std::rc::Rc;
 use std::time::Duration;
 
 use hydroflow::bytes::Bytes;
@@ -66,11 +67,11 @@ impl<
 }
 
 pub trait ProcessSpec<'a, D: LocalDeploy<'a> + ?Sized> {
-    fn build(&self, id: usize, builder: &'a FlowBuilder<'a, D>, meta: &mut D::Meta) -> D::Process;
+    fn build(&self, id: usize, builder: &FlowBuilder<'a, D>, meta: &mut D::Meta) -> D::Process;
 }
 
 pub trait ClusterSpec<'a, D: LocalDeploy<'a> + ?Sized> {
-    fn build(&self, id: usize, builder: &'a FlowBuilder<'a, D>, meta: &mut D::Meta) -> D::Cluster;
+    fn build(&self, id: usize, builder: &FlowBuilder<'a, D>, meta: &mut D::Meta) -> D::Cluster;
 }
 
 pub trait Location<'a>: Clone {
@@ -80,7 +81,7 @@ pub trait Location<'a>: Clone {
     fn id(&self) -> usize;
 
     /// A handle to the global list of IR leaves, which are the outputs of the program.
-    fn ir_leaves(&self) -> &'a RefCell<Vec<HfPlusLeaf>>;
+    fn ir_leaves(&self) -> &Rc<RefCell<Vec<HfPlusLeaf>>>;
 
     /// A handle to a counter of cycles within this location.
     fn cycle_counter(&self) -> &RefCell<usize>;
@@ -92,7 +93,7 @@ pub trait Location<'a>: Clone {
     fn spin(&self) -> Stream<'a, (), Async, Self> {
         Stream::new(
             self.clone(),
-            self.ir_leaves(),
+            self.ir_leaves().clone(),
             HfPlusNode::Source {
                 source: HfPlusSource::Spin(),
                 location_id: self.id(),
@@ -118,7 +119,7 @@ pub trait Location<'a>: Clone {
 
         Stream::new(
             self.clone(),
-            self.ir_leaves(),
+            self.ir_leaves().clone(),
             HfPlusNode::Source {
                 source: HfPlusSource::Stream(e.into()),
                 location_id: self.id(),
@@ -139,7 +140,7 @@ pub trait Location<'a>: Clone {
             port,
             Stream::new(
                 self.clone(),
-                self.ir_leaves(),
+                self.ir_leaves().clone(),
                 HfPlusNode::Map {
                     f: process.into(),
                     input: Box::new(HfPlusNode::Source {
@@ -164,7 +165,7 @@ pub trait Location<'a>: Clone {
             port,
             Stream::new(
                 self.clone(),
-                self.ir_leaves(),
+                self.ir_leaves().clone(),
                 HfPlusNode::Map {
                     f: process.into(),
                     input: Box::new(HfPlusNode::Source {
@@ -184,7 +185,7 @@ pub trait Location<'a>: Clone {
 
         Stream::new(
             self.clone(),
-            self.ir_leaves(),
+            self.ir_leaves().clone(),
             HfPlusNode::Source {
                 source: HfPlusSource::Iter(e.into()),
                 location_id: self.id(),
@@ -200,7 +201,7 @@ pub trait Location<'a>: Clone {
 
         Stream::new(
             self.clone(),
-            self.ir_leaves(),
+            self.ir_leaves().clone(),
             HfPlusNode::Source {
                 source: HfPlusSource::Interval(interval.into()),
                 location_id: self.id(),
@@ -224,12 +225,12 @@ pub trait Location<'a>: Clone {
             HfCycle {
                 ident: ident.clone(),
                 node: self.clone(),
-                ir_leaves: self.ir_leaves(),
+                ir_leaves: self.ir_leaves().clone(),
                 _phantom: PhantomData,
             },
             Stream::new(
                 self.clone(),
-                self.ir_leaves(),
+                self.ir_leaves().clone(),
                 HfPlusNode::CycleSource {
                     ident,
                     location_id: self.id(),

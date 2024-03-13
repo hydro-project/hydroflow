@@ -4,7 +4,7 @@ use stageleft::{q, Quoted, RuntimeData};
 
 #[stageleft::entry]
 pub fn test_difference<'a>(
-    flow: &'a FlowBuilder<'a, SingleProcessGraph>,
+    flow: FlowBuilder<'a, SingleProcessGraph>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
     persist1: bool,
     persist2: bool,
@@ -30,7 +30,7 @@ pub fn test_difference<'a>(
 
 #[stageleft::entry]
 pub fn test_anti_join<'a>(
-    flow: &'a FlowBuilder<'a, SingleProcessGraph>,
+    flow: FlowBuilder<'a, SingleProcessGraph>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
     persist1: bool,
     persist2: bool,

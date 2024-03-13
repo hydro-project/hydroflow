@@ -86,8 +86,16 @@ pub trait QuotedContext {
     fn create() -> Self;
 }
 
-impl QuotedContext for () {
-    fn create() -> Self {}
+pub struct BorrowBounds<'a> {
+    _marker: PhantomData<&'a &'a mut ()>,
+}
+
+impl<'a> QuotedContext for BorrowBounds<'a> {
+    fn create() -> Self {
+        BorrowBounds {
+            _marker: PhantomData,
+        }
+    }
 }
 
 pub trait Quoted<'a, T>: FreeVariable<T> {
