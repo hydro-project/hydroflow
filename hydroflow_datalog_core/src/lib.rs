@@ -564,7 +564,8 @@ fn gen_target_expr(
     match expr {
         TargetExpr::Expr(expr) => gen_value_expr(expr, lookup_ident, get_span),
         TargetExpr::Aggregation(Aggregation::Count(_)) => parse_quote!(()),
-        TargetExpr::Aggregation(Aggregation::CountUnique(_, _, keys, _)) => {
+        TargetExpr::Aggregation(Aggregation::CountUnique(_, _, keys, _))
+        | TargetExpr::Aggregation(Aggregation::CollectVec(_, _, keys, _)) => {
             let keys = keys
                 .iter()
                 .map(|k| gen_value_expr(&IntExpr::Ident(k.clone()), lookup_ident, get_span))
@@ -685,6 +686,12 @@ fn apply_aggregations(
                     .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap().1));
                 agg_idx += 1;
             }
+            TargetExpr::Aggregation(Aggregation::CollectVec(..)) => {
+                let idx = syn::Index::from(agg_idx);
+                after_group_lookups
+                    .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap().into_iter().collect::<Vec<_>>()));
+                agg_idx += 1;
+            }
             TargetExpr::Aggregation(_) => {
                 let idx = syn::Index::from(agg_idx);
                 after_group_lookups
@@ -758,6 +765,13 @@ fn apply_aggregations(
                             }
                         })
                     }
+                    Aggregation::CollectVec(..) => {
+                        parse_quote!({
+                            let mut set: hydroflow::rustc_hash::FxHashSet<_> = prev;
+                            set.insert(#val_at_index);
+                            set
+                        })
+                    }
                     Aggregation::Choose(..) => {
                         parse_quote!(prev) // choose = select any 1 element from the relation. By default we select the 1st.
                     }
@@ -778,6 +792,13 @@ fn apply_aggregations(
                             let mut set = hydroflow::rustc_hash::FxHashSet::<_>::default();
                             set.insert(#val_at_index);
                             (set, 1)
+                        })
+                    }
+                    Aggregation::CollectVec(..) => {
+                        parse_quote!({
+                            let mut set = hydroflow::rustc_hash::FxHashSet::<_>::default();
+                            set.insert(#val_at_index);
+                            set
                         })
                     }
                 };
@@ -1187,6 +1208,20 @@ mod tests {
             result3(a, b, index()) :- ints_persisted(a, b)
             result4(a, count(b), index()) :- ints_persisted(a, b)
             result5(a, b, index()) :- ints_persisted(a, b)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_collect_vec() {
+        test_snapshots!(
+            r#"
+            .input ints1 `source_stream(ints1)` 
+            .input ints2 `source_stream(ints2)`
+            
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(collect_vec(a, b)) :- ints1(a), ints2(b)
             "#
         );
     }
