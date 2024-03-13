@@ -16,7 +16,7 @@ To create a process, we must take a `ProcessSpec` as an argument to our function
 
 ```rust
 pub fn my_flow<'a, D: Deploy<'a>>(
-    flow: &'a FlowBuilder<'a, D>,
+    flow: &FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>
 ) {
     ...

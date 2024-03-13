@@ -50,18 +50,18 @@ impl<'a> FreeVariable<&'a Context> for RuntimeContext<'a> {
     }
 }
 
-pub struct HfBuilt<'a, ID> {
+pub struct HfCompiled<'a, ID> {
     hydroflow_ir: BTreeMap<usize, HydroflowGraph>,
     _phantom: PhantomData<&'a mut &'a ID>,
 }
 
-impl<'a, ID> HfBuilt<'a, ID> {
+impl<'a, ID> HfCompiled<'a, ID> {
     pub fn hydroflow_ir(&self) -> &BTreeMap<usize, HydroflowGraph> {
         &self.hydroflow_ir
     }
 }
 
-impl<'a> HfBuilt<'a, usize> {
+impl<'a> HfCompiled<'a, usize> {
     pub fn with_dynamic_id(self, id: impl Quoted<'a, usize>) -> HfBuiltWithID<'a> {
         let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
             .expect("hydroflow_plus should be present in `Cargo.toml`");
@@ -117,9 +117,9 @@ impl<'a> HfBuilt<'a, usize> {
     }
 }
 
-impl<'a> Quoted<'a, Hydroflow<'a>> for HfBuilt<'a, ()> {}
+impl<'a> Quoted<'a, Hydroflow<'a>> for HfCompiled<'a, ()> {}
 
-impl<'a> FreeVariable<Hydroflow<'a>> for HfBuilt<'a, ()> {
+impl<'a> FreeVariable<Hydroflow<'a>> for HfCompiled<'a, ()> {
     fn to_tokens(mut self) -> (Option<TokenStream>, Option<TokenStream>) {
         let hydroflow_crate = proc_macro_crate::crate_name("hydroflow_plus")
             .expect("hydroflow_plus should be present in `Cargo.toml`");
