@@ -273,6 +273,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         id: String,
         binary: Arc<(String, Vec<u8>, PathBuf)>,
         args: &[String],
+        perf: Option<PathBuf>,
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let session = self.open_ssh_session().await?;
 
@@ -305,6 +306,9 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
                 channel
                     .exec(&format!("{binary_path_string}{args_string}"))
                     .await?;
+                if perf.is_some() {
+                    todo!("Perf profiling on remote machines is not supported");
+                }
 
                 anyhow::Ok(channel)
             },

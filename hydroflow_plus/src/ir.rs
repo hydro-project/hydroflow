@@ -79,7 +79,7 @@ pub enum HfPlusLeaf {
 impl HfPlusLeaf {
     pub fn transform_children(
         self,
-        transform: impl Fn(HfPlusNode, &mut SeenTees) -> HfPlusNode,
+        mut transform: impl FnMut(HfPlusNode, &mut SeenTees) -> HfPlusNode,
         seen_tees: &mut SeenTees,
     ) -> HfPlusLeaf {
         match self {
@@ -246,7 +246,7 @@ pub type SeenTees = HashMap<*const RefCell<HfPlusNode>, Rc<RefCell<HfPlusNode>>>
 impl HfPlusNode {
     pub fn transform_children(
         self,
-        transform: impl Fn(HfPlusNode, &mut SeenTees) -> HfPlusNode,
+        mut transform: impl FnMut(HfPlusNode, &mut SeenTees) -> HfPlusNode,
         seen_tees: &mut SeenTees,
     ) -> HfPlusNode {
         match self {

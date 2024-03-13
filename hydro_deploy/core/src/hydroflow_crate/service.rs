@@ -26,6 +26,7 @@ pub struct HydroflowCrateService {
     bin: Option<String>,
     example: Option<String>,
     profile: Option<String>,
+    perf: Option<PathBuf>,
     features: Option<Vec<String>>,
     args: Option<Vec<String>>,
     display_id: Option<String>,
@@ -62,6 +63,7 @@ impl HydroflowCrateService {
         bin: Option<String>,
         example: Option<String>,
         profile: Option<String>,
+        perf: Option<PathBuf>,
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
         display_id: Option<String>,
@@ -76,6 +78,7 @@ impl HydroflowCrateService {
             on,
             example,
             profile,
+            perf,
             features,
             args,
             display_id,
@@ -277,6 +280,7 @@ impl Service for HydroflowCrateService {
                             .unwrap_or_else(|| format!("service/{}", self.id)),
                         built.clone(),
                         &args,
+                        self.perf.clone(),
                     )
                     .await?;
 

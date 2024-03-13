@@ -4,6 +4,7 @@
 use core::hydroflow_crate::ports::HydroflowSource;
 use std::collections::HashMap;
 use std::ops::DerefMut;
+use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -266,6 +267,7 @@ impl Deployment {
         bin: Option<String>,
         example: Option<String>,
         profile: Option<String>,
+        perf: Option<PathBuf>,
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
         display_id: Option<String>,
@@ -279,6 +281,7 @@ impl Deployment {
                 bin,
                 example,
                 profile,
+                perf,
                 features,
                 args,
                 display_id,
