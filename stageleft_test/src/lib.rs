@@ -33,6 +33,15 @@ fn closure_capture_lifetime<'a, I: Copy + Into<u32> + 'a>(
     q!(Box::new(move || { v.into() }) as Box<dyn Fn() -> u32 + 'a>)
 }
 
+fn my_top_level_function() -> bool {
+    true
+}
+
+#[stageleft::entry]
+fn crate_paths<'a>(_ctx: &'a ()) -> impl Quoted<'a, bool> {
+    q!(crate::my_top_level_function())
+}
+
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
