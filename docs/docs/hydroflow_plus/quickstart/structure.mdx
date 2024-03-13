@@ -75,7 +75,7 @@ pub fn first_ten_runtime<'a>(
     flow: &'a FlowBuilder<'a, SingleProcessGraph>
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     first_ten(flow, &() /* for a single process graph */);
-    flow.build_single() // : impl Quoted<'a, Hydroflow<'a>>
+    flow.extract().optimize_default() // : impl Quoted<'a, Hydroflow<'a>>
 }
 ```
 

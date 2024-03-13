@@ -60,7 +60,9 @@ pub fn broadcast_runtime<'a>(
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     broadcast(flow, &cli, &cli);
-    flow.build(q!(cli.meta.subgraph_id))
+    flow.extract()
+        .optimize_default()
+        .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 ```
 

@@ -1,6 +1,6 @@
 ---
 source: hydroflow_plus_test/src/cluster.rs
-expression: builder.ir()
+expression: builder.extract().ir()
 ---
 [
     ForEach {
@@ -29,9 +29,8 @@ expression: builder.ir()
                     },
                 ),
             ),
-            input: PipelineOp {
-                kind: "inspect",
-                gen_pipeline: <function>,
+            input: Inspect {
+                f: { use crate :: __staged :: cluster :: * ; | n | println ! ("cluster received: {:?}" , n) },
                 input: Network {
                     to_location: 1,
                     serialize_pipeline: Some(
@@ -65,7 +64,6 @@ expression: builder.ir()
                                     source: Iter(
                                         { use hydroflow_plus_cli_integration :: __staged :: deploy :: * ; panic ! () },
                                     ),
-                                    produces_delta: false,
                                     location_id: 0,
                                 },
                             },
@@ -73,7 +71,6 @@ expression: builder.ir()
                                 source: Iter(
                                     { use crate :: __staged :: cluster :: * ; 0 .. 5 },
                                 ),
-                                produces_delta: false,
                                 location_id: 0,
                             },
                         ),
