@@ -16,5 +16,5 @@ pub fn first_ten_runtime<'a>(
     flow: &'a FlowBuilder<'a, SingleProcessGraph>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     first_ten(flow, &());
-    flow.build_single()
+    flow.build().emit_single()
 }

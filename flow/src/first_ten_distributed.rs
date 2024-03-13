@@ -25,7 +25,7 @@ pub fn first_ten_distributed_runtime<'a>(
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = first_ten_distributed(flow, &cli);
-    flow.build(q!(cli.meta.subgraph_id))
+    flow.build().emit(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::runtime]
