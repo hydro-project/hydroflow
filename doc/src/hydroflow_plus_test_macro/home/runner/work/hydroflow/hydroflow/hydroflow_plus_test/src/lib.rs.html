@@ -316,6 +316,11 @@
 <a href="#314" id="314">314</a>
 <a href="#315" id="315">315</a>
 <a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
 </pre></div><pre class="rust"><code><span class="macro">stageleft::stageleft_crate!</span>(hydroflow_plus_test_macro);
 
 <span class="kw">use </span>hydroflow_plus::futures::stream::Stream;
@@ -361,7 +366,9 @@
         output.send(v).unwrap();
     }));
 
-    flow.build().emit(subgraph_id)
+    flow.extract()
+        .optimize_default()
+        .with_dynamic_id(subgraph_id)
 }
 
 <span class="attr">#[stageleft::entry]
@@ -382,6 +389,9 @@
         messages.tick_batch()
     };
 
+    <span class="comment">// do this after the persist to test pullup
+    </span><span class="kw">let </span>messages = messages.map(<span class="macro">q!</span>(|s| s.to_uppercase()));
+
     <span class="kw">let </span><span class="kw-2">mut </span>joined = users.cross_product(messages);
     <span class="kw">if </span>replay_messages {
         joined = joined.delta();
@@ -391,7 +401,7 @@
         output.send(t).unwrap();
     }));
 
-    flow.build().emit_single()
+    flow.extract().optimize_default()
 }
 
 <span class="attr">#[stageleft::entry]
@@ -420,7 +430,7 @@
         reached_out.send(v).unwrap();
     }));
 
-    flow.build().emit_single()
+    flow.extract().optimize_default()
 }
 
 <span class="attr">#[stageleft::entry(String)]
@@ -441,7 +451,7 @@
         output.send(v).unwrap();
     }));
 
-    flow.build().emit_single()
+    flow.extract().optimize_default()
 }
 
 <span class="attr">#[stageleft::runtime]
@@ -522,10 +532,10 @@
         <span class="macro">assert_eq!</span>(
             <span class="kw-2">&amp;*</span>collect_ready::&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;mut </span>out_recv),
             <span class="kw-2">&amp;</span>[
-                (<span class="number">1</span>, <span class="string">"hello"</span>.to_string()),
-                (<span class="number">2</span>, <span class="string">"hello"</span>.to_string()),
-                (<span class="number">1</span>, <span class="string">"world"</span>.to_string()),
-                (<span class="number">2</span>, <span class="string">"world"</span>.to_string())
+                (<span class="number">1</span>, <span class="string">"HELLO"</span>.to_string()),
+                (<span class="number">2</span>, <span class="string">"HELLO"</span>.to_string()),
+                (<span class="number">1</span>, <span class="string">"WORLD"</span>.to_string()),
+                (<span class="number">2</span>, <span class="string">"WORLD"</span>.to_string())
             ]
         );
 
@@ -538,9 +548,9 @@
         <span class="macro">assert_eq!</span>(
             <span class="kw-2">&amp;*</span>collect_ready::&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;mut </span>out_recv),
             <span class="kw-2">&amp;</span>[
-                (<span class="number">1</span>, <span class="string">"goodbye"</span>.to_string()),
-                (<span class="number">2</span>, <span class="string">"goodbye"</span>.to_string()),
-                (<span class="number">3</span>, <span class="string">"goodbye"</span>.to_string())
+                (<span class="number">1</span>, <span class="string">"GOODBYE"</span>.to_string()),
+                (<span class="number">2</span>, <span class="string">"GOODBYE"</span>.to_string()),
+                (<span class="number">3</span>, <span class="string">"GOODBYE"</span>.to_string())
             ]
         );
     }
@@ -565,10 +575,10 @@
         <span class="macro">assert_eq!</span>(
             <span class="kw-2">&amp;*</span>collect_ready::&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;mut </span>out_recv),
             <span class="kw-2">&amp;</span>[
-                (<span class="number">1</span>, <span class="string">"hello"</span>.to_string()),
-                (<span class="number">2</span>, <span class="string">"hello"</span>.to_string()),
-                (<span class="number">1</span>, <span class="string">"world"</span>.to_string()),
-                (<span class="number">2</span>, <span class="string">"world"</span>.to_string())
+                (<span class="number">1</span>, <span class="string">"HELLO"</span>.to_string()),
+                (<span class="number">2</span>, <span class="string">"HELLO"</span>.to_string()),
+                (<span class="number">1</span>, <span class="string">"WORLD"</span>.to_string()),
+                (<span class="number">2</span>, <span class="string">"WORLD"</span>.to_string())
             ]
         );
 
@@ -581,11 +591,11 @@
         <span class="macro">assert_eq!</span>(
             <span class="kw-2">&amp;*</span>collect_ready::&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;mut </span>out_recv),
             <span class="kw-2">&amp;</span>[
-                (<span class="number">3</span>, <span class="string">"hello"</span>.to_string()),
-                (<span class="number">3</span>, <span class="string">"world"</span>.to_string()),
-                (<span class="number">1</span>, <span class="string">"goodbye"</span>.to_string()),
-                (<span class="number">2</span>, <span class="string">"goodbye"</span>.to_string()),
-                (<span class="number">3</span>, <span class="string">"goodbye"</span>.to_string())
+                (<span class="number">3</span>, <span class="string">"HELLO"</span>.to_string()),
+                (<span class="number">3</span>, <span class="string">"WORLD"</span>.to_string()),
+                (<span class="number">1</span>, <span class="string">"GOODBYE"</span>.to_string()),
+                (<span class="number">2</span>, <span class="string">"GOODBYE"</span>.to_string()),
+                (<span class="number">3</span>, <span class="string">"GOODBYE"</span>.to_string())
             ]
         );
     }

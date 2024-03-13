@@ -589,14 +589,6 @@
 <a href="#587" id="587">587</a>
 <a href="#588" id="588">588</a>
 <a href="#589" id="589">589</a>
-<a href="#590" id="590">590</a>
-<a href="#591" id="591">591</a>
-<a href="#592" id="592">592</a>
-<a href="#593" id="593">593</a>
-<a href="#594" id="594">594</a>
-<a href="#595" id="595">595</a>
-<a href="#596" id="596">596</a>
-<a href="#597" id="597">597</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::hash::Hash;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -614,7 +606,7 @@
 <span class="kw">use </span>syn::parse_quote;
 <span class="kw">use </span>syn::visit_mut::VisitMut;
 
-<span class="kw">use </span><span class="kw">crate</span>::ir::{DebugPipelineFn, HfPlusLeaf, HfPlusNode};
+<span class="kw">use </span><span class="kw">crate</span>::ir::{HfPlusLeaf, HfPlusNode};
 <span class="kw">use </span><span class="kw">crate</span>::location::{Cluster, HfSend, Location};
 
 <span class="doccomment">/// Marks the stream as being asynchronous, which means the presence
@@ -642,10 +634,10 @@
 </span><span class="kw">pub struct </span>Stream&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; {
     node: N,
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) ir_leaves: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;,
+    ir_leaves: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) ir_node: RefCell&lt;HfPlusNode&gt;,
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), T, W)&gt;,
+    _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), T, W)&gt;,
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
@@ -681,22 +673,6 @@
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
-    <span class="kw">fn </span>pipeline_op&lt;U, W2&gt;(
-        <span class="self">self</span>,
-        kind: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
-        gen_pipeline: <span class="kw">impl </span>Fn(bool) -&gt; <span class="prelude-ty">Option</span>&lt;(Pipeline, bool)&gt; + <span class="lifetime">'static</span>,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, U, W2, N&gt; {
-        Stream::new(
-            <span class="self">self</span>.node,
-            <span class="self">self</span>.ir_leaves,
-            HfPlusNode::PipelineOp {
-                kind,
-                gen_pipeline: DebugPipelineFn(Rc::new(gen_pipeline)),
-                input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
-            },
-        )
-    }
-
     <span class="kw">pub fn </span>map&lt;U, F: Fn(T) -&gt; U + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, U, W, N&gt; {
         Stream::new(
             <span class="self">self</span>.node,
@@ -712,47 +688,61 @@
         <span class="self">self</span>,
         f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
     ) -&gt; Stream&lt;<span class="lifetime">'a</span>, U, W, N&gt; {
-        <span class="kw">let </span>f = f.splice();
-        <span class="self">self</span>.pipeline_op(<span class="string">"flat_map"</span>, <span class="kw">move </span>|d| <span class="prelude-val">Some</span>((<span class="macro">parse_quote!</span>(flat_map(#f)), d)))
+        Stream::new(
+            <span class="self">self</span>.node,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::FlatMap {
+                f: f.splice().into(),
+                input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+            },
+        )
     }
 
     <span class="kw">pub fn </span>enumerate(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, (usize, T), W, N&gt; {
-        <span class="self">self</span>.pipeline_op(<span class="string">"enumerate"</span>, |d| {
-            <span class="kw">if </span>d {
-                <span class="prelude-val">None
-            </span>} <span class="kw">else </span>{
-                <span class="prelude-val">Some</span>((<span class="macro">parse_quote!</span>(enumerate()), <span class="bool-val">false</span>))
-            }
-        })
+        Stream::new(
+            <span class="self">self</span>.node,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::Enumerate(Box::new(<span class="self">self</span>.ir_node.into_inner())),
+        )
     }
 
     <span class="kw">pub fn </span>inspect&lt;F: Fn(<span class="kw-2">&amp;</span>T) + <span class="lifetime">'a</span>&gt;(<span class="self">self</span>, f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
-        <span class="kw">let </span>f = f.splice();
-        <span class="self">self</span>.pipeline_op(<span class="string">"inspect"</span>, <span class="kw">move </span>|d| {
-            <span class="kw">if </span>d {
-                <span class="prelude-val">None
-            </span>} <span class="kw">else </span>{
-                <span class="prelude-val">Some</span>((<span class="macro">parse_quote!</span>(inspect(#f)), <span class="bool-val">false</span>))
-            }
-        })
+        Stream::new(
+            <span class="self">self</span>.node,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::Inspect {
+                f: f.splice().into(),
+                input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+            },
+        )
     }
 
     <span class="kw">pub fn </span>filter&lt;F: Fn(<span class="kw-2">&amp;</span>T) -&gt; bool + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
     ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
-        <span class="kw">let </span>f = f.splice();
-        <span class="self">self</span>.pipeline_op(<span class="string">"filter"</span>, <span class="kw">move </span>|d| <span class="prelude-val">Some</span>((<span class="macro">parse_quote!</span>(filter(#f)), d)))
+        Stream::new(
+            <span class="self">self</span>.node,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::Filter {
+                f: f.splice().into(),
+                input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+            },
+        )
     }
 
     <span class="kw">pub fn </span>filter_map&lt;U, F: Fn(T) -&gt; <span class="prelude-ty">Option</span>&lt;U&gt; + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         f: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
     ) -&gt; Stream&lt;<span class="lifetime">'a</span>, U, W, N&gt; {
-        <span class="kw">let </span>f = f.splice();
-        <span class="self">self</span>.pipeline_op(<span class="string">"filter_map"</span>, <span class="kw">move </span>|d| {
-            <span class="prelude-val">Some</span>((<span class="macro">parse_quote!</span>(filter_map(#f)), d))
-        })
+        Stream::new(
+            <span class="self">self</span>.node,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::FilterMap {
+                f: f.splice().into(),
+                input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+            },
+        )
     }
 
     <span class="comment">// TODO(shadaj): should allow for differing windows, using strongest one
@@ -825,31 +815,29 @@
         init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, I&gt;,
         comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, C&gt;,
     ) -&gt; Stream&lt;<span class="lifetime">'a</span>, A, Windowed, N&gt; {
-        <span class="kw">let </span>init = init.splice();
-        <span class="kw">let </span>comb = comb.splice();
-
-        <span class="self">self</span>.pipeline_op(<span class="string">"fold"</span>, <span class="kw">move </span>|d| {
-            <span class="kw">if </span>d {
-                <span class="prelude-val">Some</span>((<span class="macro">parse_quote!</span>(fold::&lt;<span class="lifetime">'static</span>&gt;(#init, #comb)), <span class="bool-val">false</span>))
-            } <span class="kw">else </span>{
-                <span class="prelude-val">Some</span>((<span class="macro">parse_quote!</span>(fold::&lt;<span class="lifetime">'tick</span>&gt;(#init, #comb)), <span class="bool-val">false</span>))
-            }
-        })
+        Stream::new(
+            <span class="self">self</span>.node,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::Fold {
+                init: init.splice().into(),
+                acc: comb.splice().into(),
+                input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+            },
+        )
     }
 
     <span class="kw">pub fn </span>reduce&lt;C: Fn(<span class="kw-2">&amp;mut </span>T, T) + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, C&gt;,
     ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt; {
-        <span class="kw">let </span>comb = comb.splice();
-
-        <span class="self">self</span>.pipeline_op(<span class="string">"reduce"</span>, <span class="kw">move </span>|d| {
-            <span class="kw">if </span>d {
-                <span class="prelude-val">Some</span>((<span class="macro">parse_quote!</span>(reduce::&lt;<span class="lifetime">'static</span>&gt;(#comb)), <span class="bool-val">false</span>))
-            } <span class="kw">else </span>{
-                <span class="prelude-val">Some</span>((<span class="macro">parse_quote!</span>(reduce::&lt;<span class="lifetime">'tick</span>&gt;(#comb)), <span class="bool-val">false</span>))
-            }
-        })
+        Stream::new(
+            <span class="self">self</span>.node,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::Reduce {
+                f: comb.splice().into(),
+                input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+            },
+        )
     }
 
     <span class="kw">pub fn </span>count(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, usize, Windowed, N&gt; {
@@ -868,13 +856,11 @@
     <span class="kw">where
         </span>T: Eq + Hash,
     {
-        <span class="self">self</span>.pipeline_op(<span class="string">"unique"</span>, |d| {
-            <span class="kw">if </span>d {
-                <span class="prelude-val">None
-            </span>} <span class="kw">else </span>{
-                <span class="prelude-val">Some</span>((<span class="macro">parse_quote!</span>(unique::&lt;<span class="lifetime">'tick</span>&gt;()), <span class="bool-val">false</span>))
-            }
-        })
+        Stream::new(
+            <span class="self">self</span>.node,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::Unique(Box::new(<span class="self">self</span>.ir_node.into_inner())),
+        )
     }
 
     <span class="kw">pub fn </span>filter_not_in(<span class="self">self</span>, other: Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt;) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Windowed, N&gt;
@@ -906,7 +892,7 @@
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T: Clone, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span>T, W, N&gt; {
     <span class="kw">pub fn </span>cloned(<span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
-        <span class="self">self</span>.pipeline_op(<span class="string">"cloned"</span>, |d| <span class="prelude-val">Some</span>((<span class="macro">parse_quote!</span>(map(|d| d.clone())), d)))
+        <span class="self">self</span>.map(<span class="macro">q!</span>(|d| d.clone()))
     }
 }
 
@@ -955,31 +941,29 @@
         init: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, I&gt;,
         comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, C&gt;,
     ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (K, A), Windowed, N&gt; {
-        <span class="kw">let </span>init = init.splice();
-        <span class="kw">let </span>comb = comb.splice();
-
-        <span class="self">self</span>.pipeline_op(<span class="string">"fold_keyed"</span>, <span class="kw">move </span>|d| {
-            <span class="kw">if </span>d {
-                <span class="prelude-val">Some</span>((<span class="macro">parse_quote!</span>(fold_keyed::&lt;<span class="lifetime">'static</span>&gt;(#init, #comb)), <span class="bool-val">false</span>))
-            } <span class="kw">else </span>{
-                <span class="prelude-val">Some</span>((<span class="macro">parse_quote!</span>(fold_keyed::&lt;<span class="lifetime">'tick</span>&gt;(#init, #comb)), <span class="bool-val">false</span>))
-            }
-        })
+        Stream::new(
+            <span class="self">self</span>.node,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::FoldKeyed {
+                init: init.splice().into(),
+                acc: comb.splice().into(),
+                input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+            },
+        )
     }
 
     <span class="kw">pub fn </span>reduce_keyed&lt;F: Fn(<span class="kw-2">&amp;mut </span>V, V) + <span class="lifetime">'a</span>&gt;(
         <span class="self">self</span>,
         comb: <span class="kw">impl </span>IntoQuotedMut&lt;<span class="lifetime">'a</span>, F&gt;,
     ) -&gt; Stream&lt;<span class="lifetime">'a</span>, (K, V), Windowed, N&gt; {
-        <span class="kw">let </span>comb = comb.splice();
-
-        <span class="self">self</span>.pipeline_op(<span class="string">"reduce_keyed"</span>, <span class="kw">move </span>|d| {
-            <span class="kw">if </span>d {
-                <span class="prelude-val">Some</span>((<span class="macro">parse_quote!</span>(reduce_keyed::&lt;<span class="lifetime">'static</span>&gt;(#comb)), <span class="bool-val">false</span>))
-            } <span class="kw">else </span>{
-                <span class="prelude-val">Some</span>((<span class="macro">parse_quote!</span>(reduce_keyed::&lt;<span class="lifetime">'tick</span>&gt;(#comb)), <span class="bool-val">false</span>))
-            }
-        })
+        Stream::new(
+            <span class="self">self</span>.node,
+            <span class="self">self</span>.ir_leaves,
+            HfPlusNode::ReduceKeyed {
+                f: comb.splice().into(),
+                input: Box::new(<span class="self">self</span>.ir_node.into_inner()),
+            },
+        )
     }
 }
 

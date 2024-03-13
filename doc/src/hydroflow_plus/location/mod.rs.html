@@ -246,12 +246,6 @@
 <a href="#244" id="244">244</a>
 <a href="#245" id="245">245</a>
 <a href="#246" id="246">246</a>
-<a href="#247" id="247">247</a>
-<a href="#248" id="248">248</a>
-<a href="#249" id="249">249</a>
-<a href="#250" id="250">250</a>
-<a href="#251" id="251">251</a>
-<a href="#252" id="252">252</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::time::Duration;
@@ -349,7 +343,6 @@
             <span class="self">self</span>.ir_leaves(),
             HfPlusNode::Source {
                 source: HfPlusSource::Spin(),
-                produces_delta: <span class="bool-val">false</span>,
                 location_id: <span class="self">self</span>.id(),
             },
         )
@@ -377,7 +370,6 @@
             HfPlusNode::Source {
                 source: HfPlusSource::Stream(e.into()),
                 location_id: <span class="self">self</span>.id(),
-                produces_delta: <span class="bool-val">false</span>,
             },
         )
     }
@@ -401,7 +393,6 @@
                     input: Box::new(HfPlusNode::Source {
                         source: HfPlusSource::Stream(source_pipeline.into()),
                         location_id: <span class="self">self</span>.id(),
-                        produces_delta: <span class="bool-val">false</span>,
                     }),
                 },
             ),
@@ -427,7 +418,6 @@
                     input: Box::new(HfPlusNode::Source {
                         source: HfPlusSource::Stream(source_pipeline.into()),
                         location_id: <span class="self">self</span>.id(),
-                        produces_delta: <span class="bool-val">false</span>,
                     }),
                 },
             ),
@@ -446,7 +436,6 @@
             HfPlusNode::Source {
                 source: HfPlusSource::Iter(e.into()),
                 location_id: <span class="self">self</span>.id(),
-                produces_delta: <span class="bool-val">false</span>,
             },
         )
     }
@@ -463,7 +452,6 @@
             HfPlusNode::Source {
                 source: HfPlusSource::Interval(interval.into()),
                 location_id: <span class="self">self</span>.id(),
-                produces_delta: <span class="bool-val">false</span>,
             },
         )
     }

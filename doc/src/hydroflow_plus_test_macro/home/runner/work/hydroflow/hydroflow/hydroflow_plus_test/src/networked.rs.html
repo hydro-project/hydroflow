@@ -129,6 +129,8 @@
 <a href="#127" id="127">127</a>
 <a href="#128" id="128">128</a>
 <a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::bytes::Bytes;
 <span class="kw">use </span>hydroflow_plus::util::cli::HydroCLI;
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
@@ -180,7 +182,9 @@
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let _ </span>= networked_basic(flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
-    flow.build().emit(<span class="macro">q!</span>(cli.meta.subgraph_id))
+    flow.extract()
+        .optimize_default()
+        .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::runtime]
@@ -220,7 +224,7 @@
             }),
         );
 
-        <span class="macro">insta::assert_debug_snapshot!</span>(builder.build().ir);
+        <span class="macro">insta::assert_debug_snapshot!</span>(builder.extract().ir());
 
         <span class="kw">let </span><span class="kw-2">mut </span>deployment = deployment.into_inner();
 

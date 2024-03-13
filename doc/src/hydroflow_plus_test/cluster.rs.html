@@ -321,6 +321,14 @@
 <a href="#319" id="319">319</a>
 <a href="#320" id="320">320</a>
 <a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
@@ -448,7 +456,9 @@
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let _ </span>= simple_cluster(flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
-    flow.build().emit(<span class="macro">q!</span>(cli.meta.subgraph_id))
+    flow.extract()
+        .optimize_default()
+        .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::entry]
@@ -457,7 +467,9 @@
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let _ </span>= many_to_many(flow, <span class="kw-2">&amp;</span>cli);
-    flow.build().emit(<span class="macro">q!</span>(cli.meta.subgraph_id))
+    flow.extract()
+        .optimize_default()
+        .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::entry]
@@ -466,7 +478,9 @@
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let _ </span>= map_reduce(flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
-    flow.build().emit(<span class="macro">q!</span>(cli.meta.subgraph_id))
+    flow.extract()
+        .optimize_default()
+        .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::entry]
@@ -475,7 +489,9 @@
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">let _ </span>= compute_pi(flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
-    flow.build().emit(<span class="macro">q!</span>(cli.meta.subgraph_id))
+    flow.extract()
+        .optimize_default()
+        .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
 }
 
 <span class="attr">#[stageleft::runtime]
@@ -517,7 +533,7 @@
             }),
         );
 
-        <span class="macro">insta::assert_debug_snapshot!</span>(builder.build().ir);
+        <span class="macro">insta::assert_debug_snapshot!</span>(builder.extract().ir());
 
         <span class="kw">let </span><span class="kw-2">mut </span>deployment = deployment.into_inner();
 
@@ -573,7 +589,7 @@
             }),
         );
 
-        <span class="macro">insta::assert_debug_snapshot!</span>(builder.build().ir);
+        <span class="macro">insta::assert_debug_snapshot!</span>(builder.extract().ir());
 
         <span class="kw">let </span><span class="kw-2">mut </span>deployment = deployment.into_inner();
 
@@ -612,11 +628,11 @@
             <span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>),
             <span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>),
         );
-        <span class="kw">let </span>built = builder.build();
+        <span class="kw">let </span>built = builder.extract();
 
-        <span class="macro">insta::assert_debug_snapshot!</span>(built.ir);
+        <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
-        <span class="kw">for </span>(id, ir) <span class="kw">in </span>built.hydroflow_ir() {
+        <span class="kw">for </span>(id, ir) <span class="kw">in </span>built.optimize_default().hydroflow_ir() {
             <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="macro">format!</span>(<span class="string">"surface_graph_{id}"</span>)}, {
                 <span class="macro">insta::assert_display_snapshot!</span>(ir.surface_syntax_string());
             });
@@ -631,11 +647,11 @@
             <span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>),
             <span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>),
         );
-        <span class="kw">let </span>built = builder.build();
+        <span class="kw">let </span>built = builder.extract();
 
-        <span class="macro">insta::assert_debug_snapshot!</span>(built.ir);
+        <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
-        <span class="kw">for </span>(id, ir) <span class="kw">in </span>built.hydroflow_ir() {
+        <span class="kw">for </span>(id, ir) <span class="kw">in </span>built.optimize_default().hydroflow_ir() {
             <span class="macro">insta::with_settings!</span>({snapshot_suffix =&gt; <span class="macro">format!</span>(<span class="string">"surface_graph_{id}"</span>)}, {
                 <span class="macro">insta::assert_display_snapshot!</span>(ir.surface_syntax_string());
             });
