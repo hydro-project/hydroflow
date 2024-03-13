@@ -54,7 +54,7 @@ impl<T> HydroCLI<T> {
     }
 }
 
-async fn init_no_ack_start<T: DeserializeOwned + Default>() -> HydroCLI<T> {
+pub async fn init_no_ack_start<T: DeserializeOwned + Default>() -> HydroCLI<T> {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
     let trimmed = input.trim();

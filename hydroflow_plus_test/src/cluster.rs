@@ -156,6 +156,7 @@ pub fn map_reduce_runtime<'a>(
 pub fn compute_pi_runtime<'a>(
     flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
+    counters: RuntimeData<&'a std::cell::RefCell<Vec<u64>>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = compute_pi(&flow, &cli, &cli);
     flow.extract()

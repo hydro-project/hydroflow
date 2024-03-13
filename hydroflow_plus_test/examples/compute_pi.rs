@@ -29,7 +29,7 @@ async fn main() {
                     None,
                 )
             }),
-            "release",
+            "dev",
         )
     } else {
         let localhost = deployment.borrow_mut().Localhost();
