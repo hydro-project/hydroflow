@@ -4,6 +4,7 @@ use std::sync::Arc;
 use hydro_deploy::gcp::GCPNetwork;
 use hydro_deploy::{Deployment, Host, HydroflowCrate};
 use hydroflow_plus_cli_integration::{DeployClusterSpec, DeployProcessSpec};
+use stageleft::RuntimeData;
 use tokio::sync::RwLock;
 
 type HostCreator = Box<dyn Fn(&mut Deployment) -> Arc<RwLock<dyn Host>>>;
@@ -66,6 +67,7 @@ async fn main() {
                 })
                 .collect()
         }),
+        RuntimeData::new("FAKE")
     );
 
     let mut deployment = deployment.into_inner();

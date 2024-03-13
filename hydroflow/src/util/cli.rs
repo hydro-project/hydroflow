@@ -8,16 +8,21 @@ use serde::de::DeserializeOwned;
 
 use crate::scheduled::graph::Hydroflow;
 
-pub async fn launch<T: DeserializeOwned + Default>(
-    flow: impl FnOnce(&HydroCLI<T>) -> Hydroflow<'_>,
-) {
-    let ports = init_no_ack_start::<T>().await;
-    let flow = flow(&ports);
+#[macro_export]
+macro_rules! launch {
+    ($f:expr) => {
+        async {
+            let ports = $crate::util::cli::init_no_ack_start().await;
+            let flow = $f(&ports);
 
-    println!("ack start");
+            println!("ack start");
 
-    launch_flow(flow).await;
+            $crate::util::cli::launch_flow(flow).await
+        }
+    };
 }
+
+pub use crate::launch;
 
 pub async fn launch_flow(mut flow: Hydroflow<'_>) {
     let stop = tokio::sync::oneshot::channel();
@@ -54,7 +59,7 @@ impl<T> HydroCLI<T> {
     }
 }
 
-async fn init_no_ack_start<T: DeserializeOwned + Default>() -> HydroCLI<T> {
+pub async fn init_no_ack_start<T: DeserializeOwned + Default>() -> HydroCLI<T> {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
     let trimmed = input.trim();
