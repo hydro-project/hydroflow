@@ -312,6 +312,17 @@
 <a href="#310" id="310">310</a>
 <a href="#311" id="311">311</a>
 <a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
 </pre></div><pre class="rust"><code><span class="attr">#[rust_sitter::grammar(<span class="string">"datalog"</span>)]
 #[allow(dead_code)]
 </span><span class="kw">pub mod </span>datalog {
@@ -462,9 +473,10 @@
             <span class="kw">match </span><span class="self">self </span>{
                 TargetExpr::Expr(e) =&gt; e.idents(),
                 TargetExpr::Aggregation(Aggregation::Count(<span class="kw">_</span>)) =&gt; <span class="macro">vec!</span>[],
-                TargetExpr::Aggregation(Aggregation::CountUnique(<span class="kw">_</span>, <span class="kw">_</span>, idents, <span class="kw">_</span>)) =&gt; {
-                    idents.iter().map(|i| <span class="kw-2">&amp;</span>i.value).collect()
-                }
+                TargetExpr::Aggregation(
+                    Aggregation::CountUnique(<span class="kw">_</span>, <span class="kw">_</span>, idents, <span class="kw">_</span>)
+                    | Aggregation::CollectVec(<span class="kw">_</span>, <span class="kw">_</span>, idents, <span class="kw">_</span>),
+                ) =&gt; idents.iter().map(|i| <span class="kw-2">&amp;</span>i.value).collect(),
                 TargetExpr::Aggregation(
                     Aggregation::Min(<span class="kw">_</span>, <span class="kw">_</span>, a, <span class="kw">_</span>)
                     | Aggregation::Max(<span class="kw">_</span>, <span class="kw">_</span>, a, <span class="kw">_</span>)
@@ -511,6 +523,16 @@
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">"choose"</span>)] </span>(),
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">"("</span>)] </span>(),
             Spanned&lt;Ident&gt;,
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">")"</span>)] </span>(),
+        ),
+        CollectVec(
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"collect_vec"</span>)] </span>(),
+            <span class="attr">#[rust_sitter::leaf(text = <span class="string">"("</span>)] </span>(),
+            <span class="attr">#[rust_sitter::delimited(
+                <span class="attr">#[rust_sitter::leaf(text = <span class="string">","</span>)]
+                </span>()
+            )]
+            Vec&lt;Spanned&lt;Ident&gt;&gt;,
             <span class="attr">#[rust_sitter::leaf(text = <span class="string">")"</span>)] </span>(),
         ),
     }
