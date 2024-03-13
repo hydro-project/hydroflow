@@ -64,7 +64,7 @@ Replace the contents of `src/main.rs` with the following:
 Here the `filter_map` operator takes a map closure that returns a Rust [`Option`](https://doc.rust-lang.org/std/option/enum.Option.html).
 If the value is `Some(...)`, it is passed to the output; if it is `None` it is filtered.
 
-The `flat_map` operator takes a map closure that generates a iterable type (in this case a `RangeInclusive`)
+The `flat_map` operator takes a map closure that generates an iterable type (in this case a `RangeInclusive`)
 which is flattened.
 
 Results:
