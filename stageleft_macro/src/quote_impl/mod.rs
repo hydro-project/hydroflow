@@ -54,7 +54,7 @@ pub fn q_impl(root: TokenStream, expr: syn::Expr) -> TokenStream {
                 }
             }
 
-            #[allow(unreachable_code)]
+            #[allow(unreachable_code, unused_qualifications)]
             {
                 #expr
             }
