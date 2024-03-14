@@ -36,6 +36,7 @@ pub use builder::FlowBuilder;
 pub mod ir;
 
 pub mod persist_pullup;
+pub mod profiler;
 
 #[derive(Clone)]
 pub struct RuntimeContext<'a> {

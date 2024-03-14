@@ -52,11 +52,12 @@ mod tests {
             .map(q!(|v| v + 1))
             .for_each(q!(|n| println!("{}", n)));
 
-        let built = flow.build();
+        let built = flow.extract();
 
         insta::assert_debug_snapshot!(&built.ir);
 
-        let pushed_down = built.optimize_with(|ir| super::profiling(ir, flow.runtime_context()));
+        let counters = RuntimeData::new("Fake");
+        let pushed_down = built.optimize_with(|ir| super::profiling(ir, flow.runtime_context(), counters));
 
         insta::assert_debug_snapshot!(&pushed_down.ir);
     }
