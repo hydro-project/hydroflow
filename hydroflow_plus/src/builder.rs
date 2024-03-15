@@ -99,11 +99,21 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
     }
 }
 
-#[derive(Clone)]
 pub struct BuiltFlow<'a, D: LocalDeploy<'a>> {
     pub(crate) ir: Vec<HfPlusLeaf>,
 
     _phantom: PhantomData<&'a mut &'a D>,
+}
+
+impl <'a, D: LocalDeploy<'a>> Clone for BuiltFlow<'a, D> {
+    fn clone(&self) -> Self {
+        BuiltFlow {
+            ir: self.ir.clone(),
+            nodes: self.nodes.clone(),
+            clusters: self.clusters.clone(),
+            _phantom: PhantomData,
+        }
+    }
 }
 
 impl<'a, D: LocalDeploy<'a>> BuiltFlow<'a, D> {
