@@ -58,8 +58,7 @@ mod tests {
         insta::assert_debug_snapshot!(&built.ir);
 
         // Print mermaid
-        let mut mermaid_config: WriteConfig = Default::default();
-        mermaid_config.op_text_no_imports = true;
+        let mut mermaid_config = WriteConfig {op_text_no_imports: true, ..Default::default()};
         for (_, ir) in built.clone().optimize_default().hydroflow_ir() {
             println!("{}", ir.to_mermaid(&mermaid_config));
         }
