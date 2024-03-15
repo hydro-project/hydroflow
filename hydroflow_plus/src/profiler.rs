@@ -40,6 +40,7 @@ mod tests {
     use stageleft::*;
 
     use crate::{Location, MultiGraph};
+    use hydroflow_lang::graph::WriteConfig;
 
     #[test]
     fn predicate_pushdown_through_map() {
@@ -55,6 +56,13 @@ mod tests {
         let built = flow.extract();
 
         insta::assert_debug_snapshot!(&built.ir);
+
+        // Print mermaid
+        let mut mermaid_config: WriteConfig = Default::default();
+        mermaid_config.op_text_no_imports = true;
+        for (_, ir) in built.clone().optimize_default().hydroflow_ir() {
+            println!("{}", ir.to_mermaid(&mermaid_config));
+        }
 
         let counters = RuntimeData::new("Fake");
         let pushed_down = built.optimize_with(|ir| super::profiling(ir, flow.runtime_context(), counters));

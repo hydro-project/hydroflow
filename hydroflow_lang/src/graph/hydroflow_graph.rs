@@ -1351,6 +1351,18 @@ impl HydroflowGraph {
                 node_id,
                 &*if write_config.op_short_text {
                     node.to_name_string()
+                } else if write_config.op_text_no_imports {
+                    // Remove any lines that start with "use" (imports)
+                    let full_text = node.to_pretty_string();
+                    let mut output = String::new();
+                    for sentence in full_text.split("\n") {
+                        if sentence.trim().starts_with("use") {
+                            continue;
+                        }
+                        output.push_str("\n");
+                        output.push_str(sentence);
+                    }
+                    output.into()
                 } else {
                     node.to_pretty_string()
                 },
@@ -1519,6 +1531,9 @@ pub struct WriteConfig {
     /// Op text will only be their name instead of the whole source.
     #[cfg_attr(feature = "debugging", arg(long))]
     pub op_short_text: bool,
+    /// Op text will exclude any line that starts with "use".
+    #[cfg_attr(feature = "debugging", arg(long))]
+    pub op_text_no_imports: bool,
 }
 
 /// Enum for choosing between mermaid and dot graph writing.
