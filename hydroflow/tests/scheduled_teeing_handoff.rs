@@ -13,10 +13,15 @@ fn test_basic() {
     let (source, sink1) = df.make_edge::<_, TeeingHandoff<i32>>("ok");
     let sink2 = sink1.tee(&mut df);
     let sink3 = sink2.tee(&mut df);
+    let sink4 = sink3.tee(&mut df);
+    let sink5 = sink4.tee(&mut df);
+    sink4.drop(&mut df);
 
     df.add_subgraph_source("source", source, move |_context, send| {
         send.give(std::mem::take(&mut data));
     });
+    sink5.drop(&mut df);
+
     let out1 = Rc::new(RefCell::new(Vec::new()));
     let out1_inner = out1.clone();
 
@@ -36,7 +41,7 @@ fn test_basic() {
 
     let out3 = Rc::new(RefCell::new(Vec::new()));
     let out3_inner = out3.clone();
-    df.add_subgraph_sink("sink2", sink3, move |_context, recv| {
+    df.add_subgraph_sink("sink3", sink3, move |_context, recv| {
         for v in recv.take_inner() {
             out3_inner.borrow_mut().extend(v);
         }

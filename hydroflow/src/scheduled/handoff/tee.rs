@@ -21,7 +21,8 @@ impl<T> Default for ReaderHandoff<T> {
 }
 
 struct TeeingHandoffInternal<T> {
-    readers: Vec<ReaderHandoff<T>>,
+    /// (is alive, reader)
+    readers: Vec<(bool, ReaderHandoff<T>)>,
 }
 
 /// A [Handoff] which is part of a "family" of handoffs. Writing to this handoff
@@ -40,7 +41,7 @@ impl<T> Default for TeeingHandoff<T> {
         TeeingHandoff {
             read_from: 0,
             internal: Rc::new(RefCell::new(TeeingHandoffInternal {
-                readers: vec![Default::default()],
+                readers: vec![(true, ReaderHandoff::<T>::default())],
             })),
         }
     }
@@ -56,11 +57,16 @@ where
         (*self.internal)
             .borrow_mut()
             .readers
-            .push(ReaderHandoff::default());
+            .push((true, ReaderHandoff::default()));
         Self {
             read_from: id,
             internal: self.internal.clone(),
         }
+    }
+
+    /// mark this teeing handoff as dead, so no more data will be written to it.
+    pub(crate) fn mark_as_dead(&self) {
+        self.internal.borrow_mut().readers[self.read_from].0 = false;
     }
 }
 
@@ -75,7 +81,7 @@ impl<T> HandoffMeta for TeeingHandoff<T> {
             .borrow()
             .readers
             .iter()
-            .all(|r| r.contents.is_empty())
+            .all(|r| r.1.contents.is_empty())
     }
 }
 
@@ -83,7 +89,11 @@ impl<T> Handoff for TeeingHandoff<T> {
     type Inner = VecDeque<Vec<T>>;
 
     fn take_inner(&self) -> Self::Inner {
-        std::mem::take(&mut (*self.internal).borrow_mut().readers[self.read_from].contents)
+        std::mem::take(
+            &mut (*self.internal).borrow_mut().readers[self.read_from]
+                .1
+                .contents,
+        )
     }
 
     fn borrow_mut_swap(&self) -> std::cell::RefMut<Self::Inner> {
@@ -99,9 +109,13 @@ where
         let readers = &mut (*self.internal).borrow_mut().readers;
         if let Some((last, rest)) = readers.split_last_mut() {
             for reader in rest {
-                reader.contents.push_back(vec.clone());
+                if reader.0 {
+                    reader.1.contents.push_back(vec.clone());
+                }
             }
-            last.contents.push_back(vec);
+            if last.0 {
+                last.1.contents.push_back(vec);
+            }
         }
         Vec::new()
     }

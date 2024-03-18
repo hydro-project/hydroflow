@@ -64,6 +64,17 @@ impl<T: Clone> RecvPort<TeeingHandoff<T>> {
         };
         output_port
     }
+
+    /// Mark this teeing recv port as dead, so no more data will be written to it.
+    pub fn drop(self, df: &mut Hydroflow) {
+        let data = df.get_handoff_by_id(self.handoff_id);
+        let typed_handoff = data
+            .handoff
+            .any_ref()
+            .downcast_ref::<TeeingHandoff<T>>()
+            .unwrap();
+        typed_handoff.mark_as_dead();
+    }
 }
 
 /// Wrapper around a handoff to differentiate between output and input.
