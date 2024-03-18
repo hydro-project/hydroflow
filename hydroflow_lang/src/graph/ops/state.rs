@@ -7,7 +7,32 @@ use super::{
 };
 use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance, PortIndexValue};
 
-// TODO(mingwei)
+/// A lattice-based state operator, used for accumulating lattice state
+///
+/// Emits both a referenceable accumulated value `state`, and a pass-through stream `items`. In the
+/// future the pass-through stream may be deduplicated.
+///
+/// ```hydroflow
+/// use std::collections::HashSet;
+///
+/// use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
+///
+/// lhs = source_iter_delta(0..3)
+///     -> map(SetUnionSingletonSet::new_from)
+///     -> state::<SetUnionHashSet<usize>>();
+/// rhs = source_iter_delta(3..5)
+///     -> map(SetUnionSingletonSet::new_from)
+///     -> state::<SetUnionHashSet<usize>>();
+///
+/// lhs[items] -> [items_0]my_join;
+/// rhs[items] -> [items_1]my_join;
+/// lhs[state] -> [state_0]my_join;
+/// rhs[state] -> [state_1]my_join;
+///
+/// my_join = lattice_bimorphism(CartesianProductBimorphism::<HashSet<_>>::default())
+///     -> lattice_reduce()
+///     -> for_each(|x| println!("{:?}", x));
+/// ```
 pub const STATE: OperatorConstraints = OperatorConstraints {
     name: "state",
     categories: &[OperatorCategory::Persistence],
