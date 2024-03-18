@@ -6,10 +6,12 @@ use std::time::Duration;
 
 use chrono::{DateTime, Utc, MIN_DATETIME};
 use clap::{Parser, ValueEnum};
+use itertools::Itertools;
 use hydroflow::hydroflow_syntax;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use tokio::time::sleep;
 use rand::random;
+use hydroflow_lang::graph::WriteGraphType::Mermaid;
 use crate::protocol::Message::KnownMessages;
 use crate::protocol::{ChatMessage, Message};
 
@@ -34,6 +36,16 @@ impl Role {
         }
         .unwrap()
     }
+
+    fn user_id(&self) -> &str {
+        match self {
+            Role::Peer1 => "Peer1",
+            Role::Peer2 => "Peer2",
+            Role::Peer3 => "Peer3",
+            Role::Peer4 => "Peer4",
+            Role::Peer5 => "Peer5",
+        }
+    }
 }
 
 /// TODO: Help text coming soon.
@@ -48,33 +60,48 @@ struct Opts {
 async fn main() {
     let opts = Opts::parse();
 
-    // let addr = opts.role.listening_address();
-    // let (_outbound, _inbound, addr) = bind_udp_bytes(addr).await;
+    let addr = opts.role.listening_address();
+    let (sink, source, addr) = bind_udp_bytes(addr).await;
 
-    // println!("Listening on {:?}", addr);
     let (sender, receiver) = hydroflow::util::unbounded_channel::<Message>();
 
+    clear_screen();
+
     let mut flow = hydroflow_syntax! {
-        // outbound_chan = dest_sink_serde(outbound);
-        // inbound_chan = source_stream_serde(inbound);
+        outbound = dest_sink_serde(sink);
+        inbound = source_stream_serde(source);
 
         all_peers = source_iter([Role::Peer1, Role::Peer2, Role::Peer3, Role::Peer4, Role::Peer5])
             -> [0]gossip;
 
         known_messages = union()
             -> fold::<'static>(HashSet::new, |accum: &mut HashSet<ChatMessage>, elem| { accum.insert(elem) })
-            -> [1]trigger_gossip;
+            -> tee();
 
-        source_stream(receiver)
-            -> flat_map(|message| {
+        inbound
+            -> map(Result::unwrap)
+            -> flat_map(|(message, addr)| {
                 match message {
                     KnownMessages{ messages } => messages
                 }
             })
             -> [0]known_messages;
 
+        known_messages
+            -> for_each(|known_messages : HashSet<ChatMessage>| {
+                clear_screen();
+
+                let sorted_messages = known_messages.iter()
+                    .sorted_by_key(|message| message.ts);
+
+                for message in sorted_messages {
+                    println!("{:?}", message);
+                }
+            });
+        known_messages -> [1]trigger_gossip;
+
         source_stdin()
-            -> map(|line| ChatMessage { user_id: "rohit".to_owned(), message: line.unwrap(), ts: Utc::now() })
+            -> map(|line| ChatMessage { user_id: opts.role.user_id().to_owned(), message: line.unwrap(), ts: Utc::now() })
             -> [1]known_messages;
 
         trigger_gossip = zip()
@@ -85,18 +112,28 @@ async fn main() {
             -> filter_map(|(role, known_messages)| {
 
                 if random() {
-                    Some((known_messages, role.listening_address()))
+                    Some((KnownMessages { messages: known_messages  }, role.listening_address()))
                 } else {
                     None
                 }
 
                })
-            -> for_each(|(role, known_messages)| println!("{:?}", known_messages));
+            -> outbound;
 
         source_interval(Duration::from_secs(1)) -> [0]trigger_gossip;
 
     };
 
+
+    // let serde_graph = flow
+    //     .meta_graph()
+    //     .expect("No graph found, maybe failed to parse.");
+    // serde_graph.open_graph(Mermaid, None).unwrap();
+
     flow.run_async().await.unwrap();
+}
+
+fn clear_screen() {
+    print!("\x1B[2J\x1B[1;1H");
 }
 // println!("\x1B[2J\x1B[1;1H{:?}", known_messages)
