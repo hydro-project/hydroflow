@@ -63,15 +63,7 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
             -> map(|(_addr, nickname, message, ts)| ChatMessage { nickname, message, ts })
             -> tee();
 
-        messages_from_connected_client[0]
-            -> map(|chat_msg| Message::ChatMsg {
-                nickname: chat_msg.nickname,
-                message: chat_msg.message,
-                ts: chat_msg.ts     })
-            -> [0]broadcast;
-        messages_from_connected_client[1]
-            -> map(|msg| InfectionOperation::InfectWithMessage { msg })
-            -> infecting_messages;
+        messages_from_connected_client[0] -> maybe_new_messages;
 
         clients[1] -> [1]broadcast;
         broadcast = cross_join::<'tick, 'static>() -> [1]client_out;
@@ -92,8 +84,20 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
         maybe_new_messages -> [pos]actually_new_messages;
         all_messages -> [neg]actually_new_messages;
 
-        // When we have a new message, we should add it to the set of known messages.
-        actually_new_messages -> defer_tick() -> all_messages;
+        // When we have a new message, we should do 3 things
+        // 1. Broadcast it to the clients connected locally.
+        // 2. Add it to the set of known messages.
+        // 3. Add it to the set of messages currently infecting this server.
+        actually_new_messages -> defer_tick() -> all_messages; // Add to known messages
+        actually_new_messages
+            -> map(|chat_msg: ChatMessage| Message::ChatMsg {
+                    nickname: chat_msg.nickname,
+                    message: chat_msg.message,
+                    ts: chat_msg.ts})
+            -> [0]broadcast;
+        actually_new_messages
+            -> map(|msg: ChatMessage| InfectionOperation::InfectWithMessage { msg })
+            -> infecting_messages;
 
         // Holds all the known messages
         all_messages = fold::<'static>(HashSet::<ChatMessage>::new, |accum, message| {
