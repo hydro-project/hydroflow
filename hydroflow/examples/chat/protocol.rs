@@ -4,7 +4,7 @@ use chrono::prelude::*;
 use hydroflow_macro::DemuxEnum;
 use serde::{Deserialize, Serialize};
 
-#[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug, DemuxEnum)]
+#[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug, DemuxEnum, Hash)]
 pub enum Message {
     ConnectRequest,
     ConnectResponse,
@@ -14,6 +14,7 @@ pub enum Message {
         ts: DateTime<Utc>,
     },
 }
+
 
 #[derive(Clone, Debug, DemuxEnum)]
 pub enum MessageWithAddr {
