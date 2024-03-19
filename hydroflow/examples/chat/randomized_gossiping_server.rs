@@ -1,5 +1,9 @@
 use std::collections::HashSet;
+use std::net::SocketAddr;
+use std::time::Duration;
 use chrono::{DateTime, Utc};
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
@@ -22,6 +26,17 @@ enum InfectionOperation {
     RemoveForMessage { msg: ChatMessage },
 }
 
+fn gossip_address(role: &Role) -> SocketAddr {
+    match role {
+        Role::Client | Role::Server => { panic!("Incorrect role {:?} for gossip server.", role) }
+        Role::GossipingServer1 => ipv4_resolve("localhost:54322"),
+        Role::GossipingServer2 => ipv4_resolve("localhost:54323"),
+        Role::GossipingServer3 => ipv4_resolve("localhost:54324"),
+        Role::GossipingServer4 => ipv4_resolve("localhost:54325"),
+        Role::GossipingServer5 => ipv4_resolve("localhost:54326"),
+    }.unwrap()
+}
+
 pub(crate) async fn run_gossiping_server(opts: Opts) {
     // If a server address & port are provided as command-line inputs, use those, else use the
     // default.
@@ -29,21 +44,14 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
         .address
         .unwrap_or_else(|| default_server_address());
 
-    let gossip_address = match opts.role {
-        Role::Client | Role::Server => { panic!("Incorrect role {:?} for gossip server.", opts.role)}
-        Role::GossipingServer1 => ipv4_resolve("localhost:54322"),
-        Role::GossipingServer2 => ipv4_resolve("localhost:54323"),
-        Role::GossipingServer3 => ipv4_resolve("localhost:54324"),
-        Role::GossipingServer4 => ipv4_resolve("localhost:54325"),
-        Role::GossipingServer5 => ipv4_resolve("localhost:54326"),
-    }.unwrap();
+    let gossip_listening_addr = gossip_address(&opts.role);
 
     println!("Starting server on {:?}", server_address);
 
     let (client_outbound, client_inbound, actual_server_addr) = bind_udp_bytes(server_address).await;
-    let (gossip_outbound, gossip_inbound, _) = bind_udp_bytes(gossip_address).await;
+    let (gossip_outbound, gossip_inbound, _) = bind_udp_bytes(gossip_listening_addr).await;
 
-    println!("Server is live! Listening on {:?}. Gossiping On: {:?}", actual_server_addr, gossip_address);
+    println!("Server is live! Listening on {:?}. Gossiping On: {:?}", actual_server_addr, gossip_listening_addr);
 
     let mut hf: Hydroflow = hydroflow_syntax! {
         // Define shared inbound and outbound channels
@@ -110,7 +118,31 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
                 InfectionOperation::InfectWithMessage{ msg } => {accum.insert(msg)},
                 InfectionOperation::RemoveForMessage{ msg } => { accum.remove(&msg) }
             }
-        }) -> null();
+        }) -> flatten();
+
+        random_gossip_peer = source_iter([
+            Role::GossipingServer1,
+            Role::GossipingServer2,
+            Role::GossipingServer3,
+            Role::GossipingServer4,
+            Role::GossipingServer5,
+        ].choose(&mut thread_rng()))
+        -> map(|role| gossip_address(role))
+        -> null();
+
+        // Infection process.
+        // infecting_messages_to_dispatch is a stream of chat messages that are ready to dispatch
+        // to random members. These are created by a timed trigger.
+        infecting_messages_to_dispatch = cross_join()
+            -> map(|(instant, message)| message)
+            -> tee();
+        infecting_messages -> [1]infecting_messages_to_dispatch;
+        // The time trigger to perform a round of gossip
+        source_interval(Duration::from_secs(1)) -> [0]infecting_messages_to_dispatch;
+
+
+
+
     };
 
     if let Some(graph) = opts.graph {
