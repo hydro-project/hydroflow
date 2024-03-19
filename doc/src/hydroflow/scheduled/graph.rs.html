@@ -804,6 +804,7 @@
 <a href="#802" id="802">802</a>
 <a href="#803" id="803">803</a>
 <a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for the [`Hydroflow`] struct and helper items.
 
 </span><span class="kw">use </span>std::any::Any;
@@ -817,6 +818,7 @@
 <span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
 <span class="kw">use </span>instant::Instant;
 <span class="kw">use </span>ref_cast::RefCast;
+<span class="kw">use </span>smallvec::SmallVec;
 <span class="kw">use </span>tokio::sync::mpsc::{<span class="self">self</span>, UnboundedReceiver};
 
 <span class="kw">use </span><span class="kw">super</span>::context::Context;
@@ -1530,8 +1532,8 @@
     </span><span class="kw">pub</span>(<span class="kw">super</span>) name: Cow&lt;<span class="lifetime">'static</span>, str&gt;,
     <span class="doccomment">/// Crate-visible to crate for `handoff_list` internals.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) handoff: Box&lt;<span class="kw">dyn </span>HandoffMeta&gt;,
-    <span class="kw">pub</span>(<span class="kw">super</span>) preds: Vec&lt;SubgraphId&gt;,
-    <span class="kw">pub</span>(<span class="kw">super</span>) succs: Vec&lt;SubgraphId&gt;,
+    <span class="kw">pub</span>(<span class="kw">super</span>) preds: SmallVec&lt;[SubgraphId; <span class="number">1</span>]&gt;,
+    <span class="kw">pub</span>(<span class="kw">super</span>) succs: SmallVec&lt;[SubgraphId; <span class="number">1</span>]&gt;,
 }
 <span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>HandoffData {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), std::fmt::Error&gt; {
