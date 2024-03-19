@@ -4,7 +4,7 @@ use hydroflow::hydroflow_syntax;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve, UdpSink, UdpStream};
 
 use crate::protocol::Message;
-use crate::{ Opts, Role};
+use crate::{default_server_address, Opts, Role};
 
 fn pretty_print_msg(nickname: String, message: String, ts: DateTime<Utc>) {
     println!(
@@ -21,13 +21,13 @@ fn pretty_print_msg(nickname: String, message: String, ts: DateTime<Utc>) {
 
 pub(crate) async fn run_client(opts: Opts) {
     // Client listens on a port picked by the OS.
-    let client_addr = opts.role.listening_address();
+    let client_addr = ipv4_resolve("localhost:0").unwrap();
 
     // Use the server address that was provided in the command-line arguments, or use the default
     // if one was not provided.
     let server_addr = opts
         .address
-        .unwrap_or_else(|| Role::default_server_address());
+        .unwrap_or_else(|| default_server_address());
 
     let (outbound, inbound, allocated_client_addr) = bind_udp_bytes(client_addr).await;
 

@@ -3,7 +3,7 @@ use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve, UdpSink, UdpStream};
 
 use crate::protocol::{Message, MessageWithAddr};
-use crate::{Opts, Role};
+use crate::{default_server_address, Opts, Role};
 
 pub(crate) async fn run_server(opts: Opts) {
     println!("Server live!");
@@ -12,7 +12,7 @@ pub(crate) async fn run_server(opts: Opts) {
     // default.
     let server_address = opts
         .address
-        .unwrap_or_else(|| Role::default_server_address());
+        .unwrap_or_else(|| default_server_address());
 
     println!("Starting server on {:?}", server_address);
 

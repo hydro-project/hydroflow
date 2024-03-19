@@ -23,22 +23,10 @@ enum Role {
     GossipingServer5,
 }
 
-impl Role {
-    fn listening_address(&self) -> SocketAddr {
-        match self {
-            Role::Client => ipv4_resolve("localhost:0").unwrap(),
-            Role::Server | Role::GossipingServer1 => Self::default_server_address(),
-            Role::GossipingServer2 => ipv4_resolve("localhost:54322").unwrap(),
-            Role::GossipingServer3 => ipv4_resolve("localhost:54323").unwrap(),
-            Role::GossipingServer4 => ipv4_resolve("localhost:54324").unwrap(),
-            Role::GossipingServer5 => ipv4_resolve("localhost:54325").unwrap(),
-        }
-    }
-
-    fn default_server_address() -> SocketAddr {
-        ipv4_resolve("localhost:54321").unwrap()
-    }
+pub fn default_server_address() -> SocketAddr {
+    ipv4_resolve("localhost:54321").unwrap()
 }
+
 
 #[derive(Parser, Debug)]
 struct Opts {
