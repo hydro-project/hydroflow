@@ -1,4 +1,6 @@
 use std::collections::HashSet;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use hydroflow_macro::hydroflow_syntax;
@@ -7,9 +9,17 @@ use crate::{default_server_address, Opts, Role};
 use crate::protocol::{Message, MessageWithAddr};
 use crate::protocol::Message::ChatMsg;
 
+
+#[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug, Hash)]
+pub struct ChatMessage {
+    nickname: String,
+    message: String,
+    ts: DateTime<Utc>,
+}
+
 enum InfectionOperation {
-    InfectWithMessage { msg: Message },
-    RemoveForMessage { msg: Message },
+    InfectWithMessage { msg: ChatMessage },
+    RemoveForMessage { msg: ChatMessage },
 }
 
 pub(crate) async fn run_gossiping_server(opts: Opts) {
@@ -50,10 +60,16 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
 
         // Pipeline 2: Broadcast messages to all clients and gossip to other servers
         messages_from_connected_client = client_in[ChatMsg]
-            -> map(|(_addr, nickname, message, ts)| ChatMsg { nickname, message, ts})
+            -> map(|(_addr, nickname, message, ts)| ChatMessage { nickname, message, ts })
             -> tee();
 
-        messages_from_connected_client[0] -> [0]broadcast;
+        messages_from_connected_client[0]
+            -> map(|chat_msg| Message::ChatMsg {
+                nickname: chat_msg.nickname,
+                message: chat_msg.message,
+                ts: chat_msg.ts,
+            } )
+            -> [0]broadcast;
         messages_from_connected_client[1]
             -> map(|msg| InfectionOperation::InfectWithMessage { msg })
             -> infecting_messages;
@@ -69,7 +85,7 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
         //
         // null() -> gossip_out;
 
-        infecting_messages = fold::<'static>(HashSet::<Message>::new, |accum, op| {
+        infecting_messages = fold::<'static>(HashSet::<ChatMessage>::new, |accum, op| {
             match op {
                 InfectionOperation::InfectWithMessage{ msg } => {accum.insert(msg)},
                 InfectionOperation::RemoveForMessage{ msg } => { accum.remove(&msg) }
