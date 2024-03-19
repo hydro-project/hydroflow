@@ -11,6 +11,7 @@ use hydroflow_lang::diagnostic::{Diagnostic, SerdeSpan};
 use hydroflow_lang::graph::HydroflowGraph;
 use instant::Instant;
 use ref_cast::RefCast;
+use smallvec::SmallVec;
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 
 use super::context::Context;
@@ -724,8 +725,8 @@ pub struct HandoffData {
     pub(super) name: Cow<'static, str>,
     /// Crate-visible to crate for `handoff_list` internals.
     pub(super) handoff: Box<dyn HandoffMeta>,
-    pub(super) preds: Vec<SubgraphId>,
-    pub(super) succs: Vec<SubgraphId>,
+    pub(super) preds: SmallVec<[SubgraphId; 1]>,
+    pub(super) succs: SmallVec<[SubgraphId; 1]>,
 }
 impl std::fmt::Debug for HandoffData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
