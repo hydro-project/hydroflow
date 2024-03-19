@@ -65187,12 +65187,6 @@ window.BENCHMARK_DATA =
             "unit": "ns/iter"
           },
           {
-            "name": "micro/ops/join",
-            "value": 3893520,
-            "range": "± 14075",
-            "unit": "ns/iter"
-          },
-          {
             "name": "micro/ops/difference",
             "value": 101382,
             "range": "± 948",
@@ -65220,12 +65214,6 @@ window.BENCHMARK_DATA =
             "name": "micro/ops/sort",
             "value": 145231,
             "range": "± 2600",
-            "unit": "ns/iter"
-          },
-          {
-            "name": "micro/ops/crossjoin",
-            "value": 3915221,
-            "range": "± 24733",
             "unit": "ns/iter"
           },
           {
