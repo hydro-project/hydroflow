@@ -67,8 +67,7 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
             -> map(|chat_msg| Message::ChatMsg {
                 nickname: chat_msg.nickname,
                 message: chat_msg.message,
-                ts: chat_msg.ts,
-            } )
+                ts: chat_msg.ts     })
             -> [0]broadcast;
         messages_from_connected_client[1]
             -> map(|msg| InfectionOperation::InfectWithMessage { msg })
@@ -85,6 +84,23 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
         //
         // null() -> gossip_out;
 
+        // If you think there may be a new message, send it here.
+        maybe_new_messages = union();
+
+        // Actually new message is a stream of messages that have never been seen before.
+        actually_new_messages = difference() -> tee();
+        maybe_new_messages -> [pos]actually_new_messages;
+        all_messages -> [neg]actually_new_messages;
+
+        // When we have a new message, we should add it to the set of known messages.
+        actually_new_messages -> defer_tick() -> all_messages;
+
+        // Holds all the known messages
+        all_messages = fold::<'static>(HashSet::<ChatMessage>::new, |accum, message| {
+            accum.insert(message)
+        }) -> flatten();
+
+        // Holds a set of messages that are currently infecting this server
         infecting_messages = fold::<'static>(HashSet::<ChatMessage>::new, |accum, op| {
             match op {
                 InfectionOperation::InfectWithMessage{ msg } => {accum.insert(msg)},
