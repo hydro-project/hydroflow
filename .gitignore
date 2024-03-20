@@ -8,3 +8,5 @@ __pycache__/
 perf.data
 perf.data.old
 flamegraph.svg
+
+/rustc-ice-*.txt
