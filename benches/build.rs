@@ -4,7 +4,13 @@ use std::path::PathBuf;
 
 const NUM_OPS: usize = 20;
 
-pub fn main() -> std::io::Result<()> {
+pub fn main() {
+    if let Err(err) = fork_join() {
+        eprintln!("benches/build.rs error: {:?}", err);
+    }
+}
+
+pub fn fork_join() -> std::io::Result<()> {
     let path = PathBuf::from_iter([
         env!("CARGO_MANIFEST_DIR"),
         "benches",

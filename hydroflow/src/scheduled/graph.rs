@@ -3,7 +3,7 @@
 use std::any::Any;
 use std::borrow::Cow;
 use std::cell::Cell;
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::collections::VecDeque;
 use std::future::Future;
 use std::marker::PhantomData;
 
@@ -28,12 +28,8 @@ use crate::Never;
 pub struct Hydroflow<'a> {
     pub(super) subgraphs: Vec<SubgraphData<'a>>,
     pub(super) context: Context,
+
     handoffs: Vec<HandoffData>,
-    /// The root handoff of a handoff that's tee'd.
-    /// child -> root
-    handoff_root: BTreeMap<HandoffId, HandoffId>,
-    /// The set of child handoffs of a root tee handoff
-    handoff_tee_childs: BTreeMap<HandoffId, BTreeSet<HandoffId>>,
 
     /// TODO(mingwei): separate scheduler into its own struct/trait?
     /// Index is stratum, value is FIFO queue for that stratum.
@@ -74,8 +70,6 @@ impl<'a> Default for Hydroflow<'a> {
             subgraphs: Vec::new(),
             context,
             handoffs: Vec::new(),
-            handoff_root: BTreeMap::new(),
-            handoff_tee_childs: BTreeMap::new(),
 
             stratum_queues,
             event_queue_recv,
@@ -92,29 +86,23 @@ impl<'a> Hydroflow<'a> {
     pub(crate) fn add_tee_handoff<Name: Into<Cow<'static, str>>>(
         &mut self,
         name: Name,
-        mut root: HandoffId,
+        tee_parent: HandoffId,
         handoff: impl HandoffMeta + 'static,
     ) -> HandoffId {
         let handoff_id = HandoffId(self.handoffs.len());
-        let old_root = root;
-        while let Some(prev) = self.handoff_root.get(&root) {
-            if prev == &root {
-                break;
-            }
-            root = *prev;
-        }
-        // compress the path. so cases like 0 -tee-> 1, 1 -tee->2, will allow
-        // 2  to correctly know root being 0
-        self.handoff_root.insert(old_root, root);
-        // insert handoff's root id.
-        self.handoff_root.insert(handoff_id, root);
-        self.handoff_tee_childs
-            .entry(root)
-            .or_default()
-            .insert(handoff_id);
 
         // insert handoff.
-        self.handoffs.push(HandoffData::new(name.into(), handoff));
+        self.handoffs
+            .push(HandoffData::new(name.into(), handoff, handoff_id));
+
+        // Set up teeing metadata.
+        // If we're teeing from a child make sure to find root.
+        let tee_root = self.handoffs[tee_parent.0].pred_handoffs[0];
+        // Go to `tee_root`'s successors and insert self.
+        self.handoffs[tee_root.0].succ_handoffs.push(handoff_id);
+        // Set self's predecessor as `tee_root`.
+        self.handoffs[handoff_id.0].pred_handoffs = vec![tee_root];
+
         handoff_id
     }
     /// Get the handoff data by ID.
@@ -261,15 +249,7 @@ impl<'a> Hydroflow<'a> {
             for &handoff_id in sg_data.succs.iter() {
                 let handoff = &self.handoffs[handoff_id.0];
                 if !handoff.handoff.is_bottom() {
-                    // find out all child handoff spawn from teeing(if any)
-                    let mut all_succs = vec![handoff.succs.iter()];
-                    if let Some(childs) = self.handoff_tee_childs.get(&handoff_id) {
-                        for ch in childs.iter() {
-                            all_succs.push(self.handoffs[ch.0].succs.iter());
-                        }
-                    }
-
-                    for &succ_id in all_succs.iter().flat_map(|it| it.clone()) {
+                    for &succ_id in handoff.succs.iter() {
                         let succ_sg_data = &self.subgraphs[succ_id.0];
                         // If we have sent data to the next tick, then we can start the next tick.
                         if succ_sg_data.stratum < self.context.current_stratum && !sg_data.is_lazy {
@@ -583,8 +563,8 @@ impl<'a> Hydroflow<'a> {
         let sg_id = SubgraphId(self.subgraphs.len());
 
         let (mut subgraph_preds, mut subgraph_succs) = Default::default();
-        recv_ports.set_graph_meta(&mut *self.handoffs, None, Some(sg_id), &mut subgraph_preds);
-        send_ports.set_graph_meta(&mut *self.handoffs, Some(sg_id), None, &mut subgraph_succs);
+        recv_ports.set_graph_meta(&mut *self.handoffs, &mut subgraph_preds, sg_id, true);
+        send_ports.set_graph_meta(&mut *self.handoffs, &mut subgraph_succs, sg_id, false);
 
         let subgraph = move |context: &mut Context, handoffs: &mut Vec<HandoffData>| {
             let recv = recv_ports.make_ctx(&*handoffs);
@@ -716,7 +696,8 @@ impl<'a> Hydroflow<'a> {
 
         // Create and insert handoff.
         let handoff = H::default();
-        self.handoffs.push(HandoffData::new(name.into(), handoff));
+        self.handoffs
+            .push(HandoffData::new(name.into(), handoff, handoff_id));
 
         // Make ports.
         let input_port = SendPort {
@@ -786,8 +767,23 @@ pub struct HandoffData {
     pub(super) name: Cow<'static, str>,
     /// Crate-visible to crate for `handoff_list` internals.
     pub(super) handoff: Box<dyn HandoffMeta>,
+    /// Preceeding subgraphs (including the send side of a teeing handoff).
     pub(super) preds: SmallVec<[SubgraphId; 1]>,
+    /// Successor subgraphs (including recv sides of teeing handoffs).
     pub(super) succs: SmallVec<[SubgraphId; 1]>,
+
+    /// Predecessor handoffs, used by teeing handoffs.
+    /// Should be `self` on any teeing send sides (input).
+    /// Should be the send `HandoffId` if this is teeing recv side (output).
+    /// Should be just `self`'s `HandoffId` on other handoffs.
+    /// This field is only used in initialization.
+    pub(super) pred_handoffs: Vec<HandoffId>,
+    /// Successor handoffs, used by teeing handoffs.
+    /// Should be a list of outputs on the teeing send side (input).
+    /// Should be `self` on any teeing recv sides (outputs).
+    /// Should be just `self`'s `HandoffId` on other handoffs.
+    /// This field is only used in initialization.
+    pub(super) succ_handoffs: Vec<HandoffId>,
 }
 impl std::fmt::Debug for HandoffData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
@@ -798,13 +794,20 @@ impl std::fmt::Debug for HandoffData {
     }
 }
 impl HandoffData {
-    pub fn new(name: Cow<'static, str>, handoff: impl 'static + HandoffMeta) -> Self {
+    /// New with `pred_handoffs` and `succ_handoffs` set to its own [`HandoffId`]: `vec![hoff_id]`.
+    pub fn new(
+        name: Cow<'static, str>,
+        handoff: impl 'static + HandoffMeta,
+        hoff_id: HandoffId,
+    ) -> Self {
         let (preds, succs) = Default::default();
         Self {
             name,
             handoff: Box::new(handoff),
             preds,
             succs,
+            pred_handoffs: vec![hoff_id],
+            succ_handoffs: vec![hoff_id],
         }
     }
 }

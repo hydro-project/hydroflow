@@ -18,17 +18,29 @@ where
     S: Polarity,
 {
     /// Iteratively/recursively set the graph metadata for each port in this list.
+    ///
+    /// Specifically sets:
+    /// - `HandoffData::preds` and `HandoffData::succs` in the `handoffs` slice for the
+    ///   handoffs in this [`PortList`] (using `pred` and/or `succ`).
+    /// - `out_handoff_ids` will be extended with all the handoff IDs in this [`PortList`].
+    ///
+    /// `handoffs_are_preds`:
+    /// - `true`: Handoffs are predecessors (inputs) to subgraph `sg_id`.
+    /// - `false`: Handoffs are successors (outputs) from subgraph `sg_id`.
     fn set_graph_meta(
         &self,
         handoffs: &mut [HandoffData],
-        pred: Option<SubgraphId>,
-        succ: Option<SubgraphId>,
         out_handoff_ids: &mut Vec<HandoffId>,
+        sg_id: SubgraphId,
+        handoffs_are_preds: bool,
     );
 
     /// The [`Variadic`] return type of [`Self::make_ctx`].
     type Ctx<'a>: Variadic;
     /// Iteratively/recursively construct a `Ctx` variadic list.
+    ///
+    /// (Note that unlike [`Self::set_graph_meta`], this does not mess with pred/succ handoffs for
+    /// teeing).
     fn make_ctx<'a>(&self, handoffs: &'a [HandoffData]) -> Self::Ctx<'a>;
 }
 #[sealed]
@@ -41,22 +53,33 @@ where
     fn set_graph_meta(
         &self,
         handoffs: &mut [HandoffData],
-        pred: Option<SubgraphId>,
-        succ: Option<SubgraphId>,
         out_handoff_ids: &mut Vec<HandoffId>,
+        sg_id: SubgraphId,
+        handoffs_are_preds: bool,
     ) {
         let (this, rest) = self;
+        let this_handoff = &mut handoffs[this.handoff_id.0];
 
-        out_handoff_ids.push(this.handoff_id);
+        // Set subgraph's info (`out_handoff_ids`) about neighbor handoffs.
+        // Use the "representative" handoff (pred or succ) for teeing handoffs, for the subgraph metadata.
+        // For regular Vec handoffs, `pred_handoffs` and `succ_handoffs` will just be the handoff itself.
+        out_handoff_ids.extend(if handoffs_are_preds {
+            this_handoff.pred_handoffs.iter().copied()
+        } else {
+            this_handoff.succ_handoffs.iter().copied()
+        });
 
-        let handoff = handoffs.get_mut(this.handoff_id.0).unwrap();
-        if let Some(pred) = pred {
-            handoff.preds.push(pred);
+        // Set handoff's info (`preds`/`succs`) about neighbor subgraph (`sg_id`).
+        if handoffs_are_preds {
+            for succ_hoff in this_handoff.succ_handoffs.clone() {
+                handoffs[succ_hoff.0].succs.push(sg_id);
+            }
+        } else {
+            for pred_hoff in this_handoff.pred_handoffs.clone() {
+                handoffs[pred_hoff.0].preds.push(sg_id);
+            }
         }
-        if let Some(succ) = succ {
-            handoff.succs.push(succ);
-        }
-        rest.set_graph_meta(handoffs, pred, succ, out_handoff_ids);
+        rest.set_graph_meta(handoffs, out_handoff_ids, sg_id, handoffs_are_preds);
     }
 
     type Ctx<'a> = (&'a PortCtx<S, H>, Rest::Ctx<'a>);
@@ -83,9 +106,9 @@ where
     fn set_graph_meta(
         &self,
         _handoffs: &mut [HandoffData],
-        _pred: Option<SubgraphId>,
-        _succ: Option<SubgraphId>,
         _out_handoff_ids: &mut Vec<HandoffId>,
+        _sg_id: SubgraphId,
+        _handoffs_are_preds: bool,
     ) {
     }
 
