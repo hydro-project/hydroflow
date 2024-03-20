@@ -51,8 +51,9 @@ impl<T> TeeingHandoff<T>
 where
     T: Clone,
 {
+    /// Tee the internal shared datastructure to create a new tee output.
     #[must_use]
-    pub fn tee(&self) -> Self {
+    pub(crate) fn tee(&self) -> Self {
         let id = (*self.internal).borrow().readers.len();
         (*self.internal)
             .borrow_mut()
@@ -64,8 +65,8 @@ where
         }
     }
 
-    /// mark this teeing handoff as dead, so no more data will be written to it.
-    pub(crate) fn mark_as_dead(&self) {
+    /// Mark this particular teeing handoff output as dead, so no more data will be written to it.
+    pub(crate) fn drop(&self) {
         self.internal.borrow_mut().readers[self.read_from].0 = false;
     }
 }
