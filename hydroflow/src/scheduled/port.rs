@@ -46,36 +46,20 @@ pub type SendPort<H> = Port<SEND, H>;
 /// Recv-specific variant of [`Port`]. An input port.
 pub type RecvPort<H> = Port<RECV, H>;
 
+/// Methods for [`TeeingHandoff`] teeing and dropping.
 impl<T: Clone> RecvPort<TeeingHandoff<T>> {
-    /// Clone a tee recv port, See [`TeeingHandoff::tee`] for more information.
-    pub fn tee(&self, df: &mut Hydroflow) -> RecvPort<TeeingHandoff<T>> {
-        let data = df.get_handoff_by_id(self.handoff_id);
-        let name = data.name.clone();
-
-        let typed_handoff = data
-            .handoff
-            .any_ref()
-            .downcast_ref::<TeeingHandoff<T>>()
-            .unwrap();
-
-        let new_handoff = typed_handoff.tee();
-        let new_handoff_id = df.add_tee_handoff(name, self.handoff_id, new_handoff);
-        let output_port = RecvPort {
-            handoff_id: new_handoff_id,
-            _marker: PhantomData,
-        };
-        output_port
+    /// Tees this [`TeeingHandoff`], given the [`Hydroflow`] instance it belongs to.
+    pub fn tee(&self, hf: &mut Hydroflow) -> RecvPort<TeeingHandoff<T>> {
+        hf.teeing_handoff_tee(self)
     }
 
-    /// Mark this teeing recv port as dead, so no more data will be written to it.
-    pub fn drop(self, df: &mut Hydroflow) {
-        let data = df.get_handoff_by_id(self.handoff_id);
-        let typed_handoff = data
-            .handoff
-            .any_ref()
-            .downcast_ref::<TeeingHandoff<T>>()
-            .unwrap();
-        typed_handoff.mark_as_dead();
+    /// Marks this output of a [`TeeingHandoff`] as dropped so that no more data will be sent to
+    /// it, given the [`Hydroflow`] instance it belongs to.
+    ///
+    /// It is recommended to not not use this method and instead simply avoid teeing a
+    /// [`TeeingHandoff`] when it is not needed.
+    pub fn drop(self, hf: &mut Hydroflow) {
+        hf.teeing_handoff_drop(self)
     }
 }
 

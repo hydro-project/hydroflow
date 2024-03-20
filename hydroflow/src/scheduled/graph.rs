@@ -16,7 +16,7 @@ use tokio::sync::mpsc::{self, UnboundedReceiver};
 
 use super::context::Context;
 use super::handoff::handoff_list::PortList;
-use super::handoff::{Handoff, HandoffMeta};
+use super::handoff::{Handoff, HandoffMeta, TeeingHandoff};
 use super::port::{RecvCtx, RecvPort, SendCtx, SendPort, RECV, SEND};
 use super::reactor::Reactor;
 use super::state::StateHandle;
@@ -81,35 +81,66 @@ impl<'a> Default for Hydroflow<'a> {
         }
     }
 }
-impl<'a> Hydroflow<'a> {
-    /// Adds a handoff that's teed from a old handoff `root` to the graph.
-    pub(crate) fn add_tee_handoff<Name: Into<Cow<'static, str>>>(
-        &mut self,
-        name: Name,
-        tee_parent: HandoffId,
-        handoff: impl HandoffMeta + 'static,
-    ) -> HandoffId {
-        let handoff_id = HandoffId(self.handoffs.len());
 
-        // insert handoff.
-        self.handoffs
-            .push(HandoffData::new(name.into(), handoff, handoff_id));
+/// Methods for [`TeeingHandoff`] teeing and dropping.
+impl<'a> Hydroflow<'a> {
+    /// Tees a [`TeeingHandoff`].
+    pub fn teeing_handoff_tee<T>(
+        &mut self,
+        tee_parent_port: &RecvPort<TeeingHandoff<T>>,
+    ) -> RecvPort<TeeingHandoff<T>>
+    where
+        T: Clone,
+    {
+        // Handoff ID of new tee output.
+        let new_hoff_id = HandoffId(self.handoffs.len());
+
+        // If we're teeing from a child make sure to find root.
+        let tee_root = self.handoffs[tee_parent_port.handoff_id.0].pred_handoffs[0];
 
         // Set up teeing metadata.
-        // If we're teeing from a child make sure to find root.
-        let tee_root = self.handoffs[tee_parent.0].pred_handoffs[0];
-        // Go to `tee_root`'s successors and insert self.
-        self.handoffs[tee_root.0].succ_handoffs.push(handoff_id);
-        // Set self's predecessor as `tee_root`.
-        self.handoffs[handoff_id.0].pred_handoffs = vec![tee_root];
+        // Go to `tee_root`'s successors and insert self (the new tee output).
+        let tee_handoff_data = &mut self.handoffs[tee_root.0];
+        tee_handoff_data.succ_handoffs.push(new_hoff_id);
 
-        handoff_id
+        // Insert new handoff output.
+        let teeing_handoff = tee_handoff_data
+            .handoff
+            .any_ref()
+            .downcast_ref::<TeeingHandoff<T>>()
+            .unwrap();
+        let new_handoff = teeing_handoff.tee();
+        let new_name = Cow::Owned(format!("{} tee {:?}", tee_handoff_data.name, new_hoff_id));
+        let mut new_handoff_data = HandoffData::new(new_name, new_handoff, new_hoff_id);
+        // Set self's predecessor as `tee_root`.
+        new_handoff_data.pred_handoffs = vec![tee_root];
+        self.handoffs.push(new_handoff_data);
+
+        let output_port = RecvPort {
+            handoff_id: new_hoff_id,
+            _marker: PhantomData,
+        };
+        output_port
     }
-    /// Get the handoff data by ID.
-    pub(crate) fn get_handoff_by_id(&self, id: HandoffId) -> &HandoffData {
-        &self.handoffs[id.0]
+
+    /// Marks an output of a [`TeeingHandoff`] as dropped so that no more data will be sent to it.
+    ///
+    /// It is recommended to not not use this method and instead simply avoid teeing a
+    /// [`TeeingHandoff`] when it is not needed.
+    pub fn teeing_handoff_drop<T>(&mut self, tee_port: RecvPort<TeeingHandoff<T>>)
+    where
+        T: Clone,
+    {
+        let data = &self.handoffs[tee_port.handoff_id.0];
+        let teeing_handoff = data
+            .handoff
+            .any_ref()
+            .downcast_ref::<TeeingHandoff<T>>()
+            .unwrap();
+        teeing_handoff.drop();
     }
 }
+
 impl<'a> Hydroflow<'a> {
     /// Create a new empty Hydroflow graph.
     pub fn new() -> Self {
