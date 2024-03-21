@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
+use std::rc::Rc;
 
 use hydroflow::lattices::collections::MapMapValues;
 use hydroflow_lang::graph::eliminate_extra_unions_tees;
@@ -8,10 +9,10 @@ use stageleft::QuotedContext;
 
 use crate::ir::HfPlusLeaf;
 use crate::location::{ClusterSpec, LocalDeploy, Location, ProcessSpec};
-use crate::{HfBuilt, RuntimeContext};
+use crate::{HfCompiled, RuntimeContext};
 
 pub struct FlowBuilder<'a, D: LocalDeploy<'a> + ?Sized> {
-    ir_leaves: RefCell<Vec<HfPlusLeaf>>,
+    ir_leaves: Rc<RefCell<Vec<HfPlusLeaf>>>,
     nodes: RefCell<Vec<D::Process>>,
     clusters: RefCell<Vec<D::Cluster>>,
 
@@ -22,6 +23,11 @@ pub struct FlowBuilder<'a, D: LocalDeploy<'a> + ?Sized> {
     meta: RefCell<D::Meta>,
 
     next_node_id: RefCell<usize>,
+
+    /// 'a on a FlowBuilder is used to ensure that staged code does not
+    /// capture more data that it is allowed to; 'a is generated at the
+    /// entrypoint of the staged code and we keep it invariant here
+    /// to enforce the appropriate constraints
     _phantom: PhantomData<&'a mut &'a ()>,
 }
 
@@ -35,7 +41,7 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
     #[allow(clippy::new_without_default)]
     pub fn new() -> FlowBuilder<'a, D> {
         FlowBuilder {
-            ir_leaves: RefCell::new(Vec::new()),
+            ir_leaves: Rc::new(RefCell::new(Vec::new())),
             nodes: RefCell::new(Vec::new()),
             clusters: RefCell::new(Vec::new()),
             meta: RefCell::new(Default::default()),
@@ -44,18 +50,20 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
         }
     }
 
-    pub fn extract(&self) -> BuiltFlow<'a, D> {
+    pub fn extract(self) -> BuiltFlow<'a, D> {
         BuiltFlow {
             ir: self.ir_leaves.borrow().clone(),
+            nodes: self.nodes.into_inner(),
+            clusters: self.clusters.into_inner(),
             _phantom: PhantomData,
         }
     }
 
-    pub fn ir_leaves(&self) -> &RefCell<Vec<HfPlusLeaf>> {
+    pub fn ir_leaves(&self) -> &Rc<RefCell<Vec<HfPlusLeaf>>> {
         &self.ir_leaves
     }
 
-    pub fn process(&'a self, spec: &impl ProcessSpec<'a, D>) -> D::Process {
+    pub fn process(&self, spec: &impl ProcessSpec<'a, D>) -> D::Process {
         let mut next_node_id = self.next_node_id.borrow_mut();
         let id = *next_node_id;
         *next_node_id += 1;
@@ -68,7 +76,7 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
         node
     }
 
-    pub fn cluster(&'a self, spec: &impl ClusterSpec<'a, D>) -> D::Cluster {
+    pub fn cluster(&self, spec: &impl ClusterSpec<'a, D>) -> D::Cluster {
         let mut next_node_id = self.next_node_id.borrow_mut();
         let id = *next_node_id;
         *next_node_id += 1;
@@ -102,6 +110,8 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
 #[derive(Clone)]
 pub struct BuiltFlow<'a, D: LocalDeploy<'a>> {
     pub(crate) ir: Vec<HfPlusLeaf>,
+    nodes: Vec<D::Process>,
+    clusters: Vec<D::Cluster>,
 
     _phantom: PhantomData<&'a mut &'a D>,
 }
@@ -117,12 +127,14 @@ impl<'a, D: LocalDeploy<'a>> BuiltFlow<'a, D> {
     ) -> BuiltFlow<'a, D> {
         BuiltFlow {
             ir: f(self.ir),
+            nodes: self.nodes,
+            clusters: self.clusters,
             _phantom: PhantomData,
         }
     }
 }
 
-fn build_inner<'a, D: LocalDeploy<'a>>(me: BuiltFlow<'a, D>) -> HfBuilt<'a, D::GraphId> {
+fn build_inner<'a, D: LocalDeploy<'a>>(me: BuiltFlow<'a, D>) -> HfCompiled<'a, D::GraphId> {
     let mut builders = BTreeMap::new();
     let mut built_tees = HashMap::new();
     let mut next_stmt_id = 0;
@@ -130,7 +142,7 @@ fn build_inner<'a, D: LocalDeploy<'a>>(me: BuiltFlow<'a, D>) -> HfBuilt<'a, D::G
         leaf.emit(&mut builders, &mut built_tees, &mut next_stmt_id);
     }
 
-    HfBuilt {
+    HfCompiled {
         hydroflow_ir: builders.map_values(|v| {
             let (mut flat_graph, _, _) = v.build();
             eliminate_extra_unions_tees(&mut flat_graph);
@@ -141,11 +153,11 @@ fn build_inner<'a, D: LocalDeploy<'a>>(me: BuiltFlow<'a, D>) -> HfBuilt<'a, D::G
 }
 
 impl<'a, D: LocalDeploy<'a>> BuiltFlow<'a, D> {
-    pub fn no_optimize(self) -> HfBuilt<'a, D::GraphId> {
+    pub fn no_optimize(self) -> HfCompiled<'a, D::GraphId> {
         build_inner(self)
     }
 
-    pub fn optimize_default(self) -> HfBuilt<'a, D::GraphId> {
+    pub fn optimize_default(self) -> HfCompiled<'a, D::GraphId> {
         self.optimize_with(super::persist_pullup::persist_pullup)
             .no_optimize()
     }
