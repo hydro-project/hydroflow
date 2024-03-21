@@ -12,6 +12,7 @@ use hydroflow_macro::hydroflow_syntax;
 
 use crate::{default_server_address, Opts, Role};
 use crate::protocol::{Message, MessageWithAddr};
+use crate::protocol::Message::ChatMsg;
 use crate::Role::{GossipingServer1, GossipingServer2, GossipingServer3, GossipingServer4, GossipingServer5, Client, Server};
 
 
@@ -27,7 +28,7 @@ enum InfectionOperation {
     RemoveForMessage { msg: ChatMessage },
 }
 
-const REMOVAL_PROBABILITY: f32 = 1.0 / 4.0;
+const REMOVAL_PROBABILITY: f32 = 1.0 / 2.0;
 
 fn gossip_address(role: &Role) -> SocketAddr {
     match role {
@@ -130,37 +131,33 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
                 InfectionOperation::InfectWithMessage{ msg } => {accum.insert(msg)},
                 InfectionOperation::RemoveForMessage{ msg } => { accum.remove(&msg) }
             }
-        });
+        }) -> flatten() -> tee();
 
         // Infection process.
         // Every 1 second, the infecting messages are dispatched to a randomly selected peer. They
         // are blindly removed with a 1/K probability after this.
-        triggered_messages = cross_join()
+        triggered_messages = cross_join();
+        source_interval(Duration::from_secs(1)) -> [0]triggered_messages; // The time trigger to perform a round of gossip
+        infecting_messages -> [1]triggered_messages;
+
+        triggered_messages
             -> map(|(_, message)| {
                     // Choose a random peer
                     let random_peer = other_members.choose(&mut thread_rng()).unwrap();
                     (message, gossip_address(random_peer))
                })
-            -> tee();
-        source_interval(Duration::from_secs(1)) -> [0]triggered_messages; // The time trigger to perform a round of gossip
-        infecting_messages -> flatten() -> [1]triggered_messages;
+            -> gossip_out; // Strip the timestamp and assign a peer to send to.
 
-        triggered_messages
-            -> inspect(|(msg, addr)| println!("Gossiping {:?} to {:?}", msg, addr))
-            -> gossip_out;
-
-        triggered_messages
-            -> filter_map(|(msg, addr)| {
-                if rand::random::<f32>() < REMOVAL_PROBABILITY{
-                    println!("Dropping Message {:?}", msg);
+        // Removal process
+        infecting_messages
+            -> filter_map(|msg| {
+                if (rand::random::<f32>() < REMOVAL_PROBABILITY) {
                     Some(InfectionOperation::RemoveForMessage{ msg })
                 } else {
                     None
                 }
             })
-            -> defer_tick()
             -> infecting_messages;
-
     };
 
     if let Some(graph) = opts.graph {
