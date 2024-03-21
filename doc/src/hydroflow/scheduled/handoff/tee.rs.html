@@ -102,6 +102,27 @@
 <a href="#100" id="100">100</a>
 <a href="#101" id="101">101</a>
 <a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for teeing handoffs, not currently used much.
 </span><span class="attr">#![allow(missing_docs)]
 
@@ -125,11 +146,12 @@
 }
 
 <span class="kw">struct </span>TeeingHandoffInternal&lt;T&gt; {
-    readers: Vec&lt;ReaderHandoff&lt;T&gt;&gt;,
+    <span class="doccomment">/// (is alive, reader)
+    </span>readers: Vec&lt;(bool, ReaderHandoff&lt;T&gt;)&gt;,
 }
 
-<span class="comment">// A [Handoff] which is part of a "family" of handoffs. Writing to this handoff
-// will write to every reader. New readers can be created by calling `tee`.
+<span class="doccomment">/// A [Handoff] which is part of a "family" of handoffs. Writing to this handoff
+/// will write to every reader. New readers can be created by calling `tee`.
 </span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>TeeingHandoff&lt;T&gt;
 <span class="kw">where
@@ -144,7 +166,7 @@
         TeeingHandoff {
             read_from: <span class="number">0</span>,
             internal: Rc::new(RefCell::new(TeeingHandoffInternal {
-                readers: <span class="macro">vec!</span>[Default::default()],
+                readers: <span class="macro">vec!</span>[(<span class="bool-val">true</span>, ReaderHandoff::&lt;T&gt;::default())],
             })),
         }
     }
@@ -154,17 +176,23 @@
 <span class="kw">where
     </span>T: Clone,
 {
-    <span class="attr">#[must_use]
-    </span><span class="kw">pub fn </span>tee(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+    <span class="doccomment">/// Tee the internal shared datastructure to create a new tee output.
+    </span><span class="attr">#[must_use]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>tee(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>id = (<span class="kw-2">*</span><span class="self">self</span>.internal).borrow().readers.len();
         (<span class="kw-2">*</span><span class="self">self</span>.internal)
             .borrow_mut()
             .readers
-            .push(ReaderHandoff::default());
+            .push((<span class="bool-val">true</span>, ReaderHandoff::default()));
         <span class="self">Self </span>{
             read_from: id,
             internal: <span class="self">self</span>.internal.clone(),
         }
+    }
+
+    <span class="doccomment">/// Mark this particular teeing handoff output as dead, so no more data will be written to it.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>drop(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="self">self</span>.internal.borrow_mut().readers[<span class="self">self</span>.read_from].<span class="number">0 </span>= <span class="bool-val">false</span>;
     }
 }
 
@@ -173,16 +201,25 @@
         <span class="self">self
     </span>}
 
-    <span class="kw">fn </span>is_bottom(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="bool-val">true
-    </span>}
+    <span class="doccomment">/// If this output's buffer is empty, return true.
+    </span><span class="kw">fn </span>is_bottom(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.internal.borrow().readers[<span class="self">self</span>.read_from]
+            .<span class="number">1
+            </span>.contents
+            .iter()
+            .all(Vec::is_empty)
+    }
 }
 
 <span class="kw">impl</span>&lt;T&gt; Handoff <span class="kw">for </span>TeeingHandoff&lt;T&gt; {
     <span class="kw">type </span>Inner = VecDeque&lt;Vec&lt;T&gt;&gt;;
 
     <span class="kw">fn </span>take_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Inner {
-        std::mem::take(<span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span><span class="self">self</span>.internal).borrow_mut().readers[<span class="self">self</span>.read_from].contents)
+        std::mem::take(
+            <span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span><span class="self">self</span>.internal).borrow_mut().readers[<span class="self">self</span>.read_from]
+                .<span class="number">1
+                </span>.contents,
+        )
     }
 
     <span class="kw">fn </span>borrow_mut_swap(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; std::cell::RefMut&lt;<span class="self">Self</span>::Inner&gt; {
@@ -196,11 +233,16 @@
 {
     <span class="kw">fn </span>give(<span class="kw-2">&amp;</span><span class="self">self</span>, vec: Vec&lt;T&gt;) -&gt; Vec&lt;T&gt; {
         <span class="kw">let </span>readers = <span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span><span class="self">self</span>.internal).borrow_mut().readers;
-        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..(readers.len() - <span class="number">1</span>) {
-            readers[i].contents.push_back(vec.clone());
+        <span class="kw">if let </span><span class="prelude-val">Some</span>((last, rest)) = readers.split_last_mut() {
+            <span class="kw">for </span>reader <span class="kw">in </span>rest {
+                <span class="kw">if </span>reader.<span class="number">0 </span>{
+                    reader.<span class="number">1</span>.contents.push_back(vec.clone());
+                }
+            }
+            <span class="kw">if </span>last.<span class="number">0 </span>{
+                last.<span class="number">1</span>.contents.push_back(vec);
+            }
         }
-        <span class="kw">let </span>last = readers.len() - <span class="number">1</span>;
-        readers[last].contents.push_back(vec);
         Vec::new()
     }
 }

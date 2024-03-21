@@ -156,6 +156,29 @@
 <a href="#154" id="154">154</a>
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for variadic handoff port lists, [`PortList`].
 
 </span><span class="kw">use </span>ref_cast::RefCast;
@@ -176,17 +199,29 @@
     </span>S: Polarity,
 {
     <span class="doccomment">/// Iteratively/recursively set the graph metadata for each port in this list.
+    ///
+    /// Specifically sets:
+    /// - `HandoffData::preds` and `HandoffData::succs` in the `handoffs` slice for the
+    ///   handoffs in this [`PortList`] (using `pred` and/or `succ`).
+    /// - `out_handoff_ids` will be extended with all the handoff IDs in this [`PortList`].
+    ///
+    /// `handoffs_are_preds`:
+    /// - `true`: Handoffs are predecessors (inputs) to subgraph `sg_id`.
+    /// - `false`: Handoffs are successors (outputs) from subgraph `sg_id`.
     </span><span class="kw">fn </span>set_graph_meta(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         handoffs: <span class="kw-2">&amp;mut </span>[HandoffData],
-        pred: <span class="prelude-ty">Option</span>&lt;SubgraphId&gt;,
-        succ: <span class="prelude-ty">Option</span>&lt;SubgraphId&gt;,
         out_handoff_ids: <span class="kw-2">&amp;mut </span>Vec&lt;HandoffId&gt;,
+        sg_id: SubgraphId,
+        handoffs_are_preds: bool,
     );
 
     <span class="doccomment">/// The [`Variadic`] return type of [`Self::make_ctx`].
     </span><span class="kw">type </span>Ctx&lt;<span class="lifetime">'a</span>&gt;: Variadic;
     <span class="doccomment">/// Iteratively/recursively construct a `Ctx` variadic list.
+    ///
+    /// (Note that unlike [`Self::set_graph_meta`], this does not mess with pred/succ handoffs for
+    /// teeing).
     </span><span class="kw">fn </span>make_ctx&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, handoffs: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[HandoffData]) -&gt; <span class="self">Self</span>::Ctx&lt;<span class="lifetime">'a</span>&gt;;
 }
 <span class="attr">#[sealed]
@@ -199,22 +234,33 @@
     <span class="kw">fn </span>set_graph_meta(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         handoffs: <span class="kw-2">&amp;mut </span>[HandoffData],
-        pred: <span class="prelude-ty">Option</span>&lt;SubgraphId&gt;,
-        succ: <span class="prelude-ty">Option</span>&lt;SubgraphId&gt;,
         out_handoff_ids: <span class="kw-2">&amp;mut </span>Vec&lt;HandoffId&gt;,
+        sg_id: SubgraphId,
+        handoffs_are_preds: bool,
     ) {
         <span class="kw">let </span>(this, rest) = <span class="self">self</span>;
+        <span class="kw">let </span>this_handoff = <span class="kw-2">&amp;mut </span>handoffs[this.handoff_id.<span class="number">0</span>];
 
-        out_handoff_ids.push(this.handoff_id);
+        <span class="comment">// Set subgraph's info (`out_handoff_ids`) about neighbor handoffs.
+        // Use the "representative" handoff (pred or succ) for teeing handoffs, for the subgraph metadata.
+        // For regular Vec handoffs, `pred_handoffs` and `succ_handoffs` will just be the handoff itself.
+        </span>out_handoff_ids.extend(<span class="kw">if </span>handoffs_are_preds {
+            this_handoff.pred_handoffs.iter().copied()
+        } <span class="kw">else </span>{
+            this_handoff.succ_handoffs.iter().copied()
+        });
 
-        <span class="kw">let </span>handoff = handoffs.get_mut(this.handoff_id.<span class="number">0</span>).unwrap();
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(pred) = pred {
-            handoff.preds.push(pred);
+        <span class="comment">// Set handoff's info (`preds`/`succs`) about neighbor subgraph (`sg_id`).
+        </span><span class="kw">if </span>handoffs_are_preds {
+            <span class="kw">for </span>succ_hoff <span class="kw">in </span>this_handoff.succ_handoffs.clone() {
+                handoffs[succ_hoff.<span class="number">0</span>].succs.push(sg_id);
+            }
+        } <span class="kw">else </span>{
+            <span class="kw">for </span>pred_hoff <span class="kw">in </span>this_handoff.pred_handoffs.clone() {
+                handoffs[pred_hoff.<span class="number">0</span>].preds.push(sg_id);
+            }
         }
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(succ) = succ {
-            handoff.succs.push(succ);
-        }
-        rest.set_graph_meta(handoffs, pred, succ, out_handoff_ids);
+        rest.set_graph_meta(handoffs, out_handoff_ids, sg_id, handoffs_are_preds);
     }
 
     <span class="kw">type </span>Ctx&lt;<span class="lifetime">'a</span>&gt; = (<span class="kw-2">&amp;</span><span class="lifetime">'a </span>PortCtx&lt;S, H&gt;, Rest::Ctx&lt;<span class="lifetime">'a</span>&gt;);
@@ -241,9 +287,9 @@
     <span class="kw">fn </span>set_graph_meta(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         _handoffs: <span class="kw-2">&amp;mut </span>[HandoffData],
-        _pred: <span class="prelude-ty">Option</span>&lt;SubgraphId&gt;,
-        _succ: <span class="prelude-ty">Option</span>&lt;SubgraphId&gt;,
         _out_handoff_ids: <span class="kw-2">&amp;mut </span>Vec&lt;HandoffId&gt;,
+        _sg_id: SubgraphId,
+        _handoffs_are_preds: bool,
     ) {
     }
 

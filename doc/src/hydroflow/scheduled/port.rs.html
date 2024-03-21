@@ -90,6 +90,24 @@
 <a href="#88" id="88">88</a>
 <a href="#89" id="89">89</a>
 <a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Organizational module for Hydroflow Send/RecvCtx structs and Input/OutputPort structs.
 </span><span class="kw">use </span>std::cell::RefMut;
 <span class="kw">use </span>std::marker::PhantomData;
@@ -98,7 +116,8 @@
 <span class="kw">use </span>sealed::sealed;
 
 <span class="kw">use </span><span class="kw">super</span>::HandoffId;
-<span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::{CanReceive, Handoff, TryCanReceive};
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::graph::Hydroflow;
+<span class="kw">use </span><span class="kw">crate</span>::scheduled::handoff::{CanReceive, Handoff, TeeingHandoff, TryCanReceive};
 
 <span class="doccomment">/// An empty trait used to denote [`Polarity`]: either **send** or **receive**.
 ///
@@ -122,7 +141,7 @@
 </span><span class="kw">impl </span>Polarity <span class="kw">for </span>RECV {}
 
 <span class="doccomment">/// Lightweight ID struct representing an input or output port for a [`Handoff`] added to a
-/// [`Hydroflow`](super::graph::Hydroflow) instance..
+/// [`Hydroflow`] instance..
 </span><span class="attr">#[must_use]
 </span><span class="kw">pub struct </span>Port&lt;S: Polarity, H&gt;
 <span class="kw">where
@@ -136,6 +155,23 @@
 </span><span class="kw">pub type </span>SendPort&lt;H&gt; = Port&lt;SEND, H&gt;;
 <span class="doccomment">/// Recv-specific variant of [`Port`]. An input port.
 </span><span class="kw">pub type </span>RecvPort&lt;H&gt; = Port&lt;RECV, H&gt;;
+
+<span class="doccomment">/// Methods for [`TeeingHandoff`] teeing and dropping.
+</span><span class="kw">impl</span>&lt;T: Clone&gt; RecvPort&lt;TeeingHandoff&lt;T&gt;&gt; {
+    <span class="doccomment">/// Tees this [`TeeingHandoff`], given the [`Hydroflow`] instance it belongs to.
+    </span><span class="kw">pub fn </span>tee(<span class="kw-2">&amp;</span><span class="self">self</span>, hf: <span class="kw-2">&amp;mut </span>Hydroflow) -&gt; RecvPort&lt;TeeingHandoff&lt;T&gt;&gt; {
+        hf.teeing_handoff_tee(<span class="self">self</span>)
+    }
+
+    <span class="doccomment">/// Marks this output of a [`TeeingHandoff`] as dropped so that no more data will be sent to
+    /// it, given the [`Hydroflow`] instance it belongs to.
+    ///
+    /// It is recommended to not not use this method and instead simply avoid teeing a
+    /// [`TeeingHandoff`] when it is not needed.
+    </span><span class="kw">pub fn </span>drop(<span class="self">self</span>, hf: <span class="kw-2">&amp;mut </span>Hydroflow) {
+        hf.teeing_handoff_drop(<span class="self">self</span>)
+    }
+}
 
 <span class="doccomment">/// Wrapper around a handoff to differentiate between output and input.
 </span><span class="attr">#[derive(RefCast)]

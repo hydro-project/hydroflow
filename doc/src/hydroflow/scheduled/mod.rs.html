@@ -82,7 +82,7 @@
 
 <span class="doccomment">/// A handoff's ID. Invalid if used in a different [`graph::Hydroflow`]
 /// instance than the original that created it.
-</span><span class="attr">#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
+</span><span class="attr">#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 #[repr(transparent)]
 </span><span class="kw">pub struct </span>HandoffId(<span class="kw">pub</span>(<span class="kw">crate</span>) usize);
 <span class="kw">impl </span>Display <span class="kw">for </span>HandoffId {
