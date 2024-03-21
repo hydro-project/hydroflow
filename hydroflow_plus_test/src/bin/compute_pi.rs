@@ -8,7 +8,7 @@ async fn main() {
     // TODO: Figure out the number of counters we need
     let counters = RefCell::new(vec![0; 8192]);
     let ports = init_no_ack_start().await;
-    let flow = hydroflow_plus_test::cluster::compute_pi_runtime!(&ports, &counters);
+    let flow = hydroflow_plus_test::cluster::compute_pi_runtime!(&ports, &counters, 8192);
 
     println!("ack start");
 
