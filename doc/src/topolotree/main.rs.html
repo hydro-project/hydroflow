@@ -570,7 +570,7 @@
             <span class="kw">let </span>x = procinfo::pid::stat_self().unwrap();
             <span class="kw">let </span>bytes = x.rss * <span class="number">1024 </span>* <span class="number">4</span>;
             <span class="macro">println!</span>(<span class="string">"memory,{}"</span>, bytes);
-            tokio::time::sleep(std::time::Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
+            tokio::time::sleep(Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
         }
     };
 
