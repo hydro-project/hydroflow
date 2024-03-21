@@ -4,15 +4,15 @@ use hydroflow_plus::*;
 use stageleft::*;
 
 pub fn simple_cluster<'a, D: Deploy<'a, ClusterId = u32>>(
-    flow: &'a FlowBuilder<'a, D>,
+    flow: &FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
 ) -> (D::Process, D::Cluster) {
     let process = flow.process(process_spec);
     let cluster = flow.cluster(cluster_spec);
 
-    let numbers = process.source_iter(q!(0..5));
-    let ids = process.source_iter(cluster.ids()).map(q!(|&id| id));
+    let numbers = flow.source_iter(&process, q!(0..5));
+    let ids = flow.source_iter(&process, cluster.ids()).map(q!(|&id| id));
 
     ids.cross_product(numbers)
         .map(q!(|(id, n)| (id, (id, n))))
@@ -25,15 +25,14 @@ pub fn simple_cluster<'a, D: Deploy<'a, ClusterId = u32>>(
 }
 
 pub fn many_to_many<'a, D: Deploy<'a>>(
-    flow: &'a FlowBuilder<'a, D>,
+    flow: &FlowBuilder<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
 ) -> D::Cluster
 where
     D::ClusterId: std::fmt::Debug,
 {
     let cluster = flow.cluster(cluster_spec);
-    cluster
-        .source_iter(q!(0..2))
+    flow.source_iter(&cluster, q!(0..2))
         .broadcast_bincode(&cluster)
         .for_each(q!(|n| println!("cluster received: {:?}", n)));
 
@@ -41,15 +40,15 @@ where
 }
 
 pub fn map_reduce<'a, D: Deploy<'a, ClusterId = u32>>(
-    flow: &'a FlowBuilder<'a, D>,
+    flow: &FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
 ) -> (D::Process, D::Cluster) {
     let process = flow.process(process_spec);
     let cluster = flow.cluster(cluster_spec);
 
-    let words = process
-        .source_iter(q!(vec!["abc", "abc", "xyz", "abc"]))
+    let words = flow
+        .source_iter(&process, q!(vec!["abc", "abc", "xyz", "abc"]))
         .map(q!(|s| s.to_string()));
 
     let all_ids_vec = cluster.ids();
@@ -75,15 +74,16 @@ pub fn map_reduce<'a, D: Deploy<'a, ClusterId = u32>>(
 }
 
 pub fn compute_pi<'a, D: Deploy<'a>>(
-    flow: &'a FlowBuilder<'a, D>,
+    flow: &FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
+    batch_size: RuntimeData<&'a usize>,
 ) -> D::Process {
     let cluster = flow.cluster(cluster_spec);
     let process = flow.process(process_spec);
 
-    let trials = cluster
-        .spin_batch(8192)
+    let trials = flow
+        .spin_batch(&cluster, q!(*batch_size))
         .map(q!(|_| rand::random::<(f64, f64)>()))
         .map(q!(|(x, y)| x * x + y * y < 1.0))
         .fold(
@@ -121,10 +121,10 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn simple_cluster_runtime<'a>(
-    flow: &'a FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = simple_cluster(flow, &cli, &cli);
+    let _ = simple_cluster(&flow, &cli, &cli);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
@@ -132,10 +132,10 @@ pub fn simple_cluster_runtime<'a>(
 
 #[stageleft::entry]
 pub fn many_to_many_runtime<'a>(
-    flow: &'a FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = many_to_many(flow, &cli);
+    let _ = many_to_many(&flow, &cli);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
@@ -143,10 +143,10 @@ pub fn many_to_many_runtime<'a>(
 
 #[stageleft::entry]
 pub fn map_reduce_runtime<'a>(
-    flow: &'a FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = map_reduce(flow, &cli, &cli);
+    let _ = map_reduce(&flow, &cli, &cli);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
@@ -154,10 +154,11 @@ pub fn map_reduce_runtime<'a>(
 
 #[stageleft::entry]
 pub fn compute_pi_runtime<'a>(
-    flow: &'a FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
+    batch_size: RuntimeData<&'a usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = compute_pi(flow, &cli, &cli);
+    let _ = compute_pi(&flow, &cli, &cli, batch_size);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
@@ -315,6 +316,7 @@ mod tests {
             &builder,
             &RuntimeData::new("FAKE"),
             &RuntimeData::new("FAKE"),
+            RuntimeData::new("FAKE"),
         );
         let built = builder.extract();
 

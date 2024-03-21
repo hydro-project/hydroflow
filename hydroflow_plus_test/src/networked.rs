@@ -13,14 +13,14 @@ pub struct NetworkedBasicIO<'a, D: Deploy<'a>> {
 }
 
 pub fn networked_basic<'a, D: Deploy<'a>>(
-    flow: &'a FlowBuilder<'a, D>,
+    flow: &FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
 ) -> NetworkedBasicIO<'a, D> {
     let process_zero = flow.process(process_spec);
     let process_one = flow.process(process_spec);
 
-    let (source_zero_port, source_zero) = process_zero.source_external();
+    let (source_zero_port, source_zero) = flow.source_external(&process_zero);
 
     source_zero
         .send_bytes(&process_one)
@@ -29,7 +29,7 @@ pub fn networked_basic<'a, D: Deploy<'a>>(
         }));
 
     let cluster = flow.cluster(cluster_spec);
-    let (cluster_port, cluster_stream) = cluster.many_source_external::<D::Process, _>();
+    let (cluster_port, cluster_stream) = flow.many_source_external::<D::Process, _, _>(&cluster);
     cluster_stream.for_each(q!(|v: Bytes| {
         println!("cluster received: {:?}", std::str::from_utf8(&v).unwrap());
     }));
@@ -45,10 +45,10 @@ pub fn networked_basic<'a, D: Deploy<'a>>(
 
 #[stageleft::entry]
 pub fn networked_basic_runtime<'a>(
-    flow: &'a FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = networked_basic(flow, &cli, &cli);
+    let _ = networked_basic(&flow, &cli, &cli);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(q!(cli.meta.subgraph_id))

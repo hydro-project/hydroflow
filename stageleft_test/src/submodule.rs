@@ -1,4 +1,4 @@
-use stageleft::{q, Quoted};
+use stageleft::{q, BorrowBounds, Quoted};
 
 struct PrivateStruct {
     a: u32,
@@ -12,7 +12,7 @@ pub struct PublicStruct {
 }
 
 #[stageleft::entry]
-pub fn private_struct(_ctx: &()) -> impl Quoted<u32> {
+pub fn private_struct(_ctx: BorrowBounds<'_>) -> impl Quoted<u32> {
     q!({
         let my_struct = PrivateStruct { a: 1 };
         my_struct.a
@@ -20,6 +20,6 @@ pub fn private_struct(_ctx: &()) -> impl Quoted<u32> {
 }
 
 #[stageleft::entry]
-pub fn public_struct(_ctx: &()) -> impl Quoted<PublicStruct> {
+pub fn public_struct(_ctx: BorrowBounds<'_>) -> impl Quoted<PublicStruct> {
     q!(PublicStruct { a: 1 })
 }

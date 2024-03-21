@@ -1,6 +1,6 @@
 use super::Location;
 
-pub trait HfSend<'a, O: Location<'a>, V>: Location<'a> {
+pub trait HfSend<O: Location, V>: Location {
     type In<T>;
     type Out<T>;
 
@@ -13,14 +13,14 @@ pub trait HfSend<'a, O: Location<'a>, V>: Location<'a> {
     fn is_tagged() -> bool;
 }
 
-pub trait HfSendOneToOne<'a, O: Location<'a>>: Location<'a> {
+pub trait HfSendOneToOne<O: Location>: Location {
     fn connect(&self, other: &O, source_port: &Self::Port, recipient_port: &O::Port);
 
     fn gen_sink_statement(&self, port: &Self::Port) -> syn::Expr;
     fn gen_source_statement(other: &O, port: &O::Port) -> syn::Expr;
 }
 
-impl<'a, O: Location<'a>, H: HfSendOneToOne<'a, O>> HfSend<'a, O, ()> for H {
+impl<O: Location, H: HfSendOneToOne<O>> HfSend<O, ()> for H {
     type In<T> = T;
     type Out<T> = T;
 
@@ -45,14 +45,14 @@ impl<'a, O: Location<'a>, H: HfSendOneToOne<'a, O>> HfSend<'a, O, ()> for H {
     }
 }
 
-pub trait HfSendManyToOne<'a, O: Location<'a>, Tag>: Location<'a> {
+pub trait HfSendManyToOne<O: Location, Tag>: Location {
     fn connect(&self, other: &O, source_port: &Self::Port, recipient_port: &O::Port);
 
     fn gen_sink_statement(&self, port: &Self::Port) -> syn::Expr;
     fn gen_source_statement(other: &O, port: &O::Port) -> syn::Expr;
 }
 
-impl<'a, O: Location<'a>, Tag, H: HfSendManyToOne<'a, O, Tag>> HfSend<'a, O, ((), Tag)> for H {
+impl<O: Location, Tag, H: HfSendManyToOne<O, Tag>> HfSend<O, ((), Tag)> for H {
     type In<T> = T;
     type Out<T> = (Tag, T);
 
@@ -77,14 +77,14 @@ impl<'a, O: Location<'a>, Tag, H: HfSendManyToOne<'a, O, Tag>> HfSend<'a, O, (()
     }
 }
 
-pub trait HfSendOneToMany<'a, O: Location<'a>, Cid>: Location<'a> {
+pub trait HfSendOneToMany<O: Location, Cid>: Location {
     fn connect(&self, other: &O, source_port: &Self::Port, recipient_port: &O::Port);
 
     fn gen_sink_statement(&self, port: &Self::Port) -> syn::Expr;
     fn gen_source_statement(other: &O, port: &O::Port) -> syn::Expr;
 }
 
-impl<'a, O: Location<'a>, Cid, H: HfSendOneToMany<'a, O, Cid>> HfSend<'a, O, ((), (), Cid)> for H {
+impl<O: Location, Cid, H: HfSendOneToMany<O, Cid>> HfSend<O, ((), (), Cid)> for H {
     type In<T> = (Cid, T);
     type Out<T> = T;
 
@@ -109,16 +109,14 @@ impl<'a, O: Location<'a>, Cid, H: HfSendOneToMany<'a, O, Cid>> HfSend<'a, O, (()
     }
 }
 
-pub trait HfSendManyToMany<'a, O: Location<'a>, Cid>: Location<'a> {
+pub trait HfSendManyToMany<O: Location, Cid>: Location {
     fn connect(&self, other: &O, source_port: &Self::Port, recipient_port: &O::Port);
 
     fn gen_sink_statement(&self, port: &Self::Port) -> syn::Expr;
     fn gen_source_statement(other: &O, port: &O::Port) -> syn::Expr;
 }
 
-impl<'a, O: Location<'a>, Cid, H: HfSendManyToMany<'a, O, Cid>> HfSend<'a, O, ((), (), Cid, Cid)>
-    for H
-{
+impl<O: Location, Cid, H: HfSendManyToMany<O, Cid>> HfSend<O, ((), (), Cid, Cid)> for H {
     type In<T> = (Cid, T);
     type Out<T> = (Cid, T);
 

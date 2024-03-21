@@ -11,7 +11,7 @@ Clusters solve this by providing an nearly-identical API to processes, but repre
 Instantiating clusters is done using the `cluster` method on `FlowBuilder`, taking a `ClusterSpec`:
 ```rust
 pub fn my_flow<'a, D: Deploy<'a>>(
-    flow: &'a FlowBuilder<'a, D>,
+    flow: &FlowBuilder<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>
 ) {
     let cluster = flow.cluster(cluster_spec);

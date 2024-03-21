@@ -4,19 +4,19 @@ use stageleft::{q, Quoted, RuntimeData};
 
 #[stageleft::entry]
 pub fn test_difference<'a>(
-    flow: &'a FlowBuilder<'a, SingleProcessGraph>,
+    flow: FlowBuilder<'a, SingleProcessGraph>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
     persist1: bool,
     persist2: bool,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process(&());
 
-    let mut source = process.source_iter(q!(0..5));
+    let mut source = flow.source_iter(&process, q!(0..5));
     if persist1 {
         source = source.all_ticks();
     }
 
-    let mut source2 = process.source_iter(q!(3..6));
+    let mut source2 = flow.source_iter(&process, q!(3..6));
     if persist2 {
         source2 = source2.all_ticks();
     }
@@ -30,19 +30,19 @@ pub fn test_difference<'a>(
 
 #[stageleft::entry]
 pub fn test_anti_join<'a>(
-    flow: &'a FlowBuilder<'a, SingleProcessGraph>,
+    flow: FlowBuilder<'a, SingleProcessGraph>,
     output: RuntimeData<&'a UnboundedSender<u32>>,
     persist1: bool,
     persist2: bool,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process(&());
 
-    let mut source = process.source_iter(q!(0..5)).map(q!(|v| (v, v)));
+    let mut source = flow.source_iter(&process, q!(0..5)).map(q!(|v| (v, v)));
     if persist1 {
         source = source.all_ticks();
     }
 
-    let mut source2 = process.source_iter(q!(3..6));
+    let mut source2 = flow.source_iter(&process, q!(3..6));
     if persist2 {
         source2 = source2.all_ticks();
     }

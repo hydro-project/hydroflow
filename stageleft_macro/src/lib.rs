@@ -154,8 +154,8 @@ pub fn runtime(
 /// The entrypoint must be a function that returns `impl Quoted<T>` for some type `T`.
 ///
 /// The first parameter must always be a context, which defines lifetime bounds for
-/// the generated code. This can usually just be a parameter of type `&()`, but can
-/// be another borrowed type for domain specific staging.
+/// the generated code. This can usually just be a parameter of type `BorrowBounds<'_>`,
+/// but can be another borrowed type for domain specific staging.
 ///
 /// The rest of the parameters need to be passed in when invoking the macro. These
 /// can be either a `RuntimeData<T>` value for arbitrary values or a static value
@@ -325,9 +325,7 @@ pub fn entry(
             #(#param_parsing)*
 
             let output_core = {
-                #[allow(clippy::let_unit_value)]
-                let graph = #root::QuotedContext::create();
-                #root::Quoted::splice(#input_name #passed_generics(&graph, #(#params_to_pass),*))
+                #root::Quoted::splice(#input_name #passed_generics(#root::QuotedContext::create(), #(#params_to_pass),*))
             };
 
             let final_crate_name = env!("STAGELEFT_FINAL_CRATE_NAME");
