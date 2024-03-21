@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::net::SocketAddr;
 use std::time::Duration;
 use chrono::{DateTime, Utc};
+use itertools::Itertools;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use serde::{Deserialize, Serialize};
@@ -11,7 +12,7 @@ use hydroflow_macro::hydroflow_syntax;
 
 use crate::{default_server_address, Opts, Role};
 use crate::protocol::{Message, MessageWithAddr};
-use crate::protocol::Message::ChatMsg;
+use crate::Role::{GossipingServer1, GossipingServer2, GossipingServer3, GossipingServer4, GossipingServer5, Client, Server};
 
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug, Hash)]
@@ -26,14 +27,16 @@ enum InfectionOperation {
     RemoveForMessage { msg: ChatMessage },
 }
 
+const REMOVAL_PROBABILITY: f32 = 1.0 / 4.0;
+
 fn gossip_address(role: &Role) -> SocketAddr {
     match role {
-        Role::Client | Role::Server => { panic!("Incorrect role {:?} for gossip server.", role) }
-        Role::GossipingServer1 => ipv4_resolve("localhost:54322"),
-        Role::GossipingServer2 => ipv4_resolve("localhost:54323"),
-        Role::GossipingServer3 => ipv4_resolve("localhost:54324"),
-        Role::GossipingServer4 => ipv4_resolve("localhost:54325"),
-        Role::GossipingServer5 => ipv4_resolve("localhost:54326"),
+        Client | Server => { panic!("Incorrect role {:?} for gossip server.", role) }
+        GossipingServer1 => ipv4_resolve("localhost:54322"),
+        GossipingServer2 => ipv4_resolve("localhost:54323"),
+        GossipingServer3 => ipv4_resolve("localhost:54324"),
+        GossipingServer4 => ipv4_resolve("localhost:54325"),
+        GossipingServer5 => ipv4_resolve("localhost:54326"),
     }.unwrap()
 }
 
@@ -44,6 +47,17 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
         .address
         .unwrap_or_else(|| default_server_address());
 
+    let all_members = vec![GossipingServer1,
+                           GossipingServer2,
+                           GossipingServer3,
+                           GossipingServer4,
+                           GossipingServer4,
+                           GossipingServer5];
+
+    let other_members : Vec<Role> = all_members.iter().filter(|role| **role != opts.role)
+        .cloned()
+        .collect();
+
     let gossip_listening_addr = gossip_address(&opts.role);
 
     println!("Starting server on {:?}", server_address);
@@ -52,7 +66,6 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
     let (gossip_outbound, gossip_inbound, _) = bind_udp_bytes(gossip_listening_addr).await;
 
     println!("Server is live! Listening on {:?}. Gossiping On: {:?}", actual_server_addr, gossip_listening_addr);
-
     let mut hf: Hydroflow = hydroflow_syntax! {
         // Define shared inbound and outbound channels
         client_out = union() -> dest_sink_serde(client_outbound);
@@ -77,12 +90,11 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
         broadcast = cross_join::<'tick, 'static>() -> [1]client_out;
 
         // Pipeline 3: Gossip-based broadcast to other servers.
-        // gossip_out = dest_sink_serde(gossip_outbound);
-        // gossip_in = source_stream_serde(gossip_inbound)
-        //     -> map(Result::unwrap)
-        //     -> null();
-        //
-        // null() -> gossip_out;
+        gossip_out = dest_sink_serde(gossip_outbound);
+        gossip_in = source_stream_serde(gossip_inbound)
+            -> map(Result::unwrap)
+            -> map(|(message, _)| message)
+            -> maybe_new_messages;
 
         // If you think there may be a new message, send it here.
         maybe_new_messages = union();
@@ -113,35 +125,41 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
         }) -> flatten();
 
         // Holds a set of messages that are currently infecting this server
-        infecting_messages = fold::<'static>(HashSet::<ChatMessage>::new, |accum, op| {
+        infecting_messages = union() -> fold::<'static>(HashSet::<ChatMessage>::new, |accum, op| {
             match op {
                 InfectionOperation::InfectWithMessage{ msg } => {accum.insert(msg)},
                 InfectionOperation::RemoveForMessage{ msg } => { accum.remove(&msg) }
             }
-        }) -> flatten();
-
-        random_gossip_peer = source_iter([
-            Role::GossipingServer1,
-            Role::GossipingServer2,
-            Role::GossipingServer3,
-            Role::GossipingServer4,
-            Role::GossipingServer5,
-        ].choose(&mut thread_rng()))
-        -> map(|role| gossip_address(role))
-        -> null();
+        });
 
         // Infection process.
-        // infecting_messages_to_dispatch is a stream of chat messages that are ready to dispatch
-        // to random members. These are created by a timed trigger.
-        infecting_messages_to_dispatch = cross_join()
-            -> map(|(instant, message)| message)
+        // Every 1 second, the infecting messages are dispatched to a randomly selected peer. They
+        // are blindly removed with a 1/K probability after this.
+        triggered_messages = cross_join()
+            -> map(|(_, message)| {
+                    // Choose a random peer
+                    let random_peer = other_members.choose(&mut thread_rng()).unwrap();
+                    (message, gossip_address(random_peer))
+               })
             -> tee();
-        infecting_messages -> [1]infecting_messages_to_dispatch;
-        // The time trigger to perform a round of gossip
-        source_interval(Duration::from_secs(1)) -> [0]infecting_messages_to_dispatch;
+        source_interval(Duration::from_secs(1)) -> [0]triggered_messages; // The time trigger to perform a round of gossip
+        infecting_messages -> flatten() -> [1]triggered_messages;
 
+        triggered_messages
+            -> inspect(|(msg, addr)| println!("Gossiping {:?} to {:?}", msg, addr))
+            -> gossip_out;
 
-
+        triggered_messages
+            -> filter_map(|(msg, addr)| {
+                if rand::random::<f32>() < REMOVAL_PROBABILITY{
+                    println!("Dropping Message {:?}", msg);
+                    Some(InfectionOperation::RemoveForMessage{ msg })
+                } else {
+                    None
+                }
+            })
+            -> defer_tick()
+            -> infecting_messages;
 
     };
 

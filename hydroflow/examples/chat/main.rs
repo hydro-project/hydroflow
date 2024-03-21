@@ -12,7 +12,7 @@ mod protocol;
 mod server;
 mod randomized_gossiping_server;
 
-#[derive(Clone, ValueEnum, Debug)]
+#[derive(Clone, ValueEnum, Debug, Eq, PartialEq)]
 enum Role {
     Client,
     Server,
