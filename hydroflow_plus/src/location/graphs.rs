@@ -1,11 +1,6 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use stageleft::{Quoted, RuntimeData};
 
 use super::{Cluster, LocalDeploy, Location, ProcessSpec};
-use crate::ir::HfPlusLeaf;
-use crate::FlowBuilder;
 
 pub struct SingleProcessGraph {}
 
@@ -18,39 +13,20 @@ impl<'a> LocalDeploy<'a> for SingleProcessGraph {
 }
 
 impl<'a> ProcessSpec<'a, SingleProcessGraph> for () {
-    fn build(
-        &self,
-        _id: usize,
-        builder: &FlowBuilder<'a, SingleProcessGraph>,
-        _meta: &mut (),
-    ) -> SingleNode {
-        SingleNode {
-            ir_leaves: builder.ir_leaves().clone(),
-            cycle_counter: Rc::new(RefCell::new(0)),
-        }
+    fn build(&self, _id: usize, _meta: &mut ()) -> SingleNode {
+        SingleNode {}
     }
 }
 
 #[derive(Clone)]
-pub struct SingleNode {
-    ir_leaves: Rc<RefCell<Vec<HfPlusLeaf>>>,
-    cycle_counter: Rc<RefCell<usize>>,
-}
+pub struct SingleNode {}
 
-impl<'a> Location<'a> for SingleNode {
+impl Location for SingleNode {
     type Port = ();
     type Meta = ();
 
     fn id(&self) -> usize {
         0
-    }
-
-    fn ir_leaves(&self) -> &Rc<RefCell<Vec<HfPlusLeaf>>> {
-        &self.ir_leaves
-    }
-
-    fn cycle_counter(&self) -> &RefCell<usize> {
-        self.cycle_counter.as_ref()
     }
 
     fn next_port(&self) {
@@ -81,36 +57,22 @@ impl<'a> LocalDeploy<'a> for MultiGraph {
 }
 
 impl<'a> ProcessSpec<'a, MultiGraph> for () {
-    fn build(&self, id: usize, builder: &FlowBuilder<'a, MultiGraph>, _meta: &mut ()) -> MultiNode {
-        MultiNode {
-            ir_leaves: builder.ir_leaves().clone(),
-            id,
-            cycle_counter: Rc::new(RefCell::new(0)),
-        }
+    fn build(&self, id: usize, _meta: &mut ()) -> MultiNode {
+        MultiNode { id }
     }
 }
 
 #[derive(Clone)]
 pub struct MultiNode {
-    ir_leaves: Rc<RefCell<Vec<HfPlusLeaf>>>,
     id: usize,
-    cycle_counter: Rc<RefCell<usize>>,
 }
 
-impl<'a> Location<'a> for MultiNode {
+impl Location for MultiNode {
     type Port = ();
     type Meta = ();
 
     fn id(&self) -> usize {
         self.id
-    }
-
-    fn ir_leaves(&self) -> &Rc<RefCell<Vec<HfPlusLeaf>>> {
-        &self.ir_leaves
-    }
-
-    fn cycle_counter(&self) -> &RefCell<usize> {
-        self.cycle_counter.as_ref()
     }
 
     fn next_port(&self) {
