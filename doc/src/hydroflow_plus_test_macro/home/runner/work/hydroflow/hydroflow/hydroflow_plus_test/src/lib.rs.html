@@ -336,7 +336,7 @@
 
 <span class="attr">#[stageleft::entry(UnboundedReceiverStream&lt;u32&gt;)]
 </span><span class="kw">pub fn </span>teed_join&lt;<span class="lifetime">'a</span>, S: Stream&lt;Item = u32&gt; + Unpin + <span class="lifetime">'a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, MultiGraph&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, MultiGraph&gt;,
     input_stream: RuntimeData&lt;S&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;u32&gt;&gt;,
     send_twice: bool,
@@ -373,7 +373,7 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>chat_app&lt;<span class="lifetime">'a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
     users_stream: RuntimeData&lt;UnboundedReceiverStream&lt;u32&gt;&gt;,
     messages: RuntimeData&lt;UnboundedReceiverStream&lt;String&gt;&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;(u32, String)&gt;&gt;,
@@ -406,7 +406,7 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>graph_reachability&lt;<span class="lifetime">'a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
     roots: RuntimeData&lt;UnboundedReceiverStream&lt;u32&gt;&gt;,
     edges: RuntimeData&lt;UnboundedReceiverStream&lt;(u32, u32)&gt;&gt;,
     reached_out: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;u32&gt;&gt;,
@@ -435,7 +435,7 @@
 
 <span class="attr">#[stageleft::entry(String)]
 </span><span class="kw">pub fn </span>count_elems&lt;<span class="lifetime">'a</span>, T: <span class="lifetime">'a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
     input_stream: RuntimeData&lt;UnboundedReceiverStream&lt;T&gt;&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;u32&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {

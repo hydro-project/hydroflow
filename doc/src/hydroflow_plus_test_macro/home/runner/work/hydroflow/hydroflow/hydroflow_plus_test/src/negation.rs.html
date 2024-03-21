@@ -203,7 +203,7 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>test_difference&lt;<span class="lifetime">'a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;u32&gt;&gt;,
     persist1: bool,
     persist2: bool,
@@ -229,7 +229,7 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>test_anti_join&lt;<span class="lifetime">'a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
     output: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>UnboundedSender&lt;u32&gt;&gt;,
     persist1: bool,
     persist2: bool,

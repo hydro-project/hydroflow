@@ -288,7 +288,7 @@
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>CLIRuntimeNode&lt;<span class="lifetime">'a</span>&gt; {
     id: usize,
-    builder: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
+    ir_leaves: Rc&lt;RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;&gt;,
     cycle_counter: Rc&lt;RefCell&lt;usize&gt;&gt;,
     next_port: Rc&lt;RefCell&lt;usize&gt;&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
@@ -302,8 +302,8 @@
         <span class="self">self</span>.id
     }
 
-    <span class="kw">fn </span>ir_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt; {
-        <span class="self">self</span>.builder.ir_leaves()
+    <span class="kw">fn </span>ir_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Rc&lt;RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;&gt; {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.ir_leaves
     }
 
     <span class="kw">fn </span>cycle_counter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>RefCell&lt;usize&gt; {
@@ -322,7 +322,7 @@
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>CLIRuntimeCluster&lt;<span class="lifetime">'a</span>&gt; {
     id: usize,
-    builder: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
+    ir_leaves: Rc&lt;RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;&gt;,
     cycle_counter: Rc&lt;RefCell&lt;usize&gt;&gt;,
     next_port: Rc&lt;RefCell&lt;usize&gt;&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
@@ -336,8 +336,8 @@
         <span class="self">self</span>.id
     }
 
-    <span class="kw">fn </span>ir_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt; {
-        <span class="self">self</span>.builder.ir_leaves()
+    <span class="kw">fn </span>ir_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Rc&lt;RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;&gt; {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.ir_leaves
     }
 
     <span class="kw">fn </span>cycle_counter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>RefCell&lt;usize&gt; {
@@ -485,12 +485,12 @@
     <span class="kw">fn </span>build(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         id: usize,
-        builder: <span class="kw-2">&amp;</span><span class="lifetime">'cli </span>FlowBuilder&lt;<span class="lifetime">'cli</span>, CLIRuntime&gt;,
+        builder: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'cli</span>, CLIRuntime&gt;,
         _meta: <span class="kw-2">&amp;mut </span>(),
     ) -&gt; CLIRuntimeNode&lt;<span class="lifetime">'cli</span>&gt; {
         CLIRuntimeNode {
             id,
-            builder,
+            ir_leaves: builder.ir_leaves().clone(),
             cycle_counter: Rc::new(RefCell::new(<span class="number">0</span>)),
             next_port: Rc::new(RefCell::new(<span class="number">0</span>)),
             cli: <span class="kw-2">*</span><span class="self">self</span>,
@@ -502,12 +502,12 @@
     <span class="kw">fn </span>build(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         id: usize,
-        builder: <span class="kw-2">&amp;</span><span class="lifetime">'cli </span>FlowBuilder&lt;<span class="lifetime">'cli</span>, CLIRuntime&gt;,
+        builder: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'cli</span>, CLIRuntime&gt;,
         _meta: <span class="kw-2">&amp;mut </span>(),
     ) -&gt; CLIRuntimeCluster&lt;<span class="lifetime">'cli</span>&gt; {
         CLIRuntimeCluster {
             id,
-            builder,
+            ir_leaves: builder.ir_leaves().clone(),
             cycle_counter: Rc::new(RefCell::new(<span class="number">0</span>)),
             next_port: Rc::new(RefCell::new(<span class="number">0</span>)),
             cli: <span class="kw-2">*</span><span class="self">self</span>,

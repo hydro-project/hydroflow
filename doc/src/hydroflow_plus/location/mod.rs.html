@@ -246,8 +246,10 @@
 <a href="#244" id="244">244</a>
 <a href="#245" id="245">245</a>
 <a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::marker::PhantomData;
+<span class="kw">use </span>std::rc::Rc;
 <span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>hydroflow::bytes::Bytes;
@@ -314,11 +316,11 @@
 }
 
 <span class="kw">pub trait </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt; + <span class="question-mark">?</span>Sized&gt; {
-    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, id: usize, builder: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;, meta: <span class="kw-2">&amp;mut </span>D::Meta) -&gt; D::Process;
+    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, id: usize, builder: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;, meta: <span class="kw-2">&amp;mut </span>D::Meta) -&gt; D::Process;
 }
 
 <span class="kw">pub trait </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt; + <span class="question-mark">?</span>Sized&gt; {
-    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, id: usize, builder: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;, meta: <span class="kw-2">&amp;mut </span>D::Meta) -&gt; D::Cluster;
+    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, id: usize, builder: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;, meta: <span class="kw-2">&amp;mut </span>D::Meta) -&gt; D::Cluster;
 }
 
 <span class="kw">pub trait </span>Location&lt;<span class="lifetime">'a</span>&gt;: Clone {
@@ -328,7 +330,7 @@
     <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize;
 
     <span class="doccomment">/// A handle to the global list of IR leaves, which are the outputs of the program.
-    </span><span class="kw">fn </span>ir_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;;
+    </span><span class="kw">fn </span>ir_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Rc&lt;RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;&gt;;
 
     <span class="doccomment">/// A handle to a counter of cycles within this location.
     </span><span class="kw">fn </span>cycle_counter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>RefCell&lt;usize&gt;;
@@ -340,7 +342,7 @@
     <span class="kw">fn </span>spin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Stream&lt;<span class="lifetime">'a</span>, (), Async, <span class="self">Self</span>&gt; {
         Stream::new(
             <span class="self">self</span>.clone(),
-            <span class="self">self</span>.ir_leaves(),
+            <span class="self">self</span>.ir_leaves().clone(),
             HfPlusNode::Source {
                 source: HfPlusSource::Spin(),
                 location_id: <span class="self">self</span>.id(),
@@ -366,7 +368,7 @@
 
         Stream::new(
             <span class="self">self</span>.clone(),
-            <span class="self">self</span>.ir_leaves(),
+            <span class="self">self</span>.ir_leaves().clone(),
             HfPlusNode::Source {
                 source: HfPlusSource::Stream(e.into()),
                 location_id: <span class="self">self</span>.id(),
@@ -387,7 +389,7 @@
             port,
             Stream::new(
                 <span class="self">self</span>.clone(),
-                <span class="self">self</span>.ir_leaves(),
+                <span class="self">self</span>.ir_leaves().clone(),
                 HfPlusNode::Map {
                     f: process.into(),
                     input: Box::new(HfPlusNode::Source {
@@ -412,7 +414,7 @@
             port,
             Stream::new(
                 <span class="self">self</span>.clone(),
-                <span class="self">self</span>.ir_leaves(),
+                <span class="self">self</span>.ir_leaves().clone(),
                 HfPlusNode::Map {
                     f: process.into(),
                     input: Box::new(HfPlusNode::Source {
@@ -432,7 +434,7 @@
 
         Stream::new(
             <span class="self">self</span>.clone(),
-            <span class="self">self</span>.ir_leaves(),
+            <span class="self">self</span>.ir_leaves().clone(),
             HfPlusNode::Source {
                 source: HfPlusSource::Iter(e.into()),
                 location_id: <span class="self">self</span>.id(),
@@ -448,7 +450,7 @@
 
         Stream::new(
             <span class="self">self</span>.clone(),
-            <span class="self">self</span>.ir_leaves(),
+            <span class="self">self</span>.ir_leaves().clone(),
             HfPlusNode::Source {
                 source: HfPlusSource::Interval(interval.into()),
                 location_id: <span class="self">self</span>.id(),
@@ -472,12 +474,12 @@
             HfCycle {
                 ident: ident.clone(),
                 node: <span class="self">self</span>.clone(),
-                ir_leaves: <span class="self">self</span>.ir_leaves(),
+                ir_leaves: <span class="self">self</span>.ir_leaves().clone(),
                 _phantom: PhantomData,
             },
             Stream::new(
                 <span class="self">self</span>.clone(),
-                <span class="self">self</span>.ir_leaves(),
+                <span class="self">self</span>.ir_leaves().clone(),
                 HfPlusNode::CycleSource {
                     ident,
                     location_id: <span class="self">self</span>.id(),

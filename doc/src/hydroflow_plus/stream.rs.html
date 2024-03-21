@@ -634,7 +634,7 @@
 </span><span class="kw">pub struct </span>Stream&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; {
     node: N,
 
-    ir_leaves: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;,
+    ir_leaves: Rc&lt;RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) ir_node: RefCell&lt;HfPlusNode&gt;,
 
     _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), T, W)&gt;,
@@ -643,7 +643,7 @@
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(
         node: N,
-        ir_leaves: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;,
+        ir_leaves: Rc&lt;RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;&gt;,
         ir_node: HfPlusNode,
     ) -&gt; <span class="self">Self </span>{
         Stream {
@@ -666,7 +666,7 @@
 
         Stream::new(
             <span class="self">self</span>.node.clone(),
-            <span class="self">self</span>.ir_leaves,
+            <span class="self">self</span>.ir_leaves.clone(),
             <span class="self">self</span>.ir_node.borrow().clone(),
         )
     }

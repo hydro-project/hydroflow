@@ -335,7 +335,7 @@
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
 <span class="kw">pub fn </span>simple_cluster&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>, ClusterId = u32&gt;&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
+    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
     process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
     cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
 ) -&gt; (D::Process, D::Cluster) {
@@ -356,7 +356,7 @@
 }
 
 <span class="kw">pub fn </span>many_to_many&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
+    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
     cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
 ) -&gt; D::Cluster
 <span class="kw">where
@@ -372,7 +372,7 @@
 }
 
 <span class="kw">pub fn </span>map_reduce&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>, ClusterId = u32&gt;&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
+    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
     process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
     cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
 ) -&gt; (D::Process, D::Cluster) {
@@ -406,7 +406,7 @@
 }
 
 <span class="kw">pub fn </span>compute_pi&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
+    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
     process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
     cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
 ) -&gt; D::Process {
@@ -452,10 +452,10 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>simple_cluster_runtime&lt;<span class="lifetime">'a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= simple_cluster(flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
+    <span class="kw">let _ </span>= simple_cluster(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
@@ -463,10 +463,10 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>many_to_many_runtime&lt;<span class="lifetime">'a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= many_to_many(flow, <span class="kw-2">&amp;</span>cli);
+    <span class="kw">let _ </span>= many_to_many(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>cli);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
@@ -474,10 +474,10 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>map_reduce_runtime&lt;<span class="lifetime">'a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= map_reduce(flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
+    <span class="kw">let _ </span>= map_reduce(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
@@ -485,10 +485,10 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>compute_pi_runtime&lt;<span class="lifetime">'a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= compute_pi(flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
+    <span class="kw">let _ </span>= compute_pi(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))

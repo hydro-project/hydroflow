@@ -131,11 +131,6 @@
 <a href="#129" id="129">129</a>
 <a href="#130" id="130">130</a>
 <a href="#131" id="131">131</a>
-<a href="#132" id="132">132</a>
-<a href="#133" id="133">133</a>
-<a href="#134" id="134">134</a>
-<a href="#135" id="135">135</a>
-<a href="#136" id="136">136</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::rc::Rc;
 
@@ -149,8 +144,8 @@
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; LocalDeploy&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>SingleProcessGraph {
     <span class="kw">type </span>ClusterId = ();
-    <span class="kw">type </span>Process = SingleNode&lt;<span class="lifetime">'a</span>&gt;;
-    <span class="kw">type </span>Cluster = SingleNode&lt;<span class="lifetime">'a</span>&gt;;
+    <span class="kw">type </span>Process = SingleNode;
+    <span class="kw">type </span>Cluster = SingleNode;
     <span class="kw">type </span>Meta = ();
     <span class="kw">type </span>GraphId = ();
 }
@@ -159,23 +154,23 @@
     <span class="kw">fn </span>build(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         _id: usize,
-        builder: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
+        builder: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
         _meta: <span class="kw-2">&amp;mut </span>(),
-    ) -&gt; SingleNode&lt;<span class="lifetime">'a</span>&gt; {
+    ) -&gt; SingleNode {
         SingleNode {
-            builder,
+            ir_leaves: builder.ir_leaves().clone(),
             cycle_counter: Rc::new(RefCell::new(<span class="number">0</span>)),
         }
     }
 }
 
 <span class="attr">#[derive(Clone)]
-</span><span class="kw">pub struct </span>SingleNode&lt;<span class="lifetime">'a</span>&gt; {
-    builder: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
+</span><span class="kw">pub struct </span>SingleNode {
+    ir_leaves: Rc&lt;RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;&gt;,
     cycle_counter: Rc&lt;RefCell&lt;usize&gt;&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Location&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>SingleNode&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Location&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>SingleNode {
     <span class="kw">type </span>Port = ();
     <span class="kw">type </span>Meta = ();
 
@@ -183,8 +178,8 @@
         <span class="number">0
     </span>}
 
-    <span class="kw">fn </span>ir_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt; {
-        <span class="self">self</span>.builder.ir_leaves()
+    <span class="kw">fn </span>ir_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Rc&lt;RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;&gt; {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.ir_leaves
     }
 
     <span class="kw">fn </span>cycle_counter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>RefCell&lt;usize&gt; {
@@ -198,7 +193,7 @@
     <span class="kw">fn </span>update_meta(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _meta: <span class="kw-2">&amp;</span><span class="self">Self</span>::Meta) {}
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Cluster&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>SingleNode&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Cluster&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>SingleNode {
     <span class="kw">type </span>Id = ();
 
     <span class="kw">fn </span>ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Vec&lt;()&gt;&gt; + Copy + <span class="lifetime">'a </span>{
@@ -212,21 +207,16 @@
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; LocalDeploy&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>MultiGraph {
     <span class="kw">type </span>ClusterId = u32;
-    <span class="kw">type </span>Process = MultiNode&lt;<span class="lifetime">'a</span>&gt;;
-    <span class="kw">type </span>Cluster = MultiNode&lt;<span class="lifetime">'a</span>&gt;;
+    <span class="kw">type </span>Process = MultiNode;
+    <span class="kw">type </span>Cluster = MultiNode;
     <span class="kw">type </span>Meta = ();
     <span class="kw">type </span>GraphId = usize;
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; ProcessSpec&lt;<span class="lifetime">'a</span>, MultiGraph&gt; <span class="kw">for </span>() {
-    <span class="kw">fn </span>build(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        id: usize,
-        builder: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, MultiGraph&gt;,
-        _meta: <span class="kw-2">&amp;mut </span>(),
-    ) -&gt; MultiNode&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, id: usize, builder: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, MultiGraph&gt;, _meta: <span class="kw-2">&amp;mut </span>()) -&gt; MultiNode {
         MultiNode {
-            builder,
+            ir_leaves: builder.ir_leaves().clone(),
             id,
             cycle_counter: Rc::new(RefCell::new(<span class="number">0</span>)),
         }
@@ -234,13 +224,13 @@
 }
 
 <span class="attr">#[derive(Clone)]
-</span><span class="kw">pub struct </span>MultiNode&lt;<span class="lifetime">'a</span>&gt; {
-    builder: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, MultiGraph&gt;,
+</span><span class="kw">pub struct </span>MultiNode {
+    ir_leaves: Rc&lt;RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;&gt;,
     id: usize,
     cycle_counter: Rc&lt;RefCell&lt;usize&gt;&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Location&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>MultiNode&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Location&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>MultiNode {
     <span class="kw">type </span>Port = ();
     <span class="kw">type </span>Meta = ();
 
@@ -248,8 +238,8 @@
         <span class="self">self</span>.id
     }
 
-    <span class="kw">fn </span>ir_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt; {
-        <span class="self">self</span>.builder.ir_leaves()
+    <span class="kw">fn </span>ir_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Rc&lt;RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;&gt; {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.ir_leaves
     }
 
     <span class="kw">fn </span>cycle_counter(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>RefCell&lt;usize&gt; {
@@ -263,7 +253,7 @@
     <span class="kw">fn </span>update_meta(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _meta: <span class="kw-2">&amp;</span><span class="self">Self</span>::Meta) {}
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Cluster&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>MultiNode&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Cluster&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>MultiNode {
     <span class="kw">type </span>Id = u32;
 
     <span class="kw">fn </span>ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Vec&lt;u32&gt;&gt; + Copy + <span class="lifetime">'a </span>{

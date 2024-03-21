@@ -85,11 +85,14 @@
 <a href="#83" id="83">83</a>
 <a href="#84" id="84">84</a>
 <a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
 <span class="kw">pub fn </span>first_ten&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
+    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
     process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
 ) {
     <span class="kw">let </span>process = flow.process(process_spec);
@@ -98,15 +101,15 @@
 }
 
 <span class="attr">#[stageleft::entry]
-</span><span class="kw">pub fn </span>first_ten_runtime&lt;<span class="lifetime">'a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
-) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    first_ten(flow, <span class="kw-2">&amp;</span>());
+</span><span class="kw">pub fn </span>first_ten_runtime(
+    flow: FlowBuilder&lt;<span class="lifetime">'_</span>, SingleProcessGraph&gt;,
+) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'_</span>, Hydroflow&lt;<span class="lifetime">'_</span>&gt;&gt; {
+    first_ten(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>());
     flow.extract().optimize_default()
 }
 
 <span class="kw">pub fn </span>first_ten_distributed&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
+    flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
     process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
 ) -&gt; D::Process {
     <span class="kw">let </span>process = flow.process(process_spec);
@@ -125,10 +128,10 @@
 
 <span class="attr">#[stageleft::entry]
 </span><span class="kw">pub fn </span>first_ten_distributed_runtime&lt;<span class="lifetime">'a</span>&gt;(
-    flow: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= first_ten_distributed(flow, <span class="kw-2">&amp;</span>cli);
+    <span class="kw">let _ </span>= first_ten_distributed(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>cli);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
@@ -157,7 +160,10 @@
             }),
         );
 
-        <span class="macro">insta::assert_debug_snapshot!</span>(builder.extract().ir());
+        <span class="comment">// if we drop this, we drop the references to the deployment nodes
+        </span><span class="kw">let </span>built = builder.extract();
+
+        <span class="macro">insta::assert_debug_snapshot!</span>(built.ir());
 
         deployment.deploy().<span class="kw">await</span>.unwrap();
 

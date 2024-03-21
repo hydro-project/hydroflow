@@ -25,7 +25,7 @@
 <a href="#23" id="23">23</a>
 <a href="#24" id="24">24</a>
 <a href="#25" id="25">25</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>stageleft::{q, Quoted};
+</pre></div><pre class="rust"><code><span class="kw">use </span>stageleft::{q, BorrowBounds, Quoted};
 
 <span class="kw">struct </span>PrivateStruct {
     a: u32,
@@ -39,7 +39,7 @@
 }
 
 <span class="attr">#[stageleft::entry]
-</span><span class="kw">pub fn </span>private_struct(_ctx: <span class="kw-2">&amp;</span>()) -&gt; <span class="kw">impl </span>Quoted&lt;u32&gt; {
+</span><span class="kw">pub fn </span>private_struct(_ctx: BorrowBounds&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="kw">impl </span>Quoted&lt;u32&gt; {
     <span class="macro">q!</span>({
         <span class="kw">let </span>my_struct = PrivateStruct { a: <span class="number">1 </span>};
         my_struct.a
@@ -47,7 +47,7 @@
 }
 
 <span class="attr">#[stageleft::entry]
-</span><span class="kw">pub fn </span>public_struct(_ctx: <span class="kw-2">&amp;</span>()) -&gt; <span class="kw">impl </span>Quoted&lt;PublicStruct&gt; {
+</span><span class="kw">pub fn </span>public_struct(_ctx: BorrowBounds&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="kw">impl </span>Quoted&lt;PublicStruct&gt; {
     <span class="macro">q!</span>(PublicStruct { a: <span class="number">1 </span>})
 }
 </code></pre></div></section></main></body></html>

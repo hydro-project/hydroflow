@@ -217,18 +217,18 @@
     }
 }
 
-<span class="kw">pub struct </span>HfBuilt&lt;<span class="lifetime">'a</span>, ID&gt; {
+<span class="kw">pub struct </span>HfCompiled&lt;<span class="lifetime">'a</span>, ID&gt; {
     hydroflow_ir: BTreeMap&lt;usize, HydroflowGraph&gt;,
     _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>ID&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, ID&gt; HfBuilt&lt;<span class="lifetime">'a</span>, ID&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, ID&gt; HfCompiled&lt;<span class="lifetime">'a</span>, ID&gt; {
     <span class="kw">pub fn </span>hydroflow_ir(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>BTreeMap&lt;usize, HydroflowGraph&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.hydroflow_ir
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; HfBuilt&lt;<span class="lifetime">'a</span>, usize&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; HfCompiled&lt;<span class="lifetime">'a</span>, usize&gt; {
     <span class="kw">pub fn </span>with_dynamic_id(<span class="self">self</span>, id: <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, usize&gt;) -&gt; HfBuiltWithID&lt;<span class="lifetime">'a</span>&gt; {
         <span class="kw">let </span>hydroflow_crate = proc_macro_crate::crate_name(<span class="string">"hydroflow_plus"</span>)
             .expect(<span class="string">"hydroflow_plus should be present in `Cargo.toml`"</span>);
@@ -284,9 +284,9 @@
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; <span class="kw">for </span>HfBuilt&lt;<span class="lifetime">'a</span>, ()&gt; {}
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; <span class="kw">for </span>HfCompiled&lt;<span class="lifetime">'a</span>, ()&gt; {}
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; FreeVariable&lt;Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; <span class="kw">for </span>HfBuilt&lt;<span class="lifetime">'a</span>, ()&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; FreeVariable&lt;Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; <span class="kw">for </span>HfCompiled&lt;<span class="lifetime">'a</span>, ()&gt; {
     <span class="kw">fn </span>to_tokens(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; (<span class="prelude-ty">Option</span>&lt;TokenStream&gt;, <span class="prelude-ty">Option</span>&lt;TokenStream&gt;) {
         <span class="kw">let </span>hydroflow_crate = proc_macro_crate::crate_name(<span class="string">"hydroflow_plus"</span>)
             .expect(<span class="string">"hydroflow_plus should be present in `Cargo.toml`"</span>);

@@ -368,8 +368,6 @@
 <a href="#366" id="366">366</a>
 <a href="#367" id="367">367</a>
 <a href="#368" id="368">368</a>
-<a href="#369" id="369">369</a>
-<a href="#370" id="370">370</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Punct, Spacing, Span, TokenStream};
 <span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
 <span class="kw">use </span>syn::punctuated::Punctuated;
@@ -526,8 +524,8 @@
 /// The entrypoint must be a function that returns `impl Quoted&lt;T&gt;` for some type `T`.
 ///
 /// The first parameter must always be a context, which defines lifetime bounds for
-/// the generated code. This can usually just be a parameter of type `&amp;()`, but can
-/// be another borrowed type for domain specific staging.
+/// the generated code. This can usually just be a parameter of type `BorrowBounds&lt;'_&gt;`,
+/// but can be another borrowed type for domain specific staging.
 ///
 /// The rest of the parameters need to be passed in when invoking the macro. These
 /// can be either a `RuntimeData&lt;T&gt;` value for arbitrary values or a static value
@@ -697,9 +695,7 @@
             #(#param_parsing)*
 
             <span class="kw">let </span>output_core = {
-                <span class="attr">#[allow(clippy::let_unit_value)]
-                </span><span class="kw">let </span>graph = #root::QuotedContext::create();
-                #root::Quoted::splice(#input_name #passed_generics(<span class="kw-2">&amp;</span>graph, #(#params_to_pass),<span class="kw-2">*</span>))
+                #root::Quoted::splice(#input_name #passed_generics(#root::QuotedContext::create(), #(#params_to_pass),<span class="kw-2">*</span>))
             };
 
             <span class="kw">let </span>final_crate_name = <span class="macro">env!</span>(<span class="string">"STAGELEFT_FINAL_CRATE_NAME"</span>);

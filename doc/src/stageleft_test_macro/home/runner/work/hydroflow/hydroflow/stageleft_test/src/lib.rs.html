@@ -72,12 +72,12 @@
 <a href="#70" id="70">70</a>
 </pre></div><pre class="rust"><code><span class="macro">stageleft::stageleft_crate!</span>(stageleft_test_macro);
 
-<span class="kw">use </span>stageleft::{q, IntoQuotedOnce, Quoted, RuntimeData};
+<span class="kw">use </span>stageleft::{q, BorrowBounds, IntoQuotedOnce, Quoted, RuntimeData};
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>submodule;
 
 <span class="attr">#[stageleft::entry]
-</span><span class="kw">fn </span>raise_to_power(_ctx: <span class="kw-2">&amp;</span>(), value: RuntimeData&lt;i32&gt;, power: u32) -&gt; <span class="kw">impl </span>Quoted&lt;i32&gt; {
+</span><span class="kw">fn </span>raise_to_power(_ctx: BorrowBounds&lt;<span class="lifetime">'_</span>&gt;, value: RuntimeData&lt;i32&gt;, power: u32) -&gt; <span class="kw">impl </span>Quoted&lt;i32&gt; {
     <span class="kw">if </span>power == <span class="number">1 </span>{
         <span class="macro">q!</span>(value).boxed()
     } <span class="kw">else if </span>power % <span class="number">2 </span>== <span class="number">0 </span>{
@@ -99,7 +99,7 @@
 
 <span class="attr">#[stageleft::entry(bool)]
 </span><span class="kw">fn </span>closure_capture_lifetime&lt;<span class="lifetime">'a</span>, I: Copy + Into&lt;u32&gt; + <span class="lifetime">'a</span>&gt;(
-    _ctx: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>(),
+    _ctx: BorrowBounds&lt;<span class="lifetime">'a</span>&gt;,
     v: RuntimeData&lt;I&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;Box&lt;<span class="kw">dyn </span>Fn() -&gt; u32 + <span class="lifetime">'a</span>&gt;&gt; {
     <span class="macro">q!</span>(Box::new(<span class="kw">move </span>|| { v.into() }) <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>Fn() -&gt; u32 + <span class="lifetime">'a</span>&gt;)
