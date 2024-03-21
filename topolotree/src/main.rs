@@ -275,7 +275,7 @@ async fn main() {
             let x = procinfo::pid::stat_self().unwrap();
             let bytes = x.rss * 1024 * 4;
             println!("memory,{}", bytes);
-            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            tokio::time::sleep(Duration::from_secs(1)).await;
         }
     };
 
