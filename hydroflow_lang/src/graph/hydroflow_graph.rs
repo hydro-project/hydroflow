@@ -54,7 +54,10 @@ pub struct HydroflowGraph {
     /// Which stratum each subgraph belongs to.
     subgraph_stratum: SecondaryMap<GraphSubgraphId, usize>,
 
-    /// What variable name each graph node belongs to (if any).
+    /// Resolved singletons varnames references, per node.
+    node_singleton_references:
+        SparseSecondaryMap<GraphNodeId, Vec<Option<(PortIndexValue, GraphNodeId)>>>,
+    /// What variable name each graph node belongs to (if any). For debugging (graph writing) purposes only.
     node_varnames: SparseSecondaryMap<GraphNodeId, Varname>,
 
     // TODO(mingwei): #[serde(skip)] this and recompute as needed, to reduce codegen.
@@ -462,6 +465,20 @@ impl HydroflowGraph {
             (0 | 1, _many) => Some(Color::Push),
             (_many, _to_many) => Some(Color::Comp),
         }
+    }
+}
+
+/// Singleton references.
+impl HydroflowGraph {
+    /// Set the singletons referenced for the `node_id` operator. Each reference corresponds to the
+    /// same index in the [`crate::parse::Operator::singletons_referenced`] vec.
+    pub fn set_node_singleton_references(
+        &mut self,
+        node_id: GraphNodeId,
+        singletons_referenced: Vec<Option<(PortIndexValue, GraphNodeId)>>,
+    ) -> Option<Vec<Option<(PortIndexValue, GraphNodeId)>>> {
+        self.node_singleton_references
+            .insert(node_id, singletons_referenced)
     }
 }
 

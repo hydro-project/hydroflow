@@ -6,7 +6,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
 use proc_macro2::Span;
-use quote::{IdentFragment, ToTokens};
+use quote::ToTokens;
 use syn::spanned::Spanned;
 use syn::{Error, Ident, ItemUse};
 
@@ -353,25 +353,48 @@ impl FlatGraphBuilder {
                 self.connect_operators(out_port, out_node, inn_port, inn_node);
             }
         }
-        // Singleton references, which also act as edges.
+        // Resolve the singleton references for each node.
         for node_id in self.flat_graph.node_ids().collect::<Vec<_>>() {
             if let GraphNode::Operator(operator) = self.flat_graph.node(node_id) {
-                for singleton_ref in operator
+                let singletons_referenced = operator
                     .singletons_referenced
                     .iter()
                     .cloned()
                     .collect::<Vec<_>>()
-                {
-                    let port = PortIndexValue::Elided(Some(singleton_ref.span()));
-                    if let Some((out_port, out_node)) = self.helper_resolve_name(
-                        Some((port.clone(), GraphDet::Undetermined(singleton_ref.clone()))),
-                        false,
-                    ) {
-                        self.connect_operators(out_port, out_node, port, node_id);
-                    }
-                }
+                    .into_iter()
+                    .map(|singleton_ref| {
+                        let port = PortIndexValue::Elided(Some(singleton_ref.span()));
+                        let (out_port, out_node) = self.helper_resolve_name(
+                            Some((port.clone(), GraphDet::Undetermined(singleton_ref.clone()))),
+                            false,
+                        )?;
+                        Some((out_port, out_node))
+                        // Output is an option.
+                    })
+                    .collect();
+                self.flat_graph
+                    .set_node_singleton_references(node_id, singletons_referenced);
             }
         }
+        // // Singleton references, which also act as edges.
+        // for node_id in self.flat_graph.node_ids().collect::<Vec<_>>() {
+        //     if let GraphNode::Operator(operator) = self.flat_graph.node(node_id) {
+        //         for singleton_ref in operator
+        //             .singletons_referenced
+        //             .iter()
+        //             .cloned()
+        //             .collect::<Vec<_>>()
+        //         {
+        //             let port = PortIndexValue::Elided(Some(singleton_ref.span()));
+        //             if let Some((out_port, out_node)) = self.helper_resolve_name(
+        //                 Some((port.clone(), GraphDet::Undetermined(singleton_ref.clone()))),
+        //                 false,
+        //             ) {
+        //                 self.connect_operators(out_port, out_node, port, node_id);
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     /// Recursively resolve a variable name. For handling forward (and backward) name references
