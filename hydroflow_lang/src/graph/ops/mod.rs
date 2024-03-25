@@ -461,6 +461,9 @@ pub struct WriteContextArgs<'a> {
     pub op_name: &'static str,
     /// Operator instance arguments object.
     pub op_inst: &'a OperatorInstance,
+    /// Resolved ports for singletons. See [`OperatorInstance::singletons_referenced`].
+    /// Ident is the name of a state reference (TODO(mingwei): reword this when I understand it better)
+    pub singletons_resolved: &'a [Ident],
 
     /// Flow properties corresponding to each input.
     ///

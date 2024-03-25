@@ -3,6 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Debug;
 use std::iter::FusedIterator;
+use std::ops::Deref;
 
 use itertools::Itertools;
 use proc_macro2::{Ident, Literal, Span, TokenStream};
@@ -55,8 +56,7 @@ pub struct HydroflowGraph {
     subgraph_stratum: SecondaryMap<GraphSubgraphId, usize>,
 
     /// Resolved singletons varnames references, per node.
-    node_singleton_references:
-        SparseSecondaryMap<GraphNodeId, Vec<Option<(PortIndexValue, GraphNodeId)>>>,
+    node_singleton_references: SparseSecondaryMap<GraphNodeId, Vec<Option<GraphEdgeId>>>,
     /// What variable name each graph node belongs to (if any). For debugging (graph writing) purposes only.
     node_varnames: SparseSecondaryMap<GraphNodeId, Varname>,
 
@@ -310,6 +310,7 @@ impl HydroflowGraph {
                     op_constraints,
                     input_ports,
                     output_ports,
+                    singletons_referenced: operator.singletons_referenced.clone(),
                     generics,
                     arguments: operator.args.clone(),
                 },
@@ -356,6 +357,7 @@ impl HydroflowGraph {
                 op_constraints,
                 input_ports: vec![input_port],
                 output_ports: vec![output_port],
+                singletons_referenced: operator.singletons_referenced.clone(),
                 generics,
                 arguments: operator.args.clone(),
             })
@@ -475,8 +477,8 @@ impl HydroflowGraph {
     pub fn set_node_singleton_references(
         &mut self,
         node_id: GraphNodeId,
-        singletons_referenced: Vec<Option<(PortIndexValue, GraphNodeId)>>,
-    ) -> Option<Vec<Option<(PortIndexValue, GraphNodeId)>>> {
+        singletons_referenced: Vec<Option<GraphEdgeId>>,
+    ) -> Option<Vec<Option<GraphEdgeId>>> {
         self.node_singleton_references
             .insert(node_id, singletons_referenced)
     }
@@ -984,6 +986,19 @@ impl HydroflowGraph {
 
                             let is_pull = idx < pull_to_push_idx;
 
+                            let singletons_resolved = &*self.node_singleton_references.get(node_id)
+                                .into_iter() // `None` becomes empty iter.
+                                .flatten()
+                                .map(|edge_id| {
+                                    self.edge_as_ident(edge_id.expect("TODO"), op_span)
+                                })
+                                .collect::<Vec<_>>();
+
+                            // let singletons_resolved: &[_] = self
+                            //     .node_singleton_references
+                            //     .get(node_id)
+                            //     .map_or(&[], |v| &*v);
+
                             let context_args = WriteContextArgs {
                                 root,
                                 // There's a bit of dark magic hidden in `Span`s... you'd think it's just a `file:line:column`,
@@ -1007,6 +1022,7 @@ impl HydroflowGraph {
                                 output_edgetypes: &*output_edgetypes,
                                 op_name,
                                 op_inst,
+                                singletons_resolved,
                                 flow_props_in: &*flow_props_in,
                             };
 
