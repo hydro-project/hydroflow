@@ -279,6 +279,7 @@ pub fn null_write_iterator_fn(
         ident,
         inputs,
         outputs,
+        input_edgetypes,
         is_pull,
         op_inst:
             OperatorInstance {
@@ -290,10 +291,17 @@ pub fn null_write_iterator_fn(
 ) -> TokenStream {
     let default_type = parse_quote_spanned! {op_span=> _};
     let iter_type = type_args.first().unwrap_or(&default_type);
+
+    let value_inputs = inputs
+        .iter()
+        .zip(input_edgetypes)
+        .filter(|(_input, input_edgtype)| matches!(input_edgtype, GraphEdgeType::Value))
+        .map(|(input, _)| input);
+
     if is_pull {
         quote_spanned! {op_span=>
             #(
-                #inputs.for_each(std::mem::drop);
+                #value_inputs.for_each(std::mem::drop);
             )*
             let #ident = std::iter::empty::<#iter_type>();
         }
