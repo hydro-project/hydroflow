@@ -2,7 +2,7 @@ use hydroflow_plus::*;
 use stageleft::*;
 
 pub fn first_ten_distributed<'a, D: Deploy<'a>>(
-    flow: &'a FlowBuilder<'a, D>,
+    flow: &FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
 ) -> D::Process {
     let process = flow.process(process_spec);
@@ -21,11 +21,13 @@ use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 
 #[stageleft::entry]
 pub fn first_ten_distributed_runtime<'a>(
-    flow: &'a FlowBuilder<'a, CLIRuntime>,
+    flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = first_ten_distributed(flow, &cli);
-    flow.build().emit(q!(cli.meta.subgraph_id))
+    let _ = first_ten_distributed(&flow, &cli);
+    flow.extract()
+        .optimize_default()
+        .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
 #[stageleft::runtime]
