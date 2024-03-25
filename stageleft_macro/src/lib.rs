@@ -308,6 +308,7 @@ pub fn entry(
 
     proc_macro::TokenStream::from(quote_spanned! {input.span()=>
         #[cfg_attr(not(feature = "macro"), allow(unused))]
+        #[allow(clippy::needless_lifetimes)]
         #input
 
         #[cfg_attr(not(feature = "macro"), allow(unused))]

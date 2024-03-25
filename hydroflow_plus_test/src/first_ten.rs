@@ -11,9 +11,9 @@ pub fn first_ten<'a, D: LocalDeploy<'a>>(
 }
 
 #[stageleft::entry]
-pub fn first_ten_runtime(
-    flow: FlowBuilder<'_, SingleProcessGraph>,
-) -> impl Quoted<'_, Hydroflow<'_>> {
+pub fn first_ten_runtime<'a>(
+    flow: FlowBuilder<'a, SingleProcessGraph>,
+) -> impl Quoted<'a, Hydroflow<'a>> {
     first_ten(&flow, &());
     flow.extract().optimize_default()
 }
@@ -52,6 +52,11 @@ pub fn first_ten_distributed_runtime<'a>(
 mod tests {
     use hydro_deploy::{Deployment, HydroflowCrate};
     use hydroflow_plus_cli_integration::{DeployCrateWrapper, DeployProcessSpec};
+
+    #[test]
+    fn instantiate_first_ten() {
+        let _ = super::first_ten_runtime!();
+    }
 
     #[tokio::test]
     async fn first_ten_distributed() {
