@@ -368,6 +368,7 @@
 <a href="#366" id="366">366</a>
 <a href="#367" id="367">367</a>
 <a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Punct, Spacing, Span, TokenStream};
 <span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
 <span class="kw">use </span>syn::punctuated::Punctuated;
@@ -678,6 +679,7 @@
 
     proc_macro::TokenStream::from(<span class="macro">quote_spanned! </span>{input.span()=&gt;
         <span class="attr">#[cfg_attr(not(feature = <span class="string">"macro"</span>), allow(unused))]
+        #[allow(clippy::needless_lifetimes)]
         </span>#input
 
         <span class="attr">#[cfg_attr(not(feature = <span class="string">"macro"</span>), allow(unused))]

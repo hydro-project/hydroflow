@@ -88,6 +88,11 @@
 <a href="#86" id="86">86</a>
 <a href="#87" id="87">87</a>
 <a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
@@ -101,9 +106,9 @@
 }
 
 <span class="attr">#[stageleft::entry]
-</span><span class="kw">pub fn </span>first_ten_runtime(
-    flow: FlowBuilder&lt;<span class="lifetime">'_</span>, SingleProcessGraph&gt;,
-) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'_</span>, Hydroflow&lt;<span class="lifetime">'_</span>&gt;&gt; {
+</span><span class="kw">pub fn </span>first_ten_runtime&lt;<span class="lifetime">'a</span>&gt;(
+    flow: FlowBuilder&lt;<span class="lifetime">'a</span>, SingleProcessGraph&gt;,
+) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
     first_ten(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>());
     flow.extract().optimize_default()
 }
@@ -142,6 +147,11 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>hydro_deploy::{Deployment, HydroflowCrate};
     <span class="kw">use </span>hydroflow_plus_cli_integration::{DeployCrateWrapper, DeployProcessSpec};
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>instantiate_first_ten() {
+        <span class="kw">let _ </span>= <span class="macro">super::first_ten_runtime!</span>();
+    }
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>first_ten_distributed() {
