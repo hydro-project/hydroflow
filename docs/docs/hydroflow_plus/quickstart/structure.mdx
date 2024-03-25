@@ -66,7 +66,7 @@ Next, we need to instantiate our dataflow into a runnable Rust binary. We do thi
 
 To define the entrypoint, we use the `#[stageleft::entry]` macro, which takes the graph being built and returns a generated Hydroflow program. We define this as a new function `first_ten_runtime`. In this first example, we assume there is a single process so that we do not need to specify how the graph is laid out across processes. We specify this by using the `SingleProcessGraph` type parameter on `FlowBuilder`.
 
-Having done that, we can use some simple defaults for "distributing" this single-process deployment. First, we use `()` as an argument to `first_ten` to choose the default process spec. Then we use the `build_single` method to generate the Hydroflow program.
+Having done that, we can use some simple defaults for "distributing" this single-process deployment. First, we use `()` as an argument to `first_ten` to choose the default process spec. Then we use the `optimize_default` method to generate the Hydroflow program with default optimizations.
 
 
 ```rust title="flow/src/first_ten.rs"
