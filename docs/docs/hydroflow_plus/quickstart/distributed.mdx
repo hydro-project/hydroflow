@@ -44,7 +44,7 @@ numbers
 ```
 
 ## The Runtime
-Now that our graph spans multiple processes, our runtime entrypoint will involve multiple subgraphs. This means we can't get away with `build_single`. Instead, we must take the subgraph ID as a runtime parameter (`subgraph_id`) to select the appropriate graph. In addition, our dataflow involves the network, so we take a `HydroCLI` runtime parameter (`cli`) so that processes can look up their network connections and instantiate the flow graph with access to it.
+Now that our graph spans multiple processes, our runtime entrypoint will involve multiple subgraphs. This means we can't get away with just the optimized dataflow. Instead, we must take the subgraph ID as a runtime parameter through `with_dynamic_id` to select the appropriate graph. In addition, our dataflow involves the network, so we take a `HydroCLI` runtime parameter (`cli`) so that processes can look up their network connections and instantiate the flow graph with access to it.
 
 ```rust title="flow/src/first_ten_distributed.rs"
 use hydroflow_plus::util::cli::HydroCLI;
