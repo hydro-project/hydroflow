@@ -651,6 +651,14 @@
 <a href="#649" id="649">649</a>
 <a href="#650" id="650">650</a>
 <a href="#651" id="651">651</a>
+<a href="#652" id="652">652</a>
+<a href="#653" id="653">653</a>
+<a href="#654" id="654">654</a>
+<a href="#655" id="655">655</a>
+<a href="#656" id="656">656</a>
+<a href="#657" id="657">657</a>
+<a href="#658" id="658">658</a>
+<a href="#659" id="659">659</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Hydroflow's operators
 
 </span><span class="kw">use </span>std::collections::HashMap;
@@ -932,6 +940,7 @@
         ident,
         inputs,
         outputs,
+        input_edgetypes,
         is_pull,
         op_inst:
             OperatorInstance {
@@ -943,10 +952,17 @@
 ) -&gt; TokenStream {
     <span class="kw">let </span>default_type = <span class="macro">parse_quote_spanned! </span>{op_span=&gt; <span class="kw">_</span>};
     <span class="kw">let </span>iter_type = type_args.first().unwrap_or(<span class="kw-2">&amp;</span>default_type);
+
+    <span class="kw">let </span>value_inputs = inputs
+        .iter()
+        .zip(input_edgetypes)
+        .filter(|(_input, input_edgtype)| <span class="macro">matches!</span>(input_edgtype, GraphEdgeType::Value))
+        .map(|(input, <span class="kw">_</span>)| input);
+
     <span class="kw">if </span>is_pull {
         <span class="macro">quote_spanned! </span>{op_span=&gt;
             #(
-                #inputs.for_each(std::mem::drop);
+                #value_inputs.for_each(std::mem::drop);
             )*
             <span class="kw">let </span>#ident = std::iter::empty::&lt;#iter_type&gt;();
         }
