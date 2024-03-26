@@ -25,7 +25,7 @@ pub(crate) async fn run_client(opts: Opts) {
 
     // Use the server address that was provided in the command-line arguments, or use the default
     // if one was not provided.
-    let server_addr = opts.address.unwrap_or_else(|| default_server_address());
+    let server_addr = opts.address.unwrap_or_else(default_server_address);
 
     let (outbound, inbound, allocated_client_addr) = bind_udp_bytes(client_addr).await;
 
