@@ -69,8 +69,10 @@ fn test() {
 
     use hydroflow::util::{run_cargo_example, wait_for_process_output};
 
-    let (_server, _, mut server_output) =
-        run_cargo_example("chat", "--role server --name server --address 127.0.0.1:11247");
+    let (_server, _, mut server_output) = run_cargo_example(
+        "chat",
+        "--role server --name server --address 127.0.0.1:11247",
+    );
 
     let mut server_output_so_far = String::new();
     wait_for_process_output(
@@ -122,8 +124,10 @@ fn test_gossip() {
 
     use hydroflow::util::{run_cargo_example, wait_for_process_output};
 
-    let (_server1, _, mut server1_output) =
-        run_cargo_example("chat", "--role gossiping-server1 --name server --address 127.0.0.1:11247");
+    let (_server1, _, mut server1_output) = run_cargo_example(
+        "chat",
+        "--role gossiping-server1 --name server --address 127.0.0.1:11247",
+    );
 
     let mut server1_output_so_far = String::new();
     wait_for_process_output(
@@ -132,8 +136,10 @@ fn test_gossip() {
         "Server is live!",
     );
 
-    let (_server2, _, mut server2_output) =
-        run_cargo_example("chat", "--role gossiping-server2 --name server --address 127.0.0.1:11248");
+    let (_server2, _, mut server2_output) = run_cargo_example(
+        "chat",
+        "--role gossiping-server2 --name server --address 127.0.0.1:11248",
+    );
 
     let mut server2_output_so_far = String::new();
     wait_for_process_output(
