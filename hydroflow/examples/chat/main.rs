@@ -2,15 +2,16 @@ use std::net::SocketAddr;
 
 use clap::{Parser, ValueEnum};
 use client::run_client;
-use hydroflow::util::{ipv4_resolve};
+use hydroflow::util::ipv4_resolve;
 use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 use server::run_server;
+
 use crate::randomized_gossiping_server::run_gossiping_server;
 
 mod client;
 mod protocol;
-mod server;
 mod randomized_gossiping_server;
+mod server;
 
 #[derive(Clone, ValueEnum, Debug, Eq, PartialEq)]
 enum Role {
@@ -28,7 +29,6 @@ enum Role {
 pub fn default_server_address() -> SocketAddr {
     ipv4_resolve("localhost:54321").unwrap()
 }
-
 
 #[derive(Parser, Debug)]
 struct Opts {
@@ -55,9 +55,11 @@ async fn main() {
         Role::Server => {
             run_server(opts).await;
         }
-        Role::GossipingServer1 | Role::GossipingServer2 | Role::GossipingServer3 | Role::GossipingServer4 | Role::GossipingServer5 => {
-            run_gossiping_server(opts).await
-        }
+        Role::GossipingServer1
+        | Role::GossipingServer2
+        | Role::GossipingServer3
+        | Role::GossipingServer4
+        | Role::GossipingServer5 => run_gossiping_server(opts).await,
     }
 }
 

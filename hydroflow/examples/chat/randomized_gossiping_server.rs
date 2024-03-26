@@ -1,18 +1,21 @@
 use std::collections::HashSet;
 use std::net::SocketAddr;
 use std::time::Duration;
+
 use chrono::{DateTime, Utc};
-use rand::seq::SliceRandom;
-use rand::thread_rng;
-use serde::{Deserialize, Serialize};
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use hydroflow_macro::hydroflow_syntax;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
+use serde::{Deserialize, Serialize};
 
-use crate::{default_server_address, Opts, Role};
 use crate::protocol::{Message, MessageWithAddr};
-use crate::Role::{GossipingServer1, GossipingServer2, GossipingServer3, GossipingServer4, GossipingServer5, Client, Server};
-
+use crate::Role::{
+    Client, GossipingServer1, GossipingServer2, GossipingServer3, GossipingServer4,
+    GossipingServer5, Server,
+};
+use crate::{default_server_address, Opts, Role};
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize, Debug, Hash)]
 pub struct ChatMessage {
@@ -59,17 +62,19 @@ pub const REMOVAL_PROBABILITY: f32 = 1.0 / 4.0;
 pub(crate) async fn run_gossiping_server(opts: Opts) {
     // If a server address & port are provided as command-line inputs, use those, else use the
     // default.
-    let server_address = opts
-        .address
-        .unwrap_or_else(|| default_server_address());
+    let server_address = opts.address.unwrap_or_else(|| default_server_address());
 
-    let all_members = vec![GossipingServer1,
-                           GossipingServer2,
-                           GossipingServer3,
-                           GossipingServer4,
-                           GossipingServer5];
+    let all_members = vec![
+        GossipingServer1,
+        GossipingServer2,
+        GossipingServer3,
+        GossipingServer4,
+        GossipingServer5,
+    ];
 
-    let other_members : Vec<Role> = all_members.iter().filter(|role| **role != opts.role)
+    let other_members: Vec<Role> = all_members
+        .iter()
+        .filter(|role| **role != opts.role)
         .cloned()
         .collect();
 
@@ -78,10 +83,14 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
     println!("Starting server on {:?}", server_address);
 
     // Separate sinks and streams for client-server protocol & gossip protocol.
-    let (client_outbound, client_inbound, actual_server_addr) = bind_udp_bytes(server_address).await;
+    let (client_outbound, client_inbound, actual_server_addr) =
+        bind_udp_bytes(server_address).await;
     let (gossip_outbound, gossip_inbound, _) = bind_udp_bytes(gossip_listening_addr).await;
 
-    println!("Server is live! Listening on {:?}. Gossiping On: {:?}", actual_server_addr, gossip_listening_addr);
+    println!(
+        "Server is live! Listening on {:?}. Gossiping On: {:?}",
+        actual_server_addr, gossip_listening_addr
+    );
     let mut hf: Hydroflow = hydroflow_syntax! {
         // Define shared inbound and outbound channels
         client_out = union() -> dest_sink_serde(client_outbound);
@@ -196,11 +205,14 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
 /// addresses. This is different from the ports on which clients connect to servers.
 fn gossip_address(role: &Role) -> SocketAddr {
     match role {
-        Client | Server => { panic!("Incorrect role {:?} for gossip server.", role) }
+        Client | Server => {
+            panic!("Incorrect role {:?} for gossip server.", role)
+        }
         GossipingServer1 => ipv4_resolve("localhost:54322"),
         GossipingServer2 => ipv4_resolve("localhost:54323"),
         GossipingServer3 => ipv4_resolve("localhost:54324"),
         GossipingServer4 => ipv4_resolve("localhost:54325"),
         GossipingServer5 => ipv4_resolve("localhost:54326"),
-    }.unwrap()
+    }
+    .unwrap()
 }
