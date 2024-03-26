@@ -2,19 +2,33 @@ use std::net::SocketAddr;
 
 use clap::{Parser, ValueEnum};
 use client::run_client;
-use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
+use hydroflow::util::{ipv4_resolve};
 use hydroflow_lang::graph::{WriteConfig, WriteGraphType};
 use server::run_server;
+use crate::randomized_gossiping_server::run_gossiping_server;
 
 mod client;
 mod protocol;
 mod server;
+mod randomized_gossiping_server;
 
-#[derive(Clone, ValueEnum, Debug)]
+#[derive(Clone, ValueEnum, Debug, Eq, PartialEq)]
 enum Role {
     Client,
     Server,
+
+    // These roles are only used by the randomized-gossip variant of the chat example.
+    GossipingServer1,
+    GossipingServer2,
+    GossipingServer3,
+    GossipingServer4,
+    GossipingServer5,
 }
+
+pub fn default_server_address() -> SocketAddr {
+    ipv4_resolve("localhost:54321").unwrap()
+}
+
 
 #[derive(Parser, Debug)]
 struct Opts {
@@ -23,9 +37,7 @@ struct Opts {
     #[clap(value_enum, long)]
     role: Role,
     #[clap(long, value_parser = ipv4_resolve)]
-    addr: Option<SocketAddr>,
-    #[clap(long, value_parser = ipv4_resolve)]
-    server_addr: Option<SocketAddr>,
+    address: Option<SocketAddr>,
     #[clap(long)]
     graph: Option<WriteGraphType>,
     #[clap(flatten)]
@@ -35,21 +47,16 @@ struct Opts {
 #[hydroflow::main]
 async fn main() {
     let opts = Opts::parse();
-    // if no addr was provided, we ask the OS to assign a local port by passing in "localhost:0"
-    let addr = opts
-        .addr
-        .unwrap_or_else(|| ipv4_resolve("localhost:0").unwrap());
-
-    // allocate `outbound` sink and `inbound` stream
-    let (outbound, inbound, addr) = bind_udp_bytes(addr).await;
-    println!("Listening on {:?}", addr);
 
     match opts.role {
         Role::Client => {
-            run_client(outbound, inbound, opts).await;
+            run_client(opts).await;
         }
         Role::Server => {
-            run_server(outbound, inbound, opts).await;
+            run_server(opts).await;
+        }
+        Role::GossipingServer1 | Role::GossipingServer2 | Role::GossipingServer3 | Role::GossipingServer4 | Role::GossipingServer5 => {
+            run_gossiping_server(opts).await
         }
     }
 }
