@@ -1,6 +1,6 @@
 use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
-use hydroflow::util::{bind_udp_bytes};
+use hydroflow::util::bind_udp_bytes;
 
 use crate::protocol::{Message, MessageWithAddr};
 use crate::{default_server_address, Opts};
@@ -10,9 +10,7 @@ pub(crate) async fn run_server(opts: Opts) {
 
     // If a server address & port are provided as command-line inputs, use those, else use the
     // default.
-    let server_address = opts
-        .address
-        .unwrap_or_else(|| default_server_address());
+    let server_address = opts.address.unwrap_or_else(|| default_server_address());
 
     println!("Starting server on {:?}", server_address);
 
