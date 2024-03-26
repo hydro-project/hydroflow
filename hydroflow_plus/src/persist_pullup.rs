@@ -24,15 +24,14 @@ pub fn persist_pullup(ir: Vec<HfPlusLeaf>) -> Vec<HfPlusLeaf> {
 mod tests {
     use stageleft::*;
 
-    use crate::{Location, MultiGraph};
+    use crate::MultiGraph;
 
     #[test]
     fn persist_pullup_through_map() {
         let flow = crate::builder::FlowBuilder::<MultiGraph>::new();
         let process = flow.process(&());
 
-        process
-            .source_iter(q!(0..10))
+        flow.source_iter(&process, q!(0..10))
             .all_ticks()
             .map(q!(|v| v + 1))
             .for_each(q!(|n| println!("{}", n)));
@@ -56,8 +55,8 @@ mod tests {
         let flow = crate::builder::FlowBuilder::<MultiGraph>::new();
         let process = flow.process(&());
 
-        let before_tee = process
-            .source_iter(q!(0..10))
+        let before_tee = flow
+            .source_iter(&process, q!(0..10))
             .all_ticks()
             .map(q!(|v| v + 1));
 

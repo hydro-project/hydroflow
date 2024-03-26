@@ -50,7 +50,7 @@ pub fn first_ten<'a, D: LocalDeploy<'a>>(
 Now, we can build out the dataflow to run on this process. Every dataflow starts at a source that is bound to a specific process. First, we instantiate a stream that emits the first 10 natural numbers.
 
 ```rust
-let numbers = process.source_iter(q!(0..10)); // : Stream<_, i32, _, _>
+let numbers = flow.source_iter(&process, q!(0..10)); // : Stream<_, i32, _, _>
 ```
 
 In Hydroflow+, whenever there are snippets of Rust code passed to operators (like `source_iter`, `map`, or `for_each`), we use the `q!` macro to mark them. For example, we may use Rust snippets to define static sources of data or closures that transform them.

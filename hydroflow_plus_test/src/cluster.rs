@@ -11,8 +11,8 @@ pub fn simple_cluster<'a, D: Deploy<'a, ClusterId = u32>>(
     let process = flow.process(process_spec);
     let cluster = flow.cluster(cluster_spec);
 
-    let numbers = process.source_iter(q!(0..5));
-    let ids = process.source_iter(cluster.ids()).map(q!(|&id| id));
+    let numbers = flow.source_iter(&process, q!(0..5));
+    let ids = flow.source_iter(&process, cluster.ids()).map(q!(|&id| id));
 
     ids.cross_product(numbers)
         .map(q!(|(id, n)| (id, (id, n))))
@@ -32,8 +32,7 @@ where
     D::ClusterId: std::fmt::Debug,
 {
     let cluster = flow.cluster(cluster_spec);
-    cluster
-        .source_iter(q!(0..2))
+    flow.source_iter(&cluster, q!(0..2))
         .broadcast_bincode(&cluster)
         .for_each(q!(|n| println!("cluster received: {:?}", n)));
 
@@ -48,8 +47,8 @@ pub fn map_reduce<'a, D: Deploy<'a, ClusterId = u32>>(
     let process = flow.process(process_spec);
     let cluster = flow.cluster(cluster_spec);
 
-    let words = process
-        .source_iter(q!(vec!["abc", "abc", "xyz", "abc"]))
+    let words = flow
+        .source_iter(&process, q!(vec!["abc", "abc", "xyz", "abc"]))
         .map(q!(|s| s.to_string()));
 
     let all_ids_vec = cluster.ids();
@@ -82,8 +81,8 @@ pub fn compute_pi<'a, D: Deploy<'a>>(
     let cluster = flow.cluster(cluster_spec);
     let process = flow.process(process_spec);
 
-    let trials = cluster
-        .spin_batch(8192)
+    let trials = flow
+        .spin_batch(&cluster, 8192)
         .map(q!(|_| rand::random::<(f64, f64)>()))
         .map(q!(|(x, y)| x * x + y * y < 1.0))
         .fold(

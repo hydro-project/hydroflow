@@ -6,7 +6,7 @@ pub fn first_ten<'a, D: LocalDeploy<'a>>(
     process_spec: &impl ProcessSpec<'a, D>,
 ) {
     let process = flow.process(process_spec);
-    let numbers = process.source_iter(q!(0..10));
+    let numbers = flow.source_iter(&process, q!(0..10));
     numbers.for_each(q!(|n| println!("{}", n)));
 }
 
@@ -25,7 +25,7 @@ pub fn first_ten_distributed<'a, D: Deploy<'a>>(
     let process = flow.process(process_spec);
     let second_process = flow.process(process_spec);
 
-    let numbers = process.source_iter(q!(0..10));
+    let numbers = flow.source_iter(&process, q!(0..10));
     numbers
         .send_bincode(&second_process)
         .for_each(q!(|n| println!("{}", n)));
