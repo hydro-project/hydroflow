@@ -62,9 +62,9 @@ pub const REMOVAL_PROBABILITY: f32 = 1.0 / 4.0;
 pub(crate) async fn run_gossiping_server(opts: Opts) {
     // If a server address & port are provided as command-line inputs, use those, else use the
     // default.
-    let server_address = opts.address.unwrap_or_else(|| default_server_address());
+    let server_address = opts.address.unwrap_or_else(default_server_address);
 
-    let all_members = vec![
+    let all_members = [
         GossipingServer1,
         GossipingServer2,
         GossipingServer3,
