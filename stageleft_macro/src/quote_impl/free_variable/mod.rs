@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 
 mod prelude;
 use prelude::is_prelude;
@@ -60,7 +60,7 @@ impl ScopeStack {
 
 #[derive(Default)]
 pub struct FreeVariableVisitor {
-    pub free_variables: Vec<syn::Ident>,
+    pub free_variables: BTreeSet<syn::Ident>,
     pub current_scope: ScopeStack,
 }
 
@@ -115,19 +115,22 @@ impl<'ast> syn::visit::Visit<'ast> for FreeVariableVisitor {
             syn::Pat::Type(pat_type) => {
                 self.visit_pat(&pat_type.pat);
             }
+            syn::Pat::Wild(_) => {
+                // Do nothing
+            }
             _ => panic!("Local variables must be identifiers, got {:?}", i.pat),
         }
     }
 
     fn visit_ident(&mut self, i: &'ast proc_macro2::Ident) {
         if !self.current_scope.contains_term(i) {
-            self.free_variables.push(i.clone());
+            self.free_variables.insert(i.clone());
         }
     }
 
     fn visit_lifetime(&mut self, i: &'ast syn::Lifetime) {
         if !self.current_scope.contains_type(&i.ident) {
-            self.free_variables.push(i.ident.clone());
+            self.free_variables.insert(i.ident.clone());
         }
     }
 
@@ -135,7 +138,7 @@ impl<'ast> syn::visit::Visit<'ast> for FreeVariableVisitor {
         if i.leading_colon.is_none() && !is_prelude(&i.segments.first().unwrap().ident) {
             let node = i.segments.first().unwrap();
             if i.segments.len() == 1 && !self.current_scope.contains_term(&node.ident) {
-                self.free_variables.push(node.ident.clone());
+                self.free_variables.insert(node.ident.clone());
             }
         }
 
