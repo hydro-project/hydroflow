@@ -67,7 +67,7 @@ The corresponding binary in `src/bin/first_ten_distributed.rs` then instantiates
 ```rust title="flow/src/bin/first_ten_distributed.rs"
 #[tokio::main]
 async fn main() {
-    hydroflow_plus::util::cli::launch(
+    hydroflow_plus::util::cli::launch!(
         |ports| flow::first_ten_distributed_runtime!(ports)
     ).await;
 }

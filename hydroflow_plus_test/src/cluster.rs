@@ -78,12 +78,13 @@ pub fn compute_pi<'a, D: Deploy<'a>>(
     flow: &FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
+    batch_size: RuntimeData<&'a usize>,
 ) -> D::Process {
     let cluster = flow.cluster(cluster_spec);
     let process = flow.process(process_spec);
 
     let trials = cluster
-        .spin_batch(8192)
+        .spin_batch(q!(*batch_size))
         .map(q!(|_| rand::random::<(f64, f64)>()))
         .map(q!(|(x, y)| x * x + y * y < 1.0))
         .fold(
@@ -156,8 +157,9 @@ pub fn map_reduce_runtime<'a>(
 pub fn compute_pi_runtime<'a>(
     flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
+    batch_size: RuntimeData<&'a usize>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let _ = compute_pi(&flow, &cli, &cli);
+    let _ = compute_pi(&flow, &cli, &cli, batch_size);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
@@ -315,6 +317,7 @@ mod tests {
             &builder,
             &RuntimeData::new("FAKE"),
             &RuntimeData::new("FAKE"),
+            RuntimeData::new("FAKE"),
         );
         let built = builder.extract();
 
