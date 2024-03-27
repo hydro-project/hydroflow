@@ -126,7 +126,7 @@ fn test_gossip() {
 
     let (_server1, _, mut server1_output) = run_cargo_example(
         "chat",
-        "--role gossiping-server1 --name server --address 127.0.0.1:11247",
+        "--role gossiping-server1 --name server --address 127.0.0.1:11248",
     );
 
     let mut server1_output_so_far = String::new();
@@ -138,7 +138,7 @@ fn test_gossip() {
 
     let (_server2, _, mut server2_output) = run_cargo_example(
         "chat",
-        "--role gossiping-server2 --name server --address 127.0.0.1:11248",
+        "--role gossiping-server2 --name server --address 127.0.0.1:11249",
     );
 
     let mut server2_output_so_far = String::new();
@@ -150,12 +150,12 @@ fn test_gossip() {
 
     let (_client1, mut client1_input, mut client1_output) = run_cargo_example(
         "chat",
-        "--role client --name client1 --address 127.0.0.1:11247",
+        "--role client --name client1 --address 127.0.0.1:11248",
     );
 
     let (_client2, _, mut client2_output) = run_cargo_example(
         "chat",
-        "--role client --name client2 --address 127.0.0.1:11248",
+        "--role client --name client2 --address 127.0.0.1:11249",
     );
 
     let mut client1_output_so_far = String::new();
