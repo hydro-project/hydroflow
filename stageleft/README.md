@@ -78,7 +78,7 @@ name = "foo_macro"
 
 [lib]
 proc-macro = true
-path = "src/lib.rs"
+path = "../foo/src/lib.rs"
 
 [features]
 default = ["macro"]
@@ -107,13 +107,4 @@ use std::path::Path;
 fn main() {
     stageleft_tool::gen_macro(Path::new("../foo"), "foo");
 }
-```
-
-Finally, you will need to set up the `lib.rs` in these crates.
-
-In `foo`, simply add `stageleft::stageleft_crate!(foo_macro);` at the top of the file.
-
-In `foo_macro`, your `lib.rs` will only need to contain the following:
-```rust
-stageleft::stageleft_macro_crate!();
 ```

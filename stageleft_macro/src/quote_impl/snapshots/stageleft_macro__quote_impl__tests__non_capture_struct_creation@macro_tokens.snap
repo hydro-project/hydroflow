@@ -21,8 +21,7 @@ fn main() {
                     return ::std::mem::MaybeUninit::uninit().assume_init();
                 }
             }
-            #[allow(unreachable_code)] { Foo { x: 1 } }
+            #[allow(unreachable_code, unused_qualifications)] { Foo { x: 1 } }
         }
     }
 }
-

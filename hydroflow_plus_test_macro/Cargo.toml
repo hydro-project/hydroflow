@@ -6,7 +6,7 @@ edition = "2021"
 
 [lib]
 proc-macro = true
-path = "src/lib.rs"
+path = "../hydroflow_plus_test/src/lib.rs"
 
 [features]
 default = ["macro"]

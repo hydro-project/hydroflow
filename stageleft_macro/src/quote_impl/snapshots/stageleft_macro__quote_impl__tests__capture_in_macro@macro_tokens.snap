@@ -33,8 +33,7 @@ fn main() {
                     return ::std::mem::MaybeUninit::uninit().assume_init();
                 }
             }
-            #[allow(unreachable_code)] { dbg!(x) }
+            #[allow(unreachable_code, unused_qualifications)] { dbg!(x) }
         }
     }
 }
-
