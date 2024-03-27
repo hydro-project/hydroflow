@@ -6,6 +6,7 @@ use hydro_deploy::{Deployment, Host, HydroflowCrate};
 use hydroflow_plus_cli_integration::{DeployClusterSpec, DeployProcessSpec};
 use stageleft::RuntimeData;
 use tokio::sync::RwLock;
+use hydroflow_plus::profiler::profiling;
 
 type HostCreator = Box<dyn Fn(&mut Deployment) -> Arc<RwLock<dyn Host>>>;
 
@@ -69,6 +70,13 @@ async fn main() {
         }),
         RuntimeData::new("FAKE"),
     );
+
+    let runtime_context = builder.runtime_context();
+    dbg!(builder.extract()
+        .with_default_optimize()
+        .optimize_with(|ir| profiling(ir, runtime_context, RuntimeData::new("FAKE"), RuntimeData::new("FAKE")))
+        .no_optimize()
+        .ir());
 
     let mut deployment = deployment.into_inner();
 

@@ -1,16 +1,27 @@
 use std::cell::RefCell;
-use hydroflow_plus::util::cli::init_no_ack_start;
-use hydroflow_plus::util::cli::launch_flow;
+
+use hydroflow_plus::futures::StreamExt;
 
 // cannot use hydroflow::main because connect_local_blocking causes a deadlock
 #[tokio::main]
 async fn main() {
-    // TODO: Figure out the number of counters we need
+    let batch_size = 8192;
     let counters = RefCell::new(vec![0; 8192]);
-    let ports = init_no_ack_start().await;
-    let flow = hydroflow_plus_test::cluster::compute_pi_runtime!(&ports, &counters, 8192);
 
-    println!("ack start");
+    let (counter_sender, mut counter_receiver) = hydroflow_plus::futures::channel::mpsc::unbounded();
+    let counter_queue = RefCell::new(counter_sender);
 
-    launch_flow(flow).await;
+    let thread = tokio::spawn(async move {
+        while let Some((id, count)) = counter_receiver.next().await {
+            println!("node id {}: counter = {}", id, count);
+        }
+    });
+
+    hydroflow_plus::launch!(|ports| hydroflow_plus_test::cluster::compute_pi_runtime!(
+        ports,
+        &batch_size,
+        &counters,
+        &counter_queue,
+    ))
+    .await;
 }

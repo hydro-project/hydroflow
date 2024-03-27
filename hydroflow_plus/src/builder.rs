@@ -119,6 +119,8 @@ impl <'a, D: LocalDeploy<'a>> Clone for BuiltFlow<'a, D> {
     fn clone(&self) -> Self {
         BuiltFlow {
             ir: self.ir.clone(),
+            node: self.nodes.clone(),
+            clusters: self.clusters.clone(),
             _phantom: PhantomData,
         }
     }
@@ -165,8 +167,12 @@ impl<'a, D: LocalDeploy<'a>> BuiltFlow<'a, D> {
         build_inner(self)
     }
 
-    pub fn optimize_default(self) -> HfCompiled<'a, D::GraphId> {
+    pub fn with_default_optimize(self) -> BuiltFlow<'a, D> {
         self.optimize_with(super::persist_pullup::persist_pullup)
+    }
+
+    pub fn optimize_default(self) -> HfCompiled<'a, D::GraphId> {
+        self.with_default_optimize()
             .no_optimize()
     }
 }

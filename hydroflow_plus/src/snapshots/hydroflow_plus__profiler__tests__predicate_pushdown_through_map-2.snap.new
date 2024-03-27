@@ -1,12 +1,17 @@
 ---
 source: hydroflow_plus/src/profiler.rs
+<<<<<<< HEAD
 assertion_line: 70
+=======
+assertion_line: 112
+>>>>>>> ee4e33c001 (Profiling counts can be processed outside of HF)
 expression: "&pushed_down.ir"
 ---
 [
     ForEach {
         f: { use crate :: __staged :: profiler :: tests :: * ; | n | println ! ("{}" , n) },
         input: Map {
+<<<<<<< HEAD
             f: { use crate :: __staged :: profiler :: * ; let counters_copy = Fake ; let my_id = 0u32 ; let context = & context ; let my_id = 32691u32 ; let counters = Fake ; let my_id = 32691u32 ; { counters_copy . borrow_mut () [my_id as usize] = 0 ; move | v | { hydroflow_plus :: profiler :: increment_counter (context . current_tick () , my_id , & mut counters . borrow_mut () [my_id as usize]) ; v } } },
             input: Map {
                 f: { use crate :: __staged :: profiler :: tests :: * ; | v | v + 1 },
@@ -15,6 +20,16 @@ expression: "&pushed_down.ir"
                     input: Persist(
                         Map {
                             f: { use crate :: __staged :: profiler :: * ; let counters_copy = Fake ; let my_id = 2u32 ; let context = & context ; let my_id = 32691u32 ; let counters = Fake ; let my_id = 32691u32 ; { counters_copy . borrow_mut () [my_id as usize] = 0 ; move | v | { hydroflow_plus :: profiler :: increment_counter (context . current_tick () , my_id , & mut counters . borrow_mut () [my_id as usize]) ; v } } },
+=======
+            f: { use crate :: __staged :: profiler :: * ; let counter_queue = Fake ; let my_id = 0u32 ; let counters_copy1 = Fake ; let my_id = 32712u32 ; let counters_copy2 = Fake ; let my_id = 32712u32 ; let context = & context ; let my_id = 32712u32 ; let counters = Fake ; let my_id = 32712u32 ; { counter_queue . borrow () . unbounded_send ((my_id as usize , counters_copy1 . borrow () [my_id as usize])) . unwrap () ; counters_copy2 . borrow_mut () [my_id as usize] = 0 ; move | v | { hydroflow_plus :: profiler :: increment_counter (context . current_tick () , my_id , & mut counters . borrow_mut () [my_id as usize] ,) ; v } } },
+            input: Map {
+                f: { use crate :: __staged :: profiler :: tests :: * ; | v | v + 1 },
+                input: Map {
+                    f: { use crate :: __staged :: profiler :: * ; let counter_queue = Fake ; let my_id = 1u32 ; let counters_copy1 = Fake ; let my_id = 32712u32 ; let counters_copy2 = Fake ; let my_id = 32712u32 ; let context = & context ; let my_id = 32712u32 ; let counters = Fake ; let my_id = 32712u32 ; { counter_queue . borrow () . unbounded_send ((my_id as usize , counters_copy1 . borrow () [my_id as usize])) . unwrap () ; counters_copy2 . borrow_mut () [my_id as usize] = 0 ; move | v | { hydroflow_plus :: profiler :: increment_counter (context . current_tick () , my_id , & mut counters . borrow_mut () [my_id as usize] ,) ; v } } },
+                    input: Persist(
+                        Map {
+                            f: { use crate :: __staged :: profiler :: * ; let counter_queue = Fake ; let my_id = 2u32 ; let counters_copy1 = Fake ; let my_id = 32712u32 ; let counters_copy2 = Fake ; let my_id = 32712u32 ; let context = & context ; let my_id = 32712u32 ; let counters = Fake ; let my_id = 32712u32 ; { counter_queue . borrow () . unbounded_send ((my_id as usize , counters_copy1 . borrow () [my_id as usize])) . unwrap () ; counters_copy2 . borrow_mut () [my_id as usize] = 0 ; move | v | { hydroflow_plus :: profiler :: increment_counter (context . current_tick () , my_id , & mut counters . borrow_mut () [my_id as usize] ,) ; v } } },
+>>>>>>> ee4e33c001 (Profiling counts can be processed outside of HF)
                             input: Source {
                                 source: Iter(
                                     { use crate :: __staged :: profiler :: tests :: * ; 0 .. 10 },
