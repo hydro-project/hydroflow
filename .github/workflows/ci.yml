@@ -82,8 +82,8 @@ jobs:
 
           echo "$ECHO_STRING" >client-input
 
-          "${{ runner.temp }}/generated/target/debug/hydroflow-template" --role server --addr 127.0.0.100:2048 &
-          "${{ runner.temp }}/generated/target/debug/hydroflow-template" --role client --server-addr 127.0.0.100:2048 <client-input >client-output &
+          "${{ runner.temp }}/generated/target/debug/hydroflow-template" --role server --address 127.0.0.100:2048 &
+          "${{ runner.temp }}/generated/target/debug/hydroflow-template" --role client --address 127.0.0.100:2048 <client-input >client-output &
 
           sleep 1
 
