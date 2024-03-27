@@ -101,6 +101,29 @@ mod tests {
     }
 
     #[test]
+    fn test_capture_copy_local() {
+        test_quote! {
+            (x + 2) + (x + 2)
+        }
+    }
+
+    #[test]
+    fn test_capture_copy_local_block() {
+        test_quote! {{
+            let _ = x + 2;
+            let _ = x + 2;
+        }}
+    }
+
+    #[test]
+    fn test_capture_copy_local_block_let() {
+        test_quote! {{
+            let x = x + 2;
+            let _ = x + 2;
+        }}
+    }
+
+    #[test]
     fn test_capture_local_mut() {
         test_quote! {
             x += 2
