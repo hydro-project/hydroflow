@@ -228,7 +228,10 @@
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
 <a href="#228" id="228">228</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashSet;
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{BTreeSet, HashSet};
 
 <span class="kw">mod </span>prelude;
 <span class="kw">use </span>prelude::is_prelude;
@@ -290,7 +293,7 @@
 
 <span class="attr">#[derive(Default)]
 </span><span class="kw">pub struct </span>FreeVariableVisitor {
-    <span class="kw">pub </span>free_variables: Vec&lt;syn::Ident&gt;,
+    <span class="kw">pub </span>free_variables: BTreeSet&lt;syn::Ident&gt;,
     <span class="kw">pub </span>current_scope: ScopeStack,
 }
 
@@ -345,19 +348,22 @@
             syn::Pat::Type(pat_type) =&gt; {
                 <span class="self">self</span>.visit_pat(<span class="kw-2">&amp;</span>pat_type.pat);
             }
+            syn::Pat::Wild(<span class="kw">_</span>) =&gt; {
+                <span class="comment">// Do nothing
+            </span>}
             <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Local variables must be identifiers, got {:?}"</span>, i.pat),
         }
     }
 
     <span class="kw">fn </span>visit_ident(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>proc_macro2::Ident) {
         <span class="kw">if </span>!<span class="self">self</span>.current_scope.contains_term(i) {
-            <span class="self">self</span>.free_variables.push(i.clone());
+            <span class="self">self</span>.free_variables.insert(i.clone());
         }
     }
 
     <span class="kw">fn </span>visit_lifetime(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;</span><span class="lifetime">'ast </span>syn::Lifetime) {
         <span class="kw">if </span>!<span class="self">self</span>.current_scope.contains_type(<span class="kw-2">&amp;</span>i.ident) {
-            <span class="self">self</span>.free_variables.push(i.ident.clone());
+            <span class="self">self</span>.free_variables.insert(i.ident.clone());
         }
     }
 
@@ -365,7 +371,7 @@
         <span class="kw">if </span>i.leading_colon.is_none() &amp;&amp; !is_prelude(<span class="kw-2">&amp;</span>i.segments.first().unwrap().ident) {
             <span class="kw">let </span>node = i.segments.first().unwrap();
             <span class="kw">if </span>i.segments.len() == <span class="number">1 </span>&amp;&amp; !<span class="self">self</span>.current_scope.contains_term(<span class="kw-2">&amp;</span>node.ident) {
-                <span class="self">self</span>.free_variables.push(node.ident.clone());
+                <span class="self">self</span>.free_variables.insert(node.ident.clone());
             }
         }
 
