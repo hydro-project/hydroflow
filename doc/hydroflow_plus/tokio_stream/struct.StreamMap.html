@@ -167,7 +167,7 @@ sent to the client over a socket.</p>
     }
 }</code></pre></div>
 </div></details><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-StreamMap%3CK,+V%3E" class="impl"><a href="#impl-StreamMap%3CK,+V%3E" class="anchor">§</a><h3 class="code-header">impl&lt;K, V&gt; <a class="struct" href="struct.StreamMap.html" title="struct hydroflow_plus::tokio_stream::StreamMap">StreamMap</a>&lt;K, V&gt;</h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.iter" class="method"><h4 class="code-header">pub fn <a href="#method.iter" class="fn">iter</a>(&amp;self) -&gt; impl <a class="trait" href="../itertools/__std_iter/trait.Iterator.html" title="trait hydroflow_plus::itertools::__std_iter::Iterator">Iterator</a>&lt;Item = &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">(K, V)</a>&gt;</h4></section></summary><div class="docblock"><p>An iterator visiting all key-value pairs in arbitrary order.</p>
-<p>The iterator element type is &amp;’a (K, V).</p>
+<p>The iterator element type is <code>&amp;'a (K, V)</code>.</p>
 <h5 id="examples-1"><a class="doc-anchor" href="#examples-1">§</a>Examples</h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio_stream::{StreamMap, pending};
 
@@ -181,7 +181,7 @@ map.insert(<span class="string">"c"</span>, pending());
     <span class="macro">println!</span>(<span class="string">"({}, {:?})"</span>, key, stream);
 }</code></pre></div>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.iter_mut" class="method"><h4 class="code-header">pub fn <a href="#method.iter_mut" class="fn">iter_mut</a>(&amp;mut self) -&gt; impl <a class="trait" href="../itertools/__std_iter/trait.Iterator.html" title="trait hydroflow_plus::itertools::__std_iter::Iterator">Iterator</a>&lt;Item = &amp;mut <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">(K, V)</a>&gt;</h4></section></summary><div class="docblock"><p>An iterator visiting all key-value pairs mutably in arbitrary order.</p>
-<p>The iterator element type is &amp;’a mut (K, V).</p>
+<p>The iterator element type is <code>&amp;'a mut (K, V)</code>.</p>
 <h5 id="examples-2"><a class="doc-anchor" href="#examples-2">§</a>Examples</h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio_stream::{StreamMap, pending};
 
@@ -209,7 +209,7 @@ reallocating. If <code>capacity</code> is 0, the stream map will not allocate.</
 
 <span class="kw">let </span>map: StreamMap&lt;<span class="kw-2">&amp;</span>str, Pending&lt;()&gt;&gt; = StreamMap::with_capacity(<span class="number">10</span>);</code></pre></div>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.keys" class="method"><h4 class="code-header">pub fn <a href="#method.keys" class="fn">keys</a>(&amp;self) -&gt; impl <a class="trait" href="../itertools/__std_iter/trait.Iterator.html" title="trait hydroflow_plus::itertools::__std_iter::Iterator">Iterator</a>&lt;Item = <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;K</a>&gt;</h4></section></summary><div class="docblock"><p>Returns an iterator visiting all keys in arbitrary order.</p>
-<p>The iterator element type is &amp;’a K.</p>
+<p>The iterator element type is <code>&amp;'a K</code>.</p>
 <h5 id="examples-5"><a class="doc-anchor" href="#examples-5">§</a>Examples</h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio_stream::{StreamMap, pending};
 
@@ -223,7 +223,7 @@ map.insert(<span class="string">"c"</span>, pending());
     <span class="macro">println!</span>(<span class="string">"{}"</span>, key);
 }</code></pre></div>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.values" class="method"><h4 class="code-header">pub fn <a href="#method.values" class="fn">values</a>(&amp;self) -&gt; impl <a class="trait" href="../itertools/__std_iter/trait.Iterator.html" title="trait hydroflow_plus::itertools::__std_iter::Iterator">Iterator</a>&lt;Item = <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;V</a>&gt;</h4></section></summary><div class="docblock"><p>An iterator visiting all values in arbitrary order.</p>
-<p>The iterator element type is &amp;’a V.</p>
+<p>The iterator element type is <code>&amp;'a V</code>.</p>
 <h5 id="examples-6"><a class="doc-anchor" href="#examples-6">§</a>Examples</h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio_stream::{StreamMap, pending};
 
@@ -237,7 +237,7 @@ map.insert(<span class="string">"c"</span>, pending());
     <span class="macro">println!</span>(<span class="string">"{:?}"</span>, stream);
 }</code></pre></div>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.values_mut" class="method"><h4 class="code-header">pub fn <a href="#method.values_mut" class="fn">values_mut</a>(&amp;mut self) -&gt; impl <a class="trait" href="../itertools/__std_iter/trait.Iterator.html" title="trait hydroflow_plus::itertools::__std_iter::Iterator">Iterator</a>&lt;Item = <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;mut V</a>&gt;</h4></section></summary><div class="docblock"><p>An iterator visiting all values mutably in arbitrary order.</p>
-<p>The iterator element type is &amp;’a mut V.</p>
+<p>The iterator element type is <code>&amp;'a mut V</code>.</p>
 <h5 id="examples-7"><a class="doc-anchor" href="#examples-7">§</a>Examples</h5>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio_stream::{StreamMap, pending};
 
@@ -409,7 +409,9 @@ producing a single, final value. <a href="trait.StreamExt.html#method.fold">Read
     max_size: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>,
     duration: <a class="struct" href="../tokio/time/struct.Duration.html" title="struct hydroflow_plus::tokio::time::Duration">Duration</a>
 ) -&gt; ChunksTimeout&lt;Self&gt;<div class="where">where
-    Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class='docblock'>Batches the items in the given stream using a maximum duration and size for each batch. <a href="trait.StreamExt.html#method.chunks_timeout">Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-StreamExt-for-T" class="impl"><a href="#impl-StreamExt-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; <a class="trait" href="../futures/trait.StreamExt.html" title="trait hydroflow_plus::futures::StreamExt">StreamExt</a> for T<div class="where">where
+    Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class='docblock'>Batches the items in the given stream using a maximum duration and size for each batch. <a href="trait.StreamExt.html#method.chunks_timeout">Read more</a></div></details><details class="toggle method-toggle" open><summary><section id="method.peekable-1" class="method trait-impl"><a href="#method.peekable-1" class="anchor">§</a><h4 class="code-header">fn <a href="trait.StreamExt.html#method.peekable" class="fn">peekable</a>(self) -&gt; Peekable&lt;Self&gt;<div class="where">where
+    Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h4></section></summary><div class='docblock'>Turns the stream into a peekable stream, whose next element can be peeked at without being
+consumed. <a href="trait.StreamExt.html#method.peekable">Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-StreamExt-for-T" class="impl"><a href="#impl-StreamExt-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; <a class="trait" href="../futures/trait.StreamExt.html" title="trait hydroflow_plus::futures::StreamExt">StreamExt</a> for T<div class="where">where
     T: <a class="trait" href="trait.Stream.html" title="trait hydroflow_plus::tokio_stream::Stream">Stream</a> + ?<a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.next" class="method trait-impl"><a href="#method.next" class="anchor">§</a><h4 class="code-header">fn <a href="../futures/trait.StreamExt.html#method.next" class="fn">next</a>(&amp;mut self) -&gt; <a class="struct" href="../futures/prelude/stream/struct.Next.html" title="struct hydroflow_plus::futures::prelude::stream::Next">Next</a>&lt;'_, Self&gt; <a href="#" class="tooltip" data-notable-ty="Next&lt;&#39;_, Self&gt;">ⓘ</a><div class="where">where
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Unpin.html" title="trait core::marker::Unpin">Unpin</a>,</div></h4></section></summary><div class='docblock'>Creates a future that resolves to the next item in the stream. <a href="../futures/trait.StreamExt.html#method.next">Read more</a></div></details><details class="toggle method-toggle" open><summary><section id="method.into_future" class="method trait-impl"><a href="#method.into_future" class="anchor">§</a><h4 class="code-header">fn <a href="../futures/trait.StreamExt.html#method.into_future" class="fn">into_future</a>(self) -&gt; <a class="struct" href="../futures/prelude/stream/struct.StreamFuture.html" title="struct hydroflow_plus::futures::prelude::stream::StreamFuture">StreamFuture</a>&lt;Self&gt; <a href="#" class="tooltip" data-notable-ty="StreamFuture&lt;Self&gt;">ⓘ</a><div class="where">where
     Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a> + <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Unpin.html" title="trait core::marker::Unpin">Unpin</a>,</div></h4></section></summary><div class='docblock'>Converts this stream into a future of <code>(next_item, tail_of_stream)</code>.

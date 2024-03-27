@@ -786,18 +786,6 @@
 <a href="#784" id="784">784</a>
 <a href="#785" id="785">785</a>
 <a href="#786" id="786">786</a>
-<a href="#787" id="787">787</a>
-<a href="#788" id="788">788</a>
-<a href="#789" id="789">789</a>
-<a href="#790" id="790">790</a>
-<a href="#791" id="791">791</a>
-<a href="#792" id="792">792</a>
-<a href="#793" id="793">793</a>
-<a href="#794" id="794">794</a>
-<a href="#795" id="795">795</a>
-<a href="#796" id="796">796</a>
-<a href="#797" id="797">797</a>
-<a href="#798" id="798">798</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::net::SocketAddr;
@@ -817,8 +805,9 @@
 <span class="kw">use </span>tokio::net::{TcpListener, TcpStream};
 <span class="attr">#[cfg(unix)]
 </span><span class="kw">use </span>tokio::net::{UnixListener, UnixStream};
-<span class="kw">use </span>tokio::sync::mpsc::UnboundedReceiver;
 <span class="kw">use </span>tokio::task::JoinHandle;
+<span class="kw">use </span>tokio_stream::wrappers::TcpListenerStream;
+<span class="kw">use </span>tokio_stream::StreamExt;
 <span class="kw">use </span>tokio_util::codec::{Framed, LengthDelimitedCodec};
 
 <span class="kw">pub type </span>InitConfig = (HashMap&lt;String, ServerBindConfig&gt;, <span class="prelude-ty">Option</span>&lt;String&gt;);
@@ -935,20 +924,7 @@
             ServerBindConfig::TcpPort(host) =&gt; {
                 <span class="kw">let </span>listener = TcpListener::bind((host, <span class="number">0</span>)).<span class="kw">await</span>.unwrap();
                 <span class="kw">let </span>addr = listener.local_addr().unwrap();
-                <span class="kw">let </span>(conn_send, conn_recv) = tokio::sync::mpsc::unbounded_channel();
-
-                tokio::spawn(<span class="kw">async move </span>{
-                    <span class="kw">loop </span>{
-                        <span class="kw">if </span>conn_send
-                            .send(listener.accept().<span class="kw">await</span>.map(|r| r.<span class="number">0</span>))
-                            .is_err()
-                        {
-                            <span class="kw">break</span>;
-                        }
-                    }
-                });
-
-                BoundConnection::TcpPort(conn_recv, addr)
+                BoundConnection::TcpPort(TcpListenerStream::new(listener), addr)
             }
             ServerBindConfig::Demux(bindings) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>demux = HashMap::new();
@@ -991,7 +967,7 @@
 
     <span class="kw">pub async fn </span>accept_tcp(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; TcpStream {
         <span class="kw">if let </span>ServerOrBound::Bound(BoundConnection::TcpPort(handle, <span class="kw">_</span>)) = <span class="self">self </span>{
-            handle.recv().<span class="kw">await</span>.unwrap().unwrap()
+            handle.next().<span class="kw">await</span>.unwrap().unwrap()
         } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">"Not a TCP port"</span>)
         }
@@ -1034,7 +1010,7 @@
 <span class="attr">#[derive(Debug)]
 </span><span class="kw">pub enum </span>BoundConnection {
     UnixSocket(JoinHandle&lt;io::Result&lt;UnixStream&gt;&gt;, tempfile::TempDir),
-    TcpPort(UnboundedReceiver&lt;io::Result&lt;TcpStream&gt;&gt;, SocketAddr),
+    TcpPort(TcpListenerStream, SocketAddr),
     Demux(HashMap&lt;u32, BoundConnection&gt;),
     Merge(Vec&lt;BoundConnection&gt;),
     Tagged(Box&lt;BoundConnection&gt;, u32),
@@ -1106,7 +1082,7 @@
             }
         }
         BoundConnection::TcpPort(<span class="kw-2">mut </span>listener, <span class="kw">_</span>) =&gt; {
-            <span class="kw">let </span>stream = listener.recv().<span class="kw">await</span>.unwrap().unwrap();
+            <span class="kw">let </span>stream = listener.next().<span class="kw">await</span>.unwrap().unwrap();
             ConnectedDirect {
                 stream_sink: <span class="prelude-val">Some</span>(Box::pin(tcp_bytes(stream))),
                 source_only: <span class="prelude-val">None</span>,
