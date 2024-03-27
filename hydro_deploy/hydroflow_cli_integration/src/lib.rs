@@ -17,8 +17,9 @@ use tokio::io;
 use tokio::net::{TcpListener, TcpStream};
 #[cfg(unix)]
 use tokio::net::{UnixListener, UnixStream};
-use tokio::sync::mpsc::UnboundedReceiver;
 use tokio::task::JoinHandle;
+use tokio_stream::wrappers::TcpListenerStream;
+use tokio_stream::StreamExt;
 use tokio_util::codec::{Framed, LengthDelimitedCodec};
 
 pub type InitConfig = (HashMap<String, ServerBindConfig>, Option<String>);
@@ -135,20 +136,7 @@ impl ServerBindConfig {
             ServerBindConfig::TcpPort(host) => {
                 let listener = TcpListener::bind((host, 0)).await.unwrap();
                 let addr = listener.local_addr().unwrap();
-                let (conn_send, conn_recv) = tokio::sync::mpsc::unbounded_channel();
-
-                tokio::spawn(async move {
-                    loop {
-                        if conn_send
-                            .send(listener.accept().await.map(|r| r.0))
-                            .is_err()
-                        {
-                            break;
-                        }
-                    }
-                });
-
-                BoundConnection::TcpPort(conn_recv, addr)
+                BoundConnection::TcpPort(TcpListenerStream::new(listener), addr)
             }
             ServerBindConfig::Demux(bindings) => {
                 let mut demux = HashMap::new();
@@ -191,7 +179,7 @@ impl ServerOrBound {
 
     pub async fn accept_tcp(&mut self) -> TcpStream {
         if let ServerOrBound::Bound(BoundConnection::TcpPort(handle, _)) = self {
-            handle.recv().await.unwrap().unwrap()
+            handle.next().await.unwrap().unwrap()
         } else {
             panic!("Not a TCP port")
         }
@@ -234,7 +222,7 @@ pub trait ConnectedSource {
 #[derive(Debug)]
 pub enum BoundConnection {
     UnixSocket(JoinHandle<io::Result<UnixStream>>, tempfile::TempDir),
-    TcpPort(UnboundedReceiver<io::Result<TcpStream>>, SocketAddr),
+    TcpPort(TcpListenerStream, SocketAddr),
     Demux(HashMap<u32, BoundConnection>),
     Merge(Vec<BoundConnection>),
     Tagged(Box<BoundConnection>, u32),
@@ -306,7 +294,7 @@ async fn accept(bound: BoundConnection) -> ConnectedDirect {
             }
         }
         BoundConnection::TcpPort(mut listener, _) => {
-            let stream = listener.recv().await.unwrap().unwrap();
+            let stream = listener.next().await.unwrap().unwrap();
             ConnectedDirect {
                 stream_sink: Some(Box::pin(tcp_bytes(stream))),
                 source_only: None,
