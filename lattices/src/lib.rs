@@ -14,6 +14,7 @@ pub mod map_union_with_tombstones;
 mod ord;
 mod pair;
 mod point;
+mod algebra;
 pub mod set_union;
 pub mod set_union_with_tombstones;
 pub mod test;
