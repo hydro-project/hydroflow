@@ -73,9 +73,8 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
     ];
 
     let other_members: Vec<Role> = all_members
-        .iter()
-        .filter(|role| **role != opts.role)
-        .cloned()
+        .into_iter()
+        .filter(|role| *role != opts.role)
         .collect();
 
     let gossip_listening_addr = gossip_address(&opts.role);
