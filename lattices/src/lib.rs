@@ -4,27 +4,8 @@
 use std::cmp::Ordering::{self, *};
 
 pub use cc_traits;
-use sealed::sealed;
-
+/// Module for defining algebraic structures and properties.
 pub mod algebra;
-pub mod collections;
-mod conflict;
-mod dom_pair;
-pub mod map_union;
-pub mod map_union_with_tombstones;
-mod ord;
-mod pair;
-mod point;
-pub mod set_union;
-pub mod set_union_with_tombstones;
-pub mod test;
-pub mod union_find;
-mod unit;
-mod vec_union;
-mod with_bot;
-mod with_top;
-
-pub use conflict::Conflict;
 pub use dom_pair::DomPair;
 pub use ord::{Max, Min};
 pub use pair::Pair;
