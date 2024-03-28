@@ -173,7 +173,7 @@ pub fn absorbing_element<S: Debug + PartialEq + Clone, const N: usize>(
     f: impl Fn(S, S) -> S,
     z: S, //absorbing element (anything multiplied by z is z e.g. 0 in integers)
 ) {
-    for [a] in cartesian_power(items) {
+    for a in items {
         // az = z
         assert_eq!(f(a.clone(), z.clone()), z.clone());
 
@@ -191,7 +191,7 @@ pub fn inverse<S: Debug + PartialEq + Clone, const N: usize>(
     b: impl Fn(S) -> S, //b is the function to compute the inverse element of an element with respect to f
 ) {
     // ∃b: ab = e, ba = e
-    for [a] in cartesian_power(items) {
+    for a in items {
         assert_eq!(f(a.clone(), b(a.clone())), e);
         assert_eq!(f(b(a.clone()), a.clone()), e);
     }
@@ -207,7 +207,7 @@ pub fn nonzero_inverse<S: Debug + PartialEq + Clone, const N: usize>(
     b: impl Fn(S) -> S,
 ) {
     // ∃b: ab = e, ba = e
-    for [a] in cartesian_power(items) {
+    for a in items {
         if *a != zero {
             assert_eq!(f(a.clone(), b(a.clone())), e);
             assert_eq!(f(b(a.clone()), a.clone()), e);
@@ -223,7 +223,7 @@ pub fn identity<S: Debug + PartialEq + Clone, const N: usize>(
     e: S,
 ) {
     // ea = a, ae = a
-    for [a] in cartesian_power(items) {
+    for a in items {
         assert_eq!(f(e.clone(), a.clone()), a.clone());
         assert_eq!(f(a.clone(), e.clone()), a.clone());
     }
