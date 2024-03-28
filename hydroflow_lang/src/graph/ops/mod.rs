@@ -18,7 +18,7 @@ use super::{
 };
 use crate::diagnostic::{Diagnostic, Level};
 use crate::parse::{Operator, PortIndex};
-use crate::process_singletons::preprocess_singletons;
+use crate::process_singletons::postprocess_singletons;
 
 /// The delay (soft barrier) type, for each input to an operator if needed.
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
@@ -515,8 +515,8 @@ impl WriteContextArgs<'_> {
         }
     }
 
-    pub fn process_singletons(&self, tokens: TokenStream, found_idents: &[]) -> TokenStream {
-        preprocess_singletons(tokens, found_idents)
+    pub fn postprocess_singletons(&self, tokens: TokenStream) -> TokenStream {
+        postprocess_singletons(tokens, self.singletons_resolved)
     }
 }
 
