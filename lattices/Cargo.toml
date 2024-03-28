@@ -15,3 +15,4 @@ serde = ["dep:serde"]
 cc-traits = "2.0.0"
 sealed = "0.5"
 serde = { version = "1.0.160", features = ["derive"], optional = true }
+itertools = "*"
