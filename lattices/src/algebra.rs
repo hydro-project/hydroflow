@@ -341,7 +341,7 @@ mod test {
     #[test]
     fn test_absorbing() {
         // Test that 0 is absorbing for multiplication and 5 is not
-        absorbing_element(TEST_ITEMS, &u32::wrapping_mul, 0);
+        absorbing_element(TEST_ITEMS, u32::wrapping_mul, 0);
         assert!(std::panic::catch_unwind(|| {
             absorbing_element(TEST_ITEMS, u32::wrapping_mul, 5);
         })
@@ -383,7 +383,7 @@ mod test {
         // Test min plus semiring. + is min and x is plus. Also known as the "tropical semiring"
         semiring(
             &[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, f64::INFINITY],
-            &|x, y| f64::min(x, y),
+            &f64::min,
             &|x, y| x + y,
             f64::INFINITY,
             0.0,
@@ -392,7 +392,7 @@ mod test {
         // Test max plus semiring. + is max and x is plus.
         semiring(
             &[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, f64::NEG_INFINITY],
-            &|x, y| f64::max(x, y),
+            &f64::max,
             &|x, y| x + y,
             f64::NEG_INFINITY,
             0.0,
