@@ -55,8 +55,8 @@ pub fn ring<S: Debug + PartialEq + Clone, const N: usize>(
     inverse(items, f, zero, b);
 }
 
-/// defines a commutative ring structure.
-/// a commutative ring is a ring where the multiplication operation g is commutative.
+/// Defines a commutative ring structure.
+/// A commutative ring is a ring where the multiplication operation g is commutative.
 pub fn commutative_ring<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
@@ -70,8 +70,8 @@ pub fn commutative_ring<S: Debug + PartialEq + Clone, const N: usize>(
     commutativity(items, g);
 }
 
-/// defines a field structure.
-/// a field is a commutative ring where every element has a multiplicative inverse.
+/// Defines a field structure.
+/// A field is a commutative ring where every element has a multiplicative inverse.
 pub fn field<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
@@ -84,8 +84,8 @@ pub fn field<S: Debug + PartialEq + Clone, const N: usize>(
     nonzero_inverse(items, f, one, zero, b);
 }
 
-/// defines a commutative monoid structure.
-/// a commutative monoid is a monoid where the operation f is commutative.
+/// Defines a commutative monoid structure.
+/// A commutative monoid is a monoid where the operation f is commutative.
 pub fn commutative_monoid<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
@@ -96,8 +96,8 @@ pub fn commutative_monoid<S: Debug + PartialEq + Clone, const N: usize>(
 }
 
 
-/// defines a group structure.
-/// a group is a set of items along with an associative binary operation `f`
+/// Defines a group structure.
+/// A group is a set of items along with an associative binary operation `f`
 /// an identity element `zero`
 /// and every element has an inverse element with respect to `f`
 pub fn group<S: Debug + PartialEq + Clone, const N: usize>(
@@ -110,8 +110,8 @@ pub fn group<S: Debug + PartialEq + Clone, const N: usize>(
     inverse(items, f, zero, b);
 }
 
-/// defines an abelian group structure.
-/// an abelian group is a group where the operation f is commutative.
+/// Defines an abelian group structure.
+/// An abelian group is a group where the operation f is commutative.
 pub fn abelian_group<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
@@ -124,6 +124,9 @@ pub fn abelian_group<S: Debug + PartialEq + Clone, const N: usize>(
 
 
 // Algebraic Properties
+/// Defines the distributive property
+/// a(b+c) = ab + ac
+/// and (b+c)a = ba + ca
 pub fn distributive<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
@@ -133,13 +136,14 @@ pub fn distributive<S: Debug + PartialEq + Clone, const N: usize>(
     right_distributes(items, f, g);
 }
 
+/// Defines the left distributive property
+/// a(b+c) = ab + ac
 pub fn left_distributes<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
     g: impl Fn(S, S) -> S,
 ) {
     for [a, b, c] in cartesian_power(items) {
-        // a(b+c) = ab + ac
         assert_eq!(
             g(a.clone(), f(b.clone(), c.clone())),
             f(g(a.clone(), b.clone()), g(a.clone(), c.clone()))
@@ -147,13 +151,14 @@ pub fn left_distributes<S: Debug + PartialEq + Clone, const N: usize>(
     }
 }
 
+/// Defines the right distributive property.
+/// (b+c)a = ba + ca
 pub fn right_distributes<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
     g: impl Fn(S, S) -> S,
 ) {
     for [a, b, c] in cartesian_power(items) {
-        // (b+c)a = ba + ca
         assert_eq!(
             g(f(b.clone(), c.clone()), a.clone()),
             f(g(b.clone(), a.clone()), g(c.clone(), a.clone()))
@@ -161,6 +166,8 @@ pub fn right_distributes<S: Debug + PartialEq + Clone, const N: usize>(
     }
 }
 
+/// Defines the absorbing_element property.
+/// An element z is absorbing if az = z and za = z for all a.
 pub fn absorbing_element<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
@@ -175,6 +182,8 @@ pub fn absorbing_element<S: Debug + PartialEq + Clone, const N: usize>(
     }
 }
 
+/// Defines the inverse property.
+/// An element b is the inverse of a if ab = e and ba = e for some identity element e.
 pub fn inverse<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
@@ -188,6 +197,8 @@ pub fn inverse<S: Debug + PartialEq + Clone, const N: usize>(
     }
 }
 
+/// Defines the non_zero inverse property.
+/// Every element except zero must have an inverse.
 pub fn nonzero_inverse<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
@@ -204,6 +215,8 @@ pub fn nonzero_inverse<S: Debug + PartialEq + Clone, const N: usize>(
     }
 }
 
+/// Defines the identity property.
+/// An element e is the identity of f if ae = a and ea = a for all a.
 pub fn identity<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
@@ -216,11 +229,13 @@ pub fn identity<S: Debug + PartialEq + Clone, const N: usize>(
     }
 }
 
+/// Defines the associativity property.
+/// a(bc) = (ab)c
 pub fn associativity<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
 ) {
-    // a(bc) = (ab)c
+
     for [a, b, c] in cartesian_power(items) {
         assert_eq!(
             f(a.clone(), f(b.clone(), c.clone())), //f(a, f(b,c)) ie a + (b + c)
@@ -229,21 +244,24 @@ pub fn associativity<S: Debug + PartialEq + Clone, const N: usize>(
     }
 }
 
+/// Defines the commutativity property.
+/// xy = yx
 pub fn commutativity<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
 ) {
-    // xy = yx
+
     for [x, y] in cartesian_power(items) {
         assert_eq!(f(x.clone(), y.clone()), f(y.clone(), x.clone())); // a + b = b + a
     }
 }
 
+/// Defines the idempotency property.
+/// xx = x
 pub fn idempotency<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
 ) {
-    // xx = x
     for [x] in cartesian_power(items) {
         assert_eq!(f(x.clone(), x.clone()), x.clone());
     }
