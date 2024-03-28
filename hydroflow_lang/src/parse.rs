@@ -14,6 +14,8 @@ use syn::{
     Ident, ItemUse, LitInt, LitStr, Path, PathArguments, PathSegment, Token,
 };
 
+use crate::process_singletons::preprocess_singletons;
+
 pub struct HfCode {
     pub statements: Vec<HfStatement>,
 }
@@ -380,7 +382,9 @@ impl ToTokens for PortIndex {
 pub struct Operator {
     pub path: Path,
     pub paren_token: Paren,
+    pub args_raw: TokenStream,
     pub args: Punctuated<Expr, Token![,]>,
+    pub singletons_referenced: Vec<Ident>,
 }
 
 impl Operator {
@@ -455,12 +459,20 @@ impl Parse for Operator {
 
         let content;
         let paren_token = parenthesized!(content in input);
-        let args = Punctuated::parse_terminated(&content)?;
+        let args_raw: TokenStream = content.parse()?;
+        let mut singletons_referenced = Vec::new();
+        let args = syn::parse2::<ParseTerminated<Expr, Token![,]>>(preprocess_singletons(
+            args_raw.clone(),
+            &mut singletons_referenced,
+        ))?
+        .0;
 
         Ok(Self {
             path,
             paren_token,
+            args_raw,
             args,
+            singletons_referenced,
         })
     }
 }
@@ -469,7 +481,7 @@ impl ToTokens for Operator {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.path.to_tokens(tokens);
         self.paren_token.surround(tokens, |tokens| {
-            self.args.to_tokens(tokens);
+            self.args_raw.to_tokens(tokens);
         });
     }
 }
@@ -530,6 +542,17 @@ impl PartialOrd for IndexInt {
 impl Ord for IndexInt {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.value.cmp(&other.value)
+    }
+}
+
+struct ParseTerminated<T, P>(pub Punctuated<T, P>);
+impl<T, P> Parse for ParseTerminated<T, P>
+where
+    T: Parse,
+    P: Parse,
+{
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        Ok(Self(Punctuated::parse_terminated(input)?))
     }
 }
 

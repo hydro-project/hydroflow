@@ -181,12 +181,12 @@ impl GraphEdgeType {
 pub struct OperatorInstance {
     /// Name of the operator (will match [`OperatorConstraints::name`]).
     pub op_constraints: &'static OperatorConstraints,
-    // /// The source span of this operator instance.
-    // pub op_span: Span,
     /// Port values used as this operator's input.
     pub input_ports: Vec<PortIndexValue>,
     /// Port values used as this operator's output.
     pub output_ports: Vec<PortIndexValue>,
+    /// Singleton references within the operator arguments.
+    pub singletons_referenced: Vec<Ident>,
 
     /// Generic arguments.
     pub generics: OpInstGenerics,

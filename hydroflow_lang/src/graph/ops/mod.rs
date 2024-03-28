@@ -18,6 +18,7 @@ use super::{
 };
 use crate::diagnostic::{Diagnostic, Level};
 use crate::parse::{Operator, PortIndex};
+use crate::process_singletons::postprocess_singletons;
 
 /// The delay (soft barrier) type, for each input to an operator if needed.
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
@@ -461,6 +462,9 @@ pub struct WriteContextArgs<'a> {
     pub op_name: &'static str,
     /// Operator instance arguments object.
     pub op_inst: &'a OperatorInstance,
+    /// Resolved ports for singletons. See [`OperatorInstance::singletons_referenced`].
+    /// Ident is the name of a state reference (TODO(mingwei): reword this when I understand it better)
+    pub singletons_resolved: &'a [Ident],
 
     /// Flow properties corresponding to each input.
     ///
@@ -509,6 +513,10 @@ impl WriteContextArgs<'_> {
                 #root::morphism!(#func_arg)
             },
         }
+    }
+
+    pub fn postprocess_singletons(&self, tokens: TokenStream) -> TokenStream {
+        postprocess_singletons(tokens, self.singletons_resolved)
     }
 }
 
