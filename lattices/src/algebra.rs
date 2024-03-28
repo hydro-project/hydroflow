@@ -262,7 +262,7 @@ pub fn idempotency<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
 ) {
-    for [x] in cartesian_power(items) {
+    for x in items {
         assert_eq!(f(x.clone(), x.clone()), x.clone());
     }
 }
