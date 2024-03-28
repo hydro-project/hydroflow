@@ -6,6 +6,7 @@ use std::cmp::Ordering::{self, *};
 pub use cc_traits;
 use sealed::sealed;
 
+pub mod algebra;
 pub mod collections;
 mod conflict;
 mod dom_pair;
@@ -14,7 +15,6 @@ pub mod map_union_with_tombstones;
 mod ord;
 mod pair;
 mod point;
-pub mod algebra;
 pub mod set_union;
 pub mod set_union_with_tombstones;
 pub mod test;
