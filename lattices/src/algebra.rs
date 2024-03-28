@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::fmt::Debug;
 
 use crate::test::cartesian_power;
@@ -271,7 +270,8 @@ pub fn idempotency<S: Debug + PartialEq + Clone, const N: usize>(
 #[cfg(test)]
 mod test {
     use crate::algebra::*;
-
+    use std::collections::HashSet;
+    
     static TEST_ITEMS: &[u32; 14] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
 
     #[test]
