@@ -145,10 +145,10 @@ fn test_semiring(){
 fn monoid<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
-    e: S,
+    zero: S, //zero is the identity element of f
 ) {
     semigroup(items, f);
-    identity(items, f, e);
+    identity(items, f, zero);
 }
 
 fn semigroup<S: Debug + PartialEq + Clone, const N: usize>(items: &[S; N], f: &impl Fn(S, S) -> S) {
@@ -159,8 +159,8 @@ fn semiring<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     g: &impl Fn(S, S) -> S,
-    zero: S,
-    one: S,
+    zero: S, //zero is the identity element of f
+    one: S, //one is the identity element of g
 ) {
     commutative_monoid(items, f, zero.clone());
     monoid(items, g, one.clone());
@@ -174,8 +174,8 @@ fn ring<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     g: &impl Fn(S, S) -> S,
-    zero: S,
-    one: S,
+    zero: S, //zero is the identity element of f
+    one: S, //one is the identity element of g
     b: &impl Fn(S) -> S,
 ) {
     semiring(items, f, g, zero.clone(), one);
@@ -186,8 +186,8 @@ fn commutative_ring<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     g: &impl Fn(S, S) -> S,
-    zero: S,
-    one: S,
+    zero: S, //zero is the identity element of f
+    one: S, //one is the identity element of g
     b: &impl Fn(S) -> S,
 ) {
     semiring(items, f, g, zero.clone(), one);
@@ -199,8 +199,8 @@ fn field<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     g: &impl Fn(S, S) -> S,
-    zero: S,
-    one: S,
+    zero: S, //zero is the identity element of f
+    one: S, //one is the identity element of g
     b: &impl Fn(S) -> S,
 ) {
     ring(items, f, g, zero.clone(), one.clone(), b);
@@ -220,7 +220,7 @@ fn abelian_group<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     zero: S,
-    b: &impl Fn(S) -> S,
+    b: &impl Fn(S) -> S, //b is the inverse function of f
 ) {
     group(items, f, zero, b);
     commutativity(items, f);
@@ -229,11 +229,11 @@ fn abelian_group<S: Debug + PartialEq + Clone, const N: usize>(
 fn group<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
-    e: S,
-    b: &impl Fn(S) -> S,
+    zero: S, //zero is the identity element of f
+    b: &impl Fn(S) -> S, //b is the inverse function of f
 ) {
-    monoid(items, f, e.clone());
-    inverse(items, f, e, b);
+    monoid(items, f, zero.clone());
+    inverse(items, f, zero, b);
 }
 
 
@@ -278,7 +278,7 @@ fn right_distributes<S: Debug + PartialEq + Clone, const N: usize>(
 fn absorbing_element<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
-    z: S,
+    z: S, //absorbing element (anything multiplied by z is z e.g. 0 in integers)
 ) {
     for [a] in cartesian_power(items) {
         // az = z
