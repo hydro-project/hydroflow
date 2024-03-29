@@ -157,13 +157,17 @@ impl LaunchedHost for LaunchedLocalhost {
         binary: Arc<(String, Vec<u8>, PathBuf)>,
         args: &[String],
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
-        let child = Command::new(&binary.2)
-            .args(args)
-            .kill_on_drop(true)
+        let mut child = Command::new(&binary.2);
+        
+        child.args(args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()?;
+            .stderr(Stdio::piped());
+
+        #[cfg(not(unix))]
+        child.kill_on_drop();
+
+        let child = child.spawn()?;
 
         Ok(Arc::new(RwLock::new(LaunchedLocalhostBinary::new(
             child, id,
