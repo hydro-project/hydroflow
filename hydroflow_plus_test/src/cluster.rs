@@ -168,7 +168,7 @@ pub fn compute_pi_runtime<'a>(
     let runtime_context = flow.runtime_context();
     flow.extract()
         .with_default_optimize()
-        .optimize_with(|ir| profiling(ir, runtime_context, counters, counter_queue))
+        // .optimize_with(|ir| profiling(ir, runtime_context, counters, counter_queue))
         .no_optimize()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }

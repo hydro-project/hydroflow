@@ -119,7 +119,7 @@ impl <'a, D: LocalDeploy<'a>> Clone for BuiltFlow<'a, D> {
     fn clone(&self) -> Self {
         BuiltFlow {
             ir: self.ir.clone(),
-            node: self.nodes.clone(),
+            nodes: self.nodes.clone(),
             clusters: self.clusters.clone(),
             _phantom: PhantomData,
         }

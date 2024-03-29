@@ -31,13 +31,13 @@ async fn main() {
                     None,
                 )
             }),
-            "dev",
+            "profile",
         )
     } else {
         let localhost = deployment.borrow_mut().Localhost();
         (
             Box::new(move |_| -> Arc<RwLock<dyn Host>> { localhost.clone() }),
-            "dev",
+            "profile",
         )
     };
 
@@ -71,12 +71,11 @@ async fn main() {
         RuntimeData::new("FAKE"),
     );
 
-    let runtime_context = builder.runtime_context();
-    dbg!(builder.extract()
-        .with_default_optimize()
-        .optimize_with(|ir| profiling(ir, runtime_context, RuntimeData::new("FAKE"), RuntimeData::new("FAKE")))
-        .no_optimize()
-        .ir());
+    // let runtime_context = builder.runtime_context();
+    // dbg!(builder.extract()
+    //     .with_default_optimize()
+    //     .optimize_with(|ir| profiling(ir, runtime_context, RuntimeData::new("FAKE"), RuntimeData::new("FAKE")))
+    //     .ir());
 
     let mut deployment = deployment.into_inner();
 

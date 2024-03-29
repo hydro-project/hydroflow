@@ -277,6 +277,7 @@ impl Service for HydroflowCrateService {
                             .unwrap_or_else(|| format!("service/{}", self.id)),
                         built.clone(),
                         &args,
+                        self.profile.clone(),
                     )
                     .await?;
 

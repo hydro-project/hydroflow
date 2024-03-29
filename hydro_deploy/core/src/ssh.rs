@@ -273,6 +273,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         id: String,
         binary: Arc<(String, Vec<u8>, PathBuf)>,
         args: &[String],
+        profile: Option<String>,
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let session = self.open_ssh_session().await?;
 

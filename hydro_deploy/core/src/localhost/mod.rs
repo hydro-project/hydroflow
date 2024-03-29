@@ -156,18 +156,30 @@ impl LaunchedHost for LaunchedLocalhost {
         id: String,
         binary: Arc<(String, Vec<u8>, PathBuf)>,
         args: &[String],
+        profile: Option<String>,
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
-        let mut child = Command::new(&binary.2);
+        let mut command = if profile.unwrap_or("dev".to_string()) == "profile" {
+            println!("Profiling binary with perf"); 
+            let mut tmp = Command::new("perf");
+            tmp.args(&["record", "-F", "5", "--call-graph", "dwarf,64000", "-o", (id.clone() + ".perf.data").as_str()])
+                .arg(&binary.2)
+                .args(args);
+            tmp
+        } else {
+            let mut tmp = Command::new(&binary.2);
+            tmp.args(args);
+            tmp
+        };
         
-        child.args(args)
+        command.args(args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
         #[cfg(not(unix))]
-        child.kill_on_drop();
+        command.kill_on_drop();
 
-        let child = child.spawn()?;
+        let child = command.spawn()?;
 
         Ok(Arc::new(RwLock::new(LaunchedLocalhostBinary::new(
             child, id,
