@@ -219,6 +219,8 @@
 <a href="#217" id="217">217</a>
 <a href="#218" id="218">218</a>
 <a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 #![doc = <span class="macro">include_str!</span>(<span class="string">"../README.md"</span>)]
 
@@ -227,6 +229,8 @@
 <span class="kw">pub use </span>cc_traits;
 <span class="kw">use </span>sealed::sealed;
 
+<span class="doccomment">/// Module for definiting algebraic structures and properties.
+</span><span class="kw">pub mod </span>algebra;
 <span class="kw">pub mod </span>collections;
 <span class="kw">mod </span>conflict;
 <span class="kw">mod </span>dom_pair;

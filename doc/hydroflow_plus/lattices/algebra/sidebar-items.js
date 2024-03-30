@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["abelian_group","absorbing_element","associativity","commutative_monoid","commutative_ring","commutativity","distributive","field","group","idempotency","identity","inverse","left_distributes","monoid","nonzero_inverse","right_distributes","ring","semigroup","semiring"]};
