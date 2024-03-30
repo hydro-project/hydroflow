@@ -13,7 +13,7 @@ expression: flat_graph_ref.surface_syntax_string()
 15v1 = map (| _v : (_ ,) | (() , (_v . 0 ,)));
 16v1 = map (| _v : (_ ,) | (() , (_v . 0 ,)));
 17v1 = map (| row : (_ , _ ,) | (() , ((row . 0 , row . 1) ,)));
-18v1 = fold_keyed :: < 'tick , () , (Option < _ > ,) > (|| (None ,) , | old : & mut (Option < _ > ,) , val : (_ ,) | { old . 0 = if let Some (prev) = old . 0 . take () { Some ({ let mut set : hydroflow :: rustc_hash :: FxHashSet < _ > = prev ; set . insert (val . 0) ; set }) } else { Some ({ let mut set = hydroflow :: rustc_hash :: FxHashSet :: < _ > :: default () ; set . insert (val . 0) ; set }) } ; });
+18v1 = fold_keyed :: < 'tick , () , (Option < _ > ,) > (| | (None ,) , | old : & mut (Option < _ > ,) , val : (_ ,) | { old . 0 = if let Some (prev) = old . 0 . take () { Some ({ let mut set : hydroflow :: rustc_hash :: FxHashSet < _ > = prev ; set . insert (val . 0) ; set }) } else { Some ({ let mut set = hydroflow :: rustc_hash :: FxHashSet :: < _ > :: default () ; set . insert (val . 0) ; set }) } ; });
 19v1 = map (| (g , a) : (() , _) | (a . 0 . unwrap () . into_iter () . collect :: < Vec < _ > > () ,));
 
 10v1 -> 2v1;

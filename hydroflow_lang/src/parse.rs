@@ -422,6 +422,7 @@ impl Operator {
 
     /// Output the operator as a formatted string using `prettyplease`.
     pub fn to_pretty_string(&self) -> String {
+        // TODO(mingwei): preserve #args_raw instead of just args?
         let file: syn::File = syn::parse_quote! {
             fn main() {
                 #self
@@ -480,7 +481,7 @@ impl ToTokens for Operator {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.path.to_tokens(tokens);
         self.paren_token.surround(tokens, |tokens| {
-            self.args_raw.to_tokens(tokens);
+            self.args.to_tokens(tokens);
         });
     }
 }

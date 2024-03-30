@@ -344,27 +344,33 @@ impl FlatGraphBuilder {
     /// Connects operator links as a final building step. Processes all the links stored in
     /// `self.links` and actually puts them into the graph.
     fn connect_operator_links(&mut self) {
-        let mut name_edge_out_map = BTreeMap::new();
         // `->` edges
         for Ends { out, inn } in std::mem::take(&mut self.links) {
-            let out_opt = self.helper_resolve_name(out.clone(), false);
+            let out_opt = self.helper_resolve_name(out, false);
             let inn_opt = self.helper_resolve_name(inn, true);
             // `None` already have errors in `self.diagnostics`.
             if let (Some((out_port, out_node)), Some((inn_port, inn_node))) = (out_opt, inn_opt) {
-                let edge_id = self.connect_operators(out_port, out_node, inn_port, inn_node);
-
-                if let Some(GraphDet::Undetermined(name)) = out.map(|(_port, det)| det) {
-                    name_edge_out_map.insert(name.clone(), edge_id);
-                }
+                let _ = self.connect_operators(out_port, out_node, inn_port, inn_node);
             }
         }
+
         // Resolve the singleton references for each node.
         for node_id in self.flat_graph.node_ids().collect::<Vec<_>>() {
             if let GraphNode::Operator(operator) = self.flat_graph.node(node_id) {
                 let singletons_referenced = operator
                     .singletons_referenced
-                    .iter()
-                    .map(|singleton_ref| name_edge_out_map.get(singleton_ref).copied())
+                    .clone()
+                    .into_iter()
+                    .map(|singleton_ref| {
+                        let port_det = self
+                            .varname_ends
+                            .get(&singleton_ref)
+                            .and_then(|result| result.as_ref().ok())
+                            .and_then(|ends| ends.out.as_ref())
+                            .cloned();
+                        let (_port, node_id) = self.helper_resolve_name(port_det, false)?;
+                        Some(node_id)
+                    })
                     .collect();
 
                 self.flat_graph

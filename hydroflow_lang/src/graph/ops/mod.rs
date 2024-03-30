@@ -398,6 +398,7 @@ declare_ops![
     source_stream::SOURCE_STREAM,
     source_stream_serde::SOURCE_STREAM_SERDE,
     state::STATE,
+    state_ref::STATE_REF,
     tee::TEE,
     unique::UNIQUE,
     unzip::UNZIP,
@@ -457,6 +458,8 @@ pub struct WriteContextArgs<'a> {
     /// Output edge types (value or reference). Likely not that useful (since the operator decides
     /// its output edgetypes) but provided for completeness,
     pub output_edgetypes: &'a [GraphEdgeType],
+    /// Ident for the singleton output of this operator, if any.
+    pub singleton_output_ident: &'a Ident,
 
     /// Operator name.
     pub op_name: &'static str,

@@ -1,0 +1,84 @@
+---
+source: hydroflow/tests/surface_singleton.rs
+expression: "df.meta_graph().unwrap().to_dot(&Default::default())"
+---
+digraph {
+    node [fontname="Monaco,Menlo,Consolas,&quot;Droid Sans Mono&quot;,Inconsolata,&quot;Courier New&quot;,monospace", style=filled];
+    edge [fontname="Monaco,Menlo,Consolas,&quot;Droid Sans Mono&quot;,Inconsolata,&quot;Courier New&quot;,monospace"];
+    n1v1 [label="(n1v1) source_iter(10..=30)", shape=invhouse, fillcolor="#88aaff"]
+    n2v1 [label="(n2v1) source_iter_delta(15..=25)", shape=invhouse, fillcolor="#88aaff"]
+    n3v1 [label="(n3v1) map(Max::new)", shape=invhouse, fillcolor="#88aaff"]
+    n4v1 [label="(n4v1) lattice_reduce()", shape=invhouse, fillcolor="#88aaff"]
+    n5v1 [label="(n5v1) tee()", shape=house, fillcolor="#ffff88"]
+    n6v1 [label="(n6v1) inspect(|x| println!(\"inspect {}\", x))", shape=invhouse, fillcolor="#88aaff"]
+    n7v1 [label="(n7v1) identity::<Max<_>>()", shape=invhouse, fillcolor="#88aaff"]
+    n8v1 [label="(n8v1) zip()", shape=invhouse, fillcolor="#88aaff"]
+    n9v1 [label="(n9v1) filter(|(value, sum_of_stream2)| { value <= sum_of_stream2.as_reveal_ref() })", shape=invhouse, fillcolor="#88aaff"]
+    n10v1 [label="(n10v1) for_each(|x| println!(\"filtered {:?}\", x))", shape=house, fillcolor="#ffff88"]
+    n11v1 [label="(n11v1) for_each(|x: Max<_>| println!(\"state {:?}\", x))", shape=house, fillcolor="#ffff88"]
+    n12v1 [label="(n12v1) handoff", shape=parallelogram, fillcolor="#ddddff"]
+    n13v1 [label="(n13v1) handoff", shape=parallelogram, fillcolor="#ddddff"]
+    n2v1 -> n3v1 [color=darkgreen, style=dashed]
+    n4v1 -> n5v1 [color=darkgreen, style=bold]
+    n3v1 -> n12v1 [color=darkgreen, style=dashed]
+    n6v1 -> n8v1 [label="0"]
+    n1v1 -> n6v1
+    n7v1 -> n8v1 [label="1"]
+    n5v1 -> n13v1 [color=darkgreen, style=bold]
+    n9v1 -> n10v1
+    n8v1 -> n9v1
+    n5v1 -> n11v1 [color=darkgreen, style=bold]
+    n12v1 -> n4v1 [color=red, style=dashed]
+    n13v1 -> n7v1 [color=darkgreen, style=bold]
+    subgraph "cluster n1v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_1v1\nstratum 0"
+        n2v1
+        n3v1
+        subgraph "cluster_sg_1v1_var_stream2" {
+            label="var stream2"
+            n2v1
+            n3v1
+        }
+    }
+    subgraph "cluster n2v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_2v1\nstratum 0"
+        n1v1
+        n6v1
+        n7v1
+        n8v1
+        n9v1
+        n10v1
+        subgraph "cluster_sg_2v1_var_filtered_stream1" {
+            label="var filtered_stream1"
+            n6v1
+        }
+        subgraph "cluster_sg_2v1_var_filtered_stream2" {
+            label="var filtered_stream2"
+            n8v1
+            n9v1
+            n10v1
+        }
+        subgraph "cluster_sg_2v1_var_stream1" {
+            label="var stream1"
+            n1v1
+        }
+    }
+    subgraph "cluster n3v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_3v1\nstratum 0"
+        n4v1
+        n5v1
+        n11v1
+        subgraph "cluster_sg_3v1_var_sum_of_stream2" {
+            label="var sum_of_stream2"
+            n4v1
+            n5v1
+        }
+    }
+}
+
