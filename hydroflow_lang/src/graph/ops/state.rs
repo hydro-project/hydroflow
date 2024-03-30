@@ -116,16 +116,16 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
                         push: Push,
                         state_handle: #root::scheduled::state::StateHandle<::std::cell::RefCell<Lat>>,
                         context: &'a #root::scheduled::context::Context,
-                    ) -> impl 'a + #root::Pusherator<Item = Item>
+                    ) -> impl 'a + #root::pusherator::Pusherator<Item = Item>
                     where
                         Item: ::std::clone::Clone,
                         Push: #root::pusherator::Pusherator<Item = Item>,
-                        Lat: 'static + #root::lattice::Merge<Item>,
+                        Lat: 'static + #root::lattices::Merge<Item>,
                     {
                         #root::pusherator::inspect::Inspect::new(move |item| {
                             let state = context.state_ref(state_handle);
                             let mut state = state.borrow_mut();
-                            #root::lattices::Merge::merge(&mut *state, ::std::clone::Clone::clone(item))
+                            #root::lattices::Merge::merge(&mut *state, ::std::clone::Clone::clone(item));
                         }, push)
                     }
                     check_output::<_, _, #lattice_type>(#output, #state_ident, #context)
