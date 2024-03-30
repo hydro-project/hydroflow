@@ -55,7 +55,7 @@ pub struct HydroflowGraph {
     subgraph_stratum: SecondaryMap<GraphSubgraphId, usize>,
 
     /// Resolved singletons varnames references, per node.
-    node_singleton_references: SparseSecondaryMap<GraphNodeId, Vec<Option<GraphEdgeId>>>,
+    node_singleton_references: SparseSecondaryMap<GraphNodeId, Vec<Option<GraphNodeId>>>,
     /// What variable name each graph node belongs to (if any). For debugging (graph writing) purposes only.
     node_varnames: SparseSecondaryMap<GraphNodeId, Varname>,
 
@@ -478,8 +478,8 @@ impl HydroflowGraph {
     pub fn set_node_singleton_references(
         &mut self,
         node_id: GraphNodeId,
-        singletons_referenced: Vec<Option<GraphEdgeId>>,
-    ) -> Option<Vec<Option<GraphEdgeId>>> {
+        singletons_referenced: Vec<Option<GraphNodeId>>,
+    ) -> Option<Vec<Option<GraphNodeId>>> {
         self.node_singleton_references
             .insert(node_id, singletons_referenced)
     }
@@ -987,11 +987,19 @@ impl HydroflowGraph {
 
                             let is_pull = idx < pull_to_push_idx;
 
+                            // TODO(mingwei): make this a helper method.
+                            let singleton_output_ident =
+                                &Ident::new(&format!("singleton_op_{:?}", node_id.data()), op_span);
+
                             let singletons_resolved = &*self.node_singleton_references.get(node_id)
                                 .into_iter() // `None` becomes empty iter.
                                 .flatten()
-                                .map(|edge_id| {
-                                    self.edge_as_ident(edge_id.expect("TODO"), op_span)
+                                .map(|singleton_node_id| {
+                                    // TODO(mingwei): make this a helper method.
+                                    Ident::new(&format!(
+                                        "singleton_op_{:?}",
+                                        singleton_node_id.expect("TODO(mingwei): Failed to resolve singleton").data()
+                                    ), op_span)
                                 })
                                 .collect::<Vec<_>>();
 
@@ -1016,6 +1024,7 @@ impl HydroflowGraph {
                                 outputs: &*outputs,
                                 input_edgetypes: &*input_edgetypes,
                                 output_edgetypes: &*output_edgetypes,
+                                singleton_output_ident,
                                 op_name,
                                 op_inst,
                                 singletons_resolved,

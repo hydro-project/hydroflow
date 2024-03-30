@@ -2,6 +2,7 @@
 
 use itertools::Itertools;
 use proc_macro2::{Group, Ident, TokenStream, TokenTree};
+use quote::quote;
 
 /// Finds all the singleton references `#my_var` and appends them to `found_idents`. Returns the
 /// `TokenStream` but with the hashes removed from the varnames.
@@ -75,7 +76,14 @@ fn postprocess_singletons_helper(
                     if '#' == punct.as_char() && matches!(iter.peek(), Some(TokenTree::Ident(_))) {
                         // Found a singleton.
                         let _singleton_ident = iter.next();
-                        TokenTree::Ident(resolved_idents_iter.next().unwrap())
+                        let resolved_ident = resolved_idents_iter.next().unwrap();
+                        TokenTree::Group(Group::new(
+                            proc_macro2::Delimiter::None,
+                            quote! {
+                                context.state_ref(#resolved_ident).borrow_mut()
+                            },
+                        ))
+                        // TokenTree::Ident(resolved_idents_iter.next().unwrap())
                     } else {
                         TokenTree::Punct(punct)
                     }
