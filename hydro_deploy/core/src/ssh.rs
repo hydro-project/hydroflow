@@ -273,7 +273,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         id: String,
         binary: Arc<(String, Vec<u8>, PathBuf)>,
         args: &[String],
-        profile: Option<String>,
+        perf: bool,
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let session = self.open_ssh_session().await?;
 
@@ -306,6 +306,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
                 channel
                     .exec(&format!("{binary_path_string}{args_string}"))
                     .await?;
+                // TODO: If perf == true, launch SSH with perf
 
                 anyhow::Ok(channel)
             },

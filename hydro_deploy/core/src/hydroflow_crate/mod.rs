@@ -26,6 +26,7 @@ pub struct HydroflowCrate {
     target: CrateTarget,
     on: Arc<RwLock<dyn Host>>,
     profile: Option<String>,
+    perf: bool, // Whether to wrap the binary in perf to get CPU time
     args: Vec<String>,
     display_name: Option<String>,
 }
@@ -40,6 +41,7 @@ impl HydroflowCrate {
             target: CrateTarget::Default,
             on,
             profile: None,
+            perf: false,
             args: vec![],
             display_name: None,
         }
@@ -78,6 +80,11 @@ impl HydroflowCrate {
         self
     }
 
+    pub fn perf(mut self) -> Self {
+        self.perf = true;
+        self
+    }
+
     /// Sets the arguments to be passed to the binary when it is launched.
     pub fn args(mut self, args: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.args.extend(args.into_iter().map(|s| s.into()));
@@ -111,6 +118,7 @@ impl ServiceBuilder for HydroflowCrate {
             bin,
             example,
             self.profile,
+            self.perf,
             None,
             Some(self.args),
             self.display_name,

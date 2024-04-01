@@ -31,13 +31,13 @@ async fn main() {
                     None,
                 )
             }),
-            "release",
+            "profile",
         )
     } else {
         let localhost = deployment.borrow_mut().Localhost();
         (
             Box::new(move |_| -> Arc<RwLock<dyn Host>> { localhost.clone() }),
-            "dev",
+            "profile",
         )
     };
 
@@ -51,6 +51,7 @@ async fn main() {
                 HydroflowCrate::new(".", host.clone())
                     .bin("compute_pi")
                     .profile(profile)
+                    .perf()
                     .display_name("leader"),
             )
         }),
@@ -63,6 +64,7 @@ async fn main() {
                         HydroflowCrate::new(".", host.clone())
                             .bin("compute_pi")
                             .profile(profile)
+                            .perf()
                             .display_name(format!("cluster/{}", idx)),
                     )
                 })
@@ -70,6 +72,13 @@ async fn main() {
         }),
         RuntimeData::new("FAKE"),
     );
+
+    // Uncomment below, change .bin("counter_compute_pi") in order to track cardinality per operation
+    // let runtime_context = builder.runtime_context();
+    // dbg!(builder.extract()
+    //     .with_default_optimize()
+    //     .optimize_with(|ir| profiling(ir, runtime_context, RuntimeData::new("FAKE"), RuntimeData::new("FAKE")))
+    //     .ir());
 
     let mut deployment = deployment.into_inner();
 

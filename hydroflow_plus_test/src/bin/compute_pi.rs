@@ -6,22 +6,10 @@ use hydroflow_plus::futures::StreamExt;
 #[tokio::main]
 async fn main() {
     let batch_size = 8192;
-    let counters = RefCell::new(vec![0; 8192]);
-
-    let (counter_sender, mut counter_receiver) = hydroflow_plus::futures::channel::mpsc::unbounded();
-    let counter_queue = RefCell::new(counter_sender);
-
-    let thread = tokio::spawn(async move {
-        while let Some((id, count)) = counter_receiver.next().await {
-            println!("node id {}: counter = {}", id, count);
-        }
-    });
 
     hydroflow_plus::launch!(|ports| hydroflow_plus_test::cluster::compute_pi_runtime!(
         ports,
         &batch_size,
-        &counters,
-        &counter_queue,
     ))
     .await;
 }

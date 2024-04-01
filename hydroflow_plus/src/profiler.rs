@@ -7,9 +7,8 @@ use crate as hydroflow_plus;
 use crate::ir::*;
 use crate::RuntimeContext;
 
-pub fn increment_counter(tick: usize, id: u32, count: &mut u64) {
+pub fn increment_counter(count: &mut u64) {
     *count += 1;
-    // println!("tick {}, id {}: counter {} incremented", tick, id, count);
 }
 
 fn quoted_any_fn<'a, F: Fn(usize) -> usize + 'a, Q: IntoQuotedMut<'a, F>>(q: Q) -> Q {
@@ -37,7 +36,6 @@ fn add_profiling_node<'a>(
     let my_id_copy1 = my_id;
     let my_id_copy2 = my_id;
     let my_id_copy3 = my_id;
-    let my_id_copy4 = my_id;
     HfPlusNode::Map {
         f: quoted_any_fn(q!({
             // Put counters on queue
@@ -45,8 +43,6 @@ fn add_profiling_node<'a>(
             counters_copy2.borrow_mut()[my_id_copy3 as usize] = 0;
             move |v| {
                 hydroflow_plus::profiler::increment_counter(
-                    context.current_tick(),
-                    my_id_copy4,
                     &mut counters.borrow_mut()[my_id as usize],
                 );
                 v
@@ -80,7 +76,6 @@ pub fn profiling<'a>(
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
-    use hydroflow_lang::graph::WriteConfig;
     use stageleft::*;
 
     use crate::{Location, MultiGraph};

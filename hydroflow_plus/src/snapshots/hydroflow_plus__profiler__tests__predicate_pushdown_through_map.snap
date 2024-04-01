@@ -1,10 +1,5 @@
 ---
 source: hydroflow_plus/src/profiler.rs
-<<<<<<< HEAD
-assertion_line: 58
-=======
-assertion_line: 98
->>>>>>> ee4e33c001 (Profiling counts can be processed outside of HF)
 expression: "&built.ir"
 ---
 [

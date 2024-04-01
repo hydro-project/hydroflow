@@ -156,9 +156,9 @@ impl LaunchedHost for LaunchedLocalhost {
         id: String,
         binary: Arc<(String, Vec<u8>, PathBuf)>,
         args: &[String],
-        profile: Option<String>,
+        perf: bool,
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
-        let mut command = if profile.unwrap_or("dev".to_string()) == "profile" {
+        let mut command = if perf {
             println!("Profiling binary with perf"); 
             let mut tmp = Command::new("perf");
             tmp.args(&["record", "-F", "5", "--call-graph", "dwarf,64000", "-o", (id.clone() + ".perf.data").as_str()])
