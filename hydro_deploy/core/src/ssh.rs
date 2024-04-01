@@ -307,6 +307,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
                     .exec(&format!("{binary_path_string}{args_string}"))
                     .await?;
                 // TODO: If perf == true, launch SSH with perf
+                let _ = perf;
 
                 anyhow::Ok(channel)
             },

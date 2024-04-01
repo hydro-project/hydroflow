@@ -51,7 +51,7 @@ async fn main() {
                 HydroflowCrate::new(".", host.clone())
                     .bin("compute_pi")
                     .profile(profile)
-                    .perf()
+                    .perf(true)
                     .display_name("leader"),
             )
         }),
@@ -64,7 +64,7 @@ async fn main() {
                         HydroflowCrate::new(".", host.clone())
                             .bin("compute_pi")
                             .profile(profile)
-                            .perf()
+                            .perf(true)
                             .display_name(format!("cluster/{}", idx)),
                     )
                 })

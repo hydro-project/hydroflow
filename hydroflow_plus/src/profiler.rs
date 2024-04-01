@@ -15,7 +15,7 @@ fn quoted_any_fn<'a, F: Fn(usize) -> usize + 'a, Q: IntoQuotedMut<'a, F>>(q: Q) 
     q
 }
 
-// Add a profiling node before each node to count the cardinality of its input
+/// Add a profiling node before each node to count the cardinality of its input
 fn add_profiling_node<'a>(
     node: HfPlusNode,
     context: RuntimeContext<'a>,
@@ -54,7 +54,7 @@ fn add_profiling_node<'a>(
     }
 }
 
-// Count the cardinality of each input and periodically output to a file
+/// Count the cardinality of each input and periodically output to a file
 pub fn profiling<'a>(
     ir: Vec<HfPlusLeaf>,
     context: RuntimeContext<'a>,

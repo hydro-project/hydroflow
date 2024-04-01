@@ -80,8 +80,8 @@ impl HydroflowCrate {
         self
     }
 
-    pub fn perf(mut self) -> Self {
-        self.perf = true;
+    pub fn perf(mut self, perf: bool) -> Self {
+        self.perf = perf;
         self
     }
 
