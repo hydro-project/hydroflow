@@ -6,6 +6,8 @@ use std::cmp::Ordering::{self, *};
 pub use cc_traits;
 use sealed::sealed;
 
+/// Module for definiting algebraic structures and properties.
+pub mod algebra;
 pub mod collections;
 mod conflict;
 mod dom_pair;
