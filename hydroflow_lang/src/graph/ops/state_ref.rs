@@ -32,6 +32,7 @@ pub const STATE_REF: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0, // TODO(mingwei)?
     type_args: &(0..=1),
     is_external_input: false,
+    has_singleton_output: true,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,

@@ -33,6 +33,7 @@ pub const DEFER_SIGNAL: OperatorConstraints = OperatorConstraints {
     soft_range_out: RANGE_1,
     num_args: 0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { input, signal })),
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),

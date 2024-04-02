@@ -5,12 +5,12 @@ use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
+use itertools::Itertools;
 use proc_macro2::Span;
 use quote::ToTokens;
 use syn::spanned::Spanned;
 use syn::{Error, Ident, ItemUse};
 
-use super::ops::find_op_op_constraints;
 use super::{GraphEdgeId, GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::{PortListSpec, RangeTrait};
@@ -583,10 +583,12 @@ impl FlatGraphBuilder {
         for (node_id, node) in self.flat_graph.nodes() {
             match node {
                 GraphNode::Operator(operator) => {
-                    let Some(op_constraints) = find_op_op_constraints(operator) else {
+                    let Some(op_inst) = self.flat_graph.node_op_inst(node_id) else {
                         // Error already emitted by `insert_node_op_insts_all`.
                         continue;
                     };
+                    let op_constraints = op_inst.op_constraints;
+
                     // Check number of args
                     if op_constraints.num_args != operator.args.len() {
                         self.diagnostics.push(Diagnostic::spanned(
@@ -806,6 +808,36 @@ impl FlatGraphBuilder {
                                         "Operator requires a {:?} edge type input, but received a {:?} edge type input.",
                                         edge_type_expected,
                                         edge_type_actual,
+                                    ),
+                                ));
+                            }
+                        }
+                    }
+
+                    // Check that singleton references actually reference *stateful* operators.
+                    {
+                        let singletons_resolved =
+                            self.flat_graph.node_singleton_references(node_id);
+                        for (singleton_node_id, singleton_ident) in
+                            singletons_resolved.zip_eq(&*operator.singletons_referenced)
+                        {
+                            let &Some(singleton_node_id) = singleton_node_id else {
+                                // Error already emitted by `connect_operator_links`, "Cannot find referenced name...".
+                                continue;
+                            };
+                            let Some(ref_op_inst) = self.flat_graph.node_op_inst(singleton_node_id)
+                            else {
+                                // Error already emitted by `insert_node_op_insts_all`.
+                                continue;
+                            };
+                            let ref_op_constraints = ref_op_inst.op_constraints;
+                            if !ref_op_constraints.has_singleton_output {
+                                self.diagnostics.push(Diagnostic::spanned(
+                                    singleton_ident.span(),
+                                    Level::Error,
+                                    &format!(
+                                        "Cannot reference operator `{}`. Only operators with singleton state can be referenced.",
+                                        ref_op_constraints.name,
                                     ),
                                 ));
                             }

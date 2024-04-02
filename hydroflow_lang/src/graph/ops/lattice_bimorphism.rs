@@ -18,6 +18,7 @@ pub const LATTICE_BIMORPHISM: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: Some(|| {
         super::PortListSpec::Fixed(parse_quote! { items_0, items_1, state_0, state_1 })
     }),
