@@ -67,6 +67,10 @@ pub struct OperatorConstraints {
     /// If this operator receives external inputs and therefore must be in
     /// stratum 0.
     pub is_external_input: bool,
+    /// If this operator has a singleton reference output. For stateful operators.
+    /// If true, [`WriteContextArgs::singleton_output_ident`] will be set to a meaningful value in
+    /// the [`Self::write_fn`] invocation.
+    pub has_singleton_output: bool,
 
     /// What named or numbered input ports to expect?
     pub ports_inn: Option<fn() -> PortListSpec>,

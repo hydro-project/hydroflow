@@ -3,7 +3,7 @@ use lattices::Max;
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
-pub fn test_state_ref_tick() {
+pub fn test_state_ref() {
     let mut df = hydroflow::hydroflow_syntax! {
         stream1 = source_iter(10..=30);
         stream2 = source_iter_delta(15..=25) -> map(Max::new);
@@ -33,7 +33,19 @@ pub fn test_state_ref_tick() {
 }
 
 #[multiplatform_test]
-pub fn test_fold_tick() {
+pub fn test_state_ref_unused() {
+    let mut df = hydroflow::hydroflow_syntax! {
+        stream2 = source_iter_delta(15..=25) -> map(Max::new);
+        sum_of_stream2 = stream2 -> state_ref::<Max<_>>();
+    };
+
+    assert_graphvis_snapshots!(df);
+
+    df.run_available(); // Should return quickly and not hang
+}
+
+#[multiplatform_test]
+pub fn test_fold_zip() {
     let mut df = hydroflow::hydroflow_syntax! {
         stream1 = source_iter(10..=30);
         stream2 = source_iter_delta(15..=25) -> map(Max::new);

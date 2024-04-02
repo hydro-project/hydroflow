@@ -1,20 +1,5 @@
-error[E0425]: cannot find value `singleton_op_2v1` in this scope
- --> tests/compile-fail/surface_singleton_nostate.rs:5:16
+error: Cannot reference operator `null`. Only operators with singleton state can be referenced.
+ --> tests/compile-fail/surface_singleton_nostate.rs:6:41
   |
-5 |             -> filter(|value| value <= #my_ref.as_reveal_ref())
-  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
-
-error[E0282]: type annotations needed
- --> tests/compile-fail/surface_singleton_nostate.rs:2:18
-  |
-2 |       let mut df = hydroflow::hydroflow_syntax! {
-  |  __________________^
-3 | |         my_ref = source_iter(15..=25) -> null();
-4 | |         source_iter(10..=30)
-5 | |             -> filter(|value| value <= #my_ref.as_reveal_ref())
-6 | |             -> null();
-7 | |
-8 | |     };
-  | |_____^ cannot infer type
-  |
-  = note: this error originates in the macro `hydroflow::hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
+6 |             -> filter(|value| value <= #my_ref.as_reveal_ref())
+  |                                         ^^^^^^

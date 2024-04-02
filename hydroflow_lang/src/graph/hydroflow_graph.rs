@@ -484,6 +484,19 @@ impl HydroflowGraph {
         self.node_singleton_references
             .insert(node_id, singletons_referenced)
     }
+
+    /// Gets the singletons referenced by a node. Returns an empty iterator for non-operators and
+    /// operators that do not reference singletons.
+    pub fn node_singleton_references(
+        &self,
+        node_id: GraphNodeId,
+    ) -> std::slice::Iter<'_, Option<GraphNodeId>> {
+        if let Some(singletons_referenced) = self.node_singleton_references.get(node_id) {
+            singletons_referenced.iter()
+        } else {
+            [].iter()
+        }
+    }
 }
 
 /// Module methods.
@@ -794,13 +807,13 @@ impl HydroflowGraph {
 
     /// Resolve the singletons via [`Self::node_singleton_references`] for the given `node_id`.
     fn helper_resolve_singletons(&self, node_id: GraphNodeId, span: Span) -> Vec<Ident> {
-        self.node_singleton_references.get(node_id)
-            .into_iter() // `None` becomes empty iter.
-            .flatten()
+        self.node_singleton_references(node_id)
             .map(|singleton_node_id| {
                 // TODO(mingwei): this `expect` should be caught in error checking
                 self.node_as_singleton_ident(
-                    singleton_node_id.expect("Expected singleton to be resolved but was not, this is a Hydroflow bug."),
+                    singleton_node_id.expect(
+                        "Expected singleton to be resolved but was not, this is a Hydroflow bug.",
+                    ),
                     span,
                 )
             })
@@ -932,6 +945,7 @@ impl HydroflowGraph {
 
                         let op_span = node.span();
                         let op_name = op_inst.op_constraints.name;
+                        // TODO(mingwei): Just use `op_inst.op_constraints`?
                         let op_constraints = OPERATORS
                             .iter()
                             .find(|op| op_name == op.name)
@@ -1008,8 +1022,13 @@ impl HydroflowGraph {
 
                             let is_pull = idx < pull_to_push_idx;
 
-                            let singleton_output_ident =
-                                &self.node_as_singleton_ident(node_id, op_span);
+                            let singleton_output_ident = &if op_constraints.has_singleton_output {
+                                self.node_as_singleton_ident(node_id, op_span)
+                            } else {
+                                // This ident *should* go unused.
+                                Ident::new(&format!("{}_has_no_singleton_output", op_name), op_span)
+                            };
+
                             let singletons_resolved =
                                 self.helper_resolve_singletons(node_id, op_span);
                             let arguments = &postprocess_singletons(

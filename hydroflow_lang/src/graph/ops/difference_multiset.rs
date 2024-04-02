@@ -34,6 +34,7 @@ pub const DIFFERENCE_MULTISET: OperatorConstraints = OperatorConstraints {
     persistence_args: &(0..=2),
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { pos, neg })),
     ports_out: None,
     input_delaytype_fn: |idx| match idx {

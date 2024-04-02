@@ -44,6 +44,7 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0, // TODO(mingwei)?
     type_args: &(0..=1),
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: Some(|| PortListSpec::Fixed(parse_quote! { items, state })),
     input_delaytype_fn: |_| None,
