@@ -142,11 +142,9 @@
 <a href="#140" id="140">140</a>
 <a href="#141" id="141">141</a>
 <a href="#142" id="142">142</a>
-<a href="#143" id="143">143</a>
-<a href="#144" id="144">144</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::Location;
 
-<span class="kw">pub trait </span>HfSend&lt;<span class="lifetime">'a</span>, O: Location&lt;<span class="lifetime">'a</span>&gt;, V&gt;: Location&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">pub trait </span>HfSend&lt;O: Location, V&gt;: Location {
     <span class="kw">type </span>In&lt;T&gt;;
     <span class="kw">type </span>Out&lt;T&gt;;
 
@@ -159,14 +157,14 @@
     <span class="kw">fn </span>is_tagged() -&gt; bool;
 }
 
-<span class="kw">pub trait </span>HfSendOneToOne&lt;<span class="lifetime">'a</span>, O: Location&lt;<span class="lifetime">'a</span>&gt;&gt;: Location&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">pub trait </span>HfSendOneToOne&lt;O: Location&gt;: Location {
     <span class="kw">fn </span>connect(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>O, source_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port, recipient_port: <span class="kw-2">&amp;</span>O::Port);
 
     <span class="kw">fn </span>gen_sink_statement(<span class="kw-2">&amp;</span><span class="self">self</span>, port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port) -&gt; syn::Expr;
     <span class="kw">fn </span>gen_source_statement(other: <span class="kw-2">&amp;</span>O, port: <span class="kw-2">&amp;</span>O::Port) -&gt; syn::Expr;
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, O: Location&lt;<span class="lifetime">'a</span>&gt;, H: HfSendOneToOne&lt;<span class="lifetime">'a</span>, O&gt;&gt; HfSend&lt;<span class="lifetime">'a</span>, O, ()&gt; <span class="kw">for </span>H {
+<span class="kw">impl</span>&lt;O: Location, H: HfSendOneToOne&lt;O&gt;&gt; HfSend&lt;O, ()&gt; <span class="kw">for </span>H {
     <span class="kw">type </span>In&lt;T&gt; = T;
     <span class="kw">type </span>Out&lt;T&gt; = T;
 
@@ -191,14 +189,14 @@
     </span>}
 }
 
-<span class="kw">pub trait </span>HfSendManyToOne&lt;<span class="lifetime">'a</span>, O: Location&lt;<span class="lifetime">'a</span>&gt;, Tag&gt;: Location&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">pub trait </span>HfSendManyToOne&lt;O: Location, Tag&gt;: Location {
     <span class="kw">fn </span>connect(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>O, source_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port, recipient_port: <span class="kw-2">&amp;</span>O::Port);
 
     <span class="kw">fn </span>gen_sink_statement(<span class="kw-2">&amp;</span><span class="self">self</span>, port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port) -&gt; syn::Expr;
     <span class="kw">fn </span>gen_source_statement(other: <span class="kw-2">&amp;</span>O, port: <span class="kw-2">&amp;</span>O::Port) -&gt; syn::Expr;
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, O: Location&lt;<span class="lifetime">'a</span>&gt;, Tag, H: HfSendManyToOne&lt;<span class="lifetime">'a</span>, O, Tag&gt;&gt; HfSend&lt;<span class="lifetime">'a</span>, O, ((), Tag)&gt; <span class="kw">for </span>H {
+<span class="kw">impl</span>&lt;O: Location, Tag, H: HfSendManyToOne&lt;O, Tag&gt;&gt; HfSend&lt;O, ((), Tag)&gt; <span class="kw">for </span>H {
     <span class="kw">type </span>In&lt;T&gt; = T;
     <span class="kw">type </span>Out&lt;T&gt; = (Tag, T);
 
@@ -223,14 +221,14 @@
     </span>}
 }
 
-<span class="kw">pub trait </span>HfSendOneToMany&lt;<span class="lifetime">'a</span>, O: Location&lt;<span class="lifetime">'a</span>&gt;, Cid&gt;: Location&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">pub trait </span>HfSendOneToMany&lt;O: Location, Cid&gt;: Location {
     <span class="kw">fn </span>connect(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>O, source_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port, recipient_port: <span class="kw-2">&amp;</span>O::Port);
 
     <span class="kw">fn </span>gen_sink_statement(<span class="kw-2">&amp;</span><span class="self">self</span>, port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port) -&gt; syn::Expr;
     <span class="kw">fn </span>gen_source_statement(other: <span class="kw-2">&amp;</span>O, port: <span class="kw-2">&amp;</span>O::Port) -&gt; syn::Expr;
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, O: Location&lt;<span class="lifetime">'a</span>&gt;, Cid, H: HfSendOneToMany&lt;<span class="lifetime">'a</span>, O, Cid&gt;&gt; HfSend&lt;<span class="lifetime">'a</span>, O, ((), (), Cid)&gt; <span class="kw">for </span>H {
+<span class="kw">impl</span>&lt;O: Location, Cid, H: HfSendOneToMany&lt;O, Cid&gt;&gt; HfSend&lt;O, ((), (), Cid)&gt; <span class="kw">for </span>H {
     <span class="kw">type </span>In&lt;T&gt; = (Cid, T);
     <span class="kw">type </span>Out&lt;T&gt; = T;
 
@@ -255,16 +253,14 @@
     </span>}
 }
 
-<span class="kw">pub trait </span>HfSendManyToMany&lt;<span class="lifetime">'a</span>, O: Location&lt;<span class="lifetime">'a</span>&gt;, Cid&gt;: Location&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">pub trait </span>HfSendManyToMany&lt;O: Location, Cid&gt;: Location {
     <span class="kw">fn </span>connect(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>O, source_port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port, recipient_port: <span class="kw-2">&amp;</span>O::Port);
 
     <span class="kw">fn </span>gen_sink_statement(<span class="kw-2">&amp;</span><span class="self">self</span>, port: <span class="kw-2">&amp;</span><span class="self">Self</span>::Port) -&gt; syn::Expr;
     <span class="kw">fn </span>gen_source_statement(other: <span class="kw-2">&amp;</span>O, port: <span class="kw-2">&amp;</span>O::Port) -&gt; syn::Expr;
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, O: Location&lt;<span class="lifetime">'a</span>&gt;, Cid, H: HfSendManyToMany&lt;<span class="lifetime">'a</span>, O, Cid&gt;&gt; HfSend&lt;<span class="lifetime">'a</span>, O, ((), (), Cid, Cid)&gt;
-    <span class="kw">for </span>H
-{
+<span class="kw">impl</span>&lt;O: Location, Cid, H: HfSendManyToMany&lt;O, Cid&gt;&gt; HfSend&lt;O, ((), (), Cid, Cid)&gt; <span class="kw">for </span>H {
     <span class="kw">type </span>In&lt;T&gt; = (Cid, T);
     <span class="kw">type </span>Out&lt;T&gt; = (Cid, T);
 

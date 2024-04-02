@@ -81,7 +81,6 @@
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
-<a href="#82" id="82">82</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::ir::<span class="kw-2">*</span>;
 
 <span class="kw">fn </span>persist_pullup_node(node: HfPlusNode, seen_tees: <span class="kw-2">&amp;mut </span>SeenTees) -&gt; HfPlusNode {
@@ -108,15 +107,14 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
-    <span class="kw">use crate</span>::{Location, MultiGraph};
+    <span class="kw">use </span><span class="kw">crate</span>::MultiGraph;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>persist_pullup_through_map() {
         <span class="kw">let </span>flow = <span class="kw">crate</span>::builder::FlowBuilder::&lt;MultiGraph&gt;::new();
         <span class="kw">let </span>process = flow.process(<span class="kw-2">&amp;</span>());
 
-        process
-            .source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>))
+        flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>))
             .all_ticks()
             .map(<span class="macro">q!</span>(|v| v + <span class="number">1</span>))
             .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n)));
@@ -140,8 +138,8 @@
         <span class="kw">let </span>flow = <span class="kw">crate</span>::builder::FlowBuilder::&lt;MultiGraph&gt;::new();
         <span class="kw">let </span>process = flow.process(<span class="kw-2">&amp;</span>());
 
-        <span class="kw">let </span>before_tee = process
-            .source_iter(<span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>))
+        <span class="kw">let </span>before_tee = flow
+            .source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>))
             .all_ticks()
             .map(<span class="macro">q!</span>(|v| v + <span class="number">1</span>));
 

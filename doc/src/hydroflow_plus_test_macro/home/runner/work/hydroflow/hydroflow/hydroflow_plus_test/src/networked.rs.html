@@ -153,7 +153,7 @@
     <span class="kw">let </span>process_zero = flow.process(process_spec);
     <span class="kw">let </span>process_one = flow.process(process_spec);
 
-    <span class="kw">let </span>(source_zero_port, source_zero) = process_zero.source_external();
+    <span class="kw">let </span>(source_zero_port, source_zero) = flow.source_external(<span class="kw-2">&amp;</span>process_zero);
 
     source_zero
         .send_bytes(<span class="kw-2">&amp;</span>process_one)
@@ -162,7 +162,7 @@
         }));
 
     <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
-    <span class="kw">let </span>(cluster_port, cluster_stream) = cluster.many_source_external::&lt;D::Process, <span class="kw">_</span>&gt;();
+    <span class="kw">let </span>(cluster_port, cluster_stream) = flow.many_source_external::&lt;D::Process, <span class="kw">_</span>, <span class="kw">_</span>&gt;(<span class="kw-2">&amp;</span>cluster);
     cluster_stream.for_each(<span class="macro">q!</span>(|v: Bytes| {
         <span class="macro">println!</span>(<span class="string">"cluster received: {:?}"</span>, std::str::from_utf8(<span class="kw-2">&amp;</span>v).unwrap());
     }));

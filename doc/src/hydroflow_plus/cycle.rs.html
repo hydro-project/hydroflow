@@ -42,14 +42,14 @@
 /// by a stream that is not yet known.
 ///
 /// See [`Stream`] for an explainer on the type parameters.
-</span><span class="kw">pub struct </span>HfCycle&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; {
+</span><span class="kw">pub struct </span>HfCycle&lt;<span class="lifetime">'a</span>, T, W, N: Location + Clone&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) ident: syn::Ident,
     <span class="kw">pub</span>(<span class="kw">crate</span>) node: N,
     <span class="kw">pub</span>(<span class="kw">crate</span>) ir_leaves: Rc&lt;RefCell&lt;Vec&lt;HfPlusLeaf&gt;&gt;&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) _phantom: PhantomData&lt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>(), T, W)&gt;,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location&lt;<span class="lifetime">'a</span>&gt;&gt; HfCycle&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, T, W, N: Location + Clone&gt; HfCycle&lt;<span class="lifetime">'a</span>, T, W, N&gt; {
     <span class="kw">pub fn </span>complete(<span class="self">self</span>, stream: Stream&lt;<span class="lifetime">'a</span>, T, W, N&gt;) {
         <span class="kw">let </span>ident = <span class="self">self</span>.ident;
 
