@@ -368,8 +368,19 @@ impl FlatGraphBuilder {
                             .and_then(|result| result.as_ref().ok())
                             .and_then(|ends| ends.out.as_ref())
                             .cloned();
-                        let (_port, node_id) = self.helper_resolve_name(port_det, false)?;
-                        Some(node_id)
+                        if let Some((_port, node_id)) = self.helper_resolve_name(port_det, false) {
+                            Some(node_id)
+                        } else {
+                            self.diagnostics.push(Diagnostic::spanned(
+                                singleton_ref.span(),
+                                Level::Error,
+                                format!(
+                                    "Cannot find referenced name `{}`; name was never assigned.",
+                                    singleton_ref
+                                ),
+                            ));
+                            None
+                        }
                     })
                     .collect();
 
