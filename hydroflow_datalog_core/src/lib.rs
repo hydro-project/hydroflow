@@ -563,6 +563,7 @@ fn gen_target_expr(
 ) -> syn::Expr {
     match expr {
         TargetExpr::Expr(expr) => gen_value_expr(expr, lookup_ident, get_span),
+        TargetExpr::Splat(_, ident) => lookup_ident(ident),
         TargetExpr::Aggregation(Aggregation::Count(_)) => parse_quote!(()),
         TargetExpr::Aggregation(Aggregation::CountUnique(_, _, keys, _))
         | TargetExpr::Aggregation(Aggregation::CollectVec(_, _, keys, _)) => {
@@ -589,10 +590,6 @@ fn apply_aggregations(
     diagnostics: &mut Vec<Diagnostic>,
     get_span: &impl Fn((usize, usize)) -> Span,
 ) -> Pipeline {
-    let mut aggregations = vec![];
-    let mut fold_keyed_exprs = vec![];
-    let mut agg_exprs = vec![];
-
     let mut field_use_count = HashMap::new();
     for field in rule
         .target
@@ -608,8 +605,19 @@ fn apply_aggregations(
         }
     }
 
+    let mut aggregations = vec![];
+    let mut fold_keyed_exprs = vec![];
+    let mut agg_exprs = vec![];
+
     let mut field_use_cur = HashMap::new();
     let mut has_index = false;
+
+    let mut copy_group_key_lookups: Vec<syn::Expr> = vec![];
+    let mut after_group_lookups: Vec<syn::Expr> = vec![];
+    let mut splat_indices = vec![];
+    let mut group_key_idx = 0;
+    let mut agg_idx = 0;
+
     for field in rule
         .target
         .fields
@@ -618,6 +626,8 @@ fn apply_aggregations(
     {
         if matches!(field.deref(), TargetExpr::Index(_, _, _)) {
             has_index = true;
+            after_group_lookups
+                .push(parse_quote_spanned!(get_span(field.span)=> __enumerate_index));
         } else {
             let expr: syn::Expr = gen_target_expr(
                 field,
@@ -653,10 +663,50 @@ fn apply_aggregations(
             match &field.value {
                 TargetExpr::Expr(_) => {
                     fold_keyed_exprs.push(expr);
+
+                    let idx = syn::Index::from(group_key_idx);
+                    after_group_lookups.push(parse_quote_spanned!(get_span(field.span)=> g.#idx));
+                    copy_group_key_lookups
+                        .push(parse_quote_spanned!(get_span(field.span)=> g.#idx));
+                    group_key_idx += 1;
+                }
+                TargetExpr::Splat(_, _) => {
+                    fold_keyed_exprs.push(expr);
+
+                    let idx = syn::Index::from(group_key_idx);
+                    after_group_lookups.push(parse_quote_spanned!(get_span(field.span)=> g.#idx));
+                    copy_group_key_lookups
+                        .push(parse_quote_spanned!(get_span(field.span)=> g.#idx));
+
+                    splat_indices.push(group_key_idx);
+
+                    group_key_idx += 1;
                 }
                 TargetExpr::Aggregation(a) => {
                     aggregations.push(a.clone());
                     agg_exprs.push(expr);
+
+                    match a {
+                        Aggregation::CountUnique(..) => {
+                            let idx = syn::Index::from(agg_idx);
+                            after_group_lookups.push(
+                                parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap().1),
+                            );
+                            agg_idx += 1;
+                        }
+                        Aggregation::CollectVec(..) => {
+                            let idx = syn::Index::from(agg_idx);
+                            after_group_lookups
+                                .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap().into_iter().collect::<Vec<_>>()));
+                            agg_idx += 1;
+                        }
+                        _ => {
+                            let idx = syn::Index::from(agg_idx);
+                            after_group_lookups
+                                .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap()));
+                            agg_idx += 1;
+                        }
+                    }
                 }
                 TargetExpr::Index(_, _, _) => unreachable!(),
             }
@@ -665,64 +715,41 @@ fn apply_aggregations(
 
     let flattened_tuple_type = &out_expanded.tuple_type;
 
-    let mut after_group_lookups: Vec<syn::Expr> = vec![];
-    let mut group_key_idx = 0;
-    let mut agg_idx = 0;
-    for field in rule
-        .target
-        .fields
-        .iter()
-        .chain(rule.target.at_node.iter().map(|n| &n.node))
-    {
-        match field.value {
-            TargetExpr::Expr(_) => {
-                let idx = syn::Index::from(group_key_idx);
-                after_group_lookups.push(parse_quote_spanned!(get_span(field.span)=> g.#idx));
-                group_key_idx += 1;
-            }
-            TargetExpr::Aggregation(Aggregation::CountUnique(..)) => {
-                let idx = syn::Index::from(agg_idx);
-                after_group_lookups
-                    .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap().1));
-                agg_idx += 1;
-            }
-            TargetExpr::Aggregation(Aggregation::CollectVec(..)) => {
-                let idx = syn::Index::from(agg_idx);
-                after_group_lookups
-                    .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap().into_iter().collect::<Vec<_>>()));
-                agg_idx += 1;
-            }
-            TargetExpr::Aggregation(_) => {
-                let idx = syn::Index::from(agg_idx);
-                after_group_lookups
-                    .push(parse_quote_spanned!(get_span(field.span)=> a.#idx.unwrap()));
-                agg_idx += 1;
-            }
-            TargetExpr::Index(_, _, _) => {
-                after_group_lookups.push(parse_quote_spanned!(get_span(field.span)=> i));
-            }
-        }
-    }
-
     let fold_keyed_input_type =
         repeat_tuple::<syn::Type, syn::Type>(|| parse_quote!(_), fold_keyed_exprs.len());
+
+    // TODO(shadaj): use splat indices
 
     let after_group_pipeline: Pipeline = if has_index {
         if out_expanded.persisted && agg_exprs.is_empty() {
             // if there is an aggregation, we will use a group which replays so we should use `'tick` instead
-            parse_quote!(enumerate::<'static>() -> map(|(i, (g, a)): (_, (#fold_keyed_input_type, _))| (#(#after_group_lookups, )*)))
+            parse_quote!(enumerate::<'static>() -> map(|(__enumerate_index, (g, a)): (_, (#fold_keyed_input_type, _))| (#(#after_group_lookups, )*)))
         } else {
-            parse_quote!(enumerate::<'tick>() -> map(|(i, (g, a)): (_, (#fold_keyed_input_type, _))| (#(#after_group_lookups, )*)))
+            parse_quote!(enumerate::<'tick>() -> map(|(__enumerate_index, (g, a)): (_, (#fold_keyed_input_type, _))| (#(#after_group_lookups, )*)))
         }
     } else {
         parse_quote!(map(|(g, a): (#fold_keyed_input_type, _)| (#(#after_group_lookups, )*)))
     };
 
+    let mut pre_fold_keyed_map: Pipeline = parse_quote!(map(|row: #flattened_tuple_type| ((#(#fold_keyed_exprs, )*), (#(#agg_exprs, )*))));
+    for idx in splat_indices {
+        let mut lookups: Vec<syn::Expr> = copy_group_key_lookups
+            .iter()
+            .cloned()
+            .map(|e| parse_quote!(#e.clone()))
+            .collect::<Vec<_>>();
+        lookups[idx] = parse_quote!(__splatted);
+
+        let syn_idx = syn::Index::from(idx);
+
+        pre_fold_keyed_map = parse_quote!(#pre_fold_keyed_map -> flat_map(|(g, a): (#fold_keyed_input_type, _)| g.#syn_idx.into_iter().map(move |__splatted| ((#(#lookups, )*), a.clone()))) -> unique::<'tick>());
+    }
+
     if agg_exprs.is_empty() {
         if out_expanded.persisted && !consumer_is_persist {
-            parse_quote!(map(|row: #flattened_tuple_type| ((#(#fold_keyed_exprs, )*), ())) -> #after_group_pipeline -> persist())
+            parse_quote!(#pre_fold_keyed_map -> #after_group_pipeline -> persist())
         } else {
-            parse_quote!(map(|row: #flattened_tuple_type| ((#(#fold_keyed_exprs, )*), ())) -> #after_group_pipeline)
+            parse_quote!(#pre_fold_keyed_map -> #after_group_pipeline)
         }
     } else {
         let agg_initial =
@@ -813,19 +840,17 @@ fn apply_aggregations(
             })
             .collect();
 
-        let pre_fold_keyed_map: syn::Expr = parse_quote!(|row: #flattened_tuple_type| ((#(#fold_keyed_exprs, )*), (#(#agg_exprs, )*)));
-
         let fold_keyed_fn: syn::Expr = parse_quote!(|old: &mut #agg_type, val: #agg_input_type| {
             #(#fold_keyed_stmts)*
         });
 
         if out_expanded.persisted {
             parse_quote! {
-                map(#pre_fold_keyed_map) -> fold_keyed::<'static, #fold_keyed_input_type, #agg_type>(|| #agg_initial, #fold_keyed_fn) -> #after_group_pipeline
+                #pre_fold_keyed_map -> fold_keyed::<'static, #fold_keyed_input_type, #agg_type>(|| #agg_initial, #fold_keyed_fn) -> #after_group_pipeline
             }
         } else {
             parse_quote! {
-                map(#pre_fold_keyed_map) -> fold_keyed::<'tick, #fold_keyed_input_type, #agg_type>(|| #agg_initial, #fold_keyed_fn) -> #after_group_pipeline
+                #pre_fold_keyed_map -> fold_keyed::<'tick, #fold_keyed_input_type, #agg_type>(|| #agg_initial, #fold_keyed_fn) -> #after_group_pipeline
             }
         }
     }
@@ -1222,6 +1247,19 @@ mod tests {
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(collect_vec(a, b)) :- ints1(a), ints2(b)
+            "#
+        );
+    }
+
+    #[test]
+    fn test_splat() {
+        test_snapshots!(
+            r#"
+            .input ints1 `source_stream(ints1)`
+            
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(a, *b) :- ints1(a, b)
             "#
         );
     }

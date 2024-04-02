@@ -1161,6 +1161,32 @@ fn test_collect_vec() {
     );
 }
 
+#[multiplatform_test]
+fn test_splat() {
+    let (ints1_send, ints1) = hydroflow::util::unbounded_channel::<(i64, Vec<i64>)>();
+    let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64, i64)>();
+
+    let mut flow = datalog!(
+        r#"
+        .input ints1 `source_stream(ints1)`
+            
+        .output result `for_each(|v| result.send(v).unwrap())`
+
+        result(a, *b) :- ints1(a, b)
+        "#
+    );
+
+    ints1_send.send((3, vec![1, 2])).unwrap();
+    ints1_send.send((3, vec![2, 3])).unwrap();
+
+    flow.run_tick();
+
+    assert_eq!(
+        &*collect_ready::<Vec<_>, _>(&mut result_recv),
+        &[(3, 1), (3, 2), (3, 3),]
+    );
+}
+
 // #[ignore] doesn't seem to work for #[multiplatform_test]
 // #[ignore] // This test depends on the ordering of specific tuples which is undefined.
 // #[multiplatform_test]
