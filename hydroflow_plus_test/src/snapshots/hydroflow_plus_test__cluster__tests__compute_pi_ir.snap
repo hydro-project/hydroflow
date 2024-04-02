@@ -45,9 +45,9 @@ expression: built.ir()
                                         input: Map {
                                             f: { use crate :: __staged :: cluster :: * ; | _ | rand :: random :: < (f64 , f64) > () },
                                             input: Map {
-                                                f: { use hydroflow_plus :: __staged :: location :: * ; | _ | () },
+                                                f: { use hydroflow_plus :: __staged :: builder :: * ; | _ | () },
                                                 input: FlatMap {
-                                                    f: { use hydroflow_plus :: __staged :: location :: * ; let batch_size = 8192usize ; move | _ | 0 .. batch_size },
+                                                    f: { use hydroflow_plus :: __staged :: builder :: * ; let batch_size = 8192usize ; move | _ | 0 .. batch_size },
                                                     input: Source {
                                                         source: Spin,
                                                         location_id: 0,

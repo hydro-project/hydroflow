@@ -22,7 +22,7 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
     let node_zero = flow.process(&());
     let node_one = flow.process(&());
 
-    let source = node_zero.source_stream(input_stream);
+    let source = flow.source_stream(&node_zero, input_stream);
     let map1 = source.clone().map(q!(|v| (v + 1, ())));
     let map2 = source.map(q!(|v| (v - 1, ())));
 
@@ -38,7 +38,7 @@ pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(
         }));
     }
 
-    let source_node_id_1 = node_one.source_iter(q!(0..5));
+    let source_node_id_1 = flow.source_iter(&node_one, q!(0..5));
     source_node_id_1.for_each(q!(|v| {
         output.send(v).unwrap();
     }));
@@ -58,8 +58,8 @@ pub fn chat_app<'a>(
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process(&());
 
-    let users = process.source_stream(users_stream).all_ticks();
-    let messages = process.source_stream(messages);
+    let users = flow.source_stream(&process, users_stream).all_ticks();
+    let messages = flow.source_stream(&process, messages);
     let messages = if replay_messages {
         messages.all_ticks()
     } else {
@@ -90,10 +90,10 @@ pub fn graph_reachability<'a>(
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process(&());
 
-    let roots = process.source_stream(roots);
-    let edges = process.source_stream(edges);
+    let roots = flow.source_stream(&process, roots);
+    let edges = flow.source_stream(&process, edges);
 
-    let (set_reached_cycle, reached_cycle) = process.cycle();
+    let (set_reached_cycle, reached_cycle) = flow.cycle(&process);
 
     let reached = roots.union(reached_cycle);
     let reachable = reached
@@ -118,7 +118,7 @@ pub fn count_elems<'a, T: 'a>(
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let process = flow.process(&());
 
-    let source = process.source_stream(input_stream);
+    let source = flow.source_stream(&process, input_stream);
     let count = source
         .map(q!(|_| 1))
         .tick_batch()
