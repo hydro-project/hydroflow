@@ -1,10 +1,8 @@
 use quote::{quote_spanned, ToTokens};
 
-use crate::graph::GraphEdgeType;
-
 use super::{
-    FlowPropArgs, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
+    FlowPropArgs, GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
 };
 
 /// > 1 input stream, *n* output streams

@@ -2,10 +2,9 @@ use quote::quote_spanned;
 use syn::parse_quote_spanned;
 
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
-use crate::graph::{OperatorInstance, GraphEdgeType};
 
 /// > 0 input streams, 1 output stream
 ///
@@ -63,7 +62,7 @@ pub const SOURCE_INTERVAL: OperatorConstraints = OperatorConstraints {
     write_fn: |wc @ &WriteContextArgs {
                    root,
                    op_span,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                diagnostics| {
@@ -73,10 +72,7 @@ pub const SOURCE_INTERVAL: OperatorConstraints = OperatorConstraints {
                 #root::tokio_stream::wrappers::IntervalStream::new(#root::tokio::time::interval(#arguments));
         };
         let wc = WriteContextArgs {
-            op_inst: &OperatorInstance {
-                arguments: parse_quote_spanned!(op_span=> #ident_intervalstream),
-                ..wc.op_inst.clone()
-            },
+            arguments: &parse_quote_spanned!(op_span=> #ident_intervalstream),
             ..wc.clone()
         };
         let write_output = (super::source_stream::SOURCE_STREAM.write_fn)(&wc, diagnostics)?;

@@ -1,10 +1,9 @@
 use quote::quote_spanned;
 
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput, WriteContextArgs,
+    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
-use crate::graph::GraphEdgeType;
 
 /// > 1 input stream, 0 output streams
 ///
@@ -40,7 +39,7 @@ pub const FOR_EACH: OperatorConstraints = OperatorConstraints {
                    root,
                    op_span,
                    ident,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                _| {

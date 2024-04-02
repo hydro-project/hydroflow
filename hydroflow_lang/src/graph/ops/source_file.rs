@@ -2,10 +2,9 @@ use quote::quote_spanned;
 use syn::parse_quote_spanned;
 
 use super::{
-    make_missing_runtime_msg, OperatorCategory,
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    make_missing_runtime_msg, GraphEdgeType, OperatorCategory, OperatorConstraints,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::graph::{OperatorInstance, GraphEdgeType};
 
 /// > 0 input streams, 1 output stream
 ///
@@ -41,7 +40,7 @@ pub const SOURCE_FILE: OperatorConstraints = OperatorConstraints {
                    op_span,
                    ident,
                    op_name,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                diagnostics| {
@@ -63,10 +62,7 @@ pub const SOURCE_FILE: OperatorConstraints = OperatorConstraints {
             };
         };
         let wc = WriteContextArgs {
-            op_inst: &OperatorInstance {
-                arguments: parse_quote_spanned!(op_span=> #ident_filelines),
-                ..wc.op_inst.clone()
-            },
+            arguments: &parse_quote_spanned!(op_span=> #ident_filelines),
             ..wc.clone()
         };
 

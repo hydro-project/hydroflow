@@ -2,11 +2,10 @@ use quote::quote_spanned;
 use syn::parse_quote;
 
 use super::{
-    OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
-    Persistence, WriteContextArgs, RANGE_0, RANGE_1,
+    GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::GraphEdgeType;
 
 /// > 2 input streams of type `V1` and `V2`, 1 output stream of type `(V1, V2)`
 ///

@@ -2,11 +2,10 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    Persistence, WriteContextArgs, JOIN_CROSS_JOIN_FLOW_PROP_FN, RANGE_1,
+    GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, Persistence, WriteContextArgs, JOIN_CROSS_JOIN_FLOW_PROP_FN, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{OpInstGenerics, OperatorInstance, GraphEdgeType};
 
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
 ///

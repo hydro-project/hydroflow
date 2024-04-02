@@ -1,10 +1,10 @@
 use quote::{quote_spanned, ToTokens};
 
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
+    GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, PortIndexValue, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN,
+    RANGE_0, RANGE_1,
 };
-use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance, PortIndexValue};
 
 // TODO(mingwei): Improve example when things are more stable.
 /// A lattice-based state operator, used for accumulating lattice state

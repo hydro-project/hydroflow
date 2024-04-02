@@ -4,11 +4,10 @@ use syn::spanned::Spanned;
 use syn::{parse_quote, Expr, ExprCall};
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, Persistence,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance};
 
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
 ///
@@ -114,13 +113,13 @@ pub const JOIN_FUSED: OperatorConstraints = OperatorConstraints {
                    is_pull,
                    op_inst:
                        OperatorInstance {
-                           arguments,
                            generics:
                                OpInstGenerics {
                                    persistence_args, ..
                                },
                            ..
                        },
+                   arguments,
                    ..
                },
                diagnostics| {

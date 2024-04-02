@@ -2,10 +2,10 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, PortListSpec,
-    WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
+    DelayType, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, PortListSpec, WriteContextArgs,
+    LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
 };
-use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance};
 
 /// > 2 input streams, 1 output stream, no arguments.
 ///

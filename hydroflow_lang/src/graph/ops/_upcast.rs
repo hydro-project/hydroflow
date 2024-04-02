@@ -1,5 +1,4 @@
-use super::{FlowPropArgs, OperatorCategory, OperatorConstraints};
-use crate::graph::FlowProps;
+use super::{FlowPropArgs, FlowProps, OperatorCategory, OperatorConstraints};
 
 /// TODO(MINGWEI)
 pub const _UPCAST: OperatorConstraints = OperatorConstraints {
@@ -14,7 +13,7 @@ pub const _UPCAST: OperatorConstraints = OperatorConstraints {
             assert_eq!(1, op_inst.input_ports.len());
             assert_eq!(1, op_inst.output_ports.len());
 
-            let out_flow_type = super::cast::parse_flow_type(&op_inst.arguments[0], op_span)
+            let out_flow_type = super::cast::parse_flow_type(&op_inst.arguments_pre[0], op_span)
                 .map_err(|diagnostic| diagnostics.push(diagnostic))?;
             Ok(vec![Some(FlowProps {
                 star_ord: fp.new_star_ord(),

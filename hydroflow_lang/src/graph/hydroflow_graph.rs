@@ -22,6 +22,7 @@ use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::null_write_iterator_fn;
 use crate::graph::MODULE_BOUNDARY_NODE_STR;
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
+use crate::process_singletons::postprocess_singletons;
 
 /// A graph representing a Hydroflow dataflow graph (with or without subgraph partitioning,
 /// stratification, and handoff insertion). This is a "meta" graph used for generating Rust source
@@ -311,7 +312,7 @@ impl HydroflowGraph {
                     output_ports,
                     singletons_referenced: operator.singletons_referenced.clone(),
                     generics,
-                    arguments: operator.args.clone(),
+                    arguments_pre: operator.args.clone(),
                     arguments_raw: operator.args_raw.clone(),
                 },
             ));
@@ -359,7 +360,7 @@ impl HydroflowGraph {
                 output_ports: vec![output_port],
                 singletons_referenced: operator.singletons_referenced.clone(),
                 generics,
-                arguments: operator.args.clone(),
+                arguments_pre: operator.args.clone(),
                 arguments_raw: operator.args_raw.clone(),
             })
         };
@@ -786,6 +787,26 @@ impl HydroflowGraph {
         Ident::new(&*format!("edge_{:?}", edge_id.data()), span)
     }
 
+    /// For per-node singleton references. Helper to generate a deterministic `Ident` for the given node.
+    fn node_as_singleton_ident(&self, node_id: GraphNodeId, span: Span) -> Ident {
+        Ident::new(&format!("singleton_op_{:?}", node_id.data()), span)
+    }
+
+    /// Resolve the singletons via [`Self::node_singleton_references`] for the given `node_id`.
+    fn helper_resolve_singletons(&self, node_id: GraphNodeId, span: Span) -> Vec<Ident> {
+        self.node_singleton_references.get(node_id)
+            .into_iter() // `None` becomes empty iter.
+            .flatten()
+            .map(|singleton_node_id| {
+                // TODO(mingwei): this `expect` should be caught in error checking
+                self.node_as_singleton_ident(
+                    singleton_node_id.expect("Expected singleton to be resolved but was not, this is a Hydroflow bug."),
+                    span,
+                )
+            })
+            .collect::<Vec<_>>()
+    }
+
     /// Returns each subgraph's receive and send handoffs.
     /// `Map<GraphSubgraphId, (recv handoffs, send handoffs)>`
     fn helper_collect_subgraph_handoffs(
@@ -987,21 +1008,14 @@ impl HydroflowGraph {
 
                             let is_pull = idx < pull_to_push_idx;
 
-                            // TODO(mingwei): make this a helper method.
                             let singleton_output_ident =
-                                &Ident::new(&format!("singleton_op_{:?}", node_id.data()), op_span);
-
-                            let singletons_resolved = &*self.node_singleton_references.get(node_id)
-                                .into_iter() // `None` becomes empty iter.
-                                .flatten()
-                                .map(|singleton_node_id| {
-                                    // TODO(mingwei): make this a helper method.
-                                    Ident::new(&format!(
-                                        "singleton_op_{:?}",
-                                        singleton_node_id.expect("TODO(mingwei): Failed to resolve singleton").data()
-                                    ), op_span)
-                                })
-                                .collect::<Vec<_>>();
+                                &self.node_as_singleton_ident(node_id, op_span);
+                            let singletons_resolved =
+                                self.helper_resolve_singletons(node_id, op_span);
+                            let arguments = &postprocess_singletons(
+                                op_inst.arguments_raw.clone(),
+                                singletons_resolved,
+                            );
 
                             let context_args = WriteContextArgs {
                                 root,
@@ -1027,7 +1041,7 @@ impl HydroflowGraph {
                                 singleton_output_ident,
                                 op_name,
                                 op_inst,
-                                singletons_resolved,
+                                arguments,
                                 flow_props_in: &*flow_props_in,
                             };
 

@@ -1,11 +1,10 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowPropArgs, OperatorCategory, OperatorConstraints,
+    FlowPropArgs, FlowProps, GraphEdgeType, LatticeFlowType, OperatorCategory, OperatorConstraints,
     OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{FlowProps, LatticeFlowType, GraphEdgeType};
 
 /// Stores each item as it passes through, and replays all item every tick.
 ///

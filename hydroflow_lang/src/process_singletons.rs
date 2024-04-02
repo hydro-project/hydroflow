@@ -3,6 +3,10 @@
 use itertools::Itertools;
 use proc_macro2::{Group, Ident, TokenStream, TokenTree};
 use quote::quote;
+use syn::punctuated::Punctuated;
+use syn::{Expr, Token};
+
+use crate::parse::parse_terminated;
 
 /// Finds all the singleton references `#my_var` and appends them to `found_idents`. Returns the
 /// `TokenStream` but with the hashes removed from the varnames.
@@ -49,8 +53,12 @@ pub fn preprocess_singletons(tokens: TokenStream, found_idents: &mut Vec<Ident>)
 /// * `tokens` - The tokens to update singleton references within.
 /// * `resolved_idents` - The context `StateHandle` varnames that correspond 1:1 and in the same
 ///   order as the singleton references within `tokens` (found in-order via [`preprocess_singletons`]).
-pub fn postprocess_singletons(tokens: TokenStream, resolved_idents: &[Ident]) -> TokenStream {
-    postprocess_singletons_helper(tokens, resolved_idents.iter().cloned().by_ref())
+pub fn postprocess_singletons(
+    tokens: TokenStream,
+    resolved_idents: impl IntoIterator<Item = Ident>,
+) -> Punctuated<Expr, Token![,]> {
+    let processed = postprocess_singletons_helper(tokens, resolved_idents.into_iter().by_ref());
+    parse_terminated(processed).unwrap()
 }
 
 /// Internal recursive helper for [`postprocess_singletons`].

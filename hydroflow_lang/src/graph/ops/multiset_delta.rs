@@ -1,10 +1,8 @@
 use quote::quote_spanned;
 
-use crate::graph::GraphEdgeType;
-
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
 
 // TODO(mingwei): more doc

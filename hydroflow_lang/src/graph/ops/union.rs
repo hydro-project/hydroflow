@@ -1,10 +1,11 @@
 use quote::{quote_spanned, ToTokens};
 
 use super::{
-    FlowPropArgs, FlowProps, OperatorCategory,
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
+    FlowPropArgs, FlowProps, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
 };
-use crate::{diagnostic::{Diagnostic, Level}, graph::GraphEdgeType};
+use crate::diagnostic::{Diagnostic, Level};
+use crate::graph::GraphEdgeType;
 
 /// > *n* input streams of the same type, 1 output stream of the same type
 ///

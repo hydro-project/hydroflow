@@ -1,12 +1,7 @@
 use quote::quote_spanned;
 use syn::parse_quote;
 
-use crate::graph::GraphEdgeType;
-
-use super::{
-    OperatorCategory, OperatorConstraints, WriteContextArgs,
-    RANGE_1,
-};
+use super::{GraphEdgeType, OperatorCategory, OperatorConstraints, WriteContextArgs, RANGE_1};
 
 /// > 2 input streams of type S and T, 1 output stream of type (S, T)
 ///

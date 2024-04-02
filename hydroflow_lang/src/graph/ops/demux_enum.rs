@@ -3,11 +3,11 @@ use quote::{quote, quote_spanned};
 use syn::spanned::Spanned;
 
 use super::{
-    FlowPropArgs, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
+    FlowPropArgs, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, PortIndexValue, PortListSpec, WriteContextArgs, RANGE_0,
+    RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{OpInstGenerics, OperatorInstance, PortIndexValue, GraphEdgeType};
 
 /// > Generic Argument: A enum type which has `#[derive(DemuxEnum)]`. Must match the items in the input stream.
 ///

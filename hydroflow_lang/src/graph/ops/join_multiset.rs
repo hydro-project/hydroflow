@@ -1,10 +1,9 @@
 use syn::{parse_quote, parse_quote_spanned};
 
 use super::{
-    OperatorCategory, OperatorConstraints, WriteContextArgs,
-    RANGE_0, RANGE_1,
+    GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::graph::{OpInstGenerics, OperatorInstance, GraphEdgeType};
 
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
 ///
