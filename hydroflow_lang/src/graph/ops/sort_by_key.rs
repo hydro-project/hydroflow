@@ -1,10 +1,9 @@
 use quote::quote_spanned;
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::graph::{OperatorInstance, GraphEdgeType};
 
 /// Like sort, takes a stream as input and produces a version of the stream as output.
 /// This operator sorts according to the key extracted by the closure.
@@ -39,7 +38,7 @@ pub const SORT_BY_KEY: OperatorConstraints = OperatorConstraints {
                    ident,
                    inputs,
                    is_pull,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                _| {

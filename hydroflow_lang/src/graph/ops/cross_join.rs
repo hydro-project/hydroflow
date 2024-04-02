@@ -1,10 +1,8 @@
 use quote::quote_spanned;
 use syn::parse_quote;
 
-use crate::graph::GraphEdgeType;
-
 use super::{
-    OperatorCategory, OperatorConstraints, WriteContextArgs,
+    GraphEdgeType, OperatorCategory, OperatorConstraints, WriteContextArgs,
     JOIN_CROSS_JOIN_FLOW_PROP_FN, RANGE_1,
 };
 

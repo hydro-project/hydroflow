@@ -1,9 +1,7 @@
 use syn::parse_quote_spanned;
 
-use crate::graph::GraphEdgeType;
-
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorInstance, WriteContextArgs,
+    DelayType, GraphEdgeType, OperatorCategory, OperatorConstraints, WriteContextArgs,
     LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
 };
 
@@ -50,7 +48,7 @@ pub const LATTICE_FOLD: OperatorConstraints = OperatorConstraints {
                    root,
                    is_pull,
                    op_span,
-                   op_inst: op_inst @ OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                diagnostics| {
@@ -58,15 +56,12 @@ pub const LATTICE_FOLD: OperatorConstraints = OperatorConstraints {
 
         let first_arg = &arguments[0];
 
-        let arguments = parse_quote_spanned! {op_span=>
+        let arguments = &parse_quote_spanned! {op_span=>
             #first_arg, #root::lattices::Merge::merge
         };
 
         let wc = WriteContextArgs {
-            op_inst: &OperatorInstance {
-                arguments,
-                ..op_inst.clone()
-            },
+            arguments,
             ..wc.clone()
         };
 

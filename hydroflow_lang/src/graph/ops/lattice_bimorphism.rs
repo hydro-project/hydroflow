@@ -2,10 +2,9 @@ use quote::quote_spanned;
 use syn::parse_quote;
 
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     JOIN_CROSS_JOIN_FLOW_PROP_FN, RANGE_0, RANGE_1,
 };
-use crate::graph::{GraphEdgeType, OperatorInstance};
 
 // TODO(mingwei):
 pub const LATTICE_BIMORPHISM: OperatorConstraints = OperatorConstraints {
@@ -40,7 +39,7 @@ pub const LATTICE_BIMORPHISM: OperatorConstraints = OperatorConstraints {
                    is_pull,
                    ident,
                    inputs,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                _| {

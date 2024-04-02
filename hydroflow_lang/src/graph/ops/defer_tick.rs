@@ -1,8 +1,6 @@
-use crate::graph::GraphEdgeType;
-
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints,
-    IDENTITY_WRITE_FN, RANGE_0, RANGE_1,
+    DelayType, GraphEdgeType, OperatorCategory, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0,
+    RANGE_1,
 };
 
 /// Buffers all input items and releases them in the next tick.

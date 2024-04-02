@@ -1,10 +1,9 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowPropArgs, OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
+    FlowPropArgs, GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::graph::GraphEdgeType;
 
 /// > Arguments: A single closure `FnMut(&Item)`.
 ///
@@ -47,7 +46,7 @@ pub const INSPECT: OperatorConstraints = OperatorConstraints {
                    inputs,
                    outputs,
                    is_pull,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                _| {

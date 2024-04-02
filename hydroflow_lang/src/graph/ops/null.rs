@@ -1,8 +1,4 @@
-use crate::graph::GraphEdgeType;
-
-use super::{
-    OperatorCategory, OperatorConstraints, NULL_WRITE_FN, RANGE_0,
-};
+use super::{GraphEdgeType, OperatorCategory, OperatorConstraints, NULL_WRITE_FN, RANGE_0};
 
 /// > unbounded number of input streams of any type, unbounded number of output streams of any type.
 ///

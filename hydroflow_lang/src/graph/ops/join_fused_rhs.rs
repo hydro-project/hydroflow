@@ -2,10 +2,9 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_0, RANGE_1,
+    DelayType, GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    PortIndexValue, WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::graph::{GraphEdgeType, PortIndexValue};
 
 /// See `join_fused_lhs`
 ///

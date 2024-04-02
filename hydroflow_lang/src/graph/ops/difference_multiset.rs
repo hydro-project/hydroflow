@@ -2,10 +2,9 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, PortIndexValue, WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::graph::{OperatorInstance, PortIndexValue, GraphEdgeType};
 
 /// > 2 input streams of the same type T, 1 output stream of type T
 ///

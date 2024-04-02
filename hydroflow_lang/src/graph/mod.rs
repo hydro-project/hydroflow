@@ -192,7 +192,10 @@ pub struct OperatorInstance {
     pub generics: OpInstGenerics,
     /// Arguments provided by the user into the operator as arguments.
     /// I.e. the `a, b, c` in `-> my_op(a, b, c) -> `.
-    pub arguments: Punctuated<Expr, Token![,]>,
+    ///
+    /// These arguments do not include singleton postprocessing codegen. Instead use
+    /// [`ops::WriteContextArgs::arguments`].
+    pub arguments_pre: Punctuated<Expr, Token![,]>,
     /// Unparsed arguments, for singleton parsing.
     pub arguments_raw: TokenStream,
 }

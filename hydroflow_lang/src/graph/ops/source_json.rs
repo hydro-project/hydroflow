@@ -1,10 +1,9 @@
 use quote::quote_spanned;
 
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::graph::{OpInstGenerics, OperatorInstance, GraphEdgeType};
 
 /// > 0 input streams, 1 output stream
 ///
@@ -40,9 +39,9 @@ pub const SOURCE_JSON: OperatorConstraints = OperatorConstraints {
                    op_inst:
                        OperatorInstance {
                            generics: OpInstGenerics { type_args, .. },
-                           arguments,
                            ..
                        },
+                   arguments,
                    ..
                },
                _| {

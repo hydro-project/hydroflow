@@ -1,5 +1,6 @@
-use super::{OperatorCategory, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0, RANGE_1};
-use crate::graph::GraphEdgeType;
+use super::{
+    GraphEdgeType, OperatorCategory, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0, RANGE_1,
+};
 
 /// > 1 input stream of type T, 1 output stream of type T
 ///
