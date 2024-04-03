@@ -1264,8 +1264,6 @@
 <a href="#1262" id="1262">1262</a>
 <a href="#1263" id="1263">1263</a>
 <a href="#1264" id="1264">1264</a>
-<a href="#1265" id="1265">1265</a>
-<a href="#1266" id="1266">1266</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap, HashSet};
 <span class="kw">use </span>std::ops::Deref;
 
@@ -1986,9 +1984,7 @@
     <span class="kw">let </span>fold_keyed_input_type =
         repeat_tuple::&lt;syn::Type, syn::Type&gt;(|| <span class="macro">parse_quote!</span>(<span class="kw">_</span>), fold_keyed_exprs.len());
 
-    <span class="comment">// TODO(shadaj): use splat indices
-
-    </span><span class="kw">let </span>after_group_pipeline: Pipeline = <span class="kw">if </span>has_index {
+    <span class="kw">let </span>after_group_pipeline: Pipeline = <span class="kw">if </span>has_index {
         <span class="kw">if </span>out_expanded.persisted &amp;&amp; agg_exprs.is_empty() {
             <span class="comment">// if there is an aggregation, we will use a group which replays so we should use `'tick` instead
             </span><span class="macro">parse_quote!</span>(enumerate::&lt;<span class="lifetime">'static</span>&gt;() -&gt; map(|(__enumerate_index, (g, a)): (<span class="kw">_</span>, (#fold_keyed_input_type, <span class="kw">_</span>))| (#(#after_group_lookups, )<span class="kw-2">*</span>)))

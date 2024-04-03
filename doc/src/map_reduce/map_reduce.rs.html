@@ -11,7 +11,7 @@
 </pre></div><pre class="rust"><code><span class="comment">// cannot use hydroflow::main because connect_local_blocking causes a deadlock
 </span><span class="attr">#[tokio::main]
 </span><span class="kw">async fn </span>main() {
-    hydroflow_plus::util::cli::launch(|ports| {
+    <span class="macro">hydroflow_plus::util::cli::launch!</span>(|ports| {
         <span class="macro">hydroflow_plus_test::cluster::map_reduce_runtime!</span>(ports)
     })
     .<span class="kw">await</span>;

@@ -328,6 +328,9 @@
 <a href="#326" id="326">326</a>
 <a href="#327" id="327">327</a>
 <a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
@@ -407,12 +410,13 @@
     flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
     process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
     cluster_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ClusterSpec&lt;<span class="lifetime">'a</span>, D&gt;,
+    batch_size: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>usize&gt;,
 ) -&gt; D::Process {
     <span class="kw">let </span>cluster = flow.cluster(cluster_spec);
     <span class="kw">let </span>process = flow.process(process_spec);
 
     <span class="kw">let </span>trials = flow
-        .spin_batch(<span class="kw-2">&amp;</span>cluster, <span class="number">8192</span>)
+        .spin_batch(<span class="kw-2">&amp;</span>cluster, <span class="macro">q!</span>(<span class="kw-2">*</span>batch_size))
         .map(<span class="macro">q!</span>(|<span class="kw">_</span>| rand::random::&lt;(f64, f64)&gt;()))
         .map(<span class="macro">q!</span>(|(x, y)| x * x + y * y &lt; <span class="number">1.0</span>))
         .fold(
@@ -485,8 +489,9 @@
 </span><span class="kw">pub fn </span>compute_pi_runtime&lt;<span class="lifetime">'a</span>&gt;(
     flow: FlowBuilder&lt;<span class="lifetime">'a</span>, CLIRuntime&gt;,
     cli: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>HydroCLI&lt;HydroflowPlusMeta&gt;&gt;,
+    batch_size: RuntimeData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>usize&gt;,
 ) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, Hydroflow&lt;<span class="lifetime">'a</span>&gt;&gt; {
-    <span class="kw">let _ </span>= compute_pi(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli);
+    <span class="kw">let _ </span>= compute_pi(<span class="kw-2">&amp;</span>flow, <span class="kw-2">&amp;</span>cli, <span class="kw-2">&amp;</span>cli, batch_size);
     flow.extract()
         .optimize_default()
         .with_dynamic_id(<span class="macro">q!</span>(cli.meta.subgraph_id))
@@ -644,6 +649,7 @@
             <span class="kw-2">&amp;</span>builder,
             <span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>),
             <span class="kw-2">&amp;</span>RuntimeData::new(<span class="string">"FAKE"</span>),
+            RuntimeData::new(<span class="string">"FAKE"</span>),
         );
         <span class="kw">let </span>built = builder.extract();
 

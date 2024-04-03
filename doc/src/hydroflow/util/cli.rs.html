@@ -111,6 +111,11 @@
 <a href="#109" id="109">109</a>
 <a href="#110" id="110">110</a>
 <a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
 </pre></div><pre class="rust"><code><span class="attr">#![allow(missing_docs)] </span><span class="comment">// TODO(mingwei)
 
 </span><span class="kw">use </span>std::cell::RefCell;
@@ -121,16 +126,21 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::scheduled::graph::Hydroflow;
 
-<span class="kw">pub async fn </span>launch&lt;T: DeserializeOwned + Default&gt;(
-    flow: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;</span>HydroCLI&lt;T&gt;) -&gt; Hydroflow&lt;<span class="lifetime">'_</span>&gt;,
-) {
-    <span class="kw">let </span>ports = init_no_ack_start::&lt;T&gt;().<span class="kw">await</span>;
-    <span class="kw">let </span>flow = flow(<span class="kw-2">&amp;</span>ports);
+<span class="attr">#[macro_export]
+</span><span class="macro">macro_rules! </span>launch {
+    (<span class="macro-nonterminal">$f</span>:expr) =&gt; {
+        <span class="kw">async </span>{
+            <span class="kw">let </span>ports = <span class="macro-nonterminal">$crate::util::cli::init_no_ack_start</span>().<span class="kw">await</span>;
+            <span class="kw">let </span>flow = <span class="macro-nonterminal">$f</span>(<span class="kw-2">&amp;</span>ports);
 
-    <span class="macro">println!</span>(<span class="string">"ack start"</span>);
+            <span class="macro">println!</span>(<span class="string">"ack start"</span>);
 
-    launch_flow(flow).<span class="kw">await</span>;
+            <span class="macro-nonterminal">$crate::util::cli::launch_flow</span>(flow).<span class="kw">await
+        </span>}
+    };
 }
+
+<span class="kw">pub use </span><span class="kw">crate</span>::launch;
 
 <span class="kw">pub async fn </span>launch_flow(<span class="kw-2">mut </span>flow: Hydroflow&lt;<span class="lifetime">'_</span>&gt;) {
     <span class="kw">let </span>stop = tokio::sync::oneshot::channel();
@@ -167,7 +177,7 @@
     }
 }
 
-<span class="kw">async fn </span>init_no_ack_start&lt;T: DeserializeOwned + Default&gt;() -&gt; HydroCLI&lt;T&gt; {
+<span class="kw">pub async fn </span>init_no_ack_start&lt;T: DeserializeOwned + Default&gt;() -&gt; HydroCLI&lt;T&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>input = String::new();
     std::io::stdin().read_line(<span class="kw-2">&amp;mut </span>input).unwrap();
     <span class="kw">let </span>trimmed = input.trim();
