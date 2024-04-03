@@ -285,14 +285,14 @@ fn main() {
                         op_8v1__for_each__loc_unknown_start_3_25_end_3_59(op_8v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_1v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_5v1, op_8v1);
+                    pivot_run_sg_1v1(op_5v1, op_8v1);
                 },
             );
             df
