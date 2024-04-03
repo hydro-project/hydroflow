@@ -86,9 +86,9 @@ fn postprocess_singletons_helper(
                         let _singleton_ident = iter.next();
                         let resolved_ident = resolved_idents_iter.next().unwrap();
                         TokenTree::Group(Group::new(
-                            proc_macro2::Delimiter::None,
+                            proc_macro2::Delimiter::Parenthesis,
                             quote! {
-                                context.state_ref(#resolved_ident).borrow_mut()
+                                *context.state_ref(#resolved_ident).borrow_mut()
                             },
                         ))
                         // TokenTree::Ident(resolved_idents_iter.next().unwrap())

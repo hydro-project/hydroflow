@@ -9,16 +9,10 @@ pub fn test_state_ref() {
         stream2 = source_iter_delta(15..=25) -> map(Max::new);
         sum_of_stream2 = stream2 -> state_ref::<Max<_>>();
 
-        // Do we need to stratify between sum_of_stream2_reference and it's usage in the filter?
-        // Mark state as blocking and just move on.
-        // (Little different - output of state has to be blocking)
-        // For now: assume references need to be stratified (?)
-
         filtered_stream1 = stream1
             -> inspect(|x| println!("inspect {}", x))
             -> filter(|value| {
-                // THIS IS NOT MONOTONIC AND ALSO DOENS'T WORK DUE TO SCHEDULING
-                // So it should be blocking (stratified)
+                // This is not monotonic.
                 value <= #sum_of_stream2.as_reveal_ref()
             })
             -> for_each(|x| println!("filtered {}", x));
@@ -51,10 +45,6 @@ pub fn test_fold_zip() {
         stream2 = source_iter_delta(15..=25) -> map(Max::new);
         sum_of_stream2 = stream2 -> lattice_reduce() -> tee();
 
-        // Do we need to stratify between sum_of_stream2_reference and it's usage in the filter?
-        // Mark state as blocking and just move on.
-        // (Little different - output of state has to be blocking)
-
         filtered_stream1 = stream1
             -> inspect(|x| println!("inspect {}", x))
             -> [0]filtered_stream2;
@@ -62,14 +52,36 @@ pub fn test_fold_zip() {
 
         filtered_stream2 = zip()
             -> filter(|(value, sum_of_stream2)| {
-                // THIS IS NON MONOTONIC, but is ok for now because we're avoiding cycles
-                // So it should be blocking (stratified)
+                // This is not monotonic.
                 value <= sum_of_stream2.as_reveal_ref()
             })
             -> for_each(|x| println!("filtered {:?}", x));
 
         // Optional:
         sum_of_stream2 -> for_each(|x: Max<_>| println!("state {:?}", x));
+    };
+
+    assert_graphvis_snapshots!(df);
+
+    df.run_available(); // Should return quickly and not hang
+}
+
+#[multiplatform_test]
+pub fn test_fold_singleton() {
+    let mut df = hydroflow::hydroflow_syntax! {
+        stream1 = source_iter(10..=30);
+        stream2 = source_iter(15..=25);
+        sum_of_stream2 = stream2 -> fold(|| 0, std::ops::AddAssign::add_assign);
+
+        filtered_stream1 = stream1
+            -> inspect(|x| println!("inspect {}", x))
+            -> filter(|&value| {
+                // This is not monotonic.
+                value <= #sum_of_stream2
+            })
+            -> for_each(|x| println!("filtered {}", x));
+
+        sum_of_stream2 -> for_each(|x| println!("state {:?}", x));
     };
 
     assert_graphvis_snapshots!(df);
