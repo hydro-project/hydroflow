@@ -1228,6 +1228,44 @@
 <a href="#1226" id="1226">1226</a>
 <a href="#1227" id="1227">1227</a>
 <a href="#1228" id="1228">1228</a>
+<a href="#1229" id="1229">1229</a>
+<a href="#1230" id="1230">1230</a>
+<a href="#1231" id="1231">1231</a>
+<a href="#1232" id="1232">1232</a>
+<a href="#1233" id="1233">1233</a>
+<a href="#1234" id="1234">1234</a>
+<a href="#1235" id="1235">1235</a>
+<a href="#1236" id="1236">1236</a>
+<a href="#1237" id="1237">1237</a>
+<a href="#1238" id="1238">1238</a>
+<a href="#1239" id="1239">1239</a>
+<a href="#1240" id="1240">1240</a>
+<a href="#1241" id="1241">1241</a>
+<a href="#1242" id="1242">1242</a>
+<a href="#1243" id="1243">1243</a>
+<a href="#1244" id="1244">1244</a>
+<a href="#1245" id="1245">1245</a>
+<a href="#1246" id="1246">1246</a>
+<a href="#1247" id="1247">1247</a>
+<a href="#1248" id="1248">1248</a>
+<a href="#1249" id="1249">1249</a>
+<a href="#1250" id="1250">1250</a>
+<a href="#1251" id="1251">1251</a>
+<a href="#1252" id="1252">1252</a>
+<a href="#1253" id="1253">1253</a>
+<a href="#1254" id="1254">1254</a>
+<a href="#1255" id="1255">1255</a>
+<a href="#1256" id="1256">1256</a>
+<a href="#1257" id="1257">1257</a>
+<a href="#1258" id="1258">1258</a>
+<a href="#1259" id="1259">1259</a>
+<a href="#1260" id="1260">1260</a>
+<a href="#1261" id="1261">1261</a>
+<a href="#1262" id="1262">1262</a>
+<a href="#1263" id="1263">1263</a>
+<a href="#1264" id="1264">1264</a>
+<a href="#1265" id="1265">1265</a>
+<a href="#1266" id="1266">1266</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{HashMap, HashSet};
 <span class="kw">use </span>std::ops::Deref;
 
@@ -1793,6 +1831,7 @@
 ) -&gt; syn::Expr {
     <span class="kw">match </span>expr {
         TargetExpr::Expr(expr) =&gt; gen_value_expr(expr, lookup_ident, get_span),
+        TargetExpr::Splat(<span class="kw">_</span>, ident) =&gt; lookup_ident(ident),
         TargetExpr::Aggregation(Aggregation::Count(<span class="kw">_</span>)) =&gt; <span class="macro">parse_quote!</span>(()),
         TargetExpr::Aggregation(Aggregation::CountUnique(<span class="kw">_</span>, <span class="kw">_</span>, keys, <span class="kw">_</span>))
         | TargetExpr::Aggregation(Aggregation::CollectVec(<span class="kw">_</span>, <span class="kw">_</span>, keys, <span class="kw">_</span>)) =&gt; {
@@ -1819,10 +1858,6 @@
     diagnostics: <span class="kw-2">&amp;mut </span>Vec&lt;Diagnostic&gt;,
     get_span: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn((usize, usize)) -&gt; Span,
 ) -&gt; Pipeline {
-    <span class="kw">let </span><span class="kw-2">mut </span>aggregations = <span class="macro">vec!</span>[];
-    <span class="kw">let </span><span class="kw-2">mut </span>fold_keyed_exprs = <span class="macro">vec!</span>[];
-    <span class="kw">let </span><span class="kw-2">mut </span>agg_exprs = <span class="macro">vec!</span>[];
-
     <span class="kw">let </span><span class="kw-2">mut </span>field_use_count = HashMap::new();
     <span class="kw">for </span>field <span class="kw">in </span>rule
         .target
@@ -1838,8 +1873,19 @@
         }
     }
 
+    <span class="kw">let </span><span class="kw-2">mut </span>aggregations = <span class="macro">vec!</span>[];
+    <span class="kw">let </span><span class="kw-2">mut </span>fold_keyed_exprs = <span class="macro">vec!</span>[];
+    <span class="kw">let </span><span class="kw-2">mut </span>agg_exprs = <span class="macro">vec!</span>[];
+
     <span class="kw">let </span><span class="kw-2">mut </span>field_use_cur = HashMap::new();
     <span class="kw">let </span><span class="kw-2">mut </span>has_index = <span class="bool-val">false</span>;
+
+    <span class="kw">let </span><span class="kw-2">mut </span>copy_group_key_lookups: Vec&lt;syn::Expr&gt; = <span class="macro">vec!</span>[];
+    <span class="kw">let </span><span class="kw-2">mut </span>after_group_lookups: Vec&lt;syn::Expr&gt; = <span class="macro">vec!</span>[];
+    <span class="kw">let </span><span class="kw-2">mut </span>splat_indices = <span class="macro">vec!</span>[];
+    <span class="kw">let </span><span class="kw-2">mut </span>group_key_idx = <span class="number">0</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>agg_idx = <span class="number">0</span>;
+
     <span class="kw">for </span>field <span class="kw">in </span>rule
         .target
         .fields
@@ -1848,6 +1894,8 @@
     {
         <span class="kw">if </span><span class="macro">matches!</span>(field.deref(), TargetExpr::Index(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>)) {
             has_index = <span class="bool-val">true</span>;
+            after_group_lookups
+                .push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; __enumerate_index));
         } <span class="kw">else </span>{
             <span class="kw">let </span>expr: syn::Expr = gen_target_expr(
                 field,
@@ -1883,10 +1931,50 @@
             <span class="kw">match </span><span class="kw-2">&amp;</span>field.value {
                 TargetExpr::Expr(<span class="kw">_</span>) =&gt; {
                     fold_keyed_exprs.push(expr);
+
+                    <span class="kw">let </span>idx = syn::Index::from(group_key_idx);
+                    after_group_lookups.push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; g.#idx));
+                    copy_group_key_lookups
+                        .push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; g.#idx));
+                    group_key_idx += <span class="number">1</span>;
+                }
+                TargetExpr::Splat(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
+                    fold_keyed_exprs.push(expr);
+
+                    <span class="kw">let </span>idx = syn::Index::from(group_key_idx);
+                    after_group_lookups.push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; g.#idx));
+                    copy_group_key_lookups
+                        .push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; g.#idx));
+
+                    splat_indices.push(group_key_idx);
+
+                    group_key_idx += <span class="number">1</span>;
                 }
                 TargetExpr::Aggregation(a) =&gt; {
                     aggregations.push(a.clone());
                     agg_exprs.push(expr);
+
+                    <span class="kw">match </span>a {
+                        Aggregation::CountUnique(..) =&gt; {
+                            <span class="kw">let </span>idx = syn::Index::from(agg_idx);
+                            after_group_lookups.push(
+                                <span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; a.#idx.unwrap().<span class="number">1</span>),
+                            );
+                            agg_idx += <span class="number">1</span>;
+                        }
+                        Aggregation::CollectVec(..) =&gt; {
+                            <span class="kw">let </span>idx = syn::Index::from(agg_idx);
+                            after_group_lookups
+                                .push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; a.#idx.unwrap().into_iter().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()));
+                            agg_idx += <span class="number">1</span>;
+                        }
+                        <span class="kw">_ </span>=&gt; {
+                            <span class="kw">let </span>idx = syn::Index::from(agg_idx);
+                            after_group_lookups
+                                .push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; a.#idx.unwrap()));
+                            agg_idx += <span class="number">1</span>;
+                        }
+                    }
                 }
                 TargetExpr::Index(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
             }
@@ -1895,64 +1983,41 @@
 
     <span class="kw">let </span>flattened_tuple_type = <span class="kw-2">&amp;</span>out_expanded.tuple_type;
 
-    <span class="kw">let </span><span class="kw-2">mut </span>after_group_lookups: Vec&lt;syn::Expr&gt; = <span class="macro">vec!</span>[];
-    <span class="kw">let </span><span class="kw-2">mut </span>group_key_idx = <span class="number">0</span>;
-    <span class="kw">let </span><span class="kw-2">mut </span>agg_idx = <span class="number">0</span>;
-    <span class="kw">for </span>field <span class="kw">in </span>rule
-        .target
-        .fields
-        .iter()
-        .chain(rule.target.at_node.iter().map(|n| <span class="kw-2">&amp;</span>n.node))
-    {
-        <span class="kw">match </span>field.value {
-            TargetExpr::Expr(<span class="kw">_</span>) =&gt; {
-                <span class="kw">let </span>idx = syn::Index::from(group_key_idx);
-                after_group_lookups.push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; g.#idx));
-                group_key_idx += <span class="number">1</span>;
-            }
-            TargetExpr::Aggregation(Aggregation::CountUnique(..)) =&gt; {
-                <span class="kw">let </span>idx = syn::Index::from(agg_idx);
-                after_group_lookups
-                    .push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; a.#idx.unwrap().<span class="number">1</span>));
-                agg_idx += <span class="number">1</span>;
-            }
-            TargetExpr::Aggregation(Aggregation::CollectVec(..)) =&gt; {
-                <span class="kw">let </span>idx = syn::Index::from(agg_idx);
-                after_group_lookups
-                    .push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; a.#idx.unwrap().into_iter().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()));
-                agg_idx += <span class="number">1</span>;
-            }
-            TargetExpr::Aggregation(<span class="kw">_</span>) =&gt; {
-                <span class="kw">let </span>idx = syn::Index::from(agg_idx);
-                after_group_lookups
-                    .push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; a.#idx.unwrap()));
-                agg_idx += <span class="number">1</span>;
-            }
-            TargetExpr::Index(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
-                after_group_lookups.push(<span class="macro">parse_quote_spanned!</span>(get_span(field.span)=&gt; i));
-            }
-        }
-    }
-
     <span class="kw">let </span>fold_keyed_input_type =
         repeat_tuple::&lt;syn::Type, syn::Type&gt;(|| <span class="macro">parse_quote!</span>(<span class="kw">_</span>), fold_keyed_exprs.len());
 
-    <span class="kw">let </span>after_group_pipeline: Pipeline = <span class="kw">if </span>has_index {
+    <span class="comment">// TODO(shadaj): use splat indices
+
+    </span><span class="kw">let </span>after_group_pipeline: Pipeline = <span class="kw">if </span>has_index {
         <span class="kw">if </span>out_expanded.persisted &amp;&amp; agg_exprs.is_empty() {
             <span class="comment">// if there is an aggregation, we will use a group which replays so we should use `'tick` instead
-            </span><span class="macro">parse_quote!</span>(enumerate::&lt;<span class="lifetime">'static</span>&gt;() -&gt; map(|(i, (g, a)): (<span class="kw">_</span>, (#fold_keyed_input_type, <span class="kw">_</span>))| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
+            </span><span class="macro">parse_quote!</span>(enumerate::&lt;<span class="lifetime">'static</span>&gt;() -&gt; map(|(__enumerate_index, (g, a)): (<span class="kw">_</span>, (#fold_keyed_input_type, <span class="kw">_</span>))| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
         } <span class="kw">else </span>{
-            <span class="macro">parse_quote!</span>(enumerate::&lt;<span class="lifetime">'tick</span>&gt;() -&gt; map(|(i, (g, a)): (<span class="kw">_</span>, (#fold_keyed_input_type, <span class="kw">_</span>))| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
+            <span class="macro">parse_quote!</span>(enumerate::&lt;<span class="lifetime">'tick</span>&gt;() -&gt; map(|(__enumerate_index, (g, a)): (<span class="kw">_</span>, (#fold_keyed_input_type, <span class="kw">_</span>))| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
         }
     } <span class="kw">else </span>{
         <span class="macro">parse_quote!</span>(map(|(g, a): (#fold_keyed_input_type, <span class="kw">_</span>)| (#(#after_group_lookups, )<span class="kw-2">*</span>)))
     };
 
+    <span class="kw">let </span><span class="kw-2">mut </span>pre_fold_keyed_map: Pipeline = <span class="macro">parse_quote!</span>(map(|row: #flattened_tuple_type| ((#(#fold_keyed_exprs, )<span class="kw-2">*</span>), (#(#agg_exprs, )<span class="kw-2">*</span>))));
+    <span class="kw">for </span>idx <span class="kw">in </span>splat_indices {
+        <span class="kw">let </span><span class="kw-2">mut </span>lookups: Vec&lt;syn::Expr&gt; = copy_group_key_lookups
+            .iter()
+            .cloned()
+            .map(|e| <span class="macro">parse_quote!</span>(#e.clone()))
+            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+        lookups[idx] = <span class="macro">parse_quote!</span>(__splatted);
+
+        <span class="kw">let </span>syn_idx = syn::Index::from(idx);
+
+        pre_fold_keyed_map = <span class="macro">parse_quote!</span>(#pre_fold_keyed_map -&gt; flat_map(|(g, a): (#fold_keyed_input_type, <span class="kw">_</span>)| g.#syn_idx.into_iter().map(<span class="kw">move </span>|__splatted| ((#(#lookups, )<span class="kw-2">*</span>), a.clone()))) -&gt; unique::&lt;<span class="lifetime">'tick</span>&gt;());
+    }
+
     <span class="kw">if </span>agg_exprs.is_empty() {
         <span class="kw">if </span>out_expanded.persisted &amp;&amp; !consumer_is_persist {
-            <span class="macro">parse_quote!</span>(map(|row: #flattened_tuple_type| ((#(#fold_keyed_exprs, )<span class="kw-2">*</span>), ())) -&gt; #after_group_pipeline -&gt; persist())
+            <span class="macro">parse_quote!</span>(#pre_fold_keyed_map -&gt; #after_group_pipeline -&gt; persist())
         } <span class="kw">else </span>{
-            <span class="macro">parse_quote!</span>(map(|row: #flattened_tuple_type| ((#(#fold_keyed_exprs, )<span class="kw-2">*</span>), ())) -&gt; #after_group_pipeline)
+            <span class="macro">parse_quote!</span>(#pre_fold_keyed_map -&gt; #after_group_pipeline)
         }
     } <span class="kw">else </span>{
         <span class="kw">let </span>agg_initial =
@@ -2043,19 +2108,17 @@
             })
             .collect();
 
-        <span class="kw">let </span>pre_fold_keyed_map: syn::Expr = <span class="macro">parse_quote!</span>(|row: #flattened_tuple_type| ((#(#fold_keyed_exprs, )<span class="kw-2">*</span>), (#(#agg_exprs, )<span class="kw-2">*</span>)));
-
         <span class="kw">let </span>fold_keyed_fn: syn::Expr = <span class="macro">parse_quote!</span>(|old: <span class="kw-2">&amp;mut </span>#agg_type, val: #agg_input_type| {
             #(#fold_keyed_stmts)*
         });
 
         <span class="kw">if </span>out_expanded.persisted {
             <span class="macro">parse_quote! </span>{
-                map(#pre_fold_keyed_map) -&gt; fold_keyed::&lt;<span class="lifetime">'static</span>, #fold_keyed_input_type, #agg_type&gt;(|| #agg_initial, #fold_keyed_fn) -&gt; #after_group_pipeline
+                #pre_fold_keyed_map -&gt; fold_keyed::&lt;<span class="lifetime">'static</span>, #fold_keyed_input_type, #agg_type&gt;(|| #agg_initial, #fold_keyed_fn) -&gt; #after_group_pipeline
             }
         } <span class="kw">else </span>{
             <span class="macro">parse_quote! </span>{
-                map(#pre_fold_keyed_map) -&gt; fold_keyed::&lt;<span class="lifetime">'tick</span>, #fold_keyed_input_type, #agg_type&gt;(|| #agg_initial, #fold_keyed_fn) -&gt; #after_group_pipeline
+                #pre_fold_keyed_map -&gt; fold_keyed::&lt;<span class="lifetime">'tick</span>, #fold_keyed_input_type, #agg_type&gt;(|| #agg_initial, #fold_keyed_fn) -&gt; #after_group_pipeline
             }
         }
     }
@@ -2452,6 +2515,19 @@
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(collect_vec(a, b)) :- ints1(a), ints2(b)
+            "#
+        </span>);
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_splat() {
+        <span class="macro">test_snapshots!</span>(
+            <span class="string">r#"
+            .input ints1 `source_stream(ints1)`
+            
+            .output result `for_each(|v| result.send(v).unwrap())`
+
+            result(a, *b) :- ints1(a, b)
             "#
         </span>);
     }
