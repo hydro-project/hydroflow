@@ -135,6 +135,7 @@ pub mod datalog {
     #[derive(Debug, Clone)]
     pub enum TargetExpr {
         Expr(IntExpr),
+        Splat(#[rust_sitter::leaf(text = "*")] (), Spanned<Ident>),
         Aggregation(Aggregation),
         Index(
             #[rust_sitter::leaf(text = "index")] (),
@@ -147,6 +148,7 @@ pub mod datalog {
         pub fn idents(&self) -> Vec<&Ident> {
             match self {
                 TargetExpr::Expr(e) => e.idents(),
+                TargetExpr::Splat(_, i) => vec![&i.value],
                 TargetExpr::Aggregation(Aggregation::Count(_)) => vec![],
                 TargetExpr::Aggregation(
                     Aggregation::CountUnique(_, _, idents, _)
