@@ -718,8 +718,6 @@ fn apply_aggregations(
     let fold_keyed_input_type =
         repeat_tuple::<syn::Type, syn::Type>(|| parse_quote!(_), fold_keyed_exprs.len());
 
-    // TODO(shadaj): use splat indices
-
     let after_group_pipeline: Pipeline = if has_index {
         if out_expanded.persisted && agg_exprs.is_empty() {
             // if there is an aggregation, we will use a group which replays so we should use `'tick` instead
