@@ -336,6 +336,16 @@
 <a href="#334" id="334">334</a>
 <a href="#335" id="335">335</a>
 <a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::marker::PhantomData;
@@ -617,13 +627,23 @@
     }
 }
 
-<span class="attr">#[derive(Clone)]
-</span><span class="kw">pub struct </span>BuiltFlow&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; {
+<span class="kw">pub struct </span>BuiltFlow&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; {
     <span class="kw">pub</span>(<span class="kw">crate</span>) ir: Vec&lt;HfPlusLeaf&gt;,
     nodes: Vec&lt;D::Process&gt;,
     clusters: Vec&lt;D::Cluster&gt;,
 
     _phantom: PhantomData&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut &amp;</span><span class="lifetime">'a </span>D&gt;,
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; Clone <span class="kw">for </span>BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        BuiltFlow {
+            ir: <span class="self">self</span>.ir.clone(),
+            nodes: <span class="self">self</span>.nodes.clone(),
+            clusters: <span class="self">self</span>.clusters.clone(),
+            _phantom: PhantomData,
+        }
+    }
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt; BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
