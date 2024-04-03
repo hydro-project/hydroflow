@@ -1049,6 +1049,7 @@ impl HydroflowGraph {
                                             #[allow(non_snake_case)]
                                             #[inline(always)]
                                             pub fn #fn_ident<Item, Input: ::std::iter::Iterator<Item = Item>>(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                                                #[repr(transparent)]
                                                 struct Pull<Item, Input: ::std::iter::Iterator<Item = Item>> {
                                                     inner: Input
                                                 }
@@ -1080,6 +1081,7 @@ impl HydroflowGraph {
                                             #[allow(non_snake_case)]
                                             #[inline(always)]
                                             pub fn #fn_ident<Item, Input: #root::pusherator::Pusherator<Item = Item>>(input: Input) -> impl #root::pusherator::Pusherator<Item = Item> {
+                                                #[repr(transparent)]
                                                 struct Push<Item, Input: #root::pusherator::Pusherator<Item = Item>> {
                                                     inner: Input
                                                 }

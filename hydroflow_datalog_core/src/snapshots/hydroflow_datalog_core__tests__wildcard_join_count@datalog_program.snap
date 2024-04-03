@@ -185,6 +185,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -233,6 +234,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -270,6 +272,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -334,6 +337,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -382,6 +386,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -419,6 +424,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -513,6 +519,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -545,6 +552,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -593,6 +601,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -629,6 +638,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -737,6 +747,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -769,6 +780,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -817,6 +829,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -853,6 +866,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -912,6 +926,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -944,6 +959,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1023,6 +1039,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1056,6 +1073,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1088,6 +1106,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1151,6 +1170,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1183,6 +1203,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1262,6 +1283,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1295,6 +1317,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1327,6 +1350,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
