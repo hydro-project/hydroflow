@@ -244,10 +244,10 @@ pub fn inverse<S: Debug + PartialEq + Clone, const N: usize>(
 ) -> Result<(), &'static str> {
     // ∃b: ab = e, ba = e
     for a in items {
-        if (f(a.clone(), b(a.clone())) != e) {
+        if f(a.clone(), b(a.clone())) != e {
             return Err("Inverse check failed.");
         }
-        if (f(b(a.clone()), a.clone()) != e) {
+        if f(b(a.clone()), a.clone()) != e {
             return Err("Inverse check failed.");
         }
     }
@@ -286,10 +286,10 @@ pub fn identity<S: Debug + PartialEq + Clone, const N: usize>(
 ) -> Result<(), &'static str> {
     // ea = a, ae = a
     for a in items {
-        if (f(e.clone(), a.clone()) != a.clone()) {
+        if f(e.clone(), a.clone()) != a.clone() {
             return Err("Left Identity check failed.");
         }
-        if (f(a.clone(), e.clone()) != a.clone()) {
+        if f(a.clone(), e.clone()) != a.clone() {
             return Err("Right Identity check failed.");
         }
     }
@@ -303,11 +303,8 @@ pub fn associativity<S: Debug + PartialEq + Clone, const N: usize>(
     f: impl Fn(S, S) -> S,
 ) -> Result<(), &'static str> {
     for [a, b, c] in cartesian_power(items) {
-        if (
-            f(a.clone(), f(b.clone(), c.clone())) != // f(a, f(b,c)) ie a + (b + c)
-            f(f(a.clone(), b.clone()), c.clone())
-            // f(f(a,b),c) ie (a + b) + c
-        ) {
+        if f(a.clone(), f(b.clone(), c.clone())) != // f(a, f(b,c)) ie a + (b + c)
+            f(f(a.clone(), b.clone()), c.clone()) {
             return Err("Associativity check failed.");
         }
     }
@@ -321,7 +318,7 @@ pub fn commutativity<S: Debug + PartialEq + Clone, const N: usize>(
     f: impl Fn(S, S) -> S,
 ) -> Result<(), &'static str> {
     for [x, y] in cartesian_power(items) {
-        if (f(x.clone(), y.clone()) != f(y.clone(), x.clone())) {
+        if f(x.clone(), y.clone()) != f(y.clone(), x.clone()) {
             // a + b = b + a
             return Err("Commutativity check failed.");
         }
@@ -336,7 +333,7 @@ pub fn idempotency<S: Debug + PartialEq + Clone, const N: usize>(
     f: impl Fn(S, S) -> S,
 ) -> Result<(), &'static str> {
     for x in items {
-        if (f(x.clone(), x.clone()) != x.clone()) {
+        if f(x.clone(), x.clone()) != x.clone() {
             return Err("Idempotency check failed.");
         }
     }
