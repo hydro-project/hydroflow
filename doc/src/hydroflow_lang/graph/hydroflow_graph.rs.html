@@ -1532,6 +1532,8 @@
 <a href="#1530" id="1530">1530</a>
 <a href="#1531" id="1531">1531</a>
 <a href="#1532" id="1532">1532</a>
+<a href="#1533" id="1533">1533</a>
+<a href="#1534" id="1534">1534</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -2672,12 +2674,14 @@
                             .span()
                             .join(push_ident.span())
                             .unwrap_or_else(|| push_ident.span());
+                        <span class="kw">let </span>pivot_fn_ident =
+                            Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"pivot_run_sg_{:?}"</span>, subgraph_id.<span class="number">0</span>), pivot_span);
                         subgraph_op_iter_code.push(<span class="macro">quote_spanned! </span>{pivot_span=&gt;
                             <span class="attr">#[inline(always)]
-                            </span><span class="kw">fn </span>check_pivot_run&lt;Pull: ::std::iter::Iterator&lt;Item = Item&gt;, Push: #root::pusherator::Pusherator&lt;Item = Item&gt;, Item&gt;(pull: Pull, push: Push) {
+                            </span><span class="kw">fn </span>#pivot_fn_ident&lt;Pull: ::std::iter::Iterator&lt;Item = Item&gt;, Push: #root::pusherator::Pusherator&lt;Item = Item&gt;, Item&gt;(pull: Pull, push: Push) {
                                 #root::pusherator::pivot::Pivot::new(pull, push).run();
                             }
-                            check_pivot_run(#pull_ident, #push_ident);
+                            #pivot_fn_ident(#pull_ident, #push_ident);
                         });
                     }
                 };
