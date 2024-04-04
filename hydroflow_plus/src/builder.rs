@@ -144,12 +144,9 @@ impl<'a, D: LocalDeploy<'a>> FlowBuilder<'a, D> {
         )
     }
 
-    pub fn source_external<L: Location + Clone>(
-        &self,
-        on: &L,
-    ) -> (L::Port, Stream<'a, Bytes, Async, L>)
+    pub fn source_external<L>(&self, on: &L) -> (L::Port, Stream<'a, Bytes, Async, L>)
     where
-        L: HfSendOneToOne<L>,
+        L: Location + Clone + HfSendOneToOne<L>,
     {
         let port = on.next_port();
         let source_pipeline = L::gen_source_statement(on, &port);

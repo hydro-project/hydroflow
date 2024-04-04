@@ -9,6 +9,8 @@ pub fn test_fold_keyed_infer_basic() {
         pub xid: &'static str,
         pub mtype: u32,
     }
+    let (result_send, mut result_recv) =
+        hydroflow::util::unbounded_channel::<(&'static str, u32)>();
 
     let mut df = hydroflow::hydroflow_syntax! {
         source_iter([
@@ -18,9 +20,9 @@ pub fn test_fold_keyed_infer_basic() {
             SubordResponse { xid: "123", mtype: 83 },
             SubordResponse { xid: "123", mtype: 78 },
         ])
-            -> map(|m: SubordResponse| (m.xid, 1))
+            -> map(|m: SubordResponse| (m.xid, m.mtype))
             -> fold_keyed::<'static>(|| 0, |old: &mut u32, val: u32| *old += val)
-            -> for_each(|(k, v)| println!("{}: {}", k, v));
+            -> for_each(|kv| result_send.send(kv).unwrap());
     };
     assert_graphvis_snapshots!(df);
     assert_eq!((0, 0), (df.current_tick(), df.current_stratum()));
@@ -28,6 +30,11 @@ pub fn test_fold_keyed_infer_basic() {
     assert_eq!((1, 0), (df.current_tick(), df.current_stratum()));
 
     df.run_available(); // Should return quickly and not hang
+
+    assert_eq!(
+        &[("123", 318), ("123", 318)],
+        &*hydroflow::util::collect_ready::<Vec<_>, _>(&mut result_recv)
+    );
 }
 
 #[multiplatform_test]

@@ -64,7 +64,9 @@ pub fn gen_macro(staged_path: &Path, crate_name: &str) {
     let lib_path = staged_path_absolute.join("src").join("lib.rs");
     let lib_path_string = lib_path.to_string_lossy();
     let mut out_file: syn::File = parse_quote!(
-        #[path = #lib_path_string] mod __staged;
+        #[allow(dead_code)]
+        #[path = #lib_path_string]
+        mod __staged;
     );
 
     for (hash, exported_from) in visitor.exported_macros {
