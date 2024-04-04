@@ -741,14 +741,14 @@ fn main() {
                         op_9v1__tee__loc_unknown_start_4_20_end_4_29(op_9v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_1v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_8v1, op_9v1);
+                    pivot_run_sg_1v1(op_8v1, op_9v1);
                 },
             );
             df

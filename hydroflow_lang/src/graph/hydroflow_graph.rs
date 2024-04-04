@@ -1138,12 +1138,14 @@ impl HydroflowGraph {
                             .span()
                             .join(push_ident.span())
                             .unwrap_or_else(|| push_ident.span());
+                        let pivot_fn_ident =
+                            Ident::new(&format!("pivot_run_sg_{:?}", subgraph_id.0), pivot_span);
                         subgraph_op_iter_code.push(quote_spanned! {pivot_span=>
                             #[inline(always)]
-                            fn check_pivot_run<Pull: ::std::iter::Iterator<Item = Item>, Push: #root::pusherator::Pusherator<Item = Item>, Item>(pull: Pull, push: Push) {
+                            fn #pivot_fn_ident<Pull: ::std::iter::Iterator<Item = Item>, Push: #root::pusherator::Pusherator<Item = Item>, Item>(pull: Pull, push: Push) {
                                 #root::pusherator::pivot::Pivot::new(pull, push).run();
                             }
-                            check_pivot_run(#pull_ident, #push_ident);
+                            #pivot_fn_ident(#pull_ident, #push_ident);
                         });
                     }
                 };

@@ -192,14 +192,14 @@ fn main() {
                         op_9v1__map__loc_unknown_start_1_0_end_1_0(op_9v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_2v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_9v1, hoff_6v3_send);
+                    pivot_run_sg_2v1(op_9v1, hoff_6v3_send);
                 },
             );
             df.add_subgraph_stratified(
@@ -409,14 +409,14 @@ fn main() {
                         op_8v1__for_each__loc_unknown_start_3_28_end_3_65(op_8v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_1v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_5v1, op_8v1);
+                    pivot_run_sg_1v1(op_5v1, op_8v1);
                 },
             );
             df
