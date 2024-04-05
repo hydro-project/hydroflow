@@ -283,6 +283,10 @@
 <a href="#281" id="281">281</a>
 <a href="#282" id="282">282</a>
 <a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
 </pre></div><pre class="rust"><code><span class="kw">mod </span>utils;
 <span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashMap;
@@ -396,6 +400,7 @@
     no_varnames: bool,
     no_pull_push: bool,
     no_handoffs: bool,
+    no_references: bool,
     op_short_text: bool,
 ) -&gt; JsValue {
     <span class="kw">let </span>write_config = WriteConfig {
@@ -403,6 +408,7 @@
         no_varnames,
         no_pull_push,
         no_handoffs,
+        no_references,
         op_short_text,
     };
 
@@ -449,6 +455,7 @@
     no_varnames: bool,
     no_pull_push: bool,
     no_handoffs: bool,
+    no_references: bool,
     op_short_text: bool,
 ) -&gt; JsValue {
     <span class="kw">let </span>write_config = WriteConfig {
@@ -456,6 +463,7 @@
         no_varnames,
         no_pull_push,
         no_handoffs,
+        no_references,
         op_short_text,
     };
 

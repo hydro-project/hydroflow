@@ -451,6 +451,9 @@
 <a href="#449" id="449">449</a>
 <a href="#450" id="450">450</a>
 <a href="#451" id="451">451</a>
+<a href="#452" id="452">452</a>
+<a href="#453" id="453">453</a>
+<a href="#454" id="454">454</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -464,7 +467,7 @@
 
 <span class="doccomment">/// Trait for writing textual representations of graphs, i.e. mermaid or dot graphs.
 </span><span class="attr">#[auto_impl(<span class="kw-2">&amp;mut</span>, Box)]
-</span><span class="kw">pub trait </span>GraphWrite {
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait </span>GraphWrite {
     <span class="doccomment">/// Error type emitted by writing.
     </span><span class="kw">type </span><span class="prelude-val">Err</span>: Error;
 
@@ -487,6 +490,7 @@
         delay_type: <span class="prelude-ty">Option</span>&lt;DelayType&gt;,
         flow_props: <span class="prelude-ty">Option</span>&lt;FlowProps&gt;,
         label: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
+        is_reference: bool,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt;;
 
     <span class="doccomment">/// Begin writing a subgraph.
@@ -617,6 +621,7 @@
         delay_type: <span class="prelude-ty">Option</span>&lt;DelayType&gt;,
         flow_props: <span class="prelude-ty">Option</span>&lt;FlowProps&gt;,
         label: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
+        _is_reference: bool,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
         <span class="kw">let </span>src_str = <span class="macro">format!</span>(<span class="string">"{:?}"</span>, src_id.data());
         <span class="kw">let </span>dest_str = <span class="macro">format!</span>(<span class="string">"{:?}"</span>, dst_id.data());
@@ -795,6 +800,7 @@
         delay_type: <span class="prelude-ty">Option</span>&lt;DelayType&gt;,
         flow_props: <span class="prelude-ty">Option</span>&lt;FlowProps&gt;,
         label: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
+        _is_reference: bool,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
         <span class="kw">let </span>lattice_flow_type = flow_props.and_then(|flow_props| flow_props.lattice_flow_type);
         <span class="kw">let </span><span class="kw-2">mut </span>properties = Vec::&lt;Cow&lt;<span class="lifetime">'static</span>, str&gt;&gt;::new();
