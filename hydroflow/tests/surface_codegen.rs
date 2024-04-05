@@ -98,6 +98,22 @@ pub fn test_basic_inspect_null() {
     assert_eq!(&[1, 2, 3, 4], &**seen.borrow());
 }
 
+#[multiplatform_test]
+pub fn test_basic_inspect_no_null() {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
+    let seen = Rc::new(RefCell::new(Vec::new()));
+    let seen_inner = Rc::clone(&seen);
+
+    let mut df = hydroflow_syntax! {
+        source_iter([1, 2, 3, 4]) -> inspect(|&x| seen_inner.borrow_mut().push(x));
+    };
+    df.run_available();
+
+    assert_eq!(&[1, 2, 3, 4], &**seen.borrow());
+}
+
 // Mainly checking subgraph partitioning pull-push handling.
 #[multiplatform_test]
 pub fn test_large_diamond() {
