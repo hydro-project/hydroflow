@@ -19,7 +19,7 @@ use super::{
     HANDOFF_NODE_STR, HYDROFLOW,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::ops::null_write_iterator_fn;
+use crate::graph::ops::{null_write_iterator_fn, DelayType};
 use crate::graph::MODULE_BOUNDARY_NODE_STR;
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 use crate::process_singletons::postprocess_singletons;
@@ -1341,7 +1341,7 @@ impl HydroflowGraph {
     }
 
     /// Write out this `HydroflowGraph` using the given `GraphWrite`. E.g. `Mermaid` or `Dot.
-    pub fn write_graph<W>(
+    pub(crate) fn write_graph<W>(
         &self,
         mut graph_write: W,
         write_config: &WriteConfig,
@@ -1456,7 +1456,31 @@ impl HydroflowGraph {
             let delay_type = self
                 .node_op_inst(dst_id)
                 .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-            graph_write.write_edge(src_id, dst_id, delay_type, flow_props, label.as_deref())?;
+            graph_write.write_edge(
+                src_id,
+                dst_id,
+                delay_type,
+                flow_props,
+                label.as_deref(),
+                false,
+            )?;
+        }
+
+        // Write reference edges.
+        if !write_config.no_references {
+            for src_id in self.node_ids() {
+                for dst_id in self
+                    .node_singleton_references(src_id)
+                    .iter()
+                    .copied()
+                    .flatten()
+                {
+                    let delay_type = Some(DelayType::Stratum);
+                    let flow_props = None;
+                    let label = None;
+                    graph_write.write_edge(src_id, dst_id, delay_type, flow_props, label, true)?;
+                }
+            }
         }
 
         // Write subgraphs.
@@ -1588,6 +1612,9 @@ pub struct WriteConfig {
     /// Will not render handoffs if set.
     #[cfg_attr(feature = "debugging", arg(long))]
     pub no_handoffs: bool,
+    /// Will not render singleton references if set.
+    #[cfg_attr(feature = "debugging", arg(long))]
+    pub no_references: bool,
 
     /// Op text will only be their name instead of the whole source.
     #[cfg_attr(feature = "debugging", arg(long))]

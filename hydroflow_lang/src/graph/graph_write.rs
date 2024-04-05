@@ -11,7 +11,7 @@ use super::{Color, FlowProps, GraphNodeId, GraphSubgraphId, LatticeFlowType};
 
 /// Trait for writing textual representations of graphs, i.e. mermaid or dot graphs.
 #[auto_impl(&mut, Box)]
-pub trait GraphWrite {
+pub(crate) trait GraphWrite {
     /// Error type emitted by writing.
     type Err: Error;
 
@@ -34,6 +34,7 @@ pub trait GraphWrite {
         delay_type: Option<DelayType>,
         flow_props: Option<FlowProps>,
         label: Option<&str>,
+        is_reference: bool,
     ) -> Result<(), Self::Err>;
 
     /// Begin writing a subgraph.
@@ -164,6 +165,7 @@ where
         delay_type: Option<DelayType>,
         flow_props: Option<FlowProps>,
         label: Option<&str>,
+        _is_reference: bool,
     ) -> Result<(), Self::Err> {
         let src_str = format!("{:?}", src_id.data());
         let dest_str = format!("{:?}", dst_id.data());
@@ -342,6 +344,7 @@ where
         delay_type: Option<DelayType>,
         flow_props: Option<FlowProps>,
         label: Option<&str>,
+        _is_reference: bool,
     ) -> Result<(), Self::Err> {
         let lattice_flow_type = flow_props.and_then(|flow_props| flow_props.lattice_flow_type);
         let mut properties = Vec::<Cow<'static, str>>::new();

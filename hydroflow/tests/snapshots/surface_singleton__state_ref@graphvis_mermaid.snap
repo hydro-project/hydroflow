@@ -22,6 +22,7 @@ linkStyle default stroke:#aaa
 5v1-->6v1
 1v1-->5v1
 4v1==>8v1; linkStyle 5 stroke:#060
+6v1--x4v1; linkStyle 6 stroke:red
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
     1v1
     5v1
