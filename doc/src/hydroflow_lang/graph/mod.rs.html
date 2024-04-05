@@ -426,6 +426,11 @@
 <a href="#424" id="424">424</a>
 <a href="#425" id="425">425</a>
 <a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Graph representation stages for Hydroflow graphs.
 
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -609,18 +614,23 @@
 </span><span class="kw">pub struct </span>OperatorInstance {
     <span class="doccomment">/// Name of the operator (will match [`OperatorConstraints::name`]).
     </span><span class="kw">pub </span>op_constraints: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>OperatorConstraints,
-    <span class="comment">// /// The source span of this operator instance.
-    // pub op_span: Span,
-    </span><span class="doccomment">/// Port values used as this operator's input.
+    <span class="doccomment">/// Port values used as this operator's input.
     </span><span class="kw">pub </span>input_ports: Vec&lt;PortIndexValue&gt;,
     <span class="doccomment">/// Port values used as this operator's output.
     </span><span class="kw">pub </span>output_ports: Vec&lt;PortIndexValue&gt;,
+    <span class="doccomment">/// Singleton references within the operator arguments.
+    </span><span class="kw">pub </span>singletons_referenced: Vec&lt;Ident&gt;,
 
     <span class="doccomment">/// Generic arguments.
     </span><span class="kw">pub </span>generics: OpInstGenerics,
     <span class="doccomment">/// Arguments provided by the user into the operator as arguments.
     /// I.e. the `a, b, c` in `-&gt; my_op(a, b, c) -&gt; `.
-    </span><span class="kw">pub </span>arguments: Punctuated&lt;Expr, <span class="macro">Token!</span>[,]&gt;,
+    ///
+    /// These arguments do not include singleton postprocessing codegen. Instead use
+    /// [`ops::WriteContextArgs::arguments`].
+    </span><span class="kw">pub </span>arguments_pre: Punctuated&lt;Expr, <span class="macro">Token!</span>[,]&gt;,
+    <span class="doccomment">/// Unparsed arguments, for singleton parsing.
+    </span><span class="kw">pub </span>arguments_raw: TokenStream,
 }
 
 <span class="doccomment">/// Operator generic arguments, split into specific categories.

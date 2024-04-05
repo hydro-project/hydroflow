@@ -211,10 +211,6 @@
 <a href="#209" id="209">209</a>
 <a href="#210" id="210">210</a>
 <a href="#211" id="211">211</a>
-<a href="#212" id="212">212</a>
-<a href="#213" id="213">213</a>
-<a href="#214" id="214">214</a>
-<a href="#215" id="215">215</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 
 <span class="kw">use </span>proc_macro2::{Ident, TokenTree};
@@ -223,11 +219,10 @@
 <span class="kw">use </span>syn::{Expr, Pat};
 
 <span class="kw">use super</span>::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
+    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
+    PortIndexValue, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
-<span class="kw">use </span><span class="kw">crate</span>::graph::{OperatorInstance, PortIndexValue, GraphEdgeType};
 <span class="kw">use </span><span class="kw">crate</span>::pretty_span::PrettySpan;
 
 <span class="comment">// TODO(mingwei): Preprocess rustdoc links in mdbook or in the `operator_docgen` macro.
@@ -270,6 +265,7 @@
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">Some</span>(|| PortListSpec::Variadic),
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
@@ -283,12 +279,8 @@
                    outputs,
                    is_pull,
                    op_name,
-                   op_inst:
-                       OperatorInstance {
-                           output_ports,
-                           arguments,
-                           ..
-                       },
+                   op_inst: OperatorInstance { output_ports, .. },
+                   arguments,
                    ..
                },
                diagnostics| {
@@ -298,8 +290,8 @@
             diagnostics.push(Diagnostic::spanned(
                 func.span(),
                 Level::Error,
-                <span class="string">"Argument must be a two-argument closure expression"</span>),
-            );
+                <span class="string">"Argument must be a two-argument closure expression"</span>,
+            ));
             <span class="kw">return </span><span class="prelude-val">Err</span>(());
         };
         <span class="kw">if </span><span class="number">2 </span>!= func.inputs.len() {

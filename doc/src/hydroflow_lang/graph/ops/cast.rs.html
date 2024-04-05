@@ -78,14 +78,12 @@
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
-<a href="#79" id="79">79</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::Span;
 <span class="kw">use </span>quote::ToTokens;
 <span class="kw">use </span>syn::Expr;
 
-<span class="kw">use super</span>::{FlowPropArgs, OperatorCategory, OperatorConstraints};
+<span class="kw">use super</span>::{FlowPropArgs, FlowProps, LatticeFlowType, OperatorCategory, OperatorConstraints};
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
-<span class="kw">use </span><span class="kw">crate</span>::graph::{FlowProps, LatticeFlowType};
 
 <span class="doccomment">/// TODO(MINGWEI)
 </span><span class="kw">pub const </span>CAST: OperatorConstraints = OperatorConstraints {
@@ -104,7 +102,7 @@
             <span class="macro">assert_eq!</span>(<span class="number">1</span>, op_inst.input_ports.len());
             <span class="macro">assert_eq!</span>(<span class="number">1</span>, op_inst.output_ports.len());
 
-            <span class="kw">let </span>out_flow_type = parse_flow_type(<span class="kw-2">&amp;</span>op_inst.arguments[<span class="number">0</span>], op_span)
+            <span class="kw">let </span>out_flow_type = parse_flow_type(<span class="kw-2">&amp;</span>op_inst.arguments_pre[<span class="number">0</span>], op_span)
                 .map_err(|diagnostic| diagnostics.push(diagnostic))<span class="question-mark">?</span>;
             <span class="kw">let </span><span class="prelude-val">Some</span>(in_props) = flow_props_in[<span class="number">0</span>] <span class="kw">else </span>{
                 diagnostics.push(Diagnostic::spanned(

@@ -153,16 +153,17 @@
 <a href="#151" id="151">151</a>
 <a href="#152" id="152">152</a>
 <a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::Ident;
 <span class="kw">use </span>quote::{quote, quote_spanned};
 <span class="kw">use </span>syn::spanned::Spanned;
 
 <span class="kw">use super</span>::{
-    FlowPropArgs, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
+    FlowPropArgs, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, PortIndexValue, PortListSpec, WriteContextArgs, RANGE_0,
+    RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
-<span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance, PortIndexValue, GraphEdgeType};
 
 <span class="doccomment">/// &gt; Generic Argument: A enum type which has `#[derive(DemuxEnum)]`. Must match the items in the input stream.
 ///
@@ -202,6 +203,7 @@
     persistence_args: RANGE_0,
     type_args: RANGE_1,
     is_external_input: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">Some</span>(|| PortListSpec::Variadic),
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,

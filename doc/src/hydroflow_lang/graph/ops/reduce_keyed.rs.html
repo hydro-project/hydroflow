@@ -226,11 +226,10 @@
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 
 <span class="kw">use super</span>::{
-    DelayType, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_1,
+    DelayType, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
-<span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance, GraphEdgeType};
 
 <span class="doccomment">/// &gt; 1 input stream of type `(K, V)`, 1 output stream of type `(K, V)`.
 /// The output will have one tuple for each distinct `K`, with an accumulated (reduced) value of
@@ -292,6 +291,7 @@
     persistence_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     type_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">2</span>),
     is_external_input: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
@@ -308,7 +308,6 @@
                    root,
                    op_inst:
                        OperatorInstance {
-                           arguments,
                            generics:
                                OpInstGenerics {
                                    persistence_args,
@@ -317,6 +316,7 @@
                                },
                            ..
                        },
+                   arguments,
                    ..
                },
                diagnostics| {

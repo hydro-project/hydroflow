@@ -61,10 +61,9 @@
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
-    DelayType, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
-<span class="kw">use </span><span class="kw">crate</span>::graph::{OperatorInstance, GraphEdgeType};
 
 <span class="doccomment">/// Like sort, takes a stream as input and produces a version of the stream as output.
 /// This operator sorts according to the key extracted by the closure.
@@ -87,6 +86,7 @@
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
@@ -99,7 +99,7 @@
                    ident,
                    inputs,
                    is_pull,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                <span class="kw">_</span>| {

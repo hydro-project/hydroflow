@@ -57,15 +57,12 @@
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
-<a href="#58" id="58">58</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>syn::parse_quote;
 
-<span class="kw">use </span><span class="kw">crate</span>::graph::GraphEdgeType;
-
 <span class="kw">use super</span>::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
 
 <span class="doccomment">/// &gt; 1 input stream of pair tuples `(A, B)`, 2 output streams
@@ -89,6 +86,7 @@
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">Some</span>(|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote!</span>(<span class="number">0</span>, <span class="number">1</span>))),
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,

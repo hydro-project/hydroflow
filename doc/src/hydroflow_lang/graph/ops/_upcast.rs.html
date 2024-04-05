@@ -25,9 +25,7 @@
 <a href="#23" id="23">23</a>
 <a href="#24" id="24">24</a>
 <a href="#25" id="25">25</a>
-<a href="#26" id="26">26</a>
-</pre></div><pre class="rust"><code><span class="kw">use super</span>::{FlowPropArgs, OperatorCategory, OperatorConstraints};
-<span class="kw">use </span><span class="kw">crate</span>::graph::FlowProps;
+</pre></div><pre class="rust"><code><span class="kw">use super</span>::{FlowPropArgs, FlowProps, OperatorCategory, OperatorConstraints};
 
 <span class="doccomment">/// TODO(MINGWEI)
 </span><span class="kw">pub const </span>_UPCAST: OperatorConstraints = OperatorConstraints {
@@ -42,7 +40,7 @@
             <span class="macro">assert_eq!</span>(<span class="number">1</span>, op_inst.input_ports.len());
             <span class="macro">assert_eq!</span>(<span class="number">1</span>, op_inst.output_ports.len());
 
-            <span class="kw">let </span>out_flow_type = <span class="kw">super</span>::cast::parse_flow_type(<span class="kw-2">&amp;</span>op_inst.arguments[<span class="number">0</span>], op_span)
+            <span class="kw">let </span>out_flow_type = <span class="kw">super</span>::cast::parse_flow_type(<span class="kw-2">&amp;</span>op_inst.arguments_pre[<span class="number">0</span>], op_span)
                 .map_err(|diagnostic| diagnostics.push(diagnostic))<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[<span class="prelude-val">Some</span>(FlowProps {
                 star_ord: fp.new_star_ord(),

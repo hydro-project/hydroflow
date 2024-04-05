@@ -41,8 +41,11 @@
 <a href="#39" id="39">39</a>
 <a href="#40" id="40">40</a>
 <a href="#41" id="41">41</a>
-</pre></div><pre class="rust"><code><span class="kw">use super</span>::{OperatorCategory, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0, RANGE_1};
-<span class="kw">use </span><span class="kw">crate</span>::graph::GraphEdgeType;
+<a href="#42" id="42">42</a>
+<a href="#43" id="43">43</a>
+</pre></div><pre class="rust"><code><span class="kw">use super</span>::{
+    GraphEdgeType, OperatorCategory, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0, RANGE_1,
+};
 
 <span class="doccomment">/// &gt; 1 input stream of type T, 1 output stream of type T
 ///
@@ -74,6 +77,7 @@
     persistence_args: RANGE_0,
     type_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     is_external_input: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,

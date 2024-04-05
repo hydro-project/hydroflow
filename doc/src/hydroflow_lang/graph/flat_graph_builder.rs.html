@@ -841,6 +841,77 @@
 <a href="#839" id="839">839</a>
 <a href="#840" id="840">840</a>
 <a href="#841" id="841">841</a>
+<a href="#842" id="842">842</a>
+<a href="#843" id="843">843</a>
+<a href="#844" id="844">844</a>
+<a href="#845" id="845">845</a>
+<a href="#846" id="846">846</a>
+<a href="#847" id="847">847</a>
+<a href="#848" id="848">848</a>
+<a href="#849" id="849">849</a>
+<a href="#850" id="850">850</a>
+<a href="#851" id="851">851</a>
+<a href="#852" id="852">852</a>
+<a href="#853" id="853">853</a>
+<a href="#854" id="854">854</a>
+<a href="#855" id="855">855</a>
+<a href="#856" id="856">856</a>
+<a href="#857" id="857">857</a>
+<a href="#858" id="858">858</a>
+<a href="#859" id="859">859</a>
+<a href="#860" id="860">860</a>
+<a href="#861" id="861">861</a>
+<a href="#862" id="862">862</a>
+<a href="#863" id="863">863</a>
+<a href="#864" id="864">864</a>
+<a href="#865" id="865">865</a>
+<a href="#866" id="866">866</a>
+<a href="#867" id="867">867</a>
+<a href="#868" id="868">868</a>
+<a href="#869" id="869">869</a>
+<a href="#870" id="870">870</a>
+<a href="#871" id="871">871</a>
+<a href="#872" id="872">872</a>
+<a href="#873" id="873">873</a>
+<a href="#874" id="874">874</a>
+<a href="#875" id="875">875</a>
+<a href="#876" id="876">876</a>
+<a href="#877" id="877">877</a>
+<a href="#878" id="878">878</a>
+<a href="#879" id="879">879</a>
+<a href="#880" id="880">880</a>
+<a href="#881" id="881">881</a>
+<a href="#882" id="882">882</a>
+<a href="#883" id="883">883</a>
+<a href="#884" id="884">884</a>
+<a href="#885" id="885">885</a>
+<a href="#886" id="886">886</a>
+<a href="#887" id="887">887</a>
+<a href="#888" id="888">888</a>
+<a href="#889" id="889">889</a>
+<a href="#890" id="890">890</a>
+<a href="#891" id="891">891</a>
+<a href="#892" id="892">892</a>
+<a href="#893" id="893">893</a>
+<a href="#894" id="894">894</a>
+<a href="#895" id="895">895</a>
+<a href="#896" id="896">896</a>
+<a href="#897" id="897">897</a>
+<a href="#898" id="898">898</a>
+<a href="#899" id="899">899</a>
+<a href="#900" id="900">900</a>
+<a href="#901" id="901">901</a>
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a>
+<a href="#904" id="904">904</a>
+<a href="#905" id="905">905</a>
+<a href="#906" id="906">906</a>
+<a href="#907" id="907">907</a>
+<a href="#908" id="908">908</a>
+<a href="#909" id="909">909</a>
+<a href="#910" id="910">910</a>
+<a href="#911" id="911">911</a>
+<a href="#912" id="912">912</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Build a flat graph from [`HfStatement`]s.
 
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -848,13 +919,13 @@
 <span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 <span class="kw">use </span>std::path::PathBuf;
 
+<span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>proc_macro2::Span;
 <span class="kw">use </span>quote::ToTokens;
 <span class="kw">use </span>syn::spanned::Spanned;
 <span class="kw">use </span>syn::{Error, Ident, ItemUse};
 
-<span class="kw">use </span><span class="kw">super</span>::ops::find_op_op_constraints;
-<span class="kw">use super</span>::{GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
+<span class="kw">use super</span>::{GraphEdgeId, GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span><span class="kw">crate</span>::graph::ops::{PortListSpec, RangeTrait};
 <span class="kw">use </span><span class="kw">crate</span>::parse::{HfCode, HfStatement, Operator, Pipeline};
@@ -910,7 +981,6 @@
             ..Default::default()
         };
         builder.process_statements(input.statements);
-
         builder
     }
 
@@ -1188,19 +1258,58 @@
     <span class="doccomment">/// Connects operator links as a final building step. Processes all the links stored in
     /// `self.links` and actually puts them into the graph.
     </span><span class="kw">fn </span>connect_operator_links(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">for </span>Ends { out, inn } <span class="kw">in </span>std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.links) {
+        <span class="comment">// `-&gt;` edges
+        </span><span class="kw">for </span>Ends { out, inn } <span class="kw">in </span>std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.links) {
             <span class="kw">let </span>out_opt = <span class="self">self</span>.helper_resolve_name(out, <span class="bool-val">false</span>);
             <span class="kw">let </span>inn_opt = <span class="self">self</span>.helper_resolve_name(inn, <span class="bool-val">true</span>);
             <span class="comment">// `None` already have errors in `self.diagnostics`.
             </span><span class="kw">if let </span>(<span class="prelude-val">Some</span>((out_port, out_node)), <span class="prelude-val">Some</span>((inn_port, inn_node))) = (out_opt, inn_opt) {
-                <span class="self">self</span>.connect_operators(out_port, out_node, inn_port, inn_node);
+                <span class="kw">let _ </span>= <span class="self">self</span>.connect_operators(out_port, out_node, inn_port, inn_node);
+            }
+        }
+
+        <span class="comment">// Resolve the singleton references for each node.
+        </span><span class="kw">for </span>node_id <span class="kw">in </span><span class="self">self</span>.flat_graph.node_ids().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;() {
+            <span class="kw">if let </span>GraphNode::Operator(operator) = <span class="self">self</span>.flat_graph.node(node_id) {
+                <span class="kw">let </span>singletons_referenced = operator
+                    .singletons_referenced
+                    .clone()
+                    .into_iter()
+                    .map(|singleton_ref| {
+                        <span class="kw">let </span>port_det = <span class="self">self
+                            </span>.varname_ends
+                            .get(<span class="kw-2">&amp;</span>singleton_ref)
+                            .and_then(|result| result.as_ref().ok())
+                            .and_then(|ends| ends.out.as_ref())
+                            .cloned();
+                        <span class="kw">if let </span><span class="prelude-val">Some</span>((_port, node_id)) = <span class="self">self</span>.helper_resolve_name(port_det, <span class="bool-val">false</span>) {
+                            <span class="prelude-val">Some</span>(node_id)
+                        } <span class="kw">else </span>{
+                            <span class="self">self</span>.diagnostics.push(Diagnostic::spanned(
+                                singleton_ref.span(),
+                                Level::Error,
+                                <span class="macro">format!</span>(
+                                    <span class="string">"Cannot find referenced name `{}`; name was never assigned."</span>,
+                                    singleton_ref
+                                ),
+                            ));
+                            <span class="prelude-val">None
+                        </span>}
+                    })
+                    .collect();
+
+                <span class="self">self</span>.flat_graph
+                    .set_node_singleton_references(node_id, singletons_referenced);
             }
         }
     }
+
     <span class="doccomment">/// Recursively resolve a variable name. For handling forward (and backward) name references
     /// after all names have been assigned.
     /// Returns `None` if the name is not resolvable, either because it was never assigned or
     /// because it contains a self-referential cycle.
+    ///
+    /// `is_in` set to `true` means the _input_ side will be returned. `false` means the _output_ side will be returned.
     </span><span class="kw">fn </span>helper_resolve_name(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         <span class="kw-2">mut </span>port_det: <span class="prelude-ty">Option</span>&lt;(PortIndexValue, GraphDet)&gt;,
@@ -1275,6 +1384,7 @@
         ));
         <span class="prelude-val">None
     </span>}
+
     <span class="doccomment">/// Connect two operators on the given port indexes.
     </span><span class="kw">fn </span>connect_operators(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
@@ -1282,7 +1392,7 @@
         src: GraphNodeId,
         dst_port: PortIndexValue,
         dst: GraphNodeId,
-    ) {
+    ) -&gt; GraphEdgeId {
         {
             <span class="doccomment">/// Helper to emit conflicts when a port is used twice.
             </span><span class="kw">fn </span>emit_conflict(
@@ -1336,7 +1446,7 @@
                 }
             }
         }
-        <span class="self">self</span>.flat_graph.insert_edge(src, src_port, dst, dst_port);
+        <span class="self">self</span>.flat_graph.insert_edge(src, src_port, dst, dst_port)
     }
 
     <span class="doccomment">/// Process operators and emit operator errors.
@@ -1387,10 +1497,12 @@
         <span class="kw">for </span>(node_id, node) <span class="kw">in </span><span class="self">self</span>.flat_graph.nodes() {
             <span class="kw">match </span>node {
                 GraphNode::Operator(operator) =&gt; {
-                    <span class="kw">let </span><span class="prelude-val">Some</span>(op_constraints) = find_op_op_constraints(operator) <span class="kw">else </span>{
+                    <span class="kw">let </span><span class="prelude-val">Some</span>(op_inst) = <span class="self">self</span>.flat_graph.node_op_inst(node_id) <span class="kw">else </span>{
                         <span class="comment">// Error already emitted by `insert_node_op_insts_all`.
                         </span><span class="kw">continue</span>;
                     };
+                    <span class="kw">let </span>op_constraints = op_inst.op_constraints;
+
                     <span class="comment">// Check number of args
                     </span><span class="kw">if </span>op_constraints.num_args != operator.args.len() {
                         <span class="self">self</span>.diagnostics.push(Diagnostic::spanned(
@@ -1610,6 +1722,36 @@
                                         <span class="string">"Operator requires a {:?} edge type input, but received a {:?} edge type input."</span>,
                                         edge_type_expected,
                                         edge_type_actual,
+                                    ),
+                                ));
+                            }
+                        }
+                    }
+
+                    <span class="comment">// Check that singleton references actually reference *stateful* operators.
+                    </span>{
+                        <span class="kw">let </span>singletons_resolved =
+                            <span class="self">self</span>.flat_graph.node_singleton_references(node_id);
+                        <span class="kw">for </span>(singleton_node_id, singleton_ident) <span class="kw">in
+                            </span>singletons_resolved.zip_eq(<span class="kw-2">&amp;*</span>operator.singletons_referenced)
+                        {
+                            <span class="kw">let </span><span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(singleton_node_id) = singleton_node_id <span class="kw">else </span>{
+                                <span class="comment">// Error already emitted by `connect_operator_links`, "Cannot find referenced name...".
+                                </span><span class="kw">continue</span>;
+                            };
+                            <span class="kw">let </span><span class="prelude-val">Some</span>(ref_op_inst) = <span class="self">self</span>.flat_graph.node_op_inst(singleton_node_id)
+                            <span class="kw">else </span>{
+                                <span class="comment">// Error already emitted by `insert_node_op_insts_all`.
+                                </span><span class="kw">continue</span>;
+                            };
+                            <span class="kw">let </span>ref_op_constraints = ref_op_inst.op_constraints;
+                            <span class="kw">if </span>!ref_op_constraints.has_singleton_output {
+                                <span class="self">self</span>.diagnostics.push(Diagnostic::spanned(
+                                    singleton_ident.span(),
+                                    Level::Error,
+                                    <span class="kw-2">&amp;</span><span class="macro">format!</span>(
+                                        <span class="string">"Cannot reference operator `{}`. Only operators with singleton state can be referenced."</span>,
+                                        ref_op_constraints.name,
                                     ),
                                 ));
                             }

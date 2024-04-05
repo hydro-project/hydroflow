@@ -100,14 +100,11 @@
 <a href="#98" id="98">98</a>
 <a href="#99" id="99">99</a>
 <a href="#100" id="100">100</a>
-<a href="#101" id="101">101</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
-<span class="kw">use </span><span class="kw">crate</span>::graph::GraphEdgeType;
-
 <span class="kw">use super</span>::{
-    DelayType, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 <span class="doccomment">/// `persist_mut()` is similar to `persist()` except that it also enables deletions.
@@ -138,6 +135,7 @@
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),

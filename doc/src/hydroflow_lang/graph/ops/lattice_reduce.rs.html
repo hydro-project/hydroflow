@@ -97,18 +97,13 @@
 <a href="#95" id="95">95</a>
 <a href="#96" id="96">96</a>
 <a href="#97" id="97">97</a>
-<a href="#98" id="98">98</a>
-<a href="#99" id="99">99</a>
-<a href="#100" id="100">100</a>
-<a href="#101" id="101">101</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>syn::parse_quote_spanned;
 
 <span class="kw">use super</span>::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorInstance, WriteContextArgs,
-    LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
+    DelayType, GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
 };
-<span class="kw">use </span><span class="kw">crate</span>::graph::{ops::OperatorWriteOutput, GraphEdgeType};
 
 <span class="doccomment">/// &gt; 1 input stream, 1 output stream
 ///
@@ -143,6 +138,7 @@
     persistence_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::MonotoneAccum),
@@ -154,20 +150,16 @@
                    inputs,
                    op_span,
                    is_pull,
-                   op_inst: op_inst @ OperatorInstance { .. },
                    ..
                },
                diagnostics| {
         <span class="macro">assert!</span>(is_pull);
 
-        <span class="kw">let </span>arguments = <span class="macro">parse_quote_spanned! </span>{op_span=&gt;
+        <span class="kw">let </span>arguments = <span class="kw-2">&amp;</span><span class="macro">parse_quote_spanned! </span>{op_span=&gt;
             #root::lattices::Merge::&lt;<span class="kw">_</span>&gt;::merge
         };
         <span class="kw">let </span>wc = WriteContextArgs {
-            op_inst: <span class="kw-2">&amp;</span>OperatorInstance {
-                arguments,
-                ..op_inst.clone()
-            },
+            arguments,
             ..wc.clone()
         };
 

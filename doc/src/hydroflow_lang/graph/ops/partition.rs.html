@@ -402,7 +402,6 @@
 <a href="#400" id="400">400</a>
 <a href="#401" id="401">401</a>
 <a href="#402" id="402">402</a>
-<a href="#403" id="403">403</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::BTreeSet;
 
 <span class="kw">use </span>proc_macro2::Span;
@@ -412,12 +411,11 @@
 <span class="kw">use </span>syn::{parse_quote_spanned, Expr, Ident, LitInt, LitStr, Pat, PatType};
 
 <span class="kw">use super</span>::{
-    OperatorCategory, OperatorConstraints, PortListSpec,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorInstance, PortIndexValue,
+    PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 <span class="kw">use </span><span class="kw">crate</span>::graph::ops::OperatorWriteOutput;
-<span class="kw">use </span><span class="kw">crate</span>::graph::{OperatorInstance, PortIndexValue, GraphEdgeType};
 <span class="kw">use </span><span class="kw">crate</span>::pretty_span::PrettySpan;
 
 <span class="doccomment">/// This operator takes the input pipeline and allows the user to determine which singular output
@@ -471,6 +469,7 @@
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">Some</span>(|| PortListSpec::Variadic),
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
@@ -484,12 +483,8 @@
                    outputs,
                    is_pull,
                    op_name,
-                   op_inst:
-                       OperatorInstance {
-                           output_ports,
-                           arguments,
-                           ..
-                       },
+                   op_inst: OperatorInstance { output_ports, .. },
+                   arguments,
                    ..
                },
                diagnostics| {
@@ -603,7 +598,10 @@
                 diagnostics.push(Diagnostic::spanned(
                     port_span.unwrap_or(op_span),
                     Level::Error,
-                    <span class="macro">format!</span>(<span class="string">"Output ports from `{}` cannot be blank, must be named or indexed."</span>, op_name),
+                    <span class="macro">format!</span>(
+                        <span class="string">"Output ports from `{}` cannot be blank, must be named or indexed."</span>,
+                        op_name
+                    ),
                 ));
             }
             PortIndexValue::Int(port_idx) =&gt; {
@@ -682,8 +680,8 @@
         <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic::spanned(
             func.span(),
             Level::Error,
-            <span class="string">"Argument must be a two-argument closure expression"</span>),
-        );
+            <span class="string">"Argument must be a two-argument closure expression"</span>,
+        ));
     };
     <span class="kw">if </span><span class="number">2 </span>!= func.inputs.len() {
         <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic::spanned(
@@ -739,8 +737,8 @@
         .iter()
         .map(|pat| {
             <span class="kw">let </span>Pat::Ident(pat_ident) = pat <span class="kw">else </span>{
-                    <span class="macro">panic!</span>(<span class="string">"TODO(mingwei) expected ident pat"</span>);
-                };
+                <span class="macro">panic!</span>(<span class="string">"TODO(mingwei) expected ident pat"</span>);
+            };
             pat_ident.ident.clone()
         })
         .collect();

@@ -27,12 +27,9 @@
 <a href="#25" id="25">25</a>
 <a href="#26" id="26">26</a>
 <a href="#27" id="27">27</a>
-<a href="#28" id="28">28</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::GraphEdgeType;
-
-<span class="kw">use super</span>::{
-    DelayType, OperatorCategory, OperatorConstraints,
-    IDENTITY_WRITE_FN, RANGE_0, RANGE_1,
+</pre></div><pre class="rust"><code><span class="kw">use super</span>::{
+    DelayType, GraphEdgeType, OperatorCategory, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0,
+    RANGE_1,
 };
 
 <span class="doccomment">/// Delays all elements which pass through to the next stratum (in the same
@@ -48,6 +45,7 @@
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),

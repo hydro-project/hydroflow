@@ -162,15 +162,16 @@
 <a href="#160" id="160">160</a>
 <a href="#161" id="161">161</a>
 <a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use super</span>::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, Persistence,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, Persistence, PortIndexValue, WriteContextArgs, RANGE_0,
+    RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
-<span class="kw">use </span><span class="kw">crate</span>::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance, PortIndexValue};
 
 <span class="doccomment">/// &gt; 2 input streams the first of type (K, T), the second of type K,
 /// &gt; with output type (K, T)
@@ -197,6 +198,7 @@
     persistence_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">2</span>),
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">Some</span>(|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote! </span>{ pos, neg })),
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |idx| <span class="kw">match </span>idx {

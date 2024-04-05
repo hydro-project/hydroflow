@@ -67,10 +67,9 @@
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
-    OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput, WriteContextArgs,
+    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
-<span class="kw">use </span><span class="kw">crate</span>::graph::GraphEdgeType;
 
 <span class="doccomment">/// &gt; 1 input stream, 1 output stream
 ///
@@ -94,6 +93,7 @@
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
@@ -107,7 +107,7 @@
                    inputs,
                    outputs,
                    is_pull,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                <span class="kw">_</span>| {

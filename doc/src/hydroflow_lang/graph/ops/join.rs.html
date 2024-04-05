@@ -243,11 +243,10 @@
 <span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use super</span>::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    Persistence, WriteContextArgs, JOIN_CROSS_JOIN_FLOW_PROP_FN, RANGE_1,
+    GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, Persistence, WriteContextArgs, JOIN_CROSS_JOIN_FLOW_PROP_FN, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
-<span class="kw">use </span><span class="kw">crate</span>::graph::{OpInstGenerics, OperatorInstance, GraphEdgeType};
 
 <span class="doccomment">/// &gt; 2 input streams of type &lt;(K, V1)&gt; and &lt;(K, V2)&gt;, 1 output stream of type &lt;(K, (V1, V2))&gt;
 ///
@@ -332,6 +331,7 @@
     persistence_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">2</span>),
     type_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     is_external_input: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">Some</span>(|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote! </span>{ <span class="number">0</span>, <span class="number">1 </span>})),
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,

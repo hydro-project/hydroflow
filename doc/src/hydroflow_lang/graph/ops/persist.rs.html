@@ -153,11 +153,10 @@
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
-    FlowPropArgs, OperatorCategory, OperatorConstraints,
+    FlowPropArgs, FlowProps, GraphEdgeType, LatticeFlowType, OperatorCategory, OperatorConstraints,
     OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
-<span class="kw">use </span><span class="kw">crate</span>::graph::{FlowProps, LatticeFlowType, GraphEdgeType};
 
 <span class="doccomment">/// Stores each item as it passes through, and replays all item every tick.
 ///
@@ -199,6 +198,7 @@
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,

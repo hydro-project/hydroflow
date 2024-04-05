@@ -189,18 +189,14 @@
 <a href="#187" id="187">187</a>
 <a href="#188" id="188">188</a>
 <a href="#189" id="189">189</a>
-<a href="#190" id="190">190</a>
-<a href="#191" id="191">191</a>
-<a href="#192" id="192">192</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>syn::parse_quote;
 <span class="kw">use </span>syn::spanned::Spanned;
 
 <span class="kw">use super</span>::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_1,
+    DelayType, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, WriteContextArgs, RANGE_1,
 };
-<span class="kw">use </span><span class="kw">crate</span>::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance};
 
 <span class="doccomment">/// &gt; 2 input streams of type `(K, V1)` and `(K, V2)`, 1 output stream of type `(K, (V1', V2'))` where `V1`, `V2`, `V1'`, `V2'` are lattice types
 ///
@@ -280,6 +276,7 @@
     persistence_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">2</span>),
     type_args: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
     is_external_input: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">Some</span>(|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote! </span>{ <span class="number">0</span>, <span class="number">1 </span>})),
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::MonotoneAccum),
@@ -294,7 +291,7 @@
                    inputs,
                    is_pull,
                    op_inst:
-                       op_inst @ OperatorInstance {
+                       OperatorInstance {
                            generics:
                                OpInstGenerics {
                                    type_args,
@@ -310,12 +307,9 @@
         <span class="kw">let </span>rhs_type = <span class="kw-2">&amp;</span>type_args[<span class="number">1</span>];
 
         <span class="kw">let </span>wc = WriteContextArgs {
-            op_inst: <span class="kw-2">&amp;</span>OperatorInstance {
-                arguments: <span class="macro">parse_quote! </span>{
-                    FoldFrom(&lt;#lhs_type <span class="kw">as </span>#root::lattices::LatticeFrom::&lt;<span class="kw">_</span>&gt;&gt;::lattice_from, #root::lattices::Merge::merge),
-                    FoldFrom(&lt;#rhs_type <span class="kw">as </span>#root::lattices::LatticeFrom::&lt;<span class="kw">_</span>&gt;&gt;::lattice_from, #root::lattices::Merge::merge)
-                },
-                ..op_inst.clone()
+            arguments: <span class="kw-2">&amp;</span><span class="macro">parse_quote! </span>{
+                FoldFrom(&lt;#lhs_type <span class="kw">as </span>#root::lattices::LatticeFrom::&lt;<span class="kw">_</span>&gt;&gt;::lattice_from, #root::lattices::Merge::merge),
+                FoldFrom(&lt;#rhs_type <span class="kw">as </span>#root::lattices::LatticeFrom::&lt;<span class="kw">_</span>&gt;&gt;::lattice_from, #root::lattices::Merge::merge)
             },
             ..wc.clone()
         };
@@ -330,9 +324,9 @@
         <span class="macro">assert!</span>(is_pull);
         <span class="kw">let </span>persistences = <span class="kw">super</span>::join_fused::parse_persistences(persistence_args);
 
-        <span class="kw">let </span>lhs_join_options = <span class="kw">super</span>::join_fused::parse_argument(<span class="kw-2">&amp;</span>wc.op_inst.arguments[<span class="number">0</span>])
+        <span class="kw">let </span>lhs_join_options = <span class="kw">super</span>::join_fused::parse_argument(<span class="kw-2">&amp;</span>wc.arguments[<span class="number">0</span>])
             .map_err(|err| diagnostics.push(err))<span class="question-mark">?</span>;
-        <span class="kw">let </span>rhs_join_options = <span class="kw">super</span>::join_fused::parse_argument(<span class="kw-2">&amp;</span>wc.op_inst.arguments[<span class="number">1</span>])
+        <span class="kw">let </span>rhs_join_options = <span class="kw">super</span>::join_fused::parse_argument(<span class="kw-2">&amp;</span>wc.arguments[<span class="number">1</span>])
             .map_err(|err| diagnostics.push(err))<span class="question-mark">?</span>;
         <span class="kw">let </span>(lhs_joindata_ident, lhs_borrow_ident, _lhs_prologue, lhs_borrow) =
             <span class="kw">super</span>::join_fused::make_joindata(<span class="kw-2">&amp;</span>wc, persistences[<span class="number">0</span>], <span class="kw-2">&amp;</span>lhs_join_options, <span class="string">"lhs"</span>)
@@ -345,8 +339,8 @@
         <span class="kw">let </span>lhs = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
         <span class="kw">let </span>rhs = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
 
-        <span class="kw">let </span>arg0_span = wc.op_inst.arguments[<span class="number">0</span>].span();
-        <span class="kw">let </span>arg1_span = wc.op_inst.arguments[<span class="number">1</span>].span();
+        <span class="kw">let </span>arg0_span = wc.arguments[<span class="number">0</span>].span();
+        <span class="kw">let </span>arg1_span = wc.arguments[<span class="number">1</span>].span();
 
         <span class="kw">let </span>lhs_tokens = <span class="macro">quote_spanned! </span>{arg0_span=&gt;
             #lhs_borrow.fold_into(#lhs, #root::lattices::Merge::merge,

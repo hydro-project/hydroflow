@@ -79,12 +79,9 @@
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
 <a href="#79" id="79">79</a>
-<a href="#80" id="80">80</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::graph::GraphEdgeType;
-
-<span class="kw">use super</span>::{
-    DelayType, OperatorCategory, OperatorConstraints,
-    IDENTITY_WRITE_FN, RANGE_0, RANGE_1,
+</pre></div><pre class="rust"><code><span class="kw">use super</span>::{
+    DelayType, GraphEdgeType, OperatorCategory, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0,
+    RANGE_1,
 };
 
 <span class="doccomment">/// Buffers all input items and releases them in the next tick.
@@ -152,6 +149,7 @@
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Tick),
