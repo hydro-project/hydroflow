@@ -241,6 +241,8 @@
 <a href="#239" id="239">239</a>
 <a href="#240" id="240">240</a>
 <a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>std::{env, fs};
 
@@ -307,7 +309,9 @@
     <span class="kw">let </span>lib_path = staged_path_absolute.join(<span class="string">"src"</span>).join(<span class="string">"lib.rs"</span>);
     <span class="kw">let </span>lib_path_string = lib_path.to_string_lossy();
     <span class="kw">let </span><span class="kw-2">mut </span>out_file: syn::File = <span class="macro">parse_quote!</span>(
-        <span class="attr">#[path = #lib_path_string] </span><span class="kw">mod </span>__staged;
+        <span class="attr">#[allow(dead_code)]
+        #[path = #lib_path_string]
+        </span><span class="kw">mod </span>__staged;
     );
 
     <span class="kw">for </span>(hash, exported_from) <span class="kw">in </span>visitor.exported_macros {

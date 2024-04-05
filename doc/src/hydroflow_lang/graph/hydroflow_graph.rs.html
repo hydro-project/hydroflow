@@ -1534,6 +1534,8 @@
 <a href="#1532" id="1532">1532</a>
 <a href="#1533" id="1533">1533</a>
 <a href="#1534" id="1534">1534</a>
+<a href="#1535" id="1535">1535</a>
+<a href="#1536" id="1536">1536</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -2585,7 +2587,8 @@
                                             <span class="attr">#[allow(non_snake_case)]
                                             #[inline(always)]
                                             </span><span class="kw">pub fn </span>#fn_ident&lt;Item, Input: ::std::iter::Iterator&lt;Item = Item&gt;&gt;(input: Input) -&gt; <span class="kw">impl </span>::std::iter::Iterator&lt;Item = Item&gt; {
-                                                <span class="kw">struct </span>Pull&lt;Item, Input: ::std::iter::Iterator&lt;Item = Item&gt;&gt; {
+                                                <span class="attr">#[repr(transparent)]
+                                                </span><span class="kw">struct </span>Pull&lt;Item, Input: ::std::iter::Iterator&lt;Item = Item&gt;&gt; {
                                                     inner: Input
                                                 }
 
@@ -2616,7 +2619,8 @@
                                             <span class="attr">#[allow(non_snake_case)]
                                             #[inline(always)]
                                             </span><span class="kw">pub fn </span>#fn_ident&lt;Item, Input: #root::pusherator::Pusherator&lt;Item = Item&gt;&gt;(input: Input) -&gt; <span class="kw">impl </span>#root::pusherator::Pusherator&lt;Item = Item&gt; {
-                                                <span class="kw">struct </span>Push&lt;Item, Input: #root::pusherator::Pusherator&lt;Item = Item&gt;&gt; {
+                                                <span class="attr">#[repr(transparent)]
+                                                </span><span class="kw">struct </span>Push&lt;Item, Input: #root::pusherator::Pusherator&lt;Item = Item&gt;&gt; {
                                                     inner: Input
                                                 }
 
