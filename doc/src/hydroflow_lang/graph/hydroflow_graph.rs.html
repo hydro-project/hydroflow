@@ -1605,8 +1605,6 @@
 <a href="#1603" id="1603">1603</a>
 <a href="#1604" id="1604">1604</a>
 <a href="#1605" id="1605">1605</a>
-<a href="#1606" id="1606">1606</a>
-<a href="#1607" id="1607">1607</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -2096,14 +2094,11 @@
 
     <span class="doccomment">/// Gets the singletons referenced by a node. Returns an empty iterator for non-operators and
     /// operators that do not reference singletons.
-    </span><span class="kw">pub fn </span>node_singleton_references(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        node_id: GraphNodeId,
-    ) -&gt; std::slice::Iter&lt;<span class="lifetime">'_</span>, <span class="prelude-ty">Option</span>&lt;GraphNodeId&gt;&gt; {
+    </span><span class="kw">pub fn </span>node_singleton_references(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId) -&gt; <span class="kw-2">&amp;</span>[<span class="prelude-ty">Option</span>&lt;GraphNodeId&gt;] {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(singletons_referenced) = <span class="self">self</span>.node_singleton_references.get(node_id) {
-            singletons_referenced.iter()
+            singletons_referenced
         } <span class="kw">else </span>{
-            [].iter()
+            <span class="kw-2">&amp;</span>[]
         }
     }
 }
@@ -2417,6 +2412,7 @@
     <span class="doccomment">/// Resolve the singletons via [`Self::node_singleton_references`] for the given `node_id`.
     </span><span class="kw">fn </span>helper_resolve_singletons(<span class="kw-2">&amp;</span><span class="self">self</span>, node_id: GraphNodeId, span: Span) -&gt; Vec&lt;Ident&gt; {
         <span class="self">self</span>.node_singleton_references(node_id)
+            .iter()
             .map(|singleton_node_id| {
                 <span class="comment">// TODO(mingwei): this `expect` should be caught in error checking
                 </span><span class="self">self</span>.node_as_singleton_ident(

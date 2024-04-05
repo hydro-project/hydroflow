@@ -912,6 +912,7 @@
 <a href="#910" id="910">910</a>
 <a href="#911" id="911">911</a>
 <a href="#912" id="912">912</a>
+<a href="#913" id="913">913</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Build a flat graph from [`HfStatement`]s.
 
 </span><span class="kw">use </span>std::borrow::Cow;
@@ -1732,8 +1733,9 @@
                     </span>{
                         <span class="kw">let </span>singletons_resolved =
                             <span class="self">self</span>.flat_graph.node_singleton_references(node_id);
-                        <span class="kw">for </span>(singleton_node_id, singleton_ident) <span class="kw">in
-                            </span>singletons_resolved.zip_eq(<span class="kw-2">&amp;*</span>operator.singletons_referenced)
+                        <span class="kw">for </span>(singleton_node_id, singleton_ident) <span class="kw">in </span>singletons_resolved
+                            .iter()
+                            .zip_eq(<span class="kw-2">&amp;*</span>operator.singletons_referenced)
                         {
                             <span class="kw">let </span><span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(singleton_node_id) = singleton_node_id <span class="kw">else </span>{
                                 <span class="comment">// Error already emitted by `connect_operator_links`, "Cannot find referenced name...".
