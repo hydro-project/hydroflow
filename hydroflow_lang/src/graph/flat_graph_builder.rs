@@ -818,8 +818,9 @@ impl FlatGraphBuilder {
                     {
                         let singletons_resolved =
                             self.flat_graph.node_singleton_references(node_id);
-                        for (singleton_node_id, singleton_ident) in
-                            singletons_resolved.zip_eq(&*operator.singletons_referenced)
+                        for (singleton_node_id, singleton_ident) in singletons_resolved
+                            .iter()
+                            .zip_eq(&*operator.singletons_referenced)
                         {
                             let &Some(singleton_node_id) = singleton_node_id else {
                                 // Error already emitted by `connect_operator_links`, "Cannot find referenced name...".
