@@ -487,14 +487,11 @@ impl HydroflowGraph {
 
     /// Gets the singletons referenced by a node. Returns an empty iterator for non-operators and
     /// operators that do not reference singletons.
-    pub fn node_singleton_references(
-        &self,
-        node_id: GraphNodeId,
-    ) -> std::slice::Iter<'_, Option<GraphNodeId>> {
+    pub fn node_singleton_references(&self, node_id: GraphNodeId) -> &[Option<GraphNodeId>] {
         if let Some(singletons_referenced) = self.node_singleton_references.get(node_id) {
-            singletons_referenced.iter()
+            singletons_referenced
         } else {
-            [].iter()
+            &[]
         }
     }
 }
@@ -808,6 +805,7 @@ impl HydroflowGraph {
     /// Resolve the singletons via [`Self::node_singleton_references`] for the given `node_id`.
     fn helper_resolve_singletons(&self, node_id: GraphNodeId, span: Span) -> Vec<Ident> {
         self.node_singleton_references(node_id)
+            .iter()
             .map(|singleton_node_id| {
                 // TODO(mingwei): this `expect` should be caught in error checking
                 self.node_as_singleton_ident(
