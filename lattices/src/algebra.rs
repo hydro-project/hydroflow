@@ -340,11 +340,74 @@ pub fn idempotency<S: Debug + PartialEq + Clone, const N: usize>(
     Ok(())
 }
 
+// Functions for testing out whether user defined code satisfies different properties
+
+//A list of algebraic properties of a single function that we support
+// static SINGLE_FUNCTION_PROPERTIES: [(&str, fn(&[S; N], impl Fn(S, S) -> S)); 6] = [
+//     ("associativity", associativity),
+//     ("commutativity", commutativity),
+//     ("idempotency", idempotency),
+//     ("identity", identity),
+//     ("inverse", inverse),
+//     ("absorbing_element", absorbing_element)];
+
+//Loop through each property in SINGLE_FUNCTION_PROPERTIES and test for them
+pub fn get_single_function_properties<S: Debug + PartialEq + Clone, const N: usize>(
+    items: &[S; N],
+    f: impl Fn(S, S) -> S,
+    //identity element (TODO make optional parameter)
+    e: S,
+    //inverse function (TODO make optional parameter)
+    b: impl Fn(S) -> S,
+    //absorbing element (TODO make optional parameter)
+    z: S
+) -> Vec<String> {
+    //store the list of properties (strings) that are satisfied to be returned
+    let mut properties_satisfied: Vec<String> = Vec::new();
+
+    // TODO make this a loop through the SINGLE_FUNCTION_PROPERTIES array
+    if (associativity(items, &f).is_ok()){
+        properties_satisfied.push("associativity".to_string());
+    }
+    if (commutativity(items, &f).is_ok()){
+        properties_satisfied.push("commutativity".to_string());
+    }
+    if (idempotency(items, &f).is_ok()){
+        properties_satisfied.push("idempotency".to_string());
+    }
+    if (identity(items, &f, e.clone()).is_ok()){
+        properties_satisfied.push("identity".to_string());
+    }
+    if (inverse(items, &f, e.clone(), b).is_ok()){
+        properties_satisfied.push("inverse".to_string());
+    }
+    if (absorbing_element(items, &f, z).is_ok()){
+        properties_satisfied.push("absorbing_element".to_string());
+    }
+
+    return properties_satisfied;
+}
+
+//TODO write a function to take in a set of functions and check which satisfy the pairwise properties
+// pub fn get_pair_of_functions_properties<S: Debug + PartialEq + Clone, const N: usize>(
+//     items: &[S; N],
+//     f: impl Fn(S, S) -> S, //TODO make this a vector of functions.
+// ) -> Vec<String> {
+//     //store the list of properties (strings) that are satisfied to be returned
+//     let mut properties_satisfied: Vec<String> = Vec::new();
+
+//     if (associativity(items, f).is_ok()){
+//         properties_satisfied.push("associativity".to_string());
+//     }
+
+//     return properties_satisfied;
+    // TODO returns the list of properties for each pair of functions? 
+// }
 // Tests
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
+    use std::{collections::HashSet, f32::INFINITY};
 
     use crate::algebra::*;
 
@@ -909,4 +972,18 @@ mod test {
         )
         .is_ok());
     }
+
+    #[test]
+    fn test_get_single_function_properties() {
+        //Test that get single function properties on addition returns associative, commutative, identity, and inverses.
+        let test_properties_satisfied = get_single_function_properties(TEST_ITEMS, u32::wrapping_add, 0, |x| 0u32.wrapping_sub(x), 0);
+        let correct_properties = vec!["associativity".to_string(), "commutativity".to_string(), "identity".to_string(), "inverse".to_string()];
+        assert_eq!(test_properties_satisfied, correct_properties);
+
+        //Test that get single function properties on max returns associative, commutative, idempotent, identity, and absorbing element.
+        let test_properties_satisfied = get_single_function_properties(&[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, f64::INFINITY], f64::max, 0.0, |x| x, f64::INFINITY);
+        let correct_properties = vec!["associativity".to_string(), "commutativity".to_string(), "idempotency".to_string(), "identity".to_string(), "absorbing_element".to_string()];
+        assert_eq!(test_properties_satisfied, correct_properties);
+    }
 }
+
