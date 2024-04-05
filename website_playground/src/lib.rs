@@ -111,6 +111,7 @@ pub fn compile_hydroflow(
     no_varnames: bool,
     no_pull_push: bool,
     no_handoffs: bool,
+    no_references: bool,
     op_short_text: bool,
 ) -> JsValue {
     let write_config = WriteConfig {
@@ -118,6 +119,7 @@ pub fn compile_hydroflow(
         no_varnames,
         no_pull_push,
         no_handoffs,
+        no_references,
         op_short_text,
     };
 
@@ -164,6 +166,7 @@ pub fn compile_datalog(
     no_varnames: bool,
     no_pull_push: bool,
     no_handoffs: bool,
+    no_references: bool,
     op_short_text: bool,
 ) -> JsValue {
     let write_config = WriteConfig {
@@ -171,6 +174,7 @@ pub fn compile_datalog(
         no_varnames,
         no_pull_push,
         no_handoffs,
+        no_references,
         op_short_text,
     };
 
