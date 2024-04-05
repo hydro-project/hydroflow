@@ -5,7 +5,140 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.6.1 (2024-04-05)
+
+### Chore
+
+ - <csr-id-fc447ffdf8fd1b2189545a991f08588238182f00/> appease latest nightly clippy
+   Also updates `surface_keyed_fold.rs` `test_fold_keyed_infer_basic` test.
+
+### Documentation
+
+ - <csr-id-550b17c0e0edd233b0cceab55fed0de309051503/> more improvements to `persist_mut[_keyed]` docs
+
+### New Features
+
+ - <csr-id-1bde8a2443523fa8d3aafd7459c9a484de7724b7/> Render singleton references in graphvis
+ - <csr-id-54c6874931ebd7ba13140dbcf3e75ad9b2852331/> enable inspect to have no ouputs
+ - <csr-id-fa34dd317ab0cb59753bd884acae2605a7630b10/> track which ops have singleton state
+   Add a nice error message for referencing a non-singleton op
+ - <csr-id-601c484bf9afe9aada61c1a40478c0e093140a56/> improve singleton error messages/handling
+ - <csr-id-8cb29fa809e255195b65fd23b589bf7c970c5599/> enable singleton reference usage in all operators
+   also cleans up local imports
+ - <csr-id-f9b26b6df7ff7d2a3530527579c60f41d93e9d45/> switch singletons references to being per-op intead of per-edge
+   Only testing in `filter` op for now
+ - <csr-id-0a5e785d4bf0729ba0fe95466c822e8304f96e24/> initial proof-of-concept for singletons
+ - <csr-id-602e21fc04da5a0d65ac7128688760c92ffba3c1/> include subgraph ID in pivot_run codegen
+ - <csr-id-68d8ffcfb8f378e603d99bd6cac4c0ce69dc25ba/> switch launch to be a macro to enable borrowing locals
+ - <csr-id-916a366cba94c739a6e170d281663f19f706d6be/> add syntax for "splatting" columns
+   feat(hydroflow_datalog): add syntax for "splatting" columns
+   
+   The * operator can be used on the left-hand side of a rule to indicate
+   that each row should be duplicated into many rows with that column being
+   replaced by every value in iterable corresponding to the original
+   expression.
+ - <csr-id-31a543c236b874a60b7a152f11377013bcd15221/> allow dropping of tee handoff output to prevent memory leak
+ - <csr-id-5f21e4c8c565f1c87694d692fcec33ce1cb9d77f/> implement teeing handoff for scheduled layer
+   - Cleanup/update scheduled layer `TeeingHandoff` tests
+ - <csr-id-61cb55a04e518560beff1ea5d446927b6d7096b3/> add aggregation for collecting values into a vector
+   feat(hydroflow_datalog): add aggregation for collecting values into a
+   vector
+ - <csr-id-fd90d4130e86b16139f6d3a386fbbfb49fae5a9b/> add `kvs_mut` example, fix #785
+ - <csr-id-99657d528c36e4e25b7eaa536c480e7b3d859443/> scheduler `log` subgraph name (which includes surface syntax sg id)
+
+### Bug Fixes
+
+ - <csr-id-f29c710e62d45a819b0c44125f94be207ffd5d83/> `HandoffMeta::is_bottom` impl for `TeeingHandoff` [ci-bench]
+ - <csr-id-f8311db2cd9628607887fc04f2ea5933c8b7c11e/> #1050 for `fold_keyed`
+
+### Refactor
+
+ - <csr-id-1b19361a87bafb7d7c12be04cc2ce3370d71439a/> consider singleton references as `DelayType::Stratum` barriers
+ - <csr-id-8a22b3a27282b5076db1c89bc3a8572dc16a5e7c/> Cleanup user-facing teeing APIs
+ - <csr-id-0ac2d46dcfc9756219806663042eca18e4eeff3f/> Teeing overhead moved to graph assembly time, instead of scheduler
+ - <csr-id-be8d767aa6347f6df57908d1e9beae7224ea2e53/> use smallvec `[_; 1]` for handoff pred(s)/succ(s) [ci-bench]
+
+### Style
+
+ - <csr-id-76e501a35ba47803b69ea62920aae570fb60e2f0/> `Never` -> `std::convert::Infallible`
+ - <csr-id-7958fb0d900be8fe7359326abfa11dcb8fb35e8a/> qualified path cleanups for clippy
+
+### Test
+
+ - <csr-id-99bbe50a6cd214a974aec72d95bf10b9b6da33f6/> fix some `surface_codegen.rs` tests, actually test output, fix #1096
+ - <csr-id-118a563dbe627e730797128098698739db5588e5/> add hydroflow scheduling spin test for #1050 #800
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 27 commits contributed to the release over the course of 32 calendar days.
+ - 35 days passed between releases.
+ - 27 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 18 unique issues were worked on: [#1068](https://github.com/hydro-project/hydroflow/issues/1068), [#1086](https://github.com/hydro-project/hydroflow/issues/1086), [#1087](https://github.com/hydro-project/hydroflow/issues/1087), [#1089](https://github.com/hydro-project/hydroflow/issues/1089), [#1090](https://github.com/hydro-project/hydroflow/issues/1090), [#1091](https://github.com/hydro-project/hydroflow/issues/1091), [#1093](https://github.com/hydro-project/hydroflow/issues/1093), [#1094](https://github.com/hydro-project/hydroflow/issues/1094), [#1102](https://github.com/hydro-project/hydroflow/issues/1102), [#1113](https://github.com/hydro-project/hydroflow/issues/1113), [#1125](https://github.com/hydro-project/hydroflow/issues/1125), [#1128](https://github.com/hydro-project/hydroflow/issues/1128), [#1132](https://github.com/hydro-project/hydroflow/issues/1132), [#1133](https://github.com/hydro-project/hydroflow/issues/1133), [#1137](https://github.com/hydro-project/hydroflow/issues/1137), [#1140](https://github.com/hydro-project/hydroflow/issues/1140), [#1145](https://github.com/hydro-project/hydroflow/issues/1145), [#1146](https://github.com/hydro-project/hydroflow/issues/1146)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1068](https://github.com/hydro-project/hydroflow/issues/1068)**
+    - `HandoffMeta::is_bottom` impl for `TeeingHandoff` [ci-bench] ([`f29c710`](https://github.com/hydro-project/hydroflow/commit/f29c710e62d45a819b0c44125f94be207ffd5d83))
+    - Cleanup user-facing teeing APIs ([`8a22b3a`](https://github.com/hydro-project/hydroflow/commit/8a22b3a27282b5076db1c89bc3a8572dc16a5e7c))
+    - Teeing overhead moved to graph assembly time, instead of scheduler ([`0ac2d46`](https://github.com/hydro-project/hydroflow/commit/0ac2d46dcfc9756219806663042eca18e4eeff3f))
+    - Allow dropping of tee handoff output to prevent memory leak ([`31a543c`](https://github.com/hydro-project/hydroflow/commit/31a543c236b874a60b7a152f11377013bcd15221))
+    - Implement teeing handoff for scheduled layer ([`5f21e4c`](https://github.com/hydro-project/hydroflow/commit/5f21e4c8c565f1c87694d692fcec33ce1cb9d77f))
+ * **[#1086](https://github.com/hydro-project/hydroflow/issues/1086)**
+    - #1050 for `fold_keyed` ([`f8311db`](https://github.com/hydro-project/hydroflow/commit/f8311db2cd9628607887fc04f2ea5933c8b7c11e))
+    - Scheduler `log` subgraph name (which includes surface syntax sg id) ([`99657d5`](https://github.com/hydro-project/hydroflow/commit/99657d528c36e4e25b7eaa536c480e7b3d859443))
+    - Add hydroflow scheduling spin test for #1050 #800 ([`118a563`](https://github.com/hydro-project/hydroflow/commit/118a563dbe627e730797128098698739db5588e5))
+ * **[#1087](https://github.com/hydro-project/hydroflow/issues/1087)**
+    - Add `kvs_mut` example, fix #785 ([`fd90d41`](https://github.com/hydro-project/hydroflow/commit/fd90d4130e86b16139f6d3a386fbbfb49fae5a9b))
+ * **[#1089](https://github.com/hydro-project/hydroflow/issues/1089)**
+    - More improvements to `persist_mut[_keyed]` docs ([`550b17c`](https://github.com/hydro-project/hydroflow/commit/550b17c0e0edd233b0cceab55fed0de309051503))
+ * **[#1090](https://github.com/hydro-project/hydroflow/issues/1090)**
+    - Qualified path cleanups for clippy ([`7958fb0`](https://github.com/hydro-project/hydroflow/commit/7958fb0d900be8fe7359326abfa11dcb8fb35e8a))
+ * **[#1091](https://github.com/hydro-project/hydroflow/issues/1091)**
+    - Switch singletons references to being per-op intead of per-edge ([`f9b26b6`](https://github.com/hydro-project/hydroflow/commit/f9b26b6df7ff7d2a3530527579c60f41d93e9d45))
+    - Initial proof-of-concept for singletons ([`0a5e785`](https://github.com/hydro-project/hydroflow/commit/0a5e785d4bf0729ba0fe95466c822e8304f96e24))
+ * **[#1093](https://github.com/hydro-project/hydroflow/issues/1093)**
+    - `Never` -> `std::convert::Infallible` ([`76e501a`](https://github.com/hydro-project/hydroflow/commit/76e501a35ba47803b69ea62920aae570fb60e2f0))
+ * **[#1094](https://github.com/hydro-project/hydroflow/issues/1094)**
+    - Add aggregation for collecting values into a vector ([`61cb55a`](https://github.com/hydro-project/hydroflow/commit/61cb55a04e518560beff1ea5d446927b6d7096b3))
+ * **[#1102](https://github.com/hydro-project/hydroflow/issues/1102)**
+    - Switch launch to be a macro to enable borrowing locals ([`68d8ffc`](https://github.com/hydro-project/hydroflow/commit/68d8ffcfb8f378e603d99bd6cac4c0ce69dc25ba))
+ * **[#1113](https://github.com/hydro-project/hydroflow/issues/1113)**
+    - Use smallvec `[_; 1]` for handoff pred(s)/succ(s) [ci-bench] ([`be8d767`](https://github.com/hydro-project/hydroflow/commit/be8d767aa6347f6df57908d1e9beae7224ea2e53))
+ * **[#1125](https://github.com/hydro-project/hydroflow/issues/1125)**
+    - Fix some `surface_codegen.rs` tests, actually test output, fix #1096 ([`99bbe50`](https://github.com/hydro-project/hydroflow/commit/99bbe50a6cd214a974aec72d95bf10b9b6da33f6))
+ * **[#1128](https://github.com/hydro-project/hydroflow/issues/1128)**
+    - Enable inspect to have no ouputs ([`54c6874`](https://github.com/hydro-project/hydroflow/commit/54c6874931ebd7ba13140dbcf3e75ad9b2852331))
+ * **[#1132](https://github.com/hydro-project/hydroflow/issues/1132)**
+    - Add syntax for "splatting" columns ([`916a366`](https://github.com/hydro-project/hydroflow/commit/916a366cba94c739a6e170d281663f19f706d6be))
+ * **[#1133](https://github.com/hydro-project/hydroflow/issues/1133)**
+    - Track which ops have singleton state ([`fa34dd3`](https://github.com/hydro-project/hydroflow/commit/fa34dd317ab0cb59753bd884acae2605a7630b10))
+    - Improve singleton error messages/handling ([`601c484`](https://github.com/hydro-project/hydroflow/commit/601c484bf9afe9aada61c1a40478c0e093140a56))
+    - Enable singleton reference usage in all operators ([`8cb29fa`](https://github.com/hydro-project/hydroflow/commit/8cb29fa809e255195b65fd23b589bf7c970c5599))
+ * **[#1137](https://github.com/hydro-project/hydroflow/issues/1137)**
+    - Include subgraph ID in pivot_run codegen ([`602e21f`](https://github.com/hydro-project/hydroflow/commit/602e21fc04da5a0d65ac7128688760c92ffba3c1))
+ * **[#1140](https://github.com/hydro-project/hydroflow/issues/1140)**
+    - Appease latest nightly clippy ([`fc447ff`](https://github.com/hydro-project/hydroflow/commit/fc447ffdf8fd1b2189545a991f08588238182f00))
+ * **[#1145](https://github.com/hydro-project/hydroflow/issues/1145)**
+    - Consider singleton references as `DelayType::Stratum` barriers ([`1b19361`](https://github.com/hydro-project/hydroflow/commit/1b19361a87bafb7d7c12be04cc2ce3370d71439a))
+ * **[#1146](https://github.com/hydro-project/hydroflow/issues/1146)**
+    - Render singleton references in graphvis ([`1bde8a2`](https://github.com/hydro-project/hydroflow/commit/1bde8a2443523fa8d3aafd7459c9a484de7724b7))
+</details>
+
 ## 0.6.0 (2024-03-02)
+
+<csr-id-5a451ac4ae75024153a06416fc81d834d1fdae6f/>
+<csr-id-39ab8b0278e9e3fe96552ace0a4ae768a6bc10d8/>
+<csr-id-92ee7eb4e81ff2852f873d6a84a44a5a5bdc6703/>
+<csr-id-8361f9c8f83992295cfa40cf4d27a17146afb2d9/>
+<csr-id-e9639f608f8dafd3f384837067800a66951b25df/>
+<csr-id-71353f0d4dfd9766dfdc715c4a91a028081f910f/>
+<csr-id-b391447ec13f1f79c99142f296dc2fa8640034f4/>
 
 ### Chore
 
@@ -35,7 +168,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 9 commits contributed to the release over the course of 25 calendar days.
+ - 10 commits contributed to the release over the course of 24 calendar days.
  - 28 days passed between releases.
  - 9 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 6 unique issues were worked on: [#1015](https://github.com/hydro-project/hydroflow/issues/1015), [#1057](https://github.com/hydro-project/hydroflow/issues/1057), [#1060](https://github.com/hydro-project/hydroflow/issues/1060), [#1061](https://github.com/hydro-project/hydroflow/issues/1061), [#1084](https://github.com/hydro-project/hydroflow/issues/1084), [#1085](https://github.com/hydro-project/hydroflow/issues/1085)
@@ -59,6 +192,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#1085](https://github.com/hydro-project/hydroflow/issues/1085)**
     - Cleanup timing in some `surface_async` tests, #1078 ([`18ee2ad`](https://github.com/hydro-project/hydroflow/commit/18ee2ad245dad997494267050a9568f20cbe215f))
  * **Uncategorized**
+    - Release hydroflow_lang v0.6.0, hydroflow_datalog_core v0.6.0, hydroflow_datalog v0.6.0, hydroflow_macro v0.6.0, lattices v0.5.3, variadics v0.0.4, pusherator v0.0.5, hydroflow v0.6.0, stageleft v0.2.0, hydroflow_plus v0.6.0, hydro_deploy v0.6.0, hydro_cli v0.6.0, hydroflow_plus_cli_integration v0.6.0, safety bump 7 crates ([`09ea65f`](https://github.com/hydro-project/hydroflow/commit/09ea65fe9cd45c357c43bffca30e60243fa45cc8))
     - Prep for 0.0.4 release ([`5a451ac`](https://github.com/hydro-project/hydroflow/commit/5a451ac4ae75024153a06416fc81d834d1fdae6f))
     - Fix imports for clippy ([`71353f0`](https://github.com/hydro-project/hydroflow/commit/71353f0d4dfd9766dfdc715c4a91a028081f910f))
     - Fix imports ([`b391447`](https://github.com/hydro-project/hydroflow/commit/b391447ec13f1f79c99142f296dc2fa8640034f4))
@@ -143,6 +277,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-8b635683e5ac3c4ed2d896ae88e2953db1c6312c/> add a functional surface syntax using staging
  - <csr-id-f327b02c8001129e619fb253ab9b6d550e229a48/> add left,right,outer join module examples
  - <csr-id-7df0a0df61597764eed763b68138929fed1413ac/> add defer() which is the same as defer_tick() except that it is lazy
+ - <csr-id-6158a7aae2ef9b58245c23fc668715a3fb2ff7dc/> new implementation and Hydro Deploy setup
+   --
  - <csr-id-6158a7aae2ef9b58245c23fc668715a3fb2ff7dc/> new implementation and Hydro Deploy setup
    --
  - <csr-id-6158a7aae2ef9b58245c23fc668715a3fb2ff7dc/> new implementation and Hydro Deploy setup

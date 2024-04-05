@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.1.1 (2024-04-05)
+
+### New Features
+
+ - <csr-id-77f3e5afb9e276d1d6c643574ebac75ed0003939/> simplify lifetime bounds for processes and clusters
+   feat(hydroflow_plus): simplify lifetime bounds for processes and
+   clusters
+   
+   This allows `extract` to move the flow builder, which is a prerequisite
+   for having developers run the optimizer during deployment as well in
+   case it changes the network topology.
+
+### Bug Fixes
+
+ - <csr-id-6cc5a7f78fc8bd28f32dad58857ccd1c46bc93cd/> handle multiple references to copy-able free variables
+ - <csr-id-54b4ee3fc847db14a0b825e04eae6e1288d44af3/> ignore unnecessary lifetime lint on entrypoints
+
+### Style
+
+ - <csr-id-7958fb0d900be8fe7359326abfa11dcb8fb35e8a/> qualified path cleanups for clippy
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release over the course of 31 calendar days.
+ - 67 days passed between releases.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 4 unique issues were worked on: [#1090](https://github.com/hydro-project/hydroflow/issues/1090), [#1100](https://github.com/hydro-project/hydroflow/issues/1100), [#1117](https://github.com/hydro-project/hydroflow/issues/1117), [#1124](https://github.com/hydro-project/hydroflow/issues/1124)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1090](https://github.com/hydro-project/hydroflow/issues/1090)**
+    - Qualified path cleanups for clippy ([`7958fb0`](https://github.com/hydro-project/hydroflow/commit/7958fb0d900be8fe7359326abfa11dcb8fb35e8a))
+ * **[#1100](https://github.com/hydro-project/hydroflow/issues/1100)**
+    - Simplify lifetime bounds for processes and clusters ([`77f3e5a`](https://github.com/hydro-project/hydroflow/commit/77f3e5afb9e276d1d6c643574ebac75ed0003939))
+ * **[#1117](https://github.com/hydro-project/hydroflow/issues/1117)**
+    - Ignore unnecessary lifetime lint on entrypoints ([`54b4ee3`](https://github.com/hydro-project/hydroflow/commit/54b4ee3fc847db14a0b825e04eae6e1288d44af3))
+ * **[#1124](https://github.com/hydro-project/hydroflow/issues/1124)**
+    - Handle multiple references to copy-able free variables ([`6cc5a7f`](https://github.com/hydro-project/hydroflow/commit/6cc5a7f78fc8bd28f32dad58857ccd1c46bc93cd))
+</details>
+
 ## v0.1.0 (2024-01-29)
 
 ### Documentation
@@ -27,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release over the course of 76 calendar days.
+ - 6 commits contributed to the release over the course of 76 calendar days.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1021](https://github.com/hydro-project/hydroflow/issues/1021), [#899](https://github.com/hydro-project/hydroflow/issues/899), [#978](https://github.com/hydro-project/hydroflow/issues/978), [#983](https://github.com/hydro-project/hydroflow/issues/983)
 
@@ -46,6 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#983](https://github.com/hydro-project/hydroflow/issues/983)**
     - Support crates that have no entrypoints ([`7108323`](https://github.com/hydro-project/hydroflow/commit/71083233afc01e0132d7186f4af8c0b4a6323ec7))
  * **Uncategorized**
+    - Release stageleft_macro v0.1.0, stageleft v0.1.0, hydroflow_plus v0.5.1 ([`1a48db5`](https://github.com/hydro-project/hydroflow/commit/1a48db5a1ba058a718ac777367bf6eba3a236b7c))
     - Actually committing empty CHANGELOG.md is required ([`3b36020`](https://github.com/hydro-project/hydroflow/commit/3b36020d16792f26da4df3c5b09652a4ab47ec4f))
 </details>
 

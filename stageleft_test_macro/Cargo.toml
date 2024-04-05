@@ -13,7 +13,7 @@ default = ["macro"]
 macro = []
 
 [dependencies]
-stageleft = { path = "../stageleft", version = "^0.2.0" }
+stageleft = { path = "../stageleft", version = "^0.2.1" }
 
 [build-dependencies]
-stageleft_tool = { path = "../stageleft_tool", version = "^0.1.0" }
+stageleft_tool = { path = "../stageleft_tool", version = "^0.1.1" }

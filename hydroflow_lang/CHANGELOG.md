@@ -5,6 +5,92 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.6.1 (2024-04-05)
+
+### Documentation
+
+ - <csr-id-242784737abd1b2bb8e12a5b58a0771e4929954e/> add docs for `state()` operator
+ - <csr-id-550b17c0e0edd233b0cceab55fed0de309051503/> more improvements to `persist_mut[_keyed]` docs
+
+### New Features
+
+ - <csr-id-1bde8a2443523fa8d3aafd7459c9a484de7724b7/> Render singleton references in graphvis
+ - <csr-id-54c6874931ebd7ba13140dbcf3e75ad9b2852331/> enable inspect to have no ouputs
+ - <csr-id-fa34dd317ab0cb59753bd884acae2605a7630b10/> track which ops have singleton state
+   Add a nice error message for referencing a non-singleton op
+ - <csr-id-601c484bf9afe9aada61c1a40478c0e093140a56/> improve singleton error messages/handling
+ - <csr-id-8cb29fa809e255195b65fd23b589bf7c970c5599/> enable singleton reference usage in all operators
+   also cleans up local imports
+ - <csr-id-f9b26b6df7ff7d2a3530527579c60f41d93e9d45/> switch singletons references to being per-op intead of per-edge
+   Only testing in `filter` op for now
+ - <csr-id-0a5e785d4bf0729ba0fe95466c822e8304f96e24/> initial proof-of-concept for singletons
+ - <csr-id-602e21fc04da5a0d65ac7128688760c92ffba3c1/> include subgraph ID in pivot_run codegen
+ - <csr-id-fd90d4130e86b16139f6d3a386fbbfb49fae5a9b/> add `kvs_mut` example, fix #785
+
+### Bug Fixes
+
+ - <csr-id-a0e829e835efcf643bf26ce472d9de6dce05bb15/> fix `state()` op push codegen
+ - <csr-id-dfe5a1bc66564fbd6de297cd695385b627091658/> allow `null()` to receive reference input
+ - <csr-id-f8311db2cd9628607887fc04f2ea5933c8b7c11e/> #1050 for `fold_keyed`
+
+### Refactor
+
+ - <csr-id-1b19361a87bafb7d7c12be04cc2ce3370d71439a/> consider singleton references as `DelayType::Stratum` barriers
+ - <csr-id-88e2ca44fed2d54b969e54a948c41d3bcd9a2ab5/> add `#[repr(transparent)]` to type guard codegen
+   theoretically could help performance but is probably negligible
+
+### Style
+
+ - <csr-id-7958fb0d900be8fe7359326abfa11dcb8fb35e8a/> qualified path cleanups for clippy
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 17 commits contributed to the release over the course of 32 calendar days.
+ - 35 days passed between releases.
+ - 17 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 13 unique issues were worked on: [#1086](https://github.com/hydro-project/hydroflow/issues/1086), [#1087](https://github.com/hydro-project/hydroflow/issues/1087), [#1089](https://github.com/hydro-project/hydroflow/issues/1089), [#1090](https://github.com/hydro-project/hydroflow/issues/1090), [#1091](https://github.com/hydro-project/hydroflow/issues/1091), [#1109](https://github.com/hydro-project/hydroflow/issues/1109), [#1128](https://github.com/hydro-project/hydroflow/issues/1128), [#1130](https://github.com/hydro-project/hydroflow/issues/1130), [#1133](https://github.com/hydro-project/hydroflow/issues/1133), [#1136](https://github.com/hydro-project/hydroflow/issues/1136), [#1137](https://github.com/hydro-project/hydroflow/issues/1137), [#1145](https://github.com/hydro-project/hydroflow/issues/1145), [#1146](https://github.com/hydro-project/hydroflow/issues/1146)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1086](https://github.com/hydro-project/hydroflow/issues/1086)**
+    - #1050 for `fold_keyed` ([`f8311db`](https://github.com/hydro-project/hydroflow/commit/f8311db2cd9628607887fc04f2ea5933c8b7c11e))
+ * **[#1087](https://github.com/hydro-project/hydroflow/issues/1087)**
+    - Add `kvs_mut` example, fix #785 ([`fd90d41`](https://github.com/hydro-project/hydroflow/commit/fd90d4130e86b16139f6d3a386fbbfb49fae5a9b))
+ * **[#1089](https://github.com/hydro-project/hydroflow/issues/1089)**
+    - More improvements to `persist_mut[_keyed]` docs ([`550b17c`](https://github.com/hydro-project/hydroflow/commit/550b17c0e0edd233b0cceab55fed0de309051503))
+ * **[#1090](https://github.com/hydro-project/hydroflow/issues/1090)**
+    - Qualified path cleanups for clippy ([`7958fb0`](https://github.com/hydro-project/hydroflow/commit/7958fb0d900be8fe7359326abfa11dcb8fb35e8a))
+ * **[#1091](https://github.com/hydro-project/hydroflow/issues/1091)**
+    - Switch singletons references to being per-op intead of per-edge ([`f9b26b6`](https://github.com/hydro-project/hydroflow/commit/f9b26b6df7ff7d2a3530527579c60f41d93e9d45))
+    - Initial proof-of-concept for singletons ([`0a5e785`](https://github.com/hydro-project/hydroflow/commit/0a5e785d4bf0729ba0fe95466c822e8304f96e24))
+ * **[#1109](https://github.com/hydro-project/hydroflow/issues/1109)**
+    - Add docs for `state()` operator ([`2427847`](https://github.com/hydro-project/hydroflow/commit/242784737abd1b2bb8e12a5b58a0771e4929954e))
+ * **[#1128](https://github.com/hydro-project/hydroflow/issues/1128)**
+    - Enable inspect to have no ouputs ([`54c6874`](https://github.com/hydro-project/hydroflow/commit/54c6874931ebd7ba13140dbcf3e75ad9b2852331))
+ * **[#1130](https://github.com/hydro-project/hydroflow/issues/1130)**
+    - Fix `state()` op push codegen ([`a0e829e`](https://github.com/hydro-project/hydroflow/commit/a0e829e835efcf643bf26ce472d9de6dce05bb15))
+ * **[#1133](https://github.com/hydro-project/hydroflow/issues/1133)**
+    - Track which ops have singleton state ([`fa34dd3`](https://github.com/hydro-project/hydroflow/commit/fa34dd317ab0cb59753bd884acae2605a7630b10))
+    - Improve singleton error messages/handling ([`601c484`](https://github.com/hydro-project/hydroflow/commit/601c484bf9afe9aada61c1a40478c0e093140a56))
+    - Enable singleton reference usage in all operators ([`8cb29fa`](https://github.com/hydro-project/hydroflow/commit/8cb29fa809e255195b65fd23b589bf7c970c5599))
+ * **[#1136](https://github.com/hydro-project/hydroflow/issues/1136)**
+    - Add `#[repr(transparent)]` to type guard codegen ([`88e2ca4`](https://github.com/hydro-project/hydroflow/commit/88e2ca44fed2d54b969e54a948c41d3bcd9a2ab5))
+ * **[#1137](https://github.com/hydro-project/hydroflow/issues/1137)**
+    - Include subgraph ID in pivot_run codegen ([`602e21f`](https://github.com/hydro-project/hydroflow/commit/602e21fc04da5a0d65ac7128688760c92ffba3c1))
+ * **[#1145](https://github.com/hydro-project/hydroflow/issues/1145)**
+    - Consider singleton references as `DelayType::Stratum` barriers ([`1b19361`](https://github.com/hydro-project/hydroflow/commit/1b19361a87bafb7d7c12be04cc2ce3370d71439a))
+ * **[#1146](https://github.com/hydro-project/hydroflow/issues/1146)**
+    - Render singleton references in graphvis ([`1bde8a2`](https://github.com/hydro-project/hydroflow/commit/1bde8a2443523fa8d3aafd7459c9a484de7724b7))
+ * **Uncategorized**
+    - Allow `null()` to receive reference input ([`dfe5a1b`](https://github.com/hydro-project/hydroflow/commit/dfe5a1bc66564fbd6de297cd695385b627091658))
+</details>
+
 ## 0.6.0 (2024-03-02)
 
 ### New Features
@@ -17,7 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release over the course of 2 calendar days.
+ - 3 commits contributed to the release over the course of 2 calendar days.
  - 28 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1061](https://github.com/hydro-project/hydroflow/issues/1061), [#1070](https://github.com/hydro-project/hydroflow/issues/1070)
@@ -32,6 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Add (inefficient) `lattice_bimorphism` operator, fix #1073 ([`09f0c57`](https://github.com/hydro-project/hydroflow/commit/09f0c5711c2d038d1d5764d400fe6206da995ce3))
  * **[#1070](https://github.com/hydro-project/hydroflow/issues/1070)**
     - Use an IR before lowering to Hydroflow ([`eb34ccd`](https://github.com/hydro-project/hydroflow/commit/eb34ccd13f56e1d07cbae35ead79daeb3b9bad20))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.6.0, hydroflow_datalog_core v0.6.0, hydroflow_datalog v0.6.0, hydroflow_macro v0.6.0, lattices v0.5.3, variadics v0.0.4, pusherator v0.0.5, hydroflow v0.6.0, stageleft v0.2.0, hydroflow_plus v0.6.0, hydro_deploy v0.6.0, hydro_cli v0.6.0, hydroflow_plus_cli_integration v0.6.0, safety bump 7 crates ([`09ea65f`](https://github.com/hydro-project/hydroflow/commit/09ea65fe9cd45c357c43bffca30e60243fa45cc8))
 </details>
 
 ## 0.5.2 (2024-02-02)

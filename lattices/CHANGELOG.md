@@ -5,11 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.5.4 (2024-04-05)
 
 Unchanged from previous release.
 
+### Chore
+
+ - <csr-id-2a10c4f395bbf3a320bdde6ec24c3c6abd5d6ed0/> mark `lattices` as unchanged for `0.6.1` release
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release over the course of 7 calendar days.
+ - 35 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#1127](https://github.com/hydro-project/hydroflow/issues/1127)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1127](https://github.com/hydro-project/hydroflow/issues/1127)**
+    - Initial Algebra Library ([`b6e3bec`](https://github.com/hydro-project/hydroflow/commit/b6e3bec0bff31f3b7e8166cf1b545c39a5b8d617))
+ * **Uncategorized**
+    - Mark `lattices` as unchanged for `0.6.1` release ([`2a10c4f`](https://github.com/hydro-project/hydroflow/commit/2a10c4f395bbf3a320bdde6ec24c3c6abd5d6ed0))
+</details>
+
 ## 0.5.3 (2024-03-02)
+
+<csr-id-39ab8b0278e9e3fe96552ace0a4ae768a6bc10d8/>
+<csr-id-71353f0d4dfd9766dfdc715c4a91a028081f910f/>
 
 ### Chore
 
@@ -28,7 +56,7 @@ Unchanged from previous release.
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release over the course of 4 calendar days.
+ - 5 commits contributed to the release over the course of 3 calendar days.
  - 28 days passed between releases.
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 3 unique issues were worked on: [#1061](https://github.com/hydro-project/hydroflow/issues/1061), [#1062](https://github.com/hydro-project/hydroflow/issues/1062), [#1084](https://github.com/hydro-project/hydroflow/issues/1084)
@@ -46,6 +74,7 @@ Unchanged from previous release.
  * **[#1084](https://github.com/hydro-project/hydroflow/issues/1084)**
     - Appease various clippy lints ([`39ab8b0`](https://github.com/hydro-project/hydroflow/commit/39ab8b0278e9e3fe96552ace0a4ae768a6bc10d8))
  * **Uncategorized**
+    - Release hydroflow_lang v0.6.0, hydroflow_datalog_core v0.6.0, hydroflow_datalog v0.6.0, hydroflow_macro v0.6.0, lattices v0.5.3, variadics v0.0.4, pusherator v0.0.5, hydroflow v0.6.0, stageleft v0.2.0, hydroflow_plus v0.6.0, hydro_deploy v0.6.0, hydro_cli v0.6.0, hydroflow_plus_cli_integration v0.6.0, safety bump 7 crates ([`09ea65f`](https://github.com/hydro-project/hydroflow/commit/09ea65fe9cd45c357c43bffca30e60243fa45cc8))
     - Fix imports for clippy ([`71353f0`](https://github.com/hydro-project/hydroflow/commit/71353f0d4dfd9766dfdc715c4a91a028081f910f))
 </details>
 

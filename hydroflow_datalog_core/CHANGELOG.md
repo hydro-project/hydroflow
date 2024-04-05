@@ -5,7 +5,73 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.6.1 (2024-04-05)
+
+### New Features
+
+ - <csr-id-f9b26b6df7ff7d2a3530527579c60f41d93e9d45/> switch singletons references to being per-op intead of per-edge
+   Only testing in `filter` op for now
+ - <csr-id-0a5e785d4bf0729ba0fe95466c822e8304f96e24/> initial proof-of-concept for singletons
+ - <csr-id-602e21fc04da5a0d65ac7128688760c92ffba3c1/> include subgraph ID in pivot_run codegen
+ - <csr-id-916a366cba94c739a6e170d281663f19f706d6be/> add syntax for "splatting" columns
+   feat(hydroflow_datalog): add syntax for "splatting" columns
+   
+   The * operator can be used on the left-hand side of a rule to indicate
+   that each row should be duplicated into many rows with that column being
+   replaced by every value in iterable corresponding to the original
+   expression.
+ - <csr-id-61cb55a04e518560beff1ea5d446927b6d7096b3/> add aggregation for collecting values into a vector
+   feat(hydroflow_datalog): add aggregation for collecting values into a
+   vector
+
+### Bug Fixes
+
+ - <csr-id-e395ad5bc22bc94cc9b85363367a306f1589efde/> leftover comments
+   fix(hydroflow_datalog): leftover comments
+   
+   Merged too soon.
+ - <csr-id-f8311db2cd9628607887fc04f2ea5933c8b7c11e/> #1050 for `fold_keyed`
+
+### Refactor
+
+ - <csr-id-88e2ca44fed2d54b969e54a948c41d3bcd9a2ab5/> add `#[repr(transparent)]` to type guard codegen
+   theoretically could help performance but is probably negligible
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 8 commits contributed to the release over the course of 32 calendar days.
+ - 35 days passed between releases.
+ - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 7 unique issues were worked on: [#1086](https://github.com/hydro-project/hydroflow/issues/1086), [#1091](https://github.com/hydro-project/hydroflow/issues/1091), [#1094](https://github.com/hydro-project/hydroflow/issues/1094), [#1132](https://github.com/hydro-project/hydroflow/issues/1132), [#1135](https://github.com/hydro-project/hydroflow/issues/1135), [#1136](https://github.com/hydro-project/hydroflow/issues/1136), [#1137](https://github.com/hydro-project/hydroflow/issues/1137)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1086](https://github.com/hydro-project/hydroflow/issues/1086)**
+    - #1050 for `fold_keyed` ([`f8311db`](https://github.com/hydro-project/hydroflow/commit/f8311db2cd9628607887fc04f2ea5933c8b7c11e))
+ * **[#1091](https://github.com/hydro-project/hydroflow/issues/1091)**
+    - Switch singletons references to being per-op intead of per-edge ([`f9b26b6`](https://github.com/hydro-project/hydroflow/commit/f9b26b6df7ff7d2a3530527579c60f41d93e9d45))
+    - Initial proof-of-concept for singletons ([`0a5e785`](https://github.com/hydro-project/hydroflow/commit/0a5e785d4bf0729ba0fe95466c822e8304f96e24))
+ * **[#1094](https://github.com/hydro-project/hydroflow/issues/1094)**
+    - Add aggregation for collecting values into a vector ([`61cb55a`](https://github.com/hydro-project/hydroflow/commit/61cb55a04e518560beff1ea5d446927b6d7096b3))
+ * **[#1132](https://github.com/hydro-project/hydroflow/issues/1132)**
+    - Add syntax for "splatting" columns ([`916a366`](https://github.com/hydro-project/hydroflow/commit/916a366cba94c739a6e170d281663f19f706d6be))
+ * **[#1135](https://github.com/hydro-project/hydroflow/issues/1135)**
+    - Leftover comments ([`e395ad5`](https://github.com/hydro-project/hydroflow/commit/e395ad5bc22bc94cc9b85363367a306f1589efde))
+ * **[#1136](https://github.com/hydro-project/hydroflow/issues/1136)**
+    - Add `#[repr(transparent)]` to type guard codegen ([`88e2ca4`](https://github.com/hydro-project/hydroflow/commit/88e2ca44fed2d54b969e54a948c41d3bcd9a2ab5))
+ * **[#1137](https://github.com/hydro-project/hydroflow/issues/1137)**
+    - Include subgraph ID in pivot_run codegen ([`602e21f`](https://github.com/hydro-project/hydroflow/commit/602e21fc04da5a0d65ac7128688760c92ffba3c1))
+</details>
+
 ## 0.6.0 (2024-03-02)
+
+<csr-id-b391447ec13f1f79c99142f296dc2fa8640034f4/>
 
 ### Style
 
@@ -15,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 1 commit contributed to the release over the course of 6 calendar days.
+ - 2 commits contributed to the release over the course of 6 calendar days.
  - 28 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -27,6 +93,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release hydroflow_lang v0.6.0, hydroflow_datalog_core v0.6.0, hydroflow_datalog v0.6.0, hydroflow_macro v0.6.0, lattices v0.5.3, variadics v0.0.4, pusherator v0.0.5, hydroflow v0.6.0, stageleft v0.2.0, hydroflow_plus v0.6.0, hydro_deploy v0.6.0, hydro_cli v0.6.0, hydroflow_plus_cli_integration v0.6.0, safety bump 7 crates ([`09ea65f`](https://github.com/hydro-project/hydroflow/commit/09ea65fe9cd45c357c43bffca30e60243fa45cc8))
     - Fix imports ([`b391447`](https://github.com/hydro-project/hydroflow/commit/b391447ec13f1f79c99142f296dc2fa8640034f4))
 </details>
 
