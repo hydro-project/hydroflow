@@ -57,6 +57,39 @@ pub fn ring<S: Debug + PartialEq + Clone, const N: usize>(
     inverse(items, f, zero, b);
 }
 
+/// Defines an integral domain structure.
+/// An integral domain is a nonzero commutative ring with no nonzero zero divisors.
+pub fn integral_domain<S: Debug + PartialEq + Clone, const N: usize>(
+    items: &[S; N],
+    f: &impl Fn(S, S) -> S,
+    g: &impl Fn(S, S) -> S,
+    zero: S, // zero is the identity element of f
+    one: S,  // one is the identity element of g
+    b: &impl Fn(S) -> S,
+) {
+    commutative_ring(items, f, g, zero.clone(), one, b);
+    no_nonzero_zero_divisors(items, f, zero);
+}
+
+/// Defines a no-nonzero-zero-divisors property.
+/// An element a is a zero divisor if there exists a non-zero element b such that ab = 0 or ba = 0
+pub fn no_nonzero_zero_divisors<S: Debug + PartialEq + Clone, const N: usize>(
+    items: &[S; N],
+    f: &impl Fn(S, S) -> S,
+    zero: S,
+) {
+    for a in items {
+        for b in items {
+            if *a != zero && *b != zero {
+                assert_ne!(f(a.clone(), b.clone()), zero);
+                assert_ne!(f(b.clone(), a.clone()), zero);
+            }
+        }
+    }
+}
+
+
+
 /// Defines a commutative ring structure.
 /// A commutative ring is a ring where the multiplication operation g is commutative.
 pub fn commutative_ring<S: Debug + PartialEq + Clone, const N: usize>(
