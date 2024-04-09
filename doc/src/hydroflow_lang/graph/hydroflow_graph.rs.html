@@ -1632,6 +1632,7 @@
 <a href="#1630" id="1630">1630</a>
 <a href="#1631" id="1631">1631</a>
 <a href="#1632" id="1632">1632</a>
+<a href="#1633" id="1633">1633</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -3102,9 +3103,9 @@
 
         <span class="comment">// Write reference edges.
         </span><span class="kw">if </span>!write_config.no_references {
-            <span class="kw">for </span>src_id <span class="kw">in </span><span class="self">self</span>.node_ids() {
-                <span class="kw">for </span>dst_id <span class="kw">in </span><span class="self">self
-                    </span>.node_singleton_references(src_id)
+            <span class="kw">for </span>dst_id <span class="kw">in </span><span class="self">self</span>.node_ids() {
+                <span class="kw">for </span>src_ref_id <span class="kw">in </span><span class="self">self
+                    </span>.node_singleton_references(dst_id)
                     .iter()
                     .copied()
                     .flatten()
@@ -3112,7 +3113,8 @@
                     <span class="kw">let </span>delay_type = <span class="prelude-val">Some</span>(DelayType::Stratum);
                     <span class="kw">let </span>flow_props = <span class="prelude-val">None</span>;
                     <span class="kw">let </span>label = <span class="prelude-val">None</span>;
-                    graph_write.write_edge(src_id, dst_id, delay_type, flow_props, label, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
+                    graph_write
+                        .write_edge(src_ref_id, dst_id, delay_type, flow_props, label, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
                 }
             }
         }

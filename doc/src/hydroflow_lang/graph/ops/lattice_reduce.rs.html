@@ -156,7 +156,7 @@
         <span class="macro">assert!</span>(is_pull);
 
         <span class="kw">let </span>arguments = <span class="kw-2">&amp;</span><span class="macro">parse_quote_spanned! </span>{op_span=&gt;
-            #root::lattices::Merge::&lt;<span class="kw">_</span>&gt;::merge
+            |acc, item| { #root::lattices::Merge::&lt;<span class="kw">_</span>&gt;::merge(acc, item); }
         };
         <span class="kw">let </span>wc = WriteContextArgs {
             arguments,

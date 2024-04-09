@@ -613,12 +613,12 @@
         .collect();
     <span class="kw">let </span>singleton_barrier_crossers = partitioned_graph
         .node_ids()
-        .flat_map(|src| {
+        .flat_map(|dst| {
             partitioned_graph
-                .node_singleton_references(src)
+                .node_singleton_references(dst)
                 .iter()
                 .flatten()
-                .map(<span class="kw">move </span>|<span class="kw-2">&amp;</span>dst| (src, dst))
+                .map(<span class="kw">move </span>|<span class="kw-2">&amp;</span>src_ref| (src_ref, dst))
         })
         .collect();
     BarrierCrossers {

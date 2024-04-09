@@ -73,6 +73,7 @@
 <a href="#71" id="71">71</a>
 <a href="#72" id="72">72</a>
 <a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>syn::parse_quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -133,7 +134,8 @@
         <span class="kw">let </span>first_arg = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
 
         <span class="kw">let </span>arguments = <span class="kw-2">&amp;</span><span class="macro">parse_quote_spanned! </span>{op_span=&gt;
-            #first_arg, #root::lattices::Merge::merge
+            #first_arg,
+            |acc, item| { #root::lattices::Merge::&lt;<span class="kw">_</span>&gt;::merge(acc, item); }
         };
 
         <span class="kw">let </span>wc = WriteContextArgs {
