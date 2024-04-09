@@ -17,14 +17,14 @@ digraph {
         n1v1
         n2v1
         n3v1
+        subgraph "cluster_sg_1v1_var_max_of_stream2" {
+            label="var max_of_stream2"
+            n3v1
+        }
         subgraph "cluster_sg_1v1_var_stream2" {
             label="var stream2"
             n1v1
             n2v1
-        }
-        subgraph "cluster_sg_1v1_var_sum_of_stream2" {
-            label="var sum_of_stream2"
-            n3v1
         }
     }
 }
