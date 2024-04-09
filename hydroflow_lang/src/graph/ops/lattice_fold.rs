@@ -58,7 +58,8 @@ pub const LATTICE_FOLD: OperatorConstraints = OperatorConstraints {
         let first_arg = &arguments[0];
 
         let arguments = &parse_quote_spanned! {op_span=>
-            #first_arg, #root::lattices::Merge::merge
+            #first_arg,
+            |acc, item| { #root::lattices::Merge::<_>::merge(acc, item); }
         };
 
         let wc = WriteContextArgs {
