@@ -60,12 +60,12 @@ fn find_barrier_crossers(partitioned_graph: &HydroflowGraph) -> BarrierCrossers 
         .collect();
     let singleton_barrier_crossers = partitioned_graph
         .node_ids()
-        .flat_map(|src| {
+        .flat_map(|dst| {
             partitioned_graph
-                .node_singleton_references(src)
+                .node_singleton_references(dst)
                 .iter()
                 .flatten()
-                .map(move |&dst| (src, dst))
+                .map(move |&src_ref| (src_ref, dst))
         })
         .collect();
     BarrierCrossers {
