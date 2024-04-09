@@ -35,8 +35,8 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
     categories: &[OperatorCategory::Fold],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
-    hard_range_out: RANGE_1,
-    soft_range_out: RANGE_1,
+    hard_range_out: &(0..=1),
+    soft_range_out: &(0..=1),
     num_args: 2,
     persistence_args: &(0..=1),
     type_args: RANGE_0,
@@ -49,6 +49,7 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
     output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
+                   root,
                    context,
                    hydroflow,
                    op_span,
@@ -68,8 +69,6 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
                    ..
                },
                diagnostics| {
-        assert!(is_pull);
-
         let persistence = match persistence_args[..] {
             [] => Persistence::Tick,
             [a] => a,
@@ -105,6 +104,18 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
         } else {
             Default::default() // No code
         };
+        let iterator_foreach = quote_spanned! {op_span=>
+            #[inline(always)]
+            fn call_comb_type<Accum, Item, Out>(
+                accum: &mut Accum,
+                item: Item,
+                func: impl Fn(&mut Accum, Item) -> Out
+            ) -> Out {
+                (func)(accum, item)
+            }
+            #[allow(clippy::redundant_closure_call)]
+            call_comb_type(&mut *#accumulator_ident, #iterator_item_ident, #func);
+        };
 
         let write_prologue = quote_spanned! {op_span=>
             let #initializer_func_ident = #init;
@@ -114,29 +125,34 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
                 ::std::cell::RefCell::new((#initializer_func_ident)())
             );
         };
-        let write_iterator = quote_spanned! {op_span=>
-            let #ident = {
-                let mut #accumulator_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
-                #tick_reset_code
+        let write_iterator = if is_pull {
+            quote_spanned! {op_span=>
+                let #ident = {
+                    let mut #accumulator_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
+                    #tick_reset_code
 
-                #input.for_each(|#iterator_item_ident| {
-                    #[inline(always)]
-                    fn call_comb_type<Accum, Item, Out>(
-                        accum: &mut Accum,
-                        item: Item,
-                        func: impl Fn(&mut Accum, Item) -> Out
-                    ) -> Out {
-                        (func)(accum, item)
+                    #input.for_each(|#iterator_item_ident| {
+                        #iterator_foreach
+                    });
+
+                    #[allow(clippy::clone_on_copy)]
+                    {
+                        ::std::iter::once(::std::clone::Clone::clone(&*#accumulator_ident))
                     }
-                    #[allow(clippy::redundant_closure_call)]
-                    call_comb_type(&mut *#accumulator_ident, #iterator_item_ident, #func);
-                });
+                };
+            }
+        } else {
+            quote_spanned! {op_span=>
+                let #ident = {
+                    let mut #accumulator_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
+                    #tick_reset_code
 
-                #[allow(clippy::clone_on_copy)]
-                {
-                    ::std::iter::once(::std::clone::Clone::clone(&*#accumulator_ident))
-                }
-            };
+                    #root::pusherator::for_each::ForEach::new(|#iterator_item_ident| {
+                        let mut #accumulator_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
+                        #iterator_foreach
+                    })
+                };
+            }
         };
         let write_iterator_after = if Persistence::Static == persistence {
             quote_spanned! {op_span=>
