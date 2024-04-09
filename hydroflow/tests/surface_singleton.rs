@@ -86,5 +86,26 @@ pub fn test_fold_singleton() {
 
     assert_graphvis_snapshots!(df);
 
-    df.run_available(); // Should return quickly and not hang
+    df.run_available();
+}
+
+#[multiplatform_test]
+pub fn test_fold_singleton_push() {
+    let mut df = hydroflow::hydroflow_syntax! {
+        stream1 = source_iter(10..=30);
+        stream2 = source_iter(15..=25);
+        sum_of_stream2 = stream2 -> fold(|| 0, std::ops::AddAssign::add_assign);
+
+        filtered_stream1 = stream1
+            -> inspect(|x| println!("inspect {}", x))
+            -> filter(|&value| {
+                // This is not monotonic.
+                value <= #sum_of_stream2
+            })
+            -> for_each(|x| println!("filtered {}", x));
+    };
+
+    assert_graphvis_snapshots!(df);
+
+    df.run_available();
 }
