@@ -5,7 +5,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.6.2 (2024-04-09)
+
+### New Features
+
+ - <csr-id-5679bfb7d3b96089cc020308c7d88021a254e63c/> allow `reduce()` to be referenceable as a singleton, fix docs and bugs
+   * fixed bug: accumulator closures could have return values, which would be ignored
+   * updated docs
+ - <csr-id-0f16d1f50cd64d9ca52ec811acc4a643a86f14fe/> make fold output optional, usable as just a singleton reference
+ - <csr-id-5c5b6523d96a22c97382a7c61ee0e36ad77c0a0f/> allow `fold()` to be referenceable as a singleton
+
+### Bug Fixes
+
+ - <csr-id-82b3030eefb759a97053057f717efb95491802b3/> fix singleton reference edges being backwards, fix #1147
+
+### Test
+
+ - <csr-id-d9f72a62c0099d69986fe28f484bb2bf574caaac/> add tests for #1147 (failing)
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 5 commits contributed to the release.
+ - 4 days passed between releases.
+ - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 3 unique issues were worked on: [#1134](https://github.com/hydro-project/hydroflow/issues/1134), [#1148](https://github.com/hydro-project/hydroflow/issues/1148), [#1150](https://github.com/hydro-project/hydroflow/issues/1150)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1134](https://github.com/hydro-project/hydroflow/issues/1134)**
+    - Make fold output optional, usable as just a singleton reference ([`0f16d1f`](https://github.com/hydro-project/hydroflow/commit/0f16d1f50cd64d9ca52ec811acc4a643a86f14fe))
+    - Allow `fold()` to be referenceable as a singleton ([`5c5b652`](https://github.com/hydro-project/hydroflow/commit/5c5b6523d96a22c97382a7c61ee0e36ad77c0a0f))
+ * **[#1148](https://github.com/hydro-project/hydroflow/issues/1148)**
+    - Fix singleton reference edges being backwards, fix #1147 ([`82b3030`](https://github.com/hydro-project/hydroflow/commit/82b3030eefb759a97053057f717efb95491802b3))
+    - Add tests for #1147 (failing) ([`d9f72a6`](https://github.com/hydro-project/hydroflow/commit/d9f72a62c0099d69986fe28f484bb2bf574caaac))
+ * **[#1150](https://github.com/hydro-project/hydroflow/issues/1150)**
+    - Allow `reduce()` to be referenceable as a singleton, fix docs and bugs ([`5679bfb`](https://github.com/hydro-project/hydroflow/commit/5679bfb7d3b96089cc020308c7d88021a254e63c))
+</details>
+
 ## 0.6.1 (2024-04-05)
+
+<csr-id-fc447ffdf8fd1b2189545a991f08588238182f00/>
+<csr-id-1b19361a87bafb7d7c12be04cc2ce3370d71439a/>
+<csr-id-8a22b3a27282b5076db1c89bc3a8572dc16a5e7c/>
+<csr-id-0ac2d46dcfc9756219806663042eca18e4eeff3f/>
+<csr-id-be8d767aa6347f6df57908d1e9beae7224ea2e53/>
+<csr-id-76e501a35ba47803b69ea62920aae570fb60e2f0/>
+<csr-id-7958fb0d900be8fe7359326abfa11dcb8fb35e8a/>
+<csr-id-99bbe50a6cd214a974aec72d95bf10b9b6da33f6/>
+<csr-id-118a563dbe627e730797128098698739db5588e5/>
 
 ### Chore
 
@@ -17,6 +70,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-550b17c0e0edd233b0cceab55fed0de309051503/> more improvements to `persist_mut[_keyed]` docs
 
 ### New Features
+
+<csr-id-61cb55a04e518560beff1ea5d446927b6d7096b3/>
+<csr-id-fd90d4130e86b16139f6d3a386fbbfb49fae5a9b/>
+<csr-id-99657d528c36e4e25b7eaa536c480e7b3d859443/>
 
  - <csr-id-1bde8a2443523fa8d3aafd7459c9a484de7724b7/> Render singleton references in graphvis
  - <csr-id-54c6874931ebd7ba13140dbcf3e75ad9b2852331/> enable inspect to have no ouputs
@@ -40,11 +97,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-31a543c236b874a60b7a152f11377013bcd15221/> allow dropping of tee handoff output to prevent memory leak
  - <csr-id-5f21e4c8c565f1c87694d692fcec33ce1cb9d77f/> implement teeing handoff for scheduled layer
    - Cleanup/update scheduled layer `TeeingHandoff` tests
- - <csr-id-61cb55a04e518560beff1ea5d446927b6d7096b3/> add aggregation for collecting values into a vector
-   feat(hydroflow_datalog): add aggregation for collecting values into a
-   vector
- - <csr-id-fd90d4130e86b16139f6d3a386fbbfb49fae5a9b/> add `kvs_mut` example, fix #785
- - <csr-id-99657d528c36e4e25b7eaa536c480e7b3d859443/> scheduler `log` subgraph name (which includes surface syntax sg id)
 
 ### Bug Fixes
 
@@ -72,8 +124,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 27 commits contributed to the release over the course of 32 calendar days.
- - 35 days passed between releases.
+ - 28 commits contributed to the release over the course of 31 calendar days.
+ - 34 days passed between releases.
  - 27 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 18 unique issues were worked on: [#1068](https://github.com/hydro-project/hydroflow/issues/1068), [#1086](https://github.com/hydro-project/hydroflow/issues/1086), [#1087](https://github.com/hydro-project/hydroflow/issues/1087), [#1089](https://github.com/hydro-project/hydroflow/issues/1089), [#1090](https://github.com/hydro-project/hydroflow/issues/1090), [#1091](https://github.com/hydro-project/hydroflow/issues/1091), [#1093](https://github.com/hydro-project/hydroflow/issues/1093), [#1094](https://github.com/hydro-project/hydroflow/issues/1094), [#1102](https://github.com/hydro-project/hydroflow/issues/1102), [#1113](https://github.com/hydro-project/hydroflow/issues/1113), [#1125](https://github.com/hydro-project/hydroflow/issues/1125), [#1128](https://github.com/hydro-project/hydroflow/issues/1128), [#1132](https://github.com/hydro-project/hydroflow/issues/1132), [#1133](https://github.com/hydro-project/hydroflow/issues/1133), [#1137](https://github.com/hydro-project/hydroflow/issues/1137), [#1140](https://github.com/hydro-project/hydroflow/issues/1140), [#1145](https://github.com/hydro-project/hydroflow/issues/1145), [#1146](https://github.com/hydro-project/hydroflow/issues/1146)
 
@@ -128,7 +180,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Consider singleton references as `DelayType::Stratum` barriers ([`1b19361`](https://github.com/hydro-project/hydroflow/commit/1b19361a87bafb7d7c12be04cc2ce3370d71439a))
  * **[#1146](https://github.com/hydro-project/hydroflow/issues/1146)**
     - Render singleton references in graphvis ([`1bde8a2`](https://github.com/hydro-project/hydroflow/commit/1bde8a2443523fa8d3aafd7459c9a484de7724b7))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.5.2, hydroflow_lang v0.6.1, hydroflow_datalog_core v0.6.1, lattices v0.5.4, hydroflow v0.6.1, stageleft_macro v0.1.1, stageleft v0.2.1, hydroflow_plus v0.6.1, hydro_deploy v0.6.1, hydro_cli v0.6.1, hydroflow_plus_cli_integration v0.6.1, stageleft_tool v0.1.1 ([`cd63f22`](https://github.com/hydro-project/hydroflow/commit/cd63f2258c961a40f0e5dbef20ac329a2d570ad0))
 </details>
+
+<csr-unknown>
+ add aggregation for collecting values into a vectorfeat(hydroflow_datalog): add aggregation for collecting values into avector add kvs_mut example, fix #785 scheduler log subgraph name (which includes surface syntax sg id)<csr-unknown/>
 
 ## 0.6.0 (2024-03-02)
 
@@ -277,6 +334,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-8b635683e5ac3c4ed2d896ae88e2953db1c6312c/> add a functional surface syntax using staging
  - <csr-id-f327b02c8001129e619fb253ab9b6d550e229a48/> add left,right,outer join module examples
  - <csr-id-7df0a0df61597764eed763b68138929fed1413ac/> add defer() which is the same as defer_tick() except that it is lazy
+ - <csr-id-6158a7aae2ef9b58245c23fc668715a3fb2ff7dc/> new implementation and Hydro Deploy setup
+   --
  - <csr-id-6158a7aae2ef9b58245c23fc668715a3fb2ff7dc/> new implementation and Hydro Deploy setup
    --
  - <csr-id-6158a7aae2ef9b58245c23fc668715a3fb2ff7dc/> new implementation and Hydro Deploy setup

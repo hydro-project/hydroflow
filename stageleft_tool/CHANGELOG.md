@@ -1,6 +1,9 @@
 
 
-## v0.1.1 (2024-04-05)
+## v0.1.1 (2024-04-09)
+
+<csr-id-fc447ffdf8fd1b2189545a991f08588238182f00/>
+<csr-id-7958fb0d900be8fe7359326abfa11dcb8fb35e8a/>
 
 ### Chore
 
@@ -23,8 +26,8 @@
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release over the course of 31 calendar days.
- - 67 days passed between releases.
+ - 5 commits contributed to the release over the course of 35 calendar days.
+ - 71 days passed between releases.
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1083](https://github.com/hydro-project/hydroflow/issues/1083), [#1090](https://github.com/hydro-project/hydroflow/issues/1090), [#1098](https://github.com/hydro-project/hydroflow/issues/1098), [#1140](https://github.com/hydro-project/hydroflow/issues/1140)
 
@@ -42,6 +45,8 @@
     - Move persist manipulation into a proper optimization ([`5b65626`](https://github.com/hydro-project/hydroflow/commit/5b6562662ce3a0dd172ddc1103a591c1c6037e95))
  * **[#1140](https://github.com/hydro-project/hydroflow/issues/1140)**
     - Appease latest nightly clippy ([`fc447ff`](https://github.com/hydro-project/hydroflow/commit/fc447ffdf8fd1b2189545a991f08588238182f00))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.5.2, hydroflow_lang v0.6.1, hydroflow_datalog_core v0.6.1, lattices v0.5.4, hydroflow v0.6.1, stageleft_macro v0.1.1, stageleft v0.2.1, hydroflow_plus v0.6.1, hydro_deploy v0.6.1, hydro_cli v0.6.1, hydroflow_plus_cli_integration v0.6.1, stageleft_tool v0.1.1 ([`cd63f22`](https://github.com/hydro-project/hydroflow/commit/cd63f2258c961a40f0e5dbef20ac329a2d570ad0))
 </details>
 
 ## v0.1.0 (2024-01-29)

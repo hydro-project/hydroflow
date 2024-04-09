@@ -1,6 +1,6 @@
 
 
-## v0.6.1 (2024-04-05)
+## v0.6.1 (2024-04-09)
 
 ### New Features
 
@@ -17,8 +17,8 @@
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release over the course of 15 calendar days.
- - 35 days passed between releases.
+ - 3 commits contributed to the release over the course of 19 calendar days.
+ - 39 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 2 unique issues were worked on: [#1100](https://github.com/hydro-project/hydroflow/issues/1100), [#1101](https://github.com/hydro-project/hydroflow/issues/1101)
 
@@ -32,6 +32,8 @@
     - Simplify lifetime bounds for processes and clusters ([`77f3e5a`](https://github.com/hydro-project/hydroflow/commit/77f3e5afb9e276d1d6c643574ebac75ed0003939))
  * **[#1101](https://github.com/hydro-project/hydroflow/issues/1101)**
     - Simplify Location trait to remove lifetimes ([`7f68ebf`](https://github.com/hydro-project/hydroflow/commit/7f68ebf2a23e8e73719229a6f0408bffc7fbe7af))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.5.2, hydroflow_lang v0.6.1, hydroflow_datalog_core v0.6.1, lattices v0.5.4, hydroflow v0.6.1, stageleft_macro v0.1.1, stageleft v0.2.1, hydroflow_plus v0.6.1, hydro_deploy v0.6.1, hydro_cli v0.6.1, hydroflow_plus_cli_integration v0.6.1, stageleft_tool v0.1.1 ([`cd63f22`](https://github.com/hydro-project/hydroflow/commit/cd63f2258c961a40f0e5dbef20ac329a2d570ad0))
 </details>
 
 ## v0.6.0 (2024-03-02)

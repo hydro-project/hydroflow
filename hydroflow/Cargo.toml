@@ -1,7 +1,7 @@
 [package]
 name = "hydroflow"
 publish = true
-version = "0.6.1"
+version = "0.6.2"
 edition = "2021"
 license = "Apache-2.0"
 documentation = "https://docs.rs/hydroflow/"
@@ -33,7 +33,7 @@ bytes = "1.1.0"
 futures = "0.3"
 hydroflow_cli_integration = { optional = true, path = "../hydro_deploy/hydroflow_cli_integration", version = "^0.5.2" }
 hydroflow_datalog = { optional = true, path = "../hydroflow_datalog", version = "^0.6.0" }
-hydroflow_lang = { path = "../hydroflow_lang", version = "^0.6.1" }
+hydroflow_lang = { path = "../hydroflow_lang", version = "^0.6.2" }
 hydroflow_macro = { optional = true, path = "../hydroflow_macro", version = "^0.6.0" }
 itertools = "0.10"
 lattices = { path = "../lattices", version = "^0.5.4", features = [ "serde" ] }
