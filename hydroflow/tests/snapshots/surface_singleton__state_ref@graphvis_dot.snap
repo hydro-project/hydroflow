@@ -21,11 +21,11 @@ digraph {
     n1v1 -> n5v1
     n8v1 -> n9v1 [color=darkgreen, style=bold]
     n4v1 -> n8v1 [color=darkgreen, style=bold]
-    n5v1 -> n4v1 [color=red]
+    n4v1 -> n5v1 [color=red]
     subgraph "cluster n1v1" {
         fillcolor="#dddddd"
         style=filled
-        label = "sg_1v1\nstratum 0"
+        label = "sg_1v1\nstratum 1"
         n1v1
         n5v1
         n6v1
@@ -44,7 +44,7 @@ digraph {
     subgraph "cluster n2v1" {
         fillcolor="#dddddd"
         style=filled
-        label = "sg_2v1\nstratum 1"
+        label = "sg_2v1\nstratum 0"
         n2v1
         n3v1
         n4v1

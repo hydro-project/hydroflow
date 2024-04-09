@@ -1468,9 +1468,9 @@ impl HydroflowGraph {
 
         // Write reference edges.
         if !write_config.no_references {
-            for src_id in self.node_ids() {
-                for dst_id in self
-                    .node_singleton_references(src_id)
+            for dst_id in self.node_ids() {
+                for src_ref_id in self
+                    .node_singleton_references(dst_id)
                     .iter()
                     .copied()
                     .flatten()
@@ -1478,7 +1478,8 @@ impl HydroflowGraph {
                     let delay_type = Some(DelayType::Stratum);
                     let flow_props = None;
                     let label = None;
-                    graph_write.write_edge(src_id, dst_id, delay_type, flow_props, label, true)?;
+                    graph_write
+                        .write_edge(src_ref_id, dst_id, delay_type, flow_props, label, true)?;
                 }
             }
         }
