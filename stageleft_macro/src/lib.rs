@@ -145,8 +145,43 @@ pub fn runtime(
     // one that is runtime-only with public fields and one that is staged-only without
     let input: TokenStream = input.into();
     proc_macro::TokenStream::from(quote! {
-        #[cfg(not(feature = "macro"))]
+        #[cfg(not(stageleft_macro))]
         #input
+    })
+}
+
+/// A utility for declaring top-level public modules in a Stageleft crate that will
+/// export macros. This gets around errors in compiling the macro crate when there
+/// are `pub mod` declarations at the top-level file.
+///
+/// This macro will only work on nightly with `#![feature(proc_macro_hygiene)]`,
+/// but for stable builds you can manually achieve this by using the following
+/// pattern:
+///
+/// ```ignore
+/// #[cfg(not(stageleft_macro))]
+/// pub mod my_mod;
+///
+/// #[cfg(stageleft_macro)]
+/// mod my_mod;
+/// ```
+#[proc_macro_attribute]
+pub fn top_level_mod(
+    _attr: proc_macro::TokenStream,
+    input: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    let input: syn::ItemMod = syn::parse(input).unwrap();
+    let mut input_pub_crate = input.clone();
+    if let syn::Visibility::Public(_) = &input_pub_crate.vis {
+        input_pub_crate.vis = syn::parse_quote!(pub(crate));
+    }
+
+    proc_macro::TokenStream::from(quote! {
+        #[cfg(not(stageleft_macro))]
+        #input
+
+        #[cfg(stageleft_macro)]
+        #input_pub_crate
     })
 }
 
@@ -186,7 +221,7 @@ pub fn entry(
     let attr_params =
         syn::parse_macro_input!(attr with Punctuated<Type, Token![,]>::parse_terminated);
 
-    let input = syn::parse_macro_input!(input as syn::ItemFn);
+    let mut input = syn::parse_macro_input!(input as syn::ItemFn);
     let input_name = &input.sig.ident;
 
     let input_generics = &input.sig.generics;
@@ -303,17 +338,19 @@ pub fn entry(
         .collect::<String>();
     let input_hash = "macro_".to_string() + &sha256::digest(input_contents);
     let input_hash_ident = syn::Ident::new(&input_hash, Span::call_site());
+    let input_hash_impl_ident = syn::Ident::new(&(input_hash + "_impl"), Span::call_site());
 
     let input_visibility = input.vis.clone();
+    input.vis = syn::parse_quote!(pub(crate));
 
     proc_macro::TokenStream::from(quote_spanned! {input.span()=>
-        #[cfg_attr(not(feature = "macro"), allow(unused))]
+        #[cfg_attr(not(stageleft_macro), allow(unused))]
         #[allow(clippy::needless_lifetimes)]
         #input
 
-        #[cfg_attr(not(feature = "macro"), allow(unused))]
-        #[cfg_attr(not(feature = "macro"), doc(hidden))]
-        pub(crate) fn #input_hash_ident(input: #root::internal::TokenStream) -> #root::internal::TokenStream {
+        #[cfg_attr(not(stageleft_macro), allow(unused))]
+        #[cfg_attr(not(stageleft_macro), doc(hidden))]
+        pub(crate) fn #input_hash_impl_ident(input: #root::internal::TokenStream) -> #root::internal::TokenStream {
             let input_parsed = #root::internal::syn::parse::Parser::parse(
                 #root::internal::syn::punctuated::Punctuated::<#root::internal::syn::Expr, #root::internal::syn::Token![,]>::parse_terminated,
                 input.into()
@@ -333,25 +370,46 @@ pub fn entry(
             let final_crate_root = #root::runtime_support::get_final_crate_name(final_crate_name);
 
             let module_path: #root::internal::syn::Path = #root::internal::syn::parse_str(module_path!()).unwrap();
-            let module_path = module_path.segments.iter().skip(1).cloned().collect::<Vec<_>>();
-            let module_path = #root::internal::syn::Path {
-                leading_colon: None,
-                segments: #root::internal::syn::punctuated::Punctuated::from_iter(module_path.into_iter()),
+            let module_path_segments = module_path
+                .segments
+                .iter()
+                .skip(1)
+                .cloned()
+                .collect::<Vec<_>>();
+            let module_path = if module_path_segments.is_empty() {
+                None
+            } else {
+                Some(#root::internal::syn::Path {
+                    leading_colon: None,
+                    segments: #root::internal::syn::punctuated::Punctuated::from_iter(module_path_segments),
+                })
             };
 
-            ::#root::internal::quote!({
-                use #pound final_crate_root :: #pound module_path :: *;
-                fn expand_staged #input_generics(
-                    #(#runtime_data_params),*
-                ) -> #return_type_inner {
-                    #pound output_core
-                }
-                expand_staged(#(#runtime_data_locals),*)
-            })
+            if let Some(module_path) = module_path {
+                ::#root::internal::quote!({
+                    use #pound final_crate_root :: __staged :: #pound module_path :: *;
+                    fn expand_staged #input_generics(
+                        #(#runtime_data_params),*
+                    ) -> #return_type_inner {
+                        #pound output_core
+                    }
+                    expand_staged(#(#runtime_data_locals),*)
+                })
+            } else {
+                ::#root::internal::quote!({
+                    use #pound final_crate_root :: __staged :: *;
+                    fn expand_staged #input_generics(
+                        #(#runtime_data_params),*
+                    ) -> #return_type_inner {
+                        #pound output_core
+                    }
+                    expand_staged(#(#runtime_data_locals),*)
+                })
+            }
         }
 
         // TODO(shadaj): fixes jump-to-definition but breaks Rust Analyzer due to $crate
-        // #[cfg(not(feature = "macro"))]
+        // #[cfg(not(stageleft_macro))]
         // #[macro_export]
         // macro_rules! #input_hash_ident {
         //     ($($tt:tt)*) => {
@@ -359,10 +417,10 @@ pub fn entry(
         //     }
         // }
 
-        // #[cfg(not(feature = "macro"))]
+        // #[cfg(not(stageleft_macro))]
         // #input_visibility use #input_hash_ident as #input_name;
 
-        #[cfg(not(feature = "macro"))]
+        #[cfg(not(stageleft_macro))]
         #[allow(unused_imports)]
         #input_visibility use crate::__macro::#input_hash_ident as #input_name;
     })
