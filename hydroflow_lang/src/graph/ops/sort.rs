@@ -1,10 +1,8 @@
 use quote::quote_spanned;
 
-use crate::graph::GraphEdgeType;
-
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 /// Takes a stream as input and produces a sorted version of the stream as output.
@@ -28,6 +26,7 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),

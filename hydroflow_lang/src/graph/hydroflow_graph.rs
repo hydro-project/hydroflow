@@ -19,9 +19,10 @@ use super::{
     HANDOFF_NODE_STR, HYDROFLOW,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::ops::null_write_iterator_fn;
+use crate::graph::ops::{null_write_iterator_fn, DelayType};
 use crate::graph::MODULE_BOUNDARY_NODE_STR;
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
+use crate::process_singletons::postprocess_singletons;
 
 /// A graph representing a Hydroflow dataflow graph (with or without subgraph partitioning,
 /// stratification, and handoff insertion). This is a "meta" graph used for generating Rust source
@@ -54,7 +55,9 @@ pub struct HydroflowGraph {
     /// Which stratum each subgraph belongs to.
     subgraph_stratum: SecondaryMap<GraphSubgraphId, usize>,
 
-    /// What variable name each graph node belongs to (if any).
+    /// Resolved singletons varnames references, per node.
+    node_singleton_references: SparseSecondaryMap<GraphNodeId, Vec<Option<GraphNodeId>>>,
+    /// What variable name each graph node belongs to (if any). For debugging (graph writing) purposes only.
     node_varnames: SparseSecondaryMap<GraphNodeId, Varname>,
 
     // TODO(mingwei): #[serde(skip)] this and recompute as needed, to reduce codegen.
@@ -307,8 +310,10 @@ impl HydroflowGraph {
                     op_constraints,
                     input_ports,
                     output_ports,
+                    singletons_referenced: operator.singletons_referenced.clone(),
                     generics,
-                    arguments: operator.args.clone(),
+                    arguments_pre: operator.args.clone(),
+                    arguments_raw: operator.args_raw.clone(),
                 },
             ));
         }
@@ -353,8 +358,10 @@ impl HydroflowGraph {
                 op_constraints,
                 input_ports: vec![input_port],
                 output_ports: vec![output_port],
+                singletons_referenced: operator.singletons_referenced.clone(),
                 generics,
-                arguments: operator.args.clone(),
+                arguments_pre: operator.args.clone(),
+                arguments_raw: operator.args_raw.clone(),
             })
         };
 
@@ -461,6 +468,30 @@ impl HydroflowGraph {
             (_many, 0 | 1) => Some(Color::Pull),
             (0 | 1, _many) => Some(Color::Push),
             (_many, _to_many) => Some(Color::Comp),
+        }
+    }
+}
+
+/// Singleton references.
+impl HydroflowGraph {
+    /// Set the singletons referenced for the `node_id` operator. Each reference corresponds to the
+    /// same index in the [`crate::parse::Operator::singletons_referenced`] vec.
+    pub fn set_node_singleton_references(
+        &mut self,
+        node_id: GraphNodeId,
+        singletons_referenced: Vec<Option<GraphNodeId>>,
+    ) -> Option<Vec<Option<GraphNodeId>>> {
+        self.node_singleton_references
+            .insert(node_id, singletons_referenced)
+    }
+
+    /// Gets the singletons referenced by a node. Returns an empty iterator for non-operators and
+    /// operators that do not reference singletons.
+    pub fn node_singleton_references(&self, node_id: GraphNodeId) -> &[Option<GraphNodeId>] {
+        if let Some(singletons_referenced) = self.node_singleton_references.get(node_id) {
+            singletons_referenced
+        } else {
+            &[]
         }
     }
 }
@@ -766,6 +797,27 @@ impl HydroflowGraph {
         Ident::new(&*format!("edge_{:?}", edge_id.data()), span)
     }
 
+    /// For per-node singleton references. Helper to generate a deterministic `Ident` for the given node.
+    fn node_as_singleton_ident(&self, node_id: GraphNodeId, span: Span) -> Ident {
+        Ident::new(&format!("singleton_op_{:?}", node_id.data()), span)
+    }
+
+    /// Resolve the singletons via [`Self::node_singleton_references`] for the given `node_id`.
+    fn helper_resolve_singletons(&self, node_id: GraphNodeId, span: Span) -> Vec<Ident> {
+        self.node_singleton_references(node_id)
+            .iter()
+            .map(|singleton_node_id| {
+                // TODO(mingwei): this `expect` should be caught in error checking
+                self.node_as_singleton_ident(
+                    singleton_node_id.expect(
+                        "Expected singleton to be resolved but was not, this is a Hydroflow bug.",
+                    ),
+                    span,
+                )
+            })
+            .collect::<Vec<_>>()
+    }
+
     /// Returns each subgraph's receive and send handoffs.
     /// `Map<GraphSubgraphId, (recv handoffs, send handoffs)>`
     fn helper_collect_subgraph_handoffs(
@@ -891,6 +943,7 @@ impl HydroflowGraph {
 
                         let op_span = node.span();
                         let op_name = op_inst.op_constraints.name;
+                        // TODO(mingwei): Just use `op_inst.op_constraints`?
                         let op_constraints = OPERATORS
                             .iter()
                             .find(|op| op_name == op.name)
@@ -967,6 +1020,20 @@ impl HydroflowGraph {
 
                             let is_pull = idx < pull_to_push_idx;
 
+                            let singleton_output_ident = &if op_constraints.has_singleton_output {
+                                self.node_as_singleton_ident(node_id, op_span)
+                            } else {
+                                // This ident *should* go unused.
+                                Ident::new(&format!("{}_has_no_singleton_output", op_name), op_span)
+                            };
+
+                            let singletons_resolved =
+                                self.helper_resolve_singletons(node_id, op_span);
+                            let arguments = &postprocess_singletons(
+                                op_inst.arguments_raw.clone(),
+                                singletons_resolved,
+                            );
+
                             let context_args = WriteContextArgs {
                                 root,
                                 // There's a bit of dark magic hidden in `Span`s... you'd think it's just a `file:line:column`,
@@ -988,8 +1055,10 @@ impl HydroflowGraph {
                                 outputs: &*outputs,
                                 input_edgetypes: &*input_edgetypes,
                                 output_edgetypes: &*output_edgetypes,
+                                singleton_output_ident,
                                 op_name,
                                 op_inst,
+                                arguments,
                                 flow_props_in: &*flow_props_in,
                             };
 
@@ -1049,6 +1118,7 @@ impl HydroflowGraph {
                                             #[allow(non_snake_case)]
                                             #[inline(always)]
                                             pub fn #fn_ident<Item, Input: ::std::iter::Iterator<Item = Item>>(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                                                #[repr(transparent)]
                                                 struct Pull<Item, Input: ::std::iter::Iterator<Item = Item>> {
                                                     inner: Input
                                                 }
@@ -1080,6 +1150,7 @@ impl HydroflowGraph {
                                             #[allow(non_snake_case)]
                                             #[inline(always)]
                                             pub fn #fn_ident<Item, Input: #root::pusherator::Pusherator<Item = Item>>(input: Input) -> impl #root::pusherator::Pusherator<Item = Item> {
+                                                #[repr(transparent)]
                                                 struct Push<Item, Input: #root::pusherator::Pusherator<Item = Item>> {
                                                     inner: Input
                                                 }
@@ -1109,12 +1180,12 @@ impl HydroflowGraph {
 
                     {
                         // Determine pull and push halves of the `Pivot`.
-                        #[allow(unknown_lints)]
-                        // https://github.com/rust-lang/rust-clippy/issues/11290
-                        #[allow(clippy::redundant_locals)]
-                        let pull_to_push_idx = pull_to_push_idx;
-                        let pull_ident =
-                            self.node_as_ident(subgraph_nodes[pull_to_push_idx - 1], false);
+                        let pull_ident = if 0 < pull_to_push_idx {
+                            self.node_as_ident(subgraph_nodes[pull_to_push_idx - 1], false)
+                        } else {
+                            // Entire subgraph is push (with a single recv/pull handoff input).
+                            recv_ports[0].clone()
+                        };
 
                         #[rustfmt::skip]
                         let push_ident = if let Some(&node_id) =
@@ -1122,7 +1193,7 @@ impl HydroflowGraph {
                         {
                             self.node_as_ident(node_id, false)
                         } else if 1 == send_ports.len() {
-                            // Entire subgraph is pull, except for a single send/push handoff output.
+                            // Entire subgraph is pull (with a single send/push handoff output).
                             send_ports[0].clone()
                         } else {
                             diagnostics.push(Diagnostic::spanned(
@@ -1138,12 +1209,14 @@ impl HydroflowGraph {
                             .span()
                             .join(push_ident.span())
                             .unwrap_or_else(|| push_ident.span());
+                        let pivot_fn_ident =
+                            Ident::new(&format!("pivot_run_sg_{:?}", subgraph_id.0), pivot_span);
                         subgraph_op_iter_code.push(quote_spanned! {pivot_span=>
                             #[inline(always)]
-                            fn check_pivot_run<Pull: ::std::iter::Iterator<Item = Item>, Push: #root::pusherator::Pusherator<Item = Item>, Item>(pull: Pull, push: Push) {
+                            fn #pivot_fn_ident<Pull: ::std::iter::Iterator<Item = Item>, Push: #root::pusherator::Pusherator<Item = Item>, Item>(pull: Pull, push: Push) {
                                 #root::pusherator::pivot::Pivot::new(pull, push).run();
                             }
-                            check_pivot_run(#pull_ident, #push_ident);
+                            #pivot_fn_ident(#pull_ident, #push_ident);
                         });
                     }
                 };
@@ -1268,7 +1341,7 @@ impl HydroflowGraph {
     }
 
     /// Write out this `HydroflowGraph` using the given `GraphWrite`. E.g. `Mermaid` or `Dot.
-    pub fn write_graph<W>(
+    pub(crate) fn write_graph<W>(
         &self,
         mut graph_write: W,
         write_config: &WriteConfig,
@@ -1383,7 +1456,32 @@ impl HydroflowGraph {
             let delay_type = self
                 .node_op_inst(dst_id)
                 .and_then(|op_inst| (op_inst.op_constraints.input_delaytype_fn)(dst_port));
-            graph_write.write_edge(src_id, dst_id, delay_type, flow_props, label.as_deref())?;
+            graph_write.write_edge(
+                src_id,
+                dst_id,
+                delay_type,
+                flow_props,
+                label.as_deref(),
+                false,
+            )?;
+        }
+
+        // Write reference edges.
+        if !write_config.no_references {
+            for dst_id in self.node_ids() {
+                for src_ref_id in self
+                    .node_singleton_references(dst_id)
+                    .iter()
+                    .copied()
+                    .flatten()
+                {
+                    let delay_type = Some(DelayType::Stratum);
+                    let flow_props = None;
+                    let label = None;
+                    graph_write
+                        .write_edge(src_ref_id, dst_id, delay_type, flow_props, label, true)?;
+                }
+            }
         }
 
         // Write subgraphs.
@@ -1515,6 +1613,9 @@ pub struct WriteConfig {
     /// Will not render handoffs if set.
     #[cfg_attr(feature = "debugging", arg(long))]
     pub no_handoffs: bool,
+    /// Will not render singleton references if set.
+    #[cfg_attr(feature = "debugging", arg(long))]
+    pub no_references: bool,
 
     /// Op text will only be their name instead of the whole source.
     #[cfg_attr(feature = "debugging", arg(long))]

@@ -1,6 +1,52 @@
 
 
+## v0.1.1 (2024-04-05)
+
+### Chore
+
+ - <csr-id-fc447ffdf8fd1b2189545a991f08588238182f00/> appease latest nightly clippy
+   Also updates `surface_keyed_fold.rs` `test_fold_keyed_infer_basic` test.
+
+### New Features
+
+ - <csr-id-5b6562662ce3a0dd172ddc1103a591c1c6037e95/> move persist manipulation into a proper optimization
+   feat(hydroflow_plus): move persist manipulation into a proper
+   optimization
+ - <csr-id-cfb3029a6fb0836789db04a7d0d4a1e8b812b629/> add APIs for running optimization passes
+   feat(hydroflow_plus): add APIs for running optimization passes
+
+### Style
+
+ - <csr-id-7958fb0d900be8fe7359326abfa11dcb8fb35e8a/> qualified path cleanups for clippy
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release over the course of 31 calendar days.
+ - 67 days passed between releases.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 4 unique issues were worked on: [#1083](https://github.com/hydro-project/hydroflow/issues/1083), [#1090](https://github.com/hydro-project/hydroflow/issues/1090), [#1098](https://github.com/hydro-project/hydroflow/issues/1098), [#1140](https://github.com/hydro-project/hydroflow/issues/1140)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1083](https://github.com/hydro-project/hydroflow/issues/1083)**
+    - Add APIs for running optimization passes ([`cfb3029`](https://github.com/hydro-project/hydroflow/commit/cfb3029a6fb0836789db04a7d0d4a1e8b812b629))
+ * **[#1090](https://github.com/hydro-project/hydroflow/issues/1090)**
+    - Qualified path cleanups for clippy ([`7958fb0`](https://github.com/hydro-project/hydroflow/commit/7958fb0d900be8fe7359326abfa11dcb8fb35e8a))
+ * **[#1098](https://github.com/hydro-project/hydroflow/issues/1098)**
+    - Move persist manipulation into a proper optimization ([`5b65626`](https://github.com/hydro-project/hydroflow/commit/5b6562662ce3a0dd172ddc1103a591c1c6037e95))
+ * **[#1140](https://github.com/hydro-project/hydroflow/issues/1140)**
+    - Appease latest nightly clippy ([`fc447ff`](https://github.com/hydro-project/hydroflow/commit/fc447ffdf8fd1b2189545a991f08588238182f00))
+</details>
+
 ## v0.1.0 (2024-01-29)
+
+<csr-id-add8e602cbef513d1faa45f016a4e46d8bb5be6c/>
 
 ### Chore
 
@@ -23,7 +69,7 @@
 
 <csr-read-only-do-not-edit/>
 
- - 6 commits contributed to the release over the course of 76 calendar days.
+ - 7 commits contributed to the release over the course of 76 calendar days.
  - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 5 unique issues were worked on: [#1021](https://github.com/hydro-project/hydroflow/issues/1021), [#899](https://github.com/hydro-project/hydroflow/issues/899), [#978](https://github.com/hydro-project/hydroflow/issues/978), [#983](https://github.com/hydro-project/hydroflow/issues/983), [#986](https://github.com/hydro-project/hydroflow/issues/986)
 
@@ -44,6 +90,7 @@
  * **[#986](https://github.com/hydro-project/hydroflow/issues/986)**
     - Split Rust core from Python bindings ([`c50ca12`](https://github.com/hydro-project/hydroflow/commit/c50ca121b6d5e30dc07843f82caa135b68626301))
  * **Uncategorized**
+    - Release stageleft_tool v0.1.0 ([`4eb37db`](https://github.com/hydro-project/hydroflow/commit/4eb37db3c815005be9935556f049204f616ea801))
     - Commit empty CHANGELOG.md ([`add8e60`](https://github.com/hydro-project/hydroflow/commit/add8e602cbef513d1faa45f016a4e46d8bb5be6c))
 </details>
 

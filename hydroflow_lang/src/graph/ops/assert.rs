@@ -1,7 +1,8 @@
 use syn::parse_quote_spanned;
 
-use super::{OperatorCategory, OperatorConstraints, WriteContextArgs, RANGE_0, RANGE_1};
-use crate::graph::{GraphEdgeType, OperatorInstance};
+use super::{
+    GraphEdgeType, OperatorCategory, OperatorConstraints, WriteContextArgs, RANGE_0, RANGE_1,
+};
 
 /// > 1 input stream, 1 optional output stream
 /// > Arguments: a predicate function that will be applied to each item in the stream
@@ -24,6 +25,7 @@ pub const ASSERT: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
@@ -31,26 +33,23 @@ pub const ASSERT: OperatorConstraints = OperatorConstraints {
     output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
-                   op_span, op_inst, ..
+                   op_span, arguments, ..
                },
                diagnostics| {
-        let args = &op_inst.arguments[0];
+        let arg = &arguments[0];
 
-        let arguments = parse_quote_spanned! {op_span=>
+        let arguments = &parse_quote_spanned! {op_span=>
             |x| {
                 // This is to help constrain the types so that type inference works nicely.
                 fn __constrain_types<T>(f: impl Fn(&T) -> bool, x: &T) -> bool {
                     (f)(x)
                 }
-                assert!(__constrain_types(#args, x));
+                assert!(__constrain_types(#arg, x));
             }
         };
 
         let wc = WriteContextArgs {
-            op_inst: &OperatorInstance {
-                arguments,
-                ..op_inst.clone()
-            },
+            arguments,
             ..wc.clone()
         };
 

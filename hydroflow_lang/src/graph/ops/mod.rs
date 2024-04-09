@@ -67,6 +67,10 @@ pub struct OperatorConstraints {
     /// If this operator receives external inputs and therefore must be in
     /// stratum 0.
     pub is_external_input: bool,
+    /// If this operator has a singleton reference output. For stateful operators.
+    /// If true, [`WriteContextArgs::singleton_output_ident`] will be set to a meaningful value in
+    /// the [`Self::write_fn`] invocation.
+    pub has_singleton_output: bool,
 
     /// What named or numbered input ports to expect?
     pub ports_inn: Option<fn() -> PortListSpec>,
@@ -397,6 +401,7 @@ declare_ops![
     source_stream::SOURCE_STREAM,
     source_stream_serde::SOURCE_STREAM_SERDE,
     state::STATE,
+    state_ref::STATE_REF,
     tee::TEE,
     unique::UNIQUE,
     unzip::UNZIP,
@@ -456,11 +461,18 @@ pub struct WriteContextArgs<'a> {
     /// Output edge types (value or reference). Likely not that useful (since the operator decides
     /// its output edgetypes) but provided for completeness,
     pub output_edgetypes: &'a [GraphEdgeType],
+    /// Ident for the singleton output of this operator, if any.
+    pub singleton_output_ident: &'a Ident,
 
     /// Operator name.
     pub op_name: &'static str,
     /// Operator instance arguments object.
     pub op_inst: &'a OperatorInstance,
+    /// Arguments provided by the user into the operator as arguments.
+    /// I.e. the `a, b, c` in `-> my_op(a, b, c) -> `.
+    ///
+    /// These arguments include singleton postprocessing codegen.
+    pub arguments: &'a Punctuated<Expr, Token![,]>,
 
     /// Flow properties corresponding to each input.
     ///

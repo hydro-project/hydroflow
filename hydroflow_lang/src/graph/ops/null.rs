@@ -1,8 +1,4 @@
-use crate::graph::GraphEdgeType;
-
-use super::{
-    OperatorCategory, OperatorConstraints, NULL_WRITE_FN, RANGE_0,
-};
+use super::{GraphEdgeType, OperatorCategory, OperatorConstraints, NULL_WRITE_FN, RANGE_0};
 
 /// > unbounded number of input streams of any type, unbounded number of output streams of any type.
 ///
@@ -29,6 +25,7 @@ pub const NULL: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: &(0..=1),
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,

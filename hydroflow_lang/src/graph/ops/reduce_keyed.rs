@@ -1,11 +1,10 @@
 use quote::{quote_spanned, ToTokens};
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_1,
+    DelayType, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{OpInstGenerics, OperatorInstance, GraphEdgeType};
 
 /// > 1 input stream of type `(K, V)`, 1 output stream of type `(K, V)`.
 /// The output will have one tuple for each distinct `K`, with an accumulated (reduced) value of
@@ -67,6 +66,7 @@ pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
     persistence_args: &(0..=1),
     type_args: &(0..=2),
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
@@ -83,7 +83,6 @@ pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
                    root,
                    op_inst:
                        OperatorInstance {
-                           arguments,
                            generics:
                                OpInstGenerics {
                                    persistence_args,
@@ -92,6 +91,7 @@ pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
                                },
                            ..
                        },
+                   arguments,
                    ..
                },
                diagnostics| {

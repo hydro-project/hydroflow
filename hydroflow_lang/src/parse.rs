@@ -14,6 +14,8 @@ use syn::{
     Ident, ItemUse, LitInt, LitStr, Path, PathArguments, PathSegment, Token,
 };
 
+use crate::process_singletons::preprocess_singletons;
+
 pub struct HfCode {
     pub statements: Vec<HfStatement>,
 }
@@ -380,7 +382,9 @@ impl ToTokens for PortIndex {
 pub struct Operator {
     pub path: Path,
     pub paren_token: Paren,
+    pub args_raw: TokenStream,
     pub args: Punctuated<Expr, Token![,]>,
+    pub singletons_referenced: Vec<Ident>,
 }
 
 impl Operator {
@@ -418,6 +422,7 @@ impl Operator {
 
     /// Output the operator as a formatted string using `prettyplease`.
     pub fn to_pretty_string(&self) -> String {
+        // TODO(mingwei): preserve #args_raw instead of just args?
         let file: syn::File = syn::parse_quote! {
             fn main() {
                 #self
@@ -455,12 +460,19 @@ impl Parse for Operator {
 
         let content;
         let paren_token = parenthesized!(content in input);
-        let args = Punctuated::parse_terminated(&content)?;
+        let args_raw: TokenStream = content.parse()?;
+        let mut singletons_referenced = Vec::new();
+        let args = parse_terminated(preprocess_singletons(
+            args_raw.clone(),
+            &mut singletons_referenced,
+        ))?;
 
         Ok(Self {
             path,
             paren_token,
+            args_raw,
             args,
+            singletons_referenced,
         })
     }
 }
@@ -531,6 +543,25 @@ impl Ord for IndexInt {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.value.cmp(&other.value)
     }
+}
+
+pub fn parse_terminated<T, P>(tokens: TokenStream) -> syn::Result<Punctuated<T, P>>
+where
+    T: Parse,
+    P: Parse,
+{
+    struct ParseTerminated<T, P>(pub Punctuated<T, P>);
+    impl<T, P> Parse for ParseTerminated<T, P>
+    where
+        T: Parse,
+        P: Parse,
+    {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            Ok(Self(Punctuated::parse_terminated(input)?))
+        }
+    }
+
+    Ok(syn::parse2::<ParseTerminated<T, P>>(tokens)?.0)
 }
 
 #[cfg(test)]

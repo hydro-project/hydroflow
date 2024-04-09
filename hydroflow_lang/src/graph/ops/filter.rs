@@ -1,10 +1,9 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowPropArgs, OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
+    FlowPropArgs, GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::graph::GraphEdgeType;
 
 /// Filter outputs a subsequence of the items it receives at its input, according to a
 /// Rust boolean closure passed in as an argument.
@@ -30,6 +29,7 @@ pub const FILTER: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
@@ -46,7 +46,7 @@ pub const FILTER: OperatorConstraints = OperatorConstraints {
                    inputs,
                    outputs,
                    is_pull,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                _| {

@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::path::Path;
 use std::{env, fs};
 
@@ -8,7 +9,7 @@ use syn::visit::Visit;
 use syn::visit_mut::VisitMut;
 
 struct GenMacroVistor {
-    exported_macros: Vec<(String, syn::Path)>,
+    exported_macros: BTreeSet<(String, String)>,
     current_mod: syn::Path,
 }
 
@@ -42,40 +43,39 @@ impl<'a> Visit<'a> for GenMacroVistor {
                 .collect::<String>();
             let contents_hash = sha256::digest(contents);
             self.exported_macros
-                .push((contents_hash, parse_quote!(#cur_path)));
+                .insert((contents_hash, cur_path.to_token_stream().to_string()));
         }
     }
 }
 
 pub fn gen_macro(staged_path: &Path, crate_name: &str) {
     let out_dir = env::var_os("OUT_DIR").unwrap();
-    let dest_path = Path::new(&out_dir).join("lib.rs");
+    let dest_path = Path::new(&out_dir).join("lib_macro.rs");
 
     let flow_lib =
         syn_inline_mod::parse_and_inline_modules(&staged_path.join("src").join("lib.rs"));
     let mut visitor = GenMacroVistor {
-        exported_macros: vec![],
-        current_mod: parse_quote!(crate::__staged),
+        exported_macros: Default::default(),
+        current_mod: parse_quote!(crate),
     };
     visitor.visit_file(&flow_lib);
 
     let staged_path_absolute = fs::canonicalize(staged_path).unwrap();
 
-    let lib_path = staged_path_absolute.join("src").join("lib.rs");
-    let lib_path_string = lib_path.to_string_lossy();
-    let mut out_file: syn::File = parse_quote!(
-        #[path = #lib_path_string] mod __staged;
-    );
+    let mut out_file: syn::File = parse_quote!();
 
     for (hash, exported_from) in visitor.exported_macros {
         let underscored_path = syn::Ident::new(&("macro_".to_string() + &hash), Span::call_site());
+        let underscored_path_impl =
+            syn::Ident::new(&("macro_".to_string() + &hash + "_impl"), Span::call_site());
+        let exported_from_parsed: syn::Path = syn::parse_str(&exported_from).unwrap();
 
         let proc_macro_wrapper: syn::ItemFn = parse_quote!(
             #[proc_macro]
             #[allow(non_snake_case, unused_qualifications)]
             pub fn #underscored_path(input: ::proc_macro::TokenStream) -> ::proc_macro::TokenStream {
                 let input = ::stageleft::internal::TokenStream::from(input);
-                let out = #exported_from::#underscored_path(input);
+                let out = #exported_from_parsed::#underscored_path_impl(input);
                 ::proc_macro::TokenStream::from(out)
             }
         );
@@ -86,11 +86,30 @@ pub fn gen_macro(staged_path: &Path, crate_name: &str) {
     fs::write(dest_path, out_file.to_token_stream().to_string()).unwrap();
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rustc-env=STAGELEFT_FINAL_CRATE_NAME={}", crate_name);
+    println!("cargo:rustc-cfg=stageleft_macro");
 
     println!(
         "cargo:rerun-if-changed={}",
         staged_path_absolute.to_string_lossy()
     );
+}
+
+struct InlineTopLevelMod {}
+
+impl VisitMut for InlineTopLevelMod {
+    fn visit_file_mut(&mut self, i: &mut syn::File) {
+        i.attrs = vec![];
+        i.items.iter_mut().for_each(|i| {
+            if let syn::Item::Macro(e) = i {
+                if e.mac.path.to_token_stream().to_string() == "stageleft :: top_level_mod" {
+                    let inner = &e.mac.tokens;
+                    *i = parse_quote!(
+                        pub mod #inner;
+                    );
+                }
+            }
+        });
+    }
 }
 
 struct GenFinalPubVistor {
@@ -126,7 +145,7 @@ impl VisitMut for GenFinalPubVistor {
 
         if is_runtime_or_test {
             *i = parse_quote! {
-                #[cfg(feature = "macro")]
+                #[cfg(stageleft_macro)]
                 #i
             };
         } else {
@@ -153,7 +172,7 @@ impl VisitMut for GenFinalPubVistor {
 
         if is_entry {
             *i = parse_quote! {
-                #[cfg(feature = "macro")]
+                #[cfg(stageleft_macro)]
                 #i
             }
         }
@@ -188,7 +207,7 @@ impl VisitMut for GenFinalPubVistor {
             } else if let syn::Item::Impl(e) = i {
                 // TODO(shadaj): emit impls if the struct is private
                 *i = parse_quote!(
-                    #[cfg(feature = "macro")]
+                    #[cfg(stageleft_macro)]
                     #e
                 );
             }
@@ -214,6 +233,9 @@ impl VisitMut for GenFinalPubVistor {
 
 pub fn gen_final_helper(final_crate: &str) {
     let out_dir = env::var_os("OUT_DIR").unwrap();
+
+    let mut orig_flow_lib = syn_inline_mod::parse_and_inline_modules(Path::new("src/lib.rs"));
+    InlineTopLevelMod {}.visit_file_mut(&mut orig_flow_lib);
 
     let mut flow_lib_pub = syn_inline_mod::parse_and_inline_modules(Path::new("src/lib.rs"));
 

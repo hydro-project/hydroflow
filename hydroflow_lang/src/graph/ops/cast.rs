@@ -2,9 +2,8 @@ use proc_macro2::Span;
 use quote::ToTokens;
 use syn::Expr;
 
-use super::{FlowPropArgs, OperatorCategory, OperatorConstraints};
+use super::{FlowPropArgs, FlowProps, LatticeFlowType, OperatorCategory, OperatorConstraints};
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{FlowProps, LatticeFlowType};
 
 /// TODO(MINGWEI)
 pub const CAST: OperatorConstraints = OperatorConstraints {
@@ -23,7 +22,7 @@ pub const CAST: OperatorConstraints = OperatorConstraints {
             assert_eq!(1, op_inst.input_ports.len());
             assert_eq!(1, op_inst.output_ports.len());
 
-            let out_flow_type = parse_flow_type(&op_inst.arguments[0], op_span)
+            let out_flow_type = parse_flow_type(&op_inst.arguments_pre[0], op_span)
                 .map_err(|diagnostic| diagnostics.push(diagnostic))?;
             let Some(in_props) = flow_props_in[0] else {
                 diagnostics.push(Diagnostic::spanned(

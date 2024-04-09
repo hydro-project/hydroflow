@@ -4,11 +4,10 @@ use syn::spanned::Spanned;
 use syn::{parse_quote, Expr, ExprCall};
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, Persistence,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance};
 
 /// > 2 input streams of type <(K, V1)> and <(K, V2)>, 1 output stream of type <(K, (V1, V2))>
 ///
@@ -100,6 +99,7 @@ pub const JOIN_FUSED: OperatorConstraints = OperatorConstraints {
     persistence_args: &(0..=2),
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
@@ -114,13 +114,13 @@ pub const JOIN_FUSED: OperatorConstraints = OperatorConstraints {
                    is_pull,
                    op_inst:
                        OperatorInstance {
-                           arguments,
                            generics:
                                OpInstGenerics {
                                    persistence_args, ..
                                },
                            ..
                        },
+                   arguments,
                    ..
                },
                diagnostics| {

@@ -1,10 +1,9 @@
 use quote::{quote_spanned, ToTokens};
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, Persistence,
-    WriteContextArgs, RANGE_1,
+    DelayType, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_1,
 };
-use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance};
 
 /// > 1 input stream of type `(K, V1)`, 1 output stream of type `(K, V2)`.
 /// The output will have one tuple for each distinct `K`, with an accumulated value of type `V2`.
@@ -77,6 +76,7 @@ pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
     persistence_args: &(0..=1),
     type_args: &(0..=2),
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
@@ -93,7 +93,6 @@ pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
                    root,
                    op_inst:
                        OperatorInstance {
-                           arguments,
                            generics:
                                OpInstGenerics {
                                    persistence_args,
@@ -102,6 +101,7 @@ pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
                                },
                            ..
                        },
+                   arguments,
                    ..
                },
                _| {

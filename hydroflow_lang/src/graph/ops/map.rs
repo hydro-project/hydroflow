@@ -1,10 +1,8 @@
 use quote::quote_spanned;
 
-use crate::graph::GraphEdgeType;
-
 use super::{
-    FlowPropArgs, OperatorCategory, OperatorConstraints,
-    OperatorInstance, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    FlowPropArgs, GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1,
 };
 
 /// > 1 input stream, 1 output stream
@@ -32,6 +30,7 @@ pub const MAP: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
@@ -48,7 +47,7 @@ pub const MAP: OperatorConstraints = OperatorConstraints {
                    inputs,
                    outputs,
                    is_pull,
-                   op_inst: OperatorInstance { arguments, .. },
+                   arguments,
                    ..
                },
                _| {

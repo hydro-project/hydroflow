@@ -2,11 +2,11 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, Persistence,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, Persistence, PortIndexValue, WriteContextArgs, RANGE_0,
+    RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance, PortIndexValue};
 
 /// > 2 input streams the first of type (K, T), the second of type K,
 /// > with output type (K, T)
@@ -35,6 +35,7 @@ pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
     persistence_args: &(0..=2),
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { pos, neg })),
     ports_out: None,
     input_delaytype_fn: |idx| match idx {

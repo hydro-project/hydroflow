@@ -1,0 +1,5 @@
+error: Cannot reference operator `null`. Only operators with singleton state can be referenced.
+ --> tests/compile-fail/surface_singleton_nostate.rs:6:41
+  |
+6 |             -> filter(|value| value <= #my_ref.as_reveal_ref())
+  |                                         ^^^^^^

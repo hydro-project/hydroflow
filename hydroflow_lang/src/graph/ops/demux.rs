@@ -6,11 +6,10 @@ use syn::spanned::Spanned;
 use syn::{Expr, Pat};
 
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
+    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
+    PortIndexValue, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::{OperatorInstance, PortIndexValue, GraphEdgeType};
 use crate::pretty_span::PrettySpan;
 
 // TODO(mingwei): Preprocess rustdoc links in mdbook or in the `operator_docgen` macro.
@@ -53,6 +52,7 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: Some(|| PortListSpec::Variadic),
     input_delaytype_fn: |_| None,
@@ -66,12 +66,8 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
                    outputs,
                    is_pull,
                    op_name,
-                   op_inst:
-                       OperatorInstance {
-                           output_ports,
-                           arguments,
-                           ..
-                       },
+                   op_inst: OperatorInstance { output_ports, .. },
+                   arguments,
                    ..
                },
                diagnostics| {
@@ -81,8 +77,8 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
             diagnostics.push(Diagnostic::spanned(
                 func.span(),
                 Level::Error,
-                "Argument must be a two-argument closure expression"),
-            );
+                "Argument must be a two-argument closure expression",
+            ));
             return Err(());
         };
         if 2 != func.inputs.len() {

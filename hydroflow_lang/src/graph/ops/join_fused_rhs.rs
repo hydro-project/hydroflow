@@ -2,10 +2,9 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
-    RANGE_0, RANGE_1,
+    DelayType, GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    PortIndexValue, WriteContextArgs, RANGE_0, RANGE_1,
 };
-use crate::graph::{GraphEdgeType, PortIndexValue};
 
 /// See `join_fused_lhs`
 ///
@@ -21,6 +20,7 @@ pub const JOIN_FUSED_RHS: OperatorConstraints = OperatorConstraints {
     persistence_args: &(0..=2),
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
     input_delaytype_fn: |idx| match idx {

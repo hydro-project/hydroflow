@@ -2,10 +2,10 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput, PortListSpec, WriteContextArgs,
+    GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, PortIndexValue, PortListSpec, WriteContextArgs,
     LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
 };
-use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance, PortIndexValue};
 
 /// A lattice-based state operator, used for accumulating lattice state
 ///
@@ -44,6 +44,7 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0, // TODO(mingwei)?
     type_args: &(0..=1),
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: Some(|| PortListSpec::Fixed(parse_quote! { items, state })),
     input_delaytype_fn: |_| None,

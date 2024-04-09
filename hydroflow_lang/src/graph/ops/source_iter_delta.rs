@@ -1,5 +1,4 @@
-use super::OperatorConstraints;
-use crate::graph::{FlowProps, LatticeFlowType};
+use super::{FlowProps, LatticeFlowType, OperatorConstraints};
 
 /// > 0 input streams, 1 output stream
 ///

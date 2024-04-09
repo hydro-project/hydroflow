@@ -1,10 +1,11 @@
 use quote::{quote_spanned, ToTokens};
 
 use super::{
-    FlowPropArgs, FlowProps, OperatorCategory,
-    OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
+    FlowPropArgs, FlowProps, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
 };
-use crate::{diagnostic::{Diagnostic, Level}, graph::GraphEdgeType};
+use crate::diagnostic::{Diagnostic, Level};
+use crate::graph::GraphEdgeType;
 
 /// > *n* input streams of the same type, 1 output stream of the same type
 ///
@@ -32,6 +33,7 @@ pub const UNION: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,

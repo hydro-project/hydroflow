@@ -6,9 +6,24 @@ use hydroflow_plus::tokio_stream::wrappers::UnboundedReceiverStream;
 use hydroflow_plus::*;
 use stageleft::{q, Quoted, RuntimeData};
 
+#[cfg(stageleft_macro)]
+pub(crate) mod cluster;
+#[cfg(not(stageleft_macro))]
 pub mod cluster;
+
+#[cfg(stageleft_macro)]
+pub(crate) mod first_ten;
+#[cfg(not(stageleft_macro))]
 pub mod first_ten;
+
+#[cfg(stageleft_macro)]
+pub(crate) mod negation;
+#[cfg(not(stageleft_macro))]
 pub mod negation;
+
+#[cfg(stageleft_macro)]
+pub(crate) mod networked;
+#[cfg(not(stageleft_macro))]
 pub mod networked;
 
 #[stageleft::entry(UnboundedReceiverStream<u32>)]

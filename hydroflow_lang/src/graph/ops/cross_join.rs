@@ -1,10 +1,8 @@
 use quote::quote_spanned;
 use syn::parse_quote;
 
-use crate::graph::GraphEdgeType;
-
 use super::{
-    OperatorCategory, OperatorConstraints, WriteContextArgs,
+    GraphEdgeType, OperatorCategory, OperatorConstraints, WriteContextArgs,
     JOIN_CROSS_JOIN_FLOW_PROP_FN, RANGE_1,
 };
 
@@ -49,6 +47,7 @@ pub const CROSS_JOIN: OperatorConstraints = OperatorConstraints {
     persistence_args: &(0..=2),
     type_args: &(0..=1),
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
     input_delaytype_fn: |_| None,

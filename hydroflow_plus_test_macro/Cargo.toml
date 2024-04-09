@@ -6,18 +6,18 @@ edition = "2021"
 
 [lib]
 proc-macro = true
-path = "src/lib.rs"
+path = "../hydroflow_plus_test/src/lib.rs"
 
 [features]
 default = ["macro"]
 macro = []
 
 [dependencies]
-hydroflow_plus = { path = "../hydroflow_plus", version = "^0.6.0" }
+hydroflow_plus = { path = "../hydroflow_plus", version = "^0.6.1" }
 tokio = { version = "1.16", features = [ "full" ] }
-stageleft = { path = "../stageleft", version = "^0.2.0" }
-hydroflow_plus_cli_integration = { path = "../hydro_deploy/hydroflow_plus_cli_integration", version = "^0.6.0" }
+stageleft = { path = "../stageleft", version = "^0.2.1" }
+hydroflow_plus_cli_integration = { path = "../hydro_deploy/hydroflow_plus_cli_integration", version = "^0.6.1" }
 rand = "0.8.5"
 
 [build-dependencies]
-stageleft_tool = { path = "../stageleft_tool", version = "^0.1.0" }
+stageleft_tool = { path = "../stageleft_tool", version = "^0.1.1" }

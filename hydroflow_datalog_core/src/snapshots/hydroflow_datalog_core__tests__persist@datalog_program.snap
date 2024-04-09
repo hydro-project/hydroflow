@@ -9,7 +9,7 @@ fn main() {
             use hydroflow::{var_expr, var_args};
             let mut df = hydroflow::scheduled::graph::Hydroflow::new();
             df.__assign_meta_graph(
-                "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":2},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"difference :: < 'tick , 'static > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"defer_tick ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"difference :: < 'tick , 'static > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"defer_tick ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"difference :: < 'tick , 'static > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"defer_tick ()\"},\"version\":1},{\"value\":{\"Operator\":\"source_stream (ints1)\"},\"version\":1},{\"value\":{\"Operator\":\"source_stream (ints2)\"},\"version\":1},{\"value\":{\"Operator\":\"source_stream (ints3)\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| v | result . send (v) . unwrap ())\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| v | result2 . send (v) . unwrap ())\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| v | result3 . send (v) . unwrap ())\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| v | result4 . send (v) . unwrap ())\"},\"version\":1},{\"value\":{\"Operator\":\"join :: < 'static , 'static , hydroflow :: compiled :: pull :: HalfMultisetJoinState > ()\"},\"version\":1},{\"value\":{\"Operator\":\"map (| kv : (() , ((_ ,) , (_ ,))) | (kv . 1 . 0 . 0 , kv . 1 . 1 . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| _v : (_ ,) | (() , (_v . 0 ,)))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| _v : (_ ,) | (() , (_v . 0 ,)))\"},\"version\":1},{\"value\":{\"Operator\":\"join :: < 'static , 'tick , hydroflow :: compiled :: pull :: HalfMultisetJoinState > ()\"},\"version\":1},{\"value\":{\"Operator\":\"map (| kv : (() , ((_ , _ ,) , (_ ,))) | (kv . 1 . 0 . 0 , kv . 1 . 0 . 1 , kv . 1 . 1 . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| _v : (_ , _ ,) | (() , (_v . 0 , _v . 1 ,)))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| _v : (_ ,) | (() , (_v . 0 ,)))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ , _ , _ ,) | ((row . 0 , row . 1 , row . 2 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| (g , a) : ((_ , _ , _ ,) , _) | (g . 0 , g . 1 , g . 2 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"anti_join ()\"},\"version\":1},{\"value\":{\"Operator\":\"map (| kv : ((_ ,) , ()) | (kv . 0 . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"persist ()\"},\"version\":1},{\"value\":{\"Operator\":\"map (| _v : (_ ,) | ((_v . 0 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"persist ()\"},\"version\":1},{\"value\":{\"Operator\":\"map (| _v : (_ ,) | (_v . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | ((row . 0 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| (g , a) : ((_ ,) , _) | (g . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | ((row . 0 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| (g , a) : ((_ ,) , _) | (g . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"persist ()\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | ((row . 0 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| (g , a) : ((_ ,) , _) | (g . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | ((row . 0 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| (g , a) : ((_ ,) , _) | (g . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | ((row . 0 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| (g , a) : ((_ ,) , _) | (g . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"persist ()\"},\"version\":1}],\"edge_types\":[{\"value\":null,\"version\":0},{\"value\":\"Value\",\"version\":5},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":5},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":5},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":null,\"version\":0},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1}],\"graph\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":34,\"version\":1},{\"idx\":14,\"version\":3}],\"version\":5},{\"value\":[{\"idx\":3,\"version\":1},{\"idx\":4,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":5,\"version\":1},{\"idx\":28,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":25,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":35,\"version\":1},{\"idx\":11,\"version\":3}],\"version\":5},{\"value\":[{\"idx\":8,\"version\":1},{\"idx\":9,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":8,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":10,\"version\":1},{\"idx\":22,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":9,\"version\":1},{\"idx\":19,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":36,\"version\":1},{\"idx\":6,\"version\":3}],\"version\":5},{\"value\":[{\"idx\":13,\"version\":3},{\"idx\":33,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":50,\"version\":1},{\"idx\":15,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":16,\"version\":3},{\"idx\":31,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":58,\"version\":1},{\"idx\":18,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":19,\"version\":3},{\"idx\":10,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":63,\"version\":1},{\"idx\":21,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":22,\"version\":3},{\"idx\":8,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":68,\"version\":1},{\"idx\":24,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":25,\"version\":3},{\"idx\":5,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":61,\"version\":1},{\"idx\":27,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":28,\"version\":3},{\"idx\":3,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":65,\"version\":1},{\"idx\":30,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":31,\"version\":1},{\"idx\":32,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":30,\"version\":1},{\"idx\":31,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":33,\"version\":1},{\"idx\":16,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":32,\"version\":1},{\"idx\":13,\"version\":3}],\"version\":3},{\"value\":null,\"version\":2},{\"value\":[{\"idx\":6,\"version\":3},{\"idx\":12,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":11,\"version\":3},{\"idx\":7,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":15,\"version\":1},{\"idx\":37,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":18,\"version\":1},{\"idx\":38,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":21,\"version\":1},{\"idx\":39,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":24,\"version\":1},{\"idx\":40,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":41,\"version\":1},{\"idx\":42,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":43,\"version\":1},{\"idx\":41,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":29,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":44,\"version\":1},{\"idx\":41,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":9,\"version\":1},{\"idx\":26,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":45,\"version\":1},{\"idx\":46,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":47,\"version\":1},{\"idx\":45,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":42,\"version\":1},{\"idx\":47,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":48,\"version\":1},{\"idx\":45,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":12,\"version\":1},{\"idx\":48,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":14,\"version\":3},{\"idx\":2,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":49,\"version\":1},{\"idx\":50,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":46,\"version\":1},{\"idx\":49,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":51,\"version\":1},{\"idx\":52,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":54,\"version\":1},{\"idx\":51,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":53,\"version\":1},{\"idx\":54,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":23,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":56,\"version\":1},{\"idx\":20,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":55,\"version\":1},{\"idx\":56,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":9,\"version\":1},{\"idx\":55,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":17,\"version\":3},{\"idx\":65,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":57,\"version\":1},{\"idx\":58,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":52,\"version\":1},{\"idx\":57,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":26,\"version\":3},{\"idx\":44,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":60,\"version\":1},{\"idx\":61,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":59,\"version\":1},{\"idx\":60,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":59,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":20,\"version\":3},{\"idx\":51,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":62,\"version\":1},{\"idx\":63,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":27,\"version\":1},{\"idx\":62,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":29,\"version\":3},{\"idx\":43,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":64,\"version\":1},{\"idx\":17,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":64,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":23,\"version\":3},{\"idx\":53,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":67,\"version\":1},{\"idx\":68,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":66,\"version\":1},{\"idx\":67,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":32,\"version\":1},{\"idx\":66,\"version\":1}],\"version\":1}],\"ports\":[{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":5},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Path\":\"pos\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":5},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Path\":\"pos\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":5},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",{\"Path\":\"neg\"}],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",{\"Path\":\"neg\"}],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",{\"Path\":\"neg\"}],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Path\":\"pos\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Int\":\"0\"}],\"version\":1},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":3},{\"value\":[\"Elided\",{\"Int\":\"1\"}],\"version\":1},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Int\":\"0\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Int\":\"1\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Path\":\"pos\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[{\"Int\":\"1\"},\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[{\"Int\":\"1\"},\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[{\"Int\":\"2\"},\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Path\":\"neg\"}],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[{\"Int\":\"3\"},\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":1}],\"node_subgraph\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":{\"idx\":8,\"version\":1},\"version\":1},{\"value\":{\"idx\":8,\"version\":1},\"version\":1},{\"value\":{\"idx\":8,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":5,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":7,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":7,\"version\":1},\"version\":1},{\"value\":{\"idx\":7,\"version\":1},\"version\":1},{\"value\":{\"idx\":7,\"version\":1},\"version\":1},{\"value\":{\"idx\":3,\"version\":1},\"version\":1},{\"value\":{\"idx\":9,\"version\":1},\"version\":1},{\"value\":{\"idx\":10,\"version\":1},\"version\":1},{\"value\":{\"idx\":11,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":5,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":7,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":5,\"version\":1},\"version\":1},{\"value\":{\"idx\":5,\"version\":1},\"version\":1},{\"value\":{\"idx\":5,\"version\":1},\"version\":1},{\"value\":{\"idx\":5,\"version\":1},\"version\":1},{\"value\":{\"idx\":8,\"version\":1},\"version\":1},{\"value\":{\"idx\":8,\"version\":1},\"version\":1},{\"value\":{\"idx\":5,\"version\":1},\"version\":1},{\"value\":{\"idx\":5,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":7,\"version\":1},\"version\":1},{\"value\":{\"idx\":7,\"version\":1},\"version\":1},{\"value\":{\"idx\":7,\"version\":1},\"version\":1},{\"value\":{\"idx\":7,\"version\":1},\"version\":1}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":5,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":10,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":33,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":12,\"version\":1},{\"idx\":43,\"version\":1},{\"idx\":44,\"version\":1},{\"idx\":41,\"version\":1},{\"idx\":42,\"version\":1},{\"idx\":47,\"version\":1},{\"idx\":48,\"version\":1},{\"idx\":45,\"version\":1},{\"idx\":46,\"version\":1},{\"idx\":49,\"version\":1},{\"idx\":50,\"version\":1},{\"idx\":15,\"version\":1},{\"idx\":37,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":53,\"version\":1},{\"idx\":54,\"version\":1},{\"idx\":51,\"version\":1},{\"idx\":52,\"version\":1},{\"idx\":57,\"version\":1},{\"idx\":58,\"version\":1},{\"idx\":18,\"version\":1},{\"idx\":38,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1},{\"idx\":4,\"version\":1},{\"idx\":59,\"version\":1},{\"idx\":60,\"version\":1},{\"idx\":61,\"version\":1},{\"idx\":27,\"version\":1},{\"idx\":62,\"version\":1},{\"idx\":63,\"version\":1},{\"idx\":21,\"version\":1},{\"idx\":39,\"version\":1},{\"idx\":64,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":65,\"version\":1},{\"idx\":30,\"version\":1},{\"idx\":31,\"version\":1},{\"idx\":32,\"version\":1},{\"idx\":66,\"version\":1},{\"idx\":67,\"version\":1},{\"idx\":68,\"version\":1},{\"idx\":24,\"version\":1},{\"idx\":40,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":8,\"version\":1},{\"idx\":9,\"version\":1},{\"idx\":55,\"version\":1},{\"idx\":56,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":34,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":35,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":36,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1},{\"value\":0,\"version\":1},{\"value\":0,\"version\":1},{\"value\":1,\"version\":1},{\"value\":2,\"version\":1},{\"value\":1,\"version\":1},{\"value\":1,\"version\":1},{\"value\":1,\"version\":1},{\"value\":0,\"version\":1},{\"value\":0,\"version\":1},{\"value\":0,\"version\":1}],\"node_varnames\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"ints1_insert\",\"version\":1},{\"value\":\"ints1\",\"version\":1},{\"value\":\"ints1\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"ints2_insert\",\"version\":1},{\"value\":\"ints2\",\"version\":1},{\"value\":\"ints2\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"ints3_insert\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"result_insert\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"result2_insert\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"result3_insert\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"result4_insert\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"intermediate_insert\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"intermediate_persist_insert\",\"version\":1},{\"value\":\"intermediate_persist\",\"version\":1},{\"value\":\"intermediate_persist\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"join_0\",\"version\":1},{\"value\":\"join_0\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"join_1\",\"version\":1},{\"value\":\"join_1\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"join_2\",\"version\":1},{\"value\":\"join_2\",\"version\":1}],\"flow_props\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":14,\"lattice_flow_type\":null},\"version\":3},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":40,\"lattice_flow_type\":null},\"version\":3},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":33,\"lattice_flow_type\":null},\"version\":3},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":10,\"lattice_flow_type\":null},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":14,\"lattice_flow_type\":null},\"version\":1},{\"value\":{\"star_ord\":10,\"lattice_flow_type\":null},\"version\":1},{\"value\":{\"star_ord\":10,\"lattice_flow_type\":null},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":14,\"lattice_flow_type\":null},\"version\":1},{\"value\":{\"star_ord\":14,\"lattice_flow_type\":null},\"version\":1},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":22,\"lattice_flow_type\":null},\"version\":1},{\"value\":{\"star_ord\":22,\"lattice_flow_type\":null},\"version\":1},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":24,\"lattice_flow_type\":null},\"version\":3},{\"value\":{\"star_ord\":24,\"lattice_flow_type\":null},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":24,\"lattice_flow_type\":null},\"version\":3}],\"subgraph_laziness\":[{\"value\":null,\"version\":0}]}",
+                "{\"nodes\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":2},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"difference :: < 'tick , 'static > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"defer_tick ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"difference :: < 'tick , 'static > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"defer_tick ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Handoff\":{}},\"version\":3},{\"value\":{\"Operator\":\"unique :: < 'tick > ()\"},\"version\":1},{\"value\":{\"Operator\":\"difference :: < 'tick , 'static > ()\"},\"version\":1},{\"value\":{\"Operator\":\"tee ()\"},\"version\":1},{\"value\":{\"Operator\":\"defer_tick ()\"},\"version\":1},{\"value\":{\"Operator\":\"source_stream (ints1)\"},\"version\":1},{\"value\":{\"Operator\":\"source_stream (ints2)\"},\"version\":1},{\"value\":{\"Operator\":\"source_stream (ints3)\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| v | result . send (v) . unwrap ())\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| v | result2 . send (v) . unwrap ())\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| v | result3 . send (v) . unwrap ())\"},\"version\":1},{\"value\":{\"Operator\":\"for_each (| v | result4 . send (v) . unwrap ())\"},\"version\":1},{\"value\":{\"Operator\":\"join :: < 'static , 'static , hydroflow :: compiled :: pull :: HalfMultisetJoinState > ()\"},\"version\":1},{\"value\":{\"Operator\":\"map (| kv : (() , ((_ ,) , (_ ,))) | (kv . 1 . 0 . 0 , kv . 1 . 1 . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| _v : (_ ,) | (() , (_v . 0 ,)))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| _v : (_ ,) | (() , (_v . 0 ,)))\"},\"version\":1},{\"value\":{\"Operator\":\"join :: < 'static , 'tick , hydroflow :: compiled :: pull :: HalfMultisetJoinState > ()\"},\"version\":1},{\"value\":{\"Operator\":\"map (| kv : (() , ((_ , _ ,) , (_ ,))) | (kv . 1 . 0 . 0 , kv . 1 . 0 . 1 , kv . 1 . 1 . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| _v : (_ , _ ,) | (() , (_v . 0 , _v . 1 ,)))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| _v : (_ ,) | (() , (_v . 0 ,)))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ , _ , _ ,) | ((row . 0 , row . 1 , row . 2 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| (g , a) : ((_ , _ , _ ,) , _) | (g . 0 , g . 1 , g . 2 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"anti_join ()\"},\"version\":1},{\"value\":{\"Operator\":\"map (| kv : ((_ ,) , ()) | (kv . 0 . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"persist ()\"},\"version\":1},{\"value\":{\"Operator\":\"map (| _v : (_ ,) | ((_v . 0 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"persist ()\"},\"version\":1},{\"value\":{\"Operator\":\"map (| _v : (_ ,) | (_v . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | ((row . 0 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| (g , a) : ((_ ,) , _) | (g . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | ((row . 0 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| (g , a) : ((_ ,) , _) | (g . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"persist ()\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | ((row . 0 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| (g , a) : ((_ ,) , _) | (g . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | ((row . 0 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| (g , a) : ((_ ,) , _) | (g . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| row : (_ ,) | ((row . 0 ,) , ()))\"},\"version\":1},{\"value\":{\"Operator\":\"map (| (g , a) : ((_ ,) , _) | (g . 0 ,))\"},\"version\":1},{\"value\":{\"Operator\":\"persist ()\"},\"version\":1}],\"edge_types\":[{\"value\":null,\"version\":0},{\"value\":\"Value\",\"version\":5},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":5},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":5},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":null,\"version\":0},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":3},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1},{\"value\":\"Value\",\"version\":1}],\"graph\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":34,\"version\":1},{\"idx\":14,\"version\":3}],\"version\":5},{\"value\":[{\"idx\":3,\"version\":1},{\"idx\":4,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":5,\"version\":1},{\"idx\":28,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":25,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":35,\"version\":1},{\"idx\":11,\"version\":3}],\"version\":5},{\"value\":[{\"idx\":8,\"version\":1},{\"idx\":9,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":8,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":10,\"version\":1},{\"idx\":22,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":9,\"version\":1},{\"idx\":19,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":36,\"version\":1},{\"idx\":6,\"version\":3}],\"version\":5},{\"value\":[{\"idx\":13,\"version\":3},{\"idx\":33,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":50,\"version\":1},{\"idx\":15,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":16,\"version\":3},{\"idx\":31,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":58,\"version\":1},{\"idx\":18,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":19,\"version\":3},{\"idx\":10,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":63,\"version\":1},{\"idx\":21,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":22,\"version\":3},{\"idx\":8,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":68,\"version\":1},{\"idx\":24,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":25,\"version\":3},{\"idx\":5,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":61,\"version\":1},{\"idx\":27,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":28,\"version\":3},{\"idx\":3,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":65,\"version\":1},{\"idx\":30,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":31,\"version\":1},{\"idx\":32,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":30,\"version\":1},{\"idx\":31,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":33,\"version\":1},{\"idx\":16,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":32,\"version\":1},{\"idx\":13,\"version\":3}],\"version\":3},{\"value\":null,\"version\":2},{\"value\":[{\"idx\":6,\"version\":3},{\"idx\":12,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":11,\"version\":3},{\"idx\":7,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":15,\"version\":1},{\"idx\":37,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":18,\"version\":1},{\"idx\":38,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":21,\"version\":1},{\"idx\":39,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":24,\"version\":1},{\"idx\":40,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":41,\"version\":1},{\"idx\":42,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":43,\"version\":1},{\"idx\":41,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":29,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":44,\"version\":1},{\"idx\":41,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":9,\"version\":1},{\"idx\":26,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":45,\"version\":1},{\"idx\":46,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":47,\"version\":1},{\"idx\":45,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":42,\"version\":1},{\"idx\":47,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":48,\"version\":1},{\"idx\":45,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":12,\"version\":1},{\"idx\":48,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":14,\"version\":3},{\"idx\":2,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":49,\"version\":1},{\"idx\":50,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":46,\"version\":1},{\"idx\":49,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":51,\"version\":1},{\"idx\":52,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":54,\"version\":1},{\"idx\":51,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":53,\"version\":1},{\"idx\":54,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":23,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":56,\"version\":1},{\"idx\":20,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":55,\"version\":1},{\"idx\":56,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":9,\"version\":1},{\"idx\":55,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":17,\"version\":3},{\"idx\":65,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":57,\"version\":1},{\"idx\":58,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":52,\"version\":1},{\"idx\":57,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":26,\"version\":3},{\"idx\":44,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":60,\"version\":1},{\"idx\":61,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":59,\"version\":1},{\"idx\":60,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":59,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":20,\"version\":3},{\"idx\":51,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":62,\"version\":1},{\"idx\":63,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":27,\"version\":1},{\"idx\":62,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":29,\"version\":3},{\"idx\":43,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":64,\"version\":1},{\"idx\":17,\"version\":3}],\"version\":3},{\"value\":[{\"idx\":4,\"version\":1},{\"idx\":64,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":23,\"version\":3},{\"idx\":53,\"version\":1}],\"version\":3},{\"value\":[{\"idx\":67,\"version\":1},{\"idx\":68,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":66,\"version\":1},{\"idx\":67,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":32,\"version\":1},{\"idx\":66,\"version\":1}],\"version\":1}],\"ports\":[{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":5},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Path\":\"pos\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":5},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Path\":\"pos\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":5},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",{\"Path\":\"neg\"}],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",{\"Path\":\"neg\"}],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",{\"Path\":\"neg\"}],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Path\":\"pos\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":null,\"version\":0},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Int\":\"0\"}],\"version\":1},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":3},{\"value\":[\"Elided\",{\"Int\":\"1\"}],\"version\":1},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Int\":\"0\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Int\":\"1\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Path\":\"pos\"}],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[{\"Int\":\"1\"},\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[{\"Int\":\"1\"},\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[{\"Int\":\"2\"},\"Elided\"],\"version\":1},{\"value\":[\"Elided\",{\"Path\":\"neg\"}],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[{\"Int\":\"3\"},\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":3},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[\"Elided\",\"Elided\"],\"version\":1},{\"value\":[{\"Int\":\"0\"},\"Elided\"],\"version\":1}],\"node_subgraph\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":1,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":{\"idx\":8,\"version\":1},\"version\":1},{\"value\":{\"idx\":8,\"version\":1},\"version\":1},{\"value\":{\"idx\":8,\"version\":1},\"version\":1},{\"value\":{\"idx\":2,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":5,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":7,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"idx\":7,\"version\":1},\"version\":1},{\"value\":{\"idx\":7,\"version\":1},\"version\":1},{\"value\":{\"idx\":7,\"version\":1},\"version\":1},{\"value\":{\"idx\":3,\"version\":1},\"version\":1},{\"value\":{\"idx\":9,\"version\":1},\"version\":1},{\"value\":{\"idx\":10,\"version\":1},\"version\":1},{\"value\":{\"idx\":11,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":5,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":7,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":4,\"version\":1},\"version\":1},{\"value\":{\"idx\":5,\"version\":1},\"version\":1},{\"value\":{\"idx\":5,\"version\":1},\"version\":1},{\"value\":{\"idx\":5,\"version\":1},\"version\":1},{\"value\":{\"idx\":5,\"version\":1},\"version\":1},{\"value\":{\"idx\":8,\"version\":1},\"version\":1},{\"value\":{\"idx\":8,\"version\":1},\"version\":1},{\"value\":{\"idx\":5,\"version\":1},\"version\":1},{\"value\":{\"idx\":5,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":6,\"version\":1},\"version\":1},{\"value\":{\"idx\":7,\"version\":1},\"version\":1},{\"value\":{\"idx\":7,\"version\":1},\"version\":1},{\"value\":{\"idx\":7,\"version\":1},\"version\":1},{\"value\":{\"idx\":7,\"version\":1},\"version\":1}],\"subgraph_nodes\":[{\"value\":null,\"version\":0},{\"value\":[{\"idx\":5,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":10,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":33,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":12,\"version\":1},{\"idx\":43,\"version\":1},{\"idx\":44,\"version\":1},{\"idx\":41,\"version\":1},{\"idx\":42,\"version\":1},{\"idx\":47,\"version\":1},{\"idx\":48,\"version\":1},{\"idx\":45,\"version\":1},{\"idx\":46,\"version\":1},{\"idx\":49,\"version\":1},{\"idx\":50,\"version\":1},{\"idx\":15,\"version\":1},{\"idx\":37,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":53,\"version\":1},{\"idx\":54,\"version\":1},{\"idx\":51,\"version\":1},{\"idx\":52,\"version\":1},{\"idx\":57,\"version\":1},{\"idx\":58,\"version\":1},{\"idx\":18,\"version\":1},{\"idx\":38,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":2,\"version\":1},{\"idx\":3,\"version\":1},{\"idx\":4,\"version\":1},{\"idx\":59,\"version\":1},{\"idx\":60,\"version\":1},{\"idx\":61,\"version\":1},{\"idx\":27,\"version\":1},{\"idx\":62,\"version\":1},{\"idx\":63,\"version\":1},{\"idx\":21,\"version\":1},{\"idx\":39,\"version\":1},{\"idx\":64,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":65,\"version\":1},{\"idx\":30,\"version\":1},{\"idx\":31,\"version\":1},{\"idx\":32,\"version\":1},{\"idx\":66,\"version\":1},{\"idx\":67,\"version\":1},{\"idx\":68,\"version\":1},{\"idx\":24,\"version\":1},{\"idx\":40,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":7,\"version\":1},{\"idx\":8,\"version\":1},{\"idx\":9,\"version\":1},{\"idx\":55,\"version\":1},{\"idx\":56,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":34,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":35,\"version\":1}],\"version\":1},{\"value\":[{\"idx\":36,\"version\":1}],\"version\":1}],\"subgraph_stratum\":[{\"value\":null,\"version\":0},{\"value\":0,\"version\":1},{\"value\":0,\"version\":1},{\"value\":0,\"version\":1},{\"value\":1,\"version\":1},{\"value\":2,\"version\":1},{\"value\":1,\"version\":1},{\"value\":1,\"version\":1},{\"value\":1,\"version\":1},{\"value\":0,\"version\":1},{\"value\":0,\"version\":1},{\"value\":0,\"version\":1}],\"node_singleton_references\":[{\"value\":null,\"version\":0},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1},{\"value\":[],\"version\":1}],\"node_varnames\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"ints1_insert\",\"version\":1},{\"value\":\"ints1\",\"version\":1},{\"value\":\"ints1\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"ints2_insert\",\"version\":1},{\"value\":\"ints2\",\"version\":1},{\"value\":\"ints2\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"ints3_insert\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"result_insert\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"result2_insert\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"result3_insert\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"result4_insert\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"intermediate_insert\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"intermediate_persist_insert\",\"version\":1},{\"value\":\"intermediate_persist\",\"version\":1},{\"value\":\"intermediate_persist\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"join_0\",\"version\":1},{\"value\":\"join_0\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"join_1\",\"version\":1},{\"value\":\"join_1\",\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":\"join_2\",\"version\":1},{\"value\":\"join_2\",\"version\":1}],\"flow_props\":[{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":14,\"lattice_flow_type\":null},\"version\":3},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":40,\"lattice_flow_type\":null},\"version\":3},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":33,\"lattice_flow_type\":null},\"version\":3},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":10,\"lattice_flow_type\":null},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":14,\"lattice_flow_type\":null},\"version\":1},{\"value\":{\"star_ord\":10,\"lattice_flow_type\":null},\"version\":1},{\"value\":{\"star_ord\":10,\"lattice_flow_type\":null},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":14,\"lattice_flow_type\":null},\"version\":1},{\"value\":{\"star_ord\":14,\"lattice_flow_type\":null},\"version\":1},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":22,\"lattice_flow_type\":null},\"version\":1},{\"value\":{\"star_ord\":22,\"lattice_flow_type\":null},\"version\":1},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":24,\"lattice_flow_type\":null},\"version\":3},{\"value\":{\"star_ord\":24,\"lattice_flow_type\":null},\"version\":1},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":null,\"version\":0},{\"value\":{\"star_ord\":24,\"lattice_flow_type\":null},\"version\":3}],\"subgraph_laziness\":[{\"value\":null,\"version\":0}]}",
             );
             df.__assign_diagnostics("[]");
             let (hoff_6v3_send, hoff_6v3_recv) = df
@@ -327,6 +327,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -352,14 +353,14 @@ fn main() {
                         op_34v1__source_stream__loc_unknown_start_2_26_end_2_46(op_34v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_9v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_34v1, hoff_14v3_send);
+                    pivot_run_sg_9v1(op_34v1, hoff_14v3_send);
                 },
             );
             df.add_subgraph_stratified(
@@ -390,6 +391,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -415,14 +417,14 @@ fn main() {
                         op_35v1__source_stream__loc_unknown_start_5_26_end_5_46(op_35v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_10v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_35v1, hoff_11v3_send);
+                    pivot_run_sg_10v1(op_35v1, hoff_11v3_send);
                 },
             );
             df.add_subgraph_stratified(
@@ -453,6 +455,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -478,14 +481,14 @@ fn main() {
                         op_36v1__source_stream__loc_unknown_start_8_26_end_8_46(op_36v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_11v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_36v1, hoff_6v3_send);
+                    pivot_run_sg_11v1(op_36v1, hoff_6v3_send);
                 },
             );
             df.add_subgraph_stratified(
@@ -517,6 +520,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -542,14 +546,14 @@ fn main() {
                         op_5v1__defer_tick__loc_unknown_start_2_19_end_2_24(op_5v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_1v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_5v1, hoff_28v3_send);
+                    pivot_run_sg_1v1(op_5v1, hoff_28v3_send);
                 },
             );
             df.add_subgraph_stratified(
@@ -581,6 +585,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -606,14 +611,14 @@ fn main() {
                         op_10v1__defer_tick__loc_unknown_start_5_19_end_5_24(op_10v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_2v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_10v1, hoff_22v3_send);
+                    pivot_run_sg_2v1(op_10v1, hoff_22v3_send);
                 },
             );
             df.add_subgraph_stratified(
@@ -645,6 +650,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -670,14 +676,14 @@ fn main() {
                         op_33v1__defer_tick__loc_unknown_start_21_21_end_21_41(op_33v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_3v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_33v1, hoff_16v3_send);
+                    pivot_run_sg_3v1(op_33v1, hoff_16v3_send);
                 },
             );
             df.add_subgraph_stratified(
@@ -721,6 +727,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -753,6 +760,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -785,6 +793,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -862,6 +871,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -895,6 +905,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -927,6 +938,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -959,6 +971,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1037,6 +1050,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1070,6 +1084,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1103,6 +1118,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1135,6 +1151,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1183,6 +1200,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1219,6 +1237,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -1240,14 +1259,14 @@ fn main() {
                         op_37v1__for_each__loc_unknown_start_10_28_end_10_65(op_37v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_4v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_15v1, op_37v1);
+                    pivot_run_sg_4v1(op_15v1, op_37v1);
                     context.schedule_subgraph(context.current_subgraph(), false);
                     context.schedule_subgraph(context.current_subgraph(), false);
                 },
@@ -1283,6 +1302,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1315,6 +1335,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1386,6 +1407,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1418,6 +1440,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1450,6 +1473,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1482,6 +1506,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1530,6 +1555,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1566,6 +1592,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -1587,14 +1614,14 @@ fn main() {
                         op_38v1__for_each__loc_unknown_start_11_29_end_11_67(op_38v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_5v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_18v1, op_38v1);
+                    pivot_run_sg_5v1(op_18v1, op_38v1);
                     context.schedule_subgraph(context.current_subgraph(), false);
                 },
             );
@@ -1661,6 +1688,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1733,6 +1761,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -1770,6 +1799,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -1802,6 +1832,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -1850,6 +1881,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -1883,6 +1915,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -1916,6 +1949,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -1964,6 +1998,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -2027,6 +2062,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -2060,6 +2096,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -2093,6 +2130,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -2135,6 +2173,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -2156,14 +2195,14 @@ fn main() {
                         op_4v1__tee__loc_unknown_start_2_19_end_2_24(op_4v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_6v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_3v1, op_4v1);
+                    pivot_run_sg_6v1(op_3v1, op_4v1);
                     context.schedule_subgraph(context.current_subgraph(), false);
                 },
             );
@@ -2195,6 +2234,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -2243,6 +2283,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -2315,6 +2356,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -2351,6 +2393,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -2399,6 +2442,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -2462,6 +2506,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -2495,6 +2540,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -2528,6 +2574,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -2561,6 +2608,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -2582,14 +2630,14 @@ fn main() {
                         op_32v1__tee__loc_unknown_start_21_21_end_21_41(op_32v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_7v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_31v1, op_32v1);
+                    pivot_run_sg_7v1(op_31v1, op_32v1);
                     context.schedule_subgraph(context.current_subgraph(), false);
                 },
             );
@@ -2647,6 +2695,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -2719,6 +2768,7 @@ fn main() {
                             Item,
                             Input: ::std::iter::Iterator<Item = Item>,
                         >(input: Input) -> impl ::std::iter::Iterator<Item = Item> {
+                            #[repr(transparent)]
                             struct Pull<
                                 Item,
                                 Input: ::std::iter::Iterator<Item = Item>,
@@ -2756,6 +2806,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -2819,6 +2870,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -2852,6 +2904,7 @@ fn main() {
                         >(
                             input: Input,
                         ) -> impl hydroflow::pusherator::Pusherator<Item = Item> {
+                            #[repr(transparent)]
                             struct Push<
                                 Item,
                                 Input: hydroflow::pusherator::Pusherator<Item = Item>,
@@ -2873,14 +2926,14 @@ fn main() {
                         op_9v1__tee__loc_unknown_start_5_19_end_5_24(op_9v1)
                     };
                     #[inline(always)]
-                    fn check_pivot_run<
+                    fn pivot_run_sg_8v1<
                         Pull: ::std::iter::Iterator<Item = Item>,
                         Push: hydroflow::pusherator::Pusherator<Item = Item>,
                         Item,
                     >(pull: Pull, push: Push) {
                         hydroflow::pusherator::pivot::Pivot::new(pull, push).run();
                     }
-                    check_pivot_run(op_8v1, op_9v1);
+                    pivot_run_sg_8v1(op_8v1, op_9v1);
                     context.schedule_subgraph(context.current_subgraph(), false);
                 },
             );

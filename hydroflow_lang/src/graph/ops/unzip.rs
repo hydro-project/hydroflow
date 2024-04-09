@@ -1,11 +1,9 @@
 use quote::quote_spanned;
 use syn::parse_quote;
 
-use crate::graph::GraphEdgeType;
-
 use super::{
-    OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
 
 /// > 1 input stream of pair tuples `(A, B)`, 2 output streams
@@ -29,6 +27,7 @@ pub const UNZIP: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: None,
     ports_out: Some(|| super::PortListSpec::Fixed(parse_quote!(0, 1))),
     input_delaytype_fn: |_| None,

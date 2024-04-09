@@ -3,14 +3,14 @@ use syn::parse_quote;
 use syn::spanned::Spanned;
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, Persistence,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, Persistence, PortIndexValue, WriteContextArgs, RANGE_0,
+    RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::join_fused::{
     make_joindata, parse_argument, parse_persistences, JoinOptions,
 };
-use crate::graph::{GraphEdgeType, OpInstGenerics, OperatorInstance, PortIndexValue};
 
 /// See `join_fused`
 ///
@@ -36,6 +36,7 @@ pub const JOIN_FUSED_LHS: OperatorConstraints = OperatorConstraints {
     persistence_args: &(0..=2),
     type_args: RANGE_0,
     is_external_input: false,
+    has_singleton_output: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
     input_delaytype_fn: |idx| match idx {
@@ -56,13 +57,13 @@ pub const JOIN_FUSED_LHS: OperatorConstraints = OperatorConstraints {
                    is_pull,
                    op_inst:
                        OperatorInstance {
-                           arguments,
                            generics:
                                OpInstGenerics {
                                    persistence_args, ..
                                },
                            ..
                        },
+                   arguments,
                    ..
                },
                diagnostics| {
