@@ -192,9 +192,9 @@
                         </span><span class="kw">let </span>_singleton_ident = iter.next();
                         <span class="kw">let </span>resolved_ident = resolved_idents_iter.next().unwrap();
                         TokenTree::Group(Group::new(
-                            proc_macro2::Delimiter::None,
+                            proc_macro2::Delimiter::Parenthesis,
                             <span class="macro">quote! </span>{
-                                context.state_ref(#resolved_ident).borrow_mut()
+                                <span class="kw-2">*</span>context.state_ref(#resolved_ident).borrow_mut()
                             },
                         ))
                         <span class="comment">// TokenTree::Ident(resolved_idents_iter.next().unwrap())

@@ -167,6 +167,10 @@
 <a href="#165" id="165">165</a>
 <a href="#166" id="166">166</a>
 <a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -204,13 +208,13 @@
     categories: <span class="kw-2">&amp;</span>[OperatorCategory::Fold],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
-    hard_range_out: RANGE_1,
-    soft_range_out: RANGE_1,
+    hard_range_out: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
+    soft_range_out: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     num_args: <span class="number">2</span>,
     persistence_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
-    has_singleton_output: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">true</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(DelayType::Stratum),
@@ -218,12 +222,14 @@
     output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value,
     flow_prop_fn: <span class="prelude-val">None</span>,
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
+                   root,
                    context,
                    hydroflow,
                    op_span,
                    ident,
-                   inputs,
                    is_pull,
+                   inputs,
+                   singleton_output_ident,
                    op_inst:
                        OperatorInstance {
                            generics:
@@ -236,8 +242,6 @@
                    ..
                },
                diagnostics| {
-        <span class="macro">assert!</span>(is_pull);
-
         <span class="kw">let </span>persistence = <span class="kw">match </span>persistence_args[..] {
             [] =&gt; Persistence::Tick,
             [a] =&gt; a,
@@ -248,83 +252,87 @@
         <span class="kw">let </span>init = <span class="kw-2">&amp;</span>arguments[<span class="number">0</span>];
         <span class="kw">let </span>func = <span class="kw-2">&amp;</span>arguments[<span class="number">1</span>];
         <span class="kw">let </span>initializer_func_ident = wc.make_ident(<span class="string">"initializer_func"</span>);
-        <span class="kw">let </span>folddata_ident = wc.make_ident(<span class="string">"folddata"</span>);
         <span class="kw">let </span>accumulator_ident = wc.make_ident(<span class="string">"accumulator"</span>);
         <span class="kw">let </span>iterator_item_ident = wc.make_ident(<span class="string">"iterator_item"</span>);
 
-        <span class="kw">let </span>(write_prologue, write_iterator, write_iterator_after) = <span class="kw">match </span>persistence {
-            Persistence::Tick =&gt; (
-                <span class="macro">quote_spanned! </span>{op_span=&gt;
-                    <span class="kw">let </span>#initializer_func_ident = #init;
-                },
-                <span class="macro">quote_spanned! </span>{op_span=&gt;
-                    <span class="kw">let </span>#ident = {
-                        <span class="attr">#[allow(clippy::redundant_closure_call)]
-                        </span><span class="kw">let </span><span class="kw-2">mut </span>#accumulator_ident = (#initializer_func_ident)();
+        <span class="kw">if </span>Persistence::Mutable == persistence {
+            diagnostics.push(Diagnostic::spanned(
+                op_span,
+                Level::Error,
+                <span class="string">"An implementation of 'mutable does not exist"</span>,
+            ));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(());
+        }
 
-                        <span class="attr">#[inline(always)]
-                        </span><span class="doccomment">/// A: accumulator type
-                        /// T: iterator item type
-                        /// O: output type
-                        </span><span class="kw">fn </span>call_comb_type&lt;A, T, O&gt;(a: <span class="kw-2">&amp;mut </span>A, t: T, f: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;mut </span>A, T) -&gt; O) -&gt; O {
-                            f(a, t)
-                        }
-
-                        <span class="kw">for </span>#iterator_item_ident <span class="kw">in </span>#input {
-                            <span class="attr">#[allow(clippy::redundant_closure_call)]
-                            </span>call_comb_type(<span class="kw-2">&amp;mut </span>#accumulator_ident, #iterator_item_ident, #func);
-                        }
-
-                        ::std::iter::once(#accumulator_ident)
-                    };
-                },
-                Default::default(),
-            ),
-            Persistence::Static =&gt; (
-                <span class="macro">quote_spanned! </span>{op_span=&gt;
-                    <span class="kw">let </span>#initializer_func_ident = #init;
-
+        <span class="kw">let </span>tick_reset_code = <span class="kw">if </span>Persistence::Tick == persistence {
+            <span class="macro">quote_spanned! </span>{op_span=&gt;
+                <span class="comment">// Reset the value to the initializer fn if it is a new tick.
+                </span><span class="kw">if </span>#context.is_first_run_this_tick() {
                     <span class="attr">#[allow(clippy::redundant_closure_call)]
-                    </span><span class="kw">let </span>#folddata_ident = #hydroflow.add_state(
-                        ::std::cell::Cell::new(::std::option::Option::Some((#initializer_func_ident)()))
-                    );
-                },
-                <span class="macro">quote_spanned! </span>{op_span=&gt;
-                    <span class="kw">let </span>#ident = {
-                        <span class="kw">let </span><span class="kw-2">mut </span>#accumulator_ident = #context.state_ref(#folddata_ident).take().expect(<span class="string">"FOLD DATA MISSING"</span>);
-
-                        <span class="attr">#[inline(always)]
-                        </span><span class="doccomment">/// A: accumulator type
-                        /// T: iterator item type
-                        /// O: output type
-                        </span><span class="kw">fn </span>call_comb_type&lt;A, T, O&gt;(a: <span class="kw-2">&amp;mut </span>A, t: T, f: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;mut </span>A, T) -&gt; O) -&gt; O {
-                            f(a, t)
-                        }
-
-                        <span class="kw">for </span>#iterator_item_ident <span class="kw">in </span>#input {
-                            <span class="attr">#[allow(clippy::redundant_closure_call)]
-                            </span>call_comb_type(<span class="kw-2">&amp;mut </span>#accumulator_ident, #iterator_item_ident, #func);
-                        }
-
-                        #context.state_ref(#folddata_ident).set(
-                            ::std::option::Option::Some(::std::clone::Clone::clone(<span class="kw-2">&amp;</span>#accumulator_ident))
-                        );
-
-                        ::std::iter::once(#accumulator_ident)
-                    };
-                },
-                <span class="macro">quote_spanned! </span>{op_span=&gt;
-                    #context.schedule_subgraph(#context.current_subgraph(), <span class="bool-val">false</span>);
-                },
-            ),
-            Persistence::Mutable =&gt; {
-                diagnostics.push(Diagnostic::spanned(
-                    op_span,
-                    Level::Error,
-                    <span class="string">"An implementation of 'mutable does not exist"</span>,
-                ));
-                <span class="kw">return </span><span class="prelude-val">Err</span>(());
+                    </span>{
+                        <span class="kw-2">*</span>#accumulator_ident = (#initializer_func_ident)();
+                    }
+                }
             }
+        } <span class="kw">else </span>{
+            Default::default() <span class="comment">// No code
+        </span>};
+        <span class="kw">let </span>iterator_foreach = <span class="macro">quote_spanned! </span>{op_span=&gt;
+            <span class="attr">#[inline(always)]
+            </span><span class="kw">fn </span>call_comb_type&lt;Accum, Item, Out&gt;(
+                accum: <span class="kw-2">&amp;mut </span>Accum,
+                item: Item,
+                func: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;mut </span>Accum, Item) -&gt; Out
+            ) -&gt; Out {
+                (func)(accum, item)
+            }
+            <span class="attr">#[allow(clippy::redundant_closure_call)]
+            </span>call_comb_type(<span class="kw-2">&amp;mut *</span>#accumulator_ident, #iterator_item_ident, #func);
+        };
+
+        <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned! </span>{op_span=&gt;
+            <span class="kw">let </span>#initializer_func_ident = #init;
+
+            <span class="attr">#[allow(clippy::redundant_closure_call)]
+            </span><span class="kw">let </span>#singleton_output_ident = #hydroflow.add_state(
+                ::std::cell::RefCell::new((#initializer_func_ident)())
+            );
+        };
+        <span class="kw">let </span>write_iterator = <span class="kw">if </span>is_pull {
+            <span class="macro">quote_spanned! </span>{op_span=&gt;
+                <span class="kw">let </span>#ident = {
+                    <span class="kw">let </span><span class="kw-2">mut </span>#accumulator_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
+                    #tick_reset_code
+
+                    #input.for_each(|#iterator_item_ident| {
+                        #iterator_foreach
+                    });
+
+                    <span class="attr">#[allow(clippy::clone_on_copy)]
+                    </span>{
+                        ::std::iter::once(::std::clone::Clone::clone(<span class="kw-2">&amp;*</span>#accumulator_ident))
+                    }
+                };
+            }
+        } <span class="kw">else </span>{
+            <span class="macro">quote_spanned! </span>{op_span=&gt;
+                <span class="kw">let </span>#ident = {
+                    <span class="kw">let </span><span class="kw-2">mut </span>#accumulator_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
+                    #tick_reset_code
+
+                    #root::pusherator::for_each::ForEach::new(|#iterator_item_ident| {
+                        <span class="kw">let </span><span class="kw-2">mut </span>#accumulator_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
+                        #iterator_foreach
+                    })
+                };
+            }
+        };
+        <span class="kw">let </span>write_iterator_after = <span class="kw">if </span>Persistence::Static == persistence {
+            <span class="macro">quote_spanned! </span>{op_span=&gt;
+                #context.schedule_subgraph(#context.current_subgraph(), <span class="bool-val">false</span>);
+            }
+        } <span class="kw">else </span>{
+            Default::default()
         };
 
         <span class="prelude-val">Ok</span>(OperatorWriteOutput {

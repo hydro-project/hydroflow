@@ -2814,12 +2814,12 @@
 
                     {
                         <span class="comment">// Determine pull and push halves of the `Pivot`.
-                        </span><span class="attr">#[allow(unknown_lints)]
-                        </span><span class="comment">// https://github.com/rust-lang/rust-clippy/issues/11290
-                        </span><span class="attr">#[allow(clippy::redundant_locals)]
-                        </span><span class="kw">let </span>pull_to_push_idx = pull_to_push_idx;
-                        <span class="kw">let </span>pull_ident =
-                            <span class="self">self</span>.node_as_ident(subgraph_nodes[pull_to_push_idx - <span class="number">1</span>], <span class="bool-val">false</span>);
+                        </span><span class="kw">let </span>pull_ident = <span class="kw">if </span><span class="number">0 </span>&lt; pull_to_push_idx {
+                            <span class="self">self</span>.node_as_ident(subgraph_nodes[pull_to_push_idx - <span class="number">1</span>], <span class="bool-val">false</span>)
+                        } <span class="kw">else </span>{
+                            <span class="comment">// Entire subgraph is push (with a single recv/pull handoff input).
+                            </span>recv_ports[<span class="number">0</span>].clone()
+                        };
 
                         <span class="attr">#[rustfmt::skip]
                         </span><span class="kw">let </span>push_ident = <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>node_id) =
@@ -2827,7 +2827,7 @@
                         {
                             <span class="self">self</span>.node_as_ident(node_id, <span class="bool-val">false</span>)
                         } <span class="kw">else if </span><span class="number">1 </span>== send_ports.len() {
-                            <span class="comment">// Entire subgraph is pull, except for a single send/push handoff output.
+                            <span class="comment">// Entire subgraph is pull (with a single send/push handoff output).
                             </span>send_ports[<span class="number">0</span>].clone()
                         } <span class="kw">else </span>{
                             diagnostics.push(Diagnostic::spanned(
