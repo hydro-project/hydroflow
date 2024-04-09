@@ -6,11 +6,7 @@ edition = "2021"
 
 [lib]
 proc-macro = true
-path = "src/lib.rs"
-
-[features]
-default = ["macro"]
-macro = []
+path = "../stageleft_test/src/lib.rs"
 
 [dependencies]
 stageleft = { path = "../stageleft", version = "^0.2.1" }
