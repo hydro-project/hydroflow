@@ -21,7 +21,7 @@ fn test_fold_loop() {
             -> map(Max::new)
             -> folder;
         folder = union()
-            -> fold::<'static>(|| Max::<u8>::new(0), |accum, x| accum.merge(x))
+            -> fold::<'static>(|| Max::<u8>::new(0), |accum, x| { accum.merge(x); })
             -> map(|x| Max::<u8>::new(x.into_reveal() + 1))
             -> filter(|x| !x.is_top())
             -> tee();

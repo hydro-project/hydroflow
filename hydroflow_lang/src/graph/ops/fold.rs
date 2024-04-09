@@ -8,19 +8,22 @@ use crate::diagnostic::{Diagnostic, Level};
 
 /// > 1 input stream, 1 output stream
 ///
-/// > Arguments: two arguments, both closures. The first closure is used to create the initial value for the accumulator, and the second is used to combine new values with the existing accumulator.
-/// The second closure takes two two arguments: an 'accumulator', and an element.
+/// > Arguments: two arguments, both closures. The first closure is used to create the initial
+/// value for the accumulator, and the second is used to combine new items with the existing
+/// accumulator value. The second closure takes two two arguments: an `&mut Accum` accumulated
+/// value, and an `Item`.
 ///
-/// Akin to Rust's built-in fold operator, except that it takes the accumulator by `&mut` instead of by value. Folds every element into an accumulator by applying a closure,
-/// returning the final result.
+/// Akin to Rust's built-in [`fold`](https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.fold)
+/// operator, except that it takes the accumulator by `&mut` instead of by value. Folds every item
+/// into an accumulator by applying a closure, returning the final result.
 ///
-/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+/// > Note: The closures have access to the [`context` object](surface_flows.md#the-context-object).
 ///
 /// `fold` can also be provided with one generic lifetime persistence argument, either
-/// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
-/// within the same tick. With `'static`, values will be remembered across ticks and will be
-/// aggregated with pairs arriving in later ticks. When not explicitly specified persistence
-/// defaults to `'tick`.
+/// `'tick` or `'static`, to specify how data persists. With `'tick`, Items will only be collected
+/// within the same tick. With `'static`, the accumulated value will be remembered across ticks and
+/// will be aggregated with items arriving in later ticks. When not explicitly specified
+/// persistence defaults to `'tick`.
 ///
 /// ```hydroflow
 /// // should print `Reassembled vector [1,2,3,4,5]`
@@ -74,14 +77,6 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
             [a] => a,
             _ => unreachable!(),
         };
-
-        let input = &inputs[0];
-        let init = &arguments[0];
-        let func = &arguments[1];
-        let initializer_func_ident = wc.make_ident("initializer_func");
-        let accumulator_ident = wc.make_ident("accumulator");
-        let iterator_item_ident = wc.make_ident("iterator_item");
-
         if Persistence::Mutable == persistence {
             diagnostics.push(Diagnostic::spanned(
                 op_span,
@@ -90,6 +85,13 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
             ));
             return Err(());
         }
+
+        let input = &inputs[0];
+        let init = &arguments[0];
+        let func = &arguments[1];
+        let initializer_func_ident = wc.make_ident("initializer_func");
+        let accumulator_ident = wc.make_ident("accumulator");
+        let iterator_item_ident = wc.make_ident("iterator_item");
 
         let tick_reset_code = if Persistence::Tick == persistence {
             quote_spanned! {op_span=>
@@ -106,12 +108,12 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
         };
         let iterator_foreach = quote_spanned! {op_span=>
             #[inline(always)]
-            fn call_comb_type<Accum, Item, Out>(
+            fn call_comb_type<Accum, Item>(
                 accum: &mut Accum,
                 item: Item,
-                func: impl Fn(&mut Accum, Item) -> Out
-            ) -> Out {
-                (func)(accum, item)
+                func: impl Fn(&mut Accum, Item),
+            ) {
+                (func)(accum, item);
             }
             #[allow(clippy::redundant_closure_call)]
             call_comb_type(&mut *#accumulator_ident, #iterator_item_ident, #func);

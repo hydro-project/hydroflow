@@ -57,7 +57,7 @@ pub const LATTICE_REDUCE: OperatorConstraints = OperatorConstraints {
         assert!(is_pull);
 
         let arguments = &parse_quote_spanned! {op_span=>
-            #root::lattices::Merge::<_>::merge
+            |acc, item| { #root::lattices::Merge::<_>::merge(acc, item); }
         };
         let wc = WriteContextArgs {
             arguments,

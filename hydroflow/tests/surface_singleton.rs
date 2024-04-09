@@ -154,3 +154,65 @@ pub fn test_fold_singleton_push() {
         &*collect_ready::<Vec<_>, _>(&mut filter_recv)
     );
 }
+
+#[multiplatform_test]
+pub fn test_reduce_singleton() {
+    let (filter_send, mut filter_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (max_send, mut max_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    let mut df = hydroflow::hydroflow_syntax! {
+        stream1 = source_iter(1..=10);
+        stream2 = source_iter(3..=5);
+        max_of_stream2 = stream2 -> reduce(|a, b| *a = std::cmp::max(*a, b));
+
+        filtered_stream1 = stream1
+            -> filter(|&value| {
+                // This is not monotonic.
+                value <= #max_of_stream2.unwrap_or(0)
+            })
+            -> map(|x| (context.current_tick(), x))
+            -> for_each(|x| filter_send.send(x).unwrap());
+
+        max_of_stream2
+            -> map(|x| (context.current_tick(), x))
+            -> for_each(|x| max_send.send(x).unwrap());
+    };
+
+    assert_graphvis_snapshots!(df);
+
+    df.run_available();
+
+    assert_eq!(
+        &[(0, 1), (0, 2), (0, 3), (0, 4), (0, 5)],
+        &*collect_ready::<Vec<_>, _>(&mut filter_recv)
+    );
+    assert_eq!(&[(0, 5)], &*collect_ready::<Vec<_>, _>(&mut max_recv));
+}
+
+#[multiplatform_test]
+pub fn test_reduce_singleton_push() {
+    let (filter_send, mut filter_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+
+    let mut df = hydroflow::hydroflow_syntax! {
+        stream1 = source_iter(1..=10);
+        stream2 = source_iter(3..=5);
+        max_of_stream2 = stream2 -> reduce(|a, b| *a = std::cmp::max(*a, b));
+
+        filtered_stream1 = stream1
+            -> filter(|&value| {
+                // This is not monotonic.
+                value <= #max_of_stream2.unwrap_or(0)
+            })
+            -> map(|x| (context.current_tick(), x))
+            -> for_each(|x| filter_send.send(x).unwrap());
+    };
+
+    assert_graphvis_snapshots!(df);
+
+    df.run_available();
+
+    assert_eq!(
+        &[(0, 1), (0, 2), (0, 3), (0, 4), (0, 5)],
+        &*collect_ready::<Vec<_>, _>(&mut filter_recv)
+    );
+}
