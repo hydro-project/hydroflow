@@ -1180,12 +1180,12 @@ impl HydroflowGraph {
 
                     {
                         // Determine pull and push halves of the `Pivot`.
-                        #[allow(unknown_lints)]
-                        // https://github.com/rust-lang/rust-clippy/issues/11290
-                        #[allow(clippy::redundant_locals)]
-                        let pull_to_push_idx = pull_to_push_idx;
-                        let pull_ident =
-                            self.node_as_ident(subgraph_nodes[pull_to_push_idx - 1], false);
+                        let pull_ident = if 0 < pull_to_push_idx {
+                            self.node_as_ident(subgraph_nodes[pull_to_push_idx - 1], false)
+                        } else {
+                            // Entire subgraph is push (with a single recv/pull handoff input).
+                            recv_ports[0].clone()
+                        };
 
                         #[rustfmt::skip]
                         let push_ident = if let Some(&node_id) =
@@ -1193,7 +1193,7 @@ impl HydroflowGraph {
                         {
                             self.node_as_ident(node_id, false)
                         } else if 1 == send_ports.len() {
-                            // Entire subgraph is pull, except for a single send/push handoff output.
+                            // Entire subgraph is pull (with a single send/push handoff output).
                             send_ports[0].clone()
                         } else {
                             diagnostics.push(Diagnostic::spanned(
