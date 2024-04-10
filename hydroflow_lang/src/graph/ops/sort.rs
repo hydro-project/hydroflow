@@ -45,7 +45,7 @@ pub const SORT: OperatorConstraints = OperatorConstraints {
 
         let input = &inputs[0];
         let write_iterator = quote_spanned! {op_span=>
-            // TODO(mingwei): unneccesary extra handoff into_iter() then collect().
+            // TODO(mingwei): unnecessary extra handoff into_iter() then collect().
             // Fix requires handoff specialization.
             let #ident = {
                 let mut v = #input.collect::<::std::vec::Vec<_>>();

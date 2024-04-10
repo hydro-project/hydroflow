@@ -20,7 +20,7 @@ We need to support both of them.
 
 ## Performance/Optimization
 - Monomorphization: compiler should inline operators in sequence & remove dead code, as much as possible.
-- Avoid unneccesary copying.
+- Avoid unnecessary copying.
 - Keep cost of scheduling low and thread-local when possible. Support batching to avoid scheduler and context-switching overhead.
 # Benchmark Conclusions
 
