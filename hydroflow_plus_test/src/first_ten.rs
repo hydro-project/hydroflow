@@ -1,4 +1,5 @@
 use hydroflow_plus::*;
+use serde::{Deserialize, Serialize};
 use stageleft::*;
 
 pub fn first_ten<'a, D: LocalDeploy<'a>>(
@@ -18,6 +19,11 @@ pub fn first_ten_runtime<'a>(
     flow.extract().optimize_default()
 }
 
+#[derive(Serialize, Deserialize)]
+struct SendOverNetwork {
+    pub n: u32,
+}
+
 pub fn first_ten_distributed<'a, D: Deploy<'a>>(
     flow: &FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
@@ -27,8 +33,9 @@ pub fn first_ten_distributed<'a, D: Deploy<'a>>(
 
     let numbers = flow.source_iter(&process, q!(0..10));
     numbers
+        .map(q!(|n| SendOverNetwork { n }))
         .send_bincode(&second_process)
-        .for_each(q!(|n| println!("{}", n)));
+        .for_each(q!(|n: SendOverNetwork| println!("{}", n.n))); // TODO(shadaj): why is the explicit type required here?
 
     second_process
 }

@@ -362,11 +362,14 @@ pub fn entry(
 
             #(#param_parsing)*
 
+            let macro_crate_name = env!("CARGO_PKG_NAME");
+            let final_crate_name = env!("STAGELEFT_FINAL_CRATE_NAME");
+            #root::runtime_support::set_macro_to_crate(macro_crate_name, final_crate_name);
+
             let output_core = {
                 #root::Quoted::splice(#input_name #passed_generics(#root::QuotedContext::create(), #(#params_to_pass),*))
             };
 
-            let final_crate_name = env!("STAGELEFT_FINAL_CRATE_NAME");
             let final_crate_root = #root::runtime_support::get_final_crate_name(final_crate_name);
 
             let module_path: #root::internal::syn::Path = #root::internal::syn::parse_str(module_path!()).unwrap();
