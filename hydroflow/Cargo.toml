@@ -38,7 +38,7 @@ hydroflow_macro = { optional = true, path = "../hydroflow_macro", version = "^0.
 itertools = "0.10"
 lattices = { path = "../lattices", version = "^0.5.4", features = [ "serde" ] }
 pusherator = { path = "../pusherator", version = "^0.0.5" }
-pyo3 = { optional = true, version = "0.18" }
+pyo3 = { optional = true, version = "0.20" }
 ref-cast = "1.0"
 regex = "1.8.4"
 rustc-hash = "1.1.0"
