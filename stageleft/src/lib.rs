@@ -13,7 +13,7 @@ pub mod internal {
     pub type CaptureVec = Vec<(String, (Option<TokenStream>, Option<TokenStream>))>;
 }
 
-pub use stageleft_macro::{entry, q, quse_fn, runtime};
+pub use stageleft_macro::{entry, q, quse_fn, runtime, top_level_mod};
 
 pub mod runtime_support;
 use runtime_support::FreeVariable;
@@ -39,11 +39,18 @@ macro_rules! PATH_SEPARATOR {
 #[macro_export]
 macro_rules! stageleft_crate {
     ($macro_crate:ident) => {
-        #[cfg(not(feature = "macro"))]
+        #[cfg(not(stageleft_macro))]
         #[doc(hidden)]
         pub use $macro_crate as __macro;
 
-        #[cfg(not(feature = "macro"))]
+        #[cfg(stageleft_macro)]
+        include!(concat!(
+            env!("OUT_DIR"),
+            $crate::PATH_SEPARATOR!(),
+            "lib_macro.rs"
+        ));
+
+        #[cfg(not(stageleft_macro))]
         #[doc(hidden)]
         #[allow(unused, ambiguous_glob_reexports)]
         pub mod __staged {
@@ -68,17 +75,6 @@ macro_rules! stageleft_no_entry_crate {
                 "lib_pub.rs"
             ));
         }
-    };
-}
-
-#[macro_export]
-macro_rules! stageleft_macro_crate {
-    () => {
-        include!(concat!(
-            env!("OUT_DIR"),
-            $crate::PATH_SEPARATOR!(),
-            "lib.rs"
-        ));
     };
 }
 
@@ -178,7 +174,6 @@ impl<
             .segments
             .iter()
             .skip(1)
-            .skip_while(|p| p.ident == "__staged") // skip crate
             .cloned()
             .collect::<Vec<_>>();
         let module_path = if module_path_segments.is_empty() {
