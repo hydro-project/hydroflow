@@ -251,11 +251,6 @@
 <a href="#249" id="249">249</a>
 <a href="#250" id="250">250</a>
 <a href="#251" id="251">251</a>
-<a href="#252" id="252">252</a>
-<a href="#253" id="253">253</a>
-<a href="#254" id="254">254</a>
-<a href="#255" id="255">255</a>
-<a href="#256" id="256">256</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::panic;
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -271,7 +266,7 @@
     <span class="kw">pub type </span>CaptureVec = Vec&lt;(String, (<span class="prelude-ty">Option</span>&lt;TokenStream&gt;, <span class="prelude-ty">Option</span>&lt;TokenStream&gt;))&gt;;
 }
 
-<span class="kw">pub use </span>stageleft_macro::{entry, q, quse_fn, runtime};
+<span class="kw">pub use </span>stageleft_macro::{entry, q, quse_fn, runtime, top_level_mod};
 
 <span class="kw">pub mod </span>runtime_support;
 <span class="kw">use </span>runtime_support::FreeVariable;
@@ -297,11 +292,18 @@
 <span class="attr">#[macro_export]
 </span><span class="macro">macro_rules! </span>stageleft_crate {
     (<span class="macro-nonterminal">$macro_crate</span>:ident) =&gt; {
-        <span class="attr">#[cfg(not(feature = <span class="string">"macro"</span>))]
+        <span class="attr">#[cfg(not(stageleft_macro))]
         #[doc(hidden)]
         </span><span class="kw">pub use </span><span class="macro-nonterminal">$macro_crate </span><span class="kw">as </span>__macro;
 
-        <span class="attr">#[cfg(not(feature = <span class="string">"macro"</span>))]
+        <span class="attr">#[cfg(stageleft_macro)]
+        </span><span class="macro">include!</span>(<span class="macro">concat!</span>(
+            <span class="macro">env!</span>(<span class="string">"OUT_DIR"</span>),
+            <span class="macro-nonterminal">$</span><span class="macro">crate::PATH_SEPARATOR!</span>(),
+            <span class="string">"lib_macro.rs"
+        </span>));
+
+        <span class="attr">#[<span class="macro-nonterminal">cfg</span>(not(stageleft_macro))]
         #[doc(hidden)]
         #[allow(unused, ambiguous_glob_reexports)]
         </span><span class="kw">pub mod </span>__staged {
@@ -326,17 +328,6 @@
                 <span class="string">"lib_pub.rs"
             </span>));
         }
-    };
-}
-
-<span class="attr">#[<span class="macro-nonterminal">macro_export</span>]
-</span><span class="macro">macro_rules! </span>stageleft_macro_crate {
-    () =&gt; {
-        <span class="macro">include!</span>(<span class="macro">concat!</span>(
-            <span class="macro">env!</span>(<span class="string">"OUT_DIR"</span>),
-            <span class="macro-nonterminal">$</span><span class="macro">crate::PATH_SEPARATOR!</span>(),
-            <span class="string">"lib.rs"
-        </span>));
     };
 }
 
@@ -436,8 +427,7 @@
             .segments
             .iter()
             .skip(<span class="number">1</span>)
-            .skip_while(|p| p.ident == <span class="string">"__staged"</span>) <span class="comment">// skip crate
-            </span>.cloned()
+            .cloned()
             .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
         <span class="kw">let </span>module_path = <span class="kw">if </span>module_path_segments.is_empty() {
             <span class="prelude-val">None

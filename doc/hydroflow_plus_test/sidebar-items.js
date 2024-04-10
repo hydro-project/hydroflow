@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["chat_app","count_elems","graph_reachability","teed_join"],"macro":["chat_app","count_elems","graph_reachability","teed_join"],"mod":["cluster","first_ten","negation","networked"]};
+window.SIDEBAR_ITEMS = {"macro":["chat_app","count_elems","graph_reachability","teed_join"],"mod":["cluster","first_ten","negation","networked"]};

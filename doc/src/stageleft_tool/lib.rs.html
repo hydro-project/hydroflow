@@ -243,7 +243,28 @@
 <a href="#241" id="241">241</a>
 <a href="#242" id="242">242</a>
 <a href="#243" id="243">243</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::path::Path;
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::BTreeSet;
+<span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>std::{env, fs};
 
 <span class="kw">use </span>proc_macro2::Span;
@@ -253,7 +274,7 @@
 <span class="kw">use </span>syn::visit_mut::VisitMut;
 
 <span class="kw">struct </span>GenMacroVistor {
-    exported_macros: Vec&lt;(String, syn::Path)&gt;,
+    exported_macros: BTreeSet&lt;(String, String)&gt;,
     current_mod: syn::Path,
 }
 
@@ -287,42 +308,39 @@
                 .collect::&lt;String&gt;();
             <span class="kw">let </span>contents_hash = sha256::digest(contents);
             <span class="self">self</span>.exported_macros
-                .push((contents_hash, <span class="macro">parse_quote!</span>(#cur_path)));
+                .insert((contents_hash, cur_path.to_token_stream().to_string()));
         }
     }
 }
 
 <span class="kw">pub fn </span>gen_macro(staged_path: <span class="kw-2">&amp;</span>Path, crate_name: <span class="kw-2">&amp;</span>str) {
     <span class="kw">let </span>out_dir = env::var_os(<span class="string">"OUT_DIR"</span>).unwrap();
-    <span class="kw">let </span>dest_path = Path::new(<span class="kw-2">&amp;</span>out_dir).join(<span class="string">"lib.rs"</span>);
+    <span class="kw">let </span>dest_path = Path::new(<span class="kw-2">&amp;</span>out_dir).join(<span class="string">"lib_macro.rs"</span>);
 
     <span class="kw">let </span>flow_lib =
         syn_inline_mod::parse_and_inline_modules(<span class="kw-2">&amp;</span>staged_path.join(<span class="string">"src"</span>).join(<span class="string">"lib.rs"</span>));
     <span class="kw">let </span><span class="kw-2">mut </span>visitor = GenMacroVistor {
-        exported_macros: <span class="macro">vec!</span>[],
-        current_mod: <span class="macro">parse_quote!</span>(<span class="kw">crate</span>::__staged),
+        exported_macros: Default::default(),
+        current_mod: <span class="macro">parse_quote!</span>(<span class="kw">crate</span>),
     };
     visitor.visit_file(<span class="kw-2">&amp;</span>flow_lib);
 
     <span class="kw">let </span>staged_path_absolute = fs::canonicalize(staged_path).unwrap();
 
-    <span class="kw">let </span>lib_path = staged_path_absolute.join(<span class="string">"src"</span>).join(<span class="string">"lib.rs"</span>);
-    <span class="kw">let </span>lib_path_string = lib_path.to_string_lossy();
-    <span class="kw">let </span><span class="kw-2">mut </span>out_file: syn::File = <span class="macro">parse_quote!</span>(
-        <span class="attr">#[allow(dead_code)]
-        #[path = #lib_path_string]
-        </span><span class="kw">mod </span>__staged;
-    );
+    <span class="kw">let </span><span class="kw-2">mut </span>out_file: syn::File = <span class="macro">parse_quote!</span>();
 
     <span class="kw">for </span>(hash, exported_from) <span class="kw">in </span>visitor.exported_macros {
         <span class="kw">let </span>underscored_path = syn::Ident::new(<span class="kw-2">&amp;</span>(<span class="string">"macro_"</span>.to_string() + <span class="kw-2">&amp;</span>hash), Span::call_site());
+        <span class="kw">let </span>underscored_path_impl =
+            syn::Ident::new(<span class="kw-2">&amp;</span>(<span class="string">"macro_"</span>.to_string() + <span class="kw-2">&amp;</span>hash + <span class="string">"_impl"</span>), Span::call_site());
+        <span class="kw">let </span>exported_from_parsed: syn::Path = syn::parse_str(<span class="kw-2">&amp;</span>exported_from).unwrap();
 
         <span class="kw">let </span>proc_macro_wrapper: syn::ItemFn = <span class="macro">parse_quote!</span>(
             <span class="attr">#[proc_macro]
             #[allow(non_snake_case, unused_qualifications)]
             </span><span class="kw">pub fn </span>#underscored_path(input: ::proc_macro::TokenStream) -&gt; ::proc_macro::TokenStream {
                 <span class="kw">let </span>input = ::stageleft::internal::TokenStream::from(input);
-                <span class="kw">let </span>out = #exported_from::#underscored_path(input);
+                <span class="kw">let </span>out = #exported_from_parsed::#underscored_path_impl(input);
                 ::proc_macro::TokenStream::from(out)
             }
         );
@@ -333,11 +351,30 @@
     fs::write(dest_path, out_file.to_token_stream().to_string()).unwrap();
     <span class="macro">println!</span>(<span class="string">"cargo:rerun-if-changed=build.rs"</span>);
     <span class="macro">println!</span>(<span class="string">"cargo:rustc-env=STAGELEFT_FINAL_CRATE_NAME={}"</span>, crate_name);
+    <span class="macro">println!</span>(<span class="string">"cargo:rustc-cfg=stageleft_macro"</span>);
 
     <span class="macro">println!</span>(
         <span class="string">"cargo:rerun-if-changed={}"</span>,
         staged_path_absolute.to_string_lossy()
     );
+}
+
+<span class="kw">struct </span>InlineTopLevelMod {}
+
+<span class="kw">impl </span>VisitMut <span class="kw">for </span>InlineTopLevelMod {
+    <span class="kw">fn </span>visit_file_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: <span class="kw-2">&amp;mut </span>syn::File) {
+        i.attrs = <span class="macro">vec!</span>[];
+        i.items.iter_mut().for_each(|i| {
+            <span class="kw">if let </span>syn::Item::Macro(e) = i {
+                <span class="kw">if </span>e.mac.path.to_token_stream().to_string() == <span class="string">"stageleft :: top_level_mod" </span>{
+                    <span class="kw">let </span>inner = <span class="kw-2">&amp;</span>e.mac.tokens;
+                    <span class="kw-2">*</span>i = <span class="macro">parse_quote!</span>(
+                        <span class="kw">pub mod </span>#inner;
+                    );
+                }
+            }
+        });
+    }
 }
 
 <span class="kw">struct </span>GenFinalPubVistor {
@@ -373,7 +410,7 @@
 
         <span class="kw">if </span>is_runtime_or_test {
             <span class="kw-2">*</span>i = <span class="macro">parse_quote! </span>{
-                <span class="attr">#[cfg(feature = <span class="string">"macro"</span>)]
+                <span class="attr">#[cfg(stageleft_macro)]
                 </span>#i
             };
         } <span class="kw">else </span>{
@@ -400,7 +437,7 @@
 
         <span class="kw">if </span>is_entry {
             <span class="kw-2">*</span>i = <span class="macro">parse_quote! </span>{
-                <span class="attr">#[cfg(feature = <span class="string">"macro"</span>)]
+                <span class="attr">#[cfg(stageleft_macro)]
                 </span>#i
             }
         }
@@ -435,7 +472,7 @@
             } <span class="kw">else if let </span>syn::Item::Impl(e) = i {
                 <span class="comment">// TODO(shadaj): emit impls if the struct is private
                 </span><span class="kw-2">*</span>i = <span class="macro">parse_quote!</span>(
-                    <span class="attr">#[cfg(feature = <span class="string">"macro"</span>)]
+                    <span class="attr">#[cfg(stageleft_macro)]
                     </span>#e
                 );
             }
@@ -461,6 +498,9 @@
 
 <span class="kw">pub fn </span>gen_final_helper(final_crate: <span class="kw-2">&amp;</span>str) {
     <span class="kw">let </span>out_dir = env::var_os(<span class="string">"OUT_DIR"</span>).unwrap();
+
+    <span class="kw">let </span><span class="kw-2">mut </span>orig_flow_lib = syn_inline_mod::parse_and_inline_modules(Path::new(<span class="string">"src/lib.rs"</span>));
+    InlineTopLevelMod {}.visit_file_mut(<span class="kw-2">&amp;mut </span>orig_flow_lib);
 
     <span class="kw">let </span><span class="kw-2">mut </span>flow_lib_pub = syn_inline_mod::parse_and_inline_modules(Path::new(<span class="string">"src/lib.rs"</span>));
 

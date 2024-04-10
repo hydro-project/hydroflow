@@ -12,7 +12,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["hydroflow_plus",["",[["location",[],["graphs.rs","mod.rs","network.rs"]]],["builder.rs","cycle.rs","ir.rs","lib.rs","persist_pullup.rs","stream.rs"]]],\
 ["hydroflow_plus_cli_integration",["",[],["lib.rs","runtime.rs"]]],\
 ["hydroflow_plus_test",["",[],["cluster.rs","first_ten.rs","lib.rs","negation.rs","networked.rs"]]],\
-["hydroflow_plus_test_macro",["",[],["lib.rs"]]],\
+["hydroflow_plus_test_macro",["",[],["cluster.rs","first_ten.rs","lib.rs","negation.rs","networked.rs"]]],\
 ["latency_measure",["",[],["latency_measure.rs","protocol.rs"]]],\
 ["lattices",["",[],["algebra.rs","collections.rs","conflict.rs","dom_pair.rs","lib.rs","map_union.rs","map_union_with_tombstones.rs","ord.rs","pair.rs","point.rs","set_union.rs","set_union_with_tombstones.rs","test.rs","union_find.rs","unit.rs","vec_union.rs","with_bot.rs","with_top.rs"]]],\
 ["many_to_many",["",[],["many_to_many.rs"]]],\
@@ -27,7 +27,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["stageleft",["",[],["lib.rs","runtime_support.rs"]]],\
 ["stageleft_macro",["",[["quote_impl",[["free_variable",[],["mod.rs","prelude.rs"]]],["mod.rs"]]],["lib.rs"]]],\
 ["stageleft_test",["",[],["lib.rs","submodule.rs"]]],\
-["stageleft_test_macro",["",[],["lib.rs"]]],\
+["stageleft_test_macro",["",[],["lib.rs","submodule.rs"]]],\
 ["stageleft_tool",["",[],["lib.rs"]]],\
 ["topolotree",["",[],["main.rs","protocol.rs"]]],\
 ["variadics",["",[],["lib.rs"]]],\

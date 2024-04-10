@@ -369,6 +369,64 @@
 <a href="#367" id="367">367</a>
 <a href="#368" id="368">368</a>
 <a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
+<a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Punct, Spacing, Span, TokenStream};
 <span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
 <span class="kw">use </span>syn::punctuated::Punctuated;
@@ -516,8 +574,43 @@
     // one that is runtime-only with public fields and one that is staged-only without
     </span><span class="kw">let </span>input: TokenStream = input.into();
     proc_macro::TokenStream::from(<span class="macro">quote! </span>{
-        <span class="attr">#[cfg(not(feature = <span class="string">"macro"</span>))]
+        <span class="attr">#[cfg(not(stageleft_macro))]
         </span>#input
+    })
+}
+
+<span class="doccomment">/// A utility for declaring top-level public modules in a Stageleft crate that will
+/// export macros. This gets around errors in compiling the macro crate when there
+/// are `pub mod` declarations at the top-level file.
+///
+/// This macro will only work on nightly with `#![feature(proc_macro_hygiene)]`,
+/// but for stable builds you can manually achieve this by using the following
+/// pattern:
+///
+/// ```ignore
+/// #[cfg(not(stageleft_macro))]
+/// pub mod my_mod;
+///
+/// #[cfg(stageleft_macro)]
+/// mod my_mod;
+/// ```
+</span><span class="attr">#[proc_macro_attribute]
+</span><span class="kw">pub fn </span>top_level_mod(
+    _attr: proc_macro::TokenStream,
+    input: proc_macro::TokenStream,
+) -&gt; proc_macro::TokenStream {
+    <span class="kw">let </span>input: syn::ItemMod = syn::parse(input).unwrap();
+    <span class="kw">let </span><span class="kw-2">mut </span>input_pub_crate = input.clone();
+    <span class="kw">if let </span>syn::Visibility::Public(<span class="kw">_</span>) = <span class="kw-2">&amp;</span>input_pub_crate.vis {
+        input_pub_crate.vis = <span class="macro">syn::parse_quote!</span>(<span class="kw">pub</span>(<span class="kw">crate</span>));
+    }
+
+    proc_macro::TokenStream::from(<span class="macro">quote! </span>{
+        <span class="attr">#[cfg(not(stageleft_macro))]
+        </span>#input
+
+        <span class="attr">#[cfg(stageleft_macro)]
+        </span>#input_pub_crate
     })
 }
 
@@ -557,7 +650,7 @@
     <span class="kw">let </span>attr_params =
         <span class="macro">syn::parse_macro_input!</span>(attr with Punctuated&lt;Type, <span class="macro">Token!</span>[,]&gt;::parse_terminated);
 
-    <span class="kw">let </span>input = <span class="macro">syn::parse_macro_input!</span>(input <span class="kw">as </span>syn::ItemFn);
+    <span class="kw">let </span><span class="kw-2">mut </span>input = <span class="macro">syn::parse_macro_input!</span>(input <span class="kw">as </span>syn::ItemFn);
     <span class="kw">let </span>input_name = <span class="kw-2">&amp;</span>input.sig.ident;
 
     <span class="kw">let </span>input_generics = <span class="kw-2">&amp;</span>input.sig.generics;
@@ -674,17 +767,19 @@
         .collect::&lt;String&gt;();
     <span class="kw">let </span>input_hash = <span class="string">"macro_"</span>.to_string() + <span class="kw-2">&amp;</span>sha256::digest(input_contents);
     <span class="kw">let </span>input_hash_ident = syn::Ident::new(<span class="kw-2">&amp;</span>input_hash, Span::call_site());
+    <span class="kw">let </span>input_hash_impl_ident = syn::Ident::new(<span class="kw-2">&amp;</span>(input_hash + <span class="string">"_impl"</span>), Span::call_site());
 
     <span class="kw">let </span>input_visibility = input.vis.clone();
+    input.vis = <span class="macro">syn::parse_quote!</span>(<span class="kw">pub</span>(<span class="kw">crate</span>));
 
     proc_macro::TokenStream::from(<span class="macro">quote_spanned! </span>{input.span()=&gt;
-        <span class="attr">#[cfg_attr(not(feature = <span class="string">"macro"</span>), allow(unused))]
+        <span class="attr">#[cfg_attr(not(stageleft_macro), allow(unused))]
         #[allow(clippy::needless_lifetimes)]
         </span>#input
 
-        <span class="attr">#[cfg_attr(not(feature = <span class="string">"macro"</span>), allow(unused))]
-        #[cfg_attr(not(feature = <span class="string">"macro"</span>), doc(hidden))]
-        </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>#input_hash_ident(input: #root::internal::TokenStream) -&gt; #root::internal::TokenStream {
+        <span class="attr">#[cfg_attr(not(stageleft_macro), allow(unused))]
+        #[cfg_attr(not(stageleft_macro), doc(hidden))]
+        </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>#input_hash_impl_ident(input: #root::internal::TokenStream) -&gt; #root::internal::TokenStream {
             <span class="kw">let </span>input_parsed = #root::internal::syn::parse::Parser::parse(
                 #root::internal::syn::punctuated::Punctuated::&lt;#root::internal::syn::Expr, #<span class="macro">root::internal::syn::Token!</span>[,]&gt;::parse_terminated,
                 input.into()
@@ -704,25 +799,46 @@
             <span class="kw">let </span>final_crate_root = #root::runtime_support::get_final_crate_name(final_crate_name);
 
             <span class="kw">let </span>module_path: #root::internal::syn::Path = #root::internal::syn::parse_str(<span class="macro">module_path!</span>()).unwrap();
-            <span class="kw">let </span>module_path = module_path.segments.iter().skip(<span class="number">1</span>).cloned().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
-            <span class="kw">let </span>module_path = #root::internal::syn::Path {
-                leading_colon: <span class="prelude-val">None</span>,
-                segments: #root::internal::syn::punctuated::Punctuated::from_iter(module_path.into_iter()),
+            <span class="kw">let </span>module_path_segments = module_path
+                .segments
+                .iter()
+                .skip(<span class="number">1</span>)
+                .cloned()
+                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+            <span class="kw">let </span>module_path = <span class="kw">if </span>module_path_segments.is_empty() {
+                <span class="prelude-val">None
+            </span>} <span class="kw">else </span>{
+                <span class="prelude-val">Some</span>(#root::internal::syn::Path {
+                    leading_colon: <span class="prelude-val">None</span>,
+                    segments: #root::internal::syn::punctuated::Punctuated::from_iter(module_path_segments),
+                })
             };
 
-            ::#<span class="macro">root::internal::quote!</span>({
-                <span class="kw">use </span>#pound final_crate_root :: #pound module_path :: <span class="kw-2">*</span>;
-                <span class="kw">fn </span>expand_staged #input_generics(
-                    #(#runtime_data_params),*
-                ) -&gt; #return_type_inner {
-                    #pound output_core
-                }
-                expand_staged(#(#runtime_data_locals),<span class="kw-2">*</span>)
-            })
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(module_path) = module_path {
+                ::#<span class="macro">root::internal::quote!</span>({
+                    <span class="kw">use </span>#pound final_crate_root :: __staged :: #pound module_path :: <span class="kw-2">*</span>;
+                    <span class="kw">fn </span>expand_staged #input_generics(
+                        #(#runtime_data_params),*
+                    ) -&gt; #return_type_inner {
+                        #pound output_core
+                    }
+                    expand_staged(#(#runtime_data_locals),<span class="kw-2">*</span>)
+                })
+            } <span class="kw">else </span>{
+                ::#<span class="macro">root::internal::quote!</span>({
+                    <span class="kw">use </span>#pound final_crate_root :: __staged :: <span class="kw-2">*</span>;
+                    <span class="kw">fn </span>expand_staged #input_generics(
+                        #(#runtime_data_params),*
+                    ) -&gt; #return_type_inner {
+                        #pound output_core
+                    }
+                    expand_staged(#(#runtime_data_locals),<span class="kw-2">*</span>)
+                })
+            }
         }
 
         <span class="comment">// TODO(shadaj): fixes jump-to-definition but breaks Rust Analyzer due to $crate
-        // #[cfg(not(feature = "macro"))]
+        // #[cfg(not(stageleft_macro))]
         // #[macro_export]
         // macro_rules! #input_hash_ident {
         //     ($($tt:tt)*) =&gt; {
@@ -730,10 +846,10 @@
         //     }
         // }
 
-        // #[cfg(not(feature = "macro"))]
+        // #[cfg(not(stageleft_macro))]
         // #input_visibility use #input_hash_ident as #input_name;
 
-        </span><span class="attr">#[cfg(not(feature = <span class="string">"macro"</span>))]
+        </span><span class="attr">#[cfg(not(stageleft_macro))]
         #[allow(unused_imports)]
         </span>#input_visibility <span class="kw">use </span><span class="kw">crate</span>::__macro::#input_hash_ident <span class="kw">as </span>#input_name;
     })
