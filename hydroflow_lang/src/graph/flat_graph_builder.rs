@@ -704,7 +704,7 @@ impl FlatGraphBuilder {
                                             "Unexpected {} port: {}. Expected one of: `{}`",
                                             input_output,
                                             actual_port_iv.as_error_message_string(),
-                                            itertools::Itertools::intersperse(
+                                            Itertools::intersperse(
                                                 expected_ports
                                                     .iter()
                                                     .map(|port| Cow::Owned(
@@ -737,7 +737,7 @@ impl FlatGraphBuilder {
                                 format!(
                                     "Missing expected {} port(s): `{}`.",
                                     input_output,
-                                    itertools::Itertools::intersperse(
+                                    Itertools::intersperse(
                                         missing.into_iter().map(|port| Cow::Owned(
                                             port.to_token_stream().to_string()
                                         )),

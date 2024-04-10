@@ -24,7 +24,7 @@ pub(crate) fn rga_datalog_agg(
         firstLastChild = insertAfter[firstLastChild]
             -> map(|(c, p)| (p, c))
             -> fold_keyed::<'static, Timestamp, (Timestamp, Timestamp)>(
-                || (Timestamp{node_ts: 0, node_id: 0}, Timestamp{node_ts: std::usize::MAX, node_id: std::usize::MAX}),
+                || (Timestamp{node_ts: 0, node_id: 0}, Timestamp{node_ts: usize::MAX, node_id: usize::MAX}),
                 |(first, last): &mut (Timestamp, Timestamp), s2: Timestamp| {
                     if s2 > *first { *first = s2 };
                     if s2 < *last { *last = s2 };
