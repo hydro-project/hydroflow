@@ -388,21 +388,8 @@ pub fn get_single_function_properties<S: Debug + PartialEq + Clone, const N: usi
     return properties_satisfied;
 }
 
-//TODO write a function to take in a set of functions and check which satisfy the pairwise properties
-// pub fn get_pair_of_functions_properties<S: Debug + PartialEq + Clone, const N: usize>(
-//     items: &[S; N],
-//     f: impl Fn(S, S) -> S, //TODO make this a vector of functions.
-// ) -> Vec<String> {
-//     //store the list of properties (strings) that are satisfied to be returned
-//     let mut properties_satisfied: Vec<String> = Vec::new();
+//TODO write a function to take in a set of functions and check which pairs satisfy different pairwise properties (e.g. distributivity
 
-//     if (associativity(items, f).is_ok()){
-//         properties_satisfied.push("associativity".to_string());
-//     }
-
-//     return properties_satisfied;
-    // TODO returns the list of properties for each pair of functions? 
-// }
 // Tests
 
 #[cfg(test)]
@@ -983,6 +970,12 @@ mod test {
         //Test that get single function properties on max returns associative, commutative, idempotent, identity, and absorbing element.
         let test_properties_satisfied = get_single_function_properties(&[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, f64::INFINITY], f64::max, 0.0, |x| x, f64::INFINITY);
         let correct_properties = vec!["associativity".to_string(), "commutativity".to_string(), "idempotency".to_string(), "identity".to_string(), "absorbing_element".to_string()];
+        assert_eq!(test_properties_satisfied, correct_properties);
+
+        //Define a function that takes in two u32s and returns the first one
+        let f = |x: u32, y: u32| x;
+        let test_properties_satisfied = get_single_function_properties(TEST_ITEMS, f, 0, |x| 0u32.wrapping_sub(x), 0);
+        let correct_properties = vec!["associativity".to_string(), "idempotency".to_string()];
         assert_eq!(test_properties_satisfied, correct_properties);
     }
 }
