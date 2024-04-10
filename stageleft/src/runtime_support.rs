@@ -1,3 +1,4 @@
+use std::borrow::BorrowMut;
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 
@@ -25,6 +26,16 @@ pub fn get_final_crate_name(crate_name: &str) -> TokenStream {
             quote! { #ident }
         }
     }
+}
+
+thread_local! {
+    pub(crate) static MACRO_TO_CRATE: std::cell::RefCell<Option<(String, String)>> = const { std::cell::RefCell::new(None) };
+}
+
+pub fn set_macro_to_crate(macro_name: &str, crate_name: &str) {
+    MACRO_TO_CRATE.with_borrow_mut(|cell| {
+        *cell.borrow_mut() = Some((macro_name.to_string(), crate_name.to_string()));
+    });
 }
 
 pub trait ParseFromLiteral {
