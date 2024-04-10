@@ -20,6 +20,9 @@ use runtime_support::FreeVariable;
 
 use crate::runtime_support::get_final_crate_name;
 
+mod type_name;
+pub use type_name::quote_type;
+
 #[cfg(windows)]
 #[macro_export]
 macro_rules! PATH_SEPARATOR {
