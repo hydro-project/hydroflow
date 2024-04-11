@@ -63,16 +63,18 @@ pub fn integral_domain<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     g: &impl Fn(S, S) -> S,
-    zero: S, // zero is the identity element of f
-    one: S,  // one is the identity element of g
-    b: &impl Fn(S) -> S,
+    zero: S,             // zero is the identity element of f
+    one: S,              // one is the identity element of g
+    b: &impl Fn(S) -> S, /* b is the function to compute the inverse element of an element with respect to f */
 ) {
     commutative_ring(items, f, g, zero.clone(), one, b);
-    no_nonzero_zero_divisors(items, f, zero);
+    println!("commutative ring passed.");
+    no_nonzero_zero_divisors(items, g, zero);
+    println!("nonzero passed.");
 }
 
 /// Defines a no-nonzero-zero-divisors property.
-/// An element a is a zero divisor if there exists a non-zero element b such that ab = 0 or ba = 0
+/// x is a nonzero divisor if xy = 0 and y is also a nonzero element.
 pub fn no_nonzero_zero_divisors<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
@@ -88,16 +90,14 @@ pub fn no_nonzero_zero_divisors<S: Debug + PartialEq + Clone, const N: usize>(
     }
 }
 
-
-
 /// Defines a commutative ring structure.
 /// A commutative ring is a ring where the multiplication operation g is commutative.
 pub fn commutative_ring<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
-    f: &impl Fn(S, S) -> S,
-    g: &impl Fn(S, S) -> S,
-    zero: S, // zero is the identity element of f
-    one: S,  // one is the identity element of g
+    f: &impl Fn(S, S) -> S, // addition operation
+    g: &impl Fn(S, S) -> S, // multiplication operation
+    zero: S,                // zero is the identity element of f
+    one: S,                 // one is the identity element of g
     b: &impl Fn(S) -> S,
 ) {
     semiring(items, f, g, zero.clone(), one);
@@ -307,6 +307,7 @@ mod test {
     use crate::algebra::*;
 
     static TEST_ITEMS: &[u32; 14] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+    static TEST_MOD_PRIME_7: &[u32; 7] = &[0, 1, 2, 3, 4, 5, 6];
 
     #[test]
     fn test_associativity() {
@@ -377,6 +378,101 @@ mod test {
         absorbing_element(TEST_ITEMS, u32::wrapping_mul, 0);
         assert!(std::panic::catch_unwind(|| {
             absorbing_element(TEST_ITEMS, u32::wrapping_mul, 5);
+        })
+        .is_err());
+    }
+
+    // Define a function for addition modulo 7
+    fn modulo_add_7(a: u32, b: u32) -> u32 {
+        return u32::wrapping_add(a, b) % 7;
+    }
+    // Define a function for addition modulo 14
+    fn modulo_add_14(a: u32, b: u32) -> u32 {
+        return u32::wrapping_add(a, b) % 14;
+    }
+
+    // Define a function for multiplication modulo 7
+    fn modulo_mult_7(a: u32, b: u32) -> u32 {
+        return u32::wrapping_mul(a, b) % 7;
+    }
+
+    // Define an inverse operation to modulo_add_7
+    fn modulo_sub_7(a: u32) -> u32 {
+        return u32::wrapping_sub(7, a) % 7;
+    }
+    // Define an inverse operation to modulo_add_14
+    fn modulo_sub_14(a: u32) -> u32 {
+        return u32::wrapping_sub(14, a) % 14;
+    }
+
+    // Define a function for multiplication modulo 6
+    fn modulo_mult_14(a: u32, b: u32) -> u32 {
+        return u32::wrapping_mul(a, b) % 14;
+    }
+
+    #[test]
+    fn test_additive_inverse_7() {
+        assert_eq!(0, modulo_sub_7(0));
+        assert_eq!(1, modulo_sub_7(6));
+        assert_eq!(2, modulo_sub_7(5));
+        assert_eq!(3, modulo_sub_7(4));
+        assert_eq!(4, modulo_sub_7(3));
+        assert_eq!(6, modulo_sub_7(1));
+    }
+
+    #[test]
+    fn test_modulo_mu14() {
+        assert_eq!(0, modulo_mult_14(2, 7));
+        assert_eq!(3, modulo_mult_14(1, 3));
+        assert_eq!(2, modulo_mult_14(2, 1));
+        assert_eq!(3, modulo_mult_14(3, 1));
+        assert_eq!(4, modulo_mult_14(2, 2));
+        assert_eq!(6, modulo_mult_14(2, 3));
+        assert_eq!(9, modulo_mult_14(3, 3));
+    }
+    #[test]
+    fn test_modulo_mu7() {
+        assert_eq!(0, modulo_mult_7(0, 0));
+        assert_eq!(3, modulo_mult_7(1, 3));
+        assert_eq!(2, modulo_mult_7(2, 1));
+        assert_eq!(2, modulo_mult_7(3, 3));
+        assert_eq!(2, modulo_mult_7(3, 3));
+        assert_eq!(5, modulo_mult_7(3, 4));
+        assert_eq!(1, modulo_mult_7(3, 5));
+    }
+
+    #[test]
+    fn test_no_nonzero_zero_divisors() {
+        // The ring of integer mod prime number has no nonzero zero divisors.
+        no_nonzero_zero_divisors(TEST_MOD_PRIME_7, &modulo_mult_7, 0);
+        // The ring of integers with multiplication mod prime number has nonzero zero divisors. (e.g. 1 * 7 = 0 mod 7)
+        assert!(std::panic::catch_unwind(|| {
+            no_nonzero_zero_divisors(TEST_ITEMS, &modulo_mult_7, 0)
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn test_integral_domain() {
+        // The ring of integers modulo a prime number is an integral domain.
+        integral_domain(
+            TEST_MOD_PRIME_7,
+            &modulo_add_7,
+            &modulo_mult_7,
+            0,
+            1,
+            &modulo_sub_7,
+        );
+        // // The ring of integers modulo a composite number is not an integral domain.
+        assert!(std::panic::catch_unwind(|| {
+            integral_domain(
+                TEST_ITEMS,
+                &modulo_add_14,
+                &modulo_mult_14,
+                0,
+                1,
+                &modulo_sub_14,
+            )
         })
         .is_err());
     }
