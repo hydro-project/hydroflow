@@ -149,7 +149,6 @@ jobs:
           # resolve to 'nothing' so we will exclude 'nothing'. https://stackoverflow.com/a/73822998
           - rust_release: ${{ (needs.pre_job.outputs.should_skip != 'true' && 'nothing') || 'pinned-nightly' }}
           - rust_release: ${{ (github.event_name != 'pull_request' && 'nothing') || 'latest-nightly' }}
-          - os: ${{ (github.event_name != 'pull_request' && 'nothing') || 'windows-latest' }}
 
     env:
       CARGO_TERM_COLOR: always
