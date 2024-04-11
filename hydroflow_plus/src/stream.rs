@@ -13,7 +13,6 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use stageleft::{q, IntoQuotedMut, Quoted};
 use syn::parse_quote;
-use syn::visit_mut::VisitMut;
 
 use crate::ir::{HfPlusLeaf, HfPlusNode, HfPlusSource};
 use crate::location::{Cluster, HfSend, Location};
@@ -398,29 +397,10 @@ fn get_this_crate() -> TokenStream {
     }
 }
 
-// TODO(shadaj): has to be public due to temporary stageleft limitations
-/// Rewrites use of alloc::string::* to use std::string::*
-pub struct RewriteAlloc {}
-impl VisitMut for RewriteAlloc {
-    fn visit_path_mut(&mut self, i: &mut syn::Path) {
-        if i.segments.iter().take(2).collect::<Vec<_>>()
-            == vec![
-                &syn::PathSegment::from(syn::Ident::new("alloc", Span::call_site())),
-                &syn::PathSegment::from(syn::Ident::new("string", Span::call_site())),
-            ]
-        {
-            *i.segments.first_mut().unwrap() =
-                syn::PathSegment::from(syn::Ident::new("std", Span::call_site()));
-        }
-    }
-}
-
 fn serialize_bincode<T: Serialize>(is_demux: bool) -> Pipeline {
     let root = get_this_crate();
 
-    // This may fail when instantiated in an environment with different deps
-    let mut t_type: syn::Type = syn::parse_str(std::any::type_name::<T>()).unwrap();
-    RewriteAlloc {}.visit_type_mut(&mut t_type);
+    let t_type: syn::Type = stageleft::quote_type::<T>();
 
     if is_demux {
         parse_quote! {
@@ -437,12 +417,10 @@ fn serialize_bincode<T: Serialize>(is_demux: bool) -> Pipeline {
     }
 }
 
-fn deserialize_bincode<T2: DeserializeOwned>(tagged: bool) -> Pipeline {
+fn deserialize_bincode<T: DeserializeOwned>(tagged: bool) -> Pipeline {
     let root = get_this_crate();
 
-    // This may fail when instantiated in an environment with different deps
-    let mut t_type: syn::Type = syn::parse_str(std::any::type_name::<T2>()).unwrap();
-    RewriteAlloc {}.visit_type_mut(&mut t_type);
+    let t_type: syn::Type = stageleft::quote_type::<T>();
 
     if tagged {
         parse_quote! {
