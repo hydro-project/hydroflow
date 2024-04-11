@@ -1,0 +1,1 @@
+searchState.loadedDescShard("hydroflow_macro", 0, "Parse Hydroflow “surface syntax” without emitting code.\nCreate a Hydroflow instance using Hydroflow’s custom “…\n<code>hydroflow_syntax!</code> but will not emit any diagnostics …\nChecks that the given closure is a monotonic function. For …\nChecks that the given closure is a morphism. For now does …")

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_plus/src/ir.rs`."><title>ir.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_plus" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0-nightly (8f359beca 2024-02-23)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-c37d3936c59ababd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_plus/src/ir.rs`."><title>ir.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9e1300b5663a8a03.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_plus" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (8b2459c1f 2024-04-09)" data-channel="nightly" data-search-js="search-ffac13a0df2b1870.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-c97aec732c613ca4.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
             <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
     <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../hydroflow_plus/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
@@ -1035,7 +1035,7 @@
                 graph_builders
                     .entry(input_location_id)
                     .or_default()
-                    .add_statement(<span class="macro">parse_quote! </span>{
+                    .add_statement(<span class="macro">parse_quote!</span> {
                         #input_ident -&gt; for_each(#f);
                     });
             }
@@ -1047,7 +1047,7 @@
                 graph_builders
                     .entry(input_location_id)
                     .or_default()
-                    .add_statement(<span class="macro">parse_quote! </span>{
+                    .add_statement(<span class="macro">parse_quote!</span> {
                         #input_ident -&gt; dest_sink(#sink);
                     });
             }
@@ -1068,7 +1068,7 @@
                 graph_builders
                     .entry(location_id)
                     .or_default()
-                    .add_statement(<span class="macro">parse_quote! </span>{
+                    .add_statement(<span class="macro">parse_quote!</span> {
                         #ident = #input_ident;
                     });
             }
@@ -1314,7 +1314,7 @@
                     syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, persist_id), Span::call_site());
 
                 <span class="kw">let </span>builder = graph_builders.entry(location).or_default();
-                builder.add_statement(<span class="macro">parse_quote! </span>{
+                builder.add_statement(<span class="macro">parse_quote!</span> {
                     #persist_ident = #inner_ident -&gt; persist();
                 });
 
@@ -1331,7 +1331,7 @@
                     syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, delta_id), Span::call_site());
 
                 <span class="kw">let </span>builder = graph_builders.entry(location).or_default();
-                builder.add_statement(<span class="macro">parse_quote! </span>{
+                builder.add_statement(<span class="macro">parse_quote!</span> {
                     #delta_ident = #inner_ident -&gt; multiset_delta();
                 });
 
@@ -1350,25 +1350,25 @@
 
                 <span class="kw">let </span>source_stmt = <span class="kw">match </span>source {
                     HfPlusSource::Stream(expr) =&gt; {
-                        <span class="macro">parse_quote! </span>{
+                        <span class="macro">parse_quote!</span> {
                             #source_ident = source_stream(#expr);
                         }
                     }
 
                     HfPlusSource::Iter(expr) =&gt; {
-                        <span class="macro">parse_quote! </span>{
+                        <span class="macro">parse_quote!</span> {
                             #source_ident = source_iter(#expr);
                         }
                     }
 
                     HfPlusSource::Interval(expr) =&gt; {
-                        <span class="macro">parse_quote! </span>{
+                        <span class="macro">parse_quote!</span> {
                             #source_ident = source_interval(#expr);
                         }
                     }
 
                     HfPlusSource::Spin() =&gt; {
-                        <span class="macro">parse_quote! </span>{
+                        <span class="macro">parse_quote!</span> {
                             #source_ident = spin();
                         }
                     }
@@ -1399,7 +1399,7 @@
                         syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, tee_id), Span::call_site());
 
                     <span class="kw">let </span>builder = graph_builders.entry(inner_location_id).or_default();
-                    builder.add_statement(<span class="macro">parse_quote! </span>{
+                    builder.add_statement(<span class="macro">parse_quote!</span> {
                         #tee_ident = #inner_ident -&gt; tee();
                     });
 
@@ -1430,15 +1430,15 @@
                     syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, union_id), Span::call_site());
 
                 <span class="kw">let </span>builder = graph_builders.entry(left_location_id).or_default();
-                builder.add_statement(<span class="macro">parse_quote! </span>{
+                builder.add_statement(<span class="macro">parse_quote!</span> {
                     #union_ident = union();
                 });
 
-                builder.add_statement(<span class="macro">parse_quote! </span>{
+                builder.add_statement(<span class="macro">parse_quote!</span> {
                     #left_ident -&gt; [<span class="number">0</span>]#union_ident;
                 });
 
-                builder.add_statement(<span class="macro">parse_quote! </span>{
+                builder.add_statement(<span class="macro">parse_quote!</span> {
                     #right_ident -&gt; [<span class="number">1</span>]#union_ident;
                 });
 
@@ -1489,32 +1489,32 @@
 
                 <span class="kw">match </span>(left_was_persist, right_was_persist) {
                     (<span class="bool-val">true</span>, <span class="bool-val">true</span>) =&gt; {
-                        builder.add_statement(<span class="macro">parse_quote! </span>{
+                        builder.add_statement(<span class="macro">parse_quote!</span> {
                             #stream_ident = #operator::&lt;<span class="lifetime">'static</span>, <span class="lifetime">'static</span>&gt;();
                         });
                     }
                     (<span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; {
-                        builder.add_statement(<span class="macro">parse_quote! </span>{
+                        builder.add_statement(<span class="macro">parse_quote!</span> {
                             #stream_ident = #operator::&lt;<span class="lifetime">'static</span>, <span class="lifetime">'tick</span>&gt;();
                         });
                     }
                     (<span class="bool-val">false</span>, <span class="bool-val">true</span>) =&gt; {
-                        builder.add_statement(<span class="macro">parse_quote! </span>{
+                        builder.add_statement(<span class="macro">parse_quote!</span> {
                             #stream_ident = #operator::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'static</span>&gt;();
                         });
                     }
                     (<span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; {
-                        builder.add_statement(<span class="macro">parse_quote! </span>{
+                        builder.add_statement(<span class="macro">parse_quote!</span> {
                             #stream_ident = #operator::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'tick</span>&gt;();
                         });
                     }
                 };
 
-                builder.add_statement(<span class="macro">parse_quote! </span>{
+                builder.add_statement(<span class="macro">parse_quote!</span> {
                     #left_ident -&gt; [<span class="number">0</span>]#stream_ident;
                 });
 
-                builder.add_statement(<span class="macro">parse_quote! </span>{
+                builder.add_statement(<span class="macro">parse_quote!</span> {
                     #right_ident -&gt; [<span class="number">1</span>]#stream_ident;
                 });
 
@@ -1559,20 +1559,20 @@
                 <span class="kw">let </span>builder = graph_builders.entry(left_location_id).or_default();
 
                 <span class="kw">if </span>right_was_persist {
-                    builder.add_statement(<span class="macro">parse_quote! </span>{
+                    builder.add_statement(<span class="macro">parse_quote!</span> {
                         #stream_ident = #operator::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'static</span>&gt;();
                     });
                 } <span class="kw">else </span>{
-                    builder.add_statement(<span class="macro">parse_quote! </span>{
+                    builder.add_statement(<span class="macro">parse_quote!</span> {
                         #stream_ident = #operator::&lt;<span class="lifetime">'tick</span>, <span class="lifetime">'tick</span>&gt;();
                     });
                 }
 
-                builder.add_statement(<span class="macro">parse_quote! </span>{
+                builder.add_statement(<span class="macro">parse_quote!</span> {
                     #left_ident -&gt; [pos]#stream_ident;
                 });
 
-                builder.add_statement(<span class="macro">parse_quote! </span>{
+                builder.add_statement(<span class="macro">parse_quote!</span> {
                     #right_ident -&gt; [neg]#stream_ident;
                 });
 
@@ -1589,7 +1589,7 @@
                 <span class="kw">let </span>map_ident = syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, map_id), Span::call_site());
 
                 <span class="kw">let </span>builder = graph_builders.entry(input_location_id).or_default();
-                builder.add_statement(<span class="macro">parse_quote! </span>{
+                builder.add_statement(<span class="macro">parse_quote!</span> {
                     #map_ident = #input_ident -&gt; map(#f);
                 });
 
@@ -1607,7 +1607,7 @@
                     syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, flat_map_id), Span::call_site());
 
                 <span class="kw">let </span>builder = graph_builders.entry(input_location_id).or_default();
-                builder.add_statement(<span class="macro">parse_quote! </span>{
+                builder.add_statement(<span class="macro">parse_quote!</span> {
                     #flat_map_ident = #input_ident -&gt; flat_map(#f);
                 });
 
@@ -1625,7 +1625,7 @@
                     syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, filter_id), Span::call_site());
 
                 <span class="kw">let </span>builder = graph_builders.entry(input_location_id).or_default();
-                builder.add_statement(<span class="macro">parse_quote! </span>{
+                builder.add_statement(<span class="macro">parse_quote!</span> {
                     #filter_ident = #input_ident -&gt; filter(#f);
                 });
 
@@ -1643,7 +1643,7 @@
                     syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, filter_map_id), Span::call_site());
 
                 <span class="kw">let </span>builder = graph_builders.entry(input_location_id).or_default();
-                builder.add_statement(<span class="macro">parse_quote! </span>{
+                builder.add_statement(<span class="macro">parse_quote!</span> {
                     #filter_map_ident = #input_ident -&gt; filter_map(#f);
                 });
 
@@ -1661,7 +1661,7 @@
                     syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, enumerate_id), Span::call_site());
 
                 <span class="kw">let </span>builder = graph_builders.entry(input_location_id).or_default();
-                builder.add_statement(<span class="macro">parse_quote! </span>{
+                builder.add_statement(<span class="macro">parse_quote!</span> {
                     #enumerate_ident = #input_ident -&gt; enumerate();
                 });
 
@@ -1679,7 +1679,7 @@
                     syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, inspect_id), Span::call_site());
 
                 <span class="kw">let </span>builder = graph_builders.entry(input_location_id).or_default();
-                builder.add_statement(<span class="macro">parse_quote! </span>{
+                builder.add_statement(<span class="macro">parse_quote!</span> {
                     #inspect_ident = #input_ident -&gt; inspect(#f);
                 });
 
@@ -1697,7 +1697,7 @@
                     syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, unique_id), Span::call_site());
 
                 <span class="kw">let </span>builder = graph_builders.entry(input_location_id).or_default();
-                builder.add_statement(<span class="macro">parse_quote! </span>{
+                builder.add_statement(<span class="macro">parse_quote!</span> {
                     #unique_ident = #input_ident -&gt; unique::&lt;<span class="lifetime">'tick</span>&gt;();
                 });
 
@@ -1734,11 +1734,11 @@
 
                 <span class="kw">let </span>builder = graph_builders.entry(input_location_id).or_default();
                 <span class="kw">if </span>input_was_persist {
-                    builder.add_statement(<span class="macro">parse_quote! </span>{
+                    builder.add_statement(<span class="macro">parse_quote!</span> {
                         #fold_ident = #input_ident -&gt; #operator::&lt;<span class="lifetime">'static</span>&gt;(#init, #acc);
                     });
                 } <span class="kw">else </span>{
-                    builder.add_statement(<span class="macro">parse_quote! </span>{
+                    builder.add_statement(<span class="macro">parse_quote!</span> {
                         #fold_ident = #input_ident -&gt; #operator::&lt;<span class="lifetime">'tick</span>&gt;(#init, #acc);
                     });
                 }
@@ -1775,11 +1775,11 @@
 
                 <span class="kw">let </span>builder = graph_builders.entry(input_location_id).or_default();
                 <span class="kw">if </span>input_was_persist {
-                    builder.add_statement(<span class="macro">parse_quote! </span>{
+                    builder.add_statement(<span class="macro">parse_quote!</span> {
                         #reduce_ident = #input_ident -&gt; #operator::&lt;<span class="lifetime">'static</span>&gt;(#f);
                     });
                 } <span class="kw">else </span>{
-                    builder.add_statement(<span class="macro">parse_quote! </span>{
+                    builder.add_statement(<span class="macro">parse_quote!</span> {
                         #reduce_ident = #input_ident -&gt; #operator::&lt;<span class="lifetime">'tick</span>&gt;(#f);
                     });
                 }
@@ -1801,11 +1801,11 @@
                 <span class="kw">let </span>sender_builder = graph_builders.entry(input_location_id).or_default();
 
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(serialize_pipeline) = serialize_pipeline {
-                    sender_builder.add_statement(<span class="macro">parse_quote! </span>{
+                    sender_builder.add_statement(<span class="macro">parse_quote!</span> {
                         #input_ident -&gt; #serialize_pipeline -&gt; dest_sink(#sink_expr);
                     });
                 } <span class="kw">else </span>{
-                    sender_builder.add_statement(<span class="macro">parse_quote! </span>{
+                    sender_builder.add_statement(<span class="macro">parse_quote!</span> {
                         #input_ident -&gt; dest_sink(#sink_expr);
                     });
                 }
@@ -1818,11 +1818,11 @@
                     syn::Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"stream_{}"</span>, receiver_stream_id), Span::call_site());
 
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(deserialize_pipeline) = deserialize_pipeline {
-                    receiver_builder.add_statement(<span class="macro">parse_quote! </span>{
+                    receiver_builder.add_statement(<span class="macro">parse_quote!</span> {
                         #receiver_stream_ident = source_stream(#source_expr) -&gt; #deserialize_pipeline;
                     });
                 } <span class="kw">else </span>{
-                    receiver_builder.add_statement(<span class="macro">parse_quote! </span>{
+                    receiver_builder.add_statement(<span class="macro">parse_quote!</span> {
                         #receiver_stream_ident = source_stream(#source_expr);
                     });
                 }

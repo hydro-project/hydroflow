@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_macro/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_macro" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0-nightly (8f359beca 2024-02-23)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-c37d3936c59ababd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `hydroflow_macro/src/lib.rs`."><title>lib.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9e1300b5663a8a03.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="hydroflow_macro" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (8b2459c1f 2024-04-09)" data-channel="nightly" data-search-js="search-ffac13a0df2b1870.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-c97aec732c613ca4.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
             <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
     <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../hydroflow_macro/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
@@ -411,15 +411,15 @@
                 &amp;&amp; <span class="prelude-val">Ok</span>(<span class="string">"hydroflow"</span>) == env_var(<span class="string">"CARGO_CRATE_NAME"</span>).as_deref()
             {
                 <span class="comment">// In the crate itself, including unit tests.
-                </span><span class="macro">quote! </span>{ <span class="kw">crate </span>}
+                </span><span class="macro">quote!</span> { <span class="kw">crate </span>}
             } <span class="kw">else </span>{
                 <span class="comment">// In an integration test, example, bench, etc.
-                </span><span class="macro">quote! </span>{ ::hydroflow }
+                </span><span class="macro">quote!</span> { ::hydroflow }
             }
         }
         proc_macro_crate::FoundCrate::Name(name) =&gt; {
             <span class="kw">let </span>ident: Ident = Ident::new(<span class="kw-2">&amp;</span>name, Span::call_site());
-            <span class="macro">quote! </span>{ ::#ident }
+            <span class="macro">quote!</span> { ::#ident }
         }
     }
 }
@@ -452,7 +452,7 @@
     <span class="kw">let </span>(graph_code_opt, diagnostics) = build_hfcode(input, <span class="kw-2">&amp;</span>root, macro_invocation_path);
     <span class="kw">let </span>tokens = graph_code_opt
         .map(|(_graph, code)| code)
-        .unwrap_or_else(|| <span class="macro">quote! </span>{ #root::scheduled::graph::Hydroflow::new() });
+        .unwrap_or_else(|| <span class="macro">quote!</span> { #root::scheduled::graph::Hydroflow::new() });
 
     <span class="kw">let </span>diagnostics = diagnostics
         .iter()
@@ -467,7 +467,7 @@
     <span class="attr">#[cfg(not(feature = <span class="string">"diagnostics"</span>))]
     </span>{
         <span class="kw">let </span>diagnostics = diagnostics.map(Diagnostic::to_tokens);
-        <span class="macro">quote! </span>{
+        <span class="macro">quote!</span> {
             {
                 #(
                     #diagnostics
@@ -502,7 +502,7 @@
             <span class="kw">let </span>lit0 = Literal::string(<span class="kw-2">&amp;*</span>flat_mermaid);
             <span class="kw">let </span>lit1 = Literal::string(<span class="kw-2">&amp;*</span>part_mermaid);
 
-            <span class="kw">return </span><span class="macro">quote! </span>{
+            <span class="kw">return </span><span class="macro">quote!</span> {
                 {
                     <span class="macro">println!</span>(<span class="string">"{}\n\n{}\n"</span>, #lit0, #lit1);
                 }
@@ -512,7 +512,7 @@
     }
 
     diagnostics.iter().for_each(Diagnostic::emit);
-    <span class="macro">quote! </span>{}.into()
+    <span class="macro">quote!</span> {}.into()
 }
 
 <span class="attr">#[doc(hidden)]
@@ -523,12 +523,12 @@
         <span class="kw">let </span>op_ident = Ident::new(op.name, Span::call_site());
         <span class="kw">let </span>op_filename = <span class="macro">format!</span>(<span class="string">"../../docs/docgen/{}.md"</span>, op.name);
         <span class="kw">let </span>lit_filename = LitStr::new(<span class="kw-2">&amp;*</span>op_filename, Span::call_site());
-        <span class="macro">quote! </span>{
+        <span class="macro">quote!</span> {
             <span class="attr">#[doc = <span class="macro">include_str!</span>(#lit_filename)]
             </span><span class="kw">mod </span>#op_ident {}
         }
     });
-    <span class="kw">let </span>out = <span class="macro">quote! </span>{
+    <span class="kw">let </span>out = <span class="macro">quote!</span> {
         #( #each )*
     };
     out.into()
@@ -636,7 +636,7 @@
         .map(|variant| <span class="kw">match </span><span class="kw-2">&amp;</span>variant.fields {
             syn::Fields::Named(fields) =&gt; {
                 <span class="kw">let </span>field_types = fields.named.iter().map(|field| <span class="kw-2">&amp;</span>field.ty);
-                <span class="macro">parse_quote! </span>{
+                <span class="macro">parse_quote!</span> {
                     ( #( #field_types, )* )
                 }
             }
@@ -645,7 +645,7 @@
                     fields.unnamed.first().unwrap().ty.clone()
                 } <span class="kw">else </span>{
                     <span class="kw">let </span>field_types = fields.unnamed.iter().map(|field| <span class="kw-2">&amp;</span>field.ty);
-                    <span class="macro">parse_quote! </span>{
+                    <span class="macro">parse_quote!</span> {
                         ( #( #field_types, )* )
                     }
                 }
@@ -665,7 +665,7 @@
             .iter()
             .zip(variant_output_types.iter())
             .map::&lt;WherePredicate, <span class="kw">_</span>&gt;(|(pusherator_generic, output_type)| {
-                <span class="macro">parse_quote! </span>{
+                <span class="macro">parse_quote!</span> {
                     #pusherator_generic: #root::pusherator::Pusherator&lt;Item = #output_type&gt;
                 }
             }),
@@ -698,12 +698,12 @@
                 }
                 syn::Fields::Unit =&gt; (<span class="macro">quote!</span>(), <span class="macro">quote!</span>(())),
             };
-            <span class="macro">quote! </span>{
+            <span class="macro">quote!</span> {
                 <span class="self">Self</span>::#ident #fields_pat =&gt; #pushvar.give(#push_item)
             }
         });
 
-    <span class="macro">quote! </span>{
+    <span class="macro">quote!</span> {
         <span class="kw">impl </span>#impl_generics #root::util::demux_enum::DemuxEnum&lt;#<span class="macro">root::variadics::var_type!</span>( #( #variant_pusherator_generics, )* )&gt;
             <span class="kw">for </span>#ident #ty_generics #where_clause
         {

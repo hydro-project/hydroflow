@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `stageleft_macro/src/quote_impl/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-e935ef01ae1c1829.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="stageleft_macro" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0-nightly (8f359beca 2024-02-23)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-c37d3936c59ababd.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `stageleft_macro/src/quote_impl/mod.rs`."><title>mod.rs - source</title><script> if (window.location.protocol !== "file:") document.write(`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2">`)</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-9e1300b5663a8a03.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="stageleft_macro" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (8b2459c1f 2024-04-09)" data-channel="nightly" data-search-js="search-ffac13a0df2b1870.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-c97aec732c613ca4.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
             <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
     <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../stageleft_macro/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
@@ -227,7 +227,7 @@
 
             <span class="kw-2">*</span>set_mod = <span class="macro">module_path!</span>().to_string();
             <span class="kw-2">*</span>set_crate_name = <span class="macro">env!</span>(<span class="string">"STAGELEFT_FINAL_CRATE_NAME"</span>);
-            <span class="kw-2">*</span>set_tokens = #<span class="macro">root::internal::quote! </span>{
+            <span class="kw-2">*</span>set_tokens = #<span class="macro">root::internal::quote!</span> {
                 #expr_without_spans
             };
 
@@ -253,10 +253,10 @@
 
     <span class="kw">use </span><span class="kw">super</span>::q_impl;
 
-    <span class="macro">macro_rules! </span>test_quote {
+    <span class="macro">macro_rules!</span> test_quote {
         (<span class="macro-nonterminal">$program</span>:expr) =&gt; {
             <span class="kw">let </span>quoted_tokens = q_impl(<span class="macro">quote!</span>(stageleft), <span class="macro">parse_quote!</span>(<span class="macro-nonterminal">$program</span>));
-            <span class="kw">let </span>wrapped: syn::File = <span class="macro">parse_quote! </span>{
+            <span class="kw">let </span>wrapped: syn::File = <span class="macro">parse_quote!</span> {
                 <span class="kw">fn </span>main() {
                     #quoted_tokens
                 }
@@ -272,28 +272,28 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_simple() {
-        <span class="macro">test_quote! </span>{
+        <span class="macro">test_quote!</span> {
             <span class="number">1 </span>+ <span class="number">2
         </span>}
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_capture_local() {
-        <span class="macro">test_quote! </span>{
+        <span class="macro">test_quote!</span> {
             x + <span class="number">2
         </span>}
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_capture_copy_local() {
-        <span class="macro">test_quote! </span>{
+        <span class="macro">test_quote!</span> {
             (x + <span class="number">2</span>) + (x + <span class="number">2</span>)
         }
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_capture_copy_local_block() {
-        <span class="macro">test_quote! </span>{{
+        <span class="macro">test_quote!</span> {{
             <span class="kw">let _ </span>= x + <span class="number">2</span>;
             <span class="kw">let _ </span>= x + <span class="number">2</span>;
         }}
@@ -301,7 +301,7 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_capture_copy_local_block_let() {
-        <span class="macro">test_quote! </span>{{
+        <span class="macro">test_quote!</span> {{
             <span class="kw">let </span>x = x + <span class="number">2</span>;
             <span class="kw">let _ </span>= x + <span class="number">2</span>;
         }}
@@ -309,14 +309,14 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_capture_local_mut() {
-        <span class="macro">test_quote! </span>{
+        <span class="macro">test_quote!</span> {
             x += <span class="number">2
         </span>}
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_non_capture_local() {
-        <span class="macro">test_quote! </span>{
+        <span class="macro">test_quote!</span> {
             {
                 <span class="kw">let </span>x = <span class="number">1</span>;
                 x + <span class="number">2
@@ -326,40 +326,40 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_capture_in_macro() {
-        <span class="macro">test_quote! </span>{
+        <span class="macro">test_quote!</span> {
             <span class="macro">dbg!</span>(x)
         }
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_non_capture_struct_creation() {
-        <span class="macro">test_quote! </span>{
+        <span class="macro">test_quote!</span> {
             Foo { x: <span class="number">1 </span>}
         }
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_non_capture_enum_creation() {
-        <span class="macro">test_quote! </span>{
+        <span class="macro">test_quote!</span> {
             Foo::Bar { x: <span class="number">1 </span>}
         }
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_prelude_enum_variants() {
-        <span class="macro">test_quote! </span>{
+        <span class="macro">test_quote!</span> {
             <span class="prelude-val">Some</span>(<span class="number">1</span>)
         }
 
-        <span class="macro">test_quote! </span>{
+        <span class="macro">test_quote!</span> {
             <span class="prelude-val">None
         </span>}
 
-        <span class="macro">test_quote! </span>{
+        <span class="macro">test_quote!</span> {
             <span class="prelude-val">Ok</span>(<span class="number">1</span>)
         }
 
-        <span class="macro">test_quote! </span>{
+        <span class="macro">test_quote!</span> {
             <span class="prelude-val">Err</span>(<span class="number">1</span>)
         }
     }
