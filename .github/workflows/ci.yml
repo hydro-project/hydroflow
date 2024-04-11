@@ -75,28 +75,20 @@ jobs:
 
       - name: Run cargo fmt
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        shell: bash
+        run: cargo fmt --all -- --check
 
       - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --all-targets --features python -- -D warnings
+        shell: bash
+        run: cargo clippy --all-targets --features python -- -D warnings
 
       - name: Run cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --all-targets --features python
+        shell: bash
+        run: cargo check --all-targets --features python
 
       - name: Run cargo check (no default features)
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --all-targets --no-default-features
+        shell: bash
+        run: cargo check --all-targets --no-default-features
 
   check-wasm:
     name: Check WebAssembly
@@ -190,16 +182,12 @@ jobs:
         run: curl -LsSf https://get.nexte.st/latest/windows-tar | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
 
       - name: Run cargo nextest on all targets
-        uses: actions-rs/cargo@v1
-        with:
-          command: nextest
-          args: run --no-fail-fast --features python --all-targets
+        shell: bash
+        run: cargo nextest run --no-fail-fast --features python --all-targets
 
       - name: Run doctests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --no-fail-fast --features python --doc
+        shell: bash
+        run: cargo test --no-fail-fast --features python --doc
 
       - name: Install Python
         uses: actions/setup-python@v4
