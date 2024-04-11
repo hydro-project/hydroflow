@@ -63,13 +63,15 @@ jobs:
 
       - name: Run sccache-cache
         if: matrix.rust_release == 'pinned-nightly'
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.4
 
       - name: Set Rust caching env vars
         if: matrix.rust_release == 'pinned-nightly'
-        run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+        uses: actions/github-script@v6
+        with:
+          script: |
+            core.exportVariable('SCCACHE_GHA_ENABLED', 'true');
+            core.exportVariable('RUSTC_WRAPPER', 'sccache');
 
       - name: Run cargo fmt
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -169,13 +171,15 @@ jobs:
 
       - name: Run sccache-cache
         if: matrix.rust_release == 'pinned-nightly'
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.4
 
       - name: Set Rust caching env vars
         if: matrix.rust_release == 'pinned-nightly'
-        run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+        uses: actions/github-script@v6
+        with:
+          script: |
+            core.exportVariable('SCCACHE_GHA_ENABLED', 'true');
+            core.exportVariable('RUSTC_WRAPPER', 'sccache');
 
       - name: Install cargo-nextest (linux)
         if: ${{ matrix.os == 'ubuntu-latest' }}
