@@ -42,6 +42,7 @@ pub const SOURCE_ITER: OperatorConstraints = OperatorConstraints {
                    ..
                },
                _| {
+        let iter = &arguments[0];
         let iter_ident = wc.make_ident("iter");
         let write_prologue = quote_spanned! {op_span=>
             let mut #iter_ident = {
@@ -49,7 +50,7 @@ pub const SOURCE_ITER: OperatorConstraints = OperatorConstraints {
                 fn check_iter<IntoIter: ::std::iter::IntoIterator<Item = Item>, Item>(into_iter: IntoIter) -> impl ::std::iter::Iterator<Item = Item> {
                     ::std::iter::IntoIterator::into_iter(into_iter)
                 }
-                check_iter(#arguments)
+                check_iter(#iter)
             };
         };
         let write_iterator = quote_spanned! {op_span=>
