@@ -8,6 +8,7 @@ pub struct PublicStruct {
     // TODO(shadaj): right now, public structs must have public fields
     // because otherwise they may not be visible at splice time.
     // This should be documented and ideally have some tooling support.
+    #[allow(dead_code)]
     pub a: u32,
 }
 
