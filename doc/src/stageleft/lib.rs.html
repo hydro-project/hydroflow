@@ -251,6 +251,9 @@
 <a href="#249" id="249">249</a>
 <a href="#250" id="250">250</a>
 <a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::panic;
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -272,6 +275,9 @@
 <span class="kw">use </span>runtime_support::FreeVariable;
 
 <span class="kw">use </span><span class="kw">crate</span>::runtime_support::get_final_crate_name;
+
+<span class="kw">mod </span>type_name;
+<span class="kw">pub use </span>type_name::quote_type;
 
 <span class="attr">#[cfg(windows)]
 #[macro_export]

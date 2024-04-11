@@ -1,3 +1,0 @@
-(function() {var implementors = {
-"hydroflow_plus":[["impl <a class=\"trait\" href=\"https://docs.rs/syn/2.0.42/syn/gen/visit_mut/trait.VisitMut.html\" title=\"trait syn::gen::visit_mut::VisitMut\">VisitMut</a> for <a class=\"struct\" href=\"hydroflow_plus/stream/struct.RewriteAlloc.html\" title=\"struct hydroflow_plus::stream::RewriteAlloc\">RewriteAlloc</a>"]]
-};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

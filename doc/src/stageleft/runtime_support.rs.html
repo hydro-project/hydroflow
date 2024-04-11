@@ -146,7 +146,19 @@
 <a href="#144" id="144">144</a>
 <a href="#145" id="145">145</a>
 <a href="#146" id="146">146</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::BorrowMut;
+<span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::mem::MaybeUninit;
 
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
@@ -173,6 +185,16 @@
             <span class="macro">quote! </span>{ #ident }
         }
     }
+}
+
+<span class="macro">thread_local! </span>{
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">static </span>MACRO_TO_CRATE: std::cell::RefCell&lt;<span class="prelude-ty">Option</span>&lt;(String, String)&gt;&gt; = <span class="kw">const </span>{ std::cell::RefCell::new(<span class="prelude-val">None</span>) };
+}
+
+<span class="kw">pub fn </span>set_macro_to_crate(macro_name: <span class="kw-2">&amp;</span>str, crate_name: <span class="kw-2">&amp;</span>str) {
+    MACRO_TO_CRATE.with_borrow_mut(|cell| {
+        <span class="kw-2">*</span>cell.borrow_mut() = <span class="prelude-val">Some</span>((macro_name.to_string(), crate_name.to_string()));
+    });
 }
 
 <span class="kw">pub trait </span>ParseFromLiteral {

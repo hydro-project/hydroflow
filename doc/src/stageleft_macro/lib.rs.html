@@ -427,6 +427,9 @@
 <a href="#425" id="425">425</a>
 <a href="#426" id="426">426</a>
 <a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Punct, Spacing, Span, TokenStream};
 <span class="kw">use </span>quote::{quote, quote_spanned, ToTokens};
 <span class="kw">use </span>syn::punctuated::Punctuated;
@@ -791,11 +794,14 @@
 
             #(#param_parsing)*
 
+            <span class="kw">let </span>macro_crate_name = <span class="macro">env!</span>(<span class="string">"CARGO_PKG_NAME"</span>);
+            <span class="kw">let </span>final_crate_name = <span class="macro">env!</span>(<span class="string">"STAGELEFT_FINAL_CRATE_NAME"</span>);
+            #root::runtime_support::set_macro_to_crate(macro_crate_name, final_crate_name);
+
             <span class="kw">let </span>output_core = {
                 #root::Quoted::splice(#input_name #passed_generics(#root::QuotedContext::create(), #(#params_to_pass),<span class="kw-2">*</span>))
             };
 
-            <span class="kw">let </span>final_crate_name = <span class="macro">env!</span>(<span class="string">"STAGELEFT_FINAL_CRATE_NAME"</span>);
             <span class="kw">let </span>final_crate_root = #root::runtime_support::get_final_crate_name(final_crate_name);
 
             <span class="kw">let </span>module_path: #root::internal::syn::Path = #root::internal::syn::parse_str(<span class="macro">module_path!</span>()).unwrap();

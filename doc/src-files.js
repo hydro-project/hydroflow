@@ -24,7 +24,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["pusherator",["",[],["demux.rs","filter.rs","filter_map.rs","flatten.rs","for_each.rs","inspect.rs","lib.rs","map.rs","null.rs","partition.rs","pivot.rs","switch.rs","tee.rs","unzip.rs"]]],\
 ["relalg",["",[],["codegen.rs","lib.rs","runtime.rs","sexp.rs"]]],\
 ["simple_cluster",["",[],["simple_cluster.rs"]]],\
-["stageleft",["",[],["lib.rs","runtime_support.rs"]]],\
+["stageleft",["",[],["lib.rs","runtime_support.rs","type_name.rs"]]],\
 ["stageleft_macro",["",[["quote_impl",[["free_variable",[],["mod.rs","prelude.rs"]]],["mod.rs"]]],["lib.rs"]]],\
 ["stageleft_test",["",[],["lib.rs","submodule.rs"]]],\
 ["stageleft_test_macro",["",[],["lib.rs","submodule.rs"]]],\

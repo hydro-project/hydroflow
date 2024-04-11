@@ -93,7 +93,15 @@
 <a href="#91" id="91">91</a>
 <a href="#92" id="92">92</a>
 <a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>hydroflow_plus::<span class="kw-2">*</span>;
+<span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>stageleft::<span class="kw-2">*</span>;
 
 <span class="kw">pub fn </span>first_ten&lt;<span class="lifetime">'a</span>, D: LocalDeploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
@@ -113,6 +121,11 @@
     flow.extract().optimize_default()
 }
 
+<span class="attr">#[derive(Serialize, Deserialize)]
+</span><span class="kw">struct </span>SendOverNetwork {
+    <span class="kw">pub </span>n: u32,
+}
+
 <span class="kw">pub fn </span>first_ten_distributed&lt;<span class="lifetime">'a</span>, D: Deploy&lt;<span class="lifetime">'a</span>&gt;&gt;(
     flow: <span class="kw-2">&amp;</span>FlowBuilder&lt;<span class="lifetime">'a</span>, D&gt;,
     process_spec: <span class="kw-2">&amp;</span><span class="kw">impl </span>ProcessSpec&lt;<span class="lifetime">'a</span>, D&gt;,
@@ -122,10 +135,11 @@
 
     <span class="kw">let </span>numbers = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">10</span>));
     numbers
+        .map(<span class="macro">q!</span>(|n| SendOverNetwork { n }))
         .send_bincode(<span class="kw-2">&amp;</span>second_process)
-        .for_each(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"{}"</span>, n)));
+        .for_each(<span class="macro">q!</span>(|n: SendOverNetwork| <span class="macro">println!</span>(<span class="string">"{}"</span>, n.n))); <span class="comment">// TODO(shadaj): why is the explicit type required here?
 
-    second_process
+    </span>second_process
 }
 
 <span class="kw">use </span>hydroflow_plus::util::cli::HydroCLI;
