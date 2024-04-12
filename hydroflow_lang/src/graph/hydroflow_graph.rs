@@ -488,11 +488,10 @@ impl HydroflowGraph {
     /// Gets the singletons referenced by a node. Returns an empty iterator for non-operators and
     /// operators that do not reference singletons.
     pub fn node_singleton_references(&self, node_id: GraphNodeId) -> &[Option<GraphNodeId>] {
-        if let Some(singletons_referenced) = self.node_singleton_references.get(node_id) {
-            singletons_referenced
-        } else {
-            &[]
-        }
+        self.node_singleton_references
+            .get(node_id)
+            .map(std::ops::Deref::deref)
+            .unwrap_or_default()
     }
 }
 

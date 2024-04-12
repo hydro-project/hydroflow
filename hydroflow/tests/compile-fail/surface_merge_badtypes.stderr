@@ -12,3 +12,27 @@ note: required by a bound in `check_inputs`
   |
 5 |         m = union() -> for_each(std::mem::drop);
   |             ^^^^^^^ required by this bound in `check_inputs`
+
+error[E0271]: expected `impl Iterator<Item = char>` to be an iterator that yields `{integer}`, but it yields `char`
+ --> tests/compile-fail/surface_merge_badtypes.rs:5:13
+  |
+5 |         m = union() -> for_each(std::mem::drop);
+  |             ^^^^^^^ expected integer, found `char`
+  |
+note: required by a bound in `check_inputs`
+ --> tests/compile-fail/surface_merge_badtypes.rs:5:13
+  |
+5 |         m = union() -> for_each(std::mem::drop);
+  |             ^^^^^^^ required by this bound in `check_inputs`
+
+error[E0271]: expected `impl Iterator<Item = char>` to be an iterator that yields `{integer}`, but it yields `char`
+ --> tests/compile-fail/surface_merge_badtypes.rs:5:13
+  |
+5 |         m = union() -> for_each(std::mem::drop);
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected integer, found `char`
+  |
+note: required by a bound in `check_inputs`
+ --> tests/compile-fail/surface_merge_badtypes.rs:5:13
+  |
+5 |         m = union() -> for_each(std::mem::drop);
+  |             ^^^^^^^ required by this bound in `check_inputs`

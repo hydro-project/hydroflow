@@ -1,3 +1,6 @@
+// TODO(mingwei): For pyo3 generated code.
+#![allow(unused_qualifications, non_local_definitions)]
+
 use core::hydroflow_crate::ports::HydroflowSource;
 use std::collections::HashMap;
 use std::ops::DerefMut;

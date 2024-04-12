@@ -19,6 +19,25 @@ pub struct LaunchedLocalhostBinary {
     stderr_receivers: Arc<RwLock<Vec<Sender<String>>>>,
 }
 
+#[cfg(unix)]
+impl Drop for LaunchedLocalhostBinary {
+    fn drop(&mut self) {
+        let mut child = self.child.try_write().unwrap();
+
+        if let Ok(Some(_)) = child.try_status() {
+            return;
+        }
+
+        let pid = child.id();
+        if let Err(e) = nix::sys::signal::kill(
+            nix::unistd::Pid::from_raw(pid as i32),
+            nix::sys::signal::SIGTERM,
+        ) {
+            eprintln!("Failed to SIGTERM process {}: {}", pid, e);
+        }
+    }
+}
+
 impl LaunchedLocalhostBinary {
     pub fn new(mut child: async_process::Child, id: String) -> Self {
         let (stdin_sender, mut stdin_receiver) = async_channel::unbounded::<String>();

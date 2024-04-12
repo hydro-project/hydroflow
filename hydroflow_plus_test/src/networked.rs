@@ -4,7 +4,8 @@ use hydroflow_plus::*;
 use hydroflow_plus_cli_integration::{CLIRuntime, HydroflowPlusMeta};
 use stageleft::{q, Quoted, RuntimeData};
 
-pub struct NetworkedBasicIO<'a, D: Deploy<'a>> {
+#[allow(dead_code)]
+pub struct NetworkedBasicIo<'a, D: Deploy<'a>> {
     pub source_zero_port: D::ProcessPort,
     pub process_zero: D::Process,
     pub process_one: D::Process,
@@ -16,7 +17,7 @@ pub fn networked_basic<'a, D: Deploy<'a>>(
     flow: &FlowBuilder<'a, D>,
     process_spec: &impl ProcessSpec<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
-) -> NetworkedBasicIO<'a, D> {
+) -> NetworkedBasicIo<'a, D> {
     let process_zero = flow.process(process_spec);
     let process_one = flow.process(process_spec);
 
@@ -34,7 +35,7 @@ pub fn networked_basic<'a, D: Deploy<'a>>(
         println!("cluster received: {:?}", std::str::from_utf8(&v).unwrap());
     }));
 
-    NetworkedBasicIO {
+    NetworkedBasicIo {
         source_zero_port,
         process_zero,
         process_one,
