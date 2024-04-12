@@ -206,7 +206,7 @@ impl GCPComputeEngineHost {
 #[async_trait]
 impl Host for GCPComputeEngineHost {
     fn target_type(&self) -> HostTargetType {
-        HostTargetType::Linux
+        HostTargetType::Linux(crate::LinuxArchitecture::AARCH64)
     }
 
     fn request_port(&mut self, bind_type: &ServerStrategy) {

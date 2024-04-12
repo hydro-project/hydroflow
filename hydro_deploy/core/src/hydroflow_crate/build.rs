@@ -12,7 +12,7 @@ use once_cell::sync::Lazy;
 use tokio::sync::OnceCell;
 
 use crate::progress::ProgressTracker;
-use crate::HostTargetType;
+use crate::{HostTargetType, LinuxArchitecture};
 
 #[derive(PartialEq, Eq, Hash)]
 struct CacheKey {
@@ -81,8 +81,11 @@ pub async fn build_crate(
 
                     match target_type {
                         HostTargetType::Local => {}
-                        HostTargetType::Linux => {
+                        HostTargetType::Linux(LinuxArchitecture::X86_64) => {
                             command.args(["--target", "x86_64-unknown-linux-musl"]);
+                        }
+                        HostTargetType::Linux(LinuxArchitecture::AARCH64) => {
+                            command.args(["--target", "aarch64-unknown-linux-musl"]);
                         }
                     }
 
