@@ -26,6 +26,9 @@ pub fn preprocess_singletons(tokens: TokenStream, found_idents: &mut Vec<Ident>)
 /// * `tokens` - The tokens to update singleton references within.
 /// * `resolved_idents` - The context `StateHandle` varnames that correspond 1:1 and in the same
 ///   order as the singleton references within `tokens` (found in-order via [`preprocess_singletons`]).
+///
+/// Generates borrowing code ([`std::cell::RefCell::borrow_mut`]). Use
+/// [`postprocess_singletons_handles`] for just the `StateHandle`s.
 pub fn postprocess_singletons(
     tokens: TokenStream,
     resolved_idents: impl IntoIterator<Item = Ident>,
@@ -39,6 +42,20 @@ pub fn postprocess_singletons(
                 *context.state_ref(#resolved_ident).borrow_mut()
             },
         ))
+    });
+    parse_terminated(processed).unwrap()
+}
+
+/// Same as [`postprocess_singletons`] but generates just the `StateHandle` ident rather than full
+/// `RefCell` borrowing code.
+pub fn postprocess_singletons_handles(
+    tokens: TokenStream,
+    resolved_idents: impl IntoIterator<Item = Ident>,
+) -> Punctuated<Expr, Token![,]> {
+    let mut resolved_idents_iter = resolved_idents.into_iter();
+    let processed = process_singletons(tokens, &mut |_singleton_ident| {
+        let resolved_ident = resolved_idents_iter.next().unwrap();
+        TokenTree::Ident(resolved_ident)
     });
     parse_terminated(processed).unwrap()
 }

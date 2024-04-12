@@ -18,12 +18,10 @@ pub fn test_cartesian_product() {
             -> map(SetUnionSingletonSet::new_from)
             -> state::<SetUnionHashSet<usize>>();
 
-        lhs[items] -> [items_0]my_join;
-        rhs[items] -> [items_1]my_join;
-        lhs[state] -> [state_0]my_join;
-        rhs[state] -> [state_1]my_join;
+        lhs[items] -> [0]my_join;
+        rhs[items] -> [1]my_join;
 
-        my_join = lattice_bimorphism(CartesianProductBimorphism::<HashSet<_>>::default())
+        my_join = lattice_bimorphism(CartesianProductBimorphism::<HashSet<_>>::default(), #lhs, #rhs)
             -> lattice_reduce()
             -> for_each(|x| out_send.send(x).unwrap());
     };
@@ -56,12 +54,10 @@ pub fn test_join() {
             -> map(|(k, v)| MapUnionSingletonMap::new_from((k, SetUnionSingletonSet::new_from(v))))
             -> state::<MapUnionHashMap<usize, SetUnionHashSet<usize>>>();
 
-        lhs[items] -> [items_0]my_join;
-        rhs[items] -> [items_1]my_join;
-        lhs[state] -> [state_0]my_join;
-        rhs[state] -> [state_1]my_join;
+        lhs[items] -> [0]my_join;
+        rhs[items] -> [1]my_join;
 
-        my_join = lattice_bimorphism(KeyedBimorphism::<HashMap<_, _>, _>::from(CartesianProductBimorphism::<HashSet<_>>::default()))
+        my_join = lattice_bimorphism(KeyedBimorphism::<HashMap<_, _>, _>::from(CartesianProductBimorphism::<HashSet<_>>::default()), #lhs, #rhs)
             -> lattice_reduce()
             -> for_each(|x| out_send.send(x).unwrap());
     };

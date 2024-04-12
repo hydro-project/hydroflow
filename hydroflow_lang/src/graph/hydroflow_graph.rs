@@ -22,7 +22,7 @@ use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::{null_write_iterator_fn, DelayType};
 use crate::graph::MODULE_BOUNDARY_NODE_STR;
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
-use crate::process_singletons::postprocess_singletons;
+use crate::process_singletons;
 
 /// A graph representing a Hydroflow dataflow graph (with or without subgraph partitioning,
 /// stratification, and handoff insertion). This is a "meta" graph used for generating Rust source
@@ -1028,10 +1028,15 @@ impl HydroflowGraph {
 
                             let singletons_resolved =
                                 self.helper_resolve_singletons(node_id, op_span);
-                            let arguments = &postprocess_singletons(
+                            let arguments = &process_singletons::postprocess_singletons(
                                 op_inst.arguments_raw.clone(),
-                                singletons_resolved,
+                                singletons_resolved.clone(),
                             );
+                            let arguments_handles =
+                                &process_singletons::postprocess_singletons_handles(
+                                    op_inst.arguments_raw.clone(),
+                                    singletons_resolved.clone(),
+                                );
 
                             let context_args = WriteContextArgs {
                                 root,
@@ -1058,6 +1063,7 @@ impl HydroflowGraph {
                                 op_name,
                                 op_inst,
                                 arguments,
+                                arguments_handles,
                                 flow_props_in: &*flow_props_in,
                             };
 
