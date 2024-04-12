@@ -38,6 +38,8 @@ pub mod ir;
 pub mod persist_pullup;
 pub mod profiler;
 
+pub mod properties;
+
 #[derive(Clone)]
 pub struct RuntimeContext<'a> {
     _phantom: PhantomData<&'a mut &'a ()>,
