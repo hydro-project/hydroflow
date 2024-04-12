@@ -119,6 +119,7 @@ pub fn compile_hydroflow(
         no_pull_push,
         no_handoffs,
         op_short_text,
+        op_text_no_imports: false
     };
 
     let out = match syn::parse_str(&program) {
@@ -172,6 +173,7 @@ pub fn compile_datalog(
         no_pull_push,
         no_handoffs,
         op_short_text,
+        op_text_no_imports: false,
     };
 
     let wrapped = format!("r#\"{}\"#", program);
