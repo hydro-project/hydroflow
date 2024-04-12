@@ -470,8 +470,11 @@ pub struct WriteContextArgs<'a> {
     /// Arguments provided by the user into the operator as arguments.
     /// I.e. the `a, b, c` in `-> my_op(a, b, c) -> `.
     ///
-    /// These arguments include singleton postprocessing codegen.
+    /// These arguments include singleton postprocessing codegen, with
+    /// [`std::cell::RefCell::borrow_mut`] code pre-generated.
     pub arguments: &'a Punctuated<Expr, Token![,]>,
+    /// Same as [`Self::arguments`] but with only `StateHandle`s, no borrowing code.
+    pub arguments_handles: &'a Punctuated<Expr, Token![,]>,
 
     /// Flow properties corresponding to each input.
     ///
