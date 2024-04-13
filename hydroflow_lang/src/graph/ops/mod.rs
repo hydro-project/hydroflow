@@ -388,6 +388,7 @@ declare_ops![
     persist_mut::PERSIST_MUT,
     persist_mut_keyed::PERSIST_MUT_KEYED,
     poll_futures::POLL_FUTURES,
+    poll_futures_ordered::POLL_FUTURES_ORDERED,
     py_udf::PY_UDF,
     reduce::REDUCE,
     spin::SPIN,
