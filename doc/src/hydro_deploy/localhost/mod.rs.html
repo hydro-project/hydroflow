@@ -176,6 +176,11 @@
 <a href="#174" id="174">174</a>
 <a href="#175" id="175">175</a>
 <a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::path::PathBuf;
@@ -335,13 +340,18 @@
         binary: Arc&lt;(String, Vec&lt;u8&gt;, PathBuf)&gt;,
         args: <span class="kw-2">&amp;</span>[String],
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt; {
-        <span class="kw">let </span>child = Command::new(<span class="kw-2">&amp;</span>binary.<span class="number">2</span>)
+        <span class="kw">let </span><span class="kw-2">mut </span>child = Command::new(<span class="kw-2">&amp;</span>binary.<span class="number">2</span>);
+
+        child
             .args(args)
-            .kill_on_drop(<span class="bool-val">true</span>)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()<span class="question-mark">?</span>;
+            .stderr(Stdio::piped());
+
+        <span class="attr">#[cfg(not(unix))]
+        </span>child.kill_on_drop(<span class="bool-val">true</span>);
+
+        <span class="kw">let </span>child = child.spawn()<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(Arc::new(RwLock::new(LaunchedLocalhostBinary::new(
             child, id,
