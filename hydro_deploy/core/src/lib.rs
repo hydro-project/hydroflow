@@ -100,6 +100,7 @@ pub trait LaunchedHost: Send + Sync {
         id: String,
         binary: Arc<(String, Vec<u8>, PathBuf)>,
         args: &[String],
+        perf: Option<PathBuf>,
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;
 
     async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr>;

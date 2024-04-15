@@ -26,6 +26,7 @@ pub struct HydroflowCrate {
     target: CrateTarget,
     on: Arc<RwLock<dyn Host>>,
     profile: Option<String>,
+    perf: Option<PathBuf>, /* If a path is provided, run perf to get CPU time and output to that path.perf.data */
     args: Vec<String>,
     display_name: Option<String>,
 }
@@ -40,6 +41,7 @@ impl HydroflowCrate {
             target: CrateTarget::Default,
             on,
             profile: None,
+            perf: None,
             args: vec![],
             display_name: None,
         }
@@ -78,6 +80,15 @@ impl HydroflowCrate {
         self
     }
 
+    pub fn perf(mut self, perf: impl Into<PathBuf>) -> Self {
+        if self.perf.is_some() {
+            panic!("perf path already set");
+        }
+
+        self.perf = Some(perf.into());
+        self
+    }
+
     /// Sets the arguments to be passed to the binary when it is launched.
     pub fn args(mut self, args: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.args.extend(args.into_iter().map(|s| s.into()));
@@ -111,6 +122,7 @@ impl ServiceBuilder for HydroflowCrate {
             bin,
             example,
             self.profile,
+            self.perf,
             None,
             Some(self.args),
             self.display_name,

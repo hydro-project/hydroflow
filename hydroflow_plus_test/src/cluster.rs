@@ -1,5 +1,8 @@
+use std::cell::RefCell;
 use std::time::Duration;
 
+use futures::channel::mpsc::UnboundedSender;
+use hydroflow_plus::profiler::profiling;
 use hydroflow_plus::*;
 use stageleft::*;
 
@@ -161,6 +164,22 @@ pub fn compute_pi_runtime<'a>(
     let _ = compute_pi(&flow, &cli, &cli, batch_size);
     flow.extract()
         .optimize_default()
+        .with_dynamic_id(q!(cli.meta.subgraph_id))
+}
+
+#[stageleft::entry]
+pub fn cardinality_compute_pi_runtime<'a>(
+    flow: FlowBuilder<'a, CLIRuntime>,
+    cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
+    batch_size: RuntimeData<&'a usize>,
+    counters: RuntimeData<&'a RefCell<Vec<u64>>>,
+    counter_queue: RuntimeData<&'a RefCell<UnboundedSender<(usize, u64)>>>,
+) -> impl Quoted<'a, Hydroflow<'a>> {
+    let _ = compute_pi(&flow, &cli, &cli, batch_size);
+    let runtime_context = flow.runtime_context();
+    flow.extract()
+        .optimize_with(|ir| profiling(ir, runtime_context, counters, counter_queue))
+        .no_optimize()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
