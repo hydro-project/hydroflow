@@ -68,9 +68,7 @@ pub fn integral_domain<S: Debug + PartialEq + Clone, const N: usize>(
     b: &impl Fn(S) -> S, /* b is the function to compute the inverse element of an element with respect to f */
 ) {
     commutative_ring(items, f, g, zero.clone(), one, b);
-    println!("commutative ring passed.");
     no_nonzero_zero_divisors(items, g, zero);
-    println!("nonzero passed.");
 }
 
 /// Defines a no-nonzero-zero-divisors property.
@@ -382,36 +380,45 @@ mod test {
         .is_err());
     }
 
-    // Define a function for addition modulo 7
+    // Performs addition modulo 7, ensuring the result remains within the range of 0 to 6.
+    // This function is used to compute addition modulo 7 within the context of testing integral domains.
     fn modulo_add_7(a: u32, b: u32) -> u32 {
         return u32::wrapping_add(a, b) % 7;
     }
-    // Define a function for addition modulo 14
+
+    // Performs addition modulo 14, ensuring the result remains within the range of 0 to 13.
+    // This function is used to compute addition modulo 14 within the context of testing integral domains.
     fn modulo_add_14(a: u32, b: u32) -> u32 {
         return u32::wrapping_add(a, b) % 14;
     }
 
-    // Define a function for multiplication modulo 7
-    fn modulo_mult_7(a: u32, b: u32) -> u32 {
-        return u32::wrapping_mul(a, b) % 7;
-    }
-
-    // Define an inverse operation to modulo_add_7
+    // Performs subtraction modulo 7, ensuring the result remains within the range of 0 to 6.
+    // This function is used to compute subtraction modulo 7 within the context of testing integral domains.
     fn modulo_sub_7(a: u32) -> u32 {
         return u32::wrapping_sub(7, a) % 7;
     }
-    // Define an inverse operation to modulo_add_14
+
+    // Performs subtraction modulo 14, ensuring the result remains within the range of 0 to 13.
+    // This function is used to compute subtraction modulo 14 within the context of testing integral domains.
     fn modulo_sub_14(a: u32) -> u32 {
         return u32::wrapping_sub(14, a) % 14;
     }
 
-    // Define a function for multiplication modulo 6
+    // Performs multiplication modulo 7, ensuring the result remains within the range of 0 to 6.
+    // This function is used to compute multiplication modulo 7 within the context of testing integral domains.
+    fn modulo_mult_7(a: u32, b: u32) -> u32 {
+        return u32::wrapping_mul(a, b) % 7;
+    }
+
+    // Performs multiplication modulo 14, ensuring the result remains within the range of 0 to 13.
+    // This function is used to compute multiplication modulo 14 within the context of testing integral domains.
     fn modulo_mult_14(a: u32, b: u32) -> u32 {
         return u32::wrapping_mul(a, b) % 14;
     }
 
     #[test]
     fn test_additive_inverse_7() {
+        // Tests that the additive inverse of each element in the ring of integers modulo 7 is correct.
         assert_eq!(0, modulo_sub_7(0));
         assert_eq!(1, modulo_sub_7(6));
         assert_eq!(2, modulo_sub_7(5));
@@ -422,6 +429,7 @@ mod test {
 
     #[test]
     fn test_modulo_mu14() {
+        // Tests that the multiplication modulo 14 is correct.
         assert_eq!(0, modulo_mult_14(2, 7));
         assert_eq!(3, modulo_mult_14(1, 3));
         assert_eq!(2, modulo_mult_14(2, 1));
@@ -432,6 +440,7 @@ mod test {
     }
     #[test]
     fn test_modulo_mu7() {
+        // Tests that the multiplication modulo 7 is correct.
         assert_eq!(0, modulo_mult_7(0, 0));
         assert_eq!(3, modulo_mult_7(1, 3));
         assert_eq!(2, modulo_mult_7(2, 1));
@@ -463,7 +472,7 @@ mod test {
             1,
             &modulo_sub_7,
         );
-        // // The ring of integers modulo a composite number is not an integral domain.
+        // The ring of integers modulo a composite number is not an integral domain.
         assert!(std::panic::catch_unwind(|| {
             integral_domain(
                 TEST_ITEMS,
