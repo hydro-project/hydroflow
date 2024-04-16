@@ -4,14 +4,14 @@ use lattices::Max;
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
-pub fn test_state_ref() {
+pub fn test_state() {
     let (filter_send, mut filter_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
     let (max_send, mut max_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
 
     let mut df = hydroflow::hydroflow_syntax! {
         stream1 = source_iter(1..=10);
         stream2 = source_iter_delta(3..=5) -> map(Max::new);
-        max_of_stream2 = stream2 -> state_ref::<Max<_>>();
+        max_of_stream2 = stream2 -> state::<Max<_>>();
 
         filtered_stream1 = stream1
             -> filter(|value| {
@@ -43,10 +43,10 @@ pub fn test_state_ref() {
 
 /// Just tests that the codegen is valid.
 #[multiplatform_test]
-pub fn test_state_ref_unused() {
+pub fn test_state_unused() {
     let mut df = hydroflow::hydroflow_syntax! {
         stream2 = source_iter_delta(15..=25) -> map(Max::new);
-        max_of_stream2 = stream2 -> state_ref::<Max<_>>();
+        max_of_stream2 = stream2 -> state::<Max<_>>();
     };
 
     assert_graphvis_snapshots!(df);

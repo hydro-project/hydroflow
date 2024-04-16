@@ -7,7 +7,7 @@ digraph {
     edge [fontname="Monaco,Menlo,Consolas,&quot;Droid Sans Mono&quot;,Inconsolata,&quot;Courier New&quot;,monospace"];
     n1v1 [label="(n1v1) source_iter_delta(15..=25)", shape=invhouse, fillcolor="#88aaff"]
     n2v1 [label="(n2v1) map(Max::new)", shape=invhouse, fillcolor="#88aaff"]
-    n3v1 [label="(n3v1) state_ref::<Max<_>>()", shape=house, fillcolor="#ffff88"]
+    n3v1 [label="(n3v1) state::<Max<_>>()", shape=house, fillcolor="#ffff88"]
     n1v1 -> n2v1 [color=darkgreen, style=dashed]
     n2v1 -> n3v1 [color=darkgreen, style=dashed]
     subgraph "cluster n1v1" {
