@@ -2,7 +2,7 @@ use quote::quote_spanned;
 use syn::parse_quote;
 
 use super::{
-    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     JOIN_CROSS_JOIN_FLOW_PROP_FN, RANGE_0, RANGE_1,
 };
 
@@ -22,8 +22,6 @@ pub const LATTICE_BIMORPHISM: OperatorConstraints = OperatorConstraints {
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: Some(JOIN_CROSS_JOIN_FLOW_PROP_FN),
     write_fn: |wc @ &WriteContextArgs {
                    root,

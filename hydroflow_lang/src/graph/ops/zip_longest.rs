@@ -6,7 +6,6 @@ use super::{
     OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::GraphEdgeType;
 
 /// > 2 input streams of type `V1` and `V2`, 1 output stream of type `itertools::EitherOrBoth<V1, V2>`
 ///
@@ -38,8 +37,6 @@ pub const ZIP_LONGEST: OperatorConstraints = OperatorConstraints {
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    root,
