@@ -113,15 +113,6 @@ fn find_subgraph_unionfind(
             if subgraph_unionfind.same_set(src, dst) {
                 // Note that the _edge_ `edge_id` might not be in the subgraph even when both `src` and `dst` are. This prevents case 2.
                 // Handoffs will be inserted later for this self-loop.
-                if !partitioned_graph
-                    .edge_type(edge_id)
-                    .unwrap()
-                    .affects_in_out_graph_ownership()
-                {
-                    // However self-loops are ok in the case of reference edges.
-                    // (This may hit trigger times for the same reference edge).
-                    progress |= handoff_edges.remove(&edge_id);
-                }
                 continue;
             }
 
@@ -143,7 +134,7 @@ fn find_subgraph_unionfind(
                 // within a single subgraph.
                 subgraph_unionfind.union(src, dst);
                 assert!(handoff_edges.remove(&edge_id));
-                progress |= true;
+                progress = true;
             }
         }
     }
@@ -514,26 +505,10 @@ fn separate_external_inputs(partitioned_graph: &mut HydroflowGraph) {
     }
 }
 
-/// Ensure edgetypes are set.
-pub fn assert_edgetypes_set(flat_graph: &HydroflowGraph) {
-    let missing_edgetypes = flat_graph
-        .edge_ids()
-        .filter(|&edge_id| flat_graph.edge_type(edge_id).is_none())
-        .count();
-    assert!(
-        0 == missing_edgetypes,
-        "`partition_graph` requires edge types to be set, but was unset for {} out of {} edges. This is a Hydroflow bug.",
-        missing_edgetypes,
-        flat_graph.edge_ids().len(),
-    );
-}
-
 /// Main method for this module. Partions a flat [`HydroflowGraph`] into one with subgraphs.
 ///
 /// Returns an error if a negative cycle exists in the graph. Negative cycles prevent partioning.
 pub fn partition_graph(flat_graph: HydroflowGraph) -> Result<HydroflowGraph, Diagnostic> {
-    assert_edgetypes_set(&flat_graph);
-
     // Pre-find barrier crossers (input edges with a `DelayType`).
     let mut barrier_crossers = find_barrier_crossers(&flat_graph);
     let mut partitioned_graph = flat_graph;

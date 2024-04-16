@@ -1,7 +1,7 @@
 use quote::quote_spanned;
 use syn::parse_quote;
 
-use super::{GraphEdgeType, OperatorCategory, OperatorConstraints, WriteContextArgs, RANGE_1};
+use super::{OperatorCategory, OperatorConstraints, WriteContextArgs, RANGE_1};
 
 /// > 2 input streams of type S and T, 1 output stream of type (S, T)
 ///
@@ -36,10 +36,7 @@ pub const CROSS_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
     has_singleton_output: false,
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
-    input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
+    input_delaytype_fn: |_| None,    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    op_span,
                    ident,

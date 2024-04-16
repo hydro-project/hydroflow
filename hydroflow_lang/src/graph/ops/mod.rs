@@ -13,8 +13,8 @@ use syn::punctuated::Punctuated;
 use syn::{parse_quote_spanned, Expr, Token};
 
 use super::{
-    FlowProps, GraphEdgeType, GraphNode, GraphNodeId, GraphSubgraphId, LatticeFlowType,
-    OpInstGenerics, OperatorInstance, PortIndexValue,
+    FlowProps, GraphNode, GraphNodeId, GraphSubgraphId, LatticeFlowType, OpInstGenerics,
+    OperatorInstance, PortIndexValue,
 };
 use crate::diagnostic::{Diagnostic, Level};
 use crate::parse::{Operator, PortIndex};
@@ -79,10 +79,6 @@ pub struct OperatorConstraints {
 
     /// Determines if this input must be preceeded by a stratum barrier.
     pub input_delaytype_fn: fn(&PortIndexValue) -> Option<DelayType>,
-    /// The required edge type for each input. Return `None` when any is OK, or for unknown `PortIndexValue` inputs.
-    pub input_edgetype_fn: fn(&PortIndexValue) -> Option<GraphEdgeType>,
-    /// Specifies the edge type for each output port.
-    pub output_edgetype_fn: fn(&PortIndexValue) -> GraphEdgeType,
 
     /// Return the output flow types for the given input flow types.
     ///
@@ -283,7 +279,6 @@ pub fn null_write_iterator_fn(
         ident,
         inputs,
         outputs,
-        input_edgetypes,
         is_pull,
         op_inst:
             OperatorInstance {
@@ -296,16 +291,10 @@ pub fn null_write_iterator_fn(
     let default_type = parse_quote_spanned! {op_span=> _};
     let iter_type = type_args.first().unwrap_or(&default_type);
 
-    let value_inputs = inputs
-        .iter()
-        .zip(input_edgetypes)
-        .filter(|(_input, input_edgtype)| matches!(input_edgtype, GraphEdgeType::Value))
-        .map(|(input, _)| input);
-
     if is_pull {
         quote_spanned! {op_span=>
             #(
-                #value_inputs.for_each(std::mem::drop);
+                #inputs.for_each(std::mem::drop);
             )*
             let #ident = std::iter::empty::<#iter_type>();
         }
@@ -457,11 +446,6 @@ pub struct WriteContextArgs<'a> {
     pub inputs: &'a [Ident],
     /// Output operator idents (or ref idents; used for push).
     pub outputs: &'a [Ident],
-    /// Input edge types (value or reference).
-    pub input_edgetypes: &'a [GraphEdgeType],
-    /// Output edge types (value or reference). Likely not that useful (since the operator decides
-    /// its output edgetypes) but provided for completeness,
-    pub output_edgetypes: &'a [GraphEdgeType],
     /// Ident for the singleton output of this operator, if any.
     pub singleton_output_ident: &'a Ident,
 

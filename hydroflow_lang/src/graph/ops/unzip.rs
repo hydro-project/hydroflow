@@ -2,7 +2,7 @@ use quote::quote_spanned;
 use syn::parse_quote;
 
 use super::{
-    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
 
@@ -31,8 +31,6 @@ pub const UNZIP: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: Some(|| super::PortListSpec::Fixed(parse_quote!(0, 1))),
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    root,

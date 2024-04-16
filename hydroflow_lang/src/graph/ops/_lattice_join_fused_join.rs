@@ -3,7 +3,7 @@ use syn::parse_quote;
 use syn::spanned::Spanned;
 
 use super::{
-    DelayType, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints,
     OperatorInstance, OperatorWriteOutput, WriteContextArgs, RANGE_1,
 };
 
@@ -89,8 +89,6 @@ pub const _LATTICE_JOIN_FUSED_JOIN: OperatorConstraints = OperatorConstraints {
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::MonotoneAccum),
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,

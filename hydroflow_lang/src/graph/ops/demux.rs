@@ -6,7 +6,7 @@ use syn::spanned::Spanned;
 use syn::{Expr, Pat};
 
 use super::{
-    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
+    OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
     PortIndexValue, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
@@ -55,10 +55,7 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
     has_singleton_output: false,
     ports_inn: None,
     ports_out: Some(|| PortListSpec::Variadic),
-    input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
+    input_delaytype_fn: |_| None,    flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,

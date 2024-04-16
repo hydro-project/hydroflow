@@ -2,7 +2,7 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    DelayType, GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     PortIndexValue, WriteContextArgs, RANGE_0, RANGE_1,
 };
 
@@ -29,8 +29,6 @@ pub const JOIN_FUSED_RHS: OperatorConstraints = OperatorConstraints {
         }
         _ => None,
     },
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    op_span,
