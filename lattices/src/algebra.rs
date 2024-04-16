@@ -383,37 +383,37 @@ mod test {
     // Performs addition modulo 7, ensuring the result remains within the range of 0 to 6.
     // This function is used to compute addition modulo 7 within the context of testing integral domains.
     fn modulo_add_7(a: u32, b: u32) -> u32 {
-        return u32::wrapping_add(a, b) % 7;
+        u32::wrapping_add(a, b) % 7
     }
 
     // Performs addition modulo 14, ensuring the result remains within the range of 0 to 13.
     // This function is used to compute addition modulo 14 within the context of testing integral domains.
     fn modulo_add_14(a: u32, b: u32) -> u32 {
-        return u32::wrapping_add(a, b) % 14;
+        u32::wrapping_add(a, b) % 14
     }
 
     // Performs subtraction modulo 7, ensuring the result remains within the range of 0 to 6.
     // This function is used to compute subtraction modulo 7 within the context of testing integral domains.
     fn modulo_sub_7(a: u32) -> u32 {
-        return u32::wrapping_sub(7, a) % 7;
+        u32::wrapping_sub(7, a) % 7
     }
 
     // Performs subtraction modulo 14, ensuring the result remains within the range of 0 to 13.
     // This function is used to compute subtraction modulo 14 within the context of testing integral domains.
     fn modulo_sub_14(a: u32) -> u32 {
-        return u32::wrapping_sub(14, a) % 14;
+        u32::wrapping_sub(14, a) % 14
     }
 
     // Performs multiplication modulo 7, ensuring the result remains within the range of 0 to 6.
     // This function is used to compute multiplication modulo 7 within the context of testing integral domains.
     fn modulo_mult_7(a: u32, b: u32) -> u32 {
-        return u32::wrapping_mul(a, b) % 7;
+        u32::wrapping_mul(a, b) % 7
     }
 
     // Performs multiplication modulo 14, ensuring the result remains within the range of 0 to 13.
     // This function is used to compute multiplication modulo 14 within the context of testing integral domains.
     fn modulo_mult_14(a: u32, b: u32) -> u32 {
-        return u32::wrapping_mul(a, b) % 14;
+        u32::wrapping_mul(a, b) % 14
     }
 
     #[test]
