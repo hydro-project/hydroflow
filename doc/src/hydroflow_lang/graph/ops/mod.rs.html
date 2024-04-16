@@ -671,6 +671,8 @@
 <a href="#669" id="669">669</a>
 <a href="#670" id="670">670</a>
 <a href="#671" id="671">671</a>
+<a href="#672" id="672">672</a>
+<a href="#673" id="673">673</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Hydroflow's operators
 
 </span><span class="kw">use </span>std::collections::HashMap;
@@ -1074,7 +1076,6 @@
     source_stream::SOURCE_STREAM,
     source_stream_serde::SOURCE_STREAM_SERDE,
     state::STATE,
-    state_ref::STATE_REF,
     tee::TEE,
     unique::UNIQUE,
     unzip::UNZIP,
@@ -1144,8 +1145,11 @@
     <span class="doccomment">/// Arguments provided by the user into the operator as arguments.
     /// I.e. the `a, b, c` in `-&gt; my_op(a, b, c) -&gt; `.
     ///
-    /// These arguments include singleton postprocessing codegen.
+    /// These arguments include singleton postprocessing codegen, with
+    /// [`std::cell::RefCell::borrow_mut`] code pre-generated.
     </span><span class="kw">pub </span>arguments: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Punctuated&lt;Expr, <span class="macro">Token!</span>[,]&gt;,
+    <span class="doccomment">/// Same as [`Self::arguments`] but with only `StateHandle`s, no borrowing code.
+    </span><span class="kw">pub </span>arguments_handles: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Punctuated&lt;Expr, <span class="macro">Token!</span>[,]&gt;,
 
     <span class="doccomment">/// Flow properties corresponding to each input.
     ///

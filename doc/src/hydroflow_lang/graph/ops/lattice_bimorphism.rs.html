@@ -98,13 +98,6 @@
 <a href="#96" id="96">96</a>
 <a href="#97" id="97">97</a>
 <a href="#98" id="98">98</a>
-<a href="#99" id="99">99</a>
-<a href="#100" id="100">100</a>
-<a href="#101" id="101">101</a>
-<a href="#102" id="102">102</a>
-<a href="#103" id="103">103</a>
-<a href="#104" id="104">104</a>
-<a href="#105" id="105">105</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>syn::parse_quote;
 
@@ -117,27 +110,19 @@
 </span><span class="kw">pub const </span>LATTICE_BIMORPHISM: OperatorConstraints = OperatorConstraints {
     name: <span class="string">"lattice_bimorphism"</span>,
     categories: <span class="kw-2">&amp;</span>[OperatorCategory::MultiIn],
-    hard_range_inn: <span class="kw-2">&amp;</span>(<span class="number">4</span>..=<span class="number">4</span>),
-    soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">4</span>..=<span class="number">4</span>),
+    hard_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
+    soft_range_inn: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
-    num_args: <span class="number">1</span>,
+    num_args: <span class="number">3</span>,
     persistence_args: RANGE_0,
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
     has_singleton_output: <span class="bool-val">false</span>,
-    ports_inn: <span class="prelude-val">Some</span>(|| {
-        <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote!</span> { items_0, items_1, state_0, state_1 })
-    }),
+    ports_inn: <span class="prelude-val">Some</span>(|| <span class="kw">super</span>::PortListSpec::Fixed(<span class="macro">parse_quote!</span> { <span class="number">0</span>, <span class="number">1 </span>})),
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    input_edgetype_fn: |port| <span class="kw">match </span><span class="kw-2">&amp;*</span>port.to_string() {
-        <span class="string">"items_0" </span>=&gt; <span class="prelude-val">Some</span>(GraphEdgeType::Value),
-        <span class="string">"items_1" </span>=&gt; <span class="prelude-val">Some</span>(GraphEdgeType::Value),
-        <span class="string">"state_0" </span>=&gt; <span class="prelude-val">Some</span>(GraphEdgeType::Reference),
-        <span class="string">"state_1" </span>=&gt; <span class="prelude-val">Some</span>(GraphEdgeType::Reference),
-        <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-    },
+    input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(GraphEdgeType::Value),
     output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value,
     flow_prop_fn: <span class="prelude-val">Some</span>(JOIN_CROSS_JOIN_FLOW_PROP_FN),
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
@@ -148,17 +133,18 @@
                    ident,
                    inputs,
                    arguments,
+                   arguments_handles,
                    ..
                },
                <span class="kw">_</span>| {
         <span class="macro">assert!</span>(is_pull);
 
         <span class="kw">let </span>func = wc.wrap_check_func_arg(<span class="kw-2">&amp;</span>arguments[<span class="number">0</span>]);
+        <span class="kw">let </span>lhs_state_handle = <span class="kw-2">&amp;</span>arguments_handles[<span class="number">1</span>];
+        <span class="kw">let </span>rhs_state_handle = <span class="kw-2">&amp;</span>arguments_handles[<span class="number">2</span>];
 
         <span class="kw">let </span>lhs_items = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
         <span class="kw">let </span>rhs_items = <span class="kw-2">&amp;</span>inputs[<span class="number">1</span>];
-        <span class="kw">let </span>lhs_state = <span class="kw-2">&amp;</span>inputs[<span class="number">2</span>];
-        <span class="kw">let </span>rhs_state = <span class="kw-2">&amp;</span>inputs[<span class="number">3</span>];
 
         <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned!</span> {op_span=&gt;
             <span class="kw">let </span>#ident = {
@@ -197,8 +183,8 @@
                     #func,
                     #lhs_items,
                     #rhs_items,
-                    #lhs_state,
-                    #rhs_state,
+                    #lhs_state_handle,
+                    #rhs_state_handle,
                     <span class="kw-2">&amp;</span>#context,
                 )
             };

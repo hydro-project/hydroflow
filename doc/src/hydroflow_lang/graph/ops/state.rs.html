@@ -142,55 +142,52 @@
 <a href="#140" id="140">140</a>
 <a href="#141" id="141">141</a>
 <a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
-<span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use super</span>::{
     GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
-    OperatorWriteOutput, PortIndexValue, PortListSpec, WriteContextArgs,
-    LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_0, RANGE_1,
+    OperatorWriteOutput, PortIndexValue, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN,
+    RANGE_0, RANGE_1,
 };
 
-<span class="doccomment">/// A lattice-based state operator, used for accumulating lattice state
+<span class="comment">// TODO(mingwei): Improve example when things are more stable.
+</span><span class="doccomment">/// A lattice-based state operator, used for accumulating lattice state
 ///
-/// Emits both a referenceable accumulated value `state`, and a pass-through stream `items`. In the
-/// future the pass-through stream may be deduplicated.
+/// Emits both a referenceable singleton and (optionally) a pass-through stream. In the future the
+/// pass-through stream may be deduplicated.
 ///
 /// ```hydroflow
 /// use std::collections::HashSet;
 ///
 /// use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
 ///
-/// lhs = source_iter_delta(0..3)
+/// my_state = source_iter_delta(0..3)
 ///     -&gt; map(SetUnionSingletonSet::new_from)
 ///     -&gt; state::&lt;SetUnionHashSet&lt;usize&gt;&gt;();
-/// rhs = source_iter_delta(3..5)
-///     -&gt; map(SetUnionSingletonSet::new_from)
-///     -&gt; state::&lt;SetUnionHashSet&lt;usize&gt;&gt;();
-///
-/// lhs[items] -&gt; [items_0]my_join;
-/// rhs[items] -&gt; [items_1]my_join;
-/// lhs[state] -&gt; [state_0]my_join;
-/// rhs[state] -&gt; [state_1]my_join;
-///
-/// my_join = lattice_bimorphism(CartesianProductBimorphism::&lt;HashSet&lt;_&gt;&gt;::default())
-///     -&gt; lattice_reduce()
-///     -&gt; for_each(|x| println!("{:?}", x));
 /// ```
 </span><span class="kw">pub const </span>STATE: OperatorConstraints = OperatorConstraints {
     name: <span class="string">"state"</span>,
     categories: <span class="kw-2">&amp;</span>[OperatorCategory::Persistence],
     hard_range_inn: RANGE_1,
     soft_range_inn: RANGE_1,
-    hard_range_out: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
-    soft_range_out: <span class="kw-2">&amp;</span>(<span class="number">2</span>..=<span class="number">2</span>),
+    hard_range_out: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
+    soft_range_out: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     num_args: <span class="number">0</span>,
     persistence_args: RANGE_0, <span class="comment">// TODO(mingwei)?
     </span>type_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     is_external_input: <span class="bool-val">false</span>,
-    has_singleton_output: <span class="bool-val">false</span>,
+    has_singleton_output: <span class="bool-val">true</span>,
     ports_inn: <span class="prelude-val">None</span>,
-    ports_out: <span class="prelude-val">Some</span>(|| PortListSpec::Fixed(<span class="macro">parse_quote!</span> { items, state })),
+    ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
     input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(GraphEdgeType::Value),
     output_edgetype_fn: |idx| <span class="kw">match </span>idx {
@@ -209,6 +206,7 @@
                    inputs,
                    outputs,
                    is_pull,
+                   singleton_output_ident,
                    op_inst:
                        OperatorInstance {
                            generics: OpInstGenerics { type_args, .. },
@@ -222,7 +220,7 @@
             .map(ToTokens::to_token_stream)
             .unwrap_or(<span class="macro">quote_spanned!</span>(op_span=&gt; <span class="kw">_</span>));
 
-        <span class="kw">let </span>state_ident = <span class="kw-2">&amp;</span>outputs[<span class="number">1</span>];
+        <span class="kw">let </span>state_ident = singleton_output_ident;
 
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned!</span> {op_span=&gt;
             <span class="kw">let </span>#state_ident = #hydroflow.add_state(::std::cell::RefCell::new(
@@ -230,7 +228,8 @@
             ));
         };
 
-        <span class="kw">let </span>write_iterator = <span class="kw">if </span>is_pull {
+        <span class="comment">// TODO(mingwei): deduplicate codegen
+        </span><span class="kw">let </span>write_iterator = <span class="kw">if </span>is_pull {
             <span class="kw">let </span>input = <span class="kw-2">&amp;</span>inputs[<span class="number">0</span>];
             <span class="macro">quote_spanned!</span> {op_span=&gt;
                 <span class="kw">let </span>#ident = {
@@ -253,8 +252,7 @@
                     check_input::&lt;<span class="kw">_</span>, <span class="kw">_</span>, #lattice_type&gt;(#input, #state_ident, #context)
                 };
             }
-        } <span class="kw">else </span>{
-            <span class="kw">let </span>output = <span class="kw-2">&amp;</span>outputs[<span class="number">0</span>];
+        } <span class="kw">else if let </span><span class="prelude-val">Some</span>(output) = outputs.first() {
             <span class="macro">quote_spanned!</span> {op_span=&gt;
                 <span class="kw">let </span>#ident = {
                     <span class="kw">fn </span>check_output&lt;<span class="lifetime">'a</span>, Item, Push, Lat&gt;(
@@ -263,7 +261,7 @@
                         context: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>#root::scheduled::context::Context,
                     ) -&gt; <span class="kw">impl </span><span class="lifetime">'a </span>+ #root::pusherator::Pusherator&lt;Item = Item&gt;
                     <span class="kw">where
-                        </span>Item: ::std::clone::Clone,
+                        </span>Item: <span class="lifetime">'a </span>+ ::std::clone::Clone,
                         Push: #root::pusherator::Pusherator&lt;Item = Item&gt;,
                         Lat: <span class="lifetime">'static </span>+ #root::lattices::Merge&lt;Item&gt;,
                     {
@@ -274,6 +272,26 @@
                         }, push)
                     }
                     check_output::&lt;<span class="kw">_</span>, <span class="kw">_</span>, #lattice_type&gt;(#output, #state_ident, #context)
+                };
+            }
+        } <span class="kw">else </span>{
+            <span class="macro">quote_spanned!</span> {op_span=&gt;
+                <span class="kw">let </span>#ident = {
+                    <span class="kw">fn </span>check_output&lt;<span class="lifetime">'a</span>, Item, Lat&gt;(
+                        state_handle: #root::scheduled::state::StateHandle&lt;::std::cell::RefCell&lt;Lat&gt;&gt;,
+                        context: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>#root::scheduled::context::Context,
+                    ) -&gt; <span class="kw">impl </span><span class="lifetime">'a </span>+ #root::pusherator::Pusherator&lt;Item = Item&gt;
+                    <span class="kw">where
+                        </span>Item: <span class="lifetime">'a</span>,
+                        Lat: <span class="lifetime">'static </span>+ #root::lattices::Merge&lt;Item&gt;,
+                    {
+                        #root::pusherator::for_each::ForEach::new(<span class="kw">move </span>|item| {
+                            <span class="kw">let </span>state = context.state_ref(state_handle);
+                            <span class="kw">let </span><span class="kw-2">mut </span>state = state.borrow_mut();
+                            #root::lattices::Merge::merge(<span class="kw-2">&amp;mut *</span>state, item);
+                        })
+                    }
+                    check_output::&lt;<span class="kw">_</span>, #lattice_type&gt;(#state_ident, #context)
                 };
             }
         };

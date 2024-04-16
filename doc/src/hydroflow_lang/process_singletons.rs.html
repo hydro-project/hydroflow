@@ -99,11 +99,6 @@
 <a href="#97" id="97">97</a>
 <a href="#98" id="98">98</a>
 <a href="#99" id="99">99</a>
-<a href="#100" id="100">100</a>
-<a href="#101" id="101">101</a>
-<a href="#102" id="102">102</a>
-<a href="#103" id="103">103</a>
-<a href="#104" id="104">104</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Utility methods for processing singleton references: `#my_var`.
 
 </span><span class="kw">use </span>itertools::Itertools;
@@ -121,6 +116,57 @@
 /// OK. However the returned tokens are not used in the codegen as we need to use [`postprocess_singletons`]
 /// later to substitute-in the context referencing code for each singleton
 </span><span class="kw">pub fn </span>preprocess_singletons(tokens: TokenStream, found_idents: <span class="kw-2">&amp;mut </span>Vec&lt;Ident&gt;) -&gt; TokenStream {
+    process_singletons(tokens, <span class="kw-2">&amp;mut </span>|singleton_ident| {
+        found_idents.push(singleton_ident.clone());
+        TokenTree::Ident(singleton_ident)
+    })
+}
+
+<span class="doccomment">/// Replaces singleton references `#my_var` with the code needed to actually get the value inside.
+///
+/// * `tokens` - The tokens to update singleton references within.
+/// * `resolved_idents` - The context `StateHandle` varnames that correspond 1:1 and in the same
+///   order as the singleton references within `tokens` (found in-order via [`preprocess_singletons`]).
+///
+/// Generates borrowing code ([`std::cell::RefCell::borrow_mut`]). Use
+/// [`postprocess_singletons_handles`] for just the `StateHandle`s.
+</span><span class="kw">pub fn </span>postprocess_singletons(
+    tokens: TokenStream,
+    resolved_idents: <span class="kw">impl </span>IntoIterator&lt;Item = Ident&gt;,
+) -&gt; Punctuated&lt;Expr, <span class="macro">Token!</span>[,]&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>resolved_idents_iter = resolved_idents.into_iter();
+    <span class="kw">let </span>processed = process_singletons(tokens, <span class="kw-2">&amp;mut </span>|_singleton_ident| {
+        <span class="kw">let </span>resolved_ident = resolved_idents_iter.next().unwrap();
+        TokenTree::Group(Group::new(
+            proc_macro2::Delimiter::Parenthesis,
+            <span class="macro">quote!</span> {
+                <span class="kw-2">*</span>context.state_ref(#resolved_ident).borrow_mut()
+            },
+        ))
+    });
+    parse_terminated(processed).unwrap()
+}
+
+<span class="doccomment">/// Same as [`postprocess_singletons`] but generates just the `StateHandle` ident rather than full
+/// `RefCell` borrowing code.
+</span><span class="kw">pub fn </span>postprocess_singletons_handles(
+    tokens: TokenStream,
+    resolved_idents: <span class="kw">impl </span>IntoIterator&lt;Item = Ident&gt;,
+) -&gt; Punctuated&lt;Expr, <span class="macro">Token!</span>[,]&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>resolved_idents_iter = resolved_idents.into_iter();
+    <span class="kw">let </span>processed = process_singletons(tokens, <span class="kw-2">&amp;mut </span>|_singleton_ident| {
+        <span class="kw">let </span>resolved_ident = resolved_idents_iter.next().unwrap();
+        TokenTree::Ident(resolved_ident)
+    });
+    parse_terminated(processed).unwrap()
+}
+
+<span class="doccomment">/// Traverse the token stream, applying the `map_singleton_fn` whenever a singleton is found,
+/// returning the transformed token stream.
+</span><span class="kw">fn </span>process_singletons(
+    tokens: TokenStream,
+    map_singleton_fn: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>FnMut(Ident) -&gt; TokenTree,
+) -&gt; TokenStream {
     tokens
         .into_iter()
         .peekable()
@@ -129,7 +175,7 @@
                 TokenTree::Group(group) =&gt; {
                     <span class="kw">let </span><span class="kw-2">mut </span>new_group = Group::new(
                         group.delimiter(),
-                        preprocess_singletons(group.stream(), found_idents),
+                        process_singletons(group.stream(), map_singleton_fn),
                     );
                     new_group.set_span(group.span());
                     TokenTree::Group(new_group)
@@ -141,64 +187,8 @@
                         </span><span class="kw">let </span><span class="prelude-val">Some</span>(TokenTree::Ident(singleton_ident)) = iter.next() <span class="kw">else </span>{
                             <span class="macro">unreachable!</span>()
                         };
-                        found_idents.push(singleton_ident.clone());
-                        TokenTree::Ident(singleton_ident)
+                        (map_singleton_fn)(singleton_ident)
                     } <span class="kw">else </span>{
-                        TokenTree::Punct(punct)
-                    }
-                }
-                TokenTree::Literal(lit) =&gt; TokenTree::Literal(lit),
-            };
-            <span class="prelude-val">Some</span>(out)
-        })
-        .collect()
-}
-
-<span class="doccomment">/// Replaces singleton references `#my_var` with the code needed to actually get the value inside.
-///
-/// * `tokens` - The tokens to update singleton references within.
-/// * `resolved_idents` - The context `StateHandle` varnames that correspond 1:1 and in the same
-///   order as the singleton references within `tokens` (found in-order via [`preprocess_singletons`]).
-</span><span class="kw">pub fn </span>postprocess_singletons(
-    tokens: TokenStream,
-    resolved_idents: <span class="kw">impl </span>IntoIterator&lt;Item = Ident&gt;,
-) -&gt; Punctuated&lt;Expr, <span class="macro">Token!</span>[,]&gt; {
-    <span class="kw">let </span>processed = postprocess_singletons_helper(tokens, resolved_idents.into_iter().by_ref());
-    parse_terminated(processed).unwrap()
-}
-
-<span class="doccomment">/// Internal recursive helper for [`postprocess_singletons`].
-</span><span class="kw">fn </span>postprocess_singletons_helper(
-    tokens: TokenStream,
-    resolved_idents_iter: <span class="kw-2">&amp;mut </span><span class="kw">impl </span>Iterator&lt;Item = Ident&gt;,
-) -&gt; TokenStream {
-    tokens
-        .into_iter()
-        .peekable()
-        .batching(|iter| {
-            <span class="kw">let </span>out = <span class="kw">match </span>iter.next()<span class="question-mark">? </span>{
-                TokenTree::Group(group) =&gt; {
-                    <span class="kw">let </span><span class="kw-2">mut </span>new_group = Group::new(
-                        group.delimiter(),
-                        postprocess_singletons_helper(group.stream(), resolved_idents_iter),
-                    );
-                    new_group.set_span(group.span());
-                    TokenTree::Group(new_group)
-                }
-                TokenTree::Ident(ident) =&gt; TokenTree::Ident(ident),
-                TokenTree::Punct(punct) =&gt; {
-                    <span class="kw">if </span><span class="string">'#' </span>== punct.as_char() &amp;&amp; <span class="macro">matches!</span>(iter.peek(), <span class="prelude-val">Some</span>(TokenTree::Ident(<span class="kw">_</span>))) {
-                        <span class="comment">// Found a singleton.
-                        </span><span class="kw">let </span>_singleton_ident = iter.next();
-                        <span class="kw">let </span>resolved_ident = resolved_idents_iter.next().unwrap();
-                        TokenTree::Group(Group::new(
-                            proc_macro2::Delimiter::Parenthesis,
-                            <span class="macro">quote!</span> {
-                                <span class="kw-2">*</span>context.state_ref(#resolved_ident).borrow_mut()
-                            },
-                        ))
-                        <span class="comment">// TokenTree::Ident(resolved_idents_iter.next().unwrap())
-                    </span>} <span class="kw">else </span>{
                         TokenTree::Punct(punct)
                     }
                 }

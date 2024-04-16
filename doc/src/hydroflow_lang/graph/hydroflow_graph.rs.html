@@ -1647,6 +1647,12 @@
 <a href="#1645" id="1645">1645</a>
 <a href="#1646" id="1646">1646</a>
 <a href="#1647" id="1647">1647</a>
+<a href="#1648" id="1648">1648</a>
+<a href="#1649" id="1649">1649</a>
+<a href="#1650" id="1650">1650</a>
+<a href="#1651" id="1651">1651</a>
+<a href="#1652" id="1652">1652</a>
+<a href="#1653" id="1653">1653</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -1671,7 +1677,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::graph::ops::{null_write_iterator_fn, DelayType};
 <span class="kw">use </span><span class="kw">crate</span>::graph::MODULE_BOUNDARY_NODE_STR;
 <span class="kw">use </span><span class="kw">crate</span>::pretty_span::{PrettyRowCol, PrettySpan};
-<span class="kw">use </span><span class="kw">crate</span>::process_singletons::postprocess_singletons;
+<span class="kw">use </span><span class="kw">crate</span>::process_singletons;
 
 <span class="doccomment">/// A graph representing a Hydroflow dataflow graph (with or without subgraph partitioning,
 /// stratification, and handoff insertion). This is a "meta" graph used for generating Rust source
@@ -2677,10 +2683,15 @@
 
                             <span class="kw">let </span>singletons_resolved =
                                 <span class="self">self</span>.helper_resolve_singletons(node_id, op_span);
-                            <span class="kw">let </span>arguments = <span class="kw-2">&amp;</span>postprocess_singletons(
+                            <span class="kw">let </span>arguments = <span class="kw-2">&amp;</span>process_singletons::postprocess_singletons(
                                 op_inst.arguments_raw.clone(),
-                                singletons_resolved,
+                                singletons_resolved.clone(),
                             );
+                            <span class="kw">let </span>arguments_handles =
+                                <span class="kw-2">&amp;</span>process_singletons::postprocess_singletons_handles(
+                                    op_inst.arguments_raw.clone(),
+                                    singletons_resolved.clone(),
+                                );
 
                             <span class="kw">let </span>context_args = WriteContextArgs {
                                 root,
@@ -2707,6 +2718,7 @@
                                 op_name,
                                 op_inst,
                                 arguments,
+                                arguments_handles,
                                 flow_props_in: <span class="kw-2">&amp;*</span>flow_props_in,
                             };
 
