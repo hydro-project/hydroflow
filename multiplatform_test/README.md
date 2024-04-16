@@ -53,7 +53,7 @@ You can test on a subset of platforms by passing in the platforms in parens:
 ```rust
 use multiplatform_test::multiplatform_test;
 
-#[multiplatform_test(test)]  // Only test on the standard `#[test]` platform, but enables logging
+#[multiplatform_test(test, env_logging)]  // Only test on the standard `#[test]` platform, but enables logging
 fn my_test() {
   // ...
 }
@@ -66,6 +66,7 @@ use multiplatform_test::multiplatform_test;
 
 #[test]
 fn my_test() {
+  let _ = env_logger::builder().is_test(true).try_init();
   // ...
 }
 ```
