@@ -343,6 +343,9 @@
 <a href="#341" id="341">341</a>
 <a href="#342" id="342">342</a>
 <a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap};
 <span class="kw">use </span>std::marker::PhantomData;
@@ -681,9 +684,12 @@
         build_inner(<span class="self">self</span>)
     }
 
-    <span class="kw">pub fn </span>optimize_default(<span class="self">self</span>) -&gt; HfCompiled&lt;<span class="lifetime">'a</span>, D::GraphId&gt; {
+    <span class="kw">pub fn </span>with_default_optimize(<span class="self">self</span>) -&gt; BuiltFlow&lt;<span class="lifetime">'a</span>, D&gt; {
         <span class="self">self</span>.optimize_with(<span class="kw">super</span>::persist_pullup::persist_pullup)
-            .no_optimize()
+    }
+
+    <span class="kw">pub fn </span>optimize_default(<span class="self">self</span>) -&gt; HfCompiled&lt;<span class="lifetime">'a</span>, D::GraphId&gt; {
+        <span class="self">self</span>.with_default_optimize().no_optimize()
     }
 }
 </code></pre></div></section></main></body></html>

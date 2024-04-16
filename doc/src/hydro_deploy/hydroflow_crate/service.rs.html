@@ -388,6 +388,10 @@
 <a href="#386" id="386">386</a>
 <a href="#387" id="387">387</a>
 <a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
@@ -416,6 +420,7 @@
     bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
     example: <span class="prelude-ty">Option</span>&lt;String&gt;,
     profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
     features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
@@ -452,6 +457,7 @@
         bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
         example: <span class="prelude-ty">Option</span>&lt;String&gt;,
         profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
         features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
@@ -466,6 +472,7 @@
             on,
             example,
             profile,
+            perf,
             features,
             args,
             display_id,
@@ -667,6 +674,7 @@
                             .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">"service/{}"</span>, <span class="self">self</span>.id)),
                         built.clone(),
                         <span class="kw-2">&amp;</span>args,
+                        <span class="self">self</span>.perf.clone(),
                     )
                     .<span class="kw">await</span><span class="question-mark">?</span>;
 

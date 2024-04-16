@@ -149,6 +149,18 @@
 <a href="#147" id="147">147</a>
 <a href="#148" id="148">148</a>
 <a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
 
@@ -177,7 +189,8 @@
     target: CrateTarget,
     on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
     profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    args: Vec&lt;String&gt;,
+    perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;, <span class="comment">/* If a path is provided, run perf to get CPU time and output to that path.perf.data */
+    </span>args: Vec&lt;String&gt;,
     display_name: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
@@ -191,6 +204,7 @@
             target: CrateTarget::Default,
             on,
             profile: <span class="prelude-val">None</span>,
+            perf: <span class="prelude-val">None</span>,
             args: <span class="macro">vec!</span>[],
             display_name: <span class="prelude-val">None</span>,
         }
@@ -229,6 +243,15 @@
         <span class="self">self
     </span>}
 
+    <span class="kw">pub fn </span>perf(<span class="kw-2">mut </span><span class="self">self</span>, perf: <span class="kw">impl </span>Into&lt;PathBuf&gt;) -&gt; <span class="self">Self </span>{
+        <span class="kw">if </span><span class="self">self</span>.perf.is_some() {
+            <span class="macro">panic!</span>(<span class="string">"perf path already set"</span>);
+        }
+
+        <span class="self">self</span>.perf = <span class="prelude-val">Some</span>(perf.into());
+        <span class="self">self
+    </span>}
+
     <span class="doccomment">/// Sets the arguments to be passed to the binary when it is launched.
     </span><span class="kw">pub fn </span>args(<span class="kw-2">mut </span><span class="self">self</span>, args: <span class="kw">impl </span>IntoIterator&lt;Item = <span class="kw">impl </span>Into&lt;String&gt;&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.args.extend(args.into_iter().map(|s| s.into()));
@@ -262,6 +285,7 @@
             bin,
             example,
             <span class="self">self</span>.profile,
+            <span class="self">self</span>.perf,
             <span class="prelude-val">None</span>,
             <span class="prelude-val">Some</span>(<span class="self">self</span>.args),
             <span class="self">self</span>.display_name,

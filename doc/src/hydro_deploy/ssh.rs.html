@@ -374,6 +374,10 @@
 <a href="#372" id="372">372</a>
 <a href="#373" id="373">373</a>
 <a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
@@ -649,6 +653,7 @@
         id: String,
         binary: Arc&lt;(String, Vec&lt;u8&gt;, PathBuf)&gt;,
         args: <span class="kw-2">&amp;</span>[String],
+        perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt; {
         <span class="kw">let </span>session = <span class="self">self</span>.open_ssh_session().<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -681,6 +686,9 @@
                 channel
                     .exec(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{binary_path_string}{args_string}"</span>))
                     .<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">if </span>perf.is_some() {
+                    <span class="macro">todo!</span>(<span class="string">"Perf profiling on remote machines is not supported"</span>);
+                }
 
                 anyhow::Ok(channel)
             },

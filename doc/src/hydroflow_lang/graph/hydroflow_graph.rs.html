@@ -1632,6 +1632,21 @@
 <a href="#1630" id="1630">1630</a>
 <a href="#1631" id="1631">1631</a>
 <a href="#1632" id="1632">1632</a>
+<a href="#1633" id="1633">1633</a>
+<a href="#1634" id="1634">1634</a>
+<a href="#1635" id="1635">1635</a>
+<a href="#1636" id="1636">1636</a>
+<a href="#1637" id="1637">1637</a>
+<a href="#1638" id="1638">1638</a>
+<a href="#1639" id="1639">1639</a>
+<a href="#1640" id="1640">1640</a>
+<a href="#1641" id="1641">1641</a>
+<a href="#1642" id="1642">1642</a>
+<a href="#1643" id="1643">1643</a>
+<a href="#1644" id="1644">1644</a>
+<a href="#1645" id="1645">1645</a>
+<a href="#1646" id="1646">1646</a>
+<a href="#1647" id="1647">1647</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -3057,6 +3072,18 @@
                 node_id,
                 <span class="kw-2">&amp;*</span><span class="kw">if </span>write_config.op_short_text {
                     node.to_name_string()
+                } <span class="kw">else if </span>write_config.op_text_no_imports {
+                    <span class="comment">// Remove any lines that start with "use" (imports)
+                    </span><span class="kw">let </span>full_text = node.to_pretty_string();
+                    <span class="kw">let </span><span class="kw-2">mut </span>output = String::new();
+                    <span class="kw">for </span>sentence <span class="kw">in </span>full_text.split(<span class="string">'\n'</span>) {
+                        <span class="kw">if </span>sentence.trim().starts_with(<span class="string">"use"</span>) {
+                            <span class="kw">continue</span>;
+                        }
+                        output.push(<span class="string">'\n'</span>);
+                        output.push_str(sentence);
+                    }
+                    output.into()
                 } <span class="kw">else </span>{
                     node.to_pretty_string()
                 },
@@ -3253,6 +3280,9 @@
     <span class="doccomment">/// Op text will only be their name instead of the whole source.
     </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
     </span><span class="kw">pub </span>op_short_text: bool,
+    <span class="doccomment">/// Op text will exclude any line that starts with "use".
+    </span><span class="attr">#[cfg_attr(feature = <span class="string">"debugging"</span>, arg(long))]
+    </span><span class="kw">pub </span>op_text_no_imports: bool,
 }
 
 <span class="doccomment">/// Enum for choosing between mermaid and dot graph writing.
