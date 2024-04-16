@@ -318,6 +318,43 @@ mod test {
     }
 
     #[test]
+    fn test_left_distributes() {
+        // Test that multiplication and subtraction are left distributive  a(b-c) = ab - ac.
+        // but exponentiation and subtraction isn't since a^(b-c) != a^b - a^c.
+        left_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_mul);
+        assert!(std::panic::catch_unwind(|| {
+            left_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_pow);
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn test_right_distributes() {
+        // Test that multiplication and subtraction are right distributive (b-c)a = ba - ca.
+        // but exponentiation and subtraction isn't since (b-c)^a != b^a - c^a.
+        right_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_mul);
+        assert!(std::panic::catch_unwind(|| {
+            right_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_pow);
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn test_nonzero_inverse() {
+        // Test that addition and subtraction has a nonzero inverse and that multiplication does not.
+        nonzero_inverse(TEST_ITEMS, u32::wrapping_add, 0, 0, |x| {
+            0u32.wrapping_sub(x)
+        });
+        nonzero_inverse(TEST_ITEMS, u32::wrapping_sub, 0, 0, |x| {
+            0u32.wrapping_add(x)
+        });
+        assert!(std::panic::catch_unwind(|| {
+            right_distributes(TEST_ITEMS, u32::wrapping_div, u32::wrapping_mul);
+        })
+        .is_err());
+    }
+
+    #[test]
     fn test_idempotency() {
         // Test that max() is idempotent and addition is non-idempotent
         idempotency(TEST_ITEMS, u32::max);
@@ -366,6 +403,34 @@ mod test {
         distributive(TEST_ITEMS, &u32::wrapping_add, &u32::wrapping_mul);
         assert!(std::panic::catch_unwind(|| {
             distributive(TEST_ITEMS, &u32::wrapping_add, &u32::max);
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn test_group() {
+        // Test that (Z, +) form a group.
+        group(TEST_ITEMS, &u32::wrapping_add, 0, &|x| 0u32.wrapping_sub(x));
+        // Test that (Z/7Z, +) form a group.
+        group(TEST_MOD_PRIME_7, &modulo_add_7, 0, &modulo_sub_7);
+        // Test that (Z/14Z, +) form a group.
+        group(TEST_ITEMS, &modulo_add_14, 0, &modulo_sub_14);
+        // Test that (Z, *) do not form a group since it has no inverse.
+        assert!(std::panic::catch_unwind(|| {
+            group(TEST_ITEMS, &u32::wrapping_mul, 1, &|x| 1u32.wrapping_div(x));
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn test_abelian_group() {
+        // Test that (Z, +) form an abelian group.
+        abelian_group(TEST_ITEMS, &u32::wrapping_add, 0, &|x| 0u32.wrapping_sub(x));
+        // Test that (Z/7Z, +) form an abelian group.
+        abelian_group(TEST_MOD_PRIME_7, &modulo_add_7, 0, &modulo_sub_7);
+        // Test that (Z, *) do not form an abelian group.
+        assert!(std::panic::catch_unwind(|| {
+            abelian_group(TEST_ITEMS, &u32::wrapping_mul, 1, &|x| 1u32.wrapping_div(x));
         })
         .is_err());
     }
