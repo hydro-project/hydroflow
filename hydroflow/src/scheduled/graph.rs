@@ -148,6 +148,23 @@ impl<'a> Hydroflow<'a> {
             .downcast_ref::<TeeingHandoff<T>>()
             .unwrap();
         teeing_handoff.drop();
+
+        let tee_root = data.pred_handoffs[0];
+        let tee_root_data = &mut self.handoffs[tee_root.0];
+        // Remove this output from the send succ handoff list.
+        tee_root_data
+            .succ_handoffs
+            .retain(|&succ_hoff| succ_hoff != tee_port.handoff_id);
+        // Remove from subgraph successors if send port was already connected.
+        assert!(
+            tee_root_data.preds.len() <= 1,
+            "Tee send side should only have one sender (or none set yet)."
+        );
+        if let Some(&pred_sg_id) = tee_root_data.preds.first() {
+            self.subgraphs[pred_sg_id.0]
+                .succs
+                .retain(|&succ_hoff| succ_hoff != tee_port.handoff_id);
+        }
     }
 }
 
