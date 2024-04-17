@@ -100,17 +100,27 @@ impl<'a> Hydroflow<'a> {
 
         // Set up teeing metadata.
         // Go to `tee_root`'s successors and insert self (the new tee output).
-        let tee_handoff_data = &mut self.handoffs[tee_root.0];
-        tee_handoff_data.succ_handoffs.push(new_hoff_id);
+        let tee_root_data = &mut self.handoffs[tee_root.0];
+        tee_root_data.succ_handoffs.push(new_hoff_id);
+
+        // Add our new handoff id into the subgraph data if the send `tee_root` has already been
+        // used to add a subgraph.
+        assert!(
+            tee_root_data.preds.len() <= 1,
+            "Tee send side should only have one sender (or none set yet)."
+        );
+        if let Some(&pred_sg_id) = tee_root_data.preds.first() {
+            self.subgraphs[pred_sg_id.0].succs.push(new_hoff_id);
+        }
 
         // Insert new handoff output.
-        let teeing_handoff = tee_handoff_data
+        let teeing_handoff = tee_root_data
             .handoff
             .any_ref()
             .downcast_ref::<TeeingHandoff<T>>()
             .unwrap();
         let new_handoff = teeing_handoff.tee();
-        let new_name = Cow::Owned(format!("{} tee {:?}", tee_handoff_data.name, new_hoff_id));
+        let new_name = Cow::Owned(format!("{} tee {:?}", tee_root_data.name, new_hoff_id));
         let mut new_handoff_data = HandoffData::new(new_name, new_handoff, new_hoff_id);
         // Set self's predecessor as `tee_root`.
         new_handoff_data.pred_handoffs = vec![tee_root];
