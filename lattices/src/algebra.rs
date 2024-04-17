@@ -109,12 +109,13 @@ pub fn field<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     g: &impl Fn(S, S) -> S,
-    zero: S, // zero is the identity element of f
-    one: S,  // one is the identity element of g
-    b: &impl Fn(S) -> S,
+    zero: S,                     // zero is the identity element of f
+    one: S,                      // one is the identity element of g
+    inverse_f: &impl Fn(S) -> S, /* inverse_f is the function that given x computes x' such that f(x,x') = zero. */
+    inverse_g: &impl Fn(S) -> S, /* //inverse_g is the function that given x computes x' such that g(x,x') = one. */
 ) {
-    ring(items, f, g, zero.clone(), one.clone(), b);
-    nonzero_inverse(items, f, one, zero, b);
+    commutative_ring(items, f, g, zero.clone(), one.clone(), inverse_f);
+    nonzero_inverse(items, g, one, zero, inverse_g);
 }
 
 /// Defines a commutative monoid structure.
@@ -305,7 +306,38 @@ mod test {
     use crate::algebra::*;
 
     static TEST_ITEMS: &[u32; 14] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+    static TEST_ITEMS_NONZERO: &[u32; 13] = &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
     static TEST_MOD_PRIME_7: &[u32; 7] = &[0, 1, 2, 3, 4, 5, 6];
+    static TEST_BOOLS: &[bool; 2] = &[false, true];
+
+    #[test]
+    fn test_field() {
+        // Test that GF2 (0, 1, XOR, AND) is a field and  +, x, 0, 1, - is not a field (no multiplicative inverses)
+        // Note GF2 is the Galois Field with 2 elements.
+
+        field(
+            TEST_BOOLS,
+            &|a, b| a ^ b, // logical XOR
+            &|a, b| a & b, // a & b, // logical AND
+            false,
+            true,
+            &|x| x, // XOR(x,x) = false, the identity for XOR
+            &|_x| true, /* AND(x,true) = true, the identity for AND. Note that the inverse doesn't need to work for the additive identity (false)
+                         */
+        );
+        assert!(std::panic::catch_unwind(|| {
+            field(
+                TEST_ITEMS,
+                &u32::wrapping_add,
+                &u32::wrapping_mul,
+                0,
+                1,
+                &|x| 0u32.wrapping_sub(x),
+                &|x| 0u32.wrapping_sub(x) //Note there is no valid inverse function for multiplication over the integers so we just pick some function
+            );
+        })
+        .is_err());
+    }
 
     #[test]
     fn test_associativity() {
@@ -371,6 +403,136 @@ mod test {
         commutativity(TEST_ITEMS, u32::max);
         assert!(std::panic::catch_unwind(|| {
             commutativity(TEST_ITEMS, u32::wrapping_div);
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn test_commutative_ring() {
+        // Test that (Z, +, *) is a commutative ring.
+        commutative_ring(
+            TEST_ITEMS,
+            &u32::wrapping_add,
+            &u32::wrapping_mul,
+            0,
+            1,
+            &|x| 0u32.wrapping_sub(x),
+        );
+
+        // Test that (Z, +, ^) is not a commutative ring.
+        assert!(std::panic::catch_unwind(|| {
+            commutative_ring(
+                TEST_ITEMS,
+                &u32::wrapping_add,
+                &u32::wrapping_pow,
+                0,
+                1,
+                &|x| 0u32.wrapping_sub(x),
+            );
+        })
+        .is_err());
+
+        // Test that matrix multiplication is not a commutative ring.
+        assert!(std::panic::catch_unwind(|| {
+            commutative_ring(
+                &[[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]],
+                &|a, b| {
+                    [
+                        [a[0][0] + b[0][0], a[0][1] + b[0][1]],
+                        [a[1][0] + b[1][0], a[1][0] + b[1][1]],
+                    ]
+                },
+                &|a, b| {
+                    [
+                        [
+                            a[0][0] * b[0][0] + a[0][1] * b[1][0],
+                            a[0][0] * b[0][1] + a[0][1] * b[1][1],
+                        ],
+                        [
+                            a[1][0] * b[0][0] + a[1][1] * b[1][0],
+                            a[1][0] * b[0][1] + a[1][1] * b[1][1],
+                        ],
+                    ]
+                },
+                [[0, 0], [0, 0]],
+                [[1, 0], [0, 1]],
+                &|a| {
+                    [
+                        [
+                            -a[0][0] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
+                            -a[0][1] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
+                        ],
+                        [
+                            -a[1][0] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
+                            -a[1][1] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
+                        ],
+                    ]
+                },
+            )
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn test_commutative_monoid() {
+        // Test that (Z, +) is commutative monoid since every abelian group is commutative monoid.
+        commutative_monoid(TEST_ITEMS, &u32::wrapping_add, 0);
+
+        // Test that  set of natural numbers N = {0, 1, 2, ...} is a commutative monoid under addition (identity element 0) or multiplication (identity element 1).
+        commutative_monoid(TEST_ITEMS, &u32::wrapping_mul, 1);
+        commutative_monoid(TEST_ITEMS, &u32::wrapping_add, 0);
+
+        // Test that ({true, false}, ∧) is a commutative monoid with identity element true.
+        commutative_monoid(TEST_BOOLS, &|a, b| a & b, true); // logical AND
+
+        // Test that (Z, -) is not a commutative monoid.
+        assert!(std::panic::catch_unwind(|| {
+            commutative_monoid(TEST_ITEMS, &u32::wrapping_sub, 0);
+        })
+        .is_err());
+
+        // Test that (N, +) is not a commutative monoid since it doesn't have an identity element (0 is missing).
+        assert!(std::panic::catch_unwind(|| {
+            commutative_monoid(TEST_ITEMS_NONZERO, &u32::wrapping_add, 1); // Note that 1 is an arbitrary identity element in TEST_ITEMS_NONZERO since it doesn't have an identity element 0.
+        })
+        .is_err());
+
+        // Test that (Z, ^) is not a commutative monoid.
+        assert!(std::panic::catch_unwind(|| {
+            commutative_monoid(TEST_ITEMS, &u32::wrapping_pow, 3);
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn test_semigroup() {
+        // Test that N := {1, 2, . . .} together with addition is a semigroup.
+        semigroup(TEST_ITEMS_NONZERO, &u32::wrapping_add);
+        // Test that set of all natural numbers N = {0, 1, 2, ...} is a semigroup under addition.
+        semigroup(TEST_ITEMS, &u32::wrapping_add);
+        // Test that set of all natural numbers N = {0, 1, 2, ...} is a semigroup under multiplication.
+        semigroup(TEST_ITEMS, &u32::wrapping_mul);
+        // Test that ({true, false}, ∧) is a semigroup.
+        semigroup(TEST_BOOLS, &|a, b| a & b); // logical AND
+                                              // Test that matrix multiplication is a semigroup.
+        semigroup(
+            &[[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]],
+            &|a, b| {
+                [
+                    [
+                        a[0][0] * b[0][0] + a[0][1] * b[1][0],
+                        a[0][0] * b[0][1] + a[0][1] * b[1][1],
+                    ],
+                    [
+                        a[1][0] * b[0][0] + a[1][1] * b[1][0],
+                        a[1][0] * b[0][1] + a[1][1] * b[1][1],
+                    ],
+                ]
+            },
+        );
+        // Test that set of all natural numbers N = {0, 1, 2, ...} is not a semigroup under exponentiation.
+        assert!(std::panic::catch_unwind(|| {
+            semigroup(TEST_ITEMS, &u32::wrapping_pow);
         })
         .is_err());
     }
@@ -621,7 +783,6 @@ mod test {
                         new_set.insert(format!("{a}{b}"));
                     }
                 }
-
                 new_set
             },
             HashSet::from([]),
