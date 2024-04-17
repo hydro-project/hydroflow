@@ -381,7 +381,7 @@ mod test {
             0u32.wrapping_add(x)
         });
         assert!(std::panic::catch_unwind(|| {
-            right_distributes(TEST_ITEMS, u32::wrapping_div, u32::wrapping_mul);
+            right_distributes(TEST_ITEMS_NONZERO, u32::wrapping_div, u32::wrapping_mul);
         })
         .is_err());
     }
@@ -593,6 +593,69 @@ mod test {
         // Test that (Z, *) do not form an abelian group.
         assert!(std::panic::catch_unwind(|| {
             abelian_group(TEST_ITEMS, &u32::wrapping_mul, 1, &|x| 1u32.wrapping_div(x));
+        })
+        .is_err());
+        // Test that matrix multiplication is not an abelian group.
+        assert!(std::panic::catch_unwind(|| {
+            abelian_group(
+                &[[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]],
+                &|a, b| {
+                    [
+                        [
+                            a[0][0] * b[0][0] + a[0][1] * b[1][0],
+                            a[0][0] * b[0][1] + a[0][1] * b[1][1],
+                        ],
+                        [
+                            a[1][0] * b[0][0] + a[1][1] * b[1][0],
+                            a[1][0] * b[0][1] + a[1][1] * b[1][1],
+                        ],
+                    ]
+                },
+                [[1, 0], [0, 1]],
+                &|a| {
+                    [
+                        [
+                            -a[0][0] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
+                            -a[0][1] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
+                        ],
+                        [
+                            -a[1][0] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
+                            -a[1][1] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
+                        ],
+                    ]
+                },
+            )
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn test_monoid() {
+        // Test that N = {0, 1, 2, . . .} is a monoid with respect to addition
+        monoid(TEST_ITEMS, &u32::wrapping_add, 0);
+        // Test that N+ = N − {0} and N are both monoids with respect to multiplication
+        monoid(TEST_ITEMS_NONZERO, &u32::wrapping_mul, 1);
+        monoid(TEST_ITEMS, &u32::wrapping_mul, 1);
+        // Test that the set of nxn matrix with matrix multiplication is a monoid.
+        monoid(
+            &[[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]],
+            &|a, b| {
+                [
+                    [
+                        a[0][0] * b[0][0] + a[0][1] * b[1][0],
+                        a[0][0] * b[0][1] + a[0][1] * b[1][1],
+                    ],
+                    [
+                        a[1][0] * b[0][0] + a[1][1] * b[1][0],
+                        a[1][0] * b[0][1] + a[1][1] * b[1][1],
+                    ],
+                ]
+            },
+            [[1, 0], [0, 1]],
+        );
+        // Test that N+ = N − {0} is not a monoid with respect to addition since it doesn't have an identity element (0 is missing).
+        assert!(std::panic::catch_unwind(|| {
+            monoid(TEST_ITEMS_NONZERO, &u32::wrapping_add, 1);
         })
         .is_err());
     }
