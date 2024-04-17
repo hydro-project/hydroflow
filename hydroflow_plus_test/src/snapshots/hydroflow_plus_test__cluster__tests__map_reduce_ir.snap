@@ -6,7 +6,7 @@ expression: built.ir()
     ForEach {
         f: { use crate :: __staged :: cluster :: * ; | (string , count) | println ! ("{}: {}" , string , count) },
         input: ReduceKeyed {
-            f: { use crate :: __staged :: cluster :: * ; | total , count | * total += count },
+            f: { use crate :: __staged :: cluster :: * ; | count : & mut i32 , value : i32 | * count += value },
             input: Persist(
                 Map {
                     f: { use hydroflow_plus :: __staged :: stream :: * ; | (_ , b) | b },
@@ -38,7 +38,7 @@ expression: built.ir()
                             f: { use crate :: __staged :: cluster :: * ; | (string , count) | println ! ("partition count: {} - {}" , string , count) },
                             input: FoldKeyed {
                                 init: { use crate :: __staged :: cluster :: * ; | | 0 },
-                                acc: { use crate :: __staged :: cluster :: * ; | count , _ | * count += 1 },
+                                acc: { use crate :: __staged :: cluster :: * ; | count : & mut i32 , _ | * count += 1 },
                                 input: Map {
                                     f: { use crate :: __staged :: cluster :: * ; | string | (string , ()) },
                                     input: Network {

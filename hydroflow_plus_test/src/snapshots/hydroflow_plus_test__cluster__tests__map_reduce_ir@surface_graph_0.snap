@@ -11,7 +11,7 @@ expression: ir.surface_syntax_string()
 7v1 = source_stream ({ use hydroflow_plus_cli_integration :: __staged :: runtime :: * ; let port = "port_1" ; let self_cli = FAKE ; { self_cli . port (port) . connect_local_blocking :: < ConnectedTagged < ConnectedDirect > > () . into_source () } });
 8v1 = map (| res | { let (id , b) = res . unwrap () ; (id , hydroflow_plus :: runtime_support :: bincode :: deserialize :: < (std :: string :: String , i32) > (& b) . unwrap ()) });
 9v1 = map ({ use hydroflow_plus :: __staged :: stream :: * ; | (_ , b) | b });
-10v1 = reduce_keyed :: < 'static > ({ use crate :: __staged :: cluster :: * ; | total , count | * total += count });
+10v1 = reduce_keyed :: < 'static > ({ use crate :: __staged :: cluster :: * ; | count : & mut i32 , value : i32 | * count += value });
 11v1 = for_each ({ use crate :: __staged :: cluster :: * ; | (string , count) | println ! ("{}: {}" , string , count) });
 
 1v1 -> 2v1;
@@ -23,3 +23,4 @@ expression: ir.surface_syntax_string()
 8v1 -> 9v1;
 9v1 -> 10v1;
 10v1 -> 11v1;
+
