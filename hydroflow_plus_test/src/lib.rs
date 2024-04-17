@@ -17,6 +17,11 @@ pub(crate) mod first_ten;
 pub mod first_ten;
 
 #[cfg(stageleft_macro)]
+pub(crate) mod futures;
+#[cfg(not(stageleft_macro))]
+pub mod futures;
+
+#[cfg(stageleft_macro)]
 pub(crate) mod negation;
 #[cfg(not(stageleft_macro))]
 pub mod negation;
