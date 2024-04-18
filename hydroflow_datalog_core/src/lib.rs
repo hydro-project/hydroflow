@@ -456,8 +456,8 @@ fn compute_join_plan<'a>(sources: &'a [Atom], persisted_rules: &HashSet<String>)
     let mut plan: JoinPlan = sources
         .iter()
         .filter_map(|x| match x {
-            Atom::Relation(negated, e) => {
-                if negated.is_none() && !MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
+            Atom::PosRelation(e) => {
+                if !MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
                     Some(JoinPlan::Source(e, persisted_rules.contains(&e.name.name)))
                 } else {
                     None
@@ -471,12 +471,8 @@ fn compute_join_plan<'a>(sources: &'a [Atom], persisted_rules: &HashSet<String>)
     plan = sources
         .iter()
         .filter_map(|x| match x {
-            Atom::Relation(negated, e) => {
-                if negated.is_some() {
-                    Some(JoinPlan::Source(e, persisted_rules.contains(&e.name.name)))
-                } else {
-                    None
-                }
+            Atom::NegRelation(_, e) => {
+                Some(JoinPlan::Source(e, persisted_rules.contains(&e.name.name)))
             }
             _ => None,
         })
@@ -495,17 +491,14 @@ fn compute_join_plan<'a>(sources: &'a [Atom], persisted_rules: &HashSet<String>)
     }
 
     plan = sources.iter().fold(plan, |acc, atom| match atom {
-        Atom::Relation(negated, e) => {
+        Atom::PosRelation(e) => {
             if MAGIC_RELATIONS.contains(&e.name.name.as_str()) {
                 match e.name.name.as_str() {
-                    "less_than" => {
-                        assert!(negated.is_none());
-                        JoinPlan::MagicNatLt(
-                            Box::new(acc),
-                            e.fields[0].value.clone(),
-                            e.fields[1].value.clone(),
-                        )
-                    }
+                    "less_than" => JoinPlan::MagicNatLt(
+                        Box::new(acc),
+                        e.fields[0].value.clone(),
+                        e.fields[1].value.clone(),
+                    ),
                     o => panic!("Unknown magic relation {}", o),
                 }
             } else {
@@ -563,7 +556,6 @@ fn gen_target_expr(
 ) -> syn::Expr {
     match expr {
         TargetExpr::Expr(expr) => gen_value_expr(expr, lookup_ident, get_span),
-        TargetExpr::Splat(_, ident) => lookup_ident(ident),
         TargetExpr::Aggregation(Aggregation::Count(_)) => parse_quote!(()),
         TargetExpr::Aggregation(Aggregation::CountUnique(_, _, keys, _))
         | TargetExpr::Aggregation(Aggregation::CollectVec(_, _, keys, _)) => {
@@ -614,7 +606,6 @@ fn apply_aggregations(
 
     let mut copy_group_key_lookups: Vec<syn::Expr> = vec![];
     let mut after_group_lookups: Vec<syn::Expr> = vec![];
-    let mut splat_indices = vec![];
     let mut group_key_idx = 0;
     let mut agg_idx = 0;
 
@@ -670,18 +661,6 @@ fn apply_aggregations(
                         .push(parse_quote_spanned!(get_span(field.span)=> g.#idx));
                     group_key_idx += 1;
                 }
-                TargetExpr::Splat(_, _) => {
-                    fold_keyed_exprs.push(expr);
-
-                    let idx = syn::Index::from(group_key_idx);
-                    after_group_lookups.push(parse_quote_spanned!(get_span(field.span)=> g.#idx));
-                    copy_group_key_lookups
-                        .push(parse_quote_spanned!(get_span(field.span)=> g.#idx));
-
-                    splat_indices.push(group_key_idx);
-
-                    group_key_idx += 1;
-                }
                 TargetExpr::Aggregation(a) => {
                     aggregations.push(a.clone());
                     agg_exprs.push(expr);
@@ -729,19 +708,7 @@ fn apply_aggregations(
         parse_quote!(map(|(g, a): (#fold_keyed_input_type, _)| (#(#after_group_lookups, )*)))
     };
 
-    let mut pre_fold_keyed_map: Pipeline = parse_quote!(map(|row: #flattened_tuple_type| ((#(#fold_keyed_exprs, )*), (#(#agg_exprs, )*))));
-    for idx in splat_indices {
-        let mut lookups: Vec<syn::Expr> = copy_group_key_lookups
-            .iter()
-            .cloned()
-            .map(|e| parse_quote!(#e.clone()))
-            .collect::<Vec<_>>();
-        lookups[idx] = parse_quote!(__splatted);
-
-        let syn_idx = syn::Index::from(idx);
-
-        pre_fold_keyed_map = parse_quote!(#pre_fold_keyed_map -> flat_map(|(g, a): (#fold_keyed_input_type, _)| g.#syn_idx.into_iter().map(move |__splatted| ((#(#lookups, )*), a.clone()))) -> unique::<'tick>());
-    }
+    let pre_fold_keyed_map: Pipeline = parse_quote!(map(|row: #flattened_tuple_type| ((#(#fold_keyed_exprs, )*), (#(#agg_exprs, )*))));
 
     if agg_exprs.is_empty() {
         if out_expanded.persisted && !consumer_is_persist {
@@ -1250,14 +1217,14 @@ mod tests {
     }
 
     #[test]
-    fn test_splat() {
+    fn test_flatten() {
         test_snapshots!(
             r#"
             .input ints1 `source_stream(ints1)`
             
             .output result `for_each(|v| result.send(v).unwrap())`
 
-            result(a, *b) :- ints1(a, b)
+            result(a, b) :- ints1(a, *b)
             "#
         );
     }
