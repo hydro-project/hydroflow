@@ -74,17 +74,24 @@ pub mod datalog {
 
     #[derive(Debug, Clone)]
     pub enum Atom {
-        Relation(
-            #[rust_sitter::leaf(text = "!")] Option<()>,
+        NegRelation(
+            #[rust_sitter::leaf(text = "!")] (),
             Spanned<InputRelationExpr>,
         ),
+        PosRelation(Spanned<InputRelationExpr>),
         Predicate(Spanned<BoolExpr>),
     }
 
     #[derive(Debug, Clone)]
-    pub enum IdentOrUnderscore {
-        Ident(Spanned<Ident>),
+    pub enum RhsField {
+        Extract(ExtractExpr),
         Underscore(#[rust_sitter::leaf(text = "_")] Spanned<()>),
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum ExtractExpr {
+        Ident(Spanned<Ident>),
+        Flatten(#[rust_sitter::leaf(text = "*")] (), Box<ExtractExpr>),
     }
 
     #[derive(Debug, Clone)]
@@ -98,7 +105,7 @@ pub mod datalog {
             #[rust_sitter::leaf(text = ",")]
             ()
         )]
-        pub fields: Vec<Spanned<IdentOrUnderscore>>,
+        pub fields: Vec<Spanned<RhsField>>,
 
         #[rust_sitter::leaf(text = ")")]
         _r_paren: (),
@@ -135,7 +142,6 @@ pub mod datalog {
     #[derive(Debug, Clone)]
     pub enum TargetExpr {
         Expr(IntExpr),
-        Splat(#[rust_sitter::leaf(text = "*")] (), Spanned<Ident>),
         Aggregation(Aggregation),
         Index(
             #[rust_sitter::leaf(text = "index")] (),
@@ -148,7 +154,6 @@ pub mod datalog {
         pub fn idents(&self) -> Vec<&Ident> {
             match self {
                 TargetExpr::Expr(e) => e.idents(),
-                TargetExpr::Splat(_, i) => vec![&i.value],
                 TargetExpr::Aggregation(Aggregation::Count(_)) => vec![],
                 TargetExpr::Aggregation(
                     Aggregation::CountUnique(_, _, idents, _)

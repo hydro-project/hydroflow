@@ -1162,7 +1162,7 @@ fn test_collect_vec() {
 }
 
 #[multiplatform_test]
-fn test_splat() {
+fn test_flat() {
     let (ints1_send, ints1) = hydroflow::util::unbounded_channel::<(i64, Vec<i64>)>();
     let (result, mut result_recv) = hydroflow::util::unbounded_channel::<(i64, i64)>();
 
@@ -1172,7 +1172,7 @@ fn test_splat() {
             
         .output result `for_each(|v| result.send(v).unwrap())`
 
-        result(a, *b) :- ints1(a, b)
+        result(a, b) :- ints1(a, *b)
         "#
     );
 
