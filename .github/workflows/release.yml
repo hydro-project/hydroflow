@@ -90,6 +90,7 @@ jobs:
           hydro_deploy hydro_cli hydroflow_cli_integration
           hydroflow_plus_cli_integration
           stageleft stageleft_macro stageleft_tool
+          multiplatform_test
         env:
           # Make sure to set this so the `gh` CLI works using our token.
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
