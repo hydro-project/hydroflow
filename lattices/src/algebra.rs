@@ -9,7 +9,7 @@ pub fn monoid<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     zero: S, // zero is the identity element of f
-)-> Result<(), &'static str> {
+) -> Result<(), &'static str> {
     semigroup(items, f)?;
     identity(items, f, zero)?;
     Ok(())
@@ -20,7 +20,7 @@ pub fn monoid<S: Debug + PartialEq + Clone, const N: usize>(
 pub fn semigroup<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
-)-> Result<(), &'static str> {
+) -> Result<(), &'static str> {
     associativity(items, f)?;
     Ok(())
 }
@@ -36,7 +36,7 @@ pub fn semiring<S: Debug + PartialEq + Clone, const N: usize>(
     g: &impl Fn(S, S) -> S,
     zero: S, // zero is the identity element of f
     one: S,  // one is the identity element of g
-)-> Result<(), &'static str> {
+) -> Result<(), &'static str> {
     commutative_monoid(items, f, zero.clone())?;
     monoid(items, g, one.clone())?;
 
@@ -56,7 +56,7 @@ pub fn ring<S: Debug + PartialEq + Clone, const N: usize>(
     zero: S, // zero is the identity element of f
     one: S,  // one is the identity element of g
     b: &impl Fn(S) -> S,
-)-> Result<(), &'static str> {
+) -> Result<(), &'static str> {
     semiring(items, f, g, zero.clone(), one)?;
     inverse(items, f, zero, b)?;
     Ok(())
@@ -102,7 +102,7 @@ pub fn commutative_ring<S: Debug + PartialEq + Clone, const N: usize>(
     zero: S,                // zero is the identity element of f
     one: S,                 // one is the identity element of g
     b: &impl Fn(S) -> S,
-)-> Result<(), &'static str> {
+) -> Result<(), &'static str> {
     semiring(items, f, g, zero.clone(), one)?;
     inverse(items, f, zero, b)?;
     commutativity(items, g)?;
@@ -115,22 +115,14 @@ pub fn field<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     g: &impl Fn(S, S) -> S,
-    zero: S, // zero is the identity element of f
-    one: S,  // one is the identity element of g
-    b: &impl Fn(S) -> S,
-)-> Result<(), &'static str> {
-    ring(items, f, g, zero.clone(), one.clone(), b)?;
-    nonzero_inverse(items, f, one, zero, b)?;
-    Ok(())
-}
-
     zero: S,                     // zero is the identity element of f
     one: S,                      // one is the identity element of g
     inverse_f: &impl Fn(S) -> S, /* inverse_f is the function that given x computes x' such that f(x,x') = zero. */
     inverse_g: &impl Fn(S) -> S, /* //inverse_g is the function that given x computes x' such that g(x,x') = one. */
-) {
-    commutative_ring(items, f, g, zero.clone(), one.clone(), inverse_f);
-    nonzero_inverse(items, g, one, zero, inverse_g);
+) -> Result<(), &'static str> {
+    commutative_ring(items, f, g, zero.clone(), one.clone(), inverse_f)?;
+    nonzero_inverse(items, g, one, zero, inverse_g)?;
+    Ok(())
 }
 
 /// Defines a commutative monoid structure.
@@ -139,7 +131,7 @@ pub fn commutative_monoid<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     zero: S,
-) -> Result<(), &'static str>{
+) -> Result<(), &'static str> {
     monoid(items, f, zero)?;
     commutativity(items, f)?;
     Ok(())
@@ -195,7 +187,9 @@ pub fn left_distributes<S: Debug + PartialEq + Clone, const N: usize>(
     g: impl Fn(S, S) -> S,
 ) -> Result<(), &'static str> {
     for [a, b, c] in cartesian_power(items) {
-        if g(a.clone(), f(b.clone(), c.clone())) != f(g(a.clone(), b.clone()), g(a.clone(), c.clone())) {
+        if g(a.clone(), f(b.clone(), c.clone()))
+            != f(g(a.clone(), b.clone()), g(a.clone(), c.clone()))
+        {
             return Err("Left distributive property check failed.");
         }
     }
@@ -210,7 +204,9 @@ pub fn right_distributes<S: Debug + PartialEq + Clone, const N: usize>(
     g: impl Fn(S, S) -> S,
 ) -> Result<(), &'static str> {
     for [a, b, c] in cartesian_power(items) {
-        if g(f(b.clone(), c.clone()), a.clone()) != f(g(b.clone(), a.clone()), g(c.clone(), a.clone())) {
+        if g(f(b.clone(), c.clone()), a.clone())
+            != f(g(b.clone(), a.clone()), g(c.clone(), a.clone()))
+        {
             return Err("Right distributive property check failed.");
         }
     }
@@ -245,13 +241,13 @@ pub fn inverse<S: Debug + PartialEq + Clone, const N: usize>(
     f: impl Fn(S, S) -> S,
     e: S,               // e is the identity element of f
     b: impl Fn(S) -> S, /* b is the function to compute the inverse element of an element with respect to f */
-) -> Result<(), &'static str>{
+) -> Result<(), &'static str> {
     // ∃b: ab = e, ba = e
     for a in items {
-        if(f(a.clone(), b(a.clone())) != e) {
+        if (f(a.clone(), b(a.clone())) != e) {
             return Err("Inverse check failed.");
         }
-        if(f(b(a.clone()), a.clone()) != e){
+        if (f(b(a.clone()), a.clone()) != e) {
             return Err("Inverse check failed.");
         }
     }
@@ -287,13 +283,13 @@ pub fn identity<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
     e: S,
-)-> Result<(), &'static str> {
+) -> Result<(), &'static str> {
     // ea = a, ae = a
     for a in items {
-        if(f(e.clone(), a.clone()) != a.clone()) {
+        if (f(e.clone(), a.clone()) != a.clone()) {
             return Err("Left Identity check failed.");
         }
-        if(f(a.clone(), e.clone()) != a.clone()){
+        if (f(a.clone(), e.clone()) != a.clone()) {
             return Err("Right Identity check failed.");
         }
     }
@@ -305,13 +301,13 @@ pub fn identity<S: Debug + PartialEq + Clone, const N: usize>(
 pub fn associativity<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
-)-> Result<(), &'static str>{
+) -> Result<(), &'static str> {
     for [a, b, c] in cartesian_power(items) {
-        if(
+        if (
             f(a.clone(), f(b.clone(), c.clone())) != // f(a, f(b,c)) ie a + (b + c)
-            f(f(a.clone(), b.clone()), c.clone())  // f(f(a,b),c) ie (a + b) + c
-        )
-        {
+            f(f(a.clone(), b.clone()), c.clone())
+            // f(f(a,b),c) ie (a + b) + c
+        ) {
             return Err("Associativity check failed.");
         }
     }
@@ -323,9 +319,10 @@ pub fn associativity<S: Debug + PartialEq + Clone, const N: usize>(
 pub fn commutativity<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
-)-> Result<(), &'static str> {
+) -> Result<(), &'static str> {
     for [x, y] in cartesian_power(items) {
-        if(f(x.clone(), y.clone()) != f(y.clone(), x.clone())){ // a + b = b + a
+        if (f(x.clone(), y.clone()) != f(y.clone(), x.clone())) {
+            // a + b = b + a
             return Err("Commutativity check failed.");
         }
     }
@@ -337,9 +334,9 @@ pub fn commutativity<S: Debug + PartialEq + Clone, const N: usize>(
 pub fn idempotency<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
-)-> Result<(), &'static str> {
+) -> Result<(), &'static str> {
     for x in items {
-        if(f(x.clone(), x.clone()) != x.clone()){
+        if (f(x.clone(), x.clone()) != x.clone()) {
             return Err("Idempotency check failed.");
         }
     }
@@ -446,7 +443,7 @@ mod test {
         // Test that max() is commutative and division is non-commutative
         assert!(commutativity(TEST_ITEMS, u32::max).is_ok());
         assert!(commutativity(TEST_ITEMS_NONZERO, u32::wrapping_div).is_err());
-        //Test items non-zero to avoid a divide by zero exception
+        // Test items non-zero to avoid a divide by zero exception
     }
 
     #[test]
@@ -816,16 +813,17 @@ mod test {
             0,
             1,
             &|x| 0u32.wrapping_sub(x),
-        ).is_ok());
-        assert!(
-            ring(
-                TEST_ITEMS,
-                &u32::wrapping_add,
-                &u32::wrapping_mul,
-                0,
-                5,
-                &|x| 0u32.wrapping_sub(x),
-            ).is_err());
+        )
+        .is_ok());
+        assert!(ring(
+            TEST_ITEMS,
+            &u32::wrapping_add,
+            &u32::wrapping_mul,
+            0,
+            5,
+            &|x| 0u32.wrapping_sub(x),
+        )
+        .is_err());
     }
 
     #[test]
@@ -843,7 +841,8 @@ mod test {
             &|x, y| x + y,
             f64::INFINITY,
             0.0,
-        ).is_ok());
+        )
+        .is_ok());
 
         // Test max plus semiring. + is max and x is plus.
         assert!(semiring(
@@ -852,7 +851,8 @@ mod test {
             &|x, y| x + y,
             f64::NEG_INFINITY,
             0.0,
-        ).is_ok());
+        )
+        .is_ok());
 
         // Test sets of strings semiring with union as + and concatenation as x
         assert!(semiring(
@@ -878,6 +878,7 @@ mod test {
             },
             HashSet::from([]),
             HashSet::from(["".to_owned()]),
-        ).is_ok());
+        )
+        .is_ok());
     }
 }
