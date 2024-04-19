@@ -128,21 +128,21 @@ impl FlatGraphBuilder {
                     Entry::Occupied(occupied_entry) => {
                         let prev_conflict = occupied_entry.key();
                         self.diagnostics.push(Diagnostic::spanned(
-                            stmt_span,
-                            Level::Error,
-                            format!(
-                                "Name assignment to `{}` conflicts with existing assignment: {} (1/2)",
-                                prev_conflict,
-                                PrettySpan(prev_conflict.span())
-                            ),
-                        ));
-                        self.diagnostics.push(Diagnostic::spanned(
                             prev_conflict.span(),
                             Level::Error,
                             format!(
-                                "Existing assignment to `{}` conflicts with later assignment: {} (2/2)",
+                                "Existing assignment to `{}` conflicts with later assignment: {} (1/2)",
                                 prev_conflict,
                                 PrettySpan(stmt_span),
+                            ),
+                        ));
+                        self.diagnostics.push(Diagnostic::spanned(
+                            stmt_span,
+                            Level::Error,
+                            format!(
+                                "Name assignment to `{}` conflicts with existing assignment: {} (2/2)",
+                                prev_conflict,
+                                PrettySpan(prev_conflict.span())
                             ),
                         ));
                     }
