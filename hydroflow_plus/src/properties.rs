@@ -82,7 +82,7 @@ mod tests {
 
         assert!(!db.is_tagged_commutative(&(q!(|a: &mut i32, b: i32| *a += b).splice())));
 
-        db.add_commutative_tag(q!(|a: &mut i32, b: i32| *a += b));
+        let _ = db.add_commutative_tag(q!(|a: &mut i32, b: i32| *a += b));
 
         assert!(db.is_tagged_commutative(&(q!(|a: &mut i32, b: i32| *a += b).splice())));
     }
