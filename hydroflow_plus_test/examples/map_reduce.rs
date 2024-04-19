@@ -11,7 +11,7 @@ type HostCreator = Box<dyn Fn(&mut Deployment) -> Arc<RwLock<dyn Host>>>;
 // run with no args for localhost, with `gcp <GCP PROJECT>` for GCP
 #[tokio::main]
 async fn main() {
-    use hydroflow_plus::properties::properties_optimize; //Import the algebraic optimization rules
+    use hydroflow_plus::properties::properties_optimize; // Import the algebraic optimization rules
     let deployment = RefCell::new(Deployment::new());
     let host_arg = std::env::args().nth(1).unwrap_or_default();
 

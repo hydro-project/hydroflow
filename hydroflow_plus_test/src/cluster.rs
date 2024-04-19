@@ -3,8 +3,8 @@ use std::time::Duration;
 
 use futures::channel::mpsc::UnboundedSender;
 use hydroflow_plus::profiler::profiling;
-use hydroflow_plus::*;
 use hydroflow_plus::properties::properties_optimize;
+use hydroflow_plus::*;
 use stageleft::*;
 
 pub fn simple_cluster<'a, D: Deploy<'a, ClusterId = u32>>(
@@ -60,7 +60,7 @@ pub fn map_reduce<'a, D: Deploy<'a, ClusterId = u32>>(
     let words_partitioned = words
         .enumerate()
         .map(q!(|(i, w)| ((i % all_ids_vec.len()) as u32, w)));
-    
+
     let counter_func = q!(|count: &mut i32, _| *count += 1);
     let _ = property_database.add_commutative_tag(counter_func);
 
@@ -334,7 +334,11 @@ mod tests {
 
         insta::assert_debug_snapshot!(built.ir());
 
-        for (id, ir) in built.optimize_with(|ir| properties_optimize(ir, &database)).optimize_default().hydroflow_ir() {
+        for (id, ir) in built
+            .optimize_with(|ir| properties_optimize(ir, &database))
+            .optimize_default()
+            .hydroflow_ir()
+        {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(ir.surface_syntax_string());
             });
