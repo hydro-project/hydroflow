@@ -70,10 +70,11 @@ pub fn integral_domain<S: Debug + PartialEq + Clone, const N: usize>(
     g: &impl Fn(S, S) -> S,
     zero: S,             // zero is the identity element of f
     one: S,              // one is the identity element of g
-    b: &impl Fn(S) -> S, /* b is the function to compute the inverse element of an element with respect to f */
-) {
-    commutative_ring(items, f, g, zero.clone(), one, b);
-    no_nonzero_zero_divisors(items, g, zero);
+    inverse_f: &impl Fn(S) -> S, // the function to compute the inverse element of an element with respect to f
+) -> Result<(), &'static str> {
+    commutative_ring(items, f, g, zero.clone(), one, inverse_f)?;
+    no_nonzero_zero_divisors(items, g, zero)?;
+    Ok(())
 }
 
 /// Defines a no-nonzero-zero-divisors property.
@@ -82,15 +83,22 @@ pub fn no_nonzero_zero_divisors<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     zero: S,
-) {
+) -> Result<(), &'static str>  {
     for a in items {
         for b in items {
             if *a != zero && *b != zero {
-                assert_ne!(f(a.clone(), b.clone()), zero);
-                assert_ne!(f(b.clone(), a.clone()), zero);
+                if(f(a.clone(), b.clone()) != zero)
+                {
+                    return Err("No nonzero zero divisors check failed.");
+                };
+                if(f(b.clone(), a.clone()) != zero)
+                {
+                    return Err("No nonzero zero divisors check failed.");
+                };
             }
         }
     }
+    Ok(())
 }
 
 /// Defines a commutative ring structure.
