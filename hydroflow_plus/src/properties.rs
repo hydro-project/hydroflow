@@ -14,6 +14,7 @@ pub struct PropertyDatabase {
     commutative: HashSet<syn::Expr>,
 }
 
+#[allow(dead_code)]
 // allows us to convert the hydroflow datatype for folds to a binary operation for the algebra property tests
 fn convert_hf_to_binary<I, A: Default, F: Fn(&mut A, I)>(f: F) -> impl Fn(I, I) -> A {
     move |a, b| {
