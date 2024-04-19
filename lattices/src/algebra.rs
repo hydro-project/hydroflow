@@ -310,7 +310,8 @@ pub fn associativity<S: Debug + PartialEq + Clone, const N: usize>(
 ) -> Result<(), &'static str> {
     for [a, b, c] in cartesian_power(items) {
         if f(a.clone(), f(b.clone(), c.clone())) != // f(a, f(b,c)) ie a + (b + c)
-            f(f(a.clone(), b.clone()), c.clone()) // f(f(a,b),c) ie (a + b) + c
+            f(f(a.clone(), b.clone()), c.clone())
+        // f(f(a,b),c) ie (a + b) + c
         {
             return Err("Associativity check failed.");
         }

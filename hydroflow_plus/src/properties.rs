@@ -72,8 +72,8 @@ pub fn properties_optimize(ir: Vec<HfPlusLeaf>, db: &PropertyDatabase) -> Vec<Hf
 
 #[cfg(test)]
 mod tests {
-    use crate::{FlowBuilder, SingleProcessGraph};
     use super::*;
+    use crate::{FlowBuilder, SingleProcessGraph};
 
     #[test]
     fn test_property_database() {
