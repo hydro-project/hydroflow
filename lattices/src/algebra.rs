@@ -9,9 +9,10 @@ pub fn monoid<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     zero: S, // zero is the identity element of f
-) {
-    semigroup(items, f);
-    identity(items, f, zero);
+)-> Result<(), &'static str> {
+    semigroup(items, f)?;
+    identity(items, f, zero)?;
+    Ok(())
 }
 
 /// Defines a semigroup structure.
@@ -19,8 +20,9 @@ pub fn monoid<S: Debug + PartialEq + Clone, const N: usize>(
 pub fn semigroup<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
-) {
-    associativity(items, f);
+)-> Result<(), &'static str> {
+    associativity(items, f)?;
+    Ok(())
 }
 
 /// Defines a semiring structure.
@@ -34,13 +36,15 @@ pub fn semiring<S: Debug + PartialEq + Clone, const N: usize>(
     g: &impl Fn(S, S) -> S,
     zero: S, // zero is the identity element of f
     one: S,  // one is the identity element of g
-) {
-    commutative_monoid(items, f, zero.clone());
-    monoid(items, g, one.clone());
+)-> Result<(), &'static str> {
+    commutative_monoid(items, f, zero.clone())?;
+    monoid(items, g, one.clone())?;
 
-    absorbing_element(items, g, zero);
+    absorbing_element(items, g, zero)?;
 
-    distributive(items, f, g);
+    distributive(items, f, g)?;
+
+    Ok(())
 }
 
 /// Defines a ring structure.
@@ -52,9 +56,10 @@ pub fn ring<S: Debug + PartialEq + Clone, const N: usize>(
     zero: S, // zero is the identity element of f
     one: S,  // one is the identity element of g
     b: &impl Fn(S) -> S,
-) {
-    semiring(items, f, g, zero.clone(), one);
-    inverse(items, f, zero, b);
+)-> Result<(), &'static str> {
+    semiring(items, f, g, zero.clone(), one)?;
+    inverse(items, f, zero, b)?;
+    Ok(())
 }
 
 /// Defines an integral domain structure.
@@ -97,10 +102,11 @@ pub fn commutative_ring<S: Debug + PartialEq + Clone, const N: usize>(
     zero: S,                // zero is the identity element of f
     one: S,                 // one is the identity element of g
     b: &impl Fn(S) -> S,
-) {
-    semiring(items, f, g, zero.clone(), one);
-    inverse(items, f, zero, b);
-    commutativity(items, g);
+)-> Result<(), &'static str> {
+    semiring(items, f, g, zero.clone(), one)?;
+    inverse(items, f, zero, b)?;
+    commutativity(items, g)?;
+    Ok(())
 }
 
 /// Defines a field structure.
@@ -109,6 +115,15 @@ pub fn field<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     g: &impl Fn(S, S) -> S,
+    zero: S, // zero is the identity element of f
+    one: S,  // one is the identity element of g
+    b: &impl Fn(S) -> S,
+)-> Result<(), &'static str> {
+    ring(items, f, g, zero.clone(), one.clone(), b)?;
+    nonzero_inverse(items, f, one, zero, b)?;
+    Ok(())
+}
+
     zero: S,                     // zero is the identity element of f
     one: S,                      // one is the identity element of g
     inverse_f: &impl Fn(S) -> S, /* inverse_f is the function that given x computes x' such that f(x,x') = zero. */
@@ -124,9 +139,10 @@ pub fn commutative_monoid<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     zero: S,
-) {
-    monoid(items, f, zero);
-    commutativity(items, f);
+) -> Result<(), &'static str>{
+    monoid(items, f, zero)?;
+    commutativity(items, f)?;
+    Ok(())
 }
 
 /// Defines a group structure.
@@ -138,9 +154,10 @@ pub fn group<S: Debug + PartialEq + Clone, const N: usize>(
     f: &impl Fn(S, S) -> S,
     zero: S,             // zero is the identity element of f
     b: &impl Fn(S) -> S, /* b is the function to compute the inverse element of an element with respect to f */
-) {
-    monoid(items, f, zero.clone());
-    inverse(items, f, zero, b);
+) -> Result<(), &'static str> {
+    monoid(items, f, zero.clone())?;
+    inverse(items, f, zero, b)?;
+    Ok(())
 }
 
 /// Defines an abelian group structure.
@@ -150,9 +167,10 @@ pub fn abelian_group<S: Debug + PartialEq + Clone, const N: usize>(
     f: &impl Fn(S, S) -> S,
     zero: S,
     b: &impl Fn(S) -> S, /* b is the function to compute the inverse element of an element with respect to f */
-) {
-    group(items, f, zero, b);
-    commutativity(items, f);
+) -> Result<(), &'static str> {
+    group(items, f, zero, b)?;
+    commutativity(items, f)?;
+    Ok(())
 }
 
 // Algebraic Properties
@@ -163,9 +181,10 @@ pub fn distributive<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     g: &impl Fn(S, S) -> S,
-) {
-    left_distributes(items, f, g);
-    right_distributes(items, f, g);
+) -> Result<(), &'static str> {
+    left_distributes(items, f, g)?;
+    right_distributes(items, f, g)?;
+    Ok(())
 }
 
 /// Defines the left distributive property
@@ -174,13 +193,13 @@ pub fn left_distributes<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
     g: impl Fn(S, S) -> S,
-) {
+) -> Result<(), &'static str> {
     for [a, b, c] in cartesian_power(items) {
-        assert_eq!(
-            g(a.clone(), f(b.clone(), c.clone())),
-            f(g(a.clone(), b.clone()), g(a.clone(), c.clone()))
-        );
+        if g(a.clone(), f(b.clone(), c.clone())) != f(g(a.clone(), b.clone()), g(a.clone(), c.clone())) {
+            return Err("Left distributive property check failed.");
+        }
     }
+    Ok(())
 }
 
 /// Defines the right distributive property.
@@ -189,13 +208,13 @@ pub fn right_distributes<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
     g: impl Fn(S, S) -> S,
-) {
+) -> Result<(), &'static str> {
     for [a, b, c] in cartesian_power(items) {
-        assert_eq!(
-            g(f(b.clone(), c.clone()), a.clone()),
-            f(g(b.clone(), a.clone()), g(c.clone(), a.clone()))
-        );
+        if g(f(b.clone(), c.clone()), a.clone()) != f(g(b.clone(), a.clone()), g(c.clone(), a.clone())) {
+            return Err("Right distributive property check failed.");
+        }
     }
+    Ok(())
 }
 
 /// Defines the absorbing_element property.
@@ -204,14 +223,19 @@ pub fn absorbing_element<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
     z: S, // absorbing element (anything multiplied by z is z e.g. 0 in integers)
-) {
+) -> Result<(), &'static str> {
     for a in items {
         // az = z
-        assert_eq!(f(a.clone(), z.clone()), z.clone());
+        if f(a.clone(), z.clone()) != z.clone() {
+            return Err("Absorbing element property check failed.");
+        }
 
         // za = z
-        assert_eq!(f(z.clone(), a.clone()), z.clone());
+        if f(z.clone(), a.clone()) != z.clone() {
+            return Err("Absorbing element property check failed.");
+        }
     }
+    Ok(())
 }
 
 /// Defines the inverse property.
@@ -221,12 +245,17 @@ pub fn inverse<S: Debug + PartialEq + Clone, const N: usize>(
     f: impl Fn(S, S) -> S,
     e: S,               // e is the identity element of f
     b: impl Fn(S) -> S, /* b is the function to compute the inverse element of an element with respect to f */
-) {
+) -> Result<(), &'static str>{
     // ∃b: ab = e, ba = e
     for a in items {
-        assert_eq!(f(a.clone(), b(a.clone())), e);
-        assert_eq!(f(b(a.clone()), a.clone()), e);
+        if(f(a.clone(), b(a.clone())) != e) {
+            return Err("Inverse check failed.");
+        }
+        if(f(b(a.clone()), a.clone()) != e){
+            return Err("Inverse check failed.");
+        }
     }
+    Ok(())
 }
 
 /// Defines the non_zero inverse property.
@@ -237,14 +266,19 @@ pub fn nonzero_inverse<S: Debug + PartialEq + Clone, const N: usize>(
     e: S,
     zero: S,
     b: impl Fn(S) -> S,
-) {
+) -> Result<(), &'static str> {
     // ∃b: ab = e, ba = e
     for a in items {
         if *a != zero {
-            assert_eq!(f(a.clone(), b(a.clone())), e);
-            assert_eq!(f(b(a.clone()), a.clone()), e);
+            if f(a.clone(), b(a.clone())) != e {
+                return Err("Nonzero inverse check failed.");
+            }
+            if f(b(a.clone()), a.clone()) != e {
+                return Err("Nonzero inverse check failed.");
+            }
         }
     }
+    Ok(())
 }
 
 /// Defines the identity property.
@@ -253,12 +287,17 @@ pub fn identity<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
     e: S,
-) {
+)-> Result<(), &'static str> {
     // ea = a, ae = a
     for a in items {
-        assert_eq!(f(e.clone(), a.clone()), a.clone());
-        assert_eq!(f(a.clone(), e.clone()), a.clone());
+        if(f(e.clone(), a.clone()) != a.clone()) {
+            return Err("Left Identity check failed.");
+        }
+        if(f(a.clone(), e.clone()) != a.clone()){
+            return Err("Right Identity check failed.");
+        }
     }
+    Ok(())
 }
 
 /// Defines the associativity property.
@@ -266,13 +305,17 @@ pub fn identity<S: Debug + PartialEq + Clone, const N: usize>(
 pub fn associativity<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
-) {
+)-> Result<(), &'static str>{
     for [a, b, c] in cartesian_power(items) {
-        assert_eq!(
-            f(a.clone(), f(b.clone(), c.clone())), // f(a, f(b,c)) ie a + (b + c)
+        if(
+            f(a.clone(), f(b.clone(), c.clone())) != // f(a, f(b,c)) ie a + (b + c)
             f(f(a.clone(), b.clone()), c.clone())  // f(f(a,b),c) ie (a + b) + c
-        );
+        )
+        {
+            return Err("Associativity check failed.");
+        }
     }
+    Ok(())
 }
 
 /// Defines the commutativity property.
@@ -280,10 +323,13 @@ pub fn associativity<S: Debug + PartialEq + Clone, const N: usize>(
 pub fn commutativity<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
-) {
+)-> Result<(), &'static str> {
     for [x, y] in cartesian_power(items) {
-        assert_eq!(f(x.clone(), y.clone()), f(y.clone(), x.clone())); // a + b = b + a
+        if(f(x.clone(), y.clone()) != f(y.clone(), x.clone())){ // a + b = b + a
+            return Err("Commutativity check failed.");
+        }
     }
+    Ok(())
 }
 
 /// Defines the idempotency property.
@@ -291,10 +337,13 @@ pub fn commutativity<S: Debug + PartialEq + Clone, const N: usize>(
 pub fn idempotency<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
-) {
+)-> Result<(), &'static str> {
     for x in items {
-        assert_eq!(f(x.clone(), x.clone()), x.clone());
+        if(f(x.clone(), x.clone()) != x.clone()){
+            return Err("Idempotency check failed.");
+        }
     }
+    Ok(())
 }
 
 // Tests
@@ -306,6 +355,7 @@ mod test {
     use crate::algebra::*;
 
     static TEST_ITEMS: &[u32; 14] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+    static TEST_ITEMS_NONZERO: &[u32; 13] = &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
     static TEST_ITEMS_NONZERO: &[u32; 13] = &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
     static TEST_MOD_PRIME_7: &[u32; 7] = &[0, 1, 2, 3, 4, 5, 6];
     static TEST_BOOLS: &[bool; 2] = &[false, true];
@@ -342,11 +392,8 @@ mod test {
     #[test]
     fn test_associativity() {
         // Test that max() is associative and exponentiation isn't
-        associativity(TEST_ITEMS, u32::max);
-        assert!(std::panic::catch_unwind(|| {
-            associativity(TEST_ITEMS, u32::wrapping_pow);
-        })
-        .is_err());
+        assert!(associativity(TEST_ITEMS, u32::max).is_ok());
+        assert!(associativity(TEST_ITEMS, u32::wrapping_pow).is_err());
     }
 
     #[test]
@@ -389,22 +436,17 @@ mod test {
     #[test]
     fn test_idempotency() {
         // Test that max() is idempotent and addition is non-idempotent
-        idempotency(TEST_ITEMS, u32::max);
+        assert!(idempotency(TEST_ITEMS, u32::max).is_ok());
 
-        assert!(std::panic::catch_unwind(|| {
-            idempotency(TEST_ITEMS, u32::wrapping_add);
-        })
-        .is_err());
+        assert!(idempotency(TEST_ITEMS, u32::wrapping_add).is_err());
     }
 
     #[test]
     fn test_commutativity() {
         // Test that max() is commutative and division is non-commutative
-        commutativity(TEST_ITEMS, u32::max);
-        assert!(std::panic::catch_unwind(|| {
-            commutativity(TEST_ITEMS, u32::wrapping_div);
-        })
-        .is_err());
+        assert!(commutativity(TEST_ITEMS, u32::max).is_ok());
+        assert!(commutativity(TEST_ITEMS_NONZERO, u32::wrapping_div).is_err());
+        //Test items non-zero to avoid a divide by zero exception
     }
 
     #[test]
@@ -540,33 +582,24 @@ mod test {
     #[test]
     fn test_identity() {
         // Test that 0 is the identity for addition and 5 is not
-        identity(TEST_ITEMS, u32::wrapping_add, 0);
+        assert!(identity(TEST_ITEMS, u32::wrapping_add, 0).is_ok());
 
-        assert!(std::panic::catch_unwind(|| {
-            identity(TEST_ITEMS, u32::wrapping_add, 5);
-        })
-        .is_err());
+        assert!(identity(TEST_ITEMS, u32::wrapping_add, 5).is_err());
     }
 
     #[test]
     fn test_inverse() {
         // Test that subtraction is the inverse of addition and that addition is not the inverse of addition
-        inverse(TEST_ITEMS, u32::wrapping_add, 0, |x| 0u32.wrapping_sub(x));
+        assert!(inverse(TEST_ITEMS, u32::wrapping_add, 0, |x| 0u32.wrapping_sub(x)).is_ok());
 
-        assert!(std::panic::catch_unwind(|| {
-            inverse(TEST_ITEMS, u32::wrapping_add, 0, |x| 0u32.wrapping_add(x));
-        })
-        .is_err());
+        assert!(inverse(TEST_ITEMS, u32::wrapping_add, 0, |x| 0u32.wrapping_add(x)).is_err());
     }
 
     #[test]
     fn test_distributive() {
         // Test that addition and multiplication are distributive and that addition and max() are not
-        distributive(TEST_ITEMS, &u32::wrapping_add, &u32::wrapping_mul);
-        assert!(std::panic::catch_unwind(|| {
-            distributive(TEST_ITEMS, &u32::wrapping_add, &u32::max);
-        })
-        .is_err());
+        assert!(distributive(TEST_ITEMS, &u32::wrapping_add, &u32::wrapping_mul).is_ok());
+        assert!(distributive(TEST_ITEMS, &u32::wrapping_add, &u32::max).is_err());
     }
 
     #[test]
@@ -663,11 +696,8 @@ mod test {
     #[test]
     fn test_absorbing() {
         // Test that 0 is absorbing for multiplication and 5 is not
-        absorbing_element(TEST_ITEMS, u32::wrapping_mul, 0);
-        assert!(std::panic::catch_unwind(|| {
-            absorbing_element(TEST_ITEMS, u32::wrapping_mul, 5);
-        })
-        .is_err());
+        assert!(absorbing_element(TEST_ITEMS, u32::wrapping_mul, 0).is_ok());
+        assert!(absorbing_element(TEST_ITEMS, u32::wrapping_mul, 5).is_err());
     }
 
     // Performs addition modulo 7, ensuring the result remains within the range of 0 to 6.
@@ -779,15 +809,15 @@ mod test {
     #[test]
     fn test_ring() {
         // Test that +, x, 0, 1, - are a ring and +, x, 0, 5 are not (5 isn't a multiplicative identity)
-        ring(
+        assert!(ring(
             TEST_ITEMS,
             &u32::wrapping_add,
             &u32::wrapping_mul,
             0,
             1,
             &|x| 0u32.wrapping_sub(x),
-        );
-        assert!(std::panic::catch_unwind(|| {
+        ).is_ok());
+        assert!(
             ring(
                 TEST_ITEMS,
                 &u32::wrapping_add,
@@ -795,39 +825,37 @@ mod test {
                 0,
                 5,
                 &|x| 0u32.wrapping_sub(x),
-            );
-        })
-        .is_err());
+            ).is_err());
     }
 
     #[test]
     fn test_semiring() {
         // Test +, x is a semiring
-        semiring(TEST_ITEMS, &u32::wrapping_add, &u32::wrapping_mul, 0, 1);
+        assert!(semiring(TEST_ITEMS, &u32::wrapping_add, &u32::wrapping_mul, 0, 1).is_ok());
 
         // Test boolean semiring with AND as + and OR as x
-        semiring(&[false, true], &|x, y| x | y, &|x, y| x & y, false, true);
+        assert!(semiring(&[false, true], &|x, y| x | y, &|x, y| x & y, false, true).is_ok());
 
         // Test min plus semiring. + is min and x is plus. Also known as the "tropical semiring"
-        semiring(
+        assert!(semiring(
             &[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, f64::INFINITY],
             &f64::min,
             &|x, y| x + y,
             f64::INFINITY,
             0.0,
-        );
+        ).is_ok());
 
         // Test max plus semiring. + is max and x is plus.
-        semiring(
+        assert!(semiring(
             &[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, f64::NEG_INFINITY],
             &f64::max,
             &|x, y| x + y,
             f64::NEG_INFINITY,
             0.0,
-        );
+        ).is_ok());
 
         // Test sets of strings semiring with union as + and concatenation as x
-        semiring(
+        assert!(semiring(
             &[
                 HashSet::from([]),
                 HashSet::from(["".to_owned()]),
@@ -850,6 +878,6 @@ mod test {
             },
             HashSet::from([]),
             HashSet::from(["".to_owned()]),
-        );
+        ).is_ok());
     }
 }
