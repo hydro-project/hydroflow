@@ -68,9 +68,9 @@ pub fn integral_domain<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     g: &impl Fn(S, S) -> S,
-    zero: S,             // zero is the identity element of f
-    one: S,              // one is the identity element of g
-    inverse_f: &impl Fn(S) -> S, // the function to compute the inverse element of an element with respect to f
+    zero: S,                     // zero is the identity element of f
+    one: S,                      // one is the identity element of g
+    inverse_f: &impl Fn(S) -> S, /* the function to compute the inverse element of an element with respect to f */
 ) -> Result<(), &'static str> {
     commutative_ring(items, f, g, zero.clone(), one, inverse_f)?;
     no_nonzero_zero_divisors(items, g, zero)?;
@@ -83,16 +83,14 @@ pub fn no_nonzero_zero_divisors<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     zero: S,
-) -> Result<(), &'static str>  {
+) -> Result<(), &'static str> {
     for a in items {
         for b in items {
             if *a != zero && *b != zero {
-                if f(a.clone(), b.clone()) == zero
-                {
+                if f(a.clone(), b.clone()) == zero {
                     return Err("No nonzero zero divisors check failed.");
                 };
-                if f(b.clone(), a.clone()) == zero
-                {
+                if f(b.clone(), a.clone()) == zero {
                     return Err("No nonzero zero divisors check failed.");
                 };
             }
@@ -123,10 +121,10 @@ pub fn field<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     g: &impl Fn(S, S) -> S,
-    zero: S, // zero is the identity element of f
-    one: S,  // one is the identity element of g
-    inverse_f: &impl Fn(S) -> S, //inverse_f is the function that given x computes x' such that f(x,x') = zero.
-    inverse_g: &impl Fn(S) -> S,// //inverse_g is the function that given x computes x' such that g(x,x') = one.
+    zero: S,                     // zero is the identity element of f
+    one: S,                      // one is the identity element of g
+    inverse_f: &impl Fn(S) -> S, /* inverse_f is the function that given x computes x' such that f(x,x') = zero. */
+    inverse_g: &impl Fn(S) -> S, /* //inverse_g is the function that given x computes x' such that g(x,x') = one. */
 ) -> Result<(), &'static str> {
     commutative_ring(items, f, g, zero.clone(), one.clone(), inverse_f)?;
     nonzero_inverse(items, g, one, zero, inverse_g)?;
@@ -312,7 +310,8 @@ pub fn associativity<S: Debug + PartialEq + Clone, const N: usize>(
 ) -> Result<(), &'static str> {
     for [a, b, c] in cartesian_power(items) {
         if f(a.clone(), f(b.clone(), c.clone())) != // f(a, f(b,c)) ie a + (b + c)
-            f(f(a.clone(), b.clone()), c.clone()) {
+            f(f(a.clone(), b.clone()), c.clone())
+        {
             return Err("Associativity check failed.");
         }
     }
@@ -350,7 +349,7 @@ pub fn idempotency<S: Debug + PartialEq + Clone, const N: usize>(
 
 // Functions for testing out whether user defined code satisfies different properties
 
-//A list of algebraic properties of a single function that we support
+// A list of algebraic properties of a single function that we support
 // static SINGLE_FUNCTION_PROPERTIES: [(&str, fn(&[S; N], impl Fn(S, S) -> S)); 6] = [
 //     ("associativity", associativity),
 //     ("commutativity", commutativity),
@@ -359,50 +358,51 @@ pub fn idempotency<S: Debug + PartialEq + Clone, const N: usize>(
 //     ("inverse", inverse),
 //     ("absorbing_element", absorbing_element)];
 
-//Loop through each property in SINGLE_FUNCTION_PROPERTIES and test for them
+// Loop through each property in SINGLE_FUNCTION_PROPERTIES and test for them
 pub fn get_single_function_properties<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
-    //identity element (TODO make optional parameter)
+    // identity element (TODO make optional parameter)
     e: S,
-    //inverse function (TODO make optional parameter)
+    // inverse function (TODO make optional parameter)
     b: impl Fn(S) -> S,
-    //absorbing element (TODO make optional parameter)
-    z: S
+    // absorbing element (TODO make optional parameter)
+    z: S,
 ) -> Vec<String> {
-    //store the list of properties (strings) that are satisfied to be returned
+    // store the list of properties (strings) that are satisfied to be returned
     let mut properties_satisfied: Vec<String> = Vec::new();
 
     // TODO make this a loop through the SINGLE_FUNCTION_PROPERTIES array
-    if associativity(items, &f).is_ok(){
+    if associativity(items, &f).is_ok() {
         properties_satisfied.push("associativity".to_string());
     }
-    if commutativity(items, &f).is_ok(){
+    if commutativity(items, &f).is_ok() {
         properties_satisfied.push("commutativity".to_string());
     }
-    if idempotency(items, &f).is_ok(){
+    if idempotency(items, &f).is_ok() {
         properties_satisfied.push("idempotency".to_string());
     }
-    if identity(items, &f, e.clone()).is_ok(){
+    if identity(items, &f, e.clone()).is_ok() {
         properties_satisfied.push("identity".to_string());
     }
-    if inverse(items, &f, e.clone(), b).is_ok(){
+    if inverse(items, &f, e.clone(), b).is_ok() {
         properties_satisfied.push("inverse".to_string());
     }
-    if absorbing_element(items, &f, z).is_ok(){
+    if absorbing_element(items, &f, z).is_ok() {
         properties_satisfied.push("absorbing_element".to_string());
     }
 
     return properties_satisfied;
 }
 
-//TODO write a function to take in a set of functions and check which pairs satisfy different pairwise properties (e.g. distributivity
+// TODO write a function to take in a set of functions and check which pairs satisfy different pairwise properties (e.g. distributivity
 
 // Tests
 
 #[cfg(test)]
 mod test {
-    use std::{collections::HashSet, f32::INFINITY};
+    use std::collections::HashSet;
+    use std::f32::INFINITY;
 
     use crate::algebra::*;
 
@@ -423,8 +423,7 @@ mod test {
         // Test that multiplication and subtraction are left distributive  a(b-c) = ab - ac.
         // but exponentiation and subtraction isn't since a^(b-c) != a^b - a^c.
         assert!(left_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_mul).is_ok());
-        assert!(
-            left_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_pow).is_err());
+        assert!(left_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_pow).is_err());
     }
 
     #[test]
@@ -432,8 +431,7 @@ mod test {
         // Test that multiplication and subtraction are right distributive (b-c)a = ba - ca.
         // but exponentiation and subtraction isn't since (b-c)^a != b^a - c^a.
         assert!(right_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_mul).is_ok());
-        assert!(
-            right_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_pow).is_err());
+        assert!(right_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_pow).is_err());
     }
 
     #[test]
@@ -441,12 +439,15 @@ mod test {
         // Test that addition and subtraction has a nonzero inverse and that multiplication does not.
         assert!(nonzero_inverse(TEST_ITEMS, u32::wrapping_add, 0, 0, |x| {
             0u32.wrapping_sub(x)
-        }).is_ok());
+        })
+        .is_ok());
         assert!(nonzero_inverse(TEST_ITEMS, u32::wrapping_sub, 0, 0, |x| {
             0u32.wrapping_add(x)
-        }).is_ok());
+        })
+        .is_ok());
         assert!(
-            right_distributes(TEST_ITEMS_NONZERO, u32::wrapping_div, u32::wrapping_mul).is_err());
+            right_distributes(TEST_ITEMS_NONZERO, u32::wrapping_div, u32::wrapping_mul).is_err()
+        );
     }
 
     #[test]
@@ -475,56 +476,57 @@ mod test {
             0,
             1,
             &|x| 0u32.wrapping_sub(x),
-        ).is_ok());
+        )
+        .is_ok());
 
         // Test that (Z, +, ^) is not a commutative ring.
-        assert!(
-            commutative_ring(
-                TEST_ITEMS,
-                &u32::wrapping_add,
-                &u32::wrapping_pow,
-                0,
-                1,
-                &|x| 0u32.wrapping_sub(x),
-            ).is_err());
+        assert!(commutative_ring(
+            TEST_ITEMS,
+            &u32::wrapping_add,
+            &u32::wrapping_pow,
+            0,
+            1,
+            &|x| 0u32.wrapping_sub(x),
+        )
+        .is_err());
 
         // Test that matrix multiplication is not a commutative ring.
-        assert!(
-            commutative_ring(
-                &[[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]],
-                &|a, b| {
+        assert!(commutative_ring(
+            &[[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]],
+            &|a, b| {
+                [
+                    [a[0][0] + b[0][0], a[0][1] + b[0][1]],
+                    [a[1][0] + b[1][0], a[1][0] + b[1][1]],
+                ]
+            },
+            &|a, b| {
+                [
                     [
-                        [a[0][0] + b[0][0], a[0][1] + b[0][1]],
-                        [a[1][0] + b[1][0], a[1][0] + b[1][1]],
-                    ]
-                },
-                &|a, b| {
+                        a[0][0] * b[0][0] + a[0][1] * b[1][0],
+                        a[0][0] * b[0][1] + a[0][1] * b[1][1],
+                    ],
                     [
-                        [
-                            a[0][0] * b[0][0] + a[0][1] * b[1][0],
-                            a[0][0] * b[0][1] + a[0][1] * b[1][1],
-                        ],
-                        [
-                            a[1][0] * b[0][0] + a[1][1] * b[1][0],
-                            a[1][0] * b[0][1] + a[1][1] * b[1][1],
-                        ],
-                    ]
-                },
-                [[0, 0], [0, 0]],
-                [[1, 0], [0, 1]],
-                &|a| {
+                        a[1][0] * b[0][0] + a[1][1] * b[1][0],
+                        a[1][0] * b[0][1] + a[1][1] * b[1][1],
+                    ],
+                ]
+            },
+            [[0, 0], [0, 0]],
+            [[1, 0], [0, 1]],
+            &|a| {
+                [
                     [
-                        [
-                            -a[0][0] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
-                            -a[0][1] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
-                        ],
-                        [
-                            -a[1][0] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
-                            -a[1][1] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
-                        ],
-                    ]
-                },
-            ).is_err());
+                        -a[0][0] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
+                        -a[0][1] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
+                    ],
+                    [
+                        -a[1][0] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
+                        -a[1][1] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
+                    ],
+                ]
+            },
+        )
+        .is_err());
     }
 
     #[test]
@@ -540,16 +542,13 @@ mod test {
         assert!(commutative_monoid(TEST_BOOLS, &|a, b| a & b, true).is_ok()); // logical AND
 
         // Test that (Z, -) is not a commutative monoid.
-        assert!(
-            commutative_monoid(TEST_ITEMS, &u32::wrapping_sub, 0).is_err());
+        assert!(commutative_monoid(TEST_ITEMS, &u32::wrapping_sub, 0).is_err());
 
         // Test that (N, +) is not a commutative monoid since it doesn't have an identity element (0 is missing).
-        assert!(
-            commutative_monoid(TEST_ITEMS_NONZERO, &u32::wrapping_add, 1).is_err()); // Note that 1 is an arbitrary identity element in TEST_ITEMS_NONZERO since it doesn't have an identity element 0.
+        assert!(commutative_monoid(TEST_ITEMS_NONZERO, &u32::wrapping_add, 1).is_err()); // Note that 1 is an arbitrary identity element in TEST_ITEMS_NONZERO since it doesn't have an identity element 0.
 
         // Test that (Z, ^) is not a commutative monoid.
-        assert!(
-            commutative_monoid(TEST_ITEMS, &u32::wrapping_pow, 3).is_err());
+        assert!(commutative_monoid(TEST_ITEMS, &u32::wrapping_pow, 3).is_err());
     }
 
     #[test]
@@ -562,7 +561,7 @@ mod test {
         assert!(semigroup(TEST_ITEMS, &u32::wrapping_mul).is_ok());
         // Test that ({true, false}, ∧) is a semigroup.
         assert!(semigroup(TEST_BOOLS, &|a, b| a & b).is_ok()); // logical AND
-                                              // Test that matrix multiplication is a semigroup.
+                                                               // Test that matrix multiplication is a semigroup.
         assert!(semigroup(
             &[[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]],
             &|a, b| {
@@ -577,10 +576,10 @@ mod test {
                     ],
                 ]
             },
-        ).is_ok());
+        )
+        .is_ok());
         // Test that set of all natural numbers N = {0, 1, 2, ...} is not a semigroup under exponentiation.
-        assert!(
-            semigroup(TEST_ITEMS, &u32::wrapping_pow).is_err());
+        assert!(semigroup(TEST_ITEMS, &u32::wrapping_pow).is_err());
     }
 
     #[test]
@@ -615,47 +614,55 @@ mod test {
         // Test that (Z/14Z, +) form a group.
         assert!(group(TEST_ITEMS, &modulo_add_14, 0, &modulo_sub_14).is_ok());
         // Test that (Z, *) do not form a group since it has no inverse.
-        assert!(group(TEST_ITEMS_NONZERO, &u32::wrapping_mul, 1, &|x| 1u32.wrapping_div(x)).is_err());
+        assert!(group(TEST_ITEMS_NONZERO, &u32::wrapping_mul, 1, &|x| 1u32
+            .wrapping_div(x))
+        .is_err());
     }
 
     #[test]
     fn test_abelian_group() {
         // Test that (Z, +) form an abelian group.
-        assert!(abelian_group(TEST_ITEMS, &u32::wrapping_add, 0, &|x| 0u32.wrapping_sub(x)).is_ok());
-        // Test that (Z/7Z, +) form an abelian group.
-       assert!(abelian_group(TEST_MOD_PRIME_7, &modulo_add_7, 0, &modulo_sub_7).is_ok());
-        // Test that (Z, *) do not form an abelian group.
-        assert!(abelian_group(TEST_ITEMS_NONZERO, &u32::wrapping_mul, 1, &|x| 1u32.wrapping_div(x)).is_err());
-        // Test that matrix multiplication is not an abelian group.
         assert!(
-            abelian_group(
-                &[[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]],
-                &|a, b| {
+            abelian_group(TEST_ITEMS, &u32::wrapping_add, 0, &|x| 0u32.wrapping_sub(x)).is_ok()
+        );
+        // Test that (Z/7Z, +) form an abelian group.
+        assert!(abelian_group(TEST_MOD_PRIME_7, &modulo_add_7, 0, &modulo_sub_7).is_ok());
+        // Test that (Z, *) do not form an abelian group.
+        assert!(
+            abelian_group(TEST_ITEMS_NONZERO, &u32::wrapping_mul, 1, &|x| 1u32
+                .wrapping_div(x))
+            .is_err()
+        );
+        // Test that matrix multiplication is not an abelian group.
+        assert!(abelian_group(
+            &[[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]],
+            &|a, b| {
+                [
                     [
-                        [
-                            a[0][0] * b[0][0] + a[0][1] * b[1][0],
-                            a[0][0] * b[0][1] + a[0][1] * b[1][1],
-                        ],
-                        [
-                            a[1][0] * b[0][0] + a[1][1] * b[1][0],
-                            a[1][0] * b[0][1] + a[1][1] * b[1][1],
-                        ],
-                    ]
-                },
-                [[1, 0], [0, 1]],
-                &|a| {
+                        a[0][0] * b[0][0] + a[0][1] * b[1][0],
+                        a[0][0] * b[0][1] + a[0][1] * b[1][1],
+                    ],
                     [
-                        [
-                            -a[0][0] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
-                            -a[0][1] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
-                        ],
-                        [
-                            -a[1][0] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
-                            -a[1][1] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
-                        ],
-                    ]
-                },
-            ).is_err());
+                        a[1][0] * b[0][0] + a[1][1] * b[1][0],
+                        a[1][0] * b[0][1] + a[1][1] * b[1][1],
+                    ],
+                ]
+            },
+            [[1, 0], [0, 1]],
+            &|a| {
+                [
+                    [
+                        -a[0][0] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
+                        -a[0][1] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
+                    ],
+                    [
+                        -a[1][0] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
+                        -a[1][1] / (a[0][0] * a[1][1] - a[0][1] * a[1][1]),
+                    ],
+                ]
+            },
+        )
+        .is_err());
     }
 
     #[test]
@@ -681,10 +688,10 @@ mod test {
                 ]
             },
             [[1, 0], [0, 1]],
-        ).is_ok());
+        )
+        .is_ok());
         // Test that N+ = N − {0} is not a monoid with respect to addition since it doesn't have an identity element (0 is missing).
-        assert!(
-            monoid(TEST_ITEMS_NONZERO, &u32::wrapping_add, 1).is_err());
+        assert!(monoid(TEST_ITEMS_NONZERO, &u32::wrapping_add, 1).is_err());
     }
 
     #[test]
@@ -769,8 +776,7 @@ mod test {
         // The ring of integer mod prime number has no nonzero zero divisors.
         assert!(no_nonzero_zero_divisors(TEST_MOD_PRIME_7, &modulo_mult_7, 0).is_ok());
         // The ring of integers with multiplication mod prime number has nonzero zero divisors. (e.g. 1 * 7 = 0 mod 7)
-        assert!(
-            no_nonzero_zero_divisors(TEST_ITEMS, &modulo_mult_7, 0).is_err());
+        assert!(no_nonzero_zero_divisors(TEST_ITEMS, &modulo_mult_7, 0).is_err());
     }
 
     #[test]
@@ -783,37 +789,37 @@ mod test {
             0,
             1,
             &modulo_sub_7,
-        ).is_ok());
-        //The ring of integers modulo a composite number is not an integral domain.
-        assert!(
-            integral_domain(
-                TEST_ITEMS,
-                &modulo_add_14,
-                &modulo_mult_14,
-                0,
-                1,
-                &modulo_sub_14,
-            ).is_err());
+        )
+        .is_ok());
+        // The ring of integers modulo a composite number is not an integral domain.
+        assert!(integral_domain(
+            TEST_ITEMS,
+            &modulo_add_14,
+            &modulo_mult_14,
+            0,
+            1,
+            &modulo_sub_14,
+        )
+        .is_err());
     }
 
     #[test]
     fn test_field() {
         // Test that GF2 (0, 1, XOR, AND) is a field and  +, x, 0, 1, - is not a field (no multiplicative inverses)
-        // Note GF2 is the Galois Field with 2 elements. 
-        
+        // Note GF2 is the Galois Field with 2 elements.
+
         assert!(field(
             TEST_BOOLS,
             &|a, b| a ^ b, // logical XOR
-            &|a, b| a & b,//a & b, // logical AND
+            &|a, b| a & b, // a & b, // logical AND
             false,
             true,
             &|x| x, // XOR(x,x) = false, the identity for XOR
-            &|_x| true //AND(x,true) = true, the identity for AND. Note that the inverse doesn't need to work for the additive identity (false)
-            //
-
+            &|_x| true /* AND(x,true) = true, the identity for AND. Note that the inverse doesn't need to work for the additive identity (false)
+                        */
         )
         .is_ok());
-        
+
         assert!(field(
             TEST_ITEMS,
             &u32::wrapping_add,
@@ -824,7 +830,6 @@ mod test {
             &|x| 0u32.wrapping_sub(x) //Note there is no valid inverse function for multiplication over the integers so we just pick some function
         )
         .is_err());
-
     }
 
     #[test]
@@ -908,21 +913,44 @@ mod test {
 
     #[test]
     fn test_get_single_function_properties() {
-        //Test that get single function properties on addition returns associative, commutative, identity, and inverses.
-        let test_properties_satisfied = get_single_function_properties(TEST_ITEMS, u32::wrapping_add, 0, |x| 0u32.wrapping_sub(x), 0);
-        let correct_properties = vec!["associativity".to_string(), "commutativity".to_string(), "identity".to_string(), "inverse".to_string()];
+        // Test that get single function properties on addition returns associative, commutative, identity, and inverses.
+        let test_properties_satisfied = get_single_function_properties(
+            TEST_ITEMS,
+            u32::wrapping_add,
+            0,
+            |x| 0u32.wrapping_sub(x),
+            0,
+        );
+        let correct_properties = vec![
+            "associativity".to_string(),
+            "commutativity".to_string(),
+            "identity".to_string(),
+            "inverse".to_string(),
+        ];
         assert_eq!(test_properties_satisfied, correct_properties);
 
-        //Test that get single function properties on max returns associative, commutative, idempotent, identity, and absorbing element.
-        let test_properties_satisfied = get_single_function_properties(&[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, f64::INFINITY], f64::max, 0.0, |x| x, f64::INFINITY);
-        let correct_properties = vec!["associativity".to_string(), "commutativity".to_string(), "idempotency".to_string(), "identity".to_string(), "absorbing_element".to_string()];
+        // Test that get single function properties on max returns associative, commutative, idempotent, identity, and absorbing element.
+        let test_properties_satisfied = get_single_function_properties(
+            &[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, f64::INFINITY],
+            f64::max,
+            0.0,
+            |x| x,
+            f64::INFINITY,
+        );
+        let correct_properties = vec![
+            "associativity".to_string(),
+            "commutativity".to_string(),
+            "idempotency".to_string(),
+            "identity".to_string(),
+            "absorbing_element".to_string(),
+        ];
         assert_eq!(test_properties_satisfied, correct_properties);
 
-        //Define a function that takes in two u32s and returns the first one
+        // Define a function that takes in two u32s and returns the first one
         let f = |x: u32, _y: u32| x;
-        let test_properties_satisfied = get_single_function_properties(TEST_ITEMS, f, 0, |x| 0u32.wrapping_sub(x), 0);
+        let test_properties_satisfied =
+            get_single_function_properties(TEST_ITEMS, f, 0, |x| 0u32.wrapping_sub(x), 0);
         let correct_properties = vec!["associativity".to_string(), "idempotency".to_string()];
         assert_eq!(test_properties_satisfied, correct_properties);
     }
 }
-
