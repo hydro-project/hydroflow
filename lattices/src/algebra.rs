@@ -115,10 +115,10 @@ pub fn field<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: &impl Fn(S, S) -> S,
     g: &impl Fn(S, S) -> S,
-    zero: S,                     // zero is the identity element of f
-    one: S,                      // one is the identity element of g
-    inverse_f: &impl Fn(S) -> S, /* inverse_f is the function that given x computes x' such that f(x,x') = zero. */
-    inverse_g: &impl Fn(S) -> S, /* //inverse_g is the function that given x computes x' such that g(x,x') = one. */
+    zero: S, // zero is the identity element of f
+    one: S,  // one is the identity element of g
+    inverse_f: &impl Fn(S) -> S, //inverse_f is the function that given x computes x' such that f(x,x') = zero.
+    inverse_g: &impl Fn(S) -> S,// //inverse_g is the function that given x computes x' such that g(x,x') = one.
 ) -> Result<(), &'static str> {
     commutative_ring(items, f, g, zero.clone(), one.clone(), inverse_f)?;
     nonzero_inverse(items, g, one, zero, inverse_g)?;
@@ -798,6 +798,37 @@ mod test {
             )
         })
         .is_err());
+    }
+
+    #[test]
+    fn test_field() {
+        // Test that GF2 (0, 1, XOR, AND) is a field and  +, x, 0, 1, - is not a field (no multiplicative inverses)
+        // Note GF2 is the Galois Field with 2 elements. 
+        
+        assert!(field(
+            TEST_BOOLS,
+            &|a, b| a ^ b, // logical XOR
+            &|a, b| a & b,//a & b, // logical AND
+            false,
+            true,
+            &|x| x, // XOR(x,x) = false, the identity for XOR
+            &|_x| true //AND(x,true) = true, the identity for AND. Note that the inverse doesn't need to work for the additive identity (false)
+            //
+
+        )
+        .is_ok());
+        
+        assert!(field(
+            TEST_ITEMS,
+            &u32::wrapping_add,
+            &u32::wrapping_mul,
+            0,
+            1,
+            &|x| 0u32.wrapping_sub(x),
+            &|x| 0u32.wrapping_sub(x) //Note there is no valid inverse function for multiplication over the integers so we just pick some function
+        )
+        .is_err());
+
     }
 
     #[test]
