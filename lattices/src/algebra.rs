@@ -358,7 +358,7 @@ pub fn idempotency<S: Debug + PartialEq + Clone, const N: usize>(
 //     ("inverse", inverse),
 //     ("absorbing_element", absorbing_element)];
 
-// Loop through each property in SINGLE_FUNCTION_PROPERTIES and test for them
+/// Loop through each algebraic property in SINGLE_FUNCTION_PROPERTIES and test for them
 pub fn get_single_function_properties<S: Debug + PartialEq + Clone, const N: usize>(
     items: &[S; N],
     f: impl Fn(S, S) -> S,
