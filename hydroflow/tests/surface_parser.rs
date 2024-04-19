@@ -82,7 +82,7 @@ pub fn test_parser_port_reassign() {
         id = identity();
         inn = id;
         out = id;
-        [0]out[0] -> [0]inn[0]; // ?
+        out[0] -> [0]inn; // ?
     };
 }
 
