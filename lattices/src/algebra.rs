@@ -392,7 +392,7 @@ pub fn get_single_function_properties<S: Debug + PartialEq + Clone, const N: usi
         properties_satisfied.push("absorbing_element".to_string());
     }
 
-    return properties_satisfied;
+    properties_satisfied
 }
 
 // TODO write a function to take in a set of functions and check which pairs satisfy different pairwise properties (e.g. distributivity
