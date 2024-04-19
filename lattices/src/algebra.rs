@@ -403,7 +403,7 @@ pub fn get_single_function_properties<S: Debug + PartialEq + Clone, const N: usi
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;
-    use std::f32::INFINITY;
+    
 
     use crate::algebra::*;
 
