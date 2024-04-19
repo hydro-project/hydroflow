@@ -11,7 +11,6 @@ type HostCreator = Box<dyn Fn(&mut Deployment) -> Arc<RwLock<dyn Host>>>;
 // run with no args for localhost, with `gcp <GCP PROJECT>` for GCP
 #[tokio::main]
 async fn main() {
-    use hydroflow_plus::properties::properties_optimize; // Import the algebraic optimization rules
     let deployment = RefCell::new(Deployment::new());
     let host_arg = std::env::args().nth(1).unwrap_or_default();
 
@@ -41,10 +40,8 @@ async fn main() {
     };
 
     let builder = hydroflow_plus::FlowBuilder::new();
-    let mut database = hydroflow_plus::properties::PropertyDatabase::default();
     hydroflow_plus_test::cluster::map_reduce(
         &builder,
-        &mut database,
         &DeployProcessSpec::new(|| {
             let mut deployment = deployment.borrow_mut();
             let host = create_host(&mut deployment);
@@ -71,16 +68,11 @@ async fn main() {
         }),
     );
 
-    let _ = builder
-        .extract()
-        .optimize_with(|ir| properties_optimize(ir, &database))
-        .optimize_default();
+    let mut deployment = deployment.into_inner();
 
-    // let mut deployment = deployment.into_inner();
+    deployment.deploy().await.unwrap();
 
-    // deployment.deploy().await.unwrap();
+    deployment.start().await.unwrap();
 
-    // deployment.start().await.unwrap();
-
-    // tokio::signal::ctrl_c().await.unwrap()
+    tokio::signal::ctrl_c().await.unwrap()
 }

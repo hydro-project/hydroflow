@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use futures::channel::mpsc::UnboundedSender;
 use hydroflow_plus::profiler::profiling;
-use hydroflow_plus::properties::properties_optimize;
 use hydroflow_plus::*;
 use stageleft::*;
 
@@ -45,7 +44,6 @@ where
 
 pub fn map_reduce<'a, D: Deploy<'a, ClusterId = u32>>(
     flow: &FlowBuilder<'a, D>,
-    property_database: &mut properties::PropertyDatabase,
     process_spec: &impl ProcessSpec<'a, D>,
     cluster_spec: &impl ClusterSpec<'a, D>,
 ) -> (D::Process, D::Cluster) {
@@ -61,24 +59,18 @@ pub fn map_reduce<'a, D: Deploy<'a, ClusterId = u32>>(
         .enumerate()
         .map(q!(|(i, w)| ((i % all_ids_vec.len()) as u32, w)));
 
-    let counter_func = q!(|count: &mut i32, _| *count += 1);
-    let _ = property_database.add_commutative_tag(counter_func);
-
-    let add_reduce_func = q!(|count: &mut i32, value: i32| *count += value);
-    let _ = property_database.add_commutative_tag(add_reduce_func);
-
     words_partitioned
         .send_bincode(&cluster)
         .tick_batch()
         .map(q!(|string| (string, ())))
-        .fold_keyed(q!(|| 0), counter_func)
+        .fold_keyed(q!(|| 0), q!(|count, _| *count += 1))
         .inspect(q!(|(string, count)| println!(
             "partition count: {} - {}",
             string, count
         )))
         .send_bincode_interleaved(&process)
         .all_ticks()
-        .reduce_keyed(add_reduce_func)
+        .reduce_keyed(q!(|total, count| *total += count))
         .for_each(q!(|(string, count)| println!("{}: {}", string, count)));
 
     (process, cluster)
@@ -157,10 +149,8 @@ pub fn map_reduce_runtime<'a>(
     flow: FlowBuilder<'a, CLIRuntime>,
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
-    let mut database = properties::PropertyDatabase::default();
-    let _ = map_reduce(&flow, &mut database, &cli, &cli);
+    let _ = map_reduce(&flow, &cli, &cli);
     flow.extract()
-        .optimize_with(|ir| properties_optimize(ir, &database))
         .optimize_default()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
@@ -199,7 +189,6 @@ mod tests {
     use std::cell::RefCell;
 
     use hydro_deploy::{Deployment, HydroflowCrate};
-    use hydroflow_plus::properties::properties_optimize;
     use hydroflow_plus_cli_integration::{
         DeployClusterSpec, DeployCrateWrapper, DeployProcessSpec,
     };
@@ -323,10 +312,8 @@ mod tests {
     #[test]
     fn map_reduce_ir() {
         let builder = hydroflow_plus::FlowBuilder::new();
-        let mut database = hydroflow_plus::properties::PropertyDatabase::default();
         let _ = super::map_reduce(
             &builder,
-            &mut database,
             &RuntimeData::new("FAKE"),
             &RuntimeData::new("FAKE"),
         );
@@ -334,11 +321,7 @@ mod tests {
 
         insta::assert_debug_snapshot!(built.ir());
 
-        for (id, ir) in built
-            .optimize_with(|ir| properties_optimize(ir, &database))
-            .optimize_default()
-            .hydroflow_ir()
-        {
+        for (id, ir) in built.optimize_default().hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(ir.surface_syntax_string());
             });

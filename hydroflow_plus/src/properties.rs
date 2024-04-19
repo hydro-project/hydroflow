@@ -4,13 +4,11 @@ use stageleft::*;
 
 use crate::ir::{HfPlusLeaf, HfPlusNode, SeenTees};
 
-// schema : table per algebraic property with the list of expressions that satisfy the property
-
-// interface: can "tag" an expression with a property and it will add it to that table
-// can also run a check to see if an expression satisfies a property
+/// schema : table per algebraic property with the list of expressions that satisfy the property
+/// interface: can "tag" an expression with a property and it will add it to that table
+/// can also run a check to see if an expression satisfies a property
 #[derive(Default)]
 pub struct PropertyDatabase {
-    //
     commutative: HashSet<syn::Expr>,
 }
 
@@ -75,6 +73,7 @@ pub fn properties_optimize(ir: Vec<HfPlusLeaf>, db: &PropertyDatabase) -> Vec<Hf
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::*;
 
     #[test]
     fn test_property_database() {
@@ -85,5 +84,28 @@ mod tests {
         let _ = db.add_commutative_tag(q!(|a: &mut i32, b: i32| *a += b));
 
         assert!(db.is_tagged_commutative(&(q!(|a: &mut i32, b: i32| *a += b).splice())));
+    }
+
+    #[test]
+    fn test_property_optimized() {
+        let flow = FlowBuilder::<SingleProcessGraph>::new();
+        let mut database = PropertyDatabase::default();
+
+        let process = flow.process(&());
+
+        let counter_func = q!(|count: &mut i32, _| *count += 1);
+        let _ = database.add_commutative_tag(counter_func);
+
+        flow.source_iter(&process, q!(vec![]))
+            .map(q!(|string: String| (string, ())))
+            .fold_keyed(q!(|| 0), counter_func)
+            .for_each(q!(|(string, count)| println!("{}: {}", string, count)));
+
+        let built = flow
+            .extract()
+            .optimize_with(|ir| properties_optimize(ir, &database))
+            .with_default_optimize();
+
+        insta::assert_debug_snapshot!(built.ir());
     }
 }
