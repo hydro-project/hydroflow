@@ -403,7 +403,6 @@ pub fn get_single_function_properties<S: Debug + PartialEq + Clone, const N: usi
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;
-    
     use crate::algebra::*;
 
     static TEST_ITEMS: &[u32; 14] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
