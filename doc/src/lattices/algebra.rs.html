@@ -855,6 +855,107 @@
 <a href="#853" id="853">853</a>
 <a href="#854" id="854">854</a>
 <a href="#855" id="855">855</a>
+<a href="#856" id="856">856</a>
+<a href="#857" id="857">857</a>
+<a href="#858" id="858">858</a>
+<a href="#859" id="859">859</a>
+<a href="#860" id="860">860</a>
+<a href="#861" id="861">861</a>
+<a href="#862" id="862">862</a>
+<a href="#863" id="863">863</a>
+<a href="#864" id="864">864</a>
+<a href="#865" id="865">865</a>
+<a href="#866" id="866">866</a>
+<a href="#867" id="867">867</a>
+<a href="#868" id="868">868</a>
+<a href="#869" id="869">869</a>
+<a href="#870" id="870">870</a>
+<a href="#871" id="871">871</a>
+<a href="#872" id="872">872</a>
+<a href="#873" id="873">873</a>
+<a href="#874" id="874">874</a>
+<a href="#875" id="875">875</a>
+<a href="#876" id="876">876</a>
+<a href="#877" id="877">877</a>
+<a href="#878" id="878">878</a>
+<a href="#879" id="879">879</a>
+<a href="#880" id="880">880</a>
+<a href="#881" id="881">881</a>
+<a href="#882" id="882">882</a>
+<a href="#883" id="883">883</a>
+<a href="#884" id="884">884</a>
+<a href="#885" id="885">885</a>
+<a href="#886" id="886">886</a>
+<a href="#887" id="887">887</a>
+<a href="#888" id="888">888</a>
+<a href="#889" id="889">889</a>
+<a href="#890" id="890">890</a>
+<a href="#891" id="891">891</a>
+<a href="#892" id="892">892</a>
+<a href="#893" id="893">893</a>
+<a href="#894" id="894">894</a>
+<a href="#895" id="895">895</a>
+<a href="#896" id="896">896</a>
+<a href="#897" id="897">897</a>
+<a href="#898" id="898">898</a>
+<a href="#899" id="899">899</a>
+<a href="#900" id="900">900</a>
+<a href="#901" id="901">901</a>
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a>
+<a href="#904" id="904">904</a>
+<a href="#905" id="905">905</a>
+<a href="#906" id="906">906</a>
+<a href="#907" id="907">907</a>
+<a href="#908" id="908">908</a>
+<a href="#909" id="909">909</a>
+<a href="#910" id="910">910</a>
+<a href="#911" id="911">911</a>
+<a href="#912" id="912">912</a>
+<a href="#913" id="913">913</a>
+<a href="#914" id="914">914</a>
+<a href="#915" id="915">915</a>
+<a href="#916" id="916">916</a>
+<a href="#917" id="917">917</a>
+<a href="#918" id="918">918</a>
+<a href="#919" id="919">919</a>
+<a href="#920" id="920">920</a>
+<a href="#921" id="921">921</a>
+<a href="#922" id="922">922</a>
+<a href="#923" id="923">923</a>
+<a href="#924" id="924">924</a>
+<a href="#925" id="925">925</a>
+<a href="#926" id="926">926</a>
+<a href="#927" id="927">927</a>
+<a href="#928" id="928">928</a>
+<a href="#929" id="929">929</a>
+<a href="#930" id="930">930</a>
+<a href="#931" id="931">931</a>
+<a href="#932" id="932">932</a>
+<a href="#933" id="933">933</a>
+<a href="#934" id="934">934</a>
+<a href="#935" id="935">935</a>
+<a href="#936" id="936">936</a>
+<a href="#937" id="937">937</a>
+<a href="#938" id="938">938</a>
+<a href="#939" id="939">939</a>
+<a href="#940" id="940">940</a>
+<a href="#941" id="941">941</a>
+<a href="#942" id="942">942</a>
+<a href="#943" id="943">943</a>
+<a href="#944" id="944">944</a>
+<a href="#945" id="945">945</a>
+<a href="#946" id="946">946</a>
+<a href="#947" id="947">947</a>
+<a href="#948" id="948">948</a>
+<a href="#949" id="949">949</a>
+<a href="#950" id="950">950</a>
+<a href="#951" id="951">951</a>
+<a href="#952" id="952">952</a>
+<a href="#953" id="953">953</a>
+<a href="#954" id="954">954</a>
+<a href="#955" id="955">955</a>
+<a href="#956" id="956">956</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt::Debug;
 
 <span class="kw">use </span><span class="kw">crate</span>::test::cartesian_power;
@@ -866,9 +967,10 @@
     items: <span class="kw-2">&amp;</span>[S; N],
     f: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S, S) -&gt; S,
     zero: S, <span class="comment">// zero is the identity element of f
-</span>) {
-    semigroup(items, f);
-    identity(items, f, zero);
+</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
+    semigroup(items, f)<span class="question-mark">?</span>;
+    identity(items, f, zero)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines a semigroup structure.
@@ -876,8 +978,9 @@
 </span><span class="kw">pub fn </span>semigroup&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
     f: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S, S) -&gt; S,
-) {
-    associativity(items, f);
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
+    associativity(items, f)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines a semiring structure.
@@ -891,13 +994,15 @@
     g: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S, S) -&gt; S,
     zero: S, <span class="comment">// zero is the identity element of f
     </span>one: S,  <span class="comment">// one is the identity element of g
-</span>) {
-    commutative_monoid(items, f, zero.clone());
-    monoid(items, g, one.clone());
+</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
+    commutative_monoid(items, f, zero.clone())<span class="question-mark">?</span>;
+    monoid(items, g, one.clone())<span class="question-mark">?</span>;
 
-    absorbing_element(items, g, zero);
+    absorbing_element(items, g, zero)<span class="question-mark">?</span>;
 
-    distributive(items, f, g);
+    distributive(items, f, g)<span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines a ring structure.
@@ -909,9 +1014,10 @@
     zero: S, <span class="comment">// zero is the identity element of f
     </span>one: S,  <span class="comment">// one is the identity element of g
     </span>b: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S) -&gt; S,
-) {
-    semiring(items, f, g, zero.clone(), one);
-    inverse(items, f, zero, b);
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
+    semiring(items, f, g, zero.clone(), one)<span class="question-mark">?</span>;
+    inverse(items, f, zero, b)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines an integral domain structure.
@@ -920,12 +1026,13 @@
     items: <span class="kw-2">&amp;</span>[S; N],
     f: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S, S) -&gt; S,
     g: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S, S) -&gt; S,
-    zero: S,             <span class="comment">// zero is the identity element of f
-    </span>one: S,              <span class="comment">// one is the identity element of g
-    </span>b: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S) -&gt; S, <span class="comment">/* b is the function to compute the inverse element of an element with respect to f */
-</span>) {
-    commutative_ring(items, f, g, zero.clone(), one, b);
-    no_nonzero_zero_divisors(items, g, zero);
+    zero: S,                     <span class="comment">// zero is the identity element of f
+    </span>one: S,                      <span class="comment">// one is the identity element of g
+    </span>inverse_f: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S) -&gt; S, <span class="comment">/* the function to compute the inverse element of an element with respect to f */
+</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
+    commutative_ring(items, f, g, zero.clone(), one, inverse_f)<span class="question-mark">?</span>;
+    no_nonzero_zero_divisors(items, g, zero)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines a no-nonzero-zero-divisors property.
@@ -934,15 +1041,20 @@
     items: <span class="kw-2">&amp;</span>[S; N],
     f: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S, S) -&gt; S,
     zero: S,
-) {
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
     <span class="kw">for </span>a <span class="kw">in </span>items {
         <span class="kw">for </span>b <span class="kw">in </span>items {
             <span class="kw">if </span><span class="kw-2">*</span>a != zero &amp;&amp; <span class="kw-2">*</span>b != zero {
-                <span class="macro">assert_ne!</span>(f(a.clone(), b.clone()), zero);
-                <span class="macro">assert_ne!</span>(f(b.clone(), a.clone()), zero);
+                <span class="kw">if </span>f(a.clone(), b.clone()) == zero {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"No nonzero zero divisors check failed."</span>);
+                };
+                <span class="kw">if </span>f(b.clone(), a.clone()) == zero {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"No nonzero zero divisors check failed."</span>);
+                };
             }
         }
     }
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines a commutative ring structure.
@@ -953,11 +1065,12 @@
     </span>g: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S, S) -&gt; S, <span class="comment">// multiplication operation
     </span>zero: S,                <span class="comment">// zero is the identity element of f
     </span>one: S,                 <span class="comment">// one is the identity element of g
-    </span>b: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S) -&gt; S,
-) {
-    semiring(items, f, g, zero.clone(), one);
-    inverse(items, f, zero, b);
-    commutativity(items, g);
+    </span>inverse_f: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S) -&gt; S,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
+    semiring(items, f, g, zero.clone(), one)<span class="question-mark">?</span>;
+    inverse(items, f, zero, inverse_f)<span class="question-mark">?</span>;
+    commutativity(items, g)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines a field structure.
@@ -970,9 +1083,10 @@
     </span>one: S,                      <span class="comment">// one is the identity element of g
     </span>inverse_f: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S) -&gt; S, <span class="comment">/* inverse_f is the function that given x computes x' such that f(x,x') = zero. */
     </span>inverse_g: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S) -&gt; S, <span class="comment">/* //inverse_g is the function that given x computes x' such that g(x,x') = one. */
-</span>) {
-    commutative_ring(items, f, g, zero.clone(), one.clone(), inverse_f);
-    nonzero_inverse(items, g, one, zero, inverse_g);
+</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
+    commutative_ring(items, f, g, zero.clone(), one.clone(), inverse_f)<span class="question-mark">?</span>;
+    nonzero_inverse(items, g, one, zero, inverse_g)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines a commutative monoid structure.
@@ -981,9 +1095,10 @@
     items: <span class="kw-2">&amp;</span>[S; N],
     f: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S, S) -&gt; S,
     zero: S,
-) {
-    monoid(items, f, zero);
-    commutativity(items, f);
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
+    monoid(items, f, zero)<span class="question-mark">?</span>;
+    commutativity(items, f)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines a group structure.
@@ -995,9 +1110,10 @@
     f: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S, S) -&gt; S,
     zero: S,             <span class="comment">// zero is the identity element of f
     </span>b: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S) -&gt; S, <span class="comment">/* b is the function to compute the inverse element of an element with respect to f */
-</span>) {
-    monoid(items, f, zero.clone());
-    inverse(items, f, zero, b);
+</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
+    monoid(items, f, zero.clone())<span class="question-mark">?</span>;
+    inverse(items, f, zero, b)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines an abelian group structure.
@@ -1007,9 +1123,10 @@
     f: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S, S) -&gt; S,
     zero: S,
     b: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S) -&gt; S, <span class="comment">/* b is the function to compute the inverse element of an element with respect to f */
-</span>) {
-    group(items, f, zero, b);
-    commutativity(items, f);
+</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
+    group(items, f, zero, b)<span class="question-mark">?</span>;
+    commutativity(items, f)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="comment">// Algebraic Properties
@@ -1020,9 +1137,10 @@
     items: <span class="kw-2">&amp;</span>[S; N],
     f: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S, S) -&gt; S,
     g: <span class="kw-2">&amp;</span><span class="kw">impl </span>Fn(S, S) -&gt; S,
-) {
-    left_distributes(items, f, g);
-    right_distributes(items, f, g);
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
+    left_distributes(items, f, g)<span class="question-mark">?</span>;
+    right_distributes(items, f, g)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines the left distributive property
@@ -1031,13 +1149,15 @@
     items: <span class="kw-2">&amp;</span>[S; N],
     f: <span class="kw">impl </span>Fn(S, S) -&gt; S,
     g: <span class="kw">impl </span>Fn(S, S) -&gt; S,
-) {
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
     <span class="kw">for </span>[a, b, c] <span class="kw">in </span>cartesian_power(items) {
-        <span class="macro">assert_eq!</span>(
-            g(a.clone(), f(b.clone(), c.clone())),
-            f(g(a.clone(), b.clone()), g(a.clone(), c.clone()))
-        );
+        <span class="kw">if </span>g(a.clone(), f(b.clone(), c.clone()))
+            != f(g(a.clone(), b.clone()), g(a.clone(), c.clone()))
+        {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Left distributive property check failed."</span>);
+        }
     }
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines the right distributive property.
@@ -1046,13 +1166,15 @@
     items: <span class="kw-2">&amp;</span>[S; N],
     f: <span class="kw">impl </span>Fn(S, S) -&gt; S,
     g: <span class="kw">impl </span>Fn(S, S) -&gt; S,
-) {
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
     <span class="kw">for </span>[a, b, c] <span class="kw">in </span>cartesian_power(items) {
-        <span class="macro">assert_eq!</span>(
-            g(f(b.clone(), c.clone()), a.clone()),
-            f(g(b.clone(), a.clone()), g(c.clone(), a.clone()))
-        );
+        <span class="kw">if </span>g(f(b.clone(), c.clone()), a.clone())
+            != f(g(b.clone(), a.clone()), g(c.clone(), a.clone()))
+        {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Right distributive property check failed."</span>);
+        }
     }
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines the absorbing_element property.
@@ -1061,14 +1183,19 @@
     items: <span class="kw-2">&amp;</span>[S; N],
     f: <span class="kw">impl </span>Fn(S, S) -&gt; S,
     z: S, <span class="comment">// absorbing element (anything multiplied by z is z e.g. 0 in integers)
-</span>) {
+</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
     <span class="kw">for </span>a <span class="kw">in </span>items {
         <span class="comment">// az = z
-        </span><span class="macro">assert_eq!</span>(f(a.clone(), z.clone()), z.clone());
+        </span><span class="kw">if </span>f(a.clone(), z.clone()) != z.clone() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Absorbing element property check failed."</span>);
+        }
 
         <span class="comment">// za = z
-        </span><span class="macro">assert_eq!</span>(f(z.clone(), a.clone()), z.clone());
+        </span><span class="kw">if </span>f(z.clone(), a.clone()) != z.clone() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Absorbing element property check failed."</span>);
+        }
     }
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines the inverse property.
@@ -1078,12 +1205,17 @@
     f: <span class="kw">impl </span>Fn(S, S) -&gt; S,
     e: S,               <span class="comment">// e is the identity element of f
     </span>b: <span class="kw">impl </span>Fn(S) -&gt; S, <span class="comment">/* b is the function to compute the inverse element of an element with respect to f */
-</span>) {
+</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
     <span class="comment">// ∃b: ab = e, ba = e
     </span><span class="kw">for </span>a <span class="kw">in </span>items {
-        <span class="macro">assert_eq!</span>(f(a.clone(), b(a.clone())), e);
-        <span class="macro">assert_eq!</span>(f(b(a.clone()), a.clone()), e);
+        <span class="kw">if </span>f(a.clone(), b(a.clone())) != e {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Inverse check failed."</span>);
+        }
+        <span class="kw">if </span>f(b(a.clone()), a.clone()) != e {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Inverse check failed."</span>);
+        }
     }
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines the non_zero inverse property.
@@ -1094,14 +1226,19 @@
     e: S,
     zero: S,
     b: <span class="kw">impl </span>Fn(S) -&gt; S,
-) {
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
     <span class="comment">// ∃b: ab = e, ba = e
     </span><span class="kw">for </span>a <span class="kw">in </span>items {
         <span class="kw">if </span><span class="kw-2">*</span>a != zero {
-            <span class="macro">assert_eq!</span>(f(a.clone(), b(a.clone())), e);
-            <span class="macro">assert_eq!</span>(f(b(a.clone()), a.clone()), e);
+            <span class="kw">if </span>f(a.clone(), b(a.clone())) != e {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Nonzero inverse check failed."</span>);
+            }
+            <span class="kw">if </span>f(b(a.clone()), a.clone()) != e {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Nonzero inverse check failed."</span>);
+            }
         }
     }
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines the identity property.
@@ -1110,12 +1247,17 @@
     items: <span class="kw-2">&amp;</span>[S; N],
     f: <span class="kw">impl </span>Fn(S, S) -&gt; S,
     e: S,
-) {
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
     <span class="comment">// ea = a, ae = a
     </span><span class="kw">for </span>a <span class="kw">in </span>items {
-        <span class="macro">assert_eq!</span>(f(e.clone(), a.clone()), a.clone());
-        <span class="macro">assert_eq!</span>(f(a.clone(), e.clone()), a.clone());
+        <span class="kw">if </span>f(e.clone(), a.clone()) != a.clone() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Left Identity check failed."</span>);
+        }
+        <span class="kw">if </span>f(a.clone(), e.clone()) != a.clone() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Right Identity check failed."</span>);
+        }
     }
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines the associativity property.
@@ -1123,13 +1265,16 @@
 </span><span class="kw">pub fn </span>associativity&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
     f: <span class="kw">impl </span>Fn(S, S) -&gt; S,
-) {
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
     <span class="kw">for </span>[a, b, c] <span class="kw">in </span>cartesian_power(items) {
-        <span class="macro">assert_eq!</span>(
-            f(a.clone(), f(b.clone(), c.clone())), <span class="comment">// f(a, f(b,c)) ie a + (b + c)
-            </span>f(f(a.clone(), b.clone()), c.clone())  <span class="comment">// f(f(a,b),c) ie (a + b) + c
-        </span>);
+        <span class="kw">if </span>f(a.clone(), f(b.clone(), c.clone())) != <span class="comment">// f(a, f(b,c)) ie a + (b + c)
+            </span>f(f(a.clone(), b.clone()), c.clone())
+        <span class="comment">// f(f(a,b),c) ie (a + b) + c
+        </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Associativity check failed."</span>);
+        }
     }
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines the commutativity property.
@@ -1137,10 +1282,14 @@
 </span><span class="kw">pub fn </span>commutativity&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
     f: <span class="kw">impl </span>Fn(S, S) -&gt; S,
-) {
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
     <span class="kw">for </span>[x, y] <span class="kw">in </span>cartesian_power(items) {
-        <span class="macro">assert_eq!</span>(f(x.clone(), y.clone()), f(y.clone(), x.clone())); <span class="comment">// a + b = b + a
-    </span>}
+        <span class="kw">if </span>f(x.clone(), y.clone()) != f(y.clone(), x.clone()) {
+            <span class="comment">// a + b = b + a
+            </span><span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Commutativity check failed."</span>);
+        }
+    }
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Defines the idempotency property.
@@ -1148,13 +1297,66 @@
 </span><span class="kw">pub fn </span>idempotency&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
     items: <span class="kw-2">&amp;</span>[S; N],
     f: <span class="kw">impl </span>Fn(S, S) -&gt; S,
-) {
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str&gt; {
     <span class="kw">for </span>x <span class="kw">in </span>items {
-        <span class="macro">assert_eq!</span>(f(x.clone(), x.clone()), x.clone());
+        <span class="kw">if </span>f(x.clone(), x.clone()) != x.clone() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="string">"Idempotency check failed."</span>);
+        }
     }
+    <span class="prelude-val">Ok</span>(())
 }
 
-<span class="comment">// Tests
+<span class="comment">// Functions for testing out whether user defined code satisfies different properties
+
+// A list of algebraic properties of a single function that we support
+// static SINGLE_FUNCTION_PROPERTIES: [(&amp;str, fn(&amp;[S; N], impl Fn(S, S) -&gt; S)); 6] = [
+//     ("associativity", associativity),
+//     ("commutativity", commutativity),
+//     ("idempotency", idempotency),
+//     ("identity", identity),
+//     ("inverse", inverse),
+//     ("absorbing_element", absorbing_element)];
+
+</span><span class="doccomment">/// Loop through each algebraic property in SINGLE_FUNCTION_PROPERTIES and test for them
+</span><span class="kw">pub fn </span>get_single_function_properties&lt;S: Debug + PartialEq + Clone, <span class="kw">const </span>N: usize&gt;(
+    items: <span class="kw-2">&amp;</span>[S; N],
+    f: <span class="kw">impl </span>Fn(S, S) -&gt; S,
+    <span class="comment">// identity element (TODO make optional parameter)
+    </span>e: S,
+    <span class="comment">// inverse function (TODO make optional parameter)
+    </span>b: <span class="kw">impl </span>Fn(S) -&gt; S,
+    <span class="comment">// absorbing element (TODO make optional parameter)
+    </span>z: S,
+) -&gt; Vec&lt;String&gt; {
+    <span class="comment">// store the list of properties (strings) that are satisfied to be returned
+    </span><span class="kw">let </span><span class="kw-2">mut </span>properties_satisfied: Vec&lt;String&gt; = Vec::new();
+
+    <span class="comment">// TODO make this a loop through the SINGLE_FUNCTION_PROPERTIES array
+    </span><span class="kw">if </span>associativity(items, <span class="kw-2">&amp;</span>f).is_ok() {
+        properties_satisfied.push(<span class="string">"associativity"</span>.to_string());
+    }
+    <span class="kw">if </span>commutativity(items, <span class="kw-2">&amp;</span>f).is_ok() {
+        properties_satisfied.push(<span class="string">"commutativity"</span>.to_string());
+    }
+    <span class="kw">if </span>idempotency(items, <span class="kw-2">&amp;</span>f).is_ok() {
+        properties_satisfied.push(<span class="string">"idempotency"</span>.to_string());
+    }
+    <span class="kw">if </span>identity(items, <span class="kw-2">&amp;</span>f, e.clone()).is_ok() {
+        properties_satisfied.push(<span class="string">"identity"</span>.to_string());
+    }
+    <span class="kw">if </span>inverse(items, <span class="kw-2">&amp;</span>f, e.clone(), b).is_ok() {
+        properties_satisfied.push(<span class="string">"inverse"</span>.to_string());
+    }
+    <span class="kw">if </span>absorbing_element(items, <span class="kw-2">&amp;</span>f, z).is_ok() {
+        properties_satisfied.push(<span class="string">"absorbing_element"</span>.to_string());
+    }
+
+    properties_satisfied
+}
+
+<span class="comment">// TODO write a function to take in a set of functions and check which pairs satisfy different pairwise properties (e.g. distributivity
+
+// Tests
 
 </span><span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
@@ -1168,211 +1370,157 @@
     <span class="kw">static </span>TEST_BOOLS: <span class="kw-2">&amp;</span>[bool; <span class="number">2</span>] = <span class="kw-2">&amp;</span>[<span class="bool-val">false</span>, <span class="bool-val">true</span>];
 
     <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_field() {
-        <span class="comment">// Test that GF2 (0, 1, XOR, AND) is a field and  +, x, 0, 1, - is not a field (no multiplicative inverses)
-        // Note GF2 is the Galois Field with 2 elements.
-
-        </span>field(
-            TEST_BOOLS,
-            <span class="kw-2">&amp;</span>|a, b| a ^ b, <span class="comment">// logical XOR
-            </span><span class="kw-2">&amp;</span>|a, b| a &amp; b, <span class="comment">// a &amp; b, // logical AND
-            </span><span class="bool-val">false</span>,
-            <span class="bool-val">true</span>,
-            <span class="kw-2">&amp;</span>|x| x, <span class="comment">// XOR(x,x) = false, the identity for XOR
-            </span><span class="kw-2">&amp;</span>|_x| <span class="bool-val">true</span>, <span class="comment">/* AND(x,true) = true, the identity for AND. Note that the inverse doesn't need to work for the additive identity (false)
-                         */
-        </span>);
-        <span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            field(
-                TEST_ITEMS,
-                <span class="kw-2">&amp;</span>u32::wrapping_add,
-                <span class="kw-2">&amp;</span>u32::wrapping_mul,
-                <span class="number">0</span>,
-                <span class="number">1</span>,
-                <span class="kw-2">&amp;</span>|x| <span class="number">0u32</span>.wrapping_sub(x),
-                <span class="kw-2">&amp;</span>|x| <span class="number">0u32</span>.wrapping_sub(x) <span class="comment">//Note there is no valid inverse function for multiplication over the integers so we just pick some function
-            </span>);
-        })
-        .is_err());
-    }
-
-    <span class="attr">#[test]
     </span><span class="kw">fn </span>test_associativity() {
         <span class="comment">// Test that max() is associative and exponentiation isn't
-        </span>associativity(TEST_ITEMS, u32::max);
-        <span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            associativity(TEST_ITEMS, u32::wrapping_pow);
-        })
-        .is_err());
+        </span><span class="macro">assert!</span>(associativity(TEST_ITEMS, u32::max).is_ok());
+        <span class="macro">assert!</span>(associativity(TEST_ITEMS, u32::wrapping_pow).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_left_distributes() {
         <span class="comment">// Test that multiplication and subtraction are left distributive  a(b-c) = ab - ac.
         // but exponentiation and subtraction isn't since a^(b-c) != a^b - a^c.
-        </span>left_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_mul);
-        <span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            left_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_pow);
-        })
-        .is_err());
+        </span><span class="macro">assert!</span>(left_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_mul).is_ok());
+        <span class="macro">assert!</span>(left_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_pow).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_right_distributes() {
         <span class="comment">// Test that multiplication and subtraction are right distributive (b-c)a = ba - ca.
         // but exponentiation and subtraction isn't since (b-c)^a != b^a - c^a.
-        </span>right_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_mul);
-        <span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            right_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_pow);
-        })
-        .is_err());
+        </span><span class="macro">assert!</span>(right_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_mul).is_ok());
+        <span class="macro">assert!</span>(right_distributes(TEST_ITEMS, u32::wrapping_sub, u32::wrapping_pow).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_nonzero_inverse() {
         <span class="comment">// Test that addition and subtraction has a nonzero inverse and that multiplication does not.
-        </span>nonzero_inverse(TEST_ITEMS, u32::wrapping_add, <span class="number">0</span>, <span class="number">0</span>, |x| {
+        </span><span class="macro">assert!</span>(nonzero_inverse(TEST_ITEMS, u32::wrapping_add, <span class="number">0</span>, <span class="number">0</span>, |x| {
             <span class="number">0u32</span>.wrapping_sub(x)
-        });
-        nonzero_inverse(TEST_ITEMS, u32::wrapping_sub, <span class="number">0</span>, <span class="number">0</span>, |x| {
-            <span class="number">0u32</span>.wrapping_add(x)
-        });
-        <span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            right_distributes(TEST_ITEMS_NONZERO, u32::wrapping_div, u32::wrapping_mul);
         })
-        .is_err());
+        .is_ok());
+        <span class="macro">assert!</span>(nonzero_inverse(TEST_ITEMS, u32::wrapping_sub, <span class="number">0</span>, <span class="number">0</span>, |x| {
+            <span class="number">0u32</span>.wrapping_add(x)
+        })
+        .is_ok());
+        <span class="macro">assert!</span>(
+            right_distributes(TEST_ITEMS_NONZERO, u32::wrapping_div, u32::wrapping_mul).is_err()
+        );
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_idempotency() {
         <span class="comment">// Test that max() is idempotent and addition is non-idempotent
-        </span>idempotency(TEST_ITEMS, u32::max);
+        </span><span class="macro">assert!</span>(idempotency(TEST_ITEMS, u32::max).is_ok());
 
-        <span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            idempotency(TEST_ITEMS, u32::wrapping_add);
-        })
-        .is_err());
+        <span class="macro">assert!</span>(idempotency(TEST_ITEMS, u32::wrapping_add).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_commutativity() {
         <span class="comment">// Test that max() is commutative and division is non-commutative
-        </span>commutativity(TEST_ITEMS, u32::max);
-        <span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            commutativity(TEST_ITEMS, u32::wrapping_div);
-        })
-        .is_err());
-    }
+        </span><span class="macro">assert!</span>(commutativity(TEST_ITEMS, u32::max).is_ok());
+        <span class="macro">assert!</span>(commutativity(TEST_ITEMS_NONZERO, u32::wrapping_div).is_err());
+        <span class="comment">// Test items non-zero to avoid a divide by zero exception
+    </span>}
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_commutative_ring() {
         <span class="comment">// Test that (Z, +, *) is a commutative ring.
-        </span>commutative_ring(
+        </span><span class="macro">assert!</span>(commutative_ring(
             TEST_ITEMS,
             <span class="kw-2">&amp;</span>u32::wrapping_add,
             <span class="kw-2">&amp;</span>u32::wrapping_mul,
             <span class="number">0</span>,
             <span class="number">1</span>,
             <span class="kw-2">&amp;</span>|x| <span class="number">0u32</span>.wrapping_sub(x),
-        );
+        )
+        .is_ok());
 
         <span class="comment">// Test that (Z, +, ^) is not a commutative ring.
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            commutative_ring(
-                TEST_ITEMS,
-                <span class="kw-2">&amp;</span>u32::wrapping_add,
-                <span class="kw-2">&amp;</span>u32::wrapping_pow,
-                <span class="number">0</span>,
-                <span class="number">1</span>,
-                <span class="kw-2">&amp;</span>|x| <span class="number">0u32</span>.wrapping_sub(x),
-            );
-        })
+        </span><span class="macro">assert!</span>(commutative_ring(
+            TEST_ITEMS,
+            <span class="kw-2">&amp;</span>u32::wrapping_add,
+            <span class="kw-2">&amp;</span>u32::wrapping_pow,
+            <span class="number">0</span>,
+            <span class="number">1</span>,
+            <span class="kw-2">&amp;</span>|x| <span class="number">0u32</span>.wrapping_sub(x),
+        )
         .is_err());
 
         <span class="comment">// Test that matrix multiplication is not a commutative ring.
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            commutative_ring(
-                <span class="kw-2">&amp;</span>[[[<span class="number">1</span>, <span class="number">2</span>], [<span class="number">3</span>, <span class="number">4</span>]], [[<span class="number">5</span>, <span class="number">6</span>], [<span class="number">7</span>, <span class="number">8</span>]], [[<span class="number">9</span>, <span class="number">10</span>], [<span class="number">11</span>, <span class="number">12</span>]]],
-                <span class="kw-2">&amp;</span>|a, b| {
+        </span><span class="macro">assert!</span>(commutative_ring(
+            <span class="kw-2">&amp;</span>[[[<span class="number">1</span>, <span class="number">2</span>], [<span class="number">3</span>, <span class="number">4</span>]], [[<span class="number">5</span>, <span class="number">6</span>], [<span class="number">7</span>, <span class="number">8</span>]], [[<span class="number">9</span>, <span class="number">10</span>], [<span class="number">11</span>, <span class="number">12</span>]]],
+            <span class="kw-2">&amp;</span>|a, b| {
+                [
+                    [a[<span class="number">0</span>][<span class="number">0</span>] + b[<span class="number">0</span>][<span class="number">0</span>], a[<span class="number">0</span>][<span class="number">1</span>] + b[<span class="number">0</span>][<span class="number">1</span>]],
+                    [a[<span class="number">1</span>][<span class="number">0</span>] + b[<span class="number">1</span>][<span class="number">0</span>], a[<span class="number">1</span>][<span class="number">0</span>] + b[<span class="number">1</span>][<span class="number">1</span>]],
+                ]
+            },
+            <span class="kw-2">&amp;</span>|a, b| {
+                [
                     [
-                        [a[<span class="number">0</span>][<span class="number">0</span>] + b[<span class="number">0</span>][<span class="number">0</span>], a[<span class="number">0</span>][<span class="number">1</span>] + b[<span class="number">0</span>][<span class="number">1</span>]],
-                        [a[<span class="number">1</span>][<span class="number">0</span>] + b[<span class="number">1</span>][<span class="number">0</span>], a[<span class="number">1</span>][<span class="number">0</span>] + b[<span class="number">1</span>][<span class="number">1</span>]],
-                    ]
-                },
-                <span class="kw-2">&amp;</span>|a, b| {
+                        a[<span class="number">0</span>][<span class="number">0</span>] * b[<span class="number">0</span>][<span class="number">0</span>] + a[<span class="number">0</span>][<span class="number">1</span>] * b[<span class="number">1</span>][<span class="number">0</span>],
+                        a[<span class="number">0</span>][<span class="number">0</span>] * b[<span class="number">0</span>][<span class="number">1</span>] + a[<span class="number">0</span>][<span class="number">1</span>] * b[<span class="number">1</span>][<span class="number">1</span>],
+                    ],
                     [
-                        [
-                            a[<span class="number">0</span>][<span class="number">0</span>] * b[<span class="number">0</span>][<span class="number">0</span>] + a[<span class="number">0</span>][<span class="number">1</span>] * b[<span class="number">1</span>][<span class="number">0</span>],
-                            a[<span class="number">0</span>][<span class="number">0</span>] * b[<span class="number">0</span>][<span class="number">1</span>] + a[<span class="number">0</span>][<span class="number">1</span>] * b[<span class="number">1</span>][<span class="number">1</span>],
-                        ],
-                        [
-                            a[<span class="number">1</span>][<span class="number">0</span>] * b[<span class="number">0</span>][<span class="number">0</span>] + a[<span class="number">1</span>][<span class="number">1</span>] * b[<span class="number">1</span>][<span class="number">0</span>],
-                            a[<span class="number">1</span>][<span class="number">0</span>] * b[<span class="number">0</span>][<span class="number">1</span>] + a[<span class="number">1</span>][<span class="number">1</span>] * b[<span class="number">1</span>][<span class="number">1</span>],
-                        ],
-                    ]
-                },
-                [[<span class="number">0</span>, <span class="number">0</span>], [<span class="number">0</span>, <span class="number">0</span>]],
-                [[<span class="number">1</span>, <span class="number">0</span>], [<span class="number">0</span>, <span class="number">1</span>]],
-                <span class="kw-2">&amp;</span>|a| {
+                        a[<span class="number">1</span>][<span class="number">0</span>] * b[<span class="number">0</span>][<span class="number">0</span>] + a[<span class="number">1</span>][<span class="number">1</span>] * b[<span class="number">1</span>][<span class="number">0</span>],
+                        a[<span class="number">1</span>][<span class="number">0</span>] * b[<span class="number">0</span>][<span class="number">1</span>] + a[<span class="number">1</span>][<span class="number">1</span>] * b[<span class="number">1</span>][<span class="number">1</span>],
+                    ],
+                ]
+            },
+            [[<span class="number">0</span>, <span class="number">0</span>], [<span class="number">0</span>, <span class="number">0</span>]],
+            [[<span class="number">1</span>, <span class="number">0</span>], [<span class="number">0</span>, <span class="number">1</span>]],
+            <span class="kw-2">&amp;</span>|a| {
+                [
                     [
-                        [
-                            -a[<span class="number">0</span>][<span class="number">0</span>] / (a[<span class="number">0</span>][<span class="number">0</span>] * a[<span class="number">1</span>][<span class="number">1</span>] - a[<span class="number">0</span>][<span class="number">1</span>] * a[<span class="number">1</span>][<span class="number">1</span>]),
-                            -a[<span class="number">0</span>][<span class="number">1</span>] / (a[<span class="number">0</span>][<span class="number">0</span>] * a[<span class="number">1</span>][<span class="number">1</span>] - a[<span class="number">0</span>][<span class="number">1</span>] * a[<span class="number">1</span>][<span class="number">1</span>]),
-                        ],
-                        [
-                            -a[<span class="number">1</span>][<span class="number">0</span>] / (a[<span class="number">0</span>][<span class="number">0</span>] * a[<span class="number">1</span>][<span class="number">1</span>] - a[<span class="number">0</span>][<span class="number">1</span>] * a[<span class="number">1</span>][<span class="number">1</span>]),
-                            -a[<span class="number">1</span>][<span class="number">1</span>] / (a[<span class="number">0</span>][<span class="number">0</span>] * a[<span class="number">1</span>][<span class="number">1</span>] - a[<span class="number">0</span>][<span class="number">1</span>] * a[<span class="number">1</span>][<span class="number">1</span>]),
-                        ],
-                    ]
-                },
-            )
-        })
+                        -a[<span class="number">0</span>][<span class="number">0</span>] / (a[<span class="number">0</span>][<span class="number">0</span>] * a[<span class="number">1</span>][<span class="number">1</span>] - a[<span class="number">0</span>][<span class="number">1</span>] * a[<span class="number">1</span>][<span class="number">1</span>]),
+                        -a[<span class="number">0</span>][<span class="number">1</span>] / (a[<span class="number">0</span>][<span class="number">0</span>] * a[<span class="number">1</span>][<span class="number">1</span>] - a[<span class="number">0</span>][<span class="number">1</span>] * a[<span class="number">1</span>][<span class="number">1</span>]),
+                    ],
+                    [
+                        -a[<span class="number">1</span>][<span class="number">0</span>] / (a[<span class="number">0</span>][<span class="number">0</span>] * a[<span class="number">1</span>][<span class="number">1</span>] - a[<span class="number">0</span>][<span class="number">1</span>] * a[<span class="number">1</span>][<span class="number">1</span>]),
+                        -a[<span class="number">1</span>][<span class="number">1</span>] / (a[<span class="number">0</span>][<span class="number">0</span>] * a[<span class="number">1</span>][<span class="number">1</span>] - a[<span class="number">0</span>][<span class="number">1</span>] * a[<span class="number">1</span>][<span class="number">1</span>]),
+                    ],
+                ]
+            },
+        )
         .is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_commutative_monoid() {
         <span class="comment">// Test that (Z, +) is commutative monoid since every abelian group is commutative monoid.
-        </span>commutative_monoid(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="number">0</span>);
+        </span><span class="macro">assert!</span>(commutative_monoid(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="number">0</span>).is_ok());
 
         <span class="comment">// Test that  set of natural numbers N = {0, 1, 2, ...} is a commutative monoid under addition (identity element 0) or multiplication (identity element 1).
-        </span>commutative_monoid(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_mul, <span class="number">1</span>);
-        commutative_monoid(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="number">0</span>);
+        </span><span class="macro">assert!</span>(commutative_monoid(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_mul, <span class="number">1</span>).is_ok());
+        <span class="macro">assert!</span>(commutative_monoid(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="number">0</span>).is_ok());
 
         <span class="comment">// Test that ({true, false}, ∧) is a commutative monoid with identity element true.
-        </span>commutative_monoid(TEST_BOOLS, <span class="kw-2">&amp;</span>|a, b| a &amp; b, <span class="bool-val">true</span>); <span class="comment">// logical AND
+        </span><span class="macro">assert!</span>(commutative_monoid(TEST_BOOLS, <span class="kw-2">&amp;</span>|a, b| a &amp; b, <span class="bool-val">true</span>).is_ok()); <span class="comment">// logical AND
 
         // Test that (Z, -) is not a commutative monoid.
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            commutative_monoid(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_sub, <span class="number">0</span>);
-        })
-        .is_err());
+        </span><span class="macro">assert!</span>(commutative_monoid(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_sub, <span class="number">0</span>).is_err());
 
         <span class="comment">// Test that (N, +) is not a commutative monoid since it doesn't have an identity element (0 is missing).
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            commutative_monoid(TEST_ITEMS_NONZERO, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="number">1</span>); <span class="comment">// Note that 1 is an arbitrary identity element in TEST_ITEMS_NONZERO since it doesn't have an identity element 0.
-        </span>})
-        .is_err());
+        </span><span class="macro">assert!</span>(commutative_monoid(TEST_ITEMS_NONZERO, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="number">1</span>).is_err()); <span class="comment">// Note that 1 is an arbitrary identity element in TEST_ITEMS_NONZERO since it doesn't have an identity element 0.
 
-        <span class="comment">// Test that (Z, ^) is not a commutative monoid.
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            commutative_monoid(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_pow, <span class="number">3</span>);
-        })
-        .is_err());
+        // Test that (Z, ^) is not a commutative monoid.
+        </span><span class="macro">assert!</span>(commutative_monoid(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_pow, <span class="number">3</span>).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_semigroup() {
         <span class="comment">// Test that N := {1, 2, . . .} together with addition is a semigroup.
-        </span>semigroup(TEST_ITEMS_NONZERO, <span class="kw-2">&amp;</span>u32::wrapping_add);
+        </span><span class="macro">assert!</span>(semigroup(TEST_ITEMS_NONZERO, <span class="kw-2">&amp;</span>u32::wrapping_add).is_ok());
         <span class="comment">// Test that set of all natural numbers N = {0, 1, 2, ...} is a semigroup under addition.
-        </span>semigroup(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add);
+        </span><span class="macro">assert!</span>(semigroup(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add).is_ok());
         <span class="comment">// Test that set of all natural numbers N = {0, 1, 2, ...} is a semigroup under multiplication.
-        </span>semigroup(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_mul);
+        </span><span class="macro">assert!</span>(semigroup(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_mul).is_ok());
         <span class="comment">// Test that ({true, false}, ∧) is a semigroup.
-        </span>semigroup(TEST_BOOLS, <span class="kw-2">&amp;</span>|a, b| a &amp; b); <span class="comment">// logical AND
-                                              // Test that matrix multiplication is a semigroup.
-        </span>semigroup(
+        </span><span class="macro">assert!</span>(semigroup(TEST_BOOLS, <span class="kw-2">&amp;</span>|a, b| a &amp; b).is_ok()); <span class="comment">// logical AND
+                                                               // Test that matrix multiplication is a semigroup.
+        </span><span class="macro">assert!</span>(semigroup(
             <span class="kw-2">&amp;</span>[[[<span class="number">1</span>, <span class="number">2</span>], [<span class="number">3</span>, <span class="number">4</span>]], [[<span class="number">5</span>, <span class="number">6</span>], [<span class="number">7</span>, <span class="number">8</span>]], [[<span class="number">9</span>, <span class="number">10</span>], [<span class="number">11</span>, <span class="number">12</span>]]],
             <span class="kw-2">&amp;</span>|a, b| {
                 [
@@ -1386,115 +1534,65 @@
                     ],
                 ]
             },
-        );
+        )
+        .is_ok());
         <span class="comment">// Test that set of all natural numbers N = {0, 1, 2, ...} is not a semigroup under exponentiation.
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            semigroup(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_pow);
-        })
-        .is_err());
+        </span><span class="macro">assert!</span>(semigroup(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_pow).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_identity() {
         <span class="comment">// Test that 0 is the identity for addition and 5 is not
-        </span>identity(TEST_ITEMS, u32::wrapping_add, <span class="number">0</span>);
+        </span><span class="macro">assert!</span>(identity(TEST_ITEMS, u32::wrapping_add, <span class="number">0</span>).is_ok());
 
-        <span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            identity(TEST_ITEMS, u32::wrapping_add, <span class="number">5</span>);
-        })
-        .is_err());
+        <span class="macro">assert!</span>(identity(TEST_ITEMS, u32::wrapping_add, <span class="number">5</span>).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_inverse() {
         <span class="comment">// Test that subtraction is the inverse of addition and that addition is not the inverse of addition
-        </span>inverse(TEST_ITEMS, u32::wrapping_add, <span class="number">0</span>, |x| <span class="number">0u32</span>.wrapping_sub(x));
+        </span><span class="macro">assert!</span>(inverse(TEST_ITEMS, u32::wrapping_add, <span class="number">0</span>, |x| <span class="number">0u32</span>.wrapping_sub(x)).is_ok());
 
-        <span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            inverse(TEST_ITEMS, u32::wrapping_add, <span class="number">0</span>, |x| <span class="number">0u32</span>.wrapping_add(x));
-        })
-        .is_err());
+        <span class="macro">assert!</span>(inverse(TEST_ITEMS, u32::wrapping_add, <span class="number">0</span>, |x| <span class="number">0u32</span>.wrapping_add(x)).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_distributive() {
         <span class="comment">// Test that addition and multiplication are distributive and that addition and max() are not
-        </span>distributive(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="kw-2">&amp;</span>u32::wrapping_mul);
-        <span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            distributive(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="kw-2">&amp;</span>u32::max);
-        })
-        .is_err());
+        </span><span class="macro">assert!</span>(distributive(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="kw-2">&amp;</span>u32::wrapping_mul).is_ok());
+        <span class="macro">assert!</span>(distributive(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="kw-2">&amp;</span>u32::max).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_group() {
         <span class="comment">// Test that (Z, +) form a group.
-        </span>group(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="number">0</span>, <span class="kw-2">&amp;</span>|x| <span class="number">0u32</span>.wrapping_sub(x));
+        </span><span class="macro">assert!</span>(group(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="number">0</span>, <span class="kw-2">&amp;</span>|x| <span class="number">0u32</span>.wrapping_sub(x)).is_ok());
         <span class="comment">// Test that (Z/7Z, +) form a group.
-        </span>group(TEST_MOD_PRIME_7, <span class="kw-2">&amp;</span>modulo_add_7, <span class="number">0</span>, <span class="kw-2">&amp;</span>modulo_sub_7);
+        </span><span class="macro">assert!</span>(group(TEST_MOD_PRIME_7, <span class="kw-2">&amp;</span>modulo_add_7, <span class="number">0</span>, <span class="kw-2">&amp;</span>modulo_sub_7).is_ok());
         <span class="comment">// Test that (Z/14Z, +) form a group.
-        </span>group(TEST_ITEMS, <span class="kw-2">&amp;</span>modulo_add_14, <span class="number">0</span>, <span class="kw-2">&amp;</span>modulo_sub_14);
+        </span><span class="macro">assert!</span>(group(TEST_ITEMS, <span class="kw-2">&amp;</span>modulo_add_14, <span class="number">0</span>, <span class="kw-2">&amp;</span>modulo_sub_14).is_ok());
         <span class="comment">// Test that (Z, *) do not form a group since it has no inverse.
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            group(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_mul, <span class="number">1</span>, <span class="kw-2">&amp;</span>|x| <span class="number">1u32</span>.wrapping_div(x));
-        })
+        </span><span class="macro">assert!</span>(group(TEST_ITEMS_NONZERO, <span class="kw-2">&amp;</span>u32::wrapping_mul, <span class="number">1</span>, <span class="kw-2">&amp;</span>|x| <span class="number">1u32
+            </span>.wrapping_div(x))
         .is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_abelian_group() {
         <span class="comment">// Test that (Z, +) form an abelian group.
-        </span>abelian_group(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="number">0</span>, <span class="kw-2">&amp;</span>|x| <span class="number">0u32</span>.wrapping_sub(x));
+        </span><span class="macro">assert!</span>(
+            abelian_group(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="number">0</span>, <span class="kw-2">&amp;</span>|x| <span class="number">0u32</span>.wrapping_sub(x)).is_ok()
+        );
         <span class="comment">// Test that (Z/7Z, +) form an abelian group.
-        </span>abelian_group(TEST_MOD_PRIME_7, <span class="kw-2">&amp;</span>modulo_add_7, <span class="number">0</span>, <span class="kw-2">&amp;</span>modulo_sub_7);
+        </span><span class="macro">assert!</span>(abelian_group(TEST_MOD_PRIME_7, <span class="kw-2">&amp;</span>modulo_add_7, <span class="number">0</span>, <span class="kw-2">&amp;</span>modulo_sub_7).is_ok());
         <span class="comment">// Test that (Z, *) do not form an abelian group.
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            abelian_group(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_mul, <span class="number">1</span>, <span class="kw-2">&amp;</span>|x| <span class="number">1u32</span>.wrapping_div(x));
-        })
-        .is_err());
+        </span><span class="macro">assert!</span>(
+            abelian_group(TEST_ITEMS_NONZERO, <span class="kw-2">&amp;</span>u32::wrapping_mul, <span class="number">1</span>, <span class="kw-2">&amp;</span>|x| <span class="number">1u32
+                </span>.wrapping_div(x))
+            .is_err()
+        );
         <span class="comment">// Test that matrix multiplication is not an abelian group.
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            abelian_group(
-                <span class="kw-2">&amp;</span>[[[<span class="number">1</span>, <span class="number">2</span>], [<span class="number">3</span>, <span class="number">4</span>]], [[<span class="number">5</span>, <span class="number">6</span>], [<span class="number">7</span>, <span class="number">8</span>]], [[<span class="number">9</span>, <span class="number">10</span>], [<span class="number">11</span>, <span class="number">12</span>]]],
-                <span class="kw-2">&amp;</span>|a, b| {
-                    [
-                        [
-                            a[<span class="number">0</span>][<span class="number">0</span>] * b[<span class="number">0</span>][<span class="number">0</span>] + a[<span class="number">0</span>][<span class="number">1</span>] * b[<span class="number">1</span>][<span class="number">0</span>],
-                            a[<span class="number">0</span>][<span class="number">0</span>] * b[<span class="number">0</span>][<span class="number">1</span>] + a[<span class="number">0</span>][<span class="number">1</span>] * b[<span class="number">1</span>][<span class="number">1</span>],
-                        ],
-                        [
-                            a[<span class="number">1</span>][<span class="number">0</span>] * b[<span class="number">0</span>][<span class="number">0</span>] + a[<span class="number">1</span>][<span class="number">1</span>] * b[<span class="number">1</span>][<span class="number">0</span>],
-                            a[<span class="number">1</span>][<span class="number">0</span>] * b[<span class="number">0</span>][<span class="number">1</span>] + a[<span class="number">1</span>][<span class="number">1</span>] * b[<span class="number">1</span>][<span class="number">1</span>],
-                        ],
-                    ]
-                },
-                [[<span class="number">1</span>, <span class="number">0</span>], [<span class="number">0</span>, <span class="number">1</span>]],
-                <span class="kw-2">&amp;</span>|a| {
-                    [
-                        [
-                            -a[<span class="number">0</span>][<span class="number">0</span>] / (a[<span class="number">0</span>][<span class="number">0</span>] * a[<span class="number">1</span>][<span class="number">1</span>] - a[<span class="number">0</span>][<span class="number">1</span>] * a[<span class="number">1</span>][<span class="number">1</span>]),
-                            -a[<span class="number">0</span>][<span class="number">1</span>] / (a[<span class="number">0</span>][<span class="number">0</span>] * a[<span class="number">1</span>][<span class="number">1</span>] - a[<span class="number">0</span>][<span class="number">1</span>] * a[<span class="number">1</span>][<span class="number">1</span>]),
-                        ],
-                        [
-                            -a[<span class="number">1</span>][<span class="number">0</span>] / (a[<span class="number">0</span>][<span class="number">0</span>] * a[<span class="number">1</span>][<span class="number">1</span>] - a[<span class="number">0</span>][<span class="number">1</span>] * a[<span class="number">1</span>][<span class="number">1</span>]),
-                            -a[<span class="number">1</span>][<span class="number">1</span>] / (a[<span class="number">0</span>][<span class="number">0</span>] * a[<span class="number">1</span>][<span class="number">1</span>] - a[<span class="number">0</span>][<span class="number">1</span>] * a[<span class="number">1</span>][<span class="number">1</span>]),
-                        ],
-                    ]
-                },
-            )
-        })
-        .is_err());
-    }
-
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_monoid() {
-        <span class="comment">// Test that N = {0, 1, 2, . . .} is a monoid with respect to addition
-        </span>monoid(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="number">0</span>);
-        <span class="comment">// Test that N+ = N − {0} and N are both monoids with respect to multiplication
-        </span>monoid(TEST_ITEMS_NONZERO, <span class="kw-2">&amp;</span>u32::wrapping_mul, <span class="number">1</span>);
-        monoid(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_mul, <span class="number">1</span>);
-        <span class="comment">// Test that the set of nxn matrix with matrix multiplication is a monoid.
-        </span>monoid(
+        </span><span class="macro">assert!</span>(abelian_group(
             <span class="kw-2">&amp;</span>[[[<span class="number">1</span>, <span class="number">2</span>], [<span class="number">3</span>, <span class="number">4</span>]], [[<span class="number">5</span>, <span class="number">6</span>], [<span class="number">7</span>, <span class="number">8</span>]], [[<span class="number">9</span>, <span class="number">10</span>], [<span class="number">11</span>, <span class="number">12</span>]]],
             <span class="kw-2">&amp;</span>|a, b| {
                 [
@@ -1509,22 +1607,56 @@
                 ]
             },
             [[<span class="number">1</span>, <span class="number">0</span>], [<span class="number">0</span>, <span class="number">1</span>]],
-        );
-        <span class="comment">// Test that N+ = N − {0} is not a monoid with respect to addition since it doesn't have an identity element (0 is missing).
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            monoid(TEST_ITEMS_NONZERO, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="number">1</span>);
-        })
+            <span class="kw-2">&amp;</span>|a| {
+                [
+                    [
+                        -a[<span class="number">0</span>][<span class="number">0</span>] / (a[<span class="number">0</span>][<span class="number">0</span>] * a[<span class="number">1</span>][<span class="number">1</span>] - a[<span class="number">0</span>][<span class="number">1</span>] * a[<span class="number">1</span>][<span class="number">1</span>]),
+                        -a[<span class="number">0</span>][<span class="number">1</span>] / (a[<span class="number">0</span>][<span class="number">0</span>] * a[<span class="number">1</span>][<span class="number">1</span>] - a[<span class="number">0</span>][<span class="number">1</span>] * a[<span class="number">1</span>][<span class="number">1</span>]),
+                    ],
+                    [
+                        -a[<span class="number">1</span>][<span class="number">0</span>] / (a[<span class="number">0</span>][<span class="number">0</span>] * a[<span class="number">1</span>][<span class="number">1</span>] - a[<span class="number">0</span>][<span class="number">1</span>] * a[<span class="number">1</span>][<span class="number">1</span>]),
+                        -a[<span class="number">1</span>][<span class="number">1</span>] / (a[<span class="number">0</span>][<span class="number">0</span>] * a[<span class="number">1</span>][<span class="number">1</span>] - a[<span class="number">0</span>][<span class="number">1</span>] * a[<span class="number">1</span>][<span class="number">1</span>]),
+                    ],
+                ]
+            },
+        )
         .is_err());
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_monoid() {
+        <span class="comment">// Test that N = {0, 1, 2, . . .} is a monoid with respect to addition
+        </span><span class="macro">assert!</span>(monoid(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="number">0</span>).is_ok());
+        <span class="comment">// Test that N+ = N − {0} and N are both monoids with respect to multiplication
+        </span><span class="macro">assert!</span>(monoid(TEST_ITEMS_NONZERO, <span class="kw-2">&amp;</span>u32::wrapping_mul, <span class="number">1</span>).is_ok());
+        <span class="macro">assert!</span>(monoid(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_mul, <span class="number">1</span>).is_ok());
+        <span class="comment">// Test that the set of nxn matrix with matrix multiplication is a monoid.
+        </span><span class="macro">assert!</span>(monoid(
+            <span class="kw-2">&amp;</span>[[[<span class="number">1</span>, <span class="number">2</span>], [<span class="number">3</span>, <span class="number">4</span>]], [[<span class="number">5</span>, <span class="number">6</span>], [<span class="number">7</span>, <span class="number">8</span>]], [[<span class="number">9</span>, <span class="number">10</span>], [<span class="number">11</span>, <span class="number">12</span>]]],
+            <span class="kw-2">&amp;</span>|a, b| {
+                [
+                    [
+                        a[<span class="number">0</span>][<span class="number">0</span>] * b[<span class="number">0</span>][<span class="number">0</span>] + a[<span class="number">0</span>][<span class="number">1</span>] * b[<span class="number">1</span>][<span class="number">0</span>],
+                        a[<span class="number">0</span>][<span class="number">0</span>] * b[<span class="number">0</span>][<span class="number">1</span>] + a[<span class="number">0</span>][<span class="number">1</span>] * b[<span class="number">1</span>][<span class="number">1</span>],
+                    ],
+                    [
+                        a[<span class="number">1</span>][<span class="number">0</span>] * b[<span class="number">0</span>][<span class="number">0</span>] + a[<span class="number">1</span>][<span class="number">1</span>] * b[<span class="number">1</span>][<span class="number">0</span>],
+                        a[<span class="number">1</span>][<span class="number">0</span>] * b[<span class="number">0</span>][<span class="number">1</span>] + a[<span class="number">1</span>][<span class="number">1</span>] * b[<span class="number">1</span>][<span class="number">1</span>],
+                    ],
+                ]
+            },
+            [[<span class="number">1</span>, <span class="number">0</span>], [<span class="number">0</span>, <span class="number">1</span>]],
+        )
+        .is_ok());
+        <span class="comment">// Test that N+ = N − {0} is not a monoid with respect to addition since it doesn't have an identity element (0 is missing).
+        </span><span class="macro">assert!</span>(monoid(TEST_ITEMS_NONZERO, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="number">1</span>).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_absorbing() {
         <span class="comment">// Test that 0 is absorbing for multiplication and 5 is not
-        </span>absorbing_element(TEST_ITEMS, u32::wrapping_mul, <span class="number">0</span>);
-        <span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            absorbing_element(TEST_ITEMS, u32::wrapping_mul, <span class="number">5</span>);
-        })
-        .is_err());
+        </span><span class="macro">assert!</span>(absorbing_element(TEST_ITEMS, u32::wrapping_mul, <span class="number">0</span>).is_ok());
+        <span class="macro">assert!</span>(absorbing_element(TEST_ITEMS, u32::wrapping_mul, <span class="number">5</span>).is_err());
     }
 
     <span class="comment">// Performs addition modulo 7, ensuring the result remains within the range of 0 to 6.
@@ -1600,91 +1732,117 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_no_nonzero_zero_divisors() {
         <span class="comment">// The ring of integer mod prime number has no nonzero zero divisors.
-        </span>no_nonzero_zero_divisors(TEST_MOD_PRIME_7, <span class="kw-2">&amp;</span>modulo_mult_7, <span class="number">0</span>);
+        </span><span class="macro">assert!</span>(no_nonzero_zero_divisors(TEST_MOD_PRIME_7, <span class="kw-2">&amp;</span>modulo_mult_7, <span class="number">0</span>).is_ok());
         <span class="comment">// The ring of integers with multiplication mod prime number has nonzero zero divisors. (e.g. 1 * 7 = 0 mod 7)
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            no_nonzero_zero_divisors(TEST_ITEMS, <span class="kw-2">&amp;</span>modulo_mult_7, <span class="number">0</span>)
-        })
-        .is_err());
+        </span><span class="macro">assert!</span>(no_nonzero_zero_divisors(TEST_ITEMS, <span class="kw-2">&amp;</span>modulo_mult_7, <span class="number">0</span>).is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_integral_domain() {
         <span class="comment">// The ring of integers modulo a prime number is an integral domain.
-        </span>integral_domain(
+        </span><span class="macro">assert!</span>(integral_domain(
             TEST_MOD_PRIME_7,
             <span class="kw-2">&amp;</span>modulo_add_7,
             <span class="kw-2">&amp;</span>modulo_mult_7,
             <span class="number">0</span>,
             <span class="number">1</span>,
             <span class="kw-2">&amp;</span>modulo_sub_7,
-        );
+        )
+        .is_ok());
         <span class="comment">// The ring of integers modulo a composite number is not an integral domain.
-        </span><span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            integral_domain(
-                TEST_ITEMS,
-                <span class="kw-2">&amp;</span>modulo_add_14,
-                <span class="kw-2">&amp;</span>modulo_mult_14,
-                <span class="number">0</span>,
-                <span class="number">1</span>,
-                <span class="kw-2">&amp;</span>modulo_sub_14,
-            )
-        })
+        </span><span class="macro">assert!</span>(integral_domain(
+            TEST_ITEMS,
+            <span class="kw-2">&amp;</span>modulo_add_14,
+            <span class="kw-2">&amp;</span>modulo_mult_14,
+            <span class="number">0</span>,
+            <span class="number">1</span>,
+            <span class="kw-2">&amp;</span>modulo_sub_14,
+        )
         .is_err());
     }
 
     <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_ring() {
-        <span class="comment">// Test that +, x, 0, 1, - are a ring and +, x, 0, 5 are not (5 isn't a multiplicative identity)
-        </span>ring(
+    </span><span class="kw">fn </span>test_field() {
+        <span class="comment">// Test that GF2 (0, 1, XOR, AND) is a field and  +, x, 0, 1, - is not a field (no multiplicative inverses)
+        // Note GF2 is the Galois Field with 2 elements.
+
+        </span><span class="macro">assert!</span>(field(
+            TEST_BOOLS,
+            <span class="kw-2">&amp;</span>|a, b| a ^ b, <span class="comment">// logical XOR
+            </span><span class="kw-2">&amp;</span>|a, b| a &amp; b, <span class="comment">// a &amp; b, // logical AND
+            </span><span class="bool-val">false</span>,
+            <span class="bool-val">true</span>,
+            <span class="kw-2">&amp;</span>|x| x, <span class="comment">// XOR(x,x) = false, the identity for XOR
+            </span><span class="kw-2">&amp;</span>|_x| <span class="bool-val">true </span><span class="comment">/* AND(x,true) = true, the identity for AND. Note that the inverse doesn't need to work for the additive identity (false)
+                        */
+        </span>)
+        .is_ok());
+
+        <span class="macro">assert!</span>(field(
             TEST_ITEMS,
             <span class="kw-2">&amp;</span>u32::wrapping_add,
             <span class="kw-2">&amp;</span>u32::wrapping_mul,
             <span class="number">0</span>,
             <span class="number">1</span>,
             <span class="kw-2">&amp;</span>|x| <span class="number">0u32</span>.wrapping_sub(x),
-        );
-        <span class="macro">assert!</span>(std::panic::catch_unwind(|| {
-            ring(
-                TEST_ITEMS,
-                <span class="kw-2">&amp;</span>u32::wrapping_add,
-                <span class="kw-2">&amp;</span>u32::wrapping_mul,
-                <span class="number">0</span>,
-                <span class="number">5</span>,
-                <span class="kw-2">&amp;</span>|x| <span class="number">0u32</span>.wrapping_sub(x),
-            );
-        })
+            <span class="kw-2">&amp;</span>|x| <span class="number">0u32</span>.wrapping_sub(x) <span class="comment">//Note there is no valid inverse function for multiplication over the integers so we just pick some function
+        </span>)
+        .is_err());
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_ring() {
+        <span class="comment">// Test that +, x, 0, 1, - are a ring and +, x, 0, 5 are not (5 isn't a multiplicative identity)
+        </span><span class="macro">assert!</span>(ring(
+            TEST_ITEMS,
+            <span class="kw-2">&amp;</span>u32::wrapping_add,
+            <span class="kw-2">&amp;</span>u32::wrapping_mul,
+            <span class="number">0</span>,
+            <span class="number">1</span>,
+            <span class="kw-2">&amp;</span>|x| <span class="number">0u32</span>.wrapping_sub(x),
+        )
+        .is_ok());
+        <span class="macro">assert!</span>(ring(
+            TEST_ITEMS,
+            <span class="kw-2">&amp;</span>u32::wrapping_add,
+            <span class="kw-2">&amp;</span>u32::wrapping_mul,
+            <span class="number">0</span>,
+            <span class="number">5</span>,
+            <span class="kw-2">&amp;</span>|x| <span class="number">0u32</span>.wrapping_sub(x),
+        )
         .is_err());
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_semiring() {
         <span class="comment">// Test +, x is a semiring
-        </span>semiring(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="kw-2">&amp;</span>u32::wrapping_mul, <span class="number">0</span>, <span class="number">1</span>);
+        </span><span class="macro">assert!</span>(semiring(TEST_ITEMS, <span class="kw-2">&amp;</span>u32::wrapping_add, <span class="kw-2">&amp;</span>u32::wrapping_mul, <span class="number">0</span>, <span class="number">1</span>).is_ok());
 
         <span class="comment">// Test boolean semiring with AND as + and OR as x
-        </span>semiring(<span class="kw-2">&amp;</span>[<span class="bool-val">false</span>, <span class="bool-val">true</span>], <span class="kw-2">&amp;</span>|x, y| x | y, <span class="kw-2">&amp;</span>|x, y| x &amp; y, <span class="bool-val">false</span>, <span class="bool-val">true</span>);
+        </span><span class="macro">assert!</span>(semiring(<span class="kw-2">&amp;</span>[<span class="bool-val">false</span>, <span class="bool-val">true</span>], <span class="kw-2">&amp;</span>|x, y| x | y, <span class="kw-2">&amp;</span>|x, y| x &amp; y, <span class="bool-val">false</span>, <span class="bool-val">true</span>).is_ok());
 
         <span class="comment">// Test min plus semiring. + is min and x is plus. Also known as the "tropical semiring"
-        </span>semiring(
+        </span><span class="macro">assert!</span>(semiring(
             <span class="kw-2">&amp;</span>[<span class="number">0.0</span>, <span class="number">1.0</span>, <span class="number">2.0</span>, <span class="number">3.0</span>, <span class="number">4.0</span>, <span class="number">5.0</span>, <span class="number">6.0</span>, f64::INFINITY],
             <span class="kw-2">&amp;</span>f64::min,
             <span class="kw-2">&amp;</span>|x, y| x + y,
             f64::INFINITY,
             <span class="number">0.0</span>,
-        );
+        )
+        .is_ok());
 
         <span class="comment">// Test max plus semiring. + is max and x is plus.
-        </span>semiring(
+        </span><span class="macro">assert!</span>(semiring(
             <span class="kw-2">&amp;</span>[<span class="number">0.0</span>, <span class="number">1.0</span>, <span class="number">2.0</span>, <span class="number">3.0</span>, <span class="number">4.0</span>, <span class="number">5.0</span>, <span class="number">6.0</span>, f64::NEG_INFINITY],
             <span class="kw-2">&amp;</span>f64::max,
             <span class="kw-2">&amp;</span>|x, y| x + y,
             f64::NEG_INFINITY,
             <span class="number">0.0</span>,
-        );
+        )
+        .is_ok());
 
         <span class="comment">// Test sets of strings semiring with union as + and concatenation as x
-        </span>semiring(
+        </span><span class="macro">assert!</span>(semiring(
             <span class="kw-2">&amp;</span>[
                 HashSet::from([]),
                 HashSet::from([<span class="string">""</span>.to_owned()]),
@@ -1707,7 +1865,51 @@
             },
             HashSet::from([]),
             HashSet::from([<span class="string">""</span>.to_owned()]),
+        )
+        .is_ok());
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_get_single_function_properties() {
+        <span class="comment">// Test that get single function properties on addition returns associative, commutative, identity, and inverses.
+        </span><span class="kw">let </span>test_properties_satisfied = get_single_function_properties(
+            TEST_ITEMS,
+            u32::wrapping_add,
+            <span class="number">0</span>,
+            |x| <span class="number">0u32</span>.wrapping_sub(x),
+            <span class="number">0</span>,
         );
+        <span class="kw">let </span>correct_properties = <span class="macro">vec!</span>[
+            <span class="string">"associativity"</span>.to_string(),
+            <span class="string">"commutativity"</span>.to_string(),
+            <span class="string">"identity"</span>.to_string(),
+            <span class="string">"inverse"</span>.to_string(),
+        ];
+        <span class="macro">assert_eq!</span>(test_properties_satisfied, correct_properties);
+
+        <span class="comment">// Test that get single function properties on max returns associative, commutative, idempotent, identity, and absorbing element.
+        </span><span class="kw">let </span>test_properties_satisfied = get_single_function_properties(
+            <span class="kw-2">&amp;</span>[<span class="number">0.0</span>, <span class="number">1.0</span>, <span class="number">2.0</span>, <span class="number">3.0</span>, <span class="number">4.0</span>, <span class="number">5.0</span>, <span class="number">6.0</span>, f64::INFINITY],
+            f64::max,
+            <span class="number">0.0</span>,
+            |x| x,
+            f64::INFINITY,
+        );
+        <span class="kw">let </span>correct_properties = <span class="macro">vec!</span>[
+            <span class="string">"associativity"</span>.to_string(),
+            <span class="string">"commutativity"</span>.to_string(),
+            <span class="string">"idempotency"</span>.to_string(),
+            <span class="string">"identity"</span>.to_string(),
+            <span class="string">"absorbing_element"</span>.to_string(),
+        ];
+        <span class="macro">assert_eq!</span>(test_properties_satisfied, correct_properties);
+
+        <span class="comment">// Define a function that takes in two u32s and returns the first one
+        </span><span class="kw">let </span>f = |x: u32, _y: u32| x;
+        <span class="kw">let </span>test_properties_satisfied =
+            get_single_function_properties(TEST_ITEMS, f, <span class="number">0</span>, |x| <span class="number">0u32</span>.wrapping_sub(x), <span class="number">0</span>);
+        <span class="kw">let </span>correct_properties = <span class="macro">vec!</span>[<span class="string">"associativity"</span>.to_string(), <span class="string">"idempotency"</span>.to_string()];
+        <span class="macro">assert_eq!</span>(test_properties_satisfied, correct_properties);
     }
 }
 </code></pre></div></section></main></body></html>
