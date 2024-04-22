@@ -367,6 +367,7 @@ version = "0.0.0"
 dependencies = [
  "criterion",
  "differential-dataflow-master",
+ "futures",
  "hydroflow",
  "lazy_static",
  "rand 0.8.5",
