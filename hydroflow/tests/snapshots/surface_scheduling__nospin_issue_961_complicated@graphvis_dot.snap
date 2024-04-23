@@ -16,6 +16,8 @@ digraph {
     n9v1 [label="(n9v1) handoff", shape=parallelogram, fillcolor="#ddddff"]
     n10v1 [label="(n10v1) handoff", shape=parallelogram, fillcolor="#ddddff"]
     n11v1 [label="(n11v1) handoff", shape=parallelogram, fillcolor="#ddddff"]
+    n12v1 [label="(n12v1) identity()", shape=invhouse, fillcolor="#88aaff"]
+    n13v1 [label="(n13v1) handoff", shape=parallelogram, fillcolor="#ddddff"]
     n1v1 -> n2v1
     n6v1 -> n7v1
     n5v1 -> n6v1
@@ -24,9 +26,11 @@ digraph {
     n2v1 -> n3v1
     n7v1 -> n8v1
     n7v1 -> n11v1
-    n9v1 -> n5v1 [color=red]
+    n9v1 -> n12v1
     n10v1 -> n4v1 [color=red]
     n11v1 -> n2v1
+    n12v1 -> n13v1
+    n13v1 -> n5v1 [color=red]
     subgraph "cluster n1v1" {
         fillcolor="#dddddd"
         style=filled
@@ -67,6 +71,12 @@ digraph {
             n6v1
             n7v1
         }
+    }
+    subgraph "cluster n4v1" {
+        fillcolor="#dddddd"
+        style=filled
+        label = "sg_4v1\nstratum 2"
+        n12v1
     }
 }
 
