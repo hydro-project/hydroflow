@@ -16,13 +16,17 @@ linkStyle default stroke:#aaa
 6v1["(6v1) <code>handoff</code>"]:::otherClass
 7v1["(7v1) <code>handoff</code>"]:::otherClass
 8v1["(8v1) <code>handoff</code>"]:::otherClass
+9v1[\"(9v1) <code>identity()</code>"/]:::pullClass
+10v1["(10v1) <code>handoff</code>"]:::otherClass
 4v1-->5v1
 3v1-->6v1
 2v1-->7v1
 1v1-->8v1
-6v1--o4v1; linkStyle 4 stroke:red
+6v1-->9v1
 7v1-->3v1
 8v1--x2v1; linkStyle 6 stroke:red
+9v1-->10v1
+10v1--o4v1; linkStyle 8 stroke:red
 subgraph sg_1v1 ["sg_1v1 stratum 0"]
     1v1
 end
@@ -35,5 +39,8 @@ end
 subgraph sg_4v1 ["sg_4v1 stratum 0"]
     4v1
     5v1
+end
+subgraph sg_5v1 ["sg_5v1 stratum 2"]
+    9v1
 end
 

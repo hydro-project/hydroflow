@@ -404,9 +404,11 @@ fn find_subgraph_strata(
         let dst_stratum = partitioned_graph.subgraph_stratum(dst_sg);
         match delay_type {
             DelayType::Tick | DelayType::TickLazy => {
-                // If tick edge goes forward in stratum, need to buffer.
+                let is_lazy = matches!(delay_type, DelayType::TickLazy);
+                // If tick edge goes foreward in stratum, need to buffer.
                 // (TODO(mingwei): could use a different kind of handoff.)
-                if src_stratum <= dst_stratum {
+                // Or if lazy, need to create extra subgraph to mark as lazy.
+                if src_stratum <= dst_stratum || is_lazy {
                     // We inject a new subgraph between the src/dst which runs as the last stratum
                     // of the tick and therefore delays the data until the next tick.
 
@@ -436,10 +438,7 @@ fn find_subgraph_strata(
                     partitioned_graph.set_subgraph_stratum(new_subgraph_id, extra_stratum);
 
                     // Assign laziness.
-                    partitioned_graph.set_subgraph_laziness(
-                        new_subgraph_id,
-                        matches!(delay_type, DelayType::TickLazy),
-                    );
+                    partitioned_graph.set_subgraph_laziness(new_subgraph_id, is_lazy);
                 }
             }
             DelayType::Stratum => {
