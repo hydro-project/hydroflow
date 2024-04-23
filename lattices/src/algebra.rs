@@ -348,6 +348,59 @@ pub fn idempotency<S: Debug + PartialEq + Clone, const N: usize>(
     Ok(())
 }
 
+/// Defines the linearity property
+/// q is linear with respect to some group operation + if q(a+b) = q(a) + q(b)
+/// This is the same as q being a group homomorphism
+// As defined in the paper "DBSP: Automatic Incremental View Maintenance for Rich Query Languages"
+pub fn linearity<S: Debug + PartialEq + Clone, R: Debug + PartialEq + Clone, const N: usize>(
+    items: &[S; N],
+    f: impl Fn(S, S) -> S, // The base operation of the algebraic structure for state
+    g: impl Fn(R, R) -> R, // The base operation of the algebraic structure the query q outputs to
+    q: impl Fn(S) -> R, // The query over f that we want to check for linearity (to incrementalize)
+) -> Result<(), &'static str> {
+    for [x, y] in cartesian_power(items) {
+        if q(f(x.clone(), y.clone())) != g(q(y.clone()), q(x.clone())) {
+            // q(f(a,b)) = f(q(a), q(b))
+            return Err("Linearity check failed.");
+        }
+    }
+    Ok(())
+}
+
+/// Defines the bilinearity property
+/// q is bilinear with respect to + if q(a + b, c) = q(a,c) + q(b,c) and q(a,c + d) = q(a,c) + q(a,d)
+/// This is the same as q being distributive over the addition operation of the three groups S, T, and R in q:S x T --> R
+// As defined in the paper "DBSP: Automatic Incremental View Maintenance for Rich Query Languages"
+pub fn bilinearity<
+    S: Debug + PartialEq + Clone,
+    R: Debug + PartialEq + Clone,
+    T: Debug + PartialEq + Clone,
+    const N_FOR_F: usize,
+    const N_FOR_SECOND_EXAMPLE: usize,
+>(
+    items_f: &[S; N_FOR_F],
+    items_h: &[T; N_FOR_SECOND_EXAMPLE],
+    f: impl Fn(S, S) -> S, /* The base operation of the algebraic structure on the left input to the query q */
+    h: impl Fn(T, T) -> T, /* The base operation of the algebraic structure on the right input to the query q */
+    g: impl Fn(R, R) -> R, // The base operation of the algebraic structure the query q outputs to
+    q: impl Fn(S, T) -> R, /* The query over (f,g) that we want to check for bilinearity (to incrementalize) */
+) -> Result<(), &'static str> {
+    for [a, b] in cartesian_power(items_f) {
+        for [c, d] in cartesian_power(items_h) {
+            if q(f(a.clone(), b.clone()), c.clone())
+                != g(q(a.clone(), c.clone()), q(b.clone(), c.clone()))
+                || q(a.clone(), h(c.clone(), d.clone()))
+                    != g(q(a.clone(), c.clone()), q(a.clone(), d.clone()))
+            {
+                // q(a + b, c) = q(a,c) + q(b,c) AND
+                // q(a,c + d) = q(a,c + q(c,d)
+                return Err("Bilinearity check failed.");
+            }
+        }
+    }
+    Ok(())
+}
+
 // Functions for testing out whether user defined code satisfies different properties
 
 // A list of algebraic properties of a single function that we support
@@ -603,6 +656,22 @@ mod test {
         // Test that addition and multiplication are distributive and that addition and max() are not
         assert!(distributive(TEST_ITEMS, &u32::wrapping_add, &u32::wrapping_mul).is_ok());
         assert!(distributive(TEST_ITEMS, &u32::wrapping_add, &u32::max).is_err());
+    }
+
+    #[test]
+    fn test_linearity() {
+        // Test that multiplication over the (Z,+) group is linear
+        // but exponentiation and subtraction isn't since a^(b-c) != a^b - a^c.
+        assert!(linearity(TEST_ITEMS, u32::wrapping_add, u32::wrapping_add, |x| u32::wrapping_mul(x, 5)).is_ok());
+        assert!(linearity(TEST_ITEMS, u32::wrapping_add, u32::wrapping_add, |x| u32::pow(x, 5)).is_err());
+    }
+
+    #[test]
+    fn test_bilinearity() {
+        // Test that multiplication over the (Z,+) group is bilinear
+        // but exponentiation over the (Z,+) group is not bilinear
+        assert!(bilinearity(TEST_ITEMS, TEST_ITEMS, u32::wrapping_add, u32::wrapping_add, u32::wrapping_add, u32::wrapping_mul).is_ok());
+        assert!(bilinearity(TEST_ITEMS, TEST_ITEMS, u32::wrapping_add, u32::wrapping_add, u32::wrapping_add, u32::pow).is_err());
     }
 
     #[test]
