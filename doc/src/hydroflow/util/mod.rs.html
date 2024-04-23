@@ -354,6 +354,9 @@
 <a href="#352" id="352">352</a>
 <a href="#353" id="353">353</a>
 <a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 </span><span class="doccomment">//! Helper utilities for the Hydroflow surface syntax.
 
@@ -466,10 +469,13 @@
     </span>C: Default + Extend&lt;S::Item&gt;,
     S: Stream,
 {
-    <span class="kw">let </span>any = std::cell::Cell::new(<span class="bool-val">true</span>);
-    <span class="kw">let </span><span class="kw-2">mut </span>unfused_iter = ready_iter(stream).inspect(|<span class="kw">_</span>| any.set(<span class="bool-val">true</span>));
+    <span class="kw">use </span>std::sync::atomic::Ordering;
+
+    <span class="kw">let </span>got_any_items = std::sync::atomic::AtomicBool::new(<span class="bool-val">true</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>unfused_iter =
+        ready_iter(stream).inspect(|<span class="kw">_</span>| got_any_items.store(<span class="bool-val">true</span>, Ordering::Relaxed));
     <span class="kw">let </span><span class="kw-2">mut </span>out = C::default();
-    <span class="kw">while </span>any.replace(<span class="bool-val">false</span>) {
+    <span class="kw">while </span>got_any_items.swap(<span class="bool-val">false</span>, Ordering::Relaxed) {
         out.extend(unfused_iter.by_ref());
         <span class="comment">// Tokio unbounded channel returns items in lenght-128 chunks, so we have to be careful
         // that everything gets returned. That is why we yield here and loop.
