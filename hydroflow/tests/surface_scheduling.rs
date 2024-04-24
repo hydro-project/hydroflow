@@ -1,7 +1,9 @@
 use std::error::Error;
+use std::time::Duration;
 
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax, rassert_eq};
 use multiplatform_test::multiplatform_test;
+use tokio::time::timeout;
 
 #[multiplatform_test(test, wasm, env_tracing)]
 pub fn test_stratum_loop() {
@@ -79,7 +81,7 @@ async fn test_persist_stratum_run_async() -> Result<(), Box<dyn Error>> {
     };
     assert_graphvis_snapshots!(df);
 
-    tokio::time::timeout(std::time::Duration::from_millis(200), df.run_async())
+    timeout(Duration::from_millis(200), df.run_async())
         .await
         .expect_err("Expected time out");
 
@@ -120,4 +122,44 @@ pub fn test_issue_800_1050_fold_keyed() {
     };
     assert_graphvis_snapshots!(df);
     df.run_available();
+}
+
+#[multiplatform_test(hydroflow, env_tracing)]
+async fn test_nospin_issue_961() {
+    let mut df = hydroflow_syntax! {
+        source_iter([1])
+            -> next_stratum()
+            -> persist()
+            -> defer_tick_lazy()
+            -> null();
+    };
+    assert_graphvis_snapshots!(df);
+
+    timeout(Duration::from_millis(100), df.run_available_async())
+        .await
+        .expect("Should not spin.");
+}
+
+#[multiplatform_test(hydroflow, env_tracing)]
+async fn test_nospin_issue_961_complicated() {
+    let mut df = hydroflow_syntax! {
+        source_iter([1]) -> items;
+        items = union();
+
+        double = items
+            -> persist()
+            -> fold(|| 0, |accum, x| *accum += x)
+            -> defer_tick_lazy()
+            -> filter(|_| false)
+            -> tee();
+
+        double -> null();
+
+        double -> items;
+    };
+    assert_graphvis_snapshots!(df);
+
+    timeout(Duration::from_millis(100), df.run_available_async())
+        .await
+        .expect("Should not spin.");
 }
