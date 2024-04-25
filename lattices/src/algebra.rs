@@ -358,8 +358,8 @@ pub fn linearity<S: Debug + PartialEq + Clone, R: Debug + PartialEq + Clone, con
     g: impl Fn(R, R) -> R, // The base operation of the algebraic structure the query q outputs to
     q: impl Fn(S) -> R, // The query over f that we want to check for linearity (to incrementalize)
 ) -> Result<(), &'static str> {
-    for [x, y] in cartesian_power(items) {
-        if q(f(x.clone(), y.clone())) != g(q(y.clone()), q(x.clone())) {
+    for [a, b] in cartesian_power(items) {
+        if q(f(a.clone(), b.clone())) != g(q(b.clone()), q(a.clone())) {
             // q(f(a,b)) = f(q(a), q(b))
             return Err("Linearity check failed.");
         }
@@ -661,7 +661,7 @@ mod test {
     #[test]
     fn test_linearity() {
         // Test that multiplication over the (Z,+) group is linear
-        // but exponentiation and subtraction isn't since a^(b-c) != a^b - a^c.
+        // but exponentiation over the (Z,+) group is not linear
         assert!(
             linearity(TEST_ITEMS, u32::wrapping_add, u32::wrapping_add, |x| {
                 u32::wrapping_mul(x, 5)
