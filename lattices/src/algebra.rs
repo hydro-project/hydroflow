@@ -662,16 +662,42 @@ mod test {
     fn test_linearity() {
         // Test that multiplication over the (Z,+) group is linear
         // but exponentiation and subtraction isn't since a^(b-c) != a^b - a^c.
-        assert!(linearity(TEST_ITEMS, u32::wrapping_add, u32::wrapping_add, |x| u32::wrapping_mul(x, 5)).is_ok());
-        assert!(linearity(TEST_ITEMS, u32::wrapping_add, u32::wrapping_add, |x| u32::pow(x, 5)).is_err());
+        assert!(
+            linearity(TEST_ITEMS, u32::wrapping_add, u32::wrapping_add, |x| {
+                u32::wrapping_mul(x, 5)
+            })
+            .is_ok()
+        );
+        assert!(
+            linearity(TEST_ITEMS, u32::wrapping_add, u32::wrapping_add, |x| {
+                u32::pow(x, 5)
+            })
+            .is_err()
+        );
     }
 
     #[test]
     fn test_bilinearity() {
         // Test that multiplication over the (Z,+) group is bilinear
         // but exponentiation over the (Z,+) group is not bilinear
-        assert!(bilinearity(TEST_ITEMS, TEST_ITEMS, u32::wrapping_add, u32::wrapping_add, u32::wrapping_add, u32::wrapping_mul).is_ok());
-        assert!(bilinearity(TEST_ITEMS, TEST_ITEMS, u32::wrapping_add, u32::wrapping_add, u32::wrapping_add, u32::pow).is_err());
+        assert!(bilinearity(
+            TEST_ITEMS,
+            TEST_ITEMS,
+            u32::wrapping_add,
+            u32::wrapping_add,
+            u32::wrapping_add,
+            u32::wrapping_mul
+        )
+        .is_ok());
+        assert!(bilinearity(
+            TEST_ITEMS,
+            TEST_ITEMS,
+            u32::wrapping_add,
+            u32::wrapping_add,
+            u32::wrapping_add,
+            u32::pow
+        )
+        .is_err());
     }
 
     #[test]
