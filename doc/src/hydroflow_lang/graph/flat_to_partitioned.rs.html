@@ -525,7 +525,6 @@
 <a href="#523" id="523">523</a>
 <a href="#524" id="524">524</a>
 <a href="#525" id="525">525</a>
-<a href="#526" id="526">526</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Subgraph partioning algorithm
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -932,9 +931,11 @@
         <span class="kw">let </span>dst_stratum = partitioned_graph.subgraph_stratum(dst_sg);
         <span class="kw">match </span>delay_type {
             DelayType::Tick | DelayType::TickLazy =&gt; {
-                <span class="comment">// If tick edge goes forward in stratum, need to buffer.
+                <span class="kw">let </span>is_lazy = <span class="macro">matches!</span>(delay_type, DelayType::TickLazy);
+                <span class="comment">// If tick edge goes foreward in stratum, need to buffer.
                 // (TODO(mingwei): could use a different kind of handoff.)
-                </span><span class="kw">if </span>src_stratum &lt;= dst_stratum {
+                // Or if lazy, need to create extra subgraph to mark as lazy.
+                </span><span class="kw">if </span>src_stratum &lt;= dst_stratum || is_lazy {
                     <span class="comment">// We inject a new subgraph between the src/dst which runs as the last stratum
                     // of the tick and therefore delays the data until the next tick.
 
@@ -964,10 +965,7 @@
                     </span>partitioned_graph.set_subgraph_stratum(new_subgraph_id, extra_stratum);
 
                     <span class="comment">// Assign laziness.
-                    </span>partitioned_graph.set_subgraph_laziness(
-                        new_subgraph_id,
-                        <span class="macro">matches!</span>(delay_type, DelayType::TickLazy),
-                    );
+                    </span>partitioned_graph.set_subgraph_laziness(new_subgraph_id, is_lazy);
                 }
             }
             DelayType::Stratum =&gt; {
