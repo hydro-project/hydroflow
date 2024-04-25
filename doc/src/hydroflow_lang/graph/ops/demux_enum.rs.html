@@ -151,15 +151,12 @@
 <a href="#149" id="149">149</a>
 <a href="#150" id="150">150</a>
 <a href="#151" id="151">151</a>
-<a href="#152" id="152">152</a>
-<a href="#153" id="153">153</a>
-<a href="#154" id="154">154</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::Ident;
 <span class="kw">use </span>quote::{quote, quote_spanned};
 <span class="kw">use </span>syn::spanned::Spanned;
 
 <span class="kw">use super</span>::{
-    FlowPropArgs, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    FlowPropArgs, OpInstGenerics, OperatorCategory, OperatorConstraints,
     OperatorInstance, OperatorWriteOutput, PortIndexValue, PortListSpec, WriteContextArgs, RANGE_0,
     RANGE_1,
 };
@@ -206,10 +203,7 @@
     has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">Some</span>(|| PortListSpec::Variadic),
-    input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(GraphEdgeType::Value),
-    output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value,
-    flow_prop_fn: <span class="prelude-val">Some</span>(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
+    input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,    flow_prop_fn: <span class="prelude-val">Some</span>(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
         <span class="comment">// Preserve input flow properties.
         </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[flow_props_in[<span class="number">0</span>]])
     }),

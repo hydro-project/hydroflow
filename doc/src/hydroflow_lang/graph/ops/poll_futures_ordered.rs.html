@@ -29,13 +29,7 @@
 <a href="#27" id="27">27</a>
 <a href="#28" id="28">28</a>
 <a href="#29" id="29">29</a>
-<a href="#30" id="30">30</a>
-<a href="#31" id="31">31</a>
-<a href="#32" id="32">32</a>
-<a href="#33" id="33">33</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>syn::Ident;
-
-<span class="kw">use </span><span class="kw">crate</span>::graph::GraphEdgeType;
 
 <span class="kw">use super</span>::{
     poll_futures::poll_futures_writer, FlowPropArgs, OperatorCategory, OperatorConstraints, RANGE_0, RANGE_1
@@ -56,8 +50,6 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(GraphEdgeType::Value),
-    output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value,
     flow_prop_fn: <span class="prelude-val">Some</span>(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
         <span class="comment">// Preserve input flow properties.
         </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[flow_props_in[<span class="number">0</span>]])

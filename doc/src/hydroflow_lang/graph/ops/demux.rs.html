@@ -208,9 +208,6 @@
 <a href="#206" id="206">206</a>
 <a href="#207" id="207">207</a>
 <a href="#208" id="208">208</a>
-<a href="#209" id="209">209</a>
-<a href="#210" id="210">210</a>
-<a href="#211" id="211">211</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 
 <span class="kw">use </span>proc_macro2::{Ident, TokenTree};
@@ -219,7 +216,7 @@
 <span class="kw">use </span>syn::{Expr, Pat};
 
 <span class="kw">use super</span>::{
-    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
+    OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
     PortIndexValue, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
@@ -268,10 +265,7 @@
     has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">Some</span>(|| PortListSpec::Variadic),
-    input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(GraphEdgeType::Value),
-    output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value,
-    flow_prop_fn: <span class="prelude-val">None</span>,
+    input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,    flow_prop_fn: <span class="prelude-val">None</span>,
     write_fn: |<span class="kw-2">&amp;</span>WriteContextArgs {
                    root,
                    op_span,

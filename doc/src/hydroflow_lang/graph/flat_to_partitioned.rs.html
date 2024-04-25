@@ -526,31 +526,6 @@
 <a href="#524" id="524">524</a>
 <a href="#525" id="525">525</a>
 <a href="#526" id="526">526</a>
-<a href="#527" id="527">527</a>
-<a href="#528" id="528">528</a>
-<a href="#529" id="529">529</a>
-<a href="#530" id="530">530</a>
-<a href="#531" id="531">531</a>
-<a href="#532" id="532">532</a>
-<a href="#533" id="533">533</a>
-<a href="#534" id="534">534</a>
-<a href="#535" id="535">535</a>
-<a href="#536" id="536">536</a>
-<a href="#537" id="537">537</a>
-<a href="#538" id="538">538</a>
-<a href="#539" id="539">539</a>
-<a href="#540" id="540">540</a>
-<a href="#541" id="541">541</a>
-<a href="#542" id="542">542</a>
-<a href="#543" id="543">543</a>
-<a href="#544" id="544">544</a>
-<a href="#545" id="545">545</a>
-<a href="#546" id="546">546</a>
-<a href="#547" id="547">547</a>
-<a href="#548" id="548">548</a>
-<a href="#549" id="549">549</a>
-<a href="#550" id="550">550</a>
-<a href="#551" id="551">551</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Subgraph partioning algorithm
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -666,16 +641,7 @@
             </span><span class="kw">if </span>subgraph_unionfind.same_set(src, dst) {
                 <span class="comment">// Note that the _edge_ `edge_id` might not be in the subgraph even when both `src` and `dst` are. This prevents case 2.
                 // Handoffs will be inserted later for this self-loop.
-                </span><span class="kw">if </span>!partitioned_graph
-                    .edge_type(edge_id)
-                    .unwrap()
-                    .affects_in_out_graph_ownership()
-                {
-                    <span class="comment">// However self-loops are ok in the case of reference edges.
-                    // (This may hit trigger times for the same reference edge).
-                    </span>progress |= handoff_edges.remove(<span class="kw-2">&amp;</span>edge_id);
-                }
-                <span class="kw">continue</span>;
+                </span><span class="kw">continue</span>;
             }
 
             <span class="comment">// Ignore if would join stratum crossers (next edges).
@@ -696,7 +662,7 @@
                 // within a single subgraph.
                 </span>subgraph_unionfind.union(src, dst);
                 <span class="macro">assert!</span>(handoff_edges.remove(<span class="kw-2">&amp;</span>edge_id));
-                progress |= <span class="bool-val">true</span>;
+                progress = <span class="bool-val">true</span>;
             }
         }
     }
@@ -1067,26 +1033,10 @@
     }
 }
 
-<span class="doccomment">/// Ensure edgetypes are set.
-</span><span class="kw">pub fn </span>assert_edgetypes_set(flat_graph: <span class="kw-2">&amp;</span>HydroflowGraph) {
-    <span class="kw">let </span>missing_edgetypes = flat_graph
-        .edge_ids()
-        .filter(|<span class="kw-2">&amp;</span>edge_id| flat_graph.edge_type(edge_id).is_none())
-        .count();
-    <span class="macro">assert!</span>(
-        <span class="number">0 </span>== missing_edgetypes,
-        <span class="string">"`partition_graph` requires edge types to be set, but was unset for {} out of {} edges. This is a Hydroflow bug."</span>,
-        missing_edgetypes,
-        flat_graph.edge_ids().len(),
-    );
-}
-
 <span class="doccomment">/// Main method for this module. Partions a flat [`HydroflowGraph`] into one with subgraphs.
 ///
 /// Returns an error if a negative cycle exists in the graph. Negative cycles prevent partioning.
 </span><span class="kw">pub fn </span>partition_graph(flat_graph: HydroflowGraph) -&gt; <span class="prelude-ty">Result</span>&lt;HydroflowGraph, Diagnostic&gt; {
-    assert_edgetypes_set(<span class="kw-2">&amp;</span>flat_graph);
-
     <span class="comment">// Pre-find barrier crossers (input edges with a `DelayType`).
     </span><span class="kw">let </span><span class="kw-2">mut </span>barrier_crossers = find_barrier_crossers(<span class="kw-2">&amp;</span>flat_graph);
     <span class="kw">let </span><span class="kw-2">mut </span>partitioned_graph = flat_graph;

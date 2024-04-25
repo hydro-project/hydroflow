@@ -34,9 +34,7 @@
 <a href="#32" id="32">32</a>
 <a href="#33" id="33">33</a>
 <a href="#34" id="34">34</a>
-<a href="#35" id="35">35</a>
-<a href="#36" id="36">36</a>
-</pre></div><pre class="rust"><code><span class="kw">use super</span>::{GraphEdgeType, OperatorCategory, OperatorConstraints, NULL_WRITE_FN, RANGE_0};
+</pre></div><pre class="rust"><code><span class="kw">use super</span>::{OperatorCategory, OperatorConstraints, NULL_WRITE_FN, RANGE_0};
 
 <span class="doccomment">/// &gt; unbounded number of input streams of any type, unbounded number of output streams of any type.
 ///
@@ -67,8 +65,6 @@
     ports_inn: <span class="prelude-val">None</span>,
     ports_out: <span class="prelude-val">None</span>,
     input_delaytype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">None</span>,
-    output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value,
     flow_prop_fn: <span class="prelude-val">None</span>,
     write_fn: NULL_WRITE_FN,
 };

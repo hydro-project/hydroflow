@@ -64,13 +64,11 @@
 <a href="#62" id="62">62</a>
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
-<a href="#65" id="65">65</a>
-<a href="#66" id="66">66</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 <span class="kw">use </span>syn::parse_quote;
 
 <span class="kw">use super</span>::{
-    DelayType, GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
+    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
     PortIndexValue, WriteContextArgs, RANGE_0, RANGE_1,
 };
 
@@ -97,8 +95,6 @@
         }
         <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
     },
-    input_edgetype_fn: |<span class="kw">_</span>| <span class="prelude-val">Some</span>(GraphEdgeType::Value),
-    output_edgetype_fn: |<span class="kw">_</span>| GraphEdgeType::Value,
     flow_prop_fn: <span class="prelude-val">None</span>,
     write_fn: |wc @ <span class="kw-2">&amp;</span>WriteContextArgs {
                    op_span,
