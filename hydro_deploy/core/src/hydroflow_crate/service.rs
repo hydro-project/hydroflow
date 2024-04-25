@@ -291,6 +291,8 @@ impl Service for HydroflowCrateService {
                 // request stdout before sending config so we don't miss the "ready" response
                 let stdout_receiver = binary.write().await.cli_stdout().await;
 
+                ProgressTracker::println(format!("Service ready: {formatted_bind_config}\n").as_str());
+
                 binary
                     .write()
                     .await
@@ -308,6 +310,7 @@ impl Service for HydroflowCrateService {
                     *self.server_defns.try_write().unwrap() =
                         serde_json::from_str(ready_line.trim_start_matches("ready: ")).unwrap();
                 } else {
+                    ProgressTracker::println(format!("Did not find ready. Instead found: {:?}", ready_line).as_str());
                     bail!("expected ready");
                 }
 

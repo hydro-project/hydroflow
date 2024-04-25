@@ -7,7 +7,7 @@ use tokio::sync::RwLock;
 use super::gcp::GCPNetwork;
 use super::{
     progress, CustomService, GCPComputeEngineHost, Host, LocalhostHost, ResourcePool,
-    ResourceResult, Service,
+    ResourceResult, Service, PodHost
 };
 use crate::ServiceBuilder;
 
@@ -29,6 +29,11 @@ impl Deployment {
     #[allow(non_snake_case)]
     pub fn Localhost(&mut self) -> Arc<RwLock<LocalhostHost>> {
         self.add_host(LocalhostHost::new)
+    }
+
+    #[allow(non_snake_case)]
+    pub fn PodHost(&mut self) -> Arc<RwLock<PodHost>> {
+        self.add_host(PodHost::new)
     }
 
     #[allow(non_snake_case)]

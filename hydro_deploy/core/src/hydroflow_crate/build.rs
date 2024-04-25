@@ -66,7 +66,7 @@ pub async fn build_crate(
                 tokio::task::spawn_blocking(move || {
                     let mut command = Command::new("cargo");
                     command.args([
-                        "build".to_string(),
+                        "zigbuild".to_string(),
                         "--profile".to_string(),
                         profile.unwrap_or("release".to_string()),
                     ]);

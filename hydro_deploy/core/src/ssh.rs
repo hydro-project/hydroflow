@@ -11,11 +11,21 @@ use async_ssh2_lite::ssh2::ErrorCode;
 use async_ssh2_lite::{AsyncChannel, AsyncSession, Error, SessionConfiguration};
 use async_trait::async_trait;
 use futures::io::BufReader;
-use futures::{AsyncBufReadExt, AsyncWriteExt, StreamExt};
+use futures::{AsyncBufReadExt, AsyncWriteExt, StreamExt, TryStreamExt, join};
 use hydroflow_cli_integration::ServerBindConfig;
 use nanoid::nanoid;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::RwLock;
+
+// use k8s_openapi::api::core::v1::Pod;
+// use kube::{
+//     api::{Api, AttachParams, AttachedProcess, DeleteParams, PostParams, ResourceExt, WatchEvent, WatchParams},
+//     Client,
+// };
+
+// use tokio::io::AsyncWriteExt;
+
+// use kube::core::subresource::AttachParams;
 
 use super::progress::ProgressTracker;
 use super::util::async_retry;
@@ -281,6 +291,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         let user = self.ssh_user();
         let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_name}"));
 
+        // gets the ssh session for launching the binary
         let channel = ProgressTracker::leaf(
             format!("launching binary /home/{user}/hydro-{unique_name}"),
             async {
@@ -311,19 +322,28 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         )
         .await?;
 
+        // stdin_sender is used by other functions to send data queued up for stdin_receiver
+        // stdin_sender = top of the "funnel", stdin_receiver = bottom (concurrency supported due to internal synchronization)
         let (stdin_sender, mut stdin_receiver) = async_channel::unbounded::<String>();
-        let mut stdin = channel.stream(0); // stream 0 is stdout/stdin, we use it for stdin
+
+        // stream 0 is stdout/stdin, we use it for stdin. Note that we can't just return stdin directly because it doesn't support synchronization
+        let mut stdin = channel.stream(0);
         tokio::spawn(async move {
+            // Note that this while loop only wakes up when we get a result due to await
             while let Some(line) = stdin_receiver.next().await {
                 if stdin.write_all(line.as_bytes()).await.is_err() {
                     break;
                 }
 
+                // flush the entire buffer
                 stdin.flush().await.unwrap();
             }
         });
 
         let id_clone = id.clone();
+
+        // Pull away the first stdout stream into a different "prioritized" channel,
+        // and send everything else to stdout
         let (stdout_cli_receivers, stdout_receivers) =
             prioritized_broadcast(BufReader::new(channel.stream(0)).lines(), move |s| {
                 println!("[{id_clone}] {s}")
