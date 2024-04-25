@@ -17,6 +17,9 @@ pub mod progress;
 pub mod localhost;
 pub use localhost::LocalhostHost;
 
+pub mod kubernetes;
+pub use kubernetes::PodHost;
+
 pub mod ssh;
 
 pub mod gcp;

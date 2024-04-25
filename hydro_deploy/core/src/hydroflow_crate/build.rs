@@ -91,6 +91,11 @@ pub async fn build_crate_memoized(params: BuildParams) -> Result<&'static BuildO
                 tokio::task::spawn_blocking(move || {
                     let mut command = Command::new("cargo");
                     command.args(["build"]);
+                    // command.args([
+                    //     "zigbuild".to_string(),
+                    //     "--profile".to_string(),
+                    //     profile.unwrap_or("release".to_string()),
+                    // ]);
 
                     if let Some(profile) = params.profile.as_ref() {
                         command.args(["--profile", profile]);

@@ -22,6 +22,16 @@ use tokio::sync::{mpsc, oneshot};
 use tokio_stream::StreamExt;
 use tokio_util::io::SyncIoBridge;
 
+// use k8s_openapi::api::core::v1::Pod;
+// use kube::{
+//     api::{Api, AttachParams, AttachedProcess, DeleteParams, PostParams, ResourceExt, WatchEvent, WatchParams},
+//     Client,
+// };
+
+// use tokio::io::AsyncWriteExt;
+
+// use kube::core::subresource::AttachParams;
+
 use super::progress::ProgressTracker;
 use super::util::async_retry;
 use super::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
@@ -354,6 +364,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
         let user = self.ssh_user();
         let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_name}"));
 
+        // gets the ssh session for launching the binary
         let channel = ProgressTracker::leaf(
             format!("launching binary {}", binary_path.display()),
             async {
@@ -397,11 +408,14 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
                     break;
                 }
 
+                // flush the entire buffer
                 stdin.flush().await.unwrap();
             }
         });
 
         let id_clone = id.clone();
+        // Pull away the first stdout stream into a different "prioritized" channel,
+        // and send everything else to stdout
         let (stdout_deploy_receivers, stdout_receivers) =
             prioritized_broadcast(FuturesBufReader::new(channel.stream(0)).lines(), move |s| {
                 ProgressTracker::println(format!("[{id_clone}] {s}"));
