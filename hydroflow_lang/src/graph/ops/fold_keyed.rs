@@ -79,7 +79,8 @@ pub const FOLD_KEYED: OperatorConstraints = OperatorConstraints {
     has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
-    input_delaytype_fn: |_| Some(DelayType::Stratum),    flow_prop_fn: None,
+    input_delaytype_fn: |_| Some(DelayType::Stratum),
+    flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    hydroflow,
                    context,
