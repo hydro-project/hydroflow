@@ -113,15 +113,6 @@ fn find_subgraph_unionfind(
             if subgraph_unionfind.same_set(src, dst) {
                 // Note that the _edge_ `edge_id` might not be in the subgraph even when both `src` and `dst` are. This prevents case 2.
                 // Handoffs will be inserted later for this self-loop.
-                if !partitioned_graph
-                    .edge_type(edge_id)
-                    .unwrap()
-                    .affects_in_out_graph_ownership()
-                {
-                    // However self-loops are ok in the case of reference edges.
-                    // (This may hit trigger times for the same reference edge).
-                    progress |= handoff_edges.remove(&edge_id);
-                }
                 continue;
             }
 
@@ -143,7 +134,7 @@ fn find_subgraph_unionfind(
                 // within a single subgraph.
                 subgraph_unionfind.union(src, dst);
                 assert!(handoff_edges.remove(&edge_id));
-                progress |= true;
+                progress = true;
             }
         }
     }
@@ -413,9 +404,11 @@ fn find_subgraph_strata(
         let dst_stratum = partitioned_graph.subgraph_stratum(dst_sg);
         match delay_type {
             DelayType::Tick | DelayType::TickLazy => {
-                // If tick edge goes forward in stratum, need to buffer.
+                let is_lazy = matches!(delay_type, DelayType::TickLazy);
+                // If tick edge goes foreward in stratum, need to buffer.
                 // (TODO(mingwei): could use a different kind of handoff.)
-                if src_stratum <= dst_stratum {
+                // Or if lazy, need to create extra subgraph to mark as lazy.
+                if src_stratum <= dst_stratum || is_lazy {
                     // We inject a new subgraph between the src/dst which runs as the last stratum
                     // of the tick and therefore delays the data until the next tick.
 
@@ -445,10 +438,7 @@ fn find_subgraph_strata(
                     partitioned_graph.set_subgraph_stratum(new_subgraph_id, extra_stratum);
 
                     // Assign laziness.
-                    partitioned_graph.set_subgraph_laziness(
-                        new_subgraph_id,
-                        matches!(delay_type, DelayType::TickLazy),
-                    );
+                    partitioned_graph.set_subgraph_laziness(new_subgraph_id, is_lazy);
                 }
             }
             DelayType::Stratum => {
@@ -514,26 +504,10 @@ fn separate_external_inputs(partitioned_graph: &mut HydroflowGraph) {
     }
 }
 
-/// Ensure edgetypes are set.
-pub fn assert_edgetypes_set(flat_graph: &HydroflowGraph) {
-    let missing_edgetypes = flat_graph
-        .edge_ids()
-        .filter(|&edge_id| flat_graph.edge_type(edge_id).is_none())
-        .count();
-    assert!(
-        0 == missing_edgetypes,
-        "`partition_graph` requires edge types to be set, but was unset for {} out of {} edges. This is a Hydroflow bug.",
-        missing_edgetypes,
-        flat_graph.edge_ids().len(),
-    );
-}
-
 /// Main method for this module. Partions a flat [`HydroflowGraph`] into one with subgraphs.
 ///
 /// Returns an error if a negative cycle exists in the graph. Negative cycles prevent partioning.
 pub fn partition_graph(flat_graph: HydroflowGraph) -> Result<HydroflowGraph, Diagnostic> {
-    assert_edgetypes_set(&flat_graph);
-
     // Pre-find barrier crossers (input edges with a `DelayType`).
     let mut barrier_crossers = find_barrier_crossers(&flat_graph);
     let mut partitioned_graph = flat_graph;

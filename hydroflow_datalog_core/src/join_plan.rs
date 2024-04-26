@@ -1,6 +1,5 @@
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, HashMap};
-use std::ops::Deref;
 
 use hydroflow_lang::diagnostic::{Diagnostic, Level};
 use hydroflow_lang::graph::FlatGraphBuilder;
@@ -9,7 +8,7 @@ use proc_macro2::Span;
 use rust_sitter::Spanned;
 use syn::{parse_quote, parse_quote_spanned};
 
-use crate::grammar::datalog::{BoolExpr, BoolOp, IdentOrUnderscore, InputRelationExpr, IntExpr};
+use crate::grammar::datalog::{BoolExpr, BoolOp, ExtractExpr, InputRelationExpr, IntExpr};
 use crate::util::{repeat_tuple, Counter};
 
 /// Captures the tree of joins used to compute contributions from a single rule.
@@ -23,7 +22,7 @@ pub enum JoinPlan<'a> {
     Predicate(Vec<&'a Spanned<BoolExpr>>, Box<JoinPlan<'a>>),
     /// A join between some relation and a magic relation that emits values between
     /// 0 and some value in the input relation (upper-exclusive).
-    MagicNatLt(Box<JoinPlan<'a>>, IdentOrUnderscore, IdentOrUnderscore),
+    MagicNatLt(Box<JoinPlan<'a>>, ExtractExpr, ExtractExpr),
 }
 
 /// Tracks the Hydroflow node that corresponds to a subtree of a join plan.
@@ -139,33 +138,6 @@ fn emit_join_input_pipeline(
     flat_graph_builder.add_statement(statement);
 }
 
-/// Creates a mapping from variable names to the indices where that variable appears in `fields`.
-///
-/// Only return entries for variables that appear more than once. Those correspond to additional
-/// constraints: the relation is only true when the values at those indices are equal.
-///
-/// For example, `rel(a, b, a) := ...` requires that the values in the 0th and 2nd slots be the
-/// same, so we would return a map `{ "a" => [0, 2] }`. Note that since `b` is not repeated, it is
-/// not in the map.
-fn find_relation_local_constraints<'a>(
-    fields: impl Iterator<Item = &'a Spanned<IdentOrUnderscore>>,
-) -> BTreeMap<String, Vec<usize>> {
-    let mut indices_grouped_by_var = BTreeMap::new();
-    for (i, ident) in fields.enumerate() {
-        if let IdentOrUnderscore::Ident(ident) = ident.deref() {
-            let entry: &mut Vec<_> = indices_grouped_by_var
-                // TODO(shadaj): Can we avoid cloning here?
-                .entry(ident.name.clone())
-                .or_default();
-            entry.push(i);
-        }
-    }
-
-    indices_grouped_by_var.retain(|_, v| v.len() > 1);
-
-    indices_grouped_by_var
-}
-
 /// Given a mapping from variable names to their repeated indices, builds a Rust expression that
 /// tests whether the values at those indices are equal for each variable.
 ///
@@ -217,6 +189,144 @@ fn gen_predicate_value_expr(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
+/// Processes an extract expression to generate a Hydroflow pipeline that reads the input
+/// data from the IDB/EDB.
+///
+/// `row_width` is the number of elements in the tuples emitted by the **current** pipeline,
+/// with all transformations that have been applied while extracting variable so far. The
+/// `cur_row_offset` specifies the index of the current `ExtractExpr` in that tuple. If it
+/// is `None`, then we are the top-level expression and already have a tuple.
+///
+/// This function returns the number of elements in the tuple that will be emitted by the
+/// extraction of the `ExtractExpr`. So for a single variable, it will return `1`, for a
+/// tuple, it will return sum of the number of elements emitted by its children.
+fn process_extract(
+    extract: &ExtractExpr,
+    variable_mapping: &mut BTreeMap<String, usize>,
+    local_constraints: &mut BTreeMap<String, Vec<usize>>,
+    wildcard_indices: &mut Vec<usize>,
+    reader_pipeline: &mut Pipeline,
+    row_width: usize,
+    cur_row_offset: Option<usize>, // None if at the root and we are already a tuple
+    rule_span: Span,
+) -> usize {
+    match extract {
+        ExtractExpr::Underscore(_) => {
+            wildcard_indices.push(cur_row_offset.unwrap());
+            1
+        }
+        ExtractExpr::Ident(ident) => {
+            if let Entry::Vacant(e) = variable_mapping.entry(ident.name.clone()) {
+                e.insert(cur_row_offset.unwrap());
+            }
+
+            local_constraints
+                .entry(ident.name.clone())
+                .or_default()
+                .push(cur_row_offset.unwrap());
+
+            1
+        }
+        ExtractExpr::Flatten(_, expr) => {
+            let cur_row_offset = cur_row_offset.unwrap();
+            let tuple_elems_post_flat = (0..row_width)
+                .map(|i| {
+                    if i == cur_row_offset {
+                        parse_quote!(__flattened_element)
+                    } else {
+                        let idx: syn::Index = syn::Index::from(i);
+                        parse_quote!(::std::clone::Clone::clone(&row.#idx))
+                    }
+                })
+                .collect::<Vec<syn::Expr>>();
+
+            let flat_idx = syn::Index::from(cur_row_offset);
+
+            let mut row_types: Vec<syn::Type> = vec![];
+            for _ in 0..row_width {
+                row_types.push(parse_quote!(_));
+            }
+
+            let row_type: syn::Type = parse_quote!((#(#row_types, )*));
+
+            *reader_pipeline = parse_quote_spanned! {rule_span=>
+                #reader_pipeline -> flat_map(|row: #row_type| row.#flat_idx.into_iter().map(move |__flattened_element| (#(#tuple_elems_post_flat, )*)))
+            };
+
+            process_extract(
+                expr,
+                variable_mapping,
+                local_constraints,
+                wildcard_indices,
+                reader_pipeline,
+                row_width,
+                Some(cur_row_offset),
+                rule_span,
+            )
+        }
+        ExtractExpr::Untuple(_, tuple_elems, _) => {
+            let mut new_row_width = if let Some(cur_row_offset) = cur_row_offset {
+                let flat_idx = syn::Index::from(cur_row_offset);
+
+                let tuple_elems_post_flat = (0..row_width)
+                    .flat_map(|i| {
+                        if i == cur_row_offset {
+                            (0..tuple_elems.len())
+                                .map(|tuple_i| {
+                                    let idx: syn::Index = syn::Index::from(tuple_i);
+                                    parse_quote!(row_untuple.#flat_idx.#idx)
+                                })
+                                .collect::<Vec<_>>()
+                        } else {
+                            let idx: syn::Index = syn::Index::from(i);
+                            vec![parse_quote!(row_untuple.#idx)]
+                        }
+                    })
+                    .collect::<Vec<syn::Expr>>();
+
+                let mut row_types: Vec<syn::Type> = vec![];
+                for _ in 0..row_width {
+                    row_types.push(parse_quote!(_));
+                }
+
+                let row_type: syn::Type = parse_quote!((#(#row_types, )*));
+
+                *reader_pipeline = parse_quote_spanned! {rule_span=>
+                    #reader_pipeline -> map(|row_untuple: #row_type| (#(#tuple_elems_post_flat, )*))
+                };
+
+                row_width - 1 + tuple_elems.len()
+            } else {
+                row_width
+            };
+
+            let base_offset = cur_row_offset.unwrap_or_default();
+            let mut expanded_row_elements = 0;
+            for expr in tuple_elems {
+                let expanded_width = process_extract(
+                    expr,
+                    variable_mapping,
+                    local_constraints,
+                    wildcard_indices,
+                    reader_pipeline,
+                    new_row_width,
+                    Some(base_offset + expanded_row_elements),
+                    rule_span,
+                );
+
+                // as we process each child of the tuple, the prefix of the
+                // tuple emitted by the pipeline will grow, so we need to update
+                // our cursor and the current overall width appropriately
+                expanded_row_elements += expanded_width;
+                new_row_width = new_row_width - 1 + expanded_width;
+            }
+
+            expanded_row_elements
+        }
+    }
+}
+
 /// Generates a Hydroflow pipeline that computes the output to a given [`JoinPlan`].
 pub fn expand_join_plan(
     // The plan we are converting to a Hydroflow pipeline.
@@ -231,24 +341,6 @@ pub fn expand_join_plan(
 ) -> IntermediateJoinNode {
     match plan {
         JoinPlan::Source(target, persisted) => {
-            let mut variable_mapping = BTreeMap::new();
-            let mut wildcard_indices = vec![];
-            let mut row_types: Vec<syn::Type> = vec![];
-
-            let local_constraints = find_relation_local_constraints(target.fields.iter());
-
-            for (i, ident) in target.fields.iter().enumerate() {
-                row_types.push(parse_quote!(_));
-
-                if let IdentOrUnderscore::Ident(ident) = ident.deref() {
-                    if let Entry::Vacant(e) = variable_mapping.entry(ident.name.clone()) {
-                        e.insert(i);
-                    }
-                } else {
-                    wildcard_indices.push(i);
-                }
-            }
-
             // Because this is a node corresponding to some Datalog relation, we need to tee from it.
             let tee_index = tee_counter
                 .entry(target.name.name.clone())
@@ -256,39 +348,57 @@ pub fn expand_join_plan(
                 .next()
                 .expect("Out of tee indices");
 
-            let row_type = parse_quote!((#(#row_types, )*));
-
-            if local_constraints.is_empty() {
-                return IntermediateJoinNode {
-                    name: syn::Ident::new(&target.name.name, get_span(target.name.span)),
-                    persisted: *persisted,
-                    tee_idx: Some(tee_index),
-                    variable_mapping,
-                    wildcard_indices,
-                    tuple_type: row_type,
-                    span: get_span(target.span),
-                };
-            }
-
             let relation_node = syn::Ident::new(&target.name.name, get_span(target.name.span));
             let relation_idx = syn::LitInt::new(&tee_index.to_string(), Span::call_site());
 
-            let filter_node = syn::Ident::new(
+            let source_node = syn::Ident::new(
                 &format!(
-                    "join_{}_filter",
+                    "source_reader_{}",
                     next_join_idx.next().expect("Out of join indices")
                 ),
                 Span::call_site(),
             );
 
-            let conditions = build_local_constraint_conditions(&local_constraints);
+            let mut variable_mapping = BTreeMap::new();
+            let mut local_constraints = BTreeMap::new();
+            let mut wildcard_indices = vec![];
+
+            let mut pipeline: Pipeline = parse_quote_spanned! {get_span(rule_span)=>
+                #relation_node [#relation_idx]
+            };
+
+            let final_row_width = process_extract(
+                &ExtractExpr::Untuple((), target.fields.clone(), ()),
+                &mut variable_mapping,
+                &mut local_constraints,
+                &mut wildcard_indices,
+                &mut pipeline,
+                target.fields.len(),
+                None,
+                get_span(rule_span),
+            );
+
+            let mut row_types: Vec<syn::Type> = vec![];
+            for _ in 0..final_row_width {
+                row_types.push(parse_quote!(_));
+            }
+
+            let row_type = parse_quote!((#(#row_types, )*));
+
+            if local_constraints.values().any(|v| v.len() > 1) {
+                let conditions = build_local_constraint_conditions(&local_constraints);
+
+                pipeline = parse_quote_spanned! {get_span(rule_span)=>
+                    #pipeline -> filter(|row: &#row_type| #conditions)
+                };
+            }
 
             flat_graph_builder.add_statement(parse_quote_spanned! {get_span(rule_span)=>
-                #filter_node = #relation_node [#relation_idx] -> filter(|row: &#row_type| #conditions);
+                #source_node = #pipeline;
             });
 
             IntermediateJoinNode {
-                name: filter_node,
+                name: source_node,
                 persisted: *persisted,
                 tee_idx: None,
                 variable_mapping,
@@ -596,16 +706,17 @@ pub fn expand_join_plan(
             let inner_name = inner_expanded.name.clone();
             let row_type = inner_expanded.tuple_type;
 
-            if let IdentOrUnderscore::Ident(less_than) = less_than {
-                if inner_expanded
-                    .variable_mapping
-                    .contains_key(&less_than.name)
-                {
-                    todo!("The values generated by less_than cannot currently be used in other parts of the query");
+            match &less_than {
+                ExtractExpr::Ident(ident) => {
+                    if inner_expanded.variable_mapping.contains_key(&ident.name) {
+                        todo!("The values generated by less_than cannot currently be used in other parts of the query");
+                    }
                 }
+                ExtractExpr::Underscore(_) => {}
+                _ => panic!("The values generated by less_than must be a single variable"),
             }
 
-            let threshold_name = if let IdentOrUnderscore::Ident(threshold) = threshold {
+            let threshold_name = if let ExtractExpr::Ident(threshold) = threshold {
                 threshold.name.clone()
             } else {
                 panic!("The threshold must be a variable")
@@ -633,7 +744,7 @@ pub fn expand_join_plan(
                 flattened_elements.push(parse_quote!(row.#syn_wildcard_idx.clone()));
             }
 
-            if let IdentOrUnderscore::Ident(less_than) = less_than {
+            if let ExtractExpr::Ident(less_than) = less_than {
                 if less_than.name == threshold_name {
                     panic!("The threshold and less_than variables must be different")
                 }

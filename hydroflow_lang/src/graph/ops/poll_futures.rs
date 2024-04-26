@@ -1,8 +1,6 @@
 use quote::quote_spanned;
 use syn::Ident;
 
-use crate::graph::GraphEdgeType;
-
 use super::{
     FlowPropArgs, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1
 };
@@ -22,8 +20,6 @@ pub const POLL_FUTURES: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
         // Preserve input flow properties.
         Ok(vec![flow_props_in[0]])

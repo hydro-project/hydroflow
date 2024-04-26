@@ -2,7 +2,7 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 
 use super::{
-    DelayType, GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorInstance,
+    DelayType, OperatorCategory, OperatorConstraints, OperatorInstance,
     OperatorWriteOutput, PortIndexValue, WriteContextArgs, RANGE_0, RANGE_1,
 };
 
@@ -43,8 +43,6 @@ pub const DIFFERENCE_MULTISET: OperatorConstraints = OperatorConstraints {
         }
         _else => None,
     },
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    op_span,

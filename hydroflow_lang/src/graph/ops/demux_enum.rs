@@ -3,7 +3,7 @@ use quote::{quote, quote_spanned};
 use syn::spanned::Spanned;
 
 use super::{
-    FlowPropArgs, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    FlowPropArgs, OpInstGenerics, OperatorCategory, OperatorConstraints,
     OperatorInstance, OperatorWriteOutput, PortIndexValue, PortListSpec, WriteContextArgs, RANGE_0,
     RANGE_1,
 };
@@ -50,10 +50,7 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
     has_singleton_output: false,
     ports_inn: None,
     ports_out: Some(|| PortListSpec::Variadic),
-    input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
+    input_delaytype_fn: |_| None,    flow_prop_fn: Some(|FlowPropArgs { flow_props_in, .. }, _diagnostics| {
         // Preserve input flow properties.
         Ok(vec![flow_props_in[0]])
     }),

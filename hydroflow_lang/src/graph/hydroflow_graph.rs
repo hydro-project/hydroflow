@@ -14,9 +14,9 @@ use syn::spanned::Spanned;
 use super::graph_write::{Dot, GraphWrite, Mermaid};
 use super::ops::{find_op_op_constraints, OperatorWriteOutput, WriteContextArgs, OPERATORS};
 use super::{
-    get_operator_generics, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphEdgeType, GraphNode,
-    GraphNodeId, GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT,
-    HANDOFF_NODE_STR, HYDROFLOW,
+    get_operator_generics, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphNode, GraphNodeId,
+    GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT, HANDOFF_NODE_STR,
+    HYDROFLOW,
 };
 use crate::diagnostic::{Diagnostic, Level};
 use crate::graph::ops::{null_write_iterator_fn, DelayType};
@@ -36,8 +36,6 @@ use crate::process_singletons;
 pub struct HydroflowGraph {
     /// Each node type (operator or handoff).
     nodes: SlotMap<GraphNodeId, GraphNode>,
-    /// Edge types
-    edge_types: SecondaryMap<GraphEdgeId, GraphEdgeType>,
 
     /// Instance data corresponding to each operator node.
     /// This field will be empty after deserialization.
@@ -384,12 +382,6 @@ impl HydroflowGraph {
         self.ports
             .insert(e1, (PortIndexValue::Elided(span), dst_idx));
 
-        // Duplicate edge types.
-        if let Some(edge_type) = self.edge_types.remove(edge_id) {
-            self.insert_edge_type(e0, edge_type);
-            self.insert_edge_type(e1, edge_type);
-        }
-
         (node_id, e1)
     }
 
@@ -420,16 +412,6 @@ impl HydroflowGraph {
         let (src_port, _) = self.ports.remove(pred_edge_id).unwrap();
         let (_, dst_port) = self.ports.remove(succ_edge_id).unwrap();
         self.ports.insert(new_edge_id, (src_port, dst_port));
-
-        let pred_edge_type = self.edge_types.remove(pred_edge_id);
-        let succ_edge_type = self.edge_types.remove(succ_edge_id);
-        assert_eq!(
-            pred_edge_type, succ_edge_type,
-            "Edge type should be the same before and after a union/tee."
-        );
-        if let Some(edge_type) = pred_edge_type {
-            self.insert_edge_type(new_edge_id, edge_type);
-        }
     }
 
     /// Helper method: determine the "color" (pull vs push) of a node based on its in and out degree,
@@ -442,23 +424,9 @@ impl HydroflowGraph {
             return Some(Color::Hoff);
         }
         // In-degree excluding ref-edges.
-        let inn_degree = self
-            .node_predecessor_edges(node_id)
-            .filter(|&edge_id| {
-                self.edge_type(edge_id)
-                    .expect("Edge type should be set, this is a Hydroflow bug.")
-                    .affects_in_out_graph_ownership()
-            })
-            .count();
+        let inn_degree = self.node_predecessor_edges(node_id).count();
         // Out-degree excluding ref-edges.
-        let out_degree = self
-            .node_successor_edges(node_id)
-            .filter(|&edge_id| {
-                self.edge_type(edge_id)
-                    .expect("Edge type should be set, this is a Hydroflow bug.")
-                    .affects_in_out_graph_ownership()
-            })
-            .count();
+        let out_degree = self.node_successor_edges(node_id).count();
 
         match (inn_degree, out_degree) {
             (0, 0) => None, // Generally should not happen, "Degenerate subgraph detected".
@@ -576,15 +544,11 @@ impl HydroflowGraph {
 
             let (src, _) = self.edge(pred_edge);
             let (_, dst) = self.edge(succ_edge);
-            let edge_type = self.edge_type(pred_edge);
             self.remove_edge(pred_edge);
             self.remove_edge(succ_edge);
 
             let new_edge_id = self.graph.insert_edge(src, dst);
             self.ports.insert(new_edge_id, (pred_port, succ_port));
-            if let Some(edge_type) = edge_type {
-                self.edge_types.insert(new_edge_id, edge_type);
-            }
         }
 
         self.graph.remove_vertex(mod_bound_node);
@@ -600,11 +564,6 @@ impl HydroflowGraph {
     pub fn edge(&self, edge_id: GraphEdgeId) -> (GraphNodeId, GraphNodeId) {
         let (src, dst) = self.graph.edge(edge_id).expect("Edge not found.");
         (src, dst)
-    }
-
-    /// Gets the type of the edge.
-    pub fn edge_type(&self, edge_id: GraphEdgeId) -> Option<GraphEdgeType> {
-        self.edge_types.get(edge_id).copied()
     }
 
     /// Get the source and destination ports for an edge: `(src &PortIndexValue, dst &PortIndexValue)`.
@@ -642,20 +601,10 @@ impl HydroflowGraph {
         edge_id
     }
 
-    /// Set the edge type for an edge.
-    pub fn insert_edge_type(
-        &mut self,
-        edge: GraphEdgeId,
-        edge_type: GraphEdgeType,
-    ) -> Option<GraphEdgeType> {
-        self.edge_types.insert(edge, edge_type)
-    }
-
     /// Removes an edge and its corresponding ports and edge type info.
     pub fn remove_edge(&mut self, edge: GraphEdgeId) {
         let (_src, _dst) = self.graph.remove_edge(edge).unwrap();
         let (_src_port, _dst_port) = self.ports.remove(edge).unwrap();
-        let _edge_type = self.edge_types.remove(edge);
     }
 }
 
@@ -789,11 +738,6 @@ impl HydroflowGraph {
             (_, GraphNode::ModuleBoundary { .. }) => panic!(),
         };
         Ident::new(&*name, span)
-    }
-
-    /// For reference edges. Helper to generate a deterministic `Ident` for the given [reference] edge.
-    fn edge_as_ident(&self, edge_id: GraphEdgeId, span: Span) -> Ident {
-        Ident::new(&*format!("edge_{:?}", edge_id.data()), span)
     }
 
     /// For per-node singleton references. Helper to generate a deterministic `Ident` for the given node.
@@ -963,21 +907,9 @@ impl HydroflowGraph {
 
                             let inputs = input_edges
                                 .iter()
-                                .map(|&(_port, edge_id)| match self.edge_type(edge_id).unwrap() {
-                                    GraphEdgeType::Value => {
-                                        let (pred, _) = self.edge(edge_id);
-                                        self.node_as_ident(pred, true)
-                                    }
-                                    GraphEdgeType::Reference => {
-                                        self.edge_as_ident(edge_id, op_span)
-                                    }
-                                })
-                                .collect::<Vec<_>>();
-                            let input_edgetypes = input_edges
-                                .iter()
                                 .map(|&(_port, edge_id)| {
-                                    self.edge_type(edge_id)
-                                        .expect("Unset edge_type, this is a bug.")
+                                    let (pred, _) = self.edge(edge_id);
+                                    self.node_as_ident(pred, true)
                                 })
                                 .collect::<Vec<_>>();
 
@@ -992,21 +924,9 @@ impl HydroflowGraph {
 
                             let outputs = output_edges
                                 .iter()
-                                .map(|&(_port, edge_id)| match self.edge_type(edge_id).unwrap() {
-                                    GraphEdgeType::Value => {
-                                        let (_, succ) = self.edge(edge_id);
-                                        self.node_as_ident(succ, false)
-                                    }
-                                    GraphEdgeType::Reference => {
-                                        self.edge_as_ident(edge_id, op_span)
-                                    }
-                                })
-                                .collect::<Vec<_>>();
-                            let output_edgetypes = output_edges
-                                .iter()
                                 .map(|&(_port, edge_id)| {
-                                    self.edge_type(edge_id)
-                                        .expect("Unset edge_type, this is a bug.")
+                                    let (_, succ) = self.edge(edge_id);
+                                    self.node_as_ident(succ, false)
                                 })
                                 .collect::<Vec<_>>();
 
@@ -1057,8 +977,6 @@ impl HydroflowGraph {
                                 is_pull,
                                 inputs: &*inputs,
                                 outputs: &*outputs,
-                                input_edgetypes: &*input_edgetypes,
-                                output_edgetypes: &*output_edgetypes,
                                 singleton_output_ident,
                                 op_name,
                                 op_inst,

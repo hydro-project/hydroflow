@@ -1,7 +1,7 @@
 use quote::{quote_spanned, ToTokens};
 
 use super::{
-    DelayType, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints,
     OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
@@ -70,8 +70,6 @@ pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    hydroflow,

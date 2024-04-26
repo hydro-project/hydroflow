@@ -1,7 +1,7 @@
 use quote::quote_spanned;
 
 use super::{
-    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
 
@@ -32,8 +32,6 @@ pub const SOURCE_ITER: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    op_span,
