@@ -124,6 +124,20 @@ pub fn test_issue_800_1050_fold_keyed() {
     df.run_available();
 }
 
+#[multiplatform_test(test, wasm, env_tracing)]
+pub fn test_issue_800_1050_reduce_keyed() {
+    let mut df = hydroflow_syntax! {
+        in1 = source_iter(0..10) -> map(|i| (i, i));
+        in1 -> reduce_keyed::<'static>(std::ops::AddAssign::add_assign) -> my_union_tee;
+
+        my_union_tee = union() -> tee();
+        my_union_tee -> filter(|_| false) -> my_union_tee;
+        my_union_tee -> for_each(|x| println!("A {} {} {:?}", context.current_tick(), context.current_stratum(), x));
+    };
+    assert_graphvis_snapshots!(df);
+    df.run_available();
+}
+
 #[multiplatform_test(hydroflow, env_tracing)]
 async fn test_nospin_issue_961() {
     let mut df = hydroflow_syntax! {
