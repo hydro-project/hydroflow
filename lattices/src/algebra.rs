@@ -352,8 +352,8 @@ pub fn idempotency<S: Debug + PartialEq + Clone, const N: usize>(
 /// q is linear with respect to some group operation + if q(a+b) = q(a) + q(b)
 /// This is the same as q being a group homomorphism
 // As defined in the paper "DBSP: Automatic Incremental View Maintenance for Rich Query Languages"
-pub fn linearity<S: Debug + PartialEq + Clone, R: Debug + PartialEq + Clone, const N: usize>(
-    items: &[S; N],
+pub fn linearity<S: Debug + PartialEq + Clone, R: Debug + PartialEq + Clone>(
+    items: &[S],
     f: impl Fn(S, S) -> S, // The base operation of the algebraic structure for state
     g: impl Fn(R, R) -> R, // The base operation of the algebraic structure the query q outputs to
     q: impl Fn(S) -> R, // The query over f that we want to check for linearity (to incrementalize)
@@ -375,11 +375,9 @@ pub fn bilinearity<
     S: Debug + PartialEq + Clone,
     R: Debug + PartialEq + Clone,
     T: Debug + PartialEq + Clone,
-    const N_FOR_F: usize,
-    const N_FOR_SECOND_EXAMPLE: usize,
 >(
-    items_f: &[S; N_FOR_F],
-    items_h: &[T; N_FOR_SECOND_EXAMPLE],
+    items_f: &[S],
+    items_h: &[T],
     f: impl Fn(S, S) -> S, /* The base operation of the algebraic structure on the left input to the query q */
     h: impl Fn(T, T) -> T, /* The base operation of the algebraic structure on the right input to the query q */
     g: impl Fn(R, R) -> R, // The base operation of the algebraic structure the query q outputs to
