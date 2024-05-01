@@ -351,12 +351,15 @@ pub fn idempotency<S: Debug + PartialEq + Clone, const N: usize>(
 /// Defines the linearity property
 /// q is linear with respect to some group operation + if q(a+b) = q(a) + q(b)
 /// This is the same as q being a group homomorphism
-// As defined in the paper "DBSP: Automatic Incremental View Maintenance for Rich Query Languages"
+/// As defined in the paper "DBSP: Automatic Incremental View Maintenance for Rich Query Languages"
+/// Input parameters f, g, and q represent (f) the base operation of the algebraic structure for state,
+/// (g) the base operation of the algebraic structure the query q outputs to
+/// and (q) the query over f that we want to check for linearity (to incrementalize) respectively
 pub fn linearity<S: Debug + PartialEq + Clone, R: Debug + PartialEq + Clone>(
     items: &[S],
-    f: impl Fn(S, S) -> S, // The base operation of the algebraic structure for state
-    g: impl Fn(R, R) -> R, // The base operation of the algebraic structure the query q outputs to
-    q: impl Fn(S) -> R, // The query over f that we want to check for linearity (to incrementalize)
+    f: impl Fn(S, S) -> S,
+    g: impl Fn(R, R) -> R,
+    q: impl Fn(S) -> R,
 ) -> Result<(), &'static str> {
     for [a, b] in cartesian_power(items) {
         if q(f(a.clone(), b.clone())) != g(q(b.clone()), q(a.clone())) {
@@ -370,7 +373,11 @@ pub fn linearity<S: Debug + PartialEq + Clone, R: Debug + PartialEq + Clone>(
 /// Defines the bilinearity property
 /// q is bilinear with respect to + if q(a + b, c) = q(a,c) + q(b,c) and q(a,c + d) = q(a,c) + q(a,d)
 /// This is the same as q being distributive over the addition operation of the three groups S, T, and R in q:S x T --> R
-// As defined in the paper "DBSP: Automatic Incremental View Maintenance for Rich Query Languages"
+/// As defined in the paper "DBSP: Automatic Incremental View Maintenance for Rich Query Languages
+/// Input parameters f, h, g, and q represent (f) the base operation of the algebraic structure on the left input to the query q,
+/// (h) the base operation of the algebraic structure on the right input to the query q,
+/// (g) the base operation of the algebraic structure the query q outputs to,
+/// and (q) The query over (f,g) that we want to check for bilinearity (to incrementalize)
 pub fn bilinearity<
     S: Debug + PartialEq + Clone,
     R: Debug + PartialEq + Clone,
@@ -378,10 +385,10 @@ pub fn bilinearity<
 >(
     items_f: &[S],
     items_h: &[T],
-    f: impl Fn(S, S) -> S, /* The base operation of the algebraic structure on the left input to the query q */
-    h: impl Fn(T, T) -> T, /* The base operation of the algebraic structure on the right input to the query q */
-    g: impl Fn(R, R) -> R, // The base operation of the algebraic structure the query q outputs to
-    q: impl Fn(S, T) -> R, /* The query over (f,g) that we want to check for bilinearity (to incrementalize) */
+    f: impl Fn(S, S) -> S,
+    h: impl Fn(T, T) -> T,
+    g: impl Fn(R, R) -> R,
+    q: impl Fn(S, T) -> R,
 ) -> Result<(), &'static str> {
     for [a, b] in cartesian_power(items_f) {
         for [c, d] in cartesian_power(items_h) {
