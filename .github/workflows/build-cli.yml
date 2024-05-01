@@ -1,6 +1,7 @@
 name: Build CLI
 
 on:
+  pull_request:
   push:
     branches:
       - main
@@ -9,7 +10,7 @@ on:
 
 env:
   PACKAGE_NAME: hydro_deploy
-  PYTHON_VERSION: "3.7" # to build abi3 wheels
+  PYTHON_VERSION: "3.10" # to build abi3 wheels
 
 # based on Ruff's CI
 jobs:
@@ -63,7 +64,7 @@ jobs:
           - i686-unknown-linux-gnu
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           architecture: x64
