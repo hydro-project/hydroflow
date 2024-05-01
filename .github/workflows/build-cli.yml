@@ -34,7 +34,7 @@ jobs:
           - universal2-apple-darwin
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           architecture: x64
@@ -109,7 +109,7 @@ jobs:
             arch: armv7
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: "Build wheels"
@@ -140,7 +140,7 @@ jobs:
             arch: x64
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           architecture: ${{ matrix.platform.arch }}
@@ -174,7 +174,7 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: wheels
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
       - name: "Publish to PyPi"
         env:
           TWINE_USERNAME: __token__
