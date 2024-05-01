@@ -37,7 +37,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          architecture: x64
       - name: "Build wheels"
         uses: PyO3/maturin-action@v1
         with:
