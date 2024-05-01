@@ -7,11 +7,10 @@ use syn::token::Colon;
 use syn::{parse_quote_spanned, Expr, Ident, LitInt, LitStr, Pat, PatType};
 
 use super::{
-    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorInstance, PortIndexValue,
+    OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput, PortIndexValue,
     PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::ops::OperatorWriteOutput;
 use crate::pretty_span::PrettySpan;
 
 /// This operator takes the input pipeline and allows the user to determine which singular output
@@ -69,8 +68,6 @@ pub const PARTITION: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: Some(|| PortListSpec::Variadic),
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,

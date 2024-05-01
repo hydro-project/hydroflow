@@ -1,7 +1,7 @@
 use quote::quote_spanned;
 
 use super::{
-    GraphEdgeType, OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
+    OperatorCategory, OperatorConstraints, OperatorWriteOutput, WriteContextArgs,
     RANGE_0, RANGE_1,
 };
 
@@ -29,10 +29,7 @@ pub const FLATTEN: OperatorConstraints = OperatorConstraints {
     has_singleton_output: false,
     ports_inn: None,
     ports_out: None,
-    input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
-    flow_prop_fn: None,
+    input_delaytype_fn: |_| None,    flow_prop_fn: None,
     write_fn: |&WriteContextArgs {
                    root,
                    op_span,

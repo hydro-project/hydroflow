@@ -2,15 +2,12 @@ use quote::{quote_spanned, ToTokens};
 use syn::parse_quote;
 use syn::spanned::Spanned;
 
+use super::join_fused::{make_joindata, parse_argument, parse_persistences, JoinOptions};
 use super::{
-    DelayType, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
-    OperatorInstance, OperatorWriteOutput, Persistence, PortIndexValue, WriteContextArgs, RANGE_0,
-    RANGE_1,
+    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, Persistence, PortIndexValue, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::ops::join_fused::{
-    make_joindata, parse_argument, parse_persistences, JoinOptions,
-};
 
 /// See `join_fused`
 ///
@@ -45,8 +42,6 @@ pub const JOIN_FUSED_LHS: OperatorConstraints = OperatorConstraints {
         }
         _ => None,
     },
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    context,

@@ -1,8 +1,8 @@
 use quote::{quote_spanned, ToTokens};
 
 use super::{
-    GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
-    OperatorWriteOutput, PortIndexValue, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN,
+    OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN,
     RANGE_0, RANGE_1,
 };
 
@@ -36,13 +36,6 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |idx| match idx {
-        PortIndexValue::Path(path) if "state" == path.to_token_stream().to_string() => {
-            GraphEdgeType::Reference
-        }
-        _else => GraphEdgeType::Value,
-    },
     flow_prop_fn: Some(LATTICE_FOLD_REDUCE_FLOW_PROP_FN),
     write_fn: |&WriteContextArgs {
                    root,
