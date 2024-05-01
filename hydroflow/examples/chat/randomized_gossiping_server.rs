@@ -147,14 +147,14 @@ pub(crate) async fn run_gossiping_server(opts: Opts) {
 
         // Holds all the known messages.
         all_messages = fold::<'static>(HashSet::<ChatMessage>::new, |accum, message| {
-            accum.insert(message)
+            accum.insert(message);
         }) -> flatten();
 
         // Holds a set of messages that are currently infecting this server
         infecting_messages = union() -> fold::<'static>(HashSet::<ChatMessage>::new, |accum, op| {
             match op {
-                InfectionOperation::InfectWithMessage{ msg } => {accum.insert(msg)},
-                InfectionOperation::RemoveForMessage{ msg } => { accum.remove(&msg) }
+                InfectionOperation::InfectWithMessage{ msg } => {accum.insert(msg);},
+                InfectionOperation::RemoveForMessage{ msg } => { accum.remove(&msg);}
             }
         });
 
