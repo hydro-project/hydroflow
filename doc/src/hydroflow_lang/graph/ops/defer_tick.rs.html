@@ -77,6 +77,9 @@
 <a href="#75" id="75">75</a>
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
 </pre></div><pre class="rust"><code><span class="kw">use super</span>::{
     DelayType, OperatorCategory, OperatorConstraints, IDENTITY_WRITE_FN, RANGE_0,
     RANGE_1,
@@ -136,6 +139,9 @@
 /// }
 /// flow.run_tick();
 /// ```
+///
+/// You can also supply a type parameter `defer_tick::&lt;MyType&gt;()` to specify what items flow
+/// through the the pipeline. This can be useful for helping the compiler infer types.
 </span><span class="kw">pub const </span>DEFER_TICK: OperatorConstraints = OperatorConstraints {
     name: <span class="string">"defer_tick"</span>,
     categories: <span class="kw-2">&amp;</span>[OperatorCategory::Control],
@@ -145,7 +151,7 @@
     soft_range_out: RANGE_1,
     num_args: <span class="number">0</span>,
     persistence_args: RANGE_0,
-    type_args: RANGE_0,
+    type_args: <span class="kw-2">&amp;</span>(<span class="number">0</span>..=<span class="number">1</span>),
     is_external_input: <span class="bool-val">false</span>,
     has_singleton_output: <span class="bool-val">false</span>,
     ports_inn: <span class="prelude-val">None</span>,
