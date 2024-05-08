@@ -1,13 +1,13 @@
 <h1 class="crate-title">The <code>lattices</code> Crate</h1>
 
-The `lattices` crate provides ergonomic and compsable lattice types. You can also implement custom
+The `lattices` crate provides ergonomic and composable lattice types. You can also implement custom
 lattices via a few simple traits.
 
 Lattices are an incredibly powerful mathematical concept which can greatly simplify the trickiness
 of distributed computing. They align very well with the reality of what happens physically in a
-distrubted system: messages can always arrive out-of-order or duplicated. But if that data is
+distributed system: messages can always arrive out-of-order or duplicated. But if that data is
 represented as lattices then all machines will always reach the same end result simply by merging the data together.
-One popular way of lattices are currently used in distributed systems is as the data underlying
+One popular way that lattices are currently used in distributed systems is as the data underlying
 [Conflict-free Replicated Data Types](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type)
 (CRDTs).
 

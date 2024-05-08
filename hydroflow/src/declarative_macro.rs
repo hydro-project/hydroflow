@@ -62,9 +62,8 @@ macro_rules! hydroflow_expect_warnings {
             let actuals = __hf.diagnostics().expect("Expected `diagnostics()` to be set.");
             let actuals_len = actuals.len();
             let actuals = std::collections::BTreeSet::from_iter(actuals.iter().cloned().map(|mut actual| {
-                println!("X {}", actual.to_string());
                 actual.span.line = actual.span.line.saturating_sub(__line);
-                std::borrow::Cow::Owned(actual.to_string().replace(__file, "$FILE"))
+                std::borrow::Cow::<'static, str>::Owned(actual.to_string().replace(__file, "$FILE"))
             }));
 
             let expecteds = [
