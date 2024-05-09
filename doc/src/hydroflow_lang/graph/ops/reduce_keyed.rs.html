@@ -221,6 +221,14 @@
 <a href="#219" id="219">219</a>
 <a href="#220" id="220">220</a>
 <a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::{quote_spanned, ToTokens};
 
 <span class="kw">use super</span>::{
@@ -414,10 +422,18 @@
                             }
                         }
 
-                        <span class="kw">let </span>#ident = #hashtable_ident
-                            .iter()
-                            <span class="comment">// TODO(mingwei): remove `unknown_lints` when `suspicious_double_ref_op` is stabilized.
-                            </span>.map(<span class="attr">#[allow(unknown_lints, suspicious_double_ref_op, clippy::clone_on_copy)] </span>|(k, v)| (k.clone(), v.clone()));
+                        <span class="kw">let </span>#ident = #context.is_first_run_this_tick()
+                            .then_some(#hashtable_ident.iter())
+                            .into_iter()
+                            .flatten()
+                            .map(
+                                <span class="comment">// TODO(mingwei): remove `unknown_lints` when `suspicious_double_ref_op` is stabilized.
+                                </span><span class="attr">#[allow(unknown_lints, suspicious_double_ref_op, clippy::clone_on_copy)]
+                                </span>|(k, v)| (
+                                    ::std::clone::Clone::clone(k),
+                                    ::std::clone::Clone::clone(v),
+                                )
+                            );
                     },
                     <span class="macro">quote_spanned!</span> {op_span=&gt;
                         #context.schedule_subgraph(#context.current_subgraph(), <span class="bool-val">false</span>);
