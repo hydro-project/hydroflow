@@ -20,7 +20,7 @@ use super::{
 ///         source_iter(vec!(true))
 ///                 -> state;
 ///         state = union()
-///                 -> assert(|x| if context.current_tick() % 2 == 0 { *x == true } else { *x == false })
+///                 -> assert(|x| if context.current_tick().0 % 2 == 0 { *x == true } else { *x == false })
 ///                 -> map(|x| !x)
 ///                 -> defer_tick()
 ///                 -> state;
