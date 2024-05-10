@@ -127,3 +127,26 @@ pub fn static_static() {
         assert_contains_each_by_tick!(results, 3, &[]);
     };
 }
+
+#[multiplatform_test]
+pub fn replay_static() {
+    let results = Rc::new(RefCell::new(HashMap::<usize, Vec<_>>::new()));
+    let results_inner = Rc::clone(&results);
+
+    let mut df = hydroflow_syntax! {
+        source_iter([(7, 1), (7, 2)]) -> [0]my_join;
+        source_iter([(7, 3), (7, 4)]) -> [1]my_join;
+        my_join = join::<'static, 'static>()
+            -> for_each(|x| results_inner.borrow_mut().entry(context.current_tick()).or_default().push(x));
+    };
+    df.run_tick();
+    df.run_tick();
+    df.run_tick();
+
+    #[rustfmt::skip]
+    {
+        assert_contains_each_by_tick!(results, 0, &[(7, (1, 3)), (7, (1, 4)), (7, (2, 3)), (7, (2, 4))]);
+        assert_contains_each_by_tick!(results, 1, &[(7, (1, 3)), (7, (1, 4)), (7, (2, 3)), (7, (2, 4))]);
+        assert_contains_each_by_tick!(results, 2, &[(7, (1, 3)), (7, (1, 4)), (7, (2, 3)), (7, (2, 4))]);
+    };
+}
