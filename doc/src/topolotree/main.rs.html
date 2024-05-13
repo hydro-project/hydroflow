@@ -293,6 +293,7 @@
 <a href="#291" id="291">291</a>
 <a href="#292" id="292">292</a>
 <a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
 </pre></div><pre class="rust"><code><span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests;
 
@@ -312,6 +313,7 @@
 };
 
 <span class="kw">mod </span>protocol;
+<span class="kw">use </span>hydroflow::scheduled::ticks::TickInstant;
 <span class="kw">use </span>hydroflow::util::{deserialize_from_bytes, serialize_to_bytes};
 <span class="kw">use </span>protocol::<span class="kw-2">*</span>;
 <span class="kw">use </span>tokio::time::Instant;
@@ -325,10 +327,10 @@
     }
 }
 
-<span class="kw">type </span>PostNeighborJoin = (((u64, <span class="prelude-ty">Option</span>&lt;NodeID&gt;), (i64, usize)), NodeID);
+<span class="kw">type </span>PostNeighborJoin = (((u64, <span class="prelude-ty">Option</span>&lt;NodeID&gt;), (i64, TickInstant)), NodeID);
 
 <span class="kw">type </span>ContributionAgg =
-    Rc&lt;RefCell&lt;HashMap&lt;u64, HashMap&lt;<span class="prelude-ty">Option</span>&lt;NodeID&gt;, (Timestamped&lt;i64&gt;, usize)&gt;&gt;&gt;&gt;;
+    Rc&lt;RefCell&lt;HashMap&lt;u64, HashMap&lt;<span class="prelude-ty">Option</span>&lt;NodeID&gt;, (Timestamped&lt;i64&gt;, TickInstant)&gt;&gt;&gt;&gt;;
 
 <span class="kw">fn </span>run_topolotree(
     neighbors: Vec&lt;u32&gt;,
@@ -406,7 +408,7 @@
             -&gt; fold::&lt;<span class="lifetime">'static</span>&gt;(|| Rc::new(RefCell::new(HashMap::new())), |acc: <span class="kw-2">&amp;mut </span>ContributionAgg, (source, (key, val)): (NodeID, (u64, Timestamped&lt;i64&gt;))| {
                 <span class="kw">let </span><span class="kw-2">mut </span>acc = acc.borrow_mut();
                 <span class="kw">let </span>key_entry = acc.entry(key).or_default();
-                <span class="kw">let </span>src_entry = key_entry.entry(<span class="prelude-val">Some</span>(source)).or_insert((Timestamped { timestamp: -<span class="number">1</span>, data: <span class="number">0 </span>}, <span class="number">0</span>));
+                <span class="kw">let </span>src_entry = key_entry.entry(<span class="prelude-val">Some</span>(source)).or_insert((Timestamped { timestamp: -<span class="number">1</span>, data: <span class="number">0 </span>}, TickInstant::default()));
                 <span class="kw">if </span>val.timestamp &gt; src_entry.<span class="number">0</span>.timestamp {
                     src_entry.<span class="number">0 </span>= val;
                     <span class="kw-2">*</span>self_timestamp1.borrow_mut().entry(key).or_insert(<span class="number">0</span>) += <span class="number">1</span>;
@@ -432,10 +434,10 @@
                 <span class="kw-2">*</span>self_timestamp2.borrow_mut().entry(change.key).or_insert(<span class="number">0</span>) += <span class="number">1</span>;
             })
             -&gt; map(|change_payload: OperationPayload| (change_payload.key, (change_payload.change, context.current_tick())))
-            -&gt; fold::&lt;<span class="lifetime">'static</span>&gt;(|| Rc::new(RefCell::new(HashMap::new())), |agg: <span class="kw-2">&amp;mut </span>ContributionAgg, change: (u64, (i64, usize))| {
+            -&gt; fold::&lt;<span class="lifetime">'static</span>&gt;(|| Rc::new(RefCell::new(HashMap::new())), |agg: <span class="kw-2">&amp;mut </span>ContributionAgg, change: (u64, (i64, TickInstant))| {
                 <span class="kw">let </span><span class="kw-2">mut </span>agg = agg.borrow_mut();
                 <span class="kw">let </span>agg_key = agg.entry(change.<span class="number">0</span>).or_default();
-                <span class="kw">let </span>agg_key = agg_key.entry(<span class="prelude-val">None</span>).or_insert((Timestamped { timestamp: <span class="number">0</span>, data: <span class="number">0 </span>}, <span class="number">0</span>));
+                <span class="kw">let </span>agg_key = agg_key.entry(<span class="prelude-val">None</span>).or_insert((Timestamped { timestamp: <span class="number">0</span>, data: <span class="number">0 </span>}, TickInstant::default()));
 
                 agg_key.<span class="number">0</span>.data += change.<span class="number">1.0</span>;
                 agg_key.<span class="number">1 </span>= change.<span class="number">1.1</span>;
@@ -460,10 +462,10 @@
         neighbors -&gt; [<span class="number">1</span>]all_neighbor_data;
 
         query_result = from_neighbors_or_local
-            -&gt; map(|((key, <span class="kw">_</span>), payload): ((u64, <span class="kw">_</span>), (i64, usize))| {
+            -&gt; map(|((key, <span class="kw">_</span>), payload): ((u64, <span class="kw">_</span>), (i64, TickInstant))| {
                 (key, payload)
             })
-            -&gt; reduce_keyed(|acc: <span class="kw-2">&amp;mut </span>(i64, usize), (data, change_tick): (i64, usize)| {
+            -&gt; reduce_keyed(|acc: <span class="kw-2">&amp;mut </span>(i64, TickInstant), (data, change_tick): (i64, TickInstant)| {
                 merge(<span class="kw-2">&amp;mut </span>acc.<span class="number">0</span>, data);
                 acc.<span class="number">1 </span>= std::cmp::max(acc.<span class="number">1</span>, change_tick);
             })
@@ -483,7 +485,7 @@
             -&gt; map(|(((key, <span class="kw">_</span>), payload), target_neighbor)| {
                 ((key, target_neighbor), payload)
             })
-            -&gt; reduce_keyed(|acc: <span class="kw-2">&amp;mut </span>(i64, usize), (data, change_tick): (i64, usize)| {
+            -&gt; reduce_keyed(|acc: <span class="kw-2">&amp;mut </span>(i64, TickInstant), (data, change_tick): (i64, TickInstant)| {
                 merge(<span class="kw-2">&amp;mut </span>acc.<span class="number">0</span>, data);
                 acc.<span class="number">1 </span>= std::cmp::max(acc.<span class="number">1</span>, change_tick);
             })

@@ -102,7 +102,7 @@
 ///         source_iter(vec!(true))
 ///                 -&gt; state;
 ///         state = union()
-///                 -&gt; assert(|x| if context.current_tick() % 2 == 0 { *x == true } else { *x == false })
+///                 -&gt; assert(|x| if context.current_tick().0 % 2 == 0 { *x == true } else { *x == false })
 ///                 -&gt; map(|x| !x)
 ///                 -&gt; defer_tick()
 ///                 -&gt; state;

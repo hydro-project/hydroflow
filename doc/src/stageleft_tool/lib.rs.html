@@ -263,6 +263,12 @@
 <a href="#261" id="261">261</a>
 <a href="#262" id="262">262</a>
 <a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::BTreeSet;
 <span class="kw">use </span>std::path::Path;
 <span class="kw">use </span>std::{env, fs};
@@ -349,12 +355,14 @@
     }
 
     fs::write(dest_path, out_file.to_token_stream().to_string()).unwrap();
-    <span class="macro">println!</span>(<span class="string">"cargo:rerun-if-changed=build.rs"</span>);
-    <span class="macro">println!</span>(<span class="string">"cargo:rustc-env=STAGELEFT_FINAL_CRATE_NAME={}"</span>, crate_name);
-    <span class="macro">println!</span>(<span class="string">"cargo:rustc-cfg=stageleft_macro"</span>);
+
+    <span class="macro">println!</span>(<span class="string">"cargo::rustc-check-cfg=cfg(stageleft_macro)"</span>);
+    <span class="macro">println!</span>(<span class="string">"cargo::rerun-if-changed=build.rs"</span>);
+    <span class="macro">println!</span>(<span class="string">"cargo::rustc-env=STAGELEFT_FINAL_CRATE_NAME={}"</span>, crate_name);
+    <span class="macro">println!</span>(<span class="string">"cargo::rustc-cfg=stageleft_macro"</span>);
 
     <span class="macro">println!</span>(
-        <span class="string">"cargo:rerun-if-changed={}"</span>,
+        <span class="string">"cargo::rerun-if-changed={}"</span>,
         staged_path_absolute.to_string_lossy()
     );
 }
@@ -515,9 +523,13 @@
     )
     .unwrap();
 
-    <span class="macro">println!</span>(<span class="string">"cargo:rustc-env=STAGELEFT_FINAL_CRATE_NAME={}"</span>, final_crate);
-    <span class="macro">println!</span>(<span class="string">"cargo:rerun-if-changed=build.rs"</span>);
-    <span class="macro">println!</span>(<span class="string">"cargo:rerun-if-changed=src"</span>);
+    <span class="macro">println!</span>(<span class="string">"cargo::rustc-check-cfg=cfg(stageleft_macro)"</span>);
+    <span class="macro">println!</span>(
+        <span class="string">"cargo::rustc-env=STAGELEFT_FINAL_CRATE_NAME={}"</span>,
+        final_crate
+    );
+    <span class="macro">println!</span>(<span class="string">"cargo::rerun-if-changed=build.rs"</span>);
+    <span class="macro">println!</span>(<span class="string">"cargo::rerun-if-changed=src"</span>);
 }
 
 <span class="attr">#[macro_export]

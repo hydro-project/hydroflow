@@ -195,7 +195,7 @@
         <span class="kw">let </span>write_prologue = <span class="macro">quote_spanned!</span> {op_span=&gt;
             <span class="kw">let </span>#zipbuf_ident = #hydroflow.add_state(::std::cell::RefCell::new(
                 #root::util::monotonic_map::MonotonicMap::&lt;
-                    usize,
+                    #root::scheduled::ticks::TickInstant,
                     (::std::vec::Vec&lt;<span class="kw">_</span>&gt;, ::std::vec::Vec&lt;<span class="kw">_</span>&gt;),
                 &gt;::default()
             ));

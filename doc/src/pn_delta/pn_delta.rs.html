@@ -167,12 +167,14 @@
 <a href="#165" id="165">165</a>
 <a href="#166" id="166">166</a>
 <a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::ops::Deref;
 <span class="kw">use </span>std::rc::Rc;
 
 <span class="kw">use </span>hydroflow::hydroflow_syntax;
+<span class="kw">use </span>hydroflow::scheduled::ticks::TickInstant;
 <span class="kw">use </span>hydroflow::serde::{Deserialize, Serialize};
 <span class="kw">use </span>hydroflow::util::cli::{
     ConnectedDemux, ConnectedDirect, ConnectedSink, ConnectedSource, ConnectedTagged,
@@ -235,7 +237,7 @@
 
     <span class="kw">let </span>df = <span class="macro">hydroflow_syntax!</span> {
         next_state = union()
-            -&gt; fold::&lt;<span class="lifetime">'static</span>&gt;(|| (HashMap::&lt;u64, Rc&lt;RefCell&lt;(Vec&lt;u64&gt;, Vec&lt;u64&gt;)&gt;&gt;&gt;::new(), HashMap::new(), <span class="number">0</span>), |(cur_state, modified_tweets, last_tick): <span class="kw-2">&amp;mut </span>(HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;, HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;, <span class="kw">_</span>), goi| {
+            -&gt; fold::&lt;<span class="lifetime">'static</span>&gt;(|| (HashMap::&lt;u64, Rc&lt;RefCell&lt;(Vec&lt;u64&gt;, Vec&lt;u64&gt;)&gt;&gt;&gt;::new(), HashMap::new(), TickInstant::default()), |(cur_state, modified_tweets, last_tick): <span class="kw-2">&amp;mut </span>(HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;, HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;, <span class="kw">_</span>), goi| {
                 <span class="kw">if </span>context.current_tick() != <span class="kw-2">*</span>last_tick {
                     modified_tweets.clear();
                 }
