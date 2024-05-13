@@ -59,6 +59,7 @@ pub struct TickInstant(pub u64);
     Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash, Default, Debug, Serialize, Deserialize,
 )]
 pub struct TickDuration {
+    /// The length of the duration, measured in ticks.
     pub ticks: i64,
 }
 
