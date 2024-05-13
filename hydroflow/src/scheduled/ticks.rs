@@ -59,7 +59,7 @@ pub struct TickInstant(pub u64);
     Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash, Default, Debug, Serialize, Deserialize,
 )]
 pub struct TickDuration {
-    ticks: i64,
+    pub ticks: i64,
 }
 
 impl TickInstant {
