@@ -131,7 +131,7 @@ pub fn static_static() {
 
 #[multiplatform_test]
 pub fn replay_static() {
-    let results = Rc::new(RefCell::new(HashMap::<usize, Vec<_>>::new()));
+    let results = Rc::new(RefCell::new(HashMap::<TickInstant, Vec<_>>::new()));
     let results_inner = Rc::clone(&results);
 
     let mut df = hydroflow_syntax! {
@@ -146,8 +146,8 @@ pub fn replay_static() {
 
     #[rustfmt::skip]
     {
-        assert_contains_each_by_tick!(results, 0, &[(7, (1, 3)), (7, (1, 4)), (7, (2, 3)), (7, (2, 4))]);
-        assert_contains_each_by_tick!(results, 1, &[(7, (1, 3)), (7, (1, 4)), (7, (2, 3)), (7, (2, 4))]);
-        assert_contains_each_by_tick!(results, 2, &[(7, (1, 3)), (7, (1, 4)), (7, (2, 3)), (7, (2, 4))]);
+        assert_contains_each_by_tick!(results, TickInstant::new(0), &[(7, (1, 3)), (7, (1, 4)), (7, (2, 3)), (7, (2, 4))]);
+        assert_contains_each_by_tick!(results, TickInstant::new(1), &[(7, (1, 3)), (7, (1, 4)), (7, (2, 3)), (7, (2, 4))]);
+        assert_contains_each_by_tick!(results, TickInstant::new(2), &[(7, (1, 3)), (7, (1, 4)), (7, (2, 3)), (7, (2, 4))]);
     };
 }
