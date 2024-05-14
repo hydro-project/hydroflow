@@ -1,12 +1,14 @@
 use hydroflow::assert_graphvis_snapshots;
+use hydroflow::scheduled::ticks::TickInstant;
 use hydroflow::util::collect_ready;
 use lattices::Max;
 use multiplatform_test::multiplatform_test;
 
 #[multiplatform_test]
 pub fn test_state() {
-    let (filter_send, mut filter_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
-    let (max_send, mut max_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (filter_send, mut filter_recv) =
+        hydroflow::util::unbounded_channel::<(TickInstant, usize)>();
+    let (max_send, mut max_recv) = hydroflow::util::unbounded_channel::<(TickInstant, usize)>();
 
     let mut df = hydroflow::hydroflow_syntax! {
         stream1 = source_iter(1..=10);
@@ -32,11 +34,21 @@ pub fn test_state() {
     df.run_available();
 
     assert_eq!(
-        &[(0, 1), (0, 2), (0, 3), (0, 4), (0, 5)],
+        &[
+            (TickInstant::new(0), 1),
+            (TickInstant::new(0), 2),
+            (TickInstant::new(0), 3),
+            (TickInstant::new(0), 4),
+            (TickInstant::new(0), 5)
+        ],
         &*collect_ready::<Vec<_>, _>(&mut filter_recv)
     );
     assert_eq!(
-        &[(0, 3), (0, 4), (0, 5)],
+        &[
+            (TickInstant::new(0), 3),
+            (TickInstant::new(0), 4),
+            (TickInstant::new(0), 5)
+        ],
         &*collect_ready::<Vec<_>, _>(&mut max_recv)
     );
 }
@@ -56,8 +68,9 @@ pub fn test_state_unused() {
 
 #[multiplatform_test]
 pub fn test_fold_cross() {
-    let (filter_send, mut filter_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
-    let (max_send, mut max_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (filter_send, mut filter_recv) =
+        hydroflow::util::unbounded_channel::<(TickInstant, usize)>();
+    let (max_send, mut max_recv) = hydroflow::util::unbounded_channel::<(TickInstant, usize)>();
 
     let mut df = hydroflow::hydroflow_syntax! {
         stream1 = source_iter(1..=10);
@@ -87,16 +100,26 @@ pub fn test_fold_cross() {
     df.run_available();
 
     assert_eq!(
-        &[(0, 1), (0, 2), (0, 3), (0, 4), (0, 5)],
+        &[
+            (TickInstant::new(0), 1),
+            (TickInstant::new(0), 2),
+            (TickInstant::new(0), 3),
+            (TickInstant::new(0), 4),
+            (TickInstant::new(0), 5)
+        ],
         &*collect_ready::<Vec<_>, _>(&mut filter_recv)
     );
-    assert_eq!(&[(0, 5)], &*collect_ready::<Vec<_>, _>(&mut max_recv));
+    assert_eq!(
+        &[(TickInstant::new(0), 5)],
+        &*collect_ready::<Vec<_>, _>(&mut max_recv)
+    );
 }
 
 #[multiplatform_test]
 pub fn test_fold_singleton() {
-    let (filter_send, mut filter_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
-    let (max_send, mut max_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (filter_send, mut filter_recv) =
+        hydroflow::util::unbounded_channel::<(TickInstant, usize)>();
+    let (max_send, mut max_recv) = hydroflow::util::unbounded_channel::<(TickInstant, usize)>();
 
     let mut df = hydroflow::hydroflow_syntax! {
         stream1 = source_iter(1..=10);
@@ -121,15 +144,25 @@ pub fn test_fold_singleton() {
     df.run_available();
 
     assert_eq!(
-        &[(0, 1), (0, 2), (0, 3), (0, 4), (0, 5)],
+        &[
+            (TickInstant::new(0), 1),
+            (TickInstant::new(0), 2),
+            (TickInstant::new(0), 3),
+            (TickInstant::new(0), 4),
+            (TickInstant::new(0), 5)
+        ],
         &*collect_ready::<Vec<_>, _>(&mut filter_recv)
     );
-    assert_eq!(&[(0, 5)], &*collect_ready::<Vec<_>, _>(&mut max_recv));
+    assert_eq!(
+        &[(TickInstant::new(0), 5)],
+        &*collect_ready::<Vec<_>, _>(&mut max_recv)
+    );
 }
 
 #[multiplatform_test]
 pub fn test_fold_singleton_push() {
-    let (filter_send, mut filter_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (filter_send, mut filter_recv) =
+        hydroflow::util::unbounded_channel::<(TickInstant, usize)>();
 
     let mut df = hydroflow::hydroflow_syntax! {
         stream1 = source_iter(1..=10);
@@ -150,15 +183,22 @@ pub fn test_fold_singleton_push() {
     df.run_available();
 
     assert_eq!(
-        &[(0, 1), (0, 2), (0, 3), (0, 4), (0, 5)],
+        &[
+            (TickInstant::new(0), 1),
+            (TickInstant::new(0), 2),
+            (TickInstant::new(0), 3),
+            (TickInstant::new(0), 4),
+            (TickInstant::new(0), 5)
+        ],
         &*collect_ready::<Vec<_>, _>(&mut filter_recv)
     );
 }
 
 #[multiplatform_test]
 pub fn test_reduce_singleton() {
-    let (filter_send, mut filter_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
-    let (max_send, mut max_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (filter_send, mut filter_recv) =
+        hydroflow::util::unbounded_channel::<(TickInstant, usize)>();
+    let (max_send, mut max_recv) = hydroflow::util::unbounded_channel::<(TickInstant, usize)>();
 
     let mut df = hydroflow::hydroflow_syntax! {
         stream1 = source_iter(1..=10);
@@ -183,15 +223,25 @@ pub fn test_reduce_singleton() {
     df.run_available();
 
     assert_eq!(
-        &[(0, 1), (0, 2), (0, 3), (0, 4), (0, 5)],
+        &[
+            (TickInstant::new(0), 1),
+            (TickInstant::new(0), 2),
+            (TickInstant::new(0), 3),
+            (TickInstant::new(0), 4),
+            (TickInstant::new(0), 5)
+        ],
         &*collect_ready::<Vec<_>, _>(&mut filter_recv)
     );
-    assert_eq!(&[(0, 5)], &*collect_ready::<Vec<_>, _>(&mut max_recv));
+    assert_eq!(
+        &[(TickInstant::new(0), 5)],
+        &*collect_ready::<Vec<_>, _>(&mut max_recv)
+    );
 }
 
 #[multiplatform_test]
 pub fn test_reduce_singleton_push() {
-    let (filter_send, mut filter_recv) = hydroflow::util::unbounded_channel::<(usize, usize)>();
+    let (filter_send, mut filter_recv) =
+        hydroflow::util::unbounded_channel::<(TickInstant, usize)>();
 
     let mut df = hydroflow::hydroflow_syntax! {
         stream1 = source_iter(1..=10);
@@ -212,7 +262,13 @@ pub fn test_reduce_singleton_push() {
     df.run_available();
 
     assert_eq!(
-        &[(0, 1), (0, 2), (0, 3), (0, 4), (0, 5)],
+        &[
+            (TickInstant::new(0), 1),
+            (TickInstant::new(0), 2),
+            (TickInstant::new(0), 3),
+            (TickInstant::new(0), 4),
+            (TickInstant::new(0), 5)
+        ],
         &*collect_ready::<Vec<_>, _>(&mut filter_recv)
     );
 }
