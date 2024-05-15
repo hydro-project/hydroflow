@@ -350,6 +350,11 @@
 <a href="#348" id="348">348</a>
 <a href="#349" id="349">349</a>
 <a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
 <span class="kw">use </span>std::time::Duration;
 
@@ -369,10 +374,15 @@
     <span class="kw">let </span>numbers = flow.source_iter(<span class="kw-2">&amp;</span>process, <span class="macro">q!</span>(<span class="number">0</span>..<span class="number">5</span>));
     <span class="kw">let </span>ids = flow.source_iter(<span class="kw-2">&amp;</span>process, cluster.ids()).map(<span class="macro">q!</span>(|<span class="kw-2">&amp;</span>id| id));
 
+    <span class="kw">let </span>cluster_self_id = cluster.self_id();
+
     ids.cross_product(numbers)
         .map(<span class="macro">q!</span>(|(id, n)| (id, (id, n))))
         .send_bincode(<span class="kw-2">&amp;</span>cluster)
-        .inspect(<span class="macro">q!</span>(|n| <span class="macro">println!</span>(<span class="string">"cluster received: {:?}"</span>, n)))
+        .inspect(<span class="macro">q!</span>(<span class="kw">move </span>|n| <span class="macro">println!</span>(
+            <span class="string">"cluster received: {:?} (self cluster id: {})"</span>,
+            n, cluster_self_id
+        )))
         .send_bincode(<span class="kw-2">&amp;</span>process)
         .for_each(<span class="macro">q!</span>(|(id, d)| <span class="macro">println!</span>(<span class="string">"node received: ({}, {:?})"</span>, id, d)));
 
@@ -590,7 +600,7 @@
             <span class="kw">for </span>j <span class="kw">in </span><span class="number">0</span>..<span class="number">5 </span>{
                 <span class="macro">assert_eq!</span>(
                     stdout.recv().<span class="kw">await</span>.unwrap(),
-                    <span class="macro">format!</span>(<span class="string">"cluster received: ({}, {})"</span>, i, j)
+                    <span class="macro">format!</span>(<span class="string">"cluster received: ({}, {}) (self cluster id: {})"</span>, i, j, i)
                 );
             }
         }

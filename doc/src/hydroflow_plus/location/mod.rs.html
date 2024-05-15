@@ -83,6 +83,8 @@
 <a href="#81" id="81">81</a>
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>dyn_clone::DynClone;
 <span class="kw">use </span>stageleft::Quoted;
 
@@ -165,5 +167,7 @@
     <span class="kw">type </span>Id: <span class="lifetime">'static</span>;
 
     <span class="kw">fn </span>ids&lt;<span class="lifetime">'b</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'b </span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Vec&lt;<span class="self">Self</span>::Id&gt;&gt; + Copy + <span class="lifetime">'a</span>;
+
+    <span class="kw">fn </span>self_id&lt;<span class="lifetime">'b</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'b </span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Quoted&lt;<span class="lifetime">'a</span>, <span class="self">Self</span>::Id&gt; + Copy + <span class="lifetime">'a</span>;
 }
 </code></pre></div></section></main></body></html>
