@@ -26,18 +26,23 @@ struct Cli {
 #[derive(Debug, Subcommand)]
 enum Commands {
     Bench {
+        /// Number of threads to run on .
         #[clap(long, default_value_t = 1)]
         threads: usize,
 
+        /// `s` value for the zipf sampling distribution for keys.
         #[clap(long, default_value_t = 4.0)]
         dist: f64,
 
+        /// How long to warm up for, in seconds.
         #[clap(long, default_value_t = 2)]
         warmup: u64,
 
+        /// How long to run for, in seconds.
         #[clap(long, default_value_t = 10)]
         duration: u64,
 
+        /// Write the puts/s every second while running.
         #[clap(long, default_value_t = false)]
         report: bool,
 
