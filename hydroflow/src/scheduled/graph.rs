@@ -9,10 +9,10 @@ use std::marker::PhantomData;
 
 use hydroflow_lang::diagnostic::{Diagnostic, SerdeSpan};
 use hydroflow_lang::graph::HydroflowGraph;
-use instant::Instant;
 use ref_cast::RefCast;
 use smallvec::SmallVec;
 use tokio::sync::mpsc::{self, UnboundedReceiver};
+use web_time::SystemTime;
 
 use super::context::Context;
 use super::handoff::handoff_list::PortList;
@@ -59,7 +59,7 @@ impl<'a> Default for Hydroflow<'a> {
             current_stratum: 0,
             current_tick: TickInstant::default(),
 
-            current_tick_start: Instant::now(),
+            current_tick_start: SystemTime::now(),
             subgraph_last_tick_run_in: None,
 
             subgraph_id: SubgraphId(0),
@@ -348,7 +348,7 @@ impl<'a> Hydroflow<'a> {
             // Starting the tick, reset this to `false`.
             tracing::trace!("Starting tick, setting `can_start_tick = false`.");
             self.can_start_tick = false;
-            self.context.current_tick_start = Instant::now();
+            self.context.current_tick_start = SystemTime::now();
 
             // Ensure external events are received before running the tick.
             if !self.events_received_tick {

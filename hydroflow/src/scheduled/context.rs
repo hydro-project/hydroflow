@@ -5,9 +5,9 @@ use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
 
-use instant::Instant;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::task::JoinHandle;
+use web_time::SystemTime;
 
 use super::graph::StateData;
 use super::state::StateHandle;
@@ -31,7 +31,7 @@ pub struct Context {
     pub(crate) current_tick: TickInstant,
     pub(crate) current_stratum: usize,
 
-    pub(crate) current_tick_start: Instant,
+    pub(crate) current_tick_start: SystemTime,
     pub(crate) subgraph_last_tick_run_in: Option<TickInstant>,
 
     /// The SubgraphId of the currently running operator. When this context is
@@ -51,7 +51,7 @@ impl Context {
     }
 
     /// Gets the timestamp of the beginning of the current tick.
-    pub fn current_tick_start(&self) -> Instant {
+    pub fn current_tick_start(&self) -> SystemTime {
         self.current_tick_start
     }
 
