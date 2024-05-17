@@ -3,6 +3,7 @@ mod protocol;
 mod server;
 
 use std::collections::HashMap;
+use std::num::ParseFloatError;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -35,12 +36,12 @@ enum Commands {
         dist: f64,
 
         /// How long to warm up for, in seconds.
-        #[clap(long, default_value_t = 2)]
-        warmup: u64,
+        #[clap(long, default_value = "2", value_parser = clap_duration_from_secs)]
+        warmup: Duration,
 
         /// How long to run for, in seconds.
-        #[clap(long, default_value_t = 10)]
-        duration: u64,
+        #[clap(long, default_value = "10", value_parser = clap_duration_from_secs)]
+        duration: Duration,
 
         /// Write the puts/s every second while running.
         #[clap(long, default_value_t = false)]
@@ -51,6 +52,11 @@ enum Commands {
         #[clap(flatten)]
         write_config: Option<WriteConfig>,
     },
+}
+
+/// Parse duration from float string for clap args.
+fn clap_duration_from_secs(arg: &str) -> Result<Duration, ParseFloatError> {
+    arg.parse().map(Duration::from_secs_f32)
 }
 
 pub struct Topology<RX>
@@ -142,14 +148,14 @@ fn main() {
 
             let mut total_writes_so_far = 0;
 
-            std::thread::sleep(Duration::from_secs(warmup));
+            std::thread::sleep(warmup);
 
             get_reset_throughputs();
             let start_time = Instant::now();
             let mut time_last_interval = start_time;
 
             loop {
-                if start_time.elapsed().as_secs_f64() >= duration as f64 {
+                if start_time.elapsed() >= duration {
                     break;
                 }
 
