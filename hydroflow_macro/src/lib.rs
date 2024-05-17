@@ -272,21 +272,17 @@ pub fn derive_answer_fn(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
         .map(|variant| match &variant.fields {
             syn::Fields::Named(fields) => {
                 let field_types = fields.named.iter().map(|field| &field.ty);
-                parse_quote! {
+                quote! {
                     ( #( #field_types, )* )
                 }
             }
             syn::Fields::Unnamed(fields) => {
-                if 1 == fields.unnamed.len() {
-                    fields.unnamed.first().unwrap().ty.clone()
-                } else {
-                    let field_types = fields.unnamed.iter().map(|field| &field.ty);
-                    parse_quote! {
-                        ( #( #field_types, )* )
-                    }
+                let field_types = fields.unnamed.iter().map(|field| &field.ty);
+                quote! {
+                    ( #( #field_types, )* )
                 }
             }
-            syn::Fields::Unit => parse_quote!(()),
+            syn::Fields::Unit => quote!(()),
         })
         .collect::<Vec<_>>();
 
@@ -330,7 +326,7 @@ pub fn derive_answer_fn(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
                     (quote!( { #( #idents, )* } ), quote!( ( #( #idents, )* ) ))
                 }
                 syn::Fields::Unnamed(_) => {
-                    (quote!( ( #( #idents ),* ) ), quote!( ( #( #idents ),* ) ))
+                    (quote!( ( #( #idents ),* ) ), quote!( ( #( #idents, )* ) ))
                 }
                 syn::Fields::Unit => (quote!(), quote!(())),
             };
@@ -340,13 +336,13 @@ pub fn derive_answer_fn(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
         });
 
     quote! {
-        impl #impl_generics #root::util::demux_enum::DemuxEnum<#root::variadics::var_type!( #( #variant_pusherator_generics, )* )>
+        impl #impl_generics #root::util::demux_enum::DemuxEnum<( #( #variant_pusherator_generics, )* )>
             for #ident #ty_generics #where_clause
         {
             fn demux_enum(
                 self,
-                #root::variadics::var_args!( #( #variant_pusherator_localvars, )* ):
-                    &mut #root::variadics::var_type!( #( #variant_pusherator_generics, )* )
+                ( #( #variant_pusherator_localvars, )* ):
+                    &mut ( #( #variant_pusherator_generics, )* )
             ) {
                 match self {
                     #( #variant_pats, )*
@@ -354,9 +350,7 @@ pub fn derive_answer_fn(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
             }
         }
 
-        impl #impl_generics_item #root::util::demux_enum::DemuxEnumItems for #ident #ty_generics #where_clause_item {
-            type Items = #root::variadics::var_type!( #( #variant_output_types, )* );
-        }
+        impl #impl_generics_item #root::util::demux_enum::DemuxEnumBase for #ident #ty_generics #where_clause_item {}
     }
     .into()
 }
