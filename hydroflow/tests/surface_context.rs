@@ -3,8 +3,8 @@ use std::rc::Rc;
 
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
 use hydroflow_macro::hydroflow_test;
-use instant::Duration;
 use multiplatform_test::multiplatform_test;
+use web_time::Duration;
 
 #[multiplatform_test]
 pub fn test_context_ref() {
@@ -36,8 +36,8 @@ pub fn test_context_current_tick_start() {
         source_iter([()])
             -> map(|_| context.current_tick_start())
             -> defer_tick()
-            -> assert(|t: &hydroflow::instant::SystemTime| t.elapsed().unwrap().as_nanos() > 0)
-            -> for_each(|t: hydroflow::instant::SystemTime| println!("Time between ticks: {:?}", t.elapsed()));
+            -> assert(|t: &hydroflow::web_time::SystemTime| t.elapsed().unwrap().as_nanos() > 0)
+            -> for_each(|t: hydroflow::web_time::SystemTime| println!("Time between ticks: {:?}", t.elapsed()));
     };
     assert_graphvis_snapshots!(df);
     df.run_available();

@@ -30,8 +30,8 @@ pub mod util;
 pub use pyo3;
 pub use variadics::{self, var_args, var_expr, var_type};
 pub use {
-    bincode, bytes, futures, hydroflow_lang as lang, instant, itertools, lattices, pusherator,
-    rustc_hash, serde, serde_json, tokio, tokio_stream, tokio_util, tracing,
+    bincode, bytes, futures, hydroflow_lang as lang, itertools, lattices, pusherator, rustc_hash,
+    serde, serde_json, tokio, tokio_stream, tokio_util, tracing, web_time,
 };
 
 /// `#[macro_use]` automagically brings the declarative macro export to the crate-level.

@@ -5,9 +5,9 @@ use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
 
-use instant::SystemTime;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::task::JoinHandle;
+use web_time::SystemTime;
 
 use super::graph::StateData;
 use super::state::StateHandle;

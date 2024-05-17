@@ -9,10 +9,10 @@ use std::marker::PhantomData;
 
 use hydroflow_lang::diagnostic::{Diagnostic, SerdeSpan};
 use hydroflow_lang::graph::HydroflowGraph;
-use instant::SystemTime;
 use ref_cast::RefCast;
 use smallvec::SmallVec;
 use tokio::sync::mpsc::{self, UnboundedReceiver};
+use web_time::SystemTime;
 
 use super::context::Context;
 use super::handoff::handoff_list::PortList;
