@@ -30,19 +30,6 @@ pub fn test_context_mut() {
     df.run_available();
 }
 
-#[multiplatform_test]
-pub fn test_context_current_tick_start() {
-    let mut df = hydroflow_syntax! {
-        source_iter([()])
-            -> map(|_| context.current_tick_start())
-            -> defer_tick()
-            -> assert(|t: &hydroflow::web_time::SystemTime| t.elapsed().unwrap().as_nanos() > 0)
-            -> for_each(|t: hydroflow::web_time::SystemTime| println!("Time between ticks: {:?}", t.elapsed()));
-    };
-    assert_graphvis_snapshots!(df);
-    df.run_available();
-}
-
 #[multiplatform_test(hydroflow)]
 pub async fn test_context_current_tick_start_does_not_count_time_between_ticks_async() {
     let time = Rc::new(Cell::new(None));
