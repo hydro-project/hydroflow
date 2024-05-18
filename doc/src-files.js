@@ -15,7 +15,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["hydroflow_plus_test",["",[],["cluster.rs","first_ten.rs","futures.rs","lib.rs","negation.rs","networked.rs"]]],\
 ["hydroflow_plus_test_macro",["",[],["cluster.rs","first_ten.rs","futures.rs","lib.rs","negation.rs","networked.rs"]]],\
 ["latency_measure",["",[],["latency_measure.rs","protocol.rs"]]],\
-["lattices",["",[],["algebra.rs","collections.rs","conflict.rs","dom_pair.rs","lib.rs","map_union.rs","map_union_with_tombstones.rs","ord.rs","pair.rs","point.rs","set_union.rs","set_union_with_tombstones.rs","test.rs","union_find.rs","unit.rs","vec_union.rs","with_bot.rs","with_top.rs"]]],\
+["lattices",["",[],["algebra.rs","collections.rs","conflict.rs","dom_pair.rs","lib.rs","map_union.rs","map_union_with_tombstones.rs","ord.rs","pair.rs","point.rs","semiring_application.rs","set_union.rs","set_union_with_tombstones.rs","test.rs","union_find.rs","unit.rs","vec_union.rs","with_bot.rs","with_top.rs"]]],\
 ["many_to_many",["",[],["many_to_many.rs"]]],\
 ["map_reduce",["",[],["map_reduce.rs"]]],\
 ["multiplatform_test",["",[],["lib.rs"]]],\

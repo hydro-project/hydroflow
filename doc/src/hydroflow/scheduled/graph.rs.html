@@ -939,10 +939,10 @@
 
 <span class="kw">use </span>hydroflow_lang::diagnostic::{Diagnostic, SerdeSpan};
 <span class="kw">use </span>hydroflow_lang::graph::HydroflowGraph;
-<span class="kw">use </span>instant::Instant;
 <span class="kw">use </span>ref_cast::RefCast;
 <span class="kw">use </span>smallvec::SmallVec;
 <span class="kw">use </span>tokio::sync::mpsc::{<span class="self">self</span>, UnboundedReceiver};
+<span class="kw">use </span>web_time::SystemTime;
 
 <span class="kw">use </span><span class="kw">super</span>::context::Context;
 <span class="kw">use </span><span class="kw">super</span>::handoff::handoff_list::PortList;
@@ -989,7 +989,7 @@
             current_stratum: <span class="number">0</span>,
             current_tick: TickInstant::default(),
 
-            current_tick_start: Instant::now(),
+            current_tick_start: SystemTime::now(),
             subgraph_last_tick_run_in: <span class="prelude-val">None</span>,
 
             subgraph_id: SubgraphId(<span class="number">0</span>),
@@ -1278,7 +1278,7 @@
             <span class="comment">// Starting the tick, reset this to `false`.
             </span><span class="macro">tracing::trace!</span>(<span class="string">"Starting tick, setting `can_start_tick = false`."</span>);
             <span class="self">self</span>.can_start_tick = <span class="bool-val">false</span>;
-            <span class="self">self</span>.context.current_tick_start = Instant::now();
+            <span class="self">self</span>.context.current_tick_start = SystemTime::now();
 
             <span class="comment">// Ensure external events are received before running the tick.
             </span><span class="kw">if </span>!<span class="self">self</span>.events_received_tick {

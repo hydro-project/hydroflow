@@ -126,7 +126,7 @@ an error. The error includes the value passed to <code>send</code>.</p>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.send_timeout" class="method"><h4 class="code-header">pub async fn <a href="#method.send_timeout" class="fn">send_timeout</a>(
     &amp;self,
     value: T,
-    timeout: <a class="struct" href="../../time/struct.Duration.html" title="struct hydroflow_plus::tokio::time::Duration">Duration</a>
+    timeout: <a class="struct" href="../../../web_time/struct.Duration.html" title="struct hydroflow_plus::web_time::Duration">Duration</a>
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>, <a class="enum" href="error/enum.SendTimeoutError.html" title="enum hydroflow_plus::tokio::sync::mpsc::error::SendTimeoutError">SendTimeoutError</a>&lt;T&gt;&gt;</h4></section></summary><div class="docblock"><p>Sends a value, waiting until there is capacity, but only for a limited time.</p>
 <p>Shares the same success and error conditions as <a href="struct.Sender.html#method.send" title="method hydroflow_plus::tokio::sync::mpsc::Sender::send"><code>send</code></a>, adding one more
 condition for an unsuccessful send, which is when the provided timeout has

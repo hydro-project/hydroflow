@@ -197,9 +197,9 @@
 <span class="kw">use </span>std::marker::PhantomData;
 <span class="kw">use </span>std::pin::Pin;
 
-<span class="kw">use </span>instant::Instant;
 <span class="kw">use </span>tokio::sync::mpsc::UnboundedSender;
 <span class="kw">use </span>tokio::task::JoinHandle;
+<span class="kw">use </span>web_time::SystemTime;
 
 <span class="kw">use </span><span class="kw">super</span>::graph::StateData;
 <span class="kw">use </span><span class="kw">super</span>::state::StateHandle;
@@ -223,7 +223,7 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) current_tick: TickInstant,
     <span class="kw">pub</span>(<span class="kw">crate</span>) current_stratum: usize,
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) current_tick_start: Instant,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) current_tick_start: SystemTime,
     <span class="kw">pub</span>(<span class="kw">crate</span>) subgraph_last_tick_run_in: <span class="prelude-ty">Option</span>&lt;TickInstant&gt;,
 
     <span class="doccomment">/// The SubgraphId of the currently running operator. When this context is
@@ -243,7 +243,7 @@
     }
 
     <span class="doccomment">/// Gets the timestamp of the beginning of the current tick.
-    </span><span class="kw">pub fn </span>current_tick_start(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Instant {
+    </span><span class="kw">pub fn </span>current_tick_start(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SystemTime {
         <span class="self">self</span>.current_tick_start
     }
 

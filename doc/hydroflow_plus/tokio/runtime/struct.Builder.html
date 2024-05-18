@@ -210,7 +210,7 @@ runtime.unwrap().block_on(<span class="kw">async </span>{
 rt.block_on(<span class="kw">async </span>{
     <span class="macro">println!</span>(<span class="string">"Hello from the Tokio runtime"</span>);
 });</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.thread_keep_alive" class="method"><h4 class="code-header">pub fn <a href="#method.thread_keep_alive" class="fn">thread_keep_alive</a>(&amp;mut self, duration: <a class="struct" href="../time/struct.Duration.html" title="struct hydroflow_plus::tokio::time::Duration">Duration</a>) -&gt; &amp;mut <a class="struct" href="struct.Builder.html" title="struct hydroflow_plus::tokio::runtime::Builder">Builder</a></h4></section></summary><div class="docblock"><p>Sets a custom timeout for a thread in the blocking pool.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.thread_keep_alive" class="method"><h4 class="code-header">pub fn <a href="#method.thread_keep_alive" class="fn">thread_keep_alive</a>(&amp;mut self, duration: <a class="struct" href="../../web_time/struct.Duration.html" title="struct hydroflow_plus::web_time::Duration">Duration</a>) -&gt; &amp;mut <a class="struct" href="struct.Builder.html" title="struct hydroflow_plus::tokio::runtime::Builder">Builder</a></h4></section></summary><div class="docblock"><p>Sets a custom timeout for a thread in the blocking pool.</p>
 <p>By default, the timeout for a thread is set to 10 seconds. This can
 be overridden using .thread_keep_alive().</p>
 <h5 id="example"><a class="doc-anchor" href="#example">§</a>Example</h5>
