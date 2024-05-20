@@ -17,20 +17,23 @@ use crate::diagnostic::{Diagnostic, Level};
 /// #[derive(DemuxEnum)]
 /// enum Shape {
 ///     Square(f64),
-///     Rectangle { w: f64, h: f64 },
+///     Rectangle(f64, f64),
 ///     Circle { r: f64 },
+///     Triangle { w: f64, h: f64 }
 /// }
 ///
 /// let mut df = hydroflow_syntax! {
 ///     my_demux = source_iter([
 ///         Shape::Square(9.0),
-///         Shape::Rectangle { w: 10.0, h: 8.0 },
+///         Shape::Rectangle(10.0, 8.0),
 ///         Shape::Circle { r: 5.0 },
+///         Shape::Triangle { w: 12.0, h: 13.0 },
 ///     ]) -> demux_enum::<Shape>();
 ///
 ///     my_demux[Square] -> map(|s| s * s) -> out;
 ///     my_demux[Circle] -> map(|(r,)| std::f64::consts::PI * r * r) -> out;
 ///     my_demux[Rectangle] -> map(|(w, h)| w * h) -> out;
+///     my_demux[Circle] -> map(|(w, h)| 0.5 * w * h) -> out;
 ///
 ///     out = union() -> for_each(|area| println!("Area: {}", area));
 /// };
@@ -114,7 +117,7 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
         // Note this uses the `enum_type`'s span.
         let write_prologue = quote_spanned! {enum_type.span()=>
             let _ = |__val: #enum_type| {
-                fn check_impl_demux_enum<T: ?Sized + #root::util::demux_enum::DemuxEnumItems>(_: &T) {}
+                fn check_impl_demux_enum<T: ?Sized + #root::util::demux_enum::DemuxEnumBase>(_: &T) {}
                 check_impl_demux_enum(&__val);
                 type Enum = #enum_type;
                 match __val {
@@ -126,20 +129,13 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
         };
         let write_iterator = quote_spanned! {op_span=>
             let #ident = {
-                fn __typeguard_demux_enum_fn<__EnumType, __Outputs>(__outputs: __Outputs)
-                    -> impl #root::pusherator::Pusherator<Item = __EnumType>
-                where
-                    __Outputs: #root::util::demux_enum::PusheratorListForItems<<__EnumType as #root::util::demux_enum::DemuxEnumItems>::Items>,
-                    __EnumType: #root::util::demux_enum::DemuxEnum::<__Outputs>,
-                {
-                    #root::pusherator::demux::Demux::new(
-                        <__EnumType as #root::util::demux_enum::DemuxEnum::<__Outputs>>::demux_enum,
-                        __outputs,
-                    )
-                }
-                __typeguard_demux_enum_fn::<#enum_type, _>(
-                    #root::var_expr!( #( #sorted_outputs ),* )
-                )
+                let mut __outputs = ( #( #sorted_outputs, )* );
+                #root::pusherator::for_each::ForEach::new(move |__item: #enum_type| {
+                    #root::util::demux_enum::DemuxEnum::demux_enum(
+                        __item,
+                        &mut __outputs,
+                    );
+                })
             };
         };
 
