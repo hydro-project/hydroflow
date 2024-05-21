@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::future::Future;
 use std::hash::Hash;
 use std::marker::PhantomData;
 use std::ops::Deref;
@@ -82,28 +81,6 @@ impl<'a, T: Clone, W, N: Location + Clone> Clone for Stream<'a, T, W, N> {
 }
 
 impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
-    pub fn poll_futures<T2>(self) -> Stream<'a, T2, Async, N>
-    where
-        T: Future<Output = T2>,
-    {
-        Stream::new(
-            self.node,
-            self.ir_leaves,
-            HfPlusNode::PollFutures(Box::new(self.ir_node.into_inner())),
-        )
-    }
-
-    pub fn poll_futures_ordered<T2>(self) -> Stream<'a, T2, Async, N>
-    where
-        T: Future<Output = T2>,
-    {
-        Stream::new(
-            self.node,
-            self.ir_leaves,
-            HfPlusNode::PollFuturesOrdered(Box::new(self.ir_node.into_inner())),
-        )
-    }
-
     pub fn map<U, F: Fn(T) -> U + 'a>(self, f: impl IntoQuotedMut<'a, F>) -> Stream<'a, U, W, N> {
         Stream::new(
             self.node,
