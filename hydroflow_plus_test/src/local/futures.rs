@@ -4,44 +4,6 @@ use hydroflow_plus::tokio::sync::mpsc::UnboundedSender;
 use hydroflow_plus::*;
 use stageleft::{q, Quoted, RuntimeData};
 
-#[stageleft::entry]
-pub fn unordered<'a>(
-    flow: FlowBuilder<'a, SingleProcessGraph>,
-    output: RuntimeData<&'a UnboundedSender<u32>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
-    let process = flow.process(&());
-
-    flow.source_iter(&process, q!([2, 3, 1, 9, 6, 5, 4, 7, 8]))
-        .map(q!(|x| async move {
-            // tokio::time::sleep works, import then just sleep does not, unsure why
-            tokio::time::sleep(Duration::from_millis(10)).await;
-            x
-        }))
-        .poll_futures()
-        .for_each(q!(|x| output.send(x).unwrap()));
-
-    flow.extract().optimize_default()
-}
-
-#[stageleft::entry]
-pub fn ordered<'a>(
-    flow: FlowBuilder<'a, SingleProcessGraph>,
-    output: RuntimeData<&'a UnboundedSender<u32>>,
-) -> impl Quoted<'a, Hydroflow<'a>> {
-    let process = flow.process(&());
-
-    flow.source_iter(&process, q!([2, 3, 1, 9, 6, 5, 4, 7, 8]))
-        .map(q!(|x| async move {
-            // tokio::time::sleep works, import then just sleep does not, unsure why
-            tokio::time::sleep(Duration::from_millis(10)).await;
-            x
-        }))
-        .poll_futures_ordered()
-        .for_each(q!(|x| output.send(x).unwrap()));
-
-    flow.extract().optimize_default()
-}
-
 #[stageleft::runtime]
 #[cfg(test)]
 mod tests {
