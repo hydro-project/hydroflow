@@ -42,7 +42,7 @@ which send and receive flows of data to each other.
 
 ### So how might a human write distributed systems with Hydroflow?
 As an illustration of how you can work at the Hydroflow layer, consider the 
-[Chat Server example](../quickstart/example_8_chat_server). If you run that binary
+[Chat Server example](https://github.com/hydro-project/hydroflow-template). If you run that binary
 with the command-line argument `--role server` it will start a single transducer that is responsible for a chat server: receiving
 membership requests and messages from clients, and forwarding messages from individual clients to all other clients.
 If you run that binary with the argument `--role client` it will start a transducer that is responsible for a chat client, which 
