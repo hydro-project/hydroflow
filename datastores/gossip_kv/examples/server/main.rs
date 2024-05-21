@@ -1,6 +1,5 @@
+use hydroflow::util::bind_tcp_lines;
 use hydroflow::{hydroflow_syntax, tokio};
-use hydroflow::util::{UdpSink, UdpStream};
-use hydroflow::util::{bind_tcp_lines, ipv4_resolve};
 
 #[hydroflow::main]
 async fn main() {
@@ -8,8 +7,7 @@ async fn main() {
 
     let my_hostname = hostname::get().unwrap();
 
-    let (tx, rx, server_addr) =
-        bind_tcp_lines("0.0.0.0:80".parse().unwrap()).await;
+    let (tx, rx, server_addr) = bind_tcp_lines("0.0.0.0:80".parse().unwrap()).await;
 
     println!("Starting admin server");
 

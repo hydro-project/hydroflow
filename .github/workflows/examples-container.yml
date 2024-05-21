@@ -3,7 +3,7 @@ name: examples-container-build
 
 on:
   push:
-    branches: [main]
+    branches: [main, anna_v2]
 
 jobs:
   pre_job:

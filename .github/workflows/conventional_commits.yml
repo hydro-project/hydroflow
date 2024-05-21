@@ -2,7 +2,7 @@ name: Conventional Commits
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, anna_v2]
 
 jobs:
   build:
