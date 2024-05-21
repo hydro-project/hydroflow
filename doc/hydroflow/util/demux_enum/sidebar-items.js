@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"derive":["DemuxEnum"],"trait":["DemuxEnum","DemuxEnumItems","PusheratorListForItems"]};
+window.SIDEBAR_ITEMS = {"derive":["DemuxEnum"],"trait":["DemuxEnum","DemuxEnumBase"]};

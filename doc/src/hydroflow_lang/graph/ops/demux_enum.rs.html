@@ -148,10 +148,6 @@
 <a href="#146" id="146">146</a>
 <a href="#147" id="147">147</a>
 <a href="#148" id="148">148</a>
-<a href="#149" id="149">149</a>
-<a href="#150" id="150">150</a>
-<a href="#151" id="151">151</a>
-<a href="#152" id="152">152</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::Ident;
 <span class="kw">use </span>quote::{quote, quote_spanned};
 <span class="kw">use </span>syn::spanned::Spanned;
@@ -171,20 +167,23 @@
 /// #[derive(DemuxEnum)]
 /// enum Shape {
 ///     Square(f64),
-///     Rectangle { w: f64, h: f64 },
+///     Rectangle(f64, f64),
 ///     Circle { r: f64 },
+///     Triangle { w: f64, h: f64 }
 /// }
 ///
 /// let mut df = hydroflow_syntax! {
 ///     my_demux = source_iter([
 ///         Shape::Square(9.0),
-///         Shape::Rectangle { w: 10.0, h: 8.0 },
+///         Shape::Rectangle(10.0, 8.0),
 ///         Shape::Circle { r: 5.0 },
+///         Shape::Triangle { w: 12.0, h: 13.0 },
 ///     ]) -&gt; demux_enum::&lt;Shape&gt;();
 ///
 ///     my_demux[Square] -&gt; map(|s| s * s) -&gt; out;
 ///     my_demux[Circle] -&gt; map(|(r,)| std::f64::consts::PI * r * r) -&gt; out;
 ///     my_demux[Rectangle] -&gt; map(|(w, h)| w * h) -&gt; out;
+///     my_demux[Circle] -&gt; map(|(w, h)| 0.5 * w * h) -&gt; out;
 ///
 ///     out = union() -&gt; for_each(|area| println!("Area: {}", area));
 /// };
@@ -268,7 +267,7 @@
         // Note this uses the `enum_type`'s span.
         </span><span class="kw">let </span>write_prologue = <span class="macro">quote_spanned!</span> {enum_type.span()=&gt;
             <span class="kw">let _ </span>= |__val: #enum_type| {
-                <span class="kw">fn </span>check_impl_demux_enum&lt;T: <span class="question-mark">?</span>Sized + #root::util::demux_enum::DemuxEnumItems&gt;(<span class="kw">_</span>: <span class="kw-2">&amp;</span>T) {}
+                <span class="kw">fn </span>check_impl_demux_enum&lt;T: <span class="question-mark">?</span>Sized + #root::util::demux_enum::DemuxEnumBase&gt;(<span class="kw">_</span>: <span class="kw-2">&amp;</span>T) {}
                 check_impl_demux_enum(<span class="kw-2">&amp;</span>__val);
                 <span class="kw">type </span>Enum = #enum_type;
                 <span class="kw">match </span>__val {
@@ -280,20 +279,13 @@
         };
         <span class="kw">let </span>write_iterator = <span class="macro">quote_spanned!</span> {op_span=&gt;
             <span class="kw">let </span>#ident = {
-                <span class="kw">fn </span>__typeguard_demux_enum_fn&lt;__EnumType, __Outputs&gt;(__outputs: __Outputs)
-                    -&gt; <span class="kw">impl </span>#root::pusherator::Pusherator&lt;Item = __EnumType&gt;
-                <span class="kw">where
-                    </span>__Outputs: #root::util::demux_enum::PusheratorListForItems&lt;&lt;__EnumType <span class="kw">as </span>#root::util::demux_enum::DemuxEnumItems&gt;::Items&gt;,
-                    __EnumType: #root::util::demux_enum::DemuxEnum::&lt;__Outputs&gt;,
-                {
-                    #root::pusherator::demux::Demux::new(
-                        &lt;__EnumType <span class="kw">as </span>#root::util::demux_enum::DemuxEnum::&lt;__Outputs&gt;&gt;::demux_enum,
-                        __outputs,
-                    )
-                }
-                __typeguard_demux_enum_fn::&lt;#enum_type, <span class="kw">_</span>&gt;(
-                    #<span class="macro">root::var_expr!</span>( #( #sorted_outputs ),* )
-                )
+                <span class="kw">let </span><span class="kw-2">mut </span>__outputs = ( #( #sorted_outputs, )* );
+                #root::pusherator::for_each::ForEach::new(<span class="kw">move </span>|__item: #enum_type| {
+                    #root::util::demux_enum::DemuxEnum::demux_enum(
+                        __item,
+                        <span class="kw-2">&amp;mut </span>__outputs,
+                    );
+                })
             };
         };
 

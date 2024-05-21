@@ -22,68 +22,26 @@
 <a href="#20" id="20">20</a>
 <a href="#21" id="21">21</a>
 <a href="#22" id="22">22</a>
-<a href="#23" id="23">23</a>
-<a href="#24" id="24">24</a>
-<a href="#25" id="25">25</a>
-<a href="#26" id="26">26</a>
-<a href="#27" id="27">27</a>
-<a href="#28" id="28">28</a>
-<a href="#29" id="29">29</a>
-<a href="#30" id="30">30</a>
-<a href="#31" id="31">31</a>
-<a href="#32" id="32">32</a>
-<a href="#33" id="33">33</a>
-<a href="#34" id="34">34</a>
-<a href="#35" id="35">35</a>
-<a href="#36" id="36">36</a>
-<a href="#37" id="37">37</a>
-<a href="#38" id="38">38</a>
-<a href="#39" id="39">39</a>
-<a href="#40" id="40">40</a>
-<a href="#41" id="41">41</a>
-<a href="#42" id="42">42</a>
-<a href="#43" id="43">43</a>
-</pre></div><pre class="rust"><code><span class="doccomment">//! Traits for the `demux_enum` derive and operator.
+</pre></div><pre class="rust"><code><span class="doccomment">//! Trait for the `demux_enum` derive and operator.
 
 </span><span class="kw">pub use </span>hydroflow_macro::DemuxEnum;
-<span class="kw">use </span>pusherator::demux::PusheratorList;
-<span class="kw">use </span>pusherator::Pusherator;
-<span class="kw">use </span>variadics::Variadic;
 
 <span class="doccomment">/// Trait for use with the `demux_enum` operator.
 ///
-/// This trait is meant to be derived: `#[derive(DemuEnum)]`.
-</span><span class="kw">pub trait </span>DemuxEnum&lt;Nexts&gt;: DemuxEnumItems
-<span class="kw">where
-    </span>Nexts: PusheratorListForItems&lt;<span class="self">Self</span>::Items&gt;,
-{
-    <span class="doccomment">/// Pushes self into the corresponding output pusherator.
-    </span><span class="kw">fn </span>demux_enum(<span class="self">self</span>, outputs: <span class="kw-2">&amp;mut </span>Nexts);
+/// This trait is meant to be derived: `#[derive(DemuxEnum)]`.
+///
+/// The derive will implement this such that `Outputs` can be any tuple where each item is a
+/// `Pusherator` that corresponds to each of the variants of the tuple, in alphabetic order.
+</span><span class="attr">#[diagnostic::on_unimplemented(
+    note = <span class="string">"Ensure there is exactly one output for each enum variant."</span>,
+    note = <span class="string">"Ensure that the type for each output is a tuple of the field for the variant: `()`, `(a,)`, or `(a, b, ...)`."
+</span>)]
+</span><span class="kw">pub trait </span>DemuxEnum&lt;Outputs&gt;: DemuxEnumBase {
+    <span class="doccomment">/// Pushes self into the corresponding output pusherator in `outputs`.
+    </span><span class="kw">fn </span>demux_enum(<span class="self">self</span>, outputs: <span class="kw-2">&amp;mut </span>Outputs);
 }
 
-<span class="doccomment">/// Fixed output item list for [`DemuxEnum`].
-///
-/// This trait is meant to be derived: `#[derive(DemuEnum)]`.
-</span><span class="kw">pub trait </span>DemuxEnumItems {
-    <span class="doccomment">/// A `var_type!(...)` list of items corresponding to each variant's output type.
-    </span><span class="kw">type </span>Items: Variadic;
-}
-
-<span class="doccomment">/// Helper trait to bound a [`PusheratorList`] variadic to some coresponding item list variadic.
-///
-/// A pusherator list `var_type!(PushA, PushB, PushC)` implements `PusheratorListForItems&lt;var_type!(ItemA, ItemB, ItemC)&gt;`,
-/// where `PushA: Pusherator&lt;Item = ItemA&gt;`, etc.
-</span><span class="kw">pub trait </span>PusheratorListForItems&lt;Items&gt;: PusheratorList
-<span class="kw">where
-    </span>Items: Variadic,
-{
-}
-<span class="kw">impl</span>&lt;HeadPush, RestPush, Head, Rest&gt; PusheratorListForItems&lt;(Head, Rest)&gt; <span class="kw">for </span>(HeadPush, RestPush)
-<span class="kw">where
-    </span>HeadPush: Pusherator&lt;Item = Head&gt;,
-    RestPush: PusheratorListForItems&lt;Rest&gt;,
-    Rest: Variadic,
-{
-}
-<span class="kw">impl </span>PusheratorListForItems&lt;()&gt; <span class="kw">for </span>() {}
+<span class="doccomment">/// Base implementation to constrain that `DemuxEnum&lt;SOMETHING&gt;` is implemented.
+</span><span class="attr">#[diagnostic::on_unimplemented(note = <span class="string">"Use `#[derive(hydroflow::DemuxEnum)]`"</span>)]
+</span><span class="kw">pub trait </span>DemuxEnumBase {}
 </code></pre></div></section></main></body></html>

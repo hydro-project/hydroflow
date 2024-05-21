@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Demux"],"trait":["PusheratorList"]};
+window.SIDEBAR_ITEMS = {"struct":["Demux"]};

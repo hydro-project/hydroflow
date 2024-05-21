@@ -356,12 +356,6 @@
 <a href="#354" id="354">354</a>
 <a href="#355" id="355">355</a>
 <a href="#356" id="356">356</a>
-<a href="#357" id="357">357</a>
-<a href="#358" id="358">358</a>
-<a href="#359" id="359">359</a>
-<a href="#360" id="360">360</a>
-<a href="#361" id="361">361</a>
-<a href="#362" id="362">362</a>
 </pre></div><pre class="rust"><code><span class="attr">#![cfg_attr(
     feature = <span class="string">"diagnostics"</span>,
     feature(proc_macro_diagnostic, proc_macro_span, proc_macro_def_site)
@@ -636,21 +630,17 @@
         .map(|variant| <span class="kw">match </span><span class="kw-2">&amp;</span>variant.fields {
             syn::Fields::Named(fields) =&gt; {
                 <span class="kw">let </span>field_types = fields.named.iter().map(|field| <span class="kw-2">&amp;</span>field.ty);
-                <span class="macro">parse_quote!</span> {
+                <span class="macro">quote!</span> {
                     ( #( #field_types, )* )
                 }
             }
             syn::Fields::Unnamed(fields) =&gt; {
-                <span class="kw">if </span><span class="number">1 </span>== fields.unnamed.len() {
-                    fields.unnamed.first().unwrap().ty.clone()
-                } <span class="kw">else </span>{
-                    <span class="kw">let </span>field_types = fields.unnamed.iter().map(|field| <span class="kw-2">&amp;</span>field.ty);
-                    <span class="macro">parse_quote!</span> {
-                        ( #( #field_types, )* )
-                    }
+                <span class="kw">let </span>field_types = fields.unnamed.iter().map(|field| <span class="kw-2">&amp;</span>field.ty);
+                <span class="macro">quote!</span> {
+                    ( #( #field_types, )* )
                 }
             }
-            syn::Fields::Unit =&gt; <span class="macro">parse_quote!</span>(()),
+            syn::Fields::Unit =&gt; <span class="macro">quote!</span>(()),
         })
         .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
@@ -694,7 +684,7 @@
                     (<span class="macro">quote!</span>( { #( #idents, )* } ), <span class="macro">quote!</span>( ( #( #idents, )* ) ))
                 }
                 syn::Fields::Unnamed(<span class="kw">_</span>) =&gt; {
-                    (<span class="macro">quote!</span>( ( #( #idents ),* ) ), <span class="macro">quote!</span>( ( #( #idents ),* ) ))
+                    (<span class="macro">quote!</span>( ( #( #idents ),* ) ), <span class="macro">quote!</span>( ( #( #idents, )* ) ))
                 }
                 syn::Fields::Unit =&gt; (<span class="macro">quote!</span>(), <span class="macro">quote!</span>(())),
             };
@@ -704,13 +694,13 @@
         });
 
     <span class="macro">quote!</span> {
-        <span class="kw">impl </span>#impl_generics #root::util::demux_enum::DemuxEnum&lt;#<span class="macro">root::variadics::var_type!</span>( #( #variant_pusherator_generics, )* )&gt;
+        <span class="kw">impl </span>#impl_generics #root::util::demux_enum::DemuxEnum&lt;( #( #variant_pusherator_generics, )* )&gt;
             <span class="kw">for </span>#ident #ty_generics #where_clause
         {
             <span class="kw">fn </span>demux_enum(
                 <span class="self">self</span>,
-                #<span class="macro">root::variadics::var_args!</span>( #( #variant_pusherator_localvars, )* ):
-                    <span class="kw-2">&amp;mut </span>#<span class="macro">root::variadics::var_type!</span>( #( #variant_pusherator_generics, )* )
+                ( #( #variant_pusherator_localvars, )* ):
+                    <span class="kw-2">&amp;mut </span>( #( #variant_pusherator_generics, )* )
             ) {
                 <span class="kw">match </span><span class="self">self </span>{
                     #( #variant_pats, )*
@@ -718,9 +708,7 @@
             }
         }
 
-        <span class="kw">impl </span>#impl_generics_item #root::util::demux_enum::DemuxEnumItems <span class="kw">for </span>#ident #ty_generics #where_clause_item {
-            <span class="kw">type </span>Items = #<span class="macro">root::variadics::var_type!</span>( #( #variant_output_types, )* );
-        }
+        <span class="kw">impl </span>#impl_generics_item #root::util::demux_enum::DemuxEnumBase <span class="kw">for </span>#ident #ty_generics #where_clause_item {}
     }
     .into()
 }
