@@ -110,10 +110,13 @@ where
     C: Default + Extend<S::Item>,
     S: Stream,
 {
-    let any = std::cell::Cell::new(true);
-    let mut unfused_iter = ready_iter(stream).inspect(|_| any.set(true));
+    use std::sync::atomic::Ordering;
+
+    let got_any_items = std::sync::atomic::AtomicBool::new(true);
+    let mut unfused_iter =
+        ready_iter(stream).inspect(|_| got_any_items.store(true, Ordering::Relaxed));
     let mut out = C::default();
-    while any.replace(false) {
+    while got_any_items.swap(false, Ordering::Relaxed) {
         out.extend(unfused_iter.by_ref());
         // Tokio unbounded channel returns items in lenght-128 chunks, so we have to be careful
         // that everything gets returned. That is why we yield here and loop.

@@ -2,7 +2,7 @@ use quote::quote_spanned;
 use syn::parse_quote;
 
 use super::{
-    GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
     OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
@@ -33,8 +33,6 @@ pub const ZIP: OperatorConstraints = OperatorConstraints {
     ports_inn: Some(|| super::PortListSpec::Fixed(parse_quote! { 0, 1 })),
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    root,
@@ -77,7 +75,7 @@ pub const ZIP: OperatorConstraints = OperatorConstraints {
         let write_prologue = quote_spanned! {op_span=>
             let #zipbuf_ident = #hydroflow.add_state(::std::cell::RefCell::new(
                 #root::util::monotonic_map::MonotonicMap::<
-                    usize,
+                    #root::scheduled::ticks::TickInstant,
                     (::std::vec::Vec<_>, ::std::vec::Vec<_>),
                 >::default()
             ));

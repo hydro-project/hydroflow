@@ -5,7 +5,6 @@ use super::{
     WriteContextArgs, RANGE_0, RANGE_1, RANGE_ANY,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::GraphEdgeType;
 
 /// > *n* input streams of the same type, 1 output stream of the same type
 ///
@@ -37,8 +36,6 @@ pub const UNION: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: Some(
         |fp @ FlowPropArgs {
              op_name,

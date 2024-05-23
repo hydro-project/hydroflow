@@ -151,24 +151,6 @@ impl std::fmt::Debug for GraphNode {
     }
 }
 
-/// The type of the Hydroflow graph edge.
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub enum GraphEdgeType {
-    /// Standard, pass by value, iterator ownership edges.
-    Value,
-    /// State passed by reference.
-    Reference,
-}
-impl GraphEdgeType {
-    /// Returns if this affects ownership for the sake of subgraph partitioning into in-out trees.
-    pub fn affects_in_out_graph_ownership(self) -> bool {
-        match self {
-            GraphEdgeType::Value => true,
-            GraphEdgeType::Reference => false,
-        }
-    }
-}
-
 /// Meta-data relating to operators which may be useful throughout the compilation process.
 ///
 /// This data can be generated from the graph, but it is useful to have it readily available

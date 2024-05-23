@@ -1,7 +1,7 @@
 use quote::{quote_spanned, ToTokens};
 
 use super::{
-    DelayType, GraphEdgeType, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints,
     OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
@@ -70,8 +70,6 @@ pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| Some(DelayType::Stratum),
-    input_edgetype_fn: |_| Some(GraphEdgeType::Value),
-    output_edgetype_fn: |_| GraphEdgeType::Value,
     flow_prop_fn: None,
     write_fn: |wc @ &WriteContextArgs {
                    hydroflow,
@@ -193,10 +191,18 @@ pub const REDUCE_KEYED: OperatorConstraints = OperatorConstraints {
                             }
                         }
 
-                        let #ident = #hashtable_ident
-                            .iter()
-                            // TODO(mingwei): remove `unknown_lints` when `suspicious_double_ref_op` is stabilized.
-                            .map(#[allow(unknown_lints, suspicious_double_ref_op, clippy::clone_on_copy)] |(k, v)| (k.clone(), v.clone()));
+                        let #ident = #context.is_first_run_this_tick()
+                            .then_some(#hashtable_ident.iter())
+                            .into_iter()
+                            .flatten()
+                            .map(
+                                // TODO(mingwei): remove `unknown_lints` when `suspicious_double_ref_op` is stabilized.
+                                #[allow(unknown_lints, suspicious_double_ref_op, clippy::clone_on_copy)]
+                                |(k, v)| (
+                                    ::std::clone::Clone::clone(k),
+                                    ::std::clone::Clone::clone(v),
+                                )
+                            );
                     },
                     quote_spanned! {op_span=>
                         #context.schedule_subgraph(#context.current_subgraph(), false);
