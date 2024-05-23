@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gossip-kv-admin-service
+  namespace: default
+spec:
+  selector:
+    app: gossip-kv-server-example
+  type: LoadBalancer
+  ports:
+    - name: tcp-port
+      port: 80
+      targetPort: 80
+      protocol: TCP
