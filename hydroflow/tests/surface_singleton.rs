@@ -13,7 +13,7 @@ pub fn test_state() {
     let mut df = hydroflow::hydroflow_syntax! {
         stream1 = source_iter(1..=10);
         stream2 = source_iter_delta(3..=5) -> map(Max::new);
-        max_of_stream2 = stream2 -> state::<Max<_>>();
+        max_of_stream2 = stream2 -> state::<'static, Max<_>>();
 
         filtered_stream1 = stream1
             -> persist()
@@ -59,12 +59,46 @@ pub fn test_state() {
 pub fn test_state_unused() {
     let mut df = hydroflow::hydroflow_syntax! {
         stream2 = source_iter_delta(15..=25) -> map(Max::new);
-        max_of_stream2 = stream2 -> state::<Max<_>>();
+        max_of_stream2 = stream2 -> state::<'static, Max<_>>();
     };
 
     assert_graphvis_snapshots!(df);
 
     df.run_available();
+}
+
+/// Just tests that the codegen is valid.
+#[multiplatform_test]
+pub fn test_state_tick() {
+    let (input_send, input_recv) = hydroflow::util::unbounded_channel::<usize>();
+    let (max_send, mut max_recv) = hydroflow::util::unbounded_channel::<(TickInstant, usize)>();
+    let mut df = hydroflow::hydroflow_syntax! {
+        stream2 = source_stream(input_recv) -> map(Max::new);
+        max_of_stream2 = stream2 -> state::<'tick, Max<_>>();
+
+        max_of_stream2
+            -> map(|x| (context.current_tick(), x.into_reveal()))
+            -> for_each(|x| max_send.send(x).unwrap());
+    };
+
+    input_send.send(3).unwrap();
+    input_send.send(4).unwrap();
+    input_send.send(5).unwrap();
+    df.run_tick();
+
+    input_send.send(2).unwrap();
+    df.run_tick();
+    df.run_tick();
+
+    assert_eq!(
+        &[
+            (TickInstant::new(0), 3),
+            (TickInstant::new(0), 4),
+            (TickInstant::new(0), 5),
+            (TickInstant::new(1), 2),
+        ],
+        &*collect_ready::<Vec<_>, _>(&mut max_recv)
+    );
 }
 
 #[multiplatform_test]
