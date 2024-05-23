@@ -12,7 +12,7 @@ path = "src/lib.rs"
 
 [dependencies]
 quote = "1.0.0"
-syn = { version = "2.0.0", features = [ "parsing", "extra-traits" ] }
+syn = { version = "2.0.0", features = [ "parsing", "extra-traits", "visit-mut" ] }
 proc-macro2 = "1.0.57"
 proc-macro-crate = "1.1.0"
 stageleft_macro = { path = "../stageleft_macro", version = "^0.1.1" }
