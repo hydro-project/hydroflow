@@ -55,15 +55,35 @@ later. On Mac, installing directly from python.org may work if `brew install` do
 cargo install wasm-bindgen-cli
 ```
 
-## Commit Messages
+## Submitting Changes
 
-Commit messages should follow the [Conventional Commits specification](https://www.conventionalcommits.org/)
-when submitting a PR. Alternatively, GitHub's "Squash and merge" feature can be used to adjust the
-commit message, however those messages are not checked by CI.
+### Feature Branches
+Prototypes should be committed to feature branches, rather than main. To create a feature branch:
 
-Commit messages are used to generate changelogs. See [Releasing](#releasing) for more.
+```shell
+git fetch origin
+git checkout -b feature/$FEATURE_NAME origin/main
+git push origin HEAD
+```
 
-## Pull Requests and `precheck.bash`
+To add changes on top of feature branches:
+```shell
+git checkout -b $BRANCH_NAME `feature/$FEATURE_NAME`
+.. make changes ..
+git add ... # Add all changes
+git commit # Commit changes
+git push origin HEAD 
+```
+
+### Commit Messages
+
+Pull request title and body should follow [Conventional Commits specification](https://www.conventionalcommits.org/).
+The repository defaults to Squash+Merge commits, so individual commits are only useful for showing code evolution
+during code-reviews.
+
+Pull request title and body are used to generate changelogs. See [Releasing](#releasing) for more.
+
+### Pull Requests and `precheck.bash`
 
 CI runs a comprehensive set of tests on PRs before they are merged. This includes format and lint
 checks. To run some checks locally, you can run `./precheck.bash` (or `./precheck.bash --quick` for
