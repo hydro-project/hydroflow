@@ -10,8 +10,8 @@ use crate::{DeepReveal, IsBot, IsTop, LatticeBimorphism, LatticeFrom, LatticeOrd
 #[derive(Copy, Clone, Debug, Default, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Pair<LatA, LatB> {
-    a: LatA,
-    b: LatB,
+    pub a: LatA,
+    pub b: LatB,
 }
 
 impl<LatA, LatB> Pair<LatA, LatB> {
