@@ -222,6 +222,9 @@
 <a href="#220" id="220">220</a>
 <a href="#221" id="221">221</a>
 <a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
 
 <span class="kw">use crate</span>::{DeepReveal, IsBot, IsTop, LatticeBimorphism, LatticeFrom, LatticeOrd, Merge};
@@ -234,8 +237,11 @@
 </span><span class="attr">#[derive(Copy, Clone, Debug, Default, Eq)]
 #[cfg_attr(feature = <span class="string">"serde"</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>Pair&lt;LatA, LatB&gt; {
-    a: LatA,
-    b: LatB,
+    <span class="doccomment">/// The "left" Lattice of the Pair lattice.
+    </span><span class="kw">pub </span>a: LatA,
+
+    <span class="doccomment">/// The "right" Lattice of the Pair lattice.
+    </span><span class="kw">pub </span>b: LatB,
 }
 
 <span class="kw">impl</span>&lt;LatA, LatB&gt; Pair&lt;LatA, LatB&gt; {
