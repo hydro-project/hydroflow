@@ -1354,7 +1354,7 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hydro_cli"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -1389,7 +1389,7 @@ dependencies = [
 
 [[package]]
 name = "hydro_deploy"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -1419,7 +1419,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "bincode",
  "byteorder",
@@ -1486,7 +1486,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "hydroflow_datalog_core",
  "proc-macro-crate",
@@ -1497,7 +1497,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog_core"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "hydroflow_lang",
  "insta",
@@ -1514,7 +1514,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_lang"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "auto_impl",
  "clap",
@@ -1533,7 +1533,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_macro"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "hydroflow_lang",
  "itertools",
@@ -1545,7 +1545,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_plus"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "bincode",
  "dyn-clone",
@@ -1563,7 +1563,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_plus_cli_integration"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "async-channel 1.9.0",
  "hydro_deploy",
@@ -1769,7 +1769,7 @@ dependencies = [
 
 [[package]]
 name = "lattices"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "cc-traits",
  "sealed",
@@ -1951,7 +1951,7 @@ dependencies = [
 
 [[package]]
 name = "multiplatform_test"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "env_logger",
  "log",
@@ -2376,7 +2376,7 @@ dependencies = [
 
 [[package]]
 name = "pusherator"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "either",
  "variadics",
@@ -3041,7 +3041,7 @@ dependencies = [
 
 [[package]]
 name = "stageleft"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -3052,7 +3052,7 @@ dependencies = [
 
 [[package]]
 name = "stageleft_macro"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "insta",
  "lazy_static",
@@ -3083,7 +3083,7 @@ dependencies = [
 
 [[package]]
 name = "stageleft_tool"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "proc-macro2",
  "quote",
