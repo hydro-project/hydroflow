@@ -57,7 +57,7 @@ pub fn test_join() {
         lhs[items] -> [0]my_join;
         rhs[items] -> [1]my_join;
 
-        my_join = lattice_bimorphism(KeyedBimorphism::<HashMap<_, _>, _>::from(CartesianProductBimorphism::<HashSet<_>>::default()), #lhs, #rhs)
+        my_join = lattice_bimorphism(KeyedBimorphism::<HashMap<_, _>, _>::new(CartesianProductBimorphism::<HashSet<_>>::default()), #lhs, #rhs)
             -> lattice_reduce()
             -> for_each(|x| out_send.send(x).unwrap());
     };
