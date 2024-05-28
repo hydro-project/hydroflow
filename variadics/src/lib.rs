@@ -123,6 +123,21 @@ pub trait VariadicExt: Variadic {
     type Reverse: VariadicExt;
     /// Reverses this variadic value.
     fn reverse(self) -> Self::Reverse;
+
+    /// This as a variadic of references.
+    type AsRefVar<'a>: Copy + Variadic
+    where
+        Self: 'a;
+    /// Convert a reference to this variadic into a variadic of references.
+    fn as_ref_var(&self) -> Self::AsRefVar<'_>;
+
+    /// This as a variadic of exclusive (`mut`) references.
+    type AsMutVar<'a>: Variadic
+    where
+        Self: 'a;
+    /// Convert an exclusive (`mut`) reference to this variadic into a variadic of exclusive
+    /// (`mut`) references.
+    fn as_mut_var(&mut self) -> Self::AsMutVar<'_>;
 }
 #[sealed]
 impl<Item, Rest> VariadicExt for (Item, Rest)
@@ -145,6 +160,22 @@ where
         let (item, rest) = self;
         rest.reverse().extend((item, ()))
     }
+
+    type AsRefVar<'a> = (&'a Item, Rest::AsRefVar<'a>)
+    where
+        Self: 'a;
+    fn as_ref_var(&self) -> Self::AsRefVar<'_> {
+        let (item, rest) = self;
+        (item, rest.as_ref_var())
+    }
+
+    type AsMutVar<'a> = (&'a mut Item, Rest::AsMutVar<'a>)
+    where
+        Self: 'a;
+    fn as_mut_var(&mut self) -> Self::AsMutVar<'_> {
+        let (item, rest) = self;
+        (item, rest.as_mut_var())
+    }
 }
 #[sealed]
 impl VariadicExt for () {
@@ -160,6 +191,40 @@ impl VariadicExt for () {
 
     type Reverse = ();
     fn reverse(self) -> Self::Reverse {}
+
+    type AsRefVar<'a> = ();
+    fn as_ref_var(&self) -> Self::AsRefVar<'_> {}
+
+    type AsMutVar<'a> = ();
+    fn as_mut_var(&mut self) -> Self::AsMutVar<'_> {}
+}
+
+/// Convert from a variadic of references back into the original variadic. The inverse of
+/// [`VariadicExt::as_ref_var`] or [`VariadicExt::as_mut_var`].
+///
+/// This is a sealed trait.
+#[sealed]
+pub trait UnrefVariadic: Variadic {
+    /// The un-referenced variadic. Each item will have one layer of references removed.
+    type Unref: VariadicExt;
+}
+#[sealed]
+impl<Item, Rest> UnrefVariadic for (&Item, Rest)
+where
+    Rest: UnrefVariadic,
+{
+    type Unref = (Item, Rest::Unref);
+}
+#[sealed]
+impl<Item, Rest> UnrefVariadic for (&mut Item, Rest)
+where
+    Rest: UnrefVariadic,
+{
+    type Unref = (Item, Rest::Unref);
+}
+#[sealed]
+impl UnrefVariadic for () {
+    type Unref = ();
 }
 
 /// A variadic where all elements are the same type, `T`.
@@ -289,4 +354,22 @@ mod test {
     type _ListA = var_type!(u32, u8, i32);
     type _ListB = var_type!(..._ListA, bool, Option<()>);
     type _ListC = var_type!(..._ListA, bool, Option::<()>);
+
+    #[test]
+    fn test_as_ref_var() {
+        let my_owned = var_expr!("Hello".to_owned(), Box::new(5));
+        let my_ref_a = my_owned.as_ref_var();
+        let my_ref_b = my_owned.as_ref_var();
+        assert_eq!(my_ref_a, my_ref_b);
+    }
+
+    #[test]
+    fn test_as_mut_var() {
+        let mut my_owned = var_expr!("Hello".to_owned(), Box::new(5));
+        let var_args!(mut_str, mut_box) = my_owned.as_mut_var();
+        *mut_str += " World";
+        *mut_box.as_mut() += 1;
+
+        assert_eq!(var_expr!("Hello World".to_owned(), Box::new(6)), my_owned);
+    }
 }
