@@ -1,4 +1,5 @@
 #![cfg_attr(feature = "nightly", feature(never_type))]
+#![feature(type_alias_impl_trait)]
 #![allow(type_alias_bounds)]
 #![allow(clippy::let_and_return)]
 #![allow(clippy::iter_with_drain)]
@@ -28,6 +29,8 @@ pub mod util;
 
 #[cfg(feature = "python")]
 pub use pyo3;
+#[cfg(feature = "tracing")]
+pub use tracing;
 pub use variadics::{self, var_args, var_expr, var_type};
 pub use {
     bincode, bytes, futures, hydroflow_lang as lang, itertools, lattices, pusherator, rustc_hash,

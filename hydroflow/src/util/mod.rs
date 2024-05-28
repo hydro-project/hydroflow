@@ -9,6 +9,8 @@ pub mod multiset;
 pub mod sparse_vec;
 pub mod unsync;
 
+/// GHT from the Wang/Willsey FreeFlow work
+pub mod generalized_hash_trie;
 mod monotonic;
 pub use monotonic::*;
 
