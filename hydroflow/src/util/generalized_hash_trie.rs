@@ -2,13 +2,15 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use variadics::{var_expr, var_type, Variadic, VariadicExt};
+use variadics::{var_expr, var_type, AsRefVariadic, Variadic, VariadicExt};
 
 /// node of a HashTrie
-pub trait HashTrieNode<T>: Default {
+pub trait HashTrieNode: Default {
+    type Items<'a>: Variadic + AsRefVariadic<'a>;
+
     /// Inserts items into the hash trie.
     /// Returns `true` if the items were successfully inserted, `false` otherwise.
-    fn insert(&mut self, items: &[&T]) -> bool;
+    fn insert(&mut self, items: &[Self::Items<'static>]) -> bool;
 
     /// Performs a prefix search on the hash trie.
     /// Returns `true` if the prefix is found, `false` otherwise.
