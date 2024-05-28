@@ -119,6 +119,65 @@ where
     T: 'static + Eq,
 = impl 'a + Iterator<Item = <<HtLeaf<T> as HashTrieNode>::Row as VariadicExt>::AsRefVar<'a>>;
 
+#[sealed]
+pub trait HtPrefixIter<Prefix> {
+    type Suffix: VariadicExt;
+    type PrefixIter<'a>: Iterator<Item = <Self::Suffix as VariadicExt>::AsRefVar<'a>>
+    where
+        Self: 'a,
+        Self::Suffix: 'a;
+    fn prefix_iter(&self, prefix: Prefix) -> Self::PrefixIter<'_>;
+}
+#[sealed]
+impl<'k, Key, Node, PrefixRest> HtPrefixIter<var_type!(&'k Key, ...PrefixRest)>
+    for HtInner<Key, Node>
+where
+    Key: Eq + Hash,
+    Node: HashTrieNode + HtPrefixIter<PrefixRest>,
+    Node::Suffix: 'static,      // meh
+    PrefixRest: 'static + Copy, // meh
+{
+    type Suffix = Node::Suffix;
+    type PrefixIter<'a> = std::iter::Flatten<std::option::IntoIter<Node::PrefixIter<'a>>>
+    where
+        Self: 'a,
+        Self::Suffix: 'a;
+    fn prefix_iter(&self, prefix: var_type!(&'k Key, ...PrefixRest)) -> Self::PrefixIter<'_> {
+        let var_args!(key, ...rest) = prefix;
+        self.children
+            .get(key)
+            .map(|node| node.prefix_iter(rest))
+            .into_iter()
+            .flatten()
+    }
+}
+#[sealed]
+impl<'k, Key> HtPrefixIter<var_type!(&'k Key)> for HtLeaf<Key>
+where
+    Key: Eq + Hash,
+{
+    type Suffix = var_expr!();
+    type PrefixIter<'a> = std::option::IntoIter<()>
+    where
+        Self: 'a,
+        Self::Suffix: 'a;
+    fn prefix_iter(&self, prefix: var_type!(&'k Key)) -> Self::PrefixIter<'_> {
+        let var_args!(key) = prefix;
+        self.elements.contains(key).then_some(()).into_iter()
+    }
+}
+#[sealed]
+impl<This> HtPrefixIter<var_type!()> for This
+where
+    This: 'static + HashTrieNode,
+{
+    type Suffix = <Self as HashTrieNode>::Row;
+    type PrefixIter<'a> = <Self as HashTrieNode>::Iter<'a>;
+    fn prefix_iter(&self, _prefix: var_type!()) -> Self::PrefixIter<'_> {
+        self.iter()
+    }
+}
+
 /// Trait to convert a tuple to a HashTrieList
 pub trait ToHashTrie: Variadic {
     /// The output type of the hash trie conversion.
@@ -222,6 +281,51 @@ mod tests {
         htrie.insert(var_expr!(43, 10, 600));
         for row in htrie.iter() {
             println!("{:?}", row);
+        }
+    }
+
+    #[test]
+    fn test_prefix_iter() {
+        let mut htrie = var_expr!(42, 314, 43770).to_hash_trie();
+        htrie.insert(var_expr!(42, 315, 43770));
+        htrie.insert(var_expr!(42, 314, 30619));
+        htrie.insert(var_expr!(43, 10, 600));
+
+        for row in htrie.prefix_iter(var_expr!(&42)) {
+            println!("42: {:?}", row);
+        }
+
+        for row in htrie.prefix_iter(var_expr!(&42, &315)) {
+            println!("42,315: {:?}", row);
+        }
+
+        for row in htrie.prefix_iter(var_expr!(&42, &315, &43770)) {
+            println!("42,315,43770: {:?}", row);
+        }
+        assert!(htrie.prefix_iter(var_expr!(&42, &315, &43770)).any(|_| true));
+        // // Too long:
+        // htrie.prefix_iter(var_expr!(&42, &315, &43770, &100));
+
+        for row in htrie.iter() {
+            println!("All: {:?}", row);
+        }
+    }
+
+    #[test]
+    fn test_prefix_iter_complex() {
+        let mut htrie = var_expr!(true, 1, "hello", -5).to_hash_trie();
+        htrie.insert(var_expr!(true, 2, "hello", 1));
+        htrie.insert(var_expr!(true, 1, "hi", -2));
+        htrie.insert(var_expr!(true, 1, "hi", -3));
+        htrie.insert(var_expr!(true, 1, "hi", -4));
+        htrie.insert(var_expr!(true, 1, "hi", -5));
+        htrie.insert(var_expr!(false, 10, "bye", 5));
+
+        for row in htrie.prefix_iter(var_expr!(true).as_ref_var()) {
+            println!("A {:?}", row);
+        }
+        for row in htrie.prefix_iter(var_expr!(true, 1, "hi").as_ref_var()) {
+            println!("B {:?}", row);
         }
     }
 }
