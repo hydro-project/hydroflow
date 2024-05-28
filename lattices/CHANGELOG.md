@@ -5,7 +5,74 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.5 (2024-05-24)
+
+### Documentation
+
+ - <csr-id-0d2f14b9237c0eaa8131d1d1118768357ac8133b/> Updating CONTRIBUTING.md with some info about feature branches
+   Also updating GitHub workflows to run on feature branches as well.
+
+### New Features
+
+ - <csr-id-0ed1f26b485894d3f24bd4d3251f6d3134fd1947/> Make Pair<> members public
+   Summary of types examined:
+   
+   - `Min<T>`: T is not a lattice
+   - `set_union<T>`: is not a lattice
+   - map_union - not safe to expose map
+   - union_find<K> - K is not a lattice
+   - VecUnion<Lat> - not safe to expose vec
+   - WithTop<Lat>/WithBot<Lat> - already pub
+   - Pair<LatA, LatB> - Changed in this commit
+   - DomPair<LatKey, LatVal> - Already correctly done with left pub and
+   right private.
+   - Conflict<T> / Point<T> - T is not a lattice type.
+   - () - No nested types here.
+ - <csr-id-c2577bd0ad1969f4badf23874a9e7a6c1622c5c3/> Expose PairBimorphism public.
+   Address https://github.com/hydro-project/hydroflow/issues/1229.
+ - <csr-id-d8e4d9dc784ae28fcefe5f32a0561698c1196d31/> definitions of linearity and bilinearity in algebra lib
+ - <csr-id-c3f5a37ff746401a2383a900f9004e33072d5b1a/> add prototype of tagging algebraic properties
+
+### Bug Fixes
+
+ - <csr-id-c0a06bbd20e1621de46ab835dd27df162f689411/> typos in lattice docs
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 8 commits contributed to the release over the course of 36 calendar days.
+ - 48 days passed between releases.
+ - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 7 unique issues were worked on: [#1155](https://github.com/hydro-project/hydroflow/issues/1155), [#1156](https://github.com/hydro-project/hydroflow/issues/1156), [#1174](https://github.com/hydro-project/hydroflow/issues/1174), [#1181](https://github.com/hydro-project/hydroflow/issues/1181), [#1230](https://github.com/hydro-project/hydroflow/issues/1230), [#1233](https://github.com/hydro-project/hydroflow/issues/1233), [#1236](https://github.com/hydro-project/hydroflow/issues/1236)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1155](https://github.com/hydro-project/hydroflow/issues/1155)**
+    - Add Integral domain to algebra library ([`eeef3ac`](https://github.com/hydro-project/hydroflow/commit/eeef3acd7f5f06d6d8cb7719ee2bebf7f980e537))
+ * **[#1156](https://github.com/hydro-project/hydroflow/issues/1156)**
+    - Add prototype of tagging algebraic properties ([`c3f5a37`](https://github.com/hydro-project/hydroflow/commit/c3f5a37ff746401a2383a900f9004e33072d5b1a))
+ * **[#1174](https://github.com/hydro-project/hydroflow/issues/1174)**
+    - Typos in lattice docs ([`c0a06bb`](https://github.com/hydro-project/hydroflow/commit/c0a06bbd20e1621de46ab835dd27df162f689411))
+ * **[#1181](https://github.com/hydro-project/hydroflow/issues/1181)**
+    - Part 1 ([`041bcf9`](https://github.com/hydro-project/hydroflow/commit/041bcf92a48f4fb0557796d541e27213d78235eb))
+ * **[#1230](https://github.com/hydro-project/hydroflow/issues/1230)**
+    - Expose PairBimorphism public. ([`c2577bd`](https://github.com/hydro-project/hydroflow/commit/c2577bd0ad1969f4badf23874a9e7a6c1622c5c3))
+ * **[#1233](https://github.com/hydro-project/hydroflow/issues/1233)**
+    - Make Pair<> members public ([`0ed1f26`](https://github.com/hydro-project/hydroflow/commit/0ed1f26b485894d3f24bd4d3251f6d3134fd1947))
+ * **[#1236](https://github.com/hydro-project/hydroflow/issues/1236)**
+    - Updating CONTRIBUTING.md with some info about feature branches ([`0d2f14b`](https://github.com/hydro-project/hydroflow/commit/0d2f14b9237c0eaa8131d1d1118768357ac8133b))
+ * **Uncategorized**
+    - Definitions of linearity and bilinearity in algebra lib ([`d8e4d9d`](https://github.com/hydro-project/hydroflow/commit/d8e4d9dc784ae28fcefe5f32a0561698c1196d31))
+</details>
+
 ## 0.5.4 (2024-04-05)
+
+<csr-id-2a10c4f395bbf3a320bdde6ec24c3c6abd5d6ed0/>
 
 Unchanged from previous release.
 
@@ -17,8 +84,8 @@ Unchanged from previous release.
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release over the course of 7 calendar days.
- - 35 days passed between releases.
+ - 3 commits contributed to the release over the course of 6 calendar days.
+ - 34 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#1127](https://github.com/hydro-project/hydroflow/issues/1127)
 
@@ -31,6 +98,7 @@ Unchanged from previous release.
  * **[#1127](https://github.com/hydro-project/hydroflow/issues/1127)**
     - Initial Algebra Library ([`b6e3bec`](https://github.com/hydro-project/hydroflow/commit/b6e3bec0bff31f3b7e8166cf1b545c39a5b8d617))
  * **Uncategorized**
+    - Release hydroflow_cli_integration v0.5.2, hydroflow_lang v0.6.1, hydroflow_datalog_core v0.6.1, lattices v0.5.4, hydroflow v0.6.1, stageleft_macro v0.1.1, stageleft v0.2.1, hydroflow_plus v0.6.1, hydro_deploy v0.6.1, hydro_cli v0.6.1, hydroflow_plus_cli_integration v0.6.1, stageleft_tool v0.1.1 ([`cd63f22`](https://github.com/hydro-project/hydroflow/commit/cd63f2258c961a40f0e5dbef20ac329a2d570ad0))
     - Mark `lattices` as unchanged for `0.6.1` release ([`2a10c4f`](https://github.com/hydro-project/hydroflow/commit/2a10c4f395bbf3a320bdde6ec24c3c6abd5d6ed0))
 </details>
 

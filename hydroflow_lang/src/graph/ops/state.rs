@@ -1,10 +1,10 @@
 use quote::{quote_spanned, ToTokens};
 
 use super::{
-    OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
-    OperatorWriteOutput, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN,
-    RANGE_0, RANGE_1,
+    OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance, OperatorWriteOutput,
+    Persistence, WriteContextArgs, LATTICE_FOLD_REDUCE_FLOW_PROP_FN, RANGE_1,
 };
+use crate::diagnostic::{Diagnostic, Level};
 
 // TODO(mingwei): Improve example when things are more stable.
 /// A lattice-based state operator, used for accumulating lattice state
@@ -29,7 +29,7 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
     hard_range_out: &(0..=1),
     soft_range_out: &(0..=1),
     num_args: 0,
-    persistence_args: RANGE_0, // TODO(mingwei)?
+    persistence_args: &(0..=1),
     type_args: &(0..=1),
     is_external_input: false,
     has_singleton_output: true,
@@ -47,18 +47,38 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
                    outputs,
                    is_pull,
                    singleton_output_ident,
+                   op_name,
                    op_inst:
                        OperatorInstance {
-                           generics: OpInstGenerics { type_args, .. },
+                           generics:
+                               OpInstGenerics {
+                                   type_args,
+                                   persistence_args,
+                                   ..
+                               },
                            ..
                        },
                    ..
                },
-               _diagnostics| {
+               diagnostics| {
         let lattice_type = type_args
             .first()
             .map(ToTokens::to_token_stream)
             .unwrap_or(quote_spanned!(op_span=> _));
+
+        let persistence = match persistence_args[..] {
+            [] => Persistence::Tick,
+            [Persistence::Mutable] => {
+                diagnostics.push(Diagnostic::spanned(
+                    op_span,
+                    Level::Error,
+                    format!("{} does not support `'mut`.", op_name),
+                ));
+                Persistence::Tick
+            }
+            [a] => a,
+            _ => unreachable!(),
+        };
 
         let state_ident = singleton_output_ident;
 
@@ -68,11 +88,24 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
             ));
         };
 
+        let tick_reset_code = if Persistence::Tick == persistence {
+            quote_spanned! {op_span=>
+                // Reset the value to the initializer fn if it is a new tick.
+                if #context.is_first_run_this_tick() {
+                    #context.state_ref(#state_ident).take();
+                }
+            }
+        } else {
+            Default::default() // No code
+        };
+
         // TODO(mingwei): deduplicate codegen
         let write_iterator = if is_pull {
             let input = &inputs[0];
             quote_spanned! {op_span=>
                 let #ident = {
+                    #tick_reset_code
+
                     fn check_input<'a, Item, Iter, Lat>(
                         iter: Iter,
                         state_handle: #root::scheduled::state::StateHandle<::std::cell::RefCell<Lat>>,
@@ -117,6 +150,8 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
         } else {
             quote_spanned! {op_span=>
                 let #ident = {
+                    #tick_reset_code
+
                     fn check_output<'a, Item, Lat>(
                         state_handle: #root::scheduled::state::StateHandle<::std::cell::RefCell<Lat>>,
                         context: &'a #root::scheduled::context::Context,

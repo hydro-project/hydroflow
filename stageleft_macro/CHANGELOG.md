@@ -5,7 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.2.0 (2024-05-24)
+
+### New Features
+
+ - <csr-id-93fd05e5ff256e2e0a3b513695ff869c32344447/> re-compile staged sources for the macro at the top level
+
+### Bug Fixes
+
+ - <csr-id-0cafbdb74a665412a83aa900b4eb10c00e2498dd/> handle send_bincode with local structs
+   fix(hydroflow_plus): handle send_bincode with local structs
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release over the course of 43 calendar days.
+ - 48 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 2 unique issues were worked on: [#1104](https://github.com/hydro-project/hydroflow/issues/1104), [#1151](https://github.com/hydro-project/hydroflow/issues/1151)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1104](https://github.com/hydro-project/hydroflow/issues/1104)**
+    - Re-compile staged sources for the macro at the top level ([`93fd05e`](https://github.com/hydro-project/hydroflow/commit/93fd05e5ff256e2e0a3b513695ff869c32344447))
+ * **[#1151](https://github.com/hydro-project/hydroflow/issues/1151)**
+    - Handle send_bincode with local structs ([`0cafbdb`](https://github.com/hydro-project/hydroflow/commit/0cafbdb74a665412a83aa900b4eb10c00e2498dd))
+</details>
+
 ## v0.1.1 (2024-04-05)
+
+<csr-id-7958fb0d900be8fe7359326abfa11dcb8fb35e8a/>
 
 ### New Features
 
@@ -30,8 +64,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release over the course of 31 calendar days.
- - 67 days passed between releases.
+ - 5 commits contributed to the release over the course of 30 calendar days.
+ - 66 days passed between releases.
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 4 unique issues were worked on: [#1090](https://github.com/hydro-project/hydroflow/issues/1090), [#1100](https://github.com/hydro-project/hydroflow/issues/1100), [#1117](https://github.com/hydro-project/hydroflow/issues/1117), [#1124](https://github.com/hydro-project/hydroflow/issues/1124)
 
@@ -49,6 +83,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Ignore unnecessary lifetime lint on entrypoints ([`54b4ee3`](https://github.com/hydro-project/hydroflow/commit/54b4ee3fc847db14a0b825e04eae6e1288d44af3))
  * **[#1124](https://github.com/hydro-project/hydroflow/issues/1124)**
     - Handle multiple references to copy-able free variables ([`6cc5a7f`](https://github.com/hydro-project/hydroflow/commit/6cc5a7f78fc8bd28f32dad58857ccd1c46bc93cd))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.5.2, hydroflow_lang v0.6.1, hydroflow_datalog_core v0.6.1, lattices v0.5.4, hydroflow v0.6.1, stageleft_macro v0.1.1, stageleft v0.2.1, hydroflow_plus v0.6.1, hydro_deploy v0.6.1, hydro_cli v0.6.1, hydroflow_plus_cli_integration v0.6.1, stageleft_tool v0.1.1 ([`cd63f22`](https://github.com/hydro-project/hydroflow/commit/cd63f2258c961a40f0e5dbef20ac329a2d570ad0))
 </details>
 
 ## v0.1.0 (2024-01-29)

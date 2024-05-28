@@ -5,7 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.7.0 (2024-05-24)
+
+### Chore
+
+ - <csr-id-b86f11aad344fef6ad9cdd1db0b45bb738c48bd6/> expect custom config names to prevent warnings
+   See
+   https://doc.rust-lang.org/nightly/cargo/reference/build-scripts.html#rustc-check-cfg
+ - <csr-id-cbb3e4b3601211baa84d8d0976c5176561f940b8/> update Rust Sitter
+   chore(hydroflow_datalog): update Rust Sitter
+
+### Bug Fixes
+
+ - <csr-id-d57b91146ef44125f1dd87e040ef636797f90e76/> cleanup codegen for `fold_keyed`
+
+### Refactor
+
+ - <csr-id-40f1a19ece2a8352e6fdc31f815d923e635f91b1/> remove reference edges, reverts #1017 #1041
+
+### New Features (BREAKING)
+
+ - <csr-id-c9dc66db2bde34aa1385c8847d0ba7c16472f75d/> add detupling syntax and allow interleaving with flattening
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 5 commits contributed to the release over the course of 35 calendar days.
+ - 48 days passed between releases.
+ - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 5 unique issues were worked on: [#1160](https://github.com/hydro-project/hydroflow/issues/1160), [#1166](https://github.com/hydro-project/hydroflow/issues/1166), [#1168](https://github.com/hydro-project/hydroflow/issues/1168), [#1176](https://github.com/hydro-project/hydroflow/issues/1176), [#1192](https://github.com/hydro-project/hydroflow/issues/1192)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1160](https://github.com/hydro-project/hydroflow/issues/1160)**
+    - Remove reference edges, reverts #1017 #1041 ([`40f1a19`](https://github.com/hydro-project/hydroflow/commit/40f1a19ece2a8352e6fdc31f815d923e635f91b1))
+ * **[#1166](https://github.com/hydro-project/hydroflow/issues/1166)**
+    - Add detupling syntax and allow interleaving with flattening ([`c9dc66d`](https://github.com/hydro-project/hydroflow/commit/c9dc66db2bde34aa1385c8847d0ba7c16472f75d))
+ * **[#1168](https://github.com/hydro-project/hydroflow/issues/1168)**
+    - Update Rust Sitter ([`cbb3e4b`](https://github.com/hydro-project/hydroflow/commit/cbb3e4b3601211baa84d8d0976c5176561f940b8))
+ * **[#1176](https://github.com/hydro-project/hydroflow/issues/1176)**
+    - Cleanup codegen for `fold_keyed` ([`d57b911`](https://github.com/hydro-project/hydroflow/commit/d57b91146ef44125f1dd87e040ef636797f90e76))
+ * **[#1192](https://github.com/hydro-project/hydroflow/issues/1192)**
+    - Expect custom config names to prevent warnings ([`b86f11a`](https://github.com/hydro-project/hydroflow/commit/b86f11aad344fef6ad9cdd1db0b45bb738c48bd6))
+</details>
+
 ## 0.6.1 (2024-04-05)
+
+<csr-id-88e2ca44fed2d54b969e54a948c41d3bcd9a2ab5/>
 
 ### New Features
 
@@ -41,8 +92,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 8 commits contributed to the release over the course of 32 calendar days.
- - 35 days passed between releases.
+ - 9 commits contributed to the release over the course of 31 calendar days.
+ - 34 days passed between releases.
  - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 7 unique issues were worked on: [#1086](https://github.com/hydro-project/hydroflow/issues/1086), [#1091](https://github.com/hydro-project/hydroflow/issues/1091), [#1094](https://github.com/hydro-project/hydroflow/issues/1094), [#1132](https://github.com/hydro-project/hydroflow/issues/1132), [#1135](https://github.com/hydro-project/hydroflow/issues/1135), [#1136](https://github.com/hydro-project/hydroflow/issues/1136), [#1137](https://github.com/hydro-project/hydroflow/issues/1137)
 
@@ -67,6 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Add `#[repr(transparent)]` to type guard codegen ([`88e2ca4`](https://github.com/hydro-project/hydroflow/commit/88e2ca44fed2d54b969e54a948c41d3bcd9a2ab5))
  * **[#1137](https://github.com/hydro-project/hydroflow/issues/1137)**
     - Include subgraph ID in pivot_run codegen ([`602e21f`](https://github.com/hydro-project/hydroflow/commit/602e21fc04da5a0d65ac7128688760c92ffba3c1))
+ * **Uncategorized**
+    - Release hydroflow_cli_integration v0.5.2, hydroflow_lang v0.6.1, hydroflow_datalog_core v0.6.1, lattices v0.5.4, hydroflow v0.6.1, stageleft_macro v0.1.1, stageleft v0.2.1, hydroflow_plus v0.6.1, hydro_deploy v0.6.1, hydro_cli v0.6.1, hydroflow_plus_cli_integration v0.6.1, stageleft_tool v0.1.1 ([`cd63f22`](https://github.com/hydro-project/hydroflow/commit/cd63f2258c961a40f0e5dbef20ac329a2d570ad0))
 </details>
 
 ## 0.6.0 (2024-03-02)

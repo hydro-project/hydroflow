@@ -277,8 +277,9 @@ pub struct KeyedBimorphism<MapOut, Bimorphism> {
     bimorphism: Bimorphism,
     _phantom: PhantomData<fn() -> MapOut>,
 }
-impl<MapOut, Bimorphism> From<Bimorphism> for KeyedBimorphism<MapOut, Bimorphism> {
-    fn from(bimorphism: Bimorphism) -> Self {
+impl<MapOut, Bimorphism> KeyedBimorphism<MapOut, Bimorphism> {
+    /// Create a `KeyedBimorphism` using `bimorphism` for handling values.
+    pub fn new(bimorphism: Bimorphism) -> Self {
         Self {
             bimorphism,
             _phantom: PhantomData,
@@ -398,28 +399,28 @@ mod test {
         ];
 
         check_lattice_bimorphism(
-            KeyedBimorphism::<HashMap<_, _>, _>::from(
+            KeyedBimorphism::<HashMap<_, _>, _>::new(
                 CartesianProductBimorphism::<HashSet<_>>::default(),
             ),
             items_a,
             items_a,
         );
         check_lattice_bimorphism(
-            KeyedBimorphism::<HashMap<_, _>, _>::from(
+            KeyedBimorphism::<HashMap<_, _>, _>::new(
                 CartesianProductBimorphism::<HashSet<_>>::default(),
             ),
             items_a,
             items_b,
         );
         check_lattice_bimorphism(
-            KeyedBimorphism::<HashMap<_, _>, _>::from(
+            KeyedBimorphism::<HashMap<_, _>, _>::new(
                 CartesianProductBimorphism::<HashSet<_>>::default(),
             ),
             items_b,
             items_a,
         );
         check_lattice_bimorphism(
-            KeyedBimorphism::<HashMap<_, _>, _>::from(
+            KeyedBimorphism::<HashMap<_, _>, _>::new(
                 CartesianProductBimorphism::<HashSet<_>>::default(),
             ),
             items_b,
@@ -427,28 +428,28 @@ mod test {
         );
 
         check_lattice_bimorphism(
-            KeyedBimorphism::<BTreeMap<_, _>, _>::from(
+            KeyedBimorphism::<BTreeMap<_, _>, _>::new(
                 CartesianProductBimorphism::<HashSet<_>>::default(),
             ),
             items_a,
             items_a,
         );
         check_lattice_bimorphism(
-            KeyedBimorphism::<BTreeMap<_, _>, _>::from(
+            KeyedBimorphism::<BTreeMap<_, _>, _>::new(
                 CartesianProductBimorphism::<HashSet<_>>::default(),
             ),
             items_a,
             items_b,
         );
         check_lattice_bimorphism(
-            KeyedBimorphism::<BTreeMap<_, _>, _>::from(
+            KeyedBimorphism::<BTreeMap<_, _>, _>::new(
                 CartesianProductBimorphism::<HashSet<_>>::default(),
             ),
             items_b,
             items_a,
         );
         check_lattice_bimorphism(
-            KeyedBimorphism::<BTreeMap<_, _>, _>::from(
+            KeyedBimorphism::<BTreeMap<_, _>, _>::new(
                 CartesianProductBimorphism::<HashSet<_>>::default(),
             ),
             items_b,

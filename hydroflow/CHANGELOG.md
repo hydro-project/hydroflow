@@ -5,15 +5,151 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.6.2 (2024-04-09)
+## 0.7.0 (2024-05-24)
+
+### Chore
+
+ - <csr-id-c9dfddc680e0ce5415539d7b77bc5beb97ab59d9/> use workaround for `cargo smart-release` not properly ordering `dev-`/`build-dependencies`
+ - <csr-id-b86f11aad344fef6ad9cdd1db0b45bb738c48bd6/> expect custom config names to prevent warnings
+   See
+   https://doc.rust-lang.org/nightly/cargo/reference/build-scripts.html#rustc-check-cfg
+ - <csr-id-18015029a725b068696ed9edefd1097583c858a6/> update pyo3, silence warnings in generated code
+
+### Documentation
+
+ - <csr-id-0d2f14b9237c0eaa8131d1d1118768357ac8133b/> Updating CONTRIBUTING.md with some info about feature branches
+   Also updating GitHub workflows to run on feature branches as well.
+ - <csr-id-9bcc5265044b467e9fe4ada0a89c7e84fd66dd43/> improve docs/README.md, fix #856
 
 ### New Features
 
+ - <csr-id-b0692b0d697980eaf9893c07a443a257e04786c5/> add `'static`/`'tick` support for `state()` operator
+ - <csr-id-f184ea145f0c7c3072d7d0f94d42fcda717ac8d9/> insert `persist()` before singleton referencers to enable replay
+ - <csr-id-4ca8ce43c0998296e2d86bd74800585ebb24123a/> allow `defer_tick()`, `next_stratum()` to have a type hint arg
+ - <csr-id-9df9c6251526903dbe7288e2fd9a532c63a9412c/> error on unused ports, fix #1108
+ - <csr-id-997d90a76db9a4e05dbac35073a09548750ce342/> Added poll_futures and poll_futures_async operators.
+
+### Bug Fixes
+
+ - <csr-id-e2fa6b0729cb92b29e1d293c2788458845ff306a/> fix #1050 for `reduce_keyed`, fix #1050
+ - <csr-id-d773f9a6938fe6d1521516f7a7c441c6c281a9fa/> fix scheduler spinning on replay, fix #961
+   fixes the added tests failing in the previous commit
+ - <csr-id-69abccde27644d7d0ed2fdf7d75f491fdbc41de8/> fix `TeeingHandoff` not scheduling outputs `tee()`d after send port is already used via `add_subgraph*`, fix #1163
+   Add test for it as well
+
+### Refactor
+
+ - <csr-id-826dbd9a709de2f883992bdcefa8f2d566d74ecb/> simplify `demux_enum()`, somewhat improves error messages #1201
+ - <csr-id-b649d470cc28a2bbb7e31426adcd050b455bf803/> use `Duration` instead of int seconds
+ - <csr-id-20471f11901e3fb15a2efea61752d836d4facba5/> reorder error message emission for conflicting varnames
+ - <csr-id-b072ee026f97f8537165e1fb247101e0ab2fb320/> improve `TeeingHandoff` drop implementation
+
+### Style
+
+ - <csr-id-a4cd5fe57130e3b517872d1c27a274f9c9f601c2/> fix warning unnecessary qualification
+ - <csr-id-d9b2c0263d508e6f6855f49504896d4ea670c355/> appease latest nightly clippy
+
+### Test
+
+ - <csr-id-f46e0ac84e13ad6d713836c948b02e7b199f5faa/> join replay static test
+ - <csr-id-8f4cd7bfc13bcbd89ff4a0e48c7e95cde5039f1b/> add tests for scheduler spinning #961
+   failing
+ - <csr-id-d2427e2cc901c4174830d41b4a1dfc52fd4f19ce/> update some compile-fail outputs caused by rustc regression
+
+### New Features (BREAKING)
+
+ - <csr-id-218175cd935c4d94efb2f01f6e73300ace978283/> Change current_tick_start to wall clock time
+ - <csr-id-c2f6c9578127a71c879752d52e115df75659e2b0/> Introduce newtypes for working with ticks
+ - <csr-id-c9dc66db2bde34aa1385c8847d0ba7c16472f75d/> add detupling syntax and allow interleaving with flattening
+
+### Refactor (BREAKING)
+
+ - <csr-id-4386fac824d64f63eae7629292675ac6bc8df9f7/> change `lattice_bimorphism` to take state via singleton arguments #969 #1058
+ - <csr-id-d7e579c39b370a0ea0b0385d1029e9f8a7351d68/> replace `state()` with `state_ref()` implementation
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 30 commits contributed to the release over the course of 42 calendar days.
+ - 44 days passed between releases.
+ - 27 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 23 unique issues were worked on: [#1120](https://github.com/hydro-project/hydroflow/issues/1120), [#1143](https://github.com/hydro-project/hydroflow/issues/1143), [#1152](https://github.com/hydro-project/hydroflow/issues/1152), [#1159](https://github.com/hydro-project/hydroflow/issues/1159), [#1164](https://github.com/hydro-project/hydroflow/issues/1164), [#1166](https://github.com/hydro-project/hydroflow/issues/1166), [#1167](https://github.com/hydro-project/hydroflow/issues/1167), [#1171](https://github.com/hydro-project/hydroflow/issues/1171), [#1176](https://github.com/hydro-project/hydroflow/issues/1176), [#1178](https://github.com/hydro-project/hydroflow/issues/1178), [#1182](https://github.com/hydro-project/hydroflow/issues/1182), [#1190](https://github.com/hydro-project/hydroflow/issues/1190), [#1191](https://github.com/hydro-project/hydroflow/issues/1191), [#1192](https://github.com/hydro-project/hydroflow/issues/1192), [#1193](https://github.com/hydro-project/hydroflow/issues/1193), [#1196](https://github.com/hydro-project/hydroflow/issues/1196), [#1197](https://github.com/hydro-project/hydroflow/issues/1197), [#1198](https://github.com/hydro-project/hydroflow/issues/1198), [#1199](https://github.com/hydro-project/hydroflow/issues/1199), [#1204](https://github.com/hydro-project/hydroflow/issues/1204), [#1232](https://github.com/hydro-project/hydroflow/issues/1232), [#1236](https://github.com/hydro-project/hydroflow/issues/1236), [#1238](https://github.com/hydro-project/hydroflow/issues/1238)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1120](https://github.com/hydro-project/hydroflow/issues/1120)**
+    - Extend Chat Example w/ Gossip Based Backend ([`55051e1`](https://github.com/hydro-project/hydroflow/commit/55051e1c8db2ba8e36c6b6ed0e888996e9501f3f))
+ * **[#1143](https://github.com/hydro-project/hydroflow/issues/1143)**
+    - Added poll_futures and poll_futures_async operators. ([`997d90a`](https://github.com/hydro-project/hydroflow/commit/997d90a76db9a4e05dbac35073a09548750ce342))
+ * **[#1152](https://github.com/hydro-project/hydroflow/issues/1152)**
+    - Update some compile-fail outputs caused by rustc regression ([`d2427e2`](https://github.com/hydro-project/hydroflow/commit/d2427e2cc901c4174830d41b4a1dfc52fd4f19ce))
+    - Update pyo3, silence warnings in generated code ([`1801502`](https://github.com/hydro-project/hydroflow/commit/18015029a725b068696ed9edefd1097583c858a6))
+    - Appease latest nightly clippy ([`d9b2c02`](https://github.com/hydro-project/hydroflow/commit/d9b2c0263d508e6f6855f49504896d4ea670c355))
+ * **[#1159](https://github.com/hydro-project/hydroflow/issues/1159)**
+    - Change `lattice_bimorphism` to take state via singleton arguments #969 #1058 ([`4386fac`](https://github.com/hydro-project/hydroflow/commit/4386fac824d64f63eae7629292675ac6bc8df9f7))
+    - Replace `state()` with `state_ref()` implementation ([`d7e579c`](https://github.com/hydro-project/hydroflow/commit/d7e579c39b370a0ea0b0385d1029e9f8a7351d68))
+ * **[#1164](https://github.com/hydro-project/hydroflow/issues/1164)**
+    - Improve `TeeingHandoff` drop implementation ([`b072ee0`](https://github.com/hydro-project/hydroflow/commit/b072ee026f97f8537165e1fb247101e0ab2fb320))
+    - Fix `TeeingHandoff` not scheduling outputs `tee()`d after send port is already used via `add_subgraph*`, fix #1163 ([`69abccd`](https://github.com/hydro-project/hydroflow/commit/69abccde27644d7d0ed2fdf7d75f491fdbc41de8))
+ * **[#1166](https://github.com/hydro-project/hydroflow/issues/1166)**
+    - Add detupling syntax and allow interleaving with flattening ([`c9dc66d`](https://github.com/hydro-project/hydroflow/commit/c9dc66db2bde34aa1385c8847d0ba7c16472f75d))
+ * **[#1167](https://github.com/hydro-project/hydroflow/issues/1167)**
+    - Error on unused ports, fix #1108 ([`9df9c62`](https://github.com/hydro-project/hydroflow/commit/9df9c6251526903dbe7288e2fd9a532c63a9412c))
+    - Reorder error message emission for conflicting varnames ([`20471f1`](https://github.com/hydro-project/hydroflow/commit/20471f11901e3fb15a2efea61752d836d4facba5))
+ * **[#1171](https://github.com/hydro-project/hydroflow/issues/1171)**
+    - Fix scheduler spinning on replay, fix #961 ([`d773f9a`](https://github.com/hydro-project/hydroflow/commit/d773f9a6938fe6d1521516f7a7c441c6c281a9fa))
+    - Add tests for scheduler spinning #961 ([`8f4cd7b`](https://github.com/hydro-project/hydroflow/commit/8f4cd7bfc13bcbd89ff4a0e48c7e95cde5039f1b))
+ * **[#1176](https://github.com/hydro-project/hydroflow/issues/1176)**
+    - Fix #1050 for `reduce_keyed`, fix #1050 ([`e2fa6b0`](https://github.com/hydro-project/hydroflow/commit/e2fa6b0729cb92b29e1d293c2788458845ff306a))
+ * **[#1178](https://github.com/hydro-project/hydroflow/issues/1178)**
+    - Fix warning unnecessary qualification ([`a4cd5fe`](https://github.com/hydro-project/hydroflow/commit/a4cd5fe57130e3b517872d1c27a274f9c9f601c2))
+ * **[#1182](https://github.com/hydro-project/hydroflow/issues/1182)**
+    - Allow `defer_tick()`, `next_stratum()` to have a type hint arg ([`4ca8ce4`](https://github.com/hydro-project/hydroflow/commit/4ca8ce43c0998296e2d86bd74800585ebb24123a))
+ * **[#1190](https://github.com/hydro-project/hydroflow/issues/1190)**
+    - `source_interval` no longer emits Instant instances on output. ([`b292f11`](https://github.com/hydro-project/hydroflow/commit/b292f111715fd9c397ffb35cf991bd0bfb01c1e1))
+ * **[#1191](https://github.com/hydro-project/hydroflow/issues/1191)**
+    - Fixup! test(hydroflow): join replay static test ([`c09a23e`](https://github.com/hydro-project/hydroflow/commit/c09a23e854b10202dd7eec0ad0076de2bb196f61))
+    - Join replay static test ([`f46e0ac`](https://github.com/hydro-project/hydroflow/commit/f46e0ac84e13ad6d713836c948b02e7b199f5faa))
+ * **[#1192](https://github.com/hydro-project/hydroflow/issues/1192)**
+    - Expect custom config names to prevent warnings ([`b86f11a`](https://github.com/hydro-project/hydroflow/commit/b86f11aad344fef6ad9cdd1db0b45bb738c48bd6))
+ * **[#1193](https://github.com/hydro-project/hydroflow/issues/1193)**
+    - Introduce newtypes for working with ticks ([`c2f6c95`](https://github.com/hydro-project/hydroflow/commit/c2f6c9578127a71c879752d52e115df75659e2b0))
+ * **[#1196](https://github.com/hydro-project/hydroflow/issues/1196)**
+    - Change current_tick_start to wall clock time ([`218175c`](https://github.com/hydro-project/hydroflow/commit/218175cd935c4d94efb2f01f6e73300ace978283))
+ * **[#1197](https://github.com/hydro-project/hydroflow/issues/1197)**
+    - Fixup! test(hydroflow): join replay static test ([`c09a23e`](https://github.com/hydro-project/hydroflow/commit/c09a23e854b10202dd7eec0ad0076de2bb196f61))
+ * **[#1198](https://github.com/hydro-project/hydroflow/issues/1198)**
+    - Insert `persist()` before singleton referencers to enable replay ([`f184ea1`](https://github.com/hydro-project/hydroflow/commit/f184ea145f0c7c3072d7d0f94d42fcda717ac8d9))
+ * **[#1199](https://github.com/hydro-project/hydroflow/issues/1199)**
+    - Use `Duration` instead of int seconds ([`b649d47`](https://github.com/hydro-project/hydroflow/commit/b649d470cc28a2bbb7e31426adcd050b455bf803))
+    - Improve docs/README.md, fix #856 ([`9bcc526`](https://github.com/hydro-project/hydroflow/commit/9bcc5265044b467e9fe4ada0a89c7e84fd66dd43))
+ * **[#1204](https://github.com/hydro-project/hydroflow/issues/1204)**
+    - Simplify `demux_enum()`, somewhat improves error messages #1201 ([`826dbd9`](https://github.com/hydro-project/hydroflow/commit/826dbd9a709de2f883992bdcefa8f2d566d74ecb))
+ * **[#1232](https://github.com/hydro-project/hydroflow/issues/1232)**
+    - Add `'static`/`'tick` support for `state()` operator ([`b0692b0`](https://github.com/hydro-project/hydroflow/commit/b0692b0d697980eaf9893c07a443a257e04786c5))
+ * **[#1236](https://github.com/hydro-project/hydroflow/issues/1236)**
+    - Updating CONTRIBUTING.md with some info about feature branches ([`0d2f14b`](https://github.com/hydro-project/hydroflow/commit/0d2f14b9237c0eaa8131d1d1118768357ac8133b))
+ * **[#1238](https://github.com/hydro-project/hydroflow/issues/1238)**
+    - Use workaround for `cargo smart-release` not properly ordering `dev-`/`build-dependencies` ([`c9dfddc`](https://github.com/hydro-project/hydroflow/commit/c9dfddc680e0ce5415539d7b77bc5beb97ab59d9))
+</details>
+
+## 0.6.2 (2024-04-09)
+
+<csr-id-d9f72a62c0099d69986fe28f484bb2bf574caaac/>
+
+### New Features
+
+<csr-id-0f16d1f50cd64d9ca52ec811acc4a643a86f14fe/>
+<csr-id-5c5b6523d96a22c97382a7c61ee0e36ad77c0a0f/>
+
  - <csr-id-5679bfb7d3b96089cc020308c7d88021a254e63c/> allow `reduce()` to be referenceable as a singleton, fix docs and bugs
    * fixed bug: accumulator closures could have return values, which would be ignored
-   * updated docs
- - <csr-id-0f16d1f50cd64d9ca52ec811acc4a643a86f14fe/> make fold output optional, usable as just a singleton reference
- - <csr-id-5c5b6523d96a22c97382a7c61ee0e36ad77c0a0f/> allow `fold()` to be referenceable as a singleton
+* updated docs
 
 ### Bug Fixes
 
@@ -27,8 +163,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release.
- - 4 days passed between releases.
+ - 6 commits contributed to the release.
+ - 3 days passed between releases.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 3 unique issues were worked on: [#1134](https://github.com/hydro-project/hydroflow/issues/1134), [#1148](https://github.com/hydro-project/hydroflow/issues/1148), [#1150](https://github.com/hydro-project/hydroflow/issues/1150)
 
@@ -46,7 +182,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Add tests for #1147 (failing) ([`d9f72a6`](https://github.com/hydro-project/hydroflow/commit/d9f72a62c0099d69986fe28f484bb2bf574caaac))
  * **[#1150](https://github.com/hydro-project/hydroflow/issues/1150)**
     - Allow `reduce()` to be referenceable as a singleton, fix docs and bugs ([`5679bfb`](https://github.com/hydro-project/hydroflow/commit/5679bfb7d3b96089cc020308c7d88021a254e63c))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.6.2, hydroflow v0.6.2, hydroflow_plus v0.6.1, hydro_deploy v0.6.1, hydro_cli v0.6.1, hydroflow_plus_cli_integration v0.6.1, stageleft_tool v0.1.1 ([`23cfe08`](https://github.com/hydro-project/hydroflow/commit/23cfe0839079aa17d042bbd3976f6d188689d290))
 </details>
+
+<csr-unknown>
+ make fold output optional, usable as just a singleton reference allow fold() to be referenceable as a singleton<csr-unknown/>
 
 ## 0.6.1 (2024-04-05)
 
@@ -183,9 +324,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **Uncategorized**
     - Release hydroflow_cli_integration v0.5.2, hydroflow_lang v0.6.1, hydroflow_datalog_core v0.6.1, lattices v0.5.4, hydroflow v0.6.1, stageleft_macro v0.1.1, stageleft v0.2.1, hydroflow_plus v0.6.1, hydro_deploy v0.6.1, hydro_cli v0.6.1, hydroflow_plus_cli_integration v0.6.1, stageleft_tool v0.1.1 ([`cd63f22`](https://github.com/hydro-project/hydroflow/commit/cd63f2258c961a40f0e5dbef20ac329a2d570ad0))
 </details>
-
-<csr-unknown>
- add aggregation for collecting values into a vectorfeat(hydroflow_datalog): add aggregation for collecting values into avector add kvs_mut example, fix #785 scheduler log subgraph name (which includes surface syntax sg id)<csr-unknown/>
 
 ## 0.6.0 (2024-03-02)
 
@@ -334,6 +472,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-8b635683e5ac3c4ed2d896ae88e2953db1c6312c/> add a functional surface syntax using staging
  - <csr-id-f327b02c8001129e619fb253ab9b6d550e229a48/> add left,right,outer join module examples
  - <csr-id-7df0a0df61597764eed763b68138929fed1413ac/> add defer() which is the same as defer_tick() except that it is lazy
+ - <csr-id-6158a7aae2ef9b58245c23fc668715a3fb2ff7dc/> new implementation and Hydro Deploy setup
+   --
  - <csr-id-6158a7aae2ef9b58245c23fc668715a3fb2ff7dc/> new implementation and Hydro Deploy setup
    --
  - <csr-id-6158a7aae2ef9b58245c23fc668715a3fb2ff7dc/> new implementation and Hydro Deploy setup

@@ -29,7 +29,7 @@ mod with_top;
 pub use conflict::Conflict;
 pub use dom_pair::DomPair;
 pub use ord::{Max, Min};
-pub use pair::Pair;
+pub use pair::{Pair, PairBimorphism};
 pub use point::Point;
 pub use vec_union::VecUnion;
 pub use with_bot::WithBot;

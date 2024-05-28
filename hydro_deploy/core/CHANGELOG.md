@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.7.0 (2024-05-24)
+
+### New Features
+
+ - <csr-id-29a263fb564c5ce4bc495ea4e9d20b8b2621b645/> add support for collecting counts and running perf
+
+### Bug Fixes
+
+ - <csr-id-92c72ba9527241f88dfb23f64b999c8e4bd2b26c/> end processes with SIGTERM instead of SIGKILL
+   fix(hydro_deploy): end processes with SIGTERM instead of SIGKILL
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release over the course of 41 calendar days.
+ - 44 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 2 unique issues were worked on: [#1129](https://github.com/hydro-project/hydroflow/issues/1129), [#1157](https://github.com/hydro-project/hydroflow/issues/1157)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1129](https://github.com/hydro-project/hydroflow/issues/1129)**
+    - End processes with SIGTERM instead of SIGKILL ([`92c72ba`](https://github.com/hydro-project/hydroflow/commit/92c72ba9527241f88dfb23f64b999c8e4bd2b26c))
+ * **[#1157](https://github.com/hydro-project/hydroflow/issues/1157)**
+    - Add support for collecting counts and running perf ([`29a263f`](https://github.com/hydro-project/hydroflow/commit/29a263fb564c5ce4bc495ea4e9d20b8b2621b645))
+</details>
+
 ## v0.6.1 (2024-04-09)
 
 <csr-id-7958fb0d900be8fe7359326abfa11dcb8fb35e8a/>
@@ -17,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release over the course of 34 calendar days.
+ - 4 commits contributed to the release over the course of 34 calendar days.
  - 38 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#1090](https://github.com/hydro-project/hydroflow/issues/1090)
@@ -31,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#1090](https://github.com/hydro-project/hydroflow/issues/1090)**
     - Qualified path cleanups for clippy ([`7958fb0`](https://github.com/hydro-project/hydroflow/commit/7958fb0d900be8fe7359326abfa11dcb8fb35e8a))
  * **Uncategorized**
+    - Release hydroflow_plus v0.6.1, hydro_deploy v0.6.1, hydro_cli v0.6.1, hydroflow_plus_cli_integration v0.6.1 ([`c385c13`](https://github.com/hydro-project/hydroflow/commit/c385c132c9733d1bace82156aa14216b8e7fef9f))
     - Release hydroflow_lang v0.6.2, hydroflow v0.6.2, hydroflow_plus v0.6.1, hydro_deploy v0.6.1, hydro_cli v0.6.1, hydroflow_plus_cli_integration v0.6.1, stageleft_tool v0.1.1 ([`23cfe08`](https://github.com/hydro-project/hydroflow/commit/23cfe0839079aa17d042bbd3976f6d188689d290))
     - Release hydroflow_cli_integration v0.5.2, hydroflow_lang v0.6.1, hydroflow_datalog_core v0.6.1, lattices v0.5.4, hydroflow v0.6.1, stageleft_macro v0.1.1, stageleft v0.2.1, hydroflow_plus v0.6.1, hydro_deploy v0.6.1, hydro_cli v0.6.1, hydroflow_plus_cli_integration v0.6.1, stageleft_tool v0.1.1 ([`cd63f22`](https://github.com/hydro-project/hydroflow/commit/cd63f2258c961a40f0e5dbef20ac329a2d570ad0))
 </details>
