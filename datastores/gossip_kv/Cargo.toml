@@ -9,13 +9,9 @@ publish = false
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
 serde = { version = "1.0.198", features = ["derive"] }
-hydroflow = { version = "0.6.2"}
+hydroflow = { path="../../hydroflow" }
 hostname = "0.4.0"
-
-[lib]
-name = "gossip_kv"
-path = "src/lib.rs"
 
 [[bin]]
 name = "gossip_server"
-path = "examples/server/main.rs"
+path = "server/main.rs"
