@@ -28,6 +28,7 @@ mod with_top;
 
 pub use conflict::Conflict;
 pub use dom_pair::DomPair;
+pub use lattices_macro::*;
 pub use ord::{Max, Min};
 pub use pair::{Pair, PairBimorphism};
 pub use point::Point;

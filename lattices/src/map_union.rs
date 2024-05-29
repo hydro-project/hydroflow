@@ -137,17 +137,14 @@ where
         for k in self_keys.chain(other_keys) {
             match (self.0.get(k), other.0.get(k)) {
                 (Some(self_value), Some(other_value)) => {
-                    match self_value.partial_cmp(&*other_value) {
-                        None => {
-                            return None;
-                        }
-                        Some(Less) => {
+                    match self_value.partial_cmp(&*other_value)? {
+                        Less => {
                             other_any_greater = true;
                         }
-                        Some(Greater) => {
+                        Greater => {
                             self_any_greater = true;
                         }
-                        Some(Equal) => {}
+                        Equal => {}
                     }
                 }
                 (Some(_), None) => {
