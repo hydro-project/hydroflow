@@ -1554,6 +1554,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "trybuild",
+ "tuples",
  "variadics",
  "wasm-bindgen-test",
  "web-time",
@@ -3898,6 +3899,12 @@ dependencies = [
  "url",
  "utf-8",
 ]
+
+[[package]]
+name = "tuples"
+version = "1.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2588972108c7814c636526f2cf2ba1bf8d975f55680f79da4a7aa9e0810f6b44"
 
 [[package]]
 name = "typenum"
