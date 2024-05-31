@@ -444,6 +444,15 @@ mod tests {
         }
     }
 
+    fn test_get() {
+        let ht_root = ght_tup!(42, 314, 43770).to_hash_trie();
+        let ht_inner = ght_tup!(314, 43770).to_hash_trie();
+        let ht_leaf = ght_tup!(43770).to_hash_trie();
+
+        let v = ht_root.get(&42).unwrap(); 
+        assert_eq!(v, &ht_inner);
+    }
+
     #[test]
     fn test_prefix_iter() {
         let mut htrie = ght_tup!(42, 314, 43770).to_hash_trie();
