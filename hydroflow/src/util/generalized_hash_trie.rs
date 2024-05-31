@@ -279,20 +279,29 @@ where Nested: Variadic
 }
 
 
-// ght_tup!((a, b, c), (d, e))
-// var_expr!(a, b, c, var_expr!(d, e))
-//
-// ght_tup!(
+// Given ght_tup!((a, b, c), (d, e))
+// Return var_expr!(a, b, c, var_expr!(d, e))
 #[macro_export]
 macro_rules! ght_tup {
     // Flat tuple base case: when there is exactly one field
+    // First the version with a dereference on a
+    (&$a:expr) => {
+        var_expr!(&var_expr!($a))
+    };
+    // Then the version without a dereference on b
     ($a:expr) => {
         var_expr!(var_expr!($a))
     };
     // Flat tuple base case2: when there are exactly two fields
+    // First the version with a dereference on b
+    ($a:expr, &$b:expr) => {
+        var_expr!($a, &var_expr!($b))
+    };
+    // Then the version without a dereference on b
     ($a:expr, $b:expr) => {
         var_expr!($a, var_expr!($b))
     };
+
     // Flat tuple recursive case: when there are more than two fields
     ($a:expr, $($rest:tt)*) => {
         var_expr!($a, ...ght_tup!($($rest)*))
@@ -315,6 +324,79 @@ mod tests {
     use super::*;
 
     #[test]
+    fn basic_test() {
+        // Example usage
+        // let htrie1 = ght_tup!(42, 314, 43770).to_hash_trie();
+        let htrie1 = ght_tup!(42, dec!(3.14), "hello").to_hash_trie();
+        assert_eq!(htrie1.contains(ght_tup!(&42, &dec!(3.14), &"hello")), true);
+
+        // let tuple2 = ght_tup!(42, 30619);
+        let tuple2 = ght_tup!(42, dec!(3.14));
+        let htrie2 = tuple2.to_hash_trie();
+        assert_eq!(htrie2.contains(ght_tup!(&42, &dec!(3.14))), true);
+
+        let tuple3 = ght_tup!("Rust");
+        let htrie3 = tuple3.to_hash_trie();
+        assert_eq!(htrie3.contains(ght_tup!(&"Rust")), true);
+    }
+
+    #[test]
+    fn test_ght_tup() {
+        // base case: no reference
+        let x = ght_tup!(1);
+        let y = var_expr!(var_expr!(1));
+        assert_eq!(x, y);
+        // base case: reference
+        let x = ght_tup!(&1);
+        let y = var_expr!(&var_expr!(1));
+        assert_eq!(x, y);
+        
+        // base case 2: no reference, two syntaxes
+        let x = ght_tup!(1, "hello", true => -5);
+        let y = ght_tup!(1, "hello", true, -5);
+        assert_eq!(x, y);
+
+        // base case 2: reference
+        let x = ght_tup!(1, &true);
+        let y = var_expr!(1, &var_expr!(true));
+        assert_eq!(x, y);
+
+        // recursive case: no reference, => syntax
+        let x = ght_tup!(1, "hello" => true, -5);
+        let y = var_expr!(1, "hello", var_expr!(true, -5));
+        assert_eq!(x, y);
+
+        // // recursive case: reference, => syntax
+        let x = ght_tup!(1, "hello" => &true, &-5);
+        let y = var_expr!(1, "hello", var_expr!(&true, &-5));
+        assert_eq!(x, y);
+    }
+
+#[test]
+    fn test_insert() {
+        let mut htrie = ght_tup!(42, 314, 43770).to_hash_trie();
+        htrie.insert(ght_tup!(42, 315, 43770));
+        htrie.insert(ght_tup!(42, 314, 30619));
+        htrie.insert(ght_tup!(43, 10, 600));
+        assert!(htrie.contains(ght_tup!(&42, &314, &30619)));
+        // assert!(!htrie.prefix_search(&[&42, &314, &600]));
+        // assert!(htrie.prefix_search(&[&42, &315]));
+        assert!(htrie.contains(ght_tup!(&42, &315, &43770)));
+        // assert!(htrie.prefix_search(&[&43]));
+        // assert!(htrie.prefix_search(&[&43, &10]));
+        assert!(htrie.contains(ght_tup!(&43, &10, &600)));
+    }
+    
+    #[test]
+    fn test_scale() {
+        let mut htrie = ght_tup!(true, 1, "hello", -5).to_hash_trie();
+        for i in 1..1000000 {
+            htrie.insert(ght_tup!(true, 1, "hello", i))
+        }
+        assert!(htrie.recursive_iter().count() == 1000000);
+    }
+    
+    #[test]
     fn test_flatten_last() {
         // let x = ght_tup!(1, "hello" => true, -5);
         let x = ght_tup!(1, "hello" => true, -5);
@@ -327,26 +409,12 @@ mod tests {
         let single = ght_tup!(1);
         let flat_single = single.flatten_last();
         assert_eq!(flat_single, var_expr!(1));
+
+        let double = ght_tup!(1, 2);
+        let flat_double = double.flatten_last();
+        assert_eq!(flat_double, var_expr!(1, 2));
     }
 
-    // #[test]
-    // fn do_test() {
-    //     // Example usage
-    //     // let htrie1 = ght_tup!(42, 314, 43770).to_hash_trie();
-    //     let htrie1 = ght_tup!(42, dec!(3.14), "hello").to_hash_trie();
-    //     println!("HTrie: {:?}", htrie1);
-
-    //     // let tuple2 = ght_tup!(42, 30619);
-    //     let tuple2 = ght_tup!(42, dec!(3.14));
-    //     let htrie2 = tuple2.to_hash_trie();
-    //     println!("HTrie: {:?}", htrie2);
-
-    //     let tuple3 = ght_tup!("Rust");
-    //     let htrie3 = tuple3.to_hash_trie();
-    //     println!("HTrie: {:?}", htrie3);
-    // }
-
-    // How can I insert non-atomic objects?
     #[test]
     fn test_search_prefix() {
         let htrie = ght_tup!(42_u16, 314_u32, 43770_u64).to_hash_trie();
@@ -363,21 +431,6 @@ mod tests {
         assert!(!htrie.contains(ght_tup!(42, 314, 30619).as_ref_var()));
         assert!(!htrie.contains(ght_tup!(&42, &315, &43770)));
         assert!(!htrie.contains(ght_tup!(&43, &314, &43770)));
-    }
-
-    #[test]
-    fn test_insert() {
-        let mut htrie = ght_tup!(42, 314, 43770).to_hash_trie();
-        htrie.insert(ght_tup!(42, 315, 43770));
-        htrie.insert(ght_tup!(42, 314, 30619));
-        htrie.insert(ght_tup!(43, 10, 600));
-        assert!(htrie.contains(ght_tup!(&42, &314, &30619)));
-        // assert!(!htrie.prefix_search(&[&42, &314, &600]));
-        // assert!(htrie.prefix_search(&[&42, &315]));
-        assert!(htrie.contains(ght_tup!(&42, &315, &43770)));
-        // assert!(htrie.prefix_search(&[&43]));
-        // assert!(htrie.prefix_search(&[&43, &10]));
-        assert!(htrie.contains(ght_tup!(&43, &10, &600)));
     }
 
     #[test]
@@ -436,14 +489,5 @@ mod tests {
         for row in htrie.prefix_iter(var_expr!(true, 1, "hi").as_ref_var()) {
             println!("B {:?}", row);
         }
-    }
-
-    #[test]
-    fn test_scale() {
-        let mut htrie = ght_tup!(true, 1, "hello", -5).to_hash_trie();
-        for i in 1..1000000 {
-            htrie.insert(ght_tup!(true, 1, "hello", i))
-        }
-        assert!(htrie.recursive_iter().count() == 1000000);
     }
 }
