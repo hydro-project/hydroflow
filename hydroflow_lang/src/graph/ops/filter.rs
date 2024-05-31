@@ -12,7 +12,7 @@ use super::{
 /// not modify or take ownership of the values. If you need to modify the values while filtering
 /// use [`filter_map`](#filter_map) instead.
 ///
-/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+/// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
 /// ```hydroflow
 /// source_iter(vec!["hello", "world"]) -> filter(|x| x.starts_with('w'))

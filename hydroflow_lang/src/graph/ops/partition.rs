@@ -19,7 +19,7 @@ use crate::pretty_span::PrettySpan;
 /// > Arguments: A Rust closure, the first argument is a reference to the item and the second
 /// argument corresponds to one of two modes, either named or indexed.
 ///
-/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+/// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
 /// # Named mode
 /// With named ports, the closure's second argument must be a Rust 'slice pattern' of names, such as

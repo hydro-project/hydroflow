@@ -19,7 +19,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// operator, except that it takes the accumulator by `&mut` instead of by value. Reduces every
 /// item into an accumulator by applying a closure, returning the final result.
 ///
-/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+/// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
 /// `reduce` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected
