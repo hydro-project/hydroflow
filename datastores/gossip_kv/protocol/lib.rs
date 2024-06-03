@@ -74,6 +74,9 @@ impl FromStr for Key {
         if parts.len() != 4 {
             return Err(KeyParseError::InvalidFormat);
         }
+        if !parts[0].is_empty() {
+            return Err(KeyParseError::InvalidFormat);
+        }
         let namespace = parts[1].parse()?;
         Ok(Key {
             namespace,
@@ -140,6 +143,13 @@ mod tests {
     fn test_key_parsing_invalid_format() {
         // Invalid format
         let invalid_format = "/not_even_a_key".parse::<Key>();
+        assert!(invalid_format.is_err());
+        assert_eq!(
+            invalid_format.unwrap_err(),
+            super::KeyParseError::InvalidFormat
+        );
+
+        let invalid_format = "abcd/sys/sys_table/sys_row".parse::<Key>();
         assert!(invalid_format.is_err());
         assert_eq!(
             invalid_format.unwrap_err(),
