@@ -525,39 +525,6 @@ impl PartialEqVariadic for () {
     }
 }
 
-#[sealed]
-/// Clone an Unref
-pub trait UnrefCloneVariadic: UnrefVariadic {
-    /// Clone the unref
-    fn clone_var(&self) -> Self::Unref;
-}
-#[sealed]
-impl<Item, Rest> UnrefCloneVariadic for (&Item, Rest)
-where
-    Item: Clone,
-    Rest: UnrefCloneVariadic,
-{
-    fn clone_var(&self) -> Self::Unref {
-        let var_args!(item, ...rest) = self;
-        var_expr!((*item).clone(), ...rest.clone_var())
-    }
-}
-#[sealed]
-impl<Item, Rest> UnrefCloneVariadic for (&mut Item, Rest)
-where
-    Item: Clone,
-    Rest: UnrefCloneVariadic,
-{
-    fn clone_var(&self) -> Self::Unref {
-        let var_args!(item, ...rest) = self;
-        var_expr!((*item).clone(), ...rest.clone_var())
-    }
-}
-#[sealed]
-impl UnrefCloneVariadic for () {
-    fn clone_var(&self) -> Self::Unref {}
-}
-
 /// `PartialEq` between a referenced variadic and a variadic of references, of the same types.
 #[sealed]
 pub trait AsRefVariadicPartialEq: VariadicExt {
