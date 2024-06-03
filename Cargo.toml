@@ -17,6 +17,7 @@ members = [
     "hydroflow_plus_test",
     "hydroflow_plus_test_macro",
     "lattices",
+    "lattices_macro",
     "multiplatform_test",
     "pusherator",
     "relalg",
