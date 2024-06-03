@@ -1,3 +1,4 @@
+use gossip_protocol::Namespace;
 use hydroflow::lattices::map_union::MapUnionHashMap;
 use hydroflow::lattices::set_union::SetUnionHashSet;
 use hydroflow::lattices::{DomPair, Max};
@@ -20,6 +21,8 @@ pub type TableName = String;
 /// A map from table names to tables.
 pub type TableMap<C> = MapUnionHashMap<TableName, Table<C>>;
 
+pub type Namespaces<C> = MapUnionHashMap<Namespace, TableMap<C>>;
+
 /// Timestamps used in the model.
 // TODO: This will be updated to use a more sophisticated clock type with https://github.com/hydro-project/hydroflow/issues/1207.
 pub type Clock = Max<u64>;
@@ -34,10 +37,17 @@ pub type Clock = Max<u64>;
 /// - `table_name`: Name of the table.
 /// - `key`: Primary key of the row.
 /// - `val`: Row value.
-pub fn upsert_row<C>(row_ts: C, table_name: TableName, key: RowKey, val: String) -> TableMap<C> {
+pub fn upsert_row<C>(
+    row_ts: C,
+    ns: Namespace,
+    table_name: TableName,
+    key: RowKey,
+    val: String,
+) -> Namespaces<C> {
     let value: RowValue<C> = RowValue::new_from(row_ts, SetUnionHashSet::new_from([val]));
     let row: Table<C> = Table::new_from([(key, value)]);
-    TableMap::new_from([(table_name, row)])
+    let table: TableMap<C> = TableMap::new_from([(table_name, row)]);
+    Namespaces::new_from([(ns, table)])
 }
 
 /// TableMap element to delete a row from an existing TableMap.
@@ -48,24 +58,30 @@ pub fn upsert_row<C>(row_ts: C, table_name: TableName, key: RowKey, val: String)
 /// - `row_ts`: New timestamp of the row being deleted.
 /// - `table_name`: Name of the table.
 /// - `key`: Primary key of the row.
-pub fn delete_row<C>(row_ts: C, table_name: TableName, key: RowKey) -> TableMap<C> {
+pub fn delete_row<C>(
+    row_ts: C,
+    ns: Namespace,
+    table_name: TableName,
+    key: RowKey,
+) -> Namespaces<C> {
     let value: RowValue<C> = RowValue::new_from(row_ts, SetUnionHashSet::new_from([]));
     let row: Table<C> = Table::new_from([(key, value)]);
-    TableMap::new_from([(table_name, row)])
+    let table = TableMap::new_from([(table_name, row)]);
+    Namespaces::new_from([(ns, table)])
 }
 
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
 
-    use hydroflow::lattices::map_union::MapUnionHashMap;
+    use gossip_protocol::Namespace::System;
     use hydroflow::lattices::Merge;
 
-    use crate::model::{delete_row, upsert_row, Clock, RowKey, TableMap, TableName};
+    use crate::model::{delete_row, upsert_row, Clock, Namespaces, RowKey, TableName};
 
     #[test]
     fn test_table_map() {
-        let mut table_map: TableMap<Clock> = MapUnionHashMap::default();
+        let mut namespaces: Namespaces<Clock> = Namespaces::default();
 
         let first_tick: Clock = Clock::new(0);
         let second_tick: Clock = Clock::new(1);
@@ -75,17 +91,28 @@ mod tests {
         let value_1: String = "value1".to_string();
 
         // Table starts out empty.
-        assert_eq!(table_map.as_reveal_ref().len(), 0, "Expected empty table.");
+        assert_eq!(
+            namespaces.as_reveal_ref().len(),
+            0,
+            "Expected no namespaces."
+        );
 
         let insert = upsert_row(
             first_tick,
+            System,
             members_table.clone(),
             key_1.clone(),
             value_1.clone(),
         );
-        Merge::merge(&mut table_map, insert);
+        Merge::merge(&mut namespaces, insert);
         {
-            let table = table_map.as_reveal_ref().get(&members_table).unwrap();
+            let table = namespaces
+                .as_reveal_ref()
+                .get(&System)
+                .unwrap()
+                .as_reveal_ref()
+                .get(&members_table)
+                .unwrap();
 
             let row = table.as_reveal_ref().get(&key_1);
             assert!(row.is_some(), "Row should exist");
@@ -103,10 +130,21 @@ mod tests {
             );
         }
 
-        let delete_row = delete_row(second_tick, members_table.clone(), key_1.to_string());
-        Merge::merge(&mut table_map, delete_row);
+        let delete_row = delete_row(
+            second_tick,
+            System,
+            members_table.clone(),
+            key_1.to_string(),
+        );
+        Merge::merge(&mut namespaces, delete_row);
         {
-            let table = table_map.as_reveal_ref().get(&members_table).unwrap();
+            let table = namespaces
+                .as_reveal_ref()
+                .get(&System)
+                .unwrap()
+                .as_reveal_ref()
+                .get(&members_table)
+                .unwrap();
 
             // Deletion in this case leaves a "tombstone"
             let row = table.as_reveal_ref().get(&key_1);
