@@ -291,6 +291,31 @@ impl UnrefVariadic for () {
     type Unref = ();
 }
 
+/// `PartialEq` between a referenced variadic and a variadic of references, of the same types.
+#[sealed]
+pub trait AsRefVariadicPartialEq: VariadicExt {
+    /// `PartialEq` between a referenced variadic and a variadic of references, of the same types.
+    fn as_ref_var_eq(&self, other: Self::AsRefVar<'_>) -> bool;
+}
+#[sealed]
+impl<Item, Rest> AsRefVariadicPartialEq for (Item, Rest)
+where
+    Item: PartialEq,
+    Rest: AsRefVariadicPartialEq,
+{
+    fn as_ref_var_eq(&self, other: Self::AsRefVar<'_>) -> bool {
+        let var_args!(item_self, ...rest_self) = self;
+        let var_args!(item_other, ...rest_other) = other;
+        item_self == item_other && rest_self.as_ref_var_eq(rest_other)
+    }
+}
+#[sealed]
+impl AsRefVariadicPartialEq for () {
+    fn as_ref_var_eq(&self, _other: Self::AsRefVar<'_>) -> bool {
+        true
+    }
+}
+
 /// A variadic where all elements are the same type, `T`.
 ///
 /// This is a sealed trait.

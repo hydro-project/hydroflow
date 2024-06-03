@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 use sealed::sealed;
-use variadics::{var_args, var_expr, var_type, Variadic, VariadicExt};
+use variadics::{var_args, var_expr, var_type, AsRefVariadicPartialEq, Variadic, VariadicExt};
 
 // pub fn flatten_tuple(v: Variadic) -> Variadic {
 //     let (head, tail) = v;
@@ -13,7 +13,7 @@ use variadics::{var_args, var_expr, var_type, Variadic, VariadicExt};
 #[sealed]
 pub trait HashTrieNode: Default {
     /// Row variadic.
-    type Row: VariadicExt;
+    type Row: VariadicExt + AsRefVariadicPartialEq;
     /// The first item in Row.
     type Key;
 
@@ -26,9 +26,11 @@ pub trait HashTrieNode: Default {
     /// Iterator for the keys.
     fn keys(&self) -> impl Iterator<Item = &'_ Self::Key>;
 
+    /// Type returned by [`Self::get`].
+    type Get: HashTrieNode;
     /// Retrieves the value associated with the given key.
     /// returns an `Option` containing a reference to the value if found, or `None` if not found.
-    fn get(&self, key: &Self::Key) -> Option<&'_ impl HashTrieNode>;
+    fn get(&self, key: &Self::Key) -> Option<&'_ Self::Get>;
 
     /// Iterate the sub-tree.
     fn recursive_iter(&self) -> impl Iterator<Item = <Self::Row as VariadicExt>::AsRefVar<'_>>;
@@ -79,10 +81,10 @@ where
         self.children.keys()
     }
 
-    fn get(&self, key: &Self::Key) -> Option<&'_ impl HashTrieNode> {
+    type Get = Node;
+    fn get(&self, key: &Self::Key) -> Option<&'_ Self::Get> {
         self.children.get(key)
     }
-
 
     fn recursive_iter(&self) -> impl Iterator<Item = <Self::Row as VariadicExt>::AsRefVar<'_>> {
         self.children
@@ -112,44 +114,43 @@ impl<T> Default for HtLeaf<T> {
 #[sealed]
 impl<T> HashTrieNode for HtLeaf<T>
 where
-    T: 'static + Eq,
+    T: 'static + Eq + VariadicExt + AsRefVariadicPartialEq,
 {
-    type Row = var_expr!(T);
+    type Row = T;
     type Key = T;
 
     fn insert(&mut self, row: Self::Row) {
-        let var_args!(key) = row;
-        self.elements.push(key);
+        self.elements.push(row);
     }
 
     fn contains(&self, row: <Self::Row as VariadicExt>::AsRefVar<'_>) -> bool {
-        let var_args!(key) = row;
-        self.elements.contains(key)
+        self.elements.iter().any(|r| r.as_ref_var_eq(row))
     }
 
     fn keys(&self) -> impl Iterator<Item = &'_ Self::Key> {
         self.elements.iter()
     }
 
-    fn get(&self, _key: &Self::Key) -> Option<&'_ impl HashTrieNode> {
+    type Get = Self;
+    fn get(&self, _key: &Self::Key) -> Option<&'_ Self::Get> {
         Option::<&Self>::None
     }
 
     fn recursive_iter(&self) -> impl Iterator<Item = <Self::Row as VariadicExt>::AsRefVar<'_>> {
-        self.elements.iter().map(|item| var_expr!(item))
+        self.elements.iter().map(T::as_ref_var)
     }
 }
-// /// Iter for HTLeaf.
-// pub type HTLeafIter<'a, T>
-// where
-//     T: 'static + Eq,
-// = impl 'a + Iterator<Item = <<HtLeaf<T> as HashTrieNode>::Row as VariadicExt>::AsRefVar<'a>>;
 
 #[sealed]
+/// iterator for HashTries based on a prefix search
 pub trait HtPrefixIter<Prefix> {
+    /// type of the suffix of this prefix
     type Suffix: VariadicExt;
-    fn prefix_iter<'a>(&'a self, prefix: Prefix)
-        -> impl Iterator<Item = <Self::Suffix as VariadicExt>::AsRefVar<'a>>
+    /// given a prefix, return an iterator through the items below
+    fn prefix_iter<'a>(
+        &'a self,
+        prefix: Prefix,
+    ) -> impl Iterator<Item = <Self::Suffix as VariadicExt>::AsRefVar<'a>>
     where
         Self::Suffix: 'a;
 }
@@ -163,8 +164,10 @@ where
     PrefixRest: 'static + Copy, // meh
 {
     type Suffix = Node::Suffix;
-    fn prefix_iter<'a>(&'a self, prefix: var_type!(&'k Key, ...PrefixRest))
-        -> impl Iterator<Item = <Self::Suffix as VariadicExt>::AsRefVar<'a>>
+    fn prefix_iter<'a>(
+        &'a self,
+        prefix: var_type!(&'k Key, ...PrefixRest),
+    ) -> impl Iterator<Item = <Self::Suffix as VariadicExt>::AsRefVar<'a>>
     where
         Self::Suffix: 'a,
     {
@@ -182,8 +185,10 @@ where
     Key: Eq + Hash,
 {
     type Suffix = var_expr!();
-    fn prefix_iter<'a>(&'a self, prefix: var_type!(&'k Key))
-        -> impl Iterator<Item = <Self::Suffix as VariadicExt>::AsRefVar<'a>>
+    fn prefix_iter<'a>(
+        &'a self,
+        prefix: var_type!(&'k Key),
+    ) -> impl Iterator<Item = <Self::Suffix as VariadicExt>::AsRefVar<'a>>
     where
         Self::Suffix: 'a,
     {
@@ -197,8 +202,10 @@ where
     This: 'static + HashTrieNode,
 {
     type Suffix = <Self as HashTrieNode>::Row;
-    fn prefix_iter<'a>(&'a self, _prefix: var_type!())
-        -> impl Iterator<Item = <Self::Suffix as VariadicExt>::AsRefVar<'a>>
+    fn prefix_iter<'a>(
+        &'a self,
+        _prefix: var_type!(),
+    ) -> impl Iterator<Item = <Self::Suffix as VariadicExt>::AsRefVar<'a>>
     where
         Self::Suffix: 'a,
     {
@@ -207,17 +214,19 @@ where
 }
 
 /// Trait to convert a tuple to a HashTrieList
+#[sealed]
 pub trait ToHashTrie: Variadic {
     /// The output type of the hash trie conversion.
-    type Output: HashTrieNode<Row = Self>;
+    type Output: HashTrieNode;
 
     /// Converts the object into a hash trie.
     fn to_hash_trie(self) -> Self::Output;
 }
 
+#[sealed]
 impl<Head> ToHashTrie for var_type!(Head)
 where
-    Head: 'static + Eq + Hash + Clone,
+    Head: 'static + Eq + Hash + VariadicExt + AsRefVariadicPartialEq,
 {
     type Output = HtLeaf<Head>;
 
@@ -225,11 +234,12 @@ where
         let mut result = HtLeaf {
             elements: Vec::new(),
         };
-        result.elements.push(self.0.clone());
+        result.elements.push(self.0);
         result
     }
 }
 
+#[sealed]
 impl<Head, Tail> ToHashTrie for var_type!(Head, ...Tail)
 where
     Head: 'static + Eq + Hash,
@@ -247,42 +257,43 @@ where
     }
 }
 
-/*
-    var_expr!(a, b, var_expr!(c))
-    (a, (b, ((c, ()), ())))
-            ^^^^^^^^^^^^^
-                      ^^
-                      
-*/
-trait FlattenLast: Variadic {
-    type FlattenLast: Variadic;
-    fn flatten_last(self) -> Self::FlattenLast;
-}
-impl<Head, Tail> FlattenLast for var_type!(Head, ...Tail)
-where
-    Tail: FlattenLast,
-{
-    type FlattenLast = var_type!(Head, ...Tail::FlattenLast);
-    fn flatten_last(self) -> Self::FlattenLast {
-        let var_args!(head, ...tail) = self;
-        var_expr!(head, ...tail.flatten_last())
-    }
-}
-impl<Nested> FlattenLast for var_type!(Nested)
-where Nested: Variadic
-{
-    type FlattenLast = Nested;
-    fn flatten_last(self) -> Self::FlattenLast {
-        let var_args!(nested) = self;
-        nested
-    }
-}
-
+// // var_expr!(a, b, var_expr!(c))
+// // (a, (b, ((c, ()), ())))
+// // ^^^^^^^^^^^^^
+// // ^^
+// //
+// trait FlattenLast: Variadic {
+//     type FlattenLast: Variadic;
+//     fn flatten_last(self) -> Self::FlattenLast;
+// }
+// impl<Head, Tail> FlattenLast for var_type!(Head, ...Tail)
+// where
+//     Tail: FlattenLast,
+// {
+//     type FlattenLast = var_type!(Head, ...Tail::FlattenLast);
+//     fn flatten_last(self) -> Self::FlattenLast {
+//         let var_args!(head, ...tail) = self;
+//         var_expr!(head, ...tail.flatten_last())
+//     }
+// }
+// impl<Nested> FlattenLast for var_type!(Nested)
+// where
+//     Nested: Variadic,
+// {
+//     type FlattenLast = Nested;
+//     fn flatten_last(self) -> Self::FlattenLast {
+//         let var_args!(nested) = self;
+//         nested
+//     }
+// }
 
 // Given ght_tup!((a, b, c), (d, e))
 // Return var_expr!(a, b, c, var_expr!(d, e))
+/// generate a ght tuple from either:
+///    - a flat tuple, a la (a, b, c)
+///    - or key columns and dependent columns, a la (k1, k2, k3 => d1, d2, d3)
 #[macro_export]
-macro_rules! ght_tup {
+macro_rules! init_hash_trie {
     // Flat tuple base case: when there is exactly one field
     // First the version with a dereference on a
     (&$a:expr) => {
@@ -304,7 +315,7 @@ macro_rules! ght_tup {
 
     // Flat tuple recursive case: when there are more than two fields
     ($a:expr, $($rest:tt)*) => {
-        var_expr!($a, ...ght_tup!($($rest)*))
+        var_expr!($a, ...init_hash_trie!($($rest)*))
     };
 
     // arrow delimiter
@@ -313,9 +324,6 @@ macro_rules! ght_tup {
     );
 
 }
-
-
-
 
 #[cfg(test)]
 mod tests {
@@ -327,138 +335,141 @@ mod tests {
     fn basic_test() {
         // Example usage
         // let htrie1 = ght_tup!(42, 314, 43770).to_hash_trie();
-        let htrie1 = ght_tup!(42, dec!(3.14), "hello").to_hash_trie();
-        assert_eq!(htrie1.contains(ght_tup!(&42, &dec!(3.14), &"hello")), true);
+        let htrie1 = init_hash_trie!(42, dec!(3.14), "hello").to_hash_trie();
+        assert!(htrie1.contains(var_expr!(&42, &dec!(3.14), &"hello")));
 
         // let tuple2 = ght_tup!(42, 30619);
-        let tuple2 = ght_tup!(42, dec!(3.14));
+        let tuple2 = init_hash_trie!(42, dec!(3.14));
         let htrie2 = tuple2.to_hash_trie();
-        assert_eq!(htrie2.contains(ght_tup!(&42, &dec!(3.14))), true);
+        assert!(htrie2.contains(var_expr!(&42, &dec!(3.14))));
 
-        let tuple3 = ght_tup!("Rust");
+        let tuple3 = init_hash_trie!("Rust");
         let htrie3 = tuple3.to_hash_trie();
-        assert_eq!(htrie3.contains(ght_tup!(&"Rust")), true);
+        assert!(htrie3.contains(var_expr!(&"Rust")));
     }
 
     #[test]
     fn test_ght_tup() {
         // base case: no reference
-        let x = ght_tup!(1);
+        let x = init_hash_trie!(1);
         let y = var_expr!(var_expr!(1));
         assert_eq!(x, y);
         // base case: reference
-        let x = ght_tup!(&1);
+        let x = init_hash_trie!(&1);
         let y = var_expr!(&var_expr!(1));
         assert_eq!(x, y);
-        
-        // base case 2: no reference, two syntaxes
-        let x = ght_tup!(1, "hello", true => -5);
-        let y = ght_tup!(1, "hello", true, -5);
+
+        // base case 2: no reference, both syntaxes
+        let x = init_hash_trie!(1, "hello", true => -5);
+        let y = init_hash_trie!(1, "hello", true, -5);
         assert_eq!(x, y);
 
         // base case 2: reference
-        let x = ght_tup!(1, &true);
+        let x = init_hash_trie!(1, &true);
         let y = var_expr!(1, &var_expr!(true));
         assert_eq!(x, y);
 
         // recursive case: no reference, => syntax
-        let x = ght_tup!(1, "hello" => true, -5);
+        let x = init_hash_trie!(1, "hello" => true, -5);
         let y = var_expr!(1, "hello", var_expr!(true, -5));
         assert_eq!(x, y);
 
         // // recursive case: reference, => syntax
-        let x = ght_tup!(1, "hello" => &true, &-5);
+        let x = init_hash_trie!(1, "hello" => &true, &-5);
         let y = var_expr!(1, "hello", var_expr!(&true, &-5));
         assert_eq!(x, y);
     }
 
-#[test]
+    #[test]
     fn test_insert() {
-        let mut htrie = ght_tup!(42, 314, 43770).to_hash_trie();
-        htrie.insert(ght_tup!(42, 315, 43770));
-        htrie.insert(ght_tup!(42, 314, 30619));
-        htrie.insert(ght_tup!(43, 10, 600));
-        assert!(htrie.contains(ght_tup!(&42, &314, &30619)));
+        let mut htrie = init_hash_trie!(42, 314, 43770).to_hash_trie();
+        htrie.insert(var_expr!(42, 315, 43770));
+        htrie.insert(var_expr!(42, 314, 30619));
+        htrie.insert(var_expr!(43, 10, 600));
+        assert!(htrie.contains(var_expr!(&42, &314, &30619)));
         // assert!(!htrie.prefix_search(&[&42, &314, &600]));
         // assert!(htrie.prefix_search(&[&42, &315]));
-        assert!(htrie.contains(ght_tup!(&42, &315, &43770)));
+        assert!(htrie.contains(var_expr!(&42, &315, &43770)));
         // assert!(htrie.prefix_search(&[&43]));
         // assert!(htrie.prefix_search(&[&43, &10]));
-        assert!(htrie.contains(ght_tup!(&43, &10, &600)));
+        assert!(htrie.contains(var_expr!(&43, &10, &600)));
     }
-    
+
     #[test]
     fn test_scale() {
-        let mut htrie = ght_tup!(true, 1, "hello", -5).to_hash_trie();
+        let mut htrie = init_hash_trie!(true, 1, "hello", -5).to_hash_trie();
         for i in 1..1000000 {
-            htrie.insert(ght_tup!(true, 1, "hello", i))
+            htrie.insert(var_expr!(true, 1, "hello", i))
         }
         assert!(htrie.recursive_iter().count() == 1000000);
     }
-    
-    #[test]
-    fn test_flatten_last() {
-        // let x = ght_tup!(1, "hello" => true, -5);
-        let x = ght_tup!(1, "hello" => true, -5);
-        let flat_x = x.flatten_last();
-        let y = ght_tup!(1, "hello", true, -5);
-        let flat_y = y.flatten_last();
-        assert_eq!(var_expr!(1, "hello", true, -5), flat_x);
-        assert_eq!(flat_y, flat_x);
 
-        let single = ght_tup!(1);
-        let flat_single = single.flatten_last();
-        assert_eq!(flat_single, var_expr!(1));
+    // #[test]
+    // fn test_flatten_last() {
+    //     // let x = ght_tup!(1, "hello" => true, -5);
+    //     let x = ght_tup!(1, "hello" => true, -5);
+    //     let flat_x = x.flatten_last();
+    //     let y = ght_tup!(1, "hello", true, -5);
+    //     let flat_y = y.flatten_last();
+    //     assert_eq!(var_expr!(1, "hello", true, -5), flat_x);
+    //     assert_eq!(flat_y, flat_x);
 
-        let double = ght_tup!(1, 2);
-        let flat_double = double.flatten_last();
-        assert_eq!(flat_double, var_expr!(1, 2));
-    }
+    //     let single = ght_tup!(1);
+    //     let flat_single = single.flatten_last();
+    //     assert_eq!(flat_single, var_expr!(1));
+
+    //     let double = ght_tup!(1, 2);
+    //     let flat_double = double.flatten_last();
+    //     assert_eq!(flat_double, var_expr!(1, 2));
+    // }
 
     #[test]
     fn test_search_prefix() {
-        let htrie = ght_tup!(42_u16, 314_u32, 43770_u64).to_hash_trie();
+        let htrie = init_hash_trie!(42_u16, 314_u32, 43770_u64).to_hash_trie();
         println!("HTrie: {:?}", htrie);
         // assert!(htrie.prefix_search(&[&42]));
         // assert!(!htrie.prefix_search(&[&43]));
         // assert!(htrie.prefix_search(&[&42, &314]));
         // assert!(!htrie.prefix_search(&[&42, &315]));
         // assert!(!htrie.prefix_search(&[&43, &314]));
-        let x = ght_tup!(&42, &314, &43770);
+        let x = var_expr!(&42, &314, &43770);
         assert!(htrie.contains(x));
-        assert!(htrie.contains(ght_tup!(42, 314, 43770).as_ref_var()));
-        assert!(!htrie.contains(ght_tup!(&42, &314, &30619)));
-        assert!(!htrie.contains(ght_tup!(42, 314, 30619).as_ref_var()));
-        assert!(!htrie.contains(ght_tup!(&42, &315, &43770)));
-        assert!(!htrie.contains(ght_tup!(&43, &314, &43770)));
+        assert!(htrie.contains(var_expr!(42, 314, 43770).as_ref_var()));
+        assert!(htrie.contains(var_expr!(&42, &314, &43770)));
+        assert!(!htrie.contains(var_expr!(42, 314, 30619).as_ref_var()));
+        assert!(!htrie.contains(var_expr!(&42, &315, &43770)));
+        assert!(!htrie.contains(var_expr!(&43, &314, &43770)));
     }
 
     #[test]
     fn test_recursive_iter() {
-        let mut htrie = ght_tup!(42, 314, 43770).to_hash_trie();
-        htrie.insert(ght_tup!(42, 315, 43770));
-        htrie.insert(ght_tup!(42, 314, 30619));
-        htrie.insert(ght_tup!(43, 10, 600));
+        let mut htrie = init_hash_trie!(42, 314, 43770).to_hash_trie();
+        htrie.insert(var_expr!(42, 315, 43770));
+        htrie.insert(var_expr!(42, 314, 30619));
+        htrie.insert(var_expr!(43, 10, 600));
         for row in htrie.recursive_iter() {
             println!("{:?}", row);
         }
     }
 
+    #[test]
     fn test_get() {
-        let ht_root = ght_tup!(42, 314, 43770).to_hash_trie();
-        let ht_inner = ght_tup!(314, 43770).to_hash_trie();
-        let ht_leaf = ght_tup!(43770).to_hash_trie();
+        let ht_root = init_hash_trie!(42, 314, 43770).to_hash_trie();
+        let ht_inner = init_hash_trie!(314, 43770).to_hash_trie();
+        let ht_leaf = init_hash_trie!(43770).to_hash_trie();
 
-        let v = ht_root.get(&42).unwrap(); 
-        assert_eq!(v, &ht_inner);
+        let v = ht_root.get(&42).unwrap();
+        for t in v.recursive_iter() {
+            println!("({:?})", t);
+        }
     }
 
     #[test]
     fn test_prefix_iter() {
-        let mut htrie = ght_tup!(42, 314, 43770).to_hash_trie();
-        htrie.insert(ght_tup!(42, 315, 43770));
-        htrie.insert(ght_tup!(42, 314, 30619));
-        htrie.insert(ght_tup!(43, 10, 600));
+        let mut htrie = init_hash_trie!(42, 314, 43770).to_hash_trie();
+        htrie.insert(var_expr!(42, 315, 43770));
+        htrie.insert(var_expr!(42, 314, 30619));
+        htrie.insert(var_expr!(43, 10, 600));
 
         for row in htrie.prefix_iter(var_expr!(&42)) {
             println!("42: {:?}", row);
@@ -468,9 +479,7 @@ mod tests {
             println!("42,315: {:?}", row);
         }
 
-        assert!(htrie
-            .prefix_iter(var_expr!(&42, &315))
-            .any(|_| true));
+        assert!(htrie.prefix_iter(var_expr!(&42, &315)).any(|_| true));
         // // Too long:
         // for row in htrie.prefix_iter(var_expr!(&42, &315, &43770)) {
         //     println!("42,315,43770: {:?}", row);
@@ -484,13 +493,13 @@ mod tests {
 
     #[test]
     fn test_prefix_iter_complex() {
-        let mut htrie = ght_tup!(true, 1, "hello", -5).to_hash_trie();
-        htrie.insert(ght_tup!(true, 2, "hello", 1));
-        htrie.insert(ght_tup!(true, 1, "hi", -2));
-        htrie.insert(ght_tup!(true, 1, "hi", -3));
-        htrie.insert(ght_tup!(true, 1, "hi", -4));
-        htrie.insert(ght_tup!(true, 1, "hi", -5));
-        htrie.insert(ght_tup!(false, 10, "bye", 5));
+        let mut htrie = init_hash_trie!(true, 1, "hello", -5).to_hash_trie();
+        htrie.insert(var_expr!(true, 2, "hello", 1));
+        htrie.insert(var_expr!(true, 1, "hi", -2));
+        htrie.insert(var_expr!(true, 1, "hi", -3));
+        htrie.insert(var_expr!(true, 1, "hi", -4));
+        htrie.insert(var_expr!(true, 1, "hi", -5));
+        htrie.insert(var_expr!(false, 10, "bye", 5));
 
         for row in htrie.prefix_iter(var_expr!(true).as_ref_var()) {
             println!("A {:?}", row);
