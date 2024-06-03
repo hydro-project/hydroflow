@@ -126,7 +126,7 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
                     ) -> impl 'a + #root::pusherator::Pusherator<Item = Item>
                     where
                         Item: 'a + ::std::clone::Clone,
-                        Push: #root::pusherator::Pusherator<Item = Item>,
+                        Push: 'a + #root::pusherator::Pusherator<Item = Item>,
                         Lat: 'static + #root::lattices::Merge<Item>,
                     {
                         #root::pusherator::inspect::Inspect::new(move |item| {
