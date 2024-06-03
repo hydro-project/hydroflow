@@ -11,7 +11,16 @@ clap = { version = "4.5.4", features = ["derive"] }
 serde = { version = "1.0.198", features = ["derive"] }
 hydroflow = { path="../../hydroflow" }
 hostname = "0.4.0"
+shlex = "1.3.0"
 
 [[bin]]
 name = "gossip_server"
 path = "server/main.rs"
+
+[[bin]]
+name = "gossip_cli"
+path = "cli/main.rs"
+
+[lib]
+name = "gossip_protocol"
+path = "protocol/lib.rs"
