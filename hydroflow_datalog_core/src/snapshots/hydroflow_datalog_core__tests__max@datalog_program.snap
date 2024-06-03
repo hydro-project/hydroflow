@@ -247,8 +247,7 @@ fn main() {
                                 entry,
                                 kv.1,
                                 |old: &mut (Option<_>,), val: (_,)| {
-                                    old
-                                        .0 = if let Some(prev) = old.0.take() {
+                                    old.0 = if let Some(prev) = old.0.take() {
                                         Some(std::cmp::max(prev, val.0))
                                     } else {
                                         Some(val.0)

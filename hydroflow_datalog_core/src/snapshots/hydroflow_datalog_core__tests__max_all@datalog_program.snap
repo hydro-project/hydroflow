@@ -250,14 +250,12 @@ fn main() {
                                 entry,
                                 kv.1,
                                 |old: &mut (Option<_>, Option<_>), val: (_, _)| {
-                                    old
-                                        .0 = if let Some(prev) = old.0.take() {
+                                    old.0 = if let Some(prev) = old.0.take() {
                                         Some(std::cmp::max(prev, val.0))
                                     } else {
                                         Some(val.0)
                                     };
-                                    old
-                                        .1 = if let Some(prev) = old.1.take() {
+                                    old.1 = if let Some(prev) = old.1.take() {
                                         Some(std::cmp::max(prev, val.1))
                                     } else {
                                         Some(val.1)

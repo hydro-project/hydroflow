@@ -557,8 +557,7 @@ fn main() {
                                 entry,
                                 kv.1,
                                 |old: &mut (Option<_>,), val: (_,)| {
-                                    old
-                                        .0 = if let Some(prev) = old.0.take() {
+                                    old.0 = if let Some(prev) = old.0.take() {
                                         Some({
                                             let mut set: hydroflow::rustc_hash::FxHashSet<_> = prev;
                                             set.insert(val.0);
