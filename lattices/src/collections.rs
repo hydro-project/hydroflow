@@ -12,6 +12,8 @@ use cc_traits::{
     SimpleKeyedRef,
 };
 
+use crate::generalized_hash_trie::{HashTrieNode, HtInner, HtLeaf};
+
 /// Trait for transforming the values of a map without changing the overall type of the data structure.
 pub trait MapMapValues<OldVal> {
     /// Output type, should be `Self` but with `OldVal` replaced with `NewVal`.
