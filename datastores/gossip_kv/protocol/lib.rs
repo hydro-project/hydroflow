@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fmt::Display;
 use std::str::FromStr;
 
@@ -136,7 +137,8 @@ pub enum ClientRequest {
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum ClientResponse {
     /// A response for a get request. The key is echoed back along with the value, if it exists.
-    Get { key: Key, value: Option<String> },
+    /// Multiple values are returned if there were concurrent writes to the key.
+    Get { key: Key, value: HashSet<String> },
     /// A response for a set request. The success field is true if the set was successful.
     Set { success: bool },
     /// A response for a delete request. The success field is true if delete was successful.
