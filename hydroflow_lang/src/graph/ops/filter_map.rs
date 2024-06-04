@@ -9,7 +9,7 @@ use super::{
 ///
 /// An operator that both filters and maps. It yields only the items for which the supplied closure returns `Some(value)`.
 ///
-/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+/// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
 /// ```hydroflow
 /// source_iter(vec!["1", "hello", "world", "2"])

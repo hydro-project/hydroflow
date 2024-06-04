@@ -19,7 +19,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// is partitioned into groups by the first field, and for each group the values in the second
 /// field are accumulated via the closures in the arguments.
 ///
-/// > Note: The closures have access to the [`context` object](surface_flows.md#the-context-object).
+/// > Note: The closures have access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
 /// `reduce_keyed` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected

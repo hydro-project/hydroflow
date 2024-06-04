@@ -12,7 +12,7 @@ use super::{
 /// mainly useful for debugging as in the example below, and it is generally an
 /// anti-pattern to provide a closure with side effects.
 ///
-/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+/// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
 /// ```hydroflow
 /// source_iter([1, 2, 3, 4])

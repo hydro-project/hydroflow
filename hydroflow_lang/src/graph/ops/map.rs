@@ -13,7 +13,7 @@ use super::{
 /// If you do not want to modify the item stream and instead only want to view
 /// each item use the [`inspect`](#inspect) operator instead.
 ///
-/// > Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+/// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
 /// ```hydroflow
 /// source_iter(vec!["hello", "world"]) -> map(|x| x.to_uppercase())
