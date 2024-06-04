@@ -282,6 +282,10 @@ impl<'a> Hydroflow<'a> {
     /// Returns true if any work was done.
     #[tracing::instrument(level = "trace", skip(self), fields(tick = u64::from(self.context.current_tick), stratum = self.context.current_stratum), ret)]
     pub fn run_stratum(&mut self) -> bool {
+        // Make sure to spawn tasks once hydroflow is running!
+        // This drains the task buffer, so becomes a no-op after first call.
+        self.context.spawn_tasks();
+
         let current_tick = self.context.current_tick;
 
         let mut work_done = false;
@@ -445,7 +449,6 @@ impl<'a> Hydroflow<'a> {
     /// TODO(mingwei): Currently blocks forever, no notion of "completion."
     #[tracing::instrument(level = "trace", skip(self), ret)]
     pub async fn run_async(&mut self) -> Option<Never> {
-        self.context.spawn_tasks();
         loop {
             // Run any work which is immediately available.
             self.run_available_async().await;
