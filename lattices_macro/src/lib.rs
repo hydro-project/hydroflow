@@ -1,4 +1,6 @@
 //! Macros for the `lattices` crate.
+//!
+//! See [`[derive(Lattice)`](Lattice).
 #![warn(missing_docs)]
 
 use proc_macro2::{Span, TokenStream};
@@ -102,43 +104,7 @@ where
     }
 }
 
-/// Derives `Merge`, `PartialEq`, `PartialOrd`, `LatticeOrd`, `IsBot`, `IsTop`, and `LatticeFrom`,
-/// and therefore `Lattice` too. Can be thought of as shorthand for `#[derive(Merge, LatticeOrd,
-/// IsBot, IsTop, LatticeFrom)]`.
-///
-/// The lattice derived will be the _product lattice_ of all the fields of the struct. I.e a `Pair`
-/// lattice but of all the fields of the struct instead of just two.
-///
-/// Note that all fields must be lattice types. If any field cannot be a lattice type then the
-/// `where` clauses prevent the trait impl from compiling.
-///
-/// These derive macros will create a second set of generics to allow conversion and merging
-/// between varying types. For example, given this struct:
-/// ```rust,ignore
-/// #[derive(Lattice)]
-/// struct MyLattice<KeySet, Epoch>
-/// where
-///     KeySet: Collection,
-///     Epoch: Ord,
-/// {
-///     keys: SetUnion<KeySet>,
-///     epoch: Max<Epoch>,
-/// }
-/// ```
-/// Will create derive macros `impl`s in the form:
-/// ```rust,ignore
-/// impl<KeySet, Epoch, KeySetOther, EpochOther>
-///     Merge<MyLattice<KeySetOther, EpochOther>>
-///     for MyLattice<KeySet, Epoch>
-/// where
-///     KeySet: Collection,
-///     Epoch: Ord,
-///     KeySetOther: Collection,
-///     EpochOther: Ord,
-/// {
-///     // ...
-/// }
-/// ```
+#[doc = include_str!("../README.md")]
 #[proc_macro_derive(Lattice)]
 pub fn derive_lattice_macro(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
     derive_lattice(&process_item_struct(parse_macro_input!(item))).into()
