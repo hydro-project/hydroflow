@@ -11,6 +11,8 @@
 //! ## [`var_args!`]
 #![doc = include_str!("../var_args.md")]
 
+use std::any::Any;
+
 use sealed::sealed;
 
 #[doc = include_str!("../var_expr.md")]
@@ -138,6 +140,24 @@ pub trait VariadicExt: Variadic {
     /// Convert an exclusive (`mut`) reference to this variadic into a variadic of exclusive
     /// (`mut`) references.
     fn as_mut_var(&mut self) -> Self::AsMutVar<'_>;
+
+    /// Iterator type returned by [`Self::iter_any_ref`].
+    type IterAnyRef<'a>: Iterator<Item = &'a dyn Any>
+    where
+        Self: 'static;
+    /// Iterate this variadic as `&dyn Any` references.
+    fn iter_any_ref(&self) -> Self::IterAnyRef<'_>
+    where
+        Self: 'static;
+
+    /// Iterator type returned by [`Self::iter_any_mut`].
+    type IterAnyMut<'a>: Iterator<Item = &'a mut dyn Any>
+    where
+        Self: 'static;
+    /// Iterate this variadic as `&mut dyn Any` exclusive references.
+    fn iter_any_mut(&mut self) -> Self::IterAnyMut<'_>
+    where
+        Self: 'static;
 }
 #[sealed]
 impl<Item, Rest> VariadicExt for (Item, Rest)
@@ -176,6 +196,30 @@ where
         let (item, rest) = self;
         (item, rest.as_mut_var())
     }
+
+    type IterAnyRef<'a> = std::iter::Chain<std::iter::Once<&'a dyn Any>, Rest::IterAnyRef<'a>>
+    where
+        Self: 'static;
+    fn iter_any_ref(&self) -> Self::IterAnyRef<'_>
+    where
+        Self: 'static,
+    {
+        let var_args!(item, ...rest) = self;
+        let item: &dyn Any = item;
+        std::iter::once(item).chain(rest.iter_any_ref())
+    }
+
+    type IterAnyMut<'a> = std::iter::Chain<std::iter::Once<&'a mut dyn Any>, Rest::IterAnyMut<'a>>
+    where
+        Self: 'static;
+    fn iter_any_mut(&mut self) -> Self::IterAnyMut<'_>
+    where
+        Self: 'static,
+    {
+        let var_args!(item, ...rest) = self;
+        let item: &mut dyn Any = item;
+        std::iter::once(item).chain(rest.iter_any_mut())
+    }
 }
 #[sealed]
 impl VariadicExt for () {
@@ -197,6 +241,26 @@ impl VariadicExt for () {
 
     type AsMutVar<'a> = ();
     fn as_mut_var(&mut self) -> Self::AsMutVar<'_> {}
+
+    type IterAnyRef<'a> = std::iter::Empty<&'a dyn Any>
+    where
+        Self: 'static;
+    fn iter_any_ref(&self) -> Self::IterAnyRef<'_>
+    where
+        Self: 'static,
+    {
+        std::iter::empty()
+    }
+
+    type IterAnyMut<'a> = std::iter::Empty<&'a mut dyn Any>
+    where
+        Self: 'static;
+    fn iter_any_mut(&mut self) -> Self::IterAnyMut<'_>
+    where
+        Self: 'static,
+    {
+        std::iter::empty()
+    }
 }
 
 /// Convert from a variadic of references back into the original variadic. The inverse of
@@ -371,5 +435,39 @@ mod test {
         *mut_box.as_mut() += 1;
 
         assert_eq!(var_expr!("Hello World".to_owned(), Box::new(6)), my_owned);
+    }
+
+    #[test]
+    fn test_iter_any() {
+        let mut var = var_expr!(1_i32, false, "Hello".to_owned());
+
+        let mut mut_iter = var.iter_any_mut();
+        *mut_iter.next().unwrap().downcast_mut::<i32>().unwrap() += 1;
+        *mut_iter.next().unwrap().downcast_mut::<bool>().unwrap() |= true;
+        *mut_iter.next().unwrap().downcast_mut::<String>().unwrap() += " World";
+        assert!(mut_iter.next().is_none());
+
+        let mut ref_iter = var.iter_any_ref();
+        assert_eq!(
+            Some(&2),
+            ref_iter
+                .next()
+                .map(<dyn Any>::downcast_ref)
+                .map(Option::unwrap)
+        );
+        assert_eq!(
+            Some(&true),
+            ref_iter
+                .next()
+                .map(<dyn Any>::downcast_ref)
+                .map(Option::unwrap)
+        );
+        assert_eq!(
+            Some("Hello World"),
+            ref_iter
+                .next()
+                .map(|any| &**any.downcast_ref::<String>().unwrap())
+        );
+        assert!(ref_iter.next().is_none());
     }
 }
