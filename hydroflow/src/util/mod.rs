@@ -112,6 +112,9 @@ where
 {
     use std::sync::atomic::Ordering;
 
+    // Yield to let any background async tasks send to the stream.
+    tokio::task::yield_now().await;
+
     let got_any_items = std::sync::atomic::AtomicBool::new(true);
     let mut unfused_iter =
         ready_iter(stream).inspect(|_| got_any_items.store(true, Ordering::Relaxed));
