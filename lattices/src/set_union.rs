@@ -5,15 +5,10 @@ use std::collections::{BTreeSet, HashSet};
 use std::marker::PhantomData;
 
 use cc_traits::SimpleCollectionRef;
-use variadics::{var_type, VariadicExt};
 
 use crate::cc_traits::{Iter, Len, Set};
 use crate::collections::{ArraySet, OptionSet, SingletonSet};
-use crate::generalized_hash_trie::{HashTrieNode, HtInner, HtLeaf, ToHashTrie};
-use crate::{
-    Atomize, DeepReveal, GeneralizedHashTrie, IsBot, IsTop, LatticeBimorphism, LatticeFrom,
-    LatticeOrd, Merge,
-};
+use crate::{Atomize, DeepReveal, IsBot, IsTop, LatticeBimorphism, LatticeFrom, LatticeOrd, Merge};
 
 /// Set-union lattice.
 ///
@@ -179,9 +174,6 @@ pub type SetUnionSingletonSet<Item> = SetUnion<SingletonSet<Item>>;
 /// [`Option`]-backed [`SetUnion`] lattice.
 pub type SetUnionOptionSet<Item> = SetUnion<OptionSet<Item>>;
 
-/// [`crate::generalized_hash_trie::GeneralizedHashTrie`]-backed [`SetUnion`] lattice.
-pub type SetUnionGHT<Item: HashTrieNode> = SetUnion<Item>;
-
 /// Bimorphism for the cartesian product of two sets. Output is a set of all possible pairs of
 /// items from the two input sets.
 pub struct CartesianProductBimorphism<SetOut> {
@@ -224,11 +216,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use variadics::var_expr;
-
     use super::*;
-    use crate::generalized_hash_trie::HashTrieNode;
-    use crate::ght_tup;
     use crate::test::{check_all, check_atomize_each, check_lattice_bimorphism};
 
     #[test]
@@ -320,22 +308,5 @@ mod test {
             items_b,
             items_b,
         );
-    }
-
-    #[test]
-    fn test_set_union_ght() {
-        type MyGHT = GeneralizedHashTrie!(u32, u64 => u16, &'static str);
-
-        let mut test_ght1: MyGHT = ght_tup!(42, 314 => 10, "hello").to_hash_trie();
-        let mut test_ght2: MyGHT = ght_tup!(42, 314 => 10, "hello").to_hash_trie();
-
-        test_ght1.insert(var_expr!(42, 314, 20, "goodbye"));
-        test_ght2.insert(var_expr!(42, 314, 20, "again"));
-
-        let mug1 = SetUnionGHT::new(test_ght1);
-        let mug2 = SetUnionGHT::new(test_ght2);
-
-        // mug1.merge(mug2);
-        // println!("merged: {:?}", mug1);
     }
 }

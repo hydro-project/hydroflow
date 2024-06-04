@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -14,11 +14,11 @@ use crate::Merge;
 // }
 /// node of a HashTrie
 #[sealed]
-pub trait HashTrieNode: Default {
+pub trait GeneralizedHashTrie: Default {
     /// Row variadic.
     type Row: VariadicExt + AsRefVariadicPartialEq;
     /// The first item in Row.
-    type Key;
+    type Key: Eq + Hash;
 
     /// Inserts items into the hash trie.
     fn insert(&mut self, row: Self::Row) -> bool;
@@ -30,7 +30,7 @@ pub trait HashTrieNode: Default {
     fn iter(&self) -> impl Iterator<Item = &'_ Self::Key>;
 
     /// Type returned by [`Self::get`].
-    type Get: HashTrieNode;
+    type Get: GeneralizedHashTrie;
     /// Retrieves the value associated with the given key.
     /// returns an `Option` containing a reference to the value if found, or `None` if not found.
     fn get(&self, key: &Self::Key) -> Option<&'_ Self::Get>;
@@ -39,7 +39,7 @@ pub trait HashTrieNode: Default {
     fn recursive_iter(&self) -> impl Iterator<Item = <Self::Row as VariadicExt>::AsRefVar<'_>>;
 }
 
-impl<Key, Node: HashTrieNode> Len for HtInner<Key, Node> {
+impl<Key, Node: GeneralizedHashTrie> Len for HtInner<Key, Node> {
     fn len(&self) -> usize {
         self.len
     }
@@ -49,14 +49,14 @@ impl<Key, Node: HashTrieNode> Len for HtInner<Key, Node> {
 #[derive(Debug)]
 pub struct HtInner<Key, Node>
 where
-    Node: HashTrieNode,
+    Node: GeneralizedHashTrie,
 {
     children: HashMap<Key, Node>,
     len: usize,
 }
-impl<Key, Node: HashTrieNode> Default for HtInner<Key, Node>
+impl<Key, Node: GeneralizedHashTrie> Default for HtInner<Key, Node>
 where
-    Node: HashTrieNode,
+    Node: GeneralizedHashTrie,
 {
     fn default() -> Self {
         let children = Default::default();
@@ -64,10 +64,10 @@ where
     }
 }
 #[sealed]
-impl<Key, Node> HashTrieNode for HtInner<Key, Node>
+impl<Key, Node> GeneralizedHashTrie for HtInner<Key, Node>
 where
     Key: 'static + Hash + Eq,
-    Node: 'static + HashTrieNode,
+    Node: 'static + GeneralizedHashTrie,
 {
     type Row = var_type!(Key, ...Node::Row);
     type Key = Key;
@@ -76,7 +76,7 @@ where
         let var_args!(key, ...rest) = row;
 
         let retval = self.children.entry(key).or_default().insert(rest);
-        if (retval) {
+        if retval {
             self.len += 1;
         }
         retval
@@ -127,9 +127,9 @@ impl<T> Default for HtLeaf<T> {
     }
 }
 #[sealed]
-impl<T> HashTrieNode for HtLeaf<T>
+impl<T> GeneralizedHashTrie for HtLeaf<T>
 where
-    T: 'static + Eq + VariadicExt + AsRefVariadicPartialEq,
+    T: 'static + Eq + VariadicExt + AsRefVariadicPartialEq + Hash,
 {
     type Row = T;
     type Key = T;
@@ -163,10 +163,38 @@ impl<T> Len for HtLeaf<T> {
     }
 }
 
+impl<Key, Node> Merge<HtInner<Key, Node>> for HtInner<Key, Node>
+where
+    Node: GeneralizedHashTrie + Merge<Node>,
+    Self: GeneralizedHashTrie,
+    Key: Hash + Eq,
+{
+    // XX Need to revisit to make length calculation incremental/efficient
+    fn merge(&mut self, other: HtInner<Key, Node>) -> bool {
+        let mut changed = false;
+
+        for (k, v) in other.children.into_iter() {
+            match self.children.entry(k) {
+                std::collections::hash_map::Entry::Occupied(mut occupied) => {
+                    changed |= occupied.get_mut().merge(v)
+                }
+                std::collections::hash_map::Entry::Vacant(vacant) => {
+                    vacant.insert(v);
+                    changed = true
+                }
+            }
+        }
+        // XXX inefficient
+        self.len = self.recursive_iter().count();
+        changed
+    }
+}
+
 impl<T> Merge<HtLeaf<T>> for HtLeaf<T>
 where
     T: Extend<T> + Len + IntoIterator<Item = T>,
 {
+    // Not worrying about dups right now
     fn merge(&mut self, other: HtLeaf<T>) -> bool {
         let old_len = self.len();
         self.elements.extend(other.elements);
@@ -191,7 +219,7 @@ impl<'k, Key, Node, PrefixRest> HtPrefixIter<var_type!(&'k Key, ...PrefixRest)>
     for HtInner<Key, Node>
 where
     Key: Eq + Hash,
-    Node: HashTrieNode + HtPrefixIter<PrefixRest>,
+    Node: GeneralizedHashTrie + HtPrefixIter<PrefixRest>,
     Node::Suffix: 'static,      // meh
     PrefixRest: 'static + Copy, // meh
 {
@@ -231,9 +259,9 @@ where
 #[sealed]
 impl<This> HtPrefixIter<var_type!()> for This
 where
-    This: 'static + HashTrieNode,
+    This: 'static + GeneralizedHashTrie,
 {
-    type Suffix = <Self as HashTrieNode>::Row;
+    type Suffix = <Self as GeneralizedHashTrie>::Row;
     fn prefix_iter<'a>(
         &'a self,
         _prefix: var_type!(),
@@ -249,7 +277,7 @@ where
 #[sealed]
 pub trait ToHashTrie: Variadic {
     /// The output type of the hash trie conversion.
-    type Output: HashTrieNode;
+    type Output: GeneralizedHashTrie;
 
     /// Converts the object into a hash trie.
     fn to_hash_trie(self) -> Self::Output;
@@ -313,34 +341,34 @@ macro_rules! GeneralizedHashTrie {
     );
 }
 
-#[macro_export]
-macro_rules! GeneralizedHashTrieVariadic {
-    // Flat base case.
-    (var_type !($a:ty)) => {
-        HtLeaf::<var_type!($a)>
-    };
-    // Nested base case.
-    (var_type!($a:ty, var_type!($( $z:ty ),*))) => (
-        HtInner::<$a, HtLeaf::<$z>>
-    );
-    // Flat tuple base case2: when there are exactly two fields
-    (var_type !($a:ty, $b:ty)) => {
-        HtInner::<$a, HtLeaf<var_type!($b)>>
-    };
-    // Flat tuple recursive case: when there are more than two fields
-    (var_type !($a:ty, $($b:ty),*)) => {
-        HtInner::<$a, GeneralizedHashTrieVariadic!(var_type!($( $b ),*))>
-    };
+// #[macro_export]
+// macro_rules! GeneralizedHashTrieVariadic {
+//     // Flat base case.
+//     (var_type !($a:ty)) => {
+//         HtLeaf::<var_type!($a)>
+//     };
+//     // Nested base case.
+//     (var_type!($a:ty, var_type!($( $z:ty ),*))) => (
+//         HtInner::<$a, HtLeaf::<$z>>
+//     );
+//     // Flat tuple base case2: when there are exactly two fields
+//     (var_type !($a:ty, $b:ty)) => {
+//         HtInner::<$a, HtLeaf<var_type!($b)>>
+//     };
+//     // Flat tuple recursive case: when there are more than two fields
+//     (var_type !($a:ty, $($b:ty),*)) => {
+//         HtInner::<$a, GeneralizedHashTrieVariadic!(var_type!($( $b ),*))>
+//     };
 
-    // Arrow base case.
-    (var_type!($a:ty => $($b:ty),*)) => (
-        HtInner::<$a, HtLeaf::<$($b),*>>
-    );
-    // Arrow recursive case.
-    (var_type!($a:ty, $( $b:ty ),* => $($z:ty),*)) => (
-        HtInner::<$a, GeneralizedHashTrieVariadic!(var_type!($( $b ),* => $( $z ),*))>
-    );
-}
+//     // Arrow base case.
+//     (var_type!($a:ty => $($b:ty),*)) => (
+//         HtInner::<$a, HtLeaf::<$($b),*>>
+//     );
+//     // Arrow recursive case.
+//     (var_type!($a:ty, $( $b:ty ),* => $($z:ty),*)) => (
+//         HtInner::<$a, GeneralizedHashTrieVariadic!(var_type!($( $b ),* => $( $z ),*))>
+//     );
+// }
 
 /// a ght tuple is a variadic for the key columns, which has a nested variadic at the
 /// innermost position representing the dependent columns.
@@ -409,43 +437,43 @@ mod tests {
     #[test]
     fn test_hash_trie_type_macro() {
         type LilTrie = GeneralizedHashTrie!(u32);
-        type LilVTrie = GeneralizedHashTrieVariadic!(var_type!(u32));
-        let l: LilTrie = ght_tup!(1).to_hash_trie();
-        let _: LilVTrie = l;
+        // type LilVTrie = GeneralizedHashTrieVariadic!(var_type!(u32));
+        let _l: LilTrie = ght_tup!(1).to_hash_trie();
+        // let _: LilVTrie = l;
 
         type SmallTrie = GeneralizedHashTrie!(u32, &'static str);
-        type SmallVTrie = GeneralizedHashTrieVariadic!(var_type!(u32, &'static str));
+        // type SmallVTrie = GeneralizedHashTrieVariadic!(var_type!(u32, &'static str));
         type SmallKeyedTrie = GeneralizedHashTrie!(u32 => &'static str);
-        type SmallKeyedVTrie =
-            GeneralizedHashTrieVariadic!(var_type!(u32 => var_type!(&'static str)));
+        // type SmallKeyedVTrie =
+        //     GeneralizedHashTrieVariadic!(var_type!(u32 => var_type!(&'static str)));
         let l: SmallTrie = ght_tup!(1, "hello").to_hash_trie();
-        let _: SmallVTrie = l;
+        // let _: SmallVTrie = l;
         let _: SmallKeyedTrie = l;
-        let _: SmallKeyedVTrie = l;
+        // let _: SmallKeyedVTrie = l;
 
         type LongKeySmallValTrie = GeneralizedHashTrie!(u32, u16, &'static str);
-        type LongKeySmallValVTrie = GeneralizedHashTrieVariadic!(var_type!(u32, u16, &'static str));
+        // type LongKeySmallValVTrie = GeneralizedHashTrieVariadic!(var_type!(u32, u16, &'static str));
         type LongKeySmallValKeyedTrie = GeneralizedHashTrie!(u32, u16 => &'static str);
-        type LongKeySmallValKeyedVTrie =
-            GeneralizedHashTrieVariadic!(var_type!(u32, u16 => var_type!(&'static str)));
+        // type LongKeySmallValKeyedVTrie =
+        //     GeneralizedHashTrieVariadic!(var_type!(u32, u16 => var_type!(&'static str)));
         let x: LongKeySmallValTrie = ght_tup!(1, 314, "hello").to_hash_trie();
-        let _: LongKeySmallValVTrie = x;
+        // let _: LongKeySmallValVTrie = x;
         let _: LongKeySmallValKeyedTrie = x;
-        let _: LongKeySmallValKeyedVTrie = x;
+        // let _: LongKeySmallValKeyedVTrie = x;
         let _: LongKeySmallValTrie = ght_tup!(1, 314 => "hello").to_hash_trie();
-        let _: LongKeySmallValKeyedVTrie = ght_tup!(1, 314 => "hello").to_hash_trie();
+        // let _: LongKeySmallValKeyedVTrie = ght_tup!(1, 314 => "hello").to_hash_trie();
 
         type SmallKeyLongValTrie = GeneralizedHashTrie!(u32 => u64, u16, &'static str);
-        type SmallKeyLongValVTrie =
-            GeneralizedHashTrieVariadic!(var_type!(u32 => var_type!(u64, u16, &'static str)));
-        let x: SmallKeyLongValTrie = ght_tup!(1 => 999, 222, "hello").to_hash_trie();
-        let _: SmallKeyLongValVTrie = x;
+        // type SmallKeyLongValVTrie =
+        //     GeneralizedHashTrieVariadic!(var_type!(u32 => var_type!(u64, u16, &'static str)));
+        let _x: SmallKeyLongValTrie = ght_tup!(1 => 999, 222, "hello").to_hash_trie();
+        // let _: SmallKeyLongValVTrie = x;
 
         type LongKeyLongValTrie = GeneralizedHashTrie!(u32, u64 => u16, &'static str);
-        type LongKeyLongValVTrie =
-            GeneralizedHashTrieVariadic!(var_type!(u32, u64 => var_type!(u16, &'static str)));
-        let x: LongKeyLongValTrie = ght_tup!(1, 999 => 222, "hello").to_hash_trie();
-        let _: LongKeyLongValVTrie = x;
+        // type LongKeyLongValVTrie =
+        //     GeneralizedHashTrieVariadic!(var_type!(u32, u64 => var_type!(u16, &'static str)));
+        let _x: LongKeyLongValTrie = ght_tup!(1, 999 => 222, "hello").to_hash_trie();
+        // let _: LongKeyLongValVTrie = x;
     }
 
     #[test]
@@ -612,4 +640,20 @@ mod tests {
             println!("B {:?}", row);
         }
     }
+    // #[test]
+    // fn test_set_union_ght() {
+    //     type MyGHT = GeneralizedHashTrie!(u32, u64 => u16, &'static str);
+
+    //     let mut test_ght1: MyGHT = ght_tup!(42, 314 => 10, "hello").to_hash_trie();
+    //     let mut test_ght2: MyGHT = ght_tup!(42, 314 => 10, "hello").to_hash_trie();
+
+    //     test_ght1.insert(var_expr!(42, 314, 20, "goodbye"));
+    //     test_ght2.insert(var_expr!(42, 314, 20, "again"));
+
+    //     let mug1 = SetUnionGHT::new(test_ght1);
+    //     let mug2 = SetUnionGHT::new(test_ght2);
+
+    //     mug1.merge(mug2);
+    //     println!("merged: {:?}", mug1);
+    // }
 }
