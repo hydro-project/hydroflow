@@ -1,11 +1,11 @@
 use proc_macro2::Ident;
 use quote::{quote, quote_spanned};
 use syn::spanned::Spanned;
+use syn::{PathArguments, Token, Type, TypePath};
 
 use super::{
-    FlowPropArgs, OpInstGenerics, OperatorCategory, OperatorConstraints,
-    OperatorInstance, OperatorWriteOutput, PortIndexValue, PortListSpec, WriteContextArgs, RANGE_0,
-    RANGE_1,
+    FlowPropArgs, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, PortIndexValue, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
 
@@ -100,9 +100,11 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
                 Some(port_ident)
             })
             .collect();
+
+        let enum_type_turbofish = ensure_turbofish(enum_type);
         let port_variant_check_match_arms = port_idents.iter().map(|port_ident| {
             quote_spanned! {port_ident.span()=>
-                Enum::#port_ident { .. } => ()
+                #enum_type_turbofish::#port_ident { .. } => ()
             }
         });
 
@@ -119,7 +121,6 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
             let _ = |__val: #enum_type| {
                 fn check_impl_demux_enum<T: ?Sized + #root::util::demux_enum::DemuxEnumBase>(_: &T) {}
                 check_impl_demux_enum(&__val);
-                type Enum = #enum_type;
                 match __val {
                     #(
                         #port_variant_check_match_arms,
@@ -146,3 +147,16 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
         })
     },
 };
+
+/// Ensure enum type has double colon for turbofish syntax.
+fn ensure_turbofish(ty: &Type) -> Type {
+    let mut ty = ty.clone();
+    if let Type::Path(TypePath { qself: _, path }) = &mut ty {
+        if let Some(last_seg) = path.segments.last_mut() {
+            if let PathArguments::AngleBracketed(angle_bracketed) = &mut last_seg.arguments {
+                angle_bracketed.colon2_token = Some(<Token![::]>::default());
+            }
+        }
+    };
+    ty
+}
