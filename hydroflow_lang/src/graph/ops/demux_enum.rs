@@ -1,7 +1,7 @@
-use proc_macro2::Ident;
-use quote::{quote, quote_spanned};
+use proc_macro2::{Group, Ident, Span, TokenStream, TokenTree};
+use quote::{quote, quote_spanned, ToTokens};
 use syn::spanned::Spanned;
-use syn::{PathArguments, Token, Type, TypePath};
+use syn::{PathArguments, PathSegment, Token, Type, TypePath};
 
 use super::{
     FlowPropArgs, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
@@ -103,6 +103,7 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
 
         let enum_type_turbofish = ensure_turbofish(enum_type);
         let port_variant_check_match_arms = port_idents.iter().map(|port_ident| {
+            let enum_type_turbofish = change_span(enum_type_turbofish.to_token_stream(), port_ident.span());
             quote_spanned! {port_ident.span()=>
                 #enum_type_turbofish::#port_ident { .. } => ()
             }
@@ -148,15 +149,46 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
     },
 };
 
-/// Ensure enum type has double colon for turbofish syntax.
+/// Ensure enum type has double colon turbofish syntax.
+/// `my_mod::MyType<MyGeneric>` becomes `my_mod::MyType::<MyGeneric>`.
 fn ensure_turbofish(ty: &Type) -> Type {
     let mut ty = ty.clone();
+    // If type is path.
     if let Type::Path(TypePath { qself: _, path }) = &mut ty {
-        if let Some(last_seg) = path.segments.last_mut() {
-            if let PathArguments::AngleBracketed(angle_bracketed) = &mut last_seg.arguments {
-                angle_bracketed.colon2_token = Some(<Token![::]>::default());
-            }
+        // If path ends in angle bracketed generics.
+        if let Some(PathSegment {
+            ident: _,
+            arguments: PathArguments::AngleBracketed(angle_bracketed),
+        }) = path.segments.last_mut()
+        {
+            // Ensure the final turbofish double-colon is set.
+            angle_bracketed.colon2_token = Some(<Token![::]>::default());
         }
     };
     ty
+}
+
+/// Changes all internal token's span to `span`, recursing into groups.
+fn change_span(tokens: TokenStream, span: Span) -> TokenStream {
+    tokens
+        .into_iter()
+        .map(|token| match token {
+            TokenTree::Group(mut group) => {
+                group.set_span(span);
+                TokenTree::Group(Group::new(group.delimiter(), change_span(group.stream(), span)))
+            }
+            TokenTree::Ident(mut ident) => {
+                ident.set_span(span);
+                TokenTree::Ident(ident)
+            }
+            TokenTree::Punct(mut punct) => {
+                punct.set_span(span);
+                TokenTree::Punct(punct)
+            }
+            TokenTree::Literal(mut literal) => {
+                literal.set_span(span);
+                TokenTree::Literal(literal)
+            }
+        })
+        .collect()
 }
