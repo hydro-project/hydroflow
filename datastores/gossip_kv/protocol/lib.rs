@@ -69,14 +69,50 @@ pub struct Key {
 impl FromStr for Key {
     type Err = KeyParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // TODO: Support escaping '/' in table and row keys. https://github.com/hydro-project/hydroflow/issues/1254
-        let parts: Vec<&str> = s.split('/').collect();
+        let mut parts: Vec<String> = vec![];
+        let mut current_part = String::new();
+        let mut escaping = false;
+
+        for c in s.chars() {
+            match (escaping, c) {
+                (true, '\\') | (true, '/') => {
+                    current_part.push(c);
+                    escaping = false;
+                }
+                (true, _) => return Err(KeyParseError::InvalidFormat),
+                (false, '\\') => {
+                    escaping = true;
+                }
+                (false, '/') => {
+                    parts.push(current_part);
+                    current_part = String::new();
+                }
+                (false, _) => {
+                    current_part.push(c);
+                }
+            }
+        }
+
+        if escaping {
+            return Err(KeyParseError::InvalidFormat);
+        }
+
+        if !current_part.is_empty() {
+            parts.push(current_part);
+        }
+
         if parts.len() != 4 {
             return Err(KeyParseError::InvalidFormat);
         }
+
         if !parts[0].is_empty() {
             return Err(KeyParseError::InvalidFormat);
         }
+
+        if parts[2].is_empty() || parts[3].is_empty() {
+            return Err(KeyParseError::InvalidFormat);
+        }
+
         let namespace = parts[1].parse()?;
         Ok(Key {
             namespace,
@@ -129,6 +165,25 @@ mod tests {
     }
 
     #[test]
+    fn test_key_empty_table() {
+        // Empty table
+        let empty_table = "/usr//usr_row".parse::<Key>();
+        assert!(empty_table.is_err());
+        assert_eq!(
+            empty_table.unwrap_err(),
+            super::KeyParseError::InvalidFormat
+        );
+    }
+
+    #[test]
+    fn test_key_empty_row() {
+        // Empty row
+        let empty_row = "/usr/usr_table/".parse::<Key>();
+        assert!(empty_row.is_err());
+        assert_eq!(empty_row.unwrap_err(), super::KeyParseError::InvalidFormat);
+    }
+
+    #[test]
     fn test_key_parsing_invalid_namespace() {
         // Invalid namespace
         let non_existent_namespace = "/ne_namespace/ne_table/ne_row".parse::<Key>();
@@ -155,5 +210,30 @@ mod tests {
             invalid_format.unwrap_err(),
             super::KeyParseError::InvalidFormat
         );
+    }
+
+    #[test]
+    fn test_key_parsing_escaping() {
+        // Escape \
+        let key = r"/usr/usr\/table/usr\/row".parse::<Key>().unwrap();
+        assert_eq!(key.namespace, Namespace::User);
+        assert_eq!(key.table, r"usr/table");
+        assert_eq!(key.row_key, r"usr/row");
+
+        // Escaping /
+        let key = r"/usr/usr\\table/usr\\row".parse::<Key>().unwrap();
+        assert_eq!(key.namespace, Namespace::User);
+        assert_eq!(key.table, r"usr\table");
+        assert_eq!(key.row_key, r"usr\row");
+
+        // Escaping any character
+        let key = r"/usr/usr\table/usr\row".parse::<Key>();
+        assert!(key.is_err());
+        assert_eq!(key.unwrap_err(), super::KeyParseError::InvalidFormat);
+
+        // Dangling escape
+        let key = r"/usr/usr_table/usr_row\".parse::<Key>();
+        assert!(key.is_err());
+        assert_eq!(key.unwrap_err(), super::KeyParseError::InvalidFormat);
     }
 }
