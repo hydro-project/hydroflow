@@ -8,6 +8,7 @@ use super::{
 /// > 0 input streams, 1 output stream
 ///
 /// > Arguments: An iterable Rust object.
+///
 /// Takes the iterable object and delivers its elements downstream
 /// one by one.
 ///

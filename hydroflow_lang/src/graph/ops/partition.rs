@@ -17,7 +17,7 @@ use crate::pretty_span::PrettySpan;
 /// pipeline each item should be delivered to.
 ///
 /// > Arguments: A Rust closure, the first argument is a reference to the item and the second
-/// argument corresponds to one of two modes, either named or indexed.
+/// > argument corresponds to one of two modes, either named or indexed.
 ///
 /// > Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///

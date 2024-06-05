@@ -9,9 +9,9 @@ use crate::diagnostic::{Diagnostic, Level};
 /// > 1 input stream, 1 output stream
 ///
 /// > Arguments: two arguments, both closures. The first closure is used to create the initial
-/// value for the accumulator, and the second is used to combine new items with the existing
-/// accumulator value. The second closure takes two two arguments: an `&mut Accum` accumulated
-/// value, and an `Item`.
+/// > value for the accumulator, and the second is used to combine new items with the existing
+/// > accumulator value. The second closure takes two two arguments: an `&mut Accum` accumulated
+/// > value, and an `Item`.
 ///
 /// Akin to Rust's built-in [`fold`](https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.fold)
 /// operator, except that it takes the accumulator by `&mut` instead of by value. Folds every item

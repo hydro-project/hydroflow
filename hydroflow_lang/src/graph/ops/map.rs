@@ -8,6 +8,7 @@ use super::{
 /// > 1 input stream, 1 output stream
 ///
 /// > Arguments: A Rust closure
+///
 /// For each item passed in, apply the closure to generate an item to emit.
 ///
 /// If you do not want to modify the item stream and instead only want to view

@@ -8,7 +8,7 @@ use super::{
 /// > 0 input streams, 1 output stream
 ///
 /// > Arguments: An [`AsRef`](https://doc.rust-lang.org/std/convert/trait.AsRef.html)`<`[`Path`](https://doc.rust-lang.org/nightly/std/path/struct.Path.html)`>`
-/// for a file to read as json. This will emit the parsed value one time.
+/// > for a file to read as json. This will emit the parsed value one time.
 ///
 /// `source_json` may take one generic type argument, the type of the value to be parsed, which must implement [`Deserialize`](https://docs.rs/serde/latest/serde/de/trait.Deserialize.html).
 ///
