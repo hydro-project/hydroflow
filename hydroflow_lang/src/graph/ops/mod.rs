@@ -657,32 +657,3 @@ impl OperatorCategory {
         }
     }
 }
-
-/// Changes all of token's spans to `span`, recursing into groups.
-fn change_spans(tokens: TokenStream, span: Span) -> TokenStream {
-    use proc_macro2::{Group, TokenTree};
-    tokens
-        .into_iter()
-        .map(|token| match token {
-            TokenTree::Group(mut group) => {
-                group.set_span(span);
-                TokenTree::Group(Group::new(
-                    group.delimiter(),
-                    change_spans(group.stream(), span),
-                ))
-            }
-            TokenTree::Ident(mut ident) => {
-                ident.set_span(span);
-                TokenTree::Ident(ident)
-            }
-            TokenTree::Punct(mut punct) => {
-                punct.set_span(span);
-                TokenTree::Punct(punct)
-            }
-            TokenTree::Literal(mut literal) => {
-                literal.set_span(span);
-                TokenTree::Literal(literal)
-            }
-        })
-        .collect()
-}

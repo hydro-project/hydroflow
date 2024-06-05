@@ -1,18 +1,8 @@
 error[E0271]: type mismatch resolving `<impl Pusherator<Item = (u32,)> as Pusherator>::Item == (f64,)`
   --> tests/compile-fail/surface_demuxenum_wrongfields_2.rs:17:15
    |
-12 |       let mut df = hydroflow_syntax! {
-   |  __________________-
-13 | |         my_demux = source_iter([
-14 | |             Shape::Rectangle { w: 10.0, h: 8.0 },
-15 | |             Shape::Square(9.0),
-16 | |             Shape::Circle { r: 5.0 },
-17 | |         ]) -> demux_enum::<Shape>();
-   | |               ^^^^^^^^^^^^^^^^^^^^^ expected `(f64,)`, found `(u32,)`
-...  |
-20 | |         my_demux[Square] -> for_each(|side: (u32,)| ());
-21 | |     };
-   | |_____- required by a bound introduced by this call
+17 |         ]) -> demux_enum::<Shape>();
+   |               ^^^^^^^^^^^^^^^^^^^^^ expected `(f64,)`, found `(u32,)`
    |
    = note: expected tuple `(f64,)`
               found tuple `(u32,)`

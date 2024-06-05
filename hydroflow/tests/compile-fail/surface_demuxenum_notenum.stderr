@@ -58,17 +58,8 @@ help: if there were a trait named `Example` with associated type `Square` implem
 error[E0277]: the trait bound `Shape: DemuxEnum<_>` is not satisfied
   --> tests/compile-fail/surface_demuxenum_notenum.rs:12:15
    |
-8  |       let mut df = hydroflow_syntax! {
-   |  __________________-
-9  | |         my_demux = source_iter([
-10 | |             Shape { area: 10.0 },
-11 | |             Shape { area: 9.0 },
-12 | |         ]) -> demux_enum::<Shape>();
-   | |               ^^^^^^^^^^^^^^^^^^^^^ the trait `DemuxEnum<_>` is not implemented for `Shape`
-...  |
-16 | |         my_demux[Ellipse] -> for_each(std::mem::drop);
-17 | |     };
-   | |_____- required by a bound introduced by this call
+12 |         ]) -> demux_enum::<Shape>();
+   |               ^^^^^^^^^^^^^^^^^^^^^ the trait `DemuxEnum<_>` is not implemented for `Shape`
    |
    = note: Ensure there is exactly one output for each enum variant.
    = note: Ensure that the type for each output is a tuple of the field for the variant: `()`, `(a,)`, or `(a, b, ...)`.

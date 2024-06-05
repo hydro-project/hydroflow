@@ -1,14 +1,14 @@
-use proc_macro2::{Group, Ident, Span, TokenStream, TokenTree};
+use proc_macro2::Ident;
 use quote::{quote, quote_spanned, ToTokens};
 use syn::spanned::Spanned;
 use syn::{PathArguments, PathSegment, Token, Type, TypePath};
 
 use super::{
-    change_spans, FlowPropArgs, OpInstGenerics, OperatorCategory, OperatorConstraints,
-    OperatorInstance, OperatorWriteOutput, PortIndexValue, PortListSpec, WriteContextArgs, RANGE_0,
-    RANGE_1,
+    FlowPropArgs, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, PortIndexValue, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
+use crate::graph::change_spans;
 
 /// > Generic Argument: A enum type which has `#[derive(DemuxEnum)]`. Must match the items in the input stream.
 ///
