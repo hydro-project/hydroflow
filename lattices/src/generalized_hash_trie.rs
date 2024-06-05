@@ -1,5 +1,5 @@
 use std::cmp::Ordering::{self, *};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -7,7 +7,7 @@ use sealed::sealed;
 use variadics::{var_args, var_expr, var_type, AsRefVariadicPartialEq, Variadic, VariadicExt};
 
 use crate::cc_traits::Len;
-use crate::{Atomize, IsBot, IsTop, LatticeOrd, Merge};
+use crate::{IsBot, IsTop, LatticeOrd, Merge};
 
 // pub fn flatten_tuple(v: Variadic) -> Variadic {
 //     let (head, tail) = v;
@@ -50,7 +50,7 @@ where
 }
 
 /// internal node of a HashTrie
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HtInner<Key, Node>
 where
     Node: GeneralizedHashTrie,
@@ -112,11 +112,17 @@ where
 }
 
 /// leaf node of a HashTrie
-#[derive(Debug, PartialEq, Eq)]
-pub struct HtLeaf<T> {
-    elements: Vec<T>,
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct HtLeaf<T>
+where
+    T: Hash + Eq,
+{
+    elements: HashSet<T>,
 }
-impl<T> Default for HtLeaf<T> {
+impl<T> Default for HtLeaf<T>
+where
+    T: Hash + Eq,
+{
     fn default() -> Self {
         let elements = Default::default();
         Self { elements }
@@ -131,7 +137,7 @@ where
     type Key = T;
 
     fn insert(&mut self, row: Self::Row) -> bool {
-        self.elements.push(row);
+        self.elements.insert(row);
         true
     }
 
@@ -153,7 +159,10 @@ where
     }
 }
 
-impl<T> Len for HtLeaf<T> {
+impl<T> Len for HtLeaf<T>
+where
+    T: Hash + Eq,
+{
     fn len(&self) -> usize {
         self.elements.len()
     }
@@ -186,8 +195,10 @@ where
     }
 }
 
-impl<T> Merge<HtLeaf<T>> for HtLeaf<T> {
-    // Not worrying about dups right now
+impl<T> Merge<HtLeaf<T>> for HtLeaf<T>
+where
+    T: Hash + Eq,
+{
     fn merge(&mut self, other: HtLeaf<T>) -> bool {
         let old_len = self.len();
         self.elements.extend(other.elements);
@@ -259,6 +270,13 @@ where
     Node: GeneralizedHashTrie,
 {
 }
+impl<T> LatticeOrd<HtLeaf<T>> for HtLeaf<T>
+where
+    Self: PartialOrd<HtLeaf<T>>,
+    T: Hash + Eq,
+{
+}
+
 impl<Key, Node> Eq for HtInner<Key, Node>
 where
     Node: GeneralizedHashTrie,
@@ -375,9 +393,9 @@ where
 
     fn to_hash_trie(self) -> Self::Output {
         let mut result = HtLeaf {
-            elements: Vec::new(),
+            elements: HashSet::new(),
         };
-        result.elements.push(self.0);
+        result.elements.insert(self.0);
         result
     }
 }
@@ -497,6 +515,7 @@ macro_rules! ght_tup {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::NaiveLatticeOrd;
 
     #[test]
     fn basic_test() {
@@ -734,10 +753,10 @@ mod tests {
         test_ght1.insert(var_expr!(42, 314, 20, "goodbye"));
         test_ght2.insert(var_expr!(42, 314, 20, "again"));
 
-        test_ght1.merge(test_ght2);
-        // for k in stuff.recursive_iter() {
-        //     assert!(test_ght1.contains(k))
-        // }
+        test_ght1.merge(test_ght2.clone());
+        for k in test_ght2.recursive_iter() {
+            assert!(test_ght1.contains(k))
+        }
     }
     #[test]
     fn test_lattice() {
@@ -749,12 +768,17 @@ mod tests {
         let test_ght1: MyGHT = ght_tup!(42, 314 => 10, "hello").to_hash_trie();
         let mut test_ght2: MyGHT = ght_tup!(42, 314 => 10, "hello").to_hash_trie();
         test_ght2.insert(var_expr!(42, 314, 20, "again"));
+        let mut test_ght3 = test_ght2.clone();
+        test_ght3.insert(var_expr!(42, 400, 1, "level 2"));
+        let mut test_ght4 = test_ght3.clone();
+        test_ght4.insert(var_expr!(43, 1, 1, "level 1"));
 
-        for ght in [empty_ght, test_ght1, test_ght2] {
-            test_vec.push(ght)
+        for ght in [empty_ght, test_ght1, test_ght2, test_ght3, test_ght4] {
+            ght.naive_cmp(&ght.clone());
+            test_vec.push(ght);
         }
-        // crate::test::check_lattice_ord(&test_vec);
-        // crate::test::check_partial_ord_properties(&test_vec);
-        // crate::test::check_lattice_properties(&test_vec);
+        crate::test::check_lattice_ord(&test_vec);
+        crate::test::check_partial_ord_properties(&test_vec);
+        crate::test::check_lattice_properties(&test_vec);
     }
 }
