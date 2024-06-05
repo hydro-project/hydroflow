@@ -14,6 +14,7 @@ use hydroflow::lattices::PairBimorphism;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use hydroflow::{bincode, hydroflow_syntax, tokio, DemuxEnum};
+use tracing::{error, trace};
 
 use crate::model::{delete_row, upsert_row, Clock, Namespaces, RowKey, TableName};
 
@@ -44,14 +45,16 @@ where
     E: Debug + 'static,
 {
     hydroflow_syntax! {
-        outbound_messages = inspect(|(resp, addr)| println!("Sending {:?} to {:?}", resp, addr) ) -> dest_sink(ob);
+        outbound_messages =
+            inspect(|(resp, addr)| trace!("Sending response: {:?} to {:?}", resp, addr))
+            -> dest_sink(ob);
 
         inbound_messages = source_stream(ib)
             -> map(|(msg, addr)| ClientRequestWithAddress::from_request_and_address(msg, addr))
             -> demux_enum::<ClientRequestWithAddress<A>>();
 
         inbound_messages[Get]
-            -> inspect(|req| println!("Received Get request: {:?} at {:?}", req, context.current_tick()))
+            -> inspect(|req| trace!("Received Get request: {:?} at {:?}", req, context.current_tick()))
             -> map(|(key, addr) : (Key, A)| {
                 let row = MapUnionHashMap::new_from([
                         (
@@ -65,12 +68,12 @@ where
             -> gets;
 
         inbound_messages[Set]
-            -> inspect(|request| println!("Received Set request: {:?} at {:?}", request, context.current_tick()))
+            -> inspect(|request| trace!("Received Set request: {:?} at {:?}", request, context.current_tick()))
             -> map(|(key, value, _addr) : (Key, String, A)| upsert_row(Clock::new(context.current_tick().0), key.namespace, key.table, key.row_key, value))
             -> namespaces;
 
         inbound_messages[Delete]
-            -> inspect(|req| println!("Received Delete request: {:?} at {:?}", req, context.current_tick()))
+            -> inspect(|req| trace!("Received Delete request: {:?} at {:?}", req, context.current_tick()))
             -> map(|(key, _addr) : (Key, A)| delete_row(Clock::new(context.current_tick().0), key.namespace, key.table, key.row_key))
             -> namespaces;
 
@@ -123,11 +126,12 @@ where
 
 #[hydroflow::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
+
     let address = ipv4_resolve("localhost:3000").unwrap();
     let (outbound, inbound, _) = bind_udp_bytes(address).await;
 
     let ob = outbound.with(|(msg, addr)| {
-        println!("Sending message: {:?}", msg);
         ready(Ok::<(hydroflow::bytes::Bytes, SocketAddr), Error>((
             hydroflow::util::serialize_to_bytes(msg),
             addr,
@@ -142,13 +146,13 @@ async fn main() {
                 match msg {
                     Ok(msg) => Some((msg, addr)),
                     Err(e) => {
-                        println!("Error deserializing message: {:?}", e);
+                        error!("Error deserializing message: {:?}", e);
                         None
                     }
                 }
             }
             Err(e) => {
-                println!("Error receiving message: {:?}", e);
+                error!("Error receiving message: {:?}", e);
                 None
             }
         };
