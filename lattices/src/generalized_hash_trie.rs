@@ -1,4 +1,5 @@
-use std::collections::{HashMap, HashSet};
+use std::cmp::Ordering::{self, *};
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -6,7 +7,7 @@ use sealed::sealed;
 use variadics::{var_args, var_expr, var_type, AsRefVariadicPartialEq, Variadic, VariadicExt};
 
 use crate::cc_traits::Len;
-use crate::Merge;
+use crate::{LatticeOrd, Merge};
 
 // pub fn flatten_tuple(v: Variadic) -> Variadic {
 //     let (head, tail) = v;
@@ -39,7 +40,10 @@ pub trait GeneralizedHashTrie: Default {
     fn recursive_iter(&self) -> impl Iterator<Item = <Self::Row as VariadicExt>::AsRefVar<'_>>;
 }
 
-impl<Key, Node: GeneralizedHashTrie> Len for HtInner<Key, Node> {
+impl<Key, Node> Len for HtInner<Key, Node>
+where
+    Node: GeneralizedHashTrie,
+{
     fn len(&self) -> usize {
         self.len
     }
@@ -67,7 +71,7 @@ where
 impl<Key, Node> GeneralizedHashTrie for HtInner<Key, Node>
 where
     Key: 'static + Hash + Eq,
-    Node: 'static + GeneralizedHashTrie,
+    Node: 'static + GeneralizedHashTrie + Merge<Node>,
 {
     type Row = var_type!(Key, ...Node::Row);
     type Key = Key;
@@ -106,14 +110,6 @@ where
             .flat_map(|(k, vs)| vs.recursive_iter().map(move |v| var_expr!(k, ...v)))
     }
 }
-
-// /// Iter for HTLeaf.
-// pub type HtInnerIter<'a, Key, Node>
-// where
-//     Key: 'static + Eq + Hash,
-//     Node: 'static + HashTrieNode,
-// = impl 'a
-//     + Iterator<Item = <<HtInner<Key, Node> as HashTrieNode>::Row as VariadicExt>::AsRefVar<'a>>;
 
 /// leaf node of a HashTrie
 #[derive(Debug, PartialEq, Eq)]
@@ -190,10 +186,7 @@ where
     }
 }
 
-impl<T> Merge<HtLeaf<T>> for HtLeaf<T>
-where
-    T: Extend<T> + Len + IntoIterator<Item = T>,
-{
+impl<T> Merge<HtLeaf<T>> for HtLeaf<T> {
     // Not worrying about dups right now
     fn merge(&mut self, other: HtLeaf<T>) -> bool {
         let old_len = self.len();
@@ -201,6 +194,72 @@ where
         self.len() > old_len
     }
 }
+
+impl<Key, Node> PartialEq<HtInner<Key, Node>> for HtInner<Key, Node>
+where
+    Key: Hash + Eq + 'static,
+    Node: GeneralizedHashTrie + 'static + PartialEq + Merge<Node>,
+{
+    // this only compares the current node without recursing, so it's wrong
+    // but let's get it compiling first
+    fn eq(&self, other: &HtInner<Key, Node>) -> bool {
+        if self.len() != other.len() {
+            return false;
+        }
+
+        for key in self.iter() {
+            if other.get(key).is_none() {
+                return false;
+            }
+            if !self.get(key).unwrap().eq(other.get(key).unwrap()) {
+                return false;
+            }
+        }
+        true
+    }
+}
+
+impl<Key, Node> PartialOrd<HtInner<Key, Node>> for HtInner<Key, Node>
+where
+    Key: Hash + Eq + 'static,
+    Node: GeneralizedHashTrie + PartialEq + Merge<Node> + 'static,
+{
+    // this only compares the current node without recursing, so it's wrong
+    // but let's get it compiling first
+    fn partial_cmp(&self, other: &HtInner<Key, Node>) -> Option<Ordering> {
+        match (*self).len().cmp(&other.len()) {
+            Greater => {
+                if other.iter().all(|key| self.get(key).is_some()) {
+                    Some(Greater)
+                } else {
+                    None
+                }
+            }
+            Equal => {
+                if self.iter().all(|key| other.get(key).is_some()) {
+                    Some(Equal)
+                } else {
+                    None
+                }
+            }
+            Less => {
+                if self.iter().all(|key| other.get(key).is_some()) {
+                    Some(Less)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+}
+
+impl<Key, Node> LatticeOrd<HtInner<Key, Node>> for HtInner<Key, Node>
+where
+    Self: PartialOrd<HtInner<Key, Node>>,
+    Node: GeneralizedHashTrie,
+{
+}
+
 #[sealed]
 /// iterator for HashTries based on a prefix search
 pub trait HtPrefixIter<Prefix> {
@@ -304,6 +363,7 @@ impl<Head, Tail> ToHashTrie for var_type!(Head, ...Tail)
 where
     Head: 'static + Eq + Hash,
     Tail: 'static + ToHashTrie,
+    <Tail as ToHashTrie>::Output: Merge<<Tail as ToHashTrie>::Output>,
 {
     type Output = HtInner<Head, Tail::Output>;
 
@@ -640,20 +700,37 @@ mod tests {
             println!("B {:?}", row);
         }
     }
-    // #[test]
-    // fn test_set_union_ght() {
-    //     type MyGHT = GeneralizedHashTrie!(u32, u64 => u16, &'static str);
+    #[test]
+    fn test_merge() {
+        type MyGHT = GeneralizedHashTrie!(u32, u64 => u16, &'static str);
 
-    //     let mut test_ght1: MyGHT = ght_tup!(42, 314 => 10, "hello").to_hash_trie();
-    //     let mut test_ght2: MyGHT = ght_tup!(42, 314 => 10, "hello").to_hash_trie();
+        let mut test_ght1: MyGHT = ght_tup!(42, 314 => 10, "hello").to_hash_trie();
+        let mut test_ght2: MyGHT = ght_tup!(42, 314 => 10, "hello").to_hash_trie();
 
-    //     test_ght1.insert(var_expr!(42, 314, 20, "goodbye"));
-    //     test_ght2.insert(var_expr!(42, 314, 20, "again"));
+        test_ght1.insert(var_expr!(42, 314, 20, "goodbye"));
+        test_ght2.insert(var_expr!(42, 314, 20, "again"));
 
-    //     let mug1 = SetUnionGHT::new(test_ght1);
-    //     let mug2 = SetUnionGHT::new(test_ght2);
+        test_ght1.merge(test_ght2);
+        // for k in stuff.recursive_iter() {
+        //     assert!(test_ght1.contains(k))
+        // }
+    }
+    #[test]
+    fn test_lattice() {
+        type MyGHT = GeneralizedHashTrie!(u32, u64 => u16, &'static str);
 
-    //     mug1.merge(mug2);
-    //     println!("merged: {:?}", mug1);
-    // }
+        let mut test_vec: Vec<MyGHT> = Vec::new();
+
+        let empty_ght: MyGHT = Default::default();
+        let test_ght1: MyGHT = ght_tup!(42, 314 => 10, "hello").to_hash_trie();
+        let mut test_ght2: MyGHT = ght_tup!(42, 314 => 10, "hello").to_hash_trie();
+        test_ght2.insert(var_expr!(42, 314, 20, "again"));
+
+        for ght in [empty_ght, test_ght1, test_ght2] {
+            test_vec.push(ght)
+        }
+        // crate::test::check_lattice_ord(&test_vec);
+        // crate::test::check_partial_ord_properties(&test_vec);
+        // crate::test::check_lattice_properties(&test_vec);
+    }
 }
