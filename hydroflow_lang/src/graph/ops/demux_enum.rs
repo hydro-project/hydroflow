@@ -4,8 +4,9 @@ use syn::spanned::Spanned;
 use syn::{PathArguments, PathSegment, Token, Type, TypePath};
 
 use super::{
-    FlowPropArgs, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
-    OperatorWriteOutput, PortIndexValue, PortListSpec, WriteContextArgs, RANGE_0, RANGE_1,
+    change_spans, FlowPropArgs, OpInstGenerics, OperatorCategory, OperatorConstraints,
+    OperatorInstance, OperatorWriteOutput, PortIndexValue, PortListSpec, WriteContextArgs, RANGE_0,
+    RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
 
@@ -103,7 +104,8 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
 
         let enum_type_turbofish = ensure_turbofish(enum_type);
         let port_variant_check_match_arms = port_idents.iter().map(|port_ident| {
-            let enum_type_turbofish = change_span(enum_type_turbofish.to_token_stream(), port_ident.span());
+            let enum_type_turbofish =
+                change_spans(enum_type_turbofish.to_token_stream(), port_ident.span());
             quote_spanned! {port_ident.span()=>
                 #enum_type_turbofish::#port_ident { .. } => ()
             }
@@ -118,9 +120,10 @@ pub const DEMUX_ENUM: OperatorConstraints = OperatorConstraints {
         // "missing match arm: `Variant(_)` not covered."
         // Or "no variant named `Variant` found for enum `Shape`"
         // Note this uses the `enum_type`'s span.
+        let root_span = change_spans(root.clone(), enum_type.span());
         let write_prologue = quote_spanned! {enum_type.span()=>
             let _ = |__val: #enum_type| {
-                fn check_impl_demux_enum<T: ?Sized + #root::util::demux_enum::DemuxEnumBase>(_: &T) {}
+                fn check_impl_demux_enum<T: ?Sized + #root_span::util::demux_enum::DemuxEnumBase>(_: &T) {}
                 check_impl_demux_enum(&__val);
                 match __val {
                     #(
@@ -166,29 +169,4 @@ fn ensure_turbofish(ty: &Type) -> Type {
         }
     };
     ty
-}
-
-/// Changes all internal token's span to `span`, recursing into groups.
-fn change_span(tokens: TokenStream, span: Span) -> TokenStream {
-    tokens
-        .into_iter()
-        .map(|token| match token {
-            TokenTree::Group(mut group) => {
-                group.set_span(span);
-                TokenTree::Group(Group::new(group.delimiter(), change_span(group.stream(), span)))
-            }
-            TokenTree::Ident(mut ident) => {
-                ident.set_span(span);
-                TokenTree::Ident(ident)
-            }
-            TokenTree::Punct(mut punct) => {
-                punct.set_span(span);
-                TokenTree::Punct(punct)
-            }
-            TokenTree::Literal(mut literal) => {
-                literal.set_span(span);
-                TokenTree::Literal(literal)
-            }
-        })
-        .collect()
 }

@@ -6,18 +6,10 @@ error[E0277]: the trait bound `Shape: DemuxEnumBase` is not satisfied
    |
    = note: Use `#[derive(hydroflow::DemuxEnum)]`
 note: required by a bound in `check_impl_demux_enum`
-  --> tests/compile-fail/surface_demuxenum_notenum.rs:8:18
+  --> tests/compile-fail/surface_demuxenum_notenum.rs:12:28
    |
-8  |       let mut df = hydroflow_syntax! {
-   |  __________________^
-9  | |         my_demux = source_iter([
-10 | |             Shape { area: 10.0 },
-11 | |             Shape { area: 9.0 },
-...  |
-16 | |         my_demux[Ellipse] -> for_each(std::mem::drop);
-17 | |     };
-   | |_____^ required by this bound in `check_impl_demux_enum`
-   = note: this error originates in the macro `hydroflow_syntax` (in Nightly builds, run with -Z macro-backtrace for more info)
+12 |         ]) -> demux_enum::<Shape>();
+   |                            ^^^^^ required by this bound in `check_impl_demux_enum`
 
 error[E0223]: ambiguous associated type
   --> tests/compile-fail/surface_demuxenum_notenum.rs:14:18
