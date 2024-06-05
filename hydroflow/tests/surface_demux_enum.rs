@@ -91,3 +91,35 @@ pub fn test_demux_enum() {
     };
     df.run_available();
 }
+
+#[multiplatform_test]
+pub fn test_demux_enum_generic() {
+    #[derive(DemuxEnum)]
+    enum Shape<N> {
+        Square(N),
+        Rectangle { w: N, h: N },
+        Circle { r: N },
+    }
+
+    fn test<N>(s: N, w: N, h: N, r: N)
+    where
+        N: 'static + Into<f64>,
+    {
+        let mut df = hydroflow_syntax! {
+            my_demux = source_iter([
+                Shape::Square(s),
+                Shape::Rectangle { w, h },
+                Shape::Circle { r },
+            ]) -> demux_enum::<Shape<N>>();
+
+            my_demux[Square] -> map(|(s,)| s.into()) -> map(|s| s * s) -> out;
+            my_demux[Circle] -> map(|(r,)| r.into()) -> map(|r| std::f64::consts::PI * r * r) -> out;
+            my_demux[Rectangle] -> map(|(w, h)| w.into() * h.into()) -> out;
+
+            out = union() -> for_each(|area| println!("Area: {}", area));
+        };
+        df.run_available();
+    }
+    test::<f32>(9., 10., 8., 5.);
+    test::<u32>(9, 10, 8, 5);
+}
