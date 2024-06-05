@@ -4,6 +4,7 @@ use clap::{CommandFactory, Parser, Subcommand};
 use gossip_protocol::{ClientRequest, ClientResponse, Key};
 use hydroflow::util::{bind_udp_bytes, ipv4_resolve};
 use hydroflow::{hydroflow_syntax, tokio, DemuxEnum};
+use tracing::error;
 
 /// CLI program to interact with Layer 0 gossip store.
 #[derive(Debug, Parser)]
@@ -62,7 +63,7 @@ fn parse_command(line: String) -> Option<InteractiveCommands> {
     let line_parts = shlex::split(&line);
 
     if line_parts.is_none() {
-        eprintln!("\nUnable to parse command.");
+        error!("\nUnable to parse command.");
         return None;
     }
 
@@ -72,7 +73,7 @@ fn parse_command(line: String) -> Option<InteractiveCommands> {
     match maybe_parsed {
         Err(e) => {
             // Problem with the parsed result. This displays some help.
-            eprintln!("\n{}", e);
+            error!("\n{}", e);
             None
         }
         Ok(cli) => Some(cli.commands),
@@ -81,6 +82,8 @@ fn parse_command(line: String) -> Option<InteractiveCommands> {
 
 #[hydroflow::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
+
     let opts = Opts::parse();
 
     // Bind to OS-assigned port on localhost.
