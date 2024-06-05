@@ -760,8 +760,32 @@
 <a href="#758" id="758">758</a>
 <a href="#759" id="759">759</a>
 <a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a>
+<a href="#764" id="764">764</a>
+<a href="#765" id="765">765</a>
+<a href="#766" id="766">766</a>
+<a href="#767" id="767">767</a>
+<a href="#768" id="768">768</a>
+<a href="#769" id="769">769</a>
+<a href="#770" id="770">770</a>
+<a href="#771" id="771">771</a>
+<a href="#772" id="772">772</a>
+<a href="#773" id="773">773</a>
+<a href="#774" id="774">774</a>
+<a href="#775" id="775">775</a>
+<a href="#776" id="776">776</a>
+<a href="#777" id="777">777</a>
+<a href="#778" id="778">778</a>
+<a href="#779" id="779">779</a>
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
-<span class="kw">use </span>std::collections::HashMap;
+<span class="kw">use </span>std::collections::{HashMap, HashSet};
 <span class="kw">use </span>std::fmt::Debug;
 <span class="kw">use </span>std::hash::Hash;
 
@@ -769,7 +793,7 @@
 <span class="kw">use </span>variadics::{var_args, var_expr, var_type, AsRefVariadicPartialEq, Variadic, VariadicExt};
 
 <span class="kw">use </span><span class="kw">crate</span>::cc_traits::Len;
-<span class="kw">use crate</span>::{Atomize, IsBot, IsTop, LatticeOrd, Merge};
+<span class="kw">use crate</span>::{IsBot, IsTop, LatticeOrd, Merge};
 
 <span class="comment">// pub fn flatten_tuple(v: Variadic) -&gt; Variadic {
 //     let (head, tail) = v;
@@ -812,7 +836,7 @@
 }
 
 <span class="doccomment">/// internal node of a HashTrie
-</span><span class="attr">#[derive(Debug)]
+</span><span class="attr">#[derive(Debug, Clone)]
 </span><span class="kw">pub struct </span>HtInner&lt;Key, Node&gt;
 <span class="kw">where
     </span>Node: GeneralizedHashTrie,
@@ -874,11 +898,17 @@
 }
 
 <span class="doccomment">/// leaf node of a HashTrie
-</span><span class="attr">#[derive(Debug, PartialEq, Eq)]
-</span><span class="kw">pub struct </span>HtLeaf&lt;T&gt; {
-    elements: Vec&lt;T&gt;,
+</span><span class="attr">#[derive(Debug, PartialEq, Eq, Clone)]
+</span><span class="kw">pub struct </span>HtLeaf&lt;T&gt;
+<span class="kw">where
+    </span>T: Hash + Eq,
+{
+    elements: HashSet&lt;T&gt;,
 }
-<span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span>HtLeaf&lt;T&gt; {
+<span class="kw">impl</span>&lt;T&gt; Default <span class="kw">for </span>HtLeaf&lt;T&gt;
+<span class="kw">where
+    </span>T: Hash + Eq,
+{
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>elements = Default::default();
         <span class="self">Self </span>{ elements }
@@ -893,7 +923,7 @@
     <span class="kw">type </span>Key = T;
 
     <span class="kw">fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, row: <span class="self">Self</span>::Row) -&gt; bool {
-        <span class="self">self</span>.elements.push(row);
+        <span class="self">self</span>.elements.insert(row);
         <span class="bool-val">true
     </span>}
 
@@ -915,7 +945,10 @@
     }
 }
 
-<span class="kw">impl</span>&lt;T&gt; Len <span class="kw">for </span>HtLeaf&lt;T&gt; {
+<span class="kw">impl</span>&lt;T&gt; Len <span class="kw">for </span>HtLeaf&lt;T&gt;
+<span class="kw">where
+    </span>T: Hash + Eq,
+{
     <span class="kw">fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.elements.len()
     }
@@ -948,9 +981,11 @@
     }
 }
 
-<span class="kw">impl</span>&lt;T&gt; Merge&lt;HtLeaf&lt;T&gt;&gt; <span class="kw">for </span>HtLeaf&lt;T&gt; {
-    <span class="comment">// Not worrying about dups right now
-    </span><span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: HtLeaf&lt;T&gt;) -&gt; bool {
+<span class="kw">impl</span>&lt;T&gt; Merge&lt;HtLeaf&lt;T&gt;&gt; <span class="kw">for </span>HtLeaf&lt;T&gt;
+<span class="kw">where
+    </span>T: Hash + Eq,
+{
+    <span class="kw">fn </span>merge(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: HtLeaf&lt;T&gt;) -&gt; bool {
         <span class="kw">let </span>old_len = <span class="self">self</span>.len();
         <span class="self">self</span>.elements.extend(other.elements);
         <span class="self">self</span>.len() &gt; old_len
@@ -1021,6 +1056,13 @@
     Node: GeneralizedHashTrie,
 {
 }
+<span class="kw">impl</span>&lt;T&gt; LatticeOrd&lt;HtLeaf&lt;T&gt;&gt; <span class="kw">for </span>HtLeaf&lt;T&gt;
+<span class="kw">where
+    </span><span class="self">Self</span>: PartialOrd&lt;HtLeaf&lt;T&gt;&gt;,
+    T: Hash + Eq,
+{
+}
+
 <span class="kw">impl</span>&lt;Key, Node&gt; Eq <span class="kw">for </span>HtInner&lt;Key, Node&gt;
 <span class="kw">where
     </span>Node: GeneralizedHashTrie,
@@ -1137,9 +1179,9 @@
 
     <span class="kw">fn </span>to_hash_trie(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Output {
         <span class="kw">let </span><span class="kw-2">mut </span>result = HtLeaf {
-            elements: Vec::new(),
+            elements: HashSet::new(),
         };
-        result.elements.push(<span class="self">self</span>.<span class="number">0</span>);
+        result.elements.insert(<span class="self">self</span>.<span class="number">0</span>);
         result
     }
 }
@@ -1259,6 +1301,7 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::NaiveLatticeOrd;
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>basic_test() {
@@ -1496,11 +1539,11 @@
         test_ght1.insert(<span class="macro">var_expr!</span>(<span class="number">42</span>, <span class="number">314</span>, <span class="number">20</span>, <span class="string">"goodbye"</span>));
         test_ght2.insert(<span class="macro">var_expr!</span>(<span class="number">42</span>, <span class="number">314</span>, <span class="number">20</span>, <span class="string">"again"</span>));
 
-        test_ght1.merge(test_ght2);
-        <span class="comment">// for k in stuff.recursive_iter() {
-        //     assert!(test_ght1.contains(k))
-        // }
-    </span>}
+        test_ght1.merge(test_ght2.clone());
+        <span class="kw">for </span>k <span class="kw">in </span>test_ght2.recursive_iter() {
+            <span class="macro">assert!</span>(test_ght1.contains(k))
+        }
+    }
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_lattice() {
         <span class="kw">type </span>MyGHT = <span class="macro">GeneralizedHashTrie!</span>(u32, u64 =&gt; u16, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str);
@@ -1511,13 +1554,18 @@
         <span class="kw">let </span>test_ght1: MyGHT = <span class="macro">ght_tup!</span>(<span class="number">42</span>, <span class="number">314 </span>=&gt; <span class="number">10</span>, <span class="string">"hello"</span>).to_hash_trie();
         <span class="kw">let </span><span class="kw-2">mut </span>test_ght2: MyGHT = <span class="macro">ght_tup!</span>(<span class="number">42</span>, <span class="number">314 </span>=&gt; <span class="number">10</span>, <span class="string">"hello"</span>).to_hash_trie();
         test_ght2.insert(<span class="macro">var_expr!</span>(<span class="number">42</span>, <span class="number">314</span>, <span class="number">20</span>, <span class="string">"again"</span>));
+        <span class="kw">let </span><span class="kw-2">mut </span>test_ght3 = test_ght2.clone();
+        test_ght3.insert(<span class="macro">var_expr!</span>(<span class="number">42</span>, <span class="number">400</span>, <span class="number">1</span>, <span class="string">"level 2"</span>));
+        <span class="kw">let </span><span class="kw-2">mut </span>test_ght4 = test_ght3.clone();
+        test_ght4.insert(<span class="macro">var_expr!</span>(<span class="number">43</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="string">"level 1"</span>));
 
-        <span class="kw">for </span>ght <span class="kw">in </span>[empty_ght, test_ght1, test_ght2] {
-            test_vec.push(ght)
+        <span class="kw">for </span>ght <span class="kw">in </span>[empty_ght, test_ght1, test_ght2, test_ght3, test_ght4] {
+            ght.naive_cmp(<span class="kw-2">&amp;</span>ght.clone());
+            test_vec.push(ght);
         }
-        <span class="comment">// crate::test::check_lattice_ord(&amp;test_vec);
-        // crate::test::check_partial_ord_properties(&amp;test_vec);
-        // crate::test::check_lattice_properties(&amp;test_vec);
-    </span>}
+        <span class="kw">crate</span>::test::check_lattice_ord(<span class="kw-2">&amp;</span>test_vec);
+        <span class="kw">crate</span>::test::check_partial_ord_properties(<span class="kw-2">&amp;</span>test_vec);
+        <span class="kw">crate</span>::test::check_lattice_properties(<span class="kw-2">&amp;</span>test_vec);
+    }
 }
 </code></pre></div></section></main></body></html>
