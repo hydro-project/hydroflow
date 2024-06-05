@@ -7,7 +7,7 @@ use sealed::sealed;
 use variadics::{var_args, var_expr, var_type, AsRefVariadicPartialEq, Variadic, VariadicExt};
 
 use crate::cc_traits::Len;
-use crate::{LatticeOrd, Merge};
+use crate::{Atomize, IsBot, IsTop, LatticeOrd, Merge};
 
 // pub fn flatten_tuple(v: Variadic) -> Variadic {
 //     let (head, tail) = v;
@@ -258,6 +258,30 @@ where
     Self: PartialOrd<HtInner<Key, Node>>,
     Node: GeneralizedHashTrie,
 {
+}
+impl<Key, Node> Eq for HtInner<Key, Node>
+where
+    Node: GeneralizedHashTrie,
+    Self: PartialEq,
+{
+}
+
+impl<Key, Node> IsBot for HtInner<Key, Node>
+where
+    Node: GeneralizedHashTrie,
+{
+    fn is_bot(&self) -> bool {
+        self.is_empty()
+    }
+}
+
+impl<Key, Node> IsTop for HtInner<Key, Node>
+where
+    Node: GeneralizedHashTrie,
+{
+    fn is_top(&self) -> bool {
+        false
+    }
 }
 
 #[sealed]
