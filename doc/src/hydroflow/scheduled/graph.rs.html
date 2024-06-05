@@ -928,6 +928,9 @@
 <a href="#926" id="926">926</a>
 <a href="#927" id="927">927</a>
 <a href="#928" id="928">928</a>
+<a href="#929" id="929">929</a>
+<a href="#930" id="930">930</a>
+<a href="#931" id="931">931</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module for the [`Hydroflow`] struct and helper items.
 
 </span><span class="kw">use </span>std::any::Any;
@@ -1212,6 +1215,10 @@
     /// Returns true if any work was done.
     </span><span class="attr">#[tracing::instrument(level = <span class="string">"trace"</span>, skip(<span class="self">self</span>), fields(tick = u64::from(<span class="self">self</span>.context.current_tick), stratum = <span class="self">self</span>.context.current_stratum), ret)]
     </span><span class="kw">pub fn </span>run_stratum(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
+        <span class="comment">// Make sure to spawn tasks once hydroflow is running!
+        // This drains the task buffer, so becomes a no-op after first call.
+        </span><span class="self">self</span>.context.spawn_tasks();
+
         <span class="kw">let </span>current_tick = <span class="self">self</span>.context.current_tick;
 
         <span class="kw">let </span><span class="kw-2">mut </span>work_done = <span class="bool-val">false</span>;
@@ -1375,7 +1382,6 @@
     /// TODO(mingwei): Currently blocks forever, no notion of "completion."
     </span><span class="attr">#[tracing::instrument(level = <span class="string">"trace"</span>, skip(<span class="self">self</span>), ret)]
     </span><span class="kw">pub async fn </span>run_async(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Never&gt; {
-        <span class="self">self</span>.context.spawn_tasks();
         <span class="kw">loop </span>{
             <span class="comment">// Run any work which is immediately available.
             </span><span class="self">self</span>.run_available_async().<span class="kw">await</span>;
