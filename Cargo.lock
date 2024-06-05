@@ -1264,6 +1264,8 @@ dependencies = [
  "hydroflow",
  "serde",
  "shlex",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
