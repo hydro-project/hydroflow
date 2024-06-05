@@ -52,7 +52,7 @@ pub const SOURCE_JSON: OperatorConstraints = OperatorConstraints {
             // reader: https://github.com/serde-rs/json/issues/160
             let mut #ident_jsonread = {
                 let string = ::std::fs::read_to_string(#arguments).unwrap();
-                let value #generic_type = #root::serde_json::from_str(&*string).unwrap();
+                let value #generic_type = #root::serde_json::from_str(&string).unwrap();
                 ::std::iter::once(value)
             };
         };

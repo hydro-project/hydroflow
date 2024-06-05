@@ -12,15 +12,16 @@ use slotmap::{Key, SecondaryMap, SlotMap, SparseSecondaryMap};
 use syn::spanned::Spanned;
 
 use super::graph_write::{Dot, GraphWrite, Mermaid};
-use super::ops::{find_op_op_constraints, OperatorWriteOutput, WriteContextArgs, OPERATORS};
+use super::ops::{
+    find_op_op_constraints, null_write_iterator_fn, DelayType, OperatorWriteOutput,
+    WriteContextArgs, OPERATORS,
+};
 use super::{
-    get_operator_generics, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphNode, GraphNodeId,
-    GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT, HANDOFF_NODE_STR,
-    HYDROFLOW,
+    change_spans, get_operator_generics, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphNode,
+    GraphNodeId, GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT,
+    HANDOFF_NODE_STR, HYDROFLOW, MODULE_BOUNDARY_NODE_STR,
 };
 use crate::diagnostic::{Diagnostic, Level};
-use crate::graph::ops::{null_write_iterator_fn, DelayType};
-use crate::graph::MODULE_BOUNDARY_NODE_STR;
 use crate::pretty_span::{PrettyRowCol, PrettySpan};
 use crate::process_singletons;
 
@@ -886,6 +887,8 @@ impl HydroflowGraph {
 
                         let op_span = node.span();
                         let op_name = op_inst.op_constraints.name;
+                        // Use op's span for root. #root is expected to be correct, any errors should span back to the op gen.
+                        let root = change_spans(root.clone(), op_span);
                         // TODO(mingwei): Just use `op_inst.op_constraints`?
                         let op_constraints = OPERATORS
                             .iter()
@@ -959,7 +962,7 @@ impl HydroflowGraph {
                                 );
 
                             let context_args = WriteContextArgs {
-                                root,
+                                root: &root,
                                 // There's a bit of dark magic hidden in `Span`s... you'd think it's just a `file:line:column`,
                                 // but it has one extra bit of info for _name resolution_, used for `Ident`s. `Span::call_site()`
                                 // has the (unhygienic) resolution we want, an ident is just solely determined by its string name,

@@ -10,24 +10,19 @@ error[E0599]: no variant named `Ellipse` found for enum `Shape`
 error[E0308]: mismatched types
   --> tests/compile-fail/surface_demuxenum_port_extra.rs:17:15
    |
-12 |       let mut df = hydroflow_syntax! {
-   |  __________________-
-13 | |         my_demux = source_iter([
-14 | |             Shape::Rectangle { w: 10.0, h: 8.0 },
-15 | |             Shape::Square(9.0),
-16 | |             Shape::Circle { r: 5.0 },
-17 | |         ]) -> demux_enum::<Shape>();
-   | |               ^^^^^^^^^^^^^^^^^^^^^ expected a tuple with 3 elements, found one with 4 elements
-18 | |         my_demux[Rectangle] -> for_each(std::mem::drop);
-   | |                                ------------------------ one of the found opaque types
-19 | |         my_demux[Circle] -> for_each(std::mem::drop);
-   | |                             ------------------------ one of the found opaque types
-20 | |         my_demux[Square] -> for_each(std::mem::drop);
-   | |                             ------------------------ one of the found opaque types
-21 | |         my_demux[Ellipse] -> for_each(std::mem::drop);
-   | |                              ------------------------ one of the found opaque types
-22 | |     };
-   | |_____- arguments to this function are incorrect
+17 |         ]) -> demux_enum::<Shape>();
+   |               ^^^^^^^^^^^^^^^^^^^^^
+   |               |
+   |               expected a tuple with 3 elements, found one with 4 elements
+   |               arguments to this function are incorrect
+18 |         my_demux[Rectangle] -> for_each(std::mem::drop);
+   |                                ------------------------ one of the found opaque types
+19 |         my_demux[Circle] -> for_each(std::mem::drop);
+   |                             ------------------------ one of the found opaque types
+20 |         my_demux[Square] -> for_each(std::mem::drop);
+   |                             ------------------------ one of the found opaque types
+21 |         my_demux[Ellipse] -> for_each(std::mem::drop);
+   |                              ------------------------ one of the found opaque types
    |
    = note: expected mutable reference `&mut (_, _, _)`
               found mutable reference `&mut (impl Pusherator<Item = _>, impl Pusherator<Item = _>, impl Pusherator<Item = _>, impl Pusherator<Item = _>)`

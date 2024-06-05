@@ -278,7 +278,7 @@ fn extract_closure_idents(
     };
     if 2 != func.inputs.len() {
         return Err(Diagnostic::spanned(
-            func.span(),
+            func.inputs.span(),
             Level::Error,
             &*format!(
                 "Closure provided to `{}(..)` must have two arguments: \

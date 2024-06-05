@@ -81,7 +81,7 @@ pub const DEMUX: OperatorConstraints = OperatorConstraints {
         };
         if 2 != func.inputs.len() {
             diagnostics.push(Diagnostic::spanned(
-                func.span(),
+                func.inputs.span(),
                 Level::Error,
                 &*format!(
                     "Closure provided to `{}(..)` must have two arguments: \
