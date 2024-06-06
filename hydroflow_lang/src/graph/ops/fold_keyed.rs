@@ -6,14 +6,14 @@ use super::{
 };
 
 /// > 1 input stream of type `(K, V1)`, 1 output stream of type `(K, V2)`.
-/// The output will have one tuple for each distinct `K`, with an accumulated value of type `V2`.
+/// > The output will have one tuple for each distinct `K`, with an accumulated value of type `V2`.
 ///
 /// If the input and output value types are the same and do not require initialization then use
 /// [`reduce_keyed`](#reduce_keyed).
 ///
 /// > Arguments: two Rust closures. The first generates an initial value per group. The second
-/// itself takes two arguments: an 'accumulator', and an element. The second closure returns the
-/// value that the accumulator should have for the next iteration.
+/// > itself takes two arguments: an 'accumulator', and an element. The second closure returns the
+/// > value that the accumulator should have for the next iteration.
 ///
 /// A special case of `fold`, in the spirit of SQL's GROUP BY and aggregation constructs. The input
 /// is partitioned into groups by the first field ("keys"), and for each group the values in the second

@@ -8,12 +8,9 @@ use crate::diagnostic::{Diagnostic, Level};
 
 /// > 1 input stream, 1 output stream
 ///
-/// > Arguments: a closure used to combine items. The closure takes two two arguments: an
-/// `&mut Item` accumulated value, and an `Item`.
-///
 /// > Arguments: a closure which itself takes two arguments:
-/// an `&mut Accum` accumulator mutable reference, and an `Item`. The closure should merge the item
-/// into the accumulator.
+/// > an `&mut Accum` accumulator mutable reference, and an `Item`. The closure should merge the item
+/// > into the accumulator.
 ///
 /// Akin to Rust's built-in [`reduce`](https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.reduce)
 /// operator, except that it takes the accumulator by `&mut` instead of by value. Reduces every
