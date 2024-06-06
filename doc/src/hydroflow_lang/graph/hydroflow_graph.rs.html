@@ -1571,6 +1571,9 @@
 <a href="#1569" id="1569">1569</a>
 <a href="#1570" id="1570">1570</a>
 <a href="#1571" id="1571">1571</a>
+<a href="#1572" id="1572">1572</a>
+<a href="#1573" id="1573">1573</a>
+<a href="#1574" id="1574">1574</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -1585,15 +1588,16 @@
 <span class="kw">use </span>syn::spanned::Spanned;
 
 <span class="kw">use </span><span class="kw">super</span>::graph_write::{Dot, GraphWrite, Mermaid};
-<span class="kw">use </span><span class="kw">super</span>::ops::{find_op_op_constraints, OperatorWriteOutput, WriteContextArgs, OPERATORS};
+<span class="kw">use </span><span class="kw">super</span>::ops::{
+    find_op_op_constraints, null_write_iterator_fn, DelayType, OperatorWriteOutput,
+    WriteContextArgs, OPERATORS,
+};
 <span class="kw">use super</span>::{
-    get_operator_generics, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphNode, GraphNodeId,
-    GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT, HANDOFF_NODE_STR,
-    HYDROFLOW,
+    change_spans, get_operator_generics, Color, DiMulGraph, FlowProps, GraphEdgeId, GraphNode,
+    GraphNodeId, GraphSubgraphId, OperatorInstance, PortIndexValue, Varname, CONTEXT,
+    HANDOFF_NODE_STR, HYDROFLOW, MODULE_BOUNDARY_NODE_STR,
 };
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
-<span class="kw">use </span><span class="kw">crate</span>::graph::ops::{null_write_iterator_fn, DelayType};
-<span class="kw">use </span><span class="kw">crate</span>::graph::MODULE_BOUNDARY_NODE_STR;
 <span class="kw">use </span><span class="kw">crate</span>::pretty_span::{PrettyRowCol, PrettySpan};
 <span class="kw">use </span><span class="kw">crate</span>::process_singletons;
 
@@ -2459,6 +2463,8 @@
 
                         <span class="kw">let </span>op_span = node.span();
                         <span class="kw">let </span>op_name = op_inst.op_constraints.name;
+                        <span class="comment">// Use op's span for root. #root is expected to be correct, any errors should span back to the op gen.
+                        </span><span class="kw">let </span>root = change_spans(root.clone(), op_span);
                         <span class="comment">// TODO(mingwei): Just use `op_inst.op_constraints`?
                         </span><span class="kw">let </span>op_constraints = OPERATORS
                             .iter()
@@ -2532,7 +2538,7 @@
                                 );
 
                             <span class="kw">let </span>context_args = WriteContextArgs {
-                                root,
+                                root: <span class="kw-2">&amp;</span>root,
                                 <span class="comment">// There's a bit of dark magic hidden in `Span`s... you'd think it's just a `file:line:column`,
                                 // but it has one extra bit of info for _name resolution_, used for `Ident`s. `Span::call_site()`
                                 // has the (unhygienic) resolution we want, an ident is just solely determined by its string name,
