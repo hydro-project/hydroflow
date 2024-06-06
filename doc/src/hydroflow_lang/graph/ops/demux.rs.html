@@ -236,7 +236,7 @@
 /// &gt; Note: The [`Pusherator`](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html)
 /// &gt; trait is automatically imported to enable the [`.give(...)` method](https://hydro-project.github.io/hydroflow/doc/pusherator/trait.Pusherator.html#tymethod.give).
 ///
-/// &gt; Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
+/// &gt; Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
 ///
 /// ```hydroflow
 /// my_demux = source_iter(1..=100) -&gt; demux(|v, var_args!(fzbz, fizz, buzz, rest)|
@@ -292,7 +292,7 @@
         };
         <span class="kw">if </span><span class="number">2 </span>!= func.inputs.len() {
             diagnostics.push(Diagnostic::spanned(
-                func.inputs.span(),
+                func.span(),
                 Level::Error,
                 <span class="kw-2">&amp;*</span><span class="macro">format!</span>(
                     <span class="string">"Closure provided to `{}(..)` must have two arguments: \

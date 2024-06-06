@@ -420,7 +420,7 @@
 /// &gt; Arguments: A Rust closure, the first argument is a reference to the item and the second
 /// argument corresponds to one of two modes, either named or indexed.
 ///
-/// &gt; Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
+/// &gt; Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
 ///
 /// # Named mode
 /// With named ports, the closure's second argument must be a Rust 'slice pattern' of names, such as
@@ -679,7 +679,7 @@
     };
     <span class="kw">if </span><span class="number">2 </span>!= func.inputs.len() {
         <span class="kw">return </span><span class="prelude-val">Err</span>(Diagnostic::spanned(
-            func.inputs.span(),
+            func.span(),
             Level::Error,
             <span class="kw-2">&amp;*</span><span class="macro">format!</span>(
                 <span class="string">"Closure provided to `{}(..)` must have two arguments: \

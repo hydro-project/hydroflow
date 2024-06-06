@@ -456,6 +456,9 @@
 <a href="#454" id="454">454</a>
 <a href="#455" id="455">455</a>
 <a href="#456" id="456">456</a>
+<a href="#457" id="457">457</a>
+<a href="#458" id="458">458</a>
+<a href="#459" id="459">459</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Module containing the [`MapUnion`] lattice and aliases for different datastructures.
 
 </span><span class="kw">use </span>std::cmp::Ordering::{<span class="self">self</span>, <span class="kw-2">*</span>};
@@ -595,14 +598,17 @@
         <span class="kw">for </span>k <span class="kw">in </span>self_keys.chain(other_keys) {
             <span class="kw">match </span>(<span class="self">self</span>.<span class="number">0</span>.get(k), other.<span class="number">0</span>.get(k)) {
                 (<span class="prelude-val">Some</span>(self_value), <span class="prelude-val">Some</span>(other_value)) =&gt; {
-                    <span class="kw">match </span>self_value.partial_cmp(<span class="kw-2">&amp;*</span>other_value)<span class="question-mark">? </span>{
-                        Less =&gt; {
+                    <span class="kw">match </span>self_value.partial_cmp(<span class="kw-2">&amp;*</span>other_value) {
+                        <span class="prelude-val">None </span>=&gt; {
+                            <span class="kw">return </span><span class="prelude-val">None</span>;
+                        }
+                        <span class="prelude-val">Some</span>(Less) =&gt; {
                             other_any_greater = <span class="bool-val">true</span>;
                         }
-                        Greater =&gt; {
+                        <span class="prelude-val">Some</span>(Greater) =&gt; {
                             self_any_greater = <span class="bool-val">true</span>;
                         }
-                        Equal =&gt; {}
+                        <span class="prelude-val">Some</span>(Equal) =&gt; {}
                     }
                 }
                 (<span class="prelude-val">Some</span>(<span class="kw">_</span>), <span class="prelude-val">None</span>) =&gt; {

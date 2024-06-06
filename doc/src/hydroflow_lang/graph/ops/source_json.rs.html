@@ -122,7 +122,7 @@
             // reader: https://github.com/serde-rs/json/issues/160
             </span><span class="kw">let </span><span class="kw-2">mut </span>#ident_jsonread = {
                 <span class="kw">let </span>string = ::std::fs::read_to_string(#arguments).unwrap();
-                <span class="kw">let </span>value #generic_type = #root::serde_json::from_str(<span class="kw-2">&amp;</span>string).unwrap();
+                <span class="kw">let </span>value #generic_type = #root::serde_json::from_str(<span class="kw-2">&amp;*</span>string).unwrap();
                 ::std::iter::once(value)
             };
         };
