@@ -7,13 +7,13 @@ use super::{
 use crate::diagnostic::{Diagnostic, Level};
 
 /// > 1 input stream of type `(K, V)`, 1 output stream of type `(K, V)`.
-/// The output will have one tuple for each distinct `K`, with an accumulated (reduced) value of
-/// type `V`.
+/// > The output will have one tuple for each distinct `K`, with an accumulated (reduced) value of
+/// > type `V`.
 ///
 /// If you need the accumulated value to have a different type than the input, use [`fold_keyed`](#keyed_fold).
 ///
 /// > Arguments: one Rust closures. The closure takes two arguments: an `&mut` 'accumulator', and
-/// an element. Accumulator should be updated based on the element.
+/// > an element. Accumulator should be updated based on the element.
 ///
 /// A special case of `reduce`, in the spirit of SQL's GROUP BY and aggregation constructs. The input
 /// is partitioned into groups by the first field, and for each group the values in the second
