@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["HtInner","HtLeaf"],"trait":["GeneralizedHashTrie","HtPrefixIter"]};

@@ -182,15 +182,15 @@
 <span class="doccomment">/// &gt; 1 input stream, 1 output stream
 ///
 /// &gt; Arguments: two arguments, both closures. The first closure is used to create the initial
-/// value for the accumulator, and the second is used to combine new items with the existing
-/// accumulator value. The second closure takes two two arguments: an `&amp;mut Accum` accumulated
-/// value, and an `Item`.
+/// &gt; value for the accumulator, and the second is used to combine new items with the existing
+/// &gt; accumulator value. The second closure takes two two arguments: an `&amp;mut Accum` accumulated
+/// &gt; value, and an `Item`.
 ///
 /// Akin to Rust's built-in [`fold`](https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.fold)
 /// operator, except that it takes the accumulator by `&amp;mut` instead of by value. Folds every item
 /// into an accumulator by applying a closure, returning the final result.
 ///
-/// &gt; Note: The closures have access to the [`context` object](surface_flows.md#the-context-object).
+/// &gt; Note: The closures have access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
 /// `fold` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, Items will only be collected

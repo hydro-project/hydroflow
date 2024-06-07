@@ -252,9 +252,6 @@
 <a href="#250" id="250">250</a>
 <a href="#251" id="251">251</a>
 <a href="#252" id="252">252</a>
-<a href="#253" id="253">253</a>
-<a href="#254" id="254">254</a>
-<a href="#255" id="255">255</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
@@ -265,18 +262,15 @@
 
 <span class="doccomment">/// &gt; 1 input stream, 1 output stream
 ///
-/// &gt; Arguments: a closure used to combine items. The closure takes two two arguments: an
-/// `&amp;mut Item` accumulated value, and an `Item`.
-///
 /// &gt; Arguments: a closure which itself takes two arguments:
-/// an `&amp;mut Accum` accumulator mutable reference, and an `Item`. The closure should merge the item
-/// into the accumulator.
+/// &gt; an `&amp;mut Accum` accumulator mutable reference, and an `Item`. The closure should merge the item
+/// &gt; into the accumulator.
 ///
 /// Akin to Rust's built-in [`reduce`](https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.reduce)
 /// operator, except that it takes the accumulator by `&amp;mut` instead of by value. Reduces every
 /// item into an accumulator by applying a closure, returning the final result.
 ///
-/// &gt; Note: The closure has access to the [`context` object](surface_flows.md#the-context-object).
+/// &gt; Note: The closure has access to the [`context` object](surface_flows.mdx#the-context-object).
 ///
 /// `reduce` can also be provided with one generic lifetime persistence argument, either
 /// `'tick` or `'static`, to specify how data persists. With `'tick`, values will only be collected

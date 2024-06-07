@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":["var_args","var_expr","var_type","variadic_trait"],"trait":["AsRefVariadicPartialEq","HomogenousVariadic","Split","UnrefVariadic","Variadic","VariadicExt"]};
+window.SIDEBAR_ITEMS = {"macro":["var_args","var_expr","var_type","variadic_trait"],"trait":["HomogenousVariadic","Split","UnrefVariadic","Variadic","VariadicExt"]};
