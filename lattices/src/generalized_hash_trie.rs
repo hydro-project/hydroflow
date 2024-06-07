@@ -4,7 +4,9 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 use sealed::sealed;
-use variadics::{var_args, var_expr, var_type, AsRefVariadicPartialEq, Variadic, VariadicExt};
+use variadics::{
+    var_args, var_expr, var_type, AsRefVariadicPartialEq, UnrefCloneVariadic, Variadic, VariadicExt,
+};
 
 use crate::{IsBot, IsTop, LatticeOrd, Merge};
 
@@ -160,24 +162,6 @@ where
         self.elements.iter().map(T::as_ref_var)
     }
 }
-
-// impl<Key, Node> Len for HtInner<Key, Node>
-// where
-//     Node: GeneralizedHashTrie,
-// {
-//     fn len(&self) -> usize {
-//         self.len
-//     }
-// }
-
-// impl<T> Len for HtLeaf<T>
-// where
-//     T: Hash + Eq,
-// {
-//     fn len(&self) -> usize {
-//         self.elements.len()
-//     }
-// }
 
 impl<Key, Node> Merge<HtInner<Key, Node>> for HtInner<Key, Node>
 where
@@ -475,6 +459,131 @@ macro_rules! GHTType {
         HtInner::<$a, GHTType!($( $b ),* => $( $z ),*)>
     );
 }
+
+////////////////////////////
+/// Map Compatibility Traits
+////////////////////////////
+
+/// new: (A, B, C) => (D, E, F)
+/// get: (A, B, C, D) xxx
+///
+/// Prefix: (A, B)
+/// Suffix: (C, D, E, F)
+struct HashTrieMap<Ght, Prefix, Suffix>
+where
+    Ght: GeneralizedHashTrie<Schema = var_type!(...Prefix, ...Suffix)>,
+    Prefix: VariadicExt,
+    Suffix: VariadicExt,
+{
+    data: Ght,
+    _phantom: std::marker::PhantomData<(Prefix, Suffix)>,
+}
+
+impl<Ght, Prefix, Suffix> HashTrieMap<Ght, Prefix, Suffix>
+where
+    Ght: GeneralizedHashTrie<Schema = var_type!(...Prefix, ...Suffix)>,
+    Prefix: VariadicExt,
+    Suffix: VariadicExt,
+{
+    pub fn new() -> Self {
+        HashTrieMap {
+            data: Default::default(),
+            _phantom: std::marker::PhantomData,
+        }
+    }
+
+    pub fn insert(&mut self, key: Prefix, value: Suffix) {
+        self.data.insert(var_expr!(...key, ...value));
+        // return Some(value);
+    }
+
+    pub fn get<'a>(&'a self, key: &'a Prefix) -> Option<Suffix::AsRefVar<'_>>
+    where
+        Ght: HtPrefixIter<Prefix::AsRefVar<'a>, Suffix = Suffix>,
+    {
+        self.data.prefix_iter(key.as_ref_var()).next()
+    }
+}
+
+impl<Ght, Prefix, Suffix> cc_traits::Collection for HashTrieMap<Ght, Prefix, Suffix>
+where
+    Ght: GeneralizedHashTrie<Schema = var_type!(...Prefix, ...Suffix)>,
+    Prefix: VariadicExt,
+    Suffix: VariadicExt,
+{
+    type Item = Suffix;
+}
+impl<Ght, Prefix, Suffix> cc_traits::CollectionRef for HashTrieMap<Ght, Prefix, Suffix>
+where
+    Ght: GeneralizedHashTrie<Schema = var_type!(...Prefix, ...Suffix)>,
+    Prefix: VariadicExt,
+    Suffix: VariadicExt + Clone,
+{
+    type ItemRef<'a> = Box<Suffix>
+    where
+        Self: 'a;
+
+    fn upcast_item_ref<'short, 'long: 'short>(r: Self::ItemRef<'long>) -> Self::ItemRef<'short>
+    where
+        Self: 'long,
+    {
+        r
+    }
+}
+// impl<'k, Ght, Prefix, Suffix> cc_traits::Get<&'k Prefix> for HashTrieMap<Ght, Prefix, Suffix>
+// where
+//     Ght: GeneralizedHashTrie<Schema = var_type!(...Prefix, ...Suffix)>,
+//     Ght: HtPrefixIter<Prefix::AsRefVar<'k>, Suffix = Suffix>,
+//     Prefix: VariadicExt,
+//     Suffix: 'k + VariadicExt + Clone,
+//     Suffix::AsRefVar<'k>: UnrefCloneVariadic<Unref = Suffix>,
+//     Self: 'k,
+// {
+//     fn get(&self, key: &'k Prefix) -> Option<Box<Suffix>> {
+//         self.data
+//             .prefix_iter(key.as_ref_var())
+//             .next()
+//             .map(|row| row.clone_var())
+//             .map(Box::new)
+//     }
+// }
+
+// impl<K, V> Default for HashTrieMap<K, V>
+// where
+//     K: Eq + Hash + VariadicExt + 'static,
+//     V: Clone + Eq + Hash + VariadicExt + 'static,
+// {
+//     fn default() -> Self {
+//         Self::new()
+//     }
+// }
+
+// impl<K, V> FromIterator<(K, V)> for HashTrieMap<K, V>
+// where
+//     K: Eq + Hash + VariadicExt + 'static,
+//     V: Clone + Eq + Hash + VariadicExt + 'static,
+// {
+//     fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
+//         let mut map = Self::new();
+//         for (k, v) in iter {
+//             map.insert(k, v);
+//         }
+//         map
+//     }
+// }
+
+// impl<K, V> IntoIterator for HashTrieMap<K, V>
+// where
+//     K: Eq + Hash + VariadicExt + 'static,
+//     V: Clone + Eq + Hash + VariadicExt + 'static,
+// {
+//     type Item = (K, V);
+//     type IntoIter = std::vec::IntoIter<Self::Item>;
+
+//     fn into_iter(self) -> Self::IntoIter {
+//         self.data.recursive_iter()
+//     }
+// }
 
 #[cfg(test)]
 mod tests {

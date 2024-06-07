@@ -127,7 +127,7 @@ pub trait VariadicExt: Variadic {
     fn reverse(self) -> Self::Reverse;
 
     /// This as a variadic of references.
-    type AsRefVar<'a>: Copy + Variadic
+    type AsRefVar<'a>: Copy + UnrefVariadic<Unref = Self>
     where
         Self: 'a;
     /// Convert a reference to this variadic into a variadic of references.
@@ -289,6 +289,37 @@ where
 #[sealed]
 impl UnrefVariadic for () {
     type Unref = ();
+}
+
+#[sealed]
+pub trait UnrefCloneVariadic: UnrefVariadic {
+    fn clone_var(&self) -> Self::Unref;
+}
+#[sealed]
+impl<Item, Rest> UnrefCloneVariadic for (&Item, Rest)
+where
+    Item: Clone,
+    Rest: UnrefCloneVariadic,
+{
+    fn clone_var(&self) -> Self::Unref {
+        let var_args!(item, ...rest) = self;
+        var_expr!((*item).clone(), ...rest.clone_var())
+    }
+}
+#[sealed]
+impl<Item, Rest> UnrefCloneVariadic for (&mut Item, Rest)
+where
+    Item: Clone,
+    Rest: UnrefCloneVariadic,
+{
+    fn clone_var(&self) -> Self::Unref {
+        let var_args!(item, ...rest) = self;
+        var_expr!((*item).clone(), ...rest.clone_var())
+    }
+}
+#[sealed]
+impl UnrefCloneVariadic for () {
+    fn clone_var(&self) -> Self::Unref {}
 }
 
 /// `PartialEq` between a referenced variadic and a variadic of references, of the same types.
