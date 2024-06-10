@@ -1,3 +1,5 @@
+pub mod membership;
+
 use std::collections::HashSet;
 use std::fmt::Display;
 use std::str::FromStr;
