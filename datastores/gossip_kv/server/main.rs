@@ -40,7 +40,7 @@ async fn main() {
     // Setup protocol information in the member metadata.
     let client_protocol_address =
         SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), opts.client_port);
-    let member_data = MemberDataBuilder::new(member_name())
+    let member_data = MemberDataBuilder::new(member_name().clone())
         .add_protocol(Protocol::new("client".into(), client_protocol_address))
         .build();
 

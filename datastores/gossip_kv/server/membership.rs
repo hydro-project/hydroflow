@@ -1,6 +1,5 @@
-use std::sync::Mutex;
+use std::sync::OnceLock;
 
-use once_cell::sync::Lazy;
 use rand::distributions::Distribution;
 use rand::{thread_rng, Rng};
 
@@ -14,22 +13,20 @@ impl Distribution<char> for LowercaseAlphanumeric {
     }
 }
 
-/// Holds a name for the current process.
-static MEMBER_NAME: Lazy<Mutex<String>> = Lazy::new(|| {
-    // Generate a lower-case alphanumeric suffix of length 4
-    let suffix: String = thread_rng()
-        .sample_iter(&LowercaseAlphanumeric)
-        .take(4)
-        .map(char::from)
-        .collect();
-
-    // Retrieve hostname
-    let hostname = hostname::get().unwrap().to_str().unwrap().to_string();
-
-    Mutex::new(format!("{}-{}", hostname, suffix))
-});
-
 /// Gets a name for the current process.
-pub fn member_name() -> String {
-    MEMBER_NAME.lock().unwrap().clone()
+pub fn member_name() -> &'static String {
+    static MEMBER_NAME: OnceLock<String> = OnceLock::new();
+    MEMBER_NAME.get_or_init(|| {
+        // Generate a lower-case alphanumeric suffix of length 4
+        let suffix: String = thread_rng()
+            .sample_iter(&LowercaseAlphanumeric)
+            .take(4)
+            .map(char::from)
+            .collect();
+
+        // Retrieve hostname
+        let hostname = hostname::get().unwrap().to_str().unwrap().to_string();
+
+        format!("{}-{}", hostname, suffix)
+    })
 }
