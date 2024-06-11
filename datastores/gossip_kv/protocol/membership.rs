@@ -3,6 +3,8 @@ use std::hash::Hash;
 
 use serde::{Deserialize, Serialize};
 
+pub type MemberId = String;
+
 /// Information about a member in the cluster.
 ///
 /// A member is a transducer that is part of the cluster. Leaving or failing is a terminal
@@ -19,7 +21,7 @@ where
 {
     /// The name of the member. Usually, this is a randomly generated identifier, based on the
     /// hostname on which the member is running.
-    pub name: String,
+    pub id: MemberId,
 
     /// The protocols that the member supports.
     pub protocols: Vec<Protocol<A>>,
@@ -30,7 +32,7 @@ pub struct MemberDataBuilder<A>
 where
     A: Debug + Clone + Eq + Hash + Serialize,
 {
-    name: String,
+    id: MemberId,
     protocols: Vec<Protocol<A>>,
 }
 
@@ -39,9 +41,9 @@ where
     A: Debug + Clone + Eq + Hash + Serialize,
 {
     /// Creates a new `MemberDataBuilder`.
-    pub fn new(name: String) -> Self {
+    pub fn new(id: MemberId) -> Self {
         MemberDataBuilder {
-            name,
+            id,
             protocols: Vec::new(),
         }
     }
@@ -55,7 +57,7 @@ where
     /// Builds the `MemberData`.
     pub fn build(self) -> MemberData<A> {
         MemberData {
-            name: self.name,
+            id: self.id,
             protocols: self.protocols,
         }
     }

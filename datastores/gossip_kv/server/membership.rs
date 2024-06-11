@@ -1,5 +1,6 @@
 use std::sync::OnceLock;
 
+use gossip_protocol::membership::MemberId;
 use rand::distributions::Distribution;
 use rand::{thread_rng, Rng};
 
@@ -14,8 +15,8 @@ impl Distribution<char> for LowercaseAlphanumeric {
 }
 
 /// Gets a name for the current process.
-pub fn member_name() -> &'static String {
-    static MEMBER_NAME: OnceLock<String> = OnceLock::new();
+pub fn member_name() -> &'static MemberId {
+    static MEMBER_NAME: OnceLock<MemberId> = OnceLock::new();
     MEMBER_NAME.get_or_init(|| {
         // Generate a lower-case alphanumeric suffix of length 4
         let suffix: String = thread_rng()

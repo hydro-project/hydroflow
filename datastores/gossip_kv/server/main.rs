@@ -13,8 +13,9 @@ use hydroflow::{bincode, tokio};
 use tracing::{error, info};
 
 use crate::membership::member_name;
-use crate::server::server;
+use crate::server::{server, SeedNode};
 
+mod config;
 mod membership;
 mod model;
 mod server;
@@ -36,6 +37,7 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     let opts: Opts = Opts::parse();
+    let settings = config::ServerSettings::new().unwrap();
 
     // Setup protocol information in the member metadata.
     let client_protocol_address =
@@ -48,7 +50,7 @@ async fn main() {
 
     info!(
         "Server {:?} listening for client requests on: {:?}",
-        member_data.name, client_protocol_address
+        member_data.id, client_protocol_address
     );
 
     // Setup message serialization for outbound client responses.
@@ -81,7 +83,17 @@ async fn main() {
         ready(mapped)
     });
 
+    // Configure seed nodes for gossip protocol.
+    let seed_nodes = settings
+        .seed_nodes
+        .iter()
+        .map(|node| SeedNode {
+            id: node.id.clone(),
+            address: SocketAddr::new(node.ip.parse().unwrap(), node.port),
+        })
+        .collect();
+
     // Create and run the server
-    let mut server = server(ib, ob, member_data);
+    let mut server = server(ib, ob, member_data, seed_nodes);
     server.run_async().await;
 }
