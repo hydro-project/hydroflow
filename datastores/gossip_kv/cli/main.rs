@@ -92,7 +92,7 @@ async fn main() {
     // Default to localhost:3000 if not provided.
     let server_address = opts
         .server_address
-        .unwrap_or_else(|| ipv4_resolve("localhost:3000").unwrap());
+        .unwrap_or_else(|| ipv4_resolve("localhost:3001").unwrap());
 
     // Setup UDP sockets for communication.
     let (outbound, inbound, _) = bind_udp_bytes(address).await;

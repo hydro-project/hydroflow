@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use gossip_protocol::membership::MemberData;
+use gossip_protocol::membership::{MemberData, MemberId};
 use gossip_protocol::{ClientRequest, ClientResponse, Key, Namespace};
 use hydroflow::futures::{Sink, Stream};
 use hydroflow::hydroflow_syntax;
@@ -11,51 +11,71 @@ use hydroflow::lattices::map_union::{KeyedBimorphism, MapUnionHashMap};
 use hydroflow::lattices::set_union::SetUnionHashSet;
 use hydroflow::lattices::PairBimorphism;
 use hydroflow::scheduled::graph::Hydroflow;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tracing::{info, trace};
 
 use crate::model::{delete_row, upsert_row, Clock, Namespaces, RowKey, TableName};
 use crate::util::ClientRequestWithAddress;
 
+/// A trait that represents an abstract network address. In production, this will typically be
+/// SocketAddr.
+pub trait Address: Hash + Debug + Clone + Eq + Serialize {}
+impl<A> Address for A where A: Hash + Debug + Clone + Eq + Serialize {}
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Serialize, Deserialize)]
+pub struct SeedNode<A>
+where
+    A: Address,
+{
+    pub id: MemberId,
+    pub address: A,
+}
+
 /// Creates a L0 key-value store server using Hydroflow.
 ///
 /// # Arguments
-/// -- `ib`: The input stream of client requests for the client protocol.
-/// -- `ob`: The output sink of client responses for the client protocol.
+/// -- `client_inputs`: The input stream of client requests for the client protocol.
+/// -- `client_outputs`: The output sink of client responses for the client protocol.
 /// -- `member_info`: The membership information of the server.
-///
-/// # Generic Arguments
-/// -- `I`: The input stream type for the client protocol.
-/// -- `O`: The output sink type for the client protocol.
-/// -- `A`: The transport (address type) for the client protocol.
-pub fn server<I, O, A, E>(ib: I, ob: O, member_info: MemberData<A>) -> Hydroflow<'static>
+/// -- `seed_nodes`: A list of seed nodes that can be used to bootstrap the gossip cluster.
+pub fn server<ClientInput, ClientOutput, Addr, E>(
+    client_inputs: ClientInput,
+    client_outputs: ClientOutput,
+    member_info: MemberData<Addr>,
+    seed_nodes: Vec<SeedNode<Addr>>,
+) -> Hydroflow<'static>
 where
-    I: Stream<Item = (ClientRequest, A)> + Unpin + 'static,
-    O: Sink<(ClientResponse, A), Error = E> + Unpin + 'static,
-    A: Hash + Debug + Clone + Eq + Serialize + 'static, // "Address"
+    ClientInput: Stream<Item = (ClientRequest, Addr)> + Unpin + 'static,
+    ClientOutput: Sink<(ClientResponse, Addr), Error = E> + Unpin + 'static,
+    Addr: Address + 'static,
     E: Debug + 'static,
 {
     hydroflow_syntax! {
 
         on_start = initialize() -> tee();
-
         on_start -> for_each(|_| info!("Transducer started."));
 
         // Setup member metadata for this process.
-        on_start -> map(|_| upsert_row(Clock::new(0), Namespace::System, "members".to_string(), member_info.name.clone(), serde_json::to_string(&member_info).unwrap()))
+        on_start -> map(|_| upsert_row(Clock::new(0), Namespace::System, "members".to_string(), member_info.id.clone(), serde_json::to_string(&member_info).unwrap()))
             -> namespaces;
+
+        // Setup seed nodes.
+        seed_nodes = source_iter(seed_nodes)
+           -> inspect( |seed_node| info!("Adding seed node: {:?}", seed_node))
+           -> persist()
+           -> null();
 
         outbound_messages =
             inspect(|(resp, addr)| trace!("Sending response: {:?} to {:?}", resp, addr))
-            -> dest_sink(ob);
+            -> dest_sink(client_outputs);
 
-        inbound_messages = source_stream(ib)
+        inbound_messages = source_stream(client_inputs)
             -> map(|(msg, addr)| ClientRequestWithAddress::from_request_and_address(msg, addr))
-            -> demux_enum::<ClientRequestWithAddress<A>>();
+            -> demux_enum::<ClientRequestWithAddress<Addr>>();
 
         inbound_messages[Get]
             -> inspect(|req| trace!("Received Get request: {:?} at {:?}", req, context.current_tick()))
-            -> map(|(key, addr) : (Key, A)| {
+            -> map(|(key, addr) : (Key, Addr)| {
                 let row = MapUnionHashMap::new_from([
                         (
                             key.row_key,
@@ -69,18 +89,18 @@ where
 
         inbound_messages[Set]
             -> inspect(|request| trace!("Received Set request: {:?} at {:?}", request, context.current_tick()))
-            -> map(|(key, value, _addr) : (Key, String, A)| upsert_row(Clock::new(context.current_tick().0), key.namespace, key.table, key.row_key, value))
+            -> map(|(key, value, _addr) : (Key, String, Addr)| upsert_row(Clock::new(context.current_tick().0), key.namespace, key.table, key.row_key, value))
             -> namespaces;
 
         inbound_messages[Delete]
             -> inspect(|req| trace!("Received Delete request: {:?} at {:?}", req, context.current_tick()))
-            -> map(|(key, _addr) : (Key, A)| delete_row(Clock::new(context.current_tick().0), key.namespace, key.table, key.row_key))
+            -> map(|(key, _addr) : (Key, Addr)| delete_row(Clock::new(context.current_tick().0), key.namespace, key.table, key.row_key))
             -> namespaces;
 
         namespaces = union()
             -> state::<'static, Namespaces::<Clock>>();
 
-        gets = state::<'tick, MapUnionHashMap<Namespace, MapUnionHashMap<TableName, MapUnionHashMap<RowKey, SetUnionHashSet<A>>>>>();
+        gets = state::<'tick, MapUnionHashMap<Namespace, MapUnionHashMap<TableName, MapUnionHashMap<RowKey, SetUnionHashSet<Addr>>>>>();
 
         namespaces -> [0]process_system_table_gets;
         gets -> [1]process_system_table_gets;
@@ -88,7 +108,7 @@ where
         process_system_table_gets = lattice_bimorphism(KeyedBimorphism::<HashMap<_, _>, _>::new(KeyedBimorphism::<HashMap<_, _>, _>::new(KeyedBimorphism::<HashMap<_, _>, _>::new(PairBimorphism))), #namespaces, #gets)
             -> flat_map(|result| {
 
-                let mut response: Vec<(ClientResponse, A)> = vec![];
+                let mut response: Vec<(ClientResponse, Addr)> = vec![];
 
                     let result = result.as_reveal_ref();
                     for (namespace, tables) in result.iter() {
@@ -188,6 +208,7 @@ mod tests {
             client_request_rx,
             sink_from_fn(move |(resp, addr)| client_response_tx.send((resp, addr)).unwrap()),
             member_data,
+            vec![],
         );
 
         TestServer {

@@ -8,6 +8,7 @@ publish = false
 
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
+config = "0.14.0"
 hostname = "0.4.0"
 hydroflow = { path="../../hydroflow" }
 rand = "0.8.5"
