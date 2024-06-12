@@ -6,8 +6,9 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use clap::Parser;
 use gossip_protocol::membership::{MemberDataBuilder, Protocol};
-use gossip_protocol::ClientRequest;
+use gossip_protocol::{ClientRequest, GossipMessage};
 use hydroflow::futures::{SinkExt, StreamExt};
+use hydroflow::tokio_stream::wrappers::ReceiverStream;
 use hydroflow::util::bind_udp_bytes;
 use hydroflow::{bincode, tokio};
 use tracing::{error, info};
@@ -18,7 +19,6 @@ use crate::server::{server, SeedNode};
 mod config;
 mod lattices;
 mod membership;
-mod model;
 mod server;
 mod util;
 
@@ -43,19 +43,25 @@ async fn main() {
     // Setup protocol information in the member metadata.
     let client_protocol_address =
         SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), opts.client_port);
+    let gossip_protocol_address =
+        SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), opts.gossip_port);
+
     let member_data = MemberDataBuilder::new(member_name().clone())
+        .add_protocol(Protocol::new("gossip".into(), gossip_protocol_address))
         .add_protocol(Protocol::new("client".into(), client_protocol_address))
         .build();
 
-    let (outbound, inbound, _) = bind_udp_bytes(client_protocol_address).await;
+    let (client_outbound, client_inbound, _) = bind_udp_bytes(client_protocol_address).await;
+    let (gossip_outbound, gossip_inbound, _) = bind_udp_bytes(gossip_protocol_address).await;
 
     info!(
         "Server {:?} listening for client requests on: {:?}",
         member_data.id, client_protocol_address
     );
 
+    // TODO: Remove code duplication here.
     // Setup message serialization for outbound client responses.
-    let ob = outbound.with(|(msg, addr)| {
+    let client_ob = client_outbound.with(|(msg, addr)| {
         ready(Ok::<(hydroflow::bytes::Bytes, SocketAddr), Error>((
             hydroflow::util::serialize_to_bytes(msg),
             addr,
@@ -63,10 +69,40 @@ async fn main() {
     });
 
     // Setup message deserialization for inbound client requests.
-    let ib = inbound.filter_map(|input| {
+    let client_ib = client_inbound.filter_map(|input| {
         let mapped = match input {
             Ok((bytes, addr)) => {
                 let msg: bincode::Result<ClientRequest> =
+                    hydroflow::util::deserialize_from_bytes(&bytes);
+                match msg {
+                    Ok(msg) => Some((msg, addr)),
+                    Err(e) => {
+                        error!("Error deserializing message: {:?}", e);
+                        None
+                    }
+                }
+            }
+            Err(e) => {
+                error!("Error receiving message: {:?}", e);
+                None
+            }
+        };
+        ready(mapped)
+    });
+
+    // Setup message serialization for outbound client responses.
+    let gossip_ob = gossip_outbound.with(|(msg, addr)| {
+        ready(Ok::<(hydroflow::bytes::Bytes, SocketAddr), Error>((
+            hydroflow::util::serialize_to_bytes(msg),
+            addr,
+        )))
+    });
+
+    // Setup message deserialization for inbound client requests.
+    let gossip_ib = gossip_inbound.filter_map(|input| {
+        let mapped = match input {
+            Ok((bytes, addr)) => {
+                let msg: bincode::Result<GossipMessage> =
                     hydroflow::util::deserialize_from_bytes(&bytes);
                 match msg {
                     Ok(msg) => Some((msg, addr)),
@@ -94,7 +130,23 @@ async fn main() {
         })
         .collect();
 
+    // TODO: Trigger gossip every X (configurable number of seconds)
+    let (_gossip_tx, gossip_rx) = tokio::sync::mpsc::channel::<()>(20 /* Configure size */);
+
     // Create and run the server
-    let mut server = server(ib, ob, member_data, seed_nodes);
+    let mut server = server(
+        client_ib,
+        client_ob,
+        gossip_ib,
+        gossip_ob,
+        ReceiverStream::new(gossip_rx),
+        member_data,
+        seed_nodes,
+    );
+    server
+        .meta_graph()
+        .unwrap()
+        .open_mermaid(&Default::default())
+        .unwrap();
     server.run_async().await;
 }
