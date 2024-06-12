@@ -57,7 +57,7 @@ where
 
         // Setup member metadata for this process.
         on_start -> map(|_| upsert_row(Clock::new(0), Namespace::System, "members".to_string(), member_info.id.clone(), serde_json::to_string(&member_info).unwrap()))
-            -> namespaces;
+            -> writes;
 
         // Setup seed nodes.
         seed_nodes = source_iter(seed_nodes)
@@ -90,15 +90,19 @@ where
         inbound_messages[Set]
             -> inspect(|request| trace!("Received Set request: {:?} at {:?}", request, context.current_tick()))
             -> map(|(key, value, _addr) : (Key, String, Addr)| upsert_row(Clock::new(context.current_tick().0), key.namespace, key.table, key.row_key, value))
-            -> namespaces;
+            -> writes;
 
         inbound_messages[Delete]
             -> inspect(|req| trace!("Received Delete request: {:?} at {:?}", req, context.current_tick()))
             -> map(|(key, _addr) : (Key, Addr)| delete_row(Clock::new(context.current_tick().0), key.namespace, key.table, key.row_key))
-            -> namespaces;
+            -> writes;
 
-        namespaces = union()
-            -> state::<'static, Namespaces::<Clock>>();
+        writes = union() -> tee();
+
+        writes -> namespaces;
+        writes -> new_writes;
+
+        namespaces = state::<'static, Namespaces::<Clock>>();
 
         gets = state::<'tick, MapUnionHashMap<Namespace, MapUnionHashMap<TableName, MapUnionHashMap<RowKey, SetUnionHashSet<Addr>>>>>();
 
@@ -135,6 +139,12 @@ where
                 }
                 response
             }) -> outbound_messages;
+
+        // Temporary state as work around for some problems:
+        // TODO: https://github.com/hydro-project/hydroflow/issues/1290
+        // TODO: https://github.com/hydro-project/hydroflow/issues/1291
+        new_writes = state::<'static, Namespaces::<Clock>>();
+        new_writes -> for_each(|x| println!("{:?}", x));
 
         // Uncomment to aid with debugging.
         // source_interval(Duration::from_secs(3))
