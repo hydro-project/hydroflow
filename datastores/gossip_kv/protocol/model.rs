@@ -1,7 +1,7 @@
-use gossip_protocol::Namespace;
 use hydroflow::lattices::map_union::MapUnionHashMap;
 use hydroflow::lattices::set_union::SetUnionHashSet;
 use hydroflow::lattices::{DomPair, Max};
+use crate::Namespace;
 
 /// Primary key for entries in a table.
 pub type RowKey = String;

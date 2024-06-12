@@ -1,4 +1,5 @@
-use gossip_protocol::{ClientRequest, Key};
+use gossip_protocol::{ClientRequest, GossipMessage, Key};
+use gossip_protocol::model::{Clock, Namespaces};
 use hydroflow::DemuxEnum;
 
 /// Convenience enum to represent a client request with the address of the client. Makes it
@@ -13,6 +14,7 @@ pub enum ClientRequestWithAddress<A> {
     Delete { key: Key, addr: A },
 }
 
+
 impl<A> ClientRequestWithAddress<A> {
     /// Create a `ClientRequestWithAddress` from a `ClientRequest` and an address.
     pub fn from_request_and_address(request: ClientRequest, addr: A) -> Self {
@@ -20,6 +22,24 @@ impl<A> ClientRequestWithAddress<A> {
             ClientRequest::Get { key } => Self::Get { key, addr },
             ClientRequest::Set { key, value } => Self::Set { key, value, addr },
             ClientRequest::Delete { key } => Self::Delete { key, addr },
+        }
+    }
+}
+
+#[derive(Debug, DemuxEnum)]
+pub enum GossipRequestWithAddress<A> {
+    Gossip { message_id: String, writes: Namespaces<Clock>, addr: A },
+    Ack { message_id: String, addr: A },
+    Nack { message_id: String, addr: A }
+}
+
+impl<A> GossipRequestWithAddress<A> {
+    pub fn from_request_and_address(request: GossipMessage, addr: A) -> Self {
+        match request {
+            GossipMessage::Gossip { message_id, writes } => Self::Gossip { message_id, writes, addr },
+
+            GossipMessage::Ack { message_id } => { Self::Ack { message_id, addr } },
+            GossipMessage::Nack { message_id } => { Self::Nack { message_id, addr}  }
         }
     }
 }

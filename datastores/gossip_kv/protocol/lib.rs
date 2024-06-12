@@ -1,4 +1,5 @@
 pub mod membership;
+pub mod model;
 
 use std::collections::HashSet;
 use std::fmt::Display;
@@ -7,6 +8,7 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 use crate::KeyParseError::InvalidNamespace;
+use crate::model::{Clock, Namespaces};
 
 /// The namespace of the key of an entry in the key-value store.
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Serialize, Deserialize, Hash)]
@@ -145,6 +147,20 @@ pub enum ClientResponse {
     Set { success: bool },
     /// A response for a delete request. The success field is true if delete was successful.
     Delete { success: bool },
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+pub enum GossipMessage {
+    Gossip {
+        message_id: String,
+        writes: Namespaces<Clock>,
+    },
+    Ack {
+        message_id: String
+    },
+    Nack {
+        message_id: String
+    }
 }
 
 #[cfg(test)]
