@@ -15,7 +15,7 @@ linkStyle default stroke:#aaa
 5v1[/"(5v1) <code>tee()</code>"\]:::pushClass
 6v1[\"(6v1) <code>identity::&lt;Max&lt;_&gt;&gt;()</code>"/]:::pullClass
 7v1[\"(7v1) <code>cross_join()</code>"/]:::pullClass
-8v1[\"(8v1) <code>persist()</code>"/]:::pullClass
+8v1[\"(8v1) <code>persist::&lt;'static&gt;()</code>"/]:::pullClass
 9v1[\"(9v1) <code>filter(|(value, max_of_stream2)| { value &lt;= max_of_stream2.as_reveal_ref() })</code>"/]:::pullClass
 10v1[\"(10v1) <code>map(|(x, _max)| (context.current_tick(), x))</code>"/]:::pullClass
 11v1[/"(11v1) <code>for_each(|x| filter_send.send(x).unwrap())</code>"\]:::pushClass
