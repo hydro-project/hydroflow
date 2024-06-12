@@ -28,7 +28,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
 
         // Join PUTs and GETs by key
         writes -> map(|(key, value, _addr)| (key, value)) -> writes_store;
-        writes_store = persist() -> tee();
+        writes_store = persist::<'static>() -> tee();
         writes_store -> [0]lookup;
         gets -> [1]lookup;
         lookup = join();
@@ -52,7 +52,7 @@ pub(crate) async fn run_server(outbound: UdpSink, inbound: UdpStream, opts: Opts
         // Outbound gossip. Send updates to peers.
         peers -> peer_store;
         source_iter_delta(peer_server) -> peer_store;
-        peer_store = union() -> persist();
+        peer_store = union() -> persist::<'static>();
         writes -> [0]outbound_gossip;
         peer_store -> [1]outbound_gossip;
         outbound_gossip = cross_join()

@@ -407,7 +407,7 @@ impl HfPlusNode {
 
                 let builder = graph_builders.entry(location).or_default();
                 builder.add_statement(parse_quote! {
-                    #persist_ident = #inner_ident -> persist();
+                    #persist_ident = #inner_ident -> persist::<'static>();
                 });
 
                 (persist_ident, location)

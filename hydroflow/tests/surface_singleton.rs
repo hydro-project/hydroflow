@@ -16,7 +16,7 @@ pub fn test_state() {
         max_of_stream2 = stream2 -> state::<'static, Max<_>>();
 
         filtered_stream1 = stream1
-            -> persist()
+            -> persist::<'static>()
             -> filter(|value| {
                 // This is not monotonic.
                 value <= #max_of_stream2.as_reveal_ref()
@@ -117,7 +117,7 @@ pub fn test_fold_cross() {
         max_of_stream2 -> identity::<Max<_>>() -> [1]filtered_stream2;
 
         filtered_stream2 = cross_join()
-            -> persist()
+            -> persist::<'static>()
             -> filter(|(value, max_of_stream2)| {
                 // This is not monotonic.
                 value <= max_of_stream2.as_reveal_ref()
@@ -163,7 +163,7 @@ pub fn test_fold_singleton() {
         max_of_stream2 = stream2 -> fold(|| 0, |a, b| *a = std::cmp::max(*a, b));
 
         filtered_stream1 = stream1
-            -> persist()
+            -> persist::<'static>()
             -> filter(|&value| {
                 // This is not monotonic.
                 value <= #max_of_stream2
@@ -207,7 +207,7 @@ pub fn test_fold_singleton_push() {
         max_of_stream2 = stream2 -> fold(|| 0, |a, b| *a = std::cmp::max(*a, b));
 
         filtered_stream1 = stream1
-            -> persist()
+            -> persist::<'static>()
             -> filter(|&value| {
                 // This is not monotonic.
                 value <= #max_of_stream2
@@ -244,7 +244,7 @@ pub fn test_reduce_singleton() {
         max_of_stream2 = stream2 -> reduce(|a, b| *a = std::cmp::max(*a, b));
 
         filtered_stream1 = stream1
-            -> persist()
+            -> persist::<'static>()
             -> filter(|&value| {
                 // This is not monotonic.
                 value <= #max_of_stream2.unwrap_or(0)
@@ -288,7 +288,7 @@ pub fn test_reduce_singleton_push() {
         max_of_stream2 = stream2 -> reduce(|a, b| *a = std::cmp::max(*a, b));
 
         filtered_stream1 = stream1
-            -> persist()
+            -> persist::<'static>()
             -> filter(|&value| {
                 // This is not monotonic.
                 value <= #max_of_stream2.unwrap_or(0)
@@ -324,7 +324,7 @@ pub fn test_scheduling() {
         max_of_stream2 = stream2 -> fold(|| 0, |a, b| *a = std::cmp::max(*a, b));
 
         filtered_stream1 = stream1
-            -> persist()
+            -> persist::<'static>()
             -> filter(|&value| {
                 // This is not monotonic.
                 value <= #max_of_stream2
