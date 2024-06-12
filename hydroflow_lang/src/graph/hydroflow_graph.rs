@@ -274,12 +274,19 @@ impl HydroflowGraph {
             let generics = get_operator_generics(diagnostics, operator);
             // Generic argument errors.
             {
+                // Span of `generic_args` (if it exists), otherwise span of the operator name.
+                let generics_span = generics
+                    .generic_args
+                    .as_ref()
+                    .map(Spanned::span)
+                    .unwrap_or_else(|| operator.path.span());
+
                 if !op_constraints
                     .persistence_args
                     .contains(&generics.persistence_args.len())
                 {
                     diagnostics.push(Diagnostic::spanned(
-                        generics.generic_args.span(),
+                        generics_span,
                         Level::Error,
                         format!(
                             "`{}` should have {} persistence lifetime arguments, actually has {}.",
@@ -291,7 +298,7 @@ impl HydroflowGraph {
                 }
                 if !op_constraints.type_args.contains(&generics.type_args.len()) {
                     diagnostics.push(Diagnostic::spanned(
-                        generics.generic_args.span(),
+                        generics_span,
                         Level::Error,
                         format!(
                             "`{}` should have {} generic type arguments, actually has {}.",
