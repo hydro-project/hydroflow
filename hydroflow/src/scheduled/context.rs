@@ -1,6 +1,6 @@
 //! Module for the user-facing [`Context`] object.
 
-use std::any::{Any, TypeId};
+use std::any::Any;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::ops::DerefMut;
@@ -160,15 +160,9 @@ impl Context {
         let state_data = StateData {
             state: Box::new(state),
             tick_reset: Some(Box::new(|state| {
-                eprintln!("INSIDE {:?} {:?}", (*state).type_id(), TypeId::of::<T>());
-                *(*state).downcast_mut::<T>().unwrap() = T::default();
+                *state.downcast_mut::<T>().unwrap() = T::default();
             })),
         };
-        eprintln!(
-            "{:?} {:?}",
-            (*state_data.state).type_id(),
-            TypeId::of::<T>()
-        );
         self.states.push(state_data);
 
         StateHandle {
@@ -252,5 +246,6 @@ impl Context {
 /// Internal struct containing a pointer to [`Hydroflow`]-owned state.
 struct StateData {
     state: Box<dyn Any>,
-    tick_reset: Option<Box<dyn Fn(&mut dyn Any)>>,
+    tick_reset: Option<TickResetFn>,
 }
+type TickResetFn = Box<dyn FnMut(&mut dyn Any)>;
