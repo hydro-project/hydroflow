@@ -81,19 +81,15 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
         };
 
         let state_ident = singleton_output_ident;
-
-        let write_prologue = if Persistence::Tick == persistence {
-            quote_spanned! {op_span=>
-                let #state_ident = #hydroflow.add_state_tick(::std::cell::RefCell::new(
-                    <#lattice_type as ::std::default::Default>::default()
-                ));
-            }
+        let add_state_fn = if Persistence::Tick == persistence {
+            quote_spanned!(op_span=> add_state_tick)
         } else {
-            quote_spanned! {op_span=>
-                let #state_ident = #hydroflow.add_state(::std::cell::RefCell::new(
-                    <#lattice_type as ::std::default::Default>::default()
-                ));
-            }
+            quote_spanned!(op_span=> add_state)
+        };
+        let write_prologue = quote_spanned! {op_span=>
+            let #state_ident = #hydroflow.#add_state_fn(::std::cell::RefCell::new(
+                <#lattice_type as ::std::default::Default>::default()
+            ));
         };
 
         // TODO(mingwei): deduplicate codegen
