@@ -82,21 +82,18 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
 
         let state_ident = singleton_output_ident;
 
-        let write_prologue = quote_spanned! {op_span=>
-            let #state_ident = #hydroflow.add_state(::std::cell::RefCell::new(
-                <#lattice_type as ::std::default::Default>::default()
-            ));
-        };
-
-        let tick_reset_code = if Persistence::Tick == persistence {
+        let write_prologue = if Persistence::Tick == persistence {
             quote_spanned! {op_span=>
-                // Reset the value to the initializer fn if it is a new tick.
-                if #context.is_first_run_this_tick() {
-                    #context.state_ref(#state_ident).take();
-                }
+                let #state_ident = #hydroflow.add_state_tick(::std::cell::RefCell::new(
+                    <#lattice_type as ::std::default::Default>::default()
+                ));
             }
         } else {
-            Default::default() // No code
+            quote_spanned! {op_span=>
+                let #state_ident = #hydroflow.add_state(::std::cell::RefCell::new(
+                    <#lattice_type as ::std::default::Default>::default()
+                ));
+            }
         };
 
         // TODO(mingwei): deduplicate codegen
@@ -104,8 +101,6 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
             let input = &inputs[0];
             quote_spanned! {op_span=>
                 let #ident = {
-                    #tick_reset_code
-
                     fn check_input<'a, Item, Iter, Lat>(
                         iter: Iter,
                         state_handle: #root::scheduled::state::StateHandle<::std::cell::RefCell<Lat>>,
@@ -150,8 +145,6 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
         } else {
             quote_spanned! {op_span=>
                 let #ident = {
-                    #tick_reset_code
-
                     fn check_output<'a, Item, Lat>(
                         state_handle: #root::scheduled::state::StateHandle<::std::cell::RefCell<Lat>>,
                         context: &'a #root::scheduled::context::Context,

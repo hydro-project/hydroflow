@@ -128,6 +128,8 @@ pub fn test_cartesian_product_tick_state() {
         lhs_send.send(x).unwrap();
     }
     df.run_available();
-    let out = collect_ready::<Vec<_>, _>(&mut out_recv);
-    assert_eq!(0, out.len(), "expected empty, got: {:?}", out);
+    assert_eq!(
+        &[SetUnionHashSet::default()],
+        &*collect_ready::<Vec<_>, _>(&mut out_recv)
+    );
 }
