@@ -13,6 +13,8 @@ mod conflict;
 mod dom_pair;
 /// GHT from the Wang/Willsey/Suciu Freejoin work
 pub mod generalized_hash_trie;
+/// COLT from the Wang/Willsey/Suciu Freejoin work
+// pub mod lazy_trie;
 pub mod map_union;
 pub mod map_union_with_tombstones;
 mod ord;
