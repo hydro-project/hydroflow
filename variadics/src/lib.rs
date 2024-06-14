@@ -292,7 +292,9 @@ impl UnrefVariadic for () {
 }
 
 #[sealed]
+/// Clone an Unref
 pub trait UnrefCloneVariadic: UnrefVariadic {
+    /// Clone the unref
     fn clone_var(&self) -> Self::Unref;
 }
 #[sealed]
