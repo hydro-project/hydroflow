@@ -149,26 +149,20 @@ impl Context {
         }
     }
 
-    /// Adds state to the context and returns the handle. The state will be reset to `T::default()`
-    /// at the end of each tick.
-    pub fn add_state_tick<T>(&mut self, state: T) -> StateHandle<T>
-    where
-        T: Any + Default,
+    /// Sets a hook to reset the state at the end of each tick, using the supplied closure.
+    pub fn set_state_tick_reset<T>(
+        &mut self,
+        handle: StateHandle<T>,
+        mut tick_reset_fn: impl 'static + FnMut() -> T,
+    ) where
+        T: Any,
     {
-        let state_id = StateId(self.states.len());
-
-        let state_data = StateData {
-            state: Box::new(state),
-            tick_reset: Some(Box::new(|state| {
-                *state.downcast_mut::<T>().unwrap() = T::default();
-            })),
-        };
-        self.states.push(state_data);
-
-        StateHandle {
-            state_id,
-            _phantom: PhantomData,
-        }
+        self.states
+            .get_mut(handle.state_id.0)
+            .expect("Failed to find state with given handle.")
+            .tick_reset = Some(Box::new(move |state| {
+            *state.downcast_mut::<T>().unwrap() = (tick_reset_fn)();
+        }));
     }
 
     /// Removes state from the context returns it as an owned heap value.

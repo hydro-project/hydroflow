@@ -81,16 +81,16 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
         };
 
         let state_ident = singleton_output_ident;
-        let add_state_fn = if Persistence::Tick == persistence {
-            quote_spanned!(op_span=> add_state_tick)
-        } else {
-            quote_spanned!(op_span=> add_state)
-        };
-        let write_prologue = quote_spanned! {op_span=>
-            let #state_ident = #hydroflow.#add_state_fn(::std::cell::RefCell::new(
+        let mut write_prologue = quote_spanned! {op_span=>
+            let #state_ident = #hydroflow.add_state(::std::cell::RefCell::new(
                 <#lattice_type as ::std::default::Default>::default()
             ));
         };
+        if Persistence::Tick == persistence {
+            write_prologue.extend(quote_spanned! {op_span=>
+                #hydroflow.set_state_tick_reset(#state_ident, ::std::default::Default::default);
+            });
+        }
 
         // TODO(mingwei): deduplicate codegen
         let write_iterator = if is_pull {

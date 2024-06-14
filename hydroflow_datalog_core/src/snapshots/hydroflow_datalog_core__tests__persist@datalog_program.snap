@@ -138,30 +138,32 @@ fn main() {
                 );
             let sg_4v1_node_41v1_joindata_lhs = df
                 .add_state(
-                    std::cell::RefCell::new(
+                    ::std::cell::RefCell::new(
                         hydroflow::compiled::pull::HalfMultisetJoinState::default(),
                     ),
                 );
             let sg_4v1_node_41v1_joindata_rhs = df
                 .add_state(
-                    std::cell::RefCell::new(
+                    ::std::cell::RefCell::new(
                         hydroflow::compiled::pull::HalfMultisetJoinState::default(),
                     ),
                 );
             let sg_4v1_node_45v1_joindata_lhs = df
                 .add_state(
-                    std::cell::RefCell::new(
+                    ::std::cell::RefCell::new(
                         hydroflow::compiled::pull::HalfMultisetJoinState::default(),
                     ),
                 );
             let sg_4v1_node_45v1_joindata_rhs = df
                 .add_state(
-                    std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::new_init(
-                            hydroflow::compiled::pull::HalfMultisetJoinState::default(),
-                        ),
+                    ::std::cell::RefCell::new(
+                        hydroflow::compiled::pull::HalfMultisetJoinState::default(),
                     ),
                 );
+            df.set_state_tick_reset(
+                sg_4v1_node_45v1_joindata_rhs,
+                ::std::default::Default::default,
+            );
             let sg_4v1_node_15v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
@@ -1038,8 +1040,7 @@ fn main() {
                             op_47v1,
                             op_48v1,
                             &mut *sg_4v1_node_45v1_joindata_lhs_borrow,
-                            &mut *sg_4v1_node_45v1_joindata_rhs_borrow
-                                .get_mut_clear(context.current_tick()),
+                            &mut *sg_4v1_node_45v1_joindata_rhs_borrow,
                             context.is_first_run_this_tick(),
                         )
                     };

@@ -137,17 +137,11 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
         let mut make_joindata = |persistence, side| {
             let joindata_ident = wc.make_ident(format!("joindata_{}", side));
             let borrow_ident = wc.make_ident(format!("joindata_{}_borrow", side));
-            let init = match persistence {
+            let reset = match persistence {
                 Persistence::Tick => quote_spanned! {op_span=>
-                    let #joindata_ident = #hydroflow.add_state_tick(::std::cell::RefCell::new(
-                        #join_type::default()
-                    ));
+                    #hydroflow.set_state_tick_reset(#joindata_ident, ::std::default::Default::default);
                 },
-                Persistence::Static => quote_spanned! {op_span=>
-                    let #joindata_ident = #hydroflow.add_state(::std::cell::RefCell::new(
-                        #join_type::default()
-                    ));
-                },
+                Persistence::Static => Default::default(),
                 Persistence::Mutable => {
                     diagnostics.push(Diagnostic::spanned(
                         op_span,
@@ -156,6 +150,12 @@ pub const JOIN: OperatorConstraints = OperatorConstraints {
                     ));
                     return Err(());
                 }
+            };
+            let init = quote_spanned! {op_span=>
+                let #joindata_ident = #hydroflow.add_state(::std::cell::RefCell::new(
+                    #join_type::default()
+                ));
+                #reset
             };
             Ok((joindata_ident, borrow_ident, init))
         };

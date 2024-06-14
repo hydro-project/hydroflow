@@ -770,18 +770,17 @@ impl<'a> Hydroflow<'a> {
         self.context.add_state(state)
     }
 
-    /// Adds referenceable state into the `Hydroflow` instance. Returns a state handle which can be
-    /// used externally or by operators to access the state.
-    ///
-    /// The state will be reset to `T::default()`
-    /// at the end of each tick.
+    /// Sets a hook to reset the state at the end of each tick, using the supplied closure.
     ///
     /// This is part of the "state API".
-    pub fn add_state_tick<T>(&mut self, state: T) -> StateHandle<T>
-    where
-        T: Any + Default,
+    pub fn set_state_tick_reset<T>(
+        &mut self,
+        handle: StateHandle<T>,
+        tick_reset_fn: impl 'static + FnMut() -> T,
+    ) where
+        T: Any,
     {
-        self.context.add_state_tick(state)
+        self.context.set_state_tick_reset(handle, tick_reset_fn)
     }
 
     /// Gets a exclusive (mut) ref to the internal context, setting the subgraph ID.
