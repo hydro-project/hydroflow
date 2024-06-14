@@ -1574,6 +1574,13 @@
 <a href="#1572" id="1572">1572</a>
 <a href="#1573" id="1573">1573</a>
 <a href="#1574" id="1574">1574</a>
+<a href="#1575" id="1575">1575</a>
+<a href="#1576" id="1576">1576</a>
+<a href="#1577" id="1577">1577</a>
+<a href="#1578" id="1578">1578</a>
+<a href="#1579" id="1579">1579</a>
+<a href="#1580" id="1580">1580</a>
+<a href="#1581" id="1581">1581</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -1850,12 +1857,19 @@
             </span><span class="kw">let </span>generics = get_operator_generics(diagnostics, operator);
             <span class="comment">// Generic argument errors.
             </span>{
+                <span class="comment">// Span of `generic_args` (if it exists), otherwise span of the operator name.
+                </span><span class="kw">let </span>generics_span = generics
+                    .generic_args
+                    .as_ref()
+                    .map(Spanned::span)
+                    .unwrap_or_else(|| operator.path.span());
+
                 <span class="kw">if </span>!op_constraints
                     .persistence_args
                     .contains(<span class="kw-2">&amp;</span>generics.persistence_args.len())
                 {
                     diagnostics.push(Diagnostic::spanned(
-                        generics.generic_args.span(),
+                        generics_span,
                         Level::Error,
                         <span class="macro">format!</span>(
                             <span class="string">"`{}` should have {} persistence lifetime arguments, actually has {}."</span>,
@@ -1867,7 +1881,7 @@
                 }
                 <span class="kw">if </span>!op_constraints.type_args.contains(<span class="kw-2">&amp;</span>generics.type_args.len()) {
                     diagnostics.push(Diagnostic::spanned(
-                        generics.generic_args.span(),
+                        generics_span,
                         Level::Error,
                         <span class="macro">format!</span>(
                             <span class="string">"`{}` should have {} generic type arguments, actually has {}."</span>,
