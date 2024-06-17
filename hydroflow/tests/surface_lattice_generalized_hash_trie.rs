@@ -1,7 +1,10 @@
 use hydroflow::hydroflow_syntax;
-use hydroflow::lattices::generalized_hash_trie::GeneralizedHashTrie;
+use hydroflow::lattices::ght::GeneralizedHashTrie;
 use hydroflow::lattices::GhtType;
-use hydroflow::variadics::{var_expr, var_type}; // Import the Insert trait
+use hydroflow::util::collect_ready;
+use hydroflow::variadics::{var_expr, var_type};
+use lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
+use lattices::GhtNodeType;
 
 #[test]
 fn test_basic() {
@@ -29,30 +32,43 @@ fn test_basic() {
     df.run_available();
 }
 
-// #[test]
-// fn test_join() {
-//     type MyGHT = GhtType!(u16, u16);
-//     let r = vec![
-//         var_expr!(1, 10),
-//         var_expr!(2, 20),
-//         var_expr!(3, 30),
-//         var_expr!(4, 40),
-//     ];
-//     let s = vec![var_expr!(1, 10), var_expr!(5, 50)];
+#[test]
+fn test_join() {
+    type MyGHT = GhtType!(u16 => u16);
+    type MyGhtTrie = <MyGHT as GeneralizedHashTrie>::Trie;
+    type ResultGht = GhtType!(u16 => u16, u16);
+    let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
 
-//     let mut df = hydroflow_syntax! {
-//         R = source_iter(r)
-//             -> map(|t| MyGHT::new(vec![t]))
-//             -> lattice_fold::<'static>(MyGHT::default)
-//             -> state::<MyGHT>();
-//         S = source_iter(r)
-//             -> map(|t| MyGHT::new(vec![t]))
-//             -> lattice_fold::<'static>(MyGHT::default)
-//             -> state::<MyGHT>();
-//         R[items] -> [0]my_join;
-//         S[items] -> [1]my_join;
-//         my_join = lattice_bimorphism(KeyedBimorphism::<HashMap<_, _>, _>::from(CartesianProductBimorphism::<HashSet<_>>::default()), #R, #S)
-//             -> for_each(|t| println!("{:?}", t));
-//     };
-//     df.run_available();
-// }
+    let r = vec![
+        var_expr!(1, 10),
+        var_expr!(2, 20),
+        var_expr!(3, 30),
+        var_expr!(4, 40),
+    ];
+    let s = vec![var_expr!(1, 100), var_expr!(5, 500)];
+    type LeafProd = GhtNodeType!(u16 => u16);
+
+    type MyNodeBim =
+        <(MyGhtTrie, MyGhtTrie) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;
+    type MyBim = GhtBimorphism<MyNodeBim>;
+
+    let mut df = hydroflow_syntax! {
+        R = source_iter(r)
+            -> map(|t| MyGHT::new_from([t]))
+            -> state::<MyGHT>();
+        S = source_iter(s)
+            -> map(|t| MyGHT::new_from([t]))
+            -> state::<MyGHT>();
+        R[items] -> [0]my_join;
+        S[items] -> [1]my_join;
+        my_join = lattice_bimorphism(MyBim::default(), #R, #S)
+            -> lattice_reduce() // currently required to remove spurious "early returns"
+            -> for_each(|x| out_send.send(x).unwrap());
+    };
+    df.run_available();
+
+    assert_eq!(
+        &[ResultGht::new_from(vec![var_expr!(1, 10, 100),])],
+        &*collect_ready::<Vec<_>, _>(out_recv)
+    );
+}
