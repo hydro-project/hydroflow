@@ -289,60 +289,6 @@ where
 #[sealed]
 impl UnrefVariadic for () {
     type Unref = ();
-
-    type AsRefVar<'a> = ();
-    fn as_ref_var(&self) -> Self::AsRefVar<'_> {}
-
-    type AsMutVar<'a> = ();
-    fn as_mut_var(&mut self) -> Self::AsMutVar<'_> {}
-
-    type IterAnyRef<'a> = std::iter::Empty<&'a dyn Any>
-    where
-        Self: 'static;
-    fn iter_any_ref(&self) -> Self::IterAnyRef<'_>
-    where
-        Self: 'static,
-    {
-        std::iter::empty()
-    }
-
-    type IterAnyMut<'a> = std::iter::Empty<&'a mut dyn Any>
-    where
-        Self: 'static;
-    fn iter_any_mut(&mut self) -> Self::IterAnyMut<'_>
-    where
-        Self: 'static,
-    {
-        std::iter::empty()
-    }
-}
-
-/// Convert from a variadic of references back into the original variadic. The inverse of
-/// `AsRefVariadic` or `AsMutVariadic`.
-///
-/// This is a sealed trait.
-#[sealed]
-pub trait UnrefVariadic: Variadic {
-    /// The un-referenced variadic. Each item will have one layer of references removed.
-    type Unref: VariadicExt;
-}
-#[sealed]
-impl<Item, Rest> UnrefVariadic for (&Item, Rest)
-where
-    Rest: UnrefVariadic,
-{
-    type Unref = (Item, Rest::Unref);
-}
-#[sealed]
-impl<Item, Rest> UnrefVariadic for (&mut Item, Rest)
-where
-    Rest: UnrefVariadic,
-{
-    type Unref = (Item, Rest::Unref);
-}
-#[sealed]
-impl UnrefVariadic for () {
-    type Unref = ();
 }
 
 #[sealed]
