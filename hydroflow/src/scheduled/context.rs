@@ -149,11 +149,11 @@ impl Context {
         }
     }
 
-    /// Sets a hook to reset the state at the end of each tick, using the supplied closure.
-    pub fn set_state_tick_reset<T>(
+    /// Sets a hook to modify the state at the end of each tick, using the supplied closure.
+    pub fn set_state_tick_hook<T>(
         &mut self,
         handle: StateHandle<T>,
-        mut tick_reset_fn: impl 'static + FnMut() -> T,
+        mut tick_hook_fn: impl 'static + FnMut(&mut T),
     ) where
         T: Any,
     {
@@ -161,7 +161,7 @@ impl Context {
             .get_mut(handle.state_id.0)
             .expect("Failed to find state with given handle.")
             .tick_reset = Some(Box::new(move |state| {
-            *state.downcast_mut::<T>().unwrap() = (tick_reset_fn)();
+            (tick_hook_fn)(state.downcast_mut::<T>().unwrap());
         }));
     }
 

@@ -88,7 +88,7 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
         };
         if Persistence::Tick == persistence {
             write_prologue.extend(quote_spanned! {op_span=>
-                #hydroflow.set_state_tick_reset(#state_ident, ::std::default::Default::default);
+                #hydroflow.set_state_tick_hook(#state_ident, |rcell| { rcell.take(); }); // Resets state to `Default::default()`.
             });
         }
 

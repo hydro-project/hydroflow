@@ -87,16 +87,6 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
         let accumulator_ident = wc.make_ident("accumulator");
         let iterator_item_ident = wc.make_ident("iterator_item");
 
-        let tick_reset_code = if Persistence::Tick == persistence {
-            quote_spanned! {op_span=>
-                // Reset the value to the initializer fn if it is a new tick.
-                if #context.is_first_run_this_tick() {
-                    *#accumulator_ident = ::std::option::Option::None;
-                }
-            }
-        } else {
-            Default::default() // No code
-        };
         let iterator_foreach = quote_spanned! {op_span=>
             #[inline(always)]
             fn call_comb_type<Item>(
@@ -113,17 +103,23 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
             call_comb_type(&mut *#accumulator_ident, #iterator_item_ident, #func);
         };
 
-        let write_prologue = quote_spanned! {op_span=>
+        let mut write_prologue = quote_spanned! {op_span=>
             #[allow(clippy::redundant_closure_call)]
             let #singleton_output_ident = #hydroflow.add_state(
                 ::std::cell::RefCell::new(::std::option::Option::None)
             );
         };
+        if Persistence::Tick == persistence {
+            write_prologue.extend(quote_spanned! {op_span=>
+                // Reset the value to the initializer fn at the end of each tick.
+                #hydroflow.set_state_tick_hook(#singleton_output_ident, |rcell| { rcell.take(); });
+            });
+        }
+
         let write_iterator = if is_pull {
             quote_spanned! {op_span=>
                 let #ident = {
                     let mut #accumulator_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
-                    #tick_reset_code
 
                     #input.for_each(|#iterator_item_ident| {
                         #iterator_foreach
@@ -139,7 +135,6 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
             quote_spanned! {op_span=>
                 let #ident = {
                     let mut #accumulator_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
-                    #tick_reset_code
 
                     #root::pusherator::for_each::ForEach::new(|#iterator_item_ident| {
                         let mut #accumulator_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
@@ -161,92 +156,5 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
             write_iterator,
             write_iterator_after,
         })
-
-        // let (write_prologue, write_iterator, write_iterator_after) = match persistence {
-        //     Persistence::Tick => (
-        //         Default::default(),
-        //         quote_spanned! {op_span=>
-        //             let #ident = {
-        //                 let mut #input = #input;
-        //                 let #accumulator_ident = #input.next();
-
-        //                 #[inline(always)]
-        //                 /// A: accumulator type
-        //                 /// O: output type
-        //                 fn call_comb_type<A, O>(acc: &mut A, item: A, f: impl Fn(&mut A, A) -> O) -> O {
-        //                     f(acc, item)
-        //                 }
-
-        //                 if let ::std::option::Option::Some(mut #accumulator_ident) = #accumulator_ident {
-        //                     for #iterator_item_ident in #input {
-        //                         #[allow(clippy::redundant_closure_call)]
-        //                         call_comb_type(&mut #accumulator_ident, #iterator_item_ident, #func);
-        //                     }
-
-        //                     ::std::option::Option::Some(#accumulator_ident)
-        //                 } else {
-        //                     ::std::option::Option::None
-        //                 }.into_iter()
-        //             };
-        //         },
-        //         Default::default(),
-        //     ),
-        //     Persistence::Static => (
-        //         quote_spanned! {op_span=>
-        //             let #reducedata_ident = #hydroflow.add_state(
-        //                 ::std::cell::Cell::new(::std::option::Option::None)
-        //             );
-        //         },
-        //         quote_spanned! {op_span=>
-        //             let #ident = {
-        //                 let mut #input = #input;
-        //                 let #accumulator_ident = if let ::std::option::Option::Some(#accumulator_ident) = #context.state_ref(#reducedata_ident).take() {
-        //                     Some(#accumulator_ident)
-        //                 } else {
-        //                     #input.next()
-        //                 };
-
-        //                 #[inline(always)]
-        //                 /// A: accumulator type
-        //                 /// O: output type
-        //                 fn call_comb_type<A, O>(acc: &mut A, item: A, f: impl Fn(&mut A, A) -> O) -> O {
-        //                     f(acc, item)
-        //                 }
-
-        //                 let #ret_ident = if let ::std::option::Option::Some(mut #accumulator_ident) = #accumulator_ident {
-        //                     for #iterator_item_ident in #input {
-        //                         #[allow(clippy::redundant_closure_call)]
-        //                         call_comb_type(&mut #accumulator_ident, #iterator_item_ident, #func);
-        //                     }
-
-        //                     ::std::option::Option::Some(#accumulator_ident)
-        //                 } else {
-        //                     ::std::option::Option::None
-        //                 };
-
-        //                 #context.state_ref(#reducedata_ident).set(::std::clone::Clone::clone(&#ret_ident));
-
-        //                 #ret_ident.into_iter()
-        //             };
-        //         },
-        //         quote_spanned! {op_span=>
-        //             #context.schedule_subgraph(#context.current_subgraph(), false);
-        //         },
-        //     ),
-        //     Persistence::Mutable => {
-        //         diagnostics.push(Diagnostic::spanned(
-        //             op_span,
-        //             Level::Error,
-        //             "An implementation of 'mutable does not exist",
-        //         ));
-        //         return Err(());
-        //     }
-        // };
-
-        // Ok(OperatorWriteOutput {
-        //     write_prologue,
-        //     write_iterator,
-        //     write_iterator_after,
-        // })
     },
 };

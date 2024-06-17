@@ -80,7 +80,7 @@ pub const ENUMERATE: OperatorConstraints = OperatorConstraints {
         };
         if Persistence::Tick == persistence {
             write_prologue.extend(quote_spanned! {op_span=>
-                #hydroflow.set_state_tick_reset(#counter_ident, || ::std::cell::RefCell::new(0..));
+                #hydroflow.set_state_tick_hook(#counter_ident, |rcell| { rcell.replace(0..); });
             });
         }
 

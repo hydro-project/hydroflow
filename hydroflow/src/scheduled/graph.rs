@@ -770,17 +770,17 @@ impl<'a> Hydroflow<'a> {
         self.context.add_state(state)
     }
 
-    /// Sets a hook to reset the state at the end of each tick, using the supplied closure.
+    /// Sets a hook to modify the state at the end of each tick, using the supplied closure.
     ///
     /// This is part of the "state API".
-    pub fn set_state_tick_reset<T>(
+    pub fn set_state_tick_hook<T>(
         &mut self,
         handle: StateHandle<T>,
-        tick_reset_fn: impl 'static + FnMut() -> T,
+        tick_hook_fn: impl 'static + FnMut(&mut T),
     ) where
         T: Any,
     {
-        self.context.set_state_tick_reset(handle, tick_reset_fn)
+        self.context.set_state_tick_hook(handle, tick_hook_fn)
     }
 
     /// Gets a exclusive (mut) ref to the internal context, setting the subgraph ID.
