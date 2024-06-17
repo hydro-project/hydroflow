@@ -12,7 +12,11 @@ pub mod collections;
 mod conflict;
 mod dom_pair;
 /// GHT from the Wang/Willsey/Suciu Freejoin work
-pub mod generalized_hash_trie;
+pub mod ght;
+/// Lattice methods for GHT
+pub mod ght_lattice;
+/// Tests for GHT
+pub mod ght_test;
 /// COLT from the Wang/Willsey/Suciu Freejoin work
 // pub mod lazy_trie;
 pub mod map_union;
