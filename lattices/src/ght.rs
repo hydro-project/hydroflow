@@ -98,7 +98,7 @@ where
     V: VariadicExt + AsRefVariadicPartialEq,
     Node: GeneralizedHashTrieNode,
 {
-    /// Just calls [`GeneralizedHashTrieNode::prefix_iter`].
+    /// Just calls `prefix_iter` on the underlying trie.
     pub fn prefix_iter<'a, Prefix>(
         &'a self,
         prefix: Prefix,
