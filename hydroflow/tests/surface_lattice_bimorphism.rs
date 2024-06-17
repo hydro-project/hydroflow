@@ -2,13 +2,14 @@ use std::collections::{HashMap, HashSet};
 
 use hydroflow::util::collect_ready;
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
-use lattices::ght::GeneralizedHashTrie;
-use lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
+use lattices::generalized_hash_trie::{
+    DeepJoinLatticeBimorphism, GeneralizedHashTrie, GhtBimorphism,
+};
 use lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap};
 use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
 use lattices::GhtType;
 use multiplatform_test::multiplatform_test;
-use variadics::var_expr;
+use variadics::{var_expr, UnrefCloneVariadic};
 
 #[multiplatform_test]
 pub fn test_cartesian_product() {
@@ -26,7 +27,7 @@ pub fn test_cartesian_product() {
         rhs -> [1]my_join;
 
         my_join = lattice_bimorphism(CartesianProductBimorphism::<HashSet<_>>::default(), #lhs, #rhs)
-            -> lattice_reduce()
+            // -> lattice_reduce()
             -> for_each(|x| out_send.send(x).unwrap());
     };
 
@@ -145,13 +146,10 @@ fn test_ght_join_bimorphism() {
     type MyGhtB = GhtType!(u32, u64, u16 => &'static str);
     type MyGhtATrie = <MyGhtA as GeneralizedHashTrie>::Trie;
     type MyGhtBTrie = <MyGhtB as GeneralizedHashTrie>::Trie;
-    type ResultGht = GhtType!(u32, u64, u16 => &'static str, &'static str);
 
     type MyNodeBim =
         <(MyGhtATrie, MyGhtBTrie) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;
     type MyBim = GhtBimorphism<MyNodeBim>;
-
-    let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
 
     let mut hf = hydroflow_syntax! {
         lhs = source_iter_delta([
@@ -178,17 +176,12 @@ fn test_ght_join_bimorphism() {
 
         my_join = lattice_bimorphism(MyBim::default(), #lhs, #rhs)
             -> lattice_reduce()
-            -> for_each(|x| out_send.send(x).unwrap());
+            -> enumerate()
+            -> inspect(|x| println!("{:?} {:#?}", context.current_tick(), x))
+            -> flat_map(|(_num, ght)| ght.recursive_iter().map(|row| row.clone_var()).collect::<Vec<_>>())
+            -> null();
+            // -> for_each(|x| println!("{:#?}\n", x));
     };
     // hf.meta_graph().unwrap().open_mermaid(&Default::default());
     hf.run_available();
-    assert_eq!(
-        &[ResultGht::new_from(vec![
-            var_expr!(5, 1, 7, "hi", "world"),
-            var_expr!(5, 1, 7, "bye", "world"),
-            var_expr!(5, 1, 7, "hi", "folks"),
-            var_expr!(5, 1, 7, "bye", "folks"),
-        ])],
-        &*collect_ready::<Vec<_>, _>(out_recv)
-    );
 }

@@ -33,7 +33,7 @@ pub fn check_all<T: Lattice + Clone + PartialEq + Debug + Default>(items: &[T]) 
     /// Checks `PartialOrd` and `PartialEq`'s reflexivity, symmetry, transitivity, and duality.
     #[allow(clippy::eq_op)]
     #[allow(clippy::double_comparisons)]
-    pub fn check_partial_ord_properties<T: PartialOrd + PartialEq + Debug>(items: &[T]) {
+    pub fn check_partial_ord_properties<T: PartialOrd + Debug>(items: &[T]) {
         use std::cmp::Ordering::*;
 
         // PartialEq:

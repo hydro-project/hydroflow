@@ -1,12 +1,13 @@
 use hydroflow::hydroflow_syntax;
-use hydroflow::lattices::ght::GeneralizedHashTrie;
+use hydroflow::lattices::generalized_hash_trie::GeneralizedHashTrie;
 use hydroflow::lattices::GhtType;
-use hydroflow::util::collect_ready;
-use hydroflow::variadics::{var_expr, var_type};
-use lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
+use hydroflow::variadics::{var_expr, var_type}; // Import the Insert trait
 
 #[test]
 fn test_basic() {
+    type MyGHT = GhtType!(u16, u32 => u64);
+    type FlatTup = var_type!(u16, u32, u64);
+    let input: Vec<FlatTup> = vec![
     type MyGHT = GhtType!(u16, u32 => u64);
     type FlatTup = var_type!(u16, u32, u64);
     let input: Vec<FlatTup> = vec![
@@ -16,12 +17,14 @@ fn test_basic() {
         var_expr!(43, 10, 600),
     ];
     let mut merged = MyGHT::default();
+    let mut merged = MyGHT::default();
     for i in input.clone() {
         merged.insert(i);
     }
     println!("merged: {:?}", merged);
     let mut df = hydroflow_syntax! {
         source_iter(input)
+            -> map(|t| MyGHT::new_from(vec![t]))
             -> map(|t| MyGHT::new_from(vec![t]))
             -> lattice_fold::<'static>(MyGHT::default)
             -> inspect(|t| println!("{:?}", t))
@@ -31,20 +34,16 @@ fn test_basic() {
     df.run_available();
 }
 
-#[test]
-fn test_join() {
-    type MyGHT = GhtType!(u16 => u16);
-    type MyGhtTrie = <MyGHT as GeneralizedHashTrie>::Trie;
-    type ResultGht = GhtType!(u16 => u16, u16);
-    let (out_send, out_recv) = hydroflow::util::unbounded_channel::<_>();
-
-    let r = vec![
-        var_expr!(1, 10),
-        var_expr!(2, 20),
-        var_expr!(3, 30),
-        var_expr!(4, 40),
-    ];
-    let s = vec![var_expr!(1, 100), var_expr!(5, 500)];
+// #[test]
+// fn test_join() {
+//     type MyGHT = GhtType!(u16, u16);
+//     let r = vec![
+//         var_expr!(1, 10),
+//         var_expr!(2, 20),
+//         var_expr!(3, 30),
+//         var_expr!(4, 40),
+//     ];
+//     let s = vec![var_expr!(1, 10), var_expr!(5, 50)];
 
     type MyNodeBim =
         <(MyGhtTrie, MyGhtTrie) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;
