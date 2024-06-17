@@ -81,6 +81,7 @@ pub fn test_join() {
     );
 }
 
+/// Test for https://github.com/hydro-project/hydroflow/issues/1298
 #[multiplatform_test]
 pub fn test_cartesian_product_tick_state() {
     let (lhs_send, lhs_recv) = hydroflow::util::unbounded_channel::<u32>();
