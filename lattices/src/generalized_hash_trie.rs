@@ -10,9 +10,9 @@ use variadics::{
 
 use crate::{IsBot, IsTop, LatticeBimorphism, LatticeOrd, Merge};
 
-/// GeneralizedHashTrieTrait wraps up a root GeneralizedHashTrieNode with metadata
+/// GeneralizedHashTrie wraps up a root GeneralizedHashTrieNode with metadata
 /// for the key and value types associated with the full trie.
-pub trait GeneralizedHashTrieTrait {
+pub trait GeneralizedHashTrie {
     //+ for<'a> HtPrefixIter<var_type!(&'a Self::Head)> {
     /// Schema variadic: the type of rows we're storing
     type Schema: VariadicExt + AsRefVariadicPartialEq;
@@ -25,13 +25,14 @@ pub trait GeneralizedHashTrieTrait {
     // type Head: Eq + Hash;
     // /// The type of the Node in the root
     // type Node: GeneralizedHashTrieNode;
+    /// The underlying root Trie Node
     type Trie: GeneralizedHashTrieNode;
 
-    /// Create a new, empty Ght
-    fn new_from(input: Vec<Self::Schema>) -> Self;
+    /// Create a new Ght from the iterator.
+    fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self;
 
     /// Report the height of the tree if its not empty. This is the length of a root to leaf path -1.
-    /// E.g. if we have HtInner<HtInner<HtLeaf...>> the height is 2
+    /// E.g. if we have GhtInner<GhtInner<GhtLeaf...>> the height is 2
     fn height(&self) -> Option<usize>;
 
     /// Inserts items into the hash trie.
@@ -80,50 +81,50 @@ pub trait GeneralizedHashTrieTrait {
 
 /// GeneralizedHashTrie is a metadata node pointing to a root GeneralizedHashTrieNode.
 #[derive(Debug, Clone)]
-pub struct GeneralizedHashTrie<KeyType, ValType, Inner>
+pub struct GHT<KeyType, ValType, Node>
 where
     KeyType: VariadicExt + AsRefVariadicPartialEq,
     ValType: VariadicExt + AsRefVariadicPartialEq,
-    Inner: GeneralizedHashTrieNode,
+    Node: GeneralizedHashTrieNode,
 {
-    trie: Inner,
+    trie: Node,
     _key: std::marker::PhantomData<KeyType>,
     _val: std::marker::PhantomData<ValType>,
 }
 
-impl<K, V, Inner> GeneralizedHashTrie<K, V, Inner>
+impl<K, V, Node> GHT<K, V, Node>
 where
     K: VariadicExt + AsRefVariadicPartialEq,
     V: VariadicExt + AsRefVariadicPartialEq,
-    Inner: GeneralizedHashTrieNode,
+    Node: GeneralizedHashTrieNode,
 {
     /// Just calls [`GeneralizedHashTrieNode::prefix_iter`].
     pub fn prefix_iter<'a, Prefix>(
         &'a self,
         prefix: Prefix,
-    ) -> impl Iterator<Item = <Inner::Suffix as VariadicExt>::AsRefVar<'a>>
+    ) -> impl Iterator<Item = <Node::Suffix as VariadicExt>::AsRefVar<'a>>
     where
-        Inner: HtPrefixIter<Prefix>,
+        Node: HtPrefixIter<Prefix>,
         Prefix: 'a,
     {
         self.trie.prefix_iter(prefix)
     }
 }
 
-impl<K, V, Inner> GeneralizedHashTrieTrait for GeneralizedHashTrie<K, V, Inner>
+impl<K, V, Node> GeneralizedHashTrie for GHT<K, V, Node>
 where
     K: VariadicExt + AsRefVariadicPartialEq,
     V: VariadicExt + AsRefVariadicPartialEq,
-    Inner: GeneralizedHashTrieNode,
+    Node: GeneralizedHashTrieNode,
 {
     type KeyType = K;
     type ValType = V;
-    type Schema = Inner::Schema;
-    type Trie = Inner;
+    type Schema = Node::Schema;
+    type Trie = Node;
 
-    fn new_from(input: Vec<Self::Schema>) -> Self {
+    fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self {
         let trie = GeneralizedHashTrieNode::new_from(input);
-        GeneralizedHashTrie {
+        GHT {
             trie,
             _key: Default::default(),
             _val: Default::default(),
@@ -156,19 +157,19 @@ where
         self.trie.recursive_iter_keys()
     }
 
-    fn get_trie(&self) -> &Inner {
+    fn get_trie(&self) -> &Node {
         &self.trie
     }
 }
 
-impl<K, V, Inner> Default for GeneralizedHashTrie<K, V, Inner>
+impl<K, V, Node> Default for GHT<K, V, Node>
 where
     K: VariadicExt + AsRefVariadicPartialEq,
     V: VariadicExt + AsRefVariadicPartialEq,
-    Inner: GeneralizedHashTrieNode,
+    Node: GeneralizedHashTrieNode,
 {
     fn default() -> Self {
-        let tree = Inner::default();
+        let tree = Node::default();
         let _key: std::marker::PhantomData<K> = Default::default();
         let _val: std::marker::PhantomData<V> = Default::default();
         Self {
@@ -188,11 +189,11 @@ pub trait GeneralizedHashTrieNode: Default // + for<'a> HtPrefixIter<var_type!(&
     /// The type of the first column in the Schema
     type Head: Eq + Hash;
 
-    /// Create a new, empty Ght
-    fn new_from(input: Vec<Self::Schema>) -> Self;
+    /// Create a new Ght from the iterator.
+    fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self;
 
     /// Report the height of the tree if its not empty. This is the length of a root to leaf path -1.
-    /// E.g. if we have HtInner<HtInner<HtLeaf...>> the height is 2
+    /// E.g. if we have GhtInner<GhtInner<GhtLeaf...>> the height is 2
     fn height(&self) -> Option<usize>;
 
     /// Inserts items into the hash trie.
@@ -223,6 +224,7 @@ pub trait GeneralizedHashTrieNode: Default // + for<'a> HtPrefixIter<var_type!(&
         &self,
     ) -> impl Iterator<Item = <Self::Schema as VariadicExt>::AsRefVar<'_>>;
 
+    /// Bimorphism for joining on full tuple keys (all GhtInner keys) in the trie
     type DeepJoin<Other>
     where
         Other: GeneralizedHashTrieNode,
@@ -231,13 +233,13 @@ pub trait GeneralizedHashTrieNode: Default // + for<'a> HtPrefixIter<var_type!(&
 
 /// internal node of a HashTrie
 #[derive(Debug, Clone)]
-pub struct HtInner<Head, Node>
+pub struct GhtInner<Head, Node>
 where
     Node: GeneralizedHashTrieNode,
 {
     children: HashMap<Head, Node>,
 }
-impl<Head, Node: GeneralizedHashTrieNode> Default for HtInner<Head, Node>
+impl<Head, Node: GeneralizedHashTrieNode> Default for GhtInner<Head, Node>
 where
     Node: GeneralizedHashTrieNode,
 {
@@ -247,7 +249,7 @@ where
     }
 }
 #[sealed]
-impl<Head, Node> GeneralizedHashTrieNode for HtInner<Head, Node>
+impl<Head, Node> GeneralizedHashTrieNode for GhtInner<Head, Node>
 where
     Head: 'static + Hash + Eq,
     Node: 'static + GeneralizedHashTrieNode,
@@ -255,7 +257,7 @@ where
     type Schema = var_type!(Head, ...Node::Schema);
     type Head = Head;
 
-    fn new_from(input: Vec<Self::Schema>) -> Self {
+    fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self {
         let mut retval: Self = Default::default();
         for i in input {
             retval.insert(i);
@@ -313,7 +315,7 @@ where
         Other: GeneralizedHashTrieNode,
         (Self, Other): DeepJoinLatticeBimorphism;
 }
-impl<Head, Node> FromIterator<var_type!(Head, ...Node::Schema)> for HtInner<Head, Node>
+impl<Head, Node> FromIterator<var_type!(Head, ...Node::Schema)> for GhtInner<Head, Node>
 where
     Head: 'static + Hash + Eq,
     Node: 'static + GeneralizedHashTrieNode,
@@ -329,13 +331,13 @@ where
 
 /// leaf node of a HashTrie
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct HtLeaf<T>
+pub struct GhtLeaf<T>
 where
     T: Hash + Eq,
 {
     elements: HashSet<T>,
 }
-impl<T> Default for HtLeaf<T>
+impl<T> Default for GhtLeaf<T>
 where
     T: Hash + Eq,
 {
@@ -345,14 +347,14 @@ where
     }
 }
 #[sealed]
-impl<T> GeneralizedHashTrieNode for HtLeaf<T>
+impl<T> GeneralizedHashTrieNode for GhtLeaf<T>
 where
     T: 'static + Eq + VariadicExt + AsRefVariadicPartialEq + Hash,
 {
     type Schema = T;
     type Head = T;
 
-    fn new_from(input: Vec<Self::Schema>) -> Self {
+    fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self {
         let mut retval: Self = Default::default();
         for i in input {
             retval.insert(i);
@@ -398,7 +400,7 @@ where
         (Self, Other): DeepJoinLatticeBimorphism;
 }
 
-impl<T> FromIterator<T> for HtLeaf<T>
+impl<T> FromIterator<T> for GhtLeaf<T>
 where
     T: Hash + Eq,
 {
@@ -408,25 +410,24 @@ where
     }
 }
 
-impl<KeyType, ValType, Inner> Merge<GeneralizedHashTrie<KeyType, ValType, Inner>>
-    for GeneralizedHashTrie<KeyType, ValType, Inner>
+impl<KeyType, ValType, Inner> Merge<GHT<KeyType, ValType, Inner>> for GHT<KeyType, ValType, Inner>
 where
     KeyType: VariadicExt + AsRefVariadicPartialEq,
     ValType: VariadicExt + AsRefVariadicPartialEq,
     Inner: GeneralizedHashTrieNode + Merge<Inner>,
 {
-    fn merge(&mut self, other: GeneralizedHashTrie<KeyType, ValType, Inner>) -> bool {
+    fn merge(&mut self, other: GHT<KeyType, ValType, Inner>) -> bool {
         self.trie.merge(other.trie)
     }
 }
 
-impl<Head, Node> Merge<HtInner<Head, Node>> for HtInner<Head, Node>
+impl<Head, Node> Merge<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
     Node: GeneralizedHashTrieNode + Merge<Node>,
     Self: GeneralizedHashTrieNode,
     Head: Hash + Eq,
 {
-    fn merge(&mut self, other: HtInner<Head, Node>) -> bool {
+    fn merge(&mut self, other: GhtInner<Head, Node>) -> bool {
         let mut changed = false;
 
         for (k, v) in other.children.into_iter() {
@@ -444,35 +445,35 @@ where
     }
 }
 
-impl<T> Merge<HtLeaf<T>> for HtLeaf<T>
+impl<T> Merge<GhtLeaf<T>> for GhtLeaf<T>
 where
     T: Hash + Eq,
 {
-    fn merge(&mut self, other: HtLeaf<T>) -> bool {
+    fn merge(&mut self, other: GhtLeaf<T>) -> bool {
         let old_len = self.elements.len();
         self.elements.extend(other.elements);
         self.elements.len() > old_len
     }
 }
 
-impl<KeyType, ValType, Inner> PartialEq<GeneralizedHashTrie<KeyType, ValType, Inner>>
-    for GeneralizedHashTrie<KeyType, ValType, Inner>
+impl<KeyType, ValType, Inner> PartialEq<GHT<KeyType, ValType, Inner>>
+    for GHT<KeyType, ValType, Inner>
 where
     KeyType: VariadicExt + AsRefVariadicPartialEq,
     ValType: VariadicExt + AsRefVariadicPartialEq,
     Inner: GeneralizedHashTrieNode + Merge<Inner> + PartialEq,
 {
-    fn eq(&self, other: &GeneralizedHashTrie<KeyType, ValType, Inner>) -> bool {
+    fn eq(&self, other: &GHT<KeyType, ValType, Inner>) -> bool {
         self.trie.eq(&other.trie)
     }
 }
 
-impl<Head, Node> PartialEq<HtInner<Head, Node>> for HtInner<Head, Node>
+impl<Head, Node> PartialEq<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
     Head: Hash + Eq + 'static,
     Node: GeneralizedHashTrieNode + 'static + PartialEq,
 {
-    fn eq(&self, other: &HtInner<Head, Node>) -> bool {
+    fn eq(&self, other: &GhtInner<Head, Node>) -> bool {
         if self.children.len() != other.children.len() {
             return false;
         }
@@ -489,27 +490,24 @@ where
     }
 }
 
-impl<KeyType, ValType, Inner> PartialOrd<GeneralizedHashTrie<KeyType, ValType, Inner>>
-    for GeneralizedHashTrie<KeyType, ValType, Inner>
+impl<KeyType, ValType, Inner> PartialOrd<GHT<KeyType, ValType, Inner>>
+    for GHT<KeyType, ValType, Inner>
 where
     KeyType: VariadicExt + AsRefVariadicPartialEq,
     ValType: VariadicExt + AsRefVariadicPartialEq,
     Inner: GeneralizedHashTrieNode + Merge<Inner> + PartialOrd,
 {
-    fn partial_cmp(
-        &self,
-        other: &GeneralizedHashTrie<KeyType, ValType, Inner>,
-    ) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &GHT<KeyType, ValType, Inner>) -> Option<Ordering> {
         self.trie.partial_cmp(&other.trie)
     }
 }
 
-impl<Head, Node> PartialOrd<HtInner<Head, Node>> for HtInner<Head, Node>
+impl<Head, Node> PartialOrd<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
     Head: Hash + Eq + 'static,
     Node: 'static + GeneralizedHashTrieNode + PartialEq + PartialOrd,
 {
-    fn partial_cmp(&self, other: &HtInner<Head, Node>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &GhtInner<Head, Node>) -> Option<Ordering> {
         if self.children.is_empty() && other.children.is_empty() {
             Some(Equal)
         } else {
@@ -556,11 +554,11 @@ where
     }
 }
 
-impl<T> PartialOrd<HtLeaf<T>> for HtLeaf<T>
+impl<T> PartialOrd<GhtLeaf<T>> for GhtLeaf<T>
 where
     T: 'static + Hash + Eq,
 {
-    fn partial_cmp(&self, other: &HtLeaf<T>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &GhtLeaf<T>) -> Option<Ordering> {
         match self.elements.len().cmp(&other.elements.len()) {
             Greater => {
                 if other
@@ -599,37 +597,37 @@ where
     }
 }
 
-impl<KeyType, ValType, Inner> LatticeOrd<GeneralizedHashTrie<KeyType, ValType, Inner>>
-    for GeneralizedHashTrie<KeyType, ValType, Inner>
+impl<KeyType, ValType, Inner> LatticeOrd<GHT<KeyType, ValType, Inner>>
+    for GHT<KeyType, ValType, Inner>
 where
     KeyType: VariadicExt + AsRefVariadicPartialEq,
     ValType: VariadicExt + AsRefVariadicPartialEq,
     Inner: GeneralizedHashTrieNode,
-    Self: PartialOrd<GeneralizedHashTrie<KeyType, ValType, Inner>>,
+    Self: PartialOrd<GHT<KeyType, ValType, Inner>>,
 {
 }
 
-impl<Head, Node> LatticeOrd<HtInner<Head, Node>> for HtInner<Head, Node>
+impl<Head, Node> LatticeOrd<GhtInner<Head, Node>> for GhtInner<Head, Node>
 where
-    Self: PartialOrd<HtInner<Head, Node>>,
+    Self: PartialOrd<GhtInner<Head, Node>>,
     Node: GeneralizedHashTrieNode,
 {
 }
-impl<T> LatticeOrd<HtLeaf<T>> for HtLeaf<T>
+impl<T> LatticeOrd<GhtLeaf<T>> for GhtLeaf<T>
 where
-    Self: PartialOrd<HtLeaf<T>>,
+    Self: PartialOrd<GhtLeaf<T>>,
     T: Hash + Eq,
 {
 }
 
-impl<Head, Node> Eq for HtInner<Head, Node>
+impl<Head, Node> Eq for GhtInner<Head, Node>
 where
     Node: GeneralizedHashTrieNode,
     Self: PartialEq,
 {
 }
 
-impl<KeyType, ValType, Inner> IsBot for GeneralizedHashTrie<KeyType, ValType, Inner>
+impl<KeyType, ValType, Inner> IsBot for GHT<KeyType, ValType, Inner>
 where
     KeyType: VariadicExt + AsRefVariadicPartialEq,
     ValType: VariadicExt + AsRefVariadicPartialEq,
@@ -640,7 +638,7 @@ where
     }
 }
 
-impl<Head, Node> IsBot for HtInner<Head, Node>
+impl<Head, Node> IsBot for GhtInner<Head, Node>
 where
     Node: GeneralizedHashTrieNode + IsBot,
 {
@@ -649,7 +647,7 @@ where
     }
 }
 
-impl<T> IsBot for HtLeaf<T>
+impl<T> IsBot for GhtLeaf<T>
 where
     T: Hash + Eq,
 {
@@ -658,7 +656,7 @@ where
     }
 }
 
-impl<KeyType, ValType, Inner> IsTop for GeneralizedHashTrie<KeyType, ValType, Inner>
+impl<KeyType, ValType, Inner> IsTop for GHT<KeyType, ValType, Inner>
 where
     KeyType: VariadicExt + AsRefVariadicPartialEq,
     ValType: VariadicExt + AsRefVariadicPartialEq,
@@ -669,7 +667,7 @@ where
     }
 }
 
-impl<Head, Node> IsTop for HtInner<Head, Node>
+impl<Head, Node> IsTop for GhtInner<Head, Node>
 where
     Node: GeneralizedHashTrieNode,
 {
@@ -678,7 +676,7 @@ where
     }
 }
 
-impl<T> IsTop for HtLeaf<T>
+impl<T> IsTop for GhtLeaf<T>
 where
     T: Hash + Eq,
 {
@@ -724,7 +722,7 @@ pub trait HtPrefixIter<Prefix> {
 // }
 #[sealed]
 impl<'k, Head, Node, PrefixRest> HtPrefixIter<var_type!(&'k Head, ...PrefixRest)>
-    for HtInner<Head, Node>
+    for GhtInner<Head, Node>
 where
     Head: Eq + Hash,
     Node: GeneralizedHashTrieNode + HtPrefixIter<PrefixRest>,
@@ -748,7 +746,7 @@ where
     }
 }
 #[sealed]
-impl<'k, Head> HtPrefixIter<var_type!(&'k Head)> for HtLeaf<Head>
+impl<'k, Head> HtPrefixIter<var_type!(&'k Head)> for GhtLeaf<Head>
 where
     Head: Eq + Hash,
 {
@@ -785,33 +783,33 @@ where
 /// dependent column types. You pass it:
 ///    - a list of key column types and dependent column type separated by a fat arrow,
 ///         a la (K1, K2, K3 => T1, T2, T3)
-/// This macro generates a hierarchy of GHT node types where each key column is associated with an HtInner
+/// This macro generates a hierarchy of GHT node types where each key column is associated with an GhtInner
 /// of the associated column type, and the remaining dependent columns are associated with a variadic HTleaf
 /// a la var_expr!(T1, T2, T3)
 #[macro_export]
 macro_rules! GhtNodeType {
     // Empty key base case.
     (() => $( $z:ty ),*) => (
-        HtLeaf::<var_type!($( $z ),* )>
+        $crate::generalized_hash_trie::GhtLeaf::<$crate::variadics::var_type!($( $z ),* )>
     );
     // Singleton key base case.
     ($a:ty => $( $z:ty ),*) => (
-        HtInner::<$a, HtLeaf::<var_type!($( $z ),*)>>
+        $crate::generalized_hash_trie::GhtInner::<$a, $crate::generalized_hash_trie::GhtLeaf::<$crate::variadics::var_type!($( $z ),*)>>
     );
     // Recursive case.
     ($a:ty, $( $b:ty ),* => $( $z:ty ),*) => (
-        HtInner::<$a, GhtNodeType!($( $b ),* => $( $z ),*)>
+        $crate::generalized_hash_trie::GhtInner::<$a, $crate::GhtNodeType!($( $b ),* => $( $z ),*)>
     );
 }
 
-/// Create a GHT with the appropriate KeyType, ValType, Schema, and a pointer to the HtInner at the root of the Trie
+/// Create a GHT with the appropriate KeyType, ValType, Schema, and a pointer to the GhtInner at the root of the Trie
 #[macro_export]
-macro_rules! Ght {
+macro_rules! GhtType {
     ($a:ty => $( $z:ty ),* ) => (
-        GeneralizedHashTrie::<var_type!($a), var_type!($( $z ),*), GhtNodeType!($a => $( $z ),*)>
+        $crate::generalized_hash_trie::GHT::<$crate::variadics::var_type!($a), $crate::variadics::var_type!($( $z ),*), $crate::GhtNodeType!($a => $( $z ),*)>
     );
     ($a:ty, $( $b:ty ),+  => $( $z:ty ),* ) => (
-        GeneralizedHashTrie::<var_type!( $a, $( $b ),+ ), var_type!($( $z ),*), GhtNodeType!($a, $( $b ),+ => $( $z ),*)>
+        $crate::generalized_hash_trie::GHT::<$crate::variadics::var_type!( $a, $( $b ),+ ), $crate::variadics::var_type!($( $z ),*), $crate::GhtNodeType!($a, $( $b ),+ => $( $z ),*)>
     );
 }
 
@@ -853,6 +851,7 @@ where
 /// Composable bimorphism, wraps an existing morphism by partitioning it per key.
 ///
 /// For example, `GhtKeyedBimorphism<..., GhtCartesianProduct<...>>` is a join.
+#[derive(Default)]
 pub struct GhtBimorphism<Bimorphism> {
     bimorphism: Bimorphism,
     // _phantom: std::marker::PhantomData<fn() -> MapOut>,
@@ -871,8 +870,8 @@ impl<Bimorphism> GhtBimorphism<Bimorphism> {
 //     for GhtKeyedBimorphism<ValFunc>
 // where
 //     Head: 'static + Clone + Hash + Eq,
-//     GhtA: 'static + GeneralizedHashTrieTrait<Head = Head>,
-//     GhtB: 'static + GeneralizedHashTrieTrait<Head = Head>,
+//     GhtA: 'static + GeneralizedHashTrie<Head = Head>,
+//     GhtB: 'static + GeneralizedHashTrie<Head = Head>,
 //     GhtA::Node: 'static + Clone, // BAD: cloning subtrees
 //     GhtB::Node: 'static + Clone, // BAD: cloning subtrees
 //     // <GhtA::Node as GeneralizedHashTrieNode>::Get: Clone, // BAD: cloning subtrees
@@ -882,7 +881,7 @@ impl<Bimorphism> GhtBimorphism<Bimorphism> {
 //     // for<'a> <GhtA::Schema as VariadicExt>::AsRefVar<'a>: UnrefCloneVariadic,
 //     // for<'a> <GhtB::Schema as VariadicExt>::AsRefVar<'a>: UnrefCloneVariadic,
 // {
-//     type Output = HtInner<Head, Output>; // HashMap<Head, ValFunc::Output>; // GhtOut;
+//     type Output = GhtInner<Head, Output>; // HashMap<Head, ValFunc::Output>; // GhtOut;
 
 //     fn call(&mut self, ght_a: GhtA, ght_b: GhtB) -> Self::Output {
 //         let mut children = HashMap::<Head, ValFunc::Output>::new();
@@ -895,9 +894,9 @@ impl<Bimorphism> GhtBimorphism<Bimorphism> {
 //                 children.insert(head.clone(), val);
 //             }
 //         }
-//         HtInner { children }
+//         GhtInner { children }
 //         // GeneralizedHashTrie {
-//         //     trie: HtInner { children },
+//         //     trie: GhtInner { children },
 //         //     _key: std::marker::PhantomData,
 //         //     _val: std::marker::PhantomData,
 //         // }
@@ -906,8 +905,8 @@ impl<Bimorphism> GhtBimorphism<Bimorphism> {
 
 impl<GhtA, GhtB, ValFunc, Output> LatticeBimorphism<GhtA, GhtB> for GhtBimorphism<ValFunc>
 where
-    GhtA: GeneralizedHashTrieTrait,
-    GhtB: GeneralizedHashTrieTrait,
+    GhtA: GeneralizedHashTrie,
+    GhtB: GeneralizedHashTrie,
     // // GhtA::Node: 'static + Clone, // BAD: cloning subtrees
     // // GhtB::Node: 'static + Clone, // BAD: cloning subtrees
     // // <GhtA::Node as GeneralizedHashTrieNode>::Get: Clone, // BAD: cloning subtrees
@@ -917,12 +916,12 @@ where
     // // for<'a> <GhtA::Schema as VariadicExt>::AsRefVar<'a>: UnrefCloneVariadic,
     // // for<'a> <GhtB::Schema as VariadicExt>::AsRefVar<'a>: UnrefCloneVariadic,
 {
-    type Output = GeneralizedHashTrie<(), (), Output>; // HashMap<Head, ValFunc::Output>; // GhtOut;
+    type Output = GHT<(), (), Output>; // HashMap<Head, ValFunc::Output>; // GhtOut;
 
     fn call(&mut self, ght_a: GhtA, ght_b: GhtB) -> Self::Output {
         let node_bim = &mut self.bimorphism; // GhtNodeKeyedBimorphism::<ValFunc>::new(self.bimorphism);
         let trie = node_bim.call(ght_a.get_trie(), ght_b.get_trie());
-        GeneralizedHashTrie {
+        GHT {
             trie,
             _key: std::marker::PhantomData,
             _val: std::marker::PhantomData,
@@ -931,14 +930,18 @@ where
 }
 
 #[derive(Default)]
+/// bimorphism trait for equijoining Ght Nodes
 pub struct GhtNodeKeyedBimorphism<Bimorphism> {
     bimorphism: Bimorphism,
 }
+/// bimorphism implementation for equijoining Ght Nodes
 impl<Bimorphism> GhtNodeKeyedBimorphism<Bimorphism> {
+    /// initialize bimorphism
     pub fn new(bimorphism: Bimorphism) -> Self {
         Self { bimorphism }
     }
 }
+/// bimorphism implementation for equijoining Ght Nodes
 impl<'a, 'b, Head, GhtA, GhtB, ValFunc> LatticeBimorphism<&'a GhtA, &'b GhtB>
     for GhtNodeKeyedBimorphism<ValFunc>
 where
@@ -957,7 +960,7 @@ where
     <GhtA::Schema as VariadicExt>::AsRefVar<'a>: UnrefCloneVariadic,
     <GhtB::Schema as VariadicExt>::AsRefVar<'b>: UnrefCloneVariadic,
 {
-    type Output = HtInner<Head, ValFunc::Output>; // HashMap<Head, ValFunc::Output>; // GhtOut;
+    type Output = GhtInner<Head, ValFunc::Output>; // HashMap<Head, ValFunc::Output>; // GhtOut;
 
     fn call(&mut self, ght_a: &'a GhtA, ght_b: &'b GhtB) -> Self::Output {
         let mut children = HashMap::<Head, ValFunc::Output>::new();
@@ -968,14 +971,18 @@ where
                 children.insert(head.clone(), val);
             }
         }
-        HtInner { children }
+        GhtInner { children }
     }
 }
 
+/// bimorphism trait for equijoin on full tuple (keys in all GhtInner nodes)
 pub trait DeepJoinLatticeBimorphism {
+    /// bimorphism type for equijoin on full tuple (keys in all GhtInner nodes)
     type DeepJoinLatticeBimorphism;
 }
-impl<Head, NodeA, NodeB> DeepJoinLatticeBimorphism for (HtInner<Head, NodeA>, HtInner<Head, NodeB>)
+/// bimorphism implementation for equijoin on full tuple (keys in all GhtInner nodes)
+impl<Head, NodeA, NodeB> DeepJoinLatticeBimorphism
+    for (GhtInner<Head, NodeA>, GhtInner<Head, NodeB>)
 where
     Head: 'static + Hash + Eq + Clone,
     NodeA: 'static + GeneralizedHashTrieNode,
@@ -986,7 +993,7 @@ where
         <(NodeA, NodeB) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism,
     >;
 }
-impl<A, B> DeepJoinLatticeBimorphism for (HtLeaf<A>, HtLeaf<B>)
+impl<A, B> DeepJoinLatticeBimorphism for (GhtLeaf<A>, GhtLeaf<B>)
 where
     A: 'static + VariadicExt + Eq + Hash + AsRefVariadicPartialEq,
     B: 'static + VariadicExt + Eq + Hash + AsRefVariadicPartialEq,
@@ -994,7 +1001,7 @@ where
     for<'x> B::AsRefVar<'x>: UnrefCloneVariadic,
     var_type!(...A, ...B): Eq + Hash,
 {
-    type DeepJoinLatticeBimorphism = GhtCartesianProductBimorphism<HtLeaf<var_type!(...A, ...B)>>;
+    type DeepJoinLatticeBimorphism = GhtCartesianProductBimorphism<GhtLeaf<var_type!(...A, ...B)>>;
 }
 
 #[cfg(test)]
@@ -1005,12 +1012,12 @@ mod tests {
     #[test]
     fn basic_test() {
         // Example usage
-        type MyTrie1 = Ght!(u32, u32 => &'static str);
+        type MyTrie1 = GhtType!(u32, u32 => &'static str);
         let htrie1 = MyTrie1::new_from(vec![var_expr!(42, 314, "hello")]);
         assert!(htrie1.contains(var_expr!(&42, &314, &"hello")));
         assert_eq!(htrie1.recursive_iter().count(), 1);
 
-        type MyTrie2 = Ght!(u32 => u32);
+        type MyTrie2 = GhtType!(u32 => u32);
         let htrie2 = MyTrie2::new_from(vec![var_expr!(42, 314)]);
         assert!(htrie2.contains(var_expr!(&42, &314)));
         assert_eq!(htrie1.recursive_iter().count(), 1);
@@ -1041,7 +1048,7 @@ mod tests {
 
     #[test]
     fn test_insert() {
-        let mut htrie = <Ght!(u16, u32 => u64)>::default();
+        let mut htrie = <GhtType!(u16, u32 => u64)>::default();
         htrie.insert(var_expr!(42, 314, 43770));
         assert_eq!(htrie.recursive_iter().count(), 1);
         htrie.insert(var_expr!(42, 315, 43770));
@@ -1054,7 +1061,7 @@ mod tests {
         assert!(htrie.contains(var_expr!(&42, &315, &43770)));
         assert!(htrie.contains(var_expr!(&43, &10, &600)));
 
-        type LongKeyLongValTrie = Ght!(u32, u64 => u16, &'static str);
+        type LongKeyLongValTrie = GhtType!(u32, u64 => u16, &'static str);
         let mut htrie = LongKeyLongValTrie::new_from(vec![var_expr!(1, 999, 222, "hello")]);
         htrie.insert(var_expr!(1, 999, 111, "bye"));
         htrie.insert(var_expr!(1, 1000, 123, "cya"));
@@ -1077,7 +1084,7 @@ mod tests {
 
     #[test]
     fn test_contains() {
-        type MyGht = Ght!(u16, u32 => u64);
+        type MyGht = GhtType!(u16, u32 => u64);
         let htrie = MyGht::new_from(vec![var_expr!(42_u16, 314_u32, 43770_u64)]);
         println!("HTrie: {:?}", htrie);
         let x = var_expr!(&42, &314, &43770);
@@ -1091,7 +1098,7 @@ mod tests {
 
     #[test]
     fn test_recursive_iter() {
-        type MyGht = Ght!(u32, u32 => u32);
+        type MyGht = GhtType!(u32, u32 => u32);
         let mut htrie = MyGht::new_from(vec![var_expr!(42, 314, 43770)]);
         htrie.insert(var_expr!(42, 315, 43770));
         htrie.insert(var_expr!(42, 314, 30619));
@@ -1103,7 +1110,7 @@ mod tests {
 
     #[test]
     fn test_get() {
-        type MyGht = Ght!(u32, u32 => u32);
+        type MyGht = GhtType!(u32, u32 => u32);
         let ht_root = MyGht::new_from(vec![var_expr!(42, 314, 43770)]);
 
         let inner = ht_root.trie.get(&42).unwrap();
@@ -1117,7 +1124,7 @@ mod tests {
 
     #[test]
     fn test_iter() {
-        type MyGht = Ght!(u32, u32 => u32);
+        type MyGht = GhtType!(u32, u32 => u32);
         let ht_root = MyGht::new_from(vec![var_expr!(42, 314, 43770)]);
         let inner_key = ht_root.trie.iter().next().unwrap();
         let inner = ht_root.trie.get(inner_key).unwrap();
@@ -1132,7 +1139,7 @@ mod tests {
 
     #[test]
     fn test_prefix_iter() {
-        type MyGht = Ght!(u32, u32 => u32);
+        type MyGht = GhtType!(u32, u32 => u32);
         let mut htrie = MyGht::new_from(vec![var_expr!(42, 314, 43770)]);
 
         htrie.insert(var_expr!(42, 315, 43770));
@@ -1160,7 +1167,7 @@ mod tests {
 
     #[test]
     fn test_prefix_iter_complex() {
-        type MyGht = Ght!(bool, u32, &'static str => i32);
+        type MyGht = GhtType!(bool, u32, &'static str => i32);
         let mut htrie = MyGht::new_from(vec![var_expr!(true, 1, "hello", -5)]);
 
         htrie.insert(var_expr!(true, 2, "hello", 1));
@@ -1179,7 +1186,7 @@ mod tests {
     }
     #[test]
     fn test_merge() {
-        type MyGht = Ght!(u32, u64 => u16, &'static str);
+        type MyGht = GhtType!(u32, u64 => u16, &'static str);
 
         let mut test_ght1 = MyGht::new_from(vec![var_expr!(42, 314, 10, "hello")]);
         let mut test_ght2 = MyGht::new_from(vec![var_expr!(42, 314, 10, "hello")]);
@@ -1197,8 +1204,8 @@ mod tests {
         }
     }
     #[test]
-    fn test_lattice() {
-        type MyGht = Ght!(u32, u64 => u16, &'static str);
+    fn test_node_lattice() {
+        type MyGht = GhtType!(u32, u64 => u16, &'static str);
         type MyGhtNode = GhtNodeType!(u32, u64 => u16, &'static str);
 
         let mut test_vec: Vec<MyGhtNode> = Vec::new();
@@ -1212,25 +1219,20 @@ mod tests {
         let mut test_ght4 = test_ght3.clone();
         test_ght4.insert(var_expr!(43, 1, 1, "level 1"));
 
-        for ght in [
-            empty_ght.trie,
-            test_ght1.trie,
-            test_ght2.trie,
-            test_ght3.trie,
-            test_ght4.trie,
-        ] {
+        let test_vec_wrap = [empty_ght, test_ght1, test_ght2, test_ght3, test_ght4];
+
+        for ght in test_vec_wrap.iter().map(|x| x.get_trie().clone()) {
             ght.naive_cmp(&ght.clone());
             test_vec.push(ght);
         }
-        crate::test::check_lattice_ord(&test_vec);
-        crate::test::check_partial_ord_properties(&test_vec);
-        crate::test::check_lattice_properties(&test_vec);
+        crate::test::check_all(&test_vec);
+        crate::test::check_all(&test_vec_wrap);
     }
 
     #[test]
     fn test_bimorphism() {
-        type MyGhtA = Ght!(u32, u64 => u16, &'static str);
-        type MyGhtB = Ght!(u32, u64, u16 => &'static str);
+        type MyGhtA = GhtType!(u32, u64 => u16, &'static str);
+        type MyGhtB = GhtType!(u32, u64, u16 => &'static str);
 
         let mut ght_a = MyGhtA::default();
         let mut ght_b = MyGhtB::default();
@@ -1254,12 +1256,12 @@ mod tests {
     }
 
     #[test]
-    fn test_keyed_bimorphism() {
-        type MyGhtA = GhtNodeType!(u32, u64, u16 => &'static str);
-        type MyGhtB = GhtNodeType!(u32, u64, u16 => &'static str);
+    fn test_join_bimorphism() {
+        type MyGhtATrie = GhtNodeType!(u32, u64, u16 => &'static str);
+        type MyGhtBTrie = GhtNodeType!(u32, u64, u16 => &'static str);
 
-        let mut ght_a = MyGhtA::default();
-        let mut ght_b = MyGhtB::default();
+        let mut ght_a = MyGhtATrie::default();
+        let mut ght_b = MyGhtBTrie::default();
 
         ght_a.insert(var_expr!(123, 2, 5, "hello"));
         ght_a.insert(var_expr!(50, 1, 1, "hi"));
@@ -1307,8 +1309,9 @@ mod tests {
         }
         {
             // This is a more compact representation of the block above.
-            type MyBim = <(MyGhtA, MyGhtB) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;
-            let mut bim = <MyBim as Default>::default();
+            type MyNodeBim =
+                <(MyGhtATrie, MyGhtBTrie) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;
+            let mut bim = <MyNodeBim as Default>::default();
             let out = bim.call(&ght_a, &ght_b);
             println!("{:?}", out);
             for row in out.recursive_iter() {
@@ -1317,26 +1320,22 @@ mod tests {
         }
         {
             // This is an even more compact representation of the block above.
-            type MyBim = <MyGhtA as GeneralizedHashTrieNode>::DeepJoin<MyGhtB>;
-            let mut bim = <MyBim as Default>::default();
+            type MyNodeBim = <MyGhtATrie as GeneralizedHashTrieNode>::DeepJoin<MyGhtBTrie>;
+            let mut bim = <MyNodeBim as Default>::default();
             let out = bim.call(&ght_a, &ght_b);
             println!("{:?}", out);
             for row in out.recursive_iter() {
                 println!("ROW {:?}", row);
             }
         }
-
-        // println!(
-        //     "{:?}: count {:?}",
-        //     ght_out,
-        //     ght_out.recursive_iter().count()
-        // );
     }
 
     #[test]
-    fn test_keyed_bimorphism_wrapper() {
-        type MyGhtA = Ght!(u32, u64, u16 => &'static str);
-        type MyGhtB = Ght!(u32, u64, u16 => &'static str);
+    fn test_join_bimorphism_wrapper() {
+        type MyGhtA = GhtType!(u32, u64, u16 => &'static str);
+        type MyGhtB = GhtType!(u32, u64, u16 => &'static str);
+        type MyGhtATrie = <MyGhtA as GeneralizedHashTrie>::Trie;
+        type MyGhtBTrie = <MyGhtB as GeneralizedHashTrie>::Trie;
 
         let mut ght_a = MyGhtA::default();
         let mut ght_b = MyGhtB::default();
@@ -1388,17 +1387,34 @@ mod tests {
                 println!("ROW {:?}", row);
             }
         }
-
-        // println!(
-        //     "{:?}: count {:?}",
-        //     ght_out,
-        //     ght_out.recursive_iter().count()
-        // );
+        {
+            // This is a more compact representation of the block above.
+            type MyNodeBim =
+                <(MyGhtATrie, MyGhtBTrie) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;
+            type MyBim = GhtBimorphism<MyNodeBim>;
+            let mut bim = <MyBim as Default>::default();
+            let out = bim.call(ght_a.clone(), ght_b.clone());
+            println!("{:?}", out);
+            for row in out.recursive_iter() {
+                println!("ROW {:?}", row);
+            }
+        }
+        {
+            // This is an even more compact representation of the block above.
+            type MyNodeBim = <MyGhtATrie as GeneralizedHashTrieNode>::DeepJoin<MyGhtBTrie>;
+            type MyBim = GhtBimorphism<MyNodeBim>;
+            let mut bim = <MyBim as Default>::default();
+            let out = bim.call(ght_a.clone(), ght_b.clone());
+            println!("{:?}", out);
+            for row in out.recursive_iter() {
+                println!("ROW {:?}", row);
+            }
+        }
     }
 
     #[test]
     fn test_recursive_iter_keys() {
-        type MyGht = Ght!(u32 => u32, u32);
+        type MyGht = GhtType!(u32 => u32, u32);
         let mut htrie = MyGht::new_from(vec![var_expr!(42, 314, 43770)]);
         htrie.insert(var_expr!(42, 315, 43770));
         htrie.insert(var_expr!(43, 10, 600));
@@ -1407,72 +1423,6 @@ mod tests {
             println!("row: {:?}, height: {}", row, htrie.height().unwrap());
         }
     }
-
-    // pub trait KeyedVariadic: Variadic {
-    //     fn eq_keys(&self, other: &Self) -> bool;
-    // }
-    // impl<Item1, Item2, Rest> KeyedVariadic for (Item1, (Item2, Rest))
-    // where
-    //     Item1: PartialEq,
-    //     Item2: PartialEq,
-    //     Rest: VariadicExt,
-    // {
-    //     fn eq_keys(&self, other: &Self) -> bool {
-    //         let (item1, (item2, _)) = self;
-    //         let (other_item1, (other_item2, _)) = other;
-    //         item1 == other_item1 && item2 == other_item2
-    //     }
-    // }
-    // impl KeyedVariadic for () {
-    //     fn eq_keys(&self, _other: &Self) -> bool {
-    //         true
-    //     }
-    // }
-
-    // #[macro_export]
-    // macro_rules! KeyedVariadicEq {
-    //     // Base case: when the variadic list is empty, return true.
-    //     () => {
-    //         true
-    //     };
-    //     // Recursive case: when the last element is a nested singleton variadic.
-    //     ($a:expr, ($b:expr, ())) => {
-    //         $a
-    //     };
-    //     // Recursive case: when there are more elements in the variadic list.
-    //     ($a:expr, $($rest:tt)*) => {
-    //         $a && KeyedVariadicEq!($($rest)*)
-    //     };
-    // }
-
-    // // Define an enum to encapsulate the tuple variations
-    // enum TupleVariant<T, U>
-    // where
-    //     U: VariadicExt,
-    // {
-    //     GeneralCase(T, U),
-    //     UnitCase(T),
-    // }
-    // // Implement the trait for the enum
-    // impl<Head, Rest> PartialEqExceptNested for TupleVariant<Head, Rest>
-    // where
-    //     TupleVariant<Head, Rest>: VariadicExt,
-    //     Head: PartialEq,
-    //     Rest: VariadicExt + PartialEqExceptNested,
-    // {
-    //     fn eq_except_nested(&self, other: &Self) -> bool {
-    //         match self {
-    //             TupleVariant::GeneralCase(head, rest) => {
-    //                 if let TupleVariant::GeneralCase(other_item, other_rest) = other {
-    //                     head == other_item && rest.eq_except_nested(other_rest)
-    //                 } else {
-    //                     panic!()
-    //                 }
-    //             }
-    //             TupleVariant::UnitCase(_head) => true,
-    //         }
-    //     }
-    // }
 
     pub trait PartialEqExceptNested: variadics::Variadic {
         fn eq_except_nested(&self, other: &Self) -> bool;
@@ -1500,35 +1450,29 @@ mod tests {
 
     #[test]
     fn test_split_key_val() {
-        type MyGht = Ght!(u32 => u32, u32);
+        type MyGht = GhtType!(u32 => u32, u32);
         let mut htrie = MyGht::new_from(vec![var_expr!(42, 314, 43770)]);
         htrie.insert(var_expr!(42, 315, 43770));
         htrie.insert(var_expr!(43, 10, 600));
         htrie.insert(var_expr!(43, 10, 60));
         let tup = htrie.recursive_iter().next().unwrap();
-        let (a, b) = MyGht::split_key_val(tup);
-        println!("key: {:?}, val {:?}", a, b);
+        let (k, v) = MyGht::split_key_val(tup);
+        println!("key: {:?}, val {:?}", k, v);
     }
 
-    //     #[test]
-    //     fn test_key_cmp() {
-    //         type KeyType = var_type!(u16, u32);
-    //         type ValType = var_type!(u64);
-    //         type ChildGht = GhtType!(u32 => u64);
-    //         type HeadType = u16;
-    //         type MyRoot = GhtRoot<KeyType, ValType, HeadType, ChildGht>;
-    //         let mut trie1: MyRoot = GhtRoot::default();
-    //         trie1.trie.insert(var_expr!(1, 2, 3));
-    //         let mut trie2: MyRoot = GhtRoot::default();
-    //         trie2.trie.insert(var_expr!(1, 2, 4));
+    #[test]
+    fn test_key_cmp() {
+        type MyRoot = GhtType!(u16, u32 => u64);
+        let mut trie1 = MyRoot::default();
+        trie1.trie.insert(var_expr!(1, 2, 3));
+        let mut trie2 = MyRoot::default();
+        trie2.trie.insert(var_expr!(1, 2, 4));
 
-    //         let tup1 = trie1.trie.recursive_iter_keys().next().unwrap();
-    //         let tup2 = trie2.trie.recursive_iter_keys().next().unwrap();
-    //         assert!(tup1 != tup2);
-    //         let t = trie1.tree;
-    //         let key1 = trie1.trie::Schema::<MyRoot::KeyType>(tup1);
-    //         let key2 = tup2.split(MyRoot::KeyType);
-    //         assert_eq!(key1, key2);
-    //         println!("key1 is {:?}, key2 is {:?}", key1, key2);
-    //     }
+        let tup1 = trie1.trie.recursive_iter_keys().next().unwrap();
+        let (k1, _v1) = MyRoot::split_key_val(tup1);
+        let tup2 = trie2.trie.recursive_iter_keys().next().unwrap();
+        let (k2, _v2) = MyRoot::split_key_val(tup2);
+        assert!(tup1 != tup2);
+        assert_eq!(k1, k2);
+    }
 }

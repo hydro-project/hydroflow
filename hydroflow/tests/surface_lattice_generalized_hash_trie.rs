@@ -1,28 +1,26 @@
-use std::collections::{HashMap, HashSet};
-
 use hydroflow::hydroflow_syntax;
-use hydroflow::lattices::generalized_hash_trie::{GeneralizedHashTrie, HtInner, HtLeaf};
-use hydroflow::lattices::GHTType;
-use hydroflow::variadics::{var_expr, var_type};
-use lattices::map_union::KeyedBimorphism;
-use lattices::set_union::CartesianProductBimorphism;
+use hydroflow::lattices::generalized_hash_trie::GeneralizedHashTrie;
+use hydroflow::lattices::GhtType;
+use hydroflow::variadics::{var_expr, var_type}; // Import the Insert trait
+
 #[test]
 fn test_basic() {
-    type MyGHT = GHTType!(u16, u32, u64);
-    let input = vec![
+    type MyGHT = GhtType!(u16, u32 => u64);
+    type FlatTup = var_type!(u16, u32, u64);
+    let input: Vec<FlatTup> = vec![
         var_expr!(42, 314, 43770),
         var_expr!(42, 315, 43770),
         var_expr!(42, 314, 30619),
         var_expr!(43, 10, 600),
     ];
-    let mut merged = MyGHT::new(vec![]);
+    let mut merged = MyGHT::default();
     for i in input.clone() {
         merged.insert(i);
     }
     println!("merged: {:?}", merged);
     let mut df = hydroflow_syntax! {
         source_iter(input)
-            -> map(|t| MyGHT::new(vec![t]))
+            -> map(|t| MyGHT::new_from(vec![t]))
             -> lattice_fold::<'static>(MyGHT::default)
             -> inspect(|t| println!("{:?}", t))
             -> assert(|x: &MyGHT| x.eq(&merged))
@@ -33,7 +31,7 @@ fn test_basic() {
 
 // #[test]
 // fn test_join() {
-//     type MyGHT = GHTType!(u16, u16);
+//     type MyGHT = GhtType!(u16, u16);
 //     let r = vec![
 //         var_expr!(1, 10),
 //         var_expr!(2, 20),
