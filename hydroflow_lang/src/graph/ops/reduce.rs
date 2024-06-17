@@ -82,7 +82,6 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
             return Err(());
         }
 
-        let input = &inputs[0];
         let func = &arguments[0];
         let accumulator_ident = wc.make_ident("accumulator");
         let iterator_item_ident = wc.make_ident("iterator_item");
@@ -117,6 +116,7 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
         }
 
         let write_iterator = if is_pull {
+        let input = &inputs[0];
             quote_spanned! {op_span=>
                 let #ident = {
                     let mut #accumulator_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
@@ -132,10 +132,9 @@ pub const REDUCE: OperatorConstraints = OperatorConstraints {
                 };
             }
         } else {
+            // Is only push when used as a singleton, so no need to push to `outputs[0]`.
             quote_spanned! {op_span=>
                 let #ident = {
-                    let mut #accumulator_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
-
                     #root::pusherator::for_each::ForEach::new(|#iterator_item_ident| {
                         let mut #accumulator_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
                         #iterator_foreach

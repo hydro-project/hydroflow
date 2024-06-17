@@ -52,9 +52,9 @@ fn main() {
                         hydroflow::compiled::pull::HalfMultisetJoinState::default(),
                     ),
                 );
-            df.set_state_tick_reset(
+            df.set_state_tick_hook(
                 sg_2v1_node_9v1_joindata_lhs,
-                ::std::default::Default::default,
+                |rcell| hydroflow::util::clear::Clear::clear(rcell.get_mut()),
             );
             let sg_2v1_node_9v1_joindata_rhs = df
                 .add_state(
@@ -62,9 +62,9 @@ fn main() {
                         hydroflow::compiled::pull::HalfMultisetJoinState::default(),
                     ),
                 );
-            df.set_state_tick_reset(
+            df.set_state_tick_hook(
                 sg_2v1_node_9v1_joindata_rhs,
-                ::std::default::Default::default,
+                |rcell| hydroflow::util::clear::Clear::clear(rcell.get_mut()),
             );
             let sg_2v1_node_5v1_uniquedata = df
                 .add_state(

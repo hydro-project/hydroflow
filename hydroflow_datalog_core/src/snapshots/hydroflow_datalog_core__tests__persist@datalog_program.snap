@@ -160,9 +160,9 @@ fn main() {
                         hydroflow::compiled::pull::HalfMultisetJoinState::default(),
                     ),
                 );
-            df.set_state_tick_reset(
+            df.set_state_tick_hook(
                 sg_4v1_node_45v1_joindata_rhs,
-                ::std::default::Default::default,
+                |rcell| hydroflow::util::clear::Clear::clear(rcell.get_mut()),
             );
             let sg_4v1_node_15v1_uniquedata = df
                 .add_state(

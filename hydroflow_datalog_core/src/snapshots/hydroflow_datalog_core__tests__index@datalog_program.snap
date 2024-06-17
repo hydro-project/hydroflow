@@ -87,9 +87,11 @@ fn main() {
                 );
             let sg_3v1_node_34v1_counterdata = df
                 .add_state(::std::cell::RefCell::new(0..));
-            df.set_state_tick_reset(
+            df.set_state_tick_hook(
                 sg_3v1_node_34v1_counterdata,
-                || ::std::cell::RefCell::new(0..),
+                |rcell| {
+                    rcell.replace(0..);
+                },
             );
             let sg_4v1_node_37v1_groupbydata = df
                 .add_state(
@@ -99,9 +101,11 @@ fn main() {
                 );
             let sg_4v1_node_38v1_counterdata = df
                 .add_state(::std::cell::RefCell::new(0..));
-            df.set_state_tick_reset(
+            df.set_state_tick_hook(
                 sg_4v1_node_38v1_counterdata,
-                || ::std::cell::RefCell::new(0..),
+                |rcell| {
+                    rcell.replace(0..);
+                },
             );
             let sg_4v1_node_8v1_uniquedata = df
                 .add_state(
@@ -155,9 +159,11 @@ fn main() {
                 );
             let sg_6v1_node_48v1_counterdata = df
                 .add_state(::std::cell::RefCell::new(0..));
-            df.set_state_tick_reset(
+            df.set_state_tick_hook(
                 sg_6v1_node_48v1_counterdata,
-                || ::std::cell::RefCell::new(0..),
+                |rcell| {
+                    rcell.replace(0..);
+                },
             );
             let sg_6v1_node_14v1_uniquedata = df
                 .add_state(
