@@ -16,7 +16,7 @@ error: warning test
 15 |     compile_error!("warning test");
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-warning: unused imports: `SetUnionHashSet`, `SetUnionSingletonSet`, `SetUnion`
+warning: unused imports: `SetUnionHashSet`, `SetUnionSingletonSet`, and `SetUnion`
  --> tests/compile-fail/surface_flow_props_cumul_warn_none.rs:1:38
   |
 1 | use hydroflow::lattices::set_union::{SetUnionHashSet, SetUnionSingletonSet, SetUnion};

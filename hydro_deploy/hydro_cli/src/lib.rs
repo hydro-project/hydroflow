@@ -72,10 +72,9 @@ impl pyo3_asyncio::generic::ContextExt for TokioRuntime {
     }
 
     fn get_task_locals() -> Option<TaskLocals> {
-        match TASK_LOCALS.try_with(|c| c.get().cloned()) {
-            Ok(locals) => locals,
-            Err(_) => None,
-        }
+        TASK_LOCALS
+            .try_with(|c| c.get().cloned())
+            .unwrap_or_default()
     }
 }
 

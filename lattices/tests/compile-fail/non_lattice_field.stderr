@@ -5,14 +5,14 @@ error[E0277]: the trait bound `String: Merge<String>` is not satisfied
   |          ^^^^^^^ the trait `Merge<String>` is not implemented for `String`
   |
   = help: the following other types implement trait `Merge<Other>`:
-            <() as Merge<()>>
-            <Conflict<T> as Merge<Conflict<O>>>
-            <DomPair<KeySelf, ValSelf> as Merge<DomPair<KeyOther, ValOther>>>
-            <MapUnion<MapSelf> as Merge<MapUnion<MapOther>>>
-            <MapUnionWithTombstones<MapSelf, TombstoneSetSelf> as Merge<MapUnionWithTombstones<MapOther, TombstoneSetOther>>>
-            <Max<T> as Merge<Max<T>>>
-            <Min<T> as Merge<Min<T>>>
-            <NotALattice as Merge<NotALattice>>
+            `()` implements `Merge<()>`
+            `Conflict<T>` implements `Merge<Conflict<O>>`
+            `DomPair<KeySelf, ValSelf>` implements `Merge<DomPair<KeyOther, ValOther>>`
+            `MapUnion<MapSelf>` implements `Merge<MapUnion<MapOther>>`
+            `MapUnionWithTombstones<MapSelf, TombstoneSetSelf>` implements `Merge<MapUnionWithTombstones<MapOther, TombstoneSetOther>>`
+            `Max<T>` implements `Merge<Max<T>>`
+            `Min<T>` implements `Merge<Min<T>>`
+            `NotALattice` implements `Merge<NotALattice>`
           and $N others
   = help: see issue #48214
   = note: this error originates in the derive macro `Lattice` (in Nightly builds, run with -Z macro-backtrace for more info)
@@ -74,14 +74,14 @@ error[E0277]: the trait bound `String: LatticeFrom<String>` is not satisfied
   |          ^^^^^^^ the trait `LatticeFrom<String>` is not implemented for `String`
   |
   = help: the following other types implement trait `LatticeFrom<Other>`:
-            <() as LatticeFrom<()>>
-            <Conflict<T> as LatticeFrom<Conflict<T>>>
-            <DomPair<KeySelf, ValSelf> as LatticeFrom<DomPair<KeyOther, ValOther>>>
-            <MapUnion<MapSelf> as LatticeFrom<MapUnion<MapOther>>>
-            <MapUnionWithTombstones<MapSelf, TombstoneSetSelf> as LatticeFrom<MapUnionWithTombstones<MapOther, TombstoneSetOther>>>
-            <Max<T> as LatticeFrom<Max<T>>>
-            <Min<T> as LatticeFrom<Min<T>>>
-            <NotALattice as LatticeFrom<NotALattice>>
+            `()` implements `LatticeFrom<()>`
+            `Conflict<T>` implements `LatticeFrom<Conflict<T>>`
+            `DomPair<KeySelf, ValSelf>` implements `LatticeFrom<DomPair<KeyOther, ValOther>>`
+            `MapUnion<MapSelf>` implements `LatticeFrom<MapUnion<MapOther>>`
+            `MapUnionWithTombstones<MapSelf, TombstoneSetSelf>` implements `LatticeFrom<MapUnionWithTombstones<MapOther, TombstoneSetOther>>`
+            `Max<T>` implements `LatticeFrom<Max<T>>`
+            `Min<T>` implements `LatticeFrom<Min<T>>`
+            `NotALattice` implements `LatticeFrom<NotALattice>`
           and $N others
   = help: see issue #48214
   = note: this error originates in the derive macro `Lattice` (in Nightly builds, run with -Z macro-backtrace for more info)
