@@ -67,20 +67,24 @@ fn main() {
                 );
             let sg_2v1_node_13v1_joindata_lhs = df
                 .add_state(
-                    std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::new_init(
-                            hydroflow::compiled::pull::HalfMultisetJoinState::default(),
-                        ),
+                    ::std::cell::RefCell::new(
+                        hydroflow::compiled::pull::HalfMultisetJoinState::default(),
                     ),
                 );
+            df.set_state_tick_hook(
+                sg_2v1_node_13v1_joindata_lhs,
+                |rcell| hydroflow::util::clear::Clear::clear(rcell.get_mut()),
+            );
             let sg_2v1_node_13v1_joindata_rhs = df
                 .add_state(
-                    std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::new_init(
-                            hydroflow::compiled::pull::HalfMultisetJoinState::default(),
-                        ),
+                    ::std::cell::RefCell::new(
+                        hydroflow::compiled::pull::HalfMultisetJoinState::default(),
                     ),
                 );
+            df.set_state_tick_hook(
+                sg_2v1_node_13v1_joindata_rhs,
+                |rcell| hydroflow::util::clear::Clear::clear(rcell.get_mut()),
+            );
             let sg_1v1_node_18v1_groupbydata = df
                 .add_state(
                     ::std::cell::RefCell::new(
@@ -395,10 +399,8 @@ fn main() {
                         check_inputs(
                             op_15v1,
                             op_16v1,
-                            &mut *sg_2v1_node_13v1_joindata_lhs_borrow
-                                .get_mut_clear(context.current_tick()),
-                            &mut *sg_2v1_node_13v1_joindata_rhs_borrow
-                                .get_mut_clear(context.current_tick()),
+                            &mut *sg_2v1_node_13v1_joindata_lhs_borrow,
+                            &mut *sg_2v1_node_13v1_joindata_rhs_borrow,
                             context.is_first_run_this_tick(),
                         )
                     };

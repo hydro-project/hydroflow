@@ -86,11 +86,13 @@ fn main() {
                     ),
                 );
             let sg_3v1_node_34v1_counterdata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::new_init(0..),
-                    ),
-                );
+                .add_state(::std::cell::RefCell::new(0..));
+            df.set_state_tick_hook(
+                sg_3v1_node_34v1_counterdata,
+                |rcell| {
+                    rcell.replace(0..);
+                },
+            );
             let sg_4v1_node_37v1_groupbydata = df
                 .add_state(
                     ::std::cell::RefCell::new(
@@ -98,11 +100,13 @@ fn main() {
                     ),
                 );
             let sg_4v1_node_38v1_counterdata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::new_init(0..),
-                    ),
-                );
+                .add_state(::std::cell::RefCell::new(0..));
+            df.set_state_tick_hook(
+                sg_4v1_node_38v1_counterdata,
+                |rcell| {
+                    rcell.replace(0..);
+                },
+            );
             let sg_4v1_node_8v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
@@ -154,11 +158,13 @@ fn main() {
                     ),
                 );
             let sg_6v1_node_48v1_counterdata = df
-                .add_state(
-                    ::std::cell::RefCell::new(
-                        hydroflow::util::monotonic_map::MonotonicMap::new_init(0..),
-                    ),
-                );
+                .add_state(::std::cell::RefCell::new(0..));
+            df.set_state_tick_hook(
+                sg_6v1_node_48v1_counterdata,
+                |rcell| {
+                    rcell.replace(0..);
+                },
+            );
             let sg_6v1_node_14v1_uniquedata = df
                 .add_state(
                     ::std::cell::RefCell::new(
@@ -491,14 +497,9 @@ fn main() {
                     };
                     let op_34v1 = hydroflow::pusherator::map::Map::new(
                         |item| {
-                            let mut borrow = context
+                            let mut counter = context
                                 .state_ref(sg_3v1_node_34v1_counterdata)
                                 .borrow_mut();
-                            let counter = borrow
-                                .get_mut_with(
-                                    (context.current_tick(), context.current_stratum()),
-                                    || 0..,
-                                );
                             (counter.next().unwrap(), item)
                         },
                         op_35v1,
@@ -846,14 +847,9 @@ fn main() {
                     let op_38v1 = ::std::iter::Iterator::map(
                         op_37v1,
                         |item| {
-                            let mut borrow = context
+                            let mut counter = context
                                 .state_ref(sg_4v1_node_38v1_counterdata)
                                 .borrow_mut();
-                            let counter = borrow
-                                .get_mut_with(
-                                    (context.current_tick(), context.current_stratum()),
-                                    || 0..,
-                                );
                             (counter.next().unwrap(), item)
                         },
                     );
@@ -1698,14 +1694,9 @@ fn main() {
                     let op_48v1 = ::std::iter::Iterator::map(
                         op_47v1,
                         |item| {
-                            let mut borrow = context
+                            let mut counter = context
                                 .state_ref(sg_6v1_node_48v1_counterdata)
                                 .borrow_mut();
-                            let counter = borrow
-                                .get_mut_with(
-                                    (context.current_tick(), context.current_stratum()),
-                                    || 0..,
-                                );
                             (counter.next().unwrap(), item)
                         },
                     );
