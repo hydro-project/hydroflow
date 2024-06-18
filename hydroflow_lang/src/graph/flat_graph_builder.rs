@@ -908,7 +908,7 @@ impl FlatGraphBuilder {
                 .node_predecessors(node_id)
                 .collect::<Vec<_>>()
             {
-                // Check if the predacessor is already persisted. If so, no persist should be inserted.
+                // Check if the predecessor is already persisted. If so, no persist should be inserted.
                 let mut pred_persisted = true;
                 {
                     let mut pred_node_ids = VecDeque::from_iter([pred_node_id]);
