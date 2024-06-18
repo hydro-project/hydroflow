@@ -91,19 +91,6 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
         let accumulator_ident = wc.make_ident("accumulator");
         let iterator_item_ident = wc.make_ident("iterator_item");
 
-        let tick_reset_code = if Persistence::Tick == persistence {
-            quote_spanned! {op_span=>
-                // Reset the value to the initializer fn if it is a new tick.
-                if #context.is_first_run_this_tick() {
-                    #[allow(clippy::redundant_closure_call)]
-                    {
-                        *#accumulator_ident = (#initializer_func_ident)();
-                    }
-                }
-            }
-        } else {
-            Default::default() // No code
-        };
         let iterator_foreach = quote_spanned! {op_span=>
             #[inline(always)]
             fn call_comb_type<Accum, Item>(
@@ -117,19 +104,25 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
             call_comb_type(&mut *#accumulator_ident, #iterator_item_ident, #func);
         };
 
-        let write_prologue = quote_spanned! {op_span=>
-            let #initializer_func_ident = #init;
+        let mut write_prologue = quote_spanned! {op_span=>
+            #[allow(unused_mut)]
+            let mut #initializer_func_ident = #init;
 
             #[allow(clippy::redundant_closure_call)]
             let #singleton_output_ident = #hydroflow.add_state(
                 ::std::cell::RefCell::new((#initializer_func_ident)())
             );
         };
+        if Persistence::Tick == persistence {
+            write_prologue.extend(quote_spanned! {op_span=>
+                // Reset the value to the initializer fn if it is a new tick.
+                #hydroflow.set_state_tick_hook(#singleton_output_ident, move |rcell| { rcell.replace((#initializer_func_ident)()); });
+            });
+        }
         let write_iterator = if is_pull {
             quote_spanned! {op_span=>
                 let #ident = {
                     let mut #accumulator_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
-                    #tick_reset_code
 
                     #input.for_each(|#iterator_item_ident| {
                         #iterator_foreach
@@ -144,9 +137,6 @@ pub const FOLD: OperatorConstraints = OperatorConstraints {
         } else {
             quote_spanned! {op_span=>
                 let #ident = {
-                    let mut #accumulator_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
-                    #tick_reset_code
-
                     #root::pusherator::for_each::ForEach::new(|#iterator_item_ident| {
                         let mut #accumulator_ident = #context.state_ref(#singleton_output_ident).borrow_mut();
                         #iterator_foreach

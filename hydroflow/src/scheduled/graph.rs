@@ -51,22 +51,7 @@ impl<'a> Default for Hydroflow<'a> {
     fn default() -> Self {
         let stratum_queues = vec![Default::default()]; // Always initialize stratum #0.
         let (event_queue_send, event_queue_recv) = mpsc::unbounded_channel();
-        let context = Context {
-            states: Vec::new(),
-
-            event_queue_send,
-
-            current_stratum: 0,
-            current_tick: TickInstant::default(),
-
-            current_tick_start: SystemTime::now(),
-            subgraph_last_tick_run_in: None,
-
-            subgraph_id: SubgraphId(0),
-
-            tasks_to_spawn: Vec::new(),
-            task_join_handles: Vec::new(),
-        };
+        let context = Context::new(event_queue_send);
         Self {
             subgraphs: Vec::new(),
             context,
@@ -390,6 +375,7 @@ impl<'a> Hydroflow<'a> {
                     self.context.current_tick,
                     self.context.current_tick + TickDuration::SINGLE_TICK,
                 );
+                self.context.reset_state_at_end_of_tick();
 
                 self.context.current_stratum = 0;
                 self.context.current_tick += TickDuration::SINGLE_TICK;
@@ -784,6 +770,19 @@ impl<'a> Hydroflow<'a> {
         self.context.add_state(state)
     }
 
+    /// Sets a hook to modify the state at the end of each tick, using the supplied closure.
+    ///
+    /// This is part of the "state API".
+    pub fn set_state_tick_hook<T>(
+        &mut self,
+        handle: StateHandle<T>,
+        tick_hook_fn: impl 'static + FnMut(&mut T),
+    ) where
+        T: Any,
+    {
+        self.context.set_state_tick_hook(handle, tick_hook_fn)
+    }
+
     /// Gets a exclusive (mut) ref to the internal context, setting the subgraph ID.
     pub fn context_mut(&mut self, sg_id: SubgraphId) -> &mut Context {
         self.context.subgraph_id = sg_id;
@@ -923,9 +922,4 @@ impl<'a> SubgraphData<'a> {
             is_lazy: laziness,
         }
     }
-}
-
-/// Internal struct containing a pointer to [`Hydroflow`]-owned state.
-pub(crate) struct StateData {
-    pub state: Box<dyn Any>,
 }
