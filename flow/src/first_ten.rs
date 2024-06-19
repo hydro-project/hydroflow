@@ -9,7 +9,7 @@ pub fn first_ten<'a, D: LocalDeploy<'a>>(
 ) {
     let process = flow.process(process_spec);
 
-    let numbers = process.source_iter(q!(0..10));
+    let numbers = flow.source_iter(&process, q!(0..10));
     numbers.for_each(q!(|n| println!("{}", n)));
 }
 
