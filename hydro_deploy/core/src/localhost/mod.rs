@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::net::SocketAddr;
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
@@ -13,6 +12,7 @@ use super::{
     ResourceResult, ServerStrategy,
 };
 use crate::hydroflow_crate::build::BuildOutput;
+use crate::hydroflow_crate::perf_options::PerfOptions;
 use crate::HostStrategyGetter;
 
 pub mod launched_binary;
@@ -150,15 +150,22 @@ impl LaunchedHost for LaunchedLocalhost {
         id: String,
         binary: &BuildOutput,
         args: &[String],
-        perf: Option<PathBuf>,
+        perf: Option<PerfOptions>,
     ) -> Result<Box<dyn LaunchedBinary>> {
         let mut command = if let Some(perf) = perf {
             println!("Profiling binary with perf");
             let mut tmp = Command::new("perf");
-            tmp.args(["record", "-F", "5", "--call-graph", "dwarf,64000", "-o"])
-                .arg(&perf)
-                .arg(&binary.bin_path)
-                .args(args);
+            tmp.args([
+                "record",
+                "-F",
+                &perf.frequency.to_string(),
+                "--call-graph",
+                "dwarf,64000",
+                "-o",
+            ])
+            .arg(&perf.output_file)
+            .arg(&binary.bin_path)
+            .args(args);
             tmp
         } else {
             let mut tmp = Command::new(&binary.bin_path);

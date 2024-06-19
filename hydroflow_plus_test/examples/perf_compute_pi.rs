@@ -1,7 +1,9 @@
 use std::cell::RefCell;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use hydro_deploy::gcp::GcpNetwork;
+use hydro_deploy::hydroflow_crate::perf_options::PerfOptions;
 use hydro_deploy::{Deployment, Host, HydroflowCrate};
 use hydroflow_plus_cli_integration::{DeployClusterSpec, DeployProcessSpec};
 use stageleft::RuntimeData;
@@ -24,8 +26,8 @@ async fn main() {
                 deployment.GcpComputeEngineHost(
                     &project,
                     "e2-micro",
-                    "debian-cloud/debian-11",
-                    "us-west1-a",
+                    "perf-image",
+                    "us-central1-a",
                     network.clone(),
                     None,
                 )
@@ -46,11 +48,15 @@ async fn main() {
         &DeployProcessSpec::new(|| {
             let mut deployment = deployment.borrow_mut();
             let host = create_host(&mut deployment);
+            let perf_options = PerfOptions {
+                output_file: PathBuf::from("leader.perf.data"),
+                frequency: 5,
+            };
             deployment.add_service(
                 HydroflowCrate::new(".", host.clone())
                     .bin("compute_pi")
                     .profile(profile)
-                    .perf("leader.perf.data")
+                    .perf(perf_options)
                     .display_name("leader"),
             )
         }),
@@ -59,11 +65,15 @@ async fn main() {
             (0..8)
                 .map(|idx| {
                     let host = create_host(&mut deployment);
+                    let perf_options = PerfOptions {
+                        output_file: PathBuf::from(format!("cluster{}.perf.data", idx)),
+                        frequency: 5,
+                    };
                     deployment.add_service(
                         HydroflowCrate::new(".", host.clone())
                             .bin("compute_pi")
                             .profile(profile)
-                            .perf(format!("cluster{}.perf.data", idx))
+                            .perf(perf_options)
                             .display_name(format!("cluster/{}", idx)),
                     )
                 })

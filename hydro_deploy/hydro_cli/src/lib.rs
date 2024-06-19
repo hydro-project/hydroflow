@@ -5,7 +5,6 @@ use core::hydroflow_crate::ports::HydroflowSource;
 use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::{Arc, OnceLock};
 
@@ -265,7 +264,6 @@ impl Deployment {
         bin: Option<String>,
         example: Option<String>,
         profile: Option<String>,
-        perf: Option<PathBuf>,
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
         display_id: Option<String>,
@@ -279,7 +277,7 @@ impl Deployment {
                 bin,
                 example,
                 profile,
-                perf,
+                None, // Python API doesn't support perf
                 features,
                 args,
                 display_id,

@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::net::SocketAddr;
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
 use hydroflow_cli_integration::ServerBindConfig;
+use hydroflow_crate::perf_options::PerfOptions;
 
 pub mod deployment;
 pub use deployment::Deployment;
@@ -101,7 +101,7 @@ pub trait LaunchedHost: Send + Sync {
         id: String,
         binary: &BuildOutput,
         args: &[String],
-        perf: Option<PathBuf>,
+        perf: Option<PerfOptions>,
     ) -> Result<Box<dyn LaunchedBinary>>;
 
     async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr>;
