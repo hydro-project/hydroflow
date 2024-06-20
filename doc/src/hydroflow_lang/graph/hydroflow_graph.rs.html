@@ -1579,6 +1579,10 @@
 <a href="#1579" id="1579">1579</a>
 <a href="#1580" id="1580">1580</a>
 <a href="#1581" id="1581">1581</a>
+<a href="#1582" id="1582">1582</a>
+<a href="#1583" id="1583">1583</a>
+<a href="#1584" id="1584">1584</a>
+<a href="#1585" id="1585">1585</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 
 </span><span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
@@ -2537,11 +2541,23 @@
                                 </span>Ident::new(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{}_has_no_singleton_output"</span>, op_name), op_span)
                             };
 
+                            <span class="comment">// There's a bit of dark magic hidden in `Span`s... you'd think it's just a `file:line:column`,
+                            // but it has one extra bit of info for _name resolution_, used for `Ident`s. `Span::call_site()`
+                            // has the (unhygienic) resolution we want, an ident is just solely determined by its string name,
+                            // which is what you'd expect out of unhygienic proc macros like this. Meanwhile, declarative macros
+                            // use `Span::mixed_site()` which is weird and I don't understand it. It turns out that if you call
+                            // the hydroflow syntax proc macro from _within_ a declarative macro then `op_span` will have the
+                            // bad `Span::mixed_site()` name resolution and cause "Cannot find value `df/context`" errors. So
+                            // we call `.resolved_at()` to fix resolution back to `Span::call_site()`. -Mingwei
+                            </span><span class="kw">let </span>hydroflow = <span class="kw-2">&amp;</span>Ident::new(HYDROFLOW, op_span.resolved_at(hf.span()));
+                            <span class="kw">let </span>context = <span class="kw-2">&amp;</span>Ident::new(CONTEXT, op_span.resolved_at(context.span()));
+
                             <span class="kw">let </span>singletons_resolved =
                                 <span class="self">self</span>.helper_resolve_singletons(node_id, op_span);
                             <span class="kw">let </span>arguments = <span class="kw-2">&amp;</span>process_singletons::postprocess_singletons(
                                 op_inst.arguments_raw.clone(),
                                 singletons_resolved.clone(),
+                                context,
                             );
                             <span class="kw">let </span>arguments_handles =
                                 <span class="kw-2">&amp;</span>process_singletons::postprocess_singletons_handles(
@@ -2551,16 +2567,8 @@
 
                             <span class="kw">let </span>context_args = WriteContextArgs {
                                 root: <span class="kw-2">&amp;</span>root,
-                                <span class="comment">// There's a bit of dark magic hidden in `Span`s... you'd think it's just a `file:line:column`,
-                                // but it has one extra bit of info for _name resolution_, used for `Ident`s. `Span::call_site()`
-                                // has the (unhygienic) resolution we want, an ident is just solely determined by its string name,
-                                // which is what you'd expect out of unhygienic proc macros like this. Meanwhile, declarative macros
-                                // use `Span::mixed_site()` which is weird and I don't understand it. It turns out that if you call
-                                // the hydroflow syntax proc macro from _within_ a declarative macro then `op_span` will have the
-                                // bad `Span::mixed_site()` name resolution and cause "Cannot find value `df/context`" errors. So
-                                // we call `.resolved_at()` to fix resolution back to `Span::call_site()`. -Mingwei
-                                </span>hydroflow: <span class="kw-2">&amp;</span>Ident::new(HYDROFLOW, op_span.resolved_at(hf.span())),
-                                context: <span class="kw-2">&amp;</span>Ident::new(CONTEXT, op_span.resolved_at(context.span())),
+                                hydroflow,
+                                context,
                                 subgraph_id,
                                 node_id,
                                 op_span,

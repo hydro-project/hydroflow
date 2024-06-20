@@ -868,7 +868,7 @@
                 ))
             }
             TokenTree::Ident(<span class="kw-2">mut </span>ident) =&gt; {
-                ident.set_span(span);
+                ident.set_span(span.resolved_at(ident.span()));
                 TokenTree::Ident(ident)
             }
             TokenTree::Punct(<span class="kw-2">mut </span>punct) =&gt; {

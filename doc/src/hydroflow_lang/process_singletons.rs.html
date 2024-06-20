@@ -97,11 +97,26 @@
 <a href="#97" id="97">97</a>
 <a href="#98" id="98">98</a>
 <a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Utility methods for processing singleton references: `#my_var`.
 
 </span><span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>proc_macro2::{Group, Ident, TokenStream, TokenTree};
-<span class="kw">use </span>quote::quote;
+<span class="kw">use </span>quote::quote_spanned;
 <span class="kw">use </span>syn::punctuated::Punctuated;
 <span class="kw">use </span>syn::{Expr, Token};
 
@@ -131,16 +146,22 @@
 </span><span class="kw">pub fn </span>postprocess_singletons(
     tokens: TokenStream,
     resolved_idents: <span class="kw">impl </span>IntoIterator&lt;Item = Ident&gt;,
+    context: <span class="kw-2">&amp;</span>Ident,
 ) -&gt; Punctuated&lt;Expr, <span class="macro">Token!</span>[,]&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>resolved_idents_iter = resolved_idents.into_iter();
-    <span class="kw">let </span>processed = process_singletons(tokens, <span class="kw-2">&amp;mut </span>|_singleton_ident| {
-        <span class="kw">let </span>resolved_ident = resolved_idents_iter.next().unwrap();
-        TokenTree::Group(Group::new(
+    <span class="kw">let </span>processed = process_singletons(tokens, <span class="kw-2">&amp;mut </span>|singleton_ident| {
+        <span class="kw">let </span>span = singleton_ident.span();
+        <span class="kw">let </span>context = Ident::new(<span class="kw-2">&amp;</span>context.to_string(), span.resolved_at(context.span()));
+        <span class="kw">let </span><span class="kw-2">mut </span>resolved_ident = resolved_idents_iter.next().unwrap();
+        resolved_ident.set_span(span);
+        <span class="kw">let </span><span class="kw-2">mut </span>group = Group::new(
             proc_macro2::Delimiter::Parenthesis,
-            <span class="macro">quote!</span> {
-                <span class="kw-2">*</span>context.state_ref(#resolved_ident).borrow_mut()
+            <span class="macro">quote_spanned!</span> {span=&gt;
+                <span class="kw-2">*</span>#context.state_ref(#resolved_ident).borrow_mut()
             },
-        ))
+        );
+        group.set_span(singleton_ident.span());
+        TokenTree::Group(group)
     });
     parse_terminated(processed).unwrap()
 }
@@ -152,8 +173,9 @@
     resolved_idents: <span class="kw">impl </span>IntoIterator&lt;Item = Ident&gt;,
 ) -&gt; Punctuated&lt;Expr, <span class="macro">Token!</span>[,]&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>resolved_idents_iter = resolved_idents.into_iter();
-    <span class="kw">let </span>processed = process_singletons(tokens, <span class="kw-2">&amp;mut </span>|_singleton_ident| {
-        <span class="kw">let </span>resolved_ident = resolved_idents_iter.next().unwrap();
+    <span class="kw">let </span>processed = process_singletons(tokens, <span class="kw-2">&amp;mut </span>|singleton_ident| {
+        <span class="kw">let </span><span class="kw-2">mut </span>resolved_ident = resolved_idents_iter.next().unwrap();
+        resolved_ident.set_span(singleton_ident.span().resolved_at(resolved_ident.span()));
         TokenTree::Ident(resolved_ident)
     });
     parse_terminated(processed).unwrap()
@@ -182,9 +204,17 @@
                 TokenTree::Punct(punct) =&gt; {
                     <span class="kw">if </span><span class="string">'#' </span>== punct.as_char() &amp;&amp; <span class="macro">matches!</span>(iter.peek(), <span class="prelude-val">Some</span>(TokenTree::Ident(<span class="kw">_</span>))) {
                         <span class="comment">// Found a singleton.
-                        </span><span class="kw">let </span><span class="prelude-val">Some</span>(TokenTree::Ident(singleton_ident)) = iter.next() <span class="kw">else </span>{
+                        </span><span class="kw">let </span><span class="prelude-val">Some</span>(TokenTree::Ident(<span class="kw-2">mut </span>singleton_ident)) = iter.next() <span class="kw">else </span>{
                             <span class="macro">unreachable!</span>()
                         };
+                        {
+                            <span class="comment">// Include the `#` in the span.
+                            </span><span class="kw">let </span>span = singleton_ident
+                                .span()
+                                .join(punct.span())
+                                .unwrap_or(singleton_ident.span());
+                            singleton_ident.set_span(span.resolved_at(singleton_ident.span()));
+                        }
                         (map_singleton_fn)(singleton_ident)
                     } <span class="kw">else </span>{
                         TokenTree::Punct(punct)
