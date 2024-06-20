@@ -2,7 +2,7 @@
 
 use std::borrow::Cow;
 use std::collections::btree_map::Entry;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::path::PathBuf;
 
 use itertools::Itertools;
@@ -902,18 +902,42 @@ impl FlatGraphBuilder {
                 continue;
             }
             let op_span = operator.span();
+
             for (pred_edge, pred_node_id) in self
                 .flat_graph
                 .node_predecessors(node_id)
                 .collect::<Vec<_>>()
             {
-                if let Some(op_inst) = self.flat_graph.node_op_inst(pred_node_id) {
-                    if "persist" == op_inst.op_constraints.name
-                        || "state" == op_inst.op_constraints.name
-                    {
-                        continue;
+                // Check if the predecessor is already persisted. If so, no persist should be inserted.
+                let mut pred_persisted = true;
+                {
+                    let mut pred_node_ids = VecDeque::from_iter([pred_node_id]);
+                    while let Some(pred_node_id) = pred_node_ids.pop_front() {
+                        let Some(op_inst) = self.flat_graph.node_op_inst(pred_node_id) else {
+                            pred_persisted = false;
+                            break;
+                        };
+                        match op_inst.op_constraints.name {
+                            // Stateful operators, we're good.
+                            "persist" | "state" => {}
+                            // Identity operators, check transitively.
+                            // TODO(mingwei): Add `transparent` or `is_identity` field to
+                            // `OperatorInstance` so we don't have to list all variants here.
+                            "identity" | "union" | "tee" => {
+                                pred_node_ids
+                                    .extend(self.flat_graph.node_predecessor_nodes(pred_node_id));
+                            }
+                            _other => {
+                                pred_persisted = false;
+                                break;
+                            }
+                        }
                     }
                 }
+                if pred_persisted {
+                    continue;
+                }
+
                 self.flat_graph.insert_intermediate_node(
                     pred_edge,
                     GraphNode::Operator(parse_quote_spanned! {op_span=> persist() }),

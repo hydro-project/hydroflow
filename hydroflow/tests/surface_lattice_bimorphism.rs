@@ -13,13 +13,13 @@ pub fn test_cartesian_product() {
     let mut df = hydroflow_syntax! {
         lhs = source_iter_delta(0..3)
             -> map(SetUnionSingletonSet::new_from)
-            -> state::<'static, SetUnionHashSet<usize>>();
+            -> state::<'static, SetUnionHashSet<u32>>();
         rhs = source_iter_delta(3..5)
             -> map(SetUnionSingletonSet::new_from)
-            -> state::<'static, SetUnionHashSet<usize>>();
+            -> state::<'static, SetUnionHashSet<u32>>();
 
-        lhs[items] -> [0]my_join;
-        rhs[items] -> [1]my_join;
+        lhs -> [0]my_join;
+        rhs -> [1]my_join;
 
         my_join = lattice_bimorphism(CartesianProductBimorphism::<HashSet<_>>::default(), #lhs, #rhs)
             -> lattice_reduce()
@@ -54,8 +54,8 @@ pub fn test_join() {
             -> map(|(k, v)| MapUnionSingletonMap::new_from((k, SetUnionSingletonSet::new_from(v))))
             -> state::<'static, MapUnionHashMap<usize, SetUnionHashSet<usize>>>();
 
-        lhs[items] -> [0]my_join;
-        rhs[items] -> [1]my_join;
+        lhs -> [0]my_join;
+        rhs -> [1]my_join;
 
         my_join = lattice_bimorphism(KeyedBimorphism::<HashMap<_, _>, _>::new(CartesianProductBimorphism::<HashSet<_>>::default()), #lhs, #rhs)
             -> lattice_reduce()
