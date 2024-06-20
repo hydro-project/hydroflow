@@ -1,0 +1,23 @@
+[package]
+name = "flow"
+publish = false
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+# make sure to sync these to `flow_macro`!
+hydroflow_plus = { git = "https://github.com/hydro-project/hydroflow.git" }
+tokio = { version = "1.16", features = [ "full" ] }
+stageleft = { git = "https://github.com/hydro-project/hydroflow.git" }
+hydroflow_plus_cli_integration = { git = "https://github.com/hydro-project/hydroflow.git" }
+
+# this dependency should NOT be added to `flow_macro`
+flow_macro = { path = "../flow_macro" }
+
+[build-dependencies]
+stageleft_tool = { git = "https://github.com/hydro-project/hydroflow.git" }
+
+[dev-dependencies]
+hydro_deploy = { git = "https://github.com/hydro-project/hydroflow.git" }
+hydroflow_plus_cli_integration = { git = "https://github.com/hydro-project/hydroflow.git", features = [ "deploy" ] }
+async-ssh2-lite = { version = "0.4.2", features = [ "vendored-openssl" ] }
