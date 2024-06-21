@@ -928,11 +928,35 @@
 <a href="#928" id="928">928</a>
 <a href="#929" id="929">929</a>
 <a href="#930" id="930">930</a>
+<a href="#931" id="931">931</a>
+<a href="#932" id="932">932</a>
+<a href="#933" id="933">933</a>
+<a href="#934" id="934">934</a>
+<a href="#935" id="935">935</a>
+<a href="#936" id="936">936</a>
+<a href="#937" id="937">937</a>
+<a href="#938" id="938">938</a>
+<a href="#939" id="939">939</a>
+<a href="#940" id="940">940</a>
+<a href="#941" id="941">941</a>
+<a href="#942" id="942">942</a>
+<a href="#943" id="943">943</a>
+<a href="#944" id="944">944</a>
+<a href="#945" id="945">945</a>
+<a href="#946" id="946">946</a>
+<a href="#947" id="947">947</a>
+<a href="#948" id="948">948</a>
+<a href="#949" id="949">949</a>
+<a href="#950" id="950">950</a>
+<a href="#951" id="951">951</a>
+<a href="#952" id="952">952</a>
+<a href="#953" id="953">953</a>
+<a href="#954" id="954">954</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Build a flat graph from [`HfStatement`]s.
 
 </span><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::collections::btree_map::Entry;
-<span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
+<span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, VecDeque};
 <span class="kw">use </span>std::path::PathBuf;
 
 <span class="kw">use </span>itertools::Itertools;
@@ -1832,18 +1856,42 @@
                 <span class="kw">continue</span>;
             }
             <span class="kw">let </span>op_span = operator.span();
+
             <span class="kw">for </span>(pred_edge, pred_node_id) <span class="kw">in </span><span class="self">self
                 </span>.flat_graph
                 .node_predecessors(node_id)
                 .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
             {
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(op_inst) = <span class="self">self</span>.flat_graph.node_op_inst(pred_node_id) {
-                    <span class="kw">if </span><span class="string">"persist" </span>== op_inst.op_constraints.name
-                        || <span class="string">"state" </span>== op_inst.op_constraints.name
-                    {
-                        <span class="kw">continue</span>;
+                <span class="comment">// Check if the predecessor is already persisted. If so, no persist should be inserted.
+                </span><span class="kw">let </span><span class="kw-2">mut </span>pred_persisted = <span class="bool-val">true</span>;
+                {
+                    <span class="kw">let </span><span class="kw-2">mut </span>pred_node_ids = VecDeque::from_iter([pred_node_id]);
+                    <span class="kw">while let </span><span class="prelude-val">Some</span>(pred_node_id) = pred_node_ids.pop_front() {
+                        <span class="kw">let </span><span class="prelude-val">Some</span>(op_inst) = <span class="self">self</span>.flat_graph.node_op_inst(pred_node_id) <span class="kw">else </span>{
+                            pred_persisted = <span class="bool-val">false</span>;
+                            <span class="kw">break</span>;
+                        };
+                        <span class="kw">match </span>op_inst.op_constraints.name {
+                            <span class="comment">// Stateful operators, we're good.
+                            </span><span class="string">"persist" </span>| <span class="string">"state" </span>=&gt; {}
+                            <span class="comment">// Identity operators, check transitively.
+                            // TODO(mingwei): Add `transparent` or `is_identity` field to
+                            // `OperatorInstance` so we don't have to list all variants here.
+                            </span><span class="string">"identity" </span>| <span class="string">"union" </span>| <span class="string">"tee" </span>=&gt; {
+                                pred_node_ids
+                                    .extend(<span class="self">self</span>.flat_graph.node_predecessor_nodes(pred_node_id));
+                            }
+                            _other =&gt; {
+                                pred_persisted = <span class="bool-val">false</span>;
+                                <span class="kw">break</span>;
+                            }
+                        }
                     }
                 }
+                <span class="kw">if </span>pred_persisted {
+                    <span class="kw">continue</span>;
+                }
+
                 <span class="self">self</span>.flat_graph.insert_intermediate_node(
                     pred_edge,
                     GraphNode::Operator(<span class="macro">parse_quote_spanned!</span> {op_span=&gt; persist() }),
