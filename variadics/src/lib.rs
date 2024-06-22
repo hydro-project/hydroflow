@@ -55,6 +55,23 @@ macro_rules! var_args {
     ($a:pat, $( $b:tt )+) => ( ($a, $crate::var_args!( $( $b )* )) );
 }
 
+/// return the (top-level) length of the variadic
+#[macro_export]
+macro_rules! var_len {
+    // Match the empty tuple or base case
+    (()) => {
+        0
+    };
+    // Match a single element tuple, terminating the recursion
+    (($elem:expr,())) => {
+        1
+    };
+    // Match deeper nested tuples
+    (($head:expr, $tail:tt)) => {
+        1 + var_len!($tail)
+    };
+}
+
 /// This macro generates a basic variadic trait where each element must fulfill the `where` clause.
 ///
 /// ```rust

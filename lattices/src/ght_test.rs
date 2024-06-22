@@ -477,4 +477,35 @@ mod tests {
         assert!(tup1 != tup2);
         assert_eq!(k1, k2);
     }
+
+    use variadics::var_len;
+    use variadics_macro::tuple;
+
+    #[test]
+    fn test_tuple_macro() {
+        let tup = var_expr!(1, 2, 3, "four");
+        let a = tuple!(tup, 4);
+        assert_eq!(a, (1, 2, 3, "four"));
+        println!("a: {:?}", a);
+
+        let tup = var_expr!(1, 2, var_expr!(3));
+        let b = tuple!(tup, 3);
+        assert_eq!(b, (1, 2, (3, ())));
+
+        type MyRoot = GhtType!(u16, u32 => u64);
+
+        let mut trie1 = MyRoot::default();
+        let len = <<MyRoot as GeneralizedHashTrie>::Schema as VariadicExt>::LEN;
+        println!("schema_length: {}", len);
+        (*trie1.get_mut_trie()).insert(var_expr!(1, 2, 3));
+        let t = trie1.recursive_iter().next().unwrap();
+        let tup = tuple!(t, 3);
+        println!("{:?}", tup);
+    }
+
+    #[test]
+    fn test_var_len() {
+        let i = var_len!((1, (2, (3, ()))));
+        println!("{}", i);
+    }
 }

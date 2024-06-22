@@ -1778,6 +1778,7 @@ dependencies = [
  "serde",
  "trybuild",
  "variadics",
+ "variadics_macro",
 ]
 
 [[package]]
@@ -3761,6 +3762,19 @@ version = "0.0.4"
 dependencies = [
  "sealed",
  "trybuild",
+]
+
+[[package]]
+name = "variadics_macro"
+version = "0.5.5"
+dependencies = [
+ "insta",
+ "prettyplease",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.60",
+ "variadics",
 ]
 
 [[package]]
