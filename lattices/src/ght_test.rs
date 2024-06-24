@@ -1,6 +1,7 @@
 #[cfg(test)]
-mod tests {
-    use std::collections::HashSet;
+mod joe_tests {
+    use std::collections::{BTreeSet, HashSet};
+    use std::io::{self, Write};
 
     use variadics::{var_expr, var_type, VariadicExt};
 
@@ -674,5 +675,123 @@ mod tests {
         assert_eq!(1, var_len!((1, ())));
         assert_eq!(2, var_len!((1, (2, ()))));
         assert_eq!(3, var_len!((1, (2, (3, ())))));
+    }
+
+    #[test]
+    fn triangle_generic_join() {
+        const MATCHES: u32 = 10000;
+        type MyGht = GhtType!(u32 => u32);
+
+        let mut r_data: BTreeSet<(u32, u32)> = BTreeSet::from_iter((0..MATCHES).map(|i| (0, i)));
+        r_data.extend((1..MATCHES).map(|i| (i, 0)));
+
+        let mut s_data: BTreeSet<(u32, u32)> = BTreeSet::from_iter((0..MATCHES).map(|i| (0, i)));
+        s_data.extend((1..MATCHES).map(|i| (i, 0)));
+
+        let mut t_data: BTreeSet<(u32, u32)> = BTreeSet::from_iter((0..MATCHES).map(|i| (0, i)));
+        t_data.extend((1..MATCHES).map(|i| (i, 0)));
+
+        println!("Building GHT for rx");
+        io::stdout().flush().unwrap();
+        let rx_ght = MyGht::new_from(r_data.iter().map(|(x, y)| var_expr!(*x, *y)));
+        println!("Building GHT for sb");
+        io::stdout().flush().unwrap();
+        let sb_ght = MyGht::new_from(s_data.iter().map(|(y, b)| var_expr!(*b, *y)));
+        println!("Building GHT for tx");
+        io::stdout().flush().unwrap();
+        let tx_ght = MyGht::new_from(s_data.iter().map(|(z, x)| var_expr!(*x, *z)));
+        println!("GHTs built");
+        io::stdout().flush().unwrap();
+
+        let r_x: BTreeSet<_> = r_data.iter().map(|(x, _y)| (x)).collect();
+        let t_x: BTreeSet<_> = s_data.iter().map(|(_z, x)| (x)).collect();
+        let mut x_inter: Vec<_> = r_x.intersection(&t_x).collect();
+        x_inter.sort();
+        if x_inter.len() > 1 {
+            println!("x intersection size: {:?}", x_inter.len());
+        }
+        io::stdout().flush().unwrap();
+
+        let mut output: Vec<(&u32, &u32, &u32)> = Vec::new();
+        let mut x_iters = 0usize;
+        let mut y_iters = 0usize;
+        let mut z_iters = 0usize;
+        for &a in x_inter {
+            x_iters += 1;
+            let r: BTreeSet<_> = rx_ght.prefix_iter(var_expr!(a)).map(|(y, ())| y).collect();
+            let t: BTreeSet<_> = tx_ght.prefix_iter(var_expr!(a)).map(|(z, ())| z).collect();
+            let s_y: BTreeSet<_> = s_data.iter().map(|(y, _z)| (y)).collect();
+
+            let mut y_inter: Vec<_> = r.intersection(&s_y).collect();
+            y_inter.sort();
+            if y_inter.len() > 1 {
+                println!("y intersection size of a = {}: {:?}", a, y_inter.len());
+            }
+            io::stdout().flush().unwrap();
+            for &b in y_inter {
+                y_iters += 1;
+                let s: BTreeSet<_> = sb_ght.prefix_iter(var_expr!(b)).map(|(z, ())| z).collect();
+                let mut z_inter: Vec<_> = s.intersection(&t).collect();
+                z_inter.sort();
+                if z_inter.len() > 1 {
+                    println!(
+                        "intersection size of a = {}, b = {}: {:?}",
+                        a,
+                        b,
+                        z_inter.len()
+                    );
+                }
+                io::stdout().flush().unwrap();
+                for &c in z_inter {
+                    z_iters += 1;
+                    // println!("Inserting ({}, {}, {})", a, b, c);
+                    output.push((a, b, c));
+                }
+            }
+        }
+        // let mut output = Vec::from_iter(output.iter());
+        // output.sort();
+        // output
+        //     .iter()
+        //     .enumerate()
+        //     .for_each(|(i, (a, b, c))| println!("gj #{}: ({}, {}, {})", i, a, b, c));
+        println!("output size: {}", output.len());
+        println!(
+            "x_iters: {}, y_iters: {}, z_iters:{}",
+            x_iters, y_iters, z_iters
+        );
+    }
+
+    #[test]
+    fn clover_generic_join() {
+        const MATCHES: u32 = 10;
+
+        let mut r_data: BTreeSet<(u32, u32)> = BTreeSet::from_iter((1..MATCHES).map(|i| (1, i)));
+        r_data.extend((1..MATCHES).map(|i| (2, i)));
+        r_data.insert((0, 0));
+
+        let mut s_data: BTreeSet<(u32, u32)> = BTreeSet::from_iter((1..MATCHES).map(|i| (2, i)));
+        s_data.extend((1..MATCHES).map(|i| (3, i)));
+        s_data.insert((0, 0));
+
+        let mut t_data: BTreeSet<(u32, u32)> = BTreeSet::from_iter((1..MATCHES).map(|i| (3, i)));
+        t_data.extend((1..MATCHES).map(|i| (1, i)));
+        t_data.insert((0, 0));
+
+        // let r_x = r_data.iter().map(|(x, a)| (x));
+        // let r_a = r_data.iter().map(|(x, a)| (a));
+        // let s_x = s_data.iter().map(|(x, b)| (x));
+        // let s_b = s_data.iter().map(|(x, b)| (b));
+        // let t_x = t_data.iter().map(|(x, c)| (x));
+        // let t_c = s_data.iter().map(|(x, c)| (c));
+
+        let slow_result: BTreeSet<(u32, u32, u32, u32)> = r_data
+            .iter()
+            .flat_map(|&t1| s_data.iter().map(move |&t2| (t1, t2)))
+            .flat_map(|(t1, t2)| t_data.iter().map(move |&t3| (t1, t2, t3)))
+            .filter(|&((x1, _a), (x2, _b), (x3, _c))| x1 == x2 && x2 == x3)
+            .map(|((x, a), (_x2, b), (_x3, c))| (x, a, b, c))
+            .collect();
+        println!("Slow Result: {:?}", slow_result);
     }
 }
