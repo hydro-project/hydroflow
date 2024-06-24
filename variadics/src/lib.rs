@@ -55,7 +55,8 @@ macro_rules! var_args {
     ($a:pat, $( $b:tt )+) => ( ($a, $crate::var_args!( $( $b )* )) );
 }
 
-/// return the (top-level) length of the variadic
+/// return the (top-level) length of en explicit variadic
+/// (cannot pass in a nested macro call like var_expr!(...))
 #[macro_export]
 macro_rules! var_len {
     // Match the empty tuple or base case

@@ -56,7 +56,6 @@ pub fn tuple(ts: TokenStream) -> TokenStream {
     let len = len.base10_parse::<usize>().unwrap();
     let pattern = gen_pattern(c, len, 1);
     let tuple = gen_tuple(c, len, 1);
-    println!("tuple: {:?}", tuple);
 
     // Create the assignment statement
     let expanded = quote! {
