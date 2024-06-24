@@ -3,7 +3,7 @@
 /// Lines are one-indexed (start with `1`). Both `lineStart` and `lineEnd` are inclusive.
 export function getLines(str: string, lineStart: number, lineEnd?: number): string {
     let lines = str.split('\n').slice(lineStart - 1, lineEnd || lineStart);
-    const leadingWhitespace = Math.min(...lines.map(line => line.search(/\S/)).map(Number).filter(n => 0 !== n));
+    const leadingWhitespace = Math.min(...lines.filter(line => 0 !== line.length).map(line => line.search(/\S/)).map(Number));
     if (0 < leadingWhitespace) {
         lines = lines.map(line => line.slice(leadingWhitespace));
     }
