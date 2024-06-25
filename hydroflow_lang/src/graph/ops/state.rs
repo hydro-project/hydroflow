@@ -107,10 +107,10 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
                         Iter: 'a + ::std::iter::Iterator<Item = Item>,
                         Lat: 'static + #root::lattices::Merge<Item>,
                     {
-                        iter.inspect(move |item| {
+                        iter.filter(move |item| {
                             let state = context.state_ref(state_handle);
                             let mut state = state.borrow_mut();
-                            #root::lattices::Merge::merge(&mut *state, ::std::clone::Clone::clone(item));
+                            #root::lattices::Merge::merge(&mut *state, ::std::clone::Clone::clone(item))
                         })
                     }
                     check_input::<_, _, #lattice_type>(#input, #state_ident, #context)
@@ -129,10 +129,10 @@ pub const STATE: OperatorConstraints = OperatorConstraints {
                         Push: #root::pusherator::Pusherator<Item = Item>,
                         Lat: 'static + #root::lattices::Merge<Item>,
                     {
-                        #root::pusherator::inspect::Inspect::new(move |item| {
+                        #root::pusherator::filter::Filter::new(move |item| {
                             let state = context.state_ref(state_handle);
                             let mut state = state.borrow_mut();
-                            #root::lattices::Merge::merge(&mut *state, ::std::clone::Clone::clone(item));
+                            #root::lattices::Merge::merge(&mut *state, ::std::clone::Clone::clone(item))
                         }, push)
                     }
                     check_output::<_, _, #lattice_type>(#output, #state_ident, #context)
