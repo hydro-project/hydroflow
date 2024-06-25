@@ -1773,6 +1773,7 @@ name = "lattices"
 version = "0.5.5"
 dependencies = [
  "cc-traits",
+ "fnv",
  "lattices_macro",
  "sealed",
  "serde",

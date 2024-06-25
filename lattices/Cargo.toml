@@ -19,3 +19,4 @@ serde = { version = "1.0.160", features = ["derive"], optional = true }
 trybuild = "1.0.80"
 variadics = { path = "../variadics", version = "^0.0.4" }
 variadics_macro = { path = "../variadics_macro", version = "^0.5.5" }
+fnv = "1.0.7"
