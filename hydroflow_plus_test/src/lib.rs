@@ -12,6 +12,11 @@ pub(crate) mod cluster;
 pub mod cluster;
 
 #[cfg(stageleft_macro)]
+pub(crate) mod compute_pi_local;
+#[cfg(not(stageleft_macro))]
+pub mod compute_pi_local;
+
+#[cfg(stageleft_macro)]
 pub(crate) mod first_ten;
 #[cfg(not(stageleft_macro))]
 pub mod first_ten;
