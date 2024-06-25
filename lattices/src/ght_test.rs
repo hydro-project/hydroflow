@@ -780,36 +780,94 @@ mod test {
         );
     }
 
+    fn clover_setup(
+        matches: usize,
+    ) -> (
+        impl Iterator<Item = (u32, u32)>,
+        impl Iterator<Item = (u32, u32)>,
+        impl Iterator<Item = (u32, u32)>,
+    ) {
+        let r_iter = (1..matches)
+            .map(|i| (1u32, i as u32))
+            .chain((1..matches).map(|i| (2, i as u32)))
+            .chain([(0, 0)]);
+
+        let s_iter = (1..matches)
+            .map(|i| (2u32, i as u32))
+            .chain((1..matches).map(|i| (3, i as u32)))
+            .chain([(0, 0)]);
+
+        let t_iter = (1..matches)
+            .map(|i| (3u32, i as u32))
+            .chain((1..matches).map(|i| (1, i as u32)))
+            .chain([(0, 0)]);
+        (r_iter, s_iter, t_iter)
+    }
     #[test]
     fn clover_generic_join() {
-        const MATCHES: u32 = 10;
+        const MATCHES: usize = 1000;
 
-        let mut r_data: HashSet<(u32, u32)> = HashSet::from_iter((1..MATCHES).map(|i| (1, i)));
-        r_data.extend((1..MATCHES).map(|i| (2, i)));
-        r_data.insert((0, 0));
+        // let r_iter = (0..MATCHES)
+        //     .map(|i| (0, i))
+        //     .chain((1..MATCHES).map(|i| (i, 0)));
 
-        let mut s_data: HashSet<(u32, u32)> = HashSet::from_iter((1..MATCHES).map(|i| (2, i)));
-        s_data.extend((1..MATCHES).map(|i| (3, i)));
-        s_data.insert((0, 0));
+        let (r_iter, s_iter, t_iter) = clover_setup(MATCHES);
 
-        let mut t_data: HashSet<(u32, u32)> = HashSet::from_iter((1..MATCHES).map(|i| (3, i)));
-        t_data.extend((1..MATCHES).map(|i| (1, i)));
-        t_data.insert((0, 0));
+        type MyGht = GhtType!(u32 => u32);
+        let rx_ght = MyGht::new_from(r_iter.map(|(x, a)| var_expr!(x, a)));
+        let sx_ght = MyGht::new_from(s_iter.map(|(x, b)| var_expr!(x, b)));
+        let tx_ght = MyGht::new_from(t_iter.map(|(x, c)| var_expr!(x, c)));
+        for x in rx_ght.get_trie().iter() {
+            if let (Some(r), Some(s), Some(t)) = (
+                rx_ght.get_trie().get(x),
+                sx_ght.get_trie().get(x),
+                tx_ght.get_trie().get(x),
+            ) {
+                // All unwraps succeeded, use `r`, `s`, `t` here
+                for a in r.iter() {
+                    for b in s.iter() {
+                        for c in t.iter() {
+                            println!("clover output: ({}, {}, {}, {})", *x, a.0, b.0, c.0);
+                            assert_eq!((*x, a.0, b.0, c.0), (0, 0, 0, 0));
+                        }
+                    }
+                }
+            } else {
+                // If any unwrap fails, continue to the next iteration
+                continue;
+            }
+        }
+    }
+    #[test]
+    fn clover_factorized_join() {
+        const MATCHES: usize = 1000;
 
-        // let r_x = r_data.iter().map(|(x, a)| (x));
-        // let r_a = r_data.iter().map(|(x, a)| (a));
-        // let s_x = s_data.iter().map(|(x, b)| (x));
-        // let s_b = s_data.iter().map(|(x, b)| (b));
-        // let t_x = t_data.iter().map(|(x, c)| (x));
-        // let t_c = s_data.iter().map(|(x, c)| (c));
+        // let r_iter = (0..MATCHES)
+        //     .map(|i| (0, i))
+        //     .chain((1..MATCHES).map(|i| (i, 0)));
 
-        let slow_result: HashSet<(u32, u32, u32, u32)> = r_data
-            .iter()
-            .flat_map(|&t1| s_data.iter().map(move |&t2| (t1, t2)))
-            .flat_map(|(t1, t2)| t_data.iter().map(move |&t3| (t1, t2, t3)))
-            .filter(|&((x1, _a), (x2, _b), (x3, _c))| x1 == x2 && x2 == x3)
-            .map(|((x, a), (_x2, b), (_x3, c))| (x, a, b, c))
-            .collect();
-        println!("Slow Result: {:?}", slow_result);
+        let (r_iter, s_iter, t_iter) = clover_setup(MATCHES);
+
+        type Ght1 = GhtType!(() => u32, u32);
+        type Ght2 = GhtType!(u32 => u32);
+        let rx_ght = Ght1::new_from(r_iter.map(|(x, a)| ((), var_expr!(x, a))));
+        let sx_ght = Ght2::new_from(s_iter.map(|(x, b)| var_expr!(x, b)));
+        let tx_ght = Ght2::new_from(t_iter.map(|(x, c)| var_expr!(x, c)));
+
+        for t in rx_ght.recursive_iter() {
+            let (&_, (x, (a, ()))): (&(), (&u32, (&u32, _))) = t;
+            if let (Some(s), Some(t)) = (sx_ght.get_trie().get(x), tx_ght.get_trie().get(x)) {
+                // All unwraps succeeded, use `s`, `t` here
+                for b in s.iter() {
+                    for c in t.iter() {
+                        println!("clover output: ({}, {}, {}, {})", *x, *a, b.0, c.0);
+                        assert_eq!((*x, *a, b.0, c.0), (0, 0, 0, 0));
+                    }
+                }
+            } else {
+                // If any unwrap fails, continue to the next iteration
+                continue;
+            }
+        }
     }
 }
