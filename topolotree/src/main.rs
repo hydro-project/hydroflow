@@ -157,7 +157,7 @@ fn run_topolotree(
             -> tee();
 
         new_neighbors
-            -> persist()
+            -> persist::<'static>()
             -> [pos]neighbors;
         dead_neighbors -> [neg]neighbors;
         neighbors = difference()
