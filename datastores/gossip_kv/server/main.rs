@@ -16,6 +16,7 @@ use crate::membership::member_name;
 use crate::server::{server, SeedNode};
 
 mod config;
+mod lattices;
 mod membership;
 mod model;
 mod server;
