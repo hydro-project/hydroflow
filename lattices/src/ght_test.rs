@@ -645,7 +645,6 @@ mod test {
         assert_eq!(k1, k2);
     }
 
-    use variadics::var_len;
     use variadics_macro::tuple;
 
     #[test]
@@ -668,13 +667,6 @@ mod test {
         let t = trie1.recursive_iter().next().unwrap();
         let tup = tuple!(t, 3);
         assert_eq!(tup, (&1, &2, &3));
-    }
-
-    #[test]
-    fn test_var_len() {
-        assert_eq!(1, var_len!((1, ())));
-        assert_eq!(2, var_len!((1, (2, ()))));
-        assert_eq!(3, var_len!((1, (2, (3, ())))));
     }
 
     use std::hash::BuildHasherDefault;

@@ -4,7 +4,6 @@ use hydroflow::lattices::GhtType;
 use hydroflow::util::collect_ready;
 use hydroflow::variadics::{var_expr, var_type};
 use lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
-use lattices::GhtNodeType;
 
 #[test]
 fn test_basic() {
@@ -46,7 +45,6 @@ fn test_join() {
         var_expr!(4, 40),
     ];
     let s = vec![var_expr!(1, 100), var_expr!(5, 500)];
-    type LeafProd = GhtNodeType!(u16 => u16);
 
     type MyNodeBim =
         <(MyGhtTrie, MyGhtTrie) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;

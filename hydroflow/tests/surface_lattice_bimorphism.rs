@@ -6,9 +6,9 @@ use lattices::ght::GeneralizedHashTrie;
 use lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
 use lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap};
 use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
-use lattices::{GhtNodeType, GhtType};
+use lattices::GhtType;
 use multiplatform_test::multiplatform_test;
-use variadics::{var_expr, UnrefCloneVariadic};
+use variadics::var_expr;
 
 #[multiplatform_test]
 pub fn test_cartesian_product() {

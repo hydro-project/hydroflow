@@ -492,6 +492,7 @@ where
 /// dependent column types. You pass it:
 ///    - a list of key column types and dependent column type separated by a fat arrow,
 ///         a la (K1, K2, K3 => T1, T2, T3)
+///
 /// This macro generates a hierarchy of GHT node types where each key column is associated with an GhtInner
 /// of the associated column type, and the remaining dependent columns are associated with a variadic HTleaf
 /// a la var_expr!(T1, T2, T3)
