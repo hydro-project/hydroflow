@@ -288,7 +288,7 @@ impl RefVariadic for () {
     type UnRef = ();
 }
 
-/// A variadic where each item is a shared reference `&val`.
+/// A variadic where each item is an exclusive reference `&mut val`.
 ///
 /// This is a sealed trait.
 #[sealed]
@@ -298,8 +298,9 @@ pub trait MutVariadic: Variadic {
     /// The inverse of [`VariadicExt::AsMutVar`].
     type UnMut: VariadicExt;
 
-    /// Downgrade this to a shared reference [`RefVariadic`].
+    /// Type returned by [`Self::downgrade`].
     type Downgrade: RefVariadic<UnRef = Self::UnMut>;
+    /// Downgrade this to a variadic of shared reference [`RefVariadic`].
     fn downgrade(self) -> Self::Downgrade;
 }
 #[sealed]
@@ -312,7 +313,7 @@ where
     type Downgrade = (&'a Item, Rest::Downgrade);
     fn downgrade(self) -> Self::Downgrade {
         let var_args!(item, ...rest) = self;
-        var_expr!(&*item, ...rest)
+        var_expr!(&*item, ...rest.downgrade())
     }
 }
 #[sealed]
@@ -324,16 +325,16 @@ impl MutVariadic for () {
 }
 
 #[sealed]
-/// Clone an Unref
-pub trait RefCloneVariadic: RefVariadic {
-    /// Clone the unref
+/// Clone an [`RefVariadic`] into an [`RefVariadic::UnRef`] variadic of owned values.
+pub trait CloneRefVariadic: RefVariadic {
+    /// Clone self per-value.
     fn clone_var(&self) -> Self::UnRef;
 }
 #[sealed]
-impl<Item, Rest> RefCloneVariadic for (&Item, Rest)
+impl<Item, Rest> CloneRefVariadic for (&Item, Rest)
 where
     Item: Clone,
-    Rest: RefCloneVariadic,
+    Rest: CloneRefVariadic,
 {
     fn clone_var(&self) -> Self::UnRef {
         let var_args!(item, ...rest) = self;
@@ -341,31 +342,31 @@ where
     }
 }
 #[sealed]
-impl RefCloneVariadic for () {
+impl CloneRefVariadic for () {
     fn clone_var(&self) -> Self::UnRef {}
 }
 
-/// `PartialEq` between a referenced variadic and a variadic of references, of the same types.
+/// A variadic where all item implement `PartialEq`.
 #[sealed]
-pub trait AsRefVariadicPartialEq: VariadicExt {
+pub trait PartialEqVariadic: Variadic {
     /// `PartialEq` between a referenced variadic and a variadic of references, of the same types.
-    fn as_ref_var_eq(&self, other: Self::AsRefVar<'_>) -> bool;
+    fn eq(&self, other: &Self) -> bool;
 }
 #[sealed]
-impl<Item, Rest> AsRefVariadicPartialEq for (Item, Rest)
+impl<Item, Rest> PartialEqVariadic for (Item, Rest)
 where
     Item: PartialEq,
-    Rest: AsRefVariadicPartialEq,
+    Rest: PartialEqVariadic,
 {
-    fn as_ref_var_eq(&self, other: Self::AsRefVar<'_>) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         let var_args!(item_self, ...rest_self) = self;
         let var_args!(item_other, ...rest_other) = other;
-        item_self == item_other && rest_self.as_ref_var_eq(rest_other)
+        item_self == item_other && rest_self.eq(rest_other)
     }
 }
 #[sealed]
-impl AsRefVariadicPartialEq for () {
-    fn as_ref_var_eq(&self, _other: Self::AsRefVar<'_>) -> bool {
+impl PartialEqVariadic for () {
+    fn eq(&self, _other: &Self) -> bool {
         true
     }
 }
