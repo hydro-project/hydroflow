@@ -263,7 +263,7 @@ impl VariadicExt for () {
     }
 }
 
-/// A variadic where each item is a shared reference `&val`.
+/// A variadic where each item is a shared reference `&item`.
 ///
 /// This is a sealed trait.
 #[sealed]
@@ -288,7 +288,7 @@ impl RefVariadic for () {
     type UnRef = ();
 }
 
-/// A variadic where each item is an exclusive reference `&mut val`.
+/// A variadic where each item is an exclusive reference `&mut item`.
 ///
 /// This is a sealed trait.
 #[sealed]
@@ -348,14 +348,12 @@ impl CloneRefVariadic for () {
 
 /// A variadic where all item implement `PartialEq`.
 #[sealed]
-pub trait PartialEqVariadic: Variadic {
+pub trait PartialEqVariadic: VariadicExt {
     /// `PartialEq` between a referenced variadic and a variadic of references, of the same types.
     fn eq(&self, other: &Self) -> bool;
 
     /// `PartialEq` for the `AsRefVar` version op `Self`.
-    fn eq_ref<'a>(this: Self::AsRefVar<'a>, other: Self::AsRefVar<'a>) -> bool
-    where
-        Self: VariadicExt;
+    fn eq_ref<'a>(this: Self::AsRefVar<'a>, other: Self::AsRefVar<'a>) -> bool;
 }
 #[sealed]
 impl<Item, Rest> PartialEqVariadic for (Item, Rest)
@@ -372,13 +370,10 @@ where
     fn eq_ref<'a>(
         this: <Self as VariadicExt>::AsRefVar<'a>,
         other: <Self as VariadicExt>::AsRefVar<'a>,
-    ) -> bool
-    where
-        Self: VariadicExt,
-    {
+    ) -> bool {
         let var_args!(item_self, ...rest_self) = this;
         let var_args!(item_other, ...rest_other) = other;
-        item_self == item_other && rest_self.eq(rest_other)
+        item_self == item_other && Rest::eq_ref(rest_self, rest_other)
     }
 }
 #[sealed]
@@ -390,10 +385,7 @@ impl PartialEqVariadic for () {
     fn eq_ref<'a>(
         _this: <Self as VariadicExt>::AsRefVar<'a>,
         _other: <Self as VariadicExt>::AsRefVar<'a>,
-    ) -> bool
-    where
-        Self: VariadicExt,
-    {
+    ) -> bool {
         true
     }
 }
