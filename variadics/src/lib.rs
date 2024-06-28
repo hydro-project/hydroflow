@@ -388,7 +388,7 @@ where
         if i == 0 {
             Some(item)
         } else {
-            rest.get(i)
+            rest.get(i - 1)
         }
     }
     fn get_mut(&mut self, i: usize) -> Option<&mut T> {
@@ -396,7 +396,7 @@ where
         if i == 0 {
             Some(item)
         } else {
-            rest.get_mut(i)
+            rest.get_mut(i - 1)
         }
     }
 
@@ -527,5 +527,14 @@ mod test {
                 .map(|any| &**any.downcast_ref::<String>().unwrap())
         );
         assert!(ref_iter.next().is_none());
+    }
+
+    #[test]
+    fn test_homogenous_get() {
+        let mut var = var_expr!(0, 1, 2, 3, 4);
+        for i in 0..5 {
+            assert_eq!(Some(i), var.get(i).copied());
+            assert_eq!(Some(i), var.get_mut(i).copied());
+        }
     }
 }
