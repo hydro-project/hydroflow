@@ -351,6 +351,11 @@ impl CloneRefVariadic for () {
 pub trait PartialEqVariadic: Variadic {
     /// `PartialEq` between a referenced variadic and a variadic of references, of the same types.
     fn eq(&self, other: &Self) -> bool;
+
+    /// `PartialEq` for the `AsRefVar` version op `Self`.
+    fn eq_ref<'a>(this: Self::AsRefVar<'a>, other: Self::AsRefVar<'a>) -> bool
+    where
+        Self: VariadicExt;
 }
 #[sealed]
 impl<Item, Rest> PartialEqVariadic for (Item, Rest)
@@ -363,10 +368,32 @@ where
         let var_args!(item_other, ...rest_other) = other;
         item_self == item_other && rest_self.eq(rest_other)
     }
+
+    fn eq_ref<'a>(
+        this: <Self as VariadicExt>::AsRefVar<'a>,
+        other: <Self as VariadicExt>::AsRefVar<'a>,
+    ) -> bool
+    where
+        Self: VariadicExt,
+    {
+        let var_args!(item_self, ...rest_self) = this;
+        let var_args!(item_other, ...rest_other) = other;
+        item_self == item_other && rest_self.eq(rest_other)
+    }
 }
 #[sealed]
 impl PartialEqVariadic for () {
     fn eq(&self, _other: &Self) -> bool {
+        true
+    }
+
+    fn eq_ref<'a>(
+        _this: <Self as VariadicExt>::AsRefVar<'a>,
+        _other: <Self as VariadicExt>::AsRefVar<'a>,
+    ) -> bool
+    where
+        Self: VariadicExt,
+    {
         true
     }
 }
