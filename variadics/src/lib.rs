@@ -127,7 +127,7 @@ pub trait VariadicExt: Variadic {
     fn reverse(self) -> Self::Reverse;
 
     /// This as a variadic of references.
-    type AsRefVar<'a>: Copy + Variadic
+    type AsRefVar<'a>: Copy + UnrefVariadic<Unref = Self>
     where
         Self: 'a;
     /// Convert a reference to this variadic into a variadic of references.
@@ -289,6 +289,64 @@ where
 #[sealed]
 impl UnrefVariadic for () {
     type Unref = ();
+}
+
+#[sealed]
+/// Clone an Unref
+pub trait UnrefCloneVariadic: UnrefVariadic {
+    /// Clone the unref
+    fn clone_var(&self) -> Self::Unref;
+}
+#[sealed]
+impl<Item, Rest> UnrefCloneVariadic for (&Item, Rest)
+where
+    Item: Clone,
+    Rest: UnrefCloneVariadic,
+{
+    fn clone_var(&self) -> Self::Unref {
+        let var_args!(item, ...rest) = self;
+        var_expr!((*item).clone(), ...rest.clone_var())
+    }
+}
+#[sealed]
+impl<Item, Rest> UnrefCloneVariadic for (&mut Item, Rest)
+where
+    Item: Clone,
+    Rest: UnrefCloneVariadic,
+{
+    fn clone_var(&self) -> Self::Unref {
+        let var_args!(item, ...rest) = self;
+        var_expr!((*item).clone(), ...rest.clone_var())
+    }
+}
+#[sealed]
+impl UnrefCloneVariadic for () {
+    fn clone_var(&self) -> Self::Unref {}
+}
+
+/// `PartialEq` between a referenced variadic and a variadic of references, of the same types.
+#[sealed]
+pub trait AsRefVariadicPartialEq: VariadicExt {
+    /// `PartialEq` between a referenced variadic and a variadic of references, of the same types.
+    fn as_ref_var_eq(&self, other: Self::AsRefVar<'_>) -> bool;
+}
+#[sealed]
+impl<Item, Rest> AsRefVariadicPartialEq for (Item, Rest)
+where
+    Item: PartialEq,
+    Rest: AsRefVariadicPartialEq,
+{
+    fn as_ref_var_eq(&self, other: Self::AsRefVar<'_>) -> bool {
+        let var_args!(item_self, ...rest_self) = self;
+        let var_args!(item_other, ...rest_other) = other;
+        item_self == item_other && rest_self.as_ref_var_eq(rest_other)
+    }
+}
+#[sealed]
+impl AsRefVariadicPartialEq for () {
+    fn as_ref_var_eq(&self, _other: Self::AsRefVar<'_>) -> bool {
+        true
+    }
 }
 
 /// A variadic where all elements are the same type, `T`.

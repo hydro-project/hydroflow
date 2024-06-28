@@ -9,7 +9,7 @@ use crate::{
 
 /// Helper which calls many other `check_*` functions in this module. See source code for which
 /// functions are called.
-pub fn check_all<T: Lattice + Clone + Eq + Debug + Default>(items: &[T]) {
+pub fn check_all<T: Lattice + Clone + PartialEq + Debug + Default>(items: &[T]) {
     check_lattice_ord(items);
     check_partial_ord_properties(items);
     check_lattice_properties(items);
@@ -32,7 +32,7 @@ pub fn check_lattice_ord<T: LatticeOrd + NaiveLatticeOrd + Debug>(items: &[T]) {
 /// Checks `PartialOrd`, `PartialEq`, and `Eq`'s reflexivity, symmetry, transitivity, and duality.
 #[allow(clippy::eq_op)]
 #[allow(clippy::double_comparisons)]
-pub fn check_partial_ord_properties<T: PartialOrd + Eq + Debug>(items: &[T]) {
+pub fn check_partial_ord_properties<T: PartialOrd + Debug>(items: &[T]) {
     use std::cmp::Ordering::*;
 
     // Eq:
@@ -107,7 +107,7 @@ pub fn check_partial_ord_properties<T: PartialOrd + Eq + Debug>(items: &[T]) {
 }
 
 /// Check lattice associativity, commutativity, and idempotence.
-pub fn check_lattice_properties<T: Merge<T> + Clone + Eq + Debug>(items: &[T]) {
+pub fn check_lattice_properties<T: Merge<T> + Clone + PartialEq + Debug>(items: &[T]) {
     // Idempotency
     // x ∧ x = x
     for x in items {

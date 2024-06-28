@@ -1462,6 +1462,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "trybuild",
+ "tuples",
  "variadics",
  "wasm-bindgen-test",
  "web-time",
@@ -1772,10 +1773,13 @@ name = "lattices"
 version = "0.5.5"
 dependencies = [
  "cc-traits",
+ "fnv",
  "lattices_macro",
  "sealed",
  "serde",
  "trybuild",
+ "variadics",
+ "variadics_macro",
 ]
 
 [[package]]
@@ -3668,6 +3672,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "tuples"
+version = "1.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2588972108c7814c636526f2cf2ba1bf8d975f55680f79da4a7aa9e0810f6b44"
+
+[[package]]
 name = "typenum"
 version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3753,6 +3763,19 @@ version = "0.0.4"
 dependencies = [
  "sealed",
  "trybuild",
+]
+
+[[package]]
+name = "variadics_macro"
+version = "0.5.5"
+dependencies = [
+ "insta",
+ "prettyplease",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.60",
+ "variadics",
 ]
 
 [[package]]
