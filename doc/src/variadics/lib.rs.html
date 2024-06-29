@@ -471,6 +471,15 @@
 <a href="#471" id="471">471</a>
 <a href="#472" id="472">472</a>
 <a href="#473" id="473">473</a>
+<a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a>
+<a href="#476" id="476">476</a>
+<a href="#477" id="477">477</a>
+<a href="#478" id="478">478</a>
+<a href="#479" id="479">479</a>
+<a href="#480" id="480">480</a>
+<a href="#481" id="481">481</a>
+<a href="#482" id="482">482</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 #![doc = <span class="macro">include_str!</span>(<span class="string">"../README.md"</span>)]
 </span><span class="doccomment">//! &amp;nbsp;
@@ -803,7 +812,7 @@
         <span class="kw">if </span>i == <span class="number">0 </span>{
             <span class="prelude-val">Some</span>(item)
         } <span class="kw">else </span>{
-            rest.get(i)
+            rest.get(i - <span class="number">1</span>)
         }
     }
     <span class="kw">fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: usize) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>T&gt; {
@@ -811,7 +820,7 @@
         <span class="kw">if </span>i == <span class="number">0 </span>{
             <span class="prelude-val">Some</span>(item)
         } <span class="kw">else </span>{
-            rest.get_mut(i)
+            rest.get_mut(i - <span class="number">1</span>)
         }
     }
 
@@ -942,6 +951,15 @@
                 .map(|any| <span class="kw-2">&amp;**</span>any.downcast_ref::&lt;String&gt;().unwrap())
         );
         <span class="macro">assert!</span>(ref_iter.next().is_none());
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_homogenous_get() {
+        <span class="kw">let </span><span class="kw-2">mut </span>var = <span class="macro">var_expr!</span>(<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>);
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">5 </span>{
+            <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(i), var.get(i).copied());
+            <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(i), var.get_mut(i).copied());
+        }
     }
 }
 </code></pre></div></section></main></body></html>
