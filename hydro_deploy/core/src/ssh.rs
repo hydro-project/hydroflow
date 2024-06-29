@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::fs;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -11,7 +12,7 @@ use async_ssh2_lite::ssh2::ErrorCode;
 use async_ssh2_lite::{AsyncChannel, AsyncSession, Error, SessionConfiguration};
 use async_trait::async_trait;
 use futures::io::BufReader;
-use futures::{AsyncBufReadExt, AsyncWriteExt, StreamExt};
+use futures::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, StreamExt};
 use hydroflow_cli_integration::ServerBindConfig;
 use nanoid::nanoid;
 use tokio::net::{TcpListener, TcpStream};
@@ -20,6 +21,7 @@ use tokio::sync::RwLock;
 use super::progress::ProgressTracker;
 use super::util::async_retry;
 use super::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
+use crate::hydroflow_crate::perf_options::PerfOptions;
 use crate::util::prioritized_broadcast;
 
 struct LaunchedSSHBinary {
@@ -30,6 +32,7 @@ struct LaunchedSSHBinary {
     stdout_receivers: Arc<RwLock<Vec<Sender<String>>>>,
     stdout_cli_receivers: Arc<RwLock<Option<tokio::sync::oneshot::Sender<String>>>>,
     stderr_receivers: Arc<RwLock<Vec<Sender<String>>>>,
+    perf: Option<PerfOptions>,
 }
 
 #[async_trait]
@@ -86,9 +89,40 @@ impl Drop for LaunchedSSHBinary {
         let session = self.session.take().unwrap();
         std::thread::scope(|s| {
             s.spawn(|| {
-                let runtime = tokio::runtime::Builder::new_multi_thread().build().unwrap();
+                let runtime = tokio::runtime::Builder::new_multi_thread()
+                    .enable_time()
+                    .build()
+                    .unwrap();
                 runtime
-                    .block_on(session.disconnect(None, "", None))
+                    .block_on(async move {
+                        self.channel.write_all(&[b'\x03']).await.unwrap();
+                        self.channel.send_eof().await?;
+                        self.channel.wait_eof().await?;
+                        self.channel.wait_close().await?;
+                        // Copy perf file down
+                        if let Some(perf) = &self.perf {
+                            let output_file = perf.output_file.to_str().unwrap();
+                            let sftp = session.sftp().await?;
+
+                            // download perf.data
+                            let mut perf_data = sftp.open(&PathBuf::from(output_file)).await?;
+                            let mut downloaded_perf_data =
+                                tokio::fs::File::create(output_file).await?;
+                            let data_size = perf_data.stat().await?.size.unwrap();
+                            let mut read_buf = vec![0; 128 * 1024];
+                            let mut index = 0;
+                            while index < data_size {
+                                let bytes_read = perf_data.read(&mut read_buf).await?;
+                                use tokio::io::AsyncWriteExt;
+                                downloaded_perf_data
+                                    .write_all(read_buf[0..bytes_read].as_ref())
+                                    .await?;
+                                index += bytes_read as u64;
+                            }
+                        }
+
+                        session.disconnect(None, "", None).await
+                    })
                     .unwrap();
             })
             .join()
@@ -273,7 +307,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         id: String,
         binary: Arc<(String, Vec<u8>, PathBuf)>,
         args: &[String],
-        perf: Option<PathBuf>,
+        perf: Option<PerfOptions>,
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let session = self.open_ssh_session().await?;
 
@@ -298,17 +332,30 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
                         Duration::from_secs(1),
                     )
                     .await?;
+                // Launch with perf if specified, also copy local binary to expected place for perf report to work
+                let perf_wrapper = if let Some(perf) = perf.clone() {
+                    // Copy local binary to {output_file}.bins/home/{user}/hydro-{unique_name}
+                    let output_file = perf.output_file.to_str().unwrap();
+                    let local_binary = PathBuf::from(format!(
+                        "{output_file}.bins/home/{user}/hydro-{unique_name}"
+                    ));
+                    fs::create_dir_all(local_binary.parent().unwrap()).unwrap();
+                    fs::write(local_binary, &binary.1).unwrap();
+
+                    // Attach perf to the command
+                    let frequency = perf.frequency;
+                    format!("perf record -F {frequency} --call-graph dwarf,64000 -o {output_file} ")
+                } else {
+                    "".to_string()
+                };
                 let binary_path_string = binary_path.to_str().unwrap();
                 let args_string = args
                     .iter()
                     .map(|s| shell_escape::unix::escape(Cow::from(s)))
                     .fold("".to_string(), |acc, v| format!("{acc} {v}"));
                 channel
-                    .exec(&format!("{binary_path_string}{args_string}"))
+                    .exec(&format!("{perf_wrapper}{binary_path_string}{args_string}"))
                     .await?;
-                if perf.is_some() {
-                    todo!("Perf profiling on remote machines is not supported");
-                }
 
                 anyhow::Ok(channel)
             },
@@ -345,6 +392,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
             stdout_cli_receivers,
             stdout_receivers,
             stderr_receivers,
+            perf,
         })))
     }
 

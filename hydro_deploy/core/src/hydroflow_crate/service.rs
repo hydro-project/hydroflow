@@ -12,6 +12,7 @@ use serde::Serialize;
 use tokio::sync::RwLock;
 
 use super::build::{build_crate, BuildError, BuiltCrate};
+use super::perf_options::PerfOptions;
 use super::ports::{self, HydroflowPortConfig, HydroflowSink, SourcePath};
 use crate::progress::ProgressTracker;
 use crate::{
@@ -26,7 +27,7 @@ pub struct HydroflowCrateService {
     bin: Option<String>,
     example: Option<String>,
     profile: Option<String>,
-    perf: Option<PathBuf>,
+    perf: Option<PerfOptions>,
     features: Option<Vec<String>>,
     args: Option<Vec<String>>,
     display_id: Option<String>,
@@ -63,7 +64,7 @@ impl HydroflowCrateService {
         bin: Option<String>,
         example: Option<String>,
         profile: Option<String>,
-        perf: Option<PathBuf>,
+        perf: Option<PerfOptions>,
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
         display_id: Option<String>,

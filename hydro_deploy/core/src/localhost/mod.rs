@@ -13,6 +13,7 @@ use super::{
     ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
     ResourceResult, ServerStrategy,
 };
+use crate::hydroflow_crate::perf_options::PerfOptions;
 
 pub mod launched_binary;
 pub use launched_binary::*;
@@ -156,15 +157,22 @@ impl LaunchedHost for LaunchedLocalhost {
         id: String,
         binary: Arc<(String, Vec<u8>, PathBuf)>,
         args: &[String],
-        perf: Option<PathBuf>,
+        perf: Option<PerfOptions>,
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let mut command = if let Some(perf) = perf {
             println!("Profiling binary with perf");
             let mut tmp = Command::new("perf");
-            tmp.args(["record", "-F", "5", "--call-graph", "dwarf,64000", "-o"])
-                .arg(&perf)
-                .arg(&binary.2)
-                .args(args);
+            tmp.args([
+                "record",
+                "-F",
+                &perf.frequency.to_string(),
+                "--call-graph",
+                "dwarf,64000",
+                "-o",
+            ])
+            .arg(&perf.output_file)
+            .arg(&binary.2)
+            .args(args);
             tmp
         } else {
             let mut tmp = Command::new(&binary.2);
