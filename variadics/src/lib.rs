@@ -131,6 +131,11 @@ pub trait VariadicExt: Variadic {
     where
         Self: 'a;
     /// Convert a reference to this variadic into a variadic of references.
+    /// ```rust
+    /// # use variadics::*;
+    /// let as_ref: var_type!(&u32, &String, &bool) =
+    ///     var_expr!(1_u32, "Hello".to_owned(), false).as_ref_var();
+    /// ```
     fn as_ref_var(&self) -> Self::AsRefVar<'_>;
 
     /// This as a variadic of exclusive (`mut`) references.
@@ -139,6 +144,11 @@ pub trait VariadicExt: Variadic {
         Self: 'a;
     /// Convert an exclusive (`mut`) reference to this variadic into a variadic of exclusive
     /// (`mut`) references.
+    /// ```rust
+    /// # use variadics::*;
+    /// let as_mut: var_type!(&mut u32, &mut String, &mut bool) =
+    ///     var_expr!(1_u32, "Hello".to_owned(), false).as_mut_var();
+    /// ```
     fn as_mut_var(&mut self) -> Self::AsMutVar<'_>;
 
     /// Iterator type returned by [`Self::iter_any_ref`].
@@ -265,6 +275,13 @@ impl VariadicExt for () {
 
 /// A variadic where each item is a shared reference `&item`.
 ///
+/// This can be created using [`VariadicExt::as_ref_var`]:
+/// ```rust
+/// # use variadics::*;
+/// let as_ref: var_type!(&u32, &String, &bool) =
+///     var_expr!(1_u32, "Hello".to_owned(), false).as_ref_var();
+/// ```
+///
 /// This is a sealed trait.
 #[sealed]
 pub trait RefVariadic: Variadic
@@ -274,6 +291,12 @@ where
     /// The un-referenced variadic. Each item will have one layer of shared references removed.
     ///
     /// The inverse of [`VariadicExt::AsRefVar`].
+    ///
+    /// ```rust
+    /// # use variadics::*;
+    /// let un_ref: <var_type!(&u32, &String, &bool) as RefVariadic>::UnRef =
+    ///     var_expr!(1_u32, "Hello".to_owned(), false);
+    /// ```
     type UnRef: VariadicExt;
 }
 #[sealed]
@@ -290,17 +313,39 @@ impl RefVariadic for () {
 
 /// A variadic where each item is an exclusive reference `&mut item`.
 ///
+/// This can be created using [`VariadicExt::as_mut_var`]:
+/// ```rust
+/// # use variadics::*;
+/// let as_mut: var_type!(&mut u32, &mut String, &mut bool) =
+///     var_expr!(1_u32, "Hello".to_owned(), false).as_mut_var();
+/// ```
+///
 /// This is a sealed trait.
 #[sealed]
 pub trait MutVariadic: Variadic {
     /// The un-referenced variadic. Each item will have one layer of exclusive references removed.
     ///
     /// The inverse of [`VariadicExt::AsMutVar`].
+    ///
+    /// ```rust
+    /// # use variadics::*;
+    /// let un_mut: <var_type!(&mut u32, &mut String, &mut bool) as MutVariadic>::UnMut =
+    ///     var_expr!(1_u32, "Hello".to_owned(), false);
+    /// ```
     type UnMut: VariadicExt;
 
     /// Type returned by [`Self::downgrade`].
     type Downgrade: RefVariadic<UnRef = Self::UnMut>;
     /// Downgrade this to a variadic of shared reference [`RefVariadic`].
+    ///
+    /// ```rust
+    /// # use variadics::*;
+    /// let mut original = var_expr!(1_u32, "Hello".to_owned(), false);
+    /// let as_mut: var_type!(&mut u32, &mut String, &mut bool) = original.as_mut_var();
+    /// let as_ref_1: var_type!(&u32, &String, &bool) = as_mut.downgrade();
+    /// let as_ref_2: var_type!(&u32, &String, &bool) = as_ref_1; // Can copy the reference version.
+    /// drop((as_ref_1, as_ref_2));
+    /// ```
     fn downgrade(self) -> Self::Downgrade;
 }
 #[sealed]
