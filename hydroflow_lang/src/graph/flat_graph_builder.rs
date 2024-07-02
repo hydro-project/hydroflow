@@ -940,7 +940,7 @@ impl FlatGraphBuilder {
 
                 self.flat_graph.insert_intermediate_node(
                     pred_edge,
-                    GraphNode::Operator(parse_quote_spanned! {op_span=> persist() }),
+                    GraphNode::Operator(parse_quote_spanned! {op_span=> persist::<'static>() }), // TODO(mingwei): use 'tick when implemented.
                 );
                 self.diagnostics.push(Diagnostic::spanned(
                     op_span,
