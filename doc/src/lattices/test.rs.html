@@ -379,7 +379,7 @@
 
 <span class="doccomment">/// Helper which calls many other `check_*` functions in this module. See source code for which
 /// functions are called.
-</span><span class="kw">pub fn </span>check_all&lt;T: Lattice + Clone + Eq + Debug + Default&gt;(items: <span class="kw-2">&amp;</span>[T]) {
+</span><span class="kw">pub fn </span>check_all&lt;T: Lattice + Clone + PartialEq + Debug + Default&gt;(items: <span class="kw-2">&amp;</span>[T]) {
     check_lattice_ord(items);
     check_partial_ord_properties(items);
     check_lattice_properties(items);
@@ -399,13 +399,13 @@
     }
 }
 
-<span class="doccomment">/// Checks `PartialOrd`, `PartialEq`, and `Eq`'s reflexivity, symmetry, transitivity, and duality.
+<span class="doccomment">/// Checks `PartialOrd` and `PartialEq`'s reflexivity, symmetry, transitivity, and duality.
 </span><span class="attr">#[allow(clippy::eq_op)]
 #[allow(clippy::double_comparisons)]
-</span><span class="kw">pub fn </span>check_partial_ord_properties&lt;T: PartialOrd + Eq + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
+</span><span class="kw">pub fn </span>check_partial_ord_properties&lt;T: PartialOrd + PartialEq + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
     <span class="kw">use </span>std::cmp::Ordering::<span class="kw-2">*</span>;
 
-    <span class="comment">// Eq:
+    <span class="comment">// PartialEq:
     // reflexive: a == a;
     </span><span class="kw">for </span>a <span class="kw">in </span>items {
         <span class="macro">assert!</span>(a == a, <span class="string">"Reflexivity: `{:?}` should equal itself."</span>, a);
@@ -477,7 +477,7 @@
 }
 
 <span class="doccomment">/// Check lattice associativity, commutativity, and idempotence.
-</span><span class="kw">pub fn </span>check_lattice_properties&lt;T: Merge&lt;T&gt; + Clone + Eq + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
+</span><span class="kw">pub fn </span>check_lattice_properties&lt;T: Merge&lt;T&gt; + Clone + PartialEq + Debug&gt;(items: <span class="kw-2">&amp;</span>[T]) {
     <span class="comment">// Idempotency
     // x ∧ x = x
     </span><span class="kw">for </span>x <span class="kw">in </span>items {
@@ -578,8 +578,8 @@
 </span><span class="kw">pub fn </span>check_lattice_morphism&lt;LatIn, Func&gt;(<span class="kw-2">mut </span>func: Func, items: <span class="kw-2">&amp;</span>[LatIn])
 <span class="kw">where
     </span>Func: LatticeMorphism&lt;LatIn&gt;,
-    LatIn: Merge&lt;LatIn&gt; + Clone + Eq + Debug,
-    Func::Output: Merge&lt;Func::Output&gt; + Clone + Eq + Debug,
+    LatIn: Merge&lt;LatIn&gt; + Clone + PartialEq + Debug,
+    Func::Output: Merge&lt;Func::Output&gt; + Clone + PartialEq + Debug,
 {
     <span class="kw">for </span>[a, b] <span class="kw">in </span>cartesian_power(items) {
         <span class="macro">assert_eq!</span>(
@@ -600,9 +600,9 @@
     items_b: <span class="kw-2">&amp;</span>[LatB],
 ) <span class="kw">where
     </span>Func: LatticeBimorphism&lt;LatA, LatB&gt;,
-    LatA: Merge&lt;LatA&gt; + Clone + Eq + Debug,
-    LatB: Merge&lt;LatB&gt; + Clone + Eq + Debug,
-    Func::Output: Merge&lt;Func::Output&gt; + Clone + Eq + Debug,
+    LatA: Merge&lt;LatA&gt; + Clone + PartialEq + Debug,
+    LatB: Merge&lt;LatB&gt; + Clone + PartialEq + Debug,
+    Func::Output: Merge&lt;Func::Output&gt; + Clone + PartialEq + Debug,
 {
     <span class="comment">// Morphism LHS, fixed RHS:
     </span><span class="kw">for </span>b <span class="kw">in </span>items_b {
