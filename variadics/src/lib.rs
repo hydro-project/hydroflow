@@ -139,7 +139,7 @@ pub trait VariadicExt: Variadic {
     fn as_ref_var(&self) -> Self::AsRefVar<'_>;
 
     /// This as a variadic of exclusive (`mut`) references.
-    type AsMutVar<'a>: MutVariadic<UnMut = Self>
+    type AsMutVar<'a>: MutVariadic<UnRef = Self>
     where
         Self: 'a;
     /// Convert an exclusive (`mut`) reference to this variadic into a variadic of exclusive
@@ -273,6 +273,43 @@ impl VariadicExt for () {
     }
 }
 
+/// A variadic of either shared references, exclusive references, or both.
+///
+/// Provides the [`Self::UnRef`] associated type which is the original variadic of owned values.
+///
+/// This is a sealed trait.
+#[sealed]
+pub trait EitherRefVariadic {
+    /// The un-referenced variadic. Each item will have one layer of shared references removed.
+    ///
+    /// The inverse of [`VariadicExt::AsRefVar`] and [`VariadicExt::AsMutVar`].
+    ///
+    /// ```rust
+    /// # use variadics::*;
+    /// let un_ref: <var_type!(&u32, &String, &bool) as RefVariadic>::UnRef =
+    ///     var_expr!(1_u32, "Hello".to_owned(), false);
+    /// ```
+    type UnRef: Variadic;
+}
+#[sealed]
+impl<Item, Rest> EitherRefVariadic for (&Item, Rest)
+where
+    Rest: EitherRefVariadic,
+{
+    type UnRef = (Item, Rest::UnRef);
+}
+#[sealed]
+impl<Item, Rest> EitherRefVariadic for (&mut Item, Rest)
+where
+    Rest: EitherRefVariadic,
+{
+    type UnRef = (Item, Rest::UnRef);
+}
+#[sealed]
+impl EitherRefVariadic for () {
+    type UnRef = ();
+}
+
 /// A variadic where each item is a shared reference `&item`.
 ///
 /// This can be created using [`VariadicExt::as_ref_var`]:
@@ -284,32 +321,15 @@ impl VariadicExt for () {
 ///
 /// This is a sealed trait.
 #[sealed]
-pub trait RefVariadic: Variadic
+pub trait RefVariadic: EitherRefVariadic
 where
     Self: Copy,
 {
-    /// The un-referenced variadic. Each item will have one layer of shared references removed.
-    ///
-    /// The inverse of [`VariadicExt::AsRefVar`].
-    ///
-    /// ```rust
-    /// # use variadics::*;
-    /// let un_ref: <var_type!(&u32, &String, &bool) as RefVariadic>::UnRef =
-    ///     var_expr!(1_u32, "Hello".to_owned(), false);
-    /// ```
-    type UnRef: VariadicExt;
 }
 #[sealed]
-impl<Item, Rest> RefVariadic for (&Item, Rest)
-where
-    Rest: RefVariadic,
-{
-    type UnRef = (Item, Rest::UnRef);
-}
+impl<Item, Rest> RefVariadic for (&Item, Rest) where Rest: RefVariadic {}
 #[sealed]
-impl RefVariadic for () {
-    type UnRef = ();
-}
+impl RefVariadic for () {}
 
 /// A variadic where each item is an exclusive reference `&mut item`.
 ///
@@ -322,61 +342,107 @@ impl RefVariadic for () {
 ///
 /// This is a sealed trait.
 #[sealed]
-pub trait MutVariadic: Variadic {
-    /// The un-referenced variadic. Each item will have one layer of exclusive references removed.
-    ///
-    /// The inverse of [`VariadicExt::AsMutVar`].
-    ///
-    /// ```rust
-    /// # use variadics::*;
-    /// let un_mut: <var_type!(&mut u32, &mut String, &mut bool) as MutVariadic>::UnMut =
-    ///     var_expr!(1_u32, "Hello".to_owned(), false);
-    /// ```
-    type UnMut: VariadicExt;
-
-    /// Type returned by [`Self::downgrade`].
-    type Downgrade: RefVariadic<UnRef = Self::UnMut>;
-    /// Downgrade this to a variadic of shared reference [`RefVariadic`].
+pub trait MutVariadic: EitherRefVariadic {
+    /// Type returned by [`Self::mut_to_ref`].
+    type MutToRef: RefVariadic<UnRef = Self::UnRef>;
+    /// Downgrade this to a variadic of shared references: [`RefVariadic`].
     ///
     /// ```rust
     /// # use variadics::*;
     /// let mut original = var_expr!(1_u32, "Hello".to_owned(), false);
     /// let as_mut: var_type!(&mut u32, &mut String, &mut bool) = original.as_mut_var();
-    /// let as_ref_1: var_type!(&u32, &String, &bool) = as_mut.downgrade();
+    /// let as_ref_1: var_type!(&u32, &String, &bool) = as_mut.mut_to_ref();
     /// let as_ref_2: var_type!(&u32, &String, &bool) = as_ref_1; // Can copy the reference version.
     /// drop((as_ref_1, as_ref_2));
     /// ```
-    fn downgrade(self) -> Self::Downgrade;
+    fn mut_to_ref(self) -> Self::MutToRef;
 }
 #[sealed]
 impl<'a, Item, Rest> MutVariadic for (&'a mut Item, Rest)
 where
     Rest: MutVariadic,
 {
-    type UnMut = (Item, Rest::UnMut);
-
-    type Downgrade = (&'a Item, Rest::Downgrade);
-    fn downgrade(self) -> Self::Downgrade {
+    type MutToRef = (&'a Item, Rest::MutToRef);
+    fn mut_to_ref(self) -> Self::MutToRef {
         let var_args!(item, ...rest) = self;
-        var_expr!(&*item, ...rest.downgrade())
+        var_expr!(&*item, ...rest.mut_to_ref())
     }
 }
 #[sealed]
 impl MutVariadic for () {
-    type UnMut = ();
-
-    type Downgrade = ();
-    fn downgrade(self) -> Self::Downgrade {}
+    type MutToRef = ();
+    fn mut_to_ref(self) -> Self::MutToRef {}
 }
 
+/// Copy an [`RefVariadic`] into an [`RefVariadic::UnRef`] variadic of owned values.
+///
+/// ```rust
+/// # use variadics::*;
+/// let ref_var = var_expr!(&1, &"hello", &false);
+/// let copy_var = ref_var.copy_var();
+/// assert_eq!(var_expr!(1, "hello", false), copy_var);
+/// ```
 #[sealed]
+pub trait CopyRefVariadic: EitherRefVariadic {
+    /// Copy self per-value.
+    fn copy_var(&self) -> Self::UnRef;
+}
+#[sealed]
+impl<Item, Rest> CopyRefVariadic for (&Item, Rest)
+where
+    Item: Copy,
+    Rest: CopyRefVariadic,
+{
+    fn copy_var(&self) -> Self::UnRef {
+        let var_args!(&item, ...rest) = self;
+        var_expr!(item, ...rest.copy_var())
+    }
+}
+#[sealed]
+impl<Item, Rest> CopyRefVariadic for (&mut Item, Rest)
+where
+    Item: Copy,
+    Rest: CopyRefVariadic,
+{
+    fn copy_var(&self) -> Self::UnRef {
+        let var_args!(&mut item, ...rest) = self;
+        var_expr!(item, ...rest.copy_var())
+    }
+}
+#[sealed]
+impl CopyRefVariadic for () {
+    fn copy_var(&self) -> Self::UnRef {}
+}
+
 /// Clone an [`RefVariadic`] into an [`RefVariadic::UnRef`] variadic of owned values.
-pub trait CloneRefVariadic: RefVariadic {
+///
+/// ```rust
+/// # use variadics::*;
+/// let ref_var = var_expr!(&1, &format!("hello {}", "world"), &vec![1, 2, 3]);
+/// let clone_var = ref_var.clone_var();
+/// assert_eq!(
+///     var_expr!(1, "hello world".to_owned(), vec![1, 2, 3]),
+///     clone_var
+/// );
+/// ```
+#[sealed]
+pub trait CloneRefVariadic: EitherRefVariadic {
     /// Clone self per-value.
     fn clone_var(&self) -> Self::UnRef;
 }
 #[sealed]
 impl<Item, Rest> CloneRefVariadic for (&Item, Rest)
+where
+    Item: Clone,
+    Rest: CloneRefVariadic,
+{
+    fn clone_var(&self) -> Self::UnRef {
+        let var_args!(item, ...rest) = self;
+        var_expr!((*item).clone(), ...rest.clone_var())
+    }
+}
+#[sealed]
+impl<Item, Rest> CloneRefVariadic for (&mut Item, Rest)
 where
     Item: Clone,
     Rest: CloneRefVariadic,
