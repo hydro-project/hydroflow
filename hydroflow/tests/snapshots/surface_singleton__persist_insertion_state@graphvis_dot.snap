@@ -1,6 +1,6 @@
 ---
 source: hydroflow/tests/surface_singleton.rs
-expression: "df.meta_graph().unwrap().to_dot(&Default::default())"
+expression: "df.meta_graph().unwrap().to_dot(& Default :: default())"
 ---
 digraph {
     node [fontname="Monaco,Menlo,Consolas,&quot;Droid Sans Mono&quot;,Inconsolata,&quot;Courier New&quot;,monospace", style=filled];
@@ -14,7 +14,7 @@ digraph {
     n7v1 [label="(n7v1) for_each(|x| filter_send.send(x).unwrap())", shape=house, fillcolor="#ffff88"]
     n8v1 [label="(n8v1) map(|x| (context.current_tick(), x.into_reveal()))", shape=invhouse, fillcolor="#88aaff"]
     n9v1 [label="(n9v1) for_each(|x| max_send.send(x).unwrap())", shape=house, fillcolor="#ffff88"]
-    n10v1 [label="(n10v1) persist()", shape=invhouse, fillcolor="#88aaff"]
+    n10v1 [label="(n10v1) persist::<'static>()", shape=invhouse, fillcolor="#88aaff"]
     n2v1 -> n3v1 [color=darkgreen, style=dashed]
     n3v1 -> n4v1 [color=darkgreen, style=dashed]
     n6v1 -> n7v1

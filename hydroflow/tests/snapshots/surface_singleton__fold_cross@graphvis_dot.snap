@@ -12,7 +12,7 @@ digraph {
     n5v1 [label="(n5v1) tee()", shape=house, fillcolor="#ffff88"]
     n6v1 [label="(n6v1) identity::<Max<_>>()", shape=invhouse, fillcolor="#88aaff"]
     n7v1 [label="(n7v1) cross_join()", shape=invhouse, fillcolor="#88aaff"]
-    n8v1 [label="(n8v1) persist()", shape=invhouse, fillcolor="#88aaff"]
+    n8v1 [label="(n8v1) persist::<'static>()", shape=invhouse, fillcolor="#88aaff"]
     n9v1 [label="(n9v1) filter(|(value, max_of_stream2)| { value <= max_of_stream2.as_reveal_ref() })", shape=invhouse, fillcolor="#88aaff"]
     n10v1 [label="(n10v1) map(|(x, _max)| (context.current_tick(), x))", shape=invhouse, fillcolor="#88aaff"]
     n11v1 [label="(n11v1) for_each(|x| filter_send.send(x).unwrap())", shape=house, fillcolor="#ffff88"]

@@ -9,10 +9,10 @@ use crate::diagnostic::{Diagnostic, Level};
 /// Stores each item as it passes through, and replays all item every tick.
 ///
 /// ```hydroflow
-/// // Normally `source_iter(...)` only emits once, but `persist()` will replay the `"hello"`
+/// // Normally `source_iter(...)` only emits once, but `persist::<'static>()` will replay the `"hello"`
 /// // on every tick.
 /// source_iter(["hello"])
-///     -> persist()
+///     -> persist::<'static>()
 ///     -> assert_eq(["hello"]);
 /// ```
 ///
@@ -23,8 +23,8 @@ use crate::diagnostic::{Diagnostic, Level};
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::<(&str, &str)>();
 /// let mut flow = hydroflow::hydroflow_syntax! {
-///     source_iter([("hello", "world")]) -> persist() -> [0]my_join;
-///     source_stream(input_recv) -> persist() -> [1]my_join;
+///     source_iter([("hello", "world")]) -> persist::<'static>() -> [0]my_join;
+///     source_stream(input_recv) -> persist::<'static>() -> [1]my_join;
 ///     my_join = join::<'tick>() -> for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
 /// };
 /// input_send.send(("hello", "oakland")).unwrap();
@@ -43,7 +43,7 @@ pub const PERSIST: OperatorConstraints = OperatorConstraints {
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: 0,
-    persistence_args: RANGE_0,
+    persistence_args: RANGE_1,
     type_args: RANGE_0,
     is_external_input: false,
     // If this is set to true, the state will need to be cleared using `#context.set_state_tick_hook`

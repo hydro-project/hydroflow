@@ -1,6 +1,6 @@
 ---
 source: hydroflow/tests/surface_singleton.rs
-expression: "df.meta_graph().unwrap().to_mermaid(&Default::default())"
+expression: "df.meta_graph().unwrap().to_mermaid(& Default :: default())"
 ---
 %%{init:{'theme':'base','themeVariables':{'clusterBkg':'#ddd','clusterBorder':'#888'}}}%%
 flowchart TD
@@ -17,7 +17,7 @@ linkStyle default stroke:#aaa
 7v1[/"(7v1) <code>for_each(|x| filter_send.send(x).unwrap())</code>"\]:::pushClass
 8v1[\"(8v1) <code>map(|x| (context.current_tick(), x.into_reveal()))</code>"/]:::pullClass
 9v1[/"(9v1) <code>for_each(|x| max_send.send(x).unwrap())</code>"\]:::pushClass
-10v1[\"(10v1) <code>persist()</code>"/]:::pullClass
+10v1[\"(10v1) <code>persist::&lt;'static&gt;()</code>"/]:::pullClass
 2v1-.->3v1; linkStyle 0 stroke:#060
 3v1-.->4v1; linkStyle 1 stroke:#060
 6v1-->7v1

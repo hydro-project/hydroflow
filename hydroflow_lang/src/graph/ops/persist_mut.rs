@@ -19,7 +19,7 @@ use super::{
 ///         Persistence::Persist(2),
 ///         Persistence::Delete(1),
 ///     ])
-///     -> persist_mut()
+///     -> persist_mut::<'static>()
 ///     -> assert_eq([2]);
 /// ```
 pub const PERSIST_MUT: OperatorConstraints = OperatorConstraints {
@@ -30,7 +30,7 @@ pub const PERSIST_MUT: OperatorConstraints = OperatorConstraints {
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: 0,
-    persistence_args: RANGE_0,
+    persistence_args: RANGE_1,
     type_args: RANGE_0,
     is_external_input: false,
     // If this is set to true, the state will need to be cleared using `#context.set_state_tick_hook`
