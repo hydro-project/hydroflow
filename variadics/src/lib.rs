@@ -398,7 +398,7 @@ impl<Item, Rest> MutVariadic for (&mut Item, Rest) where Rest: MutVariadic {}
 #[sealed]
 impl MutVariadic for () {}
 
-/// Copy an [`RefVariadic`] into an [`RefVariadic::UnRefVar`] variadic of owned values.
+/// Copy a variadic of references [`EitherRefVariadic`] into a variadic of owned values [`EitherRefVariadic::UnRefVar`].
 ///
 /// ```rust
 /// # use variadics::*;
