@@ -451,7 +451,7 @@
             -&gt; tee();
 
         new_neighbors
-            -&gt; persist()
+            -&gt; persist::&lt;<span class="lifetime">'static</span>&gt;()
             -&gt; [pos]neighbors;
         dead_neighbors -&gt; [neg]neighbors;
         neighbors = difference()

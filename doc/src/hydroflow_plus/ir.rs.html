@@ -1367,7 +1367,7 @@
 
                 <span class="kw">let </span>builder = graph_builders.entry(location).or_default();
                 builder.add_statement(<span class="macro">parse_quote!</span> {
-                    #persist_ident = #inner_ident -&gt; persist();
+                    #persist_ident = #inner_ident -&gt; persist::&lt;<span class="lifetime">'static</span>&gt;();
                 });
 
                 (persist_ident, location)

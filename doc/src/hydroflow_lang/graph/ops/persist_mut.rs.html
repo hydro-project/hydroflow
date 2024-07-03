@@ -121,7 +121,7 @@
 ///         Persistence::Persist(2),
 ///         Persistence::Delete(1),
 ///     ])
-///     -&gt; persist_mut()
+///     -&gt; persist_mut::&lt;'static&gt;()
 ///     -&gt; assert_eq([2]);
 /// ```
 </span><span class="kw">pub const </span>PERSIST_MUT: OperatorConstraints = OperatorConstraints {
@@ -132,7 +132,7 @@
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: <span class="number">0</span>,
-    persistence_args: RANGE_0,
+    persistence_args: RANGE_1,
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
     <span class="comment">// If this is set to true, the state will need to be cleared using `#context.set_state_tick_hook`

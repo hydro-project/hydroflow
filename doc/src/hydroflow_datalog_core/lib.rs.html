@@ -1476,7 +1476,7 @@
 
         <span class="kw">let </span>output_pipeline: Pipeline = parse_pipeline(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
         <span class="kw">let </span>output_pipeline = <span class="kw">if </span>persists.contains(<span class="kw-2">&amp;</span>target.name) {
-            <span class="macro">parse_quote_spanned!</span> {get_span(target.span)=&gt; persist() -&gt; #output_pipeline}
+            <span class="macro">parse_quote_spanned!</span> {get_span(target.span)=&gt; persist::&lt;<span class="lifetime">'static</span>&gt;() -&gt; #output_pipeline}
         } <span class="kw">else </span>{
             output_pipeline
         };
@@ -1527,7 +1527,7 @@
         <span class="kw">let </span>static_expression: syn::Expr = parse_static(<span class="kw-2">&amp;</span>hf_code.code, <span class="kw-2">&amp;</span>get_span)<span class="question-mark">?</span>;
 
         flat_graph_builder.add_statement(<span class="macro">parse_quote_spanned!</span> {get_span(target.span)=&gt;
-            source_iter(#static_expression) -&gt; persist() -&gt; [#my_union_index_lit] #name;
+            source_iter(#static_expression) -&gt; persist::&lt;<span class="lifetime">'static</span>&gt;() -&gt; [#my_union_index_lit] #name;
         });
     }
 
@@ -1995,7 +1995,7 @@
 
     <span class="kw">if </span>agg_exprs.is_empty() {
         <span class="kw">if </span>out_expanded.persisted &amp;&amp; !consumer_is_persist {
-            <span class="macro">parse_quote!</span>(#pre_fold_keyed_map -&gt; #after_group_pipeline -&gt; persist())
+            <span class="macro">parse_quote!</span>(#pre_fold_keyed_map -&gt; #after_group_pipeline -&gt; persist::&lt;<span class="lifetime">'static</span>&gt;())
         } <span class="kw">else </span>{
             <span class="macro">parse_quote!</span>(#pre_fold_keyed_map -&gt; #after_group_pipeline)
         }
@@ -2406,7 +2406,7 @@
             .persist ints2
 
             .input ints3 `source_stream(ints3)`
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
             .output result2 `for_each(|v| result2.send(v).unwrap())`
             .output result3 `for_each(|v| result3.send(v).unwrap())`
@@ -2432,9 +2432,9 @@
             .persist ints1
 
             .input ints2 `source_stream(ints2)`
-            
+
             ints1(a) :- ints2(a)
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(count(a)) :- ints1(a)
@@ -2446,9 +2446,9 @@
     </span><span class="kw">fn </span>test_wildcard_join_count() {
         <span class="macro">test_snapshots!</span>(
             <span class="string">r#"
-            .input ints1 `source_stream(ints1)` 
+            .input ints1 `source_stream(ints1)`
             .input ints2 `source_stream(ints2)`
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
             .output result2 `for_each(|v| result2.send(v).unwrap())`
 
@@ -2462,8 +2462,8 @@
     </span><span class="kw">fn </span>test_index() {
         <span class="macro">test_snapshots!</span>(
             <span class="string">r#"
-            .input ints `source_stream(ints)` 
-            
+            .input ints `source_stream(ints)`
+
             .output result `for_each(|v| result.send(v).unwrap())`
             .output result2 `for_each(|v| result2.send(v).unwrap())`
             .output result3 `for_each(|v| result3.send(v).unwrap())`
@@ -2489,9 +2489,9 @@
     </span><span class="kw">fn </span>test_collect_vec() {
         <span class="macro">test_snapshots!</span>(
             <span class="string">r#"
-            .input ints1 `source_stream(ints1)` 
+            .input ints1 `source_stream(ints1)`
             .input ints2 `source_stream(ints2)`
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(collect_vec(a, b)) :- ints1(a), ints2(b)
@@ -2504,7 +2504,7 @@
         <span class="macro">test_snapshots!</span>(
             <span class="string">r#"
             .input ints1 `source_stream(ints1)`
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(a, b) :- ints1(a, *b)
@@ -2517,7 +2517,7 @@
         <span class="macro">test_snapshots!</span>(
             <span class="string">r#"
             .input ints1 `source_stream(ints1)`
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(a, b) :- ints1((a, b))
@@ -2530,7 +2530,7 @@
         <span class="macro">test_snapshots!</span>(
             <span class="string">r#"
             .input ints1 `source_stream(ints1)`
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(a, b, c, d) :- ints1((a, b), (c, d))
@@ -2543,7 +2543,7 @@
         <span class="macro">test_snapshots!</span>(
             <span class="string">r#"
             .input ints1 `source_stream(ints1)`
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(a, b) :- ints1(*(a, b))
@@ -2556,7 +2556,7 @@
         <span class="macro">test_snapshots!</span>(
             <span class="string">r#"
             .input ints1 `source_stream(ints1)`
-            
+
             .output result `for_each(|v| result.send(v).unwrap())`
 
             result(a, b) :- ints1((*a, *b))

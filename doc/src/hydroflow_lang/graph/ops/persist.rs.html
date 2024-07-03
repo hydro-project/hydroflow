@@ -161,10 +161,10 @@
 <span class="doccomment">/// Stores each item as it passes through, and replays all item every tick.
 ///
 /// ```hydroflow
-/// // Normally `source_iter(...)` only emits once, but `persist()` will replay the `"hello"`
+/// // Normally `source_iter(...)` only emits once, but `persist::&lt;'static&gt;()` will replay the `"hello"`
 /// // on every tick.
 /// source_iter(["hello"])
-///     -&gt; persist()
+///     -&gt; persist::&lt;'static&gt;()
 ///     -&gt; assert_eq(["hello"]);
 /// ```
 ///
@@ -175,8 +175,8 @@
 /// ```rustbook
 /// let (input_send, input_recv) = hydroflow::util::unbounded_channel::&lt;(&amp;str, &amp;str)&gt;();
 /// let mut flow = hydroflow::hydroflow_syntax! {
-///     source_iter([("hello", "world")]) -&gt; persist() -&gt; [0]my_join;
-///     source_stream(input_recv) -&gt; persist() -&gt; [1]my_join;
+///     source_iter([("hello", "world")]) -&gt; persist::&lt;'static&gt;() -&gt; [0]my_join;
+///     source_stream(input_recv) -&gt; persist::&lt;'static&gt;() -&gt; [1]my_join;
 ///     my_join = join::&lt;'tick&gt;() -&gt; for_each(|(k, (v1, v2))| println!("({}, ({}, {}))", k, v1, v2));
 /// };
 /// input_send.send(("hello", "oakland")).unwrap();
@@ -195,7 +195,7 @@
     hard_range_out: RANGE_1,
     soft_range_out: RANGE_1,
     num_args: <span class="number">0</span>,
-    persistence_args: RANGE_0,
+    persistence_args: RANGE_1,
     type_args: RANGE_0,
     is_external_input: <span class="bool-val">false</span>,
     <span class="comment">// If this is set to true, the state will need to be cleared using `#context.set_state_tick_hook`

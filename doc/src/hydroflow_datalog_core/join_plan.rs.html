@@ -806,7 +806,7 @@
 </span><span class="kw">pub struct </span>IntermediateJoinNode {
     <span class="doccomment">/// The name of the Hydroflow node that this join outputs to.
     </span><span class="kw">pub </span>name: syn::Ident,
-    <span class="doccomment">/// If true, the correct dataflow for this node ends in a `persist()` operator.
+    <span class="doccomment">/// If true, the correct dataflow for this node ends in a `persist::&lt;'static&gt;()` operator.
     </span><span class="kw">pub </span>persisted: bool,
     <span class="doccomment">/// If this join node outputs data through a `tee()` operator, this is the index to consume the node with.
     /// (this is only used for cases where we are directly reading a relation)
@@ -899,7 +899,7 @@
     };
 
     <span class="kw">let </span>rhs = <span class="kw">if </span>anti_join &amp;&amp; source_expanded.persisted {
-        <span class="macro">parse_quote_spanned!</span>(source_expanded.span=&gt; persist() -&gt; #rhs)
+        <span class="macro">parse_quote_spanned!</span>(source_expanded.span=&gt; persist::&lt;<span class="lifetime">'static</span>&gt;() -&gt; #rhs)
     } <span class="kw">else </span>{
         rhs
     };

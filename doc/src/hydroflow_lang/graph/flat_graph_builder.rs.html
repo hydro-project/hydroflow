@@ -1894,8 +1894,8 @@
 
                 <span class="self">self</span>.flat_graph.insert_intermediate_node(
                     pred_edge,
-                    GraphNode::Operator(<span class="macro">parse_quote_spanned!</span> {op_span=&gt; persist() }),
-                );
+                    GraphNode::Operator(<span class="macro">parse_quote_spanned!</span> {op_span=&gt; persist::&lt;<span class="lifetime">'static</span>&gt;() }), <span class="comment">// TODO(mingwei): use 'tick when implemented.
+                </span>);
                 <span class="self">self</span>.diagnostics.push(Diagnostic::spanned(
                     op_span,
                     Level::Warning,
