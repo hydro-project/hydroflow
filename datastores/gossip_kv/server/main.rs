@@ -21,6 +21,7 @@ mod membership;
 mod server;
 mod util;
 mod request_reply;
+mod simulation;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Parser)]
 struct Opts {

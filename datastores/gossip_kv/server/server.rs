@@ -256,6 +256,8 @@ mod tests {
     use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
     use hydroflow::{futures, tokio};
 
+    use crate::simulation;
+
     use super::*;
 
     /// A mapping sink that applies a function to each item sent to the sink.
@@ -358,7 +360,11 @@ mod tests {
         let expected_member_data = MemberDataBuilder::new(TEST_SERVER_NAME.to_string())
             .add_protocol(Protocol::new(
                 TEST_CLIENT_ENDPOINT.to_string(),
-                "client_endpoint".to_string(),
+                "client".to_string(),
+            ))
+            .add_protocol(Protocol::new(
+                "gossip_endpoint".to_string(),
+                "gossip".to_string(),
             ))
             .build();
 
