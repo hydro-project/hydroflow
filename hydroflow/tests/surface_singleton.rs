@@ -369,3 +369,54 @@ pub fn test_scheduling() {
         &*collect_ready::<Vec<_>, _>(&mut out_recv)
     );
 }
+
+#[multiplatform_test]
+pub fn test_multi_tick() {
+    let (filter_send, mut filter_recv) =
+        hydroflow::util::unbounded_channel::<(TickInstant, usize)>();
+    let (max_send, mut max_recv) = hydroflow::util::unbounded_channel::<(TickInstant, usize)>();
+
+    let mut df = hydroflow::hydroflow_syntax! {
+        stream1 = source_iter(1..=10);
+        stream2 = source_iter_delta(3..=5) -> map(Max::new);
+        max_of_stream2 = stream2 -> state::<'static, Max<_>>();
+
+        filtered_stream1 = stream1
+            -> filter(|value| {
+                // This is not monotonic.
+                value <= #max_of_stream2.as_reveal_ref()
+            })
+            -> map(|x| (context.current_tick(), x))
+            -> for_each(|x| filter_send.send(x).unwrap());
+
+        // Optional:
+        max_of_stream2
+            -> map(|x| (context.current_tick(), x.into_reveal()))
+            -> for_each(|x| max_send.send(x).unwrap());
+    };
+
+    assert_graphvis_snapshots!(df);
+
+    df.run_available();
+    assert_eq!(
+        &[
+            (TickInstant::new(0), 1),
+            (TickInstant::new(0), 2),
+            (TickInstant::new(0), 3),
+            (TickInstant::new(0), 4),
+            (TickInstant::new(0), 5)
+        ],
+        &*collect_ready::<Vec<_>, _>(&mut filter_recv)
+    );
+    assert_eq!(
+        &[
+            (TickInstant::new(0), 3),
+            (TickInstant::new(0), 4),
+            (TickInstant::new(0), 5)
+        ],
+        &*collect_ready::<Vec<_>, _>(&mut max_recv)
+    );
+
+    df.run_available();
+    assert_eq!(0, collect_ready::<Vec<_>, _>(&mut max_recv).len());
+}
