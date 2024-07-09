@@ -336,7 +336,7 @@ pub fn entry(
         .chars()
         .filter(|c| c.is_alphanumeric())
         .collect::<String>();
-    let input_hash = format!("macro_{}", sha256::digest(input_contents));
+    let input_hash = "macro_".to_string() + &sha256::digest(input_contents);
     let input_hash_ident = syn::Ident::new(&input_hash, Span::call_site());
     let input_hash_impl_ident = syn::Ident::new(&(input_hash + "_impl"), Span::call_site());
 
