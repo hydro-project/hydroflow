@@ -40,7 +40,7 @@ async fn main() {
     };
 
     let builder = hydroflow_plus::FlowBuilder::new();
-    hydroflow_plus_test::cluster::simple_cluster(
+    hydroflow_plus_test::cluster::simple_cluster::simple_cluster(
         &builder,
         &DeployProcessSpec::new(|| {
             let mut deployment = deployment.borrow_mut();

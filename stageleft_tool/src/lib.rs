@@ -65,9 +65,9 @@ pub fn gen_macro(staged_path: &Path, crate_name: &str) {
     let mut out_file: syn::File = parse_quote!();
 
     for (hash, exported_from) in visitor.exported_macros {
-        let underscored_path = syn::Ident::new(&("macro_".to_string() + &hash), Span::call_site());
+        let underscored_path = syn::Ident::new(&format!("macro_{}", hash), Span::call_site());
         let underscored_path_impl =
-            syn::Ident::new(&("macro_".to_string() + &hash + "_impl"), Span::call_site());
+            syn::Ident::new(&format!("macro_{}_impl", hash), Span::call_site());
         let exported_from_parsed: syn::Path = syn::parse_str(&exported_from).unwrap();
 
         let proc_macro_wrapper: syn::ItemFn = parse_quote!(

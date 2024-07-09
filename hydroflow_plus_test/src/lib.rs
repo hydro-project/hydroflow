@@ -12,29 +12,14 @@ pub(crate) mod cluster;
 pub mod cluster;
 
 #[cfg(stageleft_macro)]
-pub(crate) mod compute_pi_local;
+pub(crate) mod local;
 #[cfg(not(stageleft_macro))]
-pub mod compute_pi_local;
+pub mod local;
 
 #[cfg(stageleft_macro)]
-pub(crate) mod first_ten;
+pub(crate) mod distributed;
 #[cfg(not(stageleft_macro))]
-pub mod first_ten;
-
-#[cfg(stageleft_macro)]
-pub(crate) mod futures;
-#[cfg(not(stageleft_macro))]
-pub mod futures;
-
-#[cfg(stageleft_macro)]
-pub(crate) mod negation;
-#[cfg(not(stageleft_macro))]
-pub mod negation;
-
-#[cfg(stageleft_macro)]
-pub(crate) mod networked;
-#[cfg(not(stageleft_macro))]
-pub mod networked;
+pub mod distributed;
 
 #[stageleft::entry(UnboundedReceiverStream<u32>)]
 pub fn teed_join<'a, S: Stream<Item = u32> + Unpin + 'a>(

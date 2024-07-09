@@ -6,7 +6,7 @@ use tokio::time::timeout;
 #[tokio::main]
 async fn main() {
     let batch_size = 8192;
-    let mut flow = hydroflow_plus_test::compute_pi_local::compute_pi_runtime!(&batch_size);
+    let mut flow = hydroflow_plus_test::local::compute_pi::compute_pi_runtime!(&batch_size);
     flow.meta_graph()
         .unwrap()
         .open_mermaid(&Default::default())
