@@ -39,7 +39,7 @@ async fn main() {
     };
 
     let builder = hydroflow_plus::FlowBuilder::new();
-    hydroflow_plus_test::first_ten::first_ten_distributed(
+    hydroflow_plus_test::distributed::first_ten::first_ten_distributed(
         &builder,
         &DeployProcessSpec::new(|| {
             let host = create_host(&mut deployment);
