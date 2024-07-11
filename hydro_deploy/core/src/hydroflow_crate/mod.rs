@@ -12,7 +12,8 @@ pub mod ports;
 pub mod service;
 pub use service::*;
 
-/// Information about a built crate. See [`build::build_crate`].
+/// Information about a built crate.
+// See [`build::build_crate`].
 pub struct BuiltCrate {
     /// A unique but meaningless id.
     pub unique_id: String,
