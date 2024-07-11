@@ -1,6 +1,7 @@
 var srcIndex = new Map(JSON.parse('[\
 ["cardinality_compute_pi",["",[],["cardinality_compute_pi.rs"]]],\
 ["compute_pi",["",[],["compute_pi.rs"]]],\
+["compute_pi_local",["",[],["compute_pi_local.rs"]]],\
 ["first_ten_distributed",["",[],["first_ten_distributed.rs"]]],\
 ["hydro_cli",["",[],["cli.rs","lib.rs"]]],\
 ["hydro_deploy",["",[["hydroflow_crate",[],["build.rs","mod.rs","ports.rs","service.rs"]],["localhost",[],["launched_binary.rs","mod.rs"]]],["azure.rs","custom_service.rs","deployment.rs","gcp.rs","lib.rs","progress.rs","ssh.rs","terraform.rs","util.rs"]]],\
@@ -12,8 +13,8 @@ var srcIndex = new Map(JSON.parse('[\
 ["hydroflow_macro",["",[],["lib.rs"]]],\
 ["hydroflow_plus",["",[["location",[],["graphs.rs","mod.rs","network.rs"]]],["builder.rs","cycle.rs","ir.rs","lib.rs","persist_pullup.rs","profiler.rs","properties.rs","stream.rs"]]],\
 ["hydroflow_plus_cli_integration",["",[],["lib.rs","runtime.rs"]]],\
-["hydroflow_plus_test",["",[],["cluster.rs","first_ten.rs","futures.rs","lib.rs","negation.rs","networked.rs"]]],\
-["hydroflow_plus_test_macro",["",[],["cluster.rs","first_ten.rs","futures.rs","lib.rs","negation.rs","networked.rs"]]],\
+["hydroflow_plus_test",["",[["cluster",[],["compute_pi.rs","many_to_many.rs","map_reduce.rs","mod.rs","simple_cluster.rs"]],["distributed",[],["first_ten.rs","mod.rs","networked.rs"]],["local",[],["chat_app.rs","compute_pi.rs","count_elems.rs","first_ten.rs","futures.rs","graph_reachability.rs","mod.rs","negation.rs","teed_join.rs"]]],["lib.rs"]]],\
+["hydroflow_plus_test_macro",["",[["cluster",[],["compute_pi.rs","many_to_many.rs","map_reduce.rs","mod.rs","simple_cluster.rs"]],["distributed",[],["first_ten.rs","mod.rs","networked.rs"]],["local",[],["chat_app.rs","compute_pi.rs","count_elems.rs","first_ten.rs","futures.rs","graph_reachability.rs","mod.rs","negation.rs","teed_join.rs"]]],["lib.rs"]]],\
 ["latency_measure",["",[],["latency_measure.rs","protocol.rs"]]],\
 ["lattices",["",[],["algebra.rs","collections.rs","conflict.rs","dom_pair.rs","lib.rs","map_union.rs","map_union_with_tombstones.rs","ord.rs","pair.rs","point.rs","semiring_application.rs","set_union.rs","set_union_with_tombstones.rs","test.rs","union_find.rs","unit.rs","vec_union.rs","with_bot.rs","with_top.rs"]]],\
 ["lattices_macro",["",[],["lib.rs"]]],\

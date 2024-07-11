@@ -10,7 +10,7 @@
 </span><span class="attr">#[tokio::main]
 </span><span class="kw">async fn </span>main() {
     <span class="macro">hydroflow_plus::util::cli::launch!</span>(|ports| {
-        <span class="macro">hydroflow_plus_test::cluster::simple_cluster_runtime!</span>(ports)
+        <span class="macro">hydroflow_plus_test::cluster::simple_cluster::simple_cluster_runtime!</span>(ports)
     })
     .<span class="kw">await</span>;
 }

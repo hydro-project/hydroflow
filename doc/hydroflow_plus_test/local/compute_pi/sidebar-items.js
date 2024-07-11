@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["compute_pi"],"macro":["compute_pi_runtime"]};

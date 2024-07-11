@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["compute_pi","many_to_many","map_reduce","simple_cluster"],"macro":["cardinality_compute_pi_runtime","compute_pi_runtime","many_to_many_runtime","map_reduce_runtime","simple_cluster_runtime"]};
+window.SIDEBAR_ITEMS = {"mod":["compute_pi","many_to_many","map_reduce","simple_cluster"]};
