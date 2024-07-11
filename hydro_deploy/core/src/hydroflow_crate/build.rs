@@ -4,11 +4,10 @@ use std::fmt::Display;
 use std::io::BufRead;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use cargo_metadata::diagnostic::Diagnostic;
 use nanoid::nanoid;
-use once_cell::sync::Lazy;
 use tokio::sync::OnceCell;
 
 use super::BuiltCrate;
@@ -25,9 +24,8 @@ struct CacheKey {
     features: Option<Vec<String>>,
 }
 
-#[allow(clippy::type_complexity)] // TODO(mingwei)
-static BUILDS: Lazy<Mutex<HashMap<CacheKey, Arc<OnceCell<Arc<BuiltCrate>>>>>> =
-    Lazy::new(Default::default);
+static BUILDS: OnceLock<Mutex<HashMap<CacheKey, UnitOfWork>>> = OnceLock::new();
+type UnitOfWork = Arc<OnceCell<Arc<BuiltCrate>>>;
 
 pub async fn build_crate(
     src: impl AsRef<Path>,
@@ -55,7 +53,7 @@ pub async fn build_crate(
     };
 
     let unit_of_work = {
-        let mut builds = BUILDS.lock().unwrap();
+        let mut builds = BUILDS.get_or_init(Default::default).lock().unwrap();
         builds.entry(key).or_default().clone()
         // Release BUILDS table lock here.
     };

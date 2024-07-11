@@ -9,7 +9,7 @@ use async_trait::async_trait;
 use futures_core::Future;
 use hydroflow_cli_integration::{InitConfig, ServerPort};
 use serde::Serialize;
-use tokio::sync::RwLock;
+use tokio::sync::{OnceCell, RwLock};
 
 use super::build::{build_crate, BuildError};
 use super::ports::{self, HydroflowPortConfig, HydroflowSink, SourcePath};
@@ -43,7 +43,7 @@ pub struct HydroflowCrateService {
     /// Configuration for the ports that this service will listen on a port for.
     pub(super) port_to_bind: HashMap<String, ServerStrategy>,
 
-    built_binary: Arc<async_once_cell::OnceCell<Result<Arc<BuiltCrate>, BuildError>>>,
+    built_binary: Arc<OnceCell<Result<Arc<BuiltCrate>, BuildError>>>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
 
     /// A map of port names to config for how other services can connect to this one.
@@ -88,7 +88,7 @@ impl HydroflowCrateService {
             meta: None,
             port_to_server: HashMap::new(),
             port_to_bind: HashMap::new(),
-            built_binary: Arc::new(async_once_cell::OnceCell::new()),
+            built_binary: Arc::new(OnceCell::new()),
             launched_host: None,
             server_defns: Arc::new(RwLock::new(HashMap::new())),
             launched_binary: None,
@@ -193,14 +193,16 @@ impl HydroflowCrateService {
 
         async move {
             built_binary_cloned
-                .get_or_init(build_crate(
-                    src_cloned,
-                    bin_cloned,
-                    example_cloned,
-                    profile_cloned,
-                    target_type,
-                    features_cloned,
-                ))
+                .get_or_init(|| {
+                    build_crate(
+                        src_cloned,
+                        bin_cloned,
+                        example_cloned,
+                        profile_cloned,
+                        target_type,
+                        features_cloned,
+                    )
+                })
                 .await
                 .clone()
         }

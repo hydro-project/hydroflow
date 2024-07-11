@@ -2,11 +2,12 @@
 #![allow(unused_qualifications, non_local_definitions)]
 
 use core::hydroflow_crate::ports::HydroflowSource;
+use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::path::PathBuf;
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use async_channel::Receiver;
 use bytes::Bytes;
@@ -57,7 +58,7 @@ impl pyo3_asyncio::generic::Runtime for TokioRuntime {
 }
 
 tokio::task_local! {
-    static TASK_LOCALS: once_cell::unsync::OnceCell<TaskLocals>;
+    static TASK_LOCALS: OnceCell<TaskLocals>;
 }
 
 impl pyo3_asyncio::generic::ContextExt for TokioRuntime {
@@ -65,7 +66,7 @@ impl pyo3_asyncio::generic::ContextExt for TokioRuntime {
     where
         F: Future<Output = R> + Send + 'static,
     {
-        let cell = once_cell::unsync::OnceCell::new();
+        let cell = OnceCell::new();
         cell.set(locals).unwrap();
 
         Box::pin(TASK_LOCALS.scope(cell, fut))
@@ -94,8 +95,7 @@ impl SafeCancelToken {
     }
 }
 
-static CONVERTERS_MODULE: once_cell::sync::OnceCell<Py<PyModule>> =
-    once_cell::sync::OnceCell::new();
+static CONVERTERS_MODULE: OnceLock<Py<PyModule>> = OnceLock::new();
 
 fn interruptible_future_to_py<F, T>(py: Python<'_>, fut: F) -> PyResult<&PyAny>
 where
