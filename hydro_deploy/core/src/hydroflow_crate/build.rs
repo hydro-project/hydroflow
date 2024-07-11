@@ -11,6 +11,7 @@ use nanoid::nanoid;
 use once_cell::sync::Lazy;
 use tokio::sync::OnceCell;
 
+use super::BuiltCrate;
 use crate::progress::ProgressTracker;
 use crate::HostTargetType;
 
@@ -24,9 +25,8 @@ struct CacheKey {
     features: Option<Vec<String>>,
 }
 
-pub type BuiltCrate = Arc<(String, Vec<u8>, PathBuf)>;
-
-static BUILDS: Lazy<Mutex<HashMap<CacheKey, Arc<OnceCell<BuiltCrate>>>>> =
+#[allow(clippy::type_complexity)] // TODO(mingwei)
+static BUILDS: Lazy<Mutex<HashMap<CacheKey, Arc<OnceCell<Arc<BuiltCrate>>>>>> =
     Lazy::new(Default::default);
 
 pub async fn build_crate(
@@ -36,7 +36,7 @@ pub async fn build_crate(
     profile: Option<String>,
     target_type: HostTargetType,
     features: Option<Vec<String>>,
-) -> Result<BuiltCrate, BuildError> {
+) -> Result<Arc<BuiltCrate>, BuildError> {
     // `fs::canonicalize` prepends windows paths with the `r"\\?\"`
     // https://stackoverflow.com/questions/21194530/what-does-mean-when-prepended-to-a-file-path
     // However, this breaks the `include!(concat!(env!("OUT_DIR"), "/my/forward/slash/path.rs"))`
@@ -130,7 +130,11 @@ pub async fn build_crate(
                                     let path_buf: PathBuf = path.clone().into();
                                     let path = path.into_string();
                                     let data = std::fs::read(path).unwrap();
-                                    return Ok(Arc::new((nanoid!(8), data, path_buf)));
+                                    return Ok(Arc::new(BuiltCrate {
+                                        unique_name: nanoid!(8),
+                                        bin_data: data,
+                                        bin_path: path_buf,
+                                    }));
                                 }
                             }
                             cargo_metadata::Message::CompilerMessage(msg) => {

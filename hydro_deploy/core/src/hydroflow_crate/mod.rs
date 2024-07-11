@@ -12,6 +12,16 @@ pub mod ports;
 pub mod service;
 pub use service::*;
 
+/// Information about a built crate.
+pub struct BuiltCrate {
+    /// A unique but meaningless name.
+    pub unique_name: String,
+    /// The binary contents as a byte array.
+    pub bin_data: Vec<u8>,
+    /// The path to the binary file.
+    pub bin_path: PathBuf,
+}
+
 #[derive(PartialEq)]
 pub enum CrateTarget {
     Default,

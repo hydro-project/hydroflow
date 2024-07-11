@@ -11,8 +11,9 @@ use hydroflow_cli_integration::{InitConfig, ServerPort};
 use serde::Serialize;
 use tokio::sync::RwLock;
 
-use super::build::{build_crate, BuildError, BuiltCrate};
+use super::build::{build_crate, BuildError};
 use super::ports::{self, HydroflowPortConfig, HydroflowSink, SourcePath};
+use super::BuiltCrate;
 use crate::progress::ProgressTracker;
 use crate::{
     Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
@@ -42,7 +43,7 @@ pub struct HydroflowCrateService {
     /// Configuration for the ports that this service will listen on a port for.
     pub(super) port_to_bind: HashMap<String, ServerStrategy>,
 
-    built_binary: Arc<async_once_cell::OnceCell<Result<BuiltCrate, BuildError>>>,
+    built_binary: Arc<async_once_cell::OnceCell<Result<Arc<BuiltCrate>, BuildError>>>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
 
     /// A map of port names to config for how other services can connect to this one.
@@ -181,7 +182,7 @@ impl HydroflowCrateService {
             .await
     }
 
-    fn build(&self) -> impl Future<Output = Result<BuiltCrate, BuildError>> {
+    fn build(&self) -> impl Future<Output = Result<Arc<BuiltCrate>, BuildError>> {
         let src_cloned = self.src.clone();
         let bin_cloned = self.bin.clone();
         let example_cloned = self.example.clone();

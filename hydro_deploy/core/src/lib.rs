@@ -31,6 +31,8 @@ pub use hydroflow_crate::HydroflowCrate;
 pub mod custom_service;
 pub use custom_service::CustomService;
 
+use crate::hydroflow_crate::BuiltCrate;
+
 pub mod terraform;
 
 pub mod util;
@@ -93,12 +95,12 @@ pub trait LaunchedHost: Send + Sync {
     /// to listen to network connections (such as the IP address to bind to).
     fn server_config(&self, strategy: &ServerStrategy) -> ServerBindConfig;
 
-    async fn copy_binary(&self, binary: Arc<(String, Vec<u8>, PathBuf)>) -> Result<()>;
+    async fn copy_binary(&self, binary: Arc<BuiltCrate>) -> Result<()>;
 
     async fn launch_binary(
         &self,
         id: String,
-        binary: Arc<(String, Vec<u8>, PathBuf)>,
+        binary: Arc<BuiltCrate>,
         args: &[String],
         perf: Option<PathBuf>,
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;

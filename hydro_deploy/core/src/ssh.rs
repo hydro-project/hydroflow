@@ -20,6 +20,7 @@ use tokio::sync::RwLock;
 use super::progress::ProgressTracker;
 use super::util::async_retry;
 use super::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
+use crate::hydroflow_crate::BuiltCrate;
 use crate::util::prioritized_broadcast;
 
 struct LaunchedSSHBinary {
@@ -202,7 +203,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         LaunchedSSHHost::server_config(self, bind_type)
     }
 
-    async fn copy_binary(&self, binary: Arc<(String, Vec<u8>, PathBuf)>) -> Result<()> {
+    async fn copy_binary(&self, binary: Arc<BuiltCrate>) -> Result<()> {
         let session = self.open_ssh_session().await?;
 
         let sftp = async_retry(
@@ -213,7 +214,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         .await?;
 
         // we may be deploying multiple binaries, so give each a unique name
-        let unique_name = &binary.0;
+        let unique_name = &binary.unique_name;
 
         let user = self.ssh_user();
         let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_name}"));
@@ -232,15 +233,17 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
                         let mut created_file = sftp.create(&temp_path).await?;
 
                         let mut index = 0;
-                        while index < binary.1.len() {
+                        while index < binary.bin_data.len() {
                             let written = created_file
                                 .write(
-                                    &binary.1
-                                        [index..std::cmp::min(index + 128 * 1024, binary.1.len())],
+                                    &binary.bin_data[index
+                                        ..std::cmp::min(index + 128 * 1024, binary.bin_data.len())],
                                 )
                                 .await?;
                             index += written;
-                            set_progress(((index as f64 / binary.1.len() as f64) * 100.0) as u64);
+                            set_progress(
+                                ((index as f64 / binary.bin_data.len() as f64) * 100.0) as u64,
+                            );
                         }
                         let mut orig_file_stat = sftp.stat(&temp_path).await?;
                         orig_file_stat.perm = Some(0o755); // allow the copied binary to be executed by anyone
@@ -271,13 +274,13 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
     async fn launch_binary(
         &self,
         id: String,
-        binary: Arc<(String, Vec<u8>, PathBuf)>,
+        binary: Arc<BuiltCrate>,
         args: &[String],
         perf: Option<PathBuf>,
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let session = self.open_ssh_session().await?;
 
-        let unique_name = &binary.0;
+        let unique_name = &binary.unique_name;
 
         let user = self.ssh_user();
         let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_name}"));
