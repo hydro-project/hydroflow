@@ -14,11 +14,11 @@ pub use service::*;
 
 /// Information about a built crate.
 pub struct BuiltCrate {
-    /// A unique but meaningless name.
-    pub unique_name: String,
+    /// A unique but meaningless id.
+    pub unique_id: String,
     /// The binary contents as a byte array.
     pub bin_data: Vec<u8>,
-    /// The path to the binary file.
+    /// The path to the binary file. [`Self::bin_data`] has a copy of the content.
     pub bin_path: PathBuf,
 }
 

@@ -131,7 +131,7 @@ pub async fn build_crate(
                                     let path = path.into_string();
                                     let data = std::fs::read(path).unwrap();
                                     return Ok(Arc::new(BuiltCrate {
-                                        unique_name: nanoid!(8),
+                                        unique_id: nanoid!(8),
                                         bin_data: data,
                                         bin_path: path_buf,
                                     }));

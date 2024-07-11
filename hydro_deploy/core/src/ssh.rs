@@ -213,11 +213,11 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         )
         .await?;
 
-        // we may be deploying multiple binaries, so give each a unique name
-        let unique_name = &binary.unique_name;
+        // We may be deploying multiple binaries, so give each a unique file name.
+        let unique_id = &binary.unique_id;
 
         let user = self.ssh_user();
-        let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_name}"));
+        let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_id}"));
 
         if sftp.stat(&binary_path).await.is_err() {
             let random = nanoid!(8);
@@ -225,7 +225,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
             let sftp = &sftp;
 
             ProgressTracker::rich_leaf(
-                format!("uploading binary to /home/{user}/hydro-{unique_name}"),
+                format!("uploading binary to {}", binary_path.display()),
                 |set_progress, _| {
                     let binary = &binary;
                     let binary_path = &binary_path;
@@ -280,13 +280,13 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
         let session = self.open_ssh_session().await?;
 
-        let unique_name = &binary.unique_name;
+        let unique_name = &binary.unique_id;
 
         let user = self.ssh_user();
         let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_name}"));
 
         let channel = ProgressTracker::leaf(
-            format!("launching binary /home/{user}/hydro-{unique_name}"),
+            format!("launching binary {}", binary_path.display()),
             async {
                 let mut channel =
                     async_retry(
