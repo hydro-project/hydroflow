@@ -20,7 +20,7 @@ use tokio::sync::RwLock;
 use super::progress::ProgressTracker;
 use super::util::async_retry;
 use super::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
-use crate::hydroflow_crate::BuiltCrate;
+use crate::hydroflow_crate::build::BuildOutput;
 use crate::util::prioritized_broadcast;
 
 struct LaunchedSSHBinary {
@@ -203,7 +203,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         LaunchedSSHHost::server_config(self, bind_type)
     }
 
-    async fn copy_binary(&self, binary: &BuiltCrate) -> Result<()> {
+    async fn copy_binary(&self, binary: &BuildOutput) -> Result<()> {
         let session = self.open_ssh_session().await?;
 
         let sftp = async_retry(
@@ -274,7 +274,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
     async fn launch_binary(
         &self,
         id: String,
-        binary: &BuiltCrate,
+        binary: &BuildOutput,
         args: &[String],
         perf: Option<PathBuf>,
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {

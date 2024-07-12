@@ -10,7 +10,6 @@ use memo_map::MemoMap;
 use nanoid::nanoid;
 use tokio::sync::OnceCell;
 
-use super::BuiltCrate;
 use crate::progress::ProgressTracker;
 use crate::HostTargetType;
 
@@ -24,7 +23,17 @@ struct CacheKey {
     features: Option<Vec<String>>,
 }
 
-static BUILDS: OnceLock<MemoMap<CacheKey, OnceCell<BuiltCrate>>> = OnceLock::new();
+/// Information about a built crate. See [`build_crate`].
+pub struct BuildOutput {
+    /// A unique but meaningless id.
+    pub unique_id: String,
+    /// The binary contents as a byte array.
+    pub bin_data: Vec<u8>,
+    /// The path to the binary file. [`Self::bin_data`] has a copy of the content.
+    pub bin_path: PathBuf,
+}
+
+static BUILDS: OnceLock<MemoMap<CacheKey, OnceCell<BuildOutput>>> = OnceLock::new();
 
 pub async fn build_crate(
     src: impl AsRef<Path>,
@@ -33,7 +42,7 @@ pub async fn build_crate(
     profile: Option<String>,
     target_type: HostTargetType,
     features: Option<Vec<String>>,
-) -> Result<&'static BuiltCrate, BuildError> {
+) -> Result<&'static BuildOutput, BuildError> {
     // `fs::canonicalize` prepends windows paths with the `r"\\?\"`
     // https://stackoverflow.com/questions/21194530/what-does-mean-when-prepended-to-a-file-path
     // However, this breaks the `include!(concat!(env!("OUT_DIR"), "/my/forward/slash/path.rs"))`
@@ -123,7 +132,7 @@ pub async fn build_crate(
                                     let path_buf: PathBuf = path.clone().into();
                                     let path = path.into_string();
                                     let data = std::fs::read(path).unwrap();
-                                    return Ok(BuiltCrate {
+                                    return Ok(BuildOutput {
                                         unique_id: nanoid!(8),
                                         bin_data: data,
                                         bin_path: path_buf,

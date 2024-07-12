@@ -13,7 +13,7 @@ use super::{
     ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
     ResourceResult, ServerStrategy,
 };
-use crate::hydroflow_crate::BuiltCrate;
+use crate::hydroflow_crate::build::BuildOutput;
 
 pub mod launched_binary;
 pub use launched_binary::*;
@@ -148,14 +148,14 @@ impl LaunchedHost for LaunchedLocalhost {
         }
     }
 
-    async fn copy_binary(&self, _binary: &BuiltCrate) -> Result<()> {
+    async fn copy_binary(&self, _binary: &BuildOutput) -> Result<()> {
         Ok(())
     }
 
     async fn launch_binary(
         &self,
         id: String,
-        binary: &BuiltCrate,
+        binary: &BuildOutput,
         args: &[String],
         perf: Option<PathBuf>,
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
