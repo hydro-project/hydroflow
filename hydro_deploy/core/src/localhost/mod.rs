@@ -7,7 +7,6 @@ use anyhow::{Context, Result};
 use async_process::{Command, Stdio};
 use async_trait::async_trait;
 use hydroflow_cli_integration::ServerBindConfig;
-use tokio::sync::RwLock;
 
 use super::{
     ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
@@ -157,13 +156,13 @@ impl LaunchedHost for LaunchedLocalhost {
         id: String,
         binary: &BuildOutput,
         args: &[String],
-        perf: Option<PathBuf>,
-    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
-        let mut command = if let Some(perf) = perf {
+        profiler_outfile: Option<PathBuf>,
+    ) -> Result<Box<dyn LaunchedBinary>> {
+        let mut command = if let Some(profiler_output) = profiler_outfile {
             println!("Profiling binary with perf");
             let mut tmp = Command::new("perf");
             tmp.args(["record", "-F", "5", "--call-graph", "dwarf,64000", "-o"])
-                .arg(&perf)
+                .arg(&profiler_output)
                 .arg(&binary.bin_path)
                 .args(args);
             tmp
@@ -186,9 +185,7 @@ impl LaunchedHost for LaunchedLocalhost {
             .spawn()
             .with_context(|| format!("Failed to execute command: {:?}", command))?;
 
-        Ok(Arc::new(RwLock::new(LaunchedLocalhostBinary::new(
-            child, id,
-        ))))
+        Ok(Box::new(LaunchedLocalhostBinary::new(child, id)))
     }
 
     async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr> {
