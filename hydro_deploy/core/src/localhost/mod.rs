@@ -158,11 +158,11 @@ impl LaunchedHost for LaunchedLocalhost {
         args: &[String],
         profiler_outfile: Option<PathBuf>,
     ) -> Result<Box<dyn LaunchedBinary>> {
-        let mut command = if let Some(profiler_output) = profiler_outfile {
+        let mut command = if let Some(profiler_outfile) = profiler_outfile {
             println!("Profiling binary with perf");
             let mut tmp = Command::new("perf");
             tmp.args(["record", "-F", "5", "--call-graph", "dwarf,64000", "-o"])
-                .arg(&profiler_output)
+                .arg(&profiler_outfile)
                 .arg(&binary.bin_path)
                 .args(args);
             tmp
