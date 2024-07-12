@@ -148,14 +148,14 @@ impl LaunchedHost for LaunchedLocalhost {
         }
     }
 
-    async fn copy_binary(&self, _binary: Arc<BuiltCrate>) -> Result<()> {
+    async fn copy_binary(&self, _binary: &BuiltCrate) -> Result<()> {
         Ok(())
     }
 
     async fn launch_binary(
         &self,
         id: String,
-        binary: Arc<BuiltCrate>,
+        binary: &BuiltCrate,
         args: &[String],
         perf: Option<PathBuf>,
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {

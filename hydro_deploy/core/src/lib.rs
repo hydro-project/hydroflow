@@ -95,12 +95,12 @@ pub trait LaunchedHost: Send + Sync {
     /// to listen to network connections (such as the IP address to bind to).
     fn server_config(&self, strategy: &ServerStrategy) -> ServerBindConfig;
 
-    async fn copy_binary(&self, binary: Arc<BuiltCrate>) -> Result<()>;
+    async fn copy_binary(&self, binary: &BuiltCrate) -> Result<()>;
 
     async fn launch_binary(
         &self,
         id: String,
-        binary: Arc<BuiltCrate>,
+        binary: &BuiltCrate,
         args: &[String],
         perf: Option<PathBuf>,
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;

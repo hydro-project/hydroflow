@@ -22,6 +22,7 @@ futures = "0.3.26"
 futures-core = "0.3.26"
 hydroflow_cli_integration = { path = "../hydroflow_cli_integration", version = "^0.5.2" }
 indicatif = "0.17.6"
+memo-map = "0.3.2"
 nanoid = "0.4.0"
 nix = "0.26.2"
 serde = { version = "1", features = [ "derive" ] }

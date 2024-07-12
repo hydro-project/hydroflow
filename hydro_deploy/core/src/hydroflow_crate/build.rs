@@ -1,12 +1,12 @@
-use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::Display;
 use std::io::BufRead;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::OnceLock;
 
 use cargo_metadata::diagnostic::Diagnostic;
+use memo_map::MemoMap;
 use nanoid::nanoid;
 use tokio::sync::OnceCell;
 
@@ -14,7 +14,7 @@ use super::BuiltCrate;
 use crate::progress::ProgressTracker;
 use crate::HostTargetType;
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 struct CacheKey {
     src: PathBuf,
     bin: Option<String>,
@@ -24,8 +24,7 @@ struct CacheKey {
     features: Option<Vec<String>>,
 }
 
-static BUILDS: OnceLock<Mutex<HashMap<CacheKey, UnitOfWork>>> = OnceLock::new();
-type UnitOfWork = Arc<OnceCell<Arc<BuiltCrate>>>;
+static BUILDS: OnceLock<MemoMap<CacheKey, OnceCell<BuiltCrate>>> = OnceLock::new();
 
 pub async fn build_crate(
     src: impl AsRef<Path>,
@@ -34,7 +33,7 @@ pub async fn build_crate(
     profile: Option<String>,
     target_type: HostTargetType,
     features: Option<Vec<String>>,
-) -> Result<Arc<BuiltCrate>, BuildError> {
+) -> Result<&'static BuiltCrate, BuildError> {
     // `fs::canonicalize` prepends windows paths with the `r"\\?\"`
     // https://stackoverflow.com/questions/21194530/what-does-mean-when-prepended-to-a-file-path
     // However, this breaks the `include!(concat!(env!("OUT_DIR"), "/my/forward/slash/path.rs"))`
@@ -52,13 +51,9 @@ pub async fn build_crate(
         features: features.clone(),
     };
 
-    let unit_of_work = {
-        let mut builds = BUILDS.get_or_init(Default::default).lock().unwrap();
-        builds.entry(key).or_default().clone()
-        // Release BUILDS table lock here.
-    };
-
-    unit_of_work
+    BUILDS
+        .get_or_init(MemoMap::new)
+        .get_or_insert(&key, Default::default)
         .get_or_try_init(move || {
             ProgressTracker::rich_leaf("build".to_string(), move |_, set_msg| async move {
                 tokio::task::spawn_blocking(move || {
@@ -128,11 +123,11 @@ pub async fn build_crate(
                                     let path_buf: PathBuf = path.clone().into();
                                     let path = path.into_string();
                                     let data = std::fs::read(path).unwrap();
-                                    return Ok(Arc::new(BuiltCrate {
+                                    return Ok(BuiltCrate {
                                         unique_id: nanoid!(8),
                                         bin_data: data,
                                         bin_path: path_buf,
-                                    }));
+                                    });
                                 }
                             }
                             cargo_metadata::Message::CompilerMessage(msg) => {
@@ -154,7 +149,6 @@ pub async fn build_crate(
             })
         })
         .await
-        .cloned()
 }
 
 #[derive(Clone, Debug)]

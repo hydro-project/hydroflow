@@ -43,7 +43,7 @@ pub struct HydroflowCrateService {
     /// Configuration for the ports that this service will listen on a port for.
     pub(super) port_to_bind: HashMap<String, ServerStrategy>,
 
-    built_binary: Arc<OnceCell<Result<Arc<BuiltCrate>, BuildError>>>,
+    built_binary: Arc<OnceCell<Result<&'static BuiltCrate, BuildError>>>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
 
     /// A map of port names to config for how other services can connect to this one.
@@ -182,7 +182,7 @@ impl HydroflowCrateService {
             .await
     }
 
-    fn build(&self) -> impl Future<Output = Result<Arc<BuiltCrate>, BuildError>> {
+    fn build(&self) -> impl Future<Output = Result<&'static BuiltCrate, BuildError>> {
         let src_cloned = self.src.clone();
         let bin_cloned = self.bin.clone();
         let example_cloned = self.example.clone();
@@ -250,7 +250,7 @@ impl Service for HydroflowCrateService {
                 let mut host_write = self.on.write().await;
                 let launched = host_write.provision(resource_result).await;
 
-                launched.copy_binary(built.clone()).await?;
+                launched.copy_binary(built).await?;
 
                 self.launched_host = Some(launched);
                 Ok(())
@@ -281,7 +281,7 @@ impl Service for HydroflowCrateService {
                         self.display_id
                             .clone()
                             .unwrap_or_else(|| format!("service/{}", self.id)),
-                        built.clone(),
+                        built,
                         &args,
                         self.perf.clone(),
                     )

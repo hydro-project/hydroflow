@@ -203,7 +203,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         LaunchedSSHHost::server_config(self, bind_type)
     }
 
-    async fn copy_binary(&self, binary: Arc<BuiltCrate>) -> Result<()> {
+    async fn copy_binary(&self, binary: &BuiltCrate) -> Result<()> {
         let session = self.open_ssh_session().await?;
 
         let sftp = async_retry(
@@ -274,7 +274,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
     async fn launch_binary(
         &self,
         id: String,
-        binary: Arc<BuiltCrate>,
+        binary: &BuiltCrate,
         args: &[String],
         perf: Option<PathBuf>,
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {

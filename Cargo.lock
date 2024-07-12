@@ -1398,6 +1398,7 @@ dependencies = [
  "futures-core",
  "hydroflow_cli_integration",
  "indicatif",
+ "memo-map",
  "nanoid",
  "nix 0.26.4",
  "serde",
@@ -1903,6 +1904,12 @@ name = "memchr"
 version = "2.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c8640c5d730cb13ebd907d8d04b52f55ac9a2eec55b440c8892f40d56c76c1d"
+
+[[package]]
+name = "memo-map"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "374c335b2df19e62d4cb323103473cbc6510980253119180de862d89184f6a83"
 
 [[package]]
 name = "memoffset"
