@@ -28,7 +28,7 @@ pub struct HydroflowCrate {
     profile: Option<String>,
     /// Output file for profiling data, if provided.
     /// Run perf (or dtrace) to get CPU time and output to that `path.perf.data`.
-    profiler_outfile: Option<PathBuf>,
+    perf: Option<PathBuf>,
     args: Vec<String>,
     display_name: Option<String>,
 }
@@ -43,7 +43,7 @@ impl HydroflowCrate {
             target: CrateTarget::Default,
             on,
             profile: None,
-            profiler_outfile: None,
+            perf: None,
             args: vec![],
             display_name: None,
         }
@@ -82,12 +82,12 @@ impl HydroflowCrate {
         self
     }
 
-    pub fn profiler_outfile(mut self, profiler_outfile: impl Into<PathBuf>) -> Self {
-        if self.profiler_outfile.is_some() {
-            panic!("profiler_outfile path already set");
+    pub fn perf(mut self, perf: impl Into<PathBuf>) -> Self {
+        if self.perf.is_some() {
+            panic!("perf path already set");
         }
 
-        self.profiler_outfile = Some(profiler_outfile.into());
+        self.perf = Some(perf.into());
         self
     }
 
@@ -124,7 +124,7 @@ impl ServiceBuilder for HydroflowCrate {
             bin,
             example,
             self.profile,
-            self.profiler_outfile,
+            self.perf,
             None,
             Some(self.args),
             self.display_name,

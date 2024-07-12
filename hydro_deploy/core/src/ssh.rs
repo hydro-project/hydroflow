@@ -276,7 +276,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         id: String,
         binary: &BuildOutput,
         args: &[String],
-        profiler_outfile: Option<PathBuf>,
+        perf: Option<PathBuf>,
     ) -> Result<Box<dyn LaunchedBinary>> {
         let session = self.open_ssh_session().await?;
 
@@ -309,7 +309,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
                 channel
                     .exec(&format!("{binary_path_string}{args_string}"))
                     .await?;
-                if profiler_outfile.is_some() {
+                if perf.is_some() {
                     todo!("Profiling on remote machines is not (yet) supported");
                 }
 

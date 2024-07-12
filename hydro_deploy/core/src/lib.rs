@@ -96,13 +96,13 @@ pub trait LaunchedHost: Send + Sync {
 
     async fn copy_binary(&self, binary: &BuildOutput) -> Result<()>;
 
-    /// * `profiler_outfile` - the output file name for profiling, or `None` for no profiling.
+    /// * `perf` - the output file name for profiling, or `None` for no profiling.
     async fn launch_binary(
         &self,
         id: String,
         binary: &BuildOutput,
         args: &[String],
-        profiler_outfile: Option<PathBuf>,
+        perf: Option<PathBuf>,
     ) -> Result<Box<dyn LaunchedBinary>>;
 
     async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr>;
