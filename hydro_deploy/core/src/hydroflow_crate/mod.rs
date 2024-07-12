@@ -26,9 +26,7 @@ pub struct HydroflowCrate {
     target: CrateTarget,
     on: Arc<RwLock<dyn Host>>,
     profile: Option<String>,
-    /// Output file for profiling data, if provided.
-    /// Run perf (or dtrace) to get CPU time and output to that `path.perf.data`.
-    perf: Option<PathBuf>,
+    perf: Option<PathBuf>, /* If a path is provided, run perf to get CPU time and output to that path.perf.data */
     args: Vec<String>,
     display_name: Option<String>,
 }

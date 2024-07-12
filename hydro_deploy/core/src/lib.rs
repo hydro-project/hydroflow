@@ -96,7 +96,6 @@ pub trait LaunchedHost: Send + Sync {
 
     async fn copy_binary(&self, binary: &BuildOutput) -> Result<()>;
 
-    /// * `perf` - the output file name for profiling, or `None` for no profiling.
     async fn launch_binary(
         &self,
         id: String,
