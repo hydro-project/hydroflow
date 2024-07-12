@@ -9,40 +9,33 @@ use async_trait::async_trait;
 use futures_core::Future;
 use hydroflow_cli_integration::{InitConfig, ServerPort};
 use serde::Serialize;
-use tokio::sync::{OnceCell, RwLock};
+use tokio::sync::RwLock;
 
-use super::build::{build_crate, BuildError, BuildOutput};
+use super::build::{build_crate_memoized, BuildError, BuildOutput, BuildParams};
 use super::ports::{self, HydroflowPortConfig, HydroflowSink, SourcePath};
 use crate::progress::ProgressTracker;
 use crate::{
-    Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
-    ServerStrategy, Service,
+    Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
 };
 
 pub struct HydroflowCrateService {
     id: usize,
-    src: PathBuf,
     pub(super) on: Arc<RwLock<dyn Host>>,
-    bin: Option<String>,
-    example: Option<String>,
-    profile: Option<String>,
+    build_params: BuildParams,
     perf: Option<PathBuf>,
-    features: Option<Vec<String>>,
     args: Option<Vec<String>>,
     display_id: Option<String>,
     external_ports: Vec<u16>,
 
     meta: Option<String>,
 
-    target_type: HostTargetType,
-
+    // target_type: HostTargetType,
     /// Configuration for the ports this service will connect to as a client.
     pub(super) port_to_server: HashMap<String, ports::ServerConfig>,
 
     /// Configuration for the ports that this service will listen on a port for.
     pub(super) port_to_bind: HashMap<String, ServerStrategy>,
 
-    built_binary: Arc<OnceCell<Result<&'static BuildOutput, BuildError>>>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
 
     /// A map of port names to config for how other services can connect to this one.
@@ -71,23 +64,19 @@ impl HydroflowCrateService {
     ) -> Self {
         let target_type = on.try_read().unwrap().target_type();
 
+        let build_params = BuildParams::new(src, bin, example, profile, target_type, features);
+
         Self {
             id,
-            src,
-            bin,
             on,
-            example,
-            profile,
+            build_params,
             perf,
-            features,
             args,
             display_id,
-            target_type,
             external_ports,
             meta: None,
             port_to_server: HashMap::new(),
             port_to_bind: HashMap::new(),
-            built_binary: Arc::new(OnceCell::new()),
             launched_host: None,
             server_defns: Arc::new(RwLock::new(HashMap::new())),
             launched_binary: None,
@@ -182,29 +171,8 @@ impl HydroflowCrateService {
     }
 
     fn build(&self) -> impl Future<Output = Result<&'static BuildOutput, BuildError>> {
-        let src_cloned = self.src.clone();
-        let bin_cloned = self.bin.clone();
-        let example_cloned = self.example.clone();
-        let features_cloned = self.features.clone();
-        let profile_cloned = self.profile.clone();
-        let target_type = self.target_type;
-        let built_binary_cloned = self.built_binary.clone();
-
-        async move {
-            built_binary_cloned
-                .get_or_init(|| {
-                    build_crate(
-                        src_cloned,
-                        bin_cloned,
-                        example_cloned,
-                        profile_cloned,
-                        target_type,
-                        features_cloned,
-                    )
-                })
-                .await
-                .clone()
-        }
+        // Memoized, so no caching in `self` is needed.
+        build_crate_memoized(self.build_params.clone())
     }
 }
 

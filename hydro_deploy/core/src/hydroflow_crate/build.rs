@@ -13,14 +13,50 @@ use tokio::sync::OnceCell;
 use crate::progress::ProgressTracker;
 use crate::HostTargetType;
 
+/// Build parameters for [`build_crate_memoized`].
 #[derive(PartialEq, Eq, Hash, Clone)]
-struct CacheKey {
+pub struct BuildParams {
+    /// The working directory for the build, where the `cargo build` command will be run. Crate root.
+    /// [`Self::new`] canonicalizes this path.
     src: PathBuf,
+    /// `--bin` binary name parameter.
     bin: Option<String>,
+    /// `--example` parameter.
     example: Option<String>,
+    /// `--profile` parameter.
     profile: Option<String>,
+    /// `--target <linux>` if cross-compiling for linux ([`HostTargetType::Linux`]).
     target_type: HostTargetType,
+    /// `--features` flags, will be comma-delimited.
     features: Option<Vec<String>>,
+}
+impl BuildParams {
+    /// Creates a new `BuildParams` and canonicalizes the `src` path.
+    pub fn new(
+        src: impl AsRef<Path>,
+        bin: Option<String>,
+        example: Option<String>,
+        profile: Option<String>,
+        target_type: HostTargetType,
+        features: Option<Vec<String>>,
+    ) -> Self {
+        // `fs::canonicalize` prepends windows paths with the `r"\\?\"`
+        // https://stackoverflow.com/questions/21194530/what-does-mean-when-prepended-to-a-file-path
+        // However, this breaks the `include!(concat!(env!("OUT_DIR"), "/my/forward/slash/path.rs"))`
+        // Rust codegen pattern on windows. To help mitigate this happening in third party crates, we
+        // instead use `dunce::canonicalize` which is the same as `fs::canonicalize` but avoids the
+        // `\\?\` prefix when possible.
+        let src = dunce::canonicalize(src).expect("Failed to canonicalize path for build.");
+
+        BuildParams {
+            src,
+            bin,
+            example,
+            profile,
+            target_type,
+            features,
+        }
+    }
 }
 
 /// Information about a built crate. See [`build_crate`].
@@ -33,69 +69,48 @@ pub struct BuildOutput {
     pub bin_path: PathBuf,
 }
 
-static BUILDS: OnceLock<MemoMap<CacheKey, OnceCell<BuildOutput>>> = OnceLock::new();
+/// Build memoization cache.
+static BUILDS: OnceLock<MemoMap<BuildParams, OnceCell<BuildOutput>>> = OnceLock::new();
 
-pub async fn build_crate(
-    src: impl AsRef<Path>,
-    bin: Option<String>,
-    example: Option<String>,
-    profile: Option<String>,
-    target_type: HostTargetType,
-    features: Option<Vec<String>>,
+pub async fn build_crate_memoized(
+    params: BuildParams,
 ) -> Result<&'static BuildOutput, BuildError> {
-    // `fs::canonicalize` prepends windows paths with the `r"\\?\"`
-    // https://stackoverflow.com/questions/21194530/what-does-mean-when-prepended-to-a-file-path
-    // However, this breaks the `include!(concat!(env!("OUT_DIR"), "/my/forward/slash/path.rs"))`
-    // Rust codegen pattern on windows. To help mitigate this happening in third party crates, we
-    // instead use `dunce::canonicalize` which is the same as `fs::canonicalize` but avoids the
-    // `\\?\` prefix when possible.
-    let src = dunce::canonicalize(src).expect("Failed to canonicalize path for build.");
-
-    let key = CacheKey {
-        src: src.clone(),
-        bin: bin.clone(),
-        example: example.clone(),
-        profile: profile.clone(),
-        target_type,
-        features: features.clone(),
-    };
-
     BUILDS
         .get_or_init(MemoMap::new)
-        .get_or_insert(&key, Default::default)
+        .get_or_insert(&params, Default::default)
         .get_or_try_init(move || {
             ProgressTracker::rich_leaf("build".to_string(), move |_, set_msg| async move {
                 tokio::task::spawn_blocking(move || {
                     let mut command = Command::new("cargo");
                     command.args([
-                        "build".to_string(),
-                        "--profile".to_string(),
-                        profile.unwrap_or("release".to_string()),
+                        "build",
+                        "--profile",
+                        params.profile.as_deref().unwrap_or("release"),
                     ]);
 
-                    if let Some(bin) = bin.as_ref() {
+                    if let Some(bin) = params.bin.as_ref() {
                         command.args(["--bin", bin]);
                     }
 
-                    if let Some(example) = example.as_ref() {
+                    if let Some(example) = params.example.as_ref() {
                         command.args(["--example", example]);
                     }
 
-                    match target_type {
+                    match params.target_type {
                         HostTargetType::Local => {}
                         HostTargetType::Linux => {
                             command.args(["--target", "x86_64-unknown-linux-musl"]);
                         }
                     }
 
-                    if let Some(features) = features {
+                    if let Some(features) = params.features {
                         command.args(["--features", &features.join(",")]);
                     }
 
                     command.arg("--message-format=json-diagnostic-rendered-ansi");
 
                     let mut spawned = command
-                        .current_dir(&src)
+                        .current_dir(&params.src)
                         .stdout(Stdio::piped())
                         .stderr(Stdio::piped())
                         .stdin(Stdio::null())
@@ -121,7 +136,7 @@ pub async fn build_crate(
                     for message in cargo_metadata::Message::parse_stream(reader) {
                         match message.unwrap() {
                             cargo_metadata::Message::CompilerArtifact(artifact) => {
-                                let is_output = if example.is_some() {
+                                let is_output = if params.example.is_some() {
                                     artifact.target.kind.contains(&"example".to_string())
                                 } else {
                                     artifact.target.kind.contains(&"bin".to_string())
