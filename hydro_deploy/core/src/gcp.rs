@@ -12,7 +12,7 @@ use super::{
     ClientStrategy, Host, HostTargetType, LaunchedHost, ResourceBatch, ResourceResult,
     ServerStrategy,
 };
-use crate::ssh::LaunchedSshHost;
+use crate::ssh::LaunchedSSHHost;
 
 pub struct LaunchedComputeEngine {
     resource_result: Arc<ResourceResult>,
@@ -21,7 +21,7 @@ pub struct LaunchedComputeEngine {
     pub external_ip: Option<String>,
 }
 
-impl LaunchedSshHost for LaunchedComputeEngine {
+impl LaunchedSSHHost for LaunchedComputeEngine {
     fn get_external_ip(&self) -> Option<String> {
         self.external_ip.clone()
     }
