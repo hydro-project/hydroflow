@@ -82,12 +82,12 @@ impl HydroflowCrate {
         self
     }
 
-    pub fn perf(mut self, perf: impl Into<PathBuf>) -> Self {
+    pub fn profiler_outfile(mut self, profiler_outfile: impl Into<PathBuf>) -> Self {
         if self.profiler_outfile.is_some() {
-            panic!("perf path already set");
+            panic!("profiler_outfile path already set");
         }
 
-        self.profiler_outfile = Some(perf.into());
+        self.profiler_outfile = Some(profiler_outfile.into());
         self
     }
 

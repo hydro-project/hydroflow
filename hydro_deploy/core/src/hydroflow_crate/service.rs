@@ -22,7 +22,7 @@ pub struct HydroflowCrateService {
     id: usize,
     pub(super) on: Arc<RwLock<dyn Host>>,
     build_params: BuildParams,
-    perf: Option<PathBuf>,
+    profiler_outfile: Option<PathBuf>,
     args: Option<Vec<String>>,
     display_id: Option<String>,
     external_ports: Vec<u16>,
@@ -55,7 +55,7 @@ impl HydroflowCrateService {
         bin: Option<String>,
         example: Option<String>,
         profile: Option<String>,
-        perf: Option<PathBuf>,
+        profiler_outfile: Option<PathBuf>,
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
         display_id: Option<String>,
@@ -69,7 +69,7 @@ impl HydroflowCrateService {
             id,
             on,
             build_params,
-            perf,
+            profiler_outfile,
             args,
             display_id,
             external_ports,
@@ -231,7 +231,7 @@ impl Service for HydroflowCrateService {
                             .unwrap_or_else(|| format!("service/{}", self.id)),
                         built,
                         &args,
-                        self.perf.clone(),
+                        self.profiler_outfile.clone(),
                     )
                     .await?;
 
