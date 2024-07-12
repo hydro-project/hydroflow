@@ -72,9 +72,7 @@ pub struct BuildOutput {
 /// Build memoization cache.
 static BUILDS: OnceLock<MemoMap<BuildParams, OnceCell<BuildOutput>>> = OnceLock::new();
 
-pub async fn build_crate_memoized(
-    params: BuildParams,
-) -> Result<&'static BuildOutput, BuildError> {
+pub async fn build_crate_memoized(params: BuildParams) -> Result<&'static BuildOutput, BuildError> {
     BUILDS
         .get_or_init(MemoMap::new)
         .get_or_insert(&params, Default::default)
