@@ -29,7 +29,6 @@ pub struct HydroflowCrateService {
 
     meta: Option<String>,
 
-    // target_type: HostTargetType,
     /// Configuration for the ports this service will connect to as a client.
     pub(super) port_to_server: HashMap<String, ports::ServerConfig>,
 
