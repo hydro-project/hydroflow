@@ -569,7 +569,7 @@ impl HydroflowCrate {
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
             Ok(PyReceiver {
-                receiver: Arc::new(underlying.stdout().await),
+                receiver: Arc::new(underlying.stdout()),
             })
         })
     }
@@ -579,7 +579,7 @@ impl HydroflowCrate {
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
             Ok(PyReceiver {
-                receiver: Arc::new(underlying.stderr().await),
+                receiver: Arc::new(underlying.stderr()),
             })
         })
     }
@@ -588,7 +588,7 @@ impl HydroflowCrate {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
-            Ok(underlying.exit_code().await)
+            Ok(underlying.exit_code())
         })
     }
 

@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use anyhow::{Context, Result};
@@ -15,7 +15,6 @@ use futures::{AsyncBufReadExt, AsyncWriteExt, StreamExt};
 use hydroflow_cli_integration::ServerBindConfig;
 use nanoid::nanoid;
 use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::RwLock;
 
 use super::progress::ProgressTracker;
 use super::util::async_retry;
@@ -28,19 +27,19 @@ struct LaunchedSshBinary {
     session: Option<AsyncSession<TcpStream>>,
     channel: AsyncChannel<TcpStream>,
     stdin_sender: Sender<String>,
-    stdout_receivers: Arc<RwLock<Vec<Sender<String>>>>,
-    stdout_cli_receivers: Arc<RwLock<Option<tokio::sync::oneshot::Sender<String>>>>,
-    stderr_receivers: Arc<RwLock<Vec<Sender<String>>>>,
+    stdout_receivers: Arc<Mutex<Vec<Sender<String>>>>,
+    stdout_cli_receivers: Arc<Mutex<Option<tokio::sync::oneshot::Sender<String>>>>,
+    stderr_receivers: Arc<Mutex<Vec<Sender<String>>>>,
 }
 
 #[async_trait]
 impl LaunchedBinary for LaunchedSshBinary {
-    async fn stdin(&self) -> Sender<String> {
+    fn stdin(&self) -> Sender<String> {
         self.stdin_sender.clone()
     }
 
-    async fn cli_stdout(&self) -> tokio::sync::oneshot::Receiver<String> {
-        let mut receivers = self.stdout_cli_receivers.write().await;
+    fn cli_stdout(&self) -> tokio::sync::oneshot::Receiver<String> {
+        let mut receivers = self.stdout_cli_receivers.lock().unwrap();
 
         if receivers.is_some() {
             panic!("Only one CLI stdout receiver is allowed at a time");
@@ -51,21 +50,21 @@ impl LaunchedBinary for LaunchedSshBinary {
         receiver
     }
 
-    async fn stdout(&self) -> Receiver<String> {
-        let mut receivers = self.stdout_receivers.write().await;
+    fn stdout(&self) -> Receiver<String> {
+        let mut receivers = self.stdout_receivers.lock().unwrap();
         let (sender, receiver) = async_channel::unbounded::<String>();
         receivers.push(sender);
         receiver
     }
 
-    async fn stderr(&self) -> Receiver<String> {
-        let mut receivers = self.stderr_receivers.write().await;
+    fn stderr(&self) -> Receiver<String> {
+        let mut receivers = self.stderr_receivers.lock().unwrap();
         let (sender, receiver) = async_channel::unbounded::<String>();
         receivers.push(sender);
         receiver
     }
 
-    async fn exit_code(&self) -> Option<i32> {
+    fn exit_code(&self) -> Option<i32> {
         // until the program exits, the exit status is meaningless
         if self.channel.eof() {
             self.channel.exit_status().ok()
@@ -76,7 +75,7 @@ impl LaunchedBinary for LaunchedSshBinary {
 
     async fn wait(&mut self) -> Option<i32> {
         self.channel.wait_eof().await.unwrap();
-        let ret = self.exit_code().await;
+        let ret = self.exit_code();
         self.channel.wait_close().await.unwrap();
         ret
     }

@@ -72,18 +72,18 @@ pub struct ResourceResult {
 
 #[async_trait]
 pub trait LaunchedBinary: Send + Sync {
-    async fn stdin(&self) -> Sender<String>;
+    fn stdin(&self) -> Sender<String>;
 
     /// Provides a oneshot channel for the CLI to handshake with the binary,
     /// with the guarantee that as long as the CLI is holding on
     /// to a handle, none of the messages will also be broadcast
     /// to the user-facing [`LaunchedBinary::stdout`] channel.
-    async fn cli_stdout(&self) -> tokio::sync::oneshot::Receiver<String>;
+    fn cli_stdout(&self) -> tokio::sync::oneshot::Receiver<String>;
 
-    async fn stdout(&self) -> Receiver<String>;
-    async fn stderr(&self) -> Receiver<String>;
+    fn stdout(&self) -> Receiver<String>;
+    fn stderr(&self) -> Receiver<String>;
 
-    async fn exit_code(&self) -> Option<i32>;
+    fn exit_code(&self) -> Option<i32>;
 
     async fn wait(&mut self) -> Option<i32>;
 }

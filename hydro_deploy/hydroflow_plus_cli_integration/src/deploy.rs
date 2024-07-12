@@ -56,12 +56,12 @@ pub trait DeployCrateWrapper {
 
     #[allow(async_fn_in_trait)]
     async fn stdout(&self) -> Receiver<String> {
-        self.underlying().read().await.stdout().await
+        self.underlying().read().await.stdout()
     }
 
     #[allow(async_fn_in_trait)]
     async fn stderr(&self) -> Receiver<String> {
-        self.underlying().read().await.stderr().await
+        self.underlying().read().await.stderr()
     }
 }
 
