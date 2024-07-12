@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_process::{Command, Stdio};
 use async_trait::async_trait;
 use hydroflow_cli_integration::ServerBindConfig;
@@ -13,6 +13,7 @@ use super::{
     ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
     ResourceResult, ServerStrategy,
 };
+use crate::hydroflow_crate::build::BuildOutput;
 
 pub mod launched_binary;
 pub use launched_binary::*;
@@ -147,14 +148,14 @@ impl LaunchedHost for LaunchedLocalhost {
         }
     }
 
-    async fn copy_binary(&self, _binary: Arc<(String, Vec<u8>, PathBuf)>) -> Result<()> {
+    async fn copy_binary(&self, _binary: &BuildOutput) -> Result<()> {
         Ok(())
     }
 
     async fn launch_binary(
         &self,
         id: String,
-        binary: Arc<(String, Vec<u8>, PathBuf)>,
+        binary: &BuildOutput,
         args: &[String],
         perf: Option<PathBuf>,
     ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
@@ -163,11 +164,11 @@ impl LaunchedHost for LaunchedLocalhost {
             let mut tmp = Command::new("perf");
             tmp.args(["record", "-F", "5", "--call-graph", "dwarf,64000", "-o"])
                 .arg(&perf)
-                .arg(&binary.2)
+                .arg(&binary.bin_path)
                 .args(args);
             tmp
         } else {
-            let mut tmp = Command::new(&binary.2);
+            let mut tmp = Command::new(&binary.bin_path);
             tmp.args(args);
             tmp
         };
@@ -181,7 +182,9 @@ impl LaunchedHost for LaunchedLocalhost {
         #[cfg(not(unix))]
         command.kill_on_drop(true);
 
-        let child = command.spawn()?;
+        let child = command
+            .spawn()
+            .with_context(|| format!("Failed to execute command: {:?}", command))?;
 
         Ok(Arc::new(RwLock::new(LaunchedLocalhostBinary::new(
             child, id,
