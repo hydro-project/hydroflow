@@ -213,11 +213,11 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         )
         .await?;
 
-        // We may be deploying multiple binaries, so give each a unique file name.
-        let unique_id = &binary.unique_id;
+        // we may be deploying multiple binaries, so give each a unique name
+        let unique_name = &binary.unique_id;
 
         let user = self.ssh_user();
-        let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_id}"));
+        let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_name}"));
 
         if sftp.stat(&binary_path).await.is_err() {
             let random = nanoid!(8);
