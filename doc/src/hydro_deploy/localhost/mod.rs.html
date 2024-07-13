@@ -192,12 +192,15 @@
 <a href="#192" id="192">192</a>
 <a href="#193" id="193">193</a>
 <a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use </span>anyhow::Result;
+<span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>async_process::{Command, Stdio};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
@@ -207,6 +210,7 @@
     ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
     ResourceResult, ServerStrategy,
 };
+<span class="kw">use </span><span class="kw">crate</span>::hydroflow_crate::build::BuildOutput;
 
 <span class="kw">pub mod </span>launched_binary;
 <span class="kw">pub use </span>launched_binary::<span class="kw-2">*</span>;
@@ -341,14 +345,14 @@
         }
     }
 
-    <span class="kw">async fn </span>copy_binary(<span class="kw-2">&amp;</span><span class="self">self</span>, _binary: Arc&lt;(String, Vec&lt;u8&gt;, PathBuf)&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">async fn </span>copy_binary(<span class="kw-2">&amp;</span><span class="self">self</span>, _binary: <span class="kw-2">&amp;</span>BuildOutput) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">async fn </span>launch_binary(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         id: String,
-        binary: Arc&lt;(String, Vec&lt;u8&gt;, PathBuf)&gt;,
+        binary: <span class="kw-2">&amp;</span>BuildOutput,
         args: <span class="kw-2">&amp;</span>[String],
         perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt; {
@@ -357,11 +361,11 @@
             <span class="kw">let </span><span class="kw-2">mut </span>tmp = Command::new(<span class="string">"perf"</span>);
             tmp.args([<span class="string">"record"</span>, <span class="string">"-F"</span>, <span class="string">"5"</span>, <span class="string">"--call-graph"</span>, <span class="string">"dwarf,64000"</span>, <span class="string">"-o"</span>])
                 .arg(<span class="kw-2">&amp;</span>perf)
-                .arg(<span class="kw-2">&amp;</span>binary.<span class="number">2</span>)
+                .arg(<span class="kw-2">&amp;</span>binary.bin_path)
                 .args(args);
             tmp
         } <span class="kw">else </span>{
-            <span class="kw">let </span><span class="kw-2">mut </span>tmp = Command::new(<span class="kw-2">&amp;</span>binary.<span class="number">2</span>);
+            <span class="kw">let </span><span class="kw-2">mut </span>tmp = Command::new(<span class="kw-2">&amp;</span>binary.bin_path);
             tmp.args(args);
             tmp
         };
@@ -375,7 +379,9 @@
         <span class="attr">#[cfg(not(unix))]
         </span>command.kill_on_drop(<span class="bool-val">true</span>);
 
-        <span class="kw">let </span>child = command.spawn()<span class="question-mark">?</span>;
+        <span class="kw">let </span>child = command
+            .spawn()
+            .with_context(|| <span class="macro">format!</span>(<span class="string">"Failed to execute command: {:?}"</span>, command))<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(Arc::new(RwLock::new(LaunchedLocalhostBinary::new(
             child, id,

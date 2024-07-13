@@ -183,102 +183,135 @@
 <a href="#183" id="183">183</a>
 <a href="#184" id="184">184</a>
 <a href="#185" id="185">185</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
-<span class="kw">use </span>std::error::Error;
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>std::fmt::Display;
 <span class="kw">use </span>std::io::BufRead;
 <span class="kw">use </span>std::path::{Path, PathBuf};
 <span class="kw">use </span>std::process::{Command, Stdio};
-<span class="kw">use </span>std::sync::{Arc, Mutex};
+<span class="kw">use </span>std::sync::OnceLock;
 
 <span class="kw">use </span>cargo_metadata::diagnostic::Diagnostic;
+<span class="kw">use </span>memo_map::MemoMap;
 <span class="kw">use </span>nanoid::nanoid;
-<span class="kw">use </span>once_cell::sync::Lazy;
 <span class="kw">use </span>tokio::sync::OnceCell;
 
 <span class="kw">use </span><span class="kw">crate</span>::progress::ProgressTracker;
 <span class="kw">use </span><span class="kw">crate</span>::HostTargetType;
 
-<span class="attr">#[derive(PartialEq, Eq, Hash)]
-</span><span class="kw">struct </span>CacheKey {
-    src: PathBuf,
-    bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    example: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    target_type: HostTargetType,
-    features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
+<span class="doccomment">/// Build parameters for [`build_crate_memoized`].
+</span><span class="attr">#[derive(PartialEq, Eq, Hash, Clone)]
+</span><span class="kw">pub struct </span>BuildParams {
+    <span class="doccomment">/// The working directory for the build, where the `cargo build` command will be run. Crate root.
+    /// [`Self::new`] canonicalizes this path.
+    </span>src: PathBuf,
+    <span class="doccomment">/// `--bin` binary name parameter.
+    </span>bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="doccomment">/// `--example` parameter.
+    </span>example: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="doccomment">/// `--profile` parameter.
+    </span>profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="doccomment">/// `--target &lt;linux&gt;` if cross-compiling for linux ([`HostTargetType::Linux`]).
+    </span>target_type: HostTargetType,
+    <span class="doccomment">/// `--features` flags, will be comma-delimited.
+    </span>features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
+}
+<span class="kw">impl </span>BuildParams {
+    <span class="doccomment">/// Creates a new `BuildParams` and canonicalizes the `src` path.
+    </span><span class="kw">pub fn </span>new(
+        src: <span class="kw">impl </span>AsRef&lt;Path&gt;,
+        bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        example: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        target_type: HostTargetType,
+        features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="comment">// `fs::canonicalize` prepends windows paths with the `r"\\?\"`
+        // https://stackoverflow.com/questions/21194530/what-does-mean-when-prepended-to-a-file-path
+        // However, this breaks the `include!(concat!(env!("OUT_DIR"), "/my/forward/slash/path.rs"))`
+        // Rust codegen pattern on windows. To help mitigate this happening in third party crates, we
+        // instead use `dunce::canonicalize` which is the same as `fs::canonicalize` but avoids the
+        // `\\?\` prefix when possible.
+        </span><span class="kw">let </span>src = dunce::canonicalize(src).expect(<span class="string">"Failed to canonicalize path for build."</span>);
+
+        BuildParams {
+            src,
+            bin,
+            example,
+            profile,
+            target_type,
+            features,
+        }
+    }
 }
 
-<span class="kw">pub type </span>BuiltCrate = Arc&lt;(String, Vec&lt;u8&gt;, PathBuf)&gt;;
+<span class="doccomment">/// Information about a built crate. See [`build_crate`].
+</span><span class="kw">pub struct </span>BuildOutput {
+    <span class="doccomment">/// A unique but meaningless id.
+    </span><span class="kw">pub </span>unique_id: String,
+    <span class="doccomment">/// The binary contents as a byte array.
+    </span><span class="kw">pub </span>bin_data: Vec&lt;u8&gt;,
+    <span class="doccomment">/// The path to the binary file. [`Self::bin_data`] has a copy of the content.
+    </span><span class="kw">pub </span>bin_path: PathBuf,
+}
 
-<span class="kw">static </span>BUILDS: Lazy&lt;Mutex&lt;HashMap&lt;CacheKey, Arc&lt;OnceCell&lt;BuiltCrate&gt;&gt;&gt;&gt;&gt; =
-    Lazy::new(Default::default);
+<span class="doccomment">/// Build memoization cache.
+</span><span class="kw">static </span>BUILDS: OnceLock&lt;MemoMap&lt;BuildParams, OnceCell&lt;BuildOutput&gt;&gt;&gt; = OnceLock::new();
 
-<span class="kw">pub async fn </span>build_crate(
-    src: <span class="kw">impl </span>AsRef&lt;Path&gt;,
-    bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    example: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    target_type: HostTargetType,
-    features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
-) -&gt; <span class="prelude-ty">Result</span>&lt;BuiltCrate, BuildError&gt; {
-    <span class="comment">// `fs::canonicalize` prepends windows paths with the `r"\\?\"`
-    // https://stackoverflow.com/questions/21194530/what-does-mean-when-prepended-to-a-file-path
-    // However, this breaks the `include!(concat!(env!("OUT_DIR"), "/my/forward/slash/path.rs"))`
-    // Rust codegen pattern on windows. To help mitigate this happening in third party crates, we
-    // instead use `dunce::canonicalize` which is the same as `fs::canonicalize` but avoids the
-    // `\\?\` prefix when possible.
-    </span><span class="kw">let </span>src = dunce::canonicalize(src).expect(<span class="string">"Failed to canonicalize path for build."</span>);
-
-    <span class="kw">let </span>key = CacheKey {
-        src: src.clone(),
-        bin: bin.clone(),
-        example: example.clone(),
-        profile: profile.clone(),
-        target_type,
-        features: features.clone(),
-    };
-
-    <span class="kw">let </span>unit_of_work = {
-        <span class="kw">let </span><span class="kw-2">mut </span>builds = BUILDS.lock().unwrap();
-        builds.entry(key).or_default().clone()
-        <span class="comment">// Release BUILDS table lock here.
-    </span>};
-
-    unit_of_work
+<span class="kw">pub async fn </span>build_crate_memoized(params: BuildParams) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>BuildOutput, BuildError&gt; {
+    BUILDS
+        .get_or_init(MemoMap::new)
+        .get_or_insert(<span class="kw-2">&amp;</span>params, Default::default)
         .get_or_try_init(<span class="kw">move </span>|| {
             ProgressTracker::rich_leaf(<span class="string">"build"</span>.to_string(), <span class="kw">move </span>|<span class="kw">_</span>, set_msg| <span class="kw">async move </span>{
                 tokio::task::spawn_blocking(<span class="kw">move </span>|| {
                     <span class="kw">let </span><span class="kw-2">mut </span>command = Command::new(<span class="string">"cargo"</span>);
                     command.args([
-                        <span class="string">"build"</span>.to_string(),
-                        <span class="string">"--profile"</span>.to_string(),
-                        profile.unwrap_or(<span class="string">"release"</span>.to_string()),
+                        <span class="string">"build"</span>,
+                        <span class="string">"--profile"</span>,
+                        params.profile.as_deref().unwrap_or(<span class="string">"release"</span>),
                     ]);
 
-                    <span class="kw">if let </span><span class="prelude-val">Some</span>(bin) = bin.as_ref() {
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(bin) = params.bin.as_ref() {
                         command.args([<span class="string">"--bin"</span>, bin]);
                     }
 
-                    <span class="kw">if let </span><span class="prelude-val">Some</span>(example) = example.as_ref() {
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(example) = params.example.as_ref() {
                         command.args([<span class="string">"--example"</span>, example]);
                     }
 
-                    <span class="kw">match </span>target_type {
+                    <span class="kw">match </span>params.target_type {
                         HostTargetType::Local =&gt; {}
                         HostTargetType::Linux =&gt; {
                             command.args([<span class="string">"--target"</span>, <span class="string">"x86_64-unknown-linux-musl"</span>]);
                         }
                     }
 
-                    <span class="kw">if let </span><span class="prelude-val">Some</span>(features) = features {
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(features) = params.features {
                         command.args([<span class="string">"--features"</span>, <span class="kw-2">&amp;</span>features.join(<span class="string">","</span>)]);
                     }
 
                     command.arg(<span class="string">"--message-format=json-diagnostic-rendered-ansi"</span>);
 
                     <span class="kw">let </span><span class="kw-2">mut </span>spawned = command
-                        .current_dir(<span class="kw-2">&amp;</span>src)
+                        .current_dir(<span class="kw-2">&amp;</span>params.src)
                         .stdout(Stdio::piped())
                         .stderr(Stdio::piped())
                         .stdin(Stdio::null())
@@ -304,7 +337,7 @@
                     <span class="kw">for </span>message <span class="kw">in </span>cargo_metadata::Message::parse_stream(reader) {
                         <span class="kw">match </span>message.unwrap() {
                             cargo_metadata::Message::CompilerArtifact(artifact) =&gt; {
-                                <span class="kw">let </span>is_output = <span class="kw">if </span>example.is_some() {
+                                <span class="kw">let </span>is_output = <span class="kw">if </span>params.example.is_some() {
                                     artifact.target.kind.contains(<span class="kw-2">&amp;</span><span class="string">"example"</span>.to_string())
                                 } <span class="kw">else </span>{
                                     artifact.target.kind.contains(<span class="kw-2">&amp;</span><span class="string">"bin"</span>.to_string())
@@ -315,7 +348,11 @@
                                     <span class="kw">let </span>path_buf: PathBuf = path.clone().into();
                                     <span class="kw">let </span>path = path.into_string();
                                     <span class="kw">let </span>data = std::fs::read(path).unwrap();
-                                    <span class="kw">return </span><span class="prelude-val">Ok</span>(Arc::new((<span class="macro">nanoid!</span>(<span class="number">8</span>), data, path_buf)));
+                                    <span class="kw">return </span><span class="prelude-val">Ok</span>(BuildOutput {
+                                        unique_id: <span class="macro">nanoid!</span>(<span class="number">8</span>),
+                                        bin_data: data,
+                                        bin_path: path_buf,
+                                    });
                                 }
                             }
                             cargo_metadata::Message::CompilerMessage(msg) =&gt; {
@@ -337,8 +374,7 @@
             </span>})
         })
         .<span class="kw">await
-        </span>.cloned()
-}
+</span>}
 
 <span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub enum </span>BuildError {

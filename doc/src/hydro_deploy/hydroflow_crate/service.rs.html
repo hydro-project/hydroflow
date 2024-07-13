@@ -359,37 +359,6 @@
 <a href="#359" id="359">359</a>
 <a href="#360" id="360">360</a>
 <a href="#361" id="361">361</a>
-<a href="#362" id="362">362</a>
-<a href="#363" id="363">363</a>
-<a href="#364" id="364">364</a>
-<a href="#365" id="365">365</a>
-<a href="#366" id="366">366</a>
-<a href="#367" id="367">367</a>
-<a href="#368" id="368">368</a>
-<a href="#369" id="369">369</a>
-<a href="#370" id="370">370</a>
-<a href="#371" id="371">371</a>
-<a href="#372" id="372">372</a>
-<a href="#373" id="373">373</a>
-<a href="#374" id="374">374</a>
-<a href="#375" id="375">375</a>
-<a href="#376" id="376">376</a>
-<a href="#377" id="377">377</a>
-<a href="#378" id="378">378</a>
-<a href="#379" id="379">379</a>
-<a href="#380" id="380">380</a>
-<a href="#381" id="381">381</a>
-<a href="#382" id="382">382</a>
-<a href="#383" id="383">383</a>
-<a href="#384" id="384">384</a>
-<a href="#385" id="385">385</a>
-<a href="#386" id="386">386</a>
-<a href="#387" id="387">387</a>
-<a href="#388" id="388">388</a>
-<a href="#389" id="389">389</a>
-<a href="#390" id="390">390</a>
-<a href="#391" id="391">391</a>
-<a href="#392" id="392">392</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
@@ -403,30 +372,23 @@
 <span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>tokio::sync::RwLock;
 
-<span class="kw">use </span><span class="kw">super</span>::build::{build_crate, BuildError, BuiltCrate};
+<span class="kw">use </span><span class="kw">super</span>::build::{build_crate_memoized, BuildError, BuildOutput, BuildParams};
 <span class="kw">use </span><span class="kw">super</span>::ports::{<span class="self">self</span>, HydroflowPortConfig, HydroflowSink, SourcePath};
 <span class="kw">use </span><span class="kw">crate</span>::progress::ProgressTracker;
 <span class="kw">use crate</span>::{
-    Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
-    ServerStrategy, Service,
+    Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
 };
 
 <span class="kw">pub struct </span>HydroflowCrateService {
     id: usize,
-    src: PathBuf,
     <span class="kw">pub</span>(<span class="kw">super</span>) on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
-    bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    example: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    build_params: BuildParams,
     perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
-    features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
     external_ports: Vec&lt;u16&gt;,
 
     meta: <span class="prelude-ty">Option</span>&lt;String&gt;,
-
-    target_type: HostTargetType,
 
     <span class="doccomment">/// Configuration for the ports this service will connect to as a client.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) port_to_server: HashMap&lt;String, ports::ServerConfig&gt;,
@@ -434,7 +396,6 @@
     <span class="doccomment">/// Configuration for the ports that this service will listen on a port for.
     </span><span class="kw">pub</span>(<span class="kw">super</span>) port_to_bind: HashMap&lt;String, ServerStrategy&gt;,
 
-    built_binary: Arc&lt;async_once_cell::OnceCell&lt;<span class="prelude-ty">Result</span>&lt;BuiltCrate, BuildError&gt;&gt;&gt;,
     launched_host: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt;,
 
     <span class="doccomment">/// A map of port names to config for how other services can connect to this one.
@@ -463,23 +424,19 @@
     ) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>target_type = on.try_read().unwrap().target_type();
 
+        <span class="kw">let </span>build_params = BuildParams::new(src, bin, example, profile, target_type, features);
+
         <span class="self">Self </span>{
             id,
-            src,
-            bin,
             on,
-            example,
-            profile,
+            build_params,
             perf,
-            features,
             args,
             display_id,
-            target_type,
             external_ports,
             meta: <span class="prelude-val">None</span>,
             port_to_server: HashMap::new(),
             port_to_bind: HashMap::new(),
-            built_binary: Arc::new(async_once_cell::OnceCell::new()),
             launched_host: <span class="prelude-val">None</span>,
             server_defns: Arc::new(RwLock::new(HashMap::new())),
             launched_binary: <span class="prelude-val">None</span>,
@@ -573,28 +530,9 @@
             .<span class="kw">await
     </span>}
 
-    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;BuiltCrate, BuildError&gt;&gt; {
-        <span class="kw">let </span>src_cloned = <span class="self">self</span>.src.clone();
-        <span class="kw">let </span>bin_cloned = <span class="self">self</span>.bin.clone();
-        <span class="kw">let </span>example_cloned = <span class="self">self</span>.example.clone();
-        <span class="kw">let </span>features_cloned = <span class="self">self</span>.features.clone();
-        <span class="kw">let </span>profile_cloned = <span class="self">self</span>.profile.clone();
-        <span class="kw">let </span>target_type = <span class="self">self</span>.target_type;
-        <span class="kw">let </span>built_binary_cloned = <span class="self">self</span>.built_binary.clone();
-
-        <span class="kw">async move </span>{
-            built_binary_cloned
-                .get_or_init(build_crate(
-                    src_cloned,
-                    bin_cloned,
-                    example_cloned,
-                    profile_cloned,
-                    target_type,
-                    features_cloned,
-                ))
-                .<span class="kw">await
-                </span>.clone()
-        }
+    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'static </span>BuildOutput, BuildError&gt;&gt; {
+        <span class="comment">// Memoized, so no caching in `self` is needed.
+        </span>build_crate_memoized(<span class="self">self</span>.build_params.clone())
     }
 }
 
@@ -639,7 +577,7 @@
                 <span class="kw">let </span><span class="kw-2">mut </span>host_write = <span class="self">self</span>.on.write().<span class="kw">await</span>;
                 <span class="kw">let </span>launched = host_write.provision(resource_result).<span class="kw">await</span>;
 
-                launched.copy_binary(built.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
+                launched.copy_binary(built).<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="self">self</span>.launched_host = <span class="prelude-val">Some</span>(launched);
                 <span class="prelude-val">Ok</span>(())
@@ -670,7 +608,7 @@
                         <span class="self">self</span>.display_id
                             .clone()
                             .unwrap_or_else(|| <span class="macro">format!</span>(<span class="string">"service/{}"</span>, <span class="self">self</span>.id)),
-                        built.clone(),
+                        built,
                         <span class="kw-2">&amp;</span>args,
                         <span class="self">self</span>.perf.clone(),
                     )

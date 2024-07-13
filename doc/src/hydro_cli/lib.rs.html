@@ -900,11 +900,12 @@
 </span><span class="attr">#![allow(unused_qualifications, non_local_definitions)]
 
 </span><span class="kw">use </span>core::hydroflow_crate::ports::HydroflowSource;
+<span class="kw">use </span>std::cell::OnceCell;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::pin::Pin;
-<span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>std::sync::{Arc, OnceLock};
 
 <span class="kw">use </span>async_channel::Receiver;
 <span class="kw">use </span>bytes::Bytes;
@@ -955,7 +956,7 @@
 }
 
 <span class="macro">tokio::task_local!</span> {
-    <span class="kw">static </span>TASK_LOCALS: once_cell::unsync::OnceCell&lt;TaskLocals&gt;;
+    <span class="kw">static </span>TASK_LOCALS: OnceCell&lt;TaskLocals&gt;;
 }
 
 <span class="kw">impl </span>pyo3_asyncio::generic::ContextExt <span class="kw">for </span>TokioRuntime {
@@ -963,7 +964,7 @@
     <span class="kw">where
         </span>F: Future&lt;Output = R&gt; + Send + <span class="lifetime">'static</span>,
     {
-        <span class="kw">let </span>cell = once_cell::unsync::OnceCell::new();
+        <span class="kw">let </span>cell = OnceCell::new();
         cell.set(locals).unwrap();
 
         Box::pin(TASK_LOCALS.scope(cell, fut))
@@ -992,8 +993,7 @@
     }
 }
 
-<span class="kw">static </span>CONVERTERS_MODULE: once_cell::sync::OnceCell&lt;Py&lt;PyModule&gt;&gt; =
-    once_cell::sync::OnceCell::new();
+<span class="kw">static </span>CONVERTERS_MODULE: OnceLock&lt;Py&lt;PyModule&gt;&gt; = OnceLock::new();
 
 <span class="kw">fn </span>interruptible_future_to_py&lt;F, T&gt;(py: Python&lt;<span class="lifetime">'_</span>&gt;, fut: F) -&gt; PyResult&lt;<span class="kw-2">&amp;</span>PyAny&gt;
 <span class="kw">where

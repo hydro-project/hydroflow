@@ -216,6 +216,8 @@
 <a href="#216" id="216">216</a>
 <a href="#217" id="217">217</a>
 <a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::path::PathBuf;
@@ -248,6 +250,8 @@
 
 <span class="kw">pub mod </span>custom_service;
 <span class="kw">pub use </span>custom_service::CustomService;
+
+<span class="kw">use </span><span class="kw">crate</span>::hydroflow_crate::build::BuildOutput;
 
 <span class="kw">pub mod </span>terraform;
 
@@ -311,12 +315,12 @@
     /// to listen to network connections (such as the IP address to bind to).
     </span><span class="kw">fn </span>server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, strategy: <span class="kw-2">&amp;</span>ServerStrategy) -&gt; ServerBindConfig;
 
-    <span class="kw">async fn </span>copy_binary(<span class="kw-2">&amp;</span><span class="self">self</span>, binary: Arc&lt;(String, Vec&lt;u8&gt;, PathBuf)&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
+    <span class="kw">async fn </span>copy_binary(<span class="kw-2">&amp;</span><span class="self">self</span>, binary: <span class="kw-2">&amp;</span>BuildOutput) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
 
     <span class="kw">async fn </span>launch_binary(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         id: String,
-        binary: Arc&lt;(String, Vec&lt;u8&gt;, PathBuf)&gt;,
+        binary: <span class="kw-2">&amp;</span>BuildOutput,
         args: <span class="kw-2">&amp;</span>[String],
         perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;&gt;;
