@@ -26,7 +26,7 @@ use tokio::sync::RwLock;
 
 mod cli;
 use hydro_deploy as core;
-use hydro_deploy::ssh::LaunchedSSHHost;
+use hydro_deploy::ssh::LaunchedSshHost;
 
 static TOKIO_RUNTIME: std::sync::RwLock<Option<tokio::runtime::Runtime>> =
     std::sync::RwLock::new(None);

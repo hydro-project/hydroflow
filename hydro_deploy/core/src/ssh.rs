@@ -23,7 +23,7 @@ use super::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
 use crate::hydroflow_crate::build::BuildOutput;
 use crate::util::prioritized_broadcast;
 
-struct LaunchedSSHBinary {
+struct LaunchedSshBinary {
     _resource_result: Arc<ResourceResult>,
     session: Option<AsyncSession<TcpStream>>,
     channel: AsyncChannel<TcpStream>,
@@ -34,7 +34,7 @@ struct LaunchedSSHBinary {
 }
 
 #[async_trait]
-impl LaunchedBinary for LaunchedSSHBinary {
+impl LaunchedBinary for LaunchedSshBinary {
     async fn stdin(&self) -> Sender<String> {
         self.stdin_sender.clone()
     }
@@ -82,7 +82,7 @@ impl LaunchedBinary for LaunchedSSHBinary {
     }
 }
 
-impl Drop for LaunchedSSHBinary {
+impl Drop for LaunchedSshBinary {
     fn drop(&mut self) {
         let session = self.session.take().unwrap();
         std::thread::scope(|s| {
@@ -99,7 +99,7 @@ impl Drop for LaunchedSSHBinary {
 }
 
 #[async_trait]
-pub trait LaunchedSSHHost: Send + Sync {
+pub trait LaunchedSshHost: Send + Sync {
     fn get_internal_ip(&self) -> String;
     fn get_external_ip(&self) -> Option<String>;
     fn get_cloud_provider(&self) -> String;
@@ -127,7 +127,7 @@ pub trait LaunchedSSHHost: Send + Sync {
             ServerStrategy::Demux(demux) => {
                 let mut config_map = HashMap::new();
                 for (key, underlying) in demux {
-                    config_map.insert(*key, LaunchedSSHHost::server_config(self, underlying));
+                    config_map.insert(*key, LaunchedSshHost::server_config(self, underlying));
                 }
 
                 ServerBindConfig::Demux(config_map)
@@ -135,13 +135,13 @@ pub trait LaunchedSSHHost: Send + Sync {
             ServerStrategy::Merge(merge) => {
                 let mut configs = vec![];
                 for underlying in merge {
-                    configs.push(LaunchedSSHHost::server_config(self, underlying));
+                    configs.push(LaunchedSshHost::server_config(self, underlying));
                 }
 
                 ServerBindConfig::Merge(configs)
             }
             ServerStrategy::Tagged(underlying, id) => ServerBindConfig::Tagged(
-                Box::new(LaunchedSSHHost::server_config(self, underlying)),
+                Box::new(LaunchedSshHost::server_config(self, underlying)),
                 *id,
             ),
             ServerStrategy::Null => ServerBindConfig::Null,
@@ -198,9 +198,9 @@ pub trait LaunchedSSHHost: Send + Sync {
 }
 
 #[async_trait]
-impl<T: LaunchedSSHHost> LaunchedHost for T {
+impl<T: LaunchedSshHost> LaunchedHost for T {
     fn server_config(&self, bind_type: &ServerStrategy) -> ServerBindConfig {
-        LaunchedSSHHost::server_config(self, bind_type)
+        LaunchedSshHost::server_config(self, bind_type)
     }
 
     async fn copy_binary(&self, binary: &BuildOutput) -> Result<()> {
@@ -340,7 +340,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
                 eprintln!("[{id}] {s}")
             });
 
-        Ok(Arc::new(RwLock::new(LaunchedSSHBinary {
+        Ok(Arc::new(RwLock::new(LaunchedSshBinary {
             _resource_result: self.resource_result().clone(),
             session: Some(session),
             channel,
