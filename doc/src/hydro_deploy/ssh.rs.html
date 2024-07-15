@@ -404,7 +404,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::hydroflow_crate::build::BuildOutput;
 <span class="kw">use </span><span class="kw">crate</span>::util::prioritized_broadcast;
 
-<span class="kw">struct </span>LaunchedSSHBinary {
+<span class="kw">struct </span>LaunchedSshBinary {
     _resource_result: Arc&lt;ResourceResult&gt;,
     session: <span class="prelude-ty">Option</span>&lt;AsyncSession&lt;TcpStream&gt;&gt;,
     channel: AsyncChannel&lt;TcpStream&gt;,
@@ -415,7 +415,7 @@
 }
 
 <span class="attr">#[async_trait]
-</span><span class="kw">impl </span>LaunchedBinary <span class="kw">for </span>LaunchedSSHBinary {
+</span><span class="kw">impl </span>LaunchedBinary <span class="kw">for </span>LaunchedSshBinary {
     <span class="kw">async fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sender&lt;String&gt; {
         <span class="self">self</span>.stdin_sender.clone()
     }
@@ -463,7 +463,7 @@
     }
 }
 
-<span class="kw">impl </span>Drop <span class="kw">for </span>LaunchedSSHBinary {
+<span class="kw">impl </span>Drop <span class="kw">for </span>LaunchedSshBinary {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span>session = <span class="self">self</span>.session.take().unwrap();
         std::thread::scope(|s| {
@@ -721,7 +721,7 @@
                 <span class="macro">eprintln!</span>(<span class="string">"[{id}] {s}"</span>)
             });
 
-        <span class="prelude-val">Ok</span>(Box::new(LaunchedSSHBinary {
+        <span class="prelude-val">Ok</span>(Box::new(LaunchedSshBinary {
             _resource_result: <span class="self">self</span>.resource_result().clone(),
             session: <span class="prelude-val">Some</span>(session),
             channel,
