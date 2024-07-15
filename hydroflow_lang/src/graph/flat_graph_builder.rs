@@ -784,7 +784,7 @@ impl FlatGraphBuilder {
                                 self.diagnostics.push(Diagnostic::spanned(
                                     singleton_ident.span(),
                                     Level::Error,
-                                    &format!(
+                                    format!(
                                         "Cannot reference operator `{}`. Only operators with singleton state can be referenced.",
                                         ref_op_constraints.name,
                                     ),
