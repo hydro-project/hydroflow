@@ -11,7 +11,7 @@ use super::{
     ClientStrategy, Host, HostTargetType, LaunchedHost, ResourceBatch, ResourceResult,
     ServerStrategy,
 };
-use crate::ssh::LaunchedSshHost;
+use crate::ssh::LaunchedSSHHost;
 
 pub struct LaunchedVirtualMachine {
     resource_result: Arc<ResourceResult>,
@@ -20,7 +20,7 @@ pub struct LaunchedVirtualMachine {
     pub external_ip: Option<String>,
 }
 
-impl LaunchedSshHost for LaunchedVirtualMachine {
+impl LaunchedSSHHost for LaunchedVirtualMachine {
     fn get_external_ip(&self) -> Option<String> {
         self.external_ip.clone()
     }

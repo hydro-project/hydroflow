@@ -23,7 +23,7 @@ use super::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
 use crate::hydroflow_crate::build::BuildOutput;
 use crate::util::prioritized_broadcast;
 
-struct LaunchedSshBinary {
+struct LaunchedSSHBinary {
     _resource_result: Arc<ResourceResult>,
     session: Option<AsyncSession<TcpStream>>,
     channel: AsyncChannel<TcpStream>,
@@ -34,7 +34,7 @@ struct LaunchedSshBinary {
 }
 
 #[async_trait]
-impl LaunchedBinary for LaunchedSshBinary {
+impl LaunchedBinary for LaunchedSSHBinary {
     async fn stdin(&self) -> Sender<String> {
         self.stdin_sender.clone()
     }
@@ -82,7 +82,7 @@ impl LaunchedBinary for LaunchedSshBinary {
     }
 }
 
-impl Drop for LaunchedSshBinary {
+impl Drop for LaunchedSSHBinary {
     fn drop(&mut self) {
         let session = self.session.take().unwrap();
         std::thread::scope(|s| {
@@ -99,7 +99,7 @@ impl Drop for LaunchedSshBinary {
 }
 
 #[async_trait]
-pub trait LaunchedSshHost: Send + Sync {
+pub trait LaunchedSSHHost: Send + Sync {
     fn get_internal_ip(&self) -> String;
     fn get_external_ip(&self) -> Option<String>;
     fn get_cloud_provider(&self) -> String;
@@ -127,7 +127,7 @@ pub trait LaunchedSshHost: Send + Sync {
             ServerStrategy::Demux(demux) => {
                 let mut config_map = HashMap::new();
                 for (key, underlying) in demux {
-                    config_map.insert(*key, LaunchedSshHost::server_config(self, underlying));
+                    config_map.insert(*key, LaunchedSSHHost::server_config(self, underlying));
                 }
 
                 ServerBindConfig::Demux(config_map)
@@ -135,13 +135,13 @@ pub trait LaunchedSshHost: Send + Sync {
             ServerStrategy::Merge(merge) => {
                 let mut configs = vec![];
                 for underlying in merge {
-                    configs.push(LaunchedSshHost::server_config(self, underlying));
+                    configs.push(LaunchedSSHHost::server_config(self, underlying));
                 }
 
                 ServerBindConfig::Merge(configs)
             }
             ServerStrategy::Tagged(underlying, id) => ServerBindConfig::Tagged(
-                Box::new(LaunchedSshHost::server_config(self, underlying)),
+                Box::new(LaunchedSSHHost::server_config(self, underlying)),
                 *id,
             ),
             ServerStrategy::Null => ServerBindConfig::Null,
@@ -198,9 +198,9 @@ pub trait LaunchedSshHost: Send + Sync {
 }
 
 #[async_trait]
-impl<T: LaunchedSshHost> LaunchedHost for T {
+impl<T: LaunchedSSHHost> LaunchedHost for T {
     fn server_config(&self, bind_type: &ServerStrategy) -> ServerBindConfig {
-        LaunchedSshHost::server_config(self, bind_type)
+        LaunchedSSHHost::server_config(self, bind_type)
     }
 
     async fn copy_binary(&self, binary: &BuildOutput) -> Result<()> {
@@ -277,7 +277,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
         binary: &BuildOutput,
         args: &[String],
         perf: Option<PathBuf>,
-    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
+    ) -> Result<Box<dyn LaunchedBinary>> {
         let session = self.open_ssh_session().await?;
 
         let unique_name = &binary.unique_id;
@@ -310,7 +310,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
                     .exec(&format!("{binary_path_string}{args_string}"))
                     .await?;
                 if perf.is_some() {
-                    todo!("Perf profiling on remote machines is not supported");
+                    todo!("Profiling on remote machines is not (yet) supported");
                 }
 
                 anyhow::Ok(channel)
@@ -340,7 +340,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
                 eprintln!("[{id}] {s}")
             });
 
-        Ok(Arc::new(RwLock::new(LaunchedSshBinary {
+        Ok(Box::new(LaunchedSSHBinary {
             _resource_result: self.resource_result().clone(),
             session: Some(session),
             channel,
@@ -348,7 +348,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
             stdout_cli_receivers,
             stdout_receivers,
             stderr_receivers,
-        })))
+        }))
     }
 
     async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr> {
