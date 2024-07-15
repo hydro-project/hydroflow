@@ -7,7 +7,6 @@ use anyhow::Result;
 use async_channel::{Receiver, Sender};
 use async_trait::async_trait;
 use hydroflow_cli_integration::ServerBindConfig;
-use tokio::sync::RwLock;
 
 pub mod deployment;
 pub use deployment::Deployment;
@@ -103,7 +102,7 @@ pub trait LaunchedHost: Send + Sync {
         binary: &BuildOutput,
         args: &[String],
         perf: Option<PathBuf>,
-    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;
+    ) -> Result<Box<dyn LaunchedBinary>>;
 
     async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr>;
 }
