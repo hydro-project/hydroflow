@@ -57,7 +57,7 @@ mod tests {
 
         deployment.deploy().await.unwrap();
 
-        let mut second_process_stdout = second_process.stdout().await;
+        let second_process_stdout = second_process.stdout().await;
 
         deployment.start().await.unwrap();
 
