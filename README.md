@@ -46,7 +46,7 @@ cargo install cargo-generate
 
 Then run
 ```bash, ignore
-cargo generate gh:hydro-project/hydroflow-template
+cargo generate gh:hydro-project/hydroflow template/hydroflow
 ```
 and you will get a well-formed Hydroflow/Rust project to use as a starting point. It provides a simple Echo Server and Client, and advice
 for adapting it to other uses.

@@ -13,7 +13,7 @@ First, we need to write the Hydroflow application, which will intergrate with Hy
 cargo install --locked cargo-generate
 
 #shell-command-next-line
-cargo generate hydro-project/hydroflow-template
+cargo generate gh:hydro-project/hydroflow template/hydroflow
 ```
 
 We'll need to add an additional dependency for `hydroflow_cli_integration` to our `Cargo.toml`:
@@ -77,13 +77,13 @@ async fn main() {
     let input_recv = ports
         .port("input")
         // connect to the port with a single recipient
-        .connect::<ConnectedDirect>() 
+        .connect::<ConnectedDirect>()
         .await
         .into_source();
 
     let output_send = ports
         .port("output")
-        .connect::<ConnectedDirect>() 
+        .connect::<ConnectedDirect>()
         .await
         .into_sink();
 
