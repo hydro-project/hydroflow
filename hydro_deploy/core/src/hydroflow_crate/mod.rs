@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 use super::Host;
 use crate::ServiceBuilder;
 
-mod build;
+pub(crate) mod build;
 pub mod ports;
 
 pub mod service;

@@ -11,30 +11,23 @@ use hydroflow_cli_integration::{InitConfig, ServerPort};
 use serde::Serialize;
 use tokio::sync::RwLock;
 
-use super::build::{build_crate, BuildError, BuiltCrate};
+use super::build::{build_crate_memoized, BuildError, BuildOutput, BuildParams};
 use super::ports::{self, HydroflowPortConfig, HydroflowSink, SourcePath};
 use crate::progress::ProgressTracker;
 use crate::{
-    Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult,
-    ServerStrategy, Service,
+    Host, LaunchedBinary, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service,
 };
 
 pub struct HydroflowCrateService {
     id: usize,
-    src: PathBuf,
     pub(super) on: Arc<RwLock<dyn Host>>,
-    bin: Option<String>,
-    example: Option<String>,
-    profile: Option<String>,
+    build_params: BuildParams,
     perf: Option<PathBuf>,
-    features: Option<Vec<String>>,
     args: Option<Vec<String>>,
     display_id: Option<String>,
     external_ports: Vec<u16>,
 
     meta: Option<String>,
-
-    target_type: HostTargetType,
 
     /// Configuration for the ports this service will connect to as a client.
     pub(super) port_to_server: HashMap<String, ports::ServerConfig>,
@@ -42,7 +35,6 @@ pub struct HydroflowCrateService {
     /// Configuration for the ports that this service will listen on a port for.
     pub(super) port_to_bind: HashMap<String, ServerStrategy>,
 
-    built_binary: Arc<async_once_cell::OnceCell<Result<BuiltCrate, BuildError>>>,
     launched_host: Option<Arc<dyn LaunchedHost>>,
 
     /// A map of port names to config for how other services can connect to this one.
@@ -50,7 +42,7 @@ pub struct HydroflowCrateService {
     /// in `server_ports`.
     pub(super) server_defns: Arc<RwLock<HashMap<String, ServerPort>>>,
 
-    launched_binary: Option<Arc<RwLock<dyn LaunchedBinary>>>,
+    launched_binary: Option<Box<dyn LaunchedBinary>>,
     started: bool,
 }
 
@@ -71,23 +63,19 @@ impl HydroflowCrateService {
     ) -> Self {
         let target_type = on.try_read().unwrap().target_type();
 
+        let build_params = BuildParams::new(src, bin, example, profile, target_type, features);
+
         Self {
             id,
-            src,
-            bin,
             on,
-            example,
-            profile,
+            build_params,
             perf,
-            features,
             args,
             display_id,
-            target_type,
             external_ports,
             meta: None,
             port_to_server: HashMap::new(),
             port_to_bind: HashMap::new(),
-            built_binary: Arc::new(async_once_cell::OnceCell::new()),
             launched_host: None,
             server_defns: Arc::new(RwLock::new(HashMap::new())),
             launched_binary: None,
@@ -152,57 +140,20 @@ impl HydroflowCrateService {
     }
 
     pub async fn stdout(&self) -> Receiver<String> {
-        self.launched_binary
-            .as_ref()
-            .unwrap()
-            .read()
-            .await
-            .stdout()
-            .await
+        self.launched_binary.as_deref().unwrap().stdout().await
     }
 
     pub async fn stderr(&self) -> Receiver<String> {
-        self.launched_binary
-            .as_ref()
-            .unwrap()
-            .read()
-            .await
-            .stderr()
-            .await
+        self.launched_binary.as_deref().unwrap().stderr().await
     }
 
     pub async fn exit_code(&self) -> Option<i32> {
-        self.launched_binary
-            .as_ref()
-            .unwrap()
-            .read()
-            .await
-            .exit_code()
-            .await
+        self.launched_binary.as_deref().unwrap().exit_code().await
     }
 
-    fn build(&self) -> impl Future<Output = Result<BuiltCrate, BuildError>> {
-        let src_cloned = self.src.clone();
-        let bin_cloned = self.bin.clone();
-        let example_cloned = self.example.clone();
-        let features_cloned = self.features.clone();
-        let profile_cloned = self.profile.clone();
-        let target_type = self.target_type;
-        let built_binary_cloned = self.built_binary.clone();
-
-        async move {
-            built_binary_cloned
-                .get_or_init(build_crate(
-                    src_cloned,
-                    bin_cloned,
-                    example_cloned,
-                    profile_cloned,
-                    target_type,
-                    features_cloned,
-                ))
-                .await
-                .clone()
-        }
+    fn build(&self) -> impl Future<Output = Result<&'static BuildOutput, BuildError>> {
+        // Memoized, so no caching in `self` is needed.
+        build_crate_memoized(self.build_params.clone())
     }
 }
 
@@ -247,7 +198,7 @@ impl Service for HydroflowCrateService {
                 let mut host_write = self.on.write().await;
                 let launched = host_write.provision(resource_result).await;
 
-                launched.copy_binary(built.clone()).await?;
+                launched.copy_binary(built).await?;
 
                 self.launched_host = Some(launched);
                 Ok(())
@@ -278,7 +229,7 @@ impl Service for HydroflowCrateService {
                         self.display_id
                             .clone()
                             .unwrap_or_else(|| format!("service/{}", self.id)),
-                        built.clone(),
+                        built,
                         &args,
                         self.perf.clone(),
                     )
@@ -293,11 +244,9 @@ impl Service for HydroflowCrateService {
                     serde_json::to_string::<InitConfig>(&(bind_config, self.meta.clone())).unwrap();
 
                 // request stdout before sending config so we don't miss the "ready" response
-                let stdout_receiver = binary.write().await.cli_stdout().await;
+                let stdout_receiver = binary.cli_stdout().await;
 
                 binary
-                    .write()
-                    .await
                     .stdin()
                     .await
                     .send(format!("{formatted_bind_config}\n"))
@@ -337,18 +286,14 @@ impl Service for HydroflowCrateService {
 
         let stdout_receiver = self
             .launched_binary
-            .as_mut()
+            .as_deref_mut()
             .unwrap()
-            .write()
-            .await
             .cli_stdout()
             .await;
 
         self.launched_binary
-            .as_mut()
+            .as_deref_mut()
             .unwrap()
-            .write()
-            .await
             .stdin()
             .await
             .send(format!("start: {formatted_defns}\n"))
@@ -370,22 +315,14 @@ impl Service for HydroflowCrateService {
 
     async fn stop(&mut self) -> Result<()> {
         self.launched_binary
-            .as_mut()
+            .as_deref_mut()
             .unwrap()
-            .write()
-            .await
             .stdin()
             .await
             .send("stop\n".to_string())
             .await?;
 
-        self.launched_binary
-            .as_mut()
-            .unwrap()
-            .write()
-            .await
-            .wait()
-            .await;
+        self.launched_binary.as_deref_mut().unwrap().wait().await;
 
         Ok(())
     }

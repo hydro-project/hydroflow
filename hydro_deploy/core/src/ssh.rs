@@ -20,6 +20,7 @@ use tokio::sync::RwLock;
 use super::progress::ProgressTracker;
 use super::util::async_retry;
 use super::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
+use crate::hydroflow_crate::build::BuildOutput;
 use crate::util::prioritized_broadcast;
 
 struct LaunchedSSHBinary {
@@ -202,7 +203,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         LaunchedSSHHost::server_config(self, bind_type)
     }
 
-    async fn copy_binary(&self, binary: Arc<(String, Vec<u8>, PathBuf)>) -> Result<()> {
+    async fn copy_binary(&self, binary: &BuildOutput) -> Result<()> {
         let session = self.open_ssh_session().await?;
 
         let sftp = async_retry(
@@ -213,7 +214,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         .await?;
 
         // we may be deploying multiple binaries, so give each a unique name
-        let unique_name = &binary.0;
+        let unique_name = &binary.unique_id;
 
         let user = self.ssh_user();
         let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_name}"));
@@ -224,7 +225,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
             let sftp = &sftp;
 
             ProgressTracker::rich_leaf(
-                format!("uploading binary to /home/{user}/hydro-{unique_name}"),
+                format!("uploading binary to {}", binary_path.display()),
                 |set_progress, _| {
                     let binary = &binary;
                     let binary_path = &binary_path;
@@ -232,15 +233,17 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
                         let mut created_file = sftp.create(&temp_path).await?;
 
                         let mut index = 0;
-                        while index < binary.1.len() {
+                        while index < binary.bin_data.len() {
                             let written = created_file
                                 .write(
-                                    &binary.1
-                                        [index..std::cmp::min(index + 128 * 1024, binary.1.len())],
+                                    &binary.bin_data[index
+                                        ..std::cmp::min(index + 128 * 1024, binary.bin_data.len())],
                                 )
                                 .await?;
                             index += written;
-                            set_progress(((index as f64 / binary.1.len() as f64) * 100.0) as u64);
+                            set_progress(
+                                ((index as f64 / binary.bin_data.len() as f64) * 100.0) as u64,
+                            );
                         }
                         let mut orig_file_stat = sftp.stat(&temp_path).await?;
                         orig_file_stat.perm = Some(0o755); // allow the copied binary to be executed by anyone
@@ -271,19 +274,19 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
     async fn launch_binary(
         &self,
         id: String,
-        binary: Arc<(String, Vec<u8>, PathBuf)>,
+        binary: &BuildOutput,
         args: &[String],
         perf: Option<PathBuf>,
-    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
+    ) -> Result<Box<dyn LaunchedBinary>> {
         let session = self.open_ssh_session().await?;
 
-        let unique_name = &binary.0;
+        let unique_name = &binary.unique_id;
 
         let user = self.ssh_user();
         let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_name}"));
 
         let channel = ProgressTracker::leaf(
-            format!("launching binary /home/{user}/hydro-{unique_name}"),
+            format!("launching binary {}", binary_path.display()),
             async {
                 let mut channel =
                     async_retry(
@@ -307,7 +310,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
                     .exec(&format!("{binary_path_string}{args_string}"))
                     .await?;
                 if perf.is_some() {
-                    todo!("Perf profiling on remote machines is not supported");
+                    todo!("Profiling on remote machines is not (yet) supported");
                 }
 
                 anyhow::Ok(channel)
@@ -337,7 +340,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
                 eprintln!("[{id}] {s}")
             });
 
-        Ok(Arc::new(RwLock::new(LaunchedSSHBinary {
+        Ok(Box::new(LaunchedSSHBinary {
             _resource_result: self.resource_result().clone(),
             session: Some(session),
             channel,
@@ -345,7 +348,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
             stdout_cli_receivers,
             stdout_receivers,
             stderr_receivers,
-        })))
+        }))
     }
 
     async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr> {
