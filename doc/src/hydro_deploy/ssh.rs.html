@@ -480,7 +480,7 @@
 }
 
 <span class="attr">#[async_trait]
-</span><span class="kw">pub trait </span>LaunchedSSHHost: Send + Sync {
+</span><span class="kw">pub trait </span>LaunchedSshHost: Send + Sync {
     <span class="kw">fn </span>get_internal_ip(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String;
     <span class="kw">fn </span>get_external_ip(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;String&gt;;
     <span class="kw">fn </span>get_cloud_provider(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String;
@@ -508,7 +508,7 @@
             ServerStrategy::Demux(demux) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>config_map = HashMap::new();
                 <span class="kw">for </span>(key, underlying) <span class="kw">in </span>demux {
-                    config_map.insert(<span class="kw-2">*</span>key, LaunchedSSHHost::server_config(<span class="self">self</span>, underlying));
+                    config_map.insert(<span class="kw-2">*</span>key, LaunchedSshHost::server_config(<span class="self">self</span>, underlying));
                 }
 
                 ServerBindConfig::Demux(config_map)
@@ -516,13 +516,13 @@
             ServerStrategy::Merge(merge) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>configs = <span class="macro">vec!</span>[];
                 <span class="kw">for </span>underlying <span class="kw">in </span>merge {
-                    configs.push(LaunchedSSHHost::server_config(<span class="self">self</span>, underlying));
+                    configs.push(LaunchedSshHost::server_config(<span class="self">self</span>, underlying));
                 }
 
                 ServerBindConfig::Merge(configs)
             }
             ServerStrategy::Tagged(underlying, id) =&gt; ServerBindConfig::Tagged(
-                Box::new(LaunchedSSHHost::server_config(<span class="self">self</span>, underlying)),
+                Box::new(LaunchedSshHost::server_config(<span class="self">self</span>, underlying)),
                 <span class="kw-2">*</span>id,
             ),
             ServerStrategy::Null =&gt; ServerBindConfig::Null,
@@ -579,9 +579,9 @@
 }
 
 <span class="attr">#[async_trait]
-</span><span class="kw">impl</span>&lt;T: LaunchedSSHHost&gt; LaunchedHost <span class="kw">for </span>T {
+</span><span class="kw">impl</span>&lt;T: LaunchedSshHost&gt; LaunchedHost <span class="kw">for </span>T {
     <span class="kw">fn </span>server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>ServerStrategy) -&gt; ServerBindConfig {
-        LaunchedSSHHost::server_config(<span class="self">self</span>, bind_type)
+        LaunchedSshHost::server_config(<span class="self">self</span>, bind_type)
     }
 
     <span class="kw">async fn </span>copy_binary(<span class="kw-2">&amp;</span><span class="self">self</span>, binary: <span class="kw-2">&amp;</span>BuildOutput) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {

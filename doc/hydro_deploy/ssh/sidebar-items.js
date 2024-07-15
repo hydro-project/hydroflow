@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["LaunchedSSHHost"]};
+window.SIDEBAR_ITEMS = {"trait":["LaunchedSshHost"]};

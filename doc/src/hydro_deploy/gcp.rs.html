@@ -535,7 +535,7 @@
     ClientStrategy, Host, HostTargetType, LaunchedHost, ResourceBatch, ResourceResult,
     ServerStrategy,
 };
-<span class="kw">use </span><span class="kw">crate</span>::ssh::LaunchedSSHHost;
+<span class="kw">use </span><span class="kw">crate</span>::ssh::LaunchedSshHost;
 
 <span class="kw">pub struct </span>LaunchedComputeEngine {
     resource_result: Arc&lt;ResourceResult&gt;,
@@ -544,7 +544,7 @@
     <span class="kw">pub </span>external_ip: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
-<span class="kw">impl </span>LaunchedSSHHost <span class="kw">for </span>LaunchedComputeEngine {
+<span class="kw">impl </span>LaunchedSshHost <span class="kw">for </span>LaunchedComputeEngine {
     <span class="kw">fn </span>get_external_ip(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;String&gt; {
         <span class="self">self</span>.external_ip.clone()
     }
