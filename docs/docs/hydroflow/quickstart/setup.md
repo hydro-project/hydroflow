@@ -41,6 +41,7 @@ In this book we will be using the Hydroflow template generator, which we recomme
 as a starting point for your Hydroflow projects. For this purpose you
 will need to install the `cargo-generate` tool:
 ```bash
+#shell-command-next-line
 cargo install cargo-generate
 ```
 
@@ -53,16 +54,25 @@ We recommend using VS Code with the `rust-analyzer` extension (and NOT the
 The easiest way to get started with Hydroflow is to begin with a template project.
 Create a directory where you'd like to put that project, direct your terminal there and run:
 ```bash
+#shell-command-next-line
 cargo generate gh:hydro-project/hydroflow template/hydroflow
 ```
 You will be prompted to name your project. The `cargo generate` command will create a subdirectory
 with the relevant files and folders.
 
+`cd` into the generated folder, ensure the correct nightly version of rust is installed:
+```bash
+#shell-command-next-line
+cd <my-project>
+#shell-command-next-line
+rustup update
+```
+
 As part of generating the project, the `hydroflow` library will be downloaded as a dependency.
 You can then open the project in VS Code or IDE of your choice, or
 you can simply build the template project with `cargo build`.
 ```bash
-cd <project name>
+#shell-command-next-line
 cargo build
 ```
 This should return successfully.

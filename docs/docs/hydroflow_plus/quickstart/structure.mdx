@@ -23,6 +23,16 @@ cargo install cargo-generate
 cargo generate gh:hydro-project/hydroflow template/hydroflow_plus
 ```
 
+`cd` into the generated folder, ensure the correct nightly version of rust is installed, and test the generated project:
+```bash
+#shell-command-next-line
+cd <my-project>
+#shell-command-next-line
+rustup update
+#shell-command-next-line
+cargo test
+```
+
 :::
 
 

@@ -2,14 +2,19 @@
 This is a template for a Rust project that uses [Hydroflow+](http://github.com/hydro-project/hydroflow) for distributed services. To generate a project, run 
 
 ```bash
-$ cargo install cargo-generate
-$ cargo generate gh:hydro-project/hydroflow template/hydroflow_plus
+cargo install cargo-generate
+cargo generate gh:hydro-project/hydroflow template/hydroflow_plus
+cd <myproject>
 ```
 
-Once the command completes, you can cd into the project and test the template.
+After `cd`ing into the workspace, ensure the correct nightly version of rust is installed:
 ```bash
-$ cd <myproject>
-$ cargo test
+rustup update
+```
+
+Then test the project:
+```bash
+cargo test
 ```
 
 ## Project Structure

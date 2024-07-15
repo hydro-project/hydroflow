@@ -7,12 +7,16 @@ distributed services. It implements a simple echo server and client over UDP.
 cargo generate gh:hydro-project/hydroflow template/hydroflow
 ```
 
-You will be prompted to name your project. Once the command completes, you can `cd` into the project and build the 
-template.
+You will be prompted to name your project. Once the command completes, you can `cd` into the project.
 
+Ensure the correct nightly version of rust is installed:
 ```bash
-cd <myproject>
-cargo build
+rustup update
+```
+
+Then test the project:
+```bash
+cargo test
 ```
 
 ## Running the Template

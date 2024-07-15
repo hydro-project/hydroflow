@@ -32,7 +32,15 @@ cargo generate gh:hydro-project/hydroflow template/hydroflow
 ✨   Done! New project created <dir>/simple
 ```
 
-Change directory into the resulting `simple` folder or open it in your IDE. Then edit the `src/main.rs` file, replacing
+After `cd`ing into the generated folder, ensure the correct nightly version of rust is installed, and test the generated project:
+```bash
+#shell-command-next-line
+rustup update
+#shell-command-next-line
+cargo test
+```
+
+Then edit the `src/main.rs` file, replacing
 *all* of its contents with the following code:
 
 <CodeBlock language="rust" showLineNumbers>{exampleCode}</CodeBlock>

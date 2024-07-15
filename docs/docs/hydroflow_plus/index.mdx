@@ -17,9 +17,12 @@ cargo install cargo-generate
 cargo generate hydro-project/hydroflow template/hydroflow_plus
 ```
 
-Then, you can test the example dataflow:
-
+`cd` into the generated folder, ensure the correct nightly version of rust is installed, and test the generated project:
 ```bash
+#shell-command-next-line
+cd <my-project>
+#shell-command-next-line
+rustup update
 #shell-command-next-line
 cargo test
 ```

@@ -16,6 +16,16 @@ cargo install --locked cargo-generate
 cargo generate gh:hydro-project/hydroflow template/hydroflow
 ```
 
+`cd` into the generated folder, ensure the correct nightly version of rust is installed, and test the generated project:
+```bash
+#shell-command-next-line
+cd <my-project>
+#shell-command-next-line
+rustup update
+#shell-command-next-line
+cargo test
+```
+
 We'll need to add an additional dependency for `hydroflow_cli_integration` to our `Cargo.toml`:
 
 ```toml
