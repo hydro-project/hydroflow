@@ -18,7 +18,7 @@ pub mod ght_lattice;
 /// Tests for GHT
 pub mod ght_test;
 /// COLT from the Wang/Willsey/Suciu Freejoin work
-// pub mod lazy_trie;
+pub mod lazy_trie;
 pub mod map_union;
 pub mod map_union_with_tombstones;
 mod ord;

@@ -189,7 +189,7 @@ where
 #[sealed]
 pub trait GeneralizedHashTrieNode: Default // + for<'a> HtPrefixIter<var_type!(&'a Self::Head)>
 {
-    /// Schema variadic: the type of rows we're storing
+    /// Schema variadic: the type of rows we're storing in this subtrie
     type Schema: VariadicExt + AsRefVariadicPartialEq;
     /// The type of the first column in the Schema
     type Head: Eq + Hash;
@@ -435,8 +435,7 @@ impl<'k, Head, Node, PrefixRest> HtPrefixIter<var_type!(&'k Head, ...PrefixRest)
 where
     Head: Eq + Hash,
     Node: GeneralizedHashTrieNode + HtPrefixIter<PrefixRest>,
-    <Node as HtPrefixIter<PrefixRest>>::Suffix: 'static, // meh
-    PrefixRest: 'static + Copy,                          // meh
+    PrefixRest: Copy,
 {
     type Suffix = <Node as HtPrefixIter<PrefixRest>>::Suffix;
     fn prefix_iter<'a>(
@@ -487,6 +486,21 @@ where
         self.recursive_iter()
     }
 }
+
+// trait ContainsKey {
+//     fn contains_key(&self) -> bool;
+// }
+
+// impl<Head, Node> ContainsKey for GhtInner<Head, Node>
+// where
+//     Head: 'static + Hash + Eq,
+//     Node: 'static + GeneralizedHashTrieNode,
+// {
+//     /// Returns `true` if the key is found in the inner nodes of the trie, `false` otherwise.
+//     fn contains_key(&self, key: <Self::KeyType as VariadicExt>::AsRefVar<'_>) -> bool {
+//         true
+//     }
+// }
 
 /// Macro to construct a Ght node type from the constituent key and
 /// dependent column types. You pass it:

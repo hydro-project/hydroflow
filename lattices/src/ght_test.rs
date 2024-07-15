@@ -1,15 +1,19 @@
 #[cfg(test)]
 mod test {
     use std::collections::HashSet;
+    use std::hash::Hash;
     use std::io::{self, Write};
 
-    use variadics::{var_expr, var_type, VariadicExt};
+    use variadics::{var_args, var_expr, var_type, AsRefVariadicPartialEq, Split, VariadicExt};
 
-    use crate::ght::{GeneralizedHashTrie, GeneralizedHashTrieNode};
+    use crate::ght::{
+        GeneralizedHashTrie, GeneralizedHashTrieNode, GhtInner, GhtLeaf, HtPrefixIter, GHT,
+    };
     use crate::ght_lattice::{
         DeepJoinLatticeBimorphism, GhtBimorphism, GhtCartesianProductBimorphism,
         GhtNodeKeyedBimorphism,
     };
+    use crate::lazy_trie::ColumnLazyTrieNode;
     use crate::{GhtNodeType, GhtType, LatticeBimorphism, Merge, NaiveLatticeOrd};
 
     #[test]
@@ -861,5 +865,463 @@ mod test {
                 continue;
             }
         }
+    }
+
+    #[test]
+    fn test_force() {
+        type LeafType = GhtNodeType!(() => u16, u32, u64);
+
+        let mut colt = GHT::<var_type!(u16, u32), var_type!(u64), LeafType>::default();
+
+        let n = LeafType::new_from(vec![
+            var_expr!(1, 1, 1),
+            var_expr!(1, 2, 2),
+            var_expr!(1, 3, 3),
+            var_expr!(2, 4, 4),
+        ]);
+        let out = n.force();
+        println!("resulting trie is {:?}", out);
+
+        for t in [
+            var_expr!(1, 1, 1),
+            var_expr!(1, 2, 2),
+            var_expr!(1, 3, 3),
+            var_expr!(2, 4, 4),
+        ] {
+            colt.insert(t);
+        }
+        // This causes a type error: the underlying trie type changes with force!
+        // colt.trie = colt.get_trie().force();
+        println!("resulting COLT is {:?}", colt);
+    }
+
+    // fn resolve_get<Head, Rest, Node>(n: Node, k: Head) -> GhtInner<_, _>
+    // where
+    //     Head: std::hash::Hash + Eq + VariadicExt,
+    //     Rest: 'static + VariadicExt + std::hash::Hash + Eq + AsRefVariadicPartialEq,
+    //     Node: ColumnLazyTrieNode,
+    // {
+    //     let var_expr!(head, ...rest) = k;
+    //     let n = n.force();
+    //     if rest == var_expr!() {
+    //         n.get(k)
+    //     } else {
+    //         let child = *n.get(head).unwrap();
+    //         resolve_get(child, rest);
+    //     }
+    // }
+    /// Macro to repeatedly call force() on a prefix tuple until the tree height
+    /// matches the prefix.
+    /// Takes as input either (<leaf>, (k1, (k2, (..., (kn, ())))))
+    /// or (<leaf>, var_expr!(k1, k2, ..., kn))
+    /// Returns the final (leaf, root) pair.
+    #[macro_export]
+    macro_rules! force_key {
+    // Recursive case.
+     ($node: expr ; ($a:tt, ()) ) => (
+        { let n = $node.force(); (n.get(&$a).unwrap().clone(), n) }
+    );
+    // Recursive case.
+    ($node: expr ; ($a:tt, $( $b:tt ),*) ) => (
+        { let n = $node.force(); (force_key!((n.get(&$a).unwrap().clone()) ;  $( $b ),*  ), n) }
+    );
+    // Recursive case.
+    ($node: expr, var_expr!($a:tt) ) => (
+        { let n = $node.force(); (n.get(&$a).unwrap().clone(), n)}
+    );
+    // Recursive case.
+    ($node: expr , var_expr!($a:tt, $( $b:tt ),*) ) => (
+        { let n = $node.force(); (force_key!((n.get(&$a).unwrap().clone()),  var_expr!($( $b ),*)), n) }
+    );
+}
+
+    #[test]
+    fn test_force_key() {
+        type LeafType = GhtNodeType!(() => u16, u32, u64);
+
+        // type GhtType = GHT<var_type!(u16, u32), var_type!(u64), LeafType>;
+        // let mut colt = GhtType::default();
+
+        let n = LeafType::new_from(vec![
+            var_expr!(1, 1, 1),
+            var_expr!(1, 2, 2),
+            var_expr!(1, 3, 3),
+            var_expr!(2, 4, 4),
+        ]);
+
+        // this doesn't work need to force first!
+        // let tup = n.get(&2);
+        // let mut root = n.force();
+        // let leaf = root.get(&2).unwrap();
+        // let middle = leaf.clone().force(); // XXX CLONE IS BAD
+        // let leaf = middle.get(&4);
+
+        // The alternative is to create two GhTs, one of depth 2 (for the get), one of depth 1 (side-effect on remaining).
+        let leaf = n;
+        // First get(2) -- gives us a new root
+        let mut root = leaf.force();
+        let first_leaf = root.get(&2);
+
+        // Now to get(4) from first_leaf we need to detach it from its parent
+        let my_leaf = root.children.remove(&2).unwrap();
+        let middle = my_leaf.force();
+
+        // now what is the state of things? we have middle and root.
+        // println!("middle is {:?}, root is {:?}", middle, root);
+        // to avoid losing data we construct a new root above middle to make a valid forest
+        let mut new_root = GhtInner::default();
+        new_root.children.insert(2, middle);
+        let result = new_root
+            .prefix_iter(var_expr!(2, 4).as_ref_var())
+            .next()
+            .unwrap();
+        println!(
+            "result: {:?}\nnew_root: {:?}\nroot: {:?}",
+            result, new_root, root
+        );
+    }
+
+    // fn force_remove<Head, Rest, Child>(
+    //     mut parent: GhtInner<Head, Child>,
+    //     key: Head,
+    // ) -> (Child::Force, Child)
+    // where
+    //     Head: 'static + Hash + Eq,
+    //     Rest: 'static + Hash + Eq + Clone + AsRefVariadicPartialEq,
+    //     Child: ColumnLazyTrieNode,
+    // {
+    //     let leaf = parent.children.remove(&key).unwrap();
+    //     let new_parent = leaf.force();
+    //     (new_parent, leaf)
+    // }
+
+    struct GhtForest<Head, Tail>
+    where
+        Head: Eq + Hash + std::fmt::Debug,
+        Tail: 'static + VariadicExt + Eq + Hash + AsRefVariadicPartialEq,
+    {
+        leaf: Option<GhtLeaf<var_type!(Head, ...Tail)>>,
+        forced: Option<GhtInner<Head, GhtLeaf<Tail>>>,
+    }
+
+    impl<Head, Tail> Default for GhtForest<Head, Tail>
+    where
+        Head: Eq + Hash + std::fmt::Debug,
+        Tail: 'static + VariadicExt + Eq + Hash + AsRefVariadicPartialEq,
+    {
+        fn default() -> Self {
+            GhtForest {
+                leaf: None,
+                forced: None,
+            }
+        }
+    }
+
+    #[macro_export]
+    macro_rules! ght_forest {
+        // Base case.
+        () => ();
+        // (var_expr!($a:tt) ) => (
+        //     var_expr!(GhtForest::<$a, var_expr!()>::default())
+        // );
+        // Recursive case.
+        (var_expr!($a:tt, $( $b:tt ),*) ) => (
+            var_expr!(GhtForest::<$a, $( $b ),* >::default(), ght_forest!(var_expr!($( $b ),*)),)
+        );
+        // Initial case.
+        ($node: expr , var_expr!($a:tt, $( $b:tt ),*) ) => (
+            // { let n = $node.force(); (force_key!((n.get(&$a).unwrap().clone()),  var_expr!($( $b ),*)), n) }
+            (GhtForest{ leaf: $node, forced: None}, ght_forest!(var_expr!($( $b ),* )),)
+        );
+    }
+
+    trait WalkTuple {
+        fn walk_tuple(&mut self);
+    }
+    impl WalkTuple for () {
+        fn walk_tuple(&mut self) {
+            println!("()]");
+        }
+    }
+    impl<Head, Tail, Rest> WalkTuple for var_type!(GhtForest<Head, Tail>, ...Rest)
+    where
+        Head: 'static + Eq + Hash + std::fmt::Debug + Default,
+        Tail: 'static + VariadicExt + Eq + Hash + AsRefVariadicPartialEq + std::fmt::Debug,
+        Rest: VariadicExt + WalkTuple,
+    {
+        fn walk_tuple(&mut self) {
+            let var_args!(head, ...rest) = self;
+            print!("(forcing {:?}, ", head.leaf);
+            if head.leaf.is_none() && head.forced.is_some() {
+                // did this one already, recurse
+                rest.walk_tuple();
+            } else if head.leaf.is_some() && head.forced.is_none() {
+                // need to do this one!
+                head.forced = Some(head.leaf.as_mut().unwrap().force_drain());
+                head.leaf = None;
+                rest.walk_tuple();
+            }
+        }
+    }
+
+    #[test]
+    fn test_walk() {
+        let tup = var_expr!(1, 2, 3, 4, 5);
+        type Ght1 = GhtNodeType!(i32 => i32, i32, i32, i32);
+        type Ght2 = GhtNodeType!(i32, i32 =>  i32, i32, i32);
+        type Ght3 = GhtNodeType!(i32, i32, i32 => i32, i32);
+        type Ght4 = GhtNodeType!(i32, i32, i32, i32 => i32);
+        type Ght5 = GhtNodeType!(i32, i32, i32, i32, i32 => ());
+        let ghts = (
+            Ght1::default(),
+            Ght2::default(),
+            Ght3::default(),
+            Ght4::default(),
+            Ght5::default(),
+        );
+
+        // tup.walk_tuple();
+    }
+
+    #[macro_export]
+    macro_rules! GhtForestType {
+        ($a:tt, $( $b:tt ),* => ()) => {
+            ()
+        };
+        ($a:tt => $c:tt, $( $d:tt ),* ) => {
+            (GhtNodeType!($a => $c, $( $d ),*), GhtForestType!($a, $c => $( $d ),*))
+        };
+        ($a:tt, $( $b:tt ),* => $c:tt) => {
+            (GhtNodeType!($a, $( $b ),* => $c), ())
+        };
+
+        ($a:tt, $( $b:tt ),* => $c:tt, $( $d:tt ),* ) => {
+            (GhtNodeType!($a, $( $b ),* => $c, $( $d ),*), (GhtForestType!($a, $( $b ),* , $c => $( $d ),*)))
+        };
+
+        ($a:tt, $( $b:tt ),* ) => {
+            GhtForestType!($a => $( $b ),*)
+        };
+    }
+
+    #[test]
+    fn test_ght_forest() {
+        // [[𝑅(𝑥),𝑆(𝑥),𝑇(𝑥),T'(x)], [𝑅(𝑎)], [𝑆(𝑏)], [T'(c), 𝑇(𝑐)]]
+        //
+        // R(a, x, y), S(a, x, c), T(a, x, c)
+        // [[R(a, x),S(a, x),T(a, x)], [T(a, c), S(a, c)]]
+        type LeafType = GhtNodeType!(() => u16, u32, u64);
+
+        let table_r = LeafType::new_from(vec![
+            var_expr!(0, 1, 1),
+            var_expr!(0, 1, 2),
+            var_expr!(0, 1, 3),
+            var_expr!(1, 2, 1),
+            var_expr!(1, 3, 1),
+        ]);
+        let table_s = LeafType::new_from(vec![
+            var_expr!(0, 1, 1),
+            var_expr!(0, 1, 2),
+            var_expr!(0, 1, 3),
+            var_expr!(0, 2, 1),
+            var_expr!(0, 2, 2),
+            var_expr!(0, 2, 3),
+            var_expr!(1, 2, 1),
+            var_expr!(1, 2, 2),
+            var_expr!(1, 2, 3),
+            var_expr!(1, 3, 1),
+            var_expr!(1, 3, 2),
+            var_expr!(1, 3, 3),
+        ]);
+        let table_t = LeafType::new_from(vec![
+            var_expr!(0, 1, 1),
+            var_expr!(0, 1, 2),
+            var_expr!(0, 1, 3),
+            var_expr!(1, 3, 1),
+        ]);
+        let mut results: usize = 0;
+
+        // set up S forest
+        type SForest = GhtForestType!(u16, u32, u64);
+        let mut s_forest = SForest::default();
+        // car(forest) is forced once
+        s_forest.0 = table_s.force();
+
+        // set up T forest
+        type TForest = GhtForestType!(u16, u32, u64);
+        let mut t_forest = TForest::default();
+        // car(forest) is forced once
+        t_forest.0 = table_t.force();
+
+        for r in table_r.elements {
+            type TupType = var_type!(u16, u32, u64);
+            type KeyType = var_type!(u16, u32);
+
+            let key_len = KeyType::LEN;
+            println!("r tup is {:?}", r);
+            // walk forest and look for (r.0, r.1, *)
+            // first check s_forest.0
+            if contains_key(&mut s_forest, r, key_len) {
+                if contains_key(&mut t_forest, r, key_len) {
+                    println!("matched {:?}", r);
+                }
+            }
+        }
+    }
+
+    // pseudocode:
+    // let mut must_force = false;
+    // let leaf = s_forest.0.find_leaf(key, &must_force);
+    // if must_force {
+    //    // force that leaf and attach into s_forest.1.0
+    //    return contains_key(s_forest.1, r, key_len);
+    // } else {
+    //    return leaf;
+    // }
+    fn contains_key(
+        s_forest: &mut (
+            GhtInner<u16, GhtLeaf<(u32, (u64, ()))>>,
+            (GhtInner<u16, GhtInner<u32, GhtLeaf<(u64, ())>>>, ()),
+        ),
+        r: (u16, (u32, (u64, ()))),
+        key_len: usize,
+    ) -> bool {
+        // recursive case: first trie height is shorter than search key
+        assert!(s_forest.0.height().unwrap() < key_len);
+        if let Some(found0) = s_forest.0.children.remove(&r.0) {
+            // found r.0! give it a parent and reattach it in s_forest.1.0
+            let forced = found0.force();
+            let mut forced_parent =
+                GhtInner::<u16, GhtInner<u32, GhtLeaf<var_type!(u64)>>>::default();
+            forced_parent.children.insert(r.0, forced);
+            s_forest.1 .0.merge(forced_parent);
+            // *println!("the forest is now: {:?}", s_forest);
+            // we're at our last search key so no need to force any more
+            let search_key = var_expr!(&r.0, &r.1 .0);
+            if s_forest.1 .0.prefix_iter(search_key).next().is_some() {
+                // found a match!
+                return true;
+            }
+            // for m in s_forest.1 .0.prefix_iter(search_key) {
+            //     println!("found {:?}", var_expr!(r.0, r.1 .0, m.0));
+            //     results += 1;
+            // }
+        } else {
+            // check s_forest.1. It's fully-formed so just prefix_iter:
+            let search_key = var_expr!(&r.0, &r.1 .0);
+            if s_forest.1 .0.prefix_iter(search_key).next().is_some() {
+                return true;
+            }
+        }
+        false
+    }
+
+    #[test]
+    fn test_reuse_of_colt() {
+        // [[𝑅(𝑥),𝑆(𝑥),𝑇(𝑥),T'(x)], [𝑅(𝑎)], [𝑆(𝑏)], [T'(c), 𝑇(𝑐)]]
+        //
+        // R(a, x, y), S(a, x, c), T(a, x, c)
+        // [[R(x),S(x),T(x)], [T(c), S(c)]]
+        type LeafType = GhtNodeType!(() => u16, u32, u64);
+
+        let table_r = LeafType::new_from(vec![
+            var_expr!(0, 1, 1),
+            var_expr!(0, 1, 2),
+            var_expr!(0, 1, 3),
+            var_expr!(1, 3, 1),
+        ]);
+        let table_s = LeafType::new_from(vec![
+            var_expr!(0, 1, 1),
+            var_expr!(0, 1, 2),
+            var_expr!(0, 1, 3),
+            var_expr!(0, 2, 1),
+            var_expr!(0, 2, 2),
+            var_expr!(0, 2, 3),
+            var_expr!(1, 3, 1),
+            var_expr!(1, 3, 2),
+            var_expr!(1, 3, 3),
+        ]);
+        let table_t = LeafType::new_from(vec![
+            var_expr!(0, 1, 1),
+            var_expr!(0, 1, 2),
+            var_expr!(0, 1, 3),
+            var_expr!(1, 3, 1),
+        ]);
+
+        // first get requires removal
+        let mut rs = table_r.iter();
+        let r = rs.next();
+        // ght_forest!(table_s, var_type!(u16, u32, u64));
+
+        // let forest1 = GhtForest {
+        //     leaf: Some(table_s),
+        //     forced: None,
+        // };
+        // let forest2: GhtForest<u32, var_type!(u64)> = GhtForest {
+        //     leaf: None,
+        //     forced: None,
+        // };
+        // let mut forest = var_expr!(forest1, forest2);
+        // forest.walk_tuple();
+
+        // if let Some(r_tup) = r {
+        //     println!("First r tup is {:?}", r_tup);
+
+        //     // now we walk the search key and the GHT forest in parallel
+        //     r_tup.walk_tuple();
+
+        //     let (forced_once, detached_leaf) = force_remove(table_s, r_tup.0);
+        //     s_ghts.0 = forced_once;
+
+        //     if let Some(leaf_s) = detached_leaf {
+        //         // recurse: force the detached leaf
+        //         let (middle_unmatched, matches) = force_remove(leaf_s, r_tup.1 .0);
+
+        //         // add superstructure to middle_unmatched: this is our new Ght
+        //         let mut forced_twice =
+        //             GhtInner::<u16, GhtInner<u32, GhtLeaf<var_type!(u64)>>>::default();
+        //         forced_twice.children.insert(r_tup.0, middle_unmatched);
+
+        //         // now impose superstructure on matches and merge into forced_twice
+        //         if let Some(leaf) = matches {
+        //             let mut middle_matched = GhtInner::<u32, GhtLeaf<var_expr!(u64)>>::default();
+        //             middle_matched.children.insert(r_tup.1 .0, leaf);
+        //             let mut parent =
+        //                 GhtInner::<u16, GhtInner<u32, GhtLeaf<var_expr!(u64)>>>::default();
+        //             parent.children.insert(r_tup.0, middle_matched);
+        //             forced_twice.merge(parent);
+        //         }
+        //         s_ghts.1 = forced_twice;
+        //     }
+
+        //     println!("ght1: {:?}\nght2: {:?}", s_ghts.0, s_ghts.1);
+        // }
+
+        // for r in rs {
+        //     // always checked forced_twice first
+        //     println!("next r tup is {:?}", r);
+        //     if let Some(middle_s) = s_ghts.1.children.get_mut(&r.0) {
+        //         if let Some(leaf_s) = middle_s.get(&r.1 .0) {
+        //             println!("found another matching leaf: {:?}", leaf_s);
+        //         }
+        //     }
+        // }
+
+        // at this point we have two GHTs at different force levels, and some removed leaves
+        // println!("forced_once: {:?}\n forced_twice: {:?}", s_ghts.0, s_ghts.1);
+
+        // for r in table_r.iter() {
+        // if let Some(leaf_s) = root_s.children.remove(&r.0) {
+        //     let medium_s = leaf_s.force();
+        //     let ss = medium_s.get(&r.1 .0);
+
+        //     let root_t = table_t.force();
+        //     if let Some(leaf_t) = root_t.children.remove(&r.0) {
+        //         let medium_t = leaf_t.force();
+        //         let ts = medium_t.get(&r.1 .0);
+        //     }
+        // }
+        // let table_s = result_s.unwrap();
+        // }
     }
 }
