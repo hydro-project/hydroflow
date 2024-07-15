@@ -42,7 +42,7 @@ pub struct HydroflowCrateService {
     /// in `server_ports`.
     pub(super) server_defns: Arc<RwLock<HashMap<String, ServerPort>>>,
 
-    launched_binary: Option<Arc<RwLock<dyn LaunchedBinary>>>,
+    launched_binary: Option<Box<dyn LaunchedBinary>>,
     started: bool,
 }
 
@@ -140,33 +140,15 @@ impl HydroflowCrateService {
     }
 
     pub async fn stdout(&self) -> Receiver<String> {
-        self.launched_binary
-            .as_ref()
-            .unwrap()
-            .read()
-            .await
-            .stdout()
-            .await
+        self.launched_binary.as_deref().unwrap().stdout().await
     }
 
     pub async fn stderr(&self) -> Receiver<String> {
-        self.launched_binary
-            .as_ref()
-            .unwrap()
-            .read()
-            .await
-            .stderr()
-            .await
+        self.launched_binary.as_deref().unwrap().stderr().await
     }
 
     pub async fn exit_code(&self) -> Option<i32> {
-        self.launched_binary
-            .as_ref()
-            .unwrap()
-            .read()
-            .await
-            .exit_code()
-            .await
+        self.launched_binary.as_deref().unwrap().exit_code().await
     }
 
     fn build(&self) -> impl Future<Output = Result<&'static BuildOutput, BuildError>> {
@@ -262,11 +244,9 @@ impl Service for HydroflowCrateService {
                     serde_json::to_string::<InitConfig>(&(bind_config, self.meta.clone())).unwrap();
 
                 // request stdout before sending config so we don't miss the "ready" response
-                let stdout_receiver = binary.write().await.cli_stdout().await;
+                let stdout_receiver = binary.cli_stdout().await;
 
                 binary
-                    .write()
-                    .await
                     .stdin()
                     .await
                     .send(format!("{formatted_bind_config}\n"))
@@ -306,18 +286,14 @@ impl Service for HydroflowCrateService {
 
         let stdout_receiver = self
             .launched_binary
-            .as_mut()
+            .as_deref_mut()
             .unwrap()
-            .write()
-            .await
             .cli_stdout()
             .await;
 
         self.launched_binary
-            .as_mut()
+            .as_deref_mut()
             .unwrap()
-            .write()
-            .await
             .stdin()
             .await
             .send(format!("start: {formatted_defns}\n"))
@@ -339,22 +315,14 @@ impl Service for HydroflowCrateService {
 
     async fn stop(&mut self) -> Result<()> {
         self.launched_binary
-            .as_mut()
+            .as_deref_mut()
             .unwrap()
-            .write()
-            .await
             .stdin()
             .await
             .send("stop\n".to_string())
             .await?;
 
-        self.launched_binary
-            .as_mut()
-            .unwrap()
-            .write()
-            .await
-            .wait()
-            .await;
+        self.launched_binary.as_deref_mut().unwrap().wait().await;
 
         Ok(())
     }
