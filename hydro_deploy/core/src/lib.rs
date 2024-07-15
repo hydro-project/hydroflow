@@ -19,7 +19,7 @@ pub use localhost::LocalhostHost;
 pub mod ssh;
 
 pub mod gcp;
-pub use gcp::GCPComputeEngineHost;
+pub use gcp::GcpComputeEngineHost;
 
 pub mod azure;
 pub use azure::AzureHost;
