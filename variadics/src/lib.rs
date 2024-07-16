@@ -127,7 +127,11 @@ pub trait VariadicExt: Variadic {
     fn reverse(self) -> Self::Reverse;
 
     /// This as a variadic of references.
-    type AsRefVar<'a>: Copy + UnrefVariadic<Unref = Self>
+    type AsRefVar<'a>: RefVariadic<
+        UnRefVar = Self,
+        RefVar = Self::AsRefVar<'a>,
+        MutVar = Self::AsMutVar<'a>,
+    >
     where
         Self: 'a;
     /// Convert a reference to this variadic into a variadic of references.
@@ -388,81 +392,135 @@ impl RefVariadic for () {}
 ///
 /// This is a sealed trait.
 #[sealed]
-pub trait UnrefVariadic: Variadic {
-    /// The un-referenced variadic. Each item will have one layer of references removed.
-    type Unref: VariadicExt;
+pub trait MutVariadic: EitherRefVariadic<MutVar = Self> {}
+#[sealed]
+impl<Item, Rest> MutVariadic for (&mut Item, Rest) where Rest: MutVariadic {}
+#[sealed]
+impl MutVariadic for () {}
+
+/// Copy a variadic of references [`EitherRefVariadic`] into a variadic of owned values [`EitherRefVariadic::UnRefVar`].
+///
+/// ```rust
+/// # use variadics::*;
+/// let ref_var = var_expr!(&1, &"hello", &false);
+/// let copy_var = ref_var.copy_var();
+/// assert_eq!(var_expr!(1, "hello", false), copy_var);
+/// ```
+#[sealed]
+pub trait CopyRefVariadic: EitherRefVariadic {
+    /// Copy self per-value.
+    fn copy_var(&self) -> Self::UnRefVar;
 }
 #[sealed]
-impl<Item, Rest> UnrefVariadic for (&Item, Rest)
+impl<Item, Rest> CopyRefVariadic for (&Item, Rest)
 where
-    Rest: UnrefVariadic,
+    Item: Copy,
+    Rest: CopyRefVariadic,
 {
-    type Unref = (Item, Rest::Unref);
+    fn copy_var(&self) -> Self::UnRefVar {
+        let var_args!(&item, ...rest) = self;
+        var_expr!(item, ...rest.copy_var())
+    }
 }
 #[sealed]
-impl<Item, Rest> UnrefVariadic for (&mut Item, Rest)
+impl<Item, Rest> CopyRefVariadic for (&mut Item, Rest)
 where
-    Rest: UnrefVariadic,
+    Item: Copy,
+    Rest: CopyRefVariadic,
 {
-    type Unref = (Item, Rest::Unref);
+    fn copy_var(&self) -> Self::UnRefVar {
+        let var_args!(&mut item, ...rest) = self;
+        var_expr!(item, ...rest.copy_var())
+    }
 }
 #[sealed]
-impl UnrefVariadic for () {
-    type Unref = ();
+impl CopyRefVariadic for () {
+    fn copy_var(&self) -> Self::UnRefVar {}
 }
 
+/// Clone a variadic of references [`EitherRefVariadic`] into a variadic of owned values [`EitherRefVariadic::UnRefVar`].
+///
+/// ```rust
+/// # use variadics::*;
+/// let ref_var = var_expr!(&1, &format!("hello {}", "world"), &vec![1, 2, 3]);
+/// let clone_var = ref_var.clone_var();
+/// assert_eq!(
+///     var_expr!(1, "hello world".to_owned(), vec![1, 2, 3]),
+///     clone_var
+/// );
+/// ```
 #[sealed]
-pub trait UnrefCloneVariadic: UnrefVariadic {
-    fn clone_var(&self) -> Self::Unref;
+pub trait CloneRefVariadic: EitherRefVariadic {
+    /// Clone self per-value.
+    fn clone_var(&self) -> Self::UnRefVar;
 }
 #[sealed]
-impl<Item, Rest> UnrefCloneVariadic for (&Item, Rest)
+impl<Item, Rest> CloneRefVariadic for (&Item, Rest)
 where
     Item: Clone,
-    Rest: UnrefCloneVariadic,
+    Rest: CloneRefVariadic,
 {
-    fn clone_var(&self) -> Self::Unref {
+    fn clone_var(&self) -> Self::UnRefVar {
         let var_args!(item, ...rest) = self;
         var_expr!((*item).clone(), ...rest.clone_var())
     }
 }
 #[sealed]
-impl<Item, Rest> UnrefCloneVariadic for (&mut Item, Rest)
+impl<Item, Rest> CloneRefVariadic for (&mut Item, Rest)
 where
     Item: Clone,
-    Rest: UnrefCloneVariadic,
+    Rest: CloneRefVariadic,
 {
-    fn clone_var(&self) -> Self::Unref {
+    fn clone_var(&self) -> Self::UnRefVar {
         let var_args!(item, ...rest) = self;
         var_expr!((*item).clone(), ...rest.clone_var())
     }
 }
 #[sealed]
-impl UnrefCloneVariadic for () {
-    fn clone_var(&self) -> Self::Unref {}
+impl CloneRefVariadic for () {
+    fn clone_var(&self) -> Self::UnRefVar {}
 }
 
-/// `PartialEq` between a referenced variadic and a variadic of references, of the same types.
+/// A variadic where all item implement `PartialEq`.
 #[sealed]
-pub trait AsRefVariadicPartialEq: VariadicExt {
+pub trait PartialEqVariadic: VariadicExt {
     /// `PartialEq` between a referenced variadic and a variadic of references, of the same types.
-    fn as_ref_var_eq(&self, other: Self::AsRefVar<'_>) -> bool;
+    fn eq(&self, other: &Self) -> bool;
+
+    /// `PartialEq` for the `AsRefVar` version op `Self`.
+    fn eq_ref<'a>(this: Self::AsRefVar<'a>, other: Self::AsRefVar<'a>) -> bool;
 }
 #[sealed]
-impl<Item, Rest> AsRefVariadicPartialEq for (Item, Rest)
+impl<Item, Rest> PartialEqVariadic for (Item, Rest)
 where
     Item: PartialEq,
-    Rest: AsRefVariadicPartialEq,
+    Rest: PartialEqVariadic,
 {
-    fn as_ref_var_eq(&self, other: Self::AsRefVar<'_>) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         let var_args!(item_self, ...rest_self) = self;
         let var_args!(item_other, ...rest_other) = other;
-        item_self == item_other && rest_self.as_ref_var_eq(rest_other)
+        item_self == item_other && rest_self.eq(rest_other)
+    }
+
+    fn eq_ref<'a>(
+        this: <Self as VariadicExt>::AsRefVar<'a>,
+        other: <Self as VariadicExt>::AsRefVar<'a>,
+    ) -> bool {
+        let var_args!(item_self, ...rest_self) = this;
+        let var_args!(item_other, ...rest_other) = other;
+        item_self == item_other && Rest::eq_ref(rest_self, rest_other)
     }
 }
 #[sealed]
-impl AsRefVariadicPartialEq for () {
-    fn as_ref_var_eq(&self, _other: Self::AsRefVar<'_>) -> bool {
+impl PartialEqVariadic for () {
+    fn eq(&self, _other: &Self) -> bool {
+        true
+    }
+
+    fn eq_ref<'a>(
+        _this: <Self as VariadicExt>::AsRefVar<'a>,
+        _other: <Self as VariadicExt>::AsRefVar<'a>,
+    ) -> bool {
         true
     }
 }

@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use variadics::{var_expr, var_type, AsRefVariadicPartialEq, VariadicExt};
+use variadics::{var_expr, var_type, EitherRefVariadic, VariadicExt};
 
 use crate::ght::{GeneralizedHashTrieNode, GhtInner, GhtLeaf};
 
@@ -24,7 +24,7 @@ pub trait ColumnLazyTrieNode: GeneralizedHashTrieNode {
 impl<Head, Rest> ColumnLazyTrieNode for GhtLeaf<var_type!(Head, ...Rest)>
 where
     Head: 'static + Hash + Eq,
-    Rest: 'static + Hash + Eq + VariadicExt + AsRefVariadicPartialEq,
+    Rest: 'static + Hash + Eq + VariadicExt + EitherRefVariadic,
 {
     fn into_iter(self) -> impl Iterator<Item = Self::Schema> {
         self.elements.into_iter()

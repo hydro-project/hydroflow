@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 use sealed::sealed;
-use variadics::{var_args, var_expr, var_type, AsRefVariadicPartialEq, Split, VariadicExt};
+use variadics::{var_args, var_expr, var_type, EitherRefVariadic, Split, VariadicExt};
 
 use crate::ght_lattice::DeepJoinLatticeBimorphism;
 
@@ -12,12 +12,12 @@ use crate::ght_lattice::DeepJoinLatticeBimorphism;
 pub trait GeneralizedHashTrie {
     //+ for<'a> HtPrefixIter<var_type!(&'a Self::Head)> {
     /// Schema variadic: the type of rows we're storing
-    type Schema: VariadicExt + AsRefVariadicPartialEq;
+    type Schema: VariadicExt + EitherRefVariadic;
 
     /// the prefix of the Schema representing the Key type
-    type KeyType: VariadicExt + AsRefVariadicPartialEq;
+    type KeyType: VariadicExt + EitherRefVariadic;
     /// the last column of the Schema, i.e. the Value type
-    type ValType: VariadicExt + AsRefVariadicPartialEq;
+    type ValType: VariadicExt + EitherRefVariadic;
     // /// The type of the first column in the Schema
     // type Head: Eq + Hash;
     // /// The type of the Node in the root
@@ -83,8 +83,8 @@ pub trait GeneralizedHashTrie {
 #[derive(Debug, Clone)]
 pub struct GHT<KeyType, ValType, Node>
 where
-    KeyType: VariadicExt + AsRefVariadicPartialEq,
-    ValType: VariadicExt + AsRefVariadicPartialEq,
+    KeyType: VariadicExt + EitherRefVariadic,
+    ValType: VariadicExt + EitherRefVariadic,
     Node: GeneralizedHashTrieNode,
 {
     pub(crate) trie: Node,
@@ -94,8 +94,8 @@ where
 
 impl<K, V, Node> GHT<K, V, Node>
 where
-    K: VariadicExt + AsRefVariadicPartialEq,
-    V: VariadicExt + AsRefVariadicPartialEq,
+    K: VariadicExt + EitherRefVariadic,
+    V: VariadicExt + EitherRefVariadic,
     Node: GeneralizedHashTrieNode,
 {
     /// Just calls `prefix_iter` on the underlying trie.
@@ -113,8 +113,8 @@ where
 
 impl<K, V, Node> GeneralizedHashTrie for GHT<K, V, Node>
 where
-    K: VariadicExt + AsRefVariadicPartialEq,
-    V: VariadicExt + AsRefVariadicPartialEq,
+    K: VariadicExt + EitherRefVariadic,
+    V: VariadicExt + EitherRefVariadic,
     Node: GeneralizedHashTrieNode,
 {
     type KeyType = K;
@@ -169,8 +169,8 @@ where
 
 impl<K, V, Node> Default for GHT<K, V, Node>
 where
-    K: VariadicExt + AsRefVariadicPartialEq,
-    V: VariadicExt + AsRefVariadicPartialEq,
+    K: VariadicExt + EitherRefVariadic,
+    V: VariadicExt + EitherRefVariadic,
     Node: GeneralizedHashTrieNode,
 {
     fn default() -> Self {
@@ -190,7 +190,7 @@ where
 pub trait GeneralizedHashTrieNode: Default // + for<'a> HtPrefixIter<var_type!(&'a Self::Head)>
 {
     /// Schema variadic: the type of rows we're storing in this subtrie
-    type Schema: VariadicExt + AsRefVariadicPartialEq;
+    type Schema: VariadicExt + EitherRefVariadic;
     /// The type of the first column in the Schema
     type Head: Eq + Hash;
 
@@ -354,7 +354,7 @@ where
 #[sealed]
 impl<T> GeneralizedHashTrieNode for GhtLeaf<T>
 where
-    T: 'static + Eq + VariadicExt + AsRefVariadicPartialEq + Hash,
+    T: 'static + Eq + VariadicExt + EitherRefVariadic + Hash,
 {
     type Schema = T;
     type Head = T;

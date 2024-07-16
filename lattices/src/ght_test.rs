@@ -4,7 +4,7 @@ mod test {
     use std::hash::Hash;
     use std::io::{self, Write};
 
-    use variadics::{var_args, var_expr, var_type, AsRefVariadicPartialEq, Split, VariadicExt};
+    use variadics::{var_args, var_expr, var_type, EitherRefVariadic, Split, VariadicExt};
 
     use crate::ght::{
         GeneralizedHashTrie, GeneralizedHashTrieNode, GhtInner, GhtLeaf, HtPrefixIter, GHT,
@@ -898,7 +898,7 @@ mod test {
     // fn resolve_get<Head, Rest, Node>(n: Node, k: Head) -> GhtInner<_, _>
     // where
     //     Head: std::hash::Hash + Eq + VariadicExt,
-    //     Rest: 'static + VariadicExt + std::hash::Hash + Eq + AsRefVariadicPartialEq,
+    //     Rest: 'static + VariadicExt + std::hash::Hash + Eq + EitherRefVariadic,
     //     Node: ColumnLazyTrieNode,
     // {
     //     let var_expr!(head, ...rest) = k;
@@ -987,7 +987,7 @@ mod test {
     // ) -> (Child::Force, Child)
     // where
     //     Head: 'static + Hash + Eq,
-    //     Rest: 'static + Hash + Eq + Clone + AsRefVariadicPartialEq,
+    //     Rest: 'static + Hash + Eq + Clone + EitherRefVariadic,
     //     Child: ColumnLazyTrieNode,
     // {
     //     let leaf = parent.children.remove(&key).unwrap();
@@ -998,7 +998,7 @@ mod test {
     struct GhtForest<Head, Tail>
     where
         Head: Eq + Hash + std::fmt::Debug,
-        Tail: 'static + VariadicExt + Eq + Hash + AsRefVariadicPartialEq,
+        Tail: 'static + VariadicExt + Eq + Hash + EitherRefVariadic,
     {
         leaf: Option<GhtLeaf<var_type!(Head, ...Tail)>>,
         forced: Option<GhtInner<Head, GhtLeaf<Tail>>>,
@@ -1007,7 +1007,7 @@ mod test {
     impl<Head, Tail> Default for GhtForest<Head, Tail>
     where
         Head: Eq + Hash + std::fmt::Debug,
-        Tail: 'static + VariadicExt + Eq + Hash + AsRefVariadicPartialEq,
+        Tail: 'static + VariadicExt + Eq + Hash + EitherRefVariadic,
     {
         fn default() -> Self {
             GhtForest {
@@ -1046,7 +1046,7 @@ mod test {
     impl<Head, Tail, Rest> WalkTuple for var_type!(GhtForest<Head, Tail>, ...Rest)
     where
         Head: 'static + Eq + Hash + std::fmt::Debug + Default,
-        Tail: 'static + VariadicExt + Eq + Hash + AsRefVariadicPartialEq + std::fmt::Debug,
+        Tail: 'static + VariadicExt + Eq + Hash + EitherRefVariadic + std::fmt::Debug,
         Rest: VariadicExt + WalkTuple,
     {
         fn walk_tuple(&mut self) {
