@@ -176,18 +176,18 @@ impl Deployment {
     }
 
     #[allow(non_snake_case, clippy::too_many_arguments)]
-    fn GCPComputeEngineHost(
+    fn GcpComputeEngineHost(
         &self,
         py: Python<'_>,
         project: String,
         machine_type: String,
         image: String,
         region: String,
-        network: GCPNetwork,
+        network: GcpNetwork,
         user: Option<String>,
     ) -> PyResult<Py<PyAny>> {
         let arc = self.underlying.blocking_write().add_host(|id| {
-            core::GCPComputeEngineHost::new(
+            core::GcpComputeEngineHost::new(
                 id,
                 project,
                 machine_type,
@@ -203,7 +203,7 @@ impl Deployment {
             PyClassInitializer::from(Host {
                 underlying: arc.clone(),
             })
-            .add_subclass(GCPComputeEngineHost { underlying: arc }),
+            .add_subclass(GcpComputeEngineHost { underlying: arc }),
         )?
         .into_py(py))
     }
@@ -357,27 +357,27 @@ impl LocalhostHost {
 
 #[pyclass]
 #[derive(Clone)]
-struct GCPNetwork {
-    underlying: Arc<RwLock<core::gcp::GCPNetwork>>,
+struct GcpNetwork {
+    underlying: Arc<RwLock<core::gcp::GcpNetwork>>,
 }
 
 #[pymethods]
-impl GCPNetwork {
+impl GcpNetwork {
     #[new]
     fn new(project: String, existing: Option<String>) -> Self {
-        GCPNetwork {
-            underlying: Arc::new(RwLock::new(core::gcp::GCPNetwork::new(project, existing))),
+        GcpNetwork {
+            underlying: Arc::new(RwLock::new(core::gcp::GcpNetwork::new(project, existing))),
         }
     }
 }
 
 #[pyclass(extends=Host, subclass)]
-struct GCPComputeEngineHost {
-    underlying: Arc<RwLock<core::GCPComputeEngineHost>>,
+struct GcpComputeEngineHost {
+    underlying: Arc<RwLock<core::GcpComputeEngineHost>>,
 }
 
 #[pymethods]
-impl GCPComputeEngineHost {
+impl GcpComputeEngineHost {
     #[getter]
     fn internal_ip(&self) -> String {
         self.underlying
@@ -876,8 +876,8 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
     module.add_class::<Host>()?;
     module.add_class::<LocalhostHost>()?;
 
-    module.add_class::<GCPNetwork>()?;
-    module.add_class::<GCPComputeEngineHost>()?;
+    module.add_class::<GcpNetwork>()?;
+    module.add_class::<GcpComputeEngineHost>()?;
 
     module.add_class::<Service>()?;
     module.add_class::<CustomService>()?;
