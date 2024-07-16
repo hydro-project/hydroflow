@@ -4,7 +4,7 @@ mod test {
     use std::hash::Hash;
     use std::io::{self, Write};
 
-    use variadics::{var_args, var_expr, var_type, EitherRefVariadic, Split, VariadicExt};
+    use variadics::{var_args, var_expr, var_type, Split, VariadicExt};
 
     use crate::ght::{
         GeneralizedHashTrie, GeneralizedHashTrieNode, GhtInner, GhtLeaf, HtPrefixIter, GHT,
@@ -23,8 +23,6 @@ mod test {
 
         fn ght_type<T: GeneralizedHashTrie>() {}
         ght_type::<MyTrie1>();
-
-        <MyTrie1 as GeneralizedHashTrie>::new_from(todo!());
 
         let htrie1 = MyTrie1::new_from(vec![var_expr!(42, 314, "hello")]);
         assert!(htrie1.contains(var_expr!(&42, &314, &"hello")));
@@ -403,6 +401,9 @@ mod test {
             type MyNodeBim =
                 <(MyGhtATrie, MyGhtBTrie) as DeepJoinLatticeBimorphism>::DeepJoinLatticeBimorphism;
             let mut bim = <MyNodeBim as Default>::default();
+            // let out = <MyNodeBim as LatticeBimorphism<&MyGhtATrie, &MyGhtBTrie>>::call(
+            //     &mut bim, &ght_a, &ght_b,
+            // );
             let out = bim.call(&ght_a, &ght_b);
             let out: HashSet<MyResultType> = out.recursive_iter().collect();
             assert_eq!(out, result.iter().copied().collect());
@@ -422,6 +423,9 @@ mod test {
                 .collect();
             type MyNodeBim = <MyGhtATrie as GeneralizedHashTrieNode>::DeepJoin<MyGhtBTrie>;
             let mut bim = <MyNodeBim as Default>::default();
+            // let out = <MyNodeBim as LatticeBimorphism<&MyGhtATrie, &MyGhtBTrie>>::call(
+            //     &mut bim, &ght_a, &ght_b,
+            // );
             let out = bim.call(&ght_a, &ght_b);
             let out: HashSet<MyResultType> = out.recursive_iter().collect();
             assert_eq!(out, result.iter().copied().collect());
@@ -904,7 +908,7 @@ mod test {
     // fn resolve_get<Head, Rest, Node>(n: Node, k: Head) -> GhtInner<_, _>
     // where
     //     Head: std::hash::Hash + Eq + VariadicExt,
-    //     Rest: 'static + VariadicExt + std::hash::Hash + Eq + EitherRefVariadic,
+    //     Rest: 'static + VariadicExt + std::hash::Hash + Eq + // UnrefVariadicPartialEq,
     //     Node: ColumnLazyTrieNode,
     // {
     //     let var_expr!(head, ...rest) = k;
@@ -993,7 +997,7 @@ mod test {
     // ) -> (Child::Force, Child)
     // where
     //     Head: 'static + Hash + Eq,
-    //     Rest: 'static + Hash + Eq + Clone + EitherRefVariadic,
+    //     Rest: 'static + Hash + Eq + Clone + // UnrefVariadicPartialEq,
     //     Child: ColumnLazyTrieNode,
     // {
     //     let leaf = parent.children.remove(&key).unwrap();
@@ -1003,8 +1007,11 @@ mod test {
 
     struct GhtForest<Head, Tail>
     where
-        Head: Eq + Hash + std::fmt::Debug,
-        Tail: 'static + VariadicExt + Eq + Hash + EitherRefVariadic,
+        Head: 'static + Eq + Hash + std::fmt::Debug,
+        Tail: 'static + VariadicExt + Eq + Hash, // UnrefVariadicPartialEq,
+        for<'r> Tail::AsRefVar<'r>: PartialEq,
+        //   * for<'r, 's> <var_type!(Head, ...Tail) as VariadicExt>::AsRefVar<'r>:
+        //   *     PartialEq<<var_type!(Head, ...Tail) as VariadicExt>::AsRefVar<'s>>, */
     {
         leaf: Option<GhtLeaf<var_type!(Head, ...Tail)>>,
         forced: Option<GhtInner<Head, GhtLeaf<Tail>>>,
@@ -1012,8 +1019,11 @@ mod test {
 
     impl<Head, Tail> Default for GhtForest<Head, Tail>
     where
-        Head: Eq + Hash + std::fmt::Debug,
-        Tail: 'static + VariadicExt + Eq + Hash + EitherRefVariadic,
+        Head: 'static + Eq + Hash + std::fmt::Debug,
+        Tail: 'static + VariadicExt + Eq + Hash, // UnrefVariadicPartialEq,
+        for<'r> Tail::AsRefVar<'r>: PartialEq,
+        //   * for<'r, 's> <var_type!(Head, ...Tail) as VariadicExt>::AsRefVar<'r>:
+        //   *     PartialEq<<var_type!(Head, ...Tail) as VariadicExt>::AsRefVar<'s>>, */
     {
         fn default() -> Self {
             GhtForest {
@@ -1051,9 +1061,18 @@ mod test {
     }
     impl<Head, Tail, Rest> WalkTuple for var_type!(GhtForest<Head, Tail>, ...Rest)
     where
-        Head: 'static + Eq + Hash + std::fmt::Debug + Default,
-        Tail: 'static + VariadicExt + Eq + Hash + EitherRefVariadic + std::fmt::Debug,
-        Rest: VariadicExt + WalkTuple,
+        Head: Eq + Hash + std::fmt::Debug,
+        Tail: VariadicExt + Eq + Hash + std::fmt::Debug,
+        Rest: WalkTuple,
+        for<'r> Tail::AsRefVar<'r>: PartialEq,
+        // Head: 'static + Eq + Hash + std::fmt::Debug + Default,
+        // Tail: 'static + VariadicExt + Eq + Hash + std::fmt::Debug, // UnrefVariadicPartialEq,
+        // Rest: VariadicExt + WalkTuple,
+        // for<'r, 's> Tail::AsRefVar<'r>: PartialEq<Tail::AsRefVar<'s>>,
+        // Head: 'static + Eq + Hash + std::fmt::Debug + Default,
+        // Tail: 'static + VariadicExt + Eq + Hash + std::fmt::Debug, // UnrefVariadicPartialEq,
+        // for<'r, 's> <var_type!(Head, ...Tail) as VariadicExt>::AsRefVar<'r>:
+        //     PartialEq<<var_type!(Head, ...Tail) as VariadicExt>::AsRefVar<'s>>,
     {
         fn walk_tuple(&mut self) {
             let var_args!(head, ...rest) = self;
@@ -1184,6 +1203,7 @@ mod test {
     // } else {
     //    return leaf;
     // }
+
     fn contains_key(
         s_forest: &mut (
             GhtInner<u16, GhtLeaf<(u32, (u64, ()))>>,

@@ -50,7 +50,7 @@ where
 
 impl<T> Merge<GhtLeaf<T>> for GhtLeaf<T>
 where
-    T: Hash + Eq,
+    T: Eq + Hash,
 {
     fn merge(&mut self, other: GhtLeaf<T>) -> bool {
         let old_len = self.elements.len();
@@ -161,7 +161,7 @@ where
 
 impl<T> PartialOrd<GhtLeaf<T>> for GhtLeaf<T>
 where
-    T: 'static + Hash + Eq,
+    T: Eq + Hash,
 {
     fn partial_cmp(&self, other: &GhtLeaf<T>) -> Option<Ordering> {
         match self.elements.len().cmp(&other.elements.len()) {
@@ -219,12 +219,7 @@ where
     Node: GeneralizedHashTrieNode,
 {
 }
-impl<T> LatticeOrd<GhtLeaf<T>> for GhtLeaf<T>
-where
-    Self: PartialOrd<GhtLeaf<T>>,
-    T: Hash + Eq,
-{
-}
+impl<T> LatticeOrd<GhtLeaf<T>> for GhtLeaf<T> where T: Eq + Hash {}
 
 // IsBot
 impl<KeyType, ValType, Inner> IsBot for GHT<KeyType, ValType, Inner>
@@ -249,7 +244,7 @@ where
 
 impl<T> IsBot for GhtLeaf<T>
 where
-    T: Hash + Eq,
+    T: Eq + Hash,
 {
     fn is_bot(&self) -> bool {
         self.elements.is_empty()
@@ -279,7 +274,7 @@ where
 
 impl<T> IsTop for GhtLeaf<T>
 where
-    T: Hash + Eq,
+    T: Eq + Hash,
 {
     fn is_top(&self) -> bool {
         false
@@ -425,7 +420,11 @@ where
     B: 'static + VariadicExt + Eq + Hash, // + AsRefVariadicPartialEq
     for<'x> A::AsRefVar<'x>: CloneRefVariadic,
     for<'x> B::AsRefVar<'x>: CloneRefVariadic,
+    // for<'a, 'b> A::AsRefVar<'a>: PartialEq<A::AsRefVar<'b>>,
+    // for<'a, 'b> B::AsRefVar<'a>: PartialEq<B::AsRefVar<'b>>,
     var_type!(...A, ...B): Eq + Hash,
+    // for<'a, 'b> <var_type!(...A, ...B) as VariadicExt>::AsRefVar<'a>:
+    //     PartialEq<<var_type!(...A, ...B) as VariadicExt>::AsRefVar<'b>>,
 {
     type DeepJoinLatticeBimorphism = GhtCartesianProductBimorphism<GhtLeaf<var_type!(...A, ...B)>>;
 }

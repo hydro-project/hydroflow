@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 use sealed::sealed;
-use variadics::{var_args, var_expr, var_type, EitherRefVariadic, Split, VariadicExt};
+use variadics::{var_args, var_expr, var_type, Split, VariadicExt};
 
 use crate::ght_lattice::DeepJoinLatticeBimorphism;
 
@@ -36,7 +36,7 @@ pub trait GeneralizedHashTrie {
     fn insert(&mut self, row: Self::Schema) -> bool;
 
     /// Returns `true` if the (entire) row is found in the trie, `false` otherwise.
-    fn contains(&self, row: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool;
+    fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool;
 
     /// Iterate through the (entire) rows stored in this HashTrie.
     /// Returns Variadics, not tuples.
@@ -139,7 +139,7 @@ where
         self.trie.insert(row)
     }
 
-    fn contains(&self, row: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool {
+    fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool {
         self.trie.contains(row)
     }
 
@@ -206,7 +206,7 @@ pub trait GeneralizedHashTrieNode: Default // + for<'a> HtPrefixIter<var_type!(&
 
     /// Returns `true` if the (entire) row is found in the trie, `false` otherwise.
     /// See `get()` below to look just for "head" keys in this node
-    fn contains(&self, row: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool;
+    fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool;
 
     /// Iterator for the "head" keys (from inner nodes) or elements (from leaf nodes).
     fn iter(&self) -> impl Iterator<Item = &'_ Self::Head>;
@@ -283,7 +283,7 @@ where
         self.children.entry(head).or_default().insert(rest)
     }
 
-    fn contains(&self, row: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool {
+    fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool {
         let var_args!(head, ...rest) = row;
         if let Some(node) = self.children.get(head) {
             node.contains(rest)
@@ -338,13 +338,13 @@ where
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct GhtLeaf<T>
 where
-    T: Hash + Eq,
+    T: Eq + Hash,
 {
     pub(crate) elements: HashSet<T>,
 }
 impl<T> Default for GhtLeaf<T>
 where
-    T: Hash + Eq,
+    T: Eq + Hash,
 {
     fn default() -> Self {
         let elements = Default::default();
@@ -355,7 +355,7 @@ where
 impl<T> GeneralizedHashTrieNode for GhtLeaf<T>
 where
     T: 'static + Eq + VariadicExt + Hash,
-    for<'r, 's> T::AsRefVar<'r>: PartialEq<T::AsRefVar<'s>>,
+    for<'a> T::AsRefVar<'a>: PartialEq,
 {
     type Schema = T;
     type Head = T;
@@ -376,7 +376,7 @@ where
         self.elements.insert(row)
     }
 
-    fn contains(&self, row: <Self::Schema as VariadicExt>::AsRefVar<'_>) -> bool {
+    fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool {
         self.elements.iter().any(|r| r.as_ref_var() == row)
     }
 
@@ -408,7 +408,7 @@ where
 
 impl<T> FromIterator<T> for GhtLeaf<T>
 where
-    T: Hash + Eq,
+    T: Eq + Hash,
 {
     fn from_iter<Iter: IntoIterator<Item = T>>(iter: Iter) -> Self {
         let elements = iter.into_iter().collect();
@@ -457,7 +457,8 @@ where
 #[sealed]
 impl<'k, Head> HtPrefixIter<var_type!(&'k Head)> for GhtLeaf<Head>
 where
-    Head: Eq + Hash,
+    Head: 'static + Eq + VariadicExt + Hash,
+    for<'a, 'b> Head::AsRefVar<'a>: PartialEq<Head::AsRefVar<'b>>,
 {
     type Suffix = var_expr!();
     fn prefix_iter<'a>(
@@ -538,3 +539,31 @@ macro_rules! GhtType {
         $crate::ght::GHT::<$crate::variadics::var_type!( $a, $( $b ),+ ), $crate::variadics::var_type!($( $z ),*), $crate::GhtNodeType!($a, $( $b ),+ => $( $z ),*)>
     );
 }
+
+// fn test_partial_eq() {
+//     fn peq<T>()
+//     where
+//         for<'a, 'b> &'a T: PartialEq<&'b T>,
+//     {
+//     }
+//     peq::<usize>();
+
+//     // fn peq2<T>()
+//     // where
+//     //     for<'a, 'b> (&'a T, ()): PartialEq<(&'b T, ())>,
+//     // {
+//     // }
+//     // peq2::<()>();
+
+//     fn peq3<T>(a: (&T, ()), b: (&T, ())) -> bool
+//     where
+//         for<'a> (&'a T, ()): PartialEq,
+//     {
+//         a.eq(&b)
+//     }
+//     // peq3::<()>();
+
+//     fn peq4<'a, 'b, T: PartialEq>(a: (&'a T, ()), b: (&'b T, ())) {
+//         peq3::<T>(a, b);
+//     }
+// }

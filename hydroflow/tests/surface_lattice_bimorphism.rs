@@ -2,14 +2,13 @@ use std::collections::{HashMap, HashSet};
 
 use hydroflow::util::collect_ready;
 use hydroflow::{assert_graphvis_snapshots, hydroflow_syntax};
-use lattices::generalized_hash_trie::{
-    DeepJoinLatticeBimorphism, GeneralizedHashTrie, GhtBimorphism,
-};
+use lattices::ght::GeneralizedHashTrie;
+use lattices::ght_lattice::{DeepJoinLatticeBimorphism, GhtBimorphism};
 use lattices::map_union::{KeyedBimorphism, MapUnionHashMap, MapUnionSingletonMap};
 use lattices::set_union::{CartesianProductBimorphism, SetUnionHashSet, SetUnionSingletonSet};
 use lattices::GhtType;
 use multiplatform_test::multiplatform_test;
-use variadics::{var_expr, UnrefCloneVariadic};
+use variadics::{var_expr, CloneRefVariadic};
 
 #[multiplatform_test]
 pub fn test_cartesian_product() {
