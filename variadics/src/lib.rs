@@ -287,7 +287,7 @@ impl VariadicExt for () {
 ///
 /// This is a sealed trait.
 #[sealed]
-pub trait EitherRefVariadic {
+pub trait EitherRefVariadic: Variadic {
     /// The un-referenced variadic. Each item will have one layer of shared references removed.
     ///
     /// The inverse of [`VariadicExt::AsRefVar`] and [`VariadicExt::AsMutVar`].
