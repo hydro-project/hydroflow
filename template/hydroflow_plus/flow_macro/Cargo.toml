@@ -13,10 +13,11 @@ default = ["macro"]
 macro = []
 
 [dependencies]
-hydroflow_plus = { git = "https://github.com/hydro-project/hydroflow.git" }
+# make sure to sync these to `flow`!
+hydroflow_plus = { git = "{{ hydroflow_git | default: 'https://github.com/hydro-project/hydroflow' }}", branch = "{{ hydroflow_branch | default: 'main' }}" }
+hydroflow_plus_cli_integration = { git = "{{ hydroflow_git | default: 'https://github.com/hydro-project/hydroflow' }}", branch = "{{ hydroflow_branch | default: 'main' }}" }
+stageleft = { git = "{{ hydroflow_git | default: 'https://github.com/hydro-project/hydroflow' }}", branch = "{{ hydroflow_branch | default: 'main' }}" }
 tokio = { version = "1.16", features = [ "full" ] }
-stageleft = { git = "https://github.com/hydro-project/hydroflow.git" }
-hydroflow_plus_cli_integration = { git = "https://github.com/hydro-project/hydroflow.git" }
 
 [build-dependencies]
-stageleft_tool = { git = "https://github.com/hydro-project/hydroflow.git" }
+stageleft_tool = { git = "{{ hydroflow_git | default: 'https://github.com/hydro-project/hydroflow' }}", branch = "{{ hydroflow_branch | default: 'main' }}" }
