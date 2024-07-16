@@ -1186,10 +1186,8 @@ mod test {
             println!("r tup is {:?}", r);
             // walk forest and look for (r.0, r.1, *)
             // first check s_forest.0
-            if contains_key(&mut s_forest, r, key_len) {
-                if contains_key(&mut t_forest, r, key_len) {
-                    println!("matched {:?}", r);
-                }
+            if contains_key(&mut s_forest, r, key_len) && contains_key(&mut t_forest, r, key_len) {
+                println!("matched {:?}", r);
             }
         }
     }
@@ -1213,7 +1211,7 @@ mod test {
         key_len: usize,
     ) -> bool {
         // recursive case: first trie height is shorter than search key
-        assert!(s_forest.0.height().unwrap() < key_len);
+        assert!(s_forest.0.height().is_none() || s_forest.0.height().unwrap() < key_len);
         if let Some(found0) = s_forest.0.children.remove(&r.0) {
             // found r.0! give it a parent and reattach it in s_forest.1.0
             let forced = found0.force();

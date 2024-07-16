@@ -539,31 +539,3 @@ macro_rules! GhtType {
         $crate::ght::GHT::<$crate::variadics::var_type!( $a, $( $b ),+ ), $crate::variadics::var_type!($( $z ),*), $crate::GhtNodeType!($a, $( $b ),+ => $( $z ),*)>
     );
 }
-
-// fn test_partial_eq() {
-//     fn peq<T>()
-//     where
-//         for<'a, 'b> &'a T: PartialEq<&'b T>,
-//     {
-//     }
-//     peq::<usize>();
-
-//     // fn peq2<T>()
-//     // where
-//     //     for<'a, 'b> (&'a T, ()): PartialEq<(&'b T, ())>,
-//     // {
-//     // }
-//     // peq2::<()>();
-
-//     fn peq3<T>(a: (&T, ()), b: (&T, ())) -> bool
-//     where
-//         for<'a> (&'a T, ()): PartialEq,
-//     {
-//         a.eq(&b)
-//     }
-//     // peq3::<()>();
-
-//     fn peq4<'a, 'b, T: PartialEq>(a: (&'a T, ()), b: (&'b T, ())) {
-//         peq3::<T>(a, b);
-//     }
-// }

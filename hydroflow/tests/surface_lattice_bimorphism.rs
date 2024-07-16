@@ -26,7 +26,7 @@ pub fn test_cartesian_product() {
         rhs -> [1]my_join;
 
         my_join = lattice_bimorphism(CartesianProductBimorphism::<HashSet<_>>::default(), #lhs, #rhs)
-            // -> lattice_reduce()
+            -> lattice_reduce()
             -> for_each(|x| out_send.send(x).unwrap());
     };
 
