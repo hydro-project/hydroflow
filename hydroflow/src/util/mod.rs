@@ -119,7 +119,7 @@ where
     let mut unfused_iter =
         ready_iter(stream).inspect(|_| got_any_items.store(true, Ordering::Relaxed));
     let mut out = C::default();
-    while any.replace(false) {
+    while got_any_items.swap(false, Ordering::Relaxed) {
         out.extend(unfused_iter.by_ref());
         // Tokio unbounded channel returns items in lenght-128 chunks, so we have to be careful
         // that everything gets returned. That is why we yield here and loop.
