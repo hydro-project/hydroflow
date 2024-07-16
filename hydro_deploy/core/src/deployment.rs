@@ -13,7 +13,7 @@ use crate::ServiceBuilder;
 
 #[derive(Default)]
 pub struct Deployment {
-    pub hosts: Vec<Arc<RwLock<dyn Host>>>,
+    pub hosts: Vec<Arc<dyn Host>>,
     pub services: Vec<Weak<RwLock<dyn Service>>>,
     pub resource_pool: ResourcePool,
     last_resource_result: Option<Arc<ResourceResult>>,
@@ -27,7 +27,7 @@ impl Deployment {
     }
 
     #[allow(non_snake_case)]
-    pub fn Localhost(&mut self) -> Arc<RwLock<LocalhostHost>> {
+    pub fn Localhost(&mut self) -> Arc<LocalhostHost> {
         self.add_host(LocalhostHost::new)
     }
 
@@ -40,7 +40,7 @@ impl Deployment {
         region: impl Into<String>,
         network: Arc<RwLock<GcpNetwork>>,
         user: Option<String>,
-    ) -> Arc<RwLock<GcpComputeEngineHost>> {
+    ) -> Arc<GcpComputeEngineHost> {
         self.add_host(|id| {
             GcpComputeEngineHost::new(id, project, machine_type, image, region, network, user)
         })
@@ -49,7 +49,7 @@ impl Deployment {
     #[allow(non_snake_case)]
     pub fn CustomService(
         &mut self,
-        on: Arc<RwLock<dyn Host>>,
+        on: Arc<dyn Host>,
         external_ports: Vec<u16>,
     ) -> Arc<RwLock<CustomService>> {
         self.add_service(|id| CustomService::new(id, on, external_ports))
@@ -76,10 +76,10 @@ impl Deployment {
             }
 
             for host in self.hosts.iter_mut() {
-                host.write().await.collect_resources(&mut resource_batch);
+                host.collect_resources(&mut resource_batch);
             }
 
-            let result = Arc::new(
+            let resource_result = Arc::new(
                 progress::ProgressTracker::with_group("provision", None, || async {
                     resource_batch
                         .provision(&mut self.resource_pool, self.last_resource_result.clone())
@@ -87,18 +87,11 @@ impl Deployment {
                 })
                 .await?,
             );
-            self.last_resource_result = Some(result.clone());
+            self.last_resource_result = Some(resource_result.clone());
 
-            progress::ProgressTracker::with_group("provision", None, || {
-                let hosts_provisioned =
-                    self.hosts
-                        .iter_mut()
-                        .map(|host: &mut Arc<RwLock<dyn Host>>| async {
-                            host.write().await.provision(&result);
-                        });
-                futures::future::join_all(hosts_provisioned)
-            })
-            .await;
+            for host in self.hosts.iter() {
+                host.provision(&resource_result);
+            }
 
             progress::ProgressTracker::with_group("deploy", None, || {
                 let services_future = self
@@ -110,7 +103,7 @@ impl Deployment {
                             .unwrap()
                             .write()
                             .await
-                            .deploy(&result)
+                            .deploy(&resource_result)
                             .await
                     })
                     .collect::<Vec<_>>();
@@ -163,11 +156,8 @@ impl Deployment {
         Ok(())
     }
 
-    pub fn add_host<T: Host + 'static, F: FnOnce(usize) -> T>(
-        &mut self,
-        host: F,
-    ) -> Arc<RwLock<T>> {
-        let arc = Arc::new(RwLock::new(host(self.next_host_id)));
+    pub fn add_host<T: Host + 'static, F: FnOnce(usize) -> T>(&mut self, host: F) -> Arc<T> {
+        let arc = Arc::new(host(self.next_host_id));
         self.next_host_id += 1;
 
         self.hosts.push(arc.clone());

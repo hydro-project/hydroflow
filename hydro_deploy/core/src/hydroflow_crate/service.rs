@@ -19,7 +19,7 @@ use crate::{
 
 pub struct HydroflowCrateService {
     id: usize,
-    pub(super) on: Arc<RwLock<dyn Host>>,
+    pub(super) on: Arc<dyn Host>,
     build_params: BuildParams,
     perf: Option<PathBuf>,
     args: Option<Vec<String>>,
@@ -50,7 +50,7 @@ impl HydroflowCrateService {
     pub fn new(
         id: usize,
         src: PathBuf,
-        on: Arc<RwLock<dyn Host>>,
+        on: Arc<dyn Host>,
         bin: Option<String>,
         example: Option<String>,
         profile: Option<String>,
@@ -60,7 +60,7 @@ impl HydroflowCrateService {
         display_id: Option<String>,
         external_ports: Vec<u16>,
     ) -> Self {
-        let target_type = on.try_read().unwrap().target_type();
+        let target_type = on.target_type();
 
         let build_params = BuildParams::new(src, bin, example, profile, target_type, features);
 
@@ -165,10 +165,7 @@ impl Service for HydroflowCrateService {
 
         tokio::task::spawn(self.build());
 
-        let mut host = self
-            .on
-            .try_write()
-            .expect("No one should be reading/writing the host while resources are collected");
+        let host = &self.on;
 
         host.request_custom_binary();
         for (_, bind_type) in self.port_to_bind.iter() {
@@ -194,8 +191,8 @@ impl Service for HydroflowCrateService {
             || async {
                 let built = self.build().await?;
 
-                let mut host_write = self.on.write().await;
-                let launched = host_write.provision(resource_result);
+                let host = &self.on;
+                let launched = host.provision(resource_result);
 
                 launched.copy_binary(built).await?;
 
