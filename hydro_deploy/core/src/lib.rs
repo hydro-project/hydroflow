@@ -190,7 +190,7 @@ pub trait Service: Send + Sync {
     ///
     /// This should also perform any "free", non-blocking computations (compilations),
     /// because the `deploy` method will be called after these resources are allocated.
-    fn collect_resources(&mut self, resource_batch: &mut ResourceBatch);
+    fn collect_resources(&self, resource_batch: &mut ResourceBatch);
 
     /// Connects to the acquired resources and prepares the service to be launched.
     async fn deploy(&mut self, resource_result: &Arc<ResourceResult>) -> Result<()>;
