@@ -24,7 +24,10 @@ pub trait ColumnLazyTrieNode: GeneralizedHashTrieNode {
 impl<Head, Rest> ColumnLazyTrieNode for GhtLeaf<var_type!(Head, ...Rest)>
 where
     Head: 'static + Hash + Eq,
-    Rest: 'static + Hash + Eq + VariadicExt + EitherRefVariadic,
+    Rest: 'static + Hash + Eq + VariadicExt,
+    for<'r, 's> <var_type!(Head, ...Rest) as VariadicExt>::AsRefVar<'r>:
+        PartialEq<<var_type!(Head, ...Rest) as VariadicExt>::AsRefVar<'s>>,
+    for<'r, 's> Rest::AsRefVar<'r>: PartialEq<Rest::AsRefVar<'s>>,
 {
     fn into_iter(self) -> impl Iterator<Item = Self::Schema> {
         self.elements.into_iter()

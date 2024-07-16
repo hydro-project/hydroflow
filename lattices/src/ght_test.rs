@@ -20,6 +20,12 @@ mod test {
     fn basic_test() {
         // Example usage
         type MyTrie1 = GhtType!(u32, u32 => &'static str);
+
+        fn ght_type<T: GeneralizedHashTrie>() {}
+        ght_type::<MyTrie1>();
+
+        <MyTrie1 as GeneralizedHashTrie>::new_from(todo!());
+
         let htrie1 = MyTrie1::new_from(vec![var_expr!(42, 314, "hello")]);
         assert!(htrie1.contains(var_expr!(&42, &314, &"hello")));
         assert_eq!(htrie1.recursive_iter().count(), 1);
