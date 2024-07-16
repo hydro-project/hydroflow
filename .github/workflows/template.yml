@@ -37,10 +37,11 @@ jobs:
           components: rustfmt, clippy
 
       - name: Action cargo-generate
-        uses: cargo-generate/cargo-generate-action@v0.17.5
+        uses: cargo-generate/cargo-generate-action@v0.20.0
         with:
           name: generated
           template: template/hydroflow
+          arguments: "-d hydroflow_git=${{ github.event.pull_request.head.repo.clone_url }} -d hydroflow_branch=${{ github.event.pull_request.head.ref }}"
       - name: Move generated project
         run: |
           mv generated ${{ runner.temp }}/
@@ -113,10 +114,11 @@ jobs:
           components: rustfmt, clippy
 
       - name: Action cargo-generate
-        uses: cargo-generate/cargo-generate-action@v0.17.5
+        uses: cargo-generate/cargo-generate-action@v0.20.0
         with:
           name: generated
           template: template/hydroflow_plus
+          arguments: "-d hydroflow_git=${{ github.event.pull_request.head.repo.clone_url }} -d hydroflow_branch=${{ github.event.pull_request.head.ref }}"
       - name: Move generated project
         run: |
           mv generated ${{ runner.temp }}/
