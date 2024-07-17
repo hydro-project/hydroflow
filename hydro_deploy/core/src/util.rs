@@ -3,10 +3,9 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use anyhow::Result;
-use async_channel::Sender;
-use futures::future::join_all;
 use futures::{Future, StreamExt};
 use futures_core::Stream;
+use tokio::sync::{mpsc, oneshot};
 
 pub async fn async_retry<T, F: Future<Output = Result<T>>>(
     mut thunk: impl FnMut() -> F,
@@ -26,16 +25,16 @@ pub async fn async_retry<T, F: Future<Output = Result<T>>>(
 }
 
 type PriorityBroadcacst = (
-    Arc<Mutex<Option<tokio::sync::oneshot::Sender<String>>>>,
-    Arc<Mutex<Vec<Sender<String>>>>,
+    Arc<Mutex<Option<oneshot::Sender<String>>>>,
+    Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
 );
 
 pub fn prioritized_broadcast<T: Stream<Item = io::Result<String>> + Send + Unpin + 'static>(
     mut lines: T,
     default: impl Fn(String) + Send + 'static,
 ) -> PriorityBroadcacst {
-    let priority_receivers = Arc::new(Mutex::new(None::<tokio::sync::oneshot::Sender<String>>));
-    let receivers = Arc::new(Mutex::new(Vec::<Sender<String>>::new()));
+    let priority_receivers = Arc::new(Mutex::new(None::<oneshot::Sender<String>>));
+    let receivers = Arc::new(Mutex::new(Vec::<mpsc::UnboundedSender<String>>::new()));
 
     let weak_priority_receivers = Arc::downgrade(&priority_receivers);
     let weak_receivers = Arc::downgrade(&receivers);
@@ -58,19 +57,13 @@ pub fn prioritized_broadcast<T: Stream<Item = io::Result<String>> + Send + Unpin
             }
 
             if let Some(receivers) = weak_receivers.upgrade() {
-                let send_all = {
-                    let mut receivers = receivers.lock().unwrap();
-                    receivers.retain(|receiver| !receiver.is_closed());
-                    join_all(receivers.iter().map(|receiver| {
-                        // Create a future which doesn't need to hold the `receivers` lock.
-                        let receiver = receiver.clone();
-                        let line = &line;
-                        async move { receiver.send(line.clone()).await }
-                    }))
-                    // Do not `.await` while holding onto the `std::sync::Mutex` `receivers` lock.
-                };
+                let mut receivers = receivers.lock().unwrap();
+                receivers.retain(|receiver| !receiver.is_closed());
 
-                let successful_send = send_all.await.into_iter().any(|result| result.is_ok());
+                let mut successful_send = false;
+                for receiver in receivers.iter() {
+                    successful_send |= receiver.send(line.clone()).is_ok();
+                }
                 if !successful_send {
                     (default)(line);
                 }
@@ -95,21 +88,23 @@ pub fn prioritized_broadcast<T: Stream<Item = io::Result<String>> + Send + Unpin
 
 #[cfg(test)]
 mod test {
-    use futures::StreamExt;
+    use tokio_stream::wrappers::UnboundedReceiverStream;
+
+    use super::*;
 
     #[tokio::test]
     async fn broadcast_listeners_close_when_source_does() {
-        let (tx, rx) = async_channel::unbounded::<_>();
-        let (_, receivers) = super::prioritized_broadcast(rx, |_| {});
+        let (tx, rx) = mpsc::unbounded_channel();
+        let (_, receivers) = prioritized_broadcast(UnboundedReceiverStream::new(rx), |_| {});
 
-        let (tx2, mut rx2) = async_channel::unbounded::<_>();
+        let (tx2, mut rx2) = mpsc::unbounded_channel();
 
         receivers.lock().unwrap().push(tx2);
 
-        tx.send(Ok("hello".to_string())).await.unwrap();
-        assert_eq!(rx2.next().await, Some("hello".to_string()));
+        tx.send(Ok("hello".to_string())).unwrap();
+        assert_eq!(rx2.recv().await, Some("hello".to_string()));
 
-        let wait_again = tokio::spawn(async move { rx2.next().await });
+        let wait_again = tokio::spawn(async move { rx2.recv().await });
 
         drop(tx);
 

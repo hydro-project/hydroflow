@@ -67,7 +67,7 @@ mod tests {
 
         deployment.deploy().await.unwrap();
 
-        let second_node_stdout = second_node.stdout().await;
+        let mut second_node_stdout = second_node.stdout().await;
 
         deployment.start().await.unwrap();
 

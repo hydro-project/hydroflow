@@ -2,20 +2,20 @@
 use std::os::unix::process::ExitStatusExt;
 use std::sync::{Arc, Mutex};
 
-use async_channel::{Receiver, Sender};
 use async_trait::async_trait;
 use futures::io::BufReader;
-use futures::{AsyncBufReadExt, AsyncWriteExt, StreamExt};
+use futures::{AsyncBufReadExt, AsyncWriteExt};
+use tokio::sync::{mpsc, oneshot};
 
 use crate::util::prioritized_broadcast;
 use crate::LaunchedBinary;
 
 pub struct LaunchedLocalhostBinary {
     child: Mutex<async_process::Child>,
-    stdin_sender: Sender<String>,
-    stdout_cli_receivers: Arc<Mutex<Option<tokio::sync::oneshot::Sender<String>>>>,
-    stdout_receivers: Arc<Mutex<Vec<Sender<String>>>>,
-    stderr_receivers: Arc<Mutex<Vec<Sender<String>>>>,
+    stdin_sender: mpsc::UnboundedSender<String>,
+    stdout_cli_receivers: Arc<Mutex<Option<oneshot::Sender<String>>>>,
+    stdout_receivers: Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
+    stderr_receivers: Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
 }
 
 #[cfg(unix)]
@@ -39,10 +39,10 @@ impl Drop for LaunchedLocalhostBinary {
 
 impl LaunchedLocalhostBinary {
     pub fn new(mut child: async_process::Child, id: String) -> Self {
-        let (stdin_sender, mut stdin_receiver) = async_channel::unbounded::<String>();
+        let (stdin_sender, mut stdin_receiver) = mpsc::unbounded_channel::<String>();
         let mut stdin = child.stdin.take().unwrap();
         tokio::spawn(async move {
-            while let Some(line) = stdin_receiver.next().await {
+            while let Some(line) = stdin_receiver.recv().await {
                 if stdin.write_all(line.as_bytes()).await.is_err() {
                     break;
                 }
@@ -73,32 +73,32 @@ impl LaunchedLocalhostBinary {
 
 #[async_trait]
 impl LaunchedBinary for LaunchedLocalhostBinary {
-    fn stdin(&self) -> Sender<String> {
+    fn stdin(&self) -> mpsc::UnboundedSender<String> {
         self.stdin_sender.clone()
     }
 
-    fn cli_stdout(&self) -> tokio::sync::oneshot::Receiver<String> {
+    fn cli_stdout(&self) -> oneshot::Receiver<String> {
         let mut receivers = self.stdout_cli_receivers.lock().unwrap();
 
         if receivers.is_some() {
             panic!("Only one CLI stdout receiver is allowed at a time");
         }
 
-        let (sender, receiver) = tokio::sync::oneshot::channel::<String>();
+        let (sender, receiver) = oneshot::channel::<String>();
         *receivers = Some(sender);
         receiver
     }
 
-    fn stdout(&self) -> Receiver<String> {
+    fn stdout(&self) -> mpsc::UnboundedReceiver<String> {
         let mut receivers = self.stdout_receivers.lock().unwrap();
-        let (sender, receiver) = async_channel::unbounded::<String>();
+        let (sender, receiver) = mpsc::unbounded_channel::<String>();
         receivers.push(sender);
         receiver
     }
 
-    fn stderr(&self) -> Receiver<String> {
+    fn stderr(&self) -> mpsc::UnboundedReceiver<String> {
         let mut receivers = self.stderr_receivers.lock().unwrap();
-        let (sender, receiver) = async_channel::unbounded::<String>();
+        let (sender, receiver) = mpsc::unbounded_channel::<String>();
         receivers.push(sender);
         receiver
     }

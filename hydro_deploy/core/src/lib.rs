@@ -4,7 +4,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_channel::{Receiver, Sender};
 use async_trait::async_trait;
 use hydroflow_cli_integration::ServerBindConfig;
 
@@ -29,6 +28,7 @@ pub use hydroflow_crate::HydroflowCrate;
 
 pub mod custom_service;
 pub use custom_service::CustomService;
+use tokio::sync::{mpsc, oneshot};
 
 use crate::hydroflow_crate::build::BuildOutput;
 
@@ -72,16 +72,16 @@ pub struct ResourceResult {
 
 #[async_trait]
 pub trait LaunchedBinary: Send + Sync {
-    fn stdin(&self) -> Sender<String>;
+    fn stdin(&self) -> mpsc::UnboundedSender<String>;
 
     /// Provides a oneshot channel for the CLI to handshake with the binary,
     /// with the guarantee that as long as the CLI is holding on
     /// to a handle, none of the messages will also be broadcast
     /// to the user-facing [`LaunchedBinary::stdout`] channel.
-    fn cli_stdout(&self) -> tokio::sync::oneshot::Receiver<String>;
+    fn cli_stdout(&self) -> oneshot::Receiver<String>;
 
-    fn stdout(&self) -> Receiver<String>;
-    fn stderr(&self) -> Receiver<String>;
+    fn stdout(&self) -> mpsc::UnboundedReceiver<String>;
+    fn stderr(&self) -> mpsc::UnboundedReceiver<String>;
 
     fn exit_code(&self) -> Option<i32>;
 

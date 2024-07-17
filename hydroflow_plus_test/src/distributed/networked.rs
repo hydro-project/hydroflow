@@ -109,10 +109,10 @@ mod tests {
         deployment.deploy().await.unwrap();
 
         let mut conn_to_zero = port_to_zero.connect().await.into_sink();
-        let node_one_stdout = io.process_one.stdout().await;
+        let mut node_one_stdout = io.process_one.stdout().await;
 
         let mut conn_to_cluster = ports_to_cluster[0].connect().await.into_sink();
-        let cluster_stdout = io.cluster.members[0].stdout().await;
+        let mut cluster_stdout = io.cluster.members[0].stdout().await;
 
         deployment.start().await.unwrap();
 
