@@ -1003,7 +1003,7 @@
 ///
 /// This is a sealed trait.
 </span><span class="attr">#[sealed]
-</span><span class="kw">pub trait </span>EitherRefVariadic {
+</span><span class="kw">pub trait </span>EitherRefVariadic: Variadic {
     <span class="doccomment">/// The un-referenced variadic. Each item will have one layer of shared references removed.
     ///
     /// The inverse of [`VariadicExt::AsRefVar`] and [`VariadicExt::AsMutVar`].

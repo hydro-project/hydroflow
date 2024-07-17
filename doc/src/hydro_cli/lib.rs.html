@@ -1074,18 +1074,18 @@
     }
 
     <span class="attr">#[allow(non_snake_case, clippy::too_many_arguments)]
-    </span><span class="kw">fn </span>GCPComputeEngineHost(
+    </span><span class="kw">fn </span>GcpComputeEngineHost(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         py: Python&lt;<span class="lifetime">'_</span>&gt;,
         project: String,
         machine_type: String,
         image: String,
         region: String,
-        network: GCPNetwork,
+        network: GcpNetwork,
         user: <span class="prelude-ty">Option</span>&lt;String&gt;,
     ) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
         <span class="kw">let </span>arc = <span class="self">self</span>.underlying.blocking_write().add_host(|id| {
-            core::GCPComputeEngineHost::new(
+            core::GcpComputeEngineHost::new(
                 id,
                 project,
                 machine_type,
@@ -1101,7 +1101,7 @@
             PyClassInitializer::from(Host {
                 underlying: arc.clone(),
             })
-            .add_subclass(GCPComputeEngineHost { underlying: arc }),
+            .add_subclass(GcpComputeEngineHost { underlying: arc }),
         )<span class="question-mark">?
         </span>.into_py(py))
     }
@@ -1255,27 +1255,27 @@
 
 <span class="attr">#[pyclass]
 #[derive(Clone)]
-</span><span class="kw">struct </span>GCPNetwork {
-    underlying: Arc&lt;RwLock&lt;core::gcp::GCPNetwork&gt;&gt;,
+</span><span class="kw">struct </span>GcpNetwork {
+    underlying: Arc&lt;RwLock&lt;core::gcp::GcpNetwork&gt;&gt;,
 }
 
 <span class="attr">#[pymethods]
-</span><span class="kw">impl </span>GCPNetwork {
+</span><span class="kw">impl </span>GcpNetwork {
     <span class="attr">#[new]
     </span><span class="kw">fn </span>new(project: String, existing: <span class="prelude-ty">Option</span>&lt;String&gt;) -&gt; <span class="self">Self </span>{
-        GCPNetwork {
-            underlying: Arc::new(RwLock::new(core::gcp::GCPNetwork::new(project, existing))),
+        GcpNetwork {
+            underlying: Arc::new(RwLock::new(core::gcp::GcpNetwork::new(project, existing))),
         }
     }
 }
 
 <span class="attr">#[pyclass(extends=Host, subclass)]
-</span><span class="kw">struct </span>GCPComputeEngineHost {
-    underlying: Arc&lt;RwLock&lt;core::GCPComputeEngineHost&gt;&gt;,
+</span><span class="kw">struct </span>GcpComputeEngineHost {
+    underlying: Arc&lt;RwLock&lt;core::GcpComputeEngineHost&gt;&gt;,
 }
 
 <span class="attr">#[pymethods]
-</span><span class="kw">impl </span>GCPComputeEngineHost {
+</span><span class="kw">impl </span>GcpComputeEngineHost {
     <span class="attr">#[getter]
     </span><span class="kw">fn </span>internal_ip(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         <span class="self">self</span>.underlying
@@ -1774,8 +1774,8 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
     module.add_class::&lt;Host&gt;()<span class="question-mark">?</span>;
     module.add_class::&lt;LocalhostHost&gt;()<span class="question-mark">?</span>;
 
-    module.add_class::&lt;GCPNetwork&gt;()<span class="question-mark">?</span>;
-    module.add_class::&lt;GCPComputeEngineHost&gt;()<span class="question-mark">?</span>;
+    module.add_class::&lt;GcpNetwork&gt;()<span class="question-mark">?</span>;
+    module.add_class::&lt;GcpComputeEngineHost&gt;()<span class="question-mark">?</span>;
 
     module.add_class::&lt;Service&gt;()<span class="question-mark">?</span>;
     module.add_class::&lt;CustomService&gt;()<span class="question-mark">?</span>;

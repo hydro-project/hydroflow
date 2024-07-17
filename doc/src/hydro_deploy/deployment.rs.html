@@ -192,9 +192,9 @@
 <span class="kw">use </span>futures::{StreamExt, TryStreamExt};
 <span class="kw">use </span>tokio::sync::RwLock;
 
-<span class="kw">use </span><span class="kw">super</span>::gcp::GCPNetwork;
+<span class="kw">use </span><span class="kw">super</span>::gcp::GcpNetwork;
 <span class="kw">use super</span>::{
-    progress, CustomService, GCPComputeEngineHost, Host, LocalhostHost, ResourcePool,
+    progress, CustomService, GcpComputeEngineHost, Host, LocalhostHost, ResourcePool,
     ResourceResult, Service,
 };
 <span class="kw">use </span><span class="kw">crate</span>::ServiceBuilder;
@@ -220,17 +220,17 @@
     }
 
     <span class="attr">#[allow(non_snake_case)]
-    </span><span class="kw">pub fn </span>GCPComputeEngineHost(
+    </span><span class="kw">pub fn </span>GcpComputeEngineHost(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         project: <span class="kw">impl </span>Into&lt;String&gt;,
         machine_type: <span class="kw">impl </span>Into&lt;String&gt;,
         image: <span class="kw">impl </span>Into&lt;String&gt;,
         region: <span class="kw">impl </span>Into&lt;String&gt;,
-        network: Arc&lt;RwLock&lt;GCPNetwork&gt;&gt;,
+        network: Arc&lt;RwLock&lt;GcpNetwork&gt;&gt;,
         user: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    ) -&gt; Arc&lt;RwLock&lt;GCPComputeEngineHost&gt;&gt; {
+    ) -&gt; Arc&lt;RwLock&lt;GcpComputeEngineHost&gt;&gt; {
         <span class="self">self</span>.add_host(|id| {
-            GCPComputeEngineHost::new(id, project, machine_type, image, region, network, user)
+            GcpComputeEngineHost::new(id, project, machine_type, image, region, network, user)
         })
     }
 

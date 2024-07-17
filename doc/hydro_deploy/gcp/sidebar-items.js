@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["GCPComputeEngineHost","GCPNetwork","LaunchedComputeEngine"]};
+window.SIDEBAR_ITEMS = {"struct":["GcpComputeEngineHost","GcpNetwork","LaunchedComputeEngine"]};

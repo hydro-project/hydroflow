@@ -567,13 +567,13 @@
 }
 
 <span class="attr">#[derive(Debug)]
-</span><span class="kw">pub struct </span>GCPNetwork {
+</span><span class="kw">pub struct </span>GcpNetwork {
     <span class="kw">pub </span>project: String,
     <span class="kw">pub </span>existing_vpc: <span class="prelude-ty">Option</span>&lt;String&gt;,
     id: String,
 }
 
-<span class="kw">impl </span>GCPNetwork {
+<span class="kw">impl </span>GcpNetwork {
     <span class="kw">pub fn </span>new(project: <span class="kw">impl </span>Into&lt;String&gt;, existing_vpc: <span class="prelude-ty">Option</span>&lt;String&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             project: project.into(),
@@ -690,26 +690,26 @@
     }
 }
 
-<span class="kw">pub struct </span>GCPComputeEngineHost {
+<span class="kw">pub struct </span>GcpComputeEngineHost {
     <span class="kw">pub </span>id: usize,
     <span class="kw">pub </span>project: String,
     <span class="kw">pub </span>machine_type: String,
     <span class="kw">pub </span>image: String,
     <span class="kw">pub </span>region: String,
-    <span class="kw">pub </span>network: Arc&lt;RwLock&lt;GCPNetwork&gt;&gt;,
+    <span class="kw">pub </span>network: Arc&lt;RwLock&lt;GcpNetwork&gt;&gt;,
     <span class="kw">pub </span>user: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="kw">pub </span>launched: <span class="prelude-ty">Option</span>&lt;Arc&lt;LaunchedComputeEngine&gt;&gt;,
     external_ports: Vec&lt;u16&gt;,
 }
 
-<span class="kw">impl </span>GCPComputeEngineHost {
+<span class="kw">impl </span>GcpComputeEngineHost {
     <span class="kw">pub fn </span>new(
         id: usize,
         project: <span class="kw">impl </span>Into&lt;String&gt;,
         machine_type: <span class="kw">impl </span>Into&lt;String&gt;,
         image: <span class="kw">impl </span>Into&lt;String&gt;,
         region: <span class="kw">impl </span>Into&lt;String&gt;,
-        network: Arc&lt;RwLock&lt;GCPNetwork&gt;&gt;,
+        network: Arc&lt;RwLock&lt;GcpNetwork&gt;&gt;,
         user: <span class="prelude-ty">Option</span>&lt;String&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
@@ -727,7 +727,7 @@
 }
 
 <span class="attr">#[async_trait]
-</span><span class="kw">impl </span>Host <span class="kw">for </span>GCPComputeEngineHost {
+</span><span class="kw">impl </span>Host <span class="kw">for </span>GcpComputeEngineHost {
     <span class="kw">fn </span>target_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HostTargetType {
         HostTargetType::Linux
     }
@@ -1006,7 +1006,7 @@
             <span class="prelude-val">Ok</span>((
                 ClientStrategy::ForwardedTcpPort(<span class="self">self</span>),
                 Box::new(|me| {
-                    me.downcast_mut::&lt;GCPComputeEngineHost&gt;()
+                    me.downcast_mut::&lt;GcpComputeEngineHost&gt;()
                         .unwrap()
                         .request_port(<span class="kw-2">&amp;</span>ServerStrategy::ExternalTcpPort(<span class="number">22</span>)); <span class="comment">// needed to forward
                     </span>ServerStrategy::InternalTcpPort
@@ -1033,7 +1033,7 @@
             }
             ClientStrategy::InternalTcpPort(target_host) =&gt; {
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(gcp_target) =
-                    target_host.as_any().downcast_ref::&lt;GCPComputeEngineHost&gt;()
+                    target_host.as_any().downcast_ref::&lt;GcpComputeEngineHost&gt;()
                 {
                     <span class="self">self</span>.project == gcp_target.project
                 } <span class="kw">else </span>{
