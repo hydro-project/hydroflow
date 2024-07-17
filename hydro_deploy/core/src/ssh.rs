@@ -379,11 +379,11 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
         let id_clone = id.clone();
         let (stdout_cli_receivers, stdout_receivers) =
             prioritized_broadcast(BufReader::new(channel.stream(0)).lines(), move |s| {
-                println!("[{id_clone}] {s}")
+                ProgressTracker::println(&format!("[{id_clone}] {s}"));
             });
         let (_, stderr_receivers) =
             prioritized_broadcast(BufReader::new(channel.stderr()).lines(), move |s| {
-                eprintln!("[{id}] {s}")
+                ProgressTracker::println(&format!("[{id} stderr] {s}"));
             });
 
         Ok(Box::new(LaunchedSshBinary {
