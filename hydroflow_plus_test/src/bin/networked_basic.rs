@@ -2,7 +2,7 @@
 #[tokio::main]
 async fn main() {
     hydroflow_plus::util::cli::launch!(|ports| {
-        hydroflow_plus_test::networked::networked_basic_runtime!(ports)
+        hydroflow_plus_test::distributed::networked::networked_basic_runtime!(ports)
     })
     .await;
 }

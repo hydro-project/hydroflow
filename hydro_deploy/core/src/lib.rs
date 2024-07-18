@@ -4,10 +4,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_channel::{Receiver, Sender};
 use async_trait::async_trait;
 use hydroflow_cli_integration::ServerBindConfig;
-use tokio::sync::RwLock;
 
 pub mod deployment;
 pub use deployment::Deployment;
@@ -20,7 +18,7 @@ pub use localhost::LocalhostHost;
 pub mod ssh;
 
 pub mod gcp;
-pub use gcp::GCPComputeEngineHost;
+pub use gcp::GcpComputeEngineHost;
 
 pub mod azure;
 pub use azure::AzureHost;
@@ -30,6 +28,9 @@ pub use hydroflow_crate::HydroflowCrate;
 
 pub mod custom_service;
 pub use custom_service::CustomService;
+use tokio::sync::{mpsc, oneshot};
+
+use crate::hydroflow_crate::build::BuildOutput;
 
 pub mod terraform;
 
@@ -71,18 +72,18 @@ pub struct ResourceResult {
 
 #[async_trait]
 pub trait LaunchedBinary: Send + Sync {
-    async fn stdin(&self) -> Sender<String>;
+    fn stdin(&self) -> mpsc::UnboundedSender<String>;
 
     /// Provides a oneshot channel for the CLI to handshake with the binary,
     /// with the guarantee that as long as the CLI is holding on
     /// to a handle, none of the messages will also be broadcast
     /// to the user-facing [`LaunchedBinary::stdout`] channel.
-    async fn cli_stdout(&self) -> tokio::sync::oneshot::Receiver<String>;
+    fn cli_stdout(&self) -> oneshot::Receiver<String>;
 
-    async fn stdout(&self) -> Receiver<String>;
-    async fn stderr(&self) -> Receiver<String>;
+    fn stdout(&self) -> mpsc::UnboundedReceiver<String>;
+    fn stderr(&self) -> mpsc::UnboundedReceiver<String>;
 
-    async fn exit_code(&self) -> Option<i32>;
+    fn exit_code(&self) -> Option<i32>;
 
     async fn wait(&mut self) -> Option<i32>;
 }
@@ -93,15 +94,15 @@ pub trait LaunchedHost: Send + Sync {
     /// to listen to network connections (such as the IP address to bind to).
     fn server_config(&self, strategy: &ServerStrategy) -> ServerBindConfig;
 
-    async fn copy_binary(&self, binary: Arc<(String, Vec<u8>, PathBuf)>) -> Result<()>;
+    async fn copy_binary(&self, binary: &BuildOutput) -> Result<()>;
 
     async fn launch_binary(
         &self,
         id: String,
-        binary: Arc<(String, Vec<u8>, PathBuf)>,
+        binary: &BuildOutput,
         args: &[String],
         perf: Option<PathBuf>,
-    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>>;
+    ) -> Result<Box<dyn LaunchedBinary>>;
 
     async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr>;
 }

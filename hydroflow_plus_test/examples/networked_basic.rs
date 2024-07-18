@@ -12,7 +12,7 @@ async fn main() {
 
     let deployment = RefCell::new(deployment);
     let builder = hydroflow_plus::FlowBuilder::new();
-    let io = hydroflow_plus_test::networked::networked_basic(
+    let io = hydroflow_plus_test::distributed::networked::networked_basic(
         &builder,
         &DeployProcessSpec::new(|| {
             deployment.borrow_mut().add_service(

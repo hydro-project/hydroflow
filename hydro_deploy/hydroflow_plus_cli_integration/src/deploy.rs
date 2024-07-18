@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use async_channel::Receiver;
 use hydro_deploy::custom_service::CustomClientPort;
 use hydro_deploy::hydroflow_crate::ports::{
     DemuxSink, HydroflowSink, HydroflowSource, TaggedSource,
@@ -55,13 +54,13 @@ pub trait DeployCrateWrapper {
     }
 
     #[allow(async_fn_in_trait)]
-    async fn stdout(&self) -> Receiver<String> {
-        self.underlying().read().await.stdout().await
+    async fn stdout(&self) -> tokio::sync::mpsc::UnboundedReceiver<String> {
+        self.underlying().read().await.stdout()
     }
 
     #[allow(async_fn_in_trait)]
-    async fn stderr(&self) -> Receiver<String> {
-        self.underlying().read().await.stderr().await
+    async fn stderr(&self) -> tokio::sync::mpsc::UnboundedReceiver<String> {
+        self.underlying().read().await.stderr()
     }
 }
 

@@ -2,69 +2,69 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use anyhow::{Context, Result};
-use async_channel::{Receiver, Sender};
 use async_ssh2_lite::ssh2::ErrorCode;
 use async_ssh2_lite::{AsyncChannel, AsyncSession, Error, SessionConfiguration};
 use async_trait::async_trait;
 use futures::io::BufReader;
-use futures::{AsyncBufReadExt, AsyncWriteExt, StreamExt};
+use futures::{AsyncBufReadExt, AsyncWriteExt};
 use hydroflow_cli_integration::ServerBindConfig;
 use nanoid::nanoid;
 use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::RwLock;
+use tokio::sync::{mpsc, oneshot};
 
 use super::progress::ProgressTracker;
 use super::util::async_retry;
 use super::{LaunchedBinary, LaunchedHost, ResourceResult, ServerStrategy};
+use crate::hydroflow_crate::build::BuildOutput;
 use crate::util::prioritized_broadcast;
 
-struct LaunchedSSHBinary {
+struct LaunchedSshBinary {
     _resource_result: Arc<ResourceResult>,
     session: Option<AsyncSession<TcpStream>>,
     channel: AsyncChannel<TcpStream>,
-    stdin_sender: Sender<String>,
-    stdout_receivers: Arc<RwLock<Vec<Sender<String>>>>,
-    stdout_cli_receivers: Arc<RwLock<Option<tokio::sync::oneshot::Sender<String>>>>,
-    stderr_receivers: Arc<RwLock<Vec<Sender<String>>>>,
+    stdin_sender: mpsc::UnboundedSender<String>,
+    stdout_receivers: Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
+    stdout_cli_receivers: Arc<Mutex<Option<oneshot::Sender<String>>>>,
+    stderr_receivers: Arc<Mutex<Vec<mpsc::UnboundedSender<String>>>>,
 }
 
 #[async_trait]
-impl LaunchedBinary for LaunchedSSHBinary {
-    async fn stdin(&self) -> Sender<String> {
+impl LaunchedBinary for LaunchedSshBinary {
+    fn stdin(&self) -> mpsc::UnboundedSender<String> {
         self.stdin_sender.clone()
     }
 
-    async fn cli_stdout(&self) -> tokio::sync::oneshot::Receiver<String> {
-        let mut receivers = self.stdout_cli_receivers.write().await;
+    fn cli_stdout(&self) -> oneshot::Receiver<String> {
+        let mut receivers = self.stdout_cli_receivers.lock().unwrap();
 
         if receivers.is_some() {
             panic!("Only one CLI stdout receiver is allowed at a time");
         }
 
-        let (sender, receiver) = tokio::sync::oneshot::channel::<String>();
+        let (sender, receiver) = oneshot::channel::<String>();
         *receivers = Some(sender);
         receiver
     }
 
-    async fn stdout(&self) -> Receiver<String> {
-        let mut receivers = self.stdout_receivers.write().await;
-        let (sender, receiver) = async_channel::unbounded::<String>();
+    fn stdout(&self) -> mpsc::UnboundedReceiver<String> {
+        let mut receivers = self.stdout_receivers.lock().unwrap();
+        let (sender, receiver) = mpsc::unbounded_channel::<String>();
         receivers.push(sender);
         receiver
     }
 
-    async fn stderr(&self) -> Receiver<String> {
-        let mut receivers = self.stderr_receivers.write().await;
-        let (sender, receiver) = async_channel::unbounded::<String>();
+    fn stderr(&self) -> mpsc::UnboundedReceiver<String> {
+        let mut receivers = self.stderr_receivers.lock().unwrap();
+        let (sender, receiver) = mpsc::unbounded_channel::<String>();
         receivers.push(sender);
         receiver
     }
 
-    async fn exit_code(&self) -> Option<i32> {
+    fn exit_code(&self) -> Option<i32> {
         // until the program exits, the exit status is meaningless
         if self.channel.eof() {
             self.channel.exit_status().ok()
@@ -75,13 +75,13 @@ impl LaunchedBinary for LaunchedSSHBinary {
 
     async fn wait(&mut self) -> Option<i32> {
         self.channel.wait_eof().await.unwrap();
-        let ret = self.exit_code().await;
+        let ret = self.exit_code();
         self.channel.wait_close().await.unwrap();
         ret
     }
 }
 
-impl Drop for LaunchedSSHBinary {
+impl Drop for LaunchedSshBinary {
     fn drop(&mut self) {
         let session = self.session.take().unwrap();
         std::thread::scope(|s| {
@@ -98,7 +98,7 @@ impl Drop for LaunchedSSHBinary {
 }
 
 #[async_trait]
-pub trait LaunchedSSHHost: Send + Sync {
+pub trait LaunchedSshHost: Send + Sync {
     fn get_internal_ip(&self) -> String;
     fn get_external_ip(&self) -> Option<String>;
     fn get_cloud_provider(&self) -> String;
@@ -126,7 +126,7 @@ pub trait LaunchedSSHHost: Send + Sync {
             ServerStrategy::Demux(demux) => {
                 let mut config_map = HashMap::new();
                 for (key, underlying) in demux {
-                    config_map.insert(*key, LaunchedSSHHost::server_config(self, underlying));
+                    config_map.insert(*key, LaunchedSshHost::server_config(self, underlying));
                 }
 
                 ServerBindConfig::Demux(config_map)
@@ -134,13 +134,13 @@ pub trait LaunchedSSHHost: Send + Sync {
             ServerStrategy::Merge(merge) => {
                 let mut configs = vec![];
                 for underlying in merge {
-                    configs.push(LaunchedSSHHost::server_config(self, underlying));
+                    configs.push(LaunchedSshHost::server_config(self, underlying));
                 }
 
                 ServerBindConfig::Merge(configs)
             }
             ServerStrategy::Tagged(underlying, id) => ServerBindConfig::Tagged(
-                Box::new(LaunchedSSHHost::server_config(self, underlying)),
+                Box::new(LaunchedSshHost::server_config(self, underlying)),
                 *id,
             ),
             ServerStrategy::Null => ServerBindConfig::Null,
@@ -197,12 +197,12 @@ pub trait LaunchedSSHHost: Send + Sync {
 }
 
 #[async_trait]
-impl<T: LaunchedSSHHost> LaunchedHost for T {
+impl<T: LaunchedSshHost> LaunchedHost for T {
     fn server_config(&self, bind_type: &ServerStrategy) -> ServerBindConfig {
-        LaunchedSSHHost::server_config(self, bind_type)
+        LaunchedSshHost::server_config(self, bind_type)
     }
 
-    async fn copy_binary(&self, binary: Arc<(String, Vec<u8>, PathBuf)>) -> Result<()> {
+    async fn copy_binary(&self, binary: &BuildOutput) -> Result<()> {
         let session = self.open_ssh_session().await?;
 
         let sftp = async_retry(
@@ -213,7 +213,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         .await?;
 
         // we may be deploying multiple binaries, so give each a unique name
-        let unique_name = &binary.0;
+        let unique_name = &binary.unique_id;
 
         let user = self.ssh_user();
         let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_name}"));
@@ -224,7 +224,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
             let sftp = &sftp;
 
             ProgressTracker::rich_leaf(
-                format!("uploading binary to /home/{user}/hydro-{unique_name}"),
+                format!("uploading binary to {}", binary_path.display()),
                 |set_progress, _| {
                     let binary = &binary;
                     let binary_path = &binary_path;
@@ -232,15 +232,17 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
                         let mut created_file = sftp.create(&temp_path).await?;
 
                         let mut index = 0;
-                        while index < binary.1.len() {
+                        while index < binary.bin_data.len() {
                             let written = created_file
                                 .write(
-                                    &binary.1
-                                        [index..std::cmp::min(index + 128 * 1024, binary.1.len())],
+                                    &binary.bin_data[index
+                                        ..std::cmp::min(index + 128 * 1024, binary.bin_data.len())],
                                 )
                                 .await?;
                             index += written;
-                            set_progress(((index as f64 / binary.1.len() as f64) * 100.0) as u64);
+                            set_progress(
+                                ((index as f64 / binary.bin_data.len() as f64) * 100.0) as u64,
+                            );
                         }
                         let mut orig_file_stat = sftp.stat(&temp_path).await?;
                         orig_file_stat.perm = Some(0o755); // allow the copied binary to be executed by anyone
@@ -271,19 +273,19 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
     async fn launch_binary(
         &self,
         id: String,
-        binary: Arc<(String, Vec<u8>, PathBuf)>,
+        binary: &BuildOutput,
         args: &[String],
         perf: Option<PathBuf>,
-    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
+    ) -> Result<Box<dyn LaunchedBinary>> {
         let session = self.open_ssh_session().await?;
 
-        let unique_name = &binary.0;
+        let unique_name = &binary.unique_id;
 
         let user = self.ssh_user();
         let binary_path = PathBuf::from(format!("/home/{user}/hydro-{unique_name}"));
 
         let channel = ProgressTracker::leaf(
-            format!("launching binary /home/{user}/hydro-{unique_name}"),
+            format!("launching binary {}", binary_path.display()),
             async {
                 let mut channel =
                     async_retry(
@@ -307,7 +309,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
                     .exec(&format!("{binary_path_string}{args_string}"))
                     .await?;
                 if perf.is_some() {
-                    todo!("Perf profiling on remote machines is not supported");
+                    todo!("Profiling on remote machines is not (yet) supported");
                 }
 
                 anyhow::Ok(channel)
@@ -315,10 +317,10 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
         )
         .await?;
 
-        let (stdin_sender, mut stdin_receiver) = async_channel::unbounded::<String>();
+        let (stdin_sender, mut stdin_receiver) = mpsc::unbounded_channel::<String>();
         let mut stdin = channel.stream(0); // stream 0 is stdout/stdin, we use it for stdin
         tokio::spawn(async move {
-            while let Some(line) = stdin_receiver.next().await {
+            while let Some(line) = stdin_receiver.recv().await {
                 if stdin.write_all(line.as_bytes()).await.is_err() {
                     break;
                 }
@@ -337,7 +339,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
                 eprintln!("[{id}] {s}")
             });
 
-        Ok(Arc::new(RwLock::new(LaunchedSSHBinary {
+        Ok(Box::new(LaunchedSshBinary {
             _resource_result: self.resource_result().clone(),
             session: Some(session),
             channel,
@@ -345,7 +347,7 @@ impl<T: LaunchedSSHHost> LaunchedHost for T {
             stdout_cli_receivers,
             stdout_receivers,
             stderr_receivers,
-        })))
+        }))
     }
 
     async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr> {

@@ -138,17 +138,6 @@ checksum = "d92bec98840b8f03a5ff5413de5293bfcd8bf96467cf5452609f939ec6f5de16"
 
 [[package]]
 name = "async-channel"
-version = "1.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81953c529336010edd6d8e358f886d9581267795c61b19475b71314bffa46d35"
-dependencies = [
- "concurrent-queue",
- "event-listener 2.5.3",
- "futures-core",
-]
-
-[[package]]
-name = "async-channel"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ca33f4bc4ed1babef42cad36cc1f51fa88be00420404e5b1e80ab1b18f7678c"
@@ -218,12 +207,6 @@ dependencies = [
  "event-listener-strategy",
  "pin-project-lite",
 ]
-
-[[package]]
-name = "async-once-cell"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9338790e78aa95a416786ec8389546c4b6a1dfc3dc36071ed9518a9413a542eb"
 
 [[package]]
 name = "async-process"
@@ -367,7 +350,6 @@ version = "0.0.0"
 dependencies = [
  "criterion",
  "differential-dataflow-master",
- "futures",
  "hydroflow",
  "lazy_static",
  "rand 0.8.5",
@@ -414,7 +396,7 @@ version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a37913e8dc4ddcc604f0c6d3bf2887c995153af3611de9e23c352b44c1b9118"
 dependencies = [
- "async-channel 2.1.1",
+ "async-channel",
  "async-lock 3.2.0",
  "async-task",
  "fastrand 2.0.1",
@@ -1357,14 +1339,12 @@ name = "hydro_cli"
 version = "0.7.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
  "async-ssh2-lite",
  "bytes",
  "clap",
  "futures",
  "hydro_deploy",
  "hydroflow_cli_integration",
- "once_cell",
  "pyo3",
  "pyo3-asyncio",
  "pythonize",
@@ -1392,8 +1372,6 @@ name = "hydro_deploy"
 version = "0.7.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
- "async-once-cell",
  "async-process",
  "async-recursion",
  "async-ssh2-lite",
@@ -1406,14 +1384,15 @@ dependencies = [
  "futures-core",
  "hydroflow_cli_integration",
  "indicatif",
+ "memo-map",
  "nanoid",
  "nix 0.26.4",
- "once_cell",
  "serde",
  "serde_json",
  "shell-escape",
  "tempfile",
  "tokio",
+ "tokio-stream",
  "tokio-util",
 ]
 
@@ -1565,7 +1544,6 @@ dependencies = [
 name = "hydroflow_plus_cli_integration"
 version = "0.7.0"
 dependencies = [
- "async-channel 1.9.0",
  "hydro_deploy",
  "hydroflow_plus",
  "serde",
@@ -1912,6 +1890,12 @@ name = "memchr"
 version = "2.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c8640c5d730cb13ebd907d8d04b52f55ac9a2eec55b440c8892f40d56c76c1d"
+
+[[package]]
+name = "memo-map"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "374c335b2df19e62d4cb323103473cbc6510980253119180de862d89184f6a83"
 
 [[package]]
 name = "memoffset"

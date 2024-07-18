@@ -2,13 +2,13 @@
 #![allow(unused_qualifications, non_local_definitions)]
 
 use core::hydroflow_crate::ports::HydroflowSource;
+use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::path::PathBuf;
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
-use async_channel::Receiver;
 use bytes::Bytes;
 use futures::{Future, SinkExt, StreamExt};
 use hydroflow_cli_integration::{
@@ -21,11 +21,11 @@ use pyo3::{create_exception, wrap_pymodule};
 use pyo3_asyncio::TaskLocals;
 use pythonize::pythonize;
 use tokio::sync::oneshot::Sender;
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 
 mod cli;
 use hydro_deploy as core;
-use hydro_deploy::ssh::LaunchedSSHHost;
+use hydro_deploy::ssh::LaunchedSshHost;
 
 static TOKIO_RUNTIME: std::sync::RwLock<Option<tokio::runtime::Runtime>> =
     std::sync::RwLock::new(None);
@@ -57,7 +57,7 @@ impl pyo3_asyncio::generic::Runtime for TokioRuntime {
 }
 
 tokio::task_local! {
-    static TASK_LOCALS: once_cell::unsync::OnceCell<TaskLocals>;
+    static TASK_LOCALS: OnceCell<TaskLocals>;
 }
 
 impl pyo3_asyncio::generic::ContextExt for TokioRuntime {
@@ -65,7 +65,7 @@ impl pyo3_asyncio::generic::ContextExt for TokioRuntime {
     where
         F: Future<Output = R> + Send + 'static,
     {
-        let cell = once_cell::unsync::OnceCell::new();
+        let cell = OnceCell::new();
         cell.set(locals).unwrap();
 
         Box::pin(TASK_LOCALS.scope(cell, fut))
@@ -94,8 +94,7 @@ impl SafeCancelToken {
     }
 }
 
-static CONVERTERS_MODULE: once_cell::sync::OnceCell<Py<PyModule>> =
-    once_cell::sync::OnceCell::new();
+static CONVERTERS_MODULE: OnceLock<Py<PyModule>> = OnceLock::new();
 
 fn interruptible_future_to_py<F, T>(py: Python<'_>, fut: F) -> PyResult<&PyAny>
 where
@@ -176,18 +175,18 @@ impl Deployment {
     }
 
     #[allow(non_snake_case, clippy::too_many_arguments)]
-    fn GCPComputeEngineHost(
+    fn GcpComputeEngineHost(
         &self,
         py: Python<'_>,
         project: String,
         machine_type: String,
         image: String,
         region: String,
-        network: GCPNetwork,
+        network: GcpNetwork,
         user: Option<String>,
     ) -> PyResult<Py<PyAny>> {
         let arc = self.underlying.blocking_write().add_host(|id| {
-            core::GCPComputeEngineHost::new(
+            core::GcpComputeEngineHost::new(
                 id,
                 project,
                 machine_type,
@@ -203,7 +202,7 @@ impl Deployment {
             PyClassInitializer::from(Host {
                 underlying: arc.clone(),
             })
-            .add_subclass(GCPComputeEngineHost { underlying: arc }),
+            .add_subclass(GcpComputeEngineHost { underlying: arc }),
         )?
         .into_py(py))
     }
@@ -357,27 +356,27 @@ impl LocalhostHost {
 
 #[pyclass]
 #[derive(Clone)]
-struct GCPNetwork {
-    underlying: Arc<RwLock<core::gcp::GCPNetwork>>,
+struct GcpNetwork {
+    underlying: Arc<RwLock<core::gcp::GcpNetwork>>,
 }
 
 #[pymethods]
-impl GCPNetwork {
+impl GcpNetwork {
     #[new]
     fn new(project: String, existing: Option<String>) -> Self {
-        GCPNetwork {
-            underlying: Arc::new(RwLock::new(core::gcp::GCPNetwork::new(project, existing))),
+        GcpNetwork {
+            underlying: Arc::new(RwLock::new(core::gcp::GcpNetwork::new(project, existing))),
         }
     }
 }
 
 #[pyclass(extends=Host, subclass)]
-struct GCPComputeEngineHost {
-    underlying: Arc<RwLock<core::GCPComputeEngineHost>>,
+struct GcpComputeEngineHost {
+    underlying: Arc<RwLock<core::GcpComputeEngineHost>>,
 }
 
 #[pymethods]
-impl GCPComputeEngineHost {
+impl GcpComputeEngineHost {
     #[getter]
     fn internal_ip(&self) -> String {
         self.underlying
@@ -476,7 +475,7 @@ impl Service {
 
 #[pyclass]
 struct PyReceiver {
-    receiver: Arc<Receiver<String>>,
+    receiver: Arc<Mutex<tokio::sync::mpsc::UnboundedReceiver<String>>>,
 }
 
 #[pymethods]
@@ -486,13 +485,15 @@ impl PyReceiver {
     }
 
     fn __anext__<'p>(&self, py: Python<'p>) -> Option<&'p PyAny> {
-        let my_receiver = self.receiver.clone();
+        let receiver = self.receiver.clone();
         Some(
             interruptible_future_to_py(py, async move {
-                let underlying = my_receiver.recv();
-                underlying
+                receiver
+                    .lock()
                     .await
-                    .map_err(|_| PyStopAsyncIteration::new_err(()))
+                    .recv()
+                    .await
+                    .ok_or_else(|| PyStopAsyncIteration::new_err(()))
             })
             .unwrap(),
         )
@@ -569,7 +570,7 @@ impl HydroflowCrate {
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
             Ok(PyReceiver {
-                receiver: Arc::new(underlying.stdout().await),
+                receiver: Arc::new(Mutex::new(underlying.stdout())),
             })
         })
     }
@@ -579,7 +580,7 @@ impl HydroflowCrate {
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
             Ok(PyReceiver {
-                receiver: Arc::new(underlying.stderr().await),
+                receiver: Arc::new(Mutex::new(underlying.stderr())),
             })
         })
     }
@@ -588,7 +589,7 @@ impl HydroflowCrate {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
-            Ok(underlying.exit_code().await)
+            Ok(underlying.exit_code())
         })
     }
 
@@ -876,8 +877,8 @@ async def coroutine_to_safely_cancellable(c, cancel_token):
     module.add_class::<Host>()?;
     module.add_class::<LocalhostHost>()?;
 
-    module.add_class::<GCPNetwork>()?;
-    module.add_class::<GCPComputeEngineHost>()?;
+    module.add_class::<GcpNetwork>()?;
+    module.add_class::<GcpComputeEngineHost>()?;
 
     module.add_class::<Service>()?;
     module.add_class::<CustomService>()?;

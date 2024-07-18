@@ -13,7 +13,6 @@ license = "Apache-2.0"
 criterion = { version = "0.5", features = [ "async_tokio", "html_reports" ] }
 hydroflow = { path = "../hydroflow" }
 lazy_static = "1.4.0"
-futures = "0.3"
 # pprof = { version = "0.6", features = [ "flamegraph", "criterion" ] }
 rand = "0.8.4"
 rand_distr = "0.4.3"
@@ -61,8 +60,4 @@ harness = false
 
 [[bench]]
 name = "symmetric_hash_join"
-harness = false
-
-[[bench]]
-name = "futures"
 harness = false

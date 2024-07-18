@@ -12,7 +12,7 @@ use super::{
     ClientStrategy, Host, HostTargetType, LaunchedHost, ResourceBatch, ResourceResult,
     ServerStrategy,
 };
-use crate::ssh::LaunchedSSHHost;
+use crate::ssh::LaunchedSshHost;
 
 pub struct LaunchedComputeEngine {
     resource_result: Arc<ResourceResult>,
@@ -21,7 +21,7 @@ pub struct LaunchedComputeEngine {
     pub external_ip: Option<String>,
 }
 
-impl LaunchedSSHHost for LaunchedComputeEngine {
+impl LaunchedSshHost for LaunchedComputeEngine {
     fn get_external_ip(&self) -> Option<String> {
         self.external_ip.clone()
     }
@@ -44,13 +44,13 @@ impl LaunchedSSHHost for LaunchedComputeEngine {
 }
 
 #[derive(Debug)]
-pub struct GCPNetwork {
+pub struct GcpNetwork {
     pub project: String,
     pub existing_vpc: Option<String>,
     id: String,
 }
 
-impl GCPNetwork {
+impl GcpNetwork {
     pub fn new(project: impl Into<String>, existing_vpc: Option<String>) -> Self {
         Self {
             project: project.into(),
@@ -167,26 +167,26 @@ impl GCPNetwork {
     }
 }
 
-pub struct GCPComputeEngineHost {
+pub struct GcpComputeEngineHost {
     pub id: usize,
     pub project: String,
     pub machine_type: String,
     pub image: String,
     pub region: String,
-    pub network: Arc<RwLock<GCPNetwork>>,
+    pub network: Arc<RwLock<GcpNetwork>>,
     pub user: Option<String>,
     pub launched: Option<Arc<LaunchedComputeEngine>>,
     external_ports: Vec<u16>,
 }
 
-impl GCPComputeEngineHost {
+impl GcpComputeEngineHost {
     pub fn new(
         id: usize,
         project: impl Into<String>,
         machine_type: impl Into<String>,
         image: impl Into<String>,
         region: impl Into<String>,
-        network: Arc<RwLock<GCPNetwork>>,
+        network: Arc<RwLock<GcpNetwork>>,
         user: Option<String>,
     ) -> Self {
         Self {
@@ -204,7 +204,7 @@ impl GCPComputeEngineHost {
 }
 
 #[async_trait]
-impl Host for GCPComputeEngineHost {
+impl Host for GcpComputeEngineHost {
     fn target_type(&self) -> HostTargetType {
         HostTargetType::Linux
     }
@@ -483,7 +483,7 @@ impl Host for GCPComputeEngineHost {
             Ok((
                 ClientStrategy::ForwardedTcpPort(self),
                 Box::new(|me| {
-                    me.downcast_mut::<GCPComputeEngineHost>()
+                    me.downcast_mut::<GcpComputeEngineHost>()
                         .unwrap()
                         .request_port(&ServerStrategy::ExternalTcpPort(22)); // needed to forward
                     ServerStrategy::InternalTcpPort
@@ -510,7 +510,7 @@ impl Host for GCPComputeEngineHost {
             }
             ClientStrategy::InternalTcpPort(target_host) => {
                 if let Some(gcp_target) =
-                    target_host.as_any().downcast_ref::<GCPComputeEngineHost>()
+                    target_host.as_any().downcast_ref::<GcpComputeEngineHost>()
                 {
                     self.project == gcp_target.project
                 } else {

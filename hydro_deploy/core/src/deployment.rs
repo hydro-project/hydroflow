@@ -4,9 +4,9 @@ use anyhow::Result;
 use futures::{StreamExt, TryStreamExt};
 use tokio::sync::RwLock;
 
-use super::gcp::GCPNetwork;
+use super::gcp::GcpNetwork;
 use super::{
-    progress, CustomService, GCPComputeEngineHost, Host, LocalhostHost, ResourcePool,
+    progress, CustomService, GcpComputeEngineHost, Host, LocalhostHost, ResourcePool,
     ResourceResult, Service,
 };
 use crate::ServiceBuilder;
@@ -32,17 +32,17 @@ impl Deployment {
     }
 
     #[allow(non_snake_case)]
-    pub fn GCPComputeEngineHost(
+    pub fn GcpComputeEngineHost(
         &mut self,
         project: impl Into<String>,
         machine_type: impl Into<String>,
         image: impl Into<String>,
         region: impl Into<String>,
-        network: Arc<RwLock<GCPNetwork>>,
+        network: Arc<RwLock<GcpNetwork>>,
         user: Option<String>,
-    ) -> Arc<RwLock<GCPComputeEngineHost>> {
+    ) -> Arc<RwLock<GcpComputeEngineHost>> {
         self.add_host(|id| {
-            GCPComputeEngineHost::new(id, project, machine_type, image, region, network, user)
+            GcpComputeEngineHost::new(id, project, machine_type, image, region, network, user)
         })
     }
 
