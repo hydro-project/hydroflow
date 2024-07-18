@@ -1,28 +1,27 @@
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use async_channel::{Receiver, Sender};
 use async_trait::async_trait;
 use futures::io::BufReader;
 use futures::{AsyncBufReadExt, AsyncWriteExt, StreamExt};
-use tokio::sync::RwLock;
 
 use crate::util::prioritized_broadcast;
 use crate::LaunchedBinary;
 
 pub struct LaunchedLocalhostBinary {
-    child: RwLock<async_process::Child>,
+    child: Mutex<async_process::Child>,
     stdin_sender: Sender<String>,
-    stdout_cli_receivers: Arc<RwLock<Option<tokio::sync::oneshot::Sender<String>>>>,
-    stdout_receivers: Arc<RwLock<Vec<Sender<String>>>>,
-    stderr_receivers: Arc<RwLock<Vec<Sender<String>>>>,
+    stdout_cli_receivers: Arc<Mutex<Option<tokio::sync::oneshot::Sender<String>>>>,
+    stdout_receivers: Arc<Mutex<Vec<Sender<String>>>>,
+    stderr_receivers: Arc<Mutex<Vec<Sender<String>>>>,
 }
 
 #[cfg(unix)]
 impl Drop for LaunchedLocalhostBinary {
     fn drop(&mut self) {
-        let mut child = self.child.try_write().unwrap();
+        let mut child = self.child.lock().unwrap();
 
         if let Ok(Some(_)) = child.try_status() {
             return;
@@ -63,7 +62,7 @@ impl LaunchedLocalhostBinary {
         );
 
         Self {
-            child: RwLock::new(child),
+            child: Mutex::new(child),
             stdin_sender,
             stdout_cli_receivers,
             stdout_receivers,
@@ -74,12 +73,12 @@ impl LaunchedLocalhostBinary {
 
 #[async_trait]
 impl LaunchedBinary for LaunchedLocalhostBinary {
-    async fn stdin(&self) -> Sender<String> {
+    fn stdin(&self) -> Sender<String> {
         self.stdin_sender.clone()
     }
 
-    async fn cli_stdout(&self) -> tokio::sync::oneshot::Receiver<String> {
-        let mut receivers = self.stdout_cli_receivers.write().await;
+    fn cli_stdout(&self) -> tokio::sync::oneshot::Receiver<String> {
+        let mut receivers = self.stdout_cli_receivers.lock().unwrap();
 
         if receivers.is_some() {
             panic!("Only one CLI stdout receiver is allowed at a time");
@@ -90,24 +89,24 @@ impl LaunchedBinary for LaunchedLocalhostBinary {
         receiver
     }
 
-    async fn stdout(&self) -> Receiver<String> {
-        let mut receivers = self.stdout_receivers.write().await;
+    fn stdout(&self) -> Receiver<String> {
+        let mut receivers = self.stdout_receivers.lock().unwrap();
         let (sender, receiver) = async_channel::unbounded::<String>();
         receivers.push(sender);
         receiver
     }
 
-    async fn stderr(&self) -> Receiver<String> {
-        let mut receivers = self.stderr_receivers.write().await;
+    fn stderr(&self) -> Receiver<String> {
+        let mut receivers = self.stderr_receivers.lock().unwrap();
         let (sender, receiver) = async_channel::unbounded::<String>();
         receivers.push(sender);
         receiver
     }
 
-    async fn exit_code(&self) -> Option<i32> {
+    fn exit_code(&self) -> Option<i32> {
         self.child
-            .write()
-            .await
+            .lock()
+            .unwrap()
             .try_status()
             .ok()
             .flatten()
@@ -120,7 +119,7 @@ impl LaunchedBinary for LaunchedLocalhostBinary {
     }
 
     async fn wait(&mut self) -> Option<i32> {
-        let _ = self.child.get_mut().status().await;
-        self.exit_code().await
+        let _ = self.child.get_mut().unwrap().status().await;
+        self.exit_code()
     }
 }

@@ -150,7 +150,7 @@ mod tests {
 
         deployment.deploy().await.unwrap();
 
-        let stdout = service.try_read().unwrap().stdout().await;
+        let stdout = service.try_read().unwrap().stdout();
 
         deployment.start().await.unwrap();
 
