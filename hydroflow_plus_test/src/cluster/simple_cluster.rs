@@ -85,13 +85,13 @@ mod tests {
 
         deployment.deploy().await.unwrap();
 
-        let node_stdout = node.stdout().await;
+        let mut node_stdout = node.stdout().await;
         let cluster_stdouts =
             futures::future::join_all(cluster.members.iter().map(|node| node.stdout())).await;
 
         deployment.start().await.unwrap();
 
-        for (i, stdout) in cluster_stdouts.into_iter().enumerate() {
+        for (i, mut stdout) in cluster_stdouts.into_iter().enumerate() {
             for j in 0..5 {
                 assert_eq!(
                     stdout.recv().await.unwrap(),

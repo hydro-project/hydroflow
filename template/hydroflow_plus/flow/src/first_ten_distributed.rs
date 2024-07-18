@@ -36,6 +36,7 @@ mod tests {
     use hydro_deploy::{Deployment, HydroflowCrate};
     use hydroflow_plus::futures::StreamExt;
     use hydroflow_plus_cli_integration::{DeployCrateWrapper, DeployProcessSpec};
+    use tokio_stream::wrappers::UnboundedReceiverStream;
 
     #[tokio::test]
     async fn first_ten_distributed() {
@@ -56,12 +57,15 @@ mod tests {
 
         deployment.deploy().await.unwrap();
 
-        let second_process_stdout = second_process.stdout().await;
+        let mut second_process_stdout = second_process.stdout().await;
 
         deployment.start().await.unwrap();
 
         assert_eq!(
-            second_process_stdout.take(10).collect::<Vec<_>>().await,
+            UnboundedReceiverStream::new(second_process_stdout)
+                .take(10)
+                .collect::<Vec<_>>()
+                .await,
             vec!["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
         );
     }

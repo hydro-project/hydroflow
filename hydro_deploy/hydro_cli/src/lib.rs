@@ -9,7 +9,6 @@ use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::{Arc, OnceLock};
 
-use async_channel::Receiver;
 use bytes::Bytes;
 use futures::{Future, SinkExt, StreamExt};
 use hydroflow_cli_integration::{
@@ -22,7 +21,7 @@ use pyo3::{create_exception, wrap_pymodule};
 use pyo3_asyncio::TaskLocals;
 use pythonize::pythonize;
 use tokio::sync::oneshot::Sender;
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 
 mod cli;
 use hydro_deploy as core;
@@ -476,7 +475,7 @@ impl Service {
 
 #[pyclass]
 struct PyReceiver {
-    receiver: Arc<Receiver<String>>,
+    receiver: Arc<Mutex<tokio::sync::mpsc::UnboundedReceiver<String>>>,
 }
 
 #[pymethods]
@@ -486,13 +485,15 @@ impl PyReceiver {
     }
 
     fn __anext__<'p>(&self, py: Python<'p>) -> Option<&'p PyAny> {
-        let my_receiver = self.receiver.clone();
+        let receiver = self.receiver.clone();
         Some(
             interruptible_future_to_py(py, async move {
-                let underlying = my_receiver.recv();
-                underlying
+                receiver
+                    .lock()
                     .await
-                    .map_err(|_| PyStopAsyncIteration::new_err(()))
+                    .recv()
+                    .await
+                    .ok_or_else(|| PyStopAsyncIteration::new_err(()))
             })
             .unwrap(),
         )
@@ -569,7 +570,7 @@ impl HydroflowCrate {
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
             Ok(PyReceiver {
-                receiver: Arc::new(underlying.stdout()),
+                receiver: Arc::new(Mutex::new(underlying.stdout())),
             })
         })
     }
@@ -579,7 +580,7 @@ impl HydroflowCrate {
         interruptible_future_to_py(py, async move {
             let underlying = underlying.read().await;
             Ok(PyReceiver {
-                receiver: Arc::new(underlying.stderr()),
+                receiver: Arc::new(Mutex::new(underlying.stderr())),
             })
         })
     }
