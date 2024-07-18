@@ -233,7 +233,7 @@ where
         -> gossip_out;
 
         gossip_messages
-            -> map(|(message_id, write, peer_gossip_address) : (String, InfectingWrite, Addr)| {
+            -> map(|(message_id, write, _peer_gossip_address) : (String, InfectingWrite, Addr)| {
                 let dummy_peer_id = uuid::Uuid::new_v4().to_string();
                 trace!("Infecting write: {:?}", dummy_peer_id);
                 MapUnionSingletonMap::new_from((message_id, InfectingWrite { write: write.write, members: BoundedSetLattice::new_from([dummy_peer_id]) }))
@@ -246,143 +246,129 @@ where
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
-    use std::convert::Infallible;
-    use std::future::ready;
-
-    use futures::SinkExt;
     use gossip_protocol::membership::{MemberDataBuilder, Protocol};
-    use hydroflow::futures::sink;
-    use hydroflow::tokio::sync::mpsc::UnboundedSender;
-    use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
-    use hydroflow::{futures, tokio};
-
+    use hydroflow::{tokio};
+    use simulation::{Fleet, Address, Hostname};
     use crate::simulation;
-
     use super::*;
 
-    /// A mapping sink that applies a function to each item sent to the sink.
-    fn sink_from_fn<T>(mut f: impl FnMut(T)) -> impl Sink<T, Error = Infallible> {
-        sink::drain().with(move |item| {
-            (f)(item);
-            ready(Result::<(), Infallible>::Ok(()))
-        })
-    }
-
-    /// Endpoints for the test transport are just strings.
-    type TestAddr = String;
-
-    /// A test instance of the L0 key-value store server.
-    ///
-    /// Encapsulates everything needed to interact with the server.
-    pub struct TestServer {
-        /// The Hydroflow server instance.
-        pub server: Hydroflow<'static>,
-
-        /// Send client requests to the server using this channel.
-        pub client_requests: UnboundedSender<(ClientRequest, TestAddr)>,
-
-        /// Receive client responses from the server using this stream.
-        pub client_responses: UnboundedReceiverStream<(ClientResponse, TestAddr)>,
-
-        pub gossip_requests: UnboundedSender<(GossipMessage, TestAddr)>,
-
-        pub gossip_responses: UnboundedReceiverStream<(GossipMessage, TestAddr)>,
-    }
-
-    /// Create a test instance of the L0 key-value store server.
-    ///
-    /// Arguments:
-    /// -- `member_name`: The name of the member.
-    /// -- `client_endpoint`: The endpoint for the client protocol.
-    fn test_server<M, E>(member_name: M, client_endpoint: E, gossip_endpoint: E) -> TestServer
-    where
-        M: Into<String>,
-        E: Into<TestAddr>,
-    {
-        let (client_request_tx, client_request_rx) =
-            hydroflow::util::unbounded_channel::<(ClientRequest, TestAddr)>();
-        let (client_response_tx, client_response_rx) =
-            hydroflow::util::unbounded_channel::<(ClientResponse, TestAddr)>();
-
-        let (gossip_request_tx, gossip_request_rx) =
-            hydroflow::util::unbounded_channel::<(GossipMessage, TestAddr)>();
-        let (gossip_response_tx, gossip_response_rx) =
-            hydroflow::util::unbounded_channel::<(GossipMessage, TestAddr)>();
-
-        let builder = MemberDataBuilder::new(member_name.into())
-            .add_protocol(Protocol::new(client_endpoint.into(), "client".to_string()))
-            .add_protocol(Protocol::new(gossip_endpoint.into(), "gossip".to_string()));
-
-        let member_data = builder.build();
-
-        let server = server(
-            client_request_rx,
-            sink_from_fn(move |(resp, addr)| client_response_tx.send((resp, addr)).unwrap()),
-            gossip_request_rx,
-            sink_from_fn(move |(resp, addr)| gossip_response_tx.send((resp, addr)).unwrap()),
-            member_data,
-            vec![],
-        );
-
-        TestServer {
-            server,
-            client_requests: client_request_tx,
-            client_responses: client_response_rx,
-            gossip_requests: gossip_request_tx,
-            gossip_responses: gossip_response_rx,
-        }
-    }
-
-    const TEST_SERVER_NAME: &str = "test_server";
-    const TEST_CLIENT_ENDPOINT: &str = "client_endpoint";
-
     #[hydroflow::test]
-    async fn test_member_initialization() {
-        let mut test_server = test_server(TEST_SERVER_NAME, "client_endpoint", "gossip_endpoint");
-        let key = "/sys/members/test_server".parse::<Key>().unwrap();
-        // TODO: The test fails if we don't run a tick before sending the get request. Why?
-        test_server.server.run_tick(); // Finish initialization.
+    async fn test_member_init() {
+        let mut fleet = Fleet::new();
 
-        // Check membership information.
-        test_server
-            .client_requests
-            .send((
-                ClientRequest::Get { key: key.clone() },
-                "unit_test".to_string(),
-            ))
-            .unwrap();
-        test_server.server.run_tick();
+        let server_name: Hostname = "server".to_string();
 
-        let output =
-            hydroflow::util::collect_ready_async::<Vec<_>, _>(&mut test_server.client_responses)
-                .await;
+        let server_client_address = Address::new(server_name.clone(), "client".to_string());
+        let server_gossip_address = Address::new(server_name.clone(), "gossip".to_string());
 
-        let expected_member_data = MemberDataBuilder::new(TEST_SERVER_NAME.to_string())
+        // Create the kv server
+        fleet.add_host(server_name.clone(), |ctx| {
+
+            let client_input = ctx.new_inbox::<ClientRequest>("client".to_string());
+            let client_output = ctx.new_outbox::<ClientResponse>("client".to_string());
+
+            let gossip_input = ctx.new_inbox::<GossipMessage>("gossip".to_string());
+            let gossip_output = ctx.new_outbox::<GossipMessage>("gossip".to_string());
+
+            let member_data = MemberDataBuilder::new(server_name.clone().into())
+                .add_protocol(Protocol::new("client".into(), server_client_address.clone()))
+                .add_protocol(Protocol::new("gossip".into(), server_gossip_address.clone()))
+                .build();
+
+            server(client_input, client_output, gossip_input, gossip_output, member_data, vec![])
+
+        });
+
+        let client_name: Hostname = "client".to_string();
+
+        let key = "/sys/members/server".parse::<Key>().unwrap();
+
+        let (trigger_tx, trigger_rx) = hydroflow::util::unbounded_channel::<()>();
+        let (response_tx, mut response_rx) = hydroflow::util::unbounded_channel::<ClientResponse>();
+
+        // Create a client
+        // TODO: It would be nice to extract a client library out here.
+        let key_clone = key.clone();
+        let server_client_address_clone = server_client_address.clone();
+
+        fleet.add_host(client_name.clone(), |ctx| {
+            let client_tx = ctx.new_outbox::<ClientRequest>("client".to_string());
+            let client_rx = ctx.new_inbox::<ClientResponse>("client".to_string());
+
+            hydroflow_syntax! {
+
+                client_output = dest_sink(client_tx);
+
+                source_stream(trigger_rx)
+                    -> map(|_| (ClientRequest::Get { key: key_clone.clone() }, server_client_address_clone.clone()) )
+                    -> client_output;
+
+                client_input = source_stream(client_rx)
+                    -> for_each(|(resp, _addr)| response_tx.send(resp).unwrap());
+
+            }
+        });
+
+        // Send a trigger to the client to send a get request.
+        trigger_tx.send(()).unwrap();
+
+        let expected_member_data = MemberDataBuilder::new(server_name.clone())
             .add_protocol(Protocol::new(
-                TEST_CLIENT_ENDPOINT.to_string(),
                 "client".to_string(),
+                server_client_address.clone(),
             ))
             .add_protocol(Protocol::new(
-                "gossip_endpoint".to_string(),
                 "gossip".to_string(),
+                server_gossip_address.clone(),
             ))
             .build();
 
-        assert_eq!(
-            output,
-            &[(
-                ClientResponse::Get {
-                    key,
-                    value: HashSet::from([serde_json::to_string(&expected_member_data).unwrap()])
-                },
-                "unit_test".to_string()
-            )]
-        );
+        loop {
+            fleet.run_single_tick_all_hosts().await;
+
+            let responses = hydroflow::util::collect_ready_async::<Vec<_>, _>(&mut response_rx).await;
+
+            if responses.len() > 0 {
+                assert_eq!(
+                    responses,
+                    &[(
+                        ClientResponse::Get {
+                            key: key.clone(),
+                            value: HashSet::from([serde_json::to_string(&expected_member_data).unwrap()])
+                        }
+                    )]
+                );
+                break;
+            }
+        }
+
     }
 
     #[hydroflow::test]
     async fn test_multiple_values_same_tick() {
-        let mut test_server = test_server(TEST_SERVER_NAME, "gossip_endpoint", "client_endpoint");
+
+        let mut fleet = Fleet::new();
+
+        let server_name: Hostname = "server".to_string();
+
+        let server_client_address = Address::new(server_name.clone(), "client".to_string());
+        let server_gossip_address = Address::new(server_name.clone(), "gossip".to_string());
+
+        // Create the kv server
+        fleet.add_host(server_name.clone(), |ctx| {
+            let client_input = ctx.new_inbox::<ClientRequest>("client".to_string());
+            let client_output = ctx.new_outbox::<ClientResponse>("client".to_string());
+
+            let gossip_input = ctx.new_inbox::<GossipMessage>("gossip".to_string());
+            let gossip_output = ctx.new_outbox::<GossipMessage>("gossip".to_string());
+
+            let member_data = MemberDataBuilder::new(server_name.clone().into())
+                .add_protocol(Protocol::new("client".into(), server_client_address.clone()))
+                .add_protocol(Protocol::new("gossip".into(), server_gossip_address.clone()))
+                .build();
+
+            server(client_input, client_output, gossip_input, gossip_output, member_data, vec![])
+        });
 
         let key = Key {
             namespace: Namespace::System,
@@ -392,47 +378,84 @@ mod tests {
         let val_a = "A".to_string();
         let val_b = "B".to_string();
 
-        // Send multiple writes to the same key in the same tick.
-        let set_a = ClientRequest::Set {
-            key: key.clone(),
-            value: val_a.clone(),
-        };
-        let set_b = ClientRequest::Set {
-            key: key.clone(),
-            value: val_b.clone(),
-        };
+        let writer_name: Hostname = "writer".to_string();
 
-        test_server
-            .client_requests
-            .send((set_a, "foo".to_string()))
-            .unwrap();
-        test_server
-            .client_requests
-            .send((set_b, "bar".to_string()))
-            .unwrap();
+        let (writer_trigger_tx, writer_trigger_rx) = hydroflow::util::unbounded_channel::<String>();
+        let key_clone = key.clone();
+        let server_client_address_clone = server_client_address.clone();
 
-        test_server.server.run_tick();
+        fleet.add_host(writer_name.clone(), |ctx| {
+            let client_tx = ctx.new_outbox::<ClientRequest>("client".to_string());
+            hydroflow_syntax! {
+                client_output = dest_sink(client_tx);
+
+                source_stream(writer_trigger_rx)
+                    -> map(|value| (ClientRequest::Set { key: key_clone.clone(), value: value.clone()}, server_client_address_clone.clone()) )
+                    -> client_output;
+            }
+        });
+
+        // Send two messages from the writer.
+        let writer = fleet.get_host_mut(&writer_name).unwrap();
+        writer_trigger_tx.send(val_a.clone()).unwrap();
+        writer.run_tick();
+
+        writer_trigger_tx.send(val_b.clone()).unwrap();
+        writer.run_tick();
+
+        // Transmit messages across the network.
+        fleet.process_network().await;
+
+        // Run the server.
+        let server = fleet.get_host_mut(&server_name).unwrap();
+        server.run_tick();
 
         // Read the value back.
-        let get = ClientRequest::Get { key: key.clone() };
-        test_server
-            .client_requests
-            .send((get, "TODO".to_string()))
-            .unwrap();
-        test_server.server.run_tick();
+        let reader_name: Hostname = "reader".to_string();
 
-        let output =
-            hydroflow::util::collect_ready_async::<Vec<_>, _>(&mut test_server.client_responses)
-                .await;
-        assert_eq!(
-            output,
-            &[(
-                ClientResponse::Get {
-                    key,
-                    value: HashSet::from([val_a, val_b])
-                },
-                "TODO".to_string()
-            )]
-        );
+        let (reader_trigger_tx, reader_trigger_rx) = hydroflow::util::unbounded_channel::<()>();
+        let (response_tx, mut response_rx) = hydroflow::util::unbounded_channel::<ClientResponse>();
+
+        let key_clone = key.clone();
+        let server_client_address_clone = server_client_address.clone();
+
+        fleet.add_host(reader_name.clone(), |ctx| {
+            let client_tx = ctx.new_outbox::<ClientRequest>("client".to_string());
+            let client_rx = ctx.new_inbox::<ClientResponse>("client".to_string());
+
+            hydroflow_syntax! {
+
+                client_output = dest_sink(client_tx);
+
+                source_stream(reader_trigger_rx)
+                    -> map(|_| (ClientRequest::Get { key: key_clone.clone() }, server_client_address_clone.clone()) )
+                    -> client_output;
+
+                client_input = source_stream(client_rx)
+                    -> for_each(|(resp, _addr)| response_tx.send(resp).unwrap());
+
+            }
+        });
+
+        reader_trigger_tx.send(()).unwrap();
+
+        loop {
+            fleet.run_single_tick_all_hosts().await;
+
+            let responses = hydroflow::util::collect_ready_async::<Vec<_>, _>(&mut response_rx).await;
+
+            if responses.len() > 0 {
+                assert_eq!(
+                    responses,
+                    &[
+                        ClientResponse::Get {
+                            key,
+                            value: HashSet::from([val_a, val_b])
+                        }
+                    ]
+                );
+                break;
+            }
+        }
     }
 }

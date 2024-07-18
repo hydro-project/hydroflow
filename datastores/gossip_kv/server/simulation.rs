@@ -1,35 +1,29 @@
-use std::any::{Any, TypeId};
+use std::any::{Any};
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::fmt::Debug;
 use std::future::ready;
-use std::marker::PhantomData;
 use std::pin::Pin;
-use std::process::Output;
-use std::task::{Context, Poll};
-use rand::{Rng, thread_rng};
-use rand::distributions::Alphanumeric;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
+use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc::{UnboundedSender};
 use tracing::trace;
 use hydroflow::futures::{Sink, sink, SinkExt, StreamExt};
-use hydroflow::futures::task::noop_waker;
-use hydroflow::hydroflow_syntax;
 use hydroflow::scheduled::graph::Hydroflow;
 use hydroflow::tokio_stream::{Stream};
 use hydroflow::tokio_stream::wrappers::UnboundedReceiverStream;
-use hydroflow::util::{collect_ready, collect_ready_async};
+use hydroflow::util::{collect_ready_async};
 
 pub type Hostname = String;
 type InterfaceName = String;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Address {
     host: Hostname,
     interface: InterfaceName,
 }
 
 impl Address {
-    fn new(host: Hostname, interface: InterfaceName) -> Self {
+    pub fn new(host: Hostname, interface: InterfaceName) -> Self {
         Address {
             host,
             interface,
@@ -37,32 +31,33 @@ impl Address {
     }
 }
 
-struct InputPort {
-    type_id: TypeId,
+pub struct InputPort {
     sender: Box<dyn MessageSender>,
 }
 
-trait MessageSender {
+pub trait MessageSender {
     fn send(&self, message: (Box<dyn Any>, Address));
 }
 
 impl<T: 'static> MessageSender for UnboundedSender<(T, Address)> {
     fn send(&self, message: (Box<dyn Any>, Address)) {
-        if let Ok(msg) = message.0.downcast::<T>() {
-            self.send((*msg, message.1)).unwrap();
-        } else {
-            panic!("Type mismatch");
+        match message.0.downcast::<T>() {
+            Ok(msg) => {
+                self.send((*msg, message.1)).unwrap();
+            }
+            Err(e) => {
+                panic!("Failed to downcast message to expected type: {:?}", e);
+            }
         }
     }
 }
 
-struct OutputPort {
-    type_id: TypeId,
+pub struct OutputPort {
     receiver: Pin<Box<dyn Stream<Item=(Box<dyn Any>, Address)>>>,
 }
 
 
-struct Host
+pub struct Host
 {
     name: Hostname,
     process: Hydroflow<'static>,
@@ -71,19 +66,19 @@ struct Host
 }
 
 impl Host {
-    fn run_tick(&mut self) -> bool {
+    pub fn run_tick(&mut self) -> bool {
         self.process.run_tick()
     }
 }
 
-struct HostBuilder {
+pub struct HostBuilder {
     name: Hostname,
     process: Option<Hydroflow<'static>>,
     inputs: HashMap<InterfaceName, InputPort>,
     outputs: HashMap<InterfaceName, OutputPort>,
 }
 
-struct ProcessBuilderContext<'context> {
+pub struct ProcessBuilderContext<'context> {
     inputs: &'context mut HashMap<InterfaceName, InputPort>,
     outputs: &'context mut HashMap<InterfaceName, OutputPort>,
 }
@@ -96,25 +91,21 @@ fn sink_from_fn<T>(mut f: impl FnMut(T)) -> impl Sink<T, Error=Infallible> {
 }
 
 impl<'context> ProcessBuilderContext<'context> {
-    fn new_inbox<T: 'static>(&mut self, interface: InterfaceName) -> UnboundedReceiverStream<(T, Address)> {
+    pub fn new_inbox<T: 'static>(&mut self, interface: InterfaceName) -> UnboundedReceiverStream<(T, Address)> {
         let (sender, receiver) = hydroflow::util::unbounded_channel::<(T, Address)>();
-        let type_id = TypeId::of::<T>();
         self.inputs.insert(interface, InputPort {
-            type_id,
             sender: Box::new(sender),
         });
         receiver
     }
-    fn new_outbox<T: 'static>(&mut self, interface: InterfaceName) -> impl Sink<(T, Address), Error=Infallible> {
+    pub fn new_outbox<T: 'static>(&mut self, interface: InterfaceName) -> impl Sink<(T, Address), Error=Infallible> {
         let (sender, receiver) = hydroflow::util::unbounded_channel::<(T, Address)>();
-        let type_id = TypeId::of::<T>();
 
         let receiver = receiver.map(|(msg, addr)| {
             (Box::new(msg) as Box<dyn Any>, addr)
         });
 
         self.outputs.insert(interface, OutputPort {
-            type_id,
             receiver: Box::pin(receiver),
         });
 
@@ -123,7 +114,7 @@ impl<'context> ProcessBuilderContext<'context> {
 }
 
 impl HostBuilder {
-    fn new(name: Hostname) -> Self {
+    pub fn new(name: Hostname) -> Self {
         HostBuilder {
             name,
             process: None,
@@ -132,7 +123,7 @@ impl HostBuilder {
         }
     }
 
-    fn with_process<F>(mut self, process_builder: F) -> Self
+    pub fn with_process<F>(mut self, process_builder: F) -> Self
     where
         F: FnOnce(&mut ProcessBuilderContext) -> Hydroflow<'static>,
     {
@@ -145,7 +136,7 @@ impl HostBuilder {
         self
     }
 
-    fn build(self) -> Host {
+    pub fn build(self) -> Host {
         if self.process.is_none() {
             panic!("Process is required to build a host");
         }
@@ -159,105 +150,86 @@ impl HostBuilder {
     }
 }
 
-struct Fleet
+pub struct Fleet
 {
     hosts: HashMap<String, Host>,
 }
 
 impl Fleet {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Fleet {
             hosts: HashMap::new(),
         }
     }
 
-    fn add_host<F>(&mut self, name: String, process_builder: F) -> &Host
+    pub fn add_host<F>(&mut self, name: String, process_builder: F) -> &Host
     where
         F: FnOnce(&mut ProcessBuilderContext) -> Hydroflow<'static>,
     {
         let host = HostBuilder::new(name.clone())
             .with_process(process_builder)
             .build();
-        self.hosts.insert(name.clone(), host);
+        assert!(self.hosts.insert(host.name.clone(), host).is_none(), "Host with name {} already exists", name);
         self.get_host(&name).unwrap()
     }
 
-    fn get_host(&self, name: &str) -> Option<&Host> {
+    pub fn get_host(&self, name: &str) -> Option<&Host> {
         self.hosts.get(name)
     }
 
-    fn get_host_mut(&mut self, name: &str) -> Option<&mut Host>
+    pub fn get_host_mut(&mut self, name: &str) -> Option<&mut Host>
     {
         self.hosts.get_mut(name)
     }
 
-    fn run_tick_all(&mut self) {
+    pub async fn run_single_tick_all_hosts(&mut self) -> bool {
+        let mut work_done: bool = false;
+
         for (name, host) in self.hosts.iter_mut() {
             trace!("Running tick for host: {}", name);
-            host.run_tick();
+            work_done |= host.run_tick();
+        }
+
+        self.process_network().await;
+
+        work_done
+    }
+
+    pub async fn process_network(&mut self) {
+        let mut all_messages: Vec<(Address, (Box<dyn Any>, Address))> = Vec::new();
+
+        for (name, host) in self.hosts.iter_mut() {
+            for (interface, output) in host.output.iter_mut() {
+                let src_address = Address::new(name.clone(), interface.clone());
+                let all_messages_on_interface: Vec<_> = collect_ready_async(&mut output.receiver).await;
+                for message_on_interface in all_messages_on_interface {
+                    all_messages.push((src_address.clone(), message_on_interface));
+                }
+            }
+        }
+
+        for (src_address, (msg, addr)) in all_messages {
+            if let Some(destination_host) = self.hosts.get(&addr.host) {
+                if let Some(input) = destination_host.inputs.get(&addr.interface) {
+                    input.sender.send((msg, src_address.clone()));
+                } else {
+                    trace!("No interface named {:?} found on host {:?}. Dropping message {:?}.", addr.interface, addr.host, msg);
+                }
+            } else {
+                trace!("No host named {:?} found. Dropping message {:?}.", addr.host, msg);
+            }
         }
     }
 
-    async fn run_until_quiescent(&mut self) {
-        loop {
-            let mut quiescent = true;
-
-            let mut all_messages: Vec<(Address, (Box<dyn Any>, Address))> = Vec::new();
-
-            for (name, host) in self.hosts.iter_mut() {
-                trace!("Running tick for host: {}", name);
-                if host.run_tick() {
-                    quiescent = false;
-
-                    for (interface, mut output) in host.output.iter_mut() {
-                        let src_address = Address::new(name.clone(), interface.clone());
-                        let all_messages_on_interface: Vec<_> = collect_ready_async(&mut output.receiver).await;
-                        for message_on_interface in all_messages_on_interface {
-                            all_messages.push((src_address.clone(), message_on_interface));
-                        }
-                    }
-                }
-            }
-
-            for (src_address, (msg, addr)) in all_messages {
-                if let Some(destination_host) = self.hosts.get(&addr.host) {
-                    if let Some(input) = destination_host.inputs.get(&addr.interface) {
-                        input.sender.send((msg, src_address.clone()));
-                    } else {
-                        trace!("No interface named {:?} found on host {:?}. Dropping message {:?}.", addr.interface, addr.host, msg);
-                    }
-                } else {
-                    trace!("No host named {:?} found. Dropping message {:?}.", addr.host, msg);
-                }
-            }
-
-            if quiescent {
-                trace!("System quiescent, stopping.");
-                break;
-            } else {
-                trace!("System not quiescent, running another set of ticks.");
-            }
-        }
+    pub async fn run_until_quiescent(&mut self) {
+        while self.run_single_tick_all_hosts().await {}
     }
 }
 
 mod tests {
-    use rand::{Rng, thread_rng};
-    use rand::distributions::Alphanumeric;
     use hydroflow::futures::StreamExt;
     use hydroflow::hydroflow_syntax;
-    use crate::server::server;
     use crate::simulation::{Address, Fleet, Hostname};
-
-
-    fn generate_random_string(length: usize) -> String {
-        thread_rng()
-            .sample_iter(&Alphanumeric)
-            .filter(|c| c.is_ascii_alphabetic())
-            .take(length)
-            .map(char::from)
-            .collect()
-    }
 
     #[hydroflow::test]
     async fn echo_test() {
@@ -268,8 +240,6 @@ mod tests {
         let chat_interface: String = "chat".to_string();
 
         let server_address = Address::new(server.clone(), chat_interface.clone());
-        let client_address = Address::new(client.clone(), chat_interface.clone());
-
 
         // Create the echo server
         fleet.add_host(server.clone(), |ctx| {
@@ -301,7 +271,7 @@ mod tests {
 
                 source_stream(network_in)
                     -> inspect(|(msg, addr)| println!("Received {:?} from {:?}", msg, addr))
-                    -> for_each(|(msg, addr)| client_response_tx.send(msg).unwrap());
+                    -> for_each(|(msg, _addr)| client_response_tx.send(msg).unwrap());
 
             }
         });
