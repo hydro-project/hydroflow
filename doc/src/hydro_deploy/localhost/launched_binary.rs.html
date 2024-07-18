@@ -123,32 +123,30 @@
 <a href="#123" id="123">123</a>
 <a href="#124" id="124">124</a>
 <a href="#125" id="125">125</a>
-<a href="#126" id="126">126</a>
 </pre></div><pre class="rust"><code><span class="attr">#[cfg(unix)]
 </span><span class="kw">use </span>std::os::unix::process::ExitStatusExt;
-<span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>std::sync::{Arc, Mutex};
 
-<span class="kw">use </span>async_channel::{Receiver, Sender};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::io::BufReader;
-<span class="kw">use </span>futures::{AsyncBufReadExt, AsyncWriteExt, StreamExt};
-<span class="kw">use </span>tokio::sync::RwLock;
+<span class="kw">use </span>futures::{AsyncBufReadExt, AsyncWriteExt};
+<span class="kw">use </span>tokio::sync::{mpsc, oneshot};
 
 <span class="kw">use </span><span class="kw">crate</span>::util::prioritized_broadcast;
 <span class="kw">use </span><span class="kw">crate</span>::LaunchedBinary;
 
 <span class="kw">pub struct </span>LaunchedLocalhostBinary {
-    child: RwLock&lt;async_process::Child&gt;,
-    stdin_sender: Sender&lt;String&gt;,
-    stdout_cli_receivers: Arc&lt;RwLock&lt;<span class="prelude-ty">Option</span>&lt;tokio::sync::oneshot::Sender&lt;String&gt;&gt;&gt;&gt;,
-    stdout_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
-    stderr_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
+    child: Mutex&lt;async_process::Child&gt;,
+    stdin_sender: mpsc::UnboundedSender&lt;String&gt;,
+    stdout_cli_receivers: Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;oneshot::Sender&lt;String&gt;&gt;&gt;&gt;,
+    stdout_receivers: Arc&lt;Mutex&lt;Vec&lt;mpsc::UnboundedSender&lt;String&gt;&gt;&gt;&gt;,
+    stderr_receivers: Arc&lt;Mutex&lt;Vec&lt;mpsc::UnboundedSender&lt;String&gt;&gt;&gt;&gt;,
 }
 
 <span class="attr">#[cfg(unix)]
 </span><span class="kw">impl </span>Drop <span class="kw">for </span>LaunchedLocalhostBinary {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">let </span><span class="kw-2">mut </span>child = <span class="self">self</span>.child.try_write().unwrap();
+        <span class="kw">let </span><span class="kw-2">mut </span>child = <span class="self">self</span>.child.lock().unwrap();
 
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="kw">_</span>)) = child.try_status() {
             <span class="kw">return</span>;
@@ -166,10 +164,10 @@
 
 <span class="kw">impl </span>LaunchedLocalhostBinary {
     <span class="kw">pub fn </span>new(<span class="kw-2">mut </span>child: async_process::Child, id: String) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>(stdin_sender, <span class="kw-2">mut </span>stdin_receiver) = async_channel::unbounded::&lt;String&gt;();
+        <span class="kw">let </span>(stdin_sender, <span class="kw-2">mut </span>stdin_receiver) = mpsc::unbounded_channel::&lt;String&gt;();
         <span class="kw">let </span><span class="kw-2">mut </span>stdin = child.stdin.take().unwrap();
         tokio::spawn(<span class="kw">async move </span>{
-            <span class="kw">while let </span><span class="prelude-val">Some</span>(line) = stdin_receiver.next().<span class="kw">await </span>{
+            <span class="kw">while let </span><span class="prelude-val">Some</span>(line) = stdin_receiver.recv().<span class="kw">await </span>{
                 <span class="kw">if </span>stdin.write_all(line.as_bytes()).<span class="kw">await</span>.is_err() {
                     <span class="kw">break</span>;
                 }
@@ -189,7 +187,7 @@
         );
 
         <span class="self">Self </span>{
-            child: RwLock::new(child),
+            child: Mutex::new(child),
             stdin_sender,
             stdout_cli_receivers,
             stdout_receivers,
@@ -200,41 +198,41 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>LaunchedBinary <span class="kw">for </span>LaunchedLocalhostBinary {
-    <span class="kw">async fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sender&lt;String&gt; {
+    <span class="kw">fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; mpsc::UnboundedSender&lt;String&gt; {
         <span class="self">self</span>.stdin_sender.clone()
     }
 
-    <span class="kw">async fn </span>cli_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; tokio::sync::oneshot::Receiver&lt;String&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_cli_receivers.write().<span class="kw">await</span>;
+    <span class="kw">fn </span>cli_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; oneshot::Receiver&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_cli_receivers.lock().unwrap();
 
         <span class="kw">if </span>receivers.is_some() {
             <span class="macro">panic!</span>(<span class="string">"Only one CLI stdout receiver is allowed at a time"</span>);
         }
 
-        <span class="kw">let </span>(sender, receiver) = tokio::sync::oneshot::channel::&lt;String&gt;();
+        <span class="kw">let </span>(sender, receiver) = oneshot::channel::&lt;String&gt;();
         <span class="kw-2">*</span>receivers = <span class="prelude-val">Some</span>(sender);
         receiver
     }
 
-    <span class="kw">async fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_receivers.write().<span class="kw">await</span>;
-        <span class="kw">let </span>(sender, receiver) = async_channel::unbounded::&lt;String&gt;();
+    <span class="kw">fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; mpsc::UnboundedReceiver&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_receivers.lock().unwrap();
+        <span class="kw">let </span>(sender, receiver) = mpsc::unbounded_channel::&lt;String&gt;();
         receivers.push(sender);
         receiver
     }
 
-    <span class="kw">async fn </span>stderr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stderr_receivers.write().<span class="kw">await</span>;
-        <span class="kw">let </span>(sender, receiver) = async_channel::unbounded::&lt;String&gt;();
+    <span class="kw">fn </span>stderr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; mpsc::UnboundedReceiver&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stderr_receivers.lock().unwrap();
+        <span class="kw">let </span>(sender, receiver) = mpsc::unbounded_channel::&lt;String&gt;();
         receivers.push(sender);
         receiver
     }
 
-    <span class="kw">async fn </span>exit_code(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
+    <span class="kw">fn </span>exit_code(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
         <span class="self">self</span>.child
-            .write()
-            .<span class="kw">await
-            </span>.try_status()
+            .lock()
+            .unwrap()
+            .try_status()
             .ok()
             .flatten()
             .and_then(|c| {
@@ -246,8 +244,8 @@
     }
 
     <span class="kw">async fn </span>wait(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
-        <span class="kw">let _ </span>= <span class="self">self</span>.child.get_mut().status().<span class="kw">await</span>;
-        <span class="self">self</span>.exit_code().<span class="kw">await
-    </span>}
+        <span class="kw">let _ </span>= <span class="self">self</span>.child.get_mut().unwrap().status().<span class="kw">await</span>;
+        <span class="self">self</span>.exit_code()
+    }
 }
 </code></pre></div></section></main></body></html>

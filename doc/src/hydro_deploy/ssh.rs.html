@@ -378,25 +378,23 @@
 <a href="#378" id="378">378</a>
 <a href="#379" id="379">379</a>
 <a href="#380" id="380">380</a>
-<a href="#381" id="381">381</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::path::PathBuf;
-<span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>std::sync::{Arc, Mutex};
 <span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
-<span class="kw">use </span>async_channel::{Receiver, Sender};
 <span class="kw">use </span>async_ssh2_lite::ssh2::ErrorCode;
 <span class="kw">use </span>async_ssh2_lite::{AsyncChannel, AsyncSession, Error, SessionConfiguration};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::io::BufReader;
-<span class="kw">use </span>futures::{AsyncBufReadExt, AsyncWriteExt, StreamExt};
+<span class="kw">use </span>futures::{AsyncBufReadExt, AsyncWriteExt};
 <span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
 <span class="kw">use </span>nanoid::nanoid;
 <span class="kw">use </span>tokio::net::{TcpListener, TcpStream};
-<span class="kw">use </span>tokio::sync::RwLock;
+<span class="kw">use </span>tokio::sync::{mpsc, oneshot};
 
 <span class="kw">use </span><span class="kw">super</span>::progress::ProgressTracker;
 <span class="kw">use </span><span class="kw">super</span>::util::async_retry;
@@ -408,45 +406,45 @@
     _resource_result: Arc&lt;ResourceResult&gt;,
     session: <span class="prelude-ty">Option</span>&lt;AsyncSession&lt;TcpStream&gt;&gt;,
     channel: AsyncChannel&lt;TcpStream&gt;,
-    stdin_sender: Sender&lt;String&gt;,
-    stdout_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
-    stdout_cli_receivers: Arc&lt;RwLock&lt;<span class="prelude-ty">Option</span>&lt;tokio::sync::oneshot::Sender&lt;String&gt;&gt;&gt;&gt;,
-    stderr_receivers: Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
+    stdin_sender: mpsc::UnboundedSender&lt;String&gt;,
+    stdout_receivers: Arc&lt;Mutex&lt;Vec&lt;mpsc::UnboundedSender&lt;String&gt;&gt;&gt;&gt;,
+    stdout_cli_receivers: Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;oneshot::Sender&lt;String&gt;&gt;&gt;&gt;,
+    stderr_receivers: Arc&lt;Mutex&lt;Vec&lt;mpsc::UnboundedSender&lt;String&gt;&gt;&gt;&gt;,
 }
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>LaunchedBinary <span class="kw">for </span>LaunchedSshBinary {
-    <span class="kw">async fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sender&lt;String&gt; {
+    <span class="kw">fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; mpsc::UnboundedSender&lt;String&gt; {
         <span class="self">self</span>.stdin_sender.clone()
     }
 
-    <span class="kw">async fn </span>cli_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; tokio::sync::oneshot::Receiver&lt;String&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_cli_receivers.write().<span class="kw">await</span>;
+    <span class="kw">fn </span>cli_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; oneshot::Receiver&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_cli_receivers.lock().unwrap();
 
         <span class="kw">if </span>receivers.is_some() {
             <span class="macro">panic!</span>(<span class="string">"Only one CLI stdout receiver is allowed at a time"</span>);
         }
 
-        <span class="kw">let </span>(sender, receiver) = tokio::sync::oneshot::channel::&lt;String&gt;();
+        <span class="kw">let </span>(sender, receiver) = oneshot::channel::&lt;String&gt;();
         <span class="kw-2">*</span>receivers = <span class="prelude-val">Some</span>(sender);
         receiver
     }
 
-    <span class="kw">async fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_receivers.write().<span class="kw">await</span>;
-        <span class="kw">let </span>(sender, receiver) = async_channel::unbounded::&lt;String&gt;();
+    <span class="kw">fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; mpsc::UnboundedReceiver&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stdout_receivers.lock().unwrap();
+        <span class="kw">let </span>(sender, receiver) = mpsc::unbounded_channel::&lt;String&gt;();
         receivers.push(sender);
         receiver
     }
 
-    <span class="kw">async fn </span>stderr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stderr_receivers.write().<span class="kw">await</span>;
-        <span class="kw">let </span>(sender, receiver) = async_channel::unbounded::&lt;String&gt;();
+    <span class="kw">fn </span>stderr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; mpsc::UnboundedReceiver&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>receivers = <span class="self">self</span>.stderr_receivers.lock().unwrap();
+        <span class="kw">let </span>(sender, receiver) = mpsc::unbounded_channel::&lt;String&gt;();
         receivers.push(sender);
         receiver
     }
 
-    <span class="kw">async fn </span>exit_code(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
+    <span class="kw">fn </span>exit_code(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
         <span class="comment">// until the program exits, the exit status is meaningless
         </span><span class="kw">if </span><span class="self">self</span>.channel.eof() {
             <span class="self">self</span>.channel.exit_status().ok()
@@ -457,7 +455,7 @@
 
     <span class="kw">async fn </span>wait(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt; {
         <span class="self">self</span>.channel.wait_eof().<span class="kw">await</span>.unwrap();
-        <span class="kw">let </span>ret = <span class="self">self</span>.exit_code().<span class="kw">await</span>;
+        <span class="kw">let </span>ret = <span class="self">self</span>.exit_code();
         <span class="self">self</span>.channel.wait_close().<span class="kw">await</span>.unwrap();
         ret
     }
@@ -699,10 +697,10 @@
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let </span>(stdin_sender, <span class="kw-2">mut </span>stdin_receiver) = async_channel::unbounded::&lt;String&gt;();
+        <span class="kw">let </span>(stdin_sender, <span class="kw-2">mut </span>stdin_receiver) = mpsc::unbounded_channel::&lt;String&gt;();
         <span class="kw">let </span><span class="kw-2">mut </span>stdin = channel.stream(<span class="number">0</span>); <span class="comment">// stream 0 is stdout/stdin, we use it for stdin
         </span>tokio::spawn(<span class="kw">async move </span>{
-            <span class="kw">while let </span><span class="prelude-val">Some</span>(line) = stdin_receiver.next().<span class="kw">await </span>{
+            <span class="kw">while let </span><span class="prelude-val">Some</span>(line) = stdin_receiver.recv().<span class="kw">await </span>{
                 <span class="kw">if </span>stdin.write_all(line.as_bytes()).<span class="kw">await</span>.is_err() {
                     <span class="kw">break</span>;
                 }

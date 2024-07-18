@@ -896,6 +896,7 @@
 <a href="#896" id="896">896</a>
 <a href="#897" id="897">897</a>
 <a href="#898" id="898">898</a>
+<a href="#899" id="899">899</a>
 </pre></div><pre class="rust"><code><span class="comment">// TODO(mingwei): For pyo3 generated code.
 </span><span class="attr">#![allow(unused_qualifications, non_local_definitions)]
 
@@ -907,7 +908,6 @@
 <span class="kw">use </span>std::pin::Pin;
 <span class="kw">use </span>std::sync::{Arc, OnceLock};
 
-<span class="kw">use </span>async_channel::Receiver;
 <span class="kw">use </span>bytes::Bytes;
 <span class="kw">use </span>futures::{Future, SinkExt, StreamExt};
 <span class="kw">use </span>hydroflow_cli_integration::{
@@ -920,7 +920,7 @@
 <span class="kw">use </span>pyo3_asyncio::TaskLocals;
 <span class="kw">use </span>pythonize::pythonize;
 <span class="kw">use </span>tokio::sync::oneshot::Sender;
-<span class="kw">use </span>tokio::sync::RwLock;
+<span class="kw">use </span>tokio::sync::{Mutex, RwLock};
 
 <span class="kw">mod </span>cli;
 <span class="kw">use </span>hydro_deploy <span class="kw">as </span>core;
@@ -1374,7 +1374,7 @@
 
 <span class="attr">#[pyclass]
 </span><span class="kw">struct </span>PyReceiver {
-    receiver: Arc&lt;Receiver&lt;String&gt;&gt;,
+    receiver: Arc&lt;Mutex&lt;tokio::sync::mpsc::UnboundedReceiver&lt;String&gt;&gt;&gt;,
 }
 
 <span class="attr">#[pymethods]
@@ -1384,13 +1384,15 @@
     }
 
     <span class="kw">fn </span>__anext__&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
-        <span class="kw">let </span>my_receiver = <span class="self">self</span>.receiver.clone();
+        <span class="kw">let </span>receiver = <span class="self">self</span>.receiver.clone();
         <span class="prelude-val">Some</span>(
             interruptible_future_to_py(py, <span class="kw">async move </span>{
-                <span class="kw">let </span>underlying = my_receiver.recv();
-                underlying
+                receiver
+                    .lock()
                     .<span class="kw">await
-                    </span>.map_err(|<span class="kw">_</span>| PyStopAsyncIteration::new_err(()))
+                    </span>.recv()
+                    .<span class="kw">await
+                    </span>.ok_or_else(|| PyStopAsyncIteration::new_err(()))
             })
             .unwrap(),
         )
@@ -1467,7 +1469,7 @@
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
             <span class="prelude-val">Ok</span>(PyReceiver {
-                receiver: Arc::new(underlying.stdout().<span class="kw">await</span>),
+                receiver: Arc::new(Mutex::new(underlying.stdout())),
             })
         })
     }
@@ -1477,7 +1479,7 @@
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
             <span class="prelude-val">Ok</span>(PyReceiver {
-                receiver: Arc::new(underlying.stderr().<span class="kw">await</span>),
+                receiver: Arc::new(Mutex::new(underlying.stderr())),
             })
         })
     }
@@ -1486,7 +1488,7 @@
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
             <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
-            <span class="prelude-val">Ok</span>(underlying.exit_code().<span class="kw">await</span>)
+            <span class="prelude-val">Ok</span>(underlying.exit_code())
         })
     }
 

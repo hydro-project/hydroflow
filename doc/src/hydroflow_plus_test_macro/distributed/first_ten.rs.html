@@ -145,7 +145,7 @@
 
         deployment.deploy().<span class="kw">await</span>.unwrap();
 
-        <span class="kw">let </span>second_node_stdout = second_node.stdout().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>second_node_stdout = second_node.stdout().<span class="kw">await</span>;
 
         deployment.start().<span class="kw">await</span>.unwrap();
 

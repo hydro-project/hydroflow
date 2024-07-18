@@ -311,13 +311,13 @@
 
         deployment.deploy().<span class="kw">await</span>.unwrap();
 
-        <span class="kw">let </span>stdout = service.try_read().unwrap().stdout().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>stdout = service.try_read().unwrap().stdout();
 
         deployment.start().<span class="kw">await</span>.unwrap();
 
         <span class="macro">assert_eq!</span>(stdout.recv().<span class="kw">await</span>.unwrap(), <span class="string">"hello!"</span>);
 
-        <span class="macro">assert!</span>(stdout.recv().<span class="kw">await</span>.is_err());
+        <span class="macro">assert!</span>(stdout.recv().<span class="kw">await</span>.is_none());
     }
 }
 </code></pre></div></section></main></body></html>

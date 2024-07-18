@@ -110,15 +110,15 @@
 <a href="#110" id="110">110</a>
 <a href="#111" id="111">111</a>
 <a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::io;
-<span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>std::sync::{Arc, Mutex};
 <span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>anyhow::Result;
-<span class="kw">use </span>async_channel::Sender;
 <span class="kw">use </span>futures::{Future, StreamExt};
 <span class="kw">use </span>futures_core::Stream;
-<span class="kw">use </span>tokio::sync::RwLock;
+<span class="kw">use </span>tokio::sync::{mpsc, oneshot};
 
 <span class="kw">pub async fn </span>async_retry&lt;T, F: Future&lt;Output = <span class="prelude-ty">Result</span>&lt;T&gt;&gt;&gt;(
     <span class="kw-2">mut </span>thunk: <span class="kw">impl </span>FnMut() -&gt; F,
@@ -138,47 +138,47 @@
 </span>}
 
 <span class="kw">type </span>PriorityBroadcacst = (
-    Arc&lt;RwLock&lt;<span class="prelude-ty">Option</span>&lt;tokio::sync::oneshot::Sender&lt;String&gt;&gt;&gt;&gt;,
-    Arc&lt;RwLock&lt;Vec&lt;Sender&lt;String&gt;&gt;&gt;&gt;,
+    Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;oneshot::Sender&lt;String&gt;&gt;&gt;&gt;,
+    Arc&lt;Mutex&lt;Vec&lt;mpsc::UnboundedSender&lt;String&gt;&gt;&gt;&gt;,
 );
 
 <span class="kw">pub fn </span>prioritized_broadcast&lt;T: Stream&lt;Item = io::Result&lt;String&gt;&gt; + Send + Unpin + <span class="lifetime">'static</span>&gt;(
     <span class="kw-2">mut </span>lines: T,
     default: <span class="kw">impl </span>Fn(String) + Send + <span class="lifetime">'static</span>,
 ) -&gt; PriorityBroadcacst {
-    <span class="kw">let </span>priority_receivers = Arc::new(RwLock::new(<span class="prelude-val">None</span>::&lt;tokio::sync::oneshot::Sender&lt;String&gt;&gt;));
-    <span class="kw">let </span>receivers = Arc::new(RwLock::new(Vec::&lt;Sender&lt;String&gt;&gt;::new()));
+    <span class="kw">let </span>priority_receivers = Arc::new(Mutex::new(<span class="prelude-val">None</span>::&lt;oneshot::Sender&lt;String&gt;&gt;));
+    <span class="kw">let </span>receivers = Arc::new(Mutex::new(Vec::&lt;mpsc::UnboundedSender&lt;String&gt;&gt;::new()));
 
     <span class="kw">let </span>weak_priority_receivers = Arc::downgrade(<span class="kw-2">&amp;</span>priority_receivers);
     <span class="kw">let </span>weak_receivers = Arc::downgrade(<span class="kw-2">&amp;</span>receivers);
 
     tokio::spawn(<span class="kw">async move </span>{
-        <span class="lifetime">'line_loop</span>: <span class="kw">while let </span><span class="prelude-val">Some</span>(Result::Ok(line)) = lines.next().<span class="kw">await </span>{
+        <span class="kw">while let </span><span class="prelude-val">Some</span>(Result::Ok(line)) = lines.next().<span class="kw">await </span>{
             <span class="kw">if let </span><span class="prelude-val">Some</span>(cli_receivers) = weak_priority_receivers.upgrade() {
-                <span class="kw">let </span><span class="kw-2">mut </span>cli_receivers = cli_receivers.write().<span class="kw">await</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>cli_receivers = cli_receivers.lock().unwrap();
 
                 <span class="kw">let </span>successful_send = <span class="kw">if let </span><span class="prelude-val">Some</span>(r) = cli_receivers.take() {
                     r.send(line.clone()).is_ok()
                 } <span class="kw">else </span>{
                     <span class="bool-val">false
                 </span>};
+                drop(cli_receivers);
 
                 <span class="kw">if </span>successful_send {
-                    <span class="kw">continue </span><span class="lifetime">'line_loop</span>;
+                    <span class="kw">continue</span>;
                 }
             }
 
             <span class="kw">if let </span><span class="prelude-val">Some</span>(receivers) = weak_receivers.upgrade() {
-                <span class="kw">let </span><span class="kw-2">mut </span>receivers = receivers.write().<span class="kw">await</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>receivers = receivers.lock().unwrap();
+                receivers.retain(|receiver| !receiver.is_closed());
+
                 <span class="kw">let </span><span class="kw-2">mut </span>successful_send = <span class="bool-val">false</span>;
-                <span class="kw">for </span>r <span class="kw">in </span>receivers.iter() {
-                    successful_send |= r.send(line.clone()).<span class="kw">await</span>.is_ok();
+                <span class="kw">for </span>receiver <span class="kw">in </span>receivers.iter() {
+                    successful_send |= receiver.send(line.clone()).is_ok();
                 }
-
-                receivers.retain(|r| !r.is_closed());
-
                 <span class="kw">if </span>!successful_send {
-                    default(line);
+                    (default)(line);
                 }
             } <span class="kw">else </span>{
                 <span class="kw">break</span>;
@@ -186,12 +186,12 @@
         }
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(cli_receivers) = weak_priority_receivers.upgrade() {
-            <span class="kw">let </span><span class="kw-2">mut </span>cli_receivers = cli_receivers.write().<span class="kw">await</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>cli_receivers = cli_receivers.lock().unwrap();
             drop(cli_receivers.take());
         }
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(receivers) = weak_receivers.upgrade() {
-            <span class="kw">let </span><span class="kw-2">mut </span>receivers = receivers.write().<span class="kw">await</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>receivers = receivers.lock().unwrap();
             receivers.clear();
         }
     });
@@ -201,21 +201,23 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
-    <span class="kw">use </span>futures::StreamExt;
+    <span class="kw">use </span>tokio_stream::wrappers::UnboundedReceiverStream;
+
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
     <span class="attr">#[tokio::test]
     </span><span class="kw">async fn </span>broadcast_listeners_close_when_source_does() {
-        <span class="kw">let </span>(tx, rx) = async_channel::unbounded::&lt;<span class="kw">_</span>&gt;();
-        <span class="kw">let </span>(<span class="kw">_</span>, receivers) = <span class="kw">super</span>::prioritized_broadcast(rx, |<span class="kw">_</span>| {});
+        <span class="kw">let </span>(tx, rx) = mpsc::unbounded_channel();
+        <span class="kw">let </span>(<span class="kw">_</span>, receivers) = prioritized_broadcast(UnboundedReceiverStream::new(rx), |<span class="kw">_</span>| {});
 
-        <span class="kw">let </span>(tx2, <span class="kw-2">mut </span>rx2) = async_channel::unbounded::&lt;<span class="kw">_</span>&gt;();
+        <span class="kw">let </span>(tx2, <span class="kw-2">mut </span>rx2) = mpsc::unbounded_channel();
 
-        receivers.try_write().unwrap().push(tx2);
+        receivers.lock().unwrap().push(tx2);
 
-        tx.send(<span class="prelude-val">Ok</span>(<span class="string">"hello"</span>.to_string())).<span class="kw">await</span>.unwrap();
-        <span class="macro">assert_eq!</span>(rx2.next().<span class="kw">await</span>, <span class="prelude-val">Some</span>(<span class="string">"hello"</span>.to_string()));
+        tx.send(<span class="prelude-val">Ok</span>(<span class="string">"hello"</span>.to_string())).unwrap();
+        <span class="macro">assert_eq!</span>(rx2.recv().<span class="kw">await</span>, <span class="prelude-val">Some</span>(<span class="string">"hello"</span>.to_string()));
 
-        <span class="kw">let </span>wait_again = tokio::spawn(<span class="kw">async move </span>{ rx2.next().<span class="kw">await </span>});
+        <span class="kw">let </span>wait_again = tokio::spawn(<span class="kw">async move </span>{ rx2.recv().<span class="kw">await </span>});
 
         drop(tx);
 

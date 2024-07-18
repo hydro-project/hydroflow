@@ -223,7 +223,6 @@
 <span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>anyhow::Result;
-<span class="kw">use </span>async_channel::{Receiver, Sender};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
 
@@ -248,6 +247,7 @@
 
 <span class="kw">pub mod </span>custom_service;
 <span class="kw">pub use </span>custom_service::CustomService;
+<span class="kw">use </span>tokio::sync::{mpsc, oneshot};
 
 <span class="kw">use </span><span class="kw">crate</span>::hydroflow_crate::build::BuildOutput;
 
@@ -291,18 +291,18 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">pub trait </span>LaunchedBinary: Send + Sync {
-    <span class="kw">async fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Sender&lt;String&gt;;
+    <span class="kw">fn </span>stdin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; mpsc::UnboundedSender&lt;String&gt;;
 
     <span class="doccomment">/// Provides a oneshot channel for the CLI to handshake with the binary,
     /// with the guarantee that as long as the CLI is holding on
     /// to a handle, none of the messages will also be broadcast
     /// to the user-facing [`LaunchedBinary::stdout`] channel.
-    </span><span class="kw">async fn </span>cli_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; tokio::sync::oneshot::Receiver&lt;String&gt;;
+    </span><span class="kw">fn </span>cli_stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; oneshot::Receiver&lt;String&gt;;
 
-    <span class="kw">async fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt;;
-    <span class="kw">async fn </span>stderr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Receiver&lt;String&gt;;
+    <span class="kw">fn </span>stdout(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; mpsc::UnboundedReceiver&lt;String&gt;;
+    <span class="kw">fn </span>stderr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; mpsc::UnboundedReceiver&lt;String&gt;;
 
-    <span class="kw">async fn </span>exit_code(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt;;
+    <span class="kw">fn </span>exit_code(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt;;
 
     <span class="kw">async fn </span>wait(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;i32&gt;;
 }

@@ -241,10 +241,10 @@
         deployment.deploy().<span class="kw">await</span>.unwrap();
 
         <span class="kw">let </span><span class="kw-2">mut </span>conn_to_zero = port_to_zero.connect().<span class="kw">await</span>.into_sink();
-        <span class="kw">let </span>node_one_stdout = io.process_one.stdout().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>node_one_stdout = io.process_one.stdout().<span class="kw">await</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>conn_to_cluster = ports_to_cluster[<span class="number">0</span>].connect().<span class="kw">await</span>.into_sink();
-        <span class="kw">let </span>cluster_stdout = io.cluster.members[<span class="number">0</span>].stdout().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>cluster_stdout = io.cluster.members[<span class="number">0</span>].stdout().<span class="kw">await</span>;
 
         deployment.start().<span class="kw">await</span>.unwrap();
 

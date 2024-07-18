@@ -162,7 +162,7 @@
 
         deployment.start().<span class="kw">await</span>.unwrap();
 
-        <span class="kw">for </span>node_stdout <span class="kw">in </span>cluster_stdouts {
+        <span class="kw">for </span><span class="kw-2">mut </span>node_stdout <span class="kw">in </span>cluster_stdouts {
             <span class="kw">let </span><span class="kw-2">mut </span>node_outs = <span class="macro">vec!</span>[];
             <span class="kw">for </span>_i <span class="kw">in </span><span class="number">0</span>..<span class="number">4 </span>{
                 node_outs.push(node_stdout.recv().<span class="kw">await</span>.unwrap());
