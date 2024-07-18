@@ -150,12 +150,12 @@ mod tests {
 
         deployment.deploy().await.unwrap();
 
-        let stdout = service.try_read().unwrap().stdout();
+        let mut stdout = service.try_read().unwrap().stdout();
 
         deployment.start().await.unwrap();
 
         assert_eq!(stdout.recv().await.unwrap(), "hello!");
 
-        assert!(stdout.recv().await.is_err());
+        assert!(stdout.recv().await.is_none());
     }
 }

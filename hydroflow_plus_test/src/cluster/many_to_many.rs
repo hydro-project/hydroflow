@@ -70,7 +70,7 @@ mod tests {
 
         deployment.start().await.unwrap();
 
-        for node_stdout in cluster_stdouts {
+        for mut node_stdout in cluster_stdouts {
             let mut node_outs = vec![];
             for _i in 0..4 {
                 node_outs.push(node_stdout.recv().await.unwrap());

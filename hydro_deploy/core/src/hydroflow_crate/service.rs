@@ -4,12 +4,11 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{bail, Result};
-use async_channel::Receiver;
 use async_trait::async_trait;
 use futures_core::Future;
 use hydroflow_cli_integration::{InitConfig, ServerPort};
 use serde::Serialize;
-use tokio::sync::RwLock;
+use tokio::sync::{mpsc, RwLock};
 
 use super::build::{build_crate_memoized, BuildError, BuildOutput, BuildParams};
 use super::ports::{self, HydroflowPortConfig, HydroflowSink, SourcePath};
@@ -139,11 +138,11 @@ impl HydroflowCrateService {
         }
     }
 
-    pub fn stdout(&self) -> Receiver<String> {
+    pub fn stdout(&self) -> mpsc::UnboundedReceiver<String> {
         self.launched_binary.as_ref().unwrap().stdout()
     }
 
-    pub fn stderr(&self) -> Receiver<String> {
+    pub fn stderr(&self) -> mpsc::UnboundedReceiver<String> {
         self.launched_binary.as_ref().unwrap().stderr()
     }
 
@@ -246,10 +245,7 @@ impl Service for HydroflowCrateService {
                 // request stdout before sending config so we don't miss the "ready" response
                 let stdout_receiver = binary.cli_stdout();
 
-                binary
-                    .stdin()
-                    .send(format!("{formatted_bind_config}\n"))
-                    .await?;
+                binary.stdin().send(format!("{formatted_bind_config}\n"))?;
 
                 let ready_line = ProgressTracker::leaf(
                     "waiting for ready".to_string(),
@@ -290,7 +286,6 @@ impl Service for HydroflowCrateService {
             .unwrap()
             .stdin()
             .send(format!("start: {formatted_defns}\n"))
-            .await
             .unwrap();
 
         let start_ack_line = ProgressTracker::leaf(
@@ -311,8 +306,7 @@ impl Service for HydroflowCrateService {
             .as_ref()
             .unwrap()
             .stdin()
-            .send("stop\n".to_string())
-            .await?;
+            .send("stop\n".to_string())?;
 
         self.launched_binary.as_mut().unwrap().wait().await;
 
