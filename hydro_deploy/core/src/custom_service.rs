@@ -1,6 +1,6 @@
 use std::any::Any;
 use std::ops::Deref;
-use std::sync::{Arc, Weak};
+use std::sync::{Arc, OnceLock, Weak};
 
 use anyhow::{bail, Result};
 use async_trait::async_trait;
@@ -11,6 +11,7 @@ use super::hydroflow_crate::ports::{
     HydroflowServer, HydroflowSink, HydroflowSource, ServerConfig, SourcePath,
 };
 use super::{Host, LaunchedHost, ResourceBatch, ResourceResult, ServerStrategy, Service};
+use crate::hydroflow_crate::ports::ReverseSinkInstantiator;
 
 /// Represents an unknown, third-party service that is not part of the Hydroflow ecosystem.
 pub struct CustomService {
@@ -81,20 +82,20 @@ impl Service for CustomService {
 
 pub struct CustomClientPort {
     pub on: Weak<RwLock<CustomService>>,
-    client_port: Option<ServerConfig>,
+    client_port: OnceLock<ServerConfig>,
 }
 
 impl CustomClientPort {
     pub fn new(on: Weak<RwLock<CustomService>>) -> Self {
         Self {
             on,
-            client_port: None,
+            client_port: OnceLock::new(),
         }
     }
 
     pub async fn server_port(&self) -> ServerPort {
         self.client_port
-            .as_ref()
+            .get()
             .unwrap()
             .load_instantiated(&|p| p)
             .await
@@ -102,7 +103,7 @@ impl CustomClientPort {
 
     pub async fn connect(&self) -> ConnectedDirect {
         self.client_port
-            .as_ref()
+            .get()
             .unwrap()
             .load_instantiated(&|p| p)
             .await
@@ -125,17 +126,20 @@ impl HydroflowSource for CustomClientPort {
         panic!("Custom services cannot be used as the server")
     }
 
-    fn record_server_config(&mut self, config: ServerConfig) {
-        self.client_port = Some(config);
+    fn record_server_config(&self, config: ServerConfig) {
+        self.client_port
+            .set(config)
+            .map_err(drop) // `ServerConfig` doesn't implement `Debug` for `.expect()`.
+            .expect("Cannot call `record_server_config()` multiple times.");
     }
 
-    fn record_server_strategy(&mut self, _config: ServerStrategy) {
+    fn record_server_strategy(&self, _config: ServerStrategy) {
         panic!("Custom services cannot be used as the server")
     }
 }
 
 impl HydroflowSink for CustomClientPort {
-    fn as_any_mut(&mut self) -> &mut dyn Any {
+    fn as_any(&self) -> &dyn Any {
         self
     }
 
@@ -148,7 +152,7 @@ impl HydroflowSink for CustomClientPort {
         server_host: &Arc<RwLock<dyn Host>>,
         server_sink: Arc<dyn HydroflowServer>,
         wrap_client_port: &dyn Fn(ServerConfig) -> ServerConfig,
-    ) -> Result<Box<dyn FnOnce(&mut dyn Any) -> ServerStrategy>> {
+    ) -> Result<ReverseSinkInstantiator> {
         let client = self.on.upgrade().unwrap();
         let client_read = client.try_read().unwrap();
 
@@ -163,7 +167,9 @@ impl HydroflowSink for CustomClientPort {
         let server_host_clone = server_host_clone.clone();
         Ok(Box::new(move |me| {
             let mut server_host = server_host_clone.try_write().unwrap();
-            me.downcast_mut::<CustomClientPort>().unwrap().client_port = Some(client_port);
+            me.downcast_ref::<CustomClientPort>()
+                .unwrap()
+                .record_server_config(client_port);
             bind_type(server_host.as_any_mut())
         }))
     }
