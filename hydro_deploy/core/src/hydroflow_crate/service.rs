@@ -195,7 +195,7 @@ impl Service for HydroflowCrateService {
                 let built = self.build().await?;
 
                 let mut host_write = self.on.write().await;
-                let launched = host_write.provision(resource_result).await;
+                let launched = host_write.provision(resource_result);
 
                 launched.copy_binary(built).await?;
 

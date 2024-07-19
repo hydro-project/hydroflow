@@ -63,7 +63,7 @@ impl Service for CustomService {
 
         let mut host_write = self.on.write().await;
         let launched = host_write.provision(resource_result);
-        self.launched_host = Some(launched.await);
+        self.launched_host = Some(launched);
         Ok(())
     }
 

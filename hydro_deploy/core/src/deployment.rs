@@ -94,7 +94,7 @@ impl Deployment {
                     self.hosts
                         .iter_mut()
                         .map(|host: &mut Arc<RwLock<dyn Host>>| async {
-                            host.write().await.provision(&result).await;
+                            host.write().await.provision(&result);
                         });
                 futures::future::join_all(hosts_provisioned)
             })

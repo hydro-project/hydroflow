@@ -433,7 +433,7 @@ impl Host for GcpComputeEngineHost {
             .map(|a| a.clone() as Arc<dyn LaunchedHost>)
     }
 
-    async fn provision(&mut self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
+    fn provision(&mut self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         if self.launched.is_none() {
             let id = self.id;
 
