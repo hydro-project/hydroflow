@@ -4,7 +4,7 @@
 use core::hydroflow_crate::ports::HydroflowSource;
 use std::cell::OnceCell;
 use std::collections::HashMap;
-use std::ops::DerefMut;
+use std::ops::Deref;
 use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::{Arc, OnceLock};
@@ -143,7 +143,7 @@ impl AnyhowWrapper {
 #[pyclass(subclass)]
 #[derive(Clone)]
 struct HydroflowSink {
-    underlying: Arc<RwLock<dyn core::hydroflow_crate::ports::HydroflowSink>>,
+    underlying: Arc<dyn core::hydroflow_crate::ports::HydroflowSink>,
 }
 
 #[pyclass(name = "Deployment")]
@@ -508,8 +508,8 @@ struct CustomService {
 #[pymethods]
 impl CustomService {
     fn client_port(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let arc = Arc::new(RwLock::new(core::custom_service::CustomClientPort::new(
-            Arc::downgrade(&self.underlying),
+        let arc = Arc::new(core::custom_service::CustomClientPort::new(Arc::downgrade(
+            &self.underlying,
         )));
 
         Ok(Py::new(
@@ -526,31 +526,27 @@ impl CustomService {
 #[pyclass(extends=HydroflowSink, subclass)]
 #[derive(Clone)]
 struct CustomClientPort {
-    underlying: Arc<RwLock<core::custom_service::CustomClientPort>>,
+    underlying: Arc<core::custom_service::CustomClientPort>,
 }
 
 #[pymethods]
 impl CustomClientPort {
-    fn send_to(&mut self, to: &HydroflowSink) {
-        self.underlying
-            .try_write()
-            .unwrap()
-            .send_to(to.underlying.try_write().unwrap().deref_mut());
+    fn send_to(&self, to: &HydroflowSink) {
+        self.underlying.send_to(to.underlying.deref());
     }
 
     fn tagged(&self, tag: u32) -> TaggedSource {
         TaggedSource {
-            underlying: Arc::new(RwLock::new(core::hydroflow_crate::ports::TaggedSource {
+            underlying: Arc::new(core::hydroflow_crate::ports::TaggedSource {
                 source: self.underlying.clone(),
                 tag,
-            })),
+            }),
         }
     }
 
     fn server_port<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.clone();
         interruptible_future_to_py(py, async move {
-            let underlying = underlying.read().await;
             Ok(ServerPort {
                 underlying: underlying.server_port().await,
             })
@@ -610,12 +606,12 @@ struct HydroflowCratePorts {
 #[pymethods]
 impl HydroflowCratePorts {
     fn __getattribute__(&self, name: String, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let arc = Arc::new(RwLock::new(
+        let arc = Arc::new(
             self.underlying
                 .try_read()
                 .unwrap()
                 .get_port(name, &self.underlying),
-        ));
+        );
 
         Ok(Py::new(
             py,
@@ -631,15 +627,13 @@ impl HydroflowCratePorts {
 #[pyclass(extends=HydroflowSink, subclass)]
 #[derive(Clone)]
 struct HydroflowCratePort {
-    underlying: Arc<RwLock<core::hydroflow_crate::ports::HydroflowPortConfig>>,
+    underlying: Arc<core::hydroflow_crate::ports::HydroflowPortConfig>,
 }
 
 #[pymethods]
 impl HydroflowCratePort {
     fn merge(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let arc = Arc::new(RwLock::new(
-            self.underlying.try_read().unwrap().clone().merge(),
-        ));
+        let arc = Arc::new(self.underlying.clone().merge());
 
         Ok(Py::new(
             py,
@@ -651,19 +645,16 @@ impl HydroflowCratePort {
         .into_py(py))
     }
 
-    fn send_to(&mut self, to: &HydroflowSink) {
-        self.underlying
-            .try_write()
-            .unwrap()
-            .send_to(to.underlying.try_write().unwrap().deref_mut());
+    fn send_to(&self, to: &HydroflowSink) {
+        self.underlying.send_to(to.underlying.deref());
     }
 
     fn tagged(&self, tag: u32) -> TaggedSource {
         TaggedSource {
-            underlying: Arc::new(RwLock::new(core::hydroflow_crate::ports::TaggedSource {
+            underlying: Arc::new(core::hydroflow_crate::ports::TaggedSource {
                 source: self.underlying.clone(),
                 tag,
-            })),
+            }),
         }
     }
 }
@@ -671,7 +662,7 @@ impl HydroflowCratePort {
 #[pyfunction]
 fn demux(mapping: &PyDict) -> HydroflowSink {
     HydroflowSink {
-        underlying: Arc::new(RwLock::new(core::hydroflow_crate::ports::DemuxSink {
+        underlying: Arc::new(core::hydroflow_crate::ports::DemuxSink {
             demux: mapping
                 .into_iter()
                 .map(|(k, v)| {
@@ -680,31 +671,28 @@ fn demux(mapping: &PyDict) -> HydroflowSink {
                     (k, v.underlying)
                 })
                 .collect(),
-        })),
+        }),
     }
 }
 
 #[pyclass(subclass)]
 #[derive(Clone)]
 struct TaggedSource {
-    underlying: Arc<RwLock<core::hydroflow_crate::ports::TaggedSource>>,
+    underlying: Arc<core::hydroflow_crate::ports::TaggedSource>,
 }
 
 #[pymethods]
 impl TaggedSource {
-    fn send_to(&mut self, to: &HydroflowSink) {
-        self.underlying
-            .try_write()
-            .unwrap()
-            .send_to(to.underlying.try_write().unwrap().deref_mut());
+    fn send_to(&self, to: &HydroflowSink) {
+        self.underlying.send_to(to.underlying.deref());
     }
 
     fn tagged(&self, tag: u32) -> TaggedSource {
         TaggedSource {
-            underlying: Arc::new(RwLock::new(core::hydroflow_crate::ports::TaggedSource {
+            underlying: Arc::new(core::hydroflow_crate::ports::TaggedSource {
                 source: self.underlying.clone(),
                 tag,
-            })),
+            }),
         }
     }
 }
@@ -712,31 +700,28 @@ impl TaggedSource {
 #[pyclass(extends=HydroflowSink, subclass)]
 #[derive(Clone)]
 struct HydroflowNull {
-    underlying: Arc<RwLock<core::hydroflow_crate::ports::NullSourceSink>>,
+    underlying: Arc<core::hydroflow_crate::ports::NullSourceSink>,
 }
 
 #[pymethods]
 impl HydroflowNull {
-    fn send_to(&mut self, to: &HydroflowSink) {
-        self.underlying
-            .try_write()
-            .unwrap()
-            .send_to(to.underlying.try_write().unwrap().deref_mut());
+    fn send_to(&self, to: &HydroflowSink) {
+        self.underlying.send_to(to.underlying.deref());
     }
 
     fn tagged(&self, tag: u32) -> TaggedSource {
         TaggedSource {
-            underlying: Arc::new(RwLock::new(core::hydroflow_crate::ports::TaggedSource {
+            underlying: Arc::new(core::hydroflow_crate::ports::TaggedSource {
                 source: self.underlying.clone(),
                 tag,
-            })),
+            }),
         }
     }
 }
 
 #[pyfunction]
 fn null(py: Python<'_>) -> PyResult<Py<PyAny>> {
-    let arc = Arc::new(RwLock::new(core::hydroflow_crate::ports::NullSourceSink));
+    let arc = Arc::new(core::hydroflow_crate::ports::NullSourceSink);
 
     Ok(Py::new(
         py,
@@ -766,7 +751,7 @@ impl ServerPort {
     }
 
     #[allow(clippy::wrong_self_convention)]
-    fn into_source<'p>(&mut self, py: Python<'p>) -> PyResult<&'p PyAny> {
+    fn into_source<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let realized = with_tokio_runtime(|| ServerOrBound::Server((&self.underlying).into()));
 
         interruptible_future_to_py(py, async move {
@@ -779,7 +764,7 @@ impl ServerPort {
     }
 
     #[allow(clippy::wrong_self_convention)]
-    fn into_sink<'p>(&mut self, py: Python<'p>) -> PyResult<&'p PyAny> {
+    fn into_sink<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
         let realized = with_tokio_runtime(|| ServerOrBound::Server((&self.underlying).into()));
 
         interruptible_future_to_py(py, async move {
@@ -800,7 +785,7 @@ struct PythonSink {
 
 #[pymethods]
 impl PythonSink {
-    fn send<'p>(&mut self, data: Py<PyBytes>, py: Python<'p>) -> PyResult<&'p PyAny> {
+    fn send<'p>(&self, data: Py<PyBytes>, py: Python<'p>) -> PyResult<&'p PyAny> {
         let underlying = self.underlying.clone();
         let bytes = Bytes::from(data.as_bytes(py).to_vec());
         interruptible_future_to_py(py, async move {

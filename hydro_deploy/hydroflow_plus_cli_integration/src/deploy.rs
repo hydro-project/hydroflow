@@ -42,14 +42,14 @@ pub trait DeployCrateWrapper {
         on: &Arc<RwLock<impl Host + 'static>>,
     ) -> CustomClientPort {
         let sender_service = deployment.CustomService(on.clone(), vec![]);
-        let mut sender_port = sender_service.read().await.declare_client(&sender_service);
-        let mut recipient = self
+        let sender_port = sender_service.read().await.declare_client(&sender_service);
+        let recipient = self
             .underlying()
             .read()
             .await
             .get_port(port.to_string(), &self.underlying());
 
-        sender_port.send_to(&mut recipient);
+        sender_port.send_to(&recipient);
         sender_port
     }
 
@@ -202,19 +202,19 @@ impl HfSendOneToOne<DeployNode> for DeployNode {
         source_port: &DeployPort<DeployNode>,
         recipient_port: &DeployPort<DeployNode>,
     ) {
-        let mut source_port = self
+        let source_port = self
             .underlying
             .try_read()
             .unwrap()
             .get_port(source_port.port.clone(), &self.underlying);
 
-        let mut recipient_port = other
+        let recipient_port = other
             .underlying
             .try_read()
             .unwrap()
             .get_port(recipient_port.port.clone(), &other.underlying);
 
-        source_port.send_to(&mut recipient_port);
+        source_port.send_to(&recipient_port);
     }
 
     fn gen_sink_statement(&self, _port: &Self::Port) -> syn::Expr {
@@ -233,7 +233,7 @@ impl HfSendManyToOne<DeployNode, u32> for DeployCluster {
         source_port: &DeployPort<DeployCluster>,
         recipient_port: &DeployPort<DeployNode>,
     ) {
-        let mut recipient_port = other
+        let recipient_port = other
             .underlying
             .try_read()
             .unwrap()
@@ -248,10 +248,10 @@ impl HfSendManyToOne<DeployNode, u32> for DeployCluster {
                 .get_port(source_port.port.clone(), &node.underlying);
 
             TaggedSource {
-                source: Arc::new(RwLock::new(source_port)),
+                source: Arc::new(source_port),
                 tag: i as u32,
             }
-            .send_to(&mut recipient_port);
+            .send_to(&recipient_port);
         }
     }
 
@@ -271,13 +271,13 @@ impl HfSendOneToMany<DeployCluster, u32> for DeployNode {
         source_port: &DeployPort<DeployNode>,
         recipient_port: &DeployPort<DeployCluster>,
     ) {
-        let mut source_port = self
+        let source_port = self
             .underlying
             .try_read()
             .unwrap()
             .get_port(source_port.port.clone(), &self.underlying);
 
-        let mut recipient_port = DemuxSink {
+        let recipient_port = DemuxSink {
             demux: other
                 .members
                 .iter()
@@ -286,15 +286,14 @@ impl HfSendOneToMany<DeployCluster, u32> for DeployNode {
                     let n = c.underlying.try_read().unwrap();
                     (
                         id as u32,
-                        Arc::new(RwLock::new(
-                            n.get_port(recipient_port.port.clone(), &c.underlying),
-                        )) as Arc<RwLock<dyn HydroflowSink + 'static>>,
+                        Arc::new(n.get_port(recipient_port.port.clone(), &c.underlying))
+                            as Arc<dyn HydroflowSink + 'static>,
                     )
                 })
                 .collect(),
         };
 
-        source_port.send_to(&mut recipient_port);
+        source_port.send_to(&recipient_port);
     }
 
     fn gen_sink_statement(&self, _port: &Self::Port) -> syn::Expr {
@@ -323,7 +322,7 @@ impl HfSendManyToMany<DeployCluster, u32> for DeployCluster {
                 .unwrap()
                 .get_port(source_port.port.clone(), &sender.underlying);
 
-            let mut recipient_port = DemuxSink {
+            let recipient_port = DemuxSink {
                 demux: other
                     .members
                     .iter()
@@ -332,21 +331,20 @@ impl HfSendManyToMany<DeployCluster, u32> for DeployCluster {
                         let n = c.underlying.try_read().unwrap();
                         (
                             id as u32,
-                            Arc::new(RwLock::new(
+                            Arc::new(
                                 n.get_port(recipient_port.port.clone(), &c.underlying)
                                     .merge(),
-                            ))
-                                as Arc<RwLock<dyn HydroflowSink + 'static>>,
+                            ) as Arc<dyn HydroflowSink + 'static>,
                         )
                     })
                     .collect(),
             };
 
             TaggedSource {
-                source: Arc::new(RwLock::new(source_port)),
+                source: Arc::new(source_port),
                 tag: i as u32,
             }
-            .send_to(&mut recipient_port);
+            .send_to(&recipient_port);
         }
     }
 
