@@ -145,7 +145,6 @@ pub enum HostTargetType {
 
 pub type HostStrategyGetter = Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>;
 
-#[async_trait]
 pub trait Host: Send + Sync {
     fn target_type(&self) -> HostTargetType;
 
@@ -167,7 +166,7 @@ pub trait Host: Send + Sync {
     fn collect_resources(&self, resource_batch: &mut ResourceBatch);
 
     /// Connects to the acquired resources and prepares the host to run services.
-    async fn provision(&mut self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost>;
+    fn provision(&mut self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost>;
 
     fn launched(&self) -> Option<Arc<dyn LaunchedHost>>;
 

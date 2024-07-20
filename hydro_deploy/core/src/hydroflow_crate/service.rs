@@ -108,7 +108,7 @@ impl HydroflowCrateService {
         &mut self,
         self_arc: &Arc<RwLock<HydroflowCrateService>>,
         my_port: String,
-        sink: &mut dyn HydroflowSink,
+        sink: &dyn HydroflowSink,
     ) -> Result<()> {
         let forward_res = sink.instantiate(&SourcePath::Direct(self.on.clone()));
         if let Ok(instantiated) = forward_res {
@@ -132,7 +132,7 @@ impl HydroflowCrateService {
 
             assert!(!self.port_to_bind.contains_key(&my_port));
             self.port_to_bind
-                .insert(my_port, instantiated(sink.as_any_mut()));
+                .insert(my_port, instantiated(sink.as_any()));
 
             Ok(())
         }
@@ -195,7 +195,7 @@ impl Service for HydroflowCrateService {
                 let built = self.build().await?;
 
                 let mut host_write = self.on.write().await;
-                let launched = host_write.provision(resource_result).await;
+                let launched = host_write.provision(resource_result);
 
                 launched.copy_binary(built).await?;
 
