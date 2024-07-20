@@ -528,33 +528,6 @@
 <a href="#528" id="528">528</a>
 <a href="#529" id="529">529</a>
 <a href="#530" id="530">530</a>
-<a href="#531" id="531">531</a>
-<a href="#532" id="532">532</a>
-<a href="#533" id="533">533</a>
-<a href="#534" id="534">534</a>
-<a href="#535" id="535">535</a>
-<a href="#536" id="536">536</a>
-<a href="#537" id="537">537</a>
-<a href="#538" id="538">538</a>
-<a href="#539" id="539">539</a>
-<a href="#540" id="540">540</a>
-<a href="#541" id="541">541</a>
-<a href="#542" id="542">542</a>
-<a href="#543" id="543">543</a>
-<a href="#544" id="544">544</a>
-<a href="#545" id="545">545</a>
-<a href="#546" id="546">546</a>
-<a href="#547" id="547">547</a>
-<a href="#548" id="548">548</a>
-<a href="#549" id="549">549</a>
-<a href="#550" id="550">550</a>
-<a href="#551" id="551">551</a>
-<a href="#552" id="552">552</a>
-<a href="#553" id="553">553</a>
-<a href="#554" id="554">554</a>
-<a href="#555" id="555">555</a>
-<a href="#556" id="556">556</a>
-<a href="#557" id="557">557</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::ops::Deref;
@@ -572,17 +545,17 @@
 
 <span class="kw">pub trait </span>HydroflowSource: Send + Sync {
     <span class="kw">fn </span>source_path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SourcePath;
-    <span class="kw">fn </span>record_server_config(<span class="kw-2">&amp;mut </span><span class="self">self</span>, config: ServerConfig);
+    <span class="kw">fn </span>record_server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, config: ServerConfig);
 
-    <span class="kw">fn </span>host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;;
+    <span class="kw">fn </span>host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>Host&gt;;
     <span class="kw">fn </span>server(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>HydroflowServer&gt;;
-    <span class="kw">fn </span>record_server_strategy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, config: ServerStrategy);
+    <span class="kw">fn </span>record_server_strategy(<span class="kw-2">&amp;</span><span class="self">self</span>, config: ServerStrategy);
 
     <span class="kw">fn </span>wrap_reverse_server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, config: ServerConfig) -&gt; ServerConfig {
         config
     }
 
-    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, sink: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>HydroflowSink) {
+    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;</span><span class="self">self</span>, sink: <span class="kw-2">&amp;</span><span class="kw">dyn </span>HydroflowSink) {
         <span class="kw">let </span>forward_res = sink.instantiate(<span class="kw-2">&amp;</span><span class="self">self</span>.source_path());
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(instantiated) = forward_res {
             <span class="self">self</span>.record_server_config(instantiated());
@@ -593,21 +566,20 @@
                     <span class="self">self</span>.wrap_reverse_server_config(p)
                 })
                 .unwrap();
-            <span class="self">self</span>.record_server_strategy(instantiated(sink.as_any_mut()));
+            <span class="self">self</span>.record_server_strategy(instantiated(sink.as_any()));
         }
     }
 }
 
-<span class="attr">#[async_trait]
-</span><span class="kw">pub trait </span>HydroflowServer: DynClone + Send + Sync {
+<span class="kw">pub trait </span>HydroflowServer: DynClone + Send + Sync {
     <span class="kw">fn </span>get_port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ServerPort;
-    <span class="kw">async fn </span>launched_host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;;
+    <span class="kw">fn </span>launched_host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;;
 }
 
-<span class="kw">pub type </span>ReverseSinkInstantiator = Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Any) -&gt; ServerStrategy&gt;;
+<span class="kw">pub type </span>ReverseSinkInstantiator = Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;</span><span class="kw">dyn </span>Any) -&gt; ServerStrategy&gt;;
 
 <span class="kw">pub trait </span>HydroflowSink: Send + Sync {
-    <span class="kw">fn </span>as_any_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Any;
+    <span class="kw">fn </span>as_any(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>Any;
 
     <span class="doccomment">/// Instantiate the sink as the source host connecting to the sink host.
     /// Returns a thunk that can be called to perform mutations that instantiate the sink.
@@ -617,49 +589,40 @@
     /// Returns a thunk that can be called to perform mutations that instantiate the sink, taking a mutable reference to this sink.
     </span><span class="kw">fn </span>instantiate_reverse(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        server_host: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
+        server_host: <span class="kw-2">&amp;</span>Arc&lt;<span class="kw">dyn </span>Host&gt;,
         server_sink: Arc&lt;<span class="kw">dyn </span>HydroflowServer&gt;,
         wrap_client_port: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(ServerConfig) -&gt; ServerConfig,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;ReverseSinkInstantiator&gt;;
 }
 
 <span class="kw">pub struct </span>TaggedSource {
-    <span class="kw">pub </span>source: Arc&lt;RwLock&lt;<span class="kw">dyn </span>HydroflowSource&gt;&gt;,
+    <span class="kw">pub </span>source: Arc&lt;<span class="kw">dyn </span>HydroflowSource&gt;,
     <span class="kw">pub </span>tag: u32,
 }
 
 <span class="kw">impl </span>HydroflowSource <span class="kw">for </span>TaggedSource {
     <span class="kw">fn </span>source_path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SourcePath {
-        SourcePath::Tagged(
-            Box::new(<span class="self">self</span>.source.try_read().unwrap().source_path()),
-            <span class="self">self</span>.tag,
-        )
+        SourcePath::Tagged(Box::new(<span class="self">self</span>.source.source_path()), <span class="self">self</span>.tag)
     }
 
-    <span class="kw">fn </span>record_server_config(<span class="kw-2">&amp;mut </span><span class="self">self</span>, config: ServerConfig) {
-        <span class="self">self</span>.source
-            .try_write()
-            .unwrap()
-            .record_server_config(config);
+    <span class="kw">fn </span>record_server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, config: ServerConfig) {
+        <span class="self">self</span>.source.record_server_config(config);
     }
 
-    <span class="kw">fn </span>host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt; {
-        <span class="self">self</span>.source.try_read().unwrap().host()
+    <span class="kw">fn </span>host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>Host&gt; {
+        <span class="self">self</span>.source.host()
     }
 
     <span class="kw">fn </span>server(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>HydroflowServer&gt; {
-        <span class="self">self</span>.source.try_read().unwrap().server()
+        <span class="self">self</span>.source.server()
     }
 
     <span class="kw">fn </span>wrap_reverse_server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, config: ServerConfig) -&gt; ServerConfig {
         ServerConfig::Tagged(Box::new(config), <span class="self">self</span>.tag)
     }
 
-    <span class="kw">fn </span>record_server_strategy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, config: ServerStrategy) {
-        <span class="self">self</span>.source
-            .try_write()
-            .unwrap()
-            .record_server_strategy(config);
+    <span class="kw">fn </span>record_server_strategy(<span class="kw-2">&amp;</span><span class="self">self</span>, config: ServerStrategy) {
+        <span class="self">self</span>.source.record_server_strategy(config);
     }
 }
 
@@ -670,7 +633,7 @@
         SourcePath::Null
     }
 
-    <span class="kw">fn </span>host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt; {
+    <span class="kw">fn </span>host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>Host&gt; {
         <span class="macro">panic!</span>(<span class="string">"null source has no host"</span>)
     }
 
@@ -678,12 +641,12 @@
         <span class="macro">panic!</span>(<span class="string">"null source has no server"</span>)
     }
 
-    <span class="kw">fn </span>record_server_config(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _config: ServerConfig) {}
-    <span class="kw">fn </span>record_server_strategy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _config: ServerStrategy) {}
+    <span class="kw">fn </span>record_server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, _config: ServerConfig) {}
+    <span class="kw">fn </span>record_server_strategy(<span class="kw-2">&amp;</span><span class="self">self</span>, _config: ServerStrategy) {}
 }
 
 <span class="kw">impl </span>HydroflowSink <span class="kw">for </span>NullSourceSink {
-    <span class="kw">fn </span>as_any_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Any {
+    <span class="kw">fn </span>as_any(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>Any {
         <span class="self">self
     </span>}
 
@@ -693,7 +656,7 @@
 
     <span class="kw">fn </span>instantiate_reverse(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        _server_host: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
+        _server_host: <span class="kw-2">&amp;</span>Arc&lt;<span class="kw">dyn </span>Host&gt;,
         _server_sink: Arc&lt;<span class="kw">dyn </span>HydroflowServer&gt;,
         _wrap_client_port: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(ServerConfig) -&gt; ServerConfig,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;ReverseSinkInstantiator&gt; {
@@ -702,18 +665,18 @@
 }
 
 <span class="kw">pub struct </span>DemuxSink {
-    <span class="kw">pub </span>demux: HashMap&lt;u32, Arc&lt;RwLock&lt;<span class="kw">dyn </span>HydroflowSink&gt;&gt;&gt;,
+    <span class="kw">pub </span>demux: HashMap&lt;u32, Arc&lt;<span class="kw">dyn </span>HydroflowSink&gt;&gt;,
 }
 
 <span class="kw">impl </span>HydroflowSink <span class="kw">for </span>DemuxSink {
-    <span class="kw">fn </span>as_any_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Any {
+    <span class="kw">fn </span>as_any(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>Any {
         <span class="self">self
     </span>}
 
     <span class="kw">fn </span>instantiate(<span class="kw-2">&amp;</span><span class="self">self</span>, client_host: <span class="kw-2">&amp;</span>SourcePath) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>FnOnce() -&gt; ServerConfig&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>thunk_map = HashMap::new();
         <span class="kw">for </span>(key, target) <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.demux {
-            thunk_map.insert(<span class="kw-2">*</span>key, target.try_read().unwrap().instantiate(client_host)<span class="question-mark">?</span>);
+            thunk_map.insert(<span class="kw-2">*</span>key, target.instantiate(client_host)<span class="question-mark">?</span>);
         }
 
         <span class="prelude-val">Ok</span>(Box::new(<span class="kw">move </span>|| {
@@ -728,15 +691,15 @@
 
     <span class="kw">fn </span>instantiate_reverse(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        server_host: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
+        server_host: <span class="kw-2">&amp;</span>Arc&lt;<span class="kw">dyn </span>Host&gt;,
         server_sink: Arc&lt;<span class="kw">dyn </span>HydroflowServer&gt;,
         wrap_client_port: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(ServerConfig) -&gt; ServerConfig,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Any) -&gt; ServerStrategy&gt;&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ReverseSinkInstantiator&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>thunk_map = HashMap::new();
         <span class="kw">for </span>(key, target) <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.demux {
             thunk_map.insert(
                 <span class="kw-2">*</span>key,
-                target.try_write().unwrap().instantiate_reverse(
+                target.instantiate_reverse(
                     server_host,
                     server_sink.clone(),
                     <span class="comment">// the parent wrapper selects the demux port for the parent defn, so do that first
@@ -746,22 +709,10 @@
         }
 
         <span class="prelude-val">Ok</span>(Box::new(<span class="kw">move </span>|me| {
-            <span class="kw">let </span>me = me.downcast_mut::&lt;DemuxSink&gt;().unwrap();
+            <span class="kw">let </span>me = me.downcast_ref::&lt;DemuxSink&gt;().unwrap();
             <span class="kw">let </span>instantiated_map = thunk_map
                 .into_iter()
-                .map(|(key, thunk)| {
-                    (
-                        key,
-                        thunk(
-                            me.demux
-                                .get_mut(<span class="kw-2">&amp;</span>key)
-                                .unwrap()
-                                .try_write()
-                                .unwrap()
-                                .as_any_mut(),
-                        ),
-                    )
-                })
+                .map(|(key, thunk)| (key, thunk(me.demux.get(<span class="kw-2">&amp;</span>key).unwrap().as_any())))
                 .collect();
 
             ServerStrategy::Demux(instantiated_map)
@@ -772,7 +723,7 @@
 <span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>HydroflowPortConfig {
     <span class="kw">pub </span>service: Weak&lt;RwLock&lt;HydroflowCrateService&gt;&gt;,
-    <span class="kw">pub </span>service_host: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
+    <span class="kw">pub </span>service_host: Arc&lt;<span class="kw">dyn </span>Host&gt;,
     <span class="kw">pub </span>service_server_defns: Arc&lt;RwLock&lt;HashMap&lt;String, ServerPort&gt;&gt;&gt;,
     <span class="kw">pub </span>port: String,
     <span class="kw">pub </span>merge: bool,
@@ -803,7 +754,7 @@
         )
     }
 
-    <span class="kw">fn </span>host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt; {
+    <span class="kw">fn </span>host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>Host&gt; {
         <span class="self">self</span>.service_host.clone()
     }
 
@@ -820,7 +771,7 @@
         })
     }
 
-    <span class="kw">fn </span>record_server_config(<span class="kw-2">&amp;mut </span><span class="self">self</span>, config: ServerConfig) {
+    <span class="kw">fn </span>record_server_config(<span class="kw-2">&amp;</span><span class="self">self</span>, config: ServerConfig) {
         <span class="kw">let </span>from = <span class="self">self</span>.service.upgrade().unwrap();
         <span class="kw">let </span><span class="kw-2">mut </span>from_write = from.try_write().unwrap();
 
@@ -829,7 +780,7 @@
         from_write.port_to_server.insert(<span class="self">self</span>.port.clone(), config);
     }
 
-    <span class="kw">fn </span>record_server_strategy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, config: ServerStrategy) {
+    <span class="kw">fn </span>record_server_strategy(<span class="kw-2">&amp;</span><span class="self">self</span>, config: ServerStrategy) {
         <span class="kw">let </span>from = <span class="self">self</span>.service.upgrade().unwrap();
         <span class="kw">let </span><span class="kw-2">mut </span>from_write = from.try_write().unwrap();
 
@@ -846,14 +797,14 @@
         server_defns.get(<span class="kw-2">&amp;</span><span class="self">self</span>.port).unwrap().clone()
     }
 
-    <span class="kw">async fn </span>launched_host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt; {
-        <span class="self">self</span>.service_host.read().<span class="kw">await</span>.launched().unwrap()
+    <span class="kw">fn </span>launched_host(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt; {
+        <span class="self">self</span>.service_host.launched().unwrap()
     }
 }
 
 <span class="kw">pub enum </span>SourcePath {
     Null,
-    Direct(Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;),
+    Direct(Arc&lt;<span class="kw">dyn </span>Host&gt;),
     Tagged(Box&lt;SourcePath&gt;, u32),
 }
 
@@ -865,7 +816,6 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(HostStrategyGetter, ServerConfig)&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             SourcePath::Direct(client_host) =&gt; {
-                <span class="kw">let </span>client_host = client_host.try_read().unwrap();
                 <span class="kw">let </span>(conn_type, bind_type) = server_host.strategy_as_server(client_host.deref())<span class="question-mark">?</span>;
                 <span class="kw">let </span>base_config = ServerConfig::from_strategy(<span class="kw-2">&amp;</span>conn_type, Arc::new(server.clone()));
                 <span class="prelude-val">Ok</span>((bind_type, base_config))
@@ -891,7 +841,7 @@
 }
 
 <span class="kw">impl </span>HydroflowSink <span class="kw">for </span>HydroflowPortConfig {
-    <span class="kw">fn </span>as_any_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Any {
+    <span class="kw">fn </span>as_any(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>Any {
         <span class="self">self
     </span>}
 
@@ -899,8 +849,7 @@
         <span class="kw">let </span>server = <span class="self">self</span>.service.upgrade().unwrap();
         <span class="kw">let </span>server_read = server.try_read().unwrap();
 
-        <span class="kw">let </span>server_host_clone = server_read.on.clone();
-        <span class="kw">let </span>server_host = server_host_clone.try_read().unwrap();
+        <span class="kw">let </span>server_host = server_read.on.clone();
 
         <span class="kw">let </span>(bind_type, base_config) = client_path.plan(<span class="self">self</span>, server_host.deref())<span class="question-mark">?</span>;
 
@@ -909,7 +858,7 @@
         <span class="kw">let </span>port = <span class="self">self</span>.port.clone();
         <span class="prelude-val">Ok</span>(Box::new(<span class="kw">move </span>|| {
             <span class="kw">let </span><span class="kw-2">mut </span>server_write = server.try_write().unwrap();
-            <span class="kw">let </span>bind_type = bind_type(server_write.on.try_write().unwrap().as_any_mut());
+            <span class="kw">let </span>bind_type = (bind_type)(server_write.on.as_any());
 
             <span class="kw">if </span>merge {
                 <span class="kw">let </span>merge_config = server_write
@@ -934,18 +883,16 @@
 
     <span class="kw">fn </span>instantiate_reverse(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        server_host: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
+        server_host: <span class="kw-2">&amp;</span>Arc&lt;<span class="kw">dyn </span>Host&gt;,
         server_sink: Arc&lt;<span class="kw">dyn </span>HydroflowServer&gt;,
         wrap_client_port: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Fn(ServerConfig) -&gt; ServerConfig,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="kw">dyn </span>Any) -&gt; ServerStrategy&gt;&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ReverseSinkInstantiator&gt; {
         <span class="kw">let </span>client = <span class="self">self</span>.service.upgrade().unwrap();
         <span class="kw">let </span>client_read = client.try_read().unwrap();
 
-        <span class="kw">let </span>server_host_clone = server_host.clone();
-        <span class="kw">let </span>server_host = server_host_clone.try_read().unwrap();
+        <span class="kw">let </span>server_host = server_host.clone();
 
-        <span class="kw">let </span>(conn_type, bind_type) =
-            server_host.strategy_as_server(client_read.on.try_read().unwrap().deref())<span class="question-mark">?</span>;
+        <span class="kw">let </span>(conn_type, bind_type) = server_host.strategy_as_server(client_read.on.deref())<span class="question-mark">?</span>;
         <span class="kw">let </span>client_port = wrap_client_port(ServerConfig::from_strategy(<span class="kw-2">&amp;</span>conn_type, server_sink));
 
         <span class="kw">let </span>client = client.clone();
@@ -972,8 +919,7 @@
                     .insert(port.clone(), client_port);
             };
 
-            <span class="kw">let </span><span class="kw-2">mut </span>server_host = client_write.on.try_write().unwrap();
-            bind_type(server_host.as_any_mut())
+            (bind_type)(client_write.on.as_any())
         }))
     }
 }
@@ -1046,7 +992,7 @@
 
             ServerConfig::Forwarded(server) =&gt; {
                 <span class="kw">let </span>selected = select(server.get_port());
-                forward_connection(<span class="kw-2">&amp;</span>selected, server.launched_host().<span class="kw">await</span>.as_ref()).<span class="kw">await
+                forward_connection(<span class="kw-2">&amp;</span>selected, server.launched_host().as_ref()).<span class="kw">await
             </span>}
 
             ServerConfig::Demux(demux) =&gt; {

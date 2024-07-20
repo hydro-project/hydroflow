@@ -362,31 +362,28 @@
     Linux,
 }
 
-<span class="kw">pub type </span>HostStrategyGetter = Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any) -&gt; ServerStrategy&gt;;
+<span class="kw">pub type </span>HostStrategyGetter = Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;</span><span class="kw">dyn </span>std::any::Any) -&gt; ServerStrategy&gt;;
 
-<span class="attr">#[async_trait]
-</span><span class="kw">pub trait </span>Host: Send + Sync {
+<span class="kw">pub trait </span>Host: Send + Sync {
     <span class="kw">fn </span>target_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HostTargetType;
 
-    <span class="kw">fn </span>request_port(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>ServerStrategy);
+    <span class="kw">fn </span>request_port(<span class="kw-2">&amp;</span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>ServerStrategy);
 
     <span class="doccomment">/// An identifier for this host, which is unique within a deployment.
     </span><span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize;
 
-    <span class="doccomment">/// Returns a reference to the host as a trait object.
-    </span><span class="kw">fn </span>as_any(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>std::any::Any;
-
-    <span class="doccomment">/// Returns a reference to the host as a trait object.
-    </span><span class="kw">fn </span>as_any_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any;
-
     <span class="doccomment">/// Configures the host to support copying and running a custom binary.
-    </span><span class="kw">fn </span>request_custom_binary(<span class="kw-2">&amp;mut </span><span class="self">self</span>);
+    </span><span class="kw">fn </span>request_custom_binary(<span class="kw-2">&amp;</span><span class="self">self</span>);
 
     <span class="doccomment">/// Makes requests for physical resources (servers) that this host needs to run.
+    ///
+    /// This should be called before `provision` is called.
     </span><span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;</span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch);
 
     <span class="doccomment">/// Connects to the acquired resources and prepares the host to run services.
-    </span><span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;;
+    ///
+    /// This should be called after `collect_resources` is called.
+    </span><span class="kw">fn </span>provision(<span class="kw-2">&amp;</span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;;
 
     <span class="kw">fn </span>launched(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt;;
 
@@ -399,6 +396,9 @@
 
     <span class="doccomment">/// Determines whether this host can connect to another host using the given strategy.
     </span><span class="kw">fn </span>can_connect_to(<span class="kw-2">&amp;</span><span class="self">self</span>, typ: ClientStrategy) -&gt; bool;
+
+    <span class="doccomment">/// Returns a reference to the host as a trait object.
+    </span><span class="kw">fn </span>as_any(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="kw">dyn </span>std::any::Any;
 }
 
 <span class="attr">#[async_trait]

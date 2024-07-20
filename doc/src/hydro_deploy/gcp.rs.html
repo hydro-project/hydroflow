@@ -517,12 +517,8 @@
 <a href="#517" id="517">517</a>
 <a href="#518" id="518">518</a>
 <a href="#519" id="519">519</a>
-<a href="#520" id="520">520</a>
-<a href="#521" id="521">521</a>
-<a href="#522" id="522">522</a>
-<a href="#523" id="523">523</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
-<span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>std::sync::{Arc, Mutex, OnceLock};
 
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_trait::async_trait;
@@ -536,6 +532,7 @@
     ServerStrategy,
 };
 <span class="kw">use </span><span class="kw">crate</span>::ssh::LaunchedSshHost;
+<span class="kw">use </span><span class="kw">crate</span>::HostStrategyGetter;
 
 <span class="kw">pub struct </span>LaunchedComputeEngine {
     resource_result: Arc&lt;ResourceResult&gt;,
@@ -698,8 +695,8 @@
     <span class="kw">pub </span>region: String,
     <span class="kw">pub </span>network: Arc&lt;RwLock&lt;GcpNetwork&gt;&gt;,
     <span class="kw">pub </span>user: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="kw">pub </span>launched: <span class="prelude-ty">Option</span>&lt;Arc&lt;LaunchedComputeEngine&gt;&gt;,
-    external_ports: Vec&lt;u16&gt;,
+    <span class="kw">pub </span>launched: OnceLock&lt;Arc&lt;LaunchedComputeEngine&gt;&gt;,
+    external_ports: Mutex&lt;Vec&lt;u16&gt;&gt;,
 }
 
 <span class="kw">impl </span>GcpComputeEngineHost {
@@ -720,8 +717,8 @@
             region: region.into(),
             network,
             user,
-            launched: <span class="prelude-val">None</span>,
-            external_ports: <span class="macro">vec!</span>[],
+            launched: OnceLock::new(),
+            external_ports: Mutex::new(Vec::new()),
         }
     }
 }
@@ -732,17 +729,17 @@
         HostTargetType::Linux
     }
 
-    <span class="kw">fn </span>request_port(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>ServerStrategy) {
+    <span class="kw">fn </span>request_port(<span class="kw-2">&amp;</span><span class="self">self</span>, bind_type: <span class="kw-2">&amp;</span>ServerStrategy) {
         <span class="kw">match </span>bind_type {
             ServerStrategy::UnixSocket =&gt; {}
             ServerStrategy::InternalTcpPort =&gt; {}
             ServerStrategy::ExternalTcpPort(port) =&gt; {
-                <span class="kw">if </span>!<span class="self">self</span>.external_ports.contains(port) {
-                    <span class="kw">if </span><span class="self">self</span>.launched.is_some() {
+                <span class="kw">let </span><span class="kw-2">mut </span>external_ports = <span class="self">self</span>.external_ports.lock().unwrap();
+                <span class="kw">if </span>!external_ports.contains(port) {
+                    <span class="kw">if </span><span class="self">self</span>.launched.get().is_some() {
                         <span class="macro">todo!</span>(<span class="string">"Cannot adjust firewall after host has been launched"</span>);
                     }
-
-                    <span class="self">self</span>.external_ports.push(<span class="kw-2">*</span>port);
+                    external_ports.push(<span class="kw-2">*</span>port);
                 }
             }
             ServerStrategy::Demux(demux) =&gt; {
@@ -762,7 +759,7 @@
         }
     }
 
-    <span class="kw">fn </span>request_custom_binary(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+    <span class="kw">fn </span>request_custom_binary(<span class="kw-2">&amp;</span><span class="self">self</span>) {
         <span class="self">self</span>.request_port(<span class="kw-2">&amp;</span>ServerStrategy::ExternalTcpPort(<span class="number">22</span>));
     }
 
@@ -774,12 +771,8 @@
         <span class="self">self
     </span>}
 
-    <span class="kw">fn </span>as_any_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any {
-        <span class="self">self
-    </span>}
-
     <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;</span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {
-        <span class="kw">if </span><span class="self">self</span>.launched.is_some() {
+        <span class="kw">if </span><span class="self">self</span>.launched.get().is_some() {
             <span class="kw">return</span>;
         }
 
@@ -862,7 +855,8 @@
         <span class="kw">let </span><span class="kw-2">mut </span>tags = <span class="macro">vec!</span>[];
         <span class="kw">let </span><span class="kw-2">mut </span>external_interfaces = <span class="macro">vec!</span>[];
 
-        <span class="kw">if </span><span class="self">self</span>.external_ports.is_empty() {
+        <span class="kw">let </span>external_ports = <span class="self">self</span>.external_ports.lock().unwrap();
+        <span class="kw">if </span>external_ports.is_empty() {
             external_interfaces.push(<span class="macro">json!</span>({ <span class="string">"network"</span>: <span class="macro">format!</span>(<span class="string">"${{{vpc_path}.self_link}}"</span>) }));
         } <span class="kw">else </span>{
             external_interfaces.push(<span class="macro">json!</span>({
@@ -875,7 +869,7 @@
             }));
 
             <span class="comment">// open the external ports that were requested
-            </span><span class="kw">let </span>my_external_tags = <span class="self">self</span>.external_ports.iter().map(|port| {
+            </span><span class="kw">let </span>my_external_tags = external_ports.iter().map(|port| {
                 <span class="kw">let </span>rule_id = <span class="macro">nanoid!</span>(<span class="number">8</span>, <span class="kw-2">&amp;</span>TERRAFORM_ALPHABET);
                 <span class="kw">let </span>firewall_rule = resource_batch
                     .terraform
@@ -909,8 +903,9 @@
                 }
             );
         }
+        drop(external_ports); <span class="comment">// Drop the lock as soon as possible.
 
-        <span class="kw">let </span>user = <span class="self">self</span>.user.as_ref().cloned().unwrap_or(<span class="string">"hydro"</span>.to_string());
+        </span><span class="kw">let </span>user = <span class="self">self</span>.user.as_ref().cloned().unwrap_or(<span class="string">"hydro"</span>.to_string());
         resource_batch
             .terraform
             .resource
@@ -952,46 +947,43 @@
 
     <span class="kw">fn </span>launched(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt; {
         <span class="self">self</span>.launched
-            .as_ref()
+            .get()
             .map(|a| a.clone() <span class="kw">as </span>Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;)
     }
 
-    <span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt; {
-        <span class="kw">if </span><span class="self">self</span>.launched.is_none() {
-            <span class="kw">let </span>id = <span class="self">self</span>.id;
+    <span class="kw">fn </span>provision(<span class="kw-2">&amp;</span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt; {
+        <span class="self">self</span>.launched
+            .get_or_init(|| {
+                <span class="kw">let </span>id = <span class="self">self</span>.id;
 
-            <span class="kw">let </span>internal_ip = resource_result
-                .terraform
-                .outputs
-                .get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"vm-instance-{id}-internal-ip"</span>))
-                .unwrap()
-                .value
-                .clone();
+                <span class="kw">let </span>internal_ip = resource_result
+                    .terraform
+                    .outputs
+                    .get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"vm-instance-{id}-internal-ip"</span>))
+                    .unwrap()
+                    .value
+                    .clone();
 
-            <span class="kw">let </span>external_ip = resource_result
-                .terraform
-                .outputs
-                .get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"vm-instance-{id}-public-ip"</span>))
-                .map(|v| v.value.clone());
+                <span class="kw">let </span>external_ip = resource_result
+                    .terraform
+                    .outputs
+                    .get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"vm-instance-{id}-public-ip"</span>))
+                    .map(|v| v.value.clone());
 
-            <span class="self">self</span>.launched = <span class="prelude-val">Some</span>(Arc::new(LaunchedComputeEngine {
-                resource_result: resource_result.clone(),
-                user: <span class="self">self</span>.user.as_ref().cloned().unwrap_or(<span class="string">"hydro"</span>.to_string()),
-                internal_ip,
-                external_ip,
-            }))
-        }
-
-        <span class="self">self</span>.launched.as_ref().unwrap().clone()
+                Arc::new(LaunchedComputeEngine {
+                    resource_result: resource_result.clone(),
+                    user: <span class="self">self</span>.user.as_ref().cloned().unwrap_or(<span class="string">"hydro"</span>.to_string()),
+                    internal_ip,
+                    external_ip,
+                })
+            })
+            .clone()
     }
 
     <span class="kw">fn </span>strategy_as_server&lt;<span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
         client_host: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Host,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(
-        ClientStrategy&lt;<span class="lifetime">'a</span>&gt;,
-        Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any) -&gt; ServerStrategy&gt;,
-    )&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(ClientStrategy&lt;<span class="lifetime">'a</span>&gt;, HostStrategyGetter)&gt; {
         <span class="kw">if </span>client_host.can_connect_to(ClientStrategy::UnixSocket(<span class="self">self</span>.id)) {
             <span class="prelude-val">Ok</span>((
                 ClientStrategy::UnixSocket(<span class="self">self</span>.id),
@@ -1006,7 +998,7 @@
             <span class="prelude-val">Ok</span>((
                 ClientStrategy::ForwardedTcpPort(<span class="self">self</span>),
                 Box::new(|me| {
-                    me.downcast_mut::&lt;GcpComputeEngineHost&gt;()
+                    me.downcast_ref::&lt;GcpComputeEngineHost&gt;()
                         .unwrap()
                         .request_port(<span class="kw-2">&amp;</span>ServerStrategy::ExternalTcpPort(<span class="number">22</span>)); <span class="comment">// needed to forward
                     </span>ServerStrategy::InternalTcpPort

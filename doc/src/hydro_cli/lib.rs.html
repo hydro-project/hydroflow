@@ -854,56 +854,13 @@
 <a href="#854" id="854">854</a>
 <a href="#855" id="855">855</a>
 <a href="#856" id="856">856</a>
-<a href="#857" id="857">857</a>
-<a href="#858" id="858">858</a>
-<a href="#859" id="859">859</a>
-<a href="#860" id="860">860</a>
-<a href="#861" id="861">861</a>
-<a href="#862" id="862">862</a>
-<a href="#863" id="863">863</a>
-<a href="#864" id="864">864</a>
-<a href="#865" id="865">865</a>
-<a href="#866" id="866">866</a>
-<a href="#867" id="867">867</a>
-<a href="#868" id="868">868</a>
-<a href="#869" id="869">869</a>
-<a href="#870" id="870">870</a>
-<a href="#871" id="871">871</a>
-<a href="#872" id="872">872</a>
-<a href="#873" id="873">873</a>
-<a href="#874" id="874">874</a>
-<a href="#875" id="875">875</a>
-<a href="#876" id="876">876</a>
-<a href="#877" id="877">877</a>
-<a href="#878" id="878">878</a>
-<a href="#879" id="879">879</a>
-<a href="#880" id="880">880</a>
-<a href="#881" id="881">881</a>
-<a href="#882" id="882">882</a>
-<a href="#883" id="883">883</a>
-<a href="#884" id="884">884</a>
-<a href="#885" id="885">885</a>
-<a href="#886" id="886">886</a>
-<a href="#887" id="887">887</a>
-<a href="#888" id="888">888</a>
-<a href="#889" id="889">889</a>
-<a href="#890" id="890">890</a>
-<a href="#891" id="891">891</a>
-<a href="#892" id="892">892</a>
-<a href="#893" id="893">893</a>
-<a href="#894" id="894">894</a>
-<a href="#895" id="895">895</a>
-<a href="#896" id="896">896</a>
-<a href="#897" id="897">897</a>
-<a href="#898" id="898">898</a>
-<a href="#899" id="899">899</a>
 </pre></div><pre class="rust"><code><span class="comment">// TODO(mingwei): For pyo3 generated code.
 </span><span class="attr">#![allow(unused_qualifications, non_local_definitions)]
 
 </span><span class="kw">use </span>core::hydroflow_crate::ports::HydroflowSource;
 <span class="kw">use </span>std::cell::OnceCell;
 <span class="kw">use </span>std::collections::HashMap;
-<span class="kw">use </span>std::ops::DerefMut;
+<span class="kw">use </span>std::ops::Deref;
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::pin::Pin;
 <span class="kw">use </span>std::sync::{Arc, OnceLock};
@@ -1042,7 +999,7 @@
 <span class="attr">#[pyclass(subclass)]
 #[derive(Clone)]
 </span><span class="kw">struct </span>HydroflowSink {
-    underlying: Arc&lt;RwLock&lt;<span class="kw">dyn </span>core::hydroflow_crate::ports::HydroflowSink&gt;&gt;,
+    underlying: Arc&lt;<span class="kw">dyn </span>core::hydroflow_crate::ports::HydroflowSink&gt;,
 }
 
 <span class="attr">#[pyclass(name = <span class="string">"Deployment"</span>)]
@@ -1227,20 +1184,18 @@
 
 <span class="attr">#[pyclass(subclass)]
 </span><span class="kw">pub struct </span>Host {
-    underlying: Arc&lt;RwLock&lt;<span class="kw">dyn </span>core::Host&gt;&gt;,
+    underlying: Arc&lt;<span class="kw">dyn </span>core::Host&gt;,
 }
 
 <span class="attr">#[pyclass(extends=Host, subclass)]
 </span><span class="kw">struct </span>LocalhostHost {
-    underlying: Arc&lt;RwLock&lt;core::LocalhostHost&gt;&gt;,
+    underlying: Arc&lt;core::LocalhostHost&gt;,
 }
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>LocalhostHost {
     <span class="kw">fn </span>client_only(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
-        <span class="kw">let </span>arc = Arc::new(RwLock::new(
-            <span class="self">self</span>.underlying.try_read().unwrap().client_only(),
-        ));
+        <span class="kw">let </span>arc = Arc::new(<span class="self">self</span>.underlying.client_only());
 
         <span class="prelude-val">Ok</span>(Py::new(
             py,
@@ -1271,39 +1226,26 @@
 
 <span class="attr">#[pyclass(extends=Host, subclass)]
 </span><span class="kw">struct </span>GcpComputeEngineHost {
-    underlying: Arc&lt;RwLock&lt;core::GcpComputeEngineHost&gt;&gt;,
+    underlying: Arc&lt;core::GcpComputeEngineHost&gt;,
 }
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>GcpComputeEngineHost {
     <span class="attr">#[getter]
     </span><span class="kw">fn </span>internal_ip(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
-        <span class="self">self</span>.underlying
-            .blocking_read()
-            .launched
-            .as_ref()
-            .unwrap()
-            .internal_ip
-            .clone()
+        <span class="self">self</span>.underlying.launched.get().unwrap().internal_ip.clone()
     }
 
     <span class="attr">#[getter]
     </span><span class="kw">fn </span>external_ip(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;String&gt; {
-        <span class="self">self</span>.underlying
-            .blocking_read()
-            .launched
-            .as_ref()
-            .unwrap()
-            .external_ip
-            .clone()
+        <span class="self">self</span>.underlying.launched.get().unwrap().external_ip.clone()
     }
 
     <span class="attr">#[getter]
     </span><span class="kw">fn </span>ssh_key_path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         <span class="self">self</span>.underlying
-            .blocking_read()
             .launched
-            .as_ref()
+            .get()
             .unwrap()
             .ssh_key_path()
             .to_str()
@@ -1314,39 +1256,26 @@
 
 <span class="attr">#[pyclass(extends=Host, subclass)]
 </span><span class="kw">struct </span>AzureHost {
-    underlying: Arc&lt;RwLock&lt;core::AzureHost&gt;&gt;,
+    underlying: Arc&lt;core::AzureHost&gt;,
 }
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>AzureHost {
     <span class="attr">#[getter]
     </span><span class="kw">fn </span>internal_ip(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
-        <span class="self">self</span>.underlying
-            .blocking_read()
-            .launched
-            .as_ref()
-            .unwrap()
-            .internal_ip
-            .clone()
+        <span class="self">self</span>.underlying.launched.get().unwrap().internal_ip.clone()
     }
 
     <span class="attr">#[getter]
     </span><span class="kw">fn </span>external_ip(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;String&gt; {
-        <span class="self">self</span>.underlying
-            .blocking_read()
-            .launched
-            .as_ref()
-            .unwrap()
-            .external_ip
-            .clone()
+        <span class="self">self</span>.underlying.launched.get().unwrap().external_ip.clone()
     }
 
     <span class="attr">#[getter]
     </span><span class="kw">fn </span>ssh_key_path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         <span class="self">self</span>.underlying
-            .blocking_read()
             .launched
-            .as_ref()
+            .get()
             .unwrap()
             .ssh_key_path()
             .to_str()
@@ -1407,8 +1336,8 @@
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>CustomService {
     <span class="kw">fn </span>client_port(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
-        <span class="kw">let </span>arc = Arc::new(RwLock::new(core::custom_service::CustomClientPort::new(
-            Arc::downgrade(<span class="kw-2">&amp;</span><span class="self">self</span>.underlying),
+        <span class="kw">let </span>arc = Arc::new(core::custom_service::CustomClientPort::new(Arc::downgrade(
+            <span class="kw-2">&amp;</span><span class="self">self</span>.underlying,
         )));
 
         <span class="prelude-val">Ok</span>(Py::new(
@@ -1425,31 +1354,27 @@
 <span class="attr">#[pyclass(extends=HydroflowSink, subclass)]
 #[derive(Clone)]
 </span><span class="kw">struct </span>CustomClientPort {
-    underlying: Arc&lt;RwLock&lt;core::custom_service::CustomClientPort&gt;&gt;,
+    underlying: Arc&lt;core::custom_service::CustomClientPort&gt;,
 }
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>CustomClientPort {
-    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: <span class="kw-2">&amp;</span>HydroflowSink) {
-        <span class="self">self</span>.underlying
-            .try_write()
-            .unwrap()
-            .send_to(to.underlying.try_write().unwrap().deref_mut());
+    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;</span><span class="self">self</span>, to: <span class="kw-2">&amp;</span>HydroflowSink) {
+        <span class="self">self</span>.underlying.send_to(to.underlying.deref());
     }
 
     <span class="kw">fn </span>tagged(<span class="kw-2">&amp;</span><span class="self">self</span>, tag: u32) -&gt; TaggedSource {
         TaggedSource {
-            underlying: Arc::new(RwLock::new(core::hydroflow_crate::ports::TaggedSource {
+            underlying: Arc::new(core::hydroflow_crate::ports::TaggedSource {
                 source: <span class="self">self</span>.underlying.clone(),
                 tag,
-            })),
+            }),
         }
     }
 
     <span class="kw">fn </span>server_port&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         interruptible_future_to_py(py, <span class="kw">async move </span>{
-            <span class="kw">let </span>underlying = underlying.read().<span class="kw">await</span>;
             <span class="prelude-val">Ok</span>(ServerPort {
                 underlying: underlying.server_port().<span class="kw">await</span>,
             })
@@ -1509,12 +1434,12 @@
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>HydroflowCratePorts {
     <span class="kw">fn </span>__getattribute__(<span class="kw-2">&amp;</span><span class="self">self</span>, name: String, py: Python&lt;<span class="lifetime">'_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
-        <span class="kw">let </span>arc = Arc::new(RwLock::new(
+        <span class="kw">let </span>arc = Arc::new(
             <span class="self">self</span>.underlying
                 .try_read()
                 .unwrap()
                 .get_port(name, <span class="kw-2">&amp;</span><span class="self">self</span>.underlying),
-        ));
+        );
 
         <span class="prelude-val">Ok</span>(Py::new(
             py,
@@ -1530,15 +1455,13 @@
 <span class="attr">#[pyclass(extends=HydroflowSink, subclass)]
 #[derive(Clone)]
 </span><span class="kw">struct </span>HydroflowCratePort {
-    underlying: Arc&lt;RwLock&lt;core::hydroflow_crate::ports::HydroflowPortConfig&gt;&gt;,
+    underlying: Arc&lt;core::hydroflow_crate::ports::HydroflowPortConfig&gt;,
 }
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>HydroflowCratePort {
     <span class="kw">fn </span>merge(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
-        <span class="kw">let </span>arc = Arc::new(RwLock::new(
-            <span class="self">self</span>.underlying.try_read().unwrap().clone().merge(),
-        ));
+        <span class="kw">let </span>arc = Arc::new(<span class="self">self</span>.underlying.clone().merge());
 
         <span class="prelude-val">Ok</span>(Py::new(
             py,
@@ -1550,19 +1473,16 @@
         </span>.into_py(py))
     }
 
-    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: <span class="kw-2">&amp;</span>HydroflowSink) {
-        <span class="self">self</span>.underlying
-            .try_write()
-            .unwrap()
-            .send_to(to.underlying.try_write().unwrap().deref_mut());
+    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;</span><span class="self">self</span>, to: <span class="kw-2">&amp;</span>HydroflowSink) {
+        <span class="self">self</span>.underlying.send_to(to.underlying.deref());
     }
 
     <span class="kw">fn </span>tagged(<span class="kw-2">&amp;</span><span class="self">self</span>, tag: u32) -&gt; TaggedSource {
         TaggedSource {
-            underlying: Arc::new(RwLock::new(core::hydroflow_crate::ports::TaggedSource {
+            underlying: Arc::new(core::hydroflow_crate::ports::TaggedSource {
                 source: <span class="self">self</span>.underlying.clone(),
                 tag,
-            })),
+            }),
         }
     }
 }
@@ -1570,7 +1490,7 @@
 <span class="attr">#[pyfunction]
 </span><span class="kw">fn </span>demux(mapping: <span class="kw-2">&amp;</span>PyDict) -&gt; HydroflowSink {
     HydroflowSink {
-        underlying: Arc::new(RwLock::new(core::hydroflow_crate::ports::DemuxSink {
+        underlying: Arc::new(core::hydroflow_crate::ports::DemuxSink {
             demux: mapping
                 .into_iter()
                 .map(|(k, v)| {
@@ -1579,31 +1499,28 @@
                     (k, v.underlying)
                 })
                 .collect(),
-        })),
+        }),
     }
 }
 
 <span class="attr">#[pyclass(subclass)]
 #[derive(Clone)]
 </span><span class="kw">struct </span>TaggedSource {
-    underlying: Arc&lt;RwLock&lt;core::hydroflow_crate::ports::TaggedSource&gt;&gt;,
+    underlying: Arc&lt;core::hydroflow_crate::ports::TaggedSource&gt;,
 }
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>TaggedSource {
-    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: <span class="kw-2">&amp;</span>HydroflowSink) {
-        <span class="self">self</span>.underlying
-            .try_write()
-            .unwrap()
-            .send_to(to.underlying.try_write().unwrap().deref_mut());
+    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;</span><span class="self">self</span>, to: <span class="kw-2">&amp;</span>HydroflowSink) {
+        <span class="self">self</span>.underlying.send_to(to.underlying.deref());
     }
 
     <span class="kw">fn </span>tagged(<span class="kw-2">&amp;</span><span class="self">self</span>, tag: u32) -&gt; TaggedSource {
         TaggedSource {
-            underlying: Arc::new(RwLock::new(core::hydroflow_crate::ports::TaggedSource {
+            underlying: Arc::new(core::hydroflow_crate::ports::TaggedSource {
                 source: <span class="self">self</span>.underlying.clone(),
                 tag,
-            })),
+            }),
         }
     }
 }
@@ -1611,31 +1528,28 @@
 <span class="attr">#[pyclass(extends=HydroflowSink, subclass)]
 #[derive(Clone)]
 </span><span class="kw">struct </span>HydroflowNull {
-    underlying: Arc&lt;RwLock&lt;core::hydroflow_crate::ports::NullSourceSink&gt;&gt;,
+    underlying: Arc&lt;core::hydroflow_crate::ports::NullSourceSink&gt;,
 }
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>HydroflowNull {
-    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, to: <span class="kw-2">&amp;</span>HydroflowSink) {
-        <span class="self">self</span>.underlying
-            .try_write()
-            .unwrap()
-            .send_to(to.underlying.try_write().unwrap().deref_mut());
+    <span class="kw">fn </span>send_to(<span class="kw-2">&amp;</span><span class="self">self</span>, to: <span class="kw-2">&amp;</span>HydroflowSink) {
+        <span class="self">self</span>.underlying.send_to(to.underlying.deref());
     }
 
     <span class="kw">fn </span>tagged(<span class="kw-2">&amp;</span><span class="self">self</span>, tag: u32) -&gt; TaggedSource {
         TaggedSource {
-            underlying: Arc::new(RwLock::new(core::hydroflow_crate::ports::TaggedSource {
+            underlying: Arc::new(core::hydroflow_crate::ports::TaggedSource {
                 source: <span class="self">self</span>.underlying.clone(),
                 tag,
-            })),
+            }),
         }
     }
 }
 
 <span class="attr">#[pyfunction]
 </span><span class="kw">fn </span>null(py: Python&lt;<span class="lifetime">'_</span>&gt;) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
-    <span class="kw">let </span>arc = Arc::new(RwLock::new(core::hydroflow_crate::ports::NullSourceSink));
+    <span class="kw">let </span>arc = Arc::new(core::hydroflow_crate::ports::NullSourceSink);
 
     <span class="prelude-val">Ok</span>(Py::new(
         py,
@@ -1665,7 +1579,7 @@
     }
 
     <span class="attr">#[allow(clippy::wrong_self_convention)]
-    </span><span class="kw">fn </span>into_source&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
+    </span><span class="kw">fn </span>into_source&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>realized = with_tokio_runtime(|| ServerOrBound::Server((<span class="kw-2">&amp;</span><span class="self">self</span>.underlying).into()));
 
         interruptible_future_to_py(py, <span class="kw">async move </span>{
@@ -1678,7 +1592,7 @@
     }
 
     <span class="attr">#[allow(clippy::wrong_self_convention)]
-    </span><span class="kw">fn </span>into_sink&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
+    </span><span class="kw">fn </span>into_sink&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>realized = with_tokio_runtime(|| ServerOrBound::Server((<span class="kw-2">&amp;</span><span class="self">self</span>.underlying).into()));
 
         interruptible_future_to_py(py, <span class="kw">async move </span>{
@@ -1699,7 +1613,7 @@
 
 <span class="attr">#[pymethods]
 </span><span class="kw">impl </span>PythonSink {
-    <span class="kw">fn </span>send&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, data: Py&lt;PyBytes&gt;, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
+    <span class="kw">fn </span>send&lt;<span class="lifetime">'p</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, data: Py&lt;PyBytes&gt;, py: Python&lt;<span class="lifetime">'p</span>&gt;) -&gt; PyResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">'p </span>PyAny&gt; {
         <span class="kw">let </span>underlying = <span class="self">self</span>.underlying.clone();
         <span class="kw">let </span>bytes = Bytes::from(data.as_bytes(py).to_vec());
         interruptible_future_to_py(py, <span class="kw">async move </span>{

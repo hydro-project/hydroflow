@@ -157,12 +157,8 @@
 <a href="#157" id="157">157</a>
 <a href="#158" id="158">158</a>
 <a href="#159" id="159">159</a>
-<a href="#160" id="160">160</a>
-<a href="#161" id="161">161</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
-
-<span class="kw">use </span>tokio::sync::RwLock;
 
 <span class="kw">use </span><span class="kw">super</span>::Host;
 <span class="kw">use </span><span class="kw">crate</span>::ServiceBuilder;
@@ -185,7 +181,7 @@
 </span><span class="kw">pub struct </span>HydroflowCrate {
     src: PathBuf,
     target: CrateTarget,
-    on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
+    on: Arc&lt;<span class="kw">dyn </span>Host&gt;,
     profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
     perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;, <span class="comment">/* If a path is provided, run perf to get CPU time and output to that path.perf.data */
     </span>args: Vec&lt;String&gt;,
@@ -196,7 +192,7 @@
     <span class="doccomment">/// Creates a new `HydroflowCrate` that will be deployed on the given host.
     /// The `src` argument is the path to the crate's directory, and the `on`
     /// argument is the host that the crate will be deployed on.
-    </span><span class="kw">pub fn </span>new(src: <span class="kw">impl </span>Into&lt;PathBuf&gt;, on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>new(src: <span class="kw">impl </span>Into&lt;PathBuf&gt;, on: Arc&lt;<span class="kw">dyn </span>Host&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             src: src.into(),
             target: CrateTarget::Default,

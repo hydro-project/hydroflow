@@ -310,9 +310,6 @@
 <a href="#310" id="310">310</a>
 <a href="#311" id="311">311</a>
 <a href="#312" id="312">312</a>
-<a href="#313" id="313">313</a>
-<a href="#314" id="314">314</a>
-<a href="#315" id="315">315</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
@@ -334,7 +331,7 @@
 
 <span class="kw">pub struct </span>HydroflowCrateService {
     id: usize,
-    <span class="kw">pub</span>(<span class="kw">super</span>) on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
+    <span class="kw">pub</span>(<span class="kw">super</span>) on: Arc&lt;<span class="kw">dyn </span>Host&gt;,
     build_params: BuildParams,
     perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
     args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
@@ -365,7 +362,7 @@
     </span><span class="kw">pub fn </span>new(
         id: usize,
         src: PathBuf,
-        on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
+        on: Arc&lt;<span class="kw">dyn </span>Host&gt;,
         bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
         example: <span class="prelude-ty">Option</span>&lt;String&gt;,
         profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
@@ -375,7 +372,7 @@
         display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
         external_ports: Vec&lt;u16&gt;,
     ) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>target_type = on.try_read().unwrap().target_type();
+        <span class="kw">let </span>target_type = on.target_type();
 
         <span class="kw">let </span>build_params = BuildParams::new(src, bin, example, profile, target_type, features);
 
@@ -423,7 +420,7 @@
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         self_arc: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;HydroflowCrateService&gt;&gt;,
         my_port: String,
-        sink: <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>HydroflowSink,
+        sink: <span class="kw-2">&amp;</span><span class="kw">dyn </span>HydroflowSink,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>forward_res = sink.instantiate(<span class="kw-2">&amp;</span>SourcePath::Direct(<span class="self">self</span>.on.clone()));
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(instantiated) = forward_res {
@@ -447,7 +444,7 @@
 
             <span class="macro">assert!</span>(!<span class="self">self</span>.port_to_bind.contains_key(<span class="kw-2">&amp;</span>my_port));
             <span class="self">self</span>.port_to_bind
-                .insert(my_port, instantiated(sink.as_any_mut()));
+                .insert(my_port, instantiated(sink.as_any()));
 
             <span class="prelude-val">Ok</span>(())
         }
@@ -480,10 +477,7 @@
 
         tokio::task::spawn(<span class="self">self</span>.build());
 
-        <span class="kw">let </span><span class="kw-2">mut </span>host = <span class="self">self
-            </span>.on
-            .try_write()
-            .expect(<span class="string">"No one should be reading/writing the host while resources are collected"</span>);
+        <span class="kw">let </span>host = <span class="kw-2">&amp;</span><span class="self">self</span>.on;
 
         host.request_custom_binary();
         <span class="kw">for </span>(<span class="kw">_</span>, bind_type) <span class="kw">in </span><span class="self">self</span>.port_to_bind.iter() {
@@ -509,8 +503,8 @@
             || <span class="kw">async </span>{
                 <span class="kw">let </span>built = <span class="self">self</span>.build().<span class="kw">await</span><span class="question-mark">?</span>;
 
-                <span class="kw">let </span><span class="kw-2">mut </span>host_write = <span class="self">self</span>.on.write().<span class="kw">await</span>;
-                <span class="kw">let </span>launched = host_write.provision(resource_result).<span class="kw">await</span>;
+                <span class="kw">let </span>host = <span class="kw-2">&amp;</span><span class="self">self</span>.on;
+                <span class="kw">let </span>launched = host.provision(resource_result);
 
                 launched.copy_binary(built).<span class="kw">await</span><span class="question-mark">?</span>;
 

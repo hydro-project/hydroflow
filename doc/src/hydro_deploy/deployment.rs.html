@@ -176,16 +176,6 @@
 <a href="#176" id="176">176</a>
 <a href="#177" id="177">177</a>
 <a href="#178" id="178">178</a>
-<a href="#179" id="179">179</a>
-<a href="#180" id="180">180</a>
-<a href="#181" id="181">181</a>
-<a href="#182" id="182">182</a>
-<a href="#183" id="183">183</a>
-<a href="#184" id="184">184</a>
-<a href="#185" id="185">185</a>
-<a href="#186" id="186">186</a>
-<a href="#187" id="187">187</a>
-<a href="#188" id="188">188</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::{Arc, Weak};
 
 <span class="kw">use </span>anyhow::Result;
@@ -201,7 +191,7 @@
 
 <span class="attr">#[derive(Default)]
 </span><span class="kw">pub struct </span>Deployment {
-    <span class="kw">pub </span>hosts: Vec&lt;Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;&gt;,
+    <span class="kw">pub </span>hosts: Vec&lt;Arc&lt;<span class="kw">dyn </span>Host&gt;&gt;,
     <span class="kw">pub </span>services: Vec&lt;Weak&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt;&gt;,
     <span class="kw">pub </span>resource_pool: ResourcePool,
     last_resource_result: <span class="prelude-ty">Option</span>&lt;Arc&lt;ResourceResult&gt;&gt;,
@@ -215,7 +205,7 @@
     }
 
     <span class="attr">#[allow(non_snake_case)]
-    </span><span class="kw">pub fn </span>Localhost(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; Arc&lt;RwLock&lt;LocalhostHost&gt;&gt; {
+    </span><span class="kw">pub fn </span>Localhost(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; Arc&lt;LocalhostHost&gt; {
         <span class="self">self</span>.add_host(LocalhostHost::new)
     }
 
@@ -228,7 +218,7 @@
         region: <span class="kw">impl </span>Into&lt;String&gt;,
         network: Arc&lt;RwLock&lt;GcpNetwork&gt;&gt;,
         user: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    ) -&gt; Arc&lt;RwLock&lt;GcpComputeEngineHost&gt;&gt; {
+    ) -&gt; Arc&lt;GcpComputeEngineHost&gt; {
         <span class="self">self</span>.add_host(|id| {
             GcpComputeEngineHost::new(id, project, machine_type, image, region, network, user)
         })
@@ -237,7 +227,7 @@
     <span class="attr">#[allow(non_snake_case)]
     </span><span class="kw">pub fn </span>CustomService(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        on: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;,
+        on: Arc&lt;<span class="kw">dyn </span>Host&gt;,
         external_ports: Vec&lt;u16&gt;,
     ) -&gt; Arc&lt;RwLock&lt;CustomService&gt;&gt; {
         <span class="self">self</span>.add_service(|id| CustomService::new(id, on, external_ports))
@@ -264,10 +254,10 @@
             }
 
             <span class="kw">for </span>host <span class="kw">in </span><span class="self">self</span>.hosts.iter_mut() {
-                host.write().<span class="kw">await</span>.collect_resources(<span class="kw-2">&amp;mut </span>resource_batch);
+                host.collect_resources(<span class="kw-2">&amp;mut </span>resource_batch);
             }
 
-            <span class="kw">let </span>result = Arc::new(
+            <span class="kw">let </span>resource_result = Arc::new(
                 progress::ProgressTracker::with_group(<span class="string">"provision"</span>, <span class="prelude-val">None</span>, || <span class="kw">async </span>{
                     resource_batch
                         .provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>.resource_pool, <span class="self">self</span>.last_resource_result.clone())
@@ -275,18 +265,11 @@
                 </span>})
                 .<span class="kw">await</span><span class="question-mark">?</span>,
             );
-            <span class="self">self</span>.last_resource_result = <span class="prelude-val">Some</span>(result.clone());
+            <span class="self">self</span>.last_resource_result = <span class="prelude-val">Some</span>(resource_result.clone());
 
-            progress::ProgressTracker::with_group(<span class="string">"provision"</span>, <span class="prelude-val">None</span>, || {
-                <span class="kw">let </span>hosts_provisioned =
-                    <span class="self">self</span>.hosts
-                        .iter_mut()
-                        .map(|host: <span class="kw-2">&amp;mut </span>Arc&lt;RwLock&lt;<span class="kw">dyn </span>Host&gt;&gt;| <span class="kw">async </span>{
-                            host.write().<span class="kw">await</span>.provision(<span class="kw-2">&amp;</span>result).<span class="kw">await</span>;
-                        });
-                futures::future::join_all(hosts_provisioned)
-            })
-            .<span class="kw">await</span>;
+            <span class="kw">for </span>host <span class="kw">in </span><span class="self">self</span>.hosts.iter() {
+                host.provision(<span class="kw-2">&amp;</span>resource_result);
+            }
 
             progress::ProgressTracker::with_group(<span class="string">"deploy"</span>, <span class="prelude-val">None</span>, || {
                 <span class="kw">let </span>services_future = <span class="self">self
@@ -298,7 +281,7 @@
                             .unwrap()
                             .write()
                             .<span class="kw">await
-                            </span>.deploy(<span class="kw-2">&amp;</span>result)
+                            </span>.deploy(<span class="kw-2">&amp;</span>resource_result)
                             .<span class="kw">await
                     </span>})
                     .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
@@ -351,11 +334,8 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub fn </span>add_host&lt;T: Host + <span class="lifetime">'static</span>, F: FnOnce(usize) -&gt; T&gt;(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        host: F,
-    ) -&gt; Arc&lt;RwLock&lt;T&gt;&gt; {
-        <span class="kw">let </span>arc = Arc::new(RwLock::new(host(<span class="self">self</span>.next_host_id)));
+    <span class="kw">pub fn </span>add_host&lt;T: Host + <span class="lifetime">'static</span>, F: FnOnce(usize) -&gt; T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, host: F) -&gt; Arc&lt;T&gt; {
+        <span class="kw">let </span>arc = Arc::new(host(<span class="self">self</span>.next_host_id));
         <span class="self">self</span>.next_host_id += <span class="number">1</span>;
 
         <span class="self">self</span>.hosts.push(arc.clone());

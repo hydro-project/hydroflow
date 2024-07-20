@@ -186,12 +186,6 @@
 <a href="#186" id="186">186</a>
 <a href="#187" id="187">187</a>
 <a href="#188" id="188">188</a>
-<a href="#189" id="189">189</a>
-<a href="#190" id="190">190</a>
-<a href="#191" id="191">191</a>
-<a href="#192" id="192">192</a>
-<a href="#193" id="193">193</a>
-<a href="#194" id="194">194</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::path::PathBuf;
@@ -207,6 +201,7 @@
     ResourceResult, ServerStrategy,
 };
 <span class="kw">use </span><span class="kw">crate</span>::hydroflow_crate::build::BuildOutput;
+<span class="kw">use </span><span class="kw">crate</span>::HostStrategyGetter;
 
 <span class="kw">pub mod </span>launched_binary;
 <span class="kw">pub use </span>launched_binary::<span class="kw-2">*</span>;
@@ -239,9 +234,9 @@
         HostTargetType::Local
     }
 
-    <span class="kw">fn </span>request_port(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _bind_type: <span class="kw-2">&amp;</span>ServerStrategy) {}
+    <span class="kw">fn </span>request_port(<span class="kw-2">&amp;</span><span class="self">self</span>, _bind_type: <span class="kw-2">&amp;</span>ServerStrategy) {}
     <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;</span><span class="self">self</span>, _resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {}
-    <span class="kw">fn </span>request_custom_binary(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {}
+    <span class="kw">fn </span>request_custom_binary(<span class="kw-2">&amp;</span><span class="self">self</span>) {}
 
     <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.id
@@ -251,25 +246,18 @@
         <span class="self">self
     </span>}
 
-    <span class="kw">fn </span>as_any_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any {
-        <span class="self">self
-    </span>}
-
     <span class="kw">fn </span>launched(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt;&gt; {
         <span class="prelude-val">Some</span>(Arc::new(LaunchedLocalhost {}))
     }
 
-    <span class="kw">async fn </span>provision(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt; {
+    <span class="kw">fn </span>provision(<span class="kw-2">&amp;</span><span class="self">self</span>, _resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>LaunchedHost&gt; {
         Arc::new(LaunchedLocalhost {})
     }
 
     <span class="kw">fn </span>strategy_as_server&lt;<span class="lifetime">'a</span>&gt;(
         <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
         connection_from: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Host,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(
-        ClientStrategy&lt;<span class="lifetime">'a</span>&gt;,
-        Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="kw">dyn </span>std::any::Any) -&gt; ServerStrategy&gt;,
-    )&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(ClientStrategy&lt;<span class="lifetime">'a</span>&gt;, HostStrategyGetter)&gt; {
         <span class="kw">if </span><span class="self">self</span>.client_only {
             <span class="macro">anyhow::bail!</span>(<span class="string">"Localhost cannot be a server if it is client only"</span>)
         }
