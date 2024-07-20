@@ -328,20 +328,18 @@ impl Deployment {
 
 #[pyclass(subclass)]
 pub struct Host {
-    underlying: Arc<RwLock<dyn core::Host>>,
+    underlying: Arc<dyn core::Host>,
 }
 
 #[pyclass(extends=Host, subclass)]
 struct LocalhostHost {
-    underlying: Arc<RwLock<core::LocalhostHost>>,
+    underlying: Arc<core::LocalhostHost>,
 }
 
 #[pymethods]
 impl LocalhostHost {
     fn client_only(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let arc = Arc::new(RwLock::new(
-            self.underlying.try_read().unwrap().client_only(),
-        ));
+        let arc = Arc::new(self.underlying.client_only());
 
         Ok(Py::new(
             py,
@@ -372,39 +370,26 @@ impl GcpNetwork {
 
 #[pyclass(extends=Host, subclass)]
 struct GcpComputeEngineHost {
-    underlying: Arc<RwLock<core::GcpComputeEngineHost>>,
+    underlying: Arc<core::GcpComputeEngineHost>,
 }
 
 #[pymethods]
 impl GcpComputeEngineHost {
     #[getter]
     fn internal_ip(&self) -> String {
-        self.underlying
-            .blocking_read()
-            .launched
-            .as_ref()
-            .unwrap()
-            .internal_ip
-            .clone()
+        self.underlying.launched.get().unwrap().internal_ip.clone()
     }
 
     #[getter]
     fn external_ip(&self) -> Option<String> {
-        self.underlying
-            .blocking_read()
-            .launched
-            .as_ref()
-            .unwrap()
-            .external_ip
-            .clone()
+        self.underlying.launched.get().unwrap().external_ip.clone()
     }
 
     #[getter]
     fn ssh_key_path(&self) -> String {
         self.underlying
-            .blocking_read()
             .launched
-            .as_ref()
+            .get()
             .unwrap()
             .ssh_key_path()
             .to_str()
@@ -415,39 +400,26 @@ impl GcpComputeEngineHost {
 
 #[pyclass(extends=Host, subclass)]
 struct AzureHost {
-    underlying: Arc<RwLock<core::AzureHost>>,
+    underlying: Arc<core::AzureHost>,
 }
 
 #[pymethods]
 impl AzureHost {
     #[getter]
     fn internal_ip(&self) -> String {
-        self.underlying
-            .blocking_read()
-            .launched
-            .as_ref()
-            .unwrap()
-            .internal_ip
-            .clone()
+        self.underlying.launched.get().unwrap().internal_ip.clone()
     }
 
     #[getter]
     fn external_ip(&self) -> Option<String> {
-        self.underlying
-            .blocking_read()
-            .launched
-            .as_ref()
-            .unwrap()
-            .external_ip
-            .clone()
+        self.underlying.launched.get().unwrap().external_ip.clone()
     }
 
     #[getter]
     fn ssh_key_path(&self) -> String {
         self.underlying
-            .blocking_read()
             .launched
-            .as_ref()
+            .get()
             .unwrap()
             .ssh_key_path()
             .to_str()

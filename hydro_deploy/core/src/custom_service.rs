@@ -16,7 +16,7 @@ use crate::hydroflow_crate::ports::ReverseSinkInstantiator;
 /// Represents an unknown, third-party service that is not part of the Hydroflow ecosystem.
 pub struct CustomService {
     _id: usize,
-    on: Arc<RwLock<dyn Host>>,
+    on: Arc<dyn Host>,
 
     /// The ports that the service wishes to expose to the public internet.
     external_ports: Vec<u16>,
@@ -25,7 +25,7 @@ pub struct CustomService {
 }
 
 impl CustomService {
-    pub fn new(id: usize, on: Arc<RwLock<dyn Host>>, external_ports: Vec<u16>) -> Self {
+    pub fn new(id: usize, on: Arc<dyn Host>, external_ports: Vec<u16>) -> Self {
         Self {
             _id: id,
             on,
@@ -46,10 +46,7 @@ impl Service for CustomService {
             return;
         }
 
-        let mut host = self
-            .on
-            .try_write()
-            .expect("No one should be reading/writing the host while resources are collected");
+        let host = &self.on;
 
         for port in self.external_ports.iter() {
             host.request_port(&ServerStrategy::ExternalTcpPort(*port));
@@ -61,8 +58,8 @@ impl Service for CustomService {
             return Ok(());
         }
 
-        let mut host_write = self.on.write().await;
-        let launched = host_write.provision(resource_result);
+        let host = &self.on;
+        let launched = host.provision(resource_result);
         self.launched_host = Some(launched);
         Ok(())
     }
@@ -118,7 +115,7 @@ impl HydroflowSource for CustomClientPort {
         SourcePath::Direct(self.on.upgrade().unwrap().try_read().unwrap().on.clone())
     }
 
-    fn host(&self) -> Arc<RwLock<dyn Host>> {
+    fn host(&self) -> Arc<dyn Host> {
         panic!("Custom services cannot be used as the server")
     }
 
@@ -149,28 +146,24 @@ impl HydroflowSink for CustomClientPort {
 
     fn instantiate_reverse(
         &self,
-        server_host: &Arc<RwLock<dyn Host>>,
+        server_host: &Arc<dyn Host>,
         server_sink: Arc<dyn HydroflowServer>,
         wrap_client_port: &dyn Fn(ServerConfig) -> ServerConfig,
     ) -> Result<ReverseSinkInstantiator> {
         let client = self.on.upgrade().unwrap();
         let client_read = client.try_read().unwrap();
 
-        let server_host_clone = server_host.clone();
-        let server_host = server_host_clone.try_read().unwrap();
+        let server_host = server_host.clone();
 
-        let (conn_type, bind_type) =
-            server_host.strategy_as_server(client_read.on.try_read().unwrap().deref())?;
+        let (conn_type, bind_type) = server_host.strategy_as_server(client_read.on.deref())?;
 
         let client_port = wrap_client_port(ServerConfig::from_strategy(&conn_type, server_sink));
 
-        let server_host_clone = server_host_clone.clone();
         Ok(Box::new(move |me| {
-            let mut server_host = server_host_clone.try_write().unwrap();
             me.downcast_ref::<CustomClientPort>()
                 .unwrap()
                 .record_server_config(client_port);
-            bind_type(server_host.as_any_mut())
+            bind_type(server_host.as_any())
         }))
     }
 }
