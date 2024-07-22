@@ -1,6 +1,6 @@
 ---
 source: hydroflow_datalog_core/src/lib.rs
-expression: "prettyplease::unparse(&wrapped)"
+expression: "prettyplease :: unparse(& wrapped)"
 ---
 fn main() {
     {
@@ -147,7 +147,7 @@ fn main() {
                         >::default(),
                     ),
                 );
-            let sg_5v1_node_45v1_persistdata = df
+            let singleton_op_45v1 = df
                 .add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
             let sg_5v1_node_43v1_counterdata = df
                 .add_state(::std::cell::RefCell::new(0..));
@@ -198,7 +198,7 @@ fn main() {
                         >::default(),
                     ),
                 );
-            let sg_7v1_node_31v1_persistdata = df
+            let singleton_op_31v1 = df
                 .add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(3v1)",
@@ -1352,7 +1352,7 @@ fn main() {
                         op_11v1__unique__loc_unknown_start_6_20_end_6_27(op_11v1)
                     };
                     let mut sg_5v1_node_45v1_persistvec = context
-                        .state_ref(sg_5v1_node_45v1_persistdata)
+                        .state_ref(singleton_op_45v1)
                         .borrow_mut();
                     let op_45v1 = {
                         fn constrain_types<'ctx, Push, Item>(
@@ -2119,7 +2119,7 @@ fn main() {
                         op_32v1__for_each__loc_unknown_start_10_29_end_10_67(op_32v1)
                     };
                     let mut sg_7v1_node_31v1_persistvec = context
-                        .state_ref(sg_7v1_node_31v1_persistdata)
+                        .state_ref(singleton_op_31v1)
                         .borrow_mut();
                     let op_31v1 = {
                         fn constrain_types<'ctx, Push, Item>(

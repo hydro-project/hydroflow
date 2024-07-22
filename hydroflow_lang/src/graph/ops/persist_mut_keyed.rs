@@ -1,9 +1,10 @@
 use quote::quote_spanned;
 
 use super::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
+use crate::diagnostic::{Diagnostic, Level};
 
 /// `persist_mut_keyed()` is similar to `persist_mut()` except that it also enables key-based deletions
 /// `persist_mut()` expects an input of type [`PersistenceKeyed<T>`](https://docs.rs/hydroflow/latest/hydroflow/util/enum.PersistenceKeyed.html),
@@ -50,10 +51,27 @@ pub const PERSIST_MUT_KEYED: OperatorConstraints = OperatorConstraints {
                    ident,
                    inputs,
                    is_pull,
+                   op_name,
+                   op_inst:
+                       OperatorInstance {
+                           generics:
+                               OpInstGenerics {
+                                   persistence_args, ..
+                               },
+                           ..
+                       },
                    ..
                },
-               _| {
+               diagnostics| {
         assert!(is_pull);
+
+        if [Persistence::Static] != persistence_args[..] {
+            diagnostics.push(Diagnostic::spanned(
+                op_span,
+                Level::Error,
+                format!("{} only supports `'static`.", op_name),
+            ));
+        }
 
         let persistdata_ident = wc.make_ident("persistdata");
         let vec_ident = wc.make_ident("persistvec");
