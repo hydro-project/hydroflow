@@ -210,7 +210,7 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>Service <span class="kw">for </span>CustomService {
-    <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {
+    <span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;</span><span class="self">self</span>, _resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch) {
         <span class="kw">if </span><span class="self">self</span>.launched_host.is_some() {
             <span class="kw">return</span>;
         }

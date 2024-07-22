@@ -409,7 +409,7 @@
     ///
     /// This should also perform any "free", non-blocking computations (compilations),
     /// because the `deploy` method will be called after these resources are allocated.
-    </span><span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch);
+    </span><span class="kw">fn </span>collect_resources(<span class="kw-2">&amp;</span><span class="self">self</span>, resource_batch: <span class="kw-2">&amp;mut </span>ResourceBatch);
 
     <span class="doccomment">/// Connects to the acquired resources and prepares the service to be launched.
     </span><span class="kw">async fn </span>deploy(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_result: <span class="kw-2">&amp;</span>Arc&lt;ResourceResult&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;

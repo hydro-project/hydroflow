@@ -244,16 +244,16 @@
                 .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
             <span class="self">self</span>.services = active_services;
 
-            <span class="kw">for </span>service <span class="kw">in </span><span class="self">self</span>.services.iter_mut() {
+            <span class="kw">for </span>service <span class="kw">in </span><span class="self">self</span>.services.iter() {
                 service
                     .upgrade()
                     .unwrap()
-                    .write()
+                    .read()
                     .<span class="kw">await
                     </span>.collect_resources(<span class="kw-2">&amp;mut </span>resource_batch);
             }
 
-            <span class="kw">for </span>host <span class="kw">in </span><span class="self">self</span>.hosts.iter_mut() {
+            <span class="kw">for </span>host <span class="kw">in </span><span class="self">self</span>.hosts.iter() {
                 host.collect_resources(<span class="kw-2">&amp;mut </span>resource_batch);
             }
 
