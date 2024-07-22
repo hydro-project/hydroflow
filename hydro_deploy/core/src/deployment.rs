@@ -66,16 +66,16 @@ impl Deployment {
                 .collect::<Vec<_>>();
             self.services = active_services;
 
-            for service in self.services.iter_mut() {
+            for service in self.services.iter() {
                 service
                     .upgrade()
                     .unwrap()
-                    .write()
+                    .read()
                     .await
                     .collect_resources(&mut resource_batch);
             }
 
-            for host in self.hosts.iter_mut() {
+            for host in self.hosts.iter() {
                 host.collect_resources(&mut resource_batch);
             }
 

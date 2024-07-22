@@ -41,7 +41,7 @@ impl CustomService {
 
 #[async_trait]
 impl Service for CustomService {
-    fn collect_resources(&mut self, _resource_batch: &mut ResourceBatch) {
+    fn collect_resources(&self, _resource_batch: &mut ResourceBatch) {
         if self.launched_host.is_some() {
             return;
         }

@@ -158,7 +158,7 @@ impl HydroflowCrateService {
 
 #[async_trait]
 impl Service for HydroflowCrateService {
-    fn collect_resources(&mut self, _resource_batch: &mut ResourceBatch) {
+    fn collect_resources(&self, _resource_batch: &mut ResourceBatch) {
         if self.launched_host.is_some() {
             return;
         }
