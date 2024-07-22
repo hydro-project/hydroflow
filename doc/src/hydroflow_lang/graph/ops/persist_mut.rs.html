@@ -100,12 +100,31 @@
 <a href="#100" id="100">100</a>
 <a href="#101" id="101">101</a>
 <a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>quote::quote_spanned;
 
 <span class="kw">use super</span>::{
-    DelayType, OperatorCategory, OperatorConstraints, OperatorWriteOutput,
-    WriteContextArgs, RANGE_0, RANGE_1,
+    DelayType, OpInstGenerics, OperatorCategory, OperatorConstraints, OperatorInstance,
+    OperatorWriteOutput, Persistence, WriteContextArgs, RANGE_0, RANGE_1,
 };
+<span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
 
 <span class="doccomment">/// `persist_mut()` is similar to `persist()` except that it also enables deletions.
 /// `persist_mut()` expects an input of type [`Persistence&lt;T&gt;`](https://docs.rs/hydroflow/latest/hydroflow/util/enum.Persistence.html),
@@ -152,10 +171,27 @@
                    ident,
                    inputs,
                    is_pull,
+                   op_name,
+                   op_inst:
+                       OperatorInstance {
+                           generics:
+                               OpInstGenerics {
+                                   persistence_args, ..
+                               },
+                           ..
+                       },
                    ..
                },
-               <span class="kw">_</span>| {
+               diagnostics| {
         <span class="macro">assert!</span>(is_pull);
+
+        <span class="kw">if </span>[Persistence::Static] != persistence_args[..] {
+            diagnostics.push(Diagnostic::spanned(
+                op_span,
+                Level::Error,
+                <span class="macro">format!</span>(<span class="string">"{} only supports `'static`."</span>, op_name),
+            ));
+        }
 
         <span class="kw">let </span>persistdata_ident = wc.make_ident(<span class="string">"persistdata"</span>);
         <span class="kw">let </span>vec_ident = wc.make_ident(<span class="string">"persistvec"</span>);

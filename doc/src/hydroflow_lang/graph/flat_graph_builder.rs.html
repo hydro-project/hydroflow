@@ -889,81 +889,18 @@
 <a href="#889" id="889">889</a>
 <a href="#890" id="890">890</a>
 <a href="#891" id="891">891</a>
-<a href="#892" id="892">892</a>
-<a href="#893" id="893">893</a>
-<a href="#894" id="894">894</a>
-<a href="#895" id="895">895</a>
-<a href="#896" id="896">896</a>
-<a href="#897" id="897">897</a>
-<a href="#898" id="898">898</a>
-<a href="#899" id="899">899</a>
-<a href="#900" id="900">900</a>
-<a href="#901" id="901">901</a>
-<a href="#902" id="902">902</a>
-<a href="#903" id="903">903</a>
-<a href="#904" id="904">904</a>
-<a href="#905" id="905">905</a>
-<a href="#906" id="906">906</a>
-<a href="#907" id="907">907</a>
-<a href="#908" id="908">908</a>
-<a href="#909" id="909">909</a>
-<a href="#910" id="910">910</a>
-<a href="#911" id="911">911</a>
-<a href="#912" id="912">912</a>
-<a href="#913" id="913">913</a>
-<a href="#914" id="914">914</a>
-<a href="#915" id="915">915</a>
-<a href="#916" id="916">916</a>
-<a href="#917" id="917">917</a>
-<a href="#918" id="918">918</a>
-<a href="#919" id="919">919</a>
-<a href="#920" id="920">920</a>
-<a href="#921" id="921">921</a>
-<a href="#922" id="922">922</a>
-<a href="#923" id="923">923</a>
-<a href="#924" id="924">924</a>
-<a href="#925" id="925">925</a>
-<a href="#926" id="926">926</a>
-<a href="#927" id="927">927</a>
-<a href="#928" id="928">928</a>
-<a href="#929" id="929">929</a>
-<a href="#930" id="930">930</a>
-<a href="#931" id="931">931</a>
-<a href="#932" id="932">932</a>
-<a href="#933" id="933">933</a>
-<a href="#934" id="934">934</a>
-<a href="#935" id="935">935</a>
-<a href="#936" id="936">936</a>
-<a href="#937" id="937">937</a>
-<a href="#938" id="938">938</a>
-<a href="#939" id="939">939</a>
-<a href="#940" id="940">940</a>
-<a href="#941" id="941">941</a>
-<a href="#942" id="942">942</a>
-<a href="#943" id="943">943</a>
-<a href="#944" id="944">944</a>
-<a href="#945" id="945">945</a>
-<a href="#946" id="946">946</a>
-<a href="#947" id="947">947</a>
-<a href="#948" id="948">948</a>
-<a href="#949" id="949">949</a>
-<a href="#950" id="950">950</a>
-<a href="#951" id="951">951</a>
-<a href="#952" id="952">952</a>
-<a href="#953" id="953">953</a>
-<a href="#954" id="954">954</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Build a flat graph from [`HfStatement`]s.
 
 </span><span class="kw">use </span>std::borrow::Cow;
 <span class="kw">use </span>std::collections::btree_map::Entry;
-<span class="kw">use </span>std::collections::{BTreeMap, BTreeSet, VecDeque};
+<span class="kw">use </span>std::collections::{BTreeMap, BTreeSet};
 <span class="kw">use </span>std::path::PathBuf;
 
 <span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>proc_macro2::Span;
 <span class="kw">use </span>quote::ToTokens;
 <span class="kw">use </span>syn::spanned::Spanned;
-<span class="kw">use </span>syn::{parse_quote_spanned, Error, Ident, ItemUse};
+<span class="kw">use </span>syn::{Error, Ident, ItemUse};
 
 <span class="kw">use super</span>::{GraphEdgeId, GraphNode, GraphNodeId, HydroflowGraph, PortIndexValue};
 <span class="kw">use </span><span class="kw">crate</span>::diagnostic::{Diagnostic, Level};
@@ -1516,7 +1453,6 @@
         <span class="self">self</span>.make_operator_instances();
         <span class="self">self</span>.check_operator_errors();
         <span class="self">self</span>.warn_unused_port_indexing();
-        <span class="self">self</span>.ensure_singleton_referencers_succeed_persist();
     }
 
     <span class="doccomment">/// Make `OperatorInstance`s for each operator node.
@@ -1840,68 +1776,6 @@
                 <span class="comment">// When errored, just use original and ignore OTHER port to minimize
                 // noisy/extra diagnostics.
                 </span><span class="prelude-val">Some</span>((og_port, og_node))
-            }
-        }
-    }
-
-    <span class="doccomment">/// Operators with singleton references must be preceeded by a `persist()` in their pipeline,
-    /// to enable replay when the singleton updates.
-    </span><span class="kw">fn </span>ensure_singleton_referencers_succeed_persist(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="comment">// Resolve the singleton references for each node.
-        </span><span class="kw">for </span>node_id <span class="kw">in </span><span class="self">self</span>.flat_graph.node_ids().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;() {
-            <span class="kw">let </span>GraphNode::Operator(operator) = <span class="self">self</span>.flat_graph.node(node_id) <span class="kw">else </span>{
-                <span class="kw">continue</span>;
-            };
-            <span class="kw">if </span>operator.singletons_referenced.is_empty() {
-                <span class="kw">continue</span>;
-            }
-            <span class="kw">let </span>op_span = operator.span();
-
-            <span class="kw">for </span>(pred_edge, pred_node_id) <span class="kw">in </span><span class="self">self
-                </span>.flat_graph
-                .node_predecessors(node_id)
-                .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
-            {
-                <span class="comment">// Check if the predecessor is already persisted. If so, no persist should be inserted.
-                </span><span class="kw">let </span><span class="kw-2">mut </span>pred_persisted = <span class="bool-val">true</span>;
-                {
-                    <span class="kw">let </span><span class="kw-2">mut </span>pred_node_ids = VecDeque::from_iter([pred_node_id]);
-                    <span class="kw">while let </span><span class="prelude-val">Some</span>(pred_node_id) = pred_node_ids.pop_front() {
-                        <span class="kw">let </span><span class="prelude-val">Some</span>(op_inst) = <span class="self">self</span>.flat_graph.node_op_inst(pred_node_id) <span class="kw">else </span>{
-                            pred_persisted = <span class="bool-val">false</span>;
-                            <span class="kw">break</span>;
-                        };
-                        <span class="kw">match </span>op_inst.op_constraints.name {
-                            <span class="comment">// Stateful operators, we're good.
-                            </span><span class="string">"persist" </span>| <span class="string">"state" </span>=&gt; {}
-                            <span class="comment">// Identity operators, check transitively.
-                            // TODO(mingwei): Add `transparent` or `is_identity` field to
-                            // `OperatorInstance` so we don't have to list all variants here.
-                            </span><span class="string">"identity" </span>| <span class="string">"union" </span>| <span class="string">"tee" </span>=&gt; {
-                                pred_node_ids
-                                    .extend(<span class="self">self</span>.flat_graph.node_predecessor_nodes(pred_node_id));
-                            }
-                            _other =&gt; {
-                                pred_persisted = <span class="bool-val">false</span>;
-                                <span class="kw">break</span>;
-                            }
-                        }
-                    }
-                }
-                <span class="kw">if </span>pred_persisted {
-                    <span class="kw">continue</span>;
-                }
-
-                <span class="self">self</span>.flat_graph.insert_intermediate_node(
-                    pred_edge,
-                    GraphNode::Operator(<span class="macro">parse_quote_spanned!</span> {op_span=&gt; persist::&lt;<span class="lifetime">'static</span>&gt;() }), <span class="comment">// TODO(mingwei): use 'tick when implemented.
-                </span>);
-                <span class="self">self</span>.diagnostics.push(Diagnostic::spanned(
-                    op_span,
-                    Level::Warning,
-                    <span class="string">"Note: A `persist()` will be inserted before this singleton-referencing operator to enable replay. \
-To silence this warning, insert a `persist()` or `state()` operator explicitly. This behavior will change in the future."
-                </span>))
             }
         }
     }
