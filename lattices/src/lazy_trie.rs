@@ -2,7 +2,7 @@ use std::hash::Hash;
 
 use variadics::{var_expr, var_type, VariadicExt};
 
-use crate::ght::{GeneralizedHashTrieNode, GhtHasChildren, GhtInner, GhtLeaf, HtPrefixIter};
+use crate::ght::{GeneralizedHashTrieNode, GhtHasChildren, GhtInner, GhtLeaf};
 
 /// COLT from Wang/Willsey/Suciu
 pub trait ColumnLazyTrieNode: GeneralizedHashTrieNode {

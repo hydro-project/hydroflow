@@ -203,7 +203,7 @@ pub trait GeneralizedHashTrieNode: Default // + for<'a> HtPrefixIter<var_type!(&
     /// E.g. if we have GhtInner<GhtInner<GhtLeaf...>> the height is 2
     fn height(&self) -> Option<usize>;
 
-    // report whether node is a leaf node; else an inner node
+    /// report whether node is a leaf node; else an inner node
     fn is_leaf(&self) -> bool;
 
     /// Inserts items into the hash trie.
@@ -256,8 +256,11 @@ pub trait GeneralizedHashTrieNode: Default // + for<'a> HtPrefixIter<var_type!(&
     // fn cast_as_inner_mut(&mut self) -> Option<&mut Self>;
 }
 
+/// A trait for internal nodes of a GHT
 pub trait GhtHasChildren: GeneralizedHashTrieNode {
+    /// The child node's type
     type Node: GeneralizedHashTrieNode;
+    /// return the hash map of children, mutable
     fn children(&mut self) -> &mut HashMap<Self::Head, Self::Node>;
 }
 
