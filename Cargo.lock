@@ -1336,7 +1336,7 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hydro_cli"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "async-ssh2-lite",
@@ -1369,7 +1369,7 @@ dependencies = [
 
 [[package]]
 name = "hydro_deploy"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "async-process",
@@ -1398,7 +1398,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bincode",
  "byteorder",
@@ -1465,7 +1465,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "hydroflow_datalog_core",
  "proc-macro-crate",
@@ -1476,7 +1476,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog_core"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "hydroflow_lang",
  "insta",
@@ -1493,7 +1493,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_lang"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "auto_impl",
  "clap",
@@ -1512,7 +1512,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_macro"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "hydroflow_lang",
  "itertools",
@@ -1524,7 +1524,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_plus"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bincode",
  "dyn-clone",
@@ -1542,7 +1542,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_plus_cli_integration"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "hydro_deploy",
  "hydroflow_plus",
@@ -1747,7 +1747,7 @@ dependencies = [
 
 [[package]]
 name = "lattices"
-version = "0.5.5"
+version = "0.5.6"
 dependencies = [
  "cc-traits",
  "lattices_macro",
@@ -2374,7 +2374,7 @@ dependencies = [
 
 [[package]]
 name = "pusherator"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "either",
  "variadics",
@@ -3733,7 +3733,7 @@ checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
 
 [[package]]
 name = "variadics"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "sealed",
  "trybuild",

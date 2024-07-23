@@ -5,11 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.8.0 (2024-07-23)
 
 Unchanged from previous release.
 
+### Chore
+
+ - <csr-id-186310f453f6a935ac5f53fdcaf07fe1337833bf/> mark `hydroflow_datalog` and `hydroflow_macro` as unchanged for 0.8.0 release
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 1 commit contributed to the release.
+ - 59 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Mark `hydroflow_datalog` and `hydroflow_macro` as unchanged for 0.8.0 release ([`186310f`](https://github.com/hydro-project/hydroflow/commit/186310f453f6a935ac5f53fdcaf07fe1337833bf))
+</details>
+
 ## 0.7.0 (2024-05-24)
+
+<csr-id-f21fe6f896a2eac2118fe5da9c71e051365473a6/>
 
 Unchanged from previous release.
 
@@ -21,7 +46,7 @@ Unchanged from previous release.
 
 <csr-read-only-do-not-edit/>
 
- - 1 commit contributed to the release.
+ - 2 commits contributed to the release.
  - 83 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -33,6 +58,7 @@ Unchanged from previous release.
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release hydroflow_lang v0.7.0, hydroflow_datalog_core v0.7.0, hydroflow_datalog v0.7.0, hydroflow_macro v0.7.0, lattices v0.5.5, multiplatform_test v0.1.0, pusherator v0.0.6, hydroflow v0.7.0, stageleft_macro v0.2.0, stageleft v0.3.0, stageleft_tool v0.2.0, hydroflow_plus v0.7.0, hydro_deploy v0.7.0, hydro_cli v0.7.0, hydroflow_plus_cli_integration v0.7.0, safety bump 8 crates ([`2852147`](https://github.com/hydro-project/hydroflow/commit/285214740627685e911781793e05d234ab2ad2bd))
     - Mark `hydroflow_datalog` as unchanged for 0.7 release ([`f21fe6f`](https://github.com/hydro-project/hydroflow/commit/f21fe6f896a2eac2118fe5da9c71e051365473a6))
 </details>
 

@@ -5,7 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.8.0 (2024-07-23)
+
+### Reverted
+
+ - <csr-id-256779abece03bee662b351430d27141d10bd5ef/> "feat(hydroflow): Added poll_futures and poll_futures_async operators.", fix #1183
+   This reverts commit 997d90a76db9a4e05dbac35073a09548750ce342.
+   
+   We have been trying to figure out the semantics a bit, and want to give
+   it more thought before we commit to maintaining it
+   
+   Can un-revert and adjust the semantics later when we use it
+
+### Refactor (BREAKING)
+
+ - <csr-id-67c0e51fb25ea1a2e3aae197c1984920b46759fa/> require lifetime on `perist*()` operators
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release over the course of 20 calendar days.
+ - 59 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 3 unique issues were worked on: [#1143](https://github.com/hydro-project/hydroflow/issues/1143), [#1216](https://github.com/hydro-project/hydroflow/issues/1216), [#1295](https://github.com/hydro-project/hydroflow/issues/1295)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1143](https://github.com/hydro-project/hydroflow/issues/1143)**
+    - "feat(hydroflow): Added poll_futures and poll_futures_async operators.", fix #1183 ([`256779a`](https://github.com/hydro-project/hydroflow/commit/256779abece03bee662b351430d27141d10bd5ef))
+ * **[#1216](https://github.com/hydro-project/hydroflow/issues/1216)**
+    - "feat(hydroflow): Added poll_futures and poll_futures_async operators.", fix #1183 ([`256779a`](https://github.com/hydro-project/hydroflow/commit/256779abece03bee662b351430d27141d10bd5ef))
+ * **[#1295](https://github.com/hydro-project/hydroflow/issues/1295)**
+    - Require lifetime on `perist*()` operators ([`67c0e51`](https://github.com/hydro-project/hydroflow/commit/67c0e51fb25ea1a2e3aae197c1984920b46759fa))
+</details>
+
 ## v0.7.0 (2024-05-24)
+
+<csr-id-c9dfddc680e0ce5415539d7b77bc5beb97ab59d9/>
 
 ### Chore
 
@@ -28,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 6 commits contributed to the release over the course of 42 calendar days.
+ - 7 commits contributed to the release over the course of 42 calendar days.
  - 44 days passed between releases.
  - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 6 unique issues were worked on: [#1143](https://github.com/hydro-project/hydroflow/issues/1143), [#1151](https://github.com/hydro-project/hydroflow/issues/1151), [#1156](https://github.com/hydro-project/hydroflow/issues/1156), [#1157](https://github.com/hydro-project/hydroflow/issues/1157), [#1194](https://github.com/hydro-project/hydroflow/issues/1194), [#1238](https://github.com/hydro-project/hydroflow/issues/1238)
@@ -51,6 +92,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Add API to get the cluster ID of the current node ([`6e57172`](https://github.com/hydro-project/hydroflow/commit/6e571726ff40818fbe9bbe9923511877c20fb243))
  * **[#1238](https://github.com/hydro-project/hydroflow/issues/1238)**
     - Use workaround for `cargo smart-release` not properly ordering `dev-`/`build-dependencies` ([`c9dfddc`](https://github.com/hydro-project/hydroflow/commit/c9dfddc680e0ce5415539d7b77bc5beb97ab59d9))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.7.0, hydroflow_datalog_core v0.7.0, hydroflow_datalog v0.7.0, hydroflow_macro v0.7.0, lattices v0.5.5, multiplatform_test v0.1.0, pusherator v0.0.6, hydroflow v0.7.0, stageleft_macro v0.2.0, stageleft v0.3.0, stageleft_tool v0.2.0, hydroflow_plus v0.7.0, hydro_deploy v0.7.0, hydro_cli v0.7.0, hydroflow_plus_cli_integration v0.7.0, safety bump 8 crates ([`2852147`](https://github.com/hydro-project/hydroflow/commit/285214740627685e911781793e05d234ab2ad2bd))
 </details>
 
 ## v0.6.1 (2024-04-09)

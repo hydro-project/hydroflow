@@ -5,11 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.0.7 (2024-07-23)
 
 Unchanged from previous release.
 
+### Chore
+
+ - <csr-id-669beead61802bfc9db8ef628c690cba3aa93791/> mark `pusherators` as unchanged for release, to ensure version is updated
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 1 commit contributed to the release.
+ - 59 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Mark `pusherators` as unchanged for release, to ensure version is updated ([`669beea`](https://github.com/hydro-project/hydroflow/commit/669beead61802bfc9db8ef628c690cba3aa93791))
+</details>
+
 ## 0.0.6 (2024-05-24)
+
+<csr-id-826dbd9a709de2f883992bdcefa8f2d566d74ecb/>
 
 ### Refactor
 
@@ -19,7 +44,7 @@ Unchanged from previous release.
 
 <csr-read-only-do-not-edit/>
 
- - 1 commit contributed to the release over the course of 3 calendar days.
+ - 2 commits contributed to the release over the course of 3 calendar days.
  - 83 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#1204](https://github.com/hydro-project/hydroflow/issues/1204)
@@ -32,6 +57,8 @@ Unchanged from previous release.
 
  * **[#1204](https://github.com/hydro-project/hydroflow/issues/1204)**
     - Simplify `demux_enum()`, somewhat improves error messages #1201 ([`826dbd9`](https://github.com/hydro-project/hydroflow/commit/826dbd9a709de2f883992bdcefa8f2d566d74ecb))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.7.0, hydroflow_datalog_core v0.7.0, hydroflow_datalog v0.7.0, hydroflow_macro v0.7.0, lattices v0.5.5, multiplatform_test v0.1.0, pusherator v0.0.6, hydroflow v0.7.0, stageleft_macro v0.2.0, stageleft v0.3.0, stageleft_tool v0.2.0, hydroflow_plus v0.7.0, hydro_deploy v0.7.0, hydro_cli v0.7.0, hydroflow_plus_cli_integration v0.7.0, safety bump 8 crates ([`2852147`](https://github.com/hydro-project/hydroflow/commit/285214740627685e911781793e05d234ab2ad2bd))
 </details>
 
 ## 0.0.5 (2024-03-02)
