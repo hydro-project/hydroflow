@@ -193,6 +193,8 @@ pub trait GeneralizedHashTrieNode: Default // + for<'a> HtPrefixIter<var_type!(&
     type Schema: VariadicExt;
     /// The type of the first column in the Schema
     type Head: Eq + Hash;
+    /// The type of the leaves
+    // type Leaf: Eq + Hash;
 
     /// Create a new Ght from the iterator.
     fn new_from(input: impl IntoIterator<Item = Self::Schema>) -> Self;
@@ -201,12 +203,21 @@ pub trait GeneralizedHashTrieNode: Default // + for<'a> HtPrefixIter<var_type!(&
     /// E.g. if we have GhtInner<GhtInner<GhtLeaf...>> the height is 2
     fn height(&self) -> Option<usize>;
 
+    // report whether node is a leaf node; else an inner node
+    fn is_leaf(&self) -> bool;
+
     /// Inserts items into the hash trie.
     fn insert(&mut self, row: Self::Schema) -> bool;
 
     /// Returns `true` if the (entire) row is found in the trie, `false` otherwise.
     /// See `get()` below to look just for "head" keys in this node
     fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool;
+
+    // /// Returns the leaf node that contains the match to this row if it exists
+    // fn containing_leaf<'a>(
+    //     &'a self,
+    //     row: <Self::Schema as VariadicExt>::AsRefVar<'a>,
+    // ) -> Option<&GhtLeaf<Self::Leaf>>;
 
     /// Iterator for the "head" keys (from inner nodes) or elements (from leaf nodes).
     fn iter(&self) -> impl Iterator<Item = &'_ Self::Head>;
@@ -234,6 +245,20 @@ pub trait GeneralizedHashTrieNode: Default // + for<'a> HtPrefixIter<var_type!(&
     where
         Other: GeneralizedHashTrieNode,
         (Self, Other): DeepJoinLatticeBimorphism;
+
+    // /// For Inner nodes only, this is the type of the Child node
+    // type ChildNode: GeneralizedHashTrieNode;
+
+    // /// Cast as Some<&GhtInner> if this is an inner node, else return None
+    // fn cast_as_inner(&self) -> Option<&Self>;
+
+    // /// Cast as Some<&mut GhtInner> if this is an inner node, else return None
+    // fn cast_as_inner_mut(&mut self) -> Option<&mut Self>;
+}
+
+pub trait GhtHasChildren: GeneralizedHashTrieNode {
+    type Node: GeneralizedHashTrieNode;
+    fn children(&mut self) -> &mut HashMap<Self::Head, Self::Node>;
 }
 
 /// internal node of a HashTrie
@@ -243,6 +268,7 @@ where
     Node: GeneralizedHashTrieNode,
 {
     pub(crate) children: HashMap<Head, Node>,
+    // pub(crate) _leaf: std::marker::PhantomData<Leaf>,
 }
 impl<Head, Node: GeneralizedHashTrieNode> Default for GhtInner<Head, Node>
 where
@@ -250,7 +276,10 @@ where
 {
     fn default() -> Self {
         let children = Default::default();
-        Self { children }
+        Self {
+            children,
+            // _leaf: Default::default(),
+        }
     }
 }
 #[sealed]
@@ -278,6 +307,10 @@ where
         }
     }
 
+    fn is_leaf(&self) -> bool {
+        false
+    }
+
     fn insert(&mut self, row: Self::Schema) -> bool {
         let var_args!(head, ...rest) = row;
         self.children.entry(head).or_default().insert(rest)
@@ -291,6 +324,19 @@ where
             false
         }
     }
+
+    // /// Returns the leaf node that contains the match to this row if it exists
+    // fn containing_leaf<'a>(
+    //     &'a self,
+    //     row: <Self::Schema as VariadicExt>::AsRefVar<'a>,
+    // ) -> Option<&GhtLeaf<Leaf>> {
+    //     let var_args!(head, ...rest) = row;
+    //     if let Some(node) = self.children.get(head) {
+    //         node.containing_leaf(rest)
+    //     } else {
+    //         None
+    //     }
+    // }
 
     fn iter(&self) -> impl Iterator<Item = &'_ Self::Head> {
         self.children.keys()
@@ -319,6 +365,14 @@ where
     where
         Other: GeneralizedHashTrieNode,
         (Self, Other): DeepJoinLatticeBimorphism;
+
+    // type ChildNode = Node;
+    // fn cast_as_inner(&self) -> Option<&Self> {
+    //     Some(self)
+    // }
+    // fn cast_as_inner_mut(&mut self) -> Option<&mut Self> {
+    //     Some(self)
+    // }
 }
 impl<Head, Node> FromIterator<var_type!(Head, ...Node::Schema)> for GhtInner<Head, Node>
 where
@@ -331,6 +385,17 @@ where
             out.insert(row);
         }
         out
+    }
+}
+
+impl<Head, Node> GhtHasChildren for GhtInner<Head, Node>
+where
+    Head: 'static + Hash + Eq,
+    Node: 'static + GeneralizedHashTrieNode,
+{
+    type Node = Node;
+    fn children(&mut self) -> &mut HashMap<Head, Node> {
+        &mut self.children
     }
 }
 
@@ -372,6 +437,10 @@ where
         Some(0)
     }
 
+    fn is_leaf(&self) -> bool {
+        true
+    }
+
     fn insert(&mut self, row: Self::Schema) -> bool {
         self.elements.insert(row)
     }
@@ -379,6 +448,18 @@ where
     fn contains<'a>(&'a self, row: <Self::Schema as VariadicExt>::AsRefVar<'a>) -> bool {
         self.elements.iter().any(|r| r.as_ref_var() == row)
     }
+
+    // /// Returns the leaf node that contains the match to this row if it exists
+    // fn containing_leaf<'a>(
+    //     &'a self,
+    //     row: <Self::Schema as VariadicExt>::AsRefVar<'a>,
+    // ) -> Option<&Self> {
+    //     if self.contains(row) {
+    //         Some(self)
+    //     } else {
+    //         None
+    //     }
+    // }
 
     fn iter(&self) -> impl Iterator<Item = &'_ Self::Head> {
         self.elements.iter()
@@ -454,11 +535,28 @@ where
             .flatten()
     }
 }
+// #[sealed]
+// impl<Head, Node> HtPrefixIter<var_type!()> for GhtInner<Head, Node>
+// where
+//     Head: 'static + Eq + Hash,
+//     Node: 'static + GeneralizedHashTrieNode,
+// {
+//     type Suffix = <Self as GeneralizedHashTrieNode>::Schema;
+//     fn prefix_iter<'a>(
+//         &'a self,
+//         _prefix: var_type!(),
+//     ) -> impl Iterator<Item = <Self::Suffix as VariadicExt>::AsRefVar<'a>>
+//     where
+//         Self::Suffix: 'a,
+//     {
+//         self.recursive_iter()
+//     }
+// }
 #[sealed]
 impl<'k, Head> HtPrefixIter<var_type!(&'k Head)> for GhtLeaf<Head>
 where
     Head: 'static + Eq + VariadicExt + Hash,
-    for<'a, 'b> Head::AsRefVar<'a>: PartialEq<Head::AsRefVar<'b>>,
+    Head::AsRefVar<'k>: PartialEq<Head::AsRefVar<'k>>,
 {
     type Suffix = var_expr!();
     fn prefix_iter<'a>(

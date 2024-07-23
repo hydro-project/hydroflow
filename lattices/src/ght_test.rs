@@ -7,7 +7,8 @@ mod test {
     use variadics::{var_args, var_expr, var_type, Split, VariadicExt};
 
     use crate::ght::{
-        GeneralizedHashTrie, GeneralizedHashTrieNode, GhtInner, GhtLeaf, HtPrefixIter, GHT,
+        GeneralizedHashTrie, GeneralizedHashTrieNode, GhtHasChildren, GhtInner, GhtLeaf,
+        HtPrefixIter, GHT,
     };
     use crate::ght_lattice::{
         DeepJoinLatticeBimorphism, GhtBimorphism, GhtCartesianProductBimorphism,
@@ -332,7 +333,7 @@ mod test {
             .iter()
             .copied()
             .collect();
-            type CartProd = GhtNodeType!(u64, u16, &'static str, u64, u16 => &'static str);
+            type CartProd = GhtNodeType!(() => u64, u16, &'static str, u64, u16, &'static str);
             let mut bim =
                 GhtNodeKeyedBimorphism::new(GhtCartesianProductBimorphism::<CartProd>::default());
             let out = bim.call(&ght_a, &ght_b);
@@ -969,12 +970,12 @@ mod test {
         // The alternative is to create two GhTs, one of depth 2 (for the get), one of depth 1 (side-effect on remaining).
         let leaf = n;
         // First get(2) -- gives us a new root
-        let mut root = leaf.force();
+        let mut root = leaf.force().unwrap();
         let first_leaf = root.get(&2);
 
         // Now to get(4) from first_leaf we need to detach it from its parent
         let my_leaf = root.children.remove(&2).unwrap();
-        let middle = my_leaf.force();
+        let middle = my_leaf.force().unwrap();
 
         // now what is the state of things? we have middle and root.
         // println!("middle is {:?}, root is {:?}", middle, root);
@@ -1082,7 +1083,7 @@ mod test {
                 rest.walk_tuple();
             } else if head.leaf.is_some() && head.forced.is_none() {
                 // need to do this one!
-                head.forced = Some(head.leaf.as_mut().unwrap().force_drain());
+                head.forced = Some(head.leaf.as_mut().unwrap().force_drain().unwrap());
                 head.leaf = None;
                 rest.walk_tuple();
             }
@@ -1164,28 +1165,34 @@ mod test {
             var_expr!(0, 1, 3),
             var_expr!(1, 3, 1),
         ]);
-        let mut results: usize = 0;
 
         // set up S forest
         type SForest = GhtForestType!(u16, u32, u64);
         let mut s_forest = SForest::default();
         // car(forest) is forced once
-        s_forest.0 = table_s.force();
+        s_forest.0 = table_s.force().unwrap();
 
         // set up T forest
         type TForest = GhtForestType!(u16, u32, u64);
         let mut t_forest = TForest::default();
         // car(forest) is forced once
-        t_forest.0 = table_t.force();
+        t_forest.0 = table_t.force().unwrap();
 
         for r in table_r.elements {
-            type TupType = var_type!(u16, u32, u64);
             type KeyType = var_type!(u16, u32);
 
             let key_len = KeyType::LEN;
             println!("r tup is {:?}", r);
             // walk forest and look for (r.0, r.1, *)
             // first check s_forest.0
+
+            // fn check_prefix_iter<'a, T0, T1>(_s_forest: &'a var_type!(T0, T1))
+            // where
+            //     T1: HtPrefixIter<var_type!(&'a u16, &'a u32, &'a var_type!(u64))>,
+            // {
+            // }
+            // check_prefix_iter(&s_forest);
+
             if contains_key(&mut s_forest, r, key_len) && contains_key(&mut t_forest, r, key_len) {
                 println!("matched {:?}", r);
             }
@@ -1202,150 +1209,68 @@ mod test {
     //    return leaf;
     // }
 
-    fn contains_key(
-        s_forest: &mut (
-            GhtInner<u16, GhtLeaf<(u32, (u64, ()))>>,
-            (GhtInner<u16, GhtInner<u32, GhtLeaf<(u64, ())>>>, ()),
-        ),
-        r: (u16, (u32, (u64, ()))),
+    fn contains_key<FHead, FCadr, FRest, RHead, RCadr, RRest>(
+        s_forest: &mut var_type!(FHead, FCadr, ...FRest),
+        // &mut (
+        //     GhtInner<u16, GhtLeaf<(u32, (u64, ()))>>,
+        //     (GhtInner<u16, GhtInner<u32, GhtLeaf<(u64, ())>>>, ()),
+        // ),
+        r: var_type!(RHead, RCadr, ...RRest),
+        // (u16, (u32, (u64, ()))),
         key_len: usize,
-    ) -> bool {
-        // recursive case: first trie height is shorter than search key
-        assert!(s_forest.0.height().is_none() || s_forest.0.height().unwrap() < key_len);
-        if let Some(found0) = s_forest.0.children.remove(&r.0) {
-            // found r.0! give it a parent and reattach it in s_forest.1.0
-            let forced = found0.force();
-            let mut forced_parent =
-                GhtInner::<u16, GhtInner<u32, GhtLeaf<var_type!(u64)>>>::default();
-            forced_parent.children.insert(r.0, forced);
-            s_forest.1 .0.merge(forced_parent);
-            // *println!("the forest is now: {:?}", s_forest);
-            // we're at our last search key so no need to force any more
-            let search_key = var_expr!(&r.0, &r.1 .0);
-            if s_forest.1 .0.prefix_iter(search_key).next().is_some() {
-                // found a match!
-                return true;
+    ) -> bool
+    where
+        FHead: GeneralizedHashTrieNode<Head = RHead> + GhtHasChildren + ColumnLazyTrieNode,
+        FCadr: GeneralizedHashTrieNode<Head = RHead>
+            + GhtHasChildren
+            + ColumnLazyTrieNode
+            + Merge<FCadr>,
+        RHead: Eq + Hash + Clone,
+        RCadr: Eq + Hash,
+        // RRest: VariadicExt,
+        <FHead as GhtHasChildren>::Node:
+            GeneralizedHashTrieNode + ColumnLazyTrieNode<Force = <FCadr as GhtHasChildren>::Node>,
+        // FCadr: for<'a> HtPrefixIter<var_type!(&'a RHead, &'a RCadr, ...RRest::AsRefVar<'a>)>,
+        FCadr: for<'a> HtPrefixIter<var_type!(&'a RHead, &'a RCadr, &'a RRest)>,
+    {
+        let var_args!(s0, s1, ..._s_rest) = s_forest;
+        let var_args!(r0, r1, ...r_rest) = r;
+
+        assert!(s0.height().is_none() || s0.height().unwrap() < key_len);
+
+        if let Some(found0) = s0.children().remove(&r0) {
+            if let Some(forced) = found0.force() {
+                // if we're here, forced is a Leaf
+                // let mut new_parent = GhtInner::<
+                //     RHead,
+                //     <<FHead as GhtHasChildren>::Node as ColumnLazyTrieNode>::Force,
+                // >::default();
+                let mut new_parent = FCadr::default();
+                new_parent.children().insert(r0.clone(), forced);
+                // we found a matching leaf
+                s1.merge(new_parent);
+
+                // we're at our last search key so no need to force any more
+                let search_key = var_expr!(&r0, &r1, &r_rest);
+                if s1.prefix_iter(search_key).next().is_some() {
+                    // found a match!
+                    return true;
+                } else {
+                    return false;
+                }
+            } else {
+                // recurse!
+                todo!();
+                // check s_forest.1. It's fully-formed so just prefix_iter:
+                // let var_args!(r1, ...r_rest_2) = r_rest;
+                // let var_args!(s1, ...s_rest_2) = s_rest;
+                // let search_key = var_expr!(&r0, &r1);
+                // if GhtInner::prefix_iter(s1, search_key).next().is_some() {
+                //     return true;
+                // }
             }
-            // for m in s_forest.1 .0.prefix_iter(search_key) {
-            //     println!("found {:?}", var_expr!(r.0, r.1 .0, m.0));
-            //     results += 1;
-            // }
         } else {
-            // check s_forest.1. It's fully-formed so just prefix_iter:
-            let search_key = var_expr!(&r.0, &r.1 .0);
-            if s_forest.1 .0.prefix_iter(search_key).next().is_some() {
-                return true;
-            }
+            false
         }
-        false
-    }
-
-    #[test]
-    fn test_reuse_of_colt() {
-        // [[𝑅(𝑥),𝑆(𝑥),𝑇(𝑥),T'(x)], [𝑅(𝑎)], [𝑆(𝑏)], [T'(c), 𝑇(𝑐)]]
-        //
-        // R(a, x, y), S(a, x, c), T(a, x, c)
-        // [[R(x),S(x),T(x)], [T(c), S(c)]]
-        type LeafType = GhtNodeType!(() => u16, u32, u64);
-
-        let table_r = LeafType::new_from(vec![
-            var_expr!(0, 1, 1),
-            var_expr!(0, 1, 2),
-            var_expr!(0, 1, 3),
-            var_expr!(1, 3, 1),
-        ]);
-        let table_s = LeafType::new_from(vec![
-            var_expr!(0, 1, 1),
-            var_expr!(0, 1, 2),
-            var_expr!(0, 1, 3),
-            var_expr!(0, 2, 1),
-            var_expr!(0, 2, 2),
-            var_expr!(0, 2, 3),
-            var_expr!(1, 3, 1),
-            var_expr!(1, 3, 2),
-            var_expr!(1, 3, 3),
-        ]);
-        let table_t = LeafType::new_from(vec![
-            var_expr!(0, 1, 1),
-            var_expr!(0, 1, 2),
-            var_expr!(0, 1, 3),
-            var_expr!(1, 3, 1),
-        ]);
-
-        // first get requires removal
-        let mut rs = table_r.iter();
-        let r = rs.next();
-        // ght_forest!(table_s, var_type!(u16, u32, u64));
-
-        // let forest1 = GhtForest {
-        //     leaf: Some(table_s),
-        //     forced: None,
-        // };
-        // let forest2: GhtForest<u32, var_type!(u64)> = GhtForest {
-        //     leaf: None,
-        //     forced: None,
-        // };
-        // let mut forest = var_expr!(forest1, forest2);
-        // forest.walk_tuple();
-
-        // if let Some(r_tup) = r {
-        //     println!("First r tup is {:?}", r_tup);
-
-        //     // now we walk the search key and the GHT forest in parallel
-        //     r_tup.walk_tuple();
-
-        //     let (forced_once, detached_leaf) = force_remove(table_s, r_tup.0);
-        //     s_ghts.0 = forced_once;
-
-        //     if let Some(leaf_s) = detached_leaf {
-        //         // recurse: force the detached leaf
-        //         let (middle_unmatched, matches) = force_remove(leaf_s, r_tup.1 .0);
-
-        //         // add superstructure to middle_unmatched: this is our new Ght
-        //         let mut forced_twice =
-        //             GhtInner::<u16, GhtInner<u32, GhtLeaf<var_type!(u64)>>>::default();
-        //         forced_twice.children.insert(r_tup.0, middle_unmatched);
-
-        //         // now impose superstructure on matches and merge into forced_twice
-        //         if let Some(leaf) = matches {
-        //             let mut middle_matched = GhtInner::<u32, GhtLeaf<var_expr!(u64)>>::default();
-        //             middle_matched.children.insert(r_tup.1 .0, leaf);
-        //             let mut parent =
-        //                 GhtInner::<u16, GhtInner<u32, GhtLeaf<var_expr!(u64)>>>::default();
-        //             parent.children.insert(r_tup.0, middle_matched);
-        //             forced_twice.merge(parent);
-        //         }
-        //         s_ghts.1 = forced_twice;
-        //     }
-
-        //     println!("ght1: {:?}\nght2: {:?}", s_ghts.0, s_ghts.1);
-        // }
-
-        // for r in rs {
-        //     // always checked forced_twice first
-        //     println!("next r tup is {:?}", r);
-        //     if let Some(middle_s) = s_ghts.1.children.get_mut(&r.0) {
-        //         if let Some(leaf_s) = middle_s.get(&r.1 .0) {
-        //             println!("found another matching leaf: {:?}", leaf_s);
-        //         }
-        //     }
-        // }
-
-        // at this point we have two GHTs at different force levels, and some removed leaves
-        // println!("forced_once: {:?}\n forced_twice: {:?}", s_ghts.0, s_ghts.1);
-
-        // for r in table_r.iter() {
-        // if let Some(leaf_s) = root_s.children.remove(&r.0) {
-        //     let medium_s = leaf_s.force();
-        //     let ss = medium_s.get(&r.1 .0);
-
-        //     let root_t = table_t.force();
-        //     if let Some(leaf_t) = root_t.children.remove(&r.0) {
-        //         let medium_t = leaf_t.force();
-        //         let ts = medium_t.get(&r.1 .0);
-        //     }
-        // }
-        // let table_s = result_s.unwrap();
-        // }
     }
 }

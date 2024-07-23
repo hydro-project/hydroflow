@@ -380,6 +380,11 @@ where
     GhtB: GeneralizedHashTrieNode<Head = Head>,
     <GhtA::Schema as VariadicExt>::AsRefVar<'a>: CloneRefVariadic,
     <GhtB::Schema as VariadicExt>::AsRefVar<'b>: CloneRefVariadic,
+    // <GhtA as GeneralizedHashTrieNode>::Leaf: VariadicExt,
+    // <GhtB as GeneralizedHashTrieNode>::Leaf: VariadicExt,
+    // <<GhtA as GeneralizedHashTrieNode>::Leaf as VariadicExt>::Extend<
+    //     <GhtB as GeneralizedHashTrieNode>::Leaf,
+    // >: Eq + Hash,
 {
     type Output = GhtInner<Head, ValFunc::Output>; // HashMap<Head, ValFunc::Output>; // GhtOut;
 
@@ -392,7 +397,10 @@ where
                 children.insert(head.clone(), val);
             }
         }
-        GhtInner { children }
+        GhtInner::<Head, ValFunc::Output> {
+            children,
+            // _leaf: Default::default(),
+        }
     }
 }
 
