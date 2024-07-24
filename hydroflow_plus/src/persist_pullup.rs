@@ -43,7 +43,7 @@ mod tests {
         let optimized = built.optimize_with(super::persist_pullup);
 
         insta::assert_debug_snapshot!(optimized.ir());
-        for (id, graph) in optimized.no_optimize().hydroflow_ir() {
+        for (id, graph) in optimized.compile().hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(graph.surface_syntax_string());
             });
@@ -72,7 +72,7 @@ mod tests {
 
         insta::assert_debug_snapshot!(optimized.ir());
 
-        for (id, graph) in optimized.no_optimize().hydroflow_ir() {
+        for (id, graph) in optimized.compile().hydroflow_ir() {
             insta::with_settings!({snapshot_suffix => format!("surface_graph_{id}")}, {
                 insta::assert_display_snapshot!(graph.surface_syntax_string());
             });
