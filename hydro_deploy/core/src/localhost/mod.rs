@@ -3,16 +3,17 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_process::{Command, Stdio};
 use async_trait::async_trait;
 use hydroflow_cli_integration::ServerBindConfig;
-use tokio::sync::RwLock;
 
 use super::{
     ClientStrategy, Host, HostTargetType, LaunchedBinary, LaunchedHost, ResourceBatch,
     ResourceResult, ServerStrategy,
 };
+use crate::hydroflow_crate::build::BuildOutput;
+use crate::HostStrategyGetter;
 
 pub mod launched_binary;
 pub use launched_binary::*;
@@ -45,9 +46,9 @@ impl Host for LocalhostHost {
         HostTargetType::Local
     }
 
-    fn request_port(&mut self, _bind_type: &ServerStrategy) {}
+    fn request_port(&self, _bind_type: &ServerStrategy) {}
     fn collect_resources(&self, _resource_batch: &mut ResourceBatch) {}
-    fn request_custom_binary(&mut self) {}
+    fn request_custom_binary(&self) {}
 
     fn id(&self) -> usize {
         self.id
@@ -57,25 +58,18 @@ impl Host for LocalhostHost {
         self
     }
 
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-
     fn launched(&self) -> Option<Arc<dyn LaunchedHost>> {
         Some(Arc::new(LaunchedLocalhost {}))
     }
 
-    async fn provision(&mut self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
+    fn provision(&self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         Arc::new(LaunchedLocalhost {})
     }
 
     fn strategy_as_server<'a>(
         &'a self,
         connection_from: &dyn Host,
-    ) -> Result<(
-        ClientStrategy<'a>,
-        Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>,
-    )> {
+    ) -> Result<(ClientStrategy<'a>, HostStrategyGetter)> {
         if self.client_only {
             anyhow::bail!("Localhost cannot be a server if it is client only")
         }
@@ -147,27 +141,27 @@ impl LaunchedHost for LaunchedLocalhost {
         }
     }
 
-    async fn copy_binary(&self, _binary: Arc<(String, Vec<u8>, PathBuf)>) -> Result<()> {
+    async fn copy_binary(&self, _binary: &BuildOutput) -> Result<()> {
         Ok(())
     }
 
     async fn launch_binary(
         &self,
         id: String,
-        binary: Arc<(String, Vec<u8>, PathBuf)>,
+        binary: &BuildOutput,
         args: &[String],
         perf: Option<PathBuf>,
-    ) -> Result<Arc<RwLock<dyn LaunchedBinary>>> {
+    ) -> Result<Box<dyn LaunchedBinary>> {
         let mut command = if let Some(perf) = perf {
             println!("Profiling binary with perf");
             let mut tmp = Command::new("perf");
             tmp.args(["record", "-F", "5", "--call-graph", "dwarf,64000", "-o"])
                 .arg(&perf)
-                .arg(&binary.2)
+                .arg(&binary.bin_path)
                 .args(args);
             tmp
         } else {
-            let mut tmp = Command::new(&binary.2);
+            let mut tmp = Command::new(&binary.bin_path);
             tmp.args(args);
             tmp
         };
@@ -181,11 +175,11 @@ impl LaunchedHost for LaunchedLocalhost {
         #[cfg(not(unix))]
         command.kill_on_drop(true);
 
-        let child = command.spawn()?;
+        let child = command
+            .spawn()
+            .with_context(|| format!("Failed to execute command: {:?}", command))?;
 
-        Ok(Arc::new(RwLock::new(LaunchedLocalhostBinary::new(
-            child, id,
-        ))))
+        Ok(Box::new(LaunchedLocalhostBinary::new(child, id)))
     }
 
     async fn forward_port(&self, addr: &SocketAddr) -> Result<SocketAddr> {

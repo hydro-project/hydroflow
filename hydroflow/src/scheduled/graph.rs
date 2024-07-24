@@ -168,7 +168,11 @@ impl<'a> Hydroflow<'a> {
 
         let mut op_inst_diagnostics = Vec::new();
         meta_graph.insert_node_op_insts_all(&mut op_inst_diagnostics);
-        assert!(op_inst_diagnostics.is_empty());
+        assert!(
+            op_inst_diagnostics.is_empty(),
+            "Expected no diagnostics, got: {:#?}",
+            op_inst_diagnostics
+        );
 
         assert!(self.meta_graph.replace(meta_graph).is_none());
     }

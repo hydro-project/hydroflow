@@ -29,7 +29,7 @@ pub enum JoinPlan<'a> {
 pub struct IntermediateJoinNode {
     /// The name of the Hydroflow node that this join outputs to.
     pub name: syn::Ident,
-    /// If true, the correct dataflow for this node ends in a `persist()` operator.
+    /// If true, the correct dataflow for this node ends in a `persist::<'static>()` operator.
     pub persisted: bool,
     /// If this join node outputs data through a `tee()` operator, this is the index to consume the node with.
     /// (this is only used for cases where we are directly reading a relation)
@@ -122,7 +122,7 @@ fn emit_join_input_pipeline(
     };
 
     let rhs = if anti_join && source_expanded.persisted {
-        parse_quote_spanned!(source_expanded.span=> persist() -> #rhs)
+        parse_quote_spanned!(source_expanded.span=> persist::<'static>() -> #rhs)
     } else {
         rhs
     };

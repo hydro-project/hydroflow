@@ -29,10 +29,8 @@ There are several subpackages included that are used by Hydroflow but are more g
 * `multiplatform_test` provides a convenience macro for specifying and initializing tests on
   various platforms.
 
-There are a few auxillary repositories as well:
+There are auxillary repositories as well:
 
-* [`hydro-project/hydroflow-template`](https://github.com/hydro-project/hydroflow-template)
-  provides a way to create a new Hydroflow user project, via `cargo generate hydro-project/hydroflow-template`.
 * [`hydro-project/rust-sitter`](https://github.com/hydro-project/rust-sitter) provides a
   [Tree-sitter](https://tree-sitter.github.io/tree-sitter/)-based parser generator interface, used
   by `hydroflow_datalog`.

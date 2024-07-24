@@ -5,6 +5,67 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.6 (2024-07-23)
+
+### Chore
+
+ - <csr-id-3098f77fd99882aae23c4b31017aa4b761306197/> update pinned rust version to 2024-06-17
+
+### New Features
+
+ - <csr-id-b3d01c20cae2335a3da2c02343debe677f17786b/> add `#[derive(Lattice)]` derive macros, fix #1247
+   This adds derive macros to allow user-created macros. Each field must be
+   a lattice.
+   
+   Example usage:
+   ```rust
+   struct MyLattice<KeySet, Epoch>
+   where
+       KeySet: Collection,
+       Epoch: Ord,
+   {
+       keys: SetUnion<KeySet>,
+       epoch: Max<Epoch>,
+   }
+   ```
+   
+   Uses `#[derive(Lattice)]` for the `lattices` library `Pair` lattice.
+   Also contains some cleanup in the `lattices` crate.
+
+### Bug Fixes
+
+ - <csr-id-9c834406efcc3839a2a0d48b514146d06bb6e35d/> change fuzz test bounds to require `PartialEq` instead of `Eq`, fix #1302
+ - <csr-id-1ad690b993f38ac6a03667fdce56e6603076b1d2/> Make inner for `WithTop` & `WithBot` private
+   `Option<T>` is not a lattice, so it is unsafe to expose as public.
+   
+   I also updated documentation to lead with intention before
+   implementation (minor cleanup).
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release over the course of 54 calendar days.
+ - 59 days passed between releases.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 4 unique issues were worked on: [#1244](https://github.com/hydro-project/hydroflow/issues/1244), [#1250](https://github.com/hydro-project/hydroflow/issues/1250), [#1309](https://github.com/hydro-project/hydroflow/issues/1309), [#1326](https://github.com/hydro-project/hydroflow/issues/1326)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1244](https://github.com/hydro-project/hydroflow/issues/1244)**
+    - Make inner for `WithTop` & `WithBot` private ([`1ad690b`](https://github.com/hydro-project/hydroflow/commit/1ad690b993f38ac6a03667fdce56e6603076b1d2))
+ * **[#1250](https://github.com/hydro-project/hydroflow/issues/1250)**
+    - Add `#[derive(Lattice)]` derive macros, fix #1247 ([`b3d01c2`](https://github.com/hydro-project/hydroflow/commit/b3d01c20cae2335a3da2c02343debe677f17786b))
+ * **[#1309](https://github.com/hydro-project/hydroflow/issues/1309)**
+    - Update pinned rust version to 2024-06-17 ([`3098f77`](https://github.com/hydro-project/hydroflow/commit/3098f77fd99882aae23c4b31017aa4b761306197))
+ * **[#1326](https://github.com/hydro-project/hydroflow/issues/1326)**
+    - Change fuzz test bounds to require `PartialEq` instead of `Eq`, fix #1302 ([`9c83440`](https://github.com/hydro-project/hydroflow/commit/9c834406efcc3839a2a0d48b514146d06bb6e35d))
+</details>
+
 ## 0.5.5 (2024-05-24)
 
 ### Documentation
@@ -14,24 +75,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### New Features
 
+<csr-id-c2577bd0ad1969f4badf23874a9e7a6c1622c5c3/>
+<csr-id-d8e4d9dc784ae28fcefe5f32a0561698c1196d31/>
+<csr-id-c3f5a37ff746401a2383a900f9004e33072d5b1a/>
+
  - <csr-id-0ed1f26b485894d3f24bd4d3251f6d3134fd1947/> Make Pair<> members public
    Summary of types examined:
    
    - `Min<T>`: T is not a lattice
-   - `set_union<T>`: is not a lattice
-   - map_union - not safe to expose map
-   - union_find<K> - K is not a lattice
-   - VecUnion<Lat> - not safe to expose vec
-   - WithTop<Lat>/WithBot<Lat> - already pub
-   - Pair<LatA, LatB> - Changed in this commit
-   - DomPair<LatKey, LatVal> - Already correctly done with left pub and
+- `set_union<T>`: is not a lattice
+- map_union - not safe to expose map
+- union_find<K> - K is not a lattice
+- VecUnion<Lat> - not safe to expose vec
+- WithTop<Lat>/WithBot<Lat> - already pub
+- Pair<LatA, LatB> - Changed in this commit
+- DomPair<LatKey, LatVal> - Already correctly done with left pub and
    right private.
-   - Conflict<T> / Point<T> - T is not a lattice type.
-   - () - No nested types here.
- - <csr-id-c2577bd0ad1969f4badf23874a9e7a6c1622c5c3/> Expose PairBimorphism public.
-   Address https://github.com/hydro-project/hydroflow/issues/1229.
- - <csr-id-d8e4d9dc784ae28fcefe5f32a0561698c1196d31/> definitions of linearity and bilinearity in algebra lib
- - <csr-id-c3f5a37ff746401a2383a900f9004e33072d5b1a/> add prototype of tagging algebraic properties
+- Conflict<T> / Point<T> - T is not a lattice type.
+- () - No nested types here.
 
 ### Bug Fixes
 
@@ -41,7 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 8 commits contributed to the release over the course of 36 calendar days.
+ - 9 commits contributed to the release over the course of 36 calendar days.
  - 48 days passed between releases.
  - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 7 unique issues were worked on: [#1155](https://github.com/hydro-project/hydroflow/issues/1155), [#1156](https://github.com/hydro-project/hydroflow/issues/1156), [#1174](https://github.com/hydro-project/hydroflow/issues/1174), [#1181](https://github.com/hydro-project/hydroflow/issues/1181), [#1230](https://github.com/hydro-project/hydroflow/issues/1230), [#1233](https://github.com/hydro-project/hydroflow/issues/1233), [#1236](https://github.com/hydro-project/hydroflow/issues/1236)
@@ -67,8 +128,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#1236](https://github.com/hydro-project/hydroflow/issues/1236)**
     - Updating CONTRIBUTING.md with some info about feature branches ([`0d2f14b`](https://github.com/hydro-project/hydroflow/commit/0d2f14b9237c0eaa8131d1d1118768357ac8133b))
  * **Uncategorized**
+    - Release hydroflow_lang v0.7.0, hydroflow_datalog_core v0.7.0, hydroflow_datalog v0.7.0, hydroflow_macro v0.7.0, lattices v0.5.5, multiplatform_test v0.1.0, pusherator v0.0.6, hydroflow v0.7.0, stageleft_macro v0.2.0, stageleft v0.3.0, stageleft_tool v0.2.0, hydroflow_plus v0.7.0, hydro_deploy v0.7.0, hydro_cli v0.7.0, hydroflow_plus_cli_integration v0.7.0, safety bump 8 crates ([`2852147`](https://github.com/hydro-project/hydroflow/commit/285214740627685e911781793e05d234ab2ad2bd))
     - Definitions of linearity and bilinearity in algebra lib ([`d8e4d9d`](https://github.com/hydro-project/hydroflow/commit/d8e4d9dc784ae28fcefe5f32a0561698c1196d31))
 </details>
+
+<csr-unknown>
+ Expose PairBimorphism public.Address https://github.com/hydro-project/hydroflow/issues/1229. definitions of linearity and bilinearity in algebra lib add prototype of tagging algebraic properties<csr-unknown/>
 
 ## 0.5.4 (2024-04-05)
 

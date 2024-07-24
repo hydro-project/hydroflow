@@ -5,7 +5,136 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.8.0 (2024-07-23)
+
+### New Features
+
+ - <csr-id-b3d01c20cae2335a3da2c02343debe677f17786b/> add `#[derive(Lattice)]` derive macros, fix #1247
+   This adds derive macros to allow user-created macros. Each field must be
+   a lattice.
+   
+   Example usage:
+   ```rust
+   struct MyLattice<KeySet, Epoch>
+   where
+       KeySet: Collection,
+       Epoch: Ord,
+   {
+       keys: SetUnion<KeySet>,
+       epoch: Max<Epoch>,
+   }
+   ```
+   
+   Uses `#[derive(Lattice)]` for the `lattices` library `Pair` lattice.
+   Also contains some cleanup in the `lattices` crate.
+
+### Bug Fixes
+
+ - <csr-id-f91c30045dfdf92cf3d383676875d9e749cb8d93/> add `add_state_tick` to state API, reset at end of each tick, fix #1298
+   Option 2 of #1298
+   
+   * Main feature in the title is in `src/scheduled/{context,graph}.rs`
+   * Codegen for some stateful operators (those which can be used as singletons, and some others) is changed to use the new API.
+   * Add a test `test_cartesian_product_tick_state` for #1298
+   * Rest of the diff is snapshot changes
+   
+   Other `'tick` state will need to be cleared, but existing implementation does that when the iterator runs, which is good enough. There is only a problem if a singleton can reference the state before the iterator runs, in that case.
+
+### Bug Fixes (BREAKING)
+
+ - <csr-id-755e8a6d2c2b30b5d28b60315bb099030d3f3964/> remove singleton referencer `persist::<'static>()` insertion
+   Also enables singletons for `persist()` and ensures that only the
+   `'static` lifetime is used
+   
+   Singletons are supposed to act like `cross_join()`. I.e. if we have this
+   code:
+   ```rust
+   stream -> filter(|item| ... #y ...) -> ...
+   ```
+   It should behave equivalently to
+   ```rust
+   stream -> cj[0];
+   y -> cj[1];
+   cj = cross_join() -> filter(|(item, y)| ...) -> ...
+   ```
+   
+   This has a very unintuitive replaying behavior, if `y` receives multiple
+   updates:
+   1. `y` receives an item `10`
+   2. `stream` receives an item `20`
+   3. `(10, 20)` is emitted
+   4. `y` receives an item `11`
+   5. `(11, 20)` is emitted
+   In this case the item `20` gets emitted twice.
+   
+   To emulate this unintuitive behavior, we currently ensure that a
+   `persist::<'static>()` exists before operator that references the
+   singleton (`filter`, in this case). (Note that this is equivalent to
+   `cross_join::<'static>()` and not `cross_join::<'tick>()`)
+   
+   However singletons also have had a different mechanism that affects
+   this- currently singleton references create a next-stratum constraint,
+   that ensures a singleton referencer must be in a later stratum than the
+   singleton it is referencing.
+   
+   Note that this actually prevents the example situation above from
+   happening-- the updates to `y` will be received all at once at the start
+   of the next stratum.
+   
+   This means that actually, currently singletons are equivalent to
+   something like:
+   ```rust
+   stream -> cj[0];
+   y -> next_stratum() -> last() -> cj[1];
+   cj = cross_join() -> filter(|(item, y)| ...) -> ...
+   ```
+   `last()` is a hypothetical operator that only keeps the most recent item
+   output by `y`. `next_stratum() -> last()` is equivalent to `reduce(|acc,
+   item| *acc = item)` (since that comes with a stratum barrier). So
+   technically this is a slightly different behavior than just cross_join,
+   but it is more intuitive.
+   ```rust
+   stream -> cj[0];
+   y -> reduce(|acc, item| { *acc = item; }) -> cj[1];
+   cj = cross_join() -> filter(|(item, y)| ...) -> ...
+   ```
+   
+   Also fixes #1293
+
+### Refactor (BREAKING)
+
+ - <csr-id-67c0e51fb25ea1a2e3aae197c1984920b46759fa/> require lifetime on `perist*()` operators
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release over the course of 49 calendar days.
+ - 59 days passed between releases.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 4 unique issues were worked on: [#1250](https://github.com/hydro-project/hydroflow/issues/1250), [#1295](https://github.com/hydro-project/hydroflow/issues/1295), [#1300](https://github.com/hydro-project/hydroflow/issues/1300), [#1332](https://github.com/hydro-project/hydroflow/issues/1332)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1250](https://github.com/hydro-project/hydroflow/issues/1250)**
+    - Add `#[derive(Lattice)]` derive macros, fix #1247 ([`b3d01c2`](https://github.com/hydro-project/hydroflow/commit/b3d01c20cae2335a3da2c02343debe677f17786b))
+ * **[#1295](https://github.com/hydro-project/hydroflow/issues/1295)**
+    - Require lifetime on `perist*()` operators ([`67c0e51`](https://github.com/hydro-project/hydroflow/commit/67c0e51fb25ea1a2e3aae197c1984920b46759fa))
+ * **[#1300](https://github.com/hydro-project/hydroflow/issues/1300)**
+    - Add `add_state_tick` to state API, reset at end of each tick, fix #1298 ([`f91c300`](https://github.com/hydro-project/hydroflow/commit/f91c30045dfdf92cf3d383676875d9e749cb8d93))
+ * **[#1332](https://github.com/hydro-project/hydroflow/issues/1332)**
+    - Remove singleton referencer `persist::<'static>()` insertion ([`755e8a6`](https://github.com/hydro-project/hydroflow/commit/755e8a6d2c2b30b5d28b60315bb099030d3f3964))
+</details>
+
 ## 0.7.0 (2024-05-24)
+
+<csr-id-b86f11aad344fef6ad9cdd1db0b45bb738c48bd6/>
+<csr-id-cbb3e4b3601211baa84d8d0976c5176561f940b8/>
+<csr-id-40f1a19ece2a8352e6fdc31f815d923e635f91b1/>
 
 ### Chore
 
@@ -31,7 +160,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release over the course of 35 calendar days.
+ - 6 commits contributed to the release over the course of 35 calendar days.
  - 48 days passed between releases.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 5 unique issues were worked on: [#1160](https://github.com/hydro-project/hydroflow/issues/1160), [#1166](https://github.com/hydro-project/hydroflow/issues/1166), [#1168](https://github.com/hydro-project/hydroflow/issues/1168), [#1176](https://github.com/hydro-project/hydroflow/issues/1176), [#1192](https://github.com/hydro-project/hydroflow/issues/1192)
@@ -52,6 +181,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Cleanup codegen for `fold_keyed` ([`d57b911`](https://github.com/hydro-project/hydroflow/commit/d57b91146ef44125f1dd87e040ef636797f90e76))
  * **[#1192](https://github.com/hydro-project/hydroflow/issues/1192)**
     - Expect custom config names to prevent warnings ([`b86f11a`](https://github.com/hydro-project/hydroflow/commit/b86f11aad344fef6ad9cdd1db0b45bb738c48bd6))
+ * **Uncategorized**
+    - Release hydroflow_lang v0.7.0, hydroflow_datalog_core v0.7.0, hydroflow_datalog v0.7.0, hydroflow_macro v0.7.0, lattices v0.5.5, multiplatform_test v0.1.0, pusherator v0.0.6, hydroflow v0.7.0, stageleft_macro v0.2.0, stageleft v0.3.0, stageleft_tool v0.2.0, hydroflow_plus v0.7.0, hydro_deploy v0.7.0, hydro_cli v0.7.0, hydroflow_plus_cli_integration v0.7.0, safety bump 8 crates ([`2852147`](https://github.com/hydro-project/hydroflow/commit/285214740627685e911781793e05d234ab2ad2bd))
 </details>
 
 ## 0.6.1 (2024-04-05)

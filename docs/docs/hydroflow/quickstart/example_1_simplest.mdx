@@ -20,10 +20,10 @@ the numbers in `0..10`.
 Create a clean template project:
 ```console
 #shell-command-next-line
-cargo generate hydro-project/hydroflow-template
-⚠️   Favorite `hydro-project/hydroflow-template` not found in config, using it as a git repository: https://github.com/hydro-project/hydroflow-template.git
+cargo generate gh:hydro-project/hydroflow template/hydroflow
+⚠️   Favorite `gh:hydro-project/hydroflow` not found in config, using it as a git repository: https://github.com/hydro-project/hydroflow.git
 🤷   Project Name: simple
-🔧   Destination: /Users/jmh/code/sussudio/simple ...
+🔧   Destination: /Users/me/code/simple ...
 🔧   project-name: simple ...
 🔧   Generating template ...
 [11/11]   Done: src
@@ -32,7 +32,15 @@ cargo generate hydro-project/hydroflow-template
 ✨   Done! New project created <dir>/simple
 ```
 
-Change directory into the resulting `simple` folder or open it in your IDE. Then edit the `src/main.rs` file, replacing
+After `cd`ing into the generated folder, ensure the correct nightly version of rust is installed, and test the generated project:
+```bash
+#shell-command-next-line
+rustup update
+#shell-command-next-line
+cargo test
+```
+
+Then edit the `src/main.rs` file, replacing
 *all* of its contents with the following code:
 
 <CodeBlock language="rust" showLineNumbers>{exampleCode}</CodeBlock>

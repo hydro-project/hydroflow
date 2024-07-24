@@ -9,7 +9,7 @@ use crate::{
 
 /// Helper which calls many other `check_*` functions in this module. See source code for which
 /// functions are called.
-pub fn check_all<T: Lattice + Clone + Eq + Debug + Default>(items: &[T]) {
+pub fn check_all<T: Lattice + Clone + PartialEq + Debug + Default>(items: &[T]) {
     check_lattice_ord(items);
     check_partial_ord_properties(items);
     check_lattice_properties(items);
@@ -29,13 +29,13 @@ pub fn check_lattice_ord<T: LatticeOrd + NaiveLatticeOrd + Debug>(items: &[T]) {
     }
 }
 
-/// Checks `PartialOrd`, `PartialEq`, and `Eq`'s reflexivity, symmetry, transitivity, and duality.
+/// Checks `PartialOrd` and `PartialEq`'s reflexivity, symmetry, transitivity, and duality.
 #[allow(clippy::eq_op)]
 #[allow(clippy::double_comparisons)]
-pub fn check_partial_ord_properties<T: PartialOrd + Eq + Debug>(items: &[T]) {
+pub fn check_partial_ord_properties<T: PartialOrd + PartialEq + Debug>(items: &[T]) {
     use std::cmp::Ordering::*;
 
-    // Eq:
+    // PartialEq:
     // reflexive: a == a;
     for a in items {
         assert!(a == a, "Reflexivity: `{:?}` should equal itself.", a);
@@ -107,7 +107,7 @@ pub fn check_partial_ord_properties<T: PartialOrd + Eq + Debug>(items: &[T]) {
 }
 
 /// Check lattice associativity, commutativity, and idempotence.
-pub fn check_lattice_properties<T: Merge<T> + Clone + Eq + Debug>(items: &[T]) {
+pub fn check_lattice_properties<T: Merge<T> + Clone + PartialEq + Debug>(items: &[T]) {
     // Idempotency
     // x ∧ x = x
     for x in items {
@@ -208,8 +208,8 @@ pub fn check_atomize_each<
 pub fn check_lattice_morphism<LatIn, Func>(mut func: Func, items: &[LatIn])
 where
     Func: LatticeMorphism<LatIn>,
-    LatIn: Merge<LatIn> + Clone + Eq + Debug,
-    Func::Output: Merge<Func::Output> + Clone + Eq + Debug,
+    LatIn: Merge<LatIn> + Clone + PartialEq + Debug,
+    Func::Output: Merge<Func::Output> + Clone + PartialEq + Debug,
 {
     for [a, b] in cartesian_power(items) {
         assert_eq!(
@@ -230,9 +230,9 @@ pub fn check_lattice_bimorphism<LatA, LatB, Func>(
     items_b: &[LatB],
 ) where
     Func: LatticeBimorphism<LatA, LatB>,
-    LatA: Merge<LatA> + Clone + Eq + Debug,
-    LatB: Merge<LatB> + Clone + Eq + Debug,
-    Func::Output: Merge<Func::Output> + Clone + Eq + Debug,
+    LatA: Merge<LatA> + Clone + PartialEq + Debug,
+    LatB: Merge<LatB> + Clone + PartialEq + Debug,
+    Func::Output: Merge<Func::Output> + Clone + PartialEq + Debug,
 {
     // Morphism LHS, fixed RHS:
     for b in items_b {

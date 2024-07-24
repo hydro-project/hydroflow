@@ -187,9 +187,6 @@ pub enum HfPlusNode {
     Difference(Box<HfPlusNode>, Box<HfPlusNode>),
     AntiJoin(Box<HfPlusNode>, Box<HfPlusNode>),
 
-    PollFutures(Box<HfPlusNode>),
-    PollFuturesOrdered(Box<HfPlusNode>),
-
     Map {
         f: DebugExpr,
         input: Box<HfPlusNode>,
@@ -314,13 +311,6 @@ impl HfPlusNode {
                 Box::new(transform(*right, seen_tees)),
             ),
 
-            HfPlusNode::PollFutures(input) => {
-                HfPlusNode::PollFutures(Box::new(transform(*input, seen_tees)))
-            }
-            HfPlusNode::PollFuturesOrdered(input) => {
-                HfPlusNode::PollFuturesOrdered(Box::new(transform(*input, seen_tees)))
-            }
-
             HfPlusNode::Map { f, input } => HfPlusNode::Map {
                 f,
                 input: Box::new(transform(*input, seen_tees)),
@@ -407,7 +397,7 @@ impl HfPlusNode {
 
                 let builder = graph_builders.entry(location).or_default();
                 builder.add_statement(parse_quote! {
-                    #persist_ident = #inner_ident -> persist();
+                    #persist_ident = #inner_ident -> persist::<'static>();
                 });
 
                 (persist_ident, location)
@@ -669,40 +659,6 @@ impl HfPlusNode {
                 });
 
                 (stream_ident, left_location_id)
-            }
-
-            HfPlusNode::PollFutures(input) => {
-                let (input_ident, location) = input.emit(graph_builders, built_tees, next_stmt_id);
-
-                let futures_id = *next_stmt_id;
-                *next_stmt_id += 1;
-
-                let futures_ident =
-                    syn::Ident::new(&format!("stream_{}", futures_id), Span::call_site());
-
-                let builder = graph_builders.entry(location).or_default();
-                builder.add_statement(parse_quote! {
-                    #futures_ident = #input_ident -> poll_futures();
-                });
-
-                (futures_ident, location)
-            }
-
-            HfPlusNode::PollFuturesOrdered(input) => {
-                let (input_ident, location) = input.emit(graph_builders, built_tees, next_stmt_id);
-
-                let futures_id = *next_stmt_id;
-                *next_stmt_id += 1;
-
-                let futures_ident =
-                    syn::Ident::new(&format!("stream_{}", futures_id), Span::call_site());
-
-                let builder = graph_builders.entry(location).or_default();
-                builder.add_statement(parse_quote! {
-                    #futures_ident = #input_ident -> poll_futures_ordered();
-                });
-
-                (futures_ident, location)
             }
 
             HfPlusNode::Map { f, input } => {
