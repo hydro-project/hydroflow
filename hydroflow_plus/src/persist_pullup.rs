@@ -36,7 +36,7 @@ mod tests {
             .map(q!(|v| v + 1))
             .for_each(q!(|n| println!("{}", n)));
 
-        let built = flow.extract();
+        let built = flow.finalize();
 
         insta::assert_debug_snapshot!(built.ir());
 
@@ -64,7 +64,7 @@ mod tests {
 
         before_tee.for_each(q!(|n| println!("{}", n)));
 
-        let built = flow.extract();
+        let built = flow.finalize();
 
         insta::assert_debug_snapshot!(built.ir());
 

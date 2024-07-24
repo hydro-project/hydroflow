@@ -74,8 +74,7 @@ async fn main() {
 
     // Uncomment below, change .bin("counter_compute_pi") in order to track cardinality per operation
     // let runtime_context = builder.runtime_context();
-    // dbg!(builder.extract()
-    //     .with_default_optimize()
+    // dbg!(builder.with_default_optimize()
     //     .optimize_with(|ir| profiling(ir, runtime_context, RuntimeData::new("FAKE"), RuntimeData::new("FAKE")))
     //     .ir());
 
