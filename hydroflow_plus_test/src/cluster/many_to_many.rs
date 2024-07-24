@@ -25,8 +25,8 @@ pub fn many_to_many_runtime<'a>(
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = many_to_many(&flow, &cli);
-    flow.extract()
-        .optimize_default()
+    flow.with_default_optimize()
+        .compile()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
@@ -59,7 +59,7 @@ mod tests {
             }),
         );
 
-        insta::assert_debug_snapshot!(builder.extract().ir());
+        insta::assert_debug_snapshot!(builder.finalize().ir());
 
         let mut deployment = deployment.into_inner();
 
