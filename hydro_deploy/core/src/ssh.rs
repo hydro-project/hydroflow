@@ -8,7 +8,9 @@ use std::time::Duration;
 
 use anyhow::{Context, Result};
 use async_ssh2_lite::ssh2::ErrorCode;
-use async_ssh2_lite::{AsyncChannel, AsyncSession, Error, SessionConfiguration};
+use async_ssh2_lite::{
+    AsyncChannel, AsyncSession, AsyncSessionStream, Error, SessionConfiguration,
+};
 use async_trait::async_trait;
 use futures::io::BufReader;
 use futures::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt};
@@ -88,45 +90,52 @@ impl Drop for LaunchedSshBinary {
     fn drop(&mut self) {
         let session = self.session.take().unwrap();
         std::thread::scope(|s| {
-            s.spawn(|| {
-                let runtime = tokio::runtime::Builder::new_multi_thread()
-                    .enable_time()
-                    .build()
-                    .unwrap();
-                runtime
-                    .block_on(async move {
-                        self.channel.write_all(&[b'\x03']).await.unwrap();
-                        self.channel.send_eof().await?;
-                        self.channel.wait_eof().await?;
-                        self.channel.wait_close().await?;
-                        // Copy perf file down
-                        if let Some(perf) = &self.perf {
-                            let output_file = perf.output_file.to_str().unwrap();
-                            let sftp = session.sftp().await?;
+            let result = s
+                .spawn(|| {
+                    let runtime = tokio::runtime::Builder::new_multi_thread()
+                        .enable_time()
+                        .build()
+                        .unwrap();
+                    runtime
+                        .block_on(async move {
+                            self.channel.write_all(&[b'\x03']).await.unwrap();
+                            self.channel.send_eof().await?;
+                            self.channel.wait_eof().await?;
+                            self.channel.wait_close().await?;
+                            // Copy perf file down
+                            if let Some(perf) = &self.perf {
+                                let output_file = perf.output_file.to_str().unwrap();
+                                let sftp = session.sftp().await?;
 
-                            // download perf.data
-                            let mut perf_data = sftp.open(&PathBuf::from(output_file)).await?;
-                            let mut downloaded_perf_data =
-                                tokio::fs::File::create(output_file).await?;
-                            let data_size = perf_data.stat().await?.size.unwrap();
-                            let mut read_buf = vec![0; 128 * 1024];
-                            let mut index = 0;
-                            while index < data_size {
-                                let bytes_read = perf_data.read(&mut read_buf).await?;
-                                use tokio::io::AsyncWriteExt;
-                                downloaded_perf_data
-                                    .write_all(read_buf[0..bytes_read].as_ref())
-                                    .await?;
-                                index += bytes_read as u64;
+                                // download perf.data
+                                let mut perf_data = sftp.open(&PathBuf::from(output_file)).await?;
+                                let mut downloaded_perf_data =
+                                    tokio::fs::File::create(output_file).await?;
+                                let data_size = perf_data.stat().await?.size.unwrap();
+                                let mut read_buf = vec![0; 128 * 1024];
+                                let mut index = 0;
+                                while index < data_size {
+                                    let bytes_read = perf_data.read(&mut read_buf).await?;
+                                    use tokio::io::AsyncWriteExt;
+                                    downloaded_perf_data
+                                        .write_all(read_buf[0..bytes_read].as_ref())
+                                        .await?;
+                                    index += bytes_read as u64;
+                                }
                             }
-                        }
 
-                        session.disconnect(None, "", None).await
-                    })
-                    .unwrap();
-            })
-            .join()
-            .unwrap();
+                            session.disconnect(None, "", None).await
+                        })
+                        .unwrap();
+                })
+                .join();
+            if let Err(e) = result {
+                if let Some(s) = e.downcast_ref::<String>() {
+                    ProgressTracker::println(&format!("DROP ERROR: {}", s));
+                } else {
+                    ProgressTracker::println("PANIC NOT STRING");
+                }
+            }
         });
     }
 }
@@ -321,7 +330,10 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
         let channel = ProgressTracker::leaf(
             format!("launching binary {}", binary_path.display()),
             async {
-                let mut channel =
+                async fn open_channel<S>(session: &AsyncSession<S>) -> Result<AsyncChannel<S>>
+                where
+                    S: AsyncSessionStream + Send + Sync + 'static,
+                {
                     async_retry(
                         &|| async {
                             Ok(tokio::time::timeout(
@@ -333,9 +345,18 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
                         10,
                         Duration::from_secs(1),
                     )
-                    .await?;
+                    .await
+                }
                 // Launch with perf if specified, also copy local binary to expected place for perf report to work
                 let perf_wrapper = if let Some(perf) = perf.clone() {
+                    {
+                        let mut channel = open_channel(&session).await?;
+                        channel.exec("sudo sh -c 'apt update && apt install -y linux-perf && echo -1 > /proc/sys/kernel/perf_event_paranoid && echo 0 > /proc/sys/kernel/kptr_restrict'").await?;
+                        channel.send_eof().await?;
+                        channel.wait_eof().await?;
+                        channel.wait_close().await?;
+                    }
+
                     // Copy local binary to {output_file}.bins/home/{user}/hydro-{unique_name}
                     let output_file = perf.output_file.to_str().unwrap();
                     let local_binary = PathBuf::from(format!(
@@ -355,6 +376,7 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
                     .iter()
                     .map(|s| shell_escape::unix::escape(Cow::from(s)))
                     .fold("".to_string(), |acc, v| format!("{acc} {v}"));
+                let mut channel = open_channel(&session).await.unwrap();
                 channel
                     .exec(&format!("{perf_wrapper}{binary_path_string}{args_string}"))
                     .await?;
