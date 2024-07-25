@@ -55,6 +55,8 @@ mod tests {
             }),
         );
 
+        let _built = flow.with_default_optimize();
+
         deployment.deploy().await.unwrap();
 
         let second_process_stdout = second_process.stdout().await;
