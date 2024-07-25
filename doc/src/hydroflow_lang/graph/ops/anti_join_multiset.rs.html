@@ -344,7 +344,7 @@
                 <span class="attr">#[allow(clippy::needless_borrow)]
                 </span>#neg_borrow.extend(#input_neg);
 
-                <span class="kw">let </span>#ident = #input_pos.filter(|x| {
+                <span class="kw">let </span>#ident = #input_pos.filter(|x: <span class="kw-2">&amp;</span>(<span class="kw">_</span>,<span class="kw">_</span>)| {
                     <span class="attr">#[allow(clippy::needless_borrow)]
                     #[allow(clippy::unnecessary_mut_passed)]
                     </span>!#neg_borrow.contains(<span class="kw-2">&amp;</span>x.<span class="number">0</span>)
@@ -370,7 +370,7 @@
                         #pos_borrow_ident.extend(#input_pos);
                         #pos_borrow_ident[len..].iter()
                     }
-                    .filter(|x| {
+                    .filter(|x: &amp;&amp;(<span class="kw">_</span>,<span class="kw">_</span>)| {
                         <span class="attr">#[allow(clippy::unnecessary_mut_passed)]
                         </span>!#neg_borrow.contains(<span class="kw-2">&amp;</span>x.<span class="number">0</span>)
                     })
