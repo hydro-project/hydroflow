@@ -172,7 +172,7 @@ pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
                         #pos_borrow_ident.extend(#input_pos);
                         #pos_borrow_ident[len..].iter()
                     }
-                    .filter(|x: &(_,_)| {
+                    .filter(|x: &&(_,_)| {
                         #[allow(clippy::unnecessary_mut_passed)]
                         !#neg_borrow.contains(&x.0)
                     })
