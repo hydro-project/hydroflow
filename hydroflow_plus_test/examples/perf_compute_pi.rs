@@ -30,7 +30,7 @@ async fn main() {
                     "us-west1-a",
                     network.clone(),
                     None,
-                    Some("sudo sh -c 'apt update && apt install -y linux-perf && echo -1 > /proc/sys/kernel/perf_event_paranoid && echo 0 > /proc/sys/kernel/kptr_restrict'".to_owned())
+                    Some("sudo sh -c 'apt update && apt install -y linux-perf binutils && echo -1 > /proc/sys/kernel/perf_event_paranoid && echo 0 > /proc/sys/kernel/kptr_restrict'".to_owned())
                 )
             }),
             "profile",
@@ -50,7 +50,7 @@ async fn main() {
             let mut deployment = deployment.borrow_mut();
             let host = create_host(&mut deployment);
             let perf_options = PerfOptions {
-                output_file: PathBuf::from("leader.perf.data"),
+                output_file: PathBuf::from("leader.perf"),
                 frequency: 5,
             };
             deployment.add_service(
@@ -67,7 +67,7 @@ async fn main() {
                 .map(|idx| {
                     let host = create_host(&mut deployment);
                     let perf_options = PerfOptions {
-                        output_file: PathBuf::from(format!("cluster{}.perf.data", idx)),
+                        output_file: PathBuf::from(format!("cluster{}.perf", idx)),
                         frequency: 5,
                     };
                     deployment.add_service(

@@ -119,7 +119,7 @@ impl Deployment {
                     .collect::<Vec<_>>();
 
                 futures::stream::iter(services_future)
-                    .buffer_unordered(8)
+                    .buffer_unordered(16)
                     .try_fold((), |_, _| async { Ok(()) })
             })
             .await?;

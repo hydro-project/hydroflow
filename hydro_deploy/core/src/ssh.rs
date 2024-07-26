@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::fs;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -357,29 +356,32 @@ impl<T: LaunchedSshHost> LaunchedHost for T {
                         Duration::from_secs(1),
                     )
                     .await?;
-                // Launch with perf if specified, also copy local binary to expected place for perf report to work
-                let perf_wrapper = if let Some(perf) = perf.clone() {
-                    // Copy local binary to {output_file}.bins/home/{user}/hydro-{unique_name}
-                    let output_file = perf.output_file.to_str().unwrap();
-                    let local_binary = PathBuf::from(format!(
-                        "{output_file}.bins/home/{user}/hydro-{unique_name}"
-                    ));
-                    fs::create_dir_all(local_binary.parent().unwrap()).unwrap();
-                    fs::write(local_binary, &binary.bin_data).unwrap();
 
-                    // Attach perf to the command
-                    let frequency = perf.frequency;
-                    format!("perf record -F {frequency} --call-graph dwarf,64000 -o {output_file} ")
-                } else {
-                    "".to_string()
-                };
                 let binary_path_string = binary_path.to_str().unwrap();
                 let args_string = args
                     .iter()
                     .map(|s| shell_escape::unix::escape(Cow::from(s)))
                     .fold("".to_string(), |acc, v| format!("{acc} {v}"));
+                let mut command = format!("{binary_path_string}{args_string}");
+                // Launch with perf if specified, also copy local binary to expected place for perf report to work
+                if let Some(perf) = perf.clone() {
+                    let output_file = perf.output_file.to_str().unwrap();
+                    // let local_binary = PathBuf::from(format!(
+                    //     "{output_file}.bins/home/{user}/hydro-{unique_name}"
+                    // ));
+                    // fs::create_dir_all(local_binary.parent().unwrap()).unwrap();
+                    // fs::write(local_binary, &binary.bin_data).unwrap();
+                    // Attach perf to the command
+                    command = format!("perf record -F {freq} --call-graph dwarf,64000 -o {data_file} {cmd}; perf script --symfs=/ -i {data_file} > {out_file}",
+                        freq = perf.frequency,
+                        cmd = command,
+                        data_file = shell_escape::unix::escape(Cow::Owned(format!("{output_file}.data"))),
+                        out_file = shell_escape::unix::escape(Cow::Borrowed(output_file))
+                    );
+                }
+
                 channel
-                    .exec(&format!("{perf_wrapper}{binary_path_string}{args_string}"))
+                    .exec(&command)
                     .await?;
 
                 anyhow::Ok(channel)
