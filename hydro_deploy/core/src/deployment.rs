@@ -31,7 +31,7 @@ impl Deployment {
         self.add_host(LocalhostHost::new)
     }
 
-    #[allow(non_snake_case)]
+    #[allow(non_snake_case, clippy::too_many_arguments)] // TODO(mingwei)
     pub fn GcpComputeEngineHost(
         &mut self,
         project: impl Into<String>,
@@ -40,9 +40,19 @@ impl Deployment {
         region: impl Into<String>,
         network: Arc<RwLock<GcpNetwork>>,
         user: Option<String>,
+        startup_script: Option<String>,
     ) -> Arc<GcpComputeEngineHost> {
         self.add_host(|id| {
-            GcpComputeEngineHost::new(id, project, machine_type, image, region, network, user)
+            GcpComputeEngineHost::new(
+                id,
+                project,
+                machine_type,
+                image,
+                region,
+                network,
+                user,
+                startup_script,
+            )
         })
     }
 
