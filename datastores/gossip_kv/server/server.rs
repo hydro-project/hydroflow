@@ -16,7 +16,7 @@ use hydroflow::lattices::{Lattice, PairBimorphism};
 use hydroflow::scheduled::graph::Hydroflow;
 use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
-use tracing::{info, trace};
+use tracing::{error, info, trace};
 use gossip_protocol::model::{Clock, delete_row, Namespaces, RowKey, TableName, upsert_row};
 use lattices::IsTop;
 use crate::lattices::BoundedSetLattice;
@@ -40,7 +40,7 @@ where
 #[derive(Debug, Clone, Serialize, Deserialize, Lattice)]
 pub struct InfectingWrite {
     write: Namespaces<Clock>,
-    members: BoundedSetLattice<MemberId, 3>,
+    members: BoundedSetLattice<MemberId, 2>,
 }
 
 pub type MessageId = String;
@@ -72,14 +72,14 @@ where
     hydroflow_syntax! {
 
         on_start = initialize() -> tee();
-        on_start -> for_each(|_| info!("Transducer started."));
+        on_start -> for_each(|_| info!("{:?}: Transducer started.", context.current_tick()));
 
         // Setup member metadata for this process.
         on_start -> map(|_| upsert_row(Clock::new(0), Namespace::System, "members".to_string(), member_info.id.clone(), serde_json::to_string(&member_info).unwrap()))
             -> writes;
 
         client_out =
-            inspect(|(resp, addr)| trace!("Sending response: {:?} to {:?}", resp, addr))
+            inspect(|(resp, addr)| trace!("{:?}: Sending response: {:?} to {:?}.", context.current_tick(), resp, addr))
             -> dest_sink(client_outputs);
 
         client_in = source_stream(client_inputs)
@@ -87,7 +87,7 @@ where
             -> demux_enum::<ClientRequestWithAddress<Addr>>();
 
         client_in[Get]
-            -> inspect(|req| trace!("Received Get request: {:?} at {:?}", req, context.current_tick()))
+            -> inspect(|req| trace!("{:?}: Received Get request: {:?}.", context.current_tick(), req))
             -> map(|(key, addr) : (Key, Addr)| {
                 let row = MapUnionHashMap::new_from([
                         (
@@ -101,12 +101,12 @@ where
             -> reads;
 
         client_in[Set]
-            -> inspect(|request| trace!("Received Set request: {:?} at {:?}", request, context.current_tick()))
+            -> inspect(|request| trace!("{:?}: Received Set request: {:?}.", context.current_tick(), request))
             -> map(|(key, value, _addr) : (Key, String, Addr)| upsert_row(Clock::new(context.current_tick().0), key.namespace, key.table, key.row_key, value))
             -> writes;
 
         client_in[Delete]
-            -> inspect(|req| trace!("Received Delete request: {:?} at {:?}", req, context.current_tick()))
+            -> inspect(|req| trace!("{:?}: Received Delete request: {:?}.", context.current_tick(), req))
             -> map(|(key, _addr) : (Key, Addr)| delete_row(Clock::new(context.current_tick().0), key.namespace, key.table, key.row_key))
             -> writes;
 
@@ -115,16 +115,16 @@ where
             -> demux_enum::<GossipRequestWithAddress<Addr>>();
 
         gossip_in[Gossip]
-            -> inspect(|request| trace!("Received gossip request: {:?} at {:?}", request, context.current_tick()))
+            -> inspect(|request| trace!("{:?}: Received gossip request: {:?}.", context.current_tick(), request))
             -> map(|(_msg_id, writes, _addr)| writes )
             -> writes;
 
         gossip_in[Ack]
-            -> inspect(|request| trace!("Received gossip ack: {:?} at {:?}", request, context.current_tick()))
+            -> inspect(|request| trace!("{:?}: Received gossip ack: {:?}.", context.current_tick(), request))
             -> null();
 
         gossip_in[Nack]
-            -> inspect(|request| trace!("Received gossip nack: {:?} at {:?}", request, context.current_tick()))
+            -> inspect(|request| trace!("{:?}: Received gossip nack: {:?}.", context.current_tick(), request))
             -> null();
 
         gossip_out = dest_sink(gossip_outputs);
@@ -148,6 +148,10 @@ where
                 let mut response: Vec<(ClientResponse, Addr)> = vec![];
 
                     let result = result.as_reveal_ref();
+                    if result.len() > 0 {
+                        error!("{:?}: {:?}", context.current_tick(), result);
+                    }
+
                     for (namespace, tables) in result.iter() {
                         for (table_name, table) in tables.as_reveal_ref().iter() {
                             for (row_key, join_results) in table.as_reveal_ref().iter() {
@@ -202,7 +206,7 @@ where
         -> filter(|(_id, infecting_write)| !infecting_write.members.is_top())
         -> inspect(|x| trace!("After: {:?}", x))
         -> map(|(id, infecting_write)| {
-            trace!("Choosing a peer to gossip to. {:?}:{:?}", id, infecting_write);
+            trace!("{:?}: Choosing a peer to gossip to. {:?}:{:?}", context.current_tick(), id, infecting_write);
             let peers = #namespaces.as_reveal_ref().get(&Namespace::System).unwrap().as_reveal_ref().get("members").unwrap().as_reveal_ref().clone();
 
             let mut peer_names = HashSet::new();
@@ -214,7 +218,7 @@ where
                 peer_names.insert(seed_node.id.clone());
             });
 
-            trace!("Peers: {:?}", peer_names);
+            trace!("{:?}: Peers: {:?}", context.current_tick(), peer_names);
 
             let chosen_peer_name = peer_names.iter().choose(&mut thread_rng()).unwrap();
 
@@ -229,7 +233,7 @@ where
             trace!("Chosen peer: {:?}:{:?}", chosen_peer_name, gossip_address);
             (id, infecting_write, gossip_address)
         })
-        -> inspect(|(message_id, infecting_write, peer_gossip_address)| trace!("Sending write:\nMessageId:{:?}\nWrite:{:?}\nPeer Address:{:?}", message_id, infecting_write, peer_gossip_address))
+        -> inspect(|(message_id, infecting_write, peer_gossip_address)| trace!("{:?}: Sending write:\nMessageId:{:?}\nWrite:{:?}\nPeer Address:{:?}", context.current_tick(), message_id, infecting_write, peer_gossip_address))
         -> tee();
 
         gossip_messages
@@ -245,7 +249,7 @@ where
         gossip_messages
             -> map(|(message_id, write, _peer_gossip_address) : (String, InfectingWrite, Addr)| {
                 let dummy_peer_id = uuid::Uuid::new_v4().to_string();
-                trace!("Infecting write: {:?}", dummy_peer_id);
+                trace!("{:?}: Infecting write: {:?}", context.current_tick(), dummy_peer_id);
                 MapUnionSingletonMap::new_from((message_id, InfectingWrite { write: write.write, members: BoundedSetLattice::new_from([dummy_peer_id]) }))
             })
             //-> defer_tick()
