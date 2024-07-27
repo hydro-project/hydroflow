@@ -146,7 +146,7 @@ pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
                 #[allow(clippy::needless_borrow)]
                 #neg_borrow.extend(#input_neg);
 
-                let #ident = #input_pos.filter(|x| {
+                let #ident = #input_pos.filter(|x: &(_,_)| {
                     #[allow(clippy::needless_borrow)]
                     #[allow(clippy::unnecessary_mut_passed)]
                     !#neg_borrow.contains(&x.0)
@@ -172,7 +172,7 @@ pub const ANTI_JOIN_MULTISET: OperatorConstraints = OperatorConstraints {
                         #pos_borrow_ident.extend(#input_pos);
                         #pos_borrow_ident[len..].iter()
                     }
-                    .filter(|x| {
+                    .filter(|x: &&(_,_)| {
                         #[allow(clippy::unnecessary_mut_passed)]
                         !#neg_borrow.contains(&x.0)
                     })
