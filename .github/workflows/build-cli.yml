@@ -2,6 +2,7 @@ name: Build CLI
 
 on:
   push:
+    pull_request:
     branches:
       - main
       - feature/**
@@ -43,6 +44,8 @@ jobs:
           working-directory: hydro_deploy/hydro_cli
           target: ${{ matrix.target }}
           args: --release --out dist
+        env:
+          CARGO_TARGET_x86_64_APPLE_DARWIN_LINKER: ld
       - name: "Install built wheel"
         run: |
           pip install hydro_deploy/hydro_cli/dist/${{ env.PACKAGE_NAME }}-*.whl --force-reinstall
