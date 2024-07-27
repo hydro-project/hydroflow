@@ -45,7 +45,7 @@ jobs:
           target: ${{ matrix.target }}
           args: --release --out dist
         env:
-          CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER: ld
+          CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER: clang
       - name: "Install built wheel"
         run: |
           pip install hydro_deploy/hydro_cli/dist/${{ env.PACKAGE_NAME }}-*.whl --force-reinstall
