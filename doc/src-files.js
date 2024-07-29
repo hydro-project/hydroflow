@@ -4,7 +4,7 @@ var srcIndex = new Map(JSON.parse('[\
 ["compute_pi_local",["",[],["compute_pi_local.rs"]]],\
 ["first_ten_distributed",["",[],["first_ten_distributed.rs"]]],\
 ["hydro_cli",["",[],["cli.rs","lib.rs"]]],\
-["hydro_deploy",["",[["hydroflow_crate",[],["build.rs","mod.rs","ports.rs","service.rs"]],["localhost",[],["launched_binary.rs","mod.rs"]]],["azure.rs","custom_service.rs","deployment.rs","gcp.rs","lib.rs","progress.rs","ssh.rs","terraform.rs","util.rs"]]],\
+["hydro_deploy",["",[["hydroflow_crate",[],["build.rs","mod.rs","perf_options.rs","ports.rs","service.rs"]],["localhost",[],["launched_binary.rs","mod.rs"]]],["azure.rs","custom_service.rs","deployment.rs","gcp.rs","lib.rs","progress.rs","ssh.rs","terraform.rs","util.rs"]]],\
 ["hydroflow",["",[["compiled",[["pull",[["half_join_state",[],["fold.rs","fold_from.rs","mod.rs","multiset.rs","reduce.rs","set.rs"]]],["anti_join.rs","cross_join.rs","mod.rs","symmetric_hash_join.rs"]]],["mod.rs"]],["props",[],["mod.rs","wrap.rs"]],["scheduled",[["handoff",[],["handoff_list.rs","mod.rs","tee.rs","vector.rs"]],["net",[],["mod.rs","network_vertex.rs"]]],["context.rs","graph.rs","graph_ext.rs","input.rs","mod.rs","port.rs","query.rs","reactor.rs","state.rs","subgraph.rs","ticks.rs"]],["util",[["unsync",[],["mod.rs","mpsc.rs"]]],["clear.rs","cli.rs","demux_enum.rs","mod.rs","monotonic.rs","monotonic_map.rs","multiset.rs","socket.rs","sparse_vec.rs","tcp.rs","udp.rs"]]],["declarative_macro.rs","lib.rs"]]],\
 ["hydroflow_cli_integration",["",[],["lib.rs"]]],\
 ["hydroflow_datalog",["",[],["lib.rs"]]],\

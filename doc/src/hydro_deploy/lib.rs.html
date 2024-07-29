@@ -219,12 +219,12 @@
 <a href="#219" id="219">219</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
-<span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>hydroflow_cli_integration::ServerBindConfig;
+<span class="kw">use </span>hydroflow_crate::perf_options::PerfOptions;
 
 <span class="kw">pub mod </span>deployment;
 <span class="kw">pub use </span>deployment::Deployment;
@@ -320,7 +320,7 @@
         id: String,
         binary: <span class="kw-2">&amp;</span>BuildOutput,
         args: <span class="kw-2">&amp;</span>[String],
-        perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+        perf: <span class="prelude-ty">Option</span>&lt;PerfOptions&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt;;
 
     <span class="kw">async fn </span>forward_port(<span class="kw-2">&amp;</span><span class="self">self</span>, addr: <span class="kw-2">&amp;</span>SocketAddr) -&gt; <span class="prelude-ty">Result</span>&lt;SocketAddr&gt;;

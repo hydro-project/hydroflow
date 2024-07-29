@@ -517,6 +517,11 @@
 <a href="#517" id="517">517</a>
 <a href="#518" id="518">518</a>
 <a href="#519" id="519">519</a>
+<a href="#520" id="520">520</a>
+<a href="#521" id="521">521</a>
+<a href="#522" id="522">522</a>
+<a href="#523" id="523">523</a>
+<a href="#524" id="524">524</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::sync::{Arc, Mutex, OnceLock};
 
@@ -695,12 +700,14 @@
     <span class="kw">pub </span>region: String,
     <span class="kw">pub </span>network: Arc&lt;RwLock&lt;GcpNetwork&gt;&gt;,
     <span class="kw">pub </span>user: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub </span>startup_script: <span class="prelude-ty">Option</span>&lt;String&gt;,
     <span class="kw">pub </span>launched: OnceLock&lt;Arc&lt;LaunchedComputeEngine&gt;&gt;,
     external_ports: Mutex&lt;Vec&lt;u16&gt;&gt;,
 }
 
 <span class="kw">impl </span>GcpComputeEngineHost {
-    <span class="kw">pub fn </span>new(
+    <span class="attr">#[allow(clippy::too_many_arguments)] </span><span class="comment">// TODO(mingwei)
+    </span><span class="kw">pub fn </span>new(
         id: usize,
         project: <span class="kw">impl </span>Into&lt;String&gt;,
         machine_type: <span class="kw">impl </span>Into&lt;String&gt;,
@@ -708,6 +715,7 @@
         region: <span class="kw">impl </span>Into&lt;String&gt;,
         network: Arc&lt;RwLock&lt;GcpNetwork&gt;&gt;,
         user: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        startup_script: <span class="prelude-ty">Option</span>&lt;String&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             id,
@@ -717,6 +725,7 @@
             region: region.into(),
             network,
             user,
+            startup_script,
             launched: OnceLock::new(),
             external_ports: Mutex::new(Vec::new()),
         }
@@ -931,7 +940,8 @@
                             ]
                         }
                     ],
-                    <span class="string">"network_interface"</span>: external_interfaces
+                    <span class="string">"network_interface"</span>: external_interfaces,
+                    <span class="string">"metadata_startup_script"</span>: <span class="self">self</span>.startup_script,
                 }),
             );
 

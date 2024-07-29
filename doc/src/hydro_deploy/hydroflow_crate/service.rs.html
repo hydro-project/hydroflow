@@ -310,6 +310,7 @@
 <a href="#310" id="310">310</a>
 <a href="#311" id="311">311</a>
 <a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
@@ -323,6 +324,7 @@
 <span class="kw">use </span>tokio::sync::{mpsc, RwLock};
 
 <span class="kw">use </span><span class="kw">super</span>::build::{build_crate_memoized, BuildError, BuildOutput, BuildParams};
+<span class="kw">use </span><span class="kw">super</span>::perf_options::PerfOptions;
 <span class="kw">use </span><span class="kw">super</span>::ports::{<span class="self">self</span>, HydroflowPortConfig, HydroflowSink, SourcePath};
 <span class="kw">use </span><span class="kw">crate</span>::progress::ProgressTracker;
 <span class="kw">use crate</span>::{
@@ -333,7 +335,7 @@
     id: usize,
     <span class="kw">pub</span>(<span class="kw">super</span>) on: Arc&lt;<span class="kw">dyn </span>Host&gt;,
     build_params: BuildParams,
-    perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+    perf: <span class="prelude-ty">Option</span>&lt;PerfOptions&gt;,
     args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
     display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
     external_ports: Vec&lt;u16&gt;,
@@ -366,7 +368,7 @@
         bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
         example: <span class="prelude-ty">Option</span>&lt;String&gt;,
         profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
-        perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+        perf: <span class="prelude-ty">Option</span>&lt;PerfOptions&gt;,
         features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,

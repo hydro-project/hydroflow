@@ -157,8 +157,14 @@
 <a href="#157" id="157">157</a>
 <a href="#158" id="158">158</a>
 <a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
+
+<span class="kw">use </span>perf_options::PerfOptions;
 
 <span class="kw">use </span><span class="kw">super</span>::Host;
 <span class="kw">use </span><span class="kw">crate</span>::ServiceBuilder;
@@ -168,6 +174,8 @@
 
 <span class="kw">pub mod </span>service;
 <span class="kw">pub use </span>service::<span class="kw-2">*</span>;
+
+<span class="kw">pub mod </span>perf_options;
 
 <span class="attr">#[derive(PartialEq)]
 </span><span class="kw">pub enum </span>CrateTarget {
@@ -183,8 +191,8 @@
     target: CrateTarget,
     on: Arc&lt;<span class="kw">dyn </span>Host&gt;,
     profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;, <span class="comment">/* If a path is provided, run perf to get CPU time and output to that path.perf.data */
-    </span>args: Vec&lt;String&gt;,
+    perf: <span class="prelude-ty">Option</span>&lt;PerfOptions&gt;,
+    args: Vec&lt;String&gt;,
     display_name: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
@@ -237,7 +245,7 @@
         <span class="self">self
     </span>}
 
-    <span class="kw">pub fn </span>perf(<span class="kw-2">mut </span><span class="self">self</span>, perf: <span class="kw">impl </span>Into&lt;PathBuf&gt;) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>perf(<span class="kw-2">mut </span><span class="self">self</span>, perf: <span class="kw">impl </span>Into&lt;PerfOptions&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">if </span><span class="self">self</span>.perf.is_some() {
             <span class="macro">panic!</span>(<span class="string">"perf path already set"</span>);
         }

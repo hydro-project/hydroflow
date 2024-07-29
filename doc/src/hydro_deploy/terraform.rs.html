@@ -377,6 +377,8 @@
 <a href="#377" id="377">377</a>
 <a href="#378" id="378">378</a>
 <a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::io::{BufRead, BufReader};
 <span class="attr">#[cfg(unix)]
@@ -569,7 +571,9 @@
                             (
                                 channel_send,
                                 tokio::task::spawn(ProgressTracker::leaf(id, <span class="kw">async move </span>{
-                                    channel_recv.<span class="kw">await</span>.unwrap();
+                                    <span class="comment">// `Err(RecvError)` means send side was dropped due to another error.
+                                    // Ignore here to prevent spurious panic stack traces.
+                                    </span><span class="kw">let </span>_result = channel_recv.<span class="kw">await</span>;
                                 })),
                             ),
                         );
@@ -634,7 +638,7 @@
         <span class="self">self</span>.child = <span class="prelude-val">None</span>;
 
         <span class="kw">if </span>!status.unwrap().success() {
-            <span class="macro">bail!</span>(<span class="string">"Terraform deployment failed"</span>);
+            <span class="macro">bail!</span>(<span class="string">"Terraform deployment failed, see `[terraform]` logs above."</span>);
         }
 
         <span class="kw">let </span><span class="kw-2">mut </span>output_command = Command::new(<span class="string">"terraform"</span>);

@@ -186,9 +186,15 @@
 <a href="#186" id="186">186</a>
 <a href="#187" id="187">187</a>
 <a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::net::SocketAddr;
-<span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
@@ -201,6 +207,7 @@
     ResourceResult, ServerStrategy,
 };
 <span class="kw">use </span><span class="kw">crate</span>::hydroflow_crate::build::BuildOutput;
+<span class="kw">use </span><span class="kw">crate</span>::hydroflow_crate::perf_options::PerfOptions;
 <span class="kw">use </span><span class="kw">crate</span>::HostStrategyGetter;
 
 <span class="kw">pub mod </span>launched_binary;
@@ -338,15 +345,22 @@
         id: String,
         binary: <span class="kw-2">&amp;</span>BuildOutput,
         args: <span class="kw-2">&amp;</span>[String],
-        perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
+        perf: <span class="prelude-ty">Option</span>&lt;PerfOptions&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Box&lt;<span class="kw">dyn </span>LaunchedBinary&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>command = <span class="kw">if let </span><span class="prelude-val">Some</span>(perf) = perf {
             <span class="macro">println!</span>(<span class="string">"Profiling binary with perf"</span>);
             <span class="kw">let </span><span class="kw-2">mut </span>tmp = Command::new(<span class="string">"perf"</span>);
-            tmp.args([<span class="string">"record"</span>, <span class="string">"-F"</span>, <span class="string">"5"</span>, <span class="string">"--call-graph"</span>, <span class="string">"dwarf,64000"</span>, <span class="string">"-o"</span>])
-                .arg(<span class="kw-2">&amp;</span>perf)
-                .arg(<span class="kw-2">&amp;</span>binary.bin_path)
-                .args(args);
+            tmp.args([
+                <span class="string">"record"</span>,
+                <span class="string">"-F"</span>,
+                <span class="kw-2">&amp;</span>perf.frequency.to_string(),
+                <span class="string">"--call-graph"</span>,
+                <span class="string">"dwarf,64000"</span>,
+                <span class="string">"-o"</span>,
+            ])
+            .arg(<span class="kw-2">&amp;</span>perf.output_file)
+            .arg(<span class="kw-2">&amp;</span>binary.bin_path)
+            .args(args);
             tmp
         } <span class="kw">else </span>{
             <span class="kw">let </span><span class="kw-2">mut </span>tmp = Command::new(<span class="kw-2">&amp;</span>binary.bin_path);

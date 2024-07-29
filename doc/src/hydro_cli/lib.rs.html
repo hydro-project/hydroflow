@@ -861,7 +861,6 @@
 <span class="kw">use </span>std::cell::OnceCell;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::ops::Deref;
-<span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>std::pin::Pin;
 <span class="kw">use </span>std::sync::{Arc, OnceLock};
 
@@ -1040,6 +1039,7 @@
         region: String,
         network: GcpNetwork,
         user: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        startup_script: <span class="prelude-ty">Option</span>&lt;String&gt;,
     ) -&gt; PyResult&lt;Py&lt;PyAny&gt;&gt; {
         <span class="kw">let </span>arc = <span class="self">self</span>.underlying.blocking_write().add_host(|id| {
             core::GcpComputeEngineHost::new(
@@ -1050,6 +1050,7 @@
                 region,
                 network.underlying,
                 user,
+                startup_script,
             )
         });
 
@@ -1121,7 +1122,6 @@
         bin: <span class="prelude-ty">Option</span>&lt;String&gt;,
         example: <span class="prelude-ty">Option</span>&lt;String&gt;,
         profile: <span class="prelude-ty">Option</span>&lt;String&gt;,
-        perf: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
         features: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         args: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
         display_id: <span class="prelude-ty">Option</span>&lt;String&gt;,
@@ -1135,8 +1135,8 @@
                 bin,
                 example,
                 profile,
-                perf,
-                features,
+                <span class="prelude-val">None</span>, <span class="comment">// Python API doesn't support perf
+                </span>features,
                 args,
                 display_id,
                 external_ports.unwrap_or_default(),
