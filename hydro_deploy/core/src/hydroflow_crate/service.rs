@@ -11,6 +11,7 @@ use serde::Serialize;
 use tokio::sync::{mpsc, RwLock};
 
 use super::build::{build_crate_memoized, BuildError, BuildOutput, BuildParams};
+use super::perf_options::PerfOptions;
 use super::ports::{self, HydroflowPortConfig, HydroflowSink, SourcePath};
 use crate::progress::ProgressTracker;
 use crate::{
@@ -21,7 +22,7 @@ pub struct HydroflowCrateService {
     id: usize,
     pub(super) on: Arc<dyn Host>,
     build_params: BuildParams,
-    perf: Option<PathBuf>,
+    perf: Option<PerfOptions>,
     args: Option<Vec<String>>,
     display_id: Option<String>,
     external_ports: Vec<u16>,
@@ -54,7 +55,7 @@ impl HydroflowCrateService {
         bin: Option<String>,
         example: Option<String>,
         profile: Option<String>,
-        perf: Option<PathBuf>,
+        perf: Option<PerfOptions>,
         features: Option<Vec<String>>,
         args: Option<Vec<String>>,
         display_id: Option<String>,

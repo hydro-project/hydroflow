@@ -190,7 +190,9 @@ async fn display_apply_outputs(stdout: &mut ChildStdout) {
                             (
                                 channel_send,
                                 tokio::task::spawn(ProgressTracker::leaf(id, async move {
-                                    channel_recv.await.unwrap();
+                                    // `Err(RecvError)` means send side was dropped due to another error.
+                                    // Ignore here to prevent spurious panic stack traces.
+                                    let _result = channel_recv.await;
                                 })),
                             ),
                         );
@@ -255,7 +257,7 @@ impl TerraformApply {
         self.child = None;
 
         if !status.unwrap().success() {
-            bail!("Terraform deployment failed");
+            bail!("Terraform deployment failed, see `[terraform]` logs above.");
         }
 
         let mut output_command = Command::new("terraform");

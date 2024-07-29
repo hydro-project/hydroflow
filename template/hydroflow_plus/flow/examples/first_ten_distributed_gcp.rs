@@ -24,6 +24,7 @@ async fn main() {
                 "us-west1-a",
                 vpc.clone(),
                 None,
+                None,
             );
 
             deployment.add_service(HydroflowCrate::new(".", host).bin("first_ten_distributed"))
