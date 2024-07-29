@@ -23,15 +23,16 @@ async fn main() {
 
         (
             Box::new(move |deployment| -> Arc<dyn Host> {
-                deployment.GcpComputeEngineHost(
-                    &project,
-                    "e2-micro",
-                    "debian-cloud/debian-11",
-                    "us-west1-a",
-                    network.clone(),
-                    None,
-                    Some("sudo sh -c 'apt update && apt install -y linux-perf binutils && echo -1 > /proc/sys/kernel/perf_event_paranoid && echo 0 > /proc/sys/kernel/kptr_restrict'".to_owned())
-                )
+                let startup_script = "sudo sh -c 'apt update && apt install -y linux-perf binutils && echo -1 > /proc/sys/kernel/perf_event_paranoid && echo 0 > /proc/sys/kernel/kptr_restrict'";
+                deployment
+                    .GcpComputeEngineHost()
+                    .project(&project)
+                    .machine_type("e2-micro")
+                    .image("debian-cloud/debian-11")
+                    .region("us-west1-a")
+                    .network(network.clone())
+                    .startup_script(startup_script)
+                    .add()
             }),
             "profile",
         )

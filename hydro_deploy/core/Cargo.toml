@@ -13,6 +13,7 @@ async-process = "1.6.0"
 async-recursion = "1.0"
 async-ssh2-lite = { version = "0.4.2", features = [ "tokio" ] }
 async-trait = "0.1.64"
+buildstructor = "0.5.4"
 bytes = "1.1.0"
 cargo_metadata = "0.15.4"
 dunce = "1.0.4"

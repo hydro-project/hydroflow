@@ -169,15 +169,17 @@ impl GcpNetwork {
 }
 
 pub struct GcpComputeEngineHost {
-    pub id: usize,
-    pub project: String,
-    pub machine_type: String,
-    pub image: String,
-    pub region: String,
-    pub network: Arc<RwLock<GcpNetwork>>,
-    pub user: Option<String>,
-    pub startup_script: Option<String>,
-    pub launched: OnceLock<Arc<LaunchedComputeEngine>>,
+    /// ID from [`crate::Deployment::add_host`].
+    id: usize,
+
+    project: String,
+    machine_type: String,
+    image: String,
+    region: String,
+    network: Arc<RwLock<GcpNetwork>>,
+    user: Option<String>,
+    startup_script: Option<String>,
+    pub launched: OnceLock<Arc<LaunchedComputeEngine>>, // TODO(mingwei): fix pub
     external_ports: Mutex<Vec<u16>>,
 }
 
