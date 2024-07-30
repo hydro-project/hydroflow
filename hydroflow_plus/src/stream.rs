@@ -507,9 +507,9 @@ impl<'a, T, W, N: Location + Clone> Stream<'a, T, W, N> {
     pub fn send_bincode_interleaved<N2: Location + Clone, Tag, CoreType, V>(
         self,
         other: &N2,
-    ) -> Stream<'a, T, Async, N2>
+    ) -> Stream<'a, CoreType, Async, N2>
     where
-        N: HfSend<N2, V, In<CoreType> = T, Out<CoreType> = (Tag, T)>,
+        N: HfSend<N2, V, In<CoreType> = T, Out<CoreType> = (Tag, CoreType)>,
         CoreType: Serialize + DeserializeOwned,
     {
         self.send_bincode::<N2, V, CoreType>(other)
