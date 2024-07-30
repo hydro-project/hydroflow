@@ -548,7 +548,7 @@
                         .unwrap();
                     runtime
                         .block_on(<span class="kw">async move </span>{
-                            <span class="self">self</span>.channel.write_all(<span class="kw-2">&amp;</span>[<span class="string">b'\x03'</span>]).<span class="kw">await</span>.unwrap();
+                            <span class="self">self</span>.channel.write_all(<span class="string">b"\x03"</span>).<span class="kw">await</span>.unwrap();
                             <span class="self">self</span>.channel.send_eof().<span class="kw">await</span><span class="question-mark">?</span>;
                             <span class="self">self</span>.channel.wait_eof().<span class="kw">await</span><span class="question-mark">?</span>;
                             <span class="self">self</span>.channel.wait_close().<span class="kw">await</span><span class="question-mark">?</span>;
