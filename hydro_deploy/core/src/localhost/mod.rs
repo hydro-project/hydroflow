@@ -13,6 +13,7 @@ use super::{
     ResourceResult, ServerStrategy,
 };
 use crate::hydroflow_crate::build::BuildOutput;
+use crate::HostStrategyGetter;
 
 pub mod launched_binary;
 pub use launched_binary::*;
@@ -45,9 +46,9 @@ impl Host for LocalhostHost {
         HostTargetType::Local
     }
 
-    fn request_port(&mut self, _bind_type: &ServerStrategy) {}
+    fn request_port(&self, _bind_type: &ServerStrategy) {}
     fn collect_resources(&self, _resource_batch: &mut ResourceBatch) {}
-    fn request_custom_binary(&mut self) {}
+    fn request_custom_binary(&self) {}
 
     fn id(&self) -> usize {
         self.id
@@ -57,25 +58,18 @@ impl Host for LocalhostHost {
         self
     }
 
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-
     fn launched(&self) -> Option<Arc<dyn LaunchedHost>> {
         Some(Arc::new(LaunchedLocalhost {}))
     }
 
-    async fn provision(&mut self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
+    fn provision(&self, _resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
         Arc::new(LaunchedLocalhost {})
     }
 
     fn strategy_as_server<'a>(
         &'a self,
         connection_from: &dyn Host,
-    ) -> Result<(
-        ClientStrategy<'a>,
-        Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>,
-    )> {
+    ) -> Result<(ClientStrategy<'a>, HostStrategyGetter)> {
         if self.client_only {
             anyhow::bail!("Localhost cannot be a server if it is client only")
         }

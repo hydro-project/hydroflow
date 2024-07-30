@@ -1,9 +1,10 @@
 use std::hash::Hash;
 
+use ref_cast::RefCast;
 use sealed::sealed;
-use variadics::{var_args, var_expr, var_type, MutVariadic, RefVariadic, Split, VariadicExt};
+use variadics::{var_expr, var_type, RefVariadic, VariadicExt};
 
-use crate::ght::{GeneralizedHashTrieNode, GhtHasChildren, GhtInner, GhtLeaf};
+use crate::ght::{GeneralizedHashTrieNode, GhtHasChildren, GhtInner, GhtLeaf, HtPrefixIter};
 use crate::{GhtNodeType, Merge};
 
 /// COLT from Wang/Willsey/Suciu
@@ -53,17 +54,6 @@ where
         None
     }
 }
-
-// impl<Head, Node> DeepForce for GhtInner<Head, Node>
-// where
-//     Head: 'static + Hash + Eq,
-//     Node: 'static + DeepForce,
-// {
-//     type DeepForce = GhtInner<Head, Node::DeepForce>;
-//     fn deep_force(&mut self) -> Self::DeepForce {
-//         todo!()
-//     }
-// }
 
 impl<Head, Rest> ColumnLazyTrieNode for GhtLeaf<var_type!(Head, ...Rest)>
 where
@@ -259,11 +249,144 @@ macro_rules! GhtForestType {
 //     }
 // }
 
-// /// Make a GhtForest trait with a force method that does the forcing+merging logic
-// /// This trait will be recursive on the variadic of `Ght`s.
-// pub trait GhtForest {
-//     type Schema; // each element is a `GeneralizedHashTrieNode<Schema = Self::Schema>`
-
-//     // ...
-//     fn force_and_merge(self, key: !) -> !;
+// struct MyVar<T: VariadicExt> {
+//     the_var: T,
 // }
+// impl<First, Rest> Default for MyVar<var_type!(First, ...Rest)>
+// where
+//     First: Default,
+//     Rest: VariadicExt,
+//     MyVar<Rest>: Default,
+// {
+//     fn default() -> Self {
+//         let suffix = MyVar::<Rest>::default();
+//         MyVar {
+//             the_var: var_expr!(First::default(), ...suffix.the_var),
+//         }
+//     }
+// }
+// impl Default for MyVar<var_type!()> {
+//     fn default() -> Self {
+//         MyVar {
+//             the_var: var_expr!(),
+//         }
+//     }
+// }
+
+/// Make a GhtForest trait with a force method that does the forcing+merging logic
+/// This trait will be recursive on the variadic of `Ght`s.
+#[sealed]
+pub trait GhtForest<Prefix>
+where
+    Prefix: VariadicExt + RefVariadic,
+{
+    /// each element is a `GeneralizedHashTrieNode<Schema = Self::Schema>`
+    // type Schema: 'static + VariadicExt
+    // where
+    //     for<'a> <Self::Schema as VariadicExt>::AsRefVar<'a>: Split<Prefix>;
+
+    // fn force_and_merge(self, key: !) -> !;
+    fn find_matching_trie<'a>(&self, search_key: Prefix, count: usize) -> Option<usize>;
+}
+
+/// GhtForestStruct is a metadata node pointing to a variadic list of Tries
+#[derive(RefCast)]
+#[repr(transparent)]
+pub struct GhtForestStruct<T>
+where
+    T: VariadicExt,
+{
+    pub(crate) forest: T,
+}
+
+#[sealed]
+impl<TrieFirst, TrieRest, Prefix> GhtForest<Prefix>
+    for GhtForestStruct<var_type!(TrieFirst, ...TrieRest)>
+where
+    TrieFirst: GeneralizedHashTrieNode,
+    TrieRest: VariadicExt,
+    TrieFirst: HtPrefixIter<Prefix>,
+    GhtForestStruct<TrieRest>: GhtForest<Prefix>,
+    Prefix: VariadicExt + RefVariadic,
+{
+    fn find_matching_trie<'a>(&self, search_key: Prefix, count: usize) -> Option<usize> {
+        let var_expr!(first, ...rest) = &self.forest;
+        if first.prefix_iter(search_key).next().is_some() {
+            Some(count)
+        } else {
+            let remainder = GhtForestStruct::<TrieRest>::ref_cast(rest);
+            GhtForest::find_matching_trie(remainder, search_key, count + 1)
+        }
+    }
+}
+
+#[sealed]
+impl<Prefix> GhtForest<Prefix> for GhtForestStruct<var_type!()>
+where
+    Prefix: VariadicExt + RefVariadic,
+{
+    fn find_matching_trie<'a>(&self, _search_key: Prefix, _count: usize) -> Option<usize> {
+        None
+    }
+}
+
+impl<TrieFirst, TrieRest> Default for GhtForestStruct<var_type!(TrieFirst, ...TrieRest)>
+where
+    // T: VariadicExt,
+    TrieFirst: Default + GeneralizedHashTrieNode,
+    TrieRest: VariadicExt,
+    GhtForestStruct<TrieRest>: Default,
+    // for<'a> <TrieRest as VariadicExt>::AsRefVar<'a>: PartialEq,
+    // <TrieFirst as GhtHasChildren>::Node: Eq + Hash,
+    // GhtLeaf<TrieFirst::Node>: GeneralizedHashTrieNode,
+    // need something like TrieFirst::Schema = TrieRest.0::Schema?
+{
+    fn default() -> Self {
+        let first_trie = TrieFirst::default();
+        let rest = GhtForestStruct::<TrieRest>::default();
+        let rest_forest: TrieRest = rest.forest;
+
+        Self {
+            forest: var_expr!(first_trie, ...rest_forest),
+        }
+    }
+}
+
+impl Default for GhtForestStruct<var_type!()> {
+    fn default() -> Self {
+        Self {
+            forest: var_expr!(),
+        }
+    }
+}
+
+#[test]
+fn test_build_forest() {
+    type MyForest = GhtForestStruct<GhtForestType!(u8, u16, u32, u64)>;
+    let mut forest = MyForest::default();
+    forest.forest.0.insert(var_expr!(1, 1, 1, 1));
+    forest.forest.1 .0.insert(var_expr!(2, 2, 2, 2));
+    forest.forest.1 .1 .0.insert(var_expr!(3, 3, 3, 3));
+
+    let i = <MyForest as GhtForest<<var_type!(u8, u16, u32, u64) as VariadicExt>::AsRefVar<'_>>>::find_matching_trie(&forest, var_expr!(1, 1, 1, 1).as_ref_var(), 0);
+
+    assert_eq!(
+        forest
+            .find_matching_trie(var_expr!(1, 1, 1, 1).as_ref_var(), 0)
+            .unwrap(),
+        0
+    );
+    assert_eq!(
+        forest
+            .find_matching_trie(var_expr!(2, 2, 2, 2).as_ref_var(), 1)
+            .unwrap(),
+        1
+    );
+    assert_eq!(
+        forest
+            .find_matching_trie(var_expr!(3, 3, 3, 3).as_ref_var(), 2)
+            .unwrap(),
+        2
+    );
+    println!("{:?}", forest.forest);
+}

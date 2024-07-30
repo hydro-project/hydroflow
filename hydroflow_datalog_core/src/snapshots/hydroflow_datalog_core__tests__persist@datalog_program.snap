@@ -1,6 +1,6 @@
 ---
 source: hydroflow_datalog_core/src/lib.rs
-expression: "prettyplease::unparse(&wrapped)"
+expression: "prettyplease :: unparse(& wrapped)"
 ---
 fn main() {
     {
@@ -173,7 +173,7 @@ fn main() {
                         >::default(),
                     ),
                 );
-            let sg_5v1_node_53v1_persistdata = df
+            let singleton_op_53v1 = df
                 .add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
             let sg_5v1_node_51v1_antijoindata_neg = df
                 .add_state(
@@ -242,7 +242,7 @@ fn main() {
                         >::default(),
                     ),
                 );
-            let sg_6v1_node_61v1_persistdata = df
+            let singleton_op_61v1 = df
                 .add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
             let sg_7v1_node_30v1_uniquedata = df
                 .add_state(
@@ -275,7 +275,7 @@ fn main() {
                         >::default(),
                     ),
                 );
-            let sg_7v1_node_68v1_persistdata = df
+            let singleton_op_68v1 = df
                 .add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
             let sg_8v1_node_7v1_uniquedata = df
                 .add_state(
@@ -299,7 +299,7 @@ fn main() {
                         >::default(),
                     ),
                 );
-            let sg_8v1_node_55v1_persistdata = df
+            let singleton_op_55v1 = df
                 .add_state(::std::cell::RefCell::new(::std::vec::Vec::new()));
             df.add_subgraph_stratified(
                 "Subgraph GraphSubgraphId(9v1)",
@@ -1284,7 +1284,7 @@ fn main() {
                     let mut hoff_23v3_recv = hoff_23v3_recv.borrow_mut_swap();
                     let hoff_23v3_recv = hoff_23v3_recv.drain(..);
                     let mut sg_5v1_node_53v1_persistvec = context
-                        .state_ref(sg_5v1_node_53v1_persistdata)
+                        .state_ref(singleton_op_53v1)
                         .borrow_mut();
                     let op_53v1 = {
                         if context.is_first_run_this_tick() {
@@ -2021,7 +2021,7 @@ fn main() {
                         op_27v1__unique__loc_unknown_start_18_12_end_18_24(op_27v1)
                     };
                     let mut sg_6v1_node_61v1_persistvec = context
-                        .state_ref(sg_6v1_node_61v1_persistdata)
+                        .state_ref(singleton_op_61v1)
                         .borrow_mut();
                     let op_61v1 = {
                         fn constrain_types<'ctx, Push, Item>(
@@ -2465,7 +2465,7 @@ fn main() {
                         op_24v1__unique__loc_unknown_start_13_20_end_13_27(op_24v1)
                     };
                     let mut sg_7v1_node_68v1_persistvec = context
-                        .state_ref(sg_7v1_node_68v1_persistdata)
+                        .state_ref(singleton_op_68v1)
                         .borrow_mut();
                     let op_68v1 = {
                         fn constrain_types<'ctx, Push, Item>(
@@ -2829,7 +2829,7 @@ fn main() {
                         op_56v1__map__loc_unknown_start_16_37_end_16_45(op_56v1)
                     };
                     let mut sg_8v1_node_55v1_persistvec = context
-                        .state_ref(sg_8v1_node_55v1_persistdata)
+                        .state_ref(singleton_op_55v1)
                         .borrow_mut();
                     let op_55v1 = {
                         fn constrain_types<'ctx, Push, Item>(

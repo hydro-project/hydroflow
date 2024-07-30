@@ -131,7 +131,6 @@ pub fn test_fold_cross() {
         max_of_stream2 -> identity::<Max<_>>() -> [1]filtered_stream2;
 
         filtered_stream2 = cross_join()
-            -> persist::<'static>()
             -> filter(|(value, max_of_stream2)| {
                 // This is not monotonic.
                 value <= max_of_stream2.as_reveal_ref()
@@ -177,7 +176,6 @@ pub fn test_fold_singleton() {
         max_of_stream2 = stream2 -> fold(|| 0, |a, b| *a = std::cmp::max(*a, b));
 
         filtered_stream1 = stream1
-            -> persist::<'static>()
             -> filter(|&value| {
                 // This is not monotonic.
                 value <= #max_of_stream2
@@ -373,7 +371,7 @@ pub fn test_scheduling() {
 }
 
 #[multiplatform_test]
-pub fn test_persist_insertion_state() {
+pub fn test_multi_tick() {
     let (filter_send, mut filter_recv) =
         hydroflow::util::unbounded_channel::<(TickInstant, usize)>();
     let (max_send, mut max_recv) = hydroflow::util::unbounded_channel::<(TickInstant, usize)>();
@@ -400,7 +398,6 @@ pub fn test_persist_insertion_state() {
     assert_graphvis_snapshots!(df);
 
     df.run_available();
-
     assert_eq!(
         &[
             (TickInstant::new(0), 1),
@@ -421,16 +418,5 @@ pub fn test_persist_insertion_state() {
     );
 
     df.run_available();
-
-    assert_eq!(
-        &[
-            (TickInstant::new(1), 1),
-            (TickInstant::new(1), 2),
-            (TickInstant::new(1), 3),
-            (TickInstant::new(1), 4),
-            (TickInstant::new(1), 5)
-        ],
-        &*collect_ready::<Vec<_>, _>(&mut filter_recv)
-    );
     assert_eq!(0, collect_ready::<Vec<_>, _>(&mut max_recv).len());
 }

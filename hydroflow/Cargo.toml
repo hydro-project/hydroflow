@@ -1,7 +1,7 @@
 [package]
 name = "hydroflow"
 publish = true
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 license = "Apache-2.0"
 documentation = "https://docs.rs/hydroflow/"
@@ -32,12 +32,12 @@ byteorder = "1.4.3"
 bytes = "1.1.0"
 futures = "0.3"
 hydroflow_cli_integration = { optional = true, path = "../hydro_deploy/hydroflow_cli_integration", version = "^0.5.2" }
-hydroflow_datalog = { optional = true, path = "../hydroflow_datalog", version = "^0.7.0" }
-hydroflow_lang = { path = "../hydroflow_lang", version = "^0.7.0" }
-hydroflow_macro = { optional = true, path = "../hydroflow_macro", version = "^0.7.0" }
+hydroflow_datalog = { optional = true, path = "../hydroflow_datalog", version = "^0.8.0" }
+hydroflow_lang = { path = "../hydroflow_lang", version = "^0.8.0" }
+hydroflow_macro = { optional = true, path = "../hydroflow_macro", version = "^0.8.0" }
 itertools = "0.10"
-lattices = { path = "../lattices", version = "^0.5.5", features = [ "serde" ] }
-pusherator = { path = "../pusherator", version = "^0.0.6" }
+lattices = { path = "../lattices", version = "^0.5.6", features = [ "serde" ] }
+pusherator = { path = "../pusherator", version = "^0.0.7" }
 pyo3 = { optional = true, version = "0.20" }
 ref-cast = "1.0"
 regex = "1.8.4"
@@ -50,7 +50,7 @@ smallvec = "1.10.0"
 tokio-stream = { version = "0.1.10", features = [ "io-util", "sync" ] }
 tracing = "0.1"
 tuples = "1.15.0"
-variadics = { path = "../variadics", version = "^0.0.4" }
+variadics = { path = "../variadics", version = "^0.0.5" }
 web-time = "1.1.0"
 
 # added to workaround `cargo smart-release` https://github.com/Byron/cargo-smart-release/issues/16

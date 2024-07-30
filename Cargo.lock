@@ -361,7 +361,6 @@ version = "0.0.0"
 dependencies = [
  "criterion",
  "differential-dataflow-master",
- "futures",
  "hydroflow",
  "lazy_static",
  "rand 0.8.5",
@@ -1348,10 +1347,9 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hydro_cli"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
- "async-channel 1.9.0",
  "async-ssh2-lite",
  "bytes",
  "clap",
@@ -1382,7 +1380,7 @@ dependencies = [
 
 [[package]]
 name = "hydro_deploy"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -1406,12 +1404,13 @@ dependencies = [
  "shell-escape",
  "tempfile",
  "tokio",
+ "tokio-stream",
  "tokio-util",
 ]
 
 [[package]]
 name = "hydroflow"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bincode",
  "byteorder",
@@ -1479,7 +1478,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "hydroflow_datalog_core",
  "proc-macro-crate",
@@ -1490,7 +1489,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_datalog_core"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "hydroflow_lang",
  "insta",
@@ -1507,7 +1506,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_lang"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "auto_impl",
  "clap",
@@ -1526,7 +1525,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_macro"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "hydroflow_lang",
  "itertools",
@@ -1538,7 +1537,7 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_plus"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bincode",
  "dyn-clone",
@@ -1556,9 +1555,8 @@ dependencies = [
 
 [[package]]
 name = "hydroflow_plus_cli_integration"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
- "async-channel 1.9.0",
  "hydro_deploy",
  "hydroflow_plus",
  "serde",
@@ -1762,11 +1760,12 @@ dependencies = [
 
 [[package]]
 name = "lattices"
-version = "0.5.5"
+version = "0.5.6"
 dependencies = [
  "cc-traits",
  "fnv",
  "lattices_macro",
+ "ref-cast",
  "sealed",
  "serde",
  "trybuild",
@@ -2392,7 +2391,7 @@ dependencies = [
 
 [[package]]
 name = "pusherator"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "either",
  "variadics",
@@ -2643,18 +2642,18 @@ dependencies = [
 
 [[package]]
 name = "ref-cast"
-version = "1.0.21"
+version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53313ec9f12686aeeffb43462c3ac77aa25f590a5f630eb2cde0de59417b29c7"
+checksum = "ccf0a6f84d5f1d581da8b41b47ec8600871962f2a528115b542b362d4b744931"
 dependencies = [
  "ref-cast-impl",
 ]
 
 [[package]]
 name = "ref-cast-impl"
-version = "1.0.21"
+version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2566c4bf6845f2c2e83b27043c3f5dfcd5ba8f2937d6c00dc009bfb51a079dc4"
+checksum = "bcc303e793d3734489387d205e9b186fac9c6cfacedd98cbb2e8a5943595f3e6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3757,7 +3756,7 @@ checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
 
 [[package]]
 name = "variadics"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "sealed",
  "trybuild",

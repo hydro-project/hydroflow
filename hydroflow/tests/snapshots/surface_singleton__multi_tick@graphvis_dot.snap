@@ -14,22 +14,19 @@ digraph {
     n7v1 [label="(n7v1) for_each(|x| filter_send.send(x).unwrap())", shape=house, fillcolor="#ffff88"]
     n8v1 [label="(n8v1) map(|x| (context.current_tick(), x.into_reveal()))", shape=invhouse, fillcolor="#88aaff"]
     n9v1 [label="(n9v1) for_each(|x| max_send.send(x).unwrap())", shape=house, fillcolor="#ffff88"]
-    n10v1 [label="(n10v1) persist::<'static>()", shape=invhouse, fillcolor="#88aaff"]
     n2v1 -> n3v1 [color=darkgreen, style=dashed]
     n3v1 -> n4v1 [color=darkgreen, style=dashed]
     n6v1 -> n7v1
     n5v1 -> n6v1
-    n1v1 -> n10v1
+    n1v1 -> n5v1
     n8v1 -> n9v1 [color=darkgreen, style=bold]
     n4v1 -> n8v1 [color=darkgreen, style=bold]
-    n10v1 -> n5v1
     n4v1 -> n5v1 [color=red]
     subgraph "cluster n1v1" {
         fillcolor="#dddddd"
         style=filled
         label = "sg_1v1\nstratum 1"
         n1v1
-        n10v1
         n5v1
         n6v1
         n7v1
@@ -64,4 +61,3 @@ digraph {
         }
     }
 }
-

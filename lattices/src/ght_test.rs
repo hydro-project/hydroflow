@@ -285,9 +285,9 @@ mod test {
         ght_b.insert(var_expr!(10, 1, 2, "hi"));
         ght_b.insert(var_expr!(12, 10, 98, "bye"));
 
-        type MyGhtAB = GhtNodeType!(u32, u64, u16, &'static str, u32, u64 => u16, &'static str);
+        type MyGhtAb = GhtNodeType!(u32, u64, u16, &'static str, u32, u64 => u16, &'static str);
 
-        let mut bim = GhtCartesianProductBimorphism::<MyGhtAB>::default();
+        let mut bim = GhtCartesianProductBimorphism::<MyGhtAb>::default();
         let ght_out = bim.call(ght_a.get_trie(), ght_b.get_trie());
         assert_eq!(
             ght_out.recursive_iter().count(),

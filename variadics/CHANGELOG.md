@@ -5,7 +5,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.0.5 (2024-07-23)
+
+### New Features
+
+ - <csr-id-20080cb7ceb5b5d3ba349dfd822a37288e40add6/> add traits for dealing with variadics of references
+   Renames some traits, but not a breaking change since there hasn't been a
+   release that includes those traits.
+ - <csr-id-b92dfc7460c985db6935e79d612f42b9b87e746f/> add `iter_any_ref` and `iter_any_mut` to `VariadicsExt`
+   Depends on #1241
+   
+   This isn't needed for the current GHT implementation, but is useful in
+   general
+ - <csr-id-1a6228f2db081af68890e2e64b3a91f15dd9214f/> add traits for referencing variadics
+   This adds a way to convert a reference to a variadic into a variadic of
+   references. I.e. `&var_expr!(a, b, c) -> var_expr!(&a, &b, &c)`
+
+### Bug Fixes
+
+ - <csr-id-bbef0705d509831415d3bb5ce003116af06b6ffb/> `EitherRefVariadic` is `Variadic`
+ - <csr-id-c70114d836e5bc36e2104188867e548e90ab38f4/> fix `HomogenousVariadic` `get` and `get_mut` only returning `None`
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 5 commits contributed to the release over the course of 53 calendar days.
+ - 143 days passed between releases.
+ - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 5 unique issues were worked on: [#1241](https://github.com/hydro-project/hydroflow/issues/1241), [#1245](https://github.com/hydro-project/hydroflow/issues/1245), [#1324](https://github.com/hydro-project/hydroflow/issues/1324), [#1325](https://github.com/hydro-project/hydroflow/issues/1325), [#1352](https://github.com/hydro-project/hydroflow/issues/1352)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#1241](https://github.com/hydro-project/hydroflow/issues/1241)**
+    - Add traits for referencing variadics ([`1a6228f`](https://github.com/hydro-project/hydroflow/commit/1a6228f2db081af68890e2e64b3a91f15dd9214f))
+ * **[#1245](https://github.com/hydro-project/hydroflow/issues/1245)**
+    - Add `iter_any_ref` and `iter_any_mut` to `VariadicsExt` ([`b92dfc7`](https://github.com/hydro-project/hydroflow/commit/b92dfc7460c985db6935e79d612f42b9b87e746f))
+ * **[#1324](https://github.com/hydro-project/hydroflow/issues/1324)**
+    - Add traits for dealing with variadics of references ([`20080cb`](https://github.com/hydro-project/hydroflow/commit/20080cb7ceb5b5d3ba349dfd822a37288e40add6))
+ * **[#1325](https://github.com/hydro-project/hydroflow/issues/1325)**
+    - Fix `HomogenousVariadic` `get` and `get_mut` only returning `None` ([`c70114d`](https://github.com/hydro-project/hydroflow/commit/c70114d836e5bc36e2104188867e548e90ab38f4))
+ * **[#1352](https://github.com/hydro-project/hydroflow/issues/1352)**
+    - `EitherRefVariadic` is `Variadic` ([`bbef070`](https://github.com/hydro-project/hydroflow/commit/bbef0705d509831415d3bb5ce003116af06b6ffb))
+</details>
+
 ## 0.0.4 (2024-03-02)
+
+<csr-id-5a451ac4ae75024153a06416fc81d834d1fdae6f/>
+<csr-id-7103e77d0da1d73f1c93fcdb260b6a4c9a18ff66/>
+<csr-id-b4683450a273d510a11338f07920a5558033b31f/>
 
 ### Chore
 
@@ -20,8 +72,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release over the course of 4 calendar days.
- - 32 days passed between releases.
+ - 4 commits contributed to the release over the course of 3 calendar days.
+ - 31 days passed between releases.
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -32,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release hydroflow_lang v0.6.0, hydroflow_datalog_core v0.6.0, hydroflow_datalog v0.6.0, hydroflow_macro v0.6.0, lattices v0.5.3, variadics v0.0.4, pusherator v0.0.5, hydroflow v0.6.0, stageleft v0.2.0, hydroflow_plus v0.6.0, hydro_deploy v0.6.0, hydro_cli v0.6.0, hydroflow_plus_cli_integration v0.6.0, safety bump 7 crates ([`09ea65f`](https://github.com/hydro-project/hydroflow/commit/09ea65fe9cd45c357c43bffca30e60243fa45cc8))
     - Prep for 0.0.4 release ([`5a451ac`](https://github.com/hydro-project/hydroflow/commit/5a451ac4ae75024153a06416fc81d834d1fdae6f))
     - Fix dead code lint ([`b468345`](https://github.com/hydro-project/hydroflow/commit/b4683450a273d510a11338f07920a5558033b31f))
     - Update pinned rust to 2024-04-24 ([`7103e77`](https://github.com/hydro-project/hydroflow/commit/7103e77d0da1d73f1c93fcdb260b6a4c9a18ff66))

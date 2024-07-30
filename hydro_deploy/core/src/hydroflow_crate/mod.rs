@@ -1,8 +1,6 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use tokio::sync::RwLock;
-
 use super::Host;
 use crate::ServiceBuilder;
 
@@ -24,7 +22,7 @@ pub enum CrateTarget {
 pub struct HydroflowCrate {
     src: PathBuf,
     target: CrateTarget,
-    on: Arc<RwLock<dyn Host>>,
+    on: Arc<dyn Host>,
     profile: Option<String>,
     perf: Option<PathBuf>, /* If a path is provided, run perf to get CPU time and output to that path.perf.data */
     args: Vec<String>,
@@ -35,7 +33,7 @@ impl HydroflowCrate {
     /// Creates a new `HydroflowCrate` that will be deployed on the given host.
     /// The `src` argument is the path to the crate's directory, and the `on`
     /// argument is the host that the crate will be deployed on.
-    pub fn new(src: impl Into<PathBuf>, on: Arc<RwLock<dyn Host>>) -> Self {
+    pub fn new(src: impl Into<PathBuf>, on: Arc<dyn Host>) -> Self {
         Self {
             src: src.into(),
             target: CrateTarget::Default,
@@ -150,12 +148,12 @@ mod tests {
 
         deployment.deploy().await.unwrap();
 
-        let stdout = service.try_read().unwrap().stdout().await;
+        let mut stdout = service.try_read().unwrap().stdout();
 
         deployment.start().await.unwrap();
 
         assert_eq!(stdout.recv().await.unwrap(), "hello!");
 
-        assert!(stdout.recv().await.is_err());
+        assert!(stdout.recv().await.is_none());
     }
 }

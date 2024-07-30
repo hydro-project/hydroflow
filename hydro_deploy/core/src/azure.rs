@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -12,6 +12,7 @@ use super::{
     ServerStrategy,
 };
 use crate::ssh::LaunchedSshHost;
+use crate::HostStrategyGetter;
 
 pub struct LaunchedVirtualMachine {
     resource_result: Arc<ResourceResult>,
@@ -50,8 +51,8 @@ pub struct AzureHost {
     pub image: Option<HashMap<String, String>>,
     pub region: String,
     pub user: Option<String>,
-    pub launched: Option<Arc<LaunchedVirtualMachine>>,
-    external_ports: Vec<u16>,
+    pub launched: OnceLock<Arc<LaunchedVirtualMachine>>,
+    external_ports: Mutex<Vec<u16>>,
 }
 
 impl AzureHost {
@@ -72,8 +73,8 @@ impl AzureHost {
             image,
             region,
             user,
-            launched: None,
-            external_ports: vec![],
+            launched: OnceLock::new(),
+            external_ports: Mutex::new(Vec::new()),
         }
     }
 }
@@ -84,17 +85,17 @@ impl Host for AzureHost {
         HostTargetType::Linux
     }
 
-    fn request_port(&mut self, bind_type: &ServerStrategy) {
+    fn request_port(&self, bind_type: &ServerStrategy) {
         match bind_type {
             ServerStrategy::UnixSocket => {}
             ServerStrategy::InternalTcpPort => {}
             ServerStrategy::ExternalTcpPort(port) => {
-                if !self.external_ports.contains(port) {
-                    if self.launched.is_some() {
+                let mut external_ports = self.external_ports.lock().unwrap();
+                if !external_ports.contains(port) {
+                    if self.launched.get().is_some() {
                         todo!("Cannot adjust firewall after host has been launched");
                     }
-
-                    self.external_ports.push(*port);
+                    external_ports.push(*port);
                 }
             }
             ServerStrategy::Demux(demux) => {
@@ -114,7 +115,7 @@ impl Host for AzureHost {
         }
     }
 
-    fn request_custom_binary(&mut self) {
+    fn request_custom_binary(&self) {
         self.request_port(&ServerStrategy::ExternalTcpPort(22));
     }
 
@@ -126,12 +127,8 @@ impl Host for AzureHost {
         self
     }
 
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-
     fn collect_resources(&self, resource_batch: &mut ResourceBatch) {
-        if self.launched.is_some() {
+        if self.launched.get().is_some() {
             return;
         }
 
@@ -398,46 +395,43 @@ impl Host for AzureHost {
 
     fn launched(&self) -> Option<Arc<dyn LaunchedHost>> {
         self.launched
-            .as_ref()
+            .get()
             .map(|a| a.clone() as Arc<dyn LaunchedHost>)
     }
 
-    async fn provision(&mut self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
-        if self.launched.is_none() {
-            let id = self.id;
+    fn provision(&self, resource_result: &Arc<ResourceResult>) -> Arc<dyn LaunchedHost> {
+        self.launched
+            .get_or_init(|| {
+                let id = self.id;
 
-            let internal_ip = resource_result
-                .terraform
-                .outputs
-                .get(&format!("vm-instance-{id}-internal-ip"))
-                .unwrap()
-                .value
-                .clone();
+                let internal_ip = resource_result
+                    .terraform
+                    .outputs
+                    .get(&format!("vm-instance-{id}-internal-ip"))
+                    .unwrap()
+                    .value
+                    .clone();
 
-            let external_ip = resource_result
-                .terraform
-                .outputs
-                .get(&format!("vm-instance-{id}-public-ip"))
-                .map(|v| v.value.clone());
+                let external_ip = resource_result
+                    .terraform
+                    .outputs
+                    .get(&format!("vm-instance-{id}-public-ip"))
+                    .map(|v| v.value.clone());
 
-            self.launched = Some(Arc::new(LaunchedVirtualMachine {
-                resource_result: resource_result.clone(),
-                user: self.user.as_ref().cloned().unwrap_or("hydro".to_string()),
-                internal_ip,
-                external_ip,
-            }))
-        }
-
-        self.launched.as_ref().unwrap().clone()
+                Arc::new(LaunchedVirtualMachine {
+                    resource_result: resource_result.clone(),
+                    user: self.user.as_ref().cloned().unwrap_or("hydro".to_string()),
+                    internal_ip,
+                    external_ip,
+                })
+            })
+            .clone()
     }
 
     fn strategy_as_server<'a>(
         &'a self,
         client_host: &dyn Host,
-    ) -> Result<(
-        ClientStrategy<'a>,
-        Box<dyn FnOnce(&mut dyn std::any::Any) -> ServerStrategy>,
-    )> {
+    ) -> Result<(ClientStrategy<'a>, HostStrategyGetter)> {
         if client_host.can_connect_to(ClientStrategy::UnixSocket(self.id)) {
             Ok((
                 ClientStrategy::UnixSocket(self.id),
@@ -452,7 +446,7 @@ impl Host for AzureHost {
             Ok((
                 ClientStrategy::ForwardedTcpPort(self),
                 Box::new(|me| {
-                    me.downcast_mut::<AzureHost>()
+                    me.downcast_ref::<AzureHost>()
                         .unwrap()
                         .request_port(&ServerStrategy::ExternalTcpPort(22)); // needed to forward
                     ServerStrategy::InternalTcpPort

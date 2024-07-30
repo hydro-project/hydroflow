@@ -1,8 +1,9 @@
 use quote::quote_spanned;
 
 use super::{
-    FlowPropArgs, FlowProps, LatticeFlowType, OperatorCategory, OperatorConstraints,
-    OperatorWriteOutput, WriteContextArgs, RANGE_0, RANGE_1,
+    FlowPropArgs, FlowProps, LatticeFlowType, OpInstGenerics, OperatorCategory,
+    OperatorConstraints, OperatorInstance, OperatorWriteOutput, Persistence, WriteContextArgs,
+    RANGE_0, RANGE_1,
 };
 use crate::diagnostic::{Diagnostic, Level};
 
@@ -17,7 +18,7 @@ use crate::diagnostic::{Diagnostic, Level};
 /// ```
 ///
 /// `persist()` can be used to introduce statefulness into stateless pipelines. In the example below, the
-/// join only stores data for single tick. The `persist()` operator introduces statefulness
+/// join only stores data for single tick. The `persist::<'static>()` operator introduces statefulness
 /// across ticks. This can be useful for optimization transformations within the hydroflow
 /// compiler. Equivalently, we could specify that the join has `static` persistence (`my_join = join::<'static>()`).
 /// ```rustbook
@@ -46,11 +47,7 @@ pub const PERSIST: OperatorConstraints = OperatorConstraints {
     persistence_args: RANGE_1,
     type_args: RANGE_0,
     is_external_input: false,
-    // If this is set to true, the state will need to be cleared using `#context.set_state_tick_hook`
-    // to prevent reading uncleared data if this subgraph doesn't run.
-    // https://github.com/hydro-project/hydroflow/issues/1298
-    // If `'tick` lifetimes are added.
-    has_singleton_output: false,
+    has_singleton_output: true,
     ports_inn: None,
     ports_out: None,
     input_delaytype_fn: |_| None,
@@ -85,13 +82,31 @@ pub const PERSIST: OperatorConstraints = OperatorConstraints {
                    hydroflow,
                    op_span,
                    ident,
+                   is_pull,
                    inputs,
                    outputs,
-                   is_pull,
+                   singleton_output_ident,
+                   op_name,
+                   op_inst:
+                       OperatorInstance {
+                           generics:
+                               OpInstGenerics {
+                                   persistence_args, ..
+                               },
+                           ..
+                       },
                    ..
                },
-               _| {
-        let persistdata_ident = wc.make_ident("persistdata");
+               diagnostics| {
+        if [Persistence::Static] != persistence_args[..] {
+            diagnostics.push(Diagnostic::spanned(
+                op_span,
+                Level::Error,
+                format!("{} only supports `'static`.", op_name),
+            ));
+        }
+
+        let persistdata_ident = singleton_output_ident;
         let vec_ident = wc.make_ident("persistvec");
         let write_prologue = quote_spanned! {op_span=>
             let #persistdata_ident = #hydroflow.add_state(::std::cell::RefCell::new(
