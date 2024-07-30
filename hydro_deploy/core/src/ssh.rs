@@ -95,7 +95,7 @@ impl Drop for LaunchedSshBinary {
                         .unwrap();
                     runtime
                         .block_on(async move {
-                            self.channel.write_all(&[b'\x03']).await.unwrap();
+                            self.channel.write_all(b"\x03").await.unwrap();
                             self.channel.send_eof().await?;
                             self.channel.wait_eof().await?;
                             self.channel.wait_close().await?;
