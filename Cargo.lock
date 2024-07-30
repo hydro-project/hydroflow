@@ -1559,6 +1559,7 @@ version = "0.0.0"
 dependencies = [
  "futures",
  "hydro_deploy",
+ "hydroflow",
  "hydroflow_plus",
  "hydroflow_plus_cli_integration",
  "hydroflow_plus_test_macro",
