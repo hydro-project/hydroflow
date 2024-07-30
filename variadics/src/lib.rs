@@ -713,4 +713,20 @@ mod test {
             assert_eq!(Some(i), var.get_mut(i).copied());
         }
     }
+
+    #[test]
+    fn test_eq_ref_vec() {
+        type MyVar = var_type!(i32, bool, &'static str);
+        let vec: Vec<MyVar> = vec![
+            var_expr!(0, true, "hello"),
+            var_expr!(1, true, "world"),
+            var_expr!(2, false, "goodnight"),
+            var_expr!(3, false, "moon"),
+        ];
+        let needle: <MyVar as VariadicExt>::AsRefVar<'_> = var_expr!(2, false, "goodnight").as_ref_var();
+        assert_eq!(Some(2), vec.iter().position(|item| <MyVar as PartialEqVariadic>::eq_ref(needle, item.as_ref_var())));
+
+        let missing: <MyVar as VariadicExt>::AsRefVar<'_> = var_expr!(3, false, "goodnight").as_ref_var();
+        assert_eq!(None, vec.iter().position(|item| <MyVar as PartialEqVariadic>::eq_ref(missing, item.as_ref_var())));
+    }
 }
