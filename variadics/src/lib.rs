@@ -297,7 +297,7 @@ pub trait EitherRefVariadic: Variadic {
     /// let un_ref: <var_type!(&u32, &String, &bool) as EitherRefVariadic>::UnRefVar =
     ///     var_expr!(1_u32, "Hello".to_owned(), false);
     /// ```
-    type UnRefVar: Variadic;
+    type UnRefVar: VariadicExt;
 
     /// This type with all exclusive `&mut` references replaced with shared `&` references.
     ///
@@ -723,10 +723,81 @@ mod test {
             var_expr!(2, false, "goodnight"),
             var_expr!(3, false, "moon"),
         ];
-        let needle: <MyVar as VariadicExt>::AsRefVar<'_> = var_expr!(2, false, "goodnight").as_ref_var();
-        assert_eq!(Some(2), vec.iter().position(|item| <MyVar as PartialEqVariadic>::eq_ref(needle, item.as_ref_var())));
+        let needle: <MyVar as VariadicExt>::AsRefVar<'_> =
+            var_expr!(2, false, "goodnight").as_ref_var();
+        assert_eq!(
+            Some(2),
+            vec.iter()
+                .position(|item| <MyVar as PartialEqVariadic>::eq_ref(needle, item.as_ref_var()))
+        );
 
-        let missing: <MyVar as VariadicExt>::AsRefVar<'_> = var_expr!(3, false, "goodnight").as_ref_var();
-        assert_eq!(None, vec.iter().position(|item| <MyVar as PartialEqVariadic>::eq_ref(missing, item.as_ref_var())));
+        let missing: <MyVar as VariadicExt>::AsRefVar<'_> =
+            var_expr!(3, false, "goodnight").as_ref_var();
+        assert_eq!(
+            None,
+            vec.iter()
+                .position(|item| <MyVar as PartialEqVariadic>::eq_ref(missing, item.as_ref_var()))
+        );
+    }
+
+    #[test]
+    fn test_borrow_hashset() {
+        use std::collections::HashSet;
+
+        type MyVar = var_type!(i32, bool, &'static str);
+        let set: HashSet<MyVar> = [
+            var_expr!(0, true, "hello"),
+            var_expr!(1, true, "world"),
+            var_expr!(2, false, "goodnight"),
+            var_expr!(3, false, "moon"),
+        ]
+        .into_iter()
+        .collect();
+
+        let needle: <MyVar as VariadicExt>::AsRefVar<'_> =
+            var_expr!(2, false, "goodnight").as_ref_var();
+
+        // assert!(set.contains(needle));
+
+        struct VarBorrowHelper<Var> {
+            pub var: Var,
+            // _phantom: std::marker::PhantomData<&'a ()>,
+        }
+        // impl<Var> VarBorrowHelper<Var>
+        // where
+        //     Var: VariadicExt,
+        // {
+        //     fn borrow<'a>(this: &'a &Self) -> &'a Var::AsRefVar<'a> {
+        //         this.var.as_ref_var()
+        //     }
+        // }
+        struct VarBorrowed<RefVar>(pub RefVar);
+        impl<'a, RefVar> std::borrow::Borrow<VarBorrowed<RefVar>> for VarBorrowHelper<RefVar::UnRefVar>
+        where
+            RefVar: EitherRefVariadic,
+            RefVar::UnRefVar: 'a + VariadicExt<AsRefVar<'a> = RefVar>,
+        {
+            fn borrow(&self) -> VarBorrowed<RefVar> {
+                VarBorrowed(self.var.as_ref_var())
+            }
+        }
+
+        // struct BorrowHelper<EitherRefVar>(EitherRefVar)
+        // where
+        //     EitherRefVar: EitherRefVariadic;
+
+        // impl<'a, EitherRefVar> std::borrow::Borrow<BorrowHelper<EitherRefVar>> for EitherRefVar::UnRefVar
+        // where
+        //     EitherRefVar: EitherRefVariadic,
+        // {
+        //     fn borrow(&self) -> &var_type!(&'a A, &'a B, &'a C) {
+        //         &self.as_ref_var()
+        //     }
+        // }
+
+        // assert_eq!(Some(2), vec.iter().position(|item| <MyVar as PartialEqVariadic>::eq_ref(needle, item.as_ref_var())));
+
+        // let missing: <MyVar as VariadicExt>::AsRefVar<'_> = var_expr!(3, false, "goodnight").as_ref_var();
+        // assert_eq!(None, vec.iter().position(|item| <MyVar as PartialEqVariadic>::eq_ref(missing, item.as_ref_var())));
     }
 }
