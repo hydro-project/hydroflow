@@ -30,6 +30,5 @@ async fn main() {
         }),
     );
 
-    let mut deployment = deployment.into_inner();
     deployment.run_ctrl_c().await.unwrap();
 }
