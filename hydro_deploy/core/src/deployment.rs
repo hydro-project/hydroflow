@@ -42,23 +42,13 @@ impl Deployment {
     }
 
     pub async fn deploy(&mut self) -> Result<()> {
+        self.services.retain(|weak| weak.strong_count() > 0);
+
         progress::ProgressTracker::with_group("deploy", None, || async {
             let mut resource_batch = super::ResourceBatch::new();
-            let active_services = self
-                .services
-                .iter()
-                .filter(|service| service.upgrade().is_some())
-                .cloned()
-                .collect::<Vec<_>>();
-            self.services = active_services;
 
-            for service in self.services.iter() {
-                service
-                    .upgrade()
-                    .unwrap()
-                    .read()
-                    .await
-                    .collect_resources(&mut resource_batch);
+            for service in self.services.iter().filter_map(Weak::upgrade) {
+                service.read().await.collect_resources(&mut resource_batch);
             }
 
             for host in self.hosts.iter() {
@@ -82,15 +72,11 @@ impl Deployment {
             progress::ProgressTracker::with_group("deploy", None, || {
                 let services_future = self
                     .services
-                    .iter_mut()
-                    .map(|service: &mut Weak<RwLock<dyn Service>>| async {
-                        service
-                            .upgrade()
-                            .unwrap()
-                            .write()
-                            .await
-                            .deploy(&resource_result)
-                            .await
+                    .iter()
+                    .filter_map(Weak::upgrade)
+                    .map(|service: Arc<RwLock<dyn Service>>| {
+                        let resource_result = &resource_result;
+                        async move { service.write().await.deploy(resource_result).await }
                     })
                     .collect::<Vec<_>>();
 
@@ -101,13 +87,12 @@ impl Deployment {
             .await?;
 
             progress::ProgressTracker::with_group("ready", None, || {
-                let all_services_ready =
-                    self.services
-                        .iter()
-                        .map(|service: &Weak<RwLock<dyn Service>>| async {
-                            service.upgrade().unwrap().write().await.ready().await?;
-                            Ok(()) as Result<()>
-                        });
+                let all_services_ready = self.services.iter().filter_map(Weak::upgrade).map(
+                    |service: Arc<RwLock<dyn Service>>| async move {
+                        service.write().await.ready().await?;
+                        Ok(()) as Result<()>
+                    },
+                );
 
                 futures::future::try_join_all(all_services_ready)
             })
@@ -119,29 +104,24 @@ impl Deployment {
     }
 
     pub async fn start(&mut self) -> Result<()> {
-        let active_services = self
-            .services
-            .iter()
-            .filter(|service| service.upgrade().is_some())
-            .cloned()
-            .collect::<Vec<_>>();
-        self.services = active_services;
+        self.services.retain(|weak| weak.strong_count() > 0);
 
         progress::ProgressTracker::with_group("start", None, || {
-            let all_services_start =
-                self.services
-                    .iter()
-                    .map(|service: &Weak<RwLock<dyn Service>>| async {
-                        service.upgrade().unwrap().write().await.start().await?;
-                        Ok(()) as Result<()>
-                    });
+            let all_services_start = self.services.iter().filter_map(Weak::upgrade).map(
+                |service: Arc<RwLock<dyn Service>>| async move {
+                    service.write().await.start().await?;
+                    Ok(()) as Result<()>
+                },
+            );
 
             futures::future::try_join_all(all_services_start)
         })
         .await?;
         Ok(())
     }
+}
 
+impl Deployment {
     pub fn add_host<T: Host + 'static, F: FnOnce(usize) -> T>(&mut self, host: F) -> Arc<T> {
         let arc = Arc::new(host(self.next_host_id));
         self.next_host_id += 1;
