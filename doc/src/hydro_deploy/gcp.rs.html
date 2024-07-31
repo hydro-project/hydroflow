@@ -522,6 +522,8 @@
 <a href="#522" id="522">522</a>
 <a href="#523" id="523">523</a>
 <a href="#524" id="524">524</a>
+<a href="#525" id="525">525</a>
+<a href="#526" id="526">526</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::sync::{Arc, Mutex, OnceLock};
 
@@ -693,16 +695,18 @@
 }
 
 <span class="kw">pub struct </span>GcpComputeEngineHost {
-    <span class="kw">pub </span>id: usize,
-    <span class="kw">pub </span>project: String,
-    <span class="kw">pub </span>machine_type: String,
-    <span class="kw">pub </span>image: String,
-    <span class="kw">pub </span>region: String,
-    <span class="kw">pub </span>network: Arc&lt;RwLock&lt;GcpNetwork&gt;&gt;,
-    <span class="kw">pub </span>user: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="kw">pub </span>startup_script: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    <span class="kw">pub </span>launched: OnceLock&lt;Arc&lt;LaunchedComputeEngine&gt;&gt;,
-    external_ports: Mutex&lt;Vec&lt;u16&gt;&gt;,
+    <span class="doccomment">/// ID from [`crate::Deployment::add_host`].
+    </span>id: usize,
+
+    project: String,
+    machine_type: String,
+    image: String,
+    region: String,
+    network: Arc&lt;RwLock&lt;GcpNetwork&gt;&gt;,
+    user: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    startup_script: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub </span>launched: OnceLock&lt;Arc&lt;LaunchedComputeEngine&gt;&gt;, <span class="comment">// TODO(mingwei): fix pub
+    </span>external_ports: Mutex&lt;Vec&lt;u16&gt;&gt;,
 }
 
 <span class="kw">impl </span>GcpComputeEngineHost {

@@ -186,7 +186,28 @@
 <a href="#186" id="186">186</a>
 <a href="#187" id="187">187</a>
 <a href="#188" id="188">188</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::{Arc, Weak};
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
+<span class="kw">use </span>std::sync::{Arc, Weak};
 
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>futures::{StreamExt, TryStreamExt};
@@ -197,7 +218,7 @@
     progress, CustomService, GcpComputeEngineHost, Host, LocalhostHost, ResourcePool,
     ResourceResult, Service,
 };
-<span class="kw">use </span><span class="kw">crate</span>::ServiceBuilder;
+<span class="kw">use crate</span>::{AzureHost, ServiceBuilder};
 
 <span class="attr">#[derive(Default)]
 </span><span class="kw">pub struct </span>Deployment {
@@ -217,31 +238,6 @@
     <span class="attr">#[allow(non_snake_case)]
     </span><span class="kw">pub fn </span>Localhost(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; Arc&lt;LocalhostHost&gt; {
         <span class="self">self</span>.add_host(LocalhostHost::new)
-    }
-
-    <span class="attr">#[allow(non_snake_case, clippy::too_many_arguments)] </span><span class="comment">// TODO(mingwei)
-    </span><span class="kw">pub fn </span>GcpComputeEngineHost(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        project: <span class="kw">impl </span>Into&lt;String&gt;,
-        machine_type: <span class="kw">impl </span>Into&lt;String&gt;,
-        image: <span class="kw">impl </span>Into&lt;String&gt;,
-        region: <span class="kw">impl </span>Into&lt;String&gt;,
-        network: Arc&lt;RwLock&lt;GcpNetwork&gt;&gt;,
-        user: <span class="prelude-ty">Option</span>&lt;String&gt;,
-        startup_script: <span class="prelude-ty">Option</span>&lt;String&gt;,
-    ) -&gt; Arc&lt;GcpComputeEngineHost&gt; {
-        <span class="self">self</span>.add_host(|id| {
-            GcpComputeEngineHost::new(
-                id,
-                project,
-                machine_type,
-                image,
-                region,
-                network,
-                user,
-                startup_script,
-            )
-        })
     }
 
     <span class="attr">#[allow(non_snake_case)]
@@ -372,6 +368,50 @@
         <span class="kw">let </span>dyn_arc: Arc&lt;RwLock&lt;<span class="kw">dyn </span>Service&gt;&gt; = arc.clone();
         <span class="self">self</span>.services.push(Arc::downgrade(<span class="kw-2">&amp;</span>dyn_arc));
         arc
+    }
+}
+
+<span class="doccomment">/// Buildstructor methods.
+</span><span class="attr">#[buildstructor::buildstructor]
+</span><span class="kw">impl </span>Deployment {
+    <span class="attr">#[allow(clippy::too_many_arguments)]
+    #[builder(entry = <span class="string">"GcpComputeEngineHost"</span>, exit = <span class="string">"add"</span>)]
+    </span><span class="kw">pub fn </span>add_gcp_compute_engine_host(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        project: String,
+        machine_type: String,
+        image: String,
+        region: String,
+        network: Arc&lt;RwLock&lt;GcpNetwork&gt;&gt;,
+        user: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        startup_script: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    ) -&gt; Arc&lt;GcpComputeEngineHost&gt; {
+        <span class="self">self</span>.add_host(|id| {
+            GcpComputeEngineHost::new(
+                id,
+                project,
+                machine_type,
+                image,
+                region,
+                network,
+                user,
+                startup_script,
+            )
+        })
+    }
+
+    <span class="attr">#[allow(clippy::too_many_arguments)]
+    #[builder(entry = <span class="string">"AzureHost"</span>, exit = <span class="string">"add"</span>)]
+    </span><span class="kw">pub fn </span>add_azure_host(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        project: String,
+        os_type: String, <span class="comment">// linux or windows
+        </span>machine_size: String,
+        image: <span class="prelude-ty">Option</span>&lt;HashMap&lt;String, String&gt;&gt;,
+        region: String,
+        user: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    ) -&gt; Arc&lt;AzureHost&gt; {
+        <span class="self">self</span>.add_host(|id| AzureHost::new(id, project, os_type, machine_size, image, region, user))
     }
 }
 </code></pre></div></section></main></body></html>
