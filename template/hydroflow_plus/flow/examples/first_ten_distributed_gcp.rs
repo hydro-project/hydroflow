@@ -17,15 +17,14 @@ async fn main() {
     flow::first_ten_distributed::first_ten_distributed(
         &flow,
         &DeployProcessSpec::new(|| {
-            let host = deployment.GcpComputeEngineHost(
-                gcp_project.clone(),
-                "e2-micro",
-                "debian-cloud/debian-11",
-                "us-west1-a",
-                vpc.clone(),
-                None,
-                None,
-            );
+            let host = deployment
+                .GcpComputeEngineHost()
+                .project(gcp_project.clone())
+                .machine_type("e2-micro")
+                .image("debian-cloud/debian-11")
+                .region("us-west1-a")
+                .network(vpc.clone())
+                .add();
 
             deployment.add_service(HydroflowCrate::new(".", host).bin("first_ten_distributed"))
         }),

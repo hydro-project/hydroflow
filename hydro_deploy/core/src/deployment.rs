@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 
 use anyhow::Result;
@@ -9,7 +10,7 @@ use super::{
     progress, CustomService, GcpComputeEngineHost, Host, LocalhostHost, ResourcePool,
     ResourceResult, Service,
 };
-use crate::ServiceBuilder;
+use crate::{AzureHost, ServiceBuilder};
 
 #[derive(Default)]
 pub struct Deployment {
@@ -29,31 +30,6 @@ impl Deployment {
     #[allow(non_snake_case)]
     pub fn Localhost(&mut self) -> Arc<LocalhostHost> {
         self.add_host(LocalhostHost::new)
-    }
-
-    #[allow(non_snake_case, clippy::too_many_arguments)] // TODO(mingwei)
-    pub fn GcpComputeEngineHost(
-        &mut self,
-        project: impl Into<String>,
-        machine_type: impl Into<String>,
-        image: impl Into<String>,
-        region: impl Into<String>,
-        network: Arc<RwLock<GcpNetwork>>,
-        user: Option<String>,
-        startup_script: Option<String>,
-    ) -> Arc<GcpComputeEngineHost> {
-        self.add_host(|id| {
-            GcpComputeEngineHost::new(
-                id,
-                project,
-                machine_type,
-                image,
-                region,
-                network,
-                user,
-                startup_script,
-            )
-        })
     }
 
     #[allow(non_snake_case)]
@@ -184,5 +160,49 @@ impl Deployment {
         let dyn_arc: Arc<RwLock<dyn Service>> = arc.clone();
         self.services.push(Arc::downgrade(&dyn_arc));
         arc
+    }
+}
+
+/// Buildstructor methods.
+#[buildstructor::buildstructor]
+impl Deployment {
+    #[allow(clippy::too_many_arguments)]
+    #[builder(entry = "GcpComputeEngineHost", exit = "add")]
+    pub fn add_gcp_compute_engine_host(
+        &mut self,
+        project: String,
+        machine_type: String,
+        image: String,
+        region: String,
+        network: Arc<RwLock<GcpNetwork>>,
+        user: Option<String>,
+        startup_script: Option<String>,
+    ) -> Arc<GcpComputeEngineHost> {
+        self.add_host(|id| {
+            GcpComputeEngineHost::new(
+                id,
+                project,
+                machine_type,
+                image,
+                region,
+                network,
+                user,
+                startup_script,
+            )
+        })
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    #[builder(entry = "AzureHost", exit = "add")]
+    pub fn add_azure_host(
+        &mut self,
+        project: String,
+        os_type: String, // linux or windows
+        machine_size: String,
+        image: Option<HashMap<String, String>>,
+        region: String,
+        user: Option<String>,
+    ) -> Arc<AzureHost> {
+        self.add_host(|id| AzureHost::new(id, project, os_type, machine_size, image, region, user))
     }
 }
