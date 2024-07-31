@@ -714,6 +714,32 @@
 <a href="#714" id="714">714</a>
 <a href="#715" id="715">715</a>
 <a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_docs)]
 #![doc = <span class="macro">include_str!</span>(<span class="string">"../README.md"</span>)]
 </span><span class="doccomment">//! &amp;nbsp;
@@ -1013,7 +1039,7 @@
     /// let un_ref: &lt;var_type!(&amp;u32, &amp;String, &amp;bool) as EitherRefVariadic&gt;::UnRefVar =
     ///     var_expr!(1_u32, "Hello".to_owned(), false);
     /// ```
-    </span><span class="kw">type </span>UnRefVar: Variadic;
+    </span><span class="kw">type </span>UnRefVar: VariadicExt;
 
     <span class="doccomment">/// This type with all exclusive `&amp;mut` references replaced with shared `&amp;` references.
     ///
@@ -1204,7 +1230,7 @@
     </span><span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool;
 
     <span class="doccomment">/// `PartialEq` for the `AsRefVar` version op `Self`.
-    </span><span class="kw">fn </span>eq_ref&lt;<span class="lifetime">'a</span>&gt;(this: <span class="self">Self</span>::AsRefVar&lt;<span class="lifetime">'a</span>&gt;, other: <span class="self">Self</span>::AsRefVar&lt;<span class="lifetime">'a</span>&gt;) -&gt; bool;
+    </span><span class="kw">fn </span>eq_ref(this: <span class="self">Self</span>::AsRefVar&lt;<span class="lifetime">'_</span>&gt;, other: <span class="self">Self</span>::AsRefVar&lt;<span class="lifetime">'_</span>&gt;) -&gt; bool;
 }
 <span class="attr">#[sealed]
 </span><span class="kw">impl</span>&lt;Item, Rest&gt; PartialEqVariadic <span class="kw">for </span>(Item, Rest)
@@ -1218,9 +1244,9 @@
         item_self == item_other &amp;&amp; rest_self.eq(rest_other)
     }
 
-    <span class="kw">fn </span>eq_ref&lt;<span class="lifetime">'a</span>&gt;(
-        this: &lt;<span class="self">Self </span><span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'a</span>&gt;,
-        other: &lt;<span class="self">Self </span><span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'a</span>&gt;,
+    <span class="kw">fn </span>eq_ref(
+        this: &lt;<span class="self">Self </span><span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'_</span>&gt;,
+        other: &lt;<span class="self">Self </span><span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; bool {
         <span class="kw">let </span><span class="macro">var_args!</span>(item_self, ...rest_self) = this;
         <span class="kw">let </span><span class="macro">var_args!</span>(item_other, ...rest_other) = other;
@@ -1233,9 +1259,9 @@
         <span class="bool-val">true
     </span>}
 
-    <span class="kw">fn </span>eq_ref&lt;<span class="lifetime">'a</span>&gt;(
-        _this: &lt;<span class="self">Self </span><span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'a</span>&gt;,
-        _other: &lt;<span class="self">Self </span><span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'a</span>&gt;,
+    <span class="kw">fn </span>eq_ref(
+        _this: &lt;<span class="self">Self </span><span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'_</span>&gt;,
+        _other: &lt;<span class="self">Self </span><span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'_</span>&gt;,
     ) -&gt; bool {
         <span class="bool-val">true
     </span>}
@@ -1428,6 +1454,32 @@
             <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(i), var.get(i).copied());
             <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(i), var.get_mut(i).copied());
         }
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_eq_ref_vec() {
+        <span class="kw">type </span>MyVar = <span class="macro">var_type!</span>(i32, bool, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str);
+        <span class="kw">let </span>vec: Vec&lt;MyVar&gt; = <span class="macro">vec!</span>[
+            <span class="macro">var_expr!</span>(<span class="number">0</span>, <span class="bool-val">true</span>, <span class="string">"hello"</span>),
+            <span class="macro">var_expr!</span>(<span class="number">1</span>, <span class="bool-val">true</span>, <span class="string">"world"</span>),
+            <span class="macro">var_expr!</span>(<span class="number">2</span>, <span class="bool-val">false</span>, <span class="string">"goodnight"</span>),
+            <span class="macro">var_expr!</span>(<span class="number">3</span>, <span class="bool-val">false</span>, <span class="string">"moon"</span>),
+        ];
+        <span class="kw">let </span>needle: &lt;MyVar <span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'_</span>&gt; =
+            <span class="macro">var_expr!</span>(<span class="number">2</span>, <span class="bool-val">false</span>, <span class="string">"goodnight"</span>).as_ref_var();
+        <span class="macro">assert_eq!</span>(
+            <span class="prelude-val">Some</span>(<span class="number">2</span>),
+            vec.iter()
+                .position(|item| &lt;MyVar <span class="kw">as </span>PartialEqVariadic&gt;::eq_ref(needle, item.as_ref_var()))
+        );
+
+        <span class="kw">let </span>missing: &lt;MyVar <span class="kw">as </span>VariadicExt&gt;::AsRefVar&lt;<span class="lifetime">'_</span>&gt; =
+            <span class="macro">var_expr!</span>(<span class="number">3</span>, <span class="bool-val">false</span>, <span class="string">"goodnight"</span>).as_ref_var();
+        <span class="macro">assert_eq!</span>(
+            <span class="prelude-val">None</span>,
+            vec.iter()
+                .position(|item| &lt;MyVar <span class="kw">as </span>PartialEqVariadic&gt;::eq_ref(missing, item.as_ref_var()))
+        );
     }
 }
 </code></pre></div></section></main></body></html>
