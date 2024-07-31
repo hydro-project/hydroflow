@@ -287,7 +287,10 @@ impl Service for HydroflowCrateService {
             .unwrap();
 
         let start_ack_line = ProgressTracker::leaf(
-            "waiting for ack start".to_string(),
+            self.display_id
+                .clone()
+                .unwrap_or_else(|| format!("service/{}", self.id))
+                + "waiting for ack start",
             tokio::time::timeout(Duration::from_secs(60), stdout_receiver),
         )
         .await??;
@@ -306,7 +309,21 @@ impl Service for HydroflowCrateService {
             .stdin()
             .send("stop\n".to_string())?;
 
-        self.launched_binary.as_mut().unwrap().wait().await;
+        let timeout_result = ProgressTracker::leaf(
+            self.display_id
+                .clone()
+                .unwrap_or_else(|| format!("service/{}", self.id))
+                + "waiting for ack start",
+            tokio::time::timeout(
+                Duration::from_secs(60),
+                self.launched_binary.as_mut().unwrap().wait(),
+            ),
+        )
+        .await;
+        // TODO(mingwei): if `timeout_result` is `Err` then force stop via:
+        // LaunchedSshBinary.channel.write_all(b"\x03").await?; // `^C`
+        // LaunchedSshBinary.channel.send_eof().await?;
+        let _exit_code = timeout_result??;
 
         Ok(())
     }

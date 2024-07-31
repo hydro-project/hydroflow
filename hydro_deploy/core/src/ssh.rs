@@ -14,6 +14,7 @@ use futures::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt};
 use hydroflow_cli_integration::ServerBindConfig;
 use nanoid::nanoid;
 use tokio::net::{TcpListener, TcpStream};
+use tokio::runtime::Handle;
 use tokio::sync::{mpsc, oneshot};
 
 use super::progress::ProgressTracker;
@@ -75,81 +76,56 @@ impl LaunchedBinary for LaunchedSshBinary {
         }
     }
 
-    async fn wait(&mut self) -> Option<i32> {
+    async fn wait(&mut self) -> Result<Option<i32>> {
         self.channel.wait_eof().await.unwrap();
         let ret = self.exit_code();
         self.channel.wait_close().await.unwrap();
-        ret
+
+        // Copy perf file down, if perf was set.
+        if let Some(perf) = &self.perf {
+            let output_file = perf.output_file.to_str().unwrap();
+            let sftp = self.session.as_ref().unwrap().sftp().await?;
+
+            // Check if perf.data exists
+            match sftp.open(&PathBuf::from(output_file)).await {
+                Ok(mut perf_data) => {
+                    // download perf.data
+                    let mut downloaded_perf_data = tokio::fs::File::create(output_file).await?;
+                    let data_size = perf_data.stat().await?.size.unwrap();
+                    let mut read_buf = vec![0; 128 * 1024];
+                    let mut index = 0;
+                    while index < data_size {
+                        let bytes_read = perf_data.read(&mut read_buf).await?;
+                        use tokio::io::AsyncWriteExt;
+                        downloaded_perf_data
+                            .write_all(read_buf[0..bytes_read].as_ref())
+                            .await?;
+                        index += bytes_read as u64;
+                    }
+                }
+                Err(Error::Ssh2(ssh2_err)) if ErrorCode::SFTP(2) == ssh2_err.code() => {
+                    // File not found, probably due to some other previous error.
+                    ProgressTracker::println(&format!(
+                        "perf output file {:?} not found on remote machine (SFTP error 2).",
+                        output_file
+                    ));
+                }
+                Err(unexpected_err) => Err(unexpected_err)?,
+            }
+        };
+
+        Ok(ret)
     }
 }
 
 impl Drop for LaunchedSshBinary {
     fn drop(&mut self) {
-        let session = self.session.take().unwrap();
-        std::thread::scope(|s| {
-            let result = s
-                .spawn(|| {
-                    let runtime = tokio::runtime::Builder::new_multi_thread()
-                        .enable_time()
-                        .build()
-                        .unwrap();
-                    runtime
-                        .block_on(async move {
-                            self.channel.write_all(b"\x03").await.unwrap();
-                            self.channel.send_eof().await?;
-                            self.channel.wait_eof().await?;
-                            self.channel.wait_close().await?;
-
-                            // Copy perf file down, if perf was set.
-                            let download_err = if let Some(perf) = &self.perf {
-                                let output_file = perf.output_file.to_str().unwrap();
-                                let sftp = session.sftp().await?;
-
-                                // Check if perf.data exists
-                                match sftp.open(&PathBuf::from(output_file)).await {
-                                    Ok(mut perf_data) => {
-                                        // download perf.data
-                                        let mut downloaded_perf_data =
-                                            tokio::fs::File::create(output_file).await?;
-                                        let data_size = perf_data.stat().await?.size.unwrap();
-                                        let mut read_buf = vec![0; 128 * 1024];
-                                        let mut index = 0;
-                                        while index < data_size {
-                                            let bytes_read = perf_data.read(&mut read_buf).await?;
-                                            use tokio::io::AsyncWriteExt;
-                                            downloaded_perf_data
-                                                .write_all(read_buf[0..bytes_read].as_ref())
-                                                .await?;
-                                            index += bytes_read as u64;
-                                        }
-                                        Ok(())
-                                    }
-                                    Err(Error::Ssh2(ssh2_err))
-                                        if ErrorCode::SFTP(2) == ssh2_err.code() =>
-                                    {
-                                        // File not found, probably due to previous error.
-                                        Ok(())
-                                    }
-                                    Err(unexpected_err) => Err(unexpected_err),
-                                }
-                            } else {
-                                Ok(())
-                            };
-
-                            session.disconnect(None, "", None).await?;
-                            download_err
-                        })
-                        .unwrap();
-                })
-                .join();
-            if let Err(e) = result {
-                if let Some(s) = e.downcast_ref::<String>() {
-                    ProgressTracker::println(&format!("DROP ERROR: {}", s));
-                } else {
-                    ProgressTracker::println("PANIC NOT STRING");
-                }
-            }
-        });
+        if let Some(session) = self.session.take() {
+            tokio::task::block_in_place(|| {
+                Handle::current().block_on(session.disconnect(None, "", None))
+            })
+            .unwrap();
+        }
     }
 }
 

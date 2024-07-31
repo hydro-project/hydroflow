@@ -30,9 +30,6 @@ async fn main() {
         }),
     );
 
-    deployment.deploy().await.unwrap();
-
-    deployment.start().await.unwrap();
-
-    tokio::signal::ctrl_c().await.unwrap()
+    let mut deployment = deployment.into_inner();
+    deployment.run_ctrl_c().await.unwrap();
 }

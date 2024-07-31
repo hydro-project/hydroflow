@@ -85,7 +85,7 @@ pub trait LaunchedBinary: Send + Sync {
 
     fn exit_code(&self) -> Option<i32>;
 
-    async fn wait(&mut self) -> Option<i32>;
+    async fn wait(&mut self) -> Result<Option<i32>>;
 }
 
 #[async_trait]

@@ -41,6 +41,16 @@ impl Deployment {
         self.add_service(|id| CustomService::new(id, on, external_ports))
     }
 
+    // TODO(mingwei): generalize to `run_until(fut: impl Future)`?
+    /// Runs `deploy()`, and `start()`, waits for CTRL+C, then runs `stop()`.
+    pub async fn run_ctrl_c(&mut self) -> Result<()> {
+        self.deploy().await?;
+        self.start().await?;
+        tokio::signal::ctrl_c().await?;
+        self.stop().await?;
+        Ok(())
+    }
+
     pub async fn deploy(&mut self) -> Result<()> {
         self.services.retain(|weak| weak.strong_count() > 0);
 
@@ -115,6 +125,23 @@ impl Deployment {
             );
 
             futures::future::try_join_all(all_services_start)
+        })
+        .await?;
+        Ok(())
+    }
+
+    pub async fn stop(&mut self) -> Result<()> {
+        self.services.retain(|weak| weak.strong_count() > 0);
+
+        progress::ProgressTracker::with_group("stop", None, || {
+            let all_services_stop = self.services.iter().filter_map(Weak::upgrade).map(
+                |service: Arc<RwLock<dyn Service>>| async move {
+                    service.write().await.stop().await?;
+                    Ok(()) as Result<()>
+                },
+            );
+
+            futures::future::try_join_all(all_services_stop)
         })
         .await?;
         Ok(())

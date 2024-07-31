@@ -2,6 +2,7 @@
 use std::os::unix::process::ExitStatusExt;
 use std::sync::{Arc, Mutex};
 
+use anyhow::Result;
 use async_trait::async_trait;
 use futures::io::BufReader;
 use futures::{AsyncBufReadExt, AsyncWriteExt};
@@ -118,8 +119,8 @@ impl LaunchedBinary for LaunchedLocalhostBinary {
             })
     }
 
-    async fn wait(&mut self) -> Option<i32> {
+    async fn wait(&mut self) -> Result<Option<i32>> {
         let _ = self.child.get_mut().unwrap().status().await;
-        self.exit_code()
+        Ok(self.exit_code())
     }
 }
