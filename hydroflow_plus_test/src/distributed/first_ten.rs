@@ -32,8 +32,8 @@ pub fn first_ten_distributed_runtime<'a>(
     cli: RuntimeData<&'a HydroCLI<HydroflowPlusMeta>>,
 ) -> impl Quoted<'a, Hydroflow<'a>> {
     let _ = first_ten_distributed(&flow, &cli);
-    flow.extract()
-        .optimize_default()
+    flow.with_default_optimize()
+        .compile()
         .with_dynamic_id(q!(cli.meta.subgraph_id))
 }
 
@@ -61,7 +61,7 @@ mod tests {
         );
 
         // if we drop this, we drop the references to the deployment nodes
-        let built = builder.extract();
+        let built = builder.finalize();
 
         insta::assert_debug_snapshot!(built.ir());
 
