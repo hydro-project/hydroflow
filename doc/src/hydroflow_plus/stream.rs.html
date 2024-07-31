@@ -1111,9 +1111,9 @@
     <span class="kw">pub fn </span>send_bincode_interleaved&lt;N2: Location + Clone, Tag, CoreType, V&gt;(
         <span class="self">self</span>,
         other: <span class="kw-2">&amp;</span>N2,
-    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, T, Async, N2&gt;
+    ) -&gt; Stream&lt;<span class="lifetime">'a</span>, CoreType, Async, N2&gt;
     <span class="kw">where
-        </span>N: HfSend&lt;N2, V, In&lt;CoreType&gt; = T, Out&lt;CoreType&gt; = (Tag, T)&gt;,
+        </span>N: HfSend&lt;N2, V, In&lt;CoreType&gt; = T, Out&lt;CoreType&gt; = (Tag, CoreType)&gt;,
         CoreType: Serialize + DeserializeOwned,
     {
         <span class="self">self</span>.send_bincode::&lt;N2, V, CoreType&gt;(other)
